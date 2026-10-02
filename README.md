@@ -34,8 +34,13 @@ anything and nothing is mapped.
 ```bash
 uv run ruff check . && uv run ruff format --check . && uv run mypy src tests
 uv run lint-imports
-uv run pytest --cov=knowledge_portal
+TEST_DATABASE_URL=postgresql://user:pass@127.0.0.1:5432/knowledge_test uv run pytest --cov=knowledge_portal
 ```
+
+`TEST_DATABASE_URL` names a disposable PostgreSQL database with pgvector; without it the
+PostgreSQL tests skip and the coverage floor is not met. Apply the schema to a real database
+with `uv run python -m knowledge_portal.infrastructure.persistence.migrate`
+(`PERSISTENCE_PROVIDER=postgres` and `DATABASE_URL`).
 
 The public API's contract is `contracts/knowledge-public.openapi.json`; regenerate it with
 `uv run python scripts/dump_openapi.py`. The internal API's contract,

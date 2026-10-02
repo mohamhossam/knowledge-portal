@@ -5,7 +5,7 @@
 | Scope | Status | Remaining |
 |---|---|---|
 | Stage 0: repository scaffolding (`AGENTS.md`, `CLAUDE.md`, `ROADMAP.md`, `UPSTREAM.md`) | In progress | CI and branch protection once the GitHub repository exists |
-| Stage 3: the service | In progress. 3.1 (backend core) and 3.2 (API and worker) done | 3.3 baseline migrations and PostgreSQL tests; 3.4 data import, images and CI; then the UI |
+| Stage 3: the service | In progress. 3.1 (backend core), 3.2 (API and worker) and 3.3 (schema) done | 3.4 data import, images and CI; then the UI |
 | Knowledge Center sub-slices B–E (from requirement-portal's `docs/slices/enhancement-knowledge-center.md`) | Specified; not scheduled | Sequencing after Stage 3 |
 
 ## Stage 3 — The service
@@ -34,7 +34,14 @@
    - Still to come: the document owner's source-impact view
      (`/library/documents/{id}/source-impact`), read over requirement-portal's
      `/internal/references/{id}/impact`.
-3. Baseline migrations and the PostgreSQL integration tests.
+3. **Schema (done).** One baseline migration, `202610021500_knowledge_baseline.sql`: the 19
+   knowledge-owned tables exactly as requirement-portal's migrations leave them at
+   `202610021400` (a pg_dump of each matches), with no foreign key leaving them. The
+   `migrate` command applies it. PostgreSQL integration tests cover every adapter and the
+   whole service; the coverage floor is 89% with `TEST_DATABASE_URL`.
+   - For the import in step 4: the audit tables' ids are `GENERATED ALWAYS`, so copying them
+     needs `OVERRIDING SYSTEM VALUE` and a sequence reset; `knowledge_events` keeps its `seq`
+     values, so requirement work's event cursor stays valid.
 4. The data import command with `--verify`, Docker images and CI.
 
 The plan is requirement-portal's `docs/slices/enhancement-platform-split.md`, read against
