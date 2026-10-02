@@ -1,0 +1,61 @@
+/*
+ * The Timetable Book: the knowledge portal's own world.
+ *
+ * Table stock and ink, three rule weights, one grotesk whose condensed width
+ * sets the table numbers. Rank is carried by weight, never by colour; colour
+ * is held back for two jobs only: red for a disruption, blue for a reference.
+ */
+:root {
+  /* Stock and ink */
+  --stock: #fbfbfa;
+  --stock-band: #f1f1ee;
+  --ink: #16181d;
+  --ink-2: #474c55;
+  --ink-3: #686e78;
+  --rule-heavy: #16181d;
+  --rule: #cfd2d6;
+  --rule-faint: #e4e5e7;
+
+  /* The two colours with a job */
+  --disruption: #b3122b;
+  --disruption-wash: #fbeaec;
+  --reference: #1d5ca3;
+  --reference-wash: #e6eef8;
+
+  /* Type: one family, two widths */
+  --face: "Archivo Variable", "Noto Sans Arabic", system-ui, sans-serif;
+  --face-arabic: "Noto Sans Arabic", "Archivo Variable", system-ui, sans-serif;
+  --width-text: 100%;
+  --width-condensed: 72%;
+  --width-monument: 62%;
+
+  /* The magnitude ramp: rank by size and weight */
+  --t-monument: clamp(4rem, 3rem + 3vw, 5.75rem);
+  --t-title: 1.625rem;
+  --t-lead: 1.0625rem;
+  --t-body: 0.9375rem;
+  --t-meta: 0.8125rem;
+  --t-mark: 0.6875rem;
+  --w-regular: 400;
+  --w-medium: 500;
+  --w-bold: 680;
+  --w-heavy: 820;
+
+  /* One spacing rhythm */
+  --s1: 0.25rem;
+  --s2: 0.5rem;
+  --s3: 0.75rem;
+  --s4: 1rem;
+  --s5: 1.5rem;
+  --s6: 2rem;
+  --s7: 3rem;
+  --s8: 4.5rem;
+
+  /* The page: a margin column for table numbers, then the table */
+  --margin-column: 7.5rem;
+  --page-max: 78rem;
+  --gutter: clamp(1rem, 0.5rem + 2vw, 2.5rem);
+
+  --focus-ring: 2px solid var(--reference);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}

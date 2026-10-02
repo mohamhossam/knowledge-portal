@@ -13,8 +13,10 @@ It is one of three repositories:
 - [`platform-kernel`](https://github.com/mohamhossam/platform-kernel), which holds the shared
   mechanisms.
 
-> **Status: backend complete (Stage 3).** The API, worker, schema, data import, image and CI
-> are in place; the UI follows. See `ROADMAP.md`.
+> **Status: backend complete (Stage 3); the UI has begun.** The API, worker, schema, data
+> import, images and CI are in place. The browser app has its design system ("the Timetable
+> Book", `DESIGN.md`), sign-in, the no-access page and the front page; the curation screens
+> follow. See `ROADMAP.md`.
 
 ## Run it offline
 
@@ -63,19 +65,41 @@ ones. `--verify` compares each table's row count and content checksum and fails 
 difference; `--verify-only` compares without copying. Admins are not imported: the portal
 remembers them as they sign in.
 
-## Image and releases
+## The browser app
 
-One image runs every process, chosen by command; see `deploy/api/Dockerfile`. Building it needs
-read access to platform-kernel as a BuildKit secret:
+`frontend/` is the portal's own React + Vite app, served under `/knowledge/`. Its design system
+is `DESIGN.md`; product truth is `PRODUCT.md`. With the API running offline on port 8100:
+
+```bash
+uv run python -m knowledge_portal.interfaces.api.serve --port 8100   # fake models, sign-in and storage
+uv run python scripts/seed_demo.py --api http://127.0.0.1:8100        # optional sample curation work
+cd frontend && npm ci && npm run dev                                  # http://localhost:5174/knowledge/
+```
+
+The development server proxies `/knowledge-api` to that API. `scripts/seed_demo.py` fills the
+in-memory store with clearly labelled sample documents, a draft catalogue release and squads, so
+each screen shows every state it must handle. Checks: `npm run lint`, `npm run typecheck`,
+`npm test`, `npm run api:check` (the generated API types against
+`contracts/knowledge-public.openapi.json`) and `npm run build`.
+
+## Images and releases
+
+One backend image runs every process, chosen by command; see `deploy/api/Dockerfile`. Building
+it needs read access to platform-kernel as a BuildKit secret:
 
 ```bash
 docker build --secret id=kernel_read_token,env=KERNEL_READ_TOKEN -f deploy/api/Dockerfile .
 ```
 
-CI (`.github/workflows/ci.yml`) runs the checks with PostgreSQL, audits dependencies, and builds,
-scans and starts the image. Pushing a tag `vX.Y.Z` that matches `pyproject.toml` publishes
-`ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` once CI passes; requirement-portal's deployment pulls
-it by tag. CI needs the `KERNEL_READ_TOKEN` repository secret.
+The browser app ships as its own image, nginx serving `/knowledge/`
+(`docker build -f deploy/web/Dockerfile .`, with `CSP_IDENTITY_ORIGINS` set to the OIDC issuer's
+origin for an OIDC deployment).
+
+CI (`.github/workflows/ci.yml`) runs the checks with PostgreSQL, the frontend checks, audits
+dependencies, and builds, scans and starts both images. Pushing a tag `vX.Y.Z` that matches
+`pyproject.toml` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` and
+`ghcr.io/mohamhossam/knowledge-web:vX.Y.Z` once CI passes; requirement-portal's deployment pulls
+them by tag. CI needs the `KERNEL_READ_TOKEN` repository secret.
 
 ## Who uses it
 

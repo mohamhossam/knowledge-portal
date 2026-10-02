@@ -5,7 +5,7 @@
 | Scope | Status | Remaining |
 |---|---|---|
 | Stage 0: repository scaffolding (`AGENTS.md`, `CLAUDE.md`, `ROADMAP.md`, `UPSTREAM.md`) | Done; CI arrived with 3.4 | Branch protection on `main`, and the `KERNEL_READ_TOKEN` secret |
-| Stage 3: the service | Backend done (3.1 to 3.4, and the owner's source-impact view) | The UI |
+| Stage 3: the service | Backend done (3.1 to 3.4, and the owner's source-impact view); UI foundation and front page done | The curation screens: library, catalogue, squads |
 | Knowledge Center sub-slices B–E (from requirement-portal's `docs/slices/enhancement-knowledge-center.md`) | Specified; not scheduled | Sequencing after Stage 3 |
 
 ## Stage 3 — The service
@@ -96,13 +96,21 @@ ADR-0099.
 - An OpenAPI snapshot published with each release.
 
 ### UI
-- A new design system, with its own `DESIGN.md`, tokens and primitives.
-- Screens:
-  - library and governance;
-  - catalogue browser and editors;
-  - squad catalogue;
-  - architecture evidence;
-  - a "no access" page for anyone without `knowledge_admin`.
+- **Done: the design system and the front page.** "The Timetable Book" (`DESIGN.md`):
+  - numbered tables with reference marks and notes;
+  - rank carried by weight;
+  - red only for disruption, blue only for references.
+
+  Also done:
+  - sign-in (offline personas, or the platform's OIDC client `knowledge-spa`);
+  - the "no access" page for anyone without `knowledge_admin`;
+  - the front page, an overview of all three tables with what needs a curator;
+  - stable addresses for `/library`, `/architecture` and `/squads`;
+  - the `knowledge-web` image.
+- **Next screens, each critiqued on a live seeded page before its pull request:**
+  - library and governance (review, publication, builds, withdrawal, ownership, dependents and source impact);
+  - catalogue browser and editors (releases, suggestions, changes, mapping impact, evidence);
+  - squad catalogue.
 
 ### Data import
 - Done in step 4 above.

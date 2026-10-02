@@ -1,0 +1,11 @@
+# The web image's own allow-list (BuildKit reads <Dockerfile>.dockerignore in
+# place of the root .dockerignore, which serves the backend image).
+*
+!frontend/
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/*.tsbuildinfo
+!contracts/knowledge-public.openapi.json
+!deploy/web/default.conf.template
+!deploy/web/security-headers.conf

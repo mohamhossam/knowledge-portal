@@ -1,0 +1,57 @@
+# The knowledge portal's browser app, served under /knowledge/.
+#
+# requirement-portal's edge proxy forwards /knowledge/ here unchanged and serves
+# /knowledge-api/ itself, so this server holds static files only.
+#
+# The page's Content-Security-Policy names the OIDC issuer, which only the
+# deployment knows. The image is built with a placeholder; the container's
+# CSP_IDENTITY_ORIGINS (space-separated origins, or empty offline) replaces it
+# in every HTML response. The image renders this template at start-up.
+server {
+    listen 8080;
+    server_tokens off;
+    absolute_redirect off;
+
+    gzip on;
+    gzip_vary on;
+    gzip_comp_level 5;
+    gzip_min_length 1024;
+    gzip_types text/css application/javascript image/svg+xml application/json text/plain;
+
+    location = /health {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    location = /knowledge {
+        return 301 /knowledge/;
+    }
+
+    # Hashed build assets never change, so they cache for a year.
+    location /knowledge/assets/ {
+        include /etc/nginx/snippets/security-headers.conf;
+        alias /usr/share/nginx/html/assets/;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        try_files $uri =404;
+    }
+
+    # Client-side routes: every other path under /knowledge/ is the app shell,
+    # never cached, so a deploy reaches browsers on their next navigation.
+    location /knowledge/ {
+        include /etc/nginx/snippets/security-headers.conf;
+        alias /usr/share/nginx/html/;
+        add_header Cache-Control "no-cache" always;
+        sub_filter "__CSP_IDENTITY_ORIGINS__" "${CSP_IDENTITY_ORIGINS}";
+        sub_filter_once off;
+        try_files $uri /knowledge/index.html;
+    }
+
+    location = /knowledge/index.html {
+        include /etc/nginx/snippets/security-headers.conf;
+        alias /usr/share/nginx/html/index.html;
+        add_header Cache-Control "no-cache" always;
+        sub_filter "__CSP_IDENTITY_ORIGINS__" "${CSP_IDENTITY_ORIGINS}";
+        sub_filter_once off;
+    }
+}
