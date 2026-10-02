@@ -295,6 +295,7 @@ export function isTheEdition(document: LibraryDocument, version: LibraryVersion,
 export function settling(document: LibraryDocument): boolean {
   const newest = newestVersion(document);
   if (newest && IN_PROGRESS.has(newest.stage)) return true;
-  const state = standing(document);
-  return state.kind === "indexing" && !state.stuck;
+  // An approval or a build still being indexed.
+  return document.publications.some((item) =>
+    !item.withdrawn_at && !item.activated_at && !item.built_at && item.indexing_attempts < 3);
 }

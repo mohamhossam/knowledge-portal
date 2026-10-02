@@ -56,6 +56,14 @@ export function useDocument(documentId: string) {
       api.cancel(document.id, versionId, document.version)),
     replace: useChange(documentId, current, (document, file: File) =>
       api.upload({ file, title: document.title, documentId: document.id, expectedVersion: document.version })),
+    build: useChange(documentId, current, (document, preview: { document_version: number; fingerprint: string; index_identity: string }) =>
+      api.build(document.id, { expected_version: preview.document_version, fingerprint: preview.fingerprint, index_identity: preview.index_identity })),
+    activate: useChange(documentId, current, (document, input: { buildId: string; manifest: string }) =>
+      api.activate(document.id, input.buildId, { expected_version: document.version, manifest: input.manifest })),
+    discard: useChange(documentId, current, (document, buildId: string) =>
+      api.discard(document.id, buildId, document.version)),
+    retryIndexing: useChange(documentId, current, (document) =>
+      api.retryIndexing(document.id, document.version)),
     reload: () => queryClient.invalidateQueries({ queryKey: documentKey(documentId) }),
   };
 }

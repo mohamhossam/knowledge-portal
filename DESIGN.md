@@ -171,6 +171,37 @@ components:
   save-bar:
     backgroundColor: "{colors.stock}"
     padding: "0.75rem 0"
+  subindex-link:
+    textColor: "{colors.ink-2}"
+    height: "2.25rem"
+  subindex-link-current:
+    textColor: "{colors.ink}"
+  govsection-title:
+    textColor: "{colors.ink}"
+    typography: "{typography.lead}"
+    padding: "0 0 0.25rem"
+  govtable-row:
+    textColor: "{colors.ink}"
+    typography: "{typography.body}"
+    padding: "0.5rem 1rem 0.5rem 0"
+  govtable-secondary:
+    textColor: "{colors.ink-2}"
+    typography: "{typography.meta}"
+  search-field:
+    backgroundColor: "{colors.stock}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.control}"
+    typography: "{typography.body}"
+    padding: "0.25rem 0.5rem"
+    height: "2.25rem"
+  search-context:
+    backgroundColor: "{colors.stock-band}"
+    textColor: "{colors.ink-2}"
+    typography: "{typography.meta}"
+    padding: "0.5rem 0.75rem"
+  toolbar-link:
+    textColor: "{colors.reference}"
+    height: "2rem"
 ---
 
 # Design System: Knowledge portal
@@ -183,7 +214,7 @@ The portal is set like a national railway timetable book. Each area of shared kn
 
 The density is that of a reference work. Rows are tight (0.5rem block padding) and separated by hairlines. Numbers and dates use tabular, lining figures and sit right-aligned, as in any timetable. The surface is flat: no cards, no shadows for depth, no pills, no gradients. One sticky masthead strip and an index of the tables bind the book, and every screen sits inside that binding.
 
-The interface language is English. Content keeps its own language and direction. Arabic names render in Noto Sans Arabic, in their own direction, beside the English in the same cell. The theme is light only. This is a decision for an office-daylight scene, not an omission.
+The interface language is English. It calls the indexed units of a document "passages", and the units of the table-aware cut "fields"; it never says "chunks". Content keeps its own language and direction. Arabic names render in Noto Sans Arabic, in their own direction, beside the English in the same cell. The theme is light only. This is a decision for an office-daylight scene, not an omission.
 
 **Key Characteristics:**
 - Near-white neutral stock (never cream) and black ink; flat, ruled, unboxed.
@@ -198,7 +229,7 @@ The interface language is English. Content keeps its own language and direction.
 The palette is table stock and ink, plus two colours with a job each.
 
 ### Primary
-- **Reference Blue** (`reference`): footnote marks, note numbers, the note return links, the next-decision line, body links, the focus ring, the caret, and the "e" edit mark on an edited passage. Wherever the reader can follow something to somewhere else.
+- **Reference Blue** (`reference`): footnote marks, note numbers, the note return links, the next-decision line, body links (including the toolbar's search link), the focus ring, the caret, and the "e" edit mark on an edited passage. Wherever the reader can follow something to somewhere else.
 - **Reference Wash** (`reference-wash`): the lit state of a row, mark or note when its partner is hovered or focused. Also text selection.
 
 ### Secondary
@@ -207,13 +238,13 @@ The palette is table stock and ink, plus two colours with a job each.
 
 ### Neutral
 - **Table Stock** (`stock`): the page and the masthead background. It is a neutral near-white, never cream.
-- **Stock Band** (`stock-band`): the only tonal step off the page. It is the scrollbar track, the background of a hovered passage row, the background of the focused/open passage row together with its detail row (the row opens in place on this band, never in a card), and the fill of a disabled action button.
-- **Ink** (`ink`): text, the working text in a passage row, the fill of the primary and action buttons, the current-index bar, the pressed-filter bar, the index extent rules, the checkbox accent and the field border on hover.
-- **Ink 2** (`ink-2`): secondary text. This covers column heads, edition lines, rows in service, notes, the quiet state, Arabic secondary lines, field labels, the comparison (in service or as extracted) column of the passage table, unpressed filters, the keys line and the save bar's state and reason lines.
+- **Stock Band** (`stock-band`): the only tonal step off the page. It is the scrollbar track, the background of a hovered passage row, the background of the focused/open passage row together with its detail row (the row opens in place on this band, never in a card), the fill of a disabled action button, and the surrounding-text block under a search result (padded on the band, never ruled or boxed).
+- **Ink** (`ink`): text, the working text in a passage row, the fill of the primary and action buttons, the current-index bar, the pressed-filter bar, the current sub-index link and its bar, the index extent rules, the checkbox accent and the field border on hover.
+- **Ink 2** (`ink-2`): secondary text. This covers column heads, edition lines, rows in service, notes, the quiet state, Arabic secondary lines, field labels, the comparison (in service or as extracted) column of the passage table, unpressed filters, the keys line, the save bar's state and reason lines, unselected sub-index links, governance section leads, the secondary lines in a governance table, and the text of a search result's surrounding-text block.
 - **Ink 3** (`ink-3`): rows in the past, disabled controls (including the disabled action button's text), the select and field borders, the masthead dot, and excluded or removed passages.
-- **Heavy Rule** (`rule-heavy`): the rule under the masthead and table heads, the totals label and the notice head, and the double rule above the notes. Also the change notice's heading, the top and bottom of the processing line and the withdraw panel, the foot of an open passage's detail row, and the top of the save bar.
-- **Rule** (`rule`): the 1px rule between tables, under the index and above "in preparation" text and the "Add a document" section. Also the resting underline of title links, the border of a disabled action button, the outline of `kbd` key caps and the frame of a source preview image.
-- **Faint Rule** (`rule-faint`): the hairlines between rows and between totals, under the change notice's counts, and between passage rows.
+- **Heavy Rule** (`rule-heavy`): the rule under the masthead and table heads, the totals label and the notice head, and the double rule above the notes. Also the change notice's heading, the top and bottom of the processing line and the withdraw panel, the foot of an open passage's detail row, the top of the save bar, and the line under a governance section title and a governance table's column heads.
+- **Rule** (`rule`): the 1px rule between tables, under the index and above "in preparation" text and the "Add a document" section. Also the resting underline of title links, the border of a disabled action button, the outline of `kbd` key caps, the frame of a source preview image, and the line under a document's sub-index.
+- **Faint Rule** (`rule-faint`): the hairlines between rows and between totals, under the change notice's counts, between passage rows, and between governance table rows.
 
 ### Named Rules
 **The Two Jobs Rule.** Colour has exactly two jobs. Red marks a disruption. Blue marks a reference, meaning something you can follow, plus focus. No other hue appears, and neither colour ever decorates or ranks.
@@ -231,10 +262,10 @@ The palette is table stock and ink, plus two colours with a job each.
 ### Hierarchy
 - **Monument** (820, clamp(4rem, 3rem + 3vw, 5.75rem), line-height 0.8, width 62%): the table number in the margin column. It is aria-hidden; the heading carries "Table N:" for screen readers. At 45rem and below it drops to 3.25rem and sits above the title. Index numbers use the same width and weight at 2.25rem (1.75rem on phones).
 - **Title** (680, 1.625rem, line-height 1.1, width 88%): table titles and notice titles. Index entry titles use the same width and weight at body size.
-- **Lead** (680, 1.0625rem): the next-decision line, the portal name in the masthead, and the titles of the "Add a document" section and the withdraw panel.
-- **Body** (400, 0.9375rem, line-height 1.45, width 100%): rows, totals and edition lines. Edition lines are capped at 72ch, notice text at 62ch, note text at 80ch.
-- **Label** (500, 0.8125rem, width 72%, letter-spacing 0.01em): column heads, totals labels, field labels, the change notice heading and the passage detail labels ("Edited from", "As extracted"), in ink 2. They use sentence case, never uppercase.
-- **Meta** (400 to 500, 0.8125rem): the notes, the masthead's "Valid as of" line, text buttons, the Arabic secondary name line, the passage table's "Where" column, exclusion reasons and flags, the keys line, and the save bar's state and reason lines. Key caps inside the keys line step down to 0.75rem, medium weight.
+- **Lead** (680, 1.0625rem): the next-decision line, the portal name in the masthead, the titles of the "Add a document" section and the withdraw panel, and governance section titles (bold, on a heavy rule).
+- **Body** (400, 0.9375rem, line-height 1.45, width 100%): rows, totals and edition lines. Edition lines are capped at 72ch, notice text at 62ch, note text at 80ch, governance leads at 72ch and a search result's passage at 64ch. Sub-index links take body size in medium weight (bold when current).
+- **Label** (500, 0.8125rem, width 72%, letter-spacing 0.01em): column heads, totals labels, field labels, the change notice heading the passage detail labels ("Edited from", "As extracted"), the governance table's column heads and the legend of a choices group, in ink 2. They use sentence case, never uppercase.
+- **Meta** (400 to 500, 0.8125rem): the notes, the masthead's "Valid as of" line, text buttons, the Arabic secondary name line, the passage table's "Where" column, exclusion reasons and flags, the keys line, the save bar's state and reason lines, the secondary lines in a governance table, a search result's surrounding text, and sub-index links on phones. Key caps inside the keys line step down to 0.75rem, medium weight.
 - **Mark** (680, 0.6875rem): the superscript reference numeral, in blue.
 
 ### Named Rules
@@ -256,18 +287,22 @@ A document's page uses the same margin grid (7.5rem margin column, 1.5rem gap), 
 
 The passage table is a fixed-layout grid: No. (3.5rem), Where (13rem; 14rem when reading a published edition), comparison text and working text sharing the rest, Status (10rem; 7rem below 60rem). An open passage's detail sets source and decision side by side, and stacks them below 60rem.
 
+A document's own pages (Review, Search versions, Who cites it, Ownership) share its head. The sub-index sits 0.75rem under the head on a 1px rule, its links 1.5rem apart (0.75rem on phones). Each page is a run of governance sections: 1rem of padding above each, 0.75rem between a section's parts, leads capped at 72ch, forms at 44rem. A governance table runs the full table column; its place column is fixed at 14rem. The search page is a numbered table whose body opens with the search bar 1rem under the head: a field growing from a 28rem basis with the action beside it, wrapping beneath it on phones.
+
+**The Kept Column Rule.** In a governance table, a secondary fact (a version's cut and passage count, a handover's reason or who performed it, a citation's place or version, a field's label) rides as a secondary ink-2 meta line inside a kept column, never in a column of its own. Columns still drop by priority on phones, and these facts stay with the row.
+
 The save bar is sticky to the bottom of the viewport (z-index 4, under the masthead's 5) above 45rem and static on phones. While it is present, the page carries 9rem of `scroll-padding-bottom`, so a passage moved to from the keyboard is never hidden under it.
 
 ## Elevation & Depth
 
-The surface is flat. Depth is not used. Rules separate the parts: a 2px heavy rule, a 1px hairline and a 3px double rule. Lit states are a background wash, never a lift; an open passage sits on the stock band, not on a raised card. The only `box-shadow` in the build is an inset 3px ink bar (`inset 0 -3px 0 ink`), under the current index entry and under the pressed filter. It works as a rule, not as a shadow. The sticky save bar is separated from the rows by its heavy rule and its stock background, not by a shadow.
+The surface is flat. Depth is not used. Rules separate the parts: a 2px heavy rule, a 1px hairline and a 3px double rule. Lit states are a background wash, never a lift; an open passage sits on the stock band, not on a raised card. The only `box-shadow` in the build is an inset 3px ink bar (`inset 0 -3px 0 ink`), under the current index entry, the pressed filter and the current sub-index link. It works as a rule, not as a shadow. The sticky save bar is separated from the rows by its heavy rule and its stock background, not by a shadow.
 
 ### Named Rules
-**The Three Rules Rule.** Separation uses three weights only. A 2px heavy rule sits under the masthead and every table head, totals label and notice head. A 1px hairline sits between rows, totals and tables. A 3px double rule sits above the notes. Do not add a fourth weight or a box.
+**The Three Rules Rule.** Separation uses three weights only. A 2px heavy rule sits under the masthead and every table head, totals label, notice head and governance section title. A 1px hairline sits between rows, totals and tables. A 3px double rule sits above the notes. Do not add a fourth weight or a box.
 
 ## Shapes
 
-The form is rectilinear. Rules run full width with square ends, and there are no cards or bordered panels. The only radius is 2px, on framed controls: the primary and action buttons, the persona select, field inputs, the file-selector button, and `kbd` key caps. Panels such as the processing line and the withdraw panel are ruled top and bottom, never boxed. The index extent rule is a 3px ink bar on a fixed 7rem track. Its length is the table's share of the largest table, with a 3% minimum.
+The form is rectilinear. Rules run full width with square ends, and there are no cards or bordered panels. The only radius is 2px, on framed controls: the primary and action buttons, the persona select, field inputs, the file-selector button, and `kbd` key caps. Panels such as the processing line and the withdraw panel are ruled top and bottom, never boxed. Governance sections open on a heavy rule under their title and are never boxed; a choices group is a fieldset with its border and padding removed. The one filled block is a search result's surrounding text: a square stock-band fill with 0.5rem by 0.75rem padding and no rule. The index extent rule is a 3px ink bar on a fixed 7rem track. Its length is the table's share of the largest table, with a 3% minimum.
 
 ## Components
 
@@ -282,6 +317,8 @@ The form is rectilinear. Rules run full width with square ends, and there are no
 - **Field:** a label in the label style, 0.25rem above a framed input: 1px ink-3 border, 2px radius, stock background, body text, 0.25rem by 0.5rem padding, a 2rem minimum height. **Hover** darkens the border to ink. Textareas inherit the body face and resize vertically only. The inline variant sets the label beside the input (the find fields, the review summary).
 - **Find field:** a search input in the field style with a visible label ("Find", "Find in passages"), set in a table's toolbar slot or at the end of the filter strip.
 - **Checkbox:** a 1.125rem box with the ink accent colour, beside a medium-weight label, in a 1.5rem-tall target.
+- **Search bar:** a `role="search"` form: a labelled field ("What are you looking for?") and the action button ("Search", with a 16px icon) at one 2.25rem height, aligned on their bottom edge. The field grows; on phones the button wraps beneath it.
+- **Choices:** a group of radio rows in the checkbox style inside a fieldset with no border or padding; its legend takes the label style, unpadded, 0.25rem above the first row. A row may carry an ink-2 secondary after its name (an email).
 - **File input:** a field framed with 0.25rem padding; its file-selector button is a 1.75rem-tall framed control with a 1px ink border, a 2px radius, stock fill and medium text, swapping to solid ink on hover.
 
 ### Filter Strip
@@ -293,6 +330,7 @@ One ink-2 meta line under the filter strip naming the review keys. Each key is a
 ### Navigation
 - **Masthead:** a strip with "Requirement AI · Knowledge portal" set at 72% width. The portal name is in bold lead, the parent product in ink 2. Next come "Valid as of" with a medium-weight time and a refresh text button, then the account at the right. A 2px heavy rule sits underneath.
 - **Index of tables:** three entries. Each has a monumental condensed number, a title at 88% width and bold weight, and a meta extent line with its count and a proportional rule. **Hover** underlines the title. **Current** adds the inset 3px ink bar. Each entry announces "Table N:" to screen readers.
+- **Document sub-index:** a labelled `nav` ("This document") under a document's head: Review · Search versions · Who cites it · Ownership. Each link is a 2.25rem-tall target in medium ink 2 with no underline; **hover** turns it to ink; **current** (`aria-current="page"`) sets it in bold ink with the inset 3px ink bar, above a 1px rule under the whole strip. While the working copy has unsaved changes, Review carries "· N unsaved" in regular weight. On phones the gap tightens to 0.75rem and the links drop to meta size.
 
 ### Numbered Table (signature)
 The portal's only container. Every area screen is built from it.
@@ -317,6 +355,25 @@ The review's grid: what requirement work cites, set against the working copy, ro
 - **Columns:** No. (end-aligned), Where (ink-2 meta), the comparison text in ink 2 (headed "In service · version N", or "As extracted"), the working text in ink (headed "Working copy · version N", or "Reviewed"), and Status. Column heads are in the label style over a heavy rule; rows sit on hairlines, top-aligned, and long words wrap anywhere.
 - **Rank:** edited and new statuses are bold; unchanged status is ink 2; an excluded passage's working text and status are ink 3 with "Excluded: reason" beneath in ink-2 meta; a removed passage is ink 3 throughout. A blocking warning sets its flag line in bold red.
 - **Clamp and open:** text is clamped to four lines until the row opens. Hovering a row, and the focused/open row with its detail row, take the stock band. The focused row shows the blue focus outline inset by 2px. The detail row closes on a heavy rule and sets source (edited-from or as-extracted text, warnings, the original preview framed in a 1px rule, up to 28rem tall) beside the decision controls.
+
+### Table Toolbar
+The slot under a table's head. Besides the find field it holds a **notice** (a full-width medium-weight line with `role="status"`, such as the result of an upload) and a **toolbar link** (a reference-blue body link in medium weight with a 14px icon before it and a 2rem minimum target, such as "Search inside the documents").
+
+### Governance Section
+The unit of a document's governance pages. A lead-size bold title on a 2px heavy rule (0.25rem under the text), then an ink-2 lead capped at 72ch (bold facts inside it return to ink), then a governance table, a form, or a quiet line. Actions sit in a wrapping row, 0.75rem by 1rem apart: an action button for the commit, text buttons for the rest. Failures use the red failure line with `role="alert"`; empty states use the quiet line under its heavy rule.
+
+### Governance Table
+The numbered table's grid, set inside a governance section without its margin number.
+- **Grid:** a real `<table>` with a visually hidden caption. Column heads in the label style over a 2px heavy rule; rows on hairlines, top-aligned, 0.5rem by 1rem padding; long words wrap anywhere. Numbers end-align.
+- **Secondary lines:** see the Kept Column Rule. Each secondary fact is its own block line in ink-2 meta under the primary value of a kept column.
+- **Rank:** the Weight Is Rank Rule applies: a due row (built and awaiting activation, a citation to reconcile) in bold, a stuck row's status bold red, a past row (replaced, withdrawn, no longer in use) in ink 3.
+- **Clamp:** quoted requirement or passage text is clamped to four lines.
+- **Place column:** where a row is a passage or field, its place is the row header, fixed at 14rem in ink-2 meta, with the field label as its secondary line.
+
+### Search Results
+A governance table of exact passages, best first, under a one-line ink-2 count ("7 passages from 5 documents, best first."). The passage is the row header, capped at 64ch, in its own direction. A text button on its own line under the passage ("Show the surrounding text (N places)") opens the surrounding text in place, as a stock-band block in meta: one place per line in a two-column grid (place in ink-3 on a 6rem track, its text in ink-2), the cited place in ink at medium weight, and no Markdown heading markers. It appears only when the context reaches beyond the passage's own place. The second column is the document title as a body link, with the version and its place ("version 1 · Heading › Line 2", plus a field label if any) on a left-to-right secondary line with the title isolated (`<bdi>`). Below 45rem that column drops and the same line rides under the passage.
+
+**The Passages Rule.** On screen the indexed units of a document are "passages", and the units of the table-aware cut are "fields". The cut itself reads "Passages" or "Table-aware". The word "chunk" belongs to code, never to a label, heading, count or caption.
 
 ### Change Notice
 Counts first, like a timetable's list of changes. A heading in the label style over a heavy rule, then a wrapping row of counts closed by a hairline. Each count is a label beside a fixed 4ch end-aligned bold value, so a count growing never moves its neighbours. The blocking count is red, label and value. At 45rem and below the counts stack as a totals list, one hairline per count. An ink-2 meta total line follows.
@@ -343,6 +400,9 @@ Sign-in, no-access and still-opening screens use a 40rem column. Each has a port
 - **Do** open a focused passage in place on the stock band (`stock-band`), with its detail row closing on a heavy rule.
 - **Do** keep deliberate steps such as withdrawal inline and ruled under the head.
 - **Do** say why a disabled action waits, in a line linked to it.
+- **Do** put a governance table's secondary facts on a secondary ink-2 meta line in a kept column, so phones keep them when columns drop.
+- **Do** mark the current page of a document's sub-index in bold ink with the inset 3px ink bar, and show the unsaved count on Review.
+- **Do** say "passages" for indexed units and "fields" for the table-aware cut.
 - **Do** use tabular, lining figures, and end-align numbers and dates.
 - **Do** let content keep its own direction: `dir="auto"` on names, `lang="ar" dir="rtl"` on Arabic secondary lines, set in Noto Sans Arabic.
 - **Do** keep targets at least 24px (text buttons 1.5rem, return links 1.5rem) and show the 2px blue focus outline on everything focusable.
@@ -357,3 +417,5 @@ Sign-in, no-access and still-opening screens use a 40rem column. Each has a port
 - **Don't** scroll tables sideways. Drop columns by priority instead.
 - **Don't** open a modal or a card to edit or withdraw. Rows open in place; steps open inline.
 - **Don't** extend the letter edit mark beyond edited passages. Sourced facts keep numbered marks and notes.
+- **Don't** give a secondary fact (a cut, a count, a reason, a place) its own column.
+- **Don't** say "chunks" on screen.

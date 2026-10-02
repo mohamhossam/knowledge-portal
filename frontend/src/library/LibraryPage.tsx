@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Upload } from "lucide-react";
+import { Search, Upload } from "lucide-react";
 import { type FormEvent, useEffect, useId, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { api } from "../api/client";
 import { errorMessage } from "../api/errors";
@@ -23,6 +23,7 @@ export function LibraryPage() {
   const documents = useQuery({ queryKey: ["library", "documents"], queryFn: api.libraryDocuments });
   const [find, setFind] = useState("");
   const findId = useId();
+  const notice = (useLocation().state as { notice?: string } | null)?.notice;
 
   useEffect(() => {
     window.document.title = "Library · Knowledge portal";
@@ -81,10 +82,17 @@ export function LibraryPage() {
         failure={documents.isError ? () => void documents.refetch() : undefined}
         next={next}
         toolbar={
-          <label className="field field--inline" htmlFor={findId}>
-            <span className="field__label">Find a document</span>
-            <input id={findId} type="search" className="field__input" value={find} onChange={(event) => setFind(event.target.value)} />
-          </label>
+          <>
+            {notice && <p className="toolbar__notice" role="status">{notice}</p>}
+            <label className="field field--inline" htmlFor={findId}>
+              <span className="field__label">Find a document</span>
+              <input id={findId} type="search" className="field__input" value={find} onChange={(event) => setFind(event.target.value)} />
+            </label>
+            <Link to="/library/search" className="toolbar__link">
+              <Search size={14} aria-hidden="true" />
+              Search inside the documents
+            </Link>
+          </>
         }
       />
       <AddDocument />

@@ -116,8 +116,13 @@ ADR-0099.
     - the original's preview;
     - save, approve and publish;
     - withdrawal, a new version, and retry or cancel of processing.
+- **Done: library governance and search.**
+  - Each document has sub-pages, Review, Search versions, Who cites it and Ownership; unsaved review work survives moving between them.
+  - Search versions: every publication, table-aware builds (preview, build, activate with acknowledgement, discard), retrying stopped indexing, and a preview of what an approval indexes.
+  - Who cites it: proposals citing the document, and source impact (read-only).
+  - Ownership: handing over to another admin, with its history.
+  - `/library/search` searches every passage in service, with exact citations and their surrounding text.
 - **Next screens, each critiqued on a live seeded page before its pull request:**
-  - library governance (table-aware builds, ownership transfer, dependents, source impact) and knowledge search;
   - catalogue browser and editors (releases, suggestions, changes, mapping impact, evidence);
   - squad catalogue.
 

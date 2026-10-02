@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-02T12:00:00Z",
+  "generatedAt": "2026-10-03T12:00:00Z",
   "title": "Design System: Knowledge portal",
   "extensions": {
     "colorMeta": {
@@ -196,19 +196,19 @@
       },
       "lead": {
         "displayName": "Lead",
-        "purpose": "The next-decision line, the masthead portal name, and the titles of the add-a-document section and the withdraw panel."
+        "purpose": "The next-decision line, the masthead portal name, the titles of the add-a-document section and the withdraw panel, and governance section titles (bold, on a heavy rule)."
       },
       "body": {
         "displayName": "Body",
-        "purpose": "Rows, totals and edition lines; tabular lining figures."
+        "purpose": "Rows, totals and edition lines; tabular lining figures. Governance leads cap at 72ch, a search result's passage at 64ch; sub-index links in medium weight, bold when current."
       },
       "label": {
         "displayName": "Label",
-        "purpose": "Column heads, totals labels, field labels, the change notice heading and passage detail labels, at 72% width, sentence case, ink 2."
+        "purpose": "Column heads (including governance tables), totals labels, field labels, the change notice heading, passage detail labels and the legend of a choices group, at 72% width, sentence case, ink 2."
       },
       "meta": {
         "displayName": "Meta",
-        "purpose": "Notes, the masthead 'Valid as of' line, text buttons, Arabic secondary lines, the passage Where column, reasons and flags, the keys line, the save bar's state and reason lines. Key caps step down to 0.75rem."
+        "purpose": "Notes, the masthead 'Valid as of' line, text buttons, Arabic secondary lines, the passage Where column, reasons and flags, the keys line, the save bar's state and reason lines, governance secondary lines, a search result's surrounding text, and sub-index links on phones. Key caps step down to 0.75rem."
       },
       "mark": {
         "displayName": "Mark",
@@ -223,19 +223,19 @@
       {
         "name": "current-bar",
         "value": "inset 0 -3px 0 var(--ink)",
-        "purpose": "A rule, not depth: the bar under the current index entry and under the pressed filter. The only box-shadow in the system."
+        "purpose": "A rule, not depth: the bar under the current index entry, the pressed filter and the current sub-index link. The only box-shadow in the system."
       }
     ],
     "rules": [
       {
         "name": "rule-heavy",
         "value": "2px solid var(--rule-heavy)",
-        "purpose": "Under the masthead, table heads, totals label, quiet line, notice head and change notice heading; above and below the processing line and the withdraw panel; at the foot of an open passage's detail row; on top of the save bar."
+        "purpose": "Under the masthead, table heads, totals label, quiet line, notice head and change notice heading; above and below the processing line and the withdraw panel; at the foot of an open passage's detail row; on top of the save bar. Under a governance section title and a governance table's column heads."
       },
       {
         "name": "hairline",
         "value": "1px solid var(--rule-faint)",
-        "purpose": "Between rows and totals; 1px var(--rule) between tables and under the index."
+        "purpose": "Between rows, totals and governance table rows; 1px var(--rule) between tables, under the index and under a document's sub-index."
       },
       {
         "name": "double",
@@ -283,7 +283,7 @@
       {
         "name": "phone",
         "value": "45rem",
-        "purpose": "Priority-2 columns hide; margin column collapses; masthead unsticks; index stacks."
+        "purpose": "Priority-2 columns hide; margin column collapses; masthead unsticks; index stacks; sub-index tightens to 0.75rem gaps at meta size."
       }
     ],
     "layout": [
@@ -296,6 +296,16 @@
         "name": "save-bar-stack",
         "value": "z-index 4 (masthead 5); position static at 45rem and below",
         "purpose": "The save bar stays in view on desktop, sits in flow on phones."
+      },
+      {
+        "name": "governance-section",
+        "value": "padding-top 1rem; gap 0.75rem; lead max 72ch; form max 44rem; place column 14rem",
+        "purpose": "The rhythm of a document's governance pages."
+      },
+      {
+        "name": "search-bar",
+        "value": "field flex 1 1 28rem; field and action at min-height 2.25rem; align-items end; wraps",
+        "purpose": "One field and its action at one height; the button wraps beneath on phones."
       }
     ]
   },
@@ -403,11 +413,43 @@
       "description": "The review's sticky foot: heavy rule on top, unsaved count, summary field, actions, the reason it waits. Static on phones.",
       "html": "<form class=\"ds-savebar\"><p class=\"ds-savebar__state\"><strong>3 unsaved changes</strong></p><label class=\"ds-savebar__summary\"><span class=\"ds-savebar__label\">Review summary</span><input class=\"ds-savebar__input\" placeholder=\"What you checked, and what you changed\"></label><button class=\"ds-savebar__btn\">Save review</button><button class=\"ds-savebar__btn ds-savebar__btn--secondary\" disabled>Approve and publish</button><p class=\"ds-savebar__why\">Save the review before approving it.</p></form>",
       "css": ".ds-savebar { position: sticky; bottom: 0; z-index: 4; display: flex; flex-wrap: wrap; align-items: end; gap: 0.5rem 1rem; padding-block: 0.75rem; border-top: 2px solid var(--rule-heavy, #16181d); background: var(--stock, #fbfbfa); font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; color: var(--ink, #16181d); } .ds-savebar__state, .ds-savebar__why { flex-basis: 100%; margin: 0; color: var(--ink-2, #474c55); font-size: 0.8125rem; } .ds-savebar__state strong { color: var(--ink, #16181d); } .ds-savebar__summary { flex: 1 1 20rem; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0.5rem; } .ds-savebar__label { color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; } .ds-savebar__input { min-height: 2rem; padding: 0.25rem 0.5rem; border: 1px solid var(--ink-3, #686e78); border-radius: 2px; background: var(--stock, #fbfbfa); font: inherit; } .ds-savebar__input:hover { border-color: var(--ink, #16181d); } .ds-savebar__input:focus-visible, .ds-savebar__btn:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-savebar__btn { min-height: 2.25rem; padding: 0 1rem; border: 2px solid var(--ink, #16181d); border-radius: 2px; background: var(--ink, #16181d); color: var(--stock, #fbfbfa); font: inherit; font-weight: 680; cursor: pointer; } .ds-savebar__btn--secondary { background: var(--stock, #fbfbfa); color: var(--ink, #16181d); } .ds-savebar__btn:disabled { border-color: var(--rule, #cfd2d6); background: var(--stock-band, #f1f1ee); color: var(--ink-3, #686e78); cursor: not-allowed; }"
+    },
+    {
+      "name": "Document Sub-index",
+      "kind": "nav",
+      "refersTo": "subindex-link",
+      "description": "The document's own pages under its head: medium ink-2 links, current in bold ink with the inset 3px ink bar, a 1px rule under the strip; Review carries the unsaved count.",
+      "html": "<nav class=\"ds-subindex\" aria-label=\"This document\"><ul class=\"ds-subindex__list\"><li><a href=\"#\" class=\"ds-subindex__link\">Review<span class=\"ds-subindex__count\">&nbsp;· 3 unsaved</span></a></li><li><a href=\"#\" class=\"ds-subindex__link\" aria-current=\"page\">Search versions</a></li><li><a href=\"#\" class=\"ds-subindex__link\">Who cites it</a></li><li><a href=\"#\" class=\"ds-subindex__link\">Ownership</a></li></ul></nav>",
+      "css": ".ds-subindex { border-bottom: 1px solid var(--rule, #cfd2d6); font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; } .ds-subindex__list { display: flex; flex-wrap: wrap; gap: 0 1.5rem; margin: 0; padding: 0; list-style: none; } .ds-subindex__link { display: inline-flex; align-items: center; min-height: 2.25rem; color: var(--ink-2, #474c55); font-weight: 500; text-decoration: none; } .ds-subindex__link:hover { color: var(--ink, #16181d); } .ds-subindex__link:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-subindex__link[aria-current='page'] { color: var(--ink, #16181d); font-weight: 680; box-shadow: inset 0 -3px 0 var(--ink, #16181d); } .ds-subindex__count { font-weight: 400; }"
+    },
+    {
+      "name": "Governance Section and Table",
+      "kind": "custom",
+      "refersTo": "govtable-row",
+      "description": "Lead-size bold title on a heavy rule, an ink-2 lead, then a ruled table whose secondary facts ride as ink-2 meta lines in kept columns.",
+      "html": "<section class=\"ds-govsection\"><h2 class=\"ds-govsection__title\">Search versions</h2><p class=\"ds-govsection__lead\">Each approval is indexed for search as a version. Requirement work cites the one in service.</p><table class=\"ds-govtable\"><thead><tr><th>Approved</th><th>State</th><th>Source</th></tr></thead><tbody><tr class=\"ds-row--due\"><th>3 Oct 2026<span class=\"ds-govtable__by\">Amina Owner</span></th><td><span class=\"ds-status\">Built, awaiting activation</span><span class=\"ds-govtable__by\">Table-aware · 9 indexed passages</span></td><td>version 1</td></tr><tr><th>1 Oct 2026<span class=\"ds-govtable__by\">Amina Owner</span></th><td><span class=\"ds-status\">In service</span><span class=\"ds-govtable__by\">Passages · 4 indexed passages</span></td><td>version 1</td></tr><tr class=\"ds-row--past\"><th>2 Sep 2026<span class=\"ds-govtable__by\">Ravi Reviewer</span></th><td><span class=\"ds-status\">Replaced</span><span class=\"ds-govtable__by\">Passages · 3 indexed passages</span></td><td>version 0</td></tr></tbody></table></section>",
+      "css": ".ds-govsection { display: grid; gap: 0.75rem; padding-top: 1rem; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; line-height: 1.45; color: var(--ink, #16181d); font-variant-numeric: tabular-nums lining-nums; } .ds-govsection__title { margin: 0; padding-bottom: 0.25rem; border-bottom: 2px solid var(--rule-heavy, #16181d); font-size: 1.0625rem; font-weight: 680; } .ds-govsection__lead { margin: 0; max-width: 72ch; color: var(--ink-2, #474c55); } .ds-govtable { width: 100%; border-collapse: collapse; } .ds-govtable thead th { padding: 0 1rem 0.5rem 0; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; text-align: start; } .ds-govtable tbody th, .ds-govtable tbody td { padding: 0.5rem 1rem 0.5rem 0; border-bottom: 1px solid var(--rule-faint, #e4e5e7); font-weight: inherit; text-align: start; vertical-align: top; overflow-wrap: anywhere; } .ds-govtable__by { display: block; color: var(--ink-2, #474c55); font-size: 0.8125rem; font-weight: 400; } .ds-row--due th, .ds-row--due .ds-status { font-weight: 680; } .ds-row--past { color: var(--ink-3, #686e78); } .ds-row--past .ds-govtable__by { color: var(--ink-3, #686e78); }"
+    },
+    {
+      "name": "Search Bar and Results",
+      "kind": "input",
+      "refersTo": "search-field",
+      "description": "One field and its action at 2.25rem; exact passages best first, the surrounding text opening in place on the stock band, the source as a body link with a secondary place line.",
+      "html": "<div class=\"ds-search\"><form class=\"ds-searchbar\" role=\"search\"><label class=\"ds-searchbar__field\"><span class=\"ds-searchbar__label\">What are you looking for?</span><input type=\"search\" class=\"ds-searchbar__input\" value=\"coverage before quoting\"></label><button class=\"ds-searchbar__btn\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.3-4.3\"/></svg>Search</button></form><p class=\"ds-search__count\">7 passages from 5 documents, best first.</p><table class=\"ds-results\"><thead><tr><th>Passage</th><th>Cited from</th></tr></thead><tbody><tr><th class=\"ds-results__passage\">Confirm XGPON coverage at the customer's address before quoting. <button class=\"ds-results__toggle\" aria-expanded=\"true\">Hide the surrounding text</button><span class=\"ds-results__context\">Line 1 # Ordering a business fibre bundle. Line 2 Confirm XGPON coverage at the customer's address before quoting. Line 3 Check the site has a free optical port.</span></th><td><a href=\"#\">Bundle ordering procedure</a><span class=\"ds-results__by\">version 1 · Heading at line 1 › Line 2</span></td></tr></tbody></table></div>",
+      "css": ".ds-search { font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; line-height: 1.45; color: var(--ink, #16181d); } .ds-searchbar { display: flex; flex-wrap: wrap; align-items: end; gap: 0.75rem; } .ds-searchbar__field { flex: 1 1 28rem; display: grid; gap: 0.25rem; } .ds-searchbar__label { color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; letter-spacing: 0.01em; } .ds-searchbar__input { width: 100%; min-height: 2.25rem; padding: 0.25rem 0.5rem; border: 1px solid var(--ink-3, #686e78); border-radius: 2px; background: var(--stock, #fbfbfa); color: inherit; font: inherit; } .ds-searchbar__input:hover { border-color: var(--ink, #16181d); } .ds-searchbar__btn { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.25rem; padding: 0 1rem; border: 2px solid var(--ink, #16181d); border-radius: 2px; background: var(--ink, #16181d); color: var(--stock, #fbfbfa); font: inherit; font-weight: 680; cursor: pointer; } .ds-searchbar__btn:hover { background: var(--stock, #fbfbfa); color: var(--ink, #16181d); } .ds-searchbar__input:focus-visible, .ds-searchbar__btn:focus-visible, .ds-results__toggle:focus-visible, .ds-results a:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-search__count { margin: 1rem 0 0; color: var(--ink-2, #474c55); } .ds-results { width: 100%; margin-top: 0.75rem; border-collapse: collapse; } .ds-results thead th { padding: 0 1rem 0.5rem 0; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; text-align: start; } .ds-results tbody th, .ds-results tbody td { padding: 0.5rem 1rem 0.5rem 0; border-bottom: 1px solid var(--rule-faint, #e4e5e7); font-weight: inherit; text-align: start; vertical-align: top; overflow-wrap: anywhere; } .ds-results__passage { max-width: 64ch; } .ds-results__toggle { min-height: 1.5rem; margin-top: 0.5rem; padding: 0 0.25rem; border: 0; background: none; color: var(--ink, #16181d); font: inherit; font-size: 0.8125rem; font-weight: 500; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.2em; cursor: pointer; } .ds-results__toggle:hover { text-decoration-thickness: 2px; } .ds-results__context { display: block; margin-top: 0.5rem; padding: 0.5rem 0.75rem; background: var(--stock-band, #f1f1ee); color: var(--ink-2, #474c55); font-size: 0.8125rem; } .ds-results a { color: var(--reference, #1d5ca3); text-decoration-thickness: 1px; text-underline-offset: 0.2em; } .ds-results a:hover { text-decoration-thickness: 2px; } .ds-results__by { display: block; color: var(--ink-2, #474c55); font-size: 0.8125rem; }"
+    },
+    {
+      "name": "Choices",
+      "kind": "input",
+      "refersTo": "field-label",
+      "description": "A borderless, unpadded fieldset of radio rows in the checkbox style, legend in the label style.",
+      "html": "<form class=\"ds-handover\"><fieldset class=\"ds-choices\"><legend class=\"ds-choices__legend\">New owner</legend><label class=\"ds-choice\"><input type=\"radio\" name=\"owner\"> Ravi Reviewer<span class=\"ds-choice__secondary\">&nbsp;· ravi.reviewer@example.test</span></label><label class=\"ds-choice\"><input type=\"radio\" name=\"owner\" checked> Amina Owner</label></fieldset></form>",
+      "css": ".ds-handover { max-width: 44rem; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; color: var(--ink, #16181d); } .ds-choices { display: grid; gap: 0.5rem; margin: 0; padding: 0; border: 0; } .ds-choices__legend { padding: 0; margin-bottom: 0.25rem; color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; letter-spacing: 0.01em; } .ds-choice { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 1.5rem; font-weight: 500; cursor: pointer; } .ds-choice input { width: 1.125rem; height: 1.125rem; margin: 0; accent-color: var(--ink, #16181d); } .ds-choice input:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-choice__secondary { color: var(--ink-2, #474c55); font-weight: 400; }"
     }
   ],
   "narrative": {
     "northStar": "The Timetable Book",
-    "overview": "The portal is set like a national railway timetable book. Each area of shared knowledge is a numbered table. Its number stands monumental and condensed in a left margin column. The table beside it has an exact column set, and each sourced fact carries a reference mark that leads to a numbered note at the table's foot. The page is near-white neutral stock with black ink. Hierarchy comes from three rule weights and from type weight, never from containers, fills or colour. Two colours are held back, and each has exactly one job.\n\nThe density is that of a reference work. Rows are tight (0.5rem block padding) and separated by hairlines. Numbers and dates use tabular, lining figures and sit right-aligned, as in any timetable. The surface is flat: no cards, no shadows for depth, no pills, no gradients. One sticky masthead strip and an index of the tables bind the book, and every screen sits inside that binding.\n\nThe interface language is English. Content keeps its own language and direction. Arabic names render in Noto Sans Arabic, in their own direction, beside the English in the same cell. The theme is light only. This is a decision for an office-daylight scene, not an omission.",
+    "overview": "The portal is set like a national railway timetable book. Each area of shared knowledge is a numbered table. Its number stands monumental and condensed in a left margin column. The table beside it has an exact column set, and each sourced fact carries a reference mark that leads to a numbered note at the table's foot. The page is near-white neutral stock with black ink. Hierarchy comes from three rule weights and from type weight, never from containers, fills or colour. Two colours are held back, and each has exactly one job.\n\nThe density is that of a reference work. Rows are tight (0.5rem block padding) and separated by hairlines. Numbers and dates use tabular, lining figures and sit right-aligned, as in any timetable. The surface is flat: no cards, no shadows for depth, no pills, no gradients. One sticky masthead strip and an index of the tables bind the book, and every screen sits inside that binding.\n\nThe interface language is English. It calls the indexed units of a document \"passages\", and the units of the table-aware cut \"fields\"; it never says \"chunks\". Content keeps its own language and direction. Arabic names render in Noto Sans Arabic, in their own direction, beside the English in the same cell. The theme is light only. This is a decision for an office-daylight scene, not an omission.",
     "keyCharacteristics": [
       "Near-white neutral stock (never cream) and black ink; flat, ruled, unboxed.",
       "One grotesk (Archivo Variable) in several widths: 100% for text, 88% for titles, 72% for labels, 62% for monumental table numbers.",
@@ -439,12 +481,22 @@
       },
       {
         "name": "The Three Rules Rule",
-        "body": "Separation uses three weights only. A 2px heavy rule sits under the masthead and every table head, totals label and notice head. A 1px hairline sits between rows, totals and tables. A 3px double rule sits above the notes. Do not add a fourth weight or a box.",
+        "body": "Separation uses three weights only. A 2px heavy rule sits under the masthead and every table head, totals label, notice head and governance section title. A 1px hairline sits between rows, totals and tables. A 3px double rule sits above the notes. Do not add a fourth weight or a box.",
         "section": "elevation"
       },
       {
         "name": "The Edit Mark Exception",
         "body": "The edit mark is the one scoped exception to the reference-mark grammar: a letter, not a number, and it opens its passage in place instead of leading to a numbered note. A review holds thousands of passages, and numbered notes for every edit would bury the table's foot. Use it only for an edit to a passage; every sourced fact still takes a numbered mark and note.",
+        "section": "components"
+      },
+      {
+        "name": "The Kept Column Rule",
+        "body": "In a governance table, a secondary fact (a version's cut and passage count, a handover's reason or who performed it, a citation's place or version, a field's label) rides as a secondary ink-2 meta line inside a kept column, never in a column of its own. Columns still drop by priority on phones, and these facts stay with the row.",
+        "section": "layout"
+      },
+      {
+        "name": "The Passages Rule",
+        "body": "On screen the indexed units of a document are \"passages\", and the units of the table-aware cut are \"fields\". The cut itself reads \"Passages\" or \"Table-aware\". The word \"chunk\" belongs to code, never to a label, heading, count or caption.",
         "section": "components"
       }
     ],
@@ -456,6 +508,9 @@
       "Do open a focused passage in place on the stock band (`stock-band`), with its detail row closing on a heavy rule.",
       "Do keep deliberate steps such as withdrawal inline and ruled under the head.",
       "Do say why a disabled action waits, in a line linked to it.",
+      "Do put a governance table's secondary facts on a secondary ink-2 meta line in a kept column, so phones keep them when columns drop.",
+      "Do mark the current page of a document's sub-index in bold ink with the inset 3px ink bar, and show the unsaved count on Review.",
+      "Do say \"passages\" for indexed units and \"fields\" for the table-aware cut.",
       "Do use tabular, lining figures, and end-align numbers and dates.",
       "Do let content keep its own direction: `dir=\"auto\"` on names, `lang=\"ar\" dir=\"rtl\"` on Arabic secondary lines, set in Noto Sans Arabic.",
       "Do keep targets at least 24px (text buttons 1.5rem, return links 1.5rem) and show the 2px blue focus outline on everything focusable.",
@@ -469,7 +524,9 @@
       "Don't add a dark theme without a new decision. Light only is the chosen office-daylight scene.",
       "Don't scroll tables sideways. Drop columns by priority instead.",
       "Don't open a modal or a card to edit or withdraw. Rows open in place; steps open inline.",
-      "Don't extend the letter edit mark beyond edited passages. Sourced facts keep numbered marks and notes."
+      "Don't extend the letter edit mark beyond edited passages. Sourced facts keep numbered marks and notes.",
+      "Don't give a secondary fact (a cut, a count, a reason, a place) its own column.",
+      "Don't say \"chunks\" on screen."
     ]
   }
 }

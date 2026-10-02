@@ -113,6 +113,29 @@ def seed_library(client: httpx.Client) -> None:
     ):
         publish(client, upload(client, title, "policy.txt", body, text, OWNER), OWNER)
 
+    # A published procedure: its lines share one section, so search finds surrounding text.
+    procedure = "\n".join(
+        [
+            "# Ordering a business fibre bundle (sample)",
+            "Confirm XGPON coverage at the customer's address before quoting.",
+            "Check the site has a free optical port; book a survey if it does not.",
+            "Quote the bundle only after coverage and the port are confirmed.",
+            "Record the coverage reference on the order.",
+        ]
+    ).encode()
+    publish(
+        client,
+        upload(
+            client,
+            "Bundle ordering procedure (sample)",
+            "ordering.md",
+            procedure,
+            "text/markdown",
+            OWNER,
+        ),
+        OWNER,
+    )
+
     # A published policy, then withdrawn.
     retired = publish(
         client,
@@ -265,6 +288,48 @@ def seed_review_material(client: httpx.Client) -> None:
     )
 
 
+def seed_governance(client: httpx.Client) -> None:
+    """A table-aware build awaiting activation, and a document handed between admins."""
+    documents = client.get("/library/documents?limit=100", headers=OWNER).json()
+    coverage = next(item for item in documents if item["title"].startswith("XGPON coverage"))
+    path = f"/library/documents/{coverage['id']}"
+    preview = client.get(f"{path}/builds/preview", headers=OWNER)
+    preview.raise_for_status()
+    body = preview.json()
+    client.post(
+        f"{path}/builds",
+        json={
+            "expected_version": body["document_version"],
+            "fingerprint": body["fingerprint"],
+            "index_identity": body["index_identity"],
+        },
+        headers=OWNER,
+    ).raise_for_status()
+    wait_for(
+        client,
+        path,
+        OWNER,
+        lambda view: any(
+            item["built_at"] and not item["activated_at"] for item in view["publications"]
+        ),
+    )
+
+    faults = next(
+        item
+        for item in client.get("/library/documents?limit=100", headers=REVIEWER).json()
+        if item["title"].startswith("Fault escalation")
+    )
+    client.post(
+        f"/library/documents/{faults['id']}/ownership",
+        json={
+            "expected_version": faults["version"],
+            "actor_id": "fake-owner",
+            "reason": "The care knowledge owner takes over escalation rules (sample).",
+        },
+        headers=REVIEWER,
+    ).raise_for_status()
+
+
 def seed_catalogue(client: httpx.Client) -> None:
     releases = "/architecture-knowledge/releases"
     draft = client.post(
@@ -343,6 +408,7 @@ def main() -> None:
         client.get("/identity/me", headers=REVIEWER).raise_for_status()
         seed_library(client)
         seed_review_material(client)
+        seed_governance(client)
         seed_catalogue(client)
         seed_squads(client)
     print("Seeded sample curation work.")

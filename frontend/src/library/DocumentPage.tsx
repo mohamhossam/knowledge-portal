@@ -1,15 +1,16 @@
 import { Download, RotateCw, Upload, X } from "lucide-react";
 import { type ChangeEvent, type ReactNode, useEffect, useId, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, NavLink, Outlet, useParams } from "react-router-dom";
 
 import { api, type LibraryDocument, type LibraryVersion } from "../api/client";
 import { ApiError, errorMessage } from "../api/errors";
 import { count, formatDay } from "../home/format";
 import {
   IN_PROGRESS, approvalBlocker, comparisonBasis, counts, initialDrafts, isTheEdition, latestRevision, matches, newestVersion,
-  reviewBody, reviewRows, saveProblems, standing, unsaved, type Draft, type Drafts, type Filter,
+  reviewBody, reviewRows, saveProblems, standing, unsaved, type Draft, type Filter,
 } from "./model";
 import { type Focus, PassageTable } from "./PassageTable";
+import { type DocumentContext, type ReviewState, useDocumentContext } from "./documentContext";
 import { useDocument } from "./useDocument";
 
 const PAGE = 200;
@@ -23,7 +24,15 @@ const STAGE: Record<string, string> = {
   cancelled: "Processing cancelled",
 };
 
-/** One library document: where it stands with requirement work, and its review. */
+const reviewKey = (version: LibraryVersion | undefined) =>
+  version ? `${version.id}:${latestRevision(version)?.id ?? "none"}` : "none";
+const freshReview = (version: LibraryVersion | undefined): ReviewState => ({
+  key: reviewKey(version),
+  drafts: version ? initialDrafts(version) : {},
+  summary: "",
+});
+
+/** One library document: where it stands with requirement work, its review and its governance. */
 export function DocumentPage() {
   const { documentId = "" } = useParams();
   const document = useDocument(documentId);
@@ -74,7 +83,12 @@ function EditionLine({ document }: { document: LibraryDocument }) {
   return <>Not yet in service. Requirement work cannot cite it until a review is approved.</>;
 }
 
-function Head({ document, version, actions }: { document: LibraryDocument; version?: LibraryVersion; actions?: ReactNode }) {
+function Head({ document, version, actions, pages }: {
+  document: LibraryDocument;
+  version?: LibraryVersion;
+  actions?: ReactNode;
+  pages?: ReactNode;
+}) {
   return (
     <header className="docpage__head">
       <p className="docpage__number" aria-hidden="true">1</p>
@@ -88,6 +102,7 @@ function Head({ document, version, actions }: { document: LibraryDocument; versi
           </p>
         )}
         {actions && <div className="docpage__actions">{actions}</div>}
+        {pages}
       </div>
     </header>
   );
@@ -128,6 +143,18 @@ type Hook = ReturnType<typeof useDocument>;
 function OwnerView({ document, hook }: { document: LibraryDocument; hook: Hook }) {
   const version = newestVersion(document);
   const [withdrawing, setWithdrawing] = useState(false);
+  const [stored, setReview] = useState<ReviewState>(() => freshReview(version));
+  // A new version or a newly saved revision (ours or a reload) resets the working copy to it.
+  const review = stored.key === reviewKey(version) ? stored : freshReview(version);
+  if (stored.key !== review.key) setReview(review);
+  const dirty = version?.stage === "ready_for_review" ? unsaved(version, review.drafts) : 0;
+
+  useEffect(() => {
+    if (dirty === 0) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
   const replaceId = useId();
   const pending = hook.review.isPending || hook.approve.isPending || hook.replace.isPending;
   const failure = [hook.retry, hook.cancel, hook.replace, hook.withdraw].find((mutation) => mutation.isError)?.error;
@@ -155,7 +182,7 @@ function OwnerView({ document, hook }: { document: LibraryDocument; hook: Hook }
       <label className="text-button file-button" htmlFor={replaceId}>
         <Upload size={14} aria-hidden="true" />
         Upload a new version
-        <input id={replaceId} type="file" className="visually-hidden" onChange={replace} disabled={pending}
+        <input id={replaceId} type="file" className="visually-hidden" onChange={replace} disabled={pending || dirty > 0}
           accept=".pdf,.docx,.xlsx,.pptx,.csv,.tsv,.txt,.md,.png,.jpg,.jpeg" />
       </label>
       {version && (
@@ -172,17 +199,50 @@ function OwnerView({ document, hook }: { document: LibraryDocument; hook: Hook }
 
   return (
     <section className="docpage" aria-labelledby="doc-title">
-      <Head document={document} version={version} actions={actions} />
+      <Head document={document} version={version} actions={actions} pages={<SubIndex dirty={dirty} />} />
       {hook.replace.isPending && <p className="docpage__notice" role="status">Uploading the new version…</p>}
       {failure ? <Failure error={failure} onReload={hook.reload} /> : null}
       {withdrawing && <Withdraw hook={hook} onDone={() => setWithdrawing(false)} />}
       {version && <Processing document={document} version={version} hook={hook} />}
-      {version?.stage === "ready_for_review" && <Review key={version.id} document={document} version={version} hook={hook} />}
+      <Outlet context={{ document, hook, review, setReview, dirty } satisfies DocumentContext} />
     </section>
   );
 }
 
-function Failure({ error, onReload }: { error: unknown; onReload: () => void }) {
+const PAGES = [
+  { to: "", label: "Review", end: true },
+  { to: "versions", label: "Search versions" },
+  { to: "citations", label: "Who cites it" },
+  { to: "ownership", label: "Ownership" },
+];
+
+/** The document's own pages, an index under its head. */
+function SubIndex({ dirty }: { dirty: number }) {
+  return (
+    <nav className="subindex" aria-label="This document">
+      <ul className="subindex__list">
+        {PAGES.map((page) => (
+          <li key={page.label}>
+            <NavLink to={page.to} end={page.end} className="subindex__link">
+              {page.label}
+              {page.label === "Review" && dirty > 0 && <span className="subindex__count"> · {dirty} unsaved</span>}
+            </NavLink>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+/** The review page: the working copy's passages, when there is something to review. */
+export function ReviewPage() {
+  const { document, hook, review, setReview } = useDocumentContext();
+  const version = newestVersion(document);
+  if (version?.stage !== "ready_for_review") return null;
+  return <Review key={version.id} document={document} version={version} hook={hook} review={review} setReview={setReview} />;
+}
+
+export function Failure({ error, onReload }: { error: unknown; onReload: () => void }) {
   const conflict = error instanceof ApiError && error.status === 409;
   return (
     <p className="docpage__failure" role="alert">
@@ -270,15 +330,17 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: "removed", label: "Removed" },
 ];
 
-function Review({ document, version, hook }: { document: LibraryDocument; version: LibraryVersion; hook: Hook }) {
+function Review({ document, version, hook, review, setReview }: {
+  document: LibraryDocument;
+  version: LibraryVersion;
+  hook: Hook;
+  review: ReviewState;
+  setReview: DocumentContext["setReview"];
+}) {
   const revision = latestRevision(version);
-  const baseKey = `${version.id}:${revision?.id ?? "none"}`;
-  const [state, setState] = useState<{ key: string; drafts: Drafts }>(() => ({ key: baseKey, drafts: initialDrafts(version) }));
-  // A new saved revision (ours or a reload) resets the working copy to it.
-  if (state.key !== baseKey) setState({ key: baseKey, drafts: initialDrafts(version) });
-  const drafts = state.key === baseKey ? state.drafts : initialDrafts(version);
-
-  const [summary, setSummary] = useState("");
+  const drafts = review.drafts;
+  const summary = review.summary;
+  const setSummary = (value: string) => setReview((current) => ({ ...current, summary: value }));
   const [filter, setFilter] = useState<Filter>("all");
   const [find, setFind] = useState("");
   const [shown, setShown] = useState(PAGE);
@@ -297,7 +359,7 @@ function Review({ document, version, hook }: { document: LibraryDocument; versio
   const fileWarnings = version.warning_details.filter((warning) => !warning.block_id);
 
   const change = (blockId: string, patch: Partial<Draft>) =>
-    setState((current) => {
+    setReview((current) => {
       const draft = current.drafts[blockId];
       return draft ? { ...current, drafts: { ...current.drafts, [blockId]: { ...draft, ...patch } } } : current;
     });

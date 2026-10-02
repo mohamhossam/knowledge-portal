@@ -2,8 +2,12 @@ import { useEffect } from "react";
 import { Link, Navigate, Route, Routes } from "react-router-dom";
 
 import { CALLBACK_PATH, SILENT_CALLBACK_PATH } from "../auth/paths";
-import { DocumentPage } from "../library/DocumentPage";
+import { CitationsPage } from "../library/CitationsPage";
+import { DocumentPage, ReviewPage } from "../library/DocumentPage";
 import { LibraryPage } from "../library/LibraryPage";
+import { OwnershipPage } from "../library/OwnershipPage";
+import { SearchPage } from "../library/SearchPage";
+import { VersionsPage } from "../library/VersionsPage";
 import { AreaPage } from "./AreaPage";
 import { HomePage } from "./HomePage";
 import { Shell } from "./Shell";
@@ -14,7 +18,13 @@ export function App() {
       <Route element={<Shell />}>
         <Route index element={<HomePage />} />
         <Route path="library" element={<LibraryPage />} />
-        <Route path="library/:documentId" element={<DocumentPage />} />
+        <Route path="library/search" element={<SearchPage />} />
+        <Route path="library/:documentId" element={<DocumentPage />}>
+          <Route index element={<ReviewPage />} />
+          <Route path="versions" element={<VersionsPage />} />
+          <Route path="citations" element={<CitationsPage />} />
+          <Route path="ownership" element={<OwnershipPage />} />
+        </Route>
         <Route path="architecture" element={<AreaPage area="architecture" />} />
         <Route path="squads" element={<AreaPage area="squads" />} />
         {/* Sign-in has already returned the admin to where they were going. */}

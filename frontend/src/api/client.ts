@@ -21,6 +21,13 @@ export type CatalogueSuggestions = Schemas["CatalogueSuggestionsResponse"];
 export type Organisation = Schemas["OrganisationResponse"];
 export type OrganisationAuditEvent = Schemas["OrganisationAuditEventResponse"];
 export type OriginalPreview = Schemas["OriginalPreview"];
+export type ReferenceChunk = Schemas["ReferenceChunk"];
+export type BuildPreview = Schemas["CorpusBuildPreview"];
+export type DependencyPage = Schemas["LibraryDependencyPage"];
+export type Dependency = Schemas["LibraryDependency"];
+export type ImpactPage = Schemas["DependencyImpactPage"];
+export type Impact = Schemas["DependencyImpact"];
+export type OwnershipTransfer = Schemas["OwnershipTransfer"];
 export type ReviewRequest = Schemas["LibraryReviewRequest"];
 
 const documentPath = (documentId: string) => `/library/documents/${encodeURIComponent(documentId)}`;
@@ -145,6 +152,29 @@ export const api = {
     post<LibraryDocument>(`${versionPath(documentId, versionId)}/cancellation`, { expected_version: expectedVersion }),
   originalPreview: (documentId: string, versionId: string, blockId: string) =>
     apiRequest<OriginalPreview>(`${versionPath(documentId, versionId)}/blocks/${encodeURIComponent(blockId)}/original-preview`),
+  // Governance: how it is indexed for search, who relies on it, who owns it.
+  chunkPreview: (documentId: string) => apiRequest<ReferenceChunk[]>(`${documentPath(documentId)}/chunks/preview`),
+  buildPreview: (documentId: string) => apiRequest<BuildPreview>(`${documentPath(documentId)}/builds/preview`),
+  build: (documentId: string, body: { expected_version: number; fingerprint: string; index_identity: string }) =>
+    post<LibraryDocument>(`${documentPath(documentId)}/builds`, body),
+  activate: (documentId: string, buildId: string, body: { expected_version: number; manifest: string }) =>
+    post<LibraryDocument>(`${documentPath(documentId)}/builds/${encodeURIComponent(buildId)}/activation`, body),
+  discard: (documentId: string, buildId: string, expectedVersion: number) =>
+    post<LibraryDocument>(`${documentPath(documentId)}/builds/${encodeURIComponent(buildId)}/discard`, { expected_version: expectedVersion }),
+  retryIndexing: (documentId: string, expectedVersion: number) =>
+    post<LibraryDocument>(`${documentPath(documentId)}/index-retry`, { expected_version: expectedVersion }),
+  dependencies: (documentId: string, offset: number) =>
+    apiRequest<DependencyPage>(`${documentPath(documentId)}/dependencies?offset=${offset}&limit=50`),
+  sourceImpact: (documentId: string, input: { offset: number; activeOnly: boolean; query: string }) =>
+    apiRequest<ImpactPage>(`${documentPath(documentId)}/source-impact?${new URLSearchParams({
+      offset: String(input.offset), limit: "50", active_only: String(input.activeOnly), query: input.query,
+    })}`),
+  ownershipHistory: (documentId: string) => apiRequest<OwnershipTransfer[]>(`${documentPath(documentId)}/ownership/history`),
+  transfer: (documentId: string, body: { expected_version: number; actor_id: string; reason: string }) =>
+    post<OwnershipTransfer>(`${documentPath(documentId)}/ownership`, body),
+  findActors: (query: string) =>
+    apiRequest<Actor[]>(`/identity/actors?${new URLSearchParams({ q: query, limit: "20" })}`),
+  search: (query: string) => post<ReferenceChunk[]>("/knowledge/search", { query }),
   /** The uploaded file itself, for the owner to compare against. */
   original: async (documentId: string, versionId: string) =>
     (await send(`${versionPath(documentId, versionId)}/original`)).blob(),
