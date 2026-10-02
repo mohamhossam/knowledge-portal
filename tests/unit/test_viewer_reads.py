@@ -129,3 +129,15 @@ def test_the_viewer_reads_need_requirement_work_s_token(
     assert (
         client.get("/internal/architecture/releases/r/evidence/c", headers=admin).status_code == 401
     )
+
+
+def test_an_activation_names_the_version_for_requirement_work(
+    served: tuple[Container, TestClient],
+) -> None:
+    container, client = served
+    active = container.manage_architecture_knowledge.active()
+
+    feed = client.get("/internal/events", headers=REQUIREMENTS).json()
+
+    (activated,) = [item for item in feed if item["kind"] == "architecture_release_activated"]
+    assert activated["payload"] == {"release_id": active.id, "name": active.name}
