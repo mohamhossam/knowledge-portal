@@ -33,6 +33,8 @@ def test_the_contract_covers_every_seam_requirement_work_uses() -> None:
         "/internal/library/search",
         "/internal/library/retrieve",
         "/internal/events",
+        "/internal/library/passages",
+        "/internal/architecture/releases/{release_id}/evidence/{chunk_id}",
     }
 
 

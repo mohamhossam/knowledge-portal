@@ -6,6 +6,7 @@ from threading import RLock
 from knowledge_portal.application.ports.knowledge_events import (
     ARCHITECTURE_RELEASE_ACTIVATED,
     KnowledgeEventOutboxPort,
+    activation,
 )
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
@@ -29,14 +30,12 @@ class InMemoryArchitectureKnowledgeRepository:
         self._published_documents = set(self._documents)
         self._active_id = initial.id
         self._events: list[KnowledgeAuditEvent] = []
-        self._activated(initial.id)
+        self._activated(initial)
 
-    def _activated(self, release_id: str) -> None:
+    def _activated(self, release: ArchitectureKnowledge) -> None:
         """Report the new active release, as the PostgreSQL adapter does (ADR-0099)."""
         if self._outbox is not None:
-            self._outbox.append(
-                ARCHITECTURE_RELEASE_ACTIVATED, release_id, {"release_id": release_id}
-            )
+            self._outbox.append(ARCHITECTURE_RELEASE_ACTIVATED, release.id, activation(release))
 
     def get(self, release_id: str) -> ArchitectureKnowledge | None:
         with self._lock:
@@ -89,7 +88,7 @@ class InMemoryArchitectureKnowledgeRepository:
             if release is None or release.status is not KnowledgeReleaseStatus.PUBLISHED:
                 raise KnowledgeConflictError("Only a published release can be activated.")
             self._active_id = release_id
-            self._activated(release_id)
+            self._activated(release)
             self._events.append(
                 KnowledgeAuditEvent(
                     release_id, actor_id, "activate", release.revision, rationale, datetime.now(UTC)
@@ -115,7 +114,7 @@ class InMemoryArchitectureKnowledgeRepository:
             self._releases[release.id] = release
             self._published_documents.update(item.id for item in release.documents)
             self._active_id = release.id
-            self._activated(release.id)
+            self._activated(release)
             self._events.append(
                 KnowledgeAuditEvent(
                     release.id,

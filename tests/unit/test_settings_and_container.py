@@ -23,8 +23,10 @@ from knowledge_portal.infrastructure.llm.embeddings import (
 from knowledge_portal.infrastructure.requirement_client import (
     FakeArchitectureMappingStats,
     FakeRequirementDependents,
+    FakeRequirementImpact,
     HttpArchitectureMappingStats,
     HttpRequirementDependents,
+    HttpRequirementImpact,
 )
 from knowledge_portal.interfaces.api.container import build_container
 from tests.conftest import FAKE_PROVIDER_SETTINGS
@@ -95,6 +97,7 @@ def test_without_requirement_work_the_fakes_stand_in() -> None:
     try:
         assert isinstance(container.library_governance._dependents, FakeRequirementDependents)
         assert isinstance(container.report_mapping_impact._stats, FakeArchitectureMappingStats)
+        assert isinstance(container.document_source_impact._impact, FakeRequirementImpact)
     finally:
         container.close_resources()
 
@@ -110,6 +113,7 @@ def test_with_requirement_work_configured_the_http_adapters_are_used() -> None:
     try:
         assert isinstance(container.library_governance._dependents, HttpRequirementDependents)
         assert isinstance(container.report_mapping_impact._stats, HttpArchitectureMappingStats)
+        assert isinstance(container.document_source_impact._impact, HttpRequirementImpact)
     finally:
         container.close_resources()
 

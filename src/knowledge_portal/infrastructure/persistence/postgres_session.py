@@ -1,7 +1,6 @@
-"""Connection contract shared by repositories and commit-time work."""
+"""Connection contract shared by the PostgreSQL repositories."""
 
-from collections.abc import Iterator
-from contextlib import AbstractContextManager, contextmanager
+from contextlib import AbstractContextManager
 from typing import Protocol
 
 from knowledge_portal.infrastructure.persistence.postgres_values import DbConnection
@@ -10,18 +9,3 @@ from knowledge_portal.infrastructure.persistence.postgres_values import DbConnec
 class PostgresSession(Protocol):
     def connection(self) -> AbstractContextManager[DbConnection]: ...
     def transaction(self) -> AbstractContextManager[None]: ...
-
-
-class PostgresCommitSession:
-    """Borrow an active commit connection without owning its transaction."""
-
-    def __init__(self, connection: DbConnection) -> None:
-        self._active = connection
-
-    @contextmanager
-    def connection(self) -> Iterator[DbConnection]:
-        yield self._active
-
-    @contextmanager
-    def transaction(self) -> Iterator[None]:
-        yield

@@ -9,8 +9,15 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Protocol
 
+from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge
+
 REFERENCE_DOCUMENT_CHANGED = "reference_document_changed"
 ARCHITECTURE_RELEASE_ACTIVATED = "architecture_release_activated"
+
+
+def activation(release: ArchitectureKnowledge) -> dict[str, object]:
+    """An activation's payload: the release, and the name people know it by."""
+    return {"release_id": release.id, "name": release.name}
 
 
 @dataclass(frozen=True)

@@ -26,12 +26,18 @@ from knowledge_portal.application.ports.requirement_dependents import (
     ProposalStatus,
     RequirementDependentsPort,
 )
+from knowledge_portal.application.ports.source_impact import (
+    ImpactDecisionKind,
+    RequirementImpactPort,
+)
 from knowledge_portal.domain.identity.entities import ActorId
 from knowledge_portal.infrastructure.requirement_client import (
     FakeArchitectureMappingStats,
     FakeRequirementDependents,
+    FakeRequirementImpact,
     HttpArchitectureMappingStats,
     HttpRequirementDependents,
+    HttpRequirementImpact,
 )
 
 CONTRACT = json.loads(
@@ -136,6 +142,51 @@ def test_dependents_are_read_for_proposals_and_decoded() -> None:
     assert item.citation.publication_id == "pub-1"
 
 
+DECISION = {
+    "dependency_id": "dep-1",
+    "publication_state": "published",
+    "decision": "retain_historical",
+    "reason": "Still applies as written.",
+    "actor": {"id": {"value": "fake-reviewer"}, "display_name": "Ravi", "email": None},
+    "recorded_at": "2026-10-02T09:00:00+00:00",
+    "version": 1,
+}
+IMPACT = {
+    "dependency": DEPENDENT,
+    "publication_current": False,
+    "publication_state": "withdrawn",
+    "needs_review": True,
+    "decisions": [DECISION],
+}
+
+
+def test_a_document_s_impact_is_read_with_its_filters_and_decoded() -> None:
+    seen: list[httpx.Request] = []
+    body = {"items": [IMPACT], "next_offset": 20}
+    page = HttpRequirementImpact(_client(_answering(body), seen)).document_impact(
+        ActorId("fake-owner"), "doc/1", active_only=True, query="XGPON", offset=0, limit=20
+    )
+    (request,) = seen
+    _assert_in_contract(request)
+    assert request.url.raw_path.startswith(b"/internal/references/doc%2F1/impact")
+    assert dict(request.url.params) == {
+        "actor_id": "fake-owner",
+        "active_only": "true",
+        "query": "XGPON",
+        "offset": "0",
+        "limit": "20",
+    }
+    (item,) = page.items
+    assert (item.needs_review, item.publication_state, page.next_offset) == (
+        True,
+        "withdrawn",
+        20,
+    )
+    assert item.dependency.lineage.citation.publication_id == "pub-1"
+    assert item.decisions[0].decision is ImpactDecisionKind.RETAIN
+    assert item.decisions[0].actor.id == ActorId("fake-reviewer")
+
+
 def test_mapping_counts_are_decoded() -> None:
     seen: list[httpx.Request] = []
     body = [{"release_id": "r1", "requirements": 2, "features": 3, "stories": 4}]
@@ -149,6 +200,9 @@ def test_mapping_counts_are_decoded() -> None:
     [
         lambda c: HttpRequirementDependents(c).proposals(ActorId("a"), "d", 0, 10),
         lambda c: HttpArchitectureMappingStats(c).by_release(),
+        lambda c: HttpRequirementImpact(c).document_impact(
+            ActorId("a"), "d", active_only=False, query="", offset=0, limit=10
+        ),
     ],
 )
 @pytest.mark.parametrize(
@@ -159,6 +213,8 @@ def test_mapping_counts_are_decoded() -> None:
         {"items": [{**DEPENDENT, "status": "unknown"}], "next_offset": None},
         {"items": [{**DEPENDENT, "lineage": {"citation": {**CITATION, "excerpt": " "}}}]},
         {"items": [], "next_offset": "later"},
+        {"items": [{**IMPACT, "decisions": [{**DECISION, "decision": "ignore"}]}]},
+        {"items": [{**IMPACT, "publication_current": "maybe"}], "next_offset": None},
     ],
 )
 def test_an_unusable_answer_is_an_explicit_failure(call: Any, body: Any) -> None:
@@ -172,3 +228,8 @@ def test_the_fakes_stand_in_for_each_port_deterministically() -> None:
     page = dependents.proposals(ActorId("a"), "d", 0, 10)
     assert (page.items, page.next_offset) == ((), None)
     assert stats.by_release() == ()
+    impact: RequirementImpactPort = FakeRequirementImpact()
+    empty = impact.document_impact(
+        ActorId("a"), "d", active_only=False, query="", offset=0, limit=5
+    )
+    assert (empty.items, empty.next_offset) == ((), None)
