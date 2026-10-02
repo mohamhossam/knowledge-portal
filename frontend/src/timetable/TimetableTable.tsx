@@ -56,6 +56,8 @@ type Props = {
   headingLevel?: "h1" | "h2";
   /** The table could not be read; offered as a retry beside the message. */
   failure?: () => void;
+  /** Controls that act on the table (find, filters), set between its head and its grid. */
+  toolbar?: ReactNode;
 };
 
 type NoteContext = {
@@ -95,7 +97,7 @@ export function NoteMark({ note }: { note: string }) {
 
 export function TimetableTable({
   number, title, to, edition, columns, rows, more, totals = [], totalsLabel, notes, next, quiet,
-  headingLevel = "h2", failure,
+  headingLevel = "h2", failure, toolbar,
 }: Props) {
   const prefix = `t${number}${useId().replace(/:/g, "")}`;
   const [lit, light] = useState<string | null>(null);
@@ -117,6 +119,7 @@ export function TimetableTable({
         </header>
 
         <div className="timetable__body">
+          {toolbar && <div className="timetable__toolbar">{toolbar}</div>}
           {rows.length > 0 ? (
             <table className="timetable__grid">
               <caption className="visually-hidden">{title}: what needs a curator</caption>

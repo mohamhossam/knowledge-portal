@@ -107,8 +107,17 @@ ADR-0099.
   - the front page, an overview of all three tables with what needs a curator;
   - stable addresses for `/library`, `/architecture` and `/squads`;
   - the `knowledge-web` image.
+- **Done: the library's review.**
+  - The library table, with "add a document".
+  - Each document's page, laid out "edition against working copy":
+    - a change notice counting what moved since the edition in service;
+    - aligned passage rows with keyboard review (j/k, Enter, x, i, e, o, Esc), filters and find;
+    - windowed rendering for thousands of passages;
+    - the original's preview;
+    - save, approve and publish;
+    - withdrawal, a new version, and retry or cancel of processing.
 - **Next screens, each critiqued on a live seeded page before its pull request:**
-  - library and governance (review, publication, builds, withdrawal, ownership, dependents and source impact);
+  - library governance (table-aware builds, ownership transfer, dependents, source impact) and knowledge search;
   - catalogue browser and editors (releases, suggestions, changes, mapping impact, evidence);
   - squad catalogue.
 

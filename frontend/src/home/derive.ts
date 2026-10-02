@@ -24,6 +24,8 @@ export type Line = {
   cells: Record<string, string>;
   /** The item's name may be Arabic, English or both. */
   name: string;
+  /** Where the item's own page is, when it has one. */
+  to?: string;
   nameAr?: string | null;
   note?: string;
 };
@@ -108,6 +110,7 @@ export function libraryOverview(documents: LibraryDocument[]): Overview {
       key: document.id,
       rank,
       name: document.title,
+      to: `/library/${encodeURIComponent(document.id)}`,
       cells: {
         status,
         version: newest ? `v${newest.number}` : "—",

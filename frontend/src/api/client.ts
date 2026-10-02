@@ -20,6 +20,12 @@ export type Release = Schemas["KnowledgeReleaseResponse"];
 export type CatalogueSuggestions = Schemas["CatalogueSuggestionsResponse"];
 export type Organisation = Schemas["OrganisationResponse"];
 export type OrganisationAuditEvent = Schemas["OrganisationAuditEventResponse"];
+export type OriginalPreview = Schemas["OriginalPreview"];
+export type ReviewRequest = Schemas["LibraryReviewRequest"];
+
+const documentPath = (documentId: string) => `/library/documents/${encodeURIComponent(documentId)}`;
+const versionPath = (documentId: string, versionId: string) =>
+  `${documentPath(documentId)}/versions/${encodeURIComponent(versionId)}`;
 
 const baseUrl = (import.meta.env.VITE_API_BASE ?? "/knowledge-api").replace(/\/$/, "");
 let authorizationHeaders: () => Record<string, string> = () => ({});
@@ -52,15 +58,17 @@ function responseError(status: number, payload: unknown): ApiError {
   );
 }
 
-export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
+async function send(path: string, init?: RequestInit): Promise<Response> {
   const session = credentialSession;
   const signal = init?.signal ? AbortSignal.any([session.signal, init.signal]) : session.signal;
+  // A multipart body sets its own Content-Type, boundary included.
+  const json = init?.body !== undefined && !(init.body instanceof FormData);
   let response: Response;
   try {
     response = await fetch(`${baseUrl}${path}`, {
       ...init,
       signal,
-      headers: { "Content-Type": "application/json", ...authorizationHeaders(), ...init?.headers },
+      headers: { ...(json ? { "Content-Type": "application/json" } : {}), ...authorizationHeaders(), ...init?.headers },
     });
   } catch (error) {
     throw new ApiError(0, error instanceof Error ? error.message : "The knowledge service is unavailable.");
@@ -71,10 +79,18 @@ export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T
     const payload: unknown = await response.json().catch(() => null);
     throw responseError(response.status, payload);
   }
-  const result = (await response.json()) as T;
+  return response;
+}
+
+export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const session = credentialSession;
+  const result = (await (await send(path, init)).json()) as T;
   session.signal.throwIfAborted();
   return result;
 }
+
+const post = <T>(path: string, body: unknown) =>
+  apiRequest<T>(path, { method: "POST", body: JSON.stringify(body) });
 
 const PAGE = 100;
 
@@ -102,4 +118,34 @@ export const api = {
     ),
   organisation: () => apiRequest<Organisation>("/organisation"),
   organisationAudit: () => apiRequest<OrganisationAuditEvent[]>("/organisation/audit"),
+
+  // Library: one document and its curation. Every change names the version it saw.
+  libraryDocument: (documentId: string) => apiRequest<LibraryDocument>(documentPath(documentId)),
+  /** A new document, or a new version of one (with its id and the version the owner saw). */
+  upload: (input: { file: File; title: string; documentId?: string; expectedVersion?: number }) => {
+    const form = new FormData();
+    form.append("file", input.file);
+    form.append("title", input.title);
+    form.append("idempotency_key", crypto.randomUUID());
+    if (input.documentId) {
+      form.append("document_id", input.documentId);
+      form.append("expected_version", String(input.expectedVersion ?? 0));
+    }
+    return apiRequest<LibraryDocument>("/library/ingestions", { method: "POST", body: form });
+  },
+  review: (documentId: string, versionId: string, body: ReviewRequest) =>
+    post<LibraryDocument>(`${versionPath(documentId, versionId)}/review`, body),
+  approve: (documentId: string, versionId: string, body: { expected_version: number; revision_id: string; fingerprint: string }) =>
+    post<LibraryDocument>(`${versionPath(documentId, versionId)}/approval`, body),
+  withdraw: (documentId: string, body: { expected_version: number; reason: string }) =>
+    post<LibraryDocument>(`${documentPath(documentId)}/withdrawal`, body),
+  retry: (documentId: string, versionId: string, expectedVersion: number) =>
+    post<LibraryDocument>(`${versionPath(documentId, versionId)}/retry`, { expected_version: expectedVersion }),
+  cancel: (documentId: string, versionId: string, expectedVersion: number) =>
+    post<LibraryDocument>(`${versionPath(documentId, versionId)}/cancellation`, { expected_version: expectedVersion }),
+  originalPreview: (documentId: string, versionId: string, blockId: string) =>
+    apiRequest<OriginalPreview>(`${versionPath(documentId, versionId)}/blocks/${encodeURIComponent(blockId)}/original-preview`),
+  /** The uploaded file itself, for the owner to compare against. */
+  original: async (documentId: string, versionId: string) =>
+    (await send(`${versionPath(documentId, versionId)}/original`)).blob(),
 };

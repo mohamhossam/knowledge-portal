@@ -9,16 +9,27 @@ suggestions; squads that own some systems and leave others without an owner.
     uv run python scripts/seed_demo.py --api http://127.0.0.1:8100
 
 Requires LLM_PROVIDER=fake, IDENTITY_PROVIDER=fake and LIBRARY_SCAN_MODE=offline.
+The review material (a deck, a workbook) is built with the test suite's file
+builders, so run it from the repository root.
 """
 
 from __future__ import annotations
 
 import argparse
+import io
+import sys
 import time
 import uuid
+from pathlib import Path
 from typing import Any
 
 import httpx
+from openpyxl import Workbook
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from tests.presentation_fixtures import PPTX_MIME, drawing_paragraph, presentation  # noqa: E402
+
+XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 OWNER = {"X-Fake-Actor-Id": "fake-owner"}
 REVIEWER = {"X-Fake-Actor-Id": "fake-reviewer"}
@@ -193,6 +204,67 @@ def seed_library(client: httpx.Client) -> None:
     )
 
 
+def workbook() -> bytes:
+    """A 400-row eligibility matrix, with a hidden internal sheet."""
+    book = Workbook()
+    sheet = book.active
+    assert sheet is not None
+    sheet.title = "Eligibility"
+    sheet.append(["Product", "Segment", "Rule"])
+    for row in range(1, 401):
+        sheet.append(
+            [
+                f"Bundle {row:03d}",
+                "SMB" if row % 3 else "Enterprise",
+                f"Eligible where XGPON coverage is confirmed (sample rule {row}).",
+            ]
+        )
+    hidden = book.create_sheet("Internal pricing")
+    hidden.sheet_state = "hidden"
+    hidden["A1"] = "Floor price is not for publication (sample)."
+    stream = io.BytesIO()
+    book.save(stream)
+    return stream.getvalue()
+
+
+def seed_review_material(client: httpx.Client) -> None:
+    """Documents that exercise the review: a blocking chart, a hidden sheet, a long text."""
+    deck = presentation(
+        drawing_paragraph("Launch the SMB fibre bundle in Q1 (sample).")
+        + '<p:graphicFrame><a:graphic><a:graphicData uri="chart"/></a:graphic></p:graphicFrame>',
+        drawing_paragraph("Sales qualify XGPON coverage before quoting (sample)."),
+        drawing_paragraph("Care escalates installation faults within one day (sample)."),
+    )
+    read(
+        client,
+        upload(client, "Product launch deck (sample)", "launch.pptx", deck, PPTX_MIME, OWNER),
+        OWNER,
+    )
+    read(
+        client,
+        upload(
+            client,
+            "Product eligibility matrix (sample)",
+            "eligibility.xlsx",
+            workbook(),
+            XLSX_MIME,
+            OWNER,
+        ),
+        OWNER,
+    )
+    handbook = "\n".join(
+        f"Step {n}: confirm the customer's site and service before step {n + 1} (sample)."
+        for n in range(1, 801)
+    ).encode()
+    read(
+        client,
+        upload(
+            client, "Customer care handbook (sample)", "handbook.txt", handbook, "text/plain", OWNER
+        ),
+        OWNER,
+    )
+
+
 def seed_catalogue(client: httpx.Client) -> None:
     releases = "/architecture-knowledge/releases"
     draft = client.post(
@@ -270,6 +342,7 @@ def main() -> None:
         client.get("/identity/me", headers=OWNER).raise_for_status()
         client.get("/identity/me", headers=REVIEWER).raise_for_status()
         seed_library(client)
+        seed_review_material(client)
         seed_catalogue(client)
         seed_squads(client)
     print("Seeded sample curation work.")

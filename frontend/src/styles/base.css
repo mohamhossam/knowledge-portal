@@ -68,7 +68,8 @@ a:hover {
 
 button,
 select,
-input {
+input,
+textarea {
   font: inherit;
   color: inherit;
 }

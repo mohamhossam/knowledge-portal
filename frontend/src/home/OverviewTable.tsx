@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 import { errorMessage } from "../api/errors";
 import { NoteMark, TimetableTable } from "../timetable/TimetableTable";
 import type { TableSpec } from "./tables";
@@ -7,7 +9,7 @@ import type { TableState } from "./useOverview";
 function nameCell(line: Line) {
   return (
     <>
-      <span dir="auto">{line.name}</span>
+      {line.to ? <Link to={line.to} dir="auto">{line.name}</Link> : <span dir="auto">{line.name}</span>}
       {line.nameAr && (
         <span className="secondary name-ar" lang="ar" dir="rtl">{line.nameAr}</span>
       )}

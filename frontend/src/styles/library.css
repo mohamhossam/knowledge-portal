@@ -1,0 +1,715 @@
+/* The library's screens, inside the Timetable Book (DESIGN.md). */
+
+/* Fields: the one framed control, as the persona select. */
+.field {
+  display: grid;
+  gap: var(--s1);
+}
+
+.field__label {
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+  font-stretch: var(--width-condensed);
+  font-weight: var(--w-medium);
+  letter-spacing: 0.01em;
+}
+
+.field__input {
+  min-height: 2rem;
+  padding: var(--s1) var(--s2);
+  border: 1px solid var(--ink-3);
+  border-radius: 2px;
+  background: var(--stock);
+  font-size: var(--t-body);
+  line-height: 1.45;
+}
+
+.field__input:hover {
+  border-color: var(--ink);
+}
+
+.field__input--text {
+  width: 100%;
+  resize: vertical;
+}
+
+.field__input--file {
+  padding: var(--s1);
+}
+
+.field__input--file::file-selector-button {
+  min-height: 1.75rem;
+  margin-right: var(--s3);
+  padding: 0 var(--s3);
+  border: 1px solid var(--ink);
+  border-radius: 2px;
+  background: var(--stock);
+  color: var(--ink);
+  font: inherit;
+  font-weight: var(--w-medium);
+  cursor: pointer;
+}
+
+.field__input--file::file-selector-button:hover {
+  background: var(--ink);
+  color: var(--stock);
+}
+
+.field--inline {
+  grid-auto-flow: column;
+  align-items: center;
+  justify-content: start;
+  gap: var(--s2);
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 1.5rem;
+  font-weight: var(--w-medium);
+  cursor: pointer;
+}
+
+.check input {
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0;
+  accent-color: var(--ink);
+}
+
+/* An action that commits something: solid ink, as the notice button. */
+.action-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 2.25rem;
+  padding: 0 var(--s4);
+  border: 2px solid var(--ink);
+  border-radius: 2px;
+  background: var(--ink);
+  color: var(--stock);
+  font-weight: var(--w-bold);
+  cursor: pointer;
+}
+
+.action-button:hover:not(:disabled) {
+  background: var(--stock);
+  color: var(--ink);
+}
+
+.action-button--secondary {
+  background: var(--stock);
+  color: var(--ink);
+}
+
+.action-button--secondary:hover:not(:disabled) {
+  background: var(--ink);
+  color: var(--stock);
+}
+
+.action-button:disabled {
+  border-color: var(--rule);
+  background: var(--stock-band);
+  color: var(--ink-3);
+  cursor: not-allowed;
+}
+
+.file-button {
+  cursor: pointer;
+}
+
+.file-button:focus-within {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.timetable__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3) var(--s5);
+  margin-top: var(--s4);
+}
+
+/* Adding a document: a plain section under the table, aligned to its body. */
+.add {
+  display: grid;
+  gap: var(--s3);
+  max-width: 44rem;
+  margin-left: calc(var(--margin-column) + var(--s5));
+  padding-top: var(--s5);
+  border-top: 1px solid var(--rule);
+}
+
+.add__title {
+  font-size: var(--t-lead);
+  font-weight: var(--w-bold);
+}
+
+.add__lead {
+  max-width: 62ch;
+  color: var(--ink-2);
+}
+
+.add__form {
+  display: grid;
+  gap: var(--s4);
+}
+
+/* One document's page. */
+.docpage {
+  display: grid;
+  grid-template-columns: var(--margin-column) minmax(0, 1fr);
+  column-gap: var(--s5);
+  row-gap: var(--s4);
+  padding-block: var(--s6) var(--s5);
+}
+
+/* Everything under the head sits in the table column, beside the margin. */
+.docpage > * {
+  grid-column: 2;
+  min-width: 0;
+}
+
+.docpage > .docpage__head {
+  grid-column: 1 / -1;
+}
+
+.docpage__head {
+  display: grid;
+  grid-template-columns: var(--margin-column) minmax(0, 1fr);
+  column-gap: var(--s5);
+}
+
+.docpage__number {
+  justify-self: end;
+  font-size: var(--t-monument);
+  font-stretch: var(--width-monument);
+  font-weight: var(--w-heavy);
+  line-height: 0.8;
+}
+
+.docpage__heading {
+  display: grid;
+  gap: var(--s1);
+  align-content: start;
+}
+
+.docpage__title {
+  font-size: var(--t-title);
+  font-stretch: 88%;
+  font-weight: var(--w-bold);
+  line-height: 1.1;
+}
+
+.docpage__edition {
+  max-width: 72ch;
+  color: var(--ink-2);
+}
+
+.docpage__version {
+  max-width: 80ch;
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+.docpage__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s4);
+  margin-top: var(--s2);
+}
+
+.docpage__quiet,
+.docpage__notice {
+  max-width: 72ch;
+  color: var(--ink-2);
+}
+
+.docpage__failure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s3);
+  color: var(--disruption);
+  font-weight: var(--w-medium);
+}
+
+.status--failed {
+  color: var(--disruption);
+  font-weight: var(--w-bold);
+}
+
+/* The working copy's processing state, one ruled line. */
+.processing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2) var(--s4);
+  padding-block: var(--s3);
+  border-block: 2px solid var(--rule-heavy);
+  color: var(--ink-2);
+}
+
+.processing .status {
+  color: var(--ink);
+  font-weight: var(--w-bold);
+}
+
+.processing--failed .status {
+  color: var(--disruption);
+}
+
+.processing__aside {
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+/* Withdrawing: an inline, deliberate step under the head. */
+.withdraw {
+  display: grid;
+  gap: var(--s3);
+  max-width: 62ch;
+  padding-block: var(--s4);
+  border-block: 2px solid var(--rule-heavy);
+}
+
+.withdraw__title {
+  font-size: var(--t-lead);
+  font-weight: var(--w-bold);
+}
+
+.withdraw__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s4);
+}
+
+/* The change notice: counts first, like a timetable's list of changes. */
+.notice-table__title {
+  padding-bottom: var(--s1);
+  border-bottom: 2px solid var(--rule-heavy);
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+  font-stretch: var(--width-condensed);
+  font-weight: var(--w-medium);
+}
+
+/* Fixed columns with room for four-digit counts, so a count growing never moves its neighbours. */
+.notice-table__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--s6);
+  margin: 0;
+  padding-block: var(--s2);
+  border-bottom: 1px solid var(--rule-faint);
+}
+
+.notice-table__item {
+  display: grid;
+  grid-template-columns: auto 4ch;
+  justify-content: start;
+  align-items: baseline;
+  white-space: nowrap;
+  gap: var(--s2);
+  padding-block: var(--s1);
+}
+
+.notice-table__item dd {
+  margin: 0;
+  font-weight: var(--w-bold);
+  text-align: end;
+}
+
+.notice-table__item.is-blocking dt,
+.notice-table__item.is-blocking dd {
+  color: var(--disruption);
+  font-weight: var(--w-bold);
+}
+
+.file-warnings {
+  display: grid;
+  max-width: 72ch;
+  gap: var(--s1);
+  margin-top: var(--s2);
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+.file-warnings .status {
+  color: var(--ink);
+  font-weight: var(--w-bold);
+}
+
+.file-warnings .is-blocking .status {
+  color: var(--disruption);
+}
+
+.notice-table__total {
+  margin-top: var(--s2);
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+/* Filters: words with counts; the one shown carries the index's ink bar. */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--s3) var(--s5);
+}
+
+.filters__set {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s4);
+}
+
+.filter {
+  min-height: 2rem;
+  padding: 0 var(--s1);
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  font-weight: var(--w-medium);
+  cursor: pointer;
+}
+
+.filter:hover {
+  color: var(--ink);
+}
+
+.filter[aria-pressed="true"] {
+  color: var(--ink);
+  font-weight: var(--w-bold);
+  box-shadow: inset 0 -3px 0 var(--ink);
+}
+
+.filter__count {
+  margin-left: var(--s1);
+  font-weight: var(--w-regular);
+}
+
+.keys {
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+kbd {
+  padding: 0 0.3em;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: var(--w-medium);
+}
+
+/* The passages: aligned rows, comparison text against the working text. */
+.passages {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.passages thead th {
+  padding: 0 var(--s4) var(--s2) 0;
+  border-bottom: 2px solid var(--rule-heavy);
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+  font-stretch: var(--width-condensed);
+  font-weight: var(--w-medium);
+  text-align: start;
+}
+
+.passages tbody th,
+.passages tbody td {
+  padding: var(--s2) var(--s4) var(--s2) 0;
+  border-bottom: 1px solid var(--rule-faint);
+  font-weight: inherit;
+  text-align: start;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.passages .cell--end {
+  text-align: end;
+}
+
+.passages__number {
+  width: 3.5rem;
+}
+
+.passages__where {
+  width: 13rem;
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+.passages__status {
+  width: 10rem;
+}
+
+.passages__basis {
+  color: var(--ink-2);
+}
+
+.passages--read .passages__where {
+  width: 14rem;
+}
+
+.passage {
+  cursor: pointer;
+  transition: background-color 180ms var(--ease-out);
+}
+
+.passage:hover {
+  background: var(--stock-band);
+}
+
+.passage:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.passage .clamp {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+.passage.is-open .clamp {
+  display: block;
+}
+
+.passage.is-open,
+.passage-detail {
+  background: var(--stock-band);
+}
+
+/* Rank by weight: what changed is bold; what is out of the publication is grey. */
+.passage--edited .status,
+.passage--new .status {
+  font-weight: var(--w-bold);
+}
+
+.passage--same .status {
+  color: var(--ink-2);
+}
+
+.passage--excluded .passages__working,
+.passage--excluded .status,
+.passage--removed {
+  color: var(--ink-3);
+}
+
+.mark-wrap--button {
+  line-height: 1;
+}
+
+/* A mark that opens something: a real target, at least 24px tall. */
+.mark--button {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  border: 0;
+  background: none;
+  vertical-align: top;
+  cursor: pointer;
+}
+
+.passages__reason {
+  display: block;
+  margin-top: var(--s1);
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+.passages__flag {
+  display: block;
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+.passages__flag--blocking {
+  color: var(--disruption);
+  font-weight: var(--w-bold);
+}
+
+.passage-detail td {
+  padding: var(--s2) var(--s4) var(--s4) calc(3.5rem);
+  border-bottom: 2px solid var(--rule-heavy);
+}
+
+.detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--s5);
+}
+
+.detail__source,
+.detail__decision {
+  display: grid;
+  gap: var(--s3);
+  align-content: start;
+}
+
+.detail__label {
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+  font-stretch: var(--width-condensed);
+  font-weight: var(--w-medium);
+}
+
+.detail__extracted p:last-child {
+  color: var(--ink-2);
+}
+
+.detail__warnings {
+  display: grid;
+  gap: var(--s1);
+  font-size: var(--t-meta);
+}
+
+.detail__warnings .status {
+  font-weight: var(--w-bold);
+}
+
+.detail__warnings .is-blocking .status {
+  color: var(--disruption);
+}
+
+.detail__note {
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+.detail__note--failed {
+  color: var(--disruption);
+}
+
+.detail__original {
+  display: grid;
+  gap: var(--s2);
+  margin: 0;
+}
+
+.detail__original img {
+  max-width: 100%;
+  max-height: 28rem;
+  border: 1px solid var(--rule);
+  object-fit: contain;
+  background: var(--stock);
+}
+
+.detail__original figcaption {
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+.detail__removed {
+  max-width: 72ch;
+  color: var(--ink-2);
+}
+
+/* The save bar: the review's foot, kept in view. */
+.savebar {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--s2) var(--s4);
+  padding-block: var(--s3);
+  border-top: 2px solid var(--rule-heavy);
+  background: var(--stock);
+}
+
+.savebar__state {
+  flex-basis: 100%;
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+.savebar__state strong {
+  color: var(--ink);
+}
+
+.savebar__summary {
+  flex: 1 1 30rem;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.savebar__summary .field__input {
+  width: 100%;
+}
+
+.savebar__why {
+  flex-basis: 100%;
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+/* A focused passage is never hidden under the save bar or the masthead. */
+html:has(.savebar) {
+  scroll-padding-bottom: 9rem;
+}
+
+@media (max-width: 60rem) {
+  .detail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .passages__status {
+    width: 7rem;
+  }
+}
+
+@media (max-width: 45rem) {
+  .docpage__head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .docpage__number {
+    justify-self: start;
+    font-size: 3.25rem;
+  }
+
+  .docpage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .docpage > * {
+    grid-column: 1;
+  }
+
+  /* On a phone the counts read as the totals list: one hairline each. */
+  .notice-table__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    padding-block: 0;
+    border-bottom: 0;
+  }
+
+  .notice-table__item {
+    grid-template-columns: minmax(0, 1fr) 4ch;
+    padding-block: var(--s2);
+    border-bottom: 1px solid var(--rule-faint);
+  }
+
+  .add {
+    margin-left: 0;
+  }
+
+  .passage-detail td {
+    padding-left: 0;
+  }
+
+  .savebar {
+    position: static;
+  }
+}

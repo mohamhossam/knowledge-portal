@@ -1,51 +1,302 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-02T00:00:00Z",
+  "generatedAt": "2026-10-02T12:00:00Z",
   "title": "Design System: Knowledge portal",
   "extensions": {
     "colorMeta": {
-      "stock": { "role": "neutral", "displayName": "Table Stock", "canonical": "#fbfbfa", "tonalRamp": ["oklch(15% 0.003 100)", "oklch(27% 0.003 100)", "oklch(39% 0.003 100)", "oklch(51% 0.003 100)", "oklch(63% 0.003 100)", "oklch(75% 0.003 100)", "oklch(87% 0.003 100)", "oklch(98.6% 0.002 100)"] },
-      "stock-band": { "role": "neutral", "displayName": "Stock Band", "canonical": "#f1f1ee", "tonalRamp": ["oklch(15% 0.005 100)", "oklch(27% 0.005 100)", "oklch(39% 0.005 100)", "oklch(51% 0.005 100)", "oklch(63% 0.005 100)", "oklch(75% 0.005 100)", "oklch(87% 0.005 100)", "oklch(95.6% 0.005 100)"] },
-      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#16181d", "tonalRamp": ["oklch(20.5% 0.01 265)", "oklch(30% 0.01 265)", "oklch(40% 0.01 265)", "oklch(50% 0.01 265)", "oklch(62% 0.01 265)", "oklch(74% 0.01 265)", "oklch(86% 0.008 265)", "oklch(95% 0.005 265)"] },
-      "ink-2": { "role": "neutral", "displayName": "Ink 2", "canonical": "#474c55", "tonalRamp": ["oklch(15% 0.015 260)", "oklch(27% 0.015 260)", "oklch(41.5% 0.015 260)", "oklch(51% 0.015 260)", "oklch(63% 0.015 260)", "oklch(75% 0.012 260)", "oklch(87% 0.008 260)", "oklch(95% 0.005 260)"] },
-      "ink-3": { "role": "neutral", "displayName": "Ink 3", "canonical": "#686e78", "tonalRamp": ["oklch(15% 0.015 260)", "oklch(27% 0.015 260)", "oklch(39% 0.015 260)", "oklch(52.5% 0.017 260)", "oklch(63% 0.015 260)", "oklch(75% 0.012 260)", "oklch(87% 0.008 260)", "oklch(95% 0.005 260)"] },
-      "rule-heavy": { "role": "neutral", "displayName": "Heavy Rule", "canonical": "#16181d", "tonalRamp": ["oklch(20.5% 0.01 265)", "oklch(30% 0.01 265)", "oklch(40% 0.01 265)", "oklch(50% 0.01 265)", "oklch(62% 0.01 265)", "oklch(74% 0.01 265)", "oklch(86% 0.008 265)", "oklch(95% 0.005 265)"] },
-      "rule": { "role": "neutral", "displayName": "Rule", "canonical": "#cfd2d6", "tonalRamp": ["oklch(15% 0.006 255)", "oklch(27% 0.006 255)", "oklch(39% 0.006 255)", "oklch(51% 0.006 255)", "oklch(63% 0.006 255)", "oklch(75% 0.006 255)", "oklch(85.7% 0.006 255)", "oklch(95% 0.004 255)"] },
-      "rule-faint": { "role": "neutral", "displayName": "Faint Rule", "canonical": "#e4e5e7", "tonalRamp": ["oklch(15% 0.003 265)", "oklch(27% 0.003 265)", "oklch(39% 0.003 265)", "oklch(51% 0.003 265)", "oklch(63% 0.003 265)", "oklch(75% 0.003 265)", "oklch(91.7% 0.003 265)", "oklch(97% 0.002 265)"] },
-      "disruption": { "role": "secondary", "displayName": "Disruption Red", "canonical": "#b3122b", "tonalRamp": ["oklch(25% 0.1 20)", "oklch(35% 0.14 20)", "oklch(44% 0.17 20)", "oklch(50.5% 0.19 20)", "oklch(60% 0.18 20)", "oklch(72% 0.12 20)", "oklch(84% 0.06 20)", "oklch(95% 0.02 20)"] },
-      "disruption-wash": { "role": "secondary", "displayName": "Disruption Wash", "canonical": "#fbeaec", "tonalRamp": ["oklch(25% 0.1 15)", "oklch(35% 0.14 15)", "oklch(45% 0.17 15)", "oklch(55% 0.17 15)", "oklch(65% 0.14 15)", "oklch(75% 0.09 15)", "oklch(86% 0.04 15)", "oklch(95.4% 0.017 15)"] },
-      "reference": { "role": "primary", "displayName": "Reference Blue", "canonical": "#1d5ca3", "tonalRamp": ["oklch(22% 0.07 255)", "oklch(32% 0.1 255)", "oklch(42% 0.12 255)", "oklch(48.5% 0.13 255)", "oklch(58% 0.13 255)", "oklch(70% 0.1 255)", "oklch(83% 0.05 255)", "oklch(94% 0.02 255)"] },
-      "reference-wash": { "role": "primary", "displayName": "Reference Wash", "canonical": "#e6eef8", "tonalRamp": ["oklch(22% 0.07 255)", "oklch(32% 0.1 255)", "oklch(42% 0.12 255)", "oklch(52% 0.12 255)", "oklch(62% 0.1 255)", "oklch(74% 0.07 255)", "oklch(85% 0.035 255)", "oklch(94.4% 0.015 255)"] }
+      "stock": {
+        "role": "neutral",
+        "displayName": "Table Stock",
+        "canonical": "#fbfbfa",
+        "tonalRamp": [
+          "oklch(15% 0.003 100)",
+          "oklch(27% 0.003 100)",
+          "oklch(39% 0.003 100)",
+          "oklch(51% 0.003 100)",
+          "oklch(63% 0.003 100)",
+          "oklch(75% 0.003 100)",
+          "oklch(87% 0.003 100)",
+          "oklch(98.6% 0.002 100)"
+        ]
+      },
+      "stock-band": {
+        "role": "neutral",
+        "displayName": "Stock Band",
+        "canonical": "#f1f1ee",
+        "tonalRamp": [
+          "oklch(15% 0.005 100)",
+          "oklch(27% 0.005 100)",
+          "oklch(39% 0.005 100)",
+          "oklch(51% 0.005 100)",
+          "oklch(63% 0.005 100)",
+          "oklch(75% 0.005 100)",
+          "oklch(87% 0.005 100)",
+          "oklch(95.6% 0.005 100)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#16181d",
+        "tonalRamp": [
+          "oklch(20.5% 0.01 265)",
+          "oklch(30% 0.01 265)",
+          "oklch(40% 0.01 265)",
+          "oklch(50% 0.01 265)",
+          "oklch(62% 0.01 265)",
+          "oklch(74% 0.01 265)",
+          "oklch(86% 0.008 265)",
+          "oklch(95% 0.005 265)"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Ink 2",
+        "canonical": "#474c55",
+        "tonalRamp": [
+          "oklch(15% 0.015 260)",
+          "oklch(27% 0.015 260)",
+          "oklch(41.5% 0.015 260)",
+          "oklch(51% 0.015 260)",
+          "oklch(63% 0.015 260)",
+          "oklch(75% 0.012 260)",
+          "oklch(87% 0.008 260)",
+          "oklch(95% 0.005 260)"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Ink 3",
+        "canonical": "#686e78",
+        "tonalRamp": [
+          "oklch(15% 0.015 260)",
+          "oklch(27% 0.015 260)",
+          "oklch(39% 0.015 260)",
+          "oklch(52.5% 0.017 260)",
+          "oklch(63% 0.015 260)",
+          "oklch(75% 0.012 260)",
+          "oklch(87% 0.008 260)",
+          "oklch(95% 0.005 260)"
+        ]
+      },
+      "rule-heavy": {
+        "role": "neutral",
+        "displayName": "Heavy Rule",
+        "canonical": "#16181d",
+        "tonalRamp": [
+          "oklch(20.5% 0.01 265)",
+          "oklch(30% 0.01 265)",
+          "oklch(40% 0.01 265)",
+          "oklch(50% 0.01 265)",
+          "oklch(62% 0.01 265)",
+          "oklch(74% 0.01 265)",
+          "oklch(86% 0.008 265)",
+          "oklch(95% 0.005 265)"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Rule",
+        "canonical": "#cfd2d6",
+        "tonalRamp": [
+          "oklch(15% 0.006 255)",
+          "oklch(27% 0.006 255)",
+          "oklch(39% 0.006 255)",
+          "oklch(51% 0.006 255)",
+          "oklch(63% 0.006 255)",
+          "oklch(75% 0.006 255)",
+          "oklch(85.7% 0.006 255)",
+          "oklch(95% 0.004 255)"
+        ]
+      },
+      "rule-faint": {
+        "role": "neutral",
+        "displayName": "Faint Rule",
+        "canonical": "#e4e5e7",
+        "tonalRamp": [
+          "oklch(15% 0.003 265)",
+          "oklch(27% 0.003 265)",
+          "oklch(39% 0.003 265)",
+          "oklch(51% 0.003 265)",
+          "oklch(63% 0.003 265)",
+          "oklch(75% 0.003 265)",
+          "oklch(91.7% 0.003 265)",
+          "oklch(97% 0.002 265)"
+        ]
+      },
+      "disruption": {
+        "role": "secondary",
+        "displayName": "Disruption Red",
+        "canonical": "#b3122b",
+        "tonalRamp": [
+          "oklch(25% 0.1 20)",
+          "oklch(35% 0.14 20)",
+          "oklch(44% 0.17 20)",
+          "oklch(50.5% 0.19 20)",
+          "oklch(60% 0.18 20)",
+          "oklch(72% 0.12 20)",
+          "oklch(84% 0.06 20)",
+          "oklch(95% 0.02 20)"
+        ]
+      },
+      "disruption-wash": {
+        "role": "secondary",
+        "displayName": "Disruption Wash",
+        "canonical": "#fbeaec",
+        "tonalRamp": [
+          "oklch(25% 0.1 15)",
+          "oklch(35% 0.14 15)",
+          "oklch(45% 0.17 15)",
+          "oklch(55% 0.17 15)",
+          "oklch(65% 0.14 15)",
+          "oklch(75% 0.09 15)",
+          "oklch(86% 0.04 15)",
+          "oklch(95.4% 0.017 15)"
+        ]
+      },
+      "reference": {
+        "role": "primary",
+        "displayName": "Reference Blue",
+        "canonical": "#1d5ca3",
+        "tonalRamp": [
+          "oklch(22% 0.07 255)",
+          "oklch(32% 0.1 255)",
+          "oklch(42% 0.12 255)",
+          "oklch(48.5% 0.13 255)",
+          "oklch(58% 0.13 255)",
+          "oklch(70% 0.1 255)",
+          "oklch(83% 0.05 255)",
+          "oklch(94% 0.02 255)"
+        ]
+      },
+      "reference-wash": {
+        "role": "primary",
+        "displayName": "Reference Wash",
+        "canonical": "#e6eef8",
+        "tonalRamp": [
+          "oklch(22% 0.07 255)",
+          "oklch(32% 0.1 255)",
+          "oklch(42% 0.12 255)",
+          "oklch(52% 0.12 255)",
+          "oklch(62% 0.1 255)",
+          "oklch(74% 0.07 255)",
+          "oklch(85% 0.035 255)",
+          "oklch(94.4% 0.015 255)"
+        ]
+      }
     },
     "typographyMeta": {
-      "monument": { "displayName": "Monument", "purpose": "The condensed table number in the margin column (aria-hidden); index numbers use the same width and weight at 2.25rem." },
-      "title": { "displayName": "Title", "purpose": "Table and notice titles at 88% width." },
-      "lead": { "displayName": "Lead", "purpose": "The next-decision line and the masthead portal name." },
-      "body": { "displayName": "Body", "purpose": "Rows, totals and edition lines; tabular lining figures." },
-      "label": { "displayName": "Label", "purpose": "Column heads and totals labels at 72% width, sentence case, ink 2." },
-      "meta": { "displayName": "Meta", "purpose": "Notes, the masthead 'Valid as of' line, text buttons, Arabic secondary lines." },
-      "mark": { "displayName": "Mark", "purpose": "The superscript blue reference numeral." },
-      "arabic": { "displayName": "Arabic", "purpose": "Noto Sans Arabic for any lang=ar or dir=rtl content; a script fallback, not a design voice." }
+      "monument": {
+        "displayName": "Monument",
+        "purpose": "The condensed table number in the margin column (aria-hidden); index numbers use the same width and weight at 2.25rem."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Table and notice titles at 88% width."
+      },
+      "lead": {
+        "displayName": "Lead",
+        "purpose": "The next-decision line, the masthead portal name, and the titles of the add-a-document section and the withdraw panel."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Rows, totals and edition lines; tabular lining figures."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Column heads, totals labels, field labels, the change notice heading and passage detail labels, at 72% width, sentence case, ink 2."
+      },
+      "meta": {
+        "displayName": "Meta",
+        "purpose": "Notes, the masthead 'Valid as of' line, text buttons, Arabic secondary lines, the passage Where column, reasons and flags, the keys line, the save bar's state and reason lines. Key caps step down to 0.75rem."
+      },
+      "mark": {
+        "displayName": "Mark",
+        "purpose": "The superscript blue reference numeral."
+      },
+      "arabic": {
+        "displayName": "Arabic",
+        "purpose": "Noto Sans Arabic for any lang=ar or dir=rtl content; a script fallback, not a design voice."
+      }
     },
     "shadows": [
-      { "name": "index-current-bar", "value": "inset 0 -3px 0 var(--ink)", "purpose": "A rule, not depth: the bar under the current index entry. The only box-shadow in the system." }
+      {
+        "name": "current-bar",
+        "value": "inset 0 -3px 0 var(--ink)",
+        "purpose": "A rule, not depth: the bar under the current index entry and under the pressed filter. The only box-shadow in the system."
+      }
     ],
     "rules": [
-      { "name": "rule-heavy", "value": "2px solid var(--rule-heavy)", "purpose": "Under the masthead, table heads, totals label, quiet line and notice head." },
-      { "name": "hairline", "value": "1px solid var(--rule-faint)", "purpose": "Between rows and totals; 1px var(--rule) between tables and under the index." },
-      { "name": "double", "value": "3px double var(--rule-heavy)", "purpose": "Above the notes at a table's foot." }
+      {
+        "name": "rule-heavy",
+        "value": "2px solid var(--rule-heavy)",
+        "purpose": "Under the masthead, table heads, totals label, quiet line, notice head and change notice heading; above and below the processing line and the withdraw panel; at the foot of an open passage's detail row; on top of the save bar."
+      },
+      {
+        "name": "hairline",
+        "value": "1px solid var(--rule-faint)",
+        "purpose": "Between rows and totals; 1px var(--rule) between tables and under the index."
+      },
+      {
+        "name": "double",
+        "value": "3px double var(--rule-heavy)",
+        "purpose": "Above the notes at a table's foot."
+      }
     ],
-    "focus": { "value": "outline: 2px solid var(--reference); outline-offset: 2px", "purpose": "Every focusable element." },
+    "focus": {
+      "value": "outline: 2px solid var(--reference); outline-offset: 2px",
+      "purpose": "Every focusable element."
+    },
     "motion": [
-      { "name": "ease-out", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "All state transitions." },
-      { "name": "light", "value": "background-color 180ms var(--ease-out)", "purpose": "Lighting a row, mark or note; background only, nothing reflows." },
-      { "name": "extent", "value": "inline-size 400ms var(--ease-out)", "purpose": "Index extent rules settling to their share." },
-      { "name": "busy-spin", "value": "spin 900ms linear infinite", "purpose": "The refresh icon while tables reload." },
-      { "name": "reduced-motion", "value": "0.01ms", "purpose": "All transitions and animations under prefers-reduced-motion: reduce." }
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "All state transitions."
+      },
+      {
+        "name": "light",
+        "value": "background-color 180ms var(--ease-out)",
+        "purpose": "Lighting a row, mark or note; background only, nothing reflows."
+      },
+      {
+        "name": "extent",
+        "value": "inline-size 400ms var(--ease-out)",
+        "purpose": "Index extent rules settling to their share."
+      },
+      {
+        "name": "busy-spin",
+        "value": "spin 900ms linear infinite",
+        "purpose": "The refresh icon while tables reload."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "0.01ms",
+        "purpose": "All transitions and animations under prefers-reduced-motion: reduce."
+      }
     ],
     "breakpoints": [
-      { "name": "below-desktop", "value": "60rem", "purpose": "Priority-3 columns hide." },
-      { "name": "phone", "value": "45rem", "purpose": "Priority-2 columns hide; margin column collapses; masthead unsticks; index stacks." }
+      {
+        "name": "below-desktop",
+        "value": "60rem",
+        "purpose": "Priority-3 columns hide."
+      },
+      {
+        "name": "phone",
+        "value": "45rem",
+        "purpose": "Priority-2 columns hide; margin column collapses; masthead unsticks; index stacks."
+      }
+    ],
+    "layout": [
+      {
+        "name": "save-bar-scroll-padding",
+        "value": "html:has(.savebar) { scroll-padding-bottom: 9rem }",
+        "purpose": "A passage moved to from the keyboard is never hidden under the sticky save bar."
+      },
+      {
+        "name": "save-bar-stack",
+        "value": "z-index 4 (masthead 5); position static at 45rem and below",
+        "purpose": "The save bar stays in view on desktop, sits in flow on phones."
+      }
     ]
   },
   "components": [
@@ -104,6 +355,54 @@
       "description": "The table's running summary of what is in force: label over a heavy rule, hairline rows, end-aligned values.",
       "html": "<div class=\"ds-totals\"><p class=\"ds-totals__label\">In the edition in force</p><dl class=\"ds-totals__list\"><div class=\"ds-total\"><dt>Systems</dt><dd>31</dd></div><div class=\"ds-total\"><dt>Relationships</dt><dd>11</dd></div></dl></div>",
       "css": ".ds-totals { max-width: 34rem; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; color: var(--ink, #16181d); font-variant-numeric: tabular-nums lining-nums; } .ds-totals__label { margin: 0; padding-bottom: 0.25rem; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; } .ds-totals__list { display: grid; margin: 0; } .ds-total { display: flex; justify-content: space-between; gap: 1rem; padding-block: 0.5rem; border-bottom: 1px solid var(--rule-faint, #e4e5e7); } .ds-total dd { margin: 0; font-weight: 500; text-align: end; }"
+    },
+    {
+      "name": "Action Button",
+      "kind": "button",
+      "refersTo": "action-button",
+      "description": "The commit action outside notice screens (Save review, Withdraw it, Upload for review); secondary variant for Approve and publish; disabled on the stock band.",
+      "html": "<div class=\"ds-actions\"><button class=\"ds-action\">Save review</button><button class=\"ds-action ds-action--secondary\">Approve and publish</button><button class=\"ds-action\" disabled>Withdraw it</button></div>",
+      "css": ".ds-actions { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; } .ds-action { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.25rem; padding: 0 1rem; border: 2px solid var(--ink, #16181d); border-radius: 2px; background: var(--ink, #16181d); color: var(--stock, #fbfbfa); font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; font-weight: 680; cursor: pointer; } .ds-action:hover:not(:disabled) { background: var(--stock, #fbfbfa); color: var(--ink, #16181d); } .ds-action--secondary { background: var(--stock, #fbfbfa); color: var(--ink, #16181d); } .ds-action--secondary:hover:not(:disabled) { background: var(--ink, #16181d); color: var(--stock, #fbfbfa); } .ds-action:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-action:disabled { border-color: var(--rule, #cfd2d6); background: var(--stock-band, #f1f1ee); color: var(--ink-3, #686e78); cursor: not-allowed; }"
+    },
+    {
+      "name": "Field",
+      "kind": "input",
+      "refersTo": "field-input",
+      "description": "Label in the label style above a 1px ink-3 framed input with a 2px radius; hover darkens to ink. Checkbox takes the ink accent.",
+      "html": "<div class=\"ds-form\"><label class=\"ds-field\"><span class=\"ds-field__label\">Title</span><input class=\"ds-field__input\" value=\"Invoice discount display\"></label><label class=\"ds-check\"><input type=\"checkbox\" checked> Include in the publication</label></div>",
+      "css": ".ds-form { display: grid; gap: 1rem; max-width: 30rem; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; color: var(--ink, #16181d); } .ds-field { display: grid; gap: 0.25rem; } .ds-field__label { color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; letter-spacing: 0.01em; } .ds-field__input { min-height: 2rem; padding: 0.25rem 0.5rem; border: 1px solid var(--ink-3, #686e78); border-radius: 2px; background: var(--stock, #fbfbfa); color: inherit; font: inherit; line-height: 1.45; } .ds-field__input:hover { border-color: var(--ink, #16181d); } .ds-field__input:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-check { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 1.5rem; font-weight: 500; cursor: pointer; } .ds-check input { width: 1.125rem; height: 1.125rem; margin: 0; accent-color: var(--ink, #16181d); } .ds-check input:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; }"
+    },
+    {
+      "name": "Filter Strip and Keys Line",
+      "kind": "chip",
+      "refersTo": "filter",
+      "description": "Words with counts, not chips: pressed is bold ink with the inset 3px ink bar (aria-pressed); the keys line sets kbd caps in a ruled outline.",
+      "html": "<div class=\"ds-filters\"><div class=\"ds-filters__set\" role=\"group\" aria-label=\"Show passages\"><button class=\"ds-filter\" aria-pressed=\"true\">All <span class=\"ds-filter__count\">412</span></button><button class=\"ds-filter\" aria-pressed=\"false\">Changed <span class=\"ds-filter__count\">18</span></button><button class=\"ds-filter\" aria-pressed=\"false\">Flagged <span class=\"ds-filter__count\">3</span></button></div><p class=\"ds-keys\">Keys on a passage: <kbd>j</kbd>/<kbd>k</kbd> move, <kbd>Enter</kbd> open, <kbd>Esc</kbd> close.</p></div>",
+      "css": ".ds-filters { display: grid; gap: 0.75rem; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; } .ds-filters__set { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; } .ds-filter { min-height: 2rem; padding: 0 0.25rem; border: 0; background: none; color: var(--ink-2, #474c55); font: inherit; font-weight: 500; cursor: pointer; } .ds-filter:hover { color: var(--ink, #16181d); } .ds-filter:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-filter[aria-pressed='true'] { color: var(--ink, #16181d); font-weight: 680; box-shadow: inset 0 -3px 0 var(--ink, #16181d); } .ds-filter__count { margin-left: 0.25rem; font-weight: 400; font-variant-numeric: tabular-nums lining-nums; } .ds-keys { margin: 0; color: var(--ink-2, #474c55); font-size: 0.8125rem; } .ds-keys kbd { padding: 0 0.3em; border: 1px solid var(--rule, #cfd2d6); border-radius: 2px; font-family: inherit; font-size: 0.75rem; font-weight: 500; }"
+    },
+    {
+      "name": "Passage Table",
+      "kind": "custom",
+      "refersTo": "passage-row",
+      "description": "Aligned passage rows: comparison text in ink 2 against working text in ink; edited status with the blue 'e' edit mark (a 24px button, the scoped exception to the reference-mark grammar); open row on the stock band; excluded in ink 3 with its reason.",
+      "html": "<table class=\"ds-passages\"><thead><tr><th class=\"ds-p-no\">No.</th><th>In service · version 2</th><th>Working copy · version 3</th><th class=\"ds-p-status\">Status</th></tr></thead><tbody><tr class=\"ds-passage ds-passage--edited is-open\" tabindex=\"0\"><td class=\"ds-end\">14</td><td class=\"ds-basis\">Discounts show on the invoice total.</td><td>Discounts show per line and on the invoice total.</td><td><span class=\"ds-status\">Edited</span><sup class=\"ds-mark-wrap\"><button class=\"ds-edit-mark\" aria-label=\"Show what passage 14 was edited from\">e</button></sup></td></tr><tr class=\"ds-detail\"><td colspan=\"4\"><span class=\"ds-detail__label\">Edited from</span><br>Discounts show per line and on the invoice total</td></tr><tr class=\"ds-passage ds-passage--excluded\"><td class=\"ds-end\">15</td><td class=\"ds-basis\">Prices include VAT.</td><td>Prices include VAT.<span class=\"ds-reason\">Excluded: duplicated in the tax policy</span></td><td><span class=\"ds-status\">Excluded</span></td></tr></tbody></table>",
+      "css": ".ds-passages { width: 100%; border-collapse: collapse; table-layout: fixed; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; line-height: 1.45; color: var(--ink, #16181d); font-variant-numeric: tabular-nums lining-nums; } .ds-passages thead th { padding: 0 1rem 0.5rem 0; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; text-align: start; } .ds-p-no { width: 3.5rem; } .ds-p-status { width: 10rem; } .ds-passages tbody td { padding: 0.5rem 1rem 0.5rem 0; border-bottom: 1px solid var(--rule-faint, #e4e5e7); vertical-align: top; overflow-wrap: anywhere; } .ds-end { text-align: end; } .ds-basis { color: var(--ink-2, #474c55); } .ds-passage { cursor: pointer; transition: background-color 180ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-passage:hover, .ds-passage.is-open, .ds-detail { background: var(--stock-band, #f1f1ee); } .ds-passage:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: -2px; } .ds-passage--edited .ds-status { font-weight: 680; } .ds-passage--excluded td:nth-child(3), .ds-passage--excluded .ds-status { color: var(--ink-3, #686e78); } .ds-reason { display: block; margin-top: 0.25rem; color: var(--ink-2, #474c55); font-size: 0.8125rem; } .ds-mark-wrap { line-height: 1; } .ds-edit-mark { display: inline-grid; place-items: center; min-width: 1.5rem; min-height: 1.5rem; padding: 0 0.15em; border: 0; background: none; color: var(--reference, #1d5ca3); font: inherit; font-size: 0.6875rem; font-weight: 680; vertical-align: top; cursor: pointer; } .ds-edit-mark:hover { background: var(--reference-wash, #e6eef8); } .ds-edit-mark:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-detail td { padding: 0.5rem 1rem 1rem 3.5rem; border-bottom: 2px solid var(--rule-heavy, #16181d); } .ds-detail__label { color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; }"
+    },
+    {
+      "name": "Change Notice",
+      "kind": "custom",
+      "refersTo": "change-notice",
+      "description": "Counts first: label-style heading over a heavy rule, a wrapping row of label + fixed 4ch end-aligned counts, blocking in red.",
+      "html": "<section class=\"ds-notice\"><h2 class=\"ds-notice__title\">Changes from version 2</h2><dl class=\"ds-notice__grid\"><div class=\"ds-notice__item\"><dt>Edited</dt><dd>18</dd></div><div class=\"ds-notice__item\"><dt>New</dt><dd>4</dd></div><div class=\"ds-notice__item is-blocking\"><dt>Blocking</dt><dd>1</dd></div></dl></section>",
+      "css": ".ds-notice { font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; color: var(--ink, #16181d); font-variant-numeric: tabular-nums lining-nums; } .ds-notice__title { margin: 0; padding-bottom: 0.25rem; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; } .ds-notice__grid { display: flex; flex-wrap: wrap; gap: 0 2rem; margin: 0; padding-block: 0.5rem; border-bottom: 1px solid var(--rule-faint, #e4e5e7); } .ds-notice__item { display: grid; grid-template-columns: auto 4ch; align-items: baseline; gap: 0.5rem; padding-block: 0.25rem; white-space: nowrap; } .ds-notice__item dd { margin: 0; font-weight: 680; text-align: end; } .ds-notice__item.is-blocking dt, .ds-notice__item.is-blocking dd { color: var(--disruption, #b3122b); font-weight: 680; }"
+    },
+    {
+      "name": "Save Bar",
+      "kind": "custom",
+      "refersTo": "save-bar",
+      "description": "The review's sticky foot: heavy rule on top, unsaved count, summary field, actions, the reason it waits. Static on phones.",
+      "html": "<form class=\"ds-savebar\"><p class=\"ds-savebar__state\"><strong>3 unsaved changes</strong></p><label class=\"ds-savebar__summary\"><span class=\"ds-savebar__label\">Review summary</span><input class=\"ds-savebar__input\" placeholder=\"What you checked, and what you changed\"></label><button class=\"ds-savebar__btn\">Save review</button><button class=\"ds-savebar__btn ds-savebar__btn--secondary\" disabled>Approve and publish</button><p class=\"ds-savebar__why\">Save the review before approving it.</p></form>",
+      "css": ".ds-savebar { position: sticky; bottom: 0; z-index: 4; display: flex; flex-wrap: wrap; align-items: end; gap: 0.5rem 1rem; padding-block: 0.75rem; border-top: 2px solid var(--rule-heavy, #16181d); background: var(--stock, #fbfbfa); font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; color: var(--ink, #16181d); } .ds-savebar__state, .ds-savebar__why { flex-basis: 100%; margin: 0; color: var(--ink-2, #474c55); font-size: 0.8125rem; } .ds-savebar__state strong { color: var(--ink, #16181d); } .ds-savebar__summary { flex: 1 1 20rem; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0.5rem; } .ds-savebar__label { color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; } .ds-savebar__input { min-height: 2rem; padding: 0.25rem 0.5rem; border: 1px solid var(--ink-3, #686e78); border-radius: 2px; background: var(--stock, #fbfbfa); font: inherit; } .ds-savebar__input:hover { border-color: var(--ink, #16181d); } .ds-savebar__input:focus-visible, .ds-savebar__btn:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-savebar__btn { min-height: 2.25rem; padding: 0 1rem; border: 2px solid var(--ink, #16181d); border-radius: 2px; background: var(--ink, #16181d); color: var(--stock, #fbfbfa); font: inherit; font-weight: 680; cursor: pointer; } .ds-savebar__btn--secondary { background: var(--stock, #fbfbfa); color: var(--ink, #16181d); } .ds-savebar__btn:disabled { border-color: var(--rule, #cfd2d6); background: var(--stock-band, #f1f1ee); color: var(--ink-3, #686e78); cursor: not-allowed; }"
     }
   ],
   "narrative": {
@@ -118,17 +417,45 @@
       "Rows never reflow when a state changes. Only the background changes."
     ],
     "rules": [
-      { "name": "The Two Jobs Rule", "body": "Colour has exactly two jobs. Red marks a disruption. Blue marks a reference, meaning something you can follow, plus focus. No other hue appears, and neither colour ever decorates or ranks.", "section": "colors" },
-      { "name": "The Stock Not Cream Rule", "body": "The page is neutral near-white (`stock`). Never warm it toward paper or cream.", "section": "colors" },
-      { "name": "The Weight Is Rank Rule", "body": "A row's importance is set by weight and ink, never by colour or badge. A due row has its name and status in bold (680). A delayed row has its status in bold and in disruption red. A running row is set in ink 2, a row in service in regular ink, a past row in ink 3.", "section": "typography" },
-      { "name": "The One Family Rule", "body": "Contrast comes from Archivo's width and weight axes, not from a second display face. Noto Sans Arabic is a script fallback, not a design voice.", "section": "typography" },
-      { "name": "The Three Rules Rule", "body": "Separation uses three weights only. A 2px heavy rule sits under the masthead and every table head, totals label and notice head. A 1px hairline sits between rows, totals and tables. A 3px double rule sits above the notes. Do not add a fourth weight or a box.", "section": "elevation" }
+      {
+        "name": "The Two Jobs Rule",
+        "body": "Colour has exactly two jobs. Red marks a disruption. Blue marks a reference, meaning something you can follow, plus focus. No other hue appears, and neither colour ever decorates or ranks.",
+        "section": "colors"
+      },
+      {
+        "name": "The Stock Not Cream Rule",
+        "body": "The page is neutral near-white (`stock`). Never warm it toward paper or cream.",
+        "section": "colors"
+      },
+      {
+        "name": "The Weight Is Rank Rule",
+        "body": "A row's importance is set by weight and ink, never by colour or badge. A due row has its name and status in bold (680). A delayed row has its status in bold and in disruption red. A running row is set in ink 2, a row in service in regular ink, a past row in ink 3.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Family Rule",
+        "body": "Contrast comes from Archivo's width and weight axes, not from a second display face. Noto Sans Arabic is a script fallback, not a design voice.",
+        "section": "typography"
+      },
+      {
+        "name": "The Three Rules Rule",
+        "body": "Separation uses three weights only. A 2px heavy rule sits under the masthead and every table head, totals label and notice head. A 1px hairline sits between rows, totals and tables. A 3px double rule sits above the notes. Do not add a fourth weight or a box.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Edit Mark Exception",
+        "body": "The edit mark is the one scoped exception to the reference-mark grammar: a letter, not a number, and it opens its passage in place instead of leading to a numbered note. A review holds thousands of passages, and numbered notes for every edit would bury the table's foot. Use it only for an edit to a passage; every sourced fact still takes a numbered mark and note.",
+        "section": "components"
+      }
     ],
     "dos": [
       "Do put every area in a numbered table: a monumental number in the 7.5rem margin column, a title, an edition line, a ruled grid, notes and one next-decision line.",
       "Do show a row's rank by weight and ink: bold for due, red and bold status for delayed, ink 2 for running, ink 3 for past.",
       "Do give every sourced fact a reference mark, and number the notes in reading order.",
       "Do keep lit states to a background wash (`reference-wash`), so rows and cells never reflow or change size.",
+      "Do open a focused passage in place on the stock band (`stock-band`), with its detail row closing on a heavy rule.",
+      "Do keep deliberate steps such as withdrawal inline and ruled under the head.",
+      "Do say why a disabled action waits, in a line linked to it.",
       "Do use tabular, lining figures, and end-align numbers and dates.",
       "Do let content keep its own direction: `dir=\"auto\"` on names, `lang=\"ar\" dir=\"rtl\"` on Arabic secondary lines, set in Noto Sans Arabic.",
       "Do keep targets at least 24px (text buttons 1.5rem, return links 1.5rem) and show the 2px blue focus outline on everything focusable.",
@@ -140,7 +467,9 @@
       "Don't warm the stock toward cream or paper.",
       "Don't add a second display typeface. Width and weight on Archivo carry the contrast.",
       "Don't add a dark theme without a new decision. Light only is the chosen office-daylight scene.",
-      "Don't scroll tables sideways. Drop columns by priority instead."
+      "Don't scroll tables sideways. Drop columns by priority instead.",
+      "Don't open a modal or a card to edit or withdraw. Rows open in place; steps open inline.",
+      "Don't extend the letter edit mark beyond edited passages. Sourced facts keep numbered marks and notes."
     ]
   }
 }
