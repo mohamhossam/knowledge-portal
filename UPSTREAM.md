@@ -9,7 +9,7 @@ This repository is imported fresh, with no history, from
 | Field | Value |
 |---|---|
 | Original commit | `d5cfb57` |
-| Imported | 2026-10-02 (scaffolding). The library and catalogue code arrives in Stage 3 |
+| Imported | 2026-10-02. The library and catalogue code was copied from requirement-portal `539e174`, which is `d5cfb57` after requirement-portal's Stage 2 untangling |
 
 ## How to port a fix
 
