@@ -8,7 +8,10 @@ from pydantic import TypeAdapter, ValidationError
 from smb_kernel.persistence.connector import DbConnection, PostgresConnector
 
 from knowledge_portal.application.errors import PersistenceError
-from knowledge_portal.application.ports.knowledge_events import ARCHITECTURE_RELEASE_ACTIVATED
+from knowledge_portal.application.ports.knowledge_events import (
+    ARCHITECTURE_RELEASE_ACTIVATED,
+    activation,
+)
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
     KnowledgeAuditEvent,
@@ -39,7 +42,7 @@ class PostgresArchitectureKnowledgeRepository:
                         "VALUES (%s, %s, %s, true) ON CONFLICT DO NOTHING",
                         (seed.id, seed.revision, Jsonb(_ADAPTER.dump_python(seed, mode="json"))),
                     )
-                    _activated(connection, seed.id)
+                    _activated(connection, seed)
         except psycopg.Error as exc:
             raise PersistenceError("Architecture knowledge initialization failed.") from exc
 
@@ -180,8 +183,8 @@ class PostgresArchitectureKnowledgeRepository:
                     "SET active = true WHERE release_id = %s",
                     (release_id,),
                 )
-                _activated(connection, release_id)
                 release = self._release(row[0])
+                _activated(connection, release)
                 connection.execute(
                     "INSERT INTO architecture_knowledge_audit "
                     "(release_id, actor_id, action, revision, rationale) "
@@ -214,7 +217,7 @@ class PostgresArchitectureKnowledgeRepository:
                     "SET active = true WHERE release_id = %s",
                     (release.id,),
                 )
-                _activated(connection, release.id)
+                _activated(connection, release)
                 connection.execute(
                     "UPDATE architecture_knowledge_documents SET published = true "
                     "WHERE version_id = ANY(%s)",
@@ -260,6 +263,9 @@ class PostgresArchitectureKnowledgeRepository:
             raise PersistenceError("Architecture knowledge write failed.") from exc
 
 
-def _activated(connection: DbConnection, release_id: str) -> None:
-    """Report the new active release, in the transaction that makes it active (ADR-0099)."""
-    append_event(connection, ARCHITECTURE_RELEASE_ACTIVATED, release_id, {"release_id": release_id})
+def _activated(connection: DbConnection, release: ArchitectureKnowledge) -> None:
+    """Report the new active release, in the transaction that makes it active (ADR-0099).
+
+    The name travels with the id, so requirement work can label the version in use.
+    """
+    append_event(connection, ARCHITECTURE_RELEASE_ACTIVATED, release.id, activation(release))
