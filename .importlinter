@@ -1,0 +1,75 @@
+[importlinter]
+# platform-kernel is a root too, so contracts can name its adapter subpackages.
+root_packages =
+    knowledge_portal
+    smb_kernel
+include_external_packages = True
+
+[importlinter:contract:domain_independence]
+name = Domain must not depend on outer layers
+type = forbidden
+source_modules =
+    knowledge_portal.domain
+forbidden_modules =
+    knowledge_portal.application
+    knowledge_portal.infrastructure
+
+[importlinter:contract:application_independence]
+name = Application must not depend on infrastructure
+type = forbidden
+source_modules =
+    knowledge_portal.application
+forbidden_modules =
+    knowledge_portal.infrastructure
+
+[importlinter:contract:domain_framework_independence]
+name = Domain must not import frameworks or provider SDKs
+type = forbidden
+source_modules =
+    knowledge_portal.domain
+forbidden_modules =
+    fastapi
+    pydantic
+    psycopg
+    openai
+    httpx
+    sqlalchemy
+
+[importlinter:contract:application_framework_independence]
+name = Application must not import delivery, persistence, or provider SDKs
+type = forbidden
+source_modules =
+    knowledge_portal.application
+forbidden_modules =
+    fastapi
+    psycopg
+    openai
+    sqlalchemy
+    httpx
+
+[importlinter:contract:kernel_contracts_only_inward]
+name = Domain and application use only platform-kernel's pure contract modules (ADR-0100)
+type = forbidden
+source_modules =
+    knowledge_portal.domain
+    knowledge_portal.application
+forbidden_modules =
+    smb_kernel.identity.oidc
+    smb_kernel.identity.fake
+    smb_kernel.documents.bounded_extractor
+    smb_kernel.documents.extraction_base
+    smb_kernel.documents.local_ocr
+    smb_kernel.documents.office_preview
+    smb_kernel.documents.pdf_image_extraction
+    smb_kernel.documents.plain_text_extraction
+    smb_kernel.documents.presentation_extraction
+    smb_kernel.documents.process_resources
+    smb_kernel.documents.scanner
+    smb_kernel.documents.spreadsheet_extraction
+    smb_kernel.documents.text_extractor
+    smb_kernel.documents.word_extraction
+    smb_kernel.llm
+    smb_kernel.persistence
+    smb_kernel.observability
+    smb_kernel.http
+    smb_kernel.diagnostics

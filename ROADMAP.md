@@ -5,10 +5,26 @@
 | Scope | Status | Remaining |
 |---|---|---|
 | Stage 0: repository scaffolding (`AGENTS.md`, `CLAUDE.md`, `ROADMAP.md`, `UPSTREAM.md`) | In progress | CI and branch protection once the GitHub repository exists |
-| Stage 3: the service | Scheduled after requirement-portal's untangling (its Stage 2) | Everything below |
+| Stage 3: the service | In progress. 3.1 (backend core) done | 3.2 settings, composition and API; 3.3 baseline migrations and PostgreSQL tests; 3.4 data import, images and CI; then the UI |
 | Knowledge Center sub-slices B–E (from requirement-portal's `docs/slices/enhancement-knowledge-center.md`) | Specified; not scheduled | Sequencing after Stage 3 |
 
 ## Stage 3 — The service
+
+### Steps
+1. **Backend core (done).** The library, catalogue and organisation code is copied from
+   requirement-portal `539e174` by import closure, renamed to `knowledge_portal`, and cut loose
+   from requirement code:
+   - kernel re-exports for actors and extraction output;
+   - `RequirementDependentsPort` with an HTTP adapter and a fake. The HTTP adapters for
+     dependents, actors and mapping statistics are tested against the pinned
+     `contracts/requirement-internal.openapi.json`;
+   - its own transaction manager, PostgreSQL store and `knowledge_document_blobs` storage, with
+     no requirement checkpoints or in-process relay;
+   - layer contracts in `.importlinter`; the unit tests that apply.
+2. Settings, composition, the FastAPI app (public routes behind `knowledge_admin`, the internal
+   API), the worker and error mapping. The route tests skipped in step 1 return here.
+3. Baseline migrations and the PostgreSQL integration tests.
+4. The data import command with `--verify`, Docker images and CI.
 
 The plan is requirement-portal's `docs/slices/enhancement-platform-split.md`, read against
 ADR-0099.
