@@ -90,6 +90,20 @@ class ManageArchitectureKnowledge:
             raise KnowledgeNotFoundError("Architecture evidence was not found.")
         return chunk
 
+    def published_evidence(self, release_id: str, chunk_id: str) -> EvidenceChunk:
+        """Evidence of a published release, for requirement work's read-only viewer.
+
+        Requirement work asks on behalf of any signed-in member (requirement-portal
+        ADR-0099), so a draft is never shown this way: it answers as if absent.
+        """
+        release = self._repository.get(release_id)
+        if release is None or release.status is not KnowledgeReleaseStatus.PUBLISHED:
+            raise KnowledgeNotFoundError("Architecture evidence was not found.")
+        chunk = self._index.get(release.index_id or release.id, chunk_id)
+        if chunk is None:
+            raise KnowledgeNotFoundError("Architecture evidence was not found.")
+        return chunk
+
     def preview(self, release_id: str, query: str, actor: Actor) -> tuple[EvidenceChunk, ...]:
         require_maintainer(actor)
         release = self.get(release_id)

@@ -59,6 +59,7 @@ from knowledge_portal.application.use_cases.architecture_preview import (
 from knowledge_portal.application.use_cases.catalogue_candidates import (
     DecideCatalogueCandidate,
 )
+from knowledge_portal.application.use_cases.cited_passages import CitedPassages
 from knowledge_portal.application.use_cases.document_library import DocumentLibrary
 from knowledge_portal.application.use_cases.identity_access import (
     ResolveCurrentActor,
@@ -135,6 +136,7 @@ class Container:
     document_library: DocumentLibrary
     library_governance: LibraryGovernance
     document_source_impact: DocumentSourceImpact
+    cited_passages: CitedPassages
     reference_knowledge: ReferenceKnowledge
     architecture_knowledge: ArchitectureKnowledgePort
     manage_architecture_knowledge: ManageArchitectureKnowledge
@@ -253,6 +255,7 @@ def _build_container(
             requirement_work.impact,
             persistence.transaction_manager,
         ),
+        cited_passages=CitedPassages(persistence.library_repository),
         reference_knowledge=reference_knowledge,
         architecture_knowledge=architecture.knowledge,
         manage_architecture_knowledge=architecture.manage,
