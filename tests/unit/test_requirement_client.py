@@ -15,10 +15,9 @@ from typing import Any
 
 import httpx
 import pytest
-from smb_kernel.errors import ServiceResponseError, ServiceUnavailableError
+from smb_kernel.errors import ServiceUnavailableError
 from smb_kernel.http.client import InternalHttpClient
 
-from knowledge_portal.application.ports.actor_directory import ActorLookupPort
 from knowledge_portal.application.ports.architecture_mapping_stats import (
     ArchitectureMappingStatsPort,
     MappingCount,
@@ -27,12 +26,10 @@ from knowledge_portal.application.ports.requirement_dependents import (
     ProposalStatus,
     RequirementDependentsPort,
 )
-from knowledge_portal.domain.identity.entities import ActorId, ActorProfile
+from knowledge_portal.domain.identity.entities import ActorId
 from knowledge_portal.infrastructure.requirement_client import (
-    FakeActorLookup,
     FakeArchitectureMappingStats,
     FakeRequirementDependents,
-    HttpActorLookup,
     HttpArchitectureMappingStats,
     HttpRequirementDependents,
 )
@@ -139,23 +136,6 @@ def test_dependents_are_read_for_proposals_and_decoded() -> None:
     assert item.citation.publication_id == "pub-1"
 
 
-def test_an_unknown_actor_is_none_and_a_known_one_keeps_its_roles() -> None:
-    seen: list[httpx.Request] = []
-    missing = HttpActorLookup(_client(_answering({"detail": "Actor not found."}, 404), seen))
-    assert missing.get(ActorId("nobody")) is None
-    body = {"id": "fake-owner", "display_name": "Amina", "email": None, "roles": ["r"]}
-    actor = HttpActorLookup(_client(_answering(body), seen)).get(ActorId("fake-owner"))
-    assert actor == ActorProfile(ActorId("fake-owner"), "Amina", None, frozenset({"r"}))
-    for request in seen:
-        _assert_in_contract(request)
-
-
-def test_any_other_refusal_is_not_mistaken_for_an_unknown_actor() -> None:
-    with pytest.raises(ServiceResponseError) as refused:
-        HttpActorLookup(_client(_answering({"detail": "no"}, 401))).get(ActorId("a"))
-    assert refused.value.status_code == 401
-
-
 def test_mapping_counts_are_decoded() -> None:
     seen: list[httpx.Request] = []
     body = [{"release_id": "r1", "requirements": 2, "features": 3, "stories": 4}]
@@ -168,7 +148,6 @@ def test_mapping_counts_are_decoded() -> None:
     "call",
     [
         lambda c: HttpRequirementDependents(c).proposals(ActorId("a"), "d", 0, 10),
-        lambda c: HttpActorLookup(c).get(ActorId("a")),
         lambda c: HttpArchitectureMappingStats(c).by_release(),
     ],
 )
@@ -180,7 +159,6 @@ def test_mapping_counts_are_decoded() -> None:
         {"items": [{**DEPENDENT, "status": "unknown"}], "next_offset": None},
         {"items": [{**DEPENDENT, "lineage": {"citation": {**CITATION, "excerpt": " "}}}]},
         {"items": [], "next_offset": "later"},
-        {"id": "a", "display_name": "A", "email": None, "roles": "admin"},
     ],
 )
 def test_an_unusable_answer_is_an_explicit_failure(call: Any, body: Any) -> None:
@@ -189,12 +167,8 @@ def test_an_unusable_answer_is_an_explicit_failure(call: Any, body: Any) -> None
 
 
 def test_the_fakes_stand_in_for_each_port_deterministically() -> None:
-    known = ActorProfile(ActorId("fake-owner"), "Amina")
     dependents: RequirementDependentsPort = FakeRequirementDependents()
-    actors: ActorLookupPort = FakeActorLookup((known,))
     stats: ArchitectureMappingStatsPort = FakeArchitectureMappingStats()
     page = dependents.proposals(ActorId("a"), "d", 0, 10)
     assert (page.items, page.next_offset) == ((), None)
-    assert actors.get(ActorId("fake-owner")) == known
-    assert actors.get(ActorId("nobody")) is None
     assert stats.by_release() == ()

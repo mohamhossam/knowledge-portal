@@ -13,7 +13,7 @@ from typing import Any
 from urllib.parse import quote
 
 from pydantic import TypeAdapter
-from smb_kernel.errors import ServiceResponseError, ServiceUnavailableError
+from smb_kernel.errors import ServiceUnavailableError
 from smb_kernel.http.client import InternalHttpClient
 
 from knowledge_portal.application.ports.architecture_mapping_stats import MappingCount
@@ -23,7 +23,7 @@ from knowledge_portal.application.ports.requirement_dependents import (
     RequirementDependentsPage,
 )
 from knowledge_portal.domain.document.reference import PublishedReference
-from knowledge_portal.domain.identity.entities import ActorId, ActorProfile
+from knowledge_portal.domain.identity.entities import ActorId
 
 _CITATION = TypeAdapter(PublishedReference)
 _COUNTS = TypeAdapter(tuple[MappingCount, ...])
@@ -109,31 +109,6 @@ def _flag(value: object) -> bool:
     return value
 
 
-class HttpActorLookup:
-    def __init__(self, client: InternalHttpClient) -> None:
-        self._client = client
-
-    def get(self, actor_id: ActorId) -> ActorProfile | None:
-        try:
-            body = self._client.get_json(f"/internal/actors/{_segment(actor_id.value)}")
-        except ServiceResponseError as refused:
-            if refused.status_code == 404:
-                return None
-            raise
-        try:
-            roles = body["roles"]
-            if not isinstance(roles, list):
-                raise TypeError("expected a list of roles")
-            return ActorProfile(
-                ActorId(_text(body["id"])),
-                _text(body["display_name"]),
-                _optional_text(body["email"]),
-                frozenset(_text(role) for role in roles),
-            )
-        except (KeyError, TypeError, ValueError) as exc:
-            raise ServiceUnavailableError("Requirement work returned an unusable actor.") from exc
-
-
 class HttpArchitectureMappingStats:
     def __init__(self, client: InternalHttpClient) -> None:
         self._client = client
@@ -150,16 +125,6 @@ class FakeRequirementDependents:
         self, actor_id: ActorId, document_id: str, offset: int, limit: int
     ) -> RequirementDependentsPage:
         return RequirementDependentsPage((), None)
-
-
-class FakeActorLookup:
-    """Knows a fixed set of actors, so ownership handover works offline."""
-
-    def __init__(self, actors: tuple[ActorProfile, ...] = ()) -> None:
-        self._actors = {actor.id: actor for actor in actors}
-
-    def get(self, actor_id: ActorId) -> ActorProfile | None:
-        return self._actors.get(actor_id)
 
 
 class FakeArchitectureMappingStats:
