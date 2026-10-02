@@ -1,0 +1,343 @@
+/* The masthead: one strip, like the running head of a timetable page. */
+.masthead {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2) var(--s5);
+  padding: var(--s2) var(--gutter);
+  border-bottom: 2px solid var(--rule-heavy);
+  background: var(--stock);
+}
+
+.masthead__title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  margin-right: auto;
+  font-stretch: var(--width-condensed);
+}
+
+.masthead__title a {
+  color: var(--ink-2);
+  text-decoration-color: var(--rule);
+}
+
+.masthead__title .masthead__portal {
+  color: var(--ink);
+  font-size: var(--t-lead);
+  font-weight: var(--w-bold);
+  text-decoration: none;
+}
+
+.masthead__dot {
+  color: var(--ink-3);
+}
+
+.masthead__valid {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+.masthead__valid time {
+  color: var(--ink);
+  font-weight: var(--w-medium);
+}
+
+.masthead__account {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  font-size: var(--t-meta);
+}
+
+.masthead__name {
+  font-weight: var(--w-medium);
+}
+
+.persona {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.persona__label {
+  color: var(--ink-2);
+}
+
+.persona select {
+  min-height: 1.75rem;
+  padding: 0 1.75rem 0 var(--s2);
+  border: 1px solid var(--ink-3);
+  border-radius: 2px;
+  appearance: none;
+  background: var(--stock)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2316181d' stroke-width='1.5'/%3E%3C/svg%3E")
+    no-repeat right 0.6rem center;
+  font-size: var(--t-meta);
+  cursor: pointer;
+}
+
+.persona select:hover {
+  border-color: var(--ink);
+}
+
+/* A control that reads as a word in the line, still a full target. */
+.text-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  min-height: 1.5rem;
+  padding: 0 var(--s1);
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-size: var(--t-meta);
+  font-weight: var(--w-medium);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.text-button:hover {
+  text-decoration-thickness: 2px;
+}
+
+.text-button:disabled {
+  color: var(--ink-3);
+  cursor: progress;
+  text-decoration: none;
+}
+
+.spin {
+  animation: spin 900ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+/* The index of tables: number, title, and how much each table holds. */
+.index {
+  padding: 0 var(--gutter);
+  border-bottom: 1px solid var(--rule);
+}
+
+.index__list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  max-width: calc(var(--page-max) - 2 * var(--gutter));
+  margin-inline: auto;
+}
+
+.index__entry {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: var(--s3);
+  padding: var(--s3) var(--s4) var(--s3) 0;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.index__entry:hover .index__title {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.index__entry[aria-current="page"] {
+  box-shadow: inset 0 -3px 0 var(--ink);
+}
+
+.index__number {
+  grid-row: 1 / span 2;
+  font-size: 2.25rem;
+  font-stretch: var(--width-monument);
+  font-weight: var(--w-heavy);
+  line-height: 0.85;
+}
+
+.index__title {
+  font-weight: var(--w-bold);
+  font-stretch: 88%;
+}
+
+.index__extent {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+/* A fixed track, so each rule's length is its table's share of the largest. */
+.index__track {
+  display: block;
+  inline-size: 7rem;
+  flex: none;
+}
+
+.index__rule {
+  display: block;
+  block-size: 3px;
+  background: var(--ink);
+  transition: inline-size 400ms var(--ease-out);
+}
+
+.index__count {
+  white-space: nowrap;
+}
+
+/* The page the tables sit on. */
+.page {
+  max-width: var(--page-max);
+  margin-inline: auto;
+  padding: 0 var(--gutter) var(--s8);
+}
+
+.page:focus {
+  outline: none;
+}
+
+.page__preparing {
+  max-width: 64ch;
+  margin-left: calc(var(--margin-column) + var(--s5));
+  padding-top: var(--s4);
+  border-top: 1px solid var(--rule);
+  color: var(--ink-2);
+}
+
+.name-ar {
+  display: block;
+  font-size: var(--t-meta);
+}
+
+/* Notices: sign-in, no access, still opening. */
+.notice {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: var(--s8) var(--gutter);
+}
+
+.notice__portal {
+  display: flex;
+  gap: var(--s2);
+  padding-bottom: var(--s3);
+  border-bottom: 2px solid var(--rule-heavy);
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+  font-stretch: var(--width-condensed);
+}
+
+.notice__title {
+  margin-top: var(--s6);
+  font-size: var(--t-title);
+  font-stretch: 88%;
+  font-weight: var(--w-bold);
+  line-height: 1.15;
+}
+
+.notice__body {
+  display: grid;
+  gap: var(--s4);
+  margin-top: var(--s4);
+  max-width: 62ch;
+}
+
+.notice__body code {
+  font-family: inherit;
+  font-weight: var(--w-bold);
+}
+
+.notice__error {
+  color: var(--disruption);
+  font-weight: var(--w-medium);
+}
+
+.notice__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s4);
+  margin-top: var(--s2);
+}
+
+.notice__primary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 2.5rem;
+  padding: 0 var(--s4);
+  border: 2px solid var(--ink);
+  border-radius: 2px;
+  background: var(--ink);
+  color: var(--stock);
+  font-weight: var(--w-bold);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.notice__primary:hover {
+  background: var(--stock);
+  color: var(--ink);
+}
+
+.missing {
+  max-width: 62ch;
+  padding-block: var(--s7);
+  margin-left: calc(var(--margin-column) + var(--s5));
+}
+
+.missing__title {
+  margin-bottom: var(--s4);
+  font-size: var(--t-title);
+  font-stretch: 88%;
+}
+
+.missing p + p {
+  margin-top: var(--s3);
+}
+
+.timetable__quiet--failed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s3);
+}
+
+.timetable__quiet--failed .status {
+  color: var(--disruption);
+  font-weight: var(--w-medium);
+}
+
+@media (max-width: 45rem) {
+  .masthead {
+    position: static;
+  }
+
+  .index__list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .index__entry {
+    padding-block: var(--s2);
+    border-bottom: 1px solid var(--rule-faint);
+  }
+
+  .index__number {
+    font-size: 1.75rem;
+  }
+
+  .page__preparing,
+  .missing {
+    margin-left: 0;
+  }
+}

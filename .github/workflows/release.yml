@@ -42,9 +42,15 @@ jobs:
             -f deploy/api/Dockerfile -t "$image" .
           docker push "$image"
 
+      - name: Build and push the web image
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER}/knowledge-web:${GITHUB_REF_NAME}"
+          DOCKER_BUILDKIT=1 docker build -f deploy/web/Dockerfile -t "$image" .
+          docker push "$image"
+
       - name: Publish the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" \
-            --notes "Image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/knowledge-api:${GITHUB_REF_NAME}"
+            --notes "Images: ghcr.io/${GITHUB_REPOSITORY_OWNER}/knowledge-api:${GITHUB_REF_NAME} and ghcr.io/${GITHUB_REPOSITORY_OWNER}/knowledge-web:${GITHUB_REF_NAME}"

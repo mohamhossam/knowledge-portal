@@ -75,6 +75,61 @@ jobs:
       - name: lint-imports
         run: lint-imports
 
+  frontend:
+    # The browser app: lint, types, unit tests, the API types against the
+    # published contract, and a production build.
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - name: API types match the published contract
+        run: npm run api:check
+      - run: npm run build
+      - name: npm dependency audit
+        run: npm audit --omit=dev --audit-level=high
+
+  web-image:
+    # Builds the knowledge-web image, scans it, and checks it serves /knowledge/.
+    runs-on: ubuntu-latest
+    env:
+      IMAGE: knowledge-portal/web:ci
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build the image
+        run: DOCKER_BUILDKIT=1 docker build -f deploy/web/Dockerfile -t "$IMAGE" .
+
+      - name: Scan the image for fixable HIGH and CRITICAL vulnerabilities
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969 \
+            image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed \
+            --exit-code 1 "$IMAGE"
+
+      - name: Serves the app under /knowledge/ on a read-only root
+        run: |
+          docker run -d --name web --read-only -p 8080:8080             --tmpfs /tmp:uid=101,gid=101 --tmpfs /etc/nginx/conf.d:uid=101,gid=101             -e CSP_IDENTITY_ORIGINS=https://login.example.test "$IMAGE"
+          for attempt in $(seq 1 20); do curl -fsS http://127.0.0.1:8080/health && break; sleep 1; done
+          curl -fsS http://127.0.0.1:8080/knowledge/ | grep -q '<title>Knowledge portal</title>'
+          curl -fsS http://127.0.0.1:8080/knowledge/library | grep -q 'http-equiv="Content-Security-Policy"'
+          # The deployment's issuer reaches the policy; the placeholder never ships.
+          curl -fsS http://127.0.0.1:8080/knowledge/ | grep -q 'connect-src .self. https://login.example.test'
+          ! curl -fsS http://127.0.0.1:8080/knowledge/library | grep -q '__CSP_IDENTITY_ORIGINS__'
+          curl -fsSI http://127.0.0.1:8080/knowledge/ | grep -i "frame-ancestors 'none'"
+          asset=$(curl -fsS http://127.0.0.1:8080/knowledge/ | grep -o '/knowledge/assets/[^"]*\.js' | head -1)
+          curl -fsSI "http://127.0.0.1:8080$asset" | grep -i "immutable"
+
   supply-chain:
     # Known-vulnerable dependencies fail the build. The audit covers what the
     # image ships (no dev tools), and the optional OCR stack an operator may add.
