@@ -22,11 +22,13 @@ from knowledge_portal.application.ports.requirement_dependents import (
     RequirementDependent,
     RequirementDependentsPage,
 )
+from knowledge_portal.application.ports.source_impact import DependencyImpactPage
 from knowledge_portal.domain.document.reference import PublishedReference
 from knowledge_portal.domain.identity.entities import ActorId
 
 _CITATION = TypeAdapter(PublishedReference)
 _COUNTS = TypeAdapter(tuple[MappingCount, ...])
+_IMPACT = TypeAdapter(DependencyImpactPage)
 
 
 def _decode[T](adapter: TypeAdapter[T], body: Any, what: str) -> T:
@@ -109,6 +111,33 @@ def _flag(value: object) -> bool:
     return value
 
 
+class HttpRequirementImpact:
+    def __init__(self, client: InternalHttpClient) -> None:
+        self._client = client
+
+    def document_impact(
+        self,
+        actor_id: ActorId,
+        document_id: str,
+        *,
+        active_only: bool,
+        query: str,
+        offset: int,
+        limit: int,
+    ) -> DependencyImpactPage:
+        body = self._client.get_json(
+            f"/internal/references/{_segment(document_id)}/impact",
+            {
+                "actor_id": actor_id.value,
+                "active_only": "true" if active_only else "false",
+                "query": query,
+                "offset": offset,
+                "limit": limit,
+            },
+        )
+        return _decode(_IMPACT, body, "source impact")
+
+
 class HttpArchitectureMappingStats:
     def __init__(self, client: InternalHttpClient) -> None:
         self._client = client
@@ -132,3 +161,19 @@ class FakeArchitectureMappingStats:
 
     def by_release(self) -> tuple[MappingCount, ...]:
         return ()
+
+
+class FakeRequirementImpact:
+    """No requirement cites anything: offline, no change needs review."""
+
+    def document_impact(
+        self,
+        actor_id: ActorId,
+        document_id: str,
+        *,
+        active_only: bool,
+        query: str,
+        offset: int,
+        limit: int,
+    ) -> DependencyImpactPage:
+        return DependencyImpactPage((), None)

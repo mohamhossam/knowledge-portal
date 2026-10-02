@@ -5,7 +5,7 @@
 | Scope | Status | Remaining |
 |---|---|---|
 | Stage 0: repository scaffolding (`AGENTS.md`, `CLAUDE.md`, `ROADMAP.md`, `UPSTREAM.md`) | Done; CI arrived with 3.4 | Branch protection on `main`, and the `KERNEL_READ_TOKEN` secret |
-| Stage 3: the service | Backend done (3.1 to 3.4) | The owner's source-impact view; then the UI |
+| Stage 3: the service | Backend done (3.1 to 3.4, and the owner's source-impact view) | The UI |
 | Knowledge Center sub-slices B–E (from requirement-portal's `docs/slices/enhancement-knowledge-center.md`) | Specified; not scheduled | Sequencing after Stage 3 |
 
 ## Stage 3 — The service
@@ -31,9 +31,10 @@
    - requirement work is reached through `REQUIREMENT_API_BASE_URL` and
      `KNOWLEDGE_SERVICE_TOKEN`, or offline fakes when unset;
    - the public contract is `contracts/knowledge-public.openapi.json`.
-   - Still to come: the document owner's source-impact view
-     (`/library/documents/{id}/source-impact`), read over requirement-portal's
-     `/internal/references/{id}/impact`.
+   - The document owner's source-impact view, `/library/documents/{id}/source-impact`.
+     It checks ownership on the live library, then reads requirement-portal's
+     `/internal/references/{id}/impact`. It is read-only: requirement members record the
+     retain-or-revise decisions in requirement-portal.
 3. **Schema (done).** One baseline migration, `202610021500_knowledge_baseline.sql`: the 19
    knowledge-owned tables exactly as requirement-portal's migrations leave them at
    `202610021400` (a pg_dump of each matches), with no foreign key leaving them. The

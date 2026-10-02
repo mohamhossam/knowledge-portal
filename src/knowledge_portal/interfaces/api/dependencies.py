@@ -46,6 +46,7 @@ from knowledge_portal.application.use_cases.organisation_catalogue import (
     ManageOrganisationCatalogue,
 )
 from knowledge_portal.application.use_cases.reference_knowledge import ReferenceKnowledge
+from knowledge_portal.application.use_cases.source_impact import DocumentSourceImpact
 from knowledge_portal.domain.identity.entities import ActorProfile
 from knowledge_portal.infrastructure.config.options import IdentityProvider
 from knowledge_portal.interfaces.api.container import Container
@@ -146,6 +147,10 @@ def get_library_governance(container: ContainerDep) -> LibraryGovernance:
 
 def get_reference_knowledge(container: ContainerDep) -> ReferenceKnowledge:
     return container.reference_knowledge
+
+
+def get_document_source_impact(container: ContainerDep) -> DocumentSourceImpact:
+    return container.document_source_impact
 
 
 def get_manage_architecture_knowledge(container: ContainerDep) -> ManageArchitectureKnowledge:

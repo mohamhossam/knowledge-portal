@@ -36,6 +36,7 @@ from knowledge_portal.application.ports.architecture_mapping_stats import (
 )
 from knowledge_portal.application.ports.knowledge_events import KnowledgeEventOutboxPort
 from knowledge_portal.application.ports.requirement_dependents import RequirementDependentsPort
+from knowledge_portal.application.ports.source_impact import RequirementImpactPort
 from knowledge_portal.application.ports.transaction_manager import TransactionManagerPort
 from knowledge_portal.application.use_cases.architecture_comparison import (
     CompareArchitectureImpact,
@@ -72,6 +73,7 @@ from knowledge_portal.application.use_cases.reference_knowledge import (
     ReferenceKnowledge,
     StructureAwareChunks,
 )
+from knowledge_portal.application.use_cases.source_impact import DocumentSourceImpact
 from knowledge_portal.domain.identity.entities import ActorProfile
 from knowledge_portal.infrastructure.config.options import IdentityProvider
 from knowledge_portal.infrastructure.config.settings import Settings
@@ -81,8 +83,10 @@ from knowledge_portal.infrastructure.persistence.reference_index import Utf8Budg
 from knowledge_portal.infrastructure.requirement_client import (
     FakeArchitectureMappingStats,
     FakeRequirementDependents,
+    FakeRequirementImpact,
     HttpArchitectureMappingStats,
     HttpRequirementDependents,
+    HttpRequirementImpact,
 )
 from knowledge_portal.interfaces.api.composition.architecture import (
     build_architecture,
@@ -130,6 +134,7 @@ class Container:
     knowledge_events: KnowledgeEventOutboxPort
     document_library: DocumentLibrary
     library_governance: LibraryGovernance
+    document_source_impact: DocumentSourceImpact
     reference_knowledge: ReferenceKnowledge
     architecture_knowledge: ArchitectureKnowledgePort
     manage_architecture_knowledge: ManageArchitectureKnowledge
@@ -151,6 +156,7 @@ class RequirementWork:
 
     dependents: RequirementDependentsPort
     mapping_stats: ArchitectureMappingStatsPort
+    impact: RequirementImpactPort
 
 
 def build_container(
@@ -242,6 +248,11 @@ def _build_container(
             clock,
             requirement_work.dependents,
         ),
+        document_source_impact=DocumentSourceImpact(
+            persistence.library_repository,
+            requirement_work.impact,
+            persistence.transaction_manager,
+        ),
         reference_knowledge=reference_knowledge,
         architecture_knowledge=architecture.knowledge,
         manage_architecture_knowledge=architecture.manage,
@@ -269,7 +280,9 @@ def _requirement_work(
 ) -> RequirementWork:
     """Requirement work's internal API when configured; otherwise deterministic fakes."""
     if settings.requirement_api_base_url is None or settings.knowledge_service_token is None:
-        return RequirementWork(FakeRequirementDependents(), FakeArchitectureMappingStats())
+        return RequirementWork(
+            FakeRequirementDependents(), FakeArchitectureMappingStats(), FakeRequirementImpact()
+        )
     http = resources.enter_context(
         httpx.Client(transport=MeteredTransport(metrics, "requirements", httpx.HTTPTransport()))
     )
@@ -279,7 +292,11 @@ def _requirement_work(
         service="requirements",
         http=http,
     )
-    return RequirementWork(HttpRequirementDependents(client), HttpArchitectureMappingStats(client))
+    return RequirementWork(
+        HttpRequirementDependents(client),
+        HttpArchitectureMappingStats(client),
+        HttpRequirementImpact(client),
+    )
 
 
 def _library_extractor(settings: Settings) -> BoundedSubprocessDocumentExtractor:

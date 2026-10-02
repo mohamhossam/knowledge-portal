@@ -1140,6 +1140,91 @@
         "title": "ChangedItem",
         "type": "string"
       },
+      "CitingDependency": {
+        "description": "One requirement statement that cites a passage of the document.",
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "analysis_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analysis Id"
+          },
+          "content_fingerprint": {
+            "title": "Content Fingerprint",
+            "type": "string"
+          },
+          "current": {
+            "default": true,
+            "title": "Current",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "lineage": {
+            "$ref": "#/components/schemas/SourceLineage"
+          },
+          "requirement_id": {
+            "title": "Requirement Id",
+            "type": "string"
+          },
+          "requirement_title": {
+            "title": "Requirement Title",
+            "type": "string"
+          },
+          "round_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Round Number"
+          },
+          "statement": {
+            "title": "Statement",
+            "type": "string"
+          },
+          "status": {
+            "default": "recorded",
+            "title": "Status",
+            "type": "string"
+          },
+          "target_id": {
+            "title": "Target Id",
+            "type": "string"
+          },
+          "target_kind": {
+            "title": "Target Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "requirement_id",
+          "requirement_title",
+          "target_kind",
+          "target_id",
+          "statement",
+          "content_fingerprint",
+          "lineage",
+          "active"
+        ],
+        "title": "CitingDependency",
+        "type": "object"
+      },
       "ComparedImpactResponse": {
         "properties": {
           "release_id": {
@@ -1346,6 +1431,69 @@
           "name"
         ],
         "title": "CreateVersionRequest",
+        "type": "object"
+      },
+      "DependencyImpact": {
+        "properties": {
+          "decisions": {
+            "items": {
+              "$ref": "#/components/schemas/ImpactDecision"
+            },
+            "title": "Decisions",
+            "type": "array"
+          },
+          "dependency": {
+            "$ref": "#/components/schemas/CitingDependency"
+          },
+          "needs_review": {
+            "title": "Needs Review",
+            "type": "boolean"
+          },
+          "publication_current": {
+            "title": "Publication Current",
+            "type": "boolean"
+          },
+          "publication_state": {
+            "title": "Publication State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "dependency",
+          "publication_current",
+          "publication_state",
+          "needs_review",
+          "decisions"
+        ],
+        "title": "DependencyImpact",
+        "type": "object"
+      },
+      "DependencyImpactPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DependencyImpact"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          }
+        },
+        "required": [
+          "items",
+          "next_offset"
+        ],
+        "title": "DependencyImpactPage",
         "type": "object"
       },
       "DocumentAsset": {
@@ -1989,6 +2137,57 @@
         ],
         "title": "ImpactComparisonResponse",
         "type": "object"
+      },
+      "ImpactDecision": {
+        "properties": {
+          "actor": {
+            "$ref": "#/components/schemas/ActorSnapshot"
+          },
+          "decision": {
+            "$ref": "#/components/schemas/ImpactDecisionKind"
+          },
+          "dependency_id": {
+            "title": "Dependency Id",
+            "type": "string"
+          },
+          "publication_state": {
+            "title": "Publication State",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "recorded_at": {
+            "format": "date-time",
+            "title": "Recorded At",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "dependency_id",
+          "publication_state",
+          "decision",
+          "reason",
+          "actor",
+          "recorded_at",
+          "version"
+        ],
+        "title": "ImpactDecision",
+        "type": "object"
+      },
+      "ImpactDecisionKind": {
+        "description": "What a requirement member decided about a citation whose source changed.",
+        "enum": [
+          "retain_historical",
+          "revise_content"
+        ],
+        "title": "ImpactDecisionKind",
+        "type": "string"
       },
       "IngestionStage": {
         "enum": [
@@ -4473,6 +4672,26 @@
         ],
         "title": "SourceConfidence",
         "type": "string"
+      },
+      "SourceLineage": {
+        "properties": {
+          "citation": {
+            "$ref": "#/components/schemas/PublishedReference"
+          },
+          "via": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Via",
+            "type": "array"
+          }
+        },
+        "required": [
+          "citation"
+        ],
+        "title": "SourceLineage",
+        "type": "object"
       },
       "SquadRequest": {
         "properties": {
@@ -8821,6 +9040,114 @@
           }
         ],
         "summary": "Ownership History",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/library/documents/{document_id}/source-impact": {
+      "get": {
+        "description": "Where the owner's document is cited, and which citations need review.",
+        "operationId": "document_source_impact_library_documents__document_id__source_impact_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "active_only",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Active Only",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 200,
+              "title": "Query",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DependencyImpactPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Document Source Impact",
         "tags": [
           "library"
         ]
