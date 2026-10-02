@@ -13,8 +13,34 @@ It is one of three repositories:
 - [`platform-kernel`](https://github.com/mohamhossam/platform-kernel), which holds the shared
   mechanisms.
 
-> **Status: scaffolding (Stage 0).** The service, its UI and the data import arrive in Stage 3 of
-> requirement-portal's `docs/slices/enhancement-platform-split.md`.
+> **Status: backend in progress (Stage 3).** The API and worker run offline today; PostgreSQL
+> migrations, the data import and the UI follow. See `ROADMAP.md`.
+
+## Run it offline
+
+```bash
+uv sync
+cp .env.example .env
+uv run python -m knowledge_portal.interfaces.api.serve
+```
+
+With the defaults it uses in-memory storage, fake models and fake sign-in. `fake-owner` and
+`fake-reviewer` are knowledge admins; `fake-observer` is not, so the portal refuses it. Without
+`REQUIREMENT_API_BASE_URL`, offline stand-ins answer for requirement work: no requirement cites
+anything and nothing is mapped.
+
+## Checks
+
+```bash
+uv run ruff check . && uv run ruff format --check . && uv run mypy src tests
+uv run lint-imports
+uv run pytest --cov=knowledge_portal
+```
+
+The public API's contract is `contracts/knowledge-public.openapi.json`; regenerate it with
+`uv run python scripts/dump_openapi.py`. The internal API's contract,
+`contracts/knowledge-internal.openapi.json`, is shared with requirement-portal and changes only
+together with it.
 
 ## Who uses it
 

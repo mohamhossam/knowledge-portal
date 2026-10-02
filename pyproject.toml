@@ -67,5 +67,7 @@ mypy_path = "src"
 source = ["knowledge_portal"]
 
 [tool.coverage.report]
-# Set once the moved tests are in place (Stage 3); requirement-portal holds 92.5%.
+# Raised as the PostgreSQL adapters gain integration tests (Stage 3.3);
+# requirement-portal holds 92.5%.
+fail_under = 85
 skip_covered = true

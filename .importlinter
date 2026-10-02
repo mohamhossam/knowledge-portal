@@ -13,14 +13,16 @@ source_modules =
 forbidden_modules =
     knowledge_portal.application
     knowledge_portal.infrastructure
+    knowledge_portal.interfaces
 
 [importlinter:contract:application_independence]
-name = Application must not depend on infrastructure
+name = Application must not depend on infrastructure or interfaces
 type = forbidden
 source_modules =
     knowledge_portal.application
 forbidden_modules =
     knowledge_portal.infrastructure
+    knowledge_portal.interfaces
 
 [importlinter:contract:domain_framework_independence]
 name = Domain must not import frameworks or provider SDKs
@@ -73,3 +75,50 @@ forbidden_modules =
     smb_kernel.observability
     smb_kernel.http
     smb_kernel.diagnostics
+
+[importlinter:contract:routes_no_adapter_selection]
+name = Routes cannot select concrete infrastructure adapters
+type = forbidden
+source_modules =
+    knowledge_portal.interfaces.api.routes
+forbidden_modules =
+    knowledge_portal.infrastructure
+allow_indirect_imports = True
+
+[importlinter:contract:dependencies_no_adapter_selection]
+name = Dependency providers obtain adapters from the composition root
+type = forbidden
+source_modules =
+    knowledge_portal.interfaces.api.dependencies
+forbidden_modules =
+    knowledge_portal.infrastructure.persistence
+    knowledge_portal.infrastructure.llm
+    knowledge_portal.infrastructure.identity
+    knowledge_portal.infrastructure.documents
+    knowledge_portal.infrastructure.jobs
+    knowledge_portal.infrastructure.requirement_client
+allow_indirect_imports = True
+
+[importlinter:contract:infrastructure_not_interfaces]
+name = Infrastructure must not depend on delivery interfaces
+type = forbidden
+source_modules =
+    knowledge_portal.infrastructure
+forbidden_modules =
+    knowledge_portal.interfaces
+
+[importlinter:contract:routes_no_kernel_adapters]
+name = Routes and dependency providers do not select platform-kernel adapters
+type = forbidden
+source_modules =
+    knowledge_portal.interfaces.api.routes
+    knowledge_portal.interfaces.api.dependencies
+forbidden_modules =
+    smb_kernel.identity.oidc
+    smb_kernel.identity.fake
+    smb_kernel.documents.text_extractor
+    smb_kernel.documents.bounded_extractor
+    smb_kernel.documents.scanner
+    smb_kernel.llm
+    smb_kernel.persistence
+allow_indirect_imports = True

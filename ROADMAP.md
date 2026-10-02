@@ -5,7 +5,7 @@
 | Scope | Status | Remaining |
 |---|---|---|
 | Stage 0: repository scaffolding (`AGENTS.md`, `CLAUDE.md`, `ROADMAP.md`, `UPSTREAM.md`) | In progress | CI and branch protection once the GitHub repository exists |
-| Stage 3: the service | In progress. 3.1 (backend core) done | 3.2 settings, composition and API; 3.3 baseline migrations and PostgreSQL tests; 3.4 data import, images and CI; then the UI |
+| Stage 3: the service | In progress. 3.1 (backend core) and 3.2 (API and worker) done | 3.3 baseline migrations and PostgreSQL tests; 3.4 data import, images and CI; then the UI |
 | Knowledge Center sub-slices B–E (from requirement-portal's `docs/slices/enhancement-knowledge-center.md`) | Specified; not scheduled | Sequencing after Stage 3 |
 
 ## Stage 3 — The service
@@ -21,8 +21,19 @@
    - its own transaction manager, PostgreSQL store and `knowledge_document_blobs` storage, with
      no requirement checkpoints or in-process relay;
    - layer contracts in `.importlinter`; the unit tests that apply.
-2. Settings, composition, the FastAPI app (public routes behind `knowledge_admin`, the internal
-   API), the worker and error mapping. The route tests skipped in step 1 return here.
+2. **API and worker (done).** Settings, composition, the FastAPI app and the worker process:
+   - every public route admits `knowledge_admin` only, enforced where the actor is resolved;
+   - the actor directory is this service's own: it remembers the admins who sign in, so a
+     document is handed over only to someone who can use the portal. The
+     `/internal/actors/{id}` read on requirement-portal is no longer needed;
+   - `/internal/*` serves requirement work behind `REQUIREMENT_SERVICE_TOKEN`, held to the
+     shared `contracts/knowledge-internal.openapi.json`;
+   - requirement work is reached through `REQUIREMENT_API_BASE_URL` and
+     `KNOWLEDGE_SERVICE_TOKEN`, or offline fakes when unset;
+   - the public contract is `contracts/knowledge-public.openapi.json`.
+   - Still to come: the document owner's source-impact view
+     (`/library/documents/{id}/source-impact`), read over requirement-portal's
+     `/internal/references/{id}/impact`.
 3. Baseline migrations and the PostgreSQL integration tests.
 4. The data import command with `--verify`, Docker images and CI.
 

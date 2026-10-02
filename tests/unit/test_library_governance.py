@@ -32,6 +32,7 @@ from knowledge_portal.domain.identity.entities import ActorId, ActorProfile
 from knowledge_portal.domain.identity.errors import AuthorizationDeniedError
 from knowledge_portal.infrastructure.documents.library_worker import OfflineDocumentScanner
 from knowledge_portal.infrastructure.identity.fake_identity import FAKE_ACTORS
+from knowledge_portal.infrastructure.persistence.actor_directory import InMemoryActorDirectory
 from knowledge_portal.infrastructure.persistence.document_library import InMemoryDocumentLibrary
 from knowledge_portal.infrastructure.persistence.document_storage import InMemoryDocumentStorage
 from knowledge_portal.infrastructure.persistence.in_memory_transaction import (
@@ -41,7 +42,6 @@ from knowledge_portal.infrastructure.persistence.reference_index import (
     InMemoryReferenceIndex,
     Utf8BudgetCounter,
 )
-from knowledge_portal.infrastructure.requirement_client import FakeActorLookup
 from tests.unit.test_document_library import Embeddings, approve_fixture, owner
 
 NOW = datetime(2026, 10, 2, tzinfo=UTC)
@@ -112,7 +112,7 @@ def _governance(
 ) -> LibraryGovernance:
     return LibraryGovernance(
         repository,
-        FakeActorLookup(FAKE_ACTORS),
+        InMemoryActorDirectory(FAKE_ACTORS),
         InMemoryTransactionManager(RLock()),
         FixedClock(NOW),
         dependents,
