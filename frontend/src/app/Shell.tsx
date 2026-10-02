@@ -1,0 +1,119 @@
+import { LogOut, RotateCw } from "lucide-react";
+import { Link, NavLink, Outlet } from "react-router-dom";
+
+import { useAuth } from "../auth/authContext";
+import { REQUIREMENT_APP_URL } from "../auth/paths";
+import { TABLES } from "../home/tables";
+import { formatMoment } from "../home/format";
+import { useOverview, type TableState } from "../home/useOverview";
+
+const ENTRIES = [
+  { key: "library", spec: TABLES.library },
+  { key: "architecture", spec: TABLES.architecture },
+  { key: "squads", spec: TABLES.squads },
+] as const;
+
+function extent(state: TableState) {
+  return state.status === "ready" ? state.overview.extent : null;
+}
+
+/**
+ * The timetable book's binding: a masthead strip, the index of tables, and
+ * the page. Every screen of the portal sits inside it.
+ */
+export function Shell() {
+  const overview = useOverview();
+  const extents = ENTRIES.map((entry) => extent(overview[entry.key]));
+  const largest = Math.max(1, ...extents.map((item) => item?.value ?? 0));
+
+  return (
+    <>
+      <a className="skip-link" href="#main">Skip to the tables</a>
+      <header className="masthead">
+        <p className="masthead__title">
+          <a href={REQUIREMENT_APP_URL}>Requirement AI</a>
+          <span aria-hidden="true" className="masthead__dot">·</span>
+          <Link to="/" className="masthead__portal">Knowledge portal</Link>
+        </p>
+        <p className="masthead__valid" aria-live="polite">
+          {overview.validAt ? (
+            <>Valid as of <time dateTime={overview.validAt.toISOString()}>{formatMoment(overview.validAt)}</time></>
+          ) : "Reading the tables…"}
+          <button
+            type="button"
+            className="text-button"
+            onClick={overview.refresh}
+            disabled={overview.refreshing}
+            aria-label={overview.refreshing ? "Refreshing the tables" : "Refresh the tables"}
+          >
+            <RotateCw size={14} aria-hidden="true" className={overview.refreshing ? "spin" : undefined} />
+            <span aria-hidden="true">{overview.refreshing ? "Refreshing" : "Refresh"}</span>
+          </button>
+        </p>
+        <Account />
+      </header>
+
+      <nav className="index" aria-label="Tables">
+        <ol className="index__list">
+          {ENTRIES.map((entry, index) => {
+            const size = extents[index];
+            return (
+              <li key={entry.key}>
+                <NavLink to={entry.spec.to} className="index__entry">
+                  <span className="index__number" aria-hidden="true">{entry.spec.number}</span>
+                  <span className="index__title">
+                    <span className="visually-hidden">Table {entry.spec.number}:</span>{" "}
+                    {entry.spec.title}
+                  </span>
+                  <span className="index__extent">
+                    <span className="index__count">{size?.label ?? "—"}</span>
+                    <span className="index__track" aria-hidden="true">
+                      <span
+                        className="index__rule"
+                        style={{ inlineSize: `${size ? Math.max(3, (size.value / largest) * 100) : 0}%` }}
+                      />
+                    </span>
+                  </span>
+                </NavLink>
+              </li>
+            );
+          })}
+        </ol>
+      </nav>
+
+      <main id="main" className="page" tabIndex={-1}>
+        <Outlet />
+      </main>
+    </>
+  );
+}
+
+function Account() {
+  const auth = useAuth();
+  if (!auth?.actor) return null;
+  return (
+    <div className="masthead__account">
+      {auth.config?.mode === "fake" ? (
+        <label className="persona">
+          <span className="persona__label">Persona</span>
+          <select
+            value={auth.actor.id}
+            onChange={(event) => void auth.switchFakeActor(event.target.value)}
+          >
+            {auth.config.fake_actors.map((item) => (
+              <option key={item.id} value={item.id}>{item.display_name}</option>
+            ))}
+          </select>
+        </label>
+      ) : (
+        <>
+          <span className="masthead__name">{auth.actor.display_name}</span>
+          <button type="button" className="text-button" onClick={() => void auth.signOut()}>
+            <LogOut size={14} aria-hidden="true" />
+            Sign out
+          </button>
+        </>
+      )}
+    </div>
+  );
+}

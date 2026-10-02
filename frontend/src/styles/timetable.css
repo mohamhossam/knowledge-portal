@@ -1,0 +1,292 @@
+/* A numbered table: the number in the margin column, the table beside it. */
+.timetable {
+  display: grid;
+  grid-template-columns: var(--margin-column) minmax(0, 1fr);
+  column-gap: var(--s5);
+  padding-block: var(--s7) var(--s6);
+  border-top: 1px solid var(--rule);
+}
+
+.timetable:first-of-type {
+  border-top: 0;
+}
+
+.timetable__number {
+  grid-row: 1 / span 2;
+  justify-self: end;
+  font-size: var(--t-monument);
+  font-stretch: var(--width-monument);
+  font-weight: var(--w-heavy);
+  line-height: 0.8;
+  letter-spacing: -0.02em;
+}
+
+.timetable__head {
+  grid-column: 2;
+  display: grid;
+  gap: var(--s1);
+  align-content: start;
+}
+
+.timetable__title {
+  font-size: var(--t-title);
+  font-stretch: 88%;
+  font-weight: var(--w-bold);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.timetable__title a {
+  color: inherit;
+  text-decoration-color: var(--rule);
+}
+
+.timetable__title a:hover {
+  text-decoration-color: currentColor;
+}
+
+.timetable__edition {
+  color: var(--ink-2);
+  max-width: 72ch;
+}
+
+.timetable__body {
+  grid-column: 2;
+  min-width: 0;
+}
+
+/* The grid: a heavy rule under the head, hairlines between rows. */
+.timetable__grid {
+  width: 100%;
+  margin-top: var(--s4);
+  border-collapse: collapse;
+}
+
+.timetable__grid thead th {
+  padding: 0 var(--s4) var(--s2) 0;
+  border-bottom: 2px solid var(--rule-heavy);
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+  font-stretch: var(--width-condensed);
+  font-weight: var(--w-medium);
+  letter-spacing: 0.01em;
+  text-align: start;
+  white-space: nowrap;
+}
+
+.timetable__grid tbody th,
+.timetable__grid tbody td {
+  padding: var(--s2) var(--s4) var(--s2) 0;
+  border-bottom: 1px solid var(--rule-faint);
+  font-weight: inherit;
+  text-align: start;
+  vertical-align: baseline;
+}
+
+.timetable__grid tbody th {
+  max-width: 34ch;
+}
+
+.timetable__grid .cell--end {
+  text-align: end;
+}
+
+.timetable__grid .cell:last-child {
+  padding-right: 0;
+}
+
+/* Rank is weight. Colour only marks a disruption. */
+.row {
+  transition: background-color 180ms var(--ease-out);
+}
+
+/* A row that needs someone: its name and its status carry the weight. */
+.timetable__grid .row--due th,
+.row--due .status {
+  font-weight: var(--w-bold);
+}
+
+.row--delayed .status {
+  color: var(--disruption);
+  font-weight: var(--w-bold);
+}
+
+.row--running {
+  color: var(--ink-2);
+}
+
+.row--past {
+  color: var(--ink-3);
+}
+
+.secondary {
+  color: var(--ink-2);
+  font-weight: var(--w-regular);
+}
+
+.row--past .secondary {
+  color: var(--ink-3);
+}
+
+.row--more td {
+  color: var(--ink-2);
+  font-style: normal;
+}
+
+.row.is-lit,
+.note.is-lit {
+  background: var(--reference-wash);
+}
+
+/* A reference mark: inline, so its line height is its target. */
+.mark-wrap {
+  line-height: 0;
+}
+
+.mark {
+  padding: 0 0.15em;
+  color: var(--reference);
+  font-size: var(--t-mark);
+  font-weight: var(--w-bold);
+  text-decoration: none;
+  vertical-align: baseline;
+  transition: background-color 180ms var(--ease-out);
+}
+
+.mark:hover,
+.mark.is-lit {
+  background: var(--reference-wash);
+}
+
+.timetable__quiet {
+  margin-top: var(--s4);
+  padding-block: var(--s3);
+  border-top: 2px solid var(--rule-heavy);
+  color: var(--ink-2);
+}
+
+/* Totals: what is in force, set as the table's running summary. */
+.timetable__totals-label,
+.timetable__totals {
+  max-width: 34rem;
+}
+
+.timetable__totals-label {
+  margin-top: var(--s5);
+  padding-bottom: var(--s1);
+  border-bottom: 2px solid var(--rule-heavy);
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+  font-stretch: var(--width-condensed);
+  font-weight: var(--w-medium);
+}
+
+.timetable__totals {
+  display: grid;
+  margin: 0;
+}
+
+.total {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding-block: var(--s2);
+  border-bottom: 1px solid var(--rule-faint);
+}
+
+.total dd {
+  margin: 0;
+  font-weight: var(--w-medium);
+  text-align: end;
+}
+
+/* The foot: a double rule, then the notes every mark points to. */
+.timetable__notes {
+  display: grid;
+  gap: var(--s1);
+  margin-top: var(--s5);
+  padding-top: var(--s3);
+  border-top: 3px double var(--rule-heavy);
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+.note {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--s2);
+  padding: var(--s1) var(--s1) var(--s1) 0;
+  transition: background-color 180ms var(--ease-out);
+}
+
+.note__number {
+  color: var(--reference);
+  font-weight: var(--w-bold);
+  text-align: end;
+}
+
+.note__text {
+  max-width: 80ch;
+}
+
+.note__back {
+  display: inline-grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-left: var(--s1);
+  color: var(--reference);
+  vertical-align: middle;
+}
+
+/* The one line that says what to do next. */
+.timetable__next {
+  margin-top: var(--s5);
+  font-size: var(--t-lead);
+  font-weight: var(--w-bold);
+}
+
+.timetable__next a {
+  display: inline;
+  padding-block: 0.15rem;
+}
+
+.timetable__next svg {
+  margin-left: var(--s1);
+  vertical-align: -0.15em;
+}
+
+.timetable__next--quiet {
+  color: var(--ink-2);
+  font-weight: var(--w-regular);
+}
+
+@media (max-width: 60rem) {
+  .cell--p3 {
+    display: none;
+  }
+}
+
+@media (max-width: 45rem) {
+  .timetable {
+    grid-template-columns: minmax(0, 1fr);
+    padding-block: var(--s6) var(--s5);
+  }
+
+  .timetable__number {
+    grid-row: auto;
+    justify-self: start;
+    margin-bottom: var(--s2);
+    font-size: 3.25rem;
+  }
+
+  .timetable__head,
+  .timetable__body {
+    grid-column: 1;
+  }
+
+  .cell--p2 {
+    display: none;
+  }
+}

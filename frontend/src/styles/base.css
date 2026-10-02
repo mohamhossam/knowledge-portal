@@ -1,0 +1,117 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light;
+  background: var(--stock);
+  color: var(--ink);
+  font-family: var(--face);
+  font-size: 100%;
+  font-synthesis: none;
+  font-variant-numeric: tabular-nums lining-nums;
+  text-rendering: optimizeLegibility;
+  -webkit-text-size-adjust: 100%;
+  scrollbar-color: var(--ink-3) var(--stock-band);
+  /* Anchored jumps between a footnote mark and its note land clear of the masthead. */
+  scroll-padding-top: 5rem;
+}
+
+body {
+  margin: 0;
+  font-size: var(--t-body);
+  line-height: 1.45;
+  font-stretch: var(--width-text);
+  caret-color: var(--reference);
+}
+
+::selection {
+  background: var(--reference-wash);
+  color: var(--ink);
+}
+
+h1,
+h2,
+h3,
+p,
+ol,
+ul,
+dl,
+dd,
+figure {
+  margin: 0;
+}
+
+ol,
+ul {
+  padding: 0;
+  list-style: none;
+}
+
+a {
+  color: var(--reference);
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+button,
+select,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+/* Content in Arabic, or mixed, keeps its own direction and a face that has its letters. */
+:lang(ar),
+[dir="rtl"] {
+  font-family: var(--face-arabic);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  left: var(--s4);
+  top: -3rem;
+  z-index: 10;
+  padding: var(--s2) var(--s3);
+  background: var(--ink);
+  color: var(--stock);
+  font-weight: var(--w-bold);
+}
+
+.skip-link:focus {
+  top: var(--s2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
