@@ -15,6 +15,7 @@ def main() -> None:
     OUTPUT.write_text(
         json.dumps(app.openapi(), indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
+        newline="\n",
     )
 
 

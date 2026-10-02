@@ -4,8 +4,8 @@
 
 | Scope | Status | Remaining |
 |---|---|---|
-| Stage 0: repository scaffolding (`AGENTS.md`, `CLAUDE.md`, `ROADMAP.md`, `UPSTREAM.md`) | In progress | CI and branch protection once the GitHub repository exists |
-| Stage 3: the service | In progress. 3.1 (backend core), 3.2 (API and worker) and 3.3 (schema) done | 3.4 data import, images and CI; then the UI |
+| Stage 0: repository scaffolding (`AGENTS.md`, `CLAUDE.md`, `ROADMAP.md`, `UPSTREAM.md`) | Done; CI arrived with 3.4 | Branch protection on `main`, and the `KERNEL_READ_TOKEN` secret |
+| Stage 3: the service | Backend done (3.1 to 3.4) | The owner's source-impact view; then the UI |
 | Knowledge Center sub-slices B–E (from requirement-portal's `docs/slices/enhancement-knowledge-center.md`) | Specified; not scheduled | Sequencing after Stage 3 |
 
 ## Stage 3 — The service
@@ -42,7 +42,20 @@
    - For the import in step 4: the audit tables' ids are `GENERATED ALWAYS`, so copying them
      needs `OVERRIDING SYSTEM VALUE` and a sequence reset; `knowledge_events` keeps its `seq`
      values, so requirement work's event cursor stays valid.
-4. The data import command with `--verify`, Docker images and CI.
+4. **Import, image and CI (done).**
+   - `knowledge-portal import --source-database-url … [--verify | --verify-only]` copies the 18
+     knowledge tables (not `actor_profiles`) in one target transaction from one source
+     snapshot. It keeps ids, moves sequences past them, and converges on the source when run
+     again. Verification compares row counts and content checksums per table. It was
+     checked against a requirement-portal database seeded by that repository's own
+     integration tests: every table matched.
+   - One backend image (`deploy/api/Dockerfile`) for the API, worker, migrate and import.
+     CI builds, scans and starts it; a version tag publishes
+     `ghcr.io/mohamhossam/knowledge-api` for requirement-portal's deployment.
+   - CI: checks with PostgreSQL, dependency audit, image. Dependabot, and a `.gitattributes`
+     that keeps line endings LF.
+   - For platform-kernel 1.0.1: `PooledPostgresConnector` names every pool
+     `smb-requirement-agent`. The name should be a parameter (mechanisms, never meaning).
 
 The plan is requirement-portal's `docs/slices/enhancement-platform-split.md`, read against
 ADR-0099.
@@ -91,8 +104,7 @@ ADR-0099.
   - a "no access" page for anyone without `knowledge_admin`.
 
 ### Data import
-- `knowledge-portal import --source-database-url … --verify` copies the owned tables and blobs,
-  preserving ids. `--verify` checks counts and checksums.
+- Done in step 4 above.
 
 ### Tests
 - Unit and PostgreSQL integration tests.

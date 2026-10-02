@@ -1,0 +1,50 @@
+name: Release
+
+# An image is published only after every CI gate passes on the tagged commit,
+# and only when the tag matches the version the package declares.
+# requirement-portal's deployment pulls it by this tag.
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
+  publish:
+    needs: gates
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    env:
+      KERNEL_READ_TOKEN: ${{ secrets.KERNEL_READ_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Tag matches the declared version
+        run: |
+          declared="v$(grep -m1 '^version = ' pyproject.toml | cut -d'"' -f2)"
+          test "$declared" = "$GITHUB_REF_NAME" || {
+            echo "Tag $GITHUB_REF_NAME does not match pyproject version $declared"; exit 1; }
+
+      - name: Build and push the backend image
+        env:
+          REGISTRY_TOKEN: ${{ github.token }}
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER}/knowledge-api:${GITHUB_REF_NAME}"
+          echo "$REGISTRY_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          DOCKER_BUILDKIT=1 docker build --secret id=kernel_read_token,env=KERNEL_READ_TOKEN \
+            -f deploy/api/Dockerfile -t "$image" .
+          docker push "$image"
+
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" \
+            --notes "Image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/knowledge-api:${GITHUB_REF_NAME}"

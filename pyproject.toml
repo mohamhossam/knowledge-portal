@@ -28,6 +28,9 @@ dependencies = [
     "prometheus-client>=0.21,<1",
 ]
 
+[project.scripts]
+knowledge-portal = "knowledge_portal.interfaces.cli:main"
+
 [project.optional-dependencies]
 document-ocr = ["docling>=2.50,<3"]
 dev = [
