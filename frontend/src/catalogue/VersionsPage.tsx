@@ -1,12 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, ChevronRight, Download, RotateCw } from "lucide-react";
 import { Fragment, useEffect, useId, useState, useSyncExternalStore } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import { api, type CatalogueFileFormat, type Release } from "../api/client";
 import { errorMessage } from "../api/errors";
 import { count, formatDay } from "../home/format";
 import { auditLabel, changeSentence, contents } from "./catalogue";
+import { StartDraft } from "./DraftActions";
 import { useActivate, useCatalogueContext, useMappingImpact, useReleases } from "./useCatalogue";
 
 type State = "in-service" | "draft" | "replaced";
@@ -26,7 +27,8 @@ export function VersionsPage() {
   const [open, setOpen] = useState<string | null>(null);
   // On a phone the state and the disclosure ride in the version cell, so its title keeps the width.
   const phone = useNarrow();
-  const [notice, setNotice] = useState<string | null>(null);
+  const location = useLocation();
+  const [notice, setNotice] = useState<string | null>((location.state as { notice?: string } | null)?.notice ?? null);
   const activeId = book.release.id;
   const state = (release: Release): State =>
     release.status === "draft" ? "draft" : release.id === activeId ? "in-service" : "replaced";
@@ -134,6 +136,7 @@ export function VersionsPage() {
           </tbody>
         </table>
       )}
+      {releases.data && <StartDraft draft={releases.data.find((release) => release.status === "draft")} />}
     </section>
   );
 }

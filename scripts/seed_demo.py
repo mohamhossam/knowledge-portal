@@ -578,34 +578,102 @@ def seed_published_catalogue(client: httpx.Client) -> None:
     ).raise_for_status()
 
 
+DESIGN = """System: Order Hub
+Component: Order API [Microservice]
+Component: Order Store [PostgreSQL]
+Capability: Order capture (capture order, new business order) @ Order API
+Constraint: Read-only between midnight and 2am
+System: Dynamics CRM
+Order Hub depends on Dynamics CRM for quotes
+Order Hub calls TIBCO for event routing
+Order Hub sends work orders to CWOMS
+Order Hub depends on fixed order orchestration for activation
+System: CWOM
+Capability: Fault intake (raise fault, fault ticket) @ Ticket Engine
+"""
+
+# A systems-table row, too wide for one source line.
+PORTAL_ROW = " | ".join(
+    [
+        "",
+        "Partner Portal",
+        "partner-portal",
+        "Partner ordering",
+        "Order Hub via REST",
+        "reseller portal",
+        "Partner channels",
+        "Resellers",
+        "CONFIRMED",
+        "",
+    ]
+).strip()
+
+LANDSCAPE = f"""# Partner landscape (sample)
+
+## Domains
+
+| Domain | ID | Code |
+| --- | --- | --- |
+| Partner channels | partner-channels | PC |
+
+## Systems
+
+| System | ID | Function | Integrations | Aliases | Domain | Sub-domain | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+{PORTAL_ROW}
+
+## Product: Business voice line (sample)
+
+| Code | Family | Version | Lifecycle |
+| --- | --- | --- | --- |
+| BVL-1 | Voice | 1 | Planned |
+
+| Order type | Code | Enabled | Description |
+| --- | --- | --- | --- |
+| New line | NEW | Yes | A new voice line |
+
+Product rules: A voice line needs a fibre bundle at the same address.
+
+## Journey: Ordering a business voice line (sample)
+
+| # | Activity | Performing system | Supporting systems |
+| --- | --- | --- | --- |
+| 10 | Capture the order | Partner Portal | |
+| 20 | Activate the line | CWOM | |
+| 30 | Start billing | BSCS | |
+"""
+
+
 def seed_catalogue(client: httpx.Client) -> None:
+    """The draft in preparation, fed from two documents read for suggestions.
+
+    The design note yields a new system with its parts, a name that may be an
+    existing system, an inferred dependency and a capability waiting for its
+    component; the landscape's tables yield a domain, a placement, an offering
+    and its journey.
+    """
     releases = "/architecture-knowledge/releases"
     draft = client.post(
         releases, json={"name": "October integration update (sample)"}, headers=OWNER
     )
     draft.raise_for_status()
     base = f"{releases}/{draft.json()['id']}"
-    uploaded = client.post(
-        f"{base}/documents",
-        data={
-            "title": "Integration design (sample)",
-            "language": "en",
-            "expected_revision": str(draft.json()["revision"]),
-        },
-        files={
-            "file": (
-                "design.txt",
-                b"System: Order Hub\nSystem: Billing Gateway\n"
-                b"Constraint: Order Hub only runs at night\n",
-                "text/plain",
-            )
-        },
-        headers=OWNER,
-    )
-    uploaded.raise_for_status()
-    version_id = uploaded.json()["documents"][-1]["id"]
-    client.post(f"{base}/documents/{version_id}/extractions", headers=OWNER).raise_for_status()
-    wait_for(client, f"{base}/suggestions", OWNER, lambda view: view["suggestions"])
+    revision = draft.json()["revision"]
+    for title, name, body, mime in (
+        ("Integration design (sample)", "design.txt", DESIGN, "text/plain"),
+        ("Partner landscape (sample)", "landscape.md", LANDSCAPE, "text/markdown"),
+    ):
+        uploaded = client.post(
+            f"{base}/documents",
+            data={"title": title, "language": "en", "expected_revision": str(revision)},
+            files={"file": (name, body.encode(), mime)},
+            headers=OWNER,
+        )
+        uploaded.raise_for_status()
+        revision = uploaded.json()["revision"]
+        version_id = uploaded.json()["documents"][-1]["id"]
+        client.post(f"{base}/documents/{version_id}/extractions", headers=OWNER).raise_for_status()
+    wait_for(client, f"{base}/suggestions", OWNER, lambda view: len(view["runs"]) >= 2)
 
 
 def seed_squads(client: httpx.Client) -> None:

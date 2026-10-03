@@ -43,6 +43,17 @@ export type CatalogueDiff = Schemas["CatalogueDiffResponse"];
 export type MappingImpact = Schemas["MappingImpactResponse"];
 export type SystemOwnership = Schemas["SystemOwnershipResponse"];
 export type CatalogueFileFormat = Schemas["CatalogueFileFormat"];
+export type Suggestion = Schemas["CatalogueSuggestionResponse"];
+export type SuggestionContent = Schemas["CandidateContentSchema"];
+export type SuggestionKind = Schemas["CandidateKind"];
+export type SuggestionMatch = Schemas["CandidateMatch"];
+export type PossibleMatch = Schemas["PossibleMatchResponse"];
+export type ExtractionRun = Schemas["ExtractionRunResponse"];
+export type ArchitectureJob = Schemas["ArchitectureJobResponse"];
+export type DocumentExtraction = Schemas["DocumentExtractionResponse"];
+export type CitedPassage = Schemas["DocumentPassageResponse"];
+export type CatalogueDocument = Schemas["KnowledgeDocumentVersionResponse"];
+export type DocumentLanguage = "en" | "ar" | "mixed";
 
 const documentPath = (documentId: string) => `/library/documents/${encodeURIComponent(documentId)}`;
 const versionPath = (documentId: string, versionId: string) =>
@@ -148,6 +159,46 @@ export const api = {
     post<Release>(`${releasePath(releaseId)}/activate`, { rationale }),
   catalogueFile: async (releaseId: string, format: CatalogueFileFormat) =>
     (await send(`${releasePath(releaseId)}/catalogue-file?format=${format}`)).blob(),
+  /** Starts the one draft: a copy of the version in service. */
+  createDraft: (name: string) => post<Release>("/architecture-knowledge/releases", { name }),
+  renameDraft: (releaseId: string, body: { expected_revision: number; name: string }) =>
+    apiRequest<Release>(`${releasePath(releaseId)}/name`, { method: "PUT", body: JSON.stringify(body) }),
+  discardDraft: async (releaseId: string, expectedRevision: number) => {
+    await send(releasePath(releaseId), { method: "DELETE", body: JSON.stringify({ expected_revision: expectedRevision }) });
+  },
+  addCatalogueDocument: (releaseId: string, input: { file: File; title: string; language: DocumentLanguage; expectedRevision: number }) => {
+    const body = new FormData();
+    body.set("file", input.file);
+    body.set("title", input.title);
+    body.set("language", input.language);
+    body.set("expected_revision", String(input.expectedRevision));
+    return apiRequest<Release>(`${releasePath(releaseId)}/documents`, { method: "POST", body });
+  },
+  /** The draft's documents, as the whole list that remains. */
+  selectCatalogueDocuments: (releaseId: string, body: { expected_revision: number; version_ids: string[] }) =>
+    apiRequest<Release>(`${releasePath(releaseId)}/documents`, { method: "PUT", body: JSON.stringify(body) }),
+  readCatalogueDocument: (releaseId: string, versionId: string) =>
+    apiRequest<ArchitectureJob>(`${releasePath(releaseId)}/documents/${encodeURIComponent(versionId)}/extractions`, { method: "POST" }),
+  extractions: (releaseId: string) => apiRequest<DocumentExtraction[]>(`${releasePath(releaseId)}/extractions`),
+  cancelJob: (jobId: string) =>
+    apiRequest<ArchitectureJob>(`/architecture-knowledge/jobs/${encodeURIComponent(jobId)}/cancel`, { method: "POST" }),
+  retryJob: (jobId: string) =>
+    apiRequest<ArchitectureJob>(`/architecture-knowledge/jobs/${encodeURIComponent(jobId)}/retry`, { method: "POST" }),
+  citedPassage: (releaseId: string, versionId: string, location: string) =>
+    apiRequest<CitedPassage>(
+      `${releasePath(releaseId)}/documents/${encodeURIComponent(versionId)}/passage?${new URLSearchParams({ location })}`,
+    ),
+  catalogueDocumentContent: async (versionId: string) =>
+    (await send(`/architecture-knowledge/documents/versions/${encodeURIComponent(versionId)}/content`)).blob(),
+  decide: (releaseId: string, suggestionId: string, body: { expected_revision: number; accept: boolean; content?: SuggestionContent | null }) =>
+    post<Release>(`${releasePath(releaseId)}/suggestions/${encodeURIComponent(suggestionId)}/decision`, body),
+  acceptAll: (releaseId: string, expectedRevision: number) =>
+    post<Schemas["AcceptAllResponse"]>(`${releasePath(releaseId)}/suggestions/acceptance`, { expected_revision: expectedRevision }),
+  rejectMany: (releaseId: string, expectedRevision: number, suggestionIds: string[]) =>
+    post<{ rejected: number }>(`${releasePath(releaseId)}/suggestions/rejection`, {
+      expected_revision: expectedRevision,
+      suggestion_ids: suggestionIds,
+    }),
   mappingImpact: () => apiRequest<MappingImpact>("/architecture-knowledge/mapping-impact"),
   systemOwnership: (systemId: string) =>
     apiRequest<SystemOwnership>(`/organisation/systems/${encodeURIComponent(systemId)}/ownership`),

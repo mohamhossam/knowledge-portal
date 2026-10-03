@@ -6,6 +6,7 @@ import { CataloguePage } from "../catalogue/CataloguePage";
 import { DomainsPage } from "../catalogue/DomainsPage";
 import { JourneyPage, JourneysPage } from "../catalogue/JourneysPage";
 import { OfferingPage, OfferingsPage } from "../catalogue/OfferingsPage";
+import { SuggestionsPage } from "../catalogue/SuggestionsPage";
 import { SystemsPage } from "../catalogue/SystemsPage";
 import { VersionsPage as CatalogueVersionsPage } from "../catalogue/VersionsPage";
 import { CitationsPage } from "../library/CitationsPage";
@@ -28,6 +29,7 @@ const catalogueRoutes = (
     <Route path="offerings/:offeringId" element={<OfferingPage />} />
     <Route path="journeys" element={<JourneysPage />} />
     <Route path="journeys/:journeyId" element={<JourneyPage />} />
+    <Route path="suggestions" element={<SuggestionsPage />} />
   </>
 );
 

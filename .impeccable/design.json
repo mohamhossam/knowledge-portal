@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-03T18:00:00Z",
+  "generatedAt": "2026-10-03T21:00:00Z",
   "title": "Design System: Knowledge portal",
   "extensions": {
     "colorMeta": {
@@ -230,12 +230,12 @@
       {
         "name": "rule-heavy",
         "value": "2px solid var(--rule-heavy)",
-        "purpose": "Under the masthead, table heads, totals label, quiet line, notice head and change notice heading; above and below the processing line and the withdraw panel; at the foot of an open passage's detail row; on top of the save bar. Under a governance section title and a governance table's column heads. In the catalogue: under each systems index group head, above a sheet's facts list, at the foot of an open version's detail row, above and below the put-back panel. A quiet line directly under a catalogue section title takes no second heavy rule."
+        "purpose": "Under the masthead, table heads, totals label, quiet line, notice head and change notice heading; above and below the processing line and the withdraw panel; at the foot of an open passage's detail row; on top of the save bar. Under a governance section title and a governance table's column heads. In the catalogue: under each systems index group head, above a sheet's facts list, at the foot of an open version's detail row, above and below the put-back panel. A quiet line directly under a catalogue section title takes no second heavy rule. In a draft: above and below the rename and remove steps, under each galley group head, at the foot of an open suggestion's detail row, under a repeating form group's legend."
       },
       {
         "name": "hairline",
         "value": "1px solid var(--rule-faint)",
-        "purpose": "Between rows, totals and governance table rows; 1px var(--rule) between tables, under the index and under a document's sub-index. Hairlines also sit between systems index entries, a sheet's facts and its list items; 1px var(--rule) under a journey's phase head and the catalogue's sub-index."
+        "purpose": "Between rows, totals and governance table rows; 1px var(--rule) between tables, under the index and under a document's sub-index. Hairlines also sit between systems index entries, a sheet's facts and its list items; 1px var(--rule) under a journey's phase head and the catalogue's sub-index. 1px var(--rule) also under an open suggestion's detail labels, at the foot of each repeating form row, and under a nested repeating legend."
       },
       {
         "name": "double",
@@ -331,6 +331,26 @@
         "name": "versions-detail",
         "value": "padding 0.5rem 1rem 1rem; inner tables max 62rem; put-back panel max 62ch",
         "purpose": "An open catalogue version's detail row."
+      },
+      {
+        "name": "galley",
+        "value": "State column 15rem (9rem at 45rem and below); every galley cell, head and detail padding-inline 0.5rem; group head padding-top 1.5rem",
+        "purpose": "The band keeps a margin and the focus ring clears the first glyph."
+      },
+      {
+        "name": "suggestion-detail",
+        "value": "grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap 1.5rem; one column below 60rem; quote and rationale max 64ch",
+        "purpose": "An open suggestion: the source beside the decision."
+      },
+      {
+        "name": "form-grid",
+        "value": "grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap 0.75rem 1rem; align-items end; text areas and lines fields span 1 / -1",
+        "purpose": "The catalogue editors' fields."
+      },
+      {
+        "name": "draft-step",
+        "value": "margin-top 0.75rem; withdraw panel shape, max 62ch",
+        "purpose": "A draft's rename and remove steps under its head."
       }
     ]
   },
@@ -502,11 +522,35 @@
       "description": "Versions ranked by weight; a text-button disclosure opens a stock-band detail row in place, closing on a heavy rule, with file downloads, history and (on a replaced version) the put-back panel.",
       "html": "<table class=\"ds-versions\"><thead><tr><th scope=\"col\">Version</th><th scope=\"col\">State</th><th scope=\"col\"><span hidden>Details</span></th></tr></thead><tbody><tr class=\"ds-due\"><th scope=\"row\"><a href=\"#\">October integration update</a><span class=\"ds-versions__by\">31 systems · 13 connections · 1 offering · 1 journey</span></th><td><span class=\"ds-versions__state\">In preparation</span><span class=\"ds-versions__by\">Started by Amina Owner · revision 2</span></td><td class=\"ds-end\"><button type=\"button\" class=\"ds-versions__toggle\" aria-expanded=\"false\">› History and files</button></td></tr><tr class=\"ds-past is-open\"><th scope=\"row\"><a href=\"#\">Initial catalogue</a><span class=\"ds-versions__by\">31 systems · 11 connections</span></th><td><span class=\"ds-versions__state\">Replaced</span><span class=\"ds-versions__by\">Published 1 Jan 2026 by the platform · revision 1</span></td><td class=\"ds-end\"><button type=\"button\" class=\"ds-versions__toggle\" aria-expanded=\"true\">⌄ History, files, put back</button></td></tr><tr class=\"ds-versions__detail\"><td colspan=\"3\"><span class=\"ds-versions__label\">Its catalogue file:</span> <button type=\"button\" class=\"ds-versions__toggle\">Excel</button> <button type=\"button\" class=\"ds-versions__toggle\">YAML</button> <button type=\"button\" class=\"ds-versions__toggle\">JSON</button></td></tr></tbody></table>",
       "css": ".ds-versions { width: 100%; border-collapse: collapse; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; line-height: 1.45; color: var(--ink, #16181d); } .ds-versions a { color: var(--reference, #1d5ca3); } .ds-versions thead th { padding: 0 1rem 0.25rem 0; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; text-align: left; } .ds-versions tbody th, .ds-versions td { padding: 0.5rem 1rem 0.5rem 0; border-bottom: 1px solid var(--rule-faint, #e4e5e7); font-weight: 400; text-align: left; vertical-align: top; } .ds-versions .ds-end { text-align: end; } .ds-versions .ds-due th, .ds-versions .ds-due .ds-versions__state { font-weight: 680; } .ds-versions .ds-past, .ds-versions .ds-past a, .ds-versions .ds-past .ds-versions__by { color: var(--ink-3, #686e78); } .ds-versions .is-open > * { background: var(--stock-band, #f1f1ee); } .ds-versions__by { display: block; color: var(--ink-2, #474c55); font-size: 0.8125rem; font-weight: 400; } .ds-versions__toggle { min-height: 1.5rem; padding: 0 0.25rem; border: 0; background: none; font: inherit; font-size: 0.8125rem; font-weight: 500; color: var(--ink, #16181d); text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; } .ds-versions__toggle:hover { text-decoration-thickness: 2px; } .ds-versions__toggle:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-versions .ds-versions__detail td { padding: 0.5rem 1rem 1rem; border-bottom: 2px solid var(--rule-heavy, #16181d); background: var(--stock-band, #f1f1ee); } .ds-versions__label { color: var(--ink-2, #474c55); font-size: 0.8125rem; }"
+    },
+    {
+      "name": "Galley",
+      "kind": "custom",
+      "refersTo": "galley-head",
+      "description": "A draft's suggestions in one table, grouped under system heads with a tally and group actions; ranked by weight; the next decision at the foot as a question.",
+      "html": "<table class=\"ds-galley\"><thead><tr><th scope=\"col\">Change</th><th scope=\"col\" class=\"ds-galley__state\">State</th></tr></thead><tbody><tr class=\"ds-galley__head\"><th scope=\"colgroup\" colspan=\"2\"><span class=\"ds-galley__title\"><span class=\"ds-galley__new\">New system</span> Order Hub</span><span class=\"ds-galley__tally\">9 waiting</span><span class=\"ds-galley__actions\"><button type=\"button\" class=\"ds-text-button\">Accept the 1 ready here</button><button type=\"button\" class=\"ds-text-button\">Reject the 9 waiting here</button></span></th></tr><tr class=\"ds-row ds-due\" tabindex=\"0\"><th scope=\"row\"><span class=\"ds-sentence\">Depends on Dynamics CRM</span><span class=\"ds-secondary\">For: quotes</span><span class=\"ds-secondary\">Integration design · lines 1-12</span></th><td><span class=\"ds-status\">Needs your decision</span><span class=\"ds-secondary\">“Dynamics CRM” may be a system the draft already has</span></td></tr><tr class=\"ds-row\" tabindex=\"-1\"><th scope=\"row\"><span class=\"ds-sentence\">Adds the system Order Hub</span><span class=\"ds-secondary\">Integration design · lines 1-12</span></th><td><span class=\"ds-status\">Ready</span></td></tr><tr class=\"ds-row ds-running\" tabindex=\"-1\"><th scope=\"row\"><span class=\"ds-sentence\">Adds the component Order API, built with Microservice</span><span class=\"ds-secondary\">Integration design · lines 1-12</span></th><td><span class=\"ds-status\">Waits for another</span><span class=\"ds-secondary\">Waits for the system Order Hub</span></td></tr><tr class=\"ds-row ds-past\" tabindex=\"-1\"><th scope=\"row\"><span class=\"ds-sentence\">Calls the API of TIBCO</span><span class=\"ds-secondary\">Integration design · lines 1-12</span></th><td><span class=\"ds-status\">Rejected</span></td></tr></tbody></table><p class=\"ds-next\"><button type=\"button\" class=\"ds-next-button\">Decide whether “Dynamics CRM” is a system the draft already has →</button></p>",
+      "css": ".ds-galley { width: 100%; border-collapse: collapse; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; line-height: 1.45; color: var(--ink, #16181d); } .ds-galley thead th { padding: 0 0.5rem 0.25rem; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; text-align: left; } .ds-galley__state { width: 15rem; } .ds-galley__head th { padding: 1.5rem 0.5rem 0.5rem; border-bottom: 2px solid var(--rule-heavy, #16181d); font-weight: 400; text-align: left; } .ds-galley__title { margin-right: 1rem; font-stretch: 88%; font-weight: 680; } .ds-galley__new::after { content: ' ·'; font-weight: 400; } .ds-galley__tally { color: var(--ink-2, #474c55); font-size: 0.8125rem; } .ds-galley__actions { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; margin-top: 0.25rem; } .ds-text-button { min-height: 1.5rem; padding: 0 0.25rem; border: 0; background: none; color: var(--ink, #16181d); font: inherit; font-size: 0.8125rem; font-weight: 500; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.2em; cursor: pointer; } .ds-text-button:hover { text-decoration-thickness: 2px; } .ds-row { cursor: pointer; transition: background-color 180ms ease-out; } .ds-row:hover { background: var(--stock-band, #f1f1ee); } .ds-row:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: -2px; } .ds-row th, .ds-row td { padding: 0.5rem; border-bottom: 1px solid var(--rule-faint, #e4e5e7); font-weight: 400; text-align: left; vertical-align: top; } .ds-secondary { display: block; color: var(--ink-2, #474c55); font-size: 0.8125rem; } .ds-due .ds-sentence, .ds-due .ds-status { font-weight: 680; } .ds-running { color: var(--ink-2, #474c55); } .ds-past, .ds-past .ds-secondary { color: var(--ink-3, #686e78); } .ds-next { margin-top: 1.5rem; font-size: 1.0625rem; font-weight: 680; font-family: var(--face, 'Archivo Variable', sans-serif); } .ds-next-button { padding: 0.15rem 0; border: 0; background: none; color: var(--reference, #1d5ca3); font: inherit; text-align: start; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.2em; cursor: pointer; } .ds-next-button:hover { text-decoration-thickness: 2px; } .ds-next-button:focus-visible, .ds-text-button:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; }"
+    },
+    {
+      "name": "Open Suggestion",
+      "kind": "custom",
+      "refersTo": "suggestion-row-open",
+      "description": "A suggestion opened in place on the stock band: the cited source and the decision under labels on 1px rules, matches as choices, accept, edit or reject, and the waits line.",
+      "html": "<div class=\"ds-detail\"><section class=\"ds-detail__col\"><h4 class=\"ds-detail__label\">From the document</h4><p>“System: Dynamics CRM”</p><p class=\"ds-detail__where\">Integration design · lines 1-12</p><div class=\"ds-passage\"><span class=\"ds-place\"><span class=\"ds-place__where\">lines 1-12</span><span>System: Dynamics CRM</span></span></div></section><section class=\"ds-detail__col\"><h4 class=\"ds-detail__label\">Decision</h4><fieldset class=\"ds-choices\"><legend>Is “Dynamics CRM” a system the draft already has?</legend><label><input type=\"radio\" name=\"m\"> Yes, it is <strong>BCRM</strong><span class=\"ds-secondary\"> · Similar name to BCRM.</span></label><label><input type=\"radio\" name=\"m\"> No, it is a new system</label></fieldset><p class=\"ds-actions\"><button type=\"button\" class=\"ds-action\" disabled aria-describedby=\"ds-why\">Accept</button><button type=\"button\" class=\"ds-text\">Edit, then accept</button><button type=\"button\" class=\"ds-text\">Reject</button></p><p id=\"ds-why\" class=\"ds-secondary\">Say first whether the name means a system the draft has.</p></section></div>",
+      "css": ".ds-detail { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 1.5rem; padding: 0.5rem 0.5rem 1rem; border-bottom: 2px solid var(--rule-heavy, #16181d); background: var(--stock-band, #f1f1ee); font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; line-height: 1.45; color: var(--ink, #16181d); } .ds-detail__col { display: grid; gap: 0.75rem; align-content: start; min-width: 0; } .ds-detail__label { margin: 0; padding-bottom: 0.25rem; border-bottom: 1px solid var(--rule, #cfd2d6); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; } .ds-detail p { margin: 0; } .ds-detail__where, .ds-secondary { color: var(--ink-2, #474c55); font-size: 0.8125rem; font-weight: 400; } .ds-passage { padding: 0.5rem 0.75rem; background: var(--stock, #fbfbfa); color: var(--ink-2, #474c55); font-size: 0.8125rem; } .ds-place { display: grid; grid-template-columns: 6rem minmax(0, 1fr); } .ds-place__where { color: var(--ink-3, #686e78); } .ds-choices { display: grid; gap: 0.5rem; margin: 0; padding: 0; border: 0; } .ds-choices legend { padding: 0 0 0.25rem; color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; } .ds-choices label { display: inline-flex; gap: 0.5rem; align-items: center; min-height: 1.5rem; font-weight: 500; } .ds-choices input { width: 1.125rem; height: 1.125rem; accent-color: var(--ink, #16181d); } .ds-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1rem; } .ds-action { min-height: 2.25rem; padding: 0 1rem; border: 2px solid var(--ink, #16181d); border-radius: 2px; background: var(--ink, #16181d); color: var(--stock, #fbfbfa); font: inherit; font-weight: 680; cursor: pointer; } .ds-action:hover { background: var(--stock, #fbfbfa); color: var(--ink, #16181d); } .ds-action:disabled { border-color: var(--rule, #cfd2d6); background: var(--stock-band, #f1f1ee); color: var(--ink-3, #686e78); cursor: not-allowed; } .ds-text { min-height: 1.5rem; padding: 0 0.25rem; border: 0; background: none; color: var(--ink, #16181d); font: inherit; font-size: 0.8125rem; font-weight: 500; text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; } .ds-text:hover { text-decoration-thickness: 2px; } .ds-action:focus-visible, .ds-text:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; }"
+    },
+    {
+      "name": "Catalogue Form Rows",
+      "kind": "input",
+      "refersTo": "form-legend",
+      "description": "The editors' repeating rows: a borderless fieldset opened by a bold legend on a heavy rule, each row ruled at its foot with its own remove, one add at the foot; fields on a wrapping grid.",
+      "html": "<fieldset class=\"ds-rows\"><legend class=\"ds-rows__legend\">Steps</legend><fieldset class=\"ds-rows__row\"><div class=\"ds-grid\"><label class=\"ds-field\"><span>No.</span><input value=\"10\"></label><label class=\"ds-field\"><span>Name</span><input value=\"Capture the order\"></label><label class=\"ds-field\"><span>Performed by</span><select><option>Order Hub (not in the draft yet)</option></select></label></div><button type=\"button\" class=\"ds-text\">× Remove step 10</button></fieldset><button type=\"button\" class=\"ds-text\">+ Add another step</button></fieldset>",
+      "css": ".ds-rows { display: grid; gap: 0.5rem; margin: 0; padding: 0; border: 0; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; color: var(--ink, #16181d); } .ds-rows__legend { width: 100%; padding: 0 0 0.25rem; border-bottom: 2px solid var(--rule-heavy, #16181d); font-weight: 680; } .ds-rows__row { display: grid; gap: 0.5rem; margin: 0; padding: 0 0 0.75rem; border: 0; border-bottom: 1px solid var(--rule, #cfd2d6); } .ds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: 0.75rem 1rem; align-items: end; } .ds-field { display: grid; gap: 0.25rem; } .ds-field > span { color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; } .ds-field input, .ds-field select { min-height: 2rem; padding: 0.25rem 0.5rem; border: 1px solid var(--ink-3, #686e78); border-radius: 2px; background: var(--stock, #fbfbfa); color: inherit; font: inherit; } .ds-field input:hover, .ds-field select:hover { border-color: var(--ink, #16181d); } .ds-field input:focus-visible, .ds-field select:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-text { justify-self: start; min-height: 1.5rem; padding: 0 0.25rem; border: 0; background: none; color: var(--ink, #16181d); font: inherit; font-size: 0.8125rem; font-weight: 500; text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; } .ds-text:hover { text-decoration-thickness: 2px; } .ds-text:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; }"
     }
   ],
   "narrative": {
     "northStar": "The Timetable Book",
-    "overview": "The portal is set like a national railway timetable book. Each area of shared knowledge is a numbered table. Its number stands monumental and condensed in a left margin column. The table beside it has an exact column set, and each sourced fact carries a reference mark that leads to a numbered note at the table's foot. The page is near-white neutral stock with black ink. Hierarchy comes from three rule weights and from type weight, never from containers, fills or colour. Two colours are held back, and each has exactly one job.\n\nThe density is that of a reference work. Rows are tight (0.5rem block padding) and separated by hairlines. Numbers and dates use tabular, lining figures and sit right-aligned, as in any timetable. The surface is flat: no cards, no shadows for depth, no pills, no gradients. One sticky masthead strip and an index of the tables bind the book, and every screen sits inside that binding.\n\nThe architecture catalogue (Table 2) reads like the station pages of the same book: an index of systems held beside one system's sheet, each sheet a run of governance sections, each connection a sentence, each journey a timetable of numbered steps grouped by phase.\n\nThe interface language is English. It calls the indexed units of a document \"passages\", and the units of the table-aware cut \"fields\"; it never says \"chunks\". Content keeps its own language and direction. Arabic names render in Noto Sans Arabic, in their own direction, beside the English in the same cell. The theme is light only. This is a decision for an office-daylight scene, not an omission.",
+    "overview": "The portal is set like a national railway timetable book. Each area of shared knowledge is a numbered table. Its number stands monumental and condensed in a left margin column. The table beside it has an exact column set, and each sourced fact carries a reference mark that leads to a numbered note at the table's foot. The page is near-white neutral stock with black ink. Hierarchy comes from three rule weights and from type weight, never from containers, fills or colour. Two colours are held back, and each has exactly one job.\n\nThe density is that of a reference work. Rows are tight (0.5rem block padding) and separated by hairlines. Numbers and dates use tabular, lining figures and sit right-aligned, as in any timetable. The surface is flat: no cards, no shadows for depth, no pills, no gradients. One sticky masthead strip and an index of the tables bind the book, and every screen sits inside that binding.\n\nThe architecture catalogue (Table 2) reads like the station pages of the same book: an index of systems held beside one system's sheet, each sheet a run of governance sections, each connection a sentence, each journey a timetable of numbered steps grouped by phase. A draft version adds the book's galley proofs: the documents being read for changes, and every suggested change set in one table under the system it would change, to be accepted or rejected line by line.\n\nThe interface language is English. It calls the indexed units of a document \"passages\", and the units of the table-aware cut \"fields\"; it never says \"chunks\". Content keeps its own language and direction. Arabic names render in Noto Sans Arabic, in their own direction, beside the English in the same cell. The theme is light only. This is a decision for an office-daylight scene, not an omission.",
     "keyCharacteristics": [
       "Near-white neutral stock (never cream) and black ink; flat, ruled, unboxed.",
       "One grotesk (Archivo Variable) in several widths: 100% for text, 88% for titles, 72% for labels, 62% for monumental table numbers.",
@@ -528,7 +572,7 @@
       },
       {
         "name": "The Weight Is Rank Rule",
-        "body": "A row's importance is set by weight and ink, never by colour or badge. A due row has its name and status in bold (680). A delayed row has its status in bold and in disruption red. A running row is set in ink 2, a row in service in regular ink, a past row in ink 3. Catalogue versions follow it: in preparation is due (bold), in service is regular ink, replaced is past.",
+        "body": "A row's importance is set by weight and ink, never by colour or badge. A due row has its name and status in bold (680). A delayed row has its status in bold and in disruption red. A running row is set in ink 2, a row in service in regular ink, a past row in ink 3. Catalogue versions follow it: in preparation is due (bold), in service is regular ink, replaced is past. Suggestions follow it: \"Needs your decision\" is due (sentence and state bold), \"Ready\" is regular ink, \"Waits for another\" and \"Already in the draft\" are running (ink 2), and accepted or rejected suggestions are past. A draft document's reading follows it too: waiting or being read is running, a failed reading is delayed.",
         "section": "typography"
       },
       {
@@ -565,6 +609,11 @@
         "name": "The Connection Sentence Rule",
         "body": "A connection reads as a sentence that names both systems. On a sheet the phrase names the sheet's system; in All connections the verb rides under From (\"calls the API of\", \"sends events to\"). Never an arrow, a bare kind code or an unnamed \"this system\".",
         "section": "components"
+      },
+      {
+        "name": "The Kept Place Rule",
+        "body": "Deciding never moves the work. Groups keep their first-seen place for the session, rows never reflow on a state change, and focus lands where the next decision is, never back at the top.",
+        "section": "components"
       }
     ],
     "dos": [
@@ -587,6 +636,13 @@
       "Do use tabular, lining figures, and end-align numbers and dates.",
       "Do let content keep its own direction: `dir=\"auto\"` on names, `lang=\"ar\" dir=\"rtl\"` on Arabic secondary lines, set in Noto Sans Arabic.",
       "Do keep targets at least 24px (text buttons 1.5rem, return links 1.5rem) and show the 2px blue focus outline on everything focusable.",
+      "Do set a draft's suggestions in one galley under system heads, and keep each group's first-seen place for the session.",
+      "Do say a suggestion's change as a sentence, with its source and reason on secondary ink-2 lines.",
+      "Do word a bulk action as exactly what it takes (\"Accept the 4 ready and the 10 that wait on them\"), and leave matches, inferred links and replacements to a person.",
+      "Do confirm a group rejection inline in its head, and a destructive draft step with an acknowledgement checkbox.",
+      "Do word the next decision as the question it asks.",
+      "Do move focus after a decision to the next waiting suggestion, or to where the decided row stood.",
+      "Do edit a list one item per line, and keep a name the draft lacks choosable as \"(not in the draft yet)\".",
       "Do honour `prefers-reduced-motion`. All transitions and animations collapse to 0.01ms."
     ],
     "donts": [
@@ -601,7 +657,10 @@
       "Don't give a secondary fact (a cut, a count, a reason, a place) its own column.",
       "Don't say \"chunks\" on screen.",
       "Don't rule a quiet line twice. Directly under a section title it rests on the title's heavy rule.",
-      "Don't show a connection as an arrow or a bare kind code."
+      "Don't show a connection as an arrow or a bare kind code.",
+      "Don't offer a group action for nothing or for one: \"Accept the N ready here\" needs one ready, \"Reject the N waiting here\" needs two waiting.",
+      "Don't show a zero count for an exceptional state; \"Already in the draft\" appears only when it has members.",
+      "Don't box a repeating form row or an editor. Rows are ruled fieldsets, and editing happens in the open row."
     ]
   }
 }

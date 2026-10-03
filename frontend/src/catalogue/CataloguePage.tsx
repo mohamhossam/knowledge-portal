@@ -7,6 +7,7 @@ import { api, type Release } from "../api/client";
 import { ApiError, errorMessage } from "../api/errors";
 import { count, formatDay } from "../home/format";
 import { changeSentence, contents } from "./catalogue";
+import { DraftActions } from "./DraftActions";
 import { type CatalogueContext, useActorNames, useMappingImpact, useRelease } from "./useCatalogue";
 
 /**
@@ -33,7 +34,7 @@ export function CataloguePage() {
           <span className="visually-hidden">Table 2:</span> Architecture catalogue
         </h1>
         {edition}
-        {pages && book && <SubIndex base={base} inService={inService} />}
+        {pages && book && <SubIndex base={base} inService={inService} draft={book.release.status === "draft"} />}
       </div>
     </header>
   );
@@ -81,6 +82,7 @@ export function CataloguePage() {
             <Edition release={book.release} inService={inService} actorName={actorName} />
           </p>
           {inService ? <MappedEarlier /> : <Consequence release={book.release} />}
+          {book.release.status === "draft" && <DraftActions key={book.release.id} release={book.release} />}
         </>,
         true,
       )}
@@ -145,13 +147,16 @@ function Consequence({ release }: { release: Release }) {
   );
 }
 
-function SubIndex({ base, inService }: { base: string; inService: boolean }) {
+function SubIndex({ base, inService, draft }: { base: string; inService: boolean; draft: boolean }) {
   const { pathname } = useLocation();
   const pages = [
     { label: "Systems", to: base, current: pathname === base || pathname.startsWith(`${base}/systems`) },
     { label: "Domains", to: `${base}/domains`, current: pathname.startsWith(`${base}/domains`) },
     { label: "Offerings", to: `${base}/offerings`, current: pathname.startsWith(`${base}/offerings`) },
     { label: "Journeys", to: `${base}/journeys`, current: pathname.startsWith(`${base}/journeys`) },
+    ...(draft
+      ? [{ label: "Suggestions", to: `${base}/suggestions`, current: pathname.startsWith(`${base}/suggestions`) }]
+      : []),
     {
       label: inService ? "Versions" : "All versions",
       to: "/architecture/versions",

@@ -247,17 +247,23 @@ export function architectureOverview(
       : { text: "No edition is in force. Requirement work maps against nothing until a release is published." },
     next: pendingTotal > 0
       ? {
-          to: "/architecture",
+          to: pendingDrafts.length === 1 && pendingDrafts[0] ? draftSuggestions(pendingDrafts[0].key) : "/architecture/versions",
           label: pendingDrafts.length === 1
             ? `${count(pendingTotal, "suggestion")} to decide in ‘${pendingDrafts[0]?.name}’`
             : `${count(pendingTotal, "suggestion")} to decide across ${count(pendingDrafts.length, "draft")}`,
         }
       : drafts.length > 0
-        ? { to: "/architecture", label: `${count(drafts.length, "draft release")} ${drafts.length === 1 ? "awaits" : "await"} publication` }
+        ? {
+            to: drafts.length === 1 && drafts[0] ? draftSuggestions(drafts[0].id) : "/architecture/versions",
+            label: `${count(drafts.length, "draft release")} ${drafts.length === 1 ? "awaits" : "await"} publication`,
+          }
         : { label: "Nothing in the architecture catalogue awaits a curator." },
     extent: { value: active?.systems.length ?? 0, label: count(active?.systems.length ?? 0, "system") },
   };
 }
+
+/** Where a draft is worked on: its documents and suggestions. */
+const draftSuggestions = (releaseId: string) => `/architecture/versions/${encodeURIComponent(releaseId)}/suggestions`;
 
 // Table 3 ----------------------------------------------------------------------
 

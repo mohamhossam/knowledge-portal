@@ -133,8 +133,20 @@ ADR-0099.
   - Versions: every version with its history and catalogue files, and putting a replaced version
     back in service with a reason, after saying what it would change. Any version reads the same
     way, with its changes against the version in service.
+- **Done: the draft from documents** (the second of three catalogue pull requests).
+  - Starting, renaming and removing the one draft; the draft reads like any version, with a
+    Suggestions page under its head.
+  - Its documents: added and read, reading state with cancel and read again, removal, and the
+    readings' warnings as numbered notes.
+  - Every suggestion gathered under the system it would change, new systems first, keeping its
+    place while deciding; decided by keyboard (j/k, Enter, a, r, e, Esc) or pointer, one after
+    another on the revision the last returned.
+  - Possible matches chosen in place, inferred links checked against their cited passage, waits
+    said in the documents' names; accepting the ready ones and what they lift in one step.
+  - Editing before accepting, for every kind: systems, components, capabilities and their
+    phrases, constraints, dependencies, domains and placements, and whole offerings and journeys
+    (editors the hand edits will reuse).
 - **Next screens, each critiqued on a live seeded page before its pull request:**
-  - the draft from documents (uploads, suggestions, possible matches);
   - hand edits, the catalogue file, build, impact checks and publishing;
   - squad catalogue.
 

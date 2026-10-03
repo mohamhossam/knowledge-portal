@@ -231,6 +231,38 @@ components:
   version-detail:
     backgroundColor: "{colors.stock-band}"
     padding: "0.5rem 1rem 1rem"
+  galley-head:
+    textColor: "{colors.ink}"
+    typography: "{typography.body}"
+    padding: "1.5rem 0.5rem 0.5rem"
+  galley-tally:
+    textColor: "{colors.ink-2}"
+    typography: "{typography.meta}"
+  suggestion-row:
+    textColor: "{colors.ink}"
+    typography: "{typography.body}"
+    padding: "0.5rem"
+  suggestion-row-open:
+    backgroundColor: "{colors.stock-band}"
+  suggestion-row-waits:
+    textColor: "{colors.ink-2}"
+  suggestion-row-decided:
+    textColor: "{colors.ink-3}"
+  suggestion-detail-label:
+    textColor: "{colors.ink-2}"
+    typography: "{typography.label}"
+    padding: "0 0 0.25rem"
+  cited-passage:
+    backgroundColor: "{colors.stock}"
+    textColor: "{colors.ink-2}"
+    typography: "{typography.meta}"
+    padding: "0.5rem 0.75rem"
+  form-legend:
+    textColor: "{colors.ink}"
+    padding: "0 0 0.25rem"
+  next-button:
+    textColor: "{colors.reference}"
+    typography: "{typography.lead}"
 ---
 
 # Design System: Knowledge portal
@@ -243,7 +275,7 @@ The portal is set like a national railway timetable book. Each area of shared kn
 
 The density is that of a reference work. Rows are tight (0.5rem block padding) and separated by hairlines. Numbers and dates use tabular, lining figures and sit right-aligned, as in any timetable. The surface is flat: no cards, no shadows for depth, no pills, no gradients. One sticky masthead strip and an index of the tables bind the book, and every screen sits inside that binding.
 
-The architecture catalogue (Table 2) reads like the station pages of the same book: an index of systems held beside one system's sheet, each sheet a run of governance sections, each connection a sentence, each journey a timetable of numbered steps grouped by phase.
+The architecture catalogue (Table 2) reads like the station pages of the same book: an index of systems held beside one system's sheet, each sheet a run of governance sections, each connection a sentence, each journey a timetable of numbered steps grouped by phase. A draft version adds the book's galley proofs: the documents being read for changes, and every suggested change set in one table under the system it would change, to be accepted or rejected line by line.
 
 The interface language is English. It calls the indexed units of a document "passages", and the units of the table-aware cut "fields"; it never says "chunks". Content keeps its own language and direction. Arabic names render in Noto Sans Arabic, in their own direction, beside the English in the same cell. The theme is light only. This is a decision for an office-daylight scene, not an omission.
 
@@ -260,21 +292,21 @@ The interface language is English. It calls the indexed units of a document "pas
 The palette is table stock and ink, plus two colours with a job each.
 
 ### Primary
-- **Reference Blue** (`reference`): footnote marks, note numbers, the note return links, the next-decision line, body links (including the toolbar's search link), the focus ring, the caret, and the "e" edit mark on an edited passage. Wherever the reader can follow something to somewhere else.
+- **Reference Blue** (`reference`): footnote marks, note numbers, the note return links, the next-decision line, body links (including the toolbar's search link), the focus ring, the caret, the "e" edit mark on an edited passage, the galley's next-decision button and the name of an existing system in a galley group head (a link to its sheet). Wherever the reader can follow something to somewhere else.
 - **Reference Wash** (`reference-wash`): the lit state of a row, mark or note when its partner is hovered or focused. Also text selection, and the way back on a system sheet: the connection row for the system the reader came from.
 
 ### Secondary
-- **Disruption Red** (`disruption`): failure only. This means a delayed or failed status (for example "Extraction failed"), a table that could not be read, a sign-in error, a failed processing line, a failed action, and anything blocking: the blocking count in the change notice, a blocking warning on a passage, a blocking file warning.
+- **Disruption Red** (`disruption`): failure only. This means a delayed or failed status (for example "Extraction failed", or a draft document's "Reading failed: why"), a table that could not be read, a sign-in error, a failed processing line, a failed action, and anything blocking: the blocking count in the change notice, a blocking warning on a passage, a blocking file warning.
 - **Disruption Wash** (`disruption-wash`): reserved as the wash partner of disruption. It is defined in the tokens but not yet used on a shipped surface.
 
 ### Neutral
-- **Table Stock** (`stock`): the page and the masthead background. It is a neutral near-white, never cream.
-- **Stock Band** (`stock-band`): the only tonal step off the page. It is the scrollbar track, the background of a hovered passage row, the background of the focused/open passage row together with its detail row (the row opens in place on this band, never in a card), the fill of a disabled action button, the surrounding-text block under a search result (padded on the band, never ruled or boxed), and an open catalogue version's row together with its detail row.
-- **Ink** (`ink`): text, the working text in a passage row, the fill of the primary and action buttons, the current-index bar, the pressed-filter bar, the current sub-index link and its bar, the current systems index entry and its bar, the catalogue's bold "still mapped with an earlier version" line, the index extent rules, the checkbox accent and the field border on hover.
-- **Ink 2** (`ink-2`): secondary text. This covers column heads, edition lines, rows in service, notes, the quiet state, Arabic secondary lines, field labels, the comparison (in service or as extracted) column of the passage table, unpressed filters, the keys line, the save bar's state and reason lines, unselected sub-index links, governance section leads, the secondary lines in a governance table, the text of a search result's surrounding-text block, the systems index's group heads, count and "which name matched" lines, a sheet's fact labels, Arabic line and meta line, the connection phrases, journey phase heads, the count after a section title, the "Its catalogue file:" label and the put-back panel's waits line.
-- **Ink 3** (`ink-3`): rows in the past, disabled controls (including the disabled action button's text), the select and field borders, the masthead dot, excluded or removed passages, replaced catalogue versions, an order type no longer offered, and the "Not placed" row of a domain tree.
-- **Heavy Rule** (`rule-heavy`): the rule under the masthead and table heads, the totals label and the notice head, and the double rule above the notes. Also the change notice's heading, the top and bottom of the processing line and the withdraw panel, the foot of an open passage's detail row, the top of the save bar, and the line under a governance section title and a governance table's column heads. In the catalogue: under each group head of the systems index, above a sheet's facts list, at the foot of an open version's detail row, and above and below the put-back panel.
-- **Rule** (`rule`): the 1px rule between tables, under the index and above "in preparation" text and the "Add a document" section. Also the resting underline of title links, the border of a disabled action button, the outline of `kbd` key caps, the frame of a source preview image, the line under a document's or the catalogue's sub-index, and the line under a journey's phase head.
+- **Table Stock** (`stock`): the page and the masthead background. It is a neutral near-white, never cream. Inside an open suggestion, which already sits on the band, the cited passage block takes the stock instead, so it reads as the document's own page.
+- **Stock Band** (`stock-band`): the only tonal step off the page. It is the scrollbar track, the background of a hovered passage row, the background of the focused/open passage row together with its detail row (the row opens in place on this band, never in a card), the fill of a disabled action button, the surrounding-text block under a search result (padded on the band, never ruled or boxed), an open catalogue version's row together with its detail row, and a hovered or open suggestion row together with its detail row.
+- **Ink** (`ink`): text, the working text in a passage row, the fill of the primary and action buttons, the current-index bar, the pressed-filter bar, the current sub-index link and its bar, the current systems index entry and its bar, the catalogue's bold "still mapped with an earlier version" line, a suggestion that needs your decision (sentence and state in bold), the bold "New system" in a galley group head, the bold legend of a repeating form group, the index extent rules, the checkbox accent and the field border on hover.
+- **Ink 2** (`ink-2`): secondary text. This covers column heads, edition lines, rows in service, notes, the quiet state, Arabic secondary lines, field labels, the comparison (in service or as extracted) column of the passage table, unpressed filters, the keys line, the save bar's state and reason lines, unselected sub-index links, governance section leads, the secondary lines in a governance table, the text of a search result's surrounding-text block, the systems index's group heads, count and "which name matched" lines, a sheet's fact labels, Arabic line and meta line, the connection phrases, journey phase heads, the count after a section title, the "Its catalogue file:" label and the put-back panel's waits line. In a draft: a document reading in progress ("Waiting to be read", "Being read"), a suggestion that waits for another or is already in the draft, a galley group head's tally, an open suggestion's "From the document" and "Decision" labels, form hints, and the waits lines under the draft's forms and decisions.
+- **Ink 3** (`ink-3`): rows in the past, disabled controls (including the disabled action button's text), the select and field borders, the masthead dot, excluded or removed passages, replaced catalogue versions, decided (accepted or rejected) suggestions, an order type no longer offered, and the "Not placed" row of a domain tree.
+- **Heavy Rule** (`rule-heavy`): the rule under the masthead and table heads, the totals label and the notice head, and the double rule above the notes. Also the change notice's heading, the top and bottom of the processing line and the withdraw panel, the foot of an open passage's detail row, the top of the save bar, and the line under a governance section title and a governance table's column heads. In the catalogue: under each group head of the systems index, above a sheet's facts list, at the foot of an open version's detail row, and above and below the put-back panel. In a draft: above and below the rename and remove steps, under each galley group head, at the foot of an open suggestion's detail row, and under a repeating form group's legend.
+- **Rule** (`rule`): the 1px rule between tables, under the index and above "in preparation" text and the "Add a document" section. Also the resting underline of title links, the border of a disabled action button, the outline of `kbd` key caps, the frame of a source preview image, the line under a document's or the catalogue's sub-index, the line under a journey's phase head, the line under each label of an open suggestion's detail, the foot of each row of a repeating form group, and the legend of a group nested inside a row.
 - **Faint Rule** (`rule-faint`): the hairlines between rows and between totals, under the change notice's counts, between passage rows, between governance table rows, between systems index entries, between a sheet's facts, and between the items of a sheet's constraint, rule and journey lists.
 
 ### Named Rules
@@ -292,15 +324,15 @@ The palette is table stock and ink, plus two colours with a job each.
 
 ### Hierarchy
 - **Monument** (820, clamp(4rem, 3rem + 3vw, 5.75rem), line-height 0.8, width 62%): the table number in the margin column. It is aria-hidden; the heading carries "Table N:" for screen readers. At 45rem and below it drops to 3.25rem and sits above the title. Index numbers use the same width and weight at 2.25rem (1.75rem on phones).
-- **Title** (680, 1.625rem, line-height 1.1, width 88%): table titles and notice titles. Index entry titles use the same width and weight at body size. A catalogue sheet's title (a system, an offering, a journey) takes the title style without a margin number.
+- **Title** (680, 1.625rem, line-height 1.1, width 88%): table titles and notice titles. Index entry titles use the same width and weight at body size. A catalogue sheet's title (a system, an offering, a journey) takes the title style without a margin number. A galley group head's name takes the title width and weight at body size.
 - **Lead** (680, 1.0625rem): the next-decision line, the portal name in the masthead, the titles of the "Add a document" section and the withdraw panel, and governance section titles (bold, on a heavy rule).
 - **Body** (400, 0.9375rem, line-height 1.45, width 100%): rows, totals and edition lines. Edition lines are capped at 72ch, notice text at 62ch, note text at 80ch, governance leads at 72ch and a search result's passage at 64ch. Sub-index links take body size in medium weight (bold when current).
-- **Label** (500, 0.8125rem, width 72%, letter-spacing 0.01em): column heads, totals labels, field labels, the change notice heading the passage detail labels ("Edited from", "As extracted"), the governance table's column heads, the legend of a choices group, the systems index's group heads, a sheet's fact labels and a journey's phase heads, in ink 2. They use sentence case, never uppercase.
-- **Meta** (400 to 500, 0.8125rem): the notes, the masthead's "Valid as of" line, text buttons, the Arabic secondary name line, the passage table's "Where" column, exclusion reasons and flags, the keys line, the save bar's state and reason lines, the secondary lines in a governance table, a search result's surrounding text, sub-index links on phones, the catalogue's consequence and mapped-earlier lines, the systems index count and its "which name matched" lines, a sheet's meta line, and the connection phrases. Key caps inside the keys line step down to 0.75rem, medium weight.
+- **Label** (500, 0.8125rem, width 72%, letter-spacing 0.01em): column heads, totals labels, field labels, the change notice heading the passage detail labels ("Edited from", "As extracted"), the governance table's column heads, the legend of a choices group, the systems index's group heads, a sheet's fact labels, a journey's phase heads, and an open suggestion's "From the document", "Decision" and "Edit, then accept" labels, in ink 2. They use sentence case, never uppercase.
+- **Meta** (400 to 500, 0.8125rem): the notes, the masthead's "Valid as of" line, text buttons, the Arabic secondary name line, the passage table's "Where" column, exclusion reasons and flags, the keys line, the save bar's state and reason lines, the secondary lines in a governance table, a search result's surrounding text, sub-index links on phones, the catalogue's consequence and mapped-earlier lines, the systems index count and its "which name matched" lines, a sheet's meta line, the connection phrases, a galley group head's tally and inline confirm, form hints, and the waits line under a decision or a draft form. Key caps inside the keys line step down to 0.75rem, medium weight.
 - **Mark** (680, 0.6875rem): the superscript reference numeral, in blue.
 
 ### Named Rules
-**The Weight Is Rank Rule.** A row's importance is set by weight and ink, never by colour or badge. A due row has its name and status in bold (680). A delayed row has its status in bold and in disruption red. A running row is set in ink 2, a row in service in regular ink, a past row in ink 3. Catalogue versions follow it: in preparation is due (bold), in service is regular ink, replaced is past.
+**The Weight Is Rank Rule.** A row's importance is set by weight and ink, never by colour or badge. A due row has its name and status in bold (680). A delayed row has its status in bold and in disruption red. A running row is set in ink 2, a row in service in regular ink, a past row in ink 3. Catalogue versions follow it: in preparation is due (bold), in service is regular ink, replaced is past. Suggestions follow it: "Needs your decision" is due (sentence and state bold), "Ready" is regular ink, "Waits for another" and "Already in the draft" are running (ink 2), and accepted or rejected suggestions are past. A draft document's reading follows it too: waiting or being read is running, a failed reading is delayed.
 
 **The Sentence Case Rule.** A value a source shouts ("FULFILS") is set in sentence case ("Fulfils") on screen. Labels, heads and group heads are sentence case too; nothing is uppercased for rank.
 
@@ -326,6 +358,8 @@ A document's own pages (Review, Search versions, Who cites it, Ownership) share 
 
 The catalogue shares the document page's head (monumental 2, title, edition lines, sub-index). The Systems page under it is a two-column grid: a 15rem systems index, a 2rem gap, then the sheet or All connections. The index is sticky under the masthead (3.5rem) and scrolls on its own track (the viewport's height less the masthead and 1rem; overscroll is contained). When a connection is followed, the index scrolls itself to keep the new current entry in view, after the sheet's heading has come into view. A page's first governance section takes 1rem of top padding so it sits level with the index's find field. On a sheet, Depends on and Used by stand side by side (2rem gap) above 80rem and stack below it. Sheet text (description, facts, list items) is capped at 72ch; a sheet's facts list runs a 7rem label column beside the value and spans the full sheet column. Inside an open version, tables cap at 62rem and the put-back panel at 62ch.
 
+A draft's Suggestions page has no index. It runs two governance sections across the catalogue column, Documents and then Suggestions, the first taking the 1rem first-section padding. The "Add a document" form under the documents loses the library's margin indent and 44rem cap and sits 1rem under the notes. The galley's State column is 15rem (9rem at 45rem and below), and every galley cell, head and detail keeps a 0.5rem inline gutter, so the band has a margin and the focus ring clears the first glyph. An open suggestion sets its source (1fr) beside its decision (1.25fr) with a 1.5rem gap, stacking below 60rem; quotes and the rationale cap at 64ch. Editor fields sit on a wrapping grid of columns at least 13rem wide, 0.75rem by 1rem apart, bottom-aligned; text areas and lines fields span the whole row. A draft's inline steps (rename, remove) sit 0.75rem under the head's actions, in the head's text column.
+
 At 45rem and below the catalogue goes to one column: the index loses its own scroll and sits in flow, and a chosen sheet replaces it ("All systems and connections" returns to it). All connections folds To into the From cell as one sentence line. Versions drops its State and disclosure columns and carries both inside the version cell. A sheet's facts stack label over value.
 
 The save bar is sticky to the bottom of the viewport (z-index 4, under the masthead's 5) above 45rem and static on phones. While it is present, the page carries 9rem of `scroll-padding-bottom`, so a passage moved to from the keyboard is never hidden under it.
@@ -339,7 +373,7 @@ The surface is flat. Depth is not used. Rules separate the parts: a 2px heavy ru
 
 ## Shapes
 
-The form is rectilinear. Rules run full width with square ends, and there are no cards or bordered panels. The only radius is 2px, on framed controls: the primary and action buttons, the persona select, field inputs, the file-selector button, and `kbd` key caps. Panels such as the processing line and the withdraw panel are ruled top and bottom, never boxed. Governance sections open on a heavy rule under their title and are never boxed; a choices group is a fieldset with its border and padding removed. The one filled block is a search result's surrounding text: a square stock-band fill with 0.5rem by 0.75rem padding and no rule. A sheet's facts list is a definition list opened by a heavy rule, each fact on a hairline, running the full sheet column. An open version's detail is a square stock-band row closed by a heavy rule. The index extent rule is a 3px ink bar on a fixed 7rem track. Its length is the table's share of the largest table, with a 3% minimum.
+The form is rectilinear. Rules run full width with square ends, and there are no cards or bordered panels. The only radius is 2px, on framed controls: the primary and action buttons, the persona select, field inputs, the file-selector button, and `kbd` key caps. Panels such as the processing line and the withdraw panel are ruled top and bottom, never boxed. Governance sections open on a heavy rule under their title and are never boxed; a choices group is a fieldset with its border and padding removed. The one filled block is a search result's surrounding text: a square stock-band fill with 0.5rem by 0.75rem padding and no rule. A sheet's facts list is a definition list opened by a heavy rule, each fact on a hairline, running the full sheet column. An open version's detail is a square stock-band row closed by a heavy rule. A repeating form group is a fieldset with its border removed, opened by its bold legend on a heavy rule; each row in it is a borderless fieldset closed by a 1px rule, never a box. An open suggestion's detail is a square stock-band row closed by a heavy rule, its cited passage a square stock block. The index extent rule is a 3px ink bar on a fixed 7rem track. Its length is the table's share of the largest table, with a 3% minimum.
 
 ## Components
 
@@ -367,7 +401,7 @@ One ink-2 meta line under the filter strip naming the review keys. Each key is a
 ### Navigation
 - **Masthead:** a strip with "Requirement AI · Knowledge portal" set at 72% width. The portal name is in bold lead, the parent product in ink 2. Next come "Valid as of" with a medium-weight time and a refresh text button, then the account at the right. A 2px heavy rule sits underneath.
 - **Index of tables:** three entries. Each has a monumental condensed number, a title at 88% width and bold weight, and a meta extent line with its count and a proportional rule. **Hover** underlines the title. **Current** adds the inset 3px ink bar. Each entry announces "Table N:" to screen readers.
-- **Document sub-index:** a labelled `nav` ("This document") under a document's head: Review · Search versions · Who cites it · Ownership. Each link is a 2.25rem-tall target in medium ink 2 with no underline; **hover** turns it to ink; **current** (`aria-current="page"`) sets it in bold ink with the inset 3px ink bar, above a 1px rule under the whole strip. While the working copy has unsaved changes, Review carries "· N unsaved" in regular weight. On phones the gap tightens to 0.75rem and the links drop to meta size; that override follows the base rule in the cascade. The catalogue uses the same strip, labelled "This catalogue": Systems · Domains · Offerings · Journeys · Versions, the last reading "All versions" while another version is being read.
+- **Document sub-index:** a labelled `nav` ("This document") under a document's head: Review · Search versions · Who cites it · Ownership. Each link is a 2.25rem-tall target in medium ink 2 with no underline; **hover** turns it to ink; **current** (`aria-current="page"`) sets it in bold ink with the inset 3px ink bar, above a 1px rule under the whole strip. While the working copy has unsaved changes, Review carries "· N unsaved" in regular weight. On phones the gap tightens to 0.75rem and the links drop to meta size; that override follows the base rule in the cascade. The catalogue uses the same strip, labelled "This catalogue": Systems · Domains · Offerings · Journeys · Suggestions (on a draft only) · Versions, the last reading "All versions" while another version is being read.
 
 ### Numbered Table (signature)
 The portal's only container. Every area screen is built from it.
@@ -377,7 +411,7 @@ The portal's only container. Every area screen is built from it.
 - **Mixed language:** a name cell sets its primary name with `dir="auto"`. The Arabic name sits on a second meta line with `lang="ar" dir="rtl"`, set in ink 2.
 - **Totals:** a 34rem-wide definition list under a label with a heavy rule. Each total sits on a hairline, with its value in medium weight and end-aligned.
 - **Quiet and failure:** when no row needs anyone, one ink-2 line sits under a heavy rule. If the table could not be read, the line is red, medium-weight text with role="alert", followed by a "Try again" text button.
-- **Next decision:** the single action line at the table's foot. It is a blue, bold, lead-size link followed by a 16px arrow. When there is nothing to do, it becomes plain ink-2 text in regular weight.
+- **Next decision:** the single action line at the table's foot. It is a blue, bold, lead-size link followed by a 16px arrow. When there is nothing to do, it becomes plain ink-2 text in regular weight. Where the next decision is an action on the same page rather than a place, it is a button set exactly as the link: blue, bold, lead size, a 1px underline offset 0.2em that thickens to 2px on hover, the 16px arrow after it.
 
 ### Reference Marks and Notes (signature)
 - **Mark:** a superscript blue numeral (0.6875rem, 680) with no underline and line-height 0, so it never opens up the row. It is labelled "Note T.N" for screen readers. **Hover/focus** lights the mark and its note with the reference wash.
@@ -415,6 +449,8 @@ A governance table of exact passages, best first, under a one-line ink-2 count (
 ### Catalogue Head
 The document page's head set for Table 2: the monumental 2, the title "Architecture catalogue", then an ink-2 edition line that says the version's state first and names it in bold: "In service: 'Name', published by X on date. N systems, N connections."; "Replaced: 'Name', published …; no longer in service."; or "In preparation: 'Name', started by X; not yet published.", the last two followed by a "Read the version in service" link. Under it, a meta line capped at 80ch: on the version in service, a bold ink line only when work is still mapped with an earlier version ("3 requirements still mapped with an earlier version."); on any other version, the consequence ("Publishing it would …" or "Putting it back in service would …", else "Its contents match the version in service."). The platform's own seed actor is named "the platform", never an id.
 
+On a draft, a row of text buttons follows: "Rename it" and "Remove this draft", each with `aria-expanded`, each opening an inline step under the head in the withdraw panel's shape (lead title, heavy rules above and below, 62ch). Rename holds a Name field, "Rename it" beside "Keep the name", and a waits line ("Give the version a name.", "The name is unchanged."). Remove states what goes and what does not ("The version in service does not change, and requirement work never saw the draft."), then an acknowledgement checkbox ("I understand the draft and its decisions cannot be brought back."); "Remove the draft" waits on it ("Confirm above first.") beside "Keep it". Once removed, Versions opens with a status notice naming what was removed.
+
 ### Systems Index
 A labelled `nav` on its own sticky track (see Layout). A find field ("Find a system", placeholder "Name, alias or phrase") over an ink-2 meta count that answers the find ("2 systems known by 'order'", or "No system is known by 'x'."), announced politely. Systems group under label-style heads on a 2px heavy rule, each head the place path joined by " › ", with "Not placed in the landscape" for the rest. Each entry is a 2rem-tall body link on a hairline, in ink with no underline until hover. While finding, an ink-2 meta line under the name says which name matched (an alias or a phrase). **Current** (`aria-current="page"`) is bold with the inset 3px ink bar.
 
@@ -440,6 +476,41 @@ A governance table of offerings (code · family · version · lifecycle as a sec
 
 ### Versions
 A governance table, newest first with the draft on top, ranked by the Weight Is Rank Rule. The version cell holds the name as a link and a contents line (systems · connections · offerings · journeys); the state cell holds the state word, then who, when and the revision as a secondary line. A text-button disclosure with a 14px chevron ("History and files"; "History, files, put back" on a replaced version) opens a detail row in place: row and detail on the stock band, the detail closing on a heavy rule. Inside: "Its catalogue file:" with Excel, YAML and JSON download text buttons; "What happened to it" as a titled history table (When · What, a rationale quoted on a secondary line); and, on a replaced version, the put-back panel. That panel is the withdraw panel's form: the consequence first, a "Why it goes back" reason field, the action button beside a "Keep the version in service" text button that closes it, and an ink-2 meta line saying why it waits, linked by `aria-describedby`. On phones the state and the disclosure ride in the version cell.
+
+Under the table, the one draft is offered as a next-decision link: "Carry on with 'Name' →", into its suggestions. With no draft, a "Start a new version" form in the add-document shape takes its place: lead title over a 1px rule, an ink-2 lead saying a draft starts as a copy of the version in service, a Name field with an example placeholder, and "Start it" with its waits line.
+
+### Draft Documents
+The first section of a draft's Suggestions page: a governance table Document · Reading · Waiting (an end-aligned count of waiting suggestions).
+- **Document cell:** the title in its own direction, then a left-to-right secondary line: filename, language ("English", "Arabic", "English and Arabic") and who added it.
+- **Reading cell:** the state in words: "Not read yet", "Waiting to be read" and "Being read" (running), "Read", "Reading cancelled", "Reading failed: why" (delayed, bold red). The reading's warnings ride as numbered reference marks on the state, with numbered notes under the double rule, in reading order across the documents, said in English counts ("7 table rows were read directly", never "row(s)"). A read document adds "N suggestions on its last reading" as a secondary line.
+- **Row actions:** a wrapping line of text buttons under the state, 0.25rem by 1rem apart: "Read it", "Cancel the reading", "Read it again", "Remove it". Remove confirms inline on the same line: an ink-2 consequence ("Its waiting suggestions stay listed, without their passages."), a bold "Remove it from the draft" and "Keep it".
+- **Adding:** with no documents yet, the "Add a document" form stands open: an ink-2 lead naming the accepted files, then File, Title (filled from the filename) and Written in on the form grid, then "Add it and read it" with its 16px upload icon and waits line. Once documents exist it collapses to one "Add another document" text button (14px upload icon); after an add, the status notice sits beside it.
+
+### Suggestions Notice and Bulk Action
+The Suggestions section opens with the change notice resting on the section title's heavy rule, with no heading of its own: Waiting, Ready, Needs your decision, Waits for another, Accepted, Rejected; "Already in the draft" appears only when non-zero. An ink-2 total line follows ("18 suggestions from 2 documents."). Then one action button worded as exactly what it takes: "Accept the 4 ready and the 10 that wait on them" (or "Accept the 4 ready"; disabled as "Nothing to accept without a decision"). The second count is derived transitively: the waiting suggestions whose wait an accepted one would lift, again and again. Beside it, an ink-2 line gives the order and what stays for a person ("Domains first, then systems, then what hangs on them. Matches, inferred links and replacements stay for you."). Then the filter strip (Waiting · Needs your decision · Waits for another · Decided · All, Waiting pressed at first, Find at the end) and the keys line: j/k move, Enter open, a accept, r reject, e edit then accept, Esc close.
+
+### Galley (signature)
+One governance table of suggestions (Change · State), grouped in runs under system heads; never one table per system.
+- **Group order:** new systems first, then the systems the draft has, then the sections Landscape domains, Offerings and Journeys, alphabetical within each. A group keeps the place it first took in the session, so a new system accepted into the draft does not jump.
+- **Group head:** 1.5rem above, a heavy rule under it. The name in bold at title width: "New system · Name" with "New system" bold and the dot regular; an existing system as its sheet link; a section by its name. Then the ink-2 meta tally ("9 waiting", plus "· 3 of 9 shown" when filtered). Under it, text buttons: "Accept the N ready here" when N is at least 1, "Reject the N waiting here" when N is more than 1. Reject confirms inline in meta: "Reject all N? A rejection stays." with a bold "Yes, reject them" and "Keep them".
+- **Foot:** the next-decision button, worded as the question it asks ("Decide whether 'Dynamics CRM' is a system the draft already has →", "Check the inferred link: …", "Decide whether to replace what the draft has: …"). With none, an ink-2 line ("Nothing needs your decision; 14 suggestions still wait.", "Every suggestion is decided.").
+- **Focus:** one roving row in the tab order. After a decision, focus goes to the next waiting suggestion; if the decided row leaves the view, focus takes the row now standing where it stood. A row that remounts when its group changes gets focus back unless the curator moved it on purpose. Decisions are announced in a polite live region.
+
+**The Kept Place Rule.** Deciding never moves the work. Groups keep their first-seen place for the session, rows never reflow on a state change, and focus lands where the next decision is, never back at the top.
+
+### Suggestion Row
+- **Change cell (row header):** the change as one sentence ("Adds the component Order API, built with Microservice", "Depends on CWOM"), then secondary ink-2 meta lines: "For: …" on a dependency, then the source, left to right: the document title isolated, its place, and "· read from a table" when the table reader produced it.
+- **State cell:** the state word in the rank grammar (see the Weight Is Rank Rule; "Accepted with edits" when edited), then the reason as a secondary line: why it needs you ("'Dynamics CRM' may be a system the draft already has") or what it waits for ("Waits for the system Order Hub").
+- **Open:** Enter or a click opens the row in place on the stock band, its detail row closing on a heavy rule. Hover takes the band too; the focused row shows the blue outline inset by 2px.
+- **From the document:** a label on a 1px rule, the quote in curly quotes, then an ink-2 meta line with the document and place and a "Show the passage" (or "Show the image") text button. The passage opens as the search result's context block, on stock, one place per line, the cited place in ink at medium weight. An inferred link adds "Why it was inferred" with its rationale.
+- **Decision:** a label on a 1px rule ("Decision"; once decided, "Accepted by X" with the day and "A decision stays"). Possible matches come first as a choices group ("Is 'X' a system the draft already has?": "Yes, it is **Name** · reason", "No, it is a new system"). Then "Accept" (action button, 16px check), "Edit, then accept" and "Reject" (text buttons, 14px icons), and the waits line linked by `aria-describedby` ("Say first whether the name means a system the draft has.", "Waits for the system X. Accept that first, or edit this to name what the draft has.").
+
+### Catalogue Forms
+The editor opens in the decision column under an "Edit, then accept" label, never in a modal.
+- **Fields:** the world's field style on the form grid: text fields, text areas, selects at a 2rem minimum, checkboxes. A lines field edits a list one item per line, its hint saying so ("One per line.", or fuller, such as "One phrase per line. Requirement work maps a requirement here when it uses one.").
+- **System select:** the draft's systems by name; a name the document used that the draft lacks stays choosable as "Name (not in the draft yet)"; "No system named" where none is allowed.
+- **Repeating rows:** a ruled fieldset per group (Order types, Parts, Steps, Branches, Hand-overs), each row with its own "Remove …" text button (14px cross) and one "Add a <one>" or "Add another <one>" (14px plus) at the foot; "None yet." when empty.
+- **Actions:** "Accept as edited" (action button) beside "Stop editing", with the reason it waits ("Every step needs a number and a name."). Escape stops editing.
 
 ### Change Notice
 Counts first, like a timetable's list of changes. A heading in the label style over a heavy rule, then a wrapping row of counts closed by a hairline. Each count is a label beside a fixed 4ch end-aligned bold value, so a count growing never moves its neighbours. The blocking count is red, label and value. At 45rem and below the counts stack as a totals list, one hairline per count. An ink-2 meta total line follows.
@@ -478,6 +549,13 @@ Sign-in, no-access and still-opening screens use a 40rem column. Each has a port
 - **Do** use tabular, lining figures, and end-align numbers and dates.
 - **Do** let content keep its own direction: `dir="auto"` on names, `lang="ar" dir="rtl"` on Arabic secondary lines, set in Noto Sans Arabic.
 - **Do** keep targets at least 24px (text buttons 1.5rem, return links 1.5rem) and show the 2px blue focus outline on everything focusable.
+- **Do** set a draft's suggestions in one galley under system heads, and keep each group's first-seen place for the session.
+- **Do** say a suggestion's change as a sentence, with its source and reason on secondary ink-2 lines.
+- **Do** word a bulk action as exactly what it takes ("Accept the 4 ready and the 10 that wait on them"), and leave matches, inferred links and replacements to a person.
+- **Do** confirm a group rejection inline in its head, and a destructive draft step with an acknowledgement checkbox.
+- **Do** word the next decision as the question it asks.
+- **Do** move focus after a decision to the next waiting suggestion, or to where the decided row stood.
+- **Do** edit a list one item per line, and keep a name the draft lacks choosable as "(not in the draft yet)".
 - **Do** honour `prefers-reduced-motion`. All transitions and animations collapse to 0.01ms.
 
 ### Don't:
@@ -493,3 +571,6 @@ Sign-in, no-access and still-opening screens use a 40rem column. Each has a port
 - **Don't** say "chunks" on screen.
 - **Don't** rule a quiet line twice. Directly under a section title it rests on the title's heavy rule.
 - **Don't** show a connection as an arrow or a bare kind code.
+- **Don't** offer a group action for nothing or for one: "Accept the N ready here" needs one ready, "Reject the N waiting here" needs two waiting.
+- **Don't** show a zero count for an exceptional state; "Already in the draft" appears only when it has members.
+- **Don't** box a repeating form row or an editor. Rows are ruled fieldsets, and editing happens in the open row.
