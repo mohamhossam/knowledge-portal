@@ -1,8 +1,10 @@
+import { Plus } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 
 import { count } from "../home/format";
 import { LINK_VERB, allConnections, findSystems, systemGroups, systemName, UNPLACED } from "./catalogue";
+import { SystemEdit } from "./DraftEdits";
 import { SystemSheet } from "./SystemSheet";
 import { useCatalogueContext } from "./useCatalogue";
 
@@ -12,13 +14,21 @@ import { useCatalogueContext } from "./useCatalogue";
  */
 export function SystemsPage() {
   const { systemId } = useParams();
-  const { book, base } = useCatalogueContext();
+  const { book, base, editable } = useCatalogueContext();
+  const location = useLocation();
+  const notice = (location.state as { notice?: string } | null)?.notice;
+  const [adding, setAdding] = useState(false);
   const chosen = systemId !== undefined ? book.systems.get(systemId) : undefined;
   return (
-    <div className={chosen ? "catalogue__systems has-sheet" : "catalogue__systems"}>
-      <SystemsIndex current={chosen?.id} />
+    <div className={chosen || adding ? "catalogue__systems has-sheet" : "catalogue__systems"}>
+      <SystemsIndex current={chosen?.id} onAdd={editable && !adding ? () => setAdding(true) : undefined} />
       <div className="catalogue__main">
-        {systemId !== undefined && !chosen ? (
+        {notice && !adding && <p className="toolbar__notice catalogue__first" role="status">{notice}</p>}
+        {adding ? (
+          <div className="catalogue__first">
+            <SystemEdit onDone={() => setAdding(false)} />
+          </div>
+        ) : systemId !== undefined && !chosen ? (
           <p className="docpage__failure" role="alert">
             This version has no system “{systemId}”. <Link to={base}>See every system</Link>
           </p>
@@ -32,7 +42,7 @@ export function SystemsPage() {
   );
 }
 
-function SystemsIndex({ current }: { current?: string }) {
+function SystemsIndex({ current, onAdd }: { current?: string; onAdd?: () => void }) {
   const { book, base } = useCatalogueContext();
   const [query, setQuery] = useState("");
   const id = useId();
@@ -85,6 +95,14 @@ function SystemsIndex({ current }: { current?: string }) {
             : `No system is known by “${query.trim()}”.`
           : count(book.release.systems.length, "system")}
       </p>
+      {onAdd && (
+        <p className="sysindex__add">
+          <button type="button" className="text-button" onClick={onAdd}>
+            <Plus size={14} aria-hidden="true" />
+            Add a system
+          </button>
+        </p>
+      )}
       {shown.map((group) => (
         <section key={group.id} className="sysindex__group" aria-labelledby={`${id}-${group.id}`}>
           <h3 id={`${id}-${group.id}`} className="sysindex__place" dir="auto">

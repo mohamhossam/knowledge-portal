@@ -101,7 +101,7 @@ export function StartDraft({ draft }: { draft: Release | undefined }) {
   if (draft) {
     return (
       <p className="timetable__next">
-        <Link to={`/architecture/versions/${encodeURIComponent(draft.id)}/suggestions`}>
+        <Link to={`/architecture/versions/${encodeURIComponent(draft.id)}/sources`}>
           Carry on with ‘<span dir="auto">{draft.name || "Untitled version"}</span>’
           <ArrowRight size={16} aria-hidden="true" />
         </Link>
@@ -113,7 +113,7 @@ export function StartDraft({ draft }: { draft: Release | undefined }) {
     event.preventDefault();
     if (waits) return;
     create.mutate(name.trim(), {
-      onSuccess: (release) => navigate(`/architecture/versions/${encodeURIComponent(release.id)}/suggestions`),
+      onSuccess: (release) => navigate(`/architecture/versions/${encodeURIComponent(release.id)}/sources`),
     });
   };
   return (

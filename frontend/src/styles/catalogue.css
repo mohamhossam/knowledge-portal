@@ -720,3 +720,137 @@
   margin-left: var(--s1);
   vertical-align: -0.15em;
 }
+
+/* Hand edits open in place where the thing is read: on the stock band, closing on a heavy rule. */
+.edit-panel {
+  display: grid;
+  gap: var(--s3);
+  margin-top: var(--s3);
+  padding: var(--s3) var(--s4) var(--s4);
+  border-bottom: 2px solid var(--rule-heavy);
+  background: var(--stock-band);
+}
+
+.edit-panel__title {
+  font-size: var(--t-lead);
+  font-weight: var(--w-bold);
+}
+
+.edit-panel__lead {
+  max-width: 62ch;
+}
+
+.edit-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s3) var(--s4);
+}
+
+/* On the band, fields keep the stock so they read as places to write. */
+.edit-panel .field__input {
+  background-color: var(--stock);
+}
+
+.sheet__row-actions,
+.samples__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s4);
+  margin-top: var(--s1);
+}
+
+.sysindex__add {
+  margin-top: var(--s2);
+}
+
+/* Changes: a timetable's list of alterations. */
+.diff {
+  margin-top: var(--s3);
+}
+
+.diff__change {
+  width: 15rem;
+}
+
+/* Check: the build's state on one line, then the samples. */
+.build-state {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--s1);
+  align-items: baseline;
+}
+
+.build-state .status {
+  font-weight: var(--w-bold);
+}
+
+.build-state--failed .status {
+  color: var(--disruption);
+}
+
+.samples__result {
+  width: 45%;
+}
+
+.samples .is-open th,
+.samples .is-open td,
+.govtable .samples__detail td {
+  background: var(--stock-band);
+}
+
+.govtable .samples__detail td {
+  padding: var(--s2) var(--s4) var(--s4);
+  border-bottom: 2px solid var(--rule-heavy);
+}
+
+.evidence-list {
+  display: grid;
+  gap: var(--s3);
+}
+
+.evidence-list__items {
+  display: grid;
+  gap: var(--s2);
+  max-width: 72ch;
+  margin-top: var(--s2);
+}
+
+.evidence__text {
+  max-width: 72ch;
+  white-space: pre-line;
+}
+
+.tryone {
+  margin-top: var(--s5);
+}
+
+.tryone__result {
+  flex-basis: 100%;
+}
+
+/* Publish: the consequence first, in words, then the reason and the action. */
+.publish__consequence {
+  display: grid;
+  gap: var(--s2);
+  max-width: 72ch;
+}
+
+.publish__reason {
+  max-width: 44rem;
+}
+
+.publish__reason .field__input {
+  width: 100%;
+}
+
+.catalogue-file__preview {
+  max-width: none;
+}
+
+@media (max-width: 45rem) {
+  .samples__result,
+  .diff__change {
+    width: auto;
+  }
+}

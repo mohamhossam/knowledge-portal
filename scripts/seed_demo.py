@@ -674,6 +674,25 @@ def seed_catalogue(client: httpx.Client) -> None:
         version_id = uploaded.json()["documents"][-1]["id"]
         client.post(f"{base}/documents/{version_id}/extractions", headers=OWNER).raise_for_status()
     wait_for(client, f"{base}/suggestions", OWNER, lambda view: len(view["runs"]) >= 2)
+    # The team's sample requirements, for checking a draft before it is published.
+    samples = client.get("/architecture-knowledge/sample-requirements", headers=OWNER)
+    samples.raise_for_status()
+    client.put(
+        "/architecture-knowledge/sample-requirements",
+        json={
+            "expected_revision": samples.json()["revision"],
+            "items": [
+                {"text": text}
+                for text in (
+                    "Business customers order a fibre bundle through B2B Web (sample).",
+                    "Track installation milestones in CWOM (sample).",
+                    "Order Hub captures business orders from the web (sample).",
+                    "Partners order a voice line through the Partner Portal (sample).",
+                )
+            ],
+        },
+        headers=OWNER,
+    ).raise_for_status()
 
 
 def seed_squads(client: httpx.Client) -> None:

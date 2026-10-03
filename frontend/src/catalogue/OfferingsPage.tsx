@@ -1,19 +1,35 @@
-import { Fragment, useEffect, useId, useRef } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { Fragment, useEffect, useId, useRef, useState } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 
 import type { Offering } from "../api/client";
 import { CONFIDENCE, sentenceCase, systemName } from "./catalogue";
+import { EditButton, OfferingEdit, WholeRemove } from "./DraftEdits";
 import { useCatalogueContext } from "./useCatalogue";
 
 /** The product offerings in a version. */
 export function OfferingsPage() {
-  const { book, base } = useCatalogueContext();
+  const { book, base, editable } = useCatalogueContext();
+  const navigate = useNavigate();
+  const [adding, setAdding] = useState(false);
   const offerings = book.release.products ?? [];
   const journeys = book.release.journeys ?? [];
   return (
     <section className="govsection catalogue__first" aria-labelledby="offerings-title">
       <h2 id="offerings-title" className="govsection__title">Product offerings</h2>
       <p className="govsection__lead">What is sold, its parts, and which systems are responsible for each part.</p>
+      {editable && !adding && (
+        <p className="govsection__actions">
+          <EditButton onClick={() => setAdding(true)}>Add an offering</EditButton>
+        </p>
+      )}
+      {adding && (
+        <OfferingEdit
+          onDone={(saved) => {
+            setAdding(false);
+            if (saved) navigate(`${base}/offerings/${encodeURIComponent(saved)}`);
+          }}
+        />
+      )}
       {offerings.length ? (
         <table className="govtable">
           <caption className="visually-hidden">Product offerings in this version</caption>
@@ -63,7 +79,9 @@ export function OfferingPage() {
 }
 
 function OfferingSheet({ offering }: { offering: Offering }) {
-  const { book, base } = useCatalogueContext();
+  const { book, base, editable } = useCatalogueContext();
+  const navigate = useNavigate();
+  const [editing, setEditing] = useState<"edit" | "remove" | null>(null);
   const location = useLocation();
   const id = useId();
   const heading = useRef<HTMLHeadingElement>(null);
@@ -107,7 +125,19 @@ function OfferingSheet({ offering }: { offering: Offering }) {
           {points("For", offering.audiences)}
           {points("Promises", offering.values)}
         </dl>
+        {editable && (
+          <p className="docpage__actions">
+            <EditButton expanded={editing === "edit"} onClick={() => setEditing(editing === "edit" ? null : "edit")}>Edit this offering</EditButton>
+            <EditButton expanded={editing === "remove"} onClick={() => setEditing(editing === "remove" ? null : "remove")}>Remove this offering</EditButton>
+          </p>
+        )}
       </header>
+      {editing === "edit" && <OfferingEdit offering={offering} onDone={() => setEditing(null)} />}
+      {editing === "remove" && (
+        <WholeRemove kind="offering" item={offering} onDone={(removed) => (removed ? navigate(`${base}/offerings`) : setEditing(null))} />
+      )}
+      {editing !== "edit" && (
+        <>
 
       <section className="govsection" aria-labelledby={`${id}-orders`}>
         <h3 id={`${id}-orders`} className="govsection__title">Order types</h3>
@@ -221,6 +251,8 @@ function OfferingSheet({ offering }: { offering: Offering }) {
           <p className="timetable__quiet">No journey in this version fulfils it.</p>
         )}
       </section>
+        </>
+      )}
     </article>
   );
 }

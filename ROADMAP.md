@@ -146,8 +146,18 @@ ADR-0099.
   - Editing before accepting, for every kind: systems, components, capabilities and their
     phrases, constraints, dependencies, domains and placements, and whole offerings and journeys
     (editors the hand edits will reuse).
+- **Done: finishing a draft** (the last of three catalogue pull requests).
+  - Hand edits in place on the draft's own pages: a system's sheet (edit, remove with its
+    connections, add/change/remove its dependencies), "Add a system", both domain trees, and
+    whole offerings and journeys.
+  - Sources: documents and suggestions beside the catalogue file (the template, the draft as
+    Excel/YAML/JSON, and a file brought back shown as its differences before it replaces anything).
+  - Changes: every difference from the version in service, counted, then listed by kind, with
+    connections said as sentences.
+  - Check: the build for matching, the team's sample requirements compared between the version in
+    service and the draft ("Now also finds Order Hub"), with the evidence the draft cites.
+  - Publish: the consequence in words, a reason, and publishing (building first when needed).
 - **Next screens, each critiqued on a live seeded page before its pull request:**
-  - hand edits, the catalogue file, build, impact checks and publishing;
   - squad catalogue.
 
 ### Data import

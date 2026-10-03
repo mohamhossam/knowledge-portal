@@ -1,5 +1,5 @@
 /** What an edit sends, and why it cannot be sent yet: shared by the catalogue's editors. */
-import type { Journey, Offering } from "../api/client";
+import type { CatalogueSystem, Journey, Offering, Release } from "../api/client";
 
 /** Trims a lines field's value at submit: no blank items. */
 export const lines = (items: string[]) => items.map((item) => item.trim()).filter(Boolean);
@@ -36,5 +36,52 @@ export function journeyProblem(value: Journey): string | null {
   const numbers = value.activities.map((step) => step.number.trim());
   if (new Set(numbers).size !== numbers.length) return "Step numbers must be different.";
   if (value.order_type_code && !value.product_id) return "An order type needs its offering.";
+  return null;
+}
+
+/** An id not yet taken: "order-hub", then "order-hub-2". */
+function freeId(name: string, taken: Set<string>): string {
+  const base = slug(name);
+  let id = base;
+  for (let n = 2; taken.has(id); n += 1) id = `${base}-${n}`;
+  taken.add(id);
+  return id;
+}
+
+/** What the service is sent for a system: trimmed lists, and an id for everything new. */
+export function finishedSystem(value: CatalogueSystem, release: Release): CatalogueSystem {
+  const others = new Set(release.systems.filter((system) => system.id !== value.id).map((system) => system.id));
+  const id = value.id || freeId(value.name, others);
+  const componentIds = new Set(value.components.map((item) => item.id).filter(Boolean));
+  const renamed = new Map<string, string>();
+  const components = value.components.map((item) => {
+    if (item.id) return { ...item, aliases: lines(item.aliases) };
+    const next = freeId(item.name, componentIds);
+    renamed.set(item.name, next);
+    return { ...item, id: next, aliases: lines(item.aliases) };
+  });
+  const capabilityIds = new Set(value.capabilities.map((item) => item.id).filter(Boolean));
+  const capabilities = value.capabilities.map((item) => ({
+    ...item,
+    id: item.id || freeId(item.name, capabilityIds),
+    triggers: lines(item.triggers),
+    // A component chosen before it was saved is named by its name until it has an id.
+    component_id: item.component_id ? renamed.get(item.component_id) ?? item.component_id : null,
+  }));
+  return { ...value, id, aliases: lines(value.aliases), constraints: lines(value.constraints), components, capabilities };
+}
+
+/** Why a system cannot be saved yet, if anything. */
+export function systemProblem(value: CatalogueSystem, release: Release): string | null {
+  if (!value.name.trim()) return "Give the system a name.";
+  const fold = (text: string) => text.trim().toLocaleLowerCase();
+  const names = [value.name, ...lines(value.aliases)].map(fold);
+  const clash = release.systems
+    .filter((system) => system.id !== value.id)
+    .find((system) => [system.name, ...system.aliases].some((name) => names.includes(fold(name))));
+  if (clash) return `${clash.name} already goes by one of these names; every name and alias must be unique.`;
+  if (value.capabilities.some((item) => !item.name.trim())) return "Every capability needs a name.";
+  if (value.capabilities.some((item) => !lines(item.triggers).length)) return "Every capability needs at least one matching phrase.";
+  if (value.components.some((item) => !item.name.trim())) return "Every component needs a name.";
   return null;
 }

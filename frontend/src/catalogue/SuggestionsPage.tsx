@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import type { Suggestion, SuggestionContent } from "../api/client";
 import { ApiError, errorMessage } from "../api/errors";
 import { count } from "../home/format";
+import { CatalogueFile } from "./CatalogueFile";
 import { DraftDocuments } from "./DraftDocuments";
 import { type RowFocus, SuggestionRow } from "./SuggestionRow";
 import {
@@ -33,7 +34,7 @@ const FILTERS: { key: Filter; label: string }[] = [
 export function SuggestionsPage() {
   const { book } = useCatalogueContext();
   if (book.release.status !== "draft") {
-    return <p className="timetable__quiet catalogue__first">Suggestions are decided on a version in preparation; this one is published.</p>;
+    return <p className="timetable__quiet catalogue__first">Sources are worked on a version in preparation; this one is published.</p>;
   }
   return <Suggestions />;
 }
@@ -158,6 +159,7 @@ function Suggestions() {
   return (
     <>
       <DraftDocuments release={release} draft={draft} actorName={actorName} />
+      <CatalogueFile release={release} />
 
       <section className="govsection" aria-labelledby="suggestions-title">
         <h2 id="suggestions-title" className="govsection__title">Suggestions</h2>

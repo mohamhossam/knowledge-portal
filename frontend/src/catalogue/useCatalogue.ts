@@ -11,6 +11,8 @@ export type CatalogueContext = {
   /** Where this version's pages live: "/architecture", or "/architecture/versions/:id". */
   base: string;
   inService: boolean;
+  /** A draft: its pages offer hand edits. */
+  editable?: boolean;
   actorName: (actorId: string | null | undefined) => string;
 };
 

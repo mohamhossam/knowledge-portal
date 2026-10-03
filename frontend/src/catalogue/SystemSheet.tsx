@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { api, type CatalogueSystem, type Relationship } from "../api/client";
 import { errorMessage } from "../api/errors";
 import { connections, dependsHow, domainPath, sentenceCase, systemName, systemRoles, usedHow } from "./catalogue";
+import { ConnectionEdit, ConnectionRemove, EditButton, SystemEdit, SystemRemove } from "./DraftEdits";
 import { useCatalogueContext } from "./useCatalogue";
 
 /** Where a sheet was reached from, so the way back can be lit and retraced. */
@@ -13,7 +14,8 @@ type Trail = { from?: string };
 
 /** One system's sheet: what it is called, what it does, how it connects, who owns it and where it plays a part. */
 export function SystemSheet({ system }: { system: CatalogueSystem }) {
-  const { book, base } = useCatalogueContext();
+  const { book, base, editable } = useCatalogueContext();
+  const [editing, setEditing] = useState<"system" | "remove" | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const from = (location.state as Trail | null)?.from;
@@ -60,8 +62,22 @@ export function SystemSheet({ system }: { system: CatalogueSystem }) {
           </div>
         </dl>
         {system.description && <p className="sheet__description" dir="auto">{system.description}</p>}
+        {editable && (
+          <p className="docpage__actions">
+            <EditButton expanded={editing === "system"} onClick={() => setEditing(editing === "system" ? null : "system")}>
+              Edit this system
+            </EditButton>
+            <EditButton expanded={editing === "remove"} onClick={() => setEditing(editing === "remove" ? null : "remove")}>
+              Remove this system
+            </EditButton>
+          </p>
+        )}
       </header>
 
+      {editing === "system" && <SystemEdit system={system} onDone={() => setEditing(null)} />}
+      {editing === "remove" && <SystemRemove system={system} onDone={() => setEditing(null)} />}
+      {editing !== "system" && (
+        <>
       <Capabilities system={system} />
 
       <div className="sheet__connections">
@@ -73,6 +89,7 @@ export function SystemSheet({ system }: { system: CatalogueSystem }) {
           from={from}
           system={system}
           empty="It depends on no other system in this version."
+          editable={editable}
         />
         <Connections
           title="Used by"
@@ -99,6 +116,8 @@ export function SystemSheet({ system }: { system: CatalogueSystem }) {
           <p className="timetable__quiet">No constraint is recorded.</p>
         )}
       </section>
+        </>
+      )}
     </article>
   );
 }
@@ -148,7 +167,7 @@ function Capabilities({ system }: { system: CatalogueSystem }) {
   );
 }
 
-function Connections({ title, rows, other, how, from, system, empty }: {
+function Connections({ title, rows, other, how, from, system, empty, editable }: {
   title: string;
   rows: Relationship[];
   other: (row: Relationship) => string;
@@ -156,9 +175,13 @@ function Connections({ title, rows, other, how, from, system, empty }: {
   from?: string;
   system: CatalogueSystem;
   empty: string;
+  /** A draft edits the dependencies a system has; those on it are edited on the other system's sheet. */
+  editable?: boolean;
 }) {
   const { book, base } = useCatalogueContext();
   const id = useId();
+  const [editing, setEditing] = useState<Relationship | "new" | null>(null);
+  const [removing, setRemoving] = useState<Relationship | null>(null);
   return (
     <section className="govsection" aria-labelledby={`${id}-title`}>
       <h3 id={`${id}-title`} className="govsection__title">
@@ -189,7 +212,19 @@ function Connections({ title, rows, other, how, from, system, empty }: {
                     <span className="secondary govtable__by">{how(row)}</span>
                     {target === from && <span className="visually-hidden"> (where you came from)</span>}
                   </th>
-                  <td dir="auto">{row.description}</td>
+                  <td dir="auto">
+                    {row.description}
+                    {editable && (
+                      <span className="sheet__row-actions">
+                        <EditButton onClick={() => { setRemoving(null); setEditing(row); }}>
+                          Change<span className="visually-hidden"> the dependency on {systemName(book, target)}</span>
+                        </EditButton>
+                        <EditButton onClick={() => { setEditing(null); setRemoving(row); }}>
+                          Remove<span className="visually-hidden"> the dependency on {systemName(book, target)}</span>
+                        </EditButton>
+                      </span>
+                    )}
+                  </td>
                 </tr>
               );
             })}
@@ -198,6 +233,20 @@ function Connections({ title, rows, other, how, from, system, empty }: {
       ) : (
         <p className="timetable__quiet">{empty}</p>
       )}
+      {editable && !editing && !removing && (
+        <p className="govsection__actions">
+          <EditButton onClick={() => setEditing("new")}>Add a dependency</EditButton>
+        </p>
+      )}
+      {editing && (
+        <ConnectionEdit
+          key={editing === "new" ? "new" : `${editing.source_system_id}>${editing.target_system_id}`}
+          system={system}
+          connection={editing === "new" ? undefined : editing}
+          onDone={() => setEditing(null)}
+        />
+      )}
+      {removing && <ConnectionRemove connection={removing} onDone={() => setRemoving(null)} />}
     </section>
   );
 }

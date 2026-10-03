@@ -73,7 +73,7 @@ export function CataloguePage() {
     );
   }
 
-  const context: CatalogueContext = { book, base, inService, actorName };
+  const context: CatalogueContext = { book, base, inService, actorName, editable: book.release.status === "draft" };
   return (
     <section className="docpage catalogue" aria-labelledby="catalogue-title">
       {head(
@@ -155,7 +155,12 @@ function SubIndex({ base, inService, draft }: { base: string; inService: boolean
     { label: "Offerings", to: `${base}/offerings`, current: pathname.startsWith(`${base}/offerings`) },
     { label: "Journeys", to: `${base}/journeys`, current: pathname.startsWith(`${base}/journeys`) },
     ...(draft
-      ? [{ label: "Suggestions", to: `${base}/suggestions`, current: pathname.startsWith(`${base}/suggestions`) }]
+      ? [
+          { label: "Sources", to: `${base}/sources`, current: pathname.startsWith(`${base}/sources`) },
+          { label: "Changes", to: `${base}/changes`, current: pathname.startsWith(`${base}/changes`) },
+          { label: "Check", to: `${base}/check`, current: pathname.startsWith(`${base}/check`) || pathname.startsWith(`${base}/evidence`) },
+          { label: "Publish", to: `${base}/publish`, current: pathname.startsWith(`${base}/publish`) },
+        ]
       : []),
     {
       label: inService ? "Versions" : "All versions",

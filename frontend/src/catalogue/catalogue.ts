@@ -295,13 +295,13 @@ export function contents(release: Release): { systems: number; connections: numb
 const ITEM: Record<CatalogueDiff["changes"][number]["item"], [string, string]> = {
   system: ["system", "systems"],
   capability: ["capability", "capabilities"],
-  relationship: ["connection", "connections"],
-  document: ["document", "documents"],
-  domain: ["business area", "business areas"],
   component: ["component", "components"],
+  relationship: ["connection", "connections"],
   landscape_domain: ["landscape domain", "landscape domains"],
+  domain: ["business area", "business areas"],
   product: ["offering", "offerings"],
   journey: ["journey", "journeys"],
+  document: ["document", "documents"],
 };
 
 /** What this version would change if it were in service, counted. */

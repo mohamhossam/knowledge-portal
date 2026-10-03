@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-03T21:00:00Z",
+  "generatedAt": "2026-10-03T23:30:00Z",
   "title": "Design System: Knowledge portal",
   "extensions": {
     "colorMeta": {
@@ -196,7 +196,7 @@
       },
       "lead": {
         "displayName": "Lead",
-        "purpose": "The next-decision line, the masthead portal name, the titles of the add-a-document section and the withdraw panel, and governance section titles (bold, on a heavy rule)."
+        "purpose": "The next-decision line, the masthead portal name, the titles of the add-a-document section, the withdraw panel, an edit panel and the catalogue file's preview, and governance section titles (bold, on a heavy rule)."
       },
       "body": {
         "displayName": "Body",
@@ -204,11 +204,11 @@
       },
       "label": {
         "displayName": "Label",
-        "purpose": "Column heads (including governance tables), totals labels, field labels, the change notice heading, passage detail labels the legend of a choices group, the systems index's group heads, a sheet's fact labels and a journey's phase heads, at 72% width, sentence case, ink 2."
+        "purpose": "Column heads (including governance tables), totals labels, field labels, the change notice heading, passage detail labels the legend of a choices group, the systems index's group heads, a sheet's fact labels, a journey's phase heads, the diff table's heads and kind heads, and the system label over an open sample's evidence, at 72% width, sentence case, ink 2."
       },
       "meta": {
         "displayName": "Meta",
-        "purpose": "Notes, the masthead 'Valid as of' line, text buttons, Arabic secondary lines, the passage Where column, reasons and flags, the keys line, the save bar's state and reason lines, governance secondary lines, a search result's surrounding text, sub-index links on phones, the catalogue's consequence and mapped-earlier lines, the systems index count and 'which name matched' lines, a sheet's meta line, and the connection phrases. Key caps step down to 0.75rem."
+        "purpose": "Notes, the masthead 'Valid as of' line, text buttons, Arabic secondary lines, the passage Where column, reasons and flags, the keys line, the save bar's state and reason lines, governance secondary lines, a search result's surrounding text, sub-index links on phones, the catalogue's consequence and mapped-earlier lines, the systems index count and 'which name matched' lines, a sheet's meta line, and the connection phrases. Also the waits line under an edit panel, and the diff and samples tables' secondary lines. Key caps step down to 0.75rem."
       },
       "mark": {
         "displayName": "Mark",
@@ -230,12 +230,12 @@
       {
         "name": "rule-heavy",
         "value": "2px solid var(--rule-heavy)",
-        "purpose": "Under the masthead, table heads, totals label, quiet line, notice head and change notice heading; above and below the processing line and the withdraw panel; at the foot of an open passage's detail row; on top of the save bar. Under a governance section title and a governance table's column heads. In the catalogue: under each systems index group head, above a sheet's facts list, at the foot of an open version's detail row, above and below the put-back panel. A quiet line directly under a catalogue section title takes no second heavy rule. In a draft: above and below the rename and remove steps, under each galley group head, at the foot of an open suggestion's detail row, under a repeating form group's legend."
+        "purpose": "Under the masthead, table heads, totals label, quiet line, notice head and change notice heading; above and below the processing line and the withdraw panel; at the foot of an open passage's detail row; on top of the save bar. Under a governance section title and a governance table's column heads. In the catalogue: under each systems index group head, above a sheet's facts list, at the foot of an open version's detail row, above and below the put-back panel. A quiet line directly under a catalogue section title takes no second heavy rule. In a draft: above and below the rename and remove steps, under each galley group head, at the foot of an open suggestion's detail row, under a repeating form group's legend. Closing an edit panel and an open sample's evidence row; above and below the catalogue file's preview."
       },
       {
         "name": "hairline",
         "value": "1px solid var(--rule-faint)",
-        "purpose": "Between rows, totals and governance table rows; 1px var(--rule) between tables, under the index and under a document's sub-index. Hairlines also sit between systems index entries, a sheet's facts and its list items; 1px var(--rule) under a journey's phase head and the catalogue's sub-index. 1px var(--rule) also under an open suggestion's detail labels, at the foot of each repeating form row, and under a nested repeating legend."
+        "purpose": "Between rows, totals and governance table rows; 1px var(--rule) between tables, under the index and under a document's sub-index. Hairlines also sit between systems index entries, a sheet's facts and its list items; 1px var(--rule) under a journey's phase head and the catalogue's sub-index. 1px var(--rule) also under an open suggestion's detail labels, at the foot of each repeating form row, and under a nested repeating legend. 1px var(--rule) under each kind head in the diff table and under each system label of an open sample's evidence."
       },
       {
         "name": "double",
@@ -288,7 +288,7 @@
       {
         "name": "phone",
         "value": "45rem",
-        "purpose": "Priority-2 columns hide; margin column collapses; masthead unsticks; index stacks; sub-index tightens to 0.75rem gaps at meta size. Catalogue: one column, the systems index in flow and replaced by a chosen sheet; All connections folds To into From; Versions carries state and disclosure in the version cell; sheet facts stack."
+        "purpose": "Priority-2 columns hide; margin column collapses; masthead unsticks; index stacks; sub-index tightens to 0.75rem gaps at meta size. Catalogue: one column, the systems index in flow and replaced by a chosen sheet; All connections folds To into From; Versions carries state and disclosure in the version cell; sheet facts stack. The diff table's Change column and the samples table's result column give way to the content."
       }
     ],
     "layout": [
@@ -351,6 +351,36 @@
         "name": "draft-step",
         "value": "margin-top 0.75rem; withdraw panel shape, max 62ch",
         "purpose": "A draft's rename and remove steps under its head."
+      },
+      {
+        "name": "edit-panel",
+        "value": "margin-top 0.75rem; padding 0.75rem 1rem 1rem; gap 0.75rem; background stock-band; border-bottom 2px heavy; lead max 62ch; actions gap 0.75rem 1rem; inputs on stock",
+        "purpose": "A hand edit opened in place under what opened it; a sheet's sections step aside while it is edited."
+      },
+      {
+        "name": "row-actions",
+        "value": "flex wrap; gap 0.25rem 1rem; margin-top 0.25rem",
+        "purpose": "A row's own text buttons (Change, Remove; Compare, The evidence) under its text."
+      },
+      {
+        "name": "diff",
+        "value": "margin-top 0.75rem; Change column 15rem (auto at 45rem and below)",
+        "purpose": "The diff table under its counts."
+      },
+      {
+        "name": "samples",
+        "value": "result column 45% (auto at 45rem and below); open row and evidence row on stock-band, evidence row padding 0.5rem 1rem 1rem closing on a 2px heavy rule; evidence lists max 72ch, gap 0.75rem between systems, 0.5rem between quotes; try-a-requirement margin-top 1.5rem",
+        "purpose": "Check: the samples, their evidence and one requirement tried without saving."
+      },
+      {
+        "name": "publish",
+        "value": "consequence paragraphs gap 0.5rem, max 72ch; reason field max 44rem, input full width",
+        "purpose": "The consequence first, then the reason and the action."
+      },
+      {
+        "name": "catalogue-file-preview",
+        "value": "withdraw panel rules (2px heavy above and below), max-width none",
+        "purpose": "A brought-back file's diff at full column width before it replaces anything."
       }
     ]
   },
@@ -546,11 +576,35 @@
       "description": "The editors' repeating rows: a borderless fieldset opened by a bold legend on a heavy rule, each row ruled at its foot with its own remove, one add at the foot; fields on a wrapping grid.",
       "html": "<fieldset class=\"ds-rows\"><legend class=\"ds-rows__legend\">Steps</legend><fieldset class=\"ds-rows__row\"><div class=\"ds-grid\"><label class=\"ds-field\"><span>No.</span><input value=\"10\"></label><label class=\"ds-field\"><span>Name</span><input value=\"Capture the order\"></label><label class=\"ds-field\"><span>Performed by</span><select><option>Order Hub (not in the draft yet)</option></select></label></div><button type=\"button\" class=\"ds-text\">× Remove step 10</button></fieldset><button type=\"button\" class=\"ds-text\">+ Add another step</button></fieldset>",
       "css": ".ds-rows { display: grid; gap: 0.5rem; margin: 0; padding: 0; border: 0; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; color: var(--ink, #16181d); } .ds-rows__legend { width: 100%; padding: 0 0 0.25rem; border-bottom: 2px solid var(--rule-heavy, #16181d); font-weight: 680; } .ds-rows__row { display: grid; gap: 0.5rem; margin: 0; padding: 0 0 0.75rem; border: 0; border-bottom: 1px solid var(--rule, #cfd2d6); } .ds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: 0.75rem 1rem; align-items: end; } .ds-field { display: grid; gap: 0.25rem; } .ds-field > span { color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; } .ds-field input, .ds-field select { min-height: 2rem; padding: 0.25rem 0.5rem; border: 1px solid var(--ink-3, #686e78); border-radius: 2px; background: var(--stock, #fbfbfa); color: inherit; font: inherit; } .ds-field input:hover, .ds-field select:hover { border-color: var(--ink, #16181d); } .ds-field input:focus-visible, .ds-field select:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-text { justify-self: start; min-height: 1.5rem; padding: 0 0.25rem; border: 0; background: none; color: var(--ink, #16181d); font: inherit; font-size: 0.8125rem; font-weight: 500; text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; } .ds-text:hover { text-decoration-thickness: 2px; } .ds-text:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; }"
+    },
+    {
+      "name": "Edit Panel",
+      "kind": "custom",
+      "refersTo": "edit-panel",
+      "description": "A hand edit opened in place on the stock band, closing on a heavy rule: lead title, fields on stock, the action beside Cancel, the waits line; Escape cancels.",
+      "html": "<form class=\"ds-panel\"><h3 class=\"ds-panel__title\">Add a dependency of CWOM</h3><div class=\"ds-grid\"><label class=\"ds-field\"><span>Depends on</span><select><option>Order Hub</option></select></label><label class=\"ds-field\"><span>How</span><select><option>Calls its API</option></select></label></div><label class=\"ds-field\"><span>For what</span><input value=\"\"></label><p class=\"ds-panel__actions\"><button class=\"ds-action\" disabled aria-describedby=\"ds-why\">Add the dependency</button><button type=\"button\" class=\"ds-text\">Cancel</button></p><p id=\"ds-why\" class=\"ds-panel__waits\">Say what the dependency is for.</p></form>",
+      "css": ".ds-panel { display: grid; gap: 0.75rem; padding: 0.75rem 1rem 1rem; border-bottom: 2px solid var(--rule-heavy, #16181d); background: var(--stock-band, #f1f1ee); font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; color: var(--ink, #16181d); } .ds-panel__title { margin: 0; font-size: 1.0625rem; font-weight: 680; } .ds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: 0.75rem 1rem; align-items: end; } .ds-field { display: grid; gap: 0.25rem; } .ds-field > span { color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; } .ds-field input, .ds-field select { min-height: 2rem; padding: 0.25rem 0.5rem; border: 1px solid var(--ink-3, #686e78); border-radius: 2px; background: var(--stock, #fbfbfa); color: inherit; font: inherit; } .ds-field input:hover, .ds-field select:hover { border-color: var(--ink, #16181d); } .ds-panel__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1rem; margin: 0; } .ds-panel__waits { margin: 0; color: var(--ink-2, #474c55); font-size: 0.8125rem; } .ds-action { min-height: 2.25rem; padding: 0 1rem; border: 2px solid var(--ink, #16181d); border-radius: 2px; background: var(--ink, #16181d); color: var(--stock, #fbfbfa); font: inherit; font-weight: 680; cursor: pointer; } .ds-action:hover { background: var(--stock, #fbfbfa); color: var(--ink, #16181d); } .ds-action:disabled { border-color: var(--rule, #cfd2d6); background: var(--stock-band, #f1f1ee); color: var(--ink-3, #686e78); cursor: not-allowed; } .ds-text { display: inline-flex; align-items: center; gap: 0.25rem; min-height: 1.5rem; padding: 0 0.25rem; border: 0; background: none; color: var(--ink, #16181d); font: inherit; font-size: 0.8125rem; font-weight: 500; text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; } .ds-text:hover { text-decoration-thickness: 2px; } .ds-text:focus-visible, .ds-action:focus-visible, .ds-field input:focus-visible, .ds-field select:focus-visible, .ds-panel a:focus-visible, .ds-diff a:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; }"
+    },
+    {
+      "name": "Diff Table",
+      "kind": "custom",
+      "refersTo": "diff-change-column",
+      "description": "A list of alterations: counts, then kinds in the One Kind Order under label heads on a 1px rule; Added/Changed/Removed in regular weight; fields in words; a connection as a sentence with For what below; removed rows past.",
+      "html": "<table class=\"ds-diff\"><thead><tr><th scope=\"col\">What</th><th scope=\"col\" class=\"ds-diff__change\">Change</th></tr></thead><tbody><tr class=\"ds-diff__kind\"><th colspan=\"2\">Systems <span>2</span></th></tr><tr><th scope=\"row\"><a href=\"#\">Order Hub</a></th><td>Added</td></tr><tr><th scope=\"row\"><a href=\"#\">CWOM</a></th><td>Changed<span class=\"ds-diff__by\">Arabic name and where it sits</span></td></tr></tbody><tbody><tr class=\"ds-diff__kind\"><th colspan=\"2\">Connections <span>2</span></th></tr><tr><th scope=\"row\">Order Hub calls the API of CWOM<span class=\"ds-diff__by\">For what: Hands over captured orders</span></th><td>Added</td></tr><tr class=\"ds-diff__past\"><th scope=\"row\">B2B Web no longer depends on Felix<span class=\"ds-diff__by\">For what: Order status</span></th><td>Removed</td></tr></tbody></table>",
+      "css": ".ds-diff { width: 100%; border-collapse: collapse; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; color: var(--ink, #16181d); font-variant-numeric: tabular-nums lining-nums; } .ds-diff thead th { padding: 0 1rem 0.25rem 0; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; text-align: start; } .ds-diff th, .ds-diff td { padding: 0.5rem 1rem 0.5rem 0; border-bottom: 1px solid var(--rule-faint, #e4e5e7); font-weight: 400; text-align: start; vertical-align: top; } .ds-diff__change { width: 15rem; } .ds-diff .ds-diff__kind th { padding: 1rem 0 0.25rem; border-bottom: 1px solid var(--rule, #cfd2d6); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; } .ds-diff__kind span { font-weight: 400; } .ds-diff__by { display: block; color: var(--ink-2, #474c55); font-size: 0.8125rem; } .ds-diff__past, .ds-diff__past .ds-diff__by { color: var(--ink-3, #686e78); } .ds-diff a { color: var(--reference, #1d5ca3); }"
+    },
+    {
+      "name": "Build State and Samples",
+      "kind": "custom",
+      "refersTo": "build-state",
+      "description": "Check: the build state line (status bold, red when failed), then samples with the verdict in words, moved rows bold, both mappings on a secondary line, and evidence opened in place on the band.",
+      "html": "<div class=\"ds-check\"><p class=\"ds-build\"><strong>Built for matching</strong> <span>at revision 5.</span></p><p class=\"ds-build ds-build--failed\" role=\"alert\"><strong>The build failed</strong> <span>: timeout.</span></p><table class=\"ds-samples\"><thead><tr><th scope=\"col\">Requirement</th><th scope=\"col\" class=\"ds-samples__result\">With this draft</th></tr></thead><tbody><tr class=\"ds-samples__moved ds-samples__open\"><th scope=\"row\">Order Hub captures business orders from the web.</th><td><strong>Now also finds Order Hub</strong><span class=\"ds-by\">In service: nothing · This draft: Order Hub</span><span class=\"ds-acts\"><button class=\"ds-text\">Compare again</button><button class=\"ds-text\" aria-expanded=\"true\">⌄ The evidence</button></span></td></tr><tr class=\"ds-samples__detail\"><td colspan=\"2\"><p class=\"ds-samples__label\"><a href=\"#\">Order Hub</a></p><p class=\"ds-samples__quote\">“Order Hub captures orders from the web channel…” <a href=\"#\">The passage</a></p></td></tr></tbody></table></div>",
+      "css": ".ds-check { font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; color: var(--ink, #16181d); } .ds-build { display: flex; flex-wrap: wrap; gap: 0 0.25rem; align-items: baseline; margin: 0 0 0.5rem; } .ds-build strong { font-weight: 680; } .ds-build span { color: var(--ink-2, #474c55); } .ds-build--failed strong { color: var(--disruption, #b3122b); } .ds-samples { width: 100%; border-collapse: collapse; margin-top: 1rem; } .ds-samples thead th { padding: 0 1rem 0.25rem 0; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; text-align: start; } .ds-samples th, .ds-samples td { padding: 0.5rem 1rem 0.5rem 0; border-bottom: 1px solid var(--rule-faint, #e4e5e7); font-weight: 400; text-align: start; vertical-align: top; } .ds-samples__result { width: 45%; } .ds-samples__moved th, .ds-samples__moved strong { font-weight: 680; } .ds-samples__open th, .ds-samples__open td, .ds-samples .ds-samples__detail td { background: var(--stock-band, #f1f1ee); } .ds-samples .ds-samples__detail td { padding: 0.5rem 1rem 1rem; border-bottom: 2px solid var(--rule-heavy, #16181d); } .ds-samples__label { margin: 0; padding-bottom: 0.25rem; border-bottom: 1px solid var(--rule, #cfd2d6); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; } .ds-samples__quote { max-width: 72ch; margin: 0.5rem 0 0; } .ds-samples a { color: var(--reference, #1d5ca3); } .ds-by { display: block; color: var(--ink-2, #474c55); font-size: 0.8125rem; } .ds-acts { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; margin-top: 0.25rem; } .ds-text { display: inline-flex; align-items: center; gap: 0.25rem; min-height: 1.5rem; padding: 0 0.25rem; border: 0; background: none; color: var(--ink, #16181d); font: inherit; font-size: 0.8125rem; font-weight: 500; text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; } .ds-text:hover { text-decoration-thickness: 2px; } .ds-text:focus-visible, .ds-samples a:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; }"
     }
   ],
   "narrative": {
     "northStar": "The Timetable Book",
-    "overview": "The portal is set like a national railway timetable book. Each area of shared knowledge is a numbered table. Its number stands monumental and condensed in a left margin column. The table beside it has an exact column set, and each sourced fact carries a reference mark that leads to a numbered note at the table's foot. The page is near-white neutral stock with black ink. Hierarchy comes from three rule weights and from type weight, never from containers, fills or colour. Two colours are held back, and each has exactly one job.\n\nThe density is that of a reference work. Rows are tight (0.5rem block padding) and separated by hairlines. Numbers and dates use tabular, lining figures and sit right-aligned, as in any timetable. The surface is flat: no cards, no shadows for depth, no pills, no gradients. One sticky masthead strip and an index of the tables bind the book, and every screen sits inside that binding.\n\nThe architecture catalogue (Table 2) reads like the station pages of the same book: an index of systems held beside one system's sheet, each sheet a run of governance sections, each connection a sentence, each journey a timetable of numbered steps grouped by phase. A draft version adds the book's galley proofs: the documents being read for changes, and every suggested change set in one table under the system it would change, to be accepted or rejected line by line.\n\nThe interface language is English. It calls the indexed units of a document \"passages\", and the units of the table-aware cut \"fields\"; it never says \"chunks\". Content keeps its own language and direction. Arabic names render in Noto Sans Arabic, in their own direction, beside the English in the same cell. The theme is light only. This is a decision for an office-daylight scene, not an omission.",
+    "overview": "The portal is set like a national railway timetable book. Each area of shared knowledge is a numbered table. Its number stands monumental and condensed in a left margin column. The table beside it has an exact column set, and each sourced fact carries a reference mark that leads to a numbered note at the table's foot. The page is near-white neutral stock with black ink. Hierarchy comes from three rule weights and from type weight, never from containers, fills or colour. Two colours are held back, and each has exactly one job.\n\nThe density is that of a reference work. Rows are tight (0.5rem block padding) and separated by hairlines. Numbers and dates use tabular, lining figures and sit right-aligned, as in any timetable. The surface is flat: no cards, no shadows for depth, no pills, no gradients. One sticky masthead strip and an index of the tables bind the book, and every screen sits inside that binding.\n\nThe architecture catalogue (Table 2) reads like the station pages of the same book: an index of systems held beside one system's sheet, each sheet a run of governance sections, each connection a sentence, each journey a timetable of numbered steps grouped by phase. A draft version adds the book's galley proofs: the documents being read for changes, and every suggested change set in one table under the system it would change, to be accepted or rejected line by line. Before it goes to press, a draft can be corrected by hand where it is read, its list of alterations read against the version in service, its sample requirements checked against it, and then it is published, the consequence stated first.\n\nThe interface language is English. It calls the indexed units of a document \"passages\", and the units of the table-aware cut \"fields\"; it never says \"chunks\". Content keeps its own language and direction. Arabic names render in Noto Sans Arabic, in their own direction, beside the English in the same cell. The theme is light only. This is a decision for an office-daylight scene, not an omission.",
     "keyCharacteristics": [
       "Near-white neutral stock (never cream) and black ink; flat, ruled, unboxed.",
       "One grotesk (Archivo Variable) in several widths: 100% for text, 88% for titles, 72% for labels, 62% for monumental table numbers.",
@@ -572,7 +626,7 @@
       },
       {
         "name": "The Weight Is Rank Rule",
-        "body": "A row's importance is set by weight and ink, never by colour or badge. A due row has its name and status in bold (680). A delayed row has its status in bold and in disruption red. A running row is set in ink 2, a row in service in regular ink, a past row in ink 3. Catalogue versions follow it: in preparation is due (bold), in service is regular ink, replaced is past. Suggestions follow it: \"Needs your decision\" is due (sentence and state bold), \"Ready\" is regular ink, \"Waits for another\" and \"Already in the draft\" are running (ink 2), and accepted or rejected suggestions are past. A draft document's reading follows it too: waiting or being read is running, a failed reading is delayed.",
+        "body": "A row's importance is set by weight and ink, never by colour or badge. A due row has its name and status in bold (680). A delayed row has its status in bold and in disruption red. A running row is set in ink 2, a row in service in regular ink, a past row in ink 3. Catalogue versions follow it: in preparation is due (bold), in service is regular ink, replaced is past. Suggestions follow it: \"Needs your decision\" is due (sentence and state bold), \"Ready\" is regular ink, \"Waits for another\" and \"Already in the draft\" are running (ink 2), and accepted or rejected suggestions are past. A draft document's reading follows it too: waiting or being read is running, a failed reading is delayed. A build's state line sets its status bold, and red when the build failed. A sample whose mapping would move is due (bold); one that keeps its systems is regular ink. A list of alterations is not a queue: \"Added\", \"Changed\" and \"Removed\" are all regular weight, and only a removed row drops to past.",
         "section": "typography"
       },
       {
@@ -607,12 +661,17 @@
       },
       {
         "name": "The Connection Sentence Rule",
-        "body": "A connection reads as a sentence that names both systems. On a sheet the phrase names the sheet's system; in All connections the verb rides under From (\"calls the API of\", \"sends events to\"). Never an arrow, a bare kind code or an unnamed \"this system\".",
+        "body": "A connection reads as a sentence that names both systems. On a sheet the phrase names the sheet's system; in All connections the verb rides under From (\"calls the API of\", \"sends events to\"); in a diff the sentence says the change (\"now sends events to\", \"no longer depends on\"), with \"For what:\" on its own line. Never an arrow, a bare kind code or an unnamed \"this system\".",
         "section": "components"
       },
       {
         "name": "The Kept Place Rule",
         "body": "Deciding never moves the work. Groups keep their first-seen place for the session, rows never reflow on a state change, and focus lands where the next decision is, never back at the top.",
+        "section": "components"
+      },
+      {
+        "name": "The One Kind Order Rule",
+        "body": "Changes are counted and listed in one order everywhere: systems, capabilities, components, connections, landscape domains, business areas, offerings, journeys, documents. The head's consequence line, the diff table's total line and its groups all follow it, so a count read in one place is found in the same place in the next.",
         "section": "components"
       }
     ],
@@ -643,6 +702,14 @@
       "Do word the next decision as the question it asks.",
       "Do move focus after a decision to the next waiting suggestion, or to where the decided row stood.",
       "Do edit a list one item per line, and keep a name the draft lacks choosable as \"(not in the draft yet)\".",
+      "Do open a hand edit in place where the thing is read: on the stock band under what opened it, closing on a heavy rule, its fields on the stock, Escape to cancel, and a waits line that names what to do first.",
+      "Do say a conflict in words and what to do about it (\"Reload the page; your edit was not saved.\").",
+      "Do edit a system's dependencies on its own sheet; a dependency on it is edited from the other system's sheet.",
+      "Do show what a catalogue file would change before it replaces anything, with Replace and Keep side by side.",
+      "Do count and list changes in the One Kind Order, and say a changed item's fields in words.",
+      "Do say a sample's verdict in words (\"Now also finds Order Hub\"), with both mappings on a secondary line, and set a sample whose mapping moves in bold.",
+      "Do cut a quoted passage at 280 characters so its closing quote mark is always shown.",
+      "Do state what publishing would change, and whether it builds first, before asking for the reason.",
       "Do honour `prefers-reduced-motion`. All transitions and animations collapse to 0.01ms."
     ],
     "donts": [
@@ -660,7 +727,10 @@
       "Don't show a connection as an arrow or a bare kind code.",
       "Don't offer a group action for nothing or for one: \"Accept the N ready here\" needs one ready, \"Reject the N waiting here\" needs two waiting.",
       "Don't show a zero count for an exceptional state; \"Already in the draft\" appears only when it has members.",
-      "Don't box a repeating form row or an editor. Rows are ruled fieldsets, and editing happens in the open row."
+      "Don't box a repeating form row or an editor. Rows are ruled fieldsets, and editing happens in the open row.",
+      "Don't set \"Added\", \"Changed\" or \"Removed\" in bold; a list of alterations is not a queue.",
+      "Don't offer an edit control on a published version.",
+      "Don't let the service's \"source → target\" label reach the screen; a changed connection is a sentence."
     ]
   }
 }

@@ -54,6 +54,21 @@ export type DocumentExtraction = Schemas["DocumentExtractionResponse"];
 export type CitedPassage = Schemas["DocumentPassageResponse"];
 export type CatalogueDocument = Schemas["KnowledgeDocumentVersionResponse"];
 export type DocumentLanguage = "en" | "ar" | "mixed";
+export type SampleRequirements = Schemas["SampleRequirementsResponse"];
+export type SampleRequirement = Schemas["SampleRequirementSchema"];
+export type ImpactComparison = Schemas["ImpactComparisonResponse"];
+export type DraftUpdate = Schemas["DraftUpdateRequest"];
+/** One passage the draft's index holds, cited as evidence for a system. */
+export type Evidence = { id: string; source_label: string; location: string; text: string; document_version_id?: string | null };
+/** What this draft would map a requirement to, with the evidence behind each system. */
+export type ImpactPreview = {
+  release_id: string;
+  system_ids: string[];
+  citation_ids: string[];
+  citations: { system_id: string; chunk_id: string; quote: string }[];
+  uncertainty: string | null;
+  evidence: Evidence[];
+};
 
 const documentPath = (documentId: string) => `/library/documents/${encodeURIComponent(documentId)}`;
 const versionPath = (documentId: string, versionId: string) =>
@@ -199,6 +214,35 @@ export const api = {
       expected_revision: expectedRevision,
       suggestion_ids: suggestionIds,
     }),
+  /** The whole draft at once: systems and connections always; omitted lists are kept as they are. */
+  saveDraft: (releaseId: string, body: DraftUpdate) =>
+    apiRequest<Release>(releasePath(releaseId), { method: "PUT", body: JSON.stringify(body) }),
+  saveSystem: (releaseId: string, systemId: string, body: { expected_revision: number; system: CatalogueSystem }) =>
+    apiRequest<Release>(`${releasePath(releaseId)}/systems/${encodeURIComponent(systemId)}`, { method: "PUT", body: JSON.stringify(body) }),
+  buildJob: (releaseId: string) => apiRequest<ArchitectureJob | null>(`${releasePath(releaseId)}/build`),
+  buildRelease: (releaseId: string, expectedRevision: number) =>
+    post<ArchitectureJob>(`${releasePath(releaseId)}/build`, { expected_revision: expectedRevision }),
+  publish: (releaseId: string, body: { expected_revision: number; rationale: string }) =>
+    post<Release>(`${releasePath(releaseId)}/publish`, body),
+  samples: () => apiRequest<SampleRequirements>("/architecture-knowledge/sample-requirements"),
+  saveSamples: (body: { expected_revision: number; items: SampleRequirement[] }) =>
+    apiRequest<SampleRequirements>("/architecture-knowledge/sample-requirements", { method: "PUT", body: JSON.stringify(body) }),
+  compareImpact: (releaseId: string, query: string) => post<ImpactComparison>(`${releasePath(releaseId)}/compare-impact`, { query }),
+  previewImpact: (releaseId: string, query: string) => post<ImpactPreview>(`${releasePath(releaseId)}/preview-impact`, { query }),
+  evidence: (releaseId: string, chunkId: string) =>
+    apiRequest<Evidence>(`${releasePath(releaseId)}/evidence/${encodeURIComponent(chunkId)}`),
+  catalogueTemplate: async () => (await send("/architecture-knowledge/catalogue-template.xlsx")).blob(),
+  previewCatalogueFile: (releaseId: string, file: File) => {
+    const body = new FormData();
+    body.set("file", file);
+    return apiRequest<CatalogueDiff>(`${releasePath(releaseId)}/catalogue-file/preview`, { method: "POST", body });
+  },
+  importCatalogueFile: (releaseId: string, file: File, expectedRevision: number) => {
+    const body = new FormData();
+    body.set("file", file);
+    body.set("expected_revision", String(expectedRevision));
+    return apiRequest<Release>(`${releasePath(releaseId)}/catalogue-file`, { method: "POST", body });
+  },
   mappingImpact: () => apiRequest<MappingImpact>("/architecture-knowledge/mapping-impact"),
   systemOwnership: (systemId: string) =>
     apiRequest<SystemOwnership>(`/organisation/systems/${encodeURIComponent(systemId)}/ownership`),

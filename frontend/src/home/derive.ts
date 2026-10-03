@@ -262,8 +262,8 @@ export function architectureOverview(
   };
 }
 
-/** Where a draft is worked on: its documents and suggestions. */
-const draftSuggestions = (releaseId: string) => `/architecture/versions/${encodeURIComponent(releaseId)}/suggestions`;
+/** Where a draft is worked on: its sources, documents and suggestions. */
+const draftSuggestions = (releaseId: string) => `/architecture/versions/${encodeURIComponent(releaseId)}/sources`;
 
 // Table 3 ----------------------------------------------------------------------
 

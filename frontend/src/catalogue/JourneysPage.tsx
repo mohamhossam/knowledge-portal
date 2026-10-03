@@ -1,19 +1,35 @@
-import { useEffect, useId, useRef } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { useEffect, useId, useRef, useState } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 
 import type { Journey } from "../api/client";
 import { CONFIDENCE, nextSteps, orderedSteps, phaseRuns, systemName } from "./catalogue";
+import { EditButton, JourneyEdit, WholeRemove } from "./DraftEdits";
 import { useCatalogueContext } from "./useCatalogue";
 
 /** The journeys in a version: how an order travels from system to system. */
 export function JourneysPage() {
-  const { book, base } = useCatalogueContext();
+  const { book, base, editable } = useCatalogueContext();
+  const navigate = useNavigate();
+  const [adding, setAdding] = useState(false);
   const journeys = book.release.journeys ?? [];
   const offerings = new Map((book.release.products ?? []).map((item) => [item.id, item]));
   return (
     <section className="govsection catalogue__first" aria-labelledby="journeys-title">
       <h2 id="journeys-title" className="govsection__title">Journeys</h2>
       <p className="govsection__lead">Each journey is read like a timetable: its steps in order, and the system that performs each.</p>
+      {editable && !adding && (
+        <p className="govsection__actions">
+          <EditButton onClick={() => setAdding(true)}>Add a journey</EditButton>
+        </p>
+      )}
+      {adding && (
+        <JourneyEdit
+          onDone={(saved) => {
+            setAdding(false);
+            if (saved) navigate(`${base}/journeys/${encodeURIComponent(saved)}`);
+          }}
+        />
+      )}
       {journeys.length ? (
         <table className="govtable">
           <caption className="visually-hidden">Journeys in this version</caption>
@@ -72,7 +88,9 @@ export function JourneyPage() {
 
 /** A journey as a timetable: steps grouped by phase, each with its system and where it goes next. */
 function JourneySheet({ journey }: { journey: Journey }) {
-  const { book, base } = useCatalogueContext();
+  const { book, base, editable } = useCatalogueContext();
+  const navigate = useNavigate();
+  const [editing, setEditing] = useState<"edit" | "remove" | null>(null);
   const location = useLocation();
   const id = useId();
   const heading = useRef<HTMLHeadingElement>(null);
@@ -106,7 +124,19 @@ function JourneySheet({ journey }: { journey: Journey }) {
           {journey.confidence && <> · {CONFIDENCE[journey.confidence]}</>}
         </p>
         {journey.description && <p className="sheet__description" dir="auto">{journey.description}</p>}
+        {editable && (
+          <p className="docpage__actions">
+            <EditButton expanded={editing === "edit"} onClick={() => setEditing(editing === "edit" ? null : "edit")}>Edit this journey</EditButton>
+            <EditButton expanded={editing === "remove"} onClick={() => setEditing(editing === "remove" ? null : "remove")}>Remove this journey</EditButton>
+          </p>
+        )}
       </header>
+      {editing === "edit" && <JourneyEdit journey={journey} onDone={() => setEditing(null)} />}
+      {editing === "remove" && (
+        <WholeRemove kind="journey" item={journey} onDone={(removed) => (removed ? navigate(`${base}/journeys`) : setEditing(null))} />
+      )}
+      {editing !== "edit" && (
+        <>
 
       <section className="govsection" aria-labelledby={`${id}-steps`}>
         <h3 id={`${id}-steps`} className="govsection__title">Steps</h3>
@@ -201,6 +231,8 @@ function JourneySheet({ journey }: { journey: Journey }) {
             </tbody>
           </table>
         </section>
+      )}
+        </>
       )}
     </article>
   );

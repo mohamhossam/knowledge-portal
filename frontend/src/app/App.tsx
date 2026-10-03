@@ -3,6 +3,10 @@ import { Link, Navigate, Route, Routes } from "react-router-dom";
 
 import { CALLBACK_PATH, SILENT_CALLBACK_PATH } from "../auth/paths";
 import { CataloguePage } from "../catalogue/CataloguePage";
+import { ChangesPage } from "../catalogue/ChangesPage";
+import { CheckPage } from "../catalogue/CheckPage";
+import { EvidencePage } from "../catalogue/EvidencePage";
+import { PublishPage } from "../catalogue/PublishPage";
 import { DomainsPage } from "../catalogue/DomainsPage";
 import { JourneyPage, JourneysPage } from "../catalogue/JourneysPage";
 import { OfferingPage, OfferingsPage } from "../catalogue/OfferingsPage";
@@ -29,7 +33,12 @@ const catalogueRoutes = (
     <Route path="offerings/:offeringId" element={<OfferingPage />} />
     <Route path="journeys" element={<JourneysPage />} />
     <Route path="journeys/:journeyId" element={<JourneyPage />} />
-    <Route path="suggestions" element={<SuggestionsPage />} />
+    <Route path="sources" element={<SuggestionsPage />} />
+    <Route path="suggestions" element={<Navigate to="../sources" replace />} />
+    <Route path="changes" element={<ChangesPage />} />
+    <Route path="check" element={<CheckPage />} />
+    <Route path="publish" element={<PublishPage />} />
+    <Route path="evidence/:chunkId" element={<EvidencePage />} />
   </>
 );
 
