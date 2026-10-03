@@ -87,7 +87,7 @@ describe("architectureOverview", () => {
     const overview = architectureOverview([active, draft], active, suggestions, nameDirectory([{ ...amina, roles: [] }]));
 
     expect(overview.lines).toMatchObject([{ rank: "due", name: "October update", cells: { status: "2 suggestions to decide", preparedBy: "Amina Owner" } }]);
-    expect(overview.next).toEqual({ to: "/architecture", label: "2 suggestions to decide in ‘October update’" });
+    expect(overview.next).toEqual({ to: "/architecture/versions/oct/sources", label: "2 suggestions to decide in ‘October update’" });
     expect(overview.notes[0]?.text).toContain("Published by Amina Owner on 1 Jan 2026, revision 1.");
     expect(overview.lines[0]?.note).toBe("draft-oct");
     expect(overview.notes[1]?.text).toBe(

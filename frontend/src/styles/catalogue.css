@@ -1,0 +1,856 @@
+/* The architecture catalogue: station pages. An index of systems beside one system's sheet. */
+
+.catalogue__systems {
+  /* The sticky masthead's height, so the index never slides under it. */
+  --masthead-clear: 3.5rem;
+  display: grid;
+  grid-template-columns: 15rem minmax(0, 1fr);
+  column-gap: var(--s6);
+  align-items: start;
+}
+
+.catalogue__main {
+  min-width: 0;
+}
+
+.catalogue__due {
+  color: var(--ink);
+  font-weight: var(--w-bold);
+}
+
+/* The systems index: ruled, grouped under where each system sits, kept in view while the sheet scrolls. */
+.sysindex {
+  position: sticky;
+  top: var(--masthead-clear);
+  max-height: calc(100vh - var(--masthead-clear) - var(--s4));
+  overflow-y: auto;
+  padding: var(--s4) var(--s2) var(--s4) 0;
+  overscroll-behavior: contain;
+}
+
+.sysindex__find .field__input {
+  width: 100%;
+}
+
+.sysindex__count {
+  margin-top: var(--s2);
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+.sysindex__group {
+  margin-top: var(--s4);
+}
+
+.sysindex__place {
+  padding-bottom: var(--s1);
+  border-bottom: 2px solid var(--rule-heavy);
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+  font-stretch: var(--width-condensed);
+  font-weight: var(--w-medium);
+}
+
+.sysindex__list li {
+  border-bottom: 1px solid var(--rule-faint);
+}
+
+.sysindex__link {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 2rem;
+  padding-block: var(--s1);
+  color: var(--ink);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.sysindex__link:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.sysindex__link[aria-current="page"] {
+  font-weight: var(--w-bold);
+  box-shadow: inset 0 -3px 0 var(--ink);
+}
+
+.sysindex__why {
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+  font-weight: var(--w-regular);
+}
+
+/* A governance section that opens a page sits level with the index's find field. */
+.catalogue__first {
+  padding-top: var(--s4);
+}
+
+/* Connections read as sentences: the system, then how, on its own meta line. */
+.connections__from,
+.connections__to {
+  width: 30%;
+}
+
+.connections__system {
+  width: 42%;
+}
+
+/* A section's quiet line sits under the section title's own heavy rule, never a second one. */
+.catalogue .govsection__title + .timetable__quiet,
+.catalogue .govsection__lead + .timetable__quiet {
+  margin-top: 0;
+  padding-top: var(--s1);
+  border-top: 0;
+}
+
+/* Arabic secondary names keep their direction but sit under the name they belong to. */
+.catalogue [dir="rtl"].govtable__by,
+.sheet__arabic {
+  text-align: left;
+}
+
+.govsection__count {
+  color: var(--ink-2);
+  font-weight: var(--w-regular);
+}
+
+/* One system's sheet. */
+.sheet {
+  display: grid;
+  gap: var(--s2);
+}
+
+.sheet__head {
+  display: grid;
+  gap: var(--s1);
+  padding-top: var(--s4);
+}
+
+.sheet__trail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s4);
+  margin-bottom: var(--s2);
+  font-size: var(--t-meta);
+}
+
+.sheet__all {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.5rem;
+}
+
+.sheet__title {
+  font-size: var(--t-title);
+  font-stretch: 88%;
+  font-weight: var(--w-bold);
+  line-height: 1.1;
+}
+
+.sheet__title:focus {
+  outline: none;
+}
+
+.sheet__title:focus-visible {
+  outline: 2px solid var(--reference);
+  outline-offset: 2px;
+}
+
+.sheet__arabic {
+  color: var(--ink-2);
+}
+
+.sheet__meta {
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+.sheet__description {
+  max-width: 72ch;
+  margin-top: var(--s2);
+}
+
+.sheet__facts {
+  display: grid;
+  margin-top: var(--s3);
+}
+
+.sheet__facts dd {
+  max-width: 72ch;
+}
+
+.sheet__facts > div {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  gap: var(--s3);
+  padding-block: var(--s1);
+  border-bottom: 1px solid var(--rule-faint);
+}
+
+.sheet__facts > div:first-child {
+  border-top: 2px solid var(--rule-heavy);
+}
+
+.sheet__facts dt {
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+  font-stretch: var(--width-condensed);
+  font-weight: var(--w-medium);
+}
+
+.sheet__list li {
+  padding-block: var(--s2);
+  border-bottom: 1px solid var(--rule-faint);
+}
+
+.sheet__list li > * {
+  max-width: 72ch;
+}
+
+.sheet__next {
+  margin-top: var(--s2);
+}
+
+.connections__inline {
+  display: none;
+}
+
+.versions__phone {
+  display: block;
+}
+
+.versions__phone .status {
+  display: block;
+  margin-top: var(--s1);
+}
+
+.sheet__roles {
+  display: grid;
+  gap: var(--s2);
+}
+
+/* Depends on, and Used by: a station's departures and arrivals, side by side when there is room. */
+.sheet__connections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--s6);
+  align-items: start;
+}
+
+@media (max-width: 80rem) {
+  .sheet__connections {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Domain trees: depth is indent, the outermost domains in bold. */
+.govtable tbody .domain--0 {
+  font-weight: var(--w-bold);
+}
+
+.govtable tbody .domain--1 {
+  padding-inline-start: var(--s4);
+}
+
+.govtable tbody .domain--2 {
+  padding-inline-start: var(--s6);
+}
+
+.domain__capabilities {
+  display: grid;
+  gap: var(--s1);
+}
+
+/* A journey's steps: a timetable's stops, grouped by phase. */
+.steps__no {
+  width: 3.5rem;
+}
+
+.govtable .steps__phase th {
+  padding: var(--s4) 0 var(--s1);
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+  font-stretch: var(--width-condensed);
+  font-weight: var(--w-medium);
+}
+
+.steps__name {
+  font-weight: var(--w-medium);
+}
+
+/* Versions: a row opens in place on the stock band, closing on a heavy rule. */
+.versions .is-open th,
+.versions .is-open td {
+  background: var(--stock-band);
+}
+
+.govtable .versions__detail td {
+  padding: var(--s2) var(--s4) var(--s4);
+  border-bottom: 2px solid var(--rule-heavy);
+  background: var(--stock-band);
+}
+
+.versions__body {
+  display: grid;
+  gap: var(--s3);
+}
+
+.versions__label {
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+.versions__title {
+  margin-top: var(--s2);
+}
+
+.versions__body .govtable {
+  max-width: 62rem;
+}
+
+.versions__putback {
+  margin-top: var(--s2);
+}
+
+.versions__putback.withdraw {
+  max-width: 62ch;
+}
+
+.versions__putback .field__input {
+  width: 100%;
+}
+
+.versions__waits {
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+@media (max-width: 45rem) {
+  .catalogue__systems {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sysindex {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  /* On a phone a chosen sheet replaces the index; "All systems and connections" returns to it. */
+  .catalogue__systems.has-sheet .sysindex {
+    display: none;
+  }
+
+  .connections__from {
+    width: 55%;
+  }
+
+  .govtable .connections__to,
+  .connections__verb {
+    display: none;
+  }
+
+  .connections__inline {
+    display: block;
+  }
+
+  .sheet__facts > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+}
+
+/* The draft's documents: reading state with its marks, actions on their own line, notes at the foot. */
+.documents__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s4);
+  margin-top: var(--s1);
+}
+
+.documents__confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s3);
+}
+
+.documents__remove {
+  font-weight: var(--w-bold);
+}
+
+.documents__notes {
+  margin-top: var(--s3);
+}
+
+.add.documents__add {
+  max-width: none;
+  margin: var(--s4) 0 0;
+}
+
+/* The galley: one table, grouped under the systems the suggestions would change. */
+.galley {
+  margin-top: var(--s2);
+}
+
+.galley__state {
+  width: 15rem;
+}
+
+.govtable .galley__head th {
+  padding: var(--s5) 0 var(--s2);
+  border-bottom: 2px solid var(--rule-heavy);
+  font-weight: var(--w-regular);
+}
+
+.galley__title {
+  margin-right: var(--s4);
+  font-stretch: 88%;
+  font-weight: var(--w-bold);
+}
+
+.galley__new {
+  font-weight: var(--w-bold);
+}
+
+.galley__new::after {
+  content: " ·";
+  font-weight: var(--w-regular);
+}
+
+.galley__tally {
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+.galley__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s4);
+  margin-top: var(--s1);
+}
+
+.galley__confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s3);
+  font-size: var(--t-meta);
+}
+
+.galley__reject {
+  font-weight: var(--w-bold);
+}
+
+/* A suggestion row: the change in words, its state; rank by weight, the row opening in place on the band. */
+.suggestion {
+  cursor: pointer;
+  transition: background-color 180ms var(--ease-out);
+}
+
+.suggestion:hover,
+.suggestion.is-open,
+.govtable .suggestion-detail td {
+  background: var(--stock-band);
+}
+
+.suggestion:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.govtable .row--due .suggestion__sentence {
+  font-weight: var(--w-bold);
+}
+
+.govtable .row--running .status {
+  color: var(--ink-2);
+}
+
+.govtable .suggestion-detail td {
+  padding: var(--s2) var(--s4) var(--s4) 0;
+  border-bottom: 2px solid var(--rule-heavy);
+}
+
+.suggestion-detail__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: var(--s5);
+}
+
+.suggestion-detail__source,
+.suggestion-detail__decision {
+  display: grid;
+  gap: var(--s3);
+  align-content: start;
+  min-width: 0;
+}
+
+/* The detail's parts sit on the label-over-rule grammar of the world's sections. */
+.suggestion-detail__label {
+  display: block;
+  padding-bottom: var(--s1);
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+  font-stretch: var(--width-condensed);
+  font-weight: var(--w-medium);
+}
+
+.suggestion-detail__rationale {
+  display: grid;
+  gap: var(--s1);
+  max-width: 64ch;
+}
+
+.citation {
+  display: grid;
+  gap: var(--s1);
+}
+
+.citation__quote {
+  max-width: 64ch;
+}
+
+.citation__where {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s3);
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+/* On the band already, the passage takes the stock instead, so it reads as the document's own page. */
+.citation__passage.searchresults__context {
+  background: var(--stock);
+}
+
+.citation__passage [dir] {
+  white-space: pre-line;
+}
+
+.citation__image {
+  max-width: 100%;
+  max-height: 28rem;
+  border: 1px solid var(--rule);
+}
+
+.decision {
+  display: grid;
+  gap: var(--s3);
+}
+
+.decision__matches .check {
+  align-items: start;
+}
+
+.decision__actions,
+.suggestion-editor__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s3) var(--s4);
+}
+
+.decision__why,
+.suggestion-editor__why {
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+.suggestion-editor {
+  display: grid;
+  gap: var(--s3);
+}
+
+.suggestion-editor__title {
+  font-weight: var(--w-bold);
+}
+
+/* Forms: fields on a wrapping grid; repeating rows ruled, never boxed. */
+.form {
+  display: grid;
+  gap: var(--s3);
+}
+
+.form__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: var(--s3) var(--s4);
+  align-items: end;
+}
+
+.form__field .field__input {
+  width: 100%;
+}
+
+.form__field--wide {
+  grid-column: 1 / -1;
+}
+
+.form__select {
+  min-height: 2rem;
+}
+
+.form__check {
+  min-height: 2rem;
+}
+
+.form__hint {
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+.form__rows {
+  display: grid;
+  gap: var(--s2);
+  margin: var(--s2) 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.form__legend {
+  padding: 0 0 var(--s1);
+  width: 100%;
+  border-bottom: 2px solid var(--rule-heavy);
+  font-weight: var(--w-bold);
+}
+
+.form__row {
+  display: grid;
+  gap: var(--s2);
+  margin: 0;
+  padding: 0 0 var(--s3);
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.form__row .form__rows .form__legend {
+  border-bottom-width: 1px;
+  font-weight: var(--w-medium);
+}
+
+.form__remove {
+  justify-self: start;
+}
+
+.form__chosen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s3);
+  margin-top: var(--s1);
+}
+
+.form__chosen li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+}
+
+.form__chosen .text-button {
+  justify-content: center;
+  min-width: 1.5rem;
+}
+
+/* A draft's inline steps sit under its head, in the head's text column. */
+.draft-step {
+  margin-top: var(--s3);
+}
+
+@media (max-width: 60rem) {
+  .suggestion-detail__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 45rem) {
+  .galley__state {
+    width: 9rem;
+  }
+}
+
+/* The galley's cells keep a gutter, so the band has a margin and the focus ring clears the first glyph. */
+.galley .suggestion > th,
+.galley .suggestion > td,
+.govtable.galley .suggestion-detail td,
+.govtable .galley__head th {
+  padding-inline: var(--s2);
+}
+
+.galley thead th {
+  padding-inline: var(--s2);
+}
+
+.documents__more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2) var(--s4);
+  margin-top: var(--s3);
+}
+
+/* The next decision as an action: the world's next-decision link, as a button. */
+.next-button {
+  display: inline;
+  padding: 0.15rem 0;
+  border: 0;
+  background: none;
+  color: var(--reference);
+  font: inherit;
+  text-align: start;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
+.next-button:hover {
+  text-decoration-thickness: 2px;
+}
+
+.next-button svg {
+  margin-left: var(--s1);
+  vertical-align: -0.15em;
+}
+
+/* Hand edits open in place where the thing is read: on the stock band, closing on a heavy rule. */
+.edit-panel {
+  display: grid;
+  gap: var(--s3);
+  margin-top: var(--s3);
+  padding: var(--s3) var(--s4) var(--s4);
+  border-bottom: 2px solid var(--rule-heavy);
+  background: var(--stock-band);
+}
+
+.edit-panel__title {
+  font-size: var(--t-lead);
+  font-weight: var(--w-bold);
+}
+
+.edit-panel__lead {
+  max-width: 62ch;
+}
+
+.edit-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s3) var(--s4);
+}
+
+/* On the band, fields keep the stock so they read as places to write. */
+.edit-panel .field__input {
+  background-color: var(--stock);
+}
+
+.sheet__row-actions,
+.samples__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s4);
+  margin-top: var(--s1);
+}
+
+.sysindex__add {
+  margin-top: var(--s2);
+}
+
+/* Changes: a timetable's list of alterations. */
+.diff {
+  margin-top: var(--s3);
+}
+
+.diff__change {
+  width: 15rem;
+}
+
+/* Check: the build's state on one line, then the samples. */
+.build-state {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--s1);
+  align-items: baseline;
+}
+
+.build-state .status {
+  font-weight: var(--w-bold);
+}
+
+.build-state--failed .status {
+  color: var(--disruption);
+}
+
+.samples__result {
+  width: 45%;
+}
+
+.samples .is-open th,
+.samples .is-open td,
+.govtable .samples__detail td {
+  background: var(--stock-band);
+}
+
+.govtable .samples__detail td {
+  padding: var(--s2) var(--s4) var(--s4);
+  border-bottom: 2px solid var(--rule-heavy);
+}
+
+.evidence-list {
+  display: grid;
+  gap: var(--s3);
+}
+
+.evidence-list__items {
+  display: grid;
+  gap: var(--s2);
+  max-width: 72ch;
+  margin-top: var(--s2);
+}
+
+.evidence__text {
+  max-width: 72ch;
+  white-space: pre-line;
+}
+
+.tryone {
+  margin-top: var(--s5);
+}
+
+.tryone__result {
+  flex-basis: 100%;
+}
+
+/* Publish: the consequence first, in words, then the reason and the action. */
+.publish__consequence {
+  display: grid;
+  gap: var(--s2);
+  max-width: 72ch;
+}
+
+.publish__reason {
+  max-width: 44rem;
+}
+
+.publish__reason .field__input {
+  width: 100%;
+}
+
+.catalogue-file__preview {
+  max-width: none;
+}
+
+@media (max-width: 45rem) {
+  .samples__result,
+  .diff__change {
+    width: auto;
+  }
+}

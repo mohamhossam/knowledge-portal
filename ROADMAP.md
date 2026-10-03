@@ -107,9 +107,57 @@ ADR-0099.
   - the front page, an overview of all three tables with what needs a curator;
   - stable addresses for `/library`, `/architecture` and `/squads`;
   - the `knowledge-web` image.
+- **Done: the library's review.**
+  - The library table, with "add a document".
+  - Each document's page, laid out "edition against working copy":
+    - a change notice counting what moved since the edition in service;
+    - aligned passage rows with keyboard review (j/k, Enter, x, i, e, o, Esc), filters and find;
+    - windowed rendering for thousands of passages;
+    - the original's preview;
+    - save, approve and publish;
+    - withdrawal, a new version, and retry or cancel of processing.
+- **Done: library governance and search.**
+  - Each document has sub-pages, Review, Search versions, Who cites it and Ownership; unsaved review work survives moving between them.
+  - Search versions: every publication, table-aware builds (preview, build, activate with acknowledgement, discard), retrying stopped indexing, and a preview of what an approval indexes.
+  - Who cites it: proposals citing the document, and source impact (read-only).
+  - Ownership: handing over to another admin, with its history.
+  - `/library/search` searches every passage in service, with exact citations and their surrounding text.
+- **Done: reading the architecture catalogue** (the first of three catalogue pull requests).
+  - The version in service as station pages: an index of systems grouped by where each sits,
+    with a find field that matches names, aliases, Arabic names, components, capabilities and
+    matching phrases, beside every connection or one system's sheet.
+  - A system's sheet: what it does and the phrases that match it, what it depends on and what
+    uses it (following a connection lights the way back), its owners from the squad catalogue,
+    the offerings and journey steps it plays a part in, its components and constraints.
+  - Domains (the landscape and the business areas), offerings, and journeys read as timetables.
+  - Versions: every version with its history and catalogue files, and putting a replaced version
+    back in service with a reason, after saying what it would change. Any version reads the same
+    way, with its changes against the version in service.
+- **Done: the draft from documents** (the second of three catalogue pull requests).
+  - Starting, renaming and removing the one draft; the draft reads like any version, with a
+    Suggestions page under its head.
+  - Its documents: added and read, reading state with cancel and read again, removal, and the
+    readings' warnings as numbered notes.
+  - Every suggestion gathered under the system it would change, new systems first, keeping its
+    place while deciding; decided by keyboard (j/k, Enter, a, r, e, Esc) or pointer, one after
+    another on the revision the last returned.
+  - Possible matches chosen in place, inferred links checked against their cited passage, waits
+    said in the documents' names; accepting the ready ones and what they lift in one step.
+  - Editing before accepting, for every kind: systems, components, capabilities and their
+    phrases, constraints, dependencies, domains and placements, and whole offerings and journeys
+    (editors the hand edits will reuse).
+- **Done: finishing a draft** (the last of three catalogue pull requests).
+  - Hand edits in place on the draft's own pages: a system's sheet (edit, remove with its
+    connections, add/change/remove its dependencies), "Add a system", both domain trees, and
+    whole offerings and journeys.
+  - Sources: documents and suggestions beside the catalogue file (the template, the draft as
+    Excel/YAML/JSON, and a file brought back shown as its differences before it replaces anything).
+  - Changes: every difference from the version in service, counted, then listed by kind, with
+    connections said as sentences.
+  - Check: the build for matching, the team's sample requirements compared between the version in
+    service and the draft ("Now also finds Order Hub"), with the evidence the draft cites.
+  - Publish: the consequence in words, a reason, and publishing (building first when needed).
 - **Next screens, each critiqued on a live seeded page before its pull request:**
-  - library and governance (review, publication, builds, withdrawal, ownership, dependents and source impact);
-  - catalogue browser and editors (releases, suggestions, changes, mapping impact, evidence);
   - squad catalogue.
 
 ### Data import
