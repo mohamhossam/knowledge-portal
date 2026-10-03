@@ -55,8 +55,8 @@
      `ghcr.io/mohamhossam/knowledge-api` for requirement-portal's deployment.
    - CI: checks with PostgreSQL, dependency audit, image. Dependabot, and a `.gitattributes`
      that keeps line endings LF.
-   - For platform-kernel 1.0.2: `PooledPostgresConnector` names every pool
-     `smb-requirement-agent`. The name should be a parameter (mechanisms, never meaning).
+   - Kernel 1.0.2 (2026-10-03) takes the pool name from the application; the pool is
+     named `knowledge-portal`.
    - Kernel 1.0.1 (2026-10-03) raised PyJWT to 2.15.1 for that day's advisories; v0.1.0 ships on it.
 
 The plan is requirement-portal's `docs/slices/enhancement-platform-split.md`, read against

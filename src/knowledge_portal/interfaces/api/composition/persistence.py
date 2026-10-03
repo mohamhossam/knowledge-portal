@@ -140,6 +140,7 @@ def _postgres(
         max_size=settings.database_pool_max_size,
         acquire_timeout_seconds=settings.database_pool_timeout_seconds,
         max_idle_seconds=POOL_MAX_IDLE_SECONDS,
+        name="knowledge-portal",
     )
     connector.open()
     # Registered first so it closes last, after every adapter and worker.
