@@ -699,8 +699,12 @@ def seed_squads(client: httpx.Client) -> None:
     def post(path: str, body: dict[str, Any]) -> None:
         client.post(path, json=body, headers=OWNER).raise_for_status()
 
-    post("/organisation/people", {"person": {"id": "layla", "name": "Layla Haddad (sample)"}})
-    post("/organisation/people", {"person": {"id": "omar", "name": "Omar Saleh (sample)"}})
+    for person in (
+        {"id": "layla", "name": "Layla Haddad (sample)", "team": "Digital sales"},
+        {"id": "omar", "name": "Omar Saleh (sample)", "team": "Fulfilment"},
+        {"id": "rana", "name": "Rana Aziz (sample)", "email": "rana@example.com"},
+    ):
+        post("/organisation/people", {"person": person})
     post(
         "/organisation/value-streams",
         {"value_stream": {"id": "retail", "name": "Retail (sample)", "lead_person_id": "layla"}},
@@ -731,6 +735,54 @@ def seed_squads(client: httpx.Client) -> None:
             }
         },
     )
+    post(
+        "/organisation/value-streams",
+        {"value_stream": {"id": "business", "name": "Business (sample)", "lead_person_id": "omar"}},
+    )
+    post(
+        "/organisation/squads",
+        {
+            "squad": {
+                "id": "fulfilment",
+                "name": "Fulfilment squad (sample)",
+                "value_stream_id": "business",
+                "scrum_master_person_id": "omar",
+                "systems": [
+                    {"system_id": "cwom", "person_id": "omar"},
+                    {"system_id": "wfm"},
+                ],
+            }
+        },
+    )
+    for product in (
+        {
+            "id": "fibre-ordering",
+            "value_stream_id": "retail",
+            "name": "Fibre bundle ordering (sample)",
+            "description": "Ordering a business fibre bundle online (sample).",
+            "system_ids": ["b2b-web", "b2b-bff", "cbcm-crmgw", "cwom", "bscs"],
+        },
+        {
+            "id": "care",
+            "value_stream_id": "retail",
+            "name": "Customer care (sample)",
+            "system_ids": ["cim", "service-now"],
+        },
+        {
+            "id": "partner-channel",
+            "value_stream_id": "business",
+            "name": "Partner channel (sample)",
+            "system_ids": ["bcrm", "dcrm"],
+        },
+    ):
+        post("/organisation/products", {"product": product})
+    # Someone who has left: inactive, holding no role, still named in history.
+    rana = client.get("/organisation", headers=OWNER).json()["people"][-1]
+    client.put(
+        "/organisation/people/rana",
+        json={"expected_revision": rana["revision"], "person": {**rana, "active": False}},
+        headers=OWNER,
+    ).raise_for_status()
 
 
 def main() -> None:

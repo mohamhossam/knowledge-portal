@@ -19,7 +19,11 @@ import { LibraryPage } from "../library/LibraryPage";
 import { OwnershipPage } from "../library/OwnershipPage";
 import { SearchPage } from "../library/SearchPage";
 import { VersionsPage } from "../library/VersionsPage";
-import { AreaPage } from "./AreaPage";
+import { HistoryPage } from "../squads/HistoryPage";
+import { PeoplePage } from "../squads/PeoplePage";
+import { ProductsPage } from "../squads/ProductsPage";
+import { SquadListPage } from "../squads/SquadListPage";
+import { SquadsPage } from "../squads/SquadsPage";
 import { HomePage } from "./HomePage";
 import { Shell } from "./Shell";
 
@@ -62,7 +66,12 @@ export function App() {
         <Route path="architecture/versions/:releaseId" element={<CataloguePage />}>
           {catalogueRoutes}
         </Route>
-        <Route path="squads" element={<AreaPage area="squads" />} />
+        <Route path="squads" element={<SquadsPage />}>
+          <Route index element={<ProductsPage />} />
+          <Route path="squads" element={<SquadListPage />} />
+          <Route path="people" element={<PeoplePage />} />
+          <Route path="history" element={<HistoryPage />} />
+        </Route>
         {/* Sign-in has already returned the admin to where they were going. */}
         <Route path={CALLBACK_PATH.slice(1)} element={<Navigate to="/" replace />} />
         <Route path={SILENT_CALLBACK_PATH.slice(1)} element={null} />

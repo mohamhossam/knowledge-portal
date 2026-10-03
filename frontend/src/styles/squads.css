@@ -1,0 +1,127 @@
+/* Table 3, the squad catalogue: the organisation read through what it sells. */
+
+/* A value stream is a section; each product a sub-table of its systems and who runs each. */
+.product {
+  display: grid;
+  gap: var(--s1);
+  margin-top: var(--s4);
+}
+
+/* A product steps down from its value stream's lead title: body size, bold, a sub-table's head. */
+.product__title {
+  font-size: var(--t-body);
+  font-weight: var(--w-bold);
+}
+
+.product__description {
+  max-width: 72ch;
+  color: var(--ink-2);
+}
+
+.runs {
+  margin-top: var(--s1);
+}
+
+.runs__system {
+  width: 40%;
+}
+
+.runs__squad {
+  display: block;
+}
+
+.runs__squad + .runs__squad {
+  margin-top: var(--s1);
+}
+
+.runs .is-open th,
+.runs .is-open td,
+.squadlist .is-open th,
+.squadlist .is-open td {
+  background: var(--stock-band);
+}
+
+/* The open edit sits on the band already; the panel's own band and margin give way. */
+.govtable .runs__detail td {
+  padding: 0 0 var(--s2);
+  border-bottom: 0;
+}
+
+.runs__detail .edit-panel {
+  margin-top: 0;
+}
+
+.squadlist__systems {
+  display: grid;
+  gap: var(--s1);
+}
+
+.squadlist__systems .is-lapsed {
+  color: var(--ink-3);
+}
+
+/* Choosing a product's systems: a compact checklist with a find field. */
+.form__systems {
+  display: grid;
+  gap: var(--s2);
+}
+
+.form__checklist {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 0 var(--s4);
+}
+
+@media (max-width: 45rem) {
+  .runs__system {
+    width: auto;
+  }
+}
+
+/* "Give it to a squad" rides on the line of the bold "No squad", so a gap is one row high. */
+.runs__give {
+  margin-inline-start: var(--s3);
+}
+
+.runs .is-lit th,
+.runs .is-lit td {
+  background: var(--reference-wash);
+}
+
+/* Each place in the closing section heads its systems on a heavy rule, like the systems index. */
+.govtable .runs__place th {
+  border-bottom: 2px solid var(--rule-heavy);
+}
+
+.squads__gaps {
+  margin-top: var(--s3);
+}
+
+.people__meta {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.people__roles-phone {
+  display: none;
+}
+
+.govtable .history__when {
+  width: 11rem;
+  padding-inline-end: var(--s5);
+  text-align: end;
+}
+
+@media (max-width: 45rem) {
+  .govtable .people__roles {
+    display: none;
+  }
+
+  .people__roles-phone {
+    display: block;
+  }
+
+  .govtable .history__when {
+    width: auto;
+  }
+}

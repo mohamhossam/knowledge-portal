@@ -87,15 +87,25 @@ export function SelectField({ label, value, onChange, options, wide }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
-  options: { value: string; label: string }[];
+  /** Options with a group are set under it, in an optgroup, in the order given. */
+  options: { value: string; label: string; group?: string }[];
   wide?: boolean;
 }) {
   const id = useId();
+  const runs: { group?: string; options: typeof options }[] = [];
+  for (const option of options) {
+    const last = runs.at(-1);
+    if (last && last.group === option.group) last.options.push(option);
+    else runs.push({ group: option.group, options: [option] });
+  }
+  const render = (list: typeof options) => list.map((option) => <option key={option.value} value={option.value}>{option.label}</option>);
   return (
     <label className={wide ? "field form__field form__field--wide" : "field form__field"} htmlFor={id}>
       <span className="field__label">{label}</span>
       <select id={id} className="field__input form__select" value={value} onChange={(event) => onChange(event.target.value)}>
-        {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+        {runs.map((run, index) =>
+          run.group ? <optgroup key={`${run.group}:${index}`} label={run.group}>{render(run.options)}</optgroup> : render(run.options),
+        )}
       </select>
     </label>
   );

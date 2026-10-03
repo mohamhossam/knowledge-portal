@@ -15,6 +15,7 @@ import "./styles/shell.css";
 import "./styles/timetable.css";
 import "./styles/library.css";
 import "./styles/catalogue.css";
+import "./styles/squads.css";
 
 import { ApiError } from "./api/errors";
 import { App } from "./app/App";
