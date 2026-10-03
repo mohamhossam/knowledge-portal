@@ -54,6 +54,10 @@ export type DocumentExtraction = Schemas["DocumentExtractionResponse"];
 export type CitedPassage = Schemas["DocumentPassageResponse"];
 export type CatalogueDocument = Schemas["KnowledgeDocumentVersionResponse"];
 export type DocumentLanguage = "en" | "ar" | "mixed";
+export type Person = Schemas["PersonSchema"];
+export type ValueStream = Schemas["ValueStreamSchema"];
+export type OrgProduct = Schemas["ProductSchema"];
+export type Squad = Schemas["SquadSchema"];
 export type SampleRequirements = Schemas["SampleRequirementsResponse"];
 export type SampleRequirement = Schemas["SampleRequirementSchema"];
 export type ImpactComparison = Schemas["ImpactComparisonResponse"];
@@ -247,6 +251,17 @@ export const api = {
   systemOwnership: (systemId: string) =>
     apiRequest<SystemOwnership>(`/organisation/systems/${encodeURIComponent(systemId)}/ownership`),
   organisation: () => apiRequest<Organisation>("/organisation"),
+  /** Saves one organisation record whole; a new one has no expected revision. Returns the whole catalogue. */
+  saveOrganisation: (kind: "people" | "value-streams" | "products" | "squads", id: string, body: Record<string, unknown>, isNew: boolean) =>
+    apiRequest<Organisation>(isNew ? `/organisation/${kind}` : `/organisation/${kind}/${encodeURIComponent(id)}`, {
+      method: isNew ? "POST" : "PUT",
+      body: JSON.stringify(body),
+    }),
+  removeOrganisation: (kind: "value-streams" | "products" | "squads", id: string, expectedRevision: number) =>
+    apiRequest<Organisation>(`/organisation/${kind}/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      body: JSON.stringify({ expected_revision: expectedRevision }),
+    }),
   organisationAudit: () => apiRequest<OrganisationAuditEvent[]>("/organisation/audit"),
 
   // Library: one document and its curation. Every change names the version it saw.

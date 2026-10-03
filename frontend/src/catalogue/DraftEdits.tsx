@@ -16,8 +16,10 @@ import { useEditing } from "./useEditing";
  * An edit opened in place where the thing is read: on the stock band, closing
  * on a heavy rule, never a modal. It says why its action waits and what failed.
  */
-export function EditPanel({ title, children, action, busy, problem, error, onSubmit, onCancel, danger }: {
+export function EditPanel({ title, children, action, busy, problem, error, onSubmit, onCancel, danger, conflictMessage }: {
   title: string;
+  /** What a 409 means here; the draft's own sentence by default. */
+  conflictMessage?: string;
   children?: ReactNode;
   action: string;
   busy: boolean;
@@ -49,7 +51,9 @@ export function EditPanel({ title, children, action, busy, problem, error, onSub
       {children}
       {error ? (
         <p className="docpage__failure" role="alert">
-          {conflict ? "The draft changed while you edited (someone else, or a document's reading). Reload the page; your edit was not saved." : errorMessage(error)}
+          {conflict
+            ? conflictMessage ?? "The draft changed while you edited (someone else, or a document's reading). Reload the page; your edit was not saved."
+            : errorMessage(error)}
         </p>
       ) : null}
       <p className="edit-panel__actions">

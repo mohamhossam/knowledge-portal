@@ -157,8 +157,12 @@ ADR-0099.
   - Check: the build for matching, the team's sample requirements compared between the version in
     service and the draft ("Now also finds Order Hub"), with the evidence the draft cites.
   - Publish: the consequence in words, a reason, and publishing (building first when needed).
-- **Next screens, each critiqued on a live seeded page before its pull request:**
-  - squad catalogue.
+- **Done: the squad catalogue** (Table 3), read through what the organisation sells.
+  - Products: each value stream with its lead and products, each product's systems and the squad
+    that runs each with its contact; then the systems no product names, by where they sit.
+  - Ownership counted against the version in service, and a system given to a squad in place.
+  - Squads (by value stream, with scrum master and contacts), People (roles, and inactive only
+    once they hold none) and History; every record edited in place with its revision.
 
 ### Data import
 - Done in step 4 above.
