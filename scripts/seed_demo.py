@@ -2,7 +2,8 @@
 
 Every record is synthetic and says so ("sample"). It gives the portal's screens
 each state they must render: documents in service, awaiting review (yours and
-another admin's), failed and withdrawn; a draft catalogue release with proposed
+another admin's), failed and withdrawn; a published catalogue version placed in a
+landscape, with an offering and its journey; a draft catalogue release with proposed
 suggestions; squads that own some systems and leave others without an owner.
 
     uv run python -m knowledge_portal.interfaces.api.serve --port 8100   # fake, in memory
@@ -330,6 +331,253 @@ def seed_governance(client: httpx.Client) -> None:
     ).raise_for_status()
 
 
+PLACES = {
+    "channels-digital": ["b2b-web", "smb-app", "saas-self-service-portal", "b2b-bff"],
+    "channels-assisted": ["bcrm", "cim", "dcrm"],
+    "customer-sales": ["cbcm-crmgw", "netcracker-crm", "oracle-atg-bcc", "netcracker-cpm"],
+    "orchestration": ["rtf", "cwom", "ibm-bpm", "felix", "wfm", "sla-management"],
+    "network": ["ericsson-ecm", "gis", "network-inventory", "service-activation"],
+    "assurance-ops": ["service-now", "hpsm", "remedy"],
+    "billing-revenue": ["bscs"],
+    "integration-platform": ["tibco", "cns", "edms", "ocr", "adfs"],
+}
+
+ARABIC = {
+    "b2b-web": "بوابة الأعمال الإلكترونية",
+    "smb-app": "تطبيق الأعمال الصغيرة",
+    "cwom": "إدارة أوامر العمل",
+    "bscs": "نظام الفوترة",
+}
+
+
+def activity(
+    number: str,
+    name: str,
+    phase: str,
+    performing: str,
+    supporting: tuple[str, ...] = (),
+    visible: bool | None = None,
+    track: str | None = None,
+) -> dict[str, Any]:
+    return {
+        "number": number,
+        "name": name,
+        "phase": phase,
+        "track": track,
+        "performing_system_id": performing,
+        "supporting_system_ids": list(supporting),
+        "customer_visible": visible,
+        "component_ids": [],
+    }
+
+
+def sample_catalogue(release: dict[str, Any]) -> dict[str, Any]:
+    """The initial catalogue, placed in a landscape, with one offering and its journey.
+
+    EIDA is left unplaced on purpose, so the catalogue shows a system without a place.
+    """
+    domains = [
+        {"id": "channels", "name": "Customer channels (sample)", "name_ar": "قنوات العملاء"},
+        {
+            "id": "channels-digital",
+            "name": "Digital channels",
+            "parent_id": "channels",
+            "name_ar": "القنوات الرقمية",
+        },
+        {"id": "channels-assisted", "name": "Assisted channels", "parent_id": "channels"},
+        {"id": "customer-sales", "name": "Customer and sales (sample)"},
+        {"id": "orchestration", "name": "Order orchestration (sample)"},
+        {"id": "network", "name": "Network and resources (sample)"},
+        {"id": "assurance-ops", "name": "Service assurance (sample)"},
+        {
+            "id": "billing-revenue",
+            "name": "Billing and revenue (sample)",
+            "name_ar": "الفوترة والإيرادات",
+        },
+        {"id": "integration-platform", "name": "Integration and enabling (sample)"},
+    ]
+    place = {system: domain for domain, systems in PLACES.items() for system in systems}
+    systems = []
+    for original in release["systems"]:
+        system = {**original, "landscape_domain_id": place.get(original["id"])}
+        if system["id"] in ARABIC:
+            system["name_ar"] = ARABIC[system["id"]]
+        if system["id"] == "cwom":
+            system["description"] = (
+                "Orchestrates fixed-line orders from capture to closure (sample)."
+            )
+            system["components"] = [
+                {
+                    "id": "milestones",
+                    "name": "Milestone tracker",
+                    "technology": "Java",
+                    "aliases": ["order milestones"],
+                    "name_ar": "متتبع المراحل",
+                },
+                {"id": "decomposition", "name": "Order decomposition", "aliases": []},
+            ]
+            system["capabilities"] = [
+                *system["capabilities"],
+                {
+                    "id": "milestone-tracking",
+                    "name": "Order milestone tracking",
+                    "triggers": ["order milestones", "installation milestones"],
+                    "domain_id": "order-fulfilment",
+                    "component_id": "milestones",
+                },
+            ]
+            system["constraints"] = ["Fixed-line orders only (sample)."]
+        systems.append(system)
+    relationships = [
+        *release["relationships"],
+        {
+            "source_system_id": "bscs",
+            "target_system_id": "cns",
+            "kind": "publishes_events_to",
+            "description": "A completed bill run notifies the customer (sample).",
+        },
+        {
+            "source_system_id": "b2b-web",
+            "target_system_id": "gis",
+            "kind": "calls_api",
+            "description": "The web checkout checks fibre coverage at the address (sample).",
+        },
+    ]
+    offering = {
+        "id": "business-fibre",
+        "name": "Business fibre bundle (sample)",
+        "code": "BFB-1",
+        "family": "Fixed broadband",
+        "lifecycle": "In market",
+        "confidence": "confirmed",
+        "proposition": "Fibre broadband and a managed router for small businesses (sample).",
+        "rules": ["Coverage is confirmed at the address before a quote (sample)."],
+        "order_types": [
+            {"code": "NEW", "name": "New connection", "enabled": True},
+            {"code": "MOD", "name": "Change speed", "enabled": True},
+            {"code": "CEASE", "name": "Cease", "enabled": False},
+        ],
+        "components": [
+            {
+                "id": "fibre-line",
+                "name": "Fibre line",
+                "kind": "Service",
+                "mandatory": True,
+                "customer_visible": True,
+                "responsibilities": [
+                    {
+                        "system_id": "cwom",
+                        "role": "Fulfils",
+                        "order_types": ["NEW", "MOD"],
+                        "description": "Orchestrates the installation and its milestones.",
+                    },
+                    {
+                        "system_id": "bscs",
+                        "role": "Bills",
+                        "order_types": [],
+                        "description": "Charges the monthly rental.",
+                    },
+                ],
+            },
+            {
+                "id": "router",
+                "name": "Managed router",
+                "kind": "Device",
+                "mandatory": False,
+                "customer_visible": True,
+                "responsibilities": [
+                    {
+                        "system_id": "network-inventory",
+                        "role": "Allocates",
+                        "order_types": ["NEW"],
+                        "description": "Reserves the router and its serial number.",
+                    }
+                ],
+            },
+        ],
+        "values": [{"name": "Installation within five working days (sample)"}],
+        "audiences": [{"name": "Small businesses"}],
+    }
+    journey = {
+        "id": "order-business-fibre",
+        "name": "Ordering a business fibre bundle (sample)",
+        "product_id": "business-fibre",
+        "order_type_code": "NEW",
+        "confidence": "confirmed",
+        "description": "From the customer's order on the web to the first bill (sample).",
+        "activities": [
+            activity("10", "Capture the order", "Order capture", "b2b-web", ("b2b-bff",), True),
+            activity(
+                "20", "Check coverage and eligibility", "Order capture", "cbcm-crmgw", ("gis",)
+            ),
+            activity("30", "Orchestrate fulfilment", "Fulfilment", "cwom", ("rtf",)),
+            activity("40", "Install the line", "Fulfilment", "wfm", (), True),
+            activity("50", "Activate the service", "Fulfilment", "service-activation"),
+            activity("60", "Start billing", "Billing", "bscs"),
+            activity("70", "Tell the customer", "Billing", "cns", (), True),
+            activity("80", "Explain the refusal", "Order capture", "cim", (), True, "REFUSAL"),
+        ],
+        "flow_rules": [
+            {
+                "kind": "decision",
+                "from_activity": "20",
+                "to_activity": "30",
+                "condition": "Covered",
+            },
+            {
+                "kind": "decision",
+                "from_activity": "20",
+                "to_activity": "80",
+                "condition": "Not covered",
+                "branch": "REFUSAL",
+            },
+        ],
+        "integrations": [
+            {
+                "from_activity": "30",
+                "to_activity": "60",
+                "interaction": "Order closure",
+                "interface": "Billing order API",
+                "timing": "Async",
+            }
+        ],
+    }
+    return {
+        "expected_revision": release["revision"],
+        "systems": systems,
+        "relationships": relationships,
+        "capability_domains": release.get("capability_domains", []),
+        "landscape_domains": domains,
+        "products": [offering],
+        "journeys": [journey],
+    }
+
+
+def seed_published_catalogue(client: httpx.Client) -> None:
+    """A second published version, now in service; the initial catalogue stays as replaced."""
+    releases = "/architecture-knowledge/releases"
+    draft = client.post(
+        releases, json={"name": "September landscape and offerings (sample)"}, headers=OWNER
+    )
+    draft.raise_for_status()
+    base = f"{releases}/{draft.json()['id']}"
+    saved = client.put(base, json=sample_catalogue(draft.json()), headers=OWNER)
+    saved.raise_for_status()
+    revision = saved.json()["revision"]
+    client.post(
+        f"{base}/build", json={"expected_revision": revision}, headers=OWNER
+    ).raise_for_status()
+    wait_for(client, f"{base}/build", OWNER, lambda job: job and job["status"] == "succeeded")
+    client.post(
+        f"{base}/publish",
+        json={
+            "expected_revision": revision,
+            "rationale": "Placed the systems in the landscape; added the fibre offering (sample).",
+        },
+        headers=OWNER,
+    ).raise_for_status()
+
+
 def seed_catalogue(client: httpx.Client) -> None:
     releases = "/architecture-knowledge/releases"
     draft = client.post(
@@ -409,6 +657,7 @@ def main() -> None:
         seed_library(client)
         seed_review_material(client)
         seed_governance(client)
+        seed_published_catalogue(client)
         seed_catalogue(client)
         seed_squads(client)
     print("Seeded sample curation work.")

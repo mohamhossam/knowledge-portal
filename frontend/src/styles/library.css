@@ -709,14 +709,6 @@ html:has(.savebar) {
     padding-left: 0;
   }
 
-  .subindex__list {
-    gap: 0 var(--s3);
-  }
-
-  .subindex__link {
-    font-size: var(--t-meta);
-  }
-
   .savebar {
     position: static;
   }
@@ -755,6 +747,16 @@ html:has(.savebar) {
 
 .subindex__count {
   font-weight: var(--w-regular);
+}
+
+@media (max-width: 45rem) {
+  .subindex__list {
+    gap: 0 var(--s3);
+  }
+
+  .subindex__link {
+    font-size: var(--t-meta);
+  }
 }
 
 /* Governance sections: a heading on a heavy rule, a lead, a ruled table. */

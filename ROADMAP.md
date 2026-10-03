@@ -122,8 +122,20 @@ ADR-0099.
   - Who cites it: proposals citing the document, and source impact (read-only).
   - Ownership: handing over to another admin, with its history.
   - `/library/search` searches every passage in service, with exact citations and their surrounding text.
+- **Done: reading the architecture catalogue** (the first of three catalogue pull requests).
+  - The version in service as station pages: an index of systems grouped by where each sits,
+    with a find field that matches names, aliases, Arabic names, components, capabilities and
+    matching phrases, beside every connection or one system's sheet.
+  - A system's sheet: what it does and the phrases that match it, what it depends on and what
+    uses it (following a connection lights the way back), its owners from the squad catalogue,
+    the offerings and journey steps it plays a part in, its components and constraints.
+  - Domains (the landscape and the business areas), offerings, and journeys read as timetables.
+  - Versions: every version with its history and catalogue files, and putting a replaced version
+    back in service with a reason, after saying what it would change. Any version reads the same
+    way, with its changes against the version in service.
 - **Next screens, each critiqued on a live seeded page before its pull request:**
-  - catalogue browser and editors (releases, suggestions, changes, mapping impact, evidence);
+  - the draft from documents (uploads, suggestions, possible matches);
+  - hand edits, the catalogue file, build, impact checks and publishing;
   - squad catalogue.
 
 ### Data import

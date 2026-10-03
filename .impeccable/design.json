@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-03T12:00:00Z",
+  "generatedAt": "2026-10-03T18:00:00Z",
   "title": "Design System: Knowledge portal",
   "extensions": {
     "colorMeta": {
@@ -192,7 +192,7 @@
       },
       "title": {
         "displayName": "Title",
-        "purpose": "Table and notice titles at 88% width."
+        "purpose": "Table and notice titles at 88% width; a catalogue sheet's title (system, offering, journey) without a margin number."
       },
       "lead": {
         "displayName": "Lead",
@@ -204,11 +204,11 @@
       },
       "label": {
         "displayName": "Label",
-        "purpose": "Column heads (including governance tables), totals labels, field labels, the change notice heading, passage detail labels and the legend of a choices group, at 72% width, sentence case, ink 2."
+        "purpose": "Column heads (including governance tables), totals labels, field labels, the change notice heading, passage detail labels the legend of a choices group, the systems index's group heads, a sheet's fact labels and a journey's phase heads, at 72% width, sentence case, ink 2."
       },
       "meta": {
         "displayName": "Meta",
-        "purpose": "Notes, the masthead 'Valid as of' line, text buttons, Arabic secondary lines, the passage Where column, reasons and flags, the keys line, the save bar's state and reason lines, governance secondary lines, a search result's surrounding text, and sub-index links on phones. Key caps step down to 0.75rem."
+        "purpose": "Notes, the masthead 'Valid as of' line, text buttons, Arabic secondary lines, the passage Where column, reasons and flags, the keys line, the save bar's state and reason lines, governance secondary lines, a search result's surrounding text, sub-index links on phones, the catalogue's consequence and mapped-earlier lines, the systems index count and 'which name matched' lines, a sheet's meta line, and the connection phrases. Key caps step down to 0.75rem."
       },
       "mark": {
         "displayName": "Mark",
@@ -223,19 +223,19 @@
       {
         "name": "current-bar",
         "value": "inset 0 -3px 0 var(--ink)",
-        "purpose": "A rule, not depth: the bar under the current index entry, the pressed filter and the current sub-index link. The only box-shadow in the system."
+        "purpose": "A rule, not depth: the bar under the current index entry, the pressed filter the current sub-index link and the current systems index entry. The only box-shadow in the system."
       }
     ],
     "rules": [
       {
         "name": "rule-heavy",
         "value": "2px solid var(--rule-heavy)",
-        "purpose": "Under the masthead, table heads, totals label, quiet line, notice head and change notice heading; above and below the processing line and the withdraw panel; at the foot of an open passage's detail row; on top of the save bar. Under a governance section title and a governance table's column heads."
+        "purpose": "Under the masthead, table heads, totals label, quiet line, notice head and change notice heading; above and below the processing line and the withdraw panel; at the foot of an open passage's detail row; on top of the save bar. Under a governance section title and a governance table's column heads. In the catalogue: under each systems index group head, above a sheet's facts list, at the foot of an open version's detail row, above and below the put-back panel. A quiet line directly under a catalogue section title takes no second heavy rule."
       },
       {
         "name": "hairline",
         "value": "1px solid var(--rule-faint)",
-        "purpose": "Between rows, totals and governance table rows; 1px var(--rule) between tables, under the index and under a document's sub-index."
+        "purpose": "Between rows, totals and governance table rows; 1px var(--rule) between tables, under the index and under a document's sub-index. Hairlines also sit between systems index entries, a sheet's facts and its list items; 1px var(--rule) under a journey's phase head and the catalogue's sub-index."
       },
       {
         "name": "double",
@@ -276,6 +276,11 @@
     ],
     "breakpoints": [
       {
+        "name": "sheet-pair",
+        "value": "80rem",
+        "purpose": "Above it a system sheet sets Depends on and Used by side by side (2rem gap); below it they stack."
+      },
+      {
         "name": "below-desktop",
         "value": "60rem",
         "purpose": "Priority-3 columns hide."
@@ -283,7 +288,7 @@
       {
         "name": "phone",
         "value": "45rem",
-        "purpose": "Priority-2 columns hide; margin column collapses; masthead unsticks; index stacks; sub-index tightens to 0.75rem gaps at meta size."
+        "purpose": "Priority-2 columns hide; margin column collapses; masthead unsticks; index stacks; sub-index tightens to 0.75rem gaps at meta size. Catalogue: one column, the systems index in flow and replaced by a chosen sheet; All connections folds To into From; Versions carries state and disclosure in the version cell; sheet facts stack."
       }
     ],
     "layout": [
@@ -306,6 +311,26 @@
         "name": "search-bar",
         "value": "field flex 1 1 28rem; field and action at min-height 2.25rem; align-items end; wraps",
         "purpose": "One field and its action at one height; the button wraps beneath on phones."
+      },
+      {
+        "name": "catalogue-systems",
+        "value": "grid-template-columns: 15rem minmax(0, 1fr); column-gap 2rem; index sticky at top 3.5rem, max-height calc(100vh - 3.5rem - 1rem), overflow-y auto, overscroll contained",
+        "purpose": "The systems index on its own track beside the sheet; it scrolls itself to keep a followed entry in view."
+      },
+      {
+        "name": "catalogue-first-section",
+        "value": "padding-top 1rem",
+        "purpose": "A page's first governance section sits level with the index's find field."
+      },
+      {
+        "name": "sheet",
+        "value": "head gap 0.25rem; facts 7rem label column, gap 0.75rem, full column; description, facts and list items max 72ch",
+        "purpose": "A system, offering or journey sheet's rhythm."
+      },
+      {
+        "name": "versions-detail",
+        "value": "padding 0.5rem 1rem 1rem; inner tables max 62rem; put-back panel max 62ch",
+        "purpose": "An open catalogue version's detail row."
       }
     ]
   },
@@ -418,7 +443,7 @@
       "name": "Document Sub-index",
       "kind": "nav",
       "refersTo": "subindex-link",
-      "description": "The document's own pages under its head: medium ink-2 links, current in bold ink with the inset 3px ink bar, a 1px rule under the strip; Review carries the unsaved count.",
+      "description": "The document's own pages under its head: medium ink-2 links, current in bold ink with the inset 3px ink bar, a 1px rule under the strip; Review carries the unsaved count. The catalogue uses the same strip, 'This catalogue': Systems, Domains, Offerings, Journeys, Versions (All versions while another version is read).",
       "html": "<nav class=\"ds-subindex\" aria-label=\"This document\"><ul class=\"ds-subindex__list\"><li><a href=\"#\" class=\"ds-subindex__link\">Review<span class=\"ds-subindex__count\">&nbsp;· 3 unsaved</span></a></li><li><a href=\"#\" class=\"ds-subindex__link\" aria-current=\"page\">Search versions</a></li><li><a href=\"#\" class=\"ds-subindex__link\">Who cites it</a></li><li><a href=\"#\" class=\"ds-subindex__link\">Ownership</a></li></ul></nav>",
       "css": ".ds-subindex { border-bottom: 1px solid var(--rule, #cfd2d6); font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; } .ds-subindex__list { display: flex; flex-wrap: wrap; gap: 0 1.5rem; margin: 0; padding: 0; list-style: none; } .ds-subindex__link { display: inline-flex; align-items: center; min-height: 2.25rem; color: var(--ink-2, #474c55); font-weight: 500; text-decoration: none; } .ds-subindex__link:hover { color: var(--ink, #16181d); } .ds-subindex__link:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-subindex__link[aria-current='page'] { color: var(--ink, #16181d); font-weight: 680; box-shadow: inset 0 -3px 0 var(--ink, #16181d); } .ds-subindex__count { font-weight: 400; }"
     },
@@ -445,11 +470,43 @@
       "description": "A borderless, unpadded fieldset of radio rows in the checkbox style, legend in the label style.",
       "html": "<form class=\"ds-handover\"><fieldset class=\"ds-choices\"><legend class=\"ds-choices__legend\">New owner</legend><label class=\"ds-choice\"><input type=\"radio\" name=\"owner\"> Ravi Reviewer<span class=\"ds-choice__secondary\">&nbsp;· ravi.reviewer@example.test</span></label><label class=\"ds-choice\"><input type=\"radio\" name=\"owner\" checked> Amina Owner</label></fieldset></form>",
       "css": ".ds-handover { max-width: 44rem; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; color: var(--ink, #16181d); } .ds-choices { display: grid; gap: 0.5rem; margin: 0; padding: 0; border: 0; } .ds-choices__legend { padding: 0; margin-bottom: 0.25rem; color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; letter-spacing: 0.01em; } .ds-choice { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 1.5rem; font-weight: 500; cursor: pointer; } .ds-choice input { width: 1.125rem; height: 1.125rem; margin: 0; accent-color: var(--ink, #16181d); } .ds-choice input:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-choice__secondary { color: var(--ink-2, #474c55); font-weight: 400; }"
+    },
+    {
+      "name": "Systems Index",
+      "kind": "nav",
+      "refersTo": "sysindex-link",
+      "description": "The catalogue's sticky systems index: a find field answered by a count, label-style group heads on heavy rules, entries on hairlines, the current entry bold with the inset 3px ink bar, and a 'which name matched' line while finding.",
+      "html": "<nav class=\"ds-sysindex\" aria-label=\"Systems in this version\"><label class=\"ds-sysindex__find\"><span class=\"ds-sysindex__label\">Find a system</span><input type=\"search\" value=\"order\" placeholder=\"Name, alias or phrase\"></label><p class=\"ds-sysindex__count\">2 systems known by “order”</p><section><h3 class=\"ds-sysindex__place\">Order orchestration › Fixed line</h3><ul class=\"ds-sysindex__list\"><li><a href=\"#\" class=\"ds-sysindex__link\" aria-current=\"page\">CWOM<span class=\"ds-sysindex__why\">Also called fixed order orchestration</span></a></li><li><a href=\"#\" class=\"ds-sysindex__link\">Milestone tracker<span class=\"ds-sysindex__why\">Matched by “order milestones”</span></a></li></ul></section></nav>",
+      "css": ".ds-sysindex { width: 15rem; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; color: var(--ink, #16181d); } .ds-sysindex__find { display: grid; gap: 0.25rem; } .ds-sysindex__label { color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; letter-spacing: 0.01em; } .ds-sysindex__find input { min-height: 2rem; padding: 0.25rem 0.5rem; border: 1px solid var(--ink-3, #686e78); border-radius: 2px; background: var(--stock, #fbfbfa); font: inherit; color: inherit; } .ds-sysindex__find input:hover { border-color: var(--ink, #16181d); } .ds-sysindex__find input:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-sysindex__count { margin: 0.5rem 0 0; color: var(--ink-2, #474c55); font-size: 0.8125rem; } .ds-sysindex__place { margin: 1rem 0 0; padding-bottom: 0.25rem; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; } .ds-sysindex__list { margin: 0; padding: 0; list-style: none; } .ds-sysindex__list li { border-bottom: 1px solid var(--rule-faint, #e4e5e7); } .ds-sysindex__link { display: flex; flex-direction: column; justify-content: center; min-height: 2rem; padding-block: 0.25rem; color: var(--ink, #16181d); text-decoration: none; } .ds-sysindex__link:hover { text-decoration: underline; text-underline-offset: 0.2em; } .ds-sysindex__link:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-sysindex__link[aria-current='page'] { font-weight: 680; box-shadow: inset 0 -3px 0 var(--ink, #16181d); } .ds-sysindex__why { color: var(--ink-2, #474c55); font-size: 0.8125rem; font-weight: 400; }"
+    },
+    {
+      "name": "System Sheet",
+      "kind": "custom",
+      "refersTo": "sheet-title",
+      "description": "One system's sheet: trail with the way back, title, Arabic line under the name, facts on a heavy rule then hairlines, and connections read as sentences naming the sheet's system, the row you came from lit.",
+      "html": "<article class=\"ds-sheet\"><p class=\"ds-sheet__trail\"><button type=\"button\" class=\"ds-sheet__back\">← Back to RTF</button><a href=\"#\">All systems and connections</a></p><h2 class=\"ds-sheet__title\">CWOM</h2><p class=\"ds-sheet__arabic\" lang=\"ar\" dir=\"rtl\">إدارة أوامر العمل</p><dl class=\"ds-sheet__facts\"><div><dt>Also called</dt><dd>fixed order orchestration</dd></div><div><dt>Sits in</dt><dd><a href=\"#\">Order orchestration</a></dd></div></dl><section><h3 class=\"ds-sheet__section\">Used by <span class=\"ds-sheet__count\">1</span></h3><table class=\"ds-sheet__table\"><thead><tr><th scope=\"col\">System</th><th scope=\"col\">For what</th></tr></thead><tbody><tr class=\"is-lit\"><th scope=\"row\"><a href=\"#\">RTF</a><span class=\"ds-sheet__how\">Orchestrates CWOM</span></th><td>RTF translates relevant orders into the fixed orchestration format.</td></tr></tbody></table></section></article>",
+      "css": ".ds-sheet { display: grid; gap: 0.25rem; max-width: 46rem; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; line-height: 1.45; color: var(--ink, #16181d); } .ds-sheet a { color: var(--reference, #1d5ca3); } .ds-sheet a:focus-visible, .ds-sheet__back:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-sheet__trail { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 1rem; margin: 0 0 0.5rem; font-size: 0.8125rem; } .ds-sheet__back { min-height: 1.5rem; padding: 0 0.25rem; border: 0; background: none; font: inherit; font-weight: 500; color: var(--ink, #16181d); text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; } .ds-sheet__back:hover { text-decoration-thickness: 2px; } .ds-sheet__title { margin: 0; font-size: 1.625rem; font-stretch: 88%; font-weight: 680; line-height: 1.1; } .ds-sheet__arabic { margin: 0; color: var(--ink-2, #474c55); font-family: 'Noto Sans Arabic', sans-serif; text-align: left; } .ds-sheet__facts { display: grid; margin: 0.75rem 0 0; } .ds-sheet__facts > div { display: grid; grid-template-columns: 7rem minmax(0, 1fr); gap: 0.75rem; padding-block: 0.25rem; border-bottom: 1px solid var(--rule-faint, #e4e5e7); } .ds-sheet__facts > div:first-child { border-top: 2px solid var(--rule-heavy, #16181d); } .ds-sheet__facts dt { color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; } .ds-sheet__facts dd { margin: 0; } .ds-sheet__section { margin: 1rem 0 0; padding-bottom: 0.25rem; border-bottom: 2px solid var(--rule-heavy, #16181d); font-size: 1.0625rem; font-weight: 680; } .ds-sheet__count { color: var(--ink-2, #474c55); font-weight: 400; } .ds-sheet__table { width: 100%; margin-top: 0.75rem; border-collapse: collapse; } .ds-sheet__table thead th { padding: 0 1rem 0.25rem 0; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; text-align: left; } .ds-sheet__table tbody th, .ds-sheet__table td { padding: 0.5rem 1rem 0.5rem 0; border-bottom: 1px solid var(--rule-faint, #e4e5e7); font-weight: 400; text-align: left; vertical-align: top; transition: background-color 180ms; } .ds-sheet__table tr.is-lit > * { background: var(--reference-wash, #e6eef8); } .ds-sheet__how { display: block; color: var(--ink-2, #474c55); font-size: 0.8125rem; }"
+    },
+    {
+      "name": "Journey Timetable",
+      "kind": "custom",
+      "refersTo": "steps-phase-head",
+      "description": "A journey's steps as a timetable: end-aligned No., phase group heads in the label style on a 1px rule, 'Back to <phase>' when a phase returns, and 'Then …' only when a step does not simply continue.",
+      "html": "<table class=\"ds-steps\"><thead><tr><th scope=\"col\" class=\"ds-steps__no\">No.</th><th scope=\"col\">Step</th><th scope=\"col\">Performed by</th></tr></thead><tbody><tr class=\"ds-steps__phase\"><th scope=\"colgroup\" colspan=\"3\">Feasibility</th></tr><tr><th scope=\"row\" class=\"ds-steps__no\">20</th><td><span class=\"ds-steps__name\">Check coverage</span><span class=\"ds-steps__by\">Then 30 if Covered; 80 if Not covered</span></td><td><a href=\"#\">GIS</a></td></tr></tbody><tbody><tr class=\"ds-steps__phase\"><th scope=\"colgroup\" colspan=\"3\">Back to feasibility</th></tr><tr><th scope=\"row\" class=\"ds-steps__no\">80</th><td><span class=\"ds-steps__name\">Offer an alternative</span><span class=\"ds-steps__by\">Seen by the customer</span></td><td><a href=\"#\">CBCM</a><span class=\"ds-steps__by\">with <a href=\"#\">CWOM</a></span></td></tr></tbody></table>",
+      "css": ".ds-steps { width: 100%; border-collapse: collapse; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; line-height: 1.45; font-variant-numeric: tabular-nums lining-nums; color: var(--ink, #16181d); } .ds-steps a { color: var(--reference, #1d5ca3); } .ds-steps a:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-steps thead th { padding: 0 1rem 0.25rem 0; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; text-align: left; } .ds-steps tbody th, .ds-steps td { padding: 0.5rem 1rem 0.5rem 0; border-bottom: 1px solid var(--rule-faint, #e4e5e7); font-weight: 400; text-align: left; vertical-align: top; } .ds-steps .ds-steps__no { width: 3.5rem; text-align: end; } .ds-steps .ds-steps__phase th { padding: 1rem 0 0.25rem; border-bottom: 1px solid var(--rule, #cfd2d6); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; } .ds-steps__name { font-weight: 500; } .ds-steps__by { display: block; color: var(--ink-2, #474c55); font-size: 0.8125rem; }"
+    },
+    {
+      "name": "Catalogue Versions",
+      "kind": "custom",
+      "refersTo": "version-detail",
+      "description": "Versions ranked by weight; a text-button disclosure opens a stock-band detail row in place, closing on a heavy rule, with file downloads, history and (on a replaced version) the put-back panel.",
+      "html": "<table class=\"ds-versions\"><thead><tr><th scope=\"col\">Version</th><th scope=\"col\">State</th><th scope=\"col\"><span hidden>Details</span></th></tr></thead><tbody><tr class=\"ds-due\"><th scope=\"row\"><a href=\"#\">October integration update</a><span class=\"ds-versions__by\">31 systems · 13 connections · 1 offering · 1 journey</span></th><td><span class=\"ds-versions__state\">In preparation</span><span class=\"ds-versions__by\">Started by Amina Owner · revision 2</span></td><td class=\"ds-end\"><button type=\"button\" class=\"ds-versions__toggle\" aria-expanded=\"false\">› History and files</button></td></tr><tr class=\"ds-past is-open\"><th scope=\"row\"><a href=\"#\">Initial catalogue</a><span class=\"ds-versions__by\">31 systems · 11 connections</span></th><td><span class=\"ds-versions__state\">Replaced</span><span class=\"ds-versions__by\">Published 1 Jan 2026 by the platform · revision 1</span></td><td class=\"ds-end\"><button type=\"button\" class=\"ds-versions__toggle\" aria-expanded=\"true\">⌄ History, files, put back</button></td></tr><tr class=\"ds-versions__detail\"><td colspan=\"3\"><span class=\"ds-versions__label\">Its catalogue file:</span> <button type=\"button\" class=\"ds-versions__toggle\">Excel</button> <button type=\"button\" class=\"ds-versions__toggle\">YAML</button> <button type=\"button\" class=\"ds-versions__toggle\">JSON</button></td></tr></tbody></table>",
+      "css": ".ds-versions { width: 100%; border-collapse: collapse; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; line-height: 1.45; color: var(--ink, #16181d); } .ds-versions a { color: var(--reference, #1d5ca3); } .ds-versions thead th { padding: 0 1rem 0.25rem 0; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; text-align: left; } .ds-versions tbody th, .ds-versions td { padding: 0.5rem 1rem 0.5rem 0; border-bottom: 1px solid var(--rule-faint, #e4e5e7); font-weight: 400; text-align: left; vertical-align: top; } .ds-versions .ds-end { text-align: end; } .ds-versions .ds-due th, .ds-versions .ds-due .ds-versions__state { font-weight: 680; } .ds-versions .ds-past, .ds-versions .ds-past a, .ds-versions .ds-past .ds-versions__by { color: var(--ink-3, #686e78); } .ds-versions .is-open > * { background: var(--stock-band, #f1f1ee); } .ds-versions__by { display: block; color: var(--ink-2, #474c55); font-size: 0.8125rem; font-weight: 400; } .ds-versions__toggle { min-height: 1.5rem; padding: 0 0.25rem; border: 0; background: none; font: inherit; font-size: 0.8125rem; font-weight: 500; color: var(--ink, #16181d); text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; } .ds-versions__toggle:hover { text-decoration-thickness: 2px; } .ds-versions__toggle:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-versions .ds-versions__detail td { padding: 0.5rem 1rem 1rem; border-bottom: 2px solid var(--rule-heavy, #16181d); background: var(--stock-band, #f1f1ee); } .ds-versions__label { color: var(--ink-2, #474c55); font-size: 0.8125rem; }"
     }
   ],
   "narrative": {
     "northStar": "The Timetable Book",
-    "overview": "The portal is set like a national railway timetable book. Each area of shared knowledge is a numbered table. Its number stands monumental and condensed in a left margin column. The table beside it has an exact column set, and each sourced fact carries a reference mark that leads to a numbered note at the table's foot. The page is near-white neutral stock with black ink. Hierarchy comes from three rule weights and from type weight, never from containers, fills or colour. Two colours are held back, and each has exactly one job.\n\nThe density is that of a reference work. Rows are tight (0.5rem block padding) and separated by hairlines. Numbers and dates use tabular, lining figures and sit right-aligned, as in any timetable. The surface is flat: no cards, no shadows for depth, no pills, no gradients. One sticky masthead strip and an index of the tables bind the book, and every screen sits inside that binding.\n\nThe interface language is English. It calls the indexed units of a document \"passages\", and the units of the table-aware cut \"fields\"; it never says \"chunks\". Content keeps its own language and direction. Arabic names render in Noto Sans Arabic, in their own direction, beside the English in the same cell. The theme is light only. This is a decision for an office-daylight scene, not an omission.",
+    "overview": "The portal is set like a national railway timetable book. Each area of shared knowledge is a numbered table. Its number stands monumental and condensed in a left margin column. The table beside it has an exact column set, and each sourced fact carries a reference mark that leads to a numbered note at the table's foot. The page is near-white neutral stock with black ink. Hierarchy comes from three rule weights and from type weight, never from containers, fills or colour. Two colours are held back, and each has exactly one job.\n\nThe density is that of a reference work. Rows are tight (0.5rem block padding) and separated by hairlines. Numbers and dates use tabular, lining figures and sit right-aligned, as in any timetable. The surface is flat: no cards, no shadows for depth, no pills, no gradients. One sticky masthead strip and an index of the tables bind the book, and every screen sits inside that binding.\n\nThe architecture catalogue (Table 2) reads like the station pages of the same book: an index of systems held beside one system's sheet, each sheet a run of governance sections, each connection a sentence, each journey a timetable of numbered steps grouped by phase.\n\nThe interface language is English. It calls the indexed units of a document \"passages\", and the units of the table-aware cut \"fields\"; it never says \"chunks\". Content keeps its own language and direction. Arabic names render in Noto Sans Arabic, in their own direction, beside the English in the same cell. The theme is light only. This is a decision for an office-daylight scene, not an omission.",
     "keyCharacteristics": [
       "Near-white neutral stock (never cream) and black ink; flat, ruled, unboxed.",
       "One grotesk (Archivo Variable) in several widths: 100% for text, 88% for titles, 72% for labels, 62% for monumental table numbers.",
@@ -471,13 +528,23 @@
       },
       {
         "name": "The Weight Is Rank Rule",
-        "body": "A row's importance is set by weight and ink, never by colour or badge. A due row has its name and status in bold (680). A delayed row has its status in bold and in disruption red. A running row is set in ink 2, a row in service in regular ink, a past row in ink 3.",
+        "body": "A row's importance is set by weight and ink, never by colour or badge. A due row has its name and status in bold (680). A delayed row has its status in bold and in disruption red. A running row is set in ink 2, a row in service in regular ink, a past row in ink 3. Catalogue versions follow it: in preparation is due (bold), in service is regular ink, replaced is past.",
+        "section": "typography"
+      },
+      {
+        "name": "The Sentence Case Rule",
+        "body": "A value a source shouts (\"FULFILS\") is set in sentence case (\"Fulfils\") on screen. Labels, heads and group heads are sentence case too; nothing is uppercased for rank.",
         "section": "typography"
       },
       {
         "name": "The One Family Rule",
         "body": "Contrast comes from Archivo's width and weight axes, not from a second display face. Noto Sans Arabic is a script fallback, not a design voice.",
         "section": "typography"
+      },
+      {
+        "name": "The Kept Column Rule",
+        "body": "In a governance table, a secondary fact (a version's cut and passage count, a handover's reason or who performed it, a citation's place or version, a field's label) rides as a secondary ink-2 meta line inside a kept column, never in a column of its own. Columns still drop by priority on phones, and these facts stay with the row.",
+        "section": "layout"
       },
       {
         "name": "The Three Rules Rule",
@@ -490,13 +557,13 @@
         "section": "components"
       },
       {
-        "name": "The Kept Column Rule",
-        "body": "In a governance table, a secondary fact (a version's cut and passage count, a handover's reason or who performed it, a citation's place or version, a field's label) rides as a secondary ink-2 meta line inside a kept column, never in a column of its own. Columns still drop by priority on phones, and these facts stay with the row.",
-        "section": "layout"
-      },
-      {
         "name": "The Passages Rule",
         "body": "On screen the indexed units of a document are \"passages\", and the units of the table-aware cut are \"fields\". The cut itself reads \"Passages\" or \"Table-aware\". The word \"chunk\" belongs to code, never to a label, heading, count or caption.",
+        "section": "components"
+      },
+      {
+        "name": "The Connection Sentence Rule",
+        "body": "A connection reads as a sentence that names both systems. On a sheet the phrase names the sheet's system; in All connections the verb rides under From (\"calls the API of\", \"sends events to\"). Never an arrow, a bare kind code or an unnamed \"this system\".",
         "section": "components"
       }
     ],
@@ -510,6 +577,12 @@
       "Do say why a disabled action waits, in a line linked to it.",
       "Do put a governance table's secondary facts on a secondary ink-2 meta line in a kept column, so phones keep them when columns drop.",
       "Do mark the current page of a document's sub-index in bold ink with the inset 3px ink bar, and show the unsaved count on Review.",
+      "Do read a connection as a sentence that names both systems; on a sheet, name the sheet's own system in the phrase.",
+      "Do light the row a reader came from in the reference wash, and offer the way back as a \"Back to X\" text button.",
+      "Do group an index or a timetable under label-style heads: a heavy rule under a systems index place, a 1px rule under a journey phase, and \"Back to <phase>\" when a phase returns.",
+      "Do write \"Then …\" only when a step does not simply continue to the next.",
+      "Do state what putting a catalogue version in service would change before asking for the reason.",
+      "Do set shouted source values in sentence case, and name the platform's seed actor \"the platform\".",
       "Do say \"passages\" for indexed units and \"fields\" for the table-aware cut.",
       "Do use tabular, lining figures, and end-align numbers and dates.",
       "Do let content keep its own direction: `dir=\"auto\"` on names, `lang=\"ar\" dir=\"rtl\"` on Arabic secondary lines, set in Noto Sans Arabic.",
@@ -526,7 +599,9 @@
       "Don't open a modal or a card to edit or withdraw. Rows open in place; steps open inline.",
       "Don't extend the letter edit mark beyond edited passages. Sourced facts keep numbered marks and notes.",
       "Don't give a secondary fact (a cut, a count, a reason, a place) its own column.",
-      "Don't say \"chunks\" on screen."
+      "Don't say \"chunks\" on screen.",
+      "Don't rule a quiet line twice. Directly under a section title it rests on the title's heavy rule.",
+      "Don't show a connection as an arrow or a bare kind code."
     ]
   }
 }

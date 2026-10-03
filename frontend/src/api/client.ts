@@ -29,10 +29,26 @@ export type ImpactPage = Schemas["DependencyImpactPage"];
 export type Impact = Schemas["DependencyImpact"];
 export type OwnershipTransfer = Schemas["OwnershipTransfer"];
 export type ReviewRequest = Schemas["LibraryReviewRequest"];
+export type CatalogueSystem = Schemas["SystemDefinitionSchema"];
+export type Relationship = Schemas["SystemRelationshipSchema"];
+export type RelationshipKind = Schemas["RelationshipKind"];
+export type LandscapeDomain = Schemas["LandscapeDomainSchema"];
+export type CapabilityDomain = Schemas["CapabilityDomainSchema"];
+export type Offering = Schemas["ProductOfferingSchema"];
+export type Journey = Schemas["JourneySchema"];
+export type JourneyActivity = Schemas["ActivitySchema"];
+export type SourceConfidence = Schemas["SourceConfidence"];
+export type ReleaseAuditEvent = Schemas["KnowledgeAuditEventResponse"];
+export type CatalogueDiff = Schemas["CatalogueDiffResponse"];
+export type MappingImpact = Schemas["MappingImpactResponse"];
+export type SystemOwnership = Schemas["SystemOwnershipResponse"];
+export type CatalogueFileFormat = Schemas["CatalogueFileFormat"];
 
 const documentPath = (documentId: string) => `/library/documents/${encodeURIComponent(documentId)}`;
 const versionPath = (documentId: string, versionId: string) =>
   `${documentPath(documentId)}/versions/${encodeURIComponent(versionId)}`;
+
+const releasePath = (releaseId: string) => `/architecture-knowledge/releases/${encodeURIComponent(releaseId)}`;
 
 const baseUrl = (import.meta.env.VITE_API_BASE ?? "/knowledge-api").replace(/\/$/, "");
 let authorizationHeaders: () => Record<string, string> = () => ({});
@@ -123,6 +139,18 @@ export const api = {
     apiRequest<CatalogueSuggestions>(
       `/architecture-knowledge/releases/${encodeURIComponent(releaseId)}/suggestions`,
     ),
+  release: (releaseId: string) => apiRequest<Release>(releasePath(releaseId)),
+  releaseAudit: (releaseId: string) => apiRequest<ReleaseAuditEvent[]>(`${releasePath(releaseId)}/audit`),
+  /** What changed from the version in service to this one. */
+  releaseChanges: (releaseId: string) => apiRequest<CatalogueDiff>(`${releasePath(releaseId)}/changes`),
+  /** Puts a published version back in service. */
+  activateRelease: (releaseId: string, rationale: string) =>
+    post<Release>(`${releasePath(releaseId)}/activate`, { rationale }),
+  catalogueFile: async (releaseId: string, format: CatalogueFileFormat) =>
+    (await send(`${releasePath(releaseId)}/catalogue-file?format=${format}`)).blob(),
+  mappingImpact: () => apiRequest<MappingImpact>("/architecture-knowledge/mapping-impact"),
+  systemOwnership: (systemId: string) =>
+    apiRequest<SystemOwnership>(`/organisation/systems/${encodeURIComponent(systemId)}/ownership`),
   organisation: () => apiRequest<Organisation>("/organisation"),
   organisationAudit: () => apiRequest<OrganisationAuditEvent[]>("/organisation/audit"),
 
