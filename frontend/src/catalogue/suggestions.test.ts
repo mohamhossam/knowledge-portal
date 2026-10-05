@@ -168,6 +168,14 @@ describe("channel suggestions", () => {
     );
     expect(bulkAcceptable(release, [web, named]).lifted).toEqual([named]);
   });
+
+  it("lifts an offering naming a channel as the document writes it, once that channel is added", () => {
+    const written = suggestion(
+      { ...office.content, product: { ...office.content.product!, order_types: [{ code: "NEW", name: "New", enabled: true, channels: ["business WEB"] }] } },
+      { match: "needs_channel" },
+    );
+    expect(bulkAcceptable(release, [web, written]).lifted).toEqual([written]);
+  });
 });
 
 describe("offering detail suggestions", () => {

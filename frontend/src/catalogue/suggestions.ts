@@ -291,7 +291,7 @@ export function bulkAcceptable(release: Release, suggestions: Suggestion[]): { r
   }
   for (const domain of release.landscape_domains ?? []) known.add(`domain:${domain.id}`);
   for (const offering of release.products ?? []) known.add(`offering:${offering.id}`);
-  for (const channel of release.channels ?? []) known.add(`channel:${channel.id}`);
+  for (const channel of release.channels ?? []) channelKeys(channel.id, channel.name).forEach((key) => known.add(key));
   const open = suggestions.filter((item) => item.status === "proposed" && !needsOneByOne(item));
   const ready = open.filter((item) => !item.match.startsWith("needs_"));
   const provided = new Set(known);
@@ -326,10 +326,18 @@ function provides(suggestion: Suggestion): string[] {
     case "product":
       return [`offering:${content.system_id}`];
     case "channel":
-      return [`channel:${content.system_id}`];
+      return channelKeys(content.system_id, content.channel?.name ?? content.name);
     default:
       return [];
   }
+}
+
+/**
+ * A channel's keys: its id and its name, without case. A document names a channel as
+ * it writes it ("Business Web"), and the service finds it by id or name alike.
+ */
+function channelKeys(...references: string[]): string[] {
+  return references.filter(Boolean).map((reference) => `channel:${reference.trim().toLowerCase()}`);
 }
 
 /** The channels an offering's order types, order tracking and lifecycle notes, or a journey's steps, name. */
@@ -351,7 +359,7 @@ function requires(suggestion: Suggestion): string[] {
   const { content } = suggestion;
   const system = suggestion.system_name ? [] : [`system:${content.system_id}`];
   // An offering or a journey also waits for every channel it names, whatever it waits for first.
-  const channels = channelsNamed(suggestion).map((id) => `channel:${id}`);
+  const channels = channelsNamed(suggestion).flatMap((reference) => channelKeys(reference));
   switch (suggestion.match) {
     case "needs_channel":
       return channels;
