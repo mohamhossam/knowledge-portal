@@ -8,6 +8,7 @@ import { finishedOffering, finishedSystem, journeyOrderProblem, journeyProblem, 
 import { AreaField, Rows, SelectField, SystemField, TextField } from "./forms";
 import { JourneyEditor } from "./JourneyEditor";
 import { OfferingFacts } from "./OfferingEditor";
+import { questionProblem } from "./governance";
 import { OFFERING_SECTIONS, type OfferingSection } from "./offeringSections";
 import { SystemEditor } from "./SystemEditor";
 import { useCatalogueContext } from "./useCatalogue";
@@ -355,7 +356,10 @@ export function OfferingEdit({ onDone }: { onDone: (saved?: string) => void }) {
   const release = book.release;
   const { saveDraft } = useEditing(release);
   const [value, setValue] = useState<Offering>(
-    () => ({ id: "", name: "", rules: [], order_types: [], components: [], values: [], audiences: [], nfrs: [], lifecycle_notes: [] }),
+    () => ({
+      id: "", name: "", rules: [], order_types: [], components: [], values: [], audiences: [], nfrs: [], lifecycle_notes: [],
+      sources: [], questions: [], decisions: [], boundaries: [], not_used: [],
+    }),
   );
   const products = release.products ?? [];
   const clash = products.some((item) => item.name.trim().toLocaleLowerCase() === value.name.trim().toLocaleLowerCase());
@@ -399,7 +403,12 @@ export function OfferingSectionEdit({ offering, section, onDone }: { offering: O
       focusOnOpen
       action={save}
       busy={saveDraft.isPending}
-      problem={offeringProblem(value) ?? journeyOrderProblem(value, release.journeys ?? []) ?? (clash ? "Another offering has that name." : null)}
+      problem={
+        offeringProblem(value) ??
+        journeyOrderProblem(value, release.journeys ?? []) ??
+        questionProblem(value, release.conflicts ?? []) ??
+        (clash ? "Another offering has that name." : null)
+      }
       error={saveDraft.error}
       onCancel={onDone}
       onSubmit={() => {
@@ -410,7 +419,7 @@ export function OfferingSectionEdit({ offering, section, onDone }: { offering: O
     >
       <p className="govsection__lead">The other sections can be edited once this one is saved or cancelled.</p>
       <div className="form">
-        <Fields value={value} onChange={setValue} systems={release.systems} channels={release.channels ?? []} />
+        <Fields value={value} onChange={setValue} systems={release.systems} channels={release.channels ?? []} register={release.sources ?? []} />
       </div>
     </EditPanel>
   );

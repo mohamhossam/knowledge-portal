@@ -217,6 +217,7 @@ export function SuggestionEditor({ suggestion, release, words, busy, onAccept, o
             value={content.product}
             systems={systems}
             channels={release.channels ?? []}
+            register={release.sources ?? []}
             names={words}
             onChange={(product: Offering) => set({ product })}
           />

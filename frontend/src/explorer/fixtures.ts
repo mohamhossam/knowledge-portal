@@ -17,6 +17,35 @@ export const EXPLORED = {
     { id: "online", name: "Online", kind: "Digital", entry_system_id: "web" },
     { id: "shop", name: "Shop", kind: "Assisted" },
   ],
+  sources: [
+    { id: "CANON", title: "SMB Value Stream — Architecture Reference", level: "L1", short: "SMB Ref", supplied: true, authority: "The canonical landscape." },
+    { id: "SDD", title: "Business Pro Plus Solution Design", level: "L2", short: "BPP SDD", version: "2.3", supplied: true, authority: "Primary source for Business Pro Plus." },
+    {
+      id: "V82", title: "Explorer v8.2", level: "L3", short: "v8.2", supplied: false,
+      authority: "Functional baseline.", boundary: "Workflow images are not machine-readable.",
+    },
+  ],
+  conflicts: [
+    {
+      id: "CF-01",
+      title: "Up / Downgrade channel scope",
+      a: { source_id: "SDD", reference: "§11.1.3", statement: "Applicable channels are BCRM and the SMB App." },
+      b: { source_id: "V82", reference: "OrderEvaluate", statement: "The request allows the B2B channel." },
+      scope: [{ product_id: "bpp", order_types: ["NEW"], question_id: "OQ-01" }],
+      difference: "Whether B2B Digital is an entry channel.",
+      impact: "B2B Digital is disabled until resolved.",
+      decision: "Product owner to confirm the B2B scope.",
+      confidence: "confirmed",
+    },
+    {
+      id: "CF-02",
+      title: "Commitment model",
+      a: { source_id: "SDD", statement: "24-month commitment." },
+      b: { source_id: "CANON", statement: "12-month commitment." },
+      scope: [{ product_id: "bpp", order_types: [] }],
+      decision: "Commercial owner to choose one.",
+    },
+  ],
   products: [
     {
       id: "bpp",
@@ -80,6 +109,15 @@ export const EXPLORED = {
         statuses: [{ label: "VALIDATED" }],
         fallout: [{ trigger: "Rejected by business rules", handling: "Back to the channel" }],
       },
+      sources: ["SDD", "CANON"],
+      primary_source: "SDD",
+      questions: [
+        { id: "OQ-01", text: "Is B2B Digital in scope for a new activation?", impact: "B2B shown as unsupported.", confidence: "confirmed", source: "BPP SDD §11.1.3" },
+        { id: "OQ-02", text: "Which FPC_SITE value does the SSO pass?" },
+      ],
+      decisions: [{ id: "AD-01", title: "Reuse Order to Delivery", text: "No new order flow.", confidence: "confirmed", source: "BPP SDD §11.2" }],
+      boundaries: ["Runtime comes from the SDD."],
+      not_used: ["Siebel CRM"],
       nfrs: [
         { quality: "Availability", coverage: "missing", confidence: "gap" },
         { quality: "Security", coverage: "partial", statement: "SAML SSO for the portal.", source: "SDD §11" },

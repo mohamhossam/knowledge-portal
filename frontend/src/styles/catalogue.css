@@ -1228,3 +1228,133 @@
 .lifecycle__due {
   font-weight: var(--w-bold);
 }
+
+/* Governance (requirement-portal ADR-0101, step 5): the source register, conflicts between
+   sources, and an offering's questions, decisions and sources. */
+.governance__level {
+  white-space: nowrap;
+}
+
+.governance__level abbr {
+  font-stretch: var(--width-condensed);
+  font-weight: var(--w-bold);
+  text-decoration: none;
+}
+
+.governance__id {
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+  font-stretch: var(--width-condensed);
+  font-weight: var(--w-medium);
+  white-space: nowrap;
+}
+
+/* A source carried forward unread is due (the Weight Is Rank Rule). */
+.governance__due {
+  display: block;
+  font-weight: var(--w-bold);
+}
+
+.governance__sides {
+  display: grid;
+  gap: var(--s2);
+  margin: 0;
+}
+
+.governance__sides dt {
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+.governance__sides dd {
+  margin: 0;
+}
+
+.governance__decision {
+  font-weight: var(--w-bold);
+}
+
+.governance__list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.governance__list > li {
+  display: grid;
+  grid-template-columns: minmax(4.5rem, max-content) 1fr;
+  gap: var(--s1) var(--s3);
+  padding: var(--s2) 0;
+  border-bottom: 1px solid var(--rule-faint);
+}
+
+.governance__list p {
+  margin: 0;
+  max-width: 72ch;
+}
+
+.governance__title {
+  font-weight: var(--w-medium);
+}
+
+.governance__item--due p {
+  font-weight: var(--w-bold);
+}
+
+.governance__primary {
+  color: var(--ink-2);
+}
+
+.governance__not-used {
+  margin: var(--s2) 0 0;
+}
+
+/* A conflict's side: a borderless group, labelled like a field. */
+.form__group {
+  display: grid;
+  gap: var(--s2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+@media (max-width: 45rem) {
+  .govtable.governance__table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .govtable.governance__table,
+  .govtable.governance__table tbody,
+  .govtable.governance__table tr,
+  .govtable.governance__table th,
+  .govtable.governance__table td {
+    display: block;
+  }
+
+  .govtable.governance__table td[data-head]::before {
+    display: block;
+    content: attr(data-head);
+    color: var(--ink-2);
+    font-size: var(--t-meta);
+  }
+
+  .govtable.governance__table tr {
+    padding: var(--s2) 0;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .govtable.governance__table th,
+  .govtable.governance__table td {
+    padding: 0.125rem 0;
+    border-bottom: 0;
+  }
+
+  .governance__list > li {
+    grid-template-columns: 1fr;
+  }
+}

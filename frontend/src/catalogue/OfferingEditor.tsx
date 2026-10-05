@@ -1,4 +1,4 @@
-import type { CatalogueSystem, Channel, Offering, SourceConfidence } from "../api/client";
+import type { CatalogueSystem, Channel, KnowledgeSource, Offering, SourceConfidence } from "../api/client";
 import { CONFIDENCE_OPTIONS, COVERAGE, LAYERS } from "./catalogue";
 import { lines } from "./editing";
 import { AreaField, CheckField, LinesField, Rows, SelectField, SystemField, TextField } from "./forms";
@@ -42,7 +42,12 @@ export type SectionProps = {
   channels: Channel[];
   /** Names for systems and channels a document mentions that the draft does not have yet. */
   names?: Names;
+  /** The draft's source register, to say which sources an offering is read from. */
+  register?: KnowledgeSource[];
 };
+
+type Question = Offering["questions"][number];
+type Decision = Offering["decisions"][number];
 
 const orderTypeOptions = (value: Offering) => value.order_types.map((type) => ({ code: type.code, name: type.name || type.code }));
 
@@ -248,6 +253,100 @@ export function OfferingNotes({ value, onChange, channels, names }: SectionProps
   );
 }
 
+/** The questions its sources leave open. */
+export function OfferingQuestions({ value, onChange }: SectionProps) {
+  return (
+    <Rows<Question>
+      legend="Open questions"
+      one="open question"
+      items={value.questions ?? []}
+      onChange={(questions) => onChange({ ...value, questions })}
+      blank={() => ({ id: "", text: "" })}
+      itemLabel={(item, index) => `question ${item.id || index + 1}`}
+      render={(item, change) => (
+        <>
+          <TextField label="Id" value={item.id} dir="ltr" hint="Such as OQ-01; made for you when left empty." onChange={(id) => change({ id })} />
+          <SelectField
+            label="How sure its source is"
+            value={item.confidence ?? ""}
+            options={CONFIDENCE_OPTIONS}
+            onChange={(confidence) => change({ confidence: (confidence || null) as SourceConfidence | null })}
+          />
+          <TextField label="Source" value={item.source} onChange={(source) => change({ source: source || null })} />
+          <AreaField label="Question" value={item.text} required onChange={(text) => change({ text })} />
+          <AreaField label="What the catalogue does meanwhile" value={item.impact} onChange={(impact) => change({ impact: impact || null })} />
+        </>
+      )}
+    />
+  );
+}
+
+/** The architecture decisions taken for it. */
+export function OfferingDecisions({ value, onChange }: SectionProps) {
+  return (
+    <Rows<Decision>
+      legend="Architecture decisions"
+      one="architecture decision"
+      items={value.decisions ?? []}
+      onChange={(decisions) => onChange({ ...value, decisions })}
+      blank={() => ({ id: "", title: "" })}
+      itemLabel={(item, index) => `decision ${item.id || index + 1}`}
+      render={(item, change) => (
+        <>
+          <TextField label="Decision" value={item.title} required wide onChange={(title) => change({ title })} />
+          <TextField label="Id" value={item.id} dir="ltr" hint="Such as AD-01; made for you when left empty." onChange={(id) => change({ id })} />
+          <SelectField
+            label="How sure its source is"
+            value={item.confidence ?? ""}
+            options={CONFIDENCE_OPTIONS}
+            onChange={(confidence) => change({ confidence: (confidence || null) as SourceConfidence | null })}
+          />
+          <TextField label="Source" value={item.source} onChange={(source) => change({ source: source || null })} />
+          <AreaField label="What was decided, and why" value={item.text} onChange={(text) => change({ text: text || null })} />
+        </>
+      )}
+    />
+  );
+}
+
+/** The registered sources it is read from, its primary one, what they cover, and what it no longer uses. */
+export function OfferingSources({ value, onChange, register = [] }: SectionProps) {
+  const chosen = value.sources ?? [];
+  const set = (patch: Partial<Offering>) => onChange({ ...value, ...patch });
+  const named = (id: string) => register.find((source) => source.id === id);
+  const label = (id: string) => {
+    const source = named(id);
+    return source ? `${source.short ?? source.title} (${source.level})` : `${id} (not in the register)`;
+  };
+  return (
+    <>
+      <fieldset className="choices form__field--wide">
+        <legend className="field__label">Read from</legend>
+        {register.length === 0 && chosen.length === 0 && <p className="form__hint">Register its sources on the Governance page first.</p>}
+        {[...chosen.filter((id) => !named(id)), ...register.map((source) => source.id)].map((id) => (
+          <CheckField
+            key={id}
+            label={label(id)}
+            checked={chosen.includes(id)}
+            onChange={(on) => {
+              const sources = on ? [...chosen, id] : chosen.filter((item) => item !== id);
+              set({ sources, primary_source: sources.includes(value.primary_source ?? "") ? value.primary_source : null });
+            }}
+          />
+        ))}
+      </fieldset>
+      <SelectField
+        label="Its primary source"
+        value={value.primary_source ?? ""}
+        options={[{ value: "", label: "None named" }, ...chosen.map((id) => ({ value: id, label: label(id) }))]}
+        onChange={(primary_source) => set({ primary_source: primary_source || null })}
+      />
+      <LinesField label="What its sources cover" value={value.boundaries ?? []} hint="One boundary per line." onChange={(boundaries) => set({ boundaries })} />
+      <LinesField label="What it no longer uses" value={value.not_used ?? []} hint="One per line, such as a system it replaced." onChange={(not_used) => set({ not_used })} />
+    </>
+  );
+}
+
 /** Its rules, one per line. */
 export function OfferingRules({ value, onChange }: SectionProps) {
   return <LinesField label="Rules" value={value.rules} hint="One rule per line." onChange={(rules) => onChange({ ...value, rules })} />;
@@ -257,8 +356,8 @@ export function OfferingRules({ value, onChange }: SectionProps) {
  * A whole product offering, every section in the sheet's order: for a suggestion,
  * reviewed as a whole. On a draft's sheet each section is edited on its own.
  */
-export function OfferingEditor({ value, onChange, systems, channels = [], names }: Omit<SectionProps, "channels"> & { channels?: Channel[] }) {
-  const props = { value, onChange, systems, channels, names };
+export function OfferingEditor({ value, onChange, systems, channels = [], names, register }: Omit<SectionProps, "channels"> & { channels?: Channel[] }) {
+  const props = { value, onChange, systems, channels, names, register };
   return (
     <div className="form">
       <OfferingFacts {...props} />
@@ -267,6 +366,9 @@ export function OfferingEditor({ value, onChange, systems, channels = [], names 
       <OfferingNfrs {...props} />
       <OfferingTracking {...props} />
       <OfferingNotes {...props} />
+      <OfferingQuestions {...props} />
+      <OfferingDecisions {...props} />
+      <OfferingSources {...props} />
       <OfferingRules {...props} />
     </div>
   );

@@ -3,6 +3,7 @@ import { type ReactNode, useState } from "react";
 
 import type { Offering } from "../api/client";
 import { CONFIDENCE, concerns } from "./catalogue";
+import { useSourceText } from "./governance";
 
 type Note = Offering["lifecycle_notes"][number];
 type Block = Note["blocks"][number];
@@ -10,9 +11,9 @@ type Block = Note["blocks"][number];
 /** The explorer reads the notes of one order type, through one channel. */
 export type LifecycleFocus = { orderCode: string; orderName: string; channelId: string | null };
 
-function sourced(item: { confidence?: string | null; source?: string | null }): string | null {
+function sourced(item: { confidence?: string | null; source?: string | null }, sourceText: (text: string | null | undefined) => string | null): string | null {
   const confidence = item.confidence && item.confidence !== "confirmed" ? CONFIDENCE[item.confidence as keyof typeof CONFIDENCE] : null;
-  return [confidence, item.source].filter(Boolean).join(" · ") || null;
+  return [confidence, sourceText(item.source)].filter(Boolean).join(" · ") || null;
 }
 
 const count = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
@@ -66,7 +67,7 @@ function SourceTable({ block, name }: { block: Block; name: string }) {
 }
 
 function NoteBlock({ block, name }: { block: Block; name: string }) {
-  const provenance = sourced(block);
+  const provenance = sourced(block, useSourceText());
   return (
     <div className="lifecycle__block">
       {block.title && <p className={block.to_verify ? "lifecycle__aside lifecycle__due" : "lifecycle__aside"} dir="auto">{block.title}</p>}
@@ -111,6 +112,7 @@ export function LifecycleSection({ offering, headingId, orderName, channelName, 
   /** An edit offered under the title, on a draft's sheet. */
   action?: ReactNode;
 }) {
+  const sourceText = useSourceText();
   const notes = offering.lifecycle_notes ?? [];
   const shown = focus ? notes.filter((note) => concerns(note, focus.orderCode, focus.channelId)) : notes;
   const others = notes.length - shown.length;
@@ -151,7 +153,7 @@ export function LifecycleSection({ offering, headingId, orderName, channelName, 
             note.kind,
             focus ? null : note.order_types.length ? `For ${note.order_types.map(orderName).join(", ")}` : "For every order type",
             note.channels.length ? `Only in ${note.channels.map(channelName).join(", ")}` : null,
-            sourced(note),
+            sourced(note, sourceText),
           ].filter(Boolean);
           return (
             <article key={note.id} className="lifecycle__note" aria-labelledby={`${headingId}-${note.id}`}>

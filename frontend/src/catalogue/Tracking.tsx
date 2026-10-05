@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import type { Offering } from "../api/client";
 import { CONFIDENCE } from "./catalogue";
+import { useSourceText } from "./governance";
 
 type Tracking = NonNullable<Offering["tracking"]>;
 type Flow = Tracking["flows"][number];
@@ -22,8 +23,9 @@ export type TrackingFocus = {
 };
 
 function Sourced({ item }: { item: { confidence?: string | null; source?: string | null } }) {
+  const sourceText = useSourceText();
   const confidence = item.confidence && item.confidence !== "confirmed" ? CONFIDENCE[item.confidence as keyof typeof CONFIDENCE] : null;
-  const line = [confidence, item.source].filter(Boolean).join(" · ");
+  const line = [confidence, sourceText(item.source)].filter(Boolean).join(" · ");
   return line ? <span className="secondary govtable__by" dir="auto">{line}</span> : null;
 }
 

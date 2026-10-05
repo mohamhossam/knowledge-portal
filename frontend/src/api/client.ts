@@ -43,6 +43,9 @@ export type Offering = Schemas["ProductOfferingSchema"];
 export type Journey = Schemas["JourneySchema"];
 /** Where orders are placed, and the system each is entered through. */
 export type Channel = Schemas["ChannelSchema"];
+export type KnowledgeSource = Schemas["KnowledgeSourceSchema"];
+export type SourceLevel = Schemas["SourceLevel"];
+export type SourceConflict = Schemas["SourceConflictSchema"];
 export type JourneyActivity = Schemas["ActivitySchema"];
 export type SourceConfidence = Schemas["SourceConfidence"];
 export type ReleaseAuditEvent = Schemas["KnowledgeAuditEventResponse"];

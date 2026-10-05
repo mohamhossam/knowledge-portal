@@ -47,6 +47,7 @@ describe("gaps", () => {
       "No system is named as responsible for Firewall in New Activation.",
       "How Firewall is realised is not recorded.",
       "Availability is not defined by any source.",
+      "2 conflicts between its sources need a decision before New Activation can be relied on.",
       "Tracking’s ‘Installation done’ is marked in the sources as a gap.",
       "1 fact is marked in its source as a gap.",
     ]);
@@ -65,6 +66,8 @@ describe("gaps", () => {
       "How Firewall is realised is not recorded.",
       "Availability is not defined by any source.",
       "Lifecycle note ‘Renewal’ carries over content from another source, to re-verify.",
+      // A conflict over every order type concerns Cease too; one over New Activation does not.
+      "1 conflict between its sources needs a decision before Cease can be relied on.",
       "1 fact is marked in its source as a gap.",
     ]);
   });

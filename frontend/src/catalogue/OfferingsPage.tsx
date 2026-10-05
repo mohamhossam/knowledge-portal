@@ -6,6 +6,8 @@ import { CONFIDENCE, roleLabel, systemName } from "./catalogue";
 import { EditButton, OfferingEdit, OfferingSectionEdit, WholeRemove } from "./DraftEdits";
 import { OFFERING_SECTIONS, type OfferingSection } from "./offeringSections";
 import { NfrSection, RealisationKey, RealisedAs, RealisedInline } from "./Realisation";
+import { ArchitectureDecisions, ConflictList, OfferingSourceList, OpenQuestions } from "./GovernanceSections";
+import { conflictsFor } from "./governance";
 import { LifecycleSection } from "./LifecycleNotes";
 import { TrackingSection } from "./Tracking";
 import { useCatalogueContext } from "./useCatalogue";
@@ -126,6 +128,7 @@ function OfferingSheet({ offering }: { offering: Offering }) {
   const journeys = (book.release.journeys ?? []).filter((journey) => journey.product_id === offering.id);
   const orderTypes = new Map(offering.order_types.map((item) => [item.code, item.name]));
   const channelNames = new Map((book.release.channels ?? []).map((item) => [item.id, item.name]));
+  const offeringConflicts = conflictsFor(book.release.conflicts ?? [], offering.id);
   useEffect(() => {
     if (location.key !== "default") heading.current?.focus();
   }, [location.key]);
@@ -318,6 +321,30 @@ function OfferingSheet({ offering }: { offering: Offering }) {
         channelName={(channelId) => channelNames.get(channelId) ?? channelId}
         action={offer("notes")}
       />
+      )}
+
+      {offeringConflicts.length > 0 && (
+        <ConflictList
+          conflicts={offeringConflicts}
+          sources={book.release.sources ?? []}
+          headingId={`${id}-conflicts`}
+          title="Decisions needed"
+          lead="Its sources contradict each other here; the catalogue never picks one."
+          action={<Link to={`${base}/governance`}>See every conflict between sources</Link>}
+          level={3}
+        />
+      )}
+
+      {editing === "questions" ? panel("questions") : (
+        <OpenQuestions offering={offering} conflicts={offeringConflicts} headingId={`${id}-questions`} action={offer("questions")} />
+      )}
+
+      {editing === "decisions" ? panel("decisions") : (
+        <ArchitectureDecisions offering={offering} headingId={`${id}-decisions`} action={offer("decisions")} />
+      )}
+
+      {editing === "sources" ? panel("sources") : (
+        <OfferingSourceList offering={offering} sources={book.release.sources ?? []} headingId={`${id}-sources`} action={offer("sources")} />
       )}
 
       {editing === "rules" ? panel("rules") : (

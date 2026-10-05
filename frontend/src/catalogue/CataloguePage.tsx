@@ -8,6 +8,7 @@ import { ApiError, errorMessage } from "../api/errors";
 import { count, formatDay } from "../home/format";
 import { changeSentence, contents } from "./catalogue";
 import { DraftActions } from "./DraftActions";
+import { SourcesContext } from "./governance";
 import { type CatalogueContext, useActorNames, useMappingImpact, useRelease } from "./useCatalogue";
 
 /**
@@ -86,7 +87,9 @@ export function CataloguePage() {
         </>,
         true,
       )}
-      <Outlet context={context} />
+      <SourcesContext.Provider value={book.release.sources ?? []}>
+        <Outlet context={context} />
+      </SourcesContext.Provider>
     </section>
   );
 }
@@ -153,6 +156,7 @@ function SubIndex({ base, inService, draft }: { base: string; inService: boolean
     { label: "Systems", to: base, current: pathname === base || pathname.startsWith(`${base}/systems`) },
     { label: "Domains", to: `${base}/domains`, current: pathname.startsWith(`${base}/domains`) },
     { label: "Channels", to: `${base}/channels`, current: pathname.startsWith(`${base}/channels`) },
+    { label: "Governance", to: `${base}/governance`, current: pathname.startsWith(`${base}/governance`) },
     { label: "Offerings", to: `${base}/offerings`, current: pathname.startsWith(`${base}/offerings`) },
     { label: "Journeys", to: `${base}/journeys`, current: pathname.startsWith(`${base}/journeys`) },
     // The explorer reads the version in service only.
