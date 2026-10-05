@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Check, Image as ImageIcon, Pencil, X } from "lucide-react";
-import { type KeyboardEvent, useEffect, useId, useMemo, useState } from "react";
+import { type KeyboardEvent, type RefObject, useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { api, type CatalogueDocument, type PossibleMatch, type Release, type Suggestion, type SuggestionContent } from "../api/client";
 import { errorMessage } from "../api/errors";
@@ -23,16 +23,25 @@ type Props = {
   focus: RowFocus | null;
   focusable: boolean;
   busy: boolean;
-  rowRef: (element: HTMLTableRowElement | null) => void;
-  onKeyDown: (event: KeyboardEvent<HTMLTableRowElement>) => void;
+  /** Edits made and not yet accepted; they outlive the editor until accepted or dropped. */
+  kept: SuggestionContent | undefined;
+  toggleRef: (element: HTMLButtonElement | null) => void;
+  onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
   onFocus: (focus: RowFocus | null) => void;
+  onClose: () => void;
+  onKeep: (content: SuggestionContent | null) => void;
   onDecide: (accept: boolean, content?: SuggestionContent | null) => void;
 };
 
-/** One suggestion: the change in words and its state; open, its source and the decision. */
+/**
+ * One suggestion: the change in words and its state; open, its source and the decision.
+ * The change is a disclosure button, the row's one stop in the tab order, so its open state
+ * reaches a screen reader (a plain table's row cannot carry `aria-expanded`).
+ */
 export function SuggestionRow({
-  suggestion, release, words, documents, actorName, focus, focusable, busy, rowRef, onKeyDown, onFocus, onDecide,
+  suggestion, release, words, documents, actorName, focus, focusable, busy, kept, toggleRef, onKeyDown, onFocus, onClose, onKeep, onDecide,
 }: Props) {
+  const detailId = useId();
   const state = suggestionState(suggestion);
   const isFocused = focus?.key === suggestion.id;
   const open = isFocused && focus.open;
@@ -43,18 +52,25 @@ export function SuggestionRow({
   return (
     <>
       <tr
-        ref={rowRef}
-        tabIndex={focusable ? 0 : -1}
         className={`row suggestion row--${STATE_RANK[state]}${open ? " is-open" : ""}`}
-        aria-expanded={open}
-        onKeyDown={onKeyDown}
-        onFocus={(event) => {
-          if (event.target === event.currentTarget && !isFocused) onFocus({ key: suggestion.id, open: false });
-        }}
-        onClick={() => onFocus({ key: suggestion.id, open: !open })}
+        onClick={() => (open ? onClose() : onFocus({ key: suggestion.id, open: true }))}
       >
         <th scope="row" className="suggestion__change" dir="auto">
-          <span className="suggestion__sentence">{changeSentence(suggestion, words)}</span>
+          <button
+            ref={toggleRef}
+            type="button"
+            className="suggestion__toggle"
+            tabIndex={focusable ? 0 : -1}
+            aria-expanded={open}
+            aria-controls={open ? detailId : undefined}
+            aria-describedby={`${detailId}-state`}
+            onKeyDown={onKeyDown}
+            onFocus={() => {
+              if (!isFocused) onFocus({ key: suggestion.id, open: false });
+            }}
+          >
+            <span className="suggestion__sentence">{changeSentence(suggestion, words)}</span>
+          </button>
           {relationship && suggestion.content.text && <span className="secondary govtable__by" dir="auto">For: {suggestion.content.text}</span>}
           <span className="secondary govtable__by suggestion__source" dir="ltr">
             <bdi>{document?.title ?? "A document no longer in the draft"}</bdi>
@@ -62,13 +78,14 @@ export function SuggestionRow({
             {suggestion.model === TABLE_READER && " · read from a table"}
           </span>
         </th>
-        <td className="suggestion__state">
+        <td id={`${detailId}-state`} className="suggestion__state">
           <span className="status">{suggestion.status === "accepted" && suggestion.edited ? "Accepted with edits" : STATE_LABEL[state]}</span>
           {reason && <span className="secondary govtable__by">{reason}</span>}
+          {kept && suggestion.status === "proposed" && <span className="secondary govtable__by">Edited, not accepted yet</span>}
         </td>
       </tr>
       {open && (
-        <tr className="suggestion-detail">
+        <tr id={detailId} className="suggestion-detail">
           <td colSpan={2}>
             <SuggestionDetail
               suggestion={suggestion}
@@ -78,8 +95,10 @@ export function SuggestionRow({
               actorName={actorName}
               editing={focus.editing === true}
               busy={busy}
+              kept={kept}
+              onKeep={onKeep}
               onEdit={(editing) => onFocus({ key: suggestion.id, open: true, editing })}
-              onClose={() => onFocus({ key: suggestion.id, open: false })}
+              onClose={onClose}
               onDecide={onDecide}
             />
           </td>
@@ -89,7 +108,7 @@ export function SuggestionRow({
   );
 }
 
-function SuggestionDetail({ suggestion, release, words, document, actorName, editing, busy, onEdit, onClose, onDecide }: {
+function SuggestionDetail({ suggestion, release, words, document, actorName, editing, busy, kept, onKeep, onEdit, onClose, onDecide }: {
   suggestion: Suggestion;
   release: Release;
   words: Lexicon;
@@ -97,6 +116,8 @@ function SuggestionDetail({ suggestion, release, words, document, actorName, edi
   actorName: (id: string | null | undefined) => string;
   editing: boolean;
   busy: boolean;
+  kept: SuggestionContent | undefined;
+  onKeep: (content: SuggestionContent | null) => void;
   onEdit: (editing: boolean) => void;
   onClose: () => void;
   onDecide: (accept: boolean, content?: SuggestionContent | null) => void;
@@ -105,11 +126,19 @@ function SuggestionDetail({ suggestion, release, words, document, actorName, edi
   const state = suggestionState(suggestion);
   const proposed = suggestion.status === "proposed";
   const holds = suggestion.content.kind === "product" ? offeringHolds(suggestion.content.product, words) : [];
+  // Leaving the editor hands focus back to the button that opened it, not to the row.
+  const editButton = useRef<HTMLButtonElement>(null);
+  const wasEditing = useRef(editing);
+  useEffect(() => {
+    if (wasEditing.current && !editing) editButton.current?.focus();
+    wasEditing.current = editing;
+  }, [editing]);
+  // Escape anywhere in the detail stops editing first, then closes it.
   const escape = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "Escape" && !editing) {
-      event.stopPropagation();
-      onClose();
-    }
+    if (event.key !== "Escape") return;
+    event.stopPropagation();
+    if (editing) onEdit(false);
+    else onClose();
   };
   return (
     <div className="suggestion-detail__body" onKeyDown={escape}>
@@ -160,11 +189,23 @@ function SuggestionDetail({ suggestion, release, words, document, actorName, edi
             release={release}
             words={words}
             busy={busy}
+            kept={kept}
+            onChange={onKeep}
             onAccept={(content) => onDecide(true, content)}
             onCancel={() => onEdit(false)}
           />
         ) : (
-          <Decision suggestion={suggestion} state={state} words={words} busy={busy} onEdit={() => onEdit(true)} onDecide={onDecide} />
+          <Decision
+            suggestion={suggestion}
+            state={state}
+            words={words}
+            busy={busy}
+            kept={kept !== undefined}
+            editButton={editButton}
+            onEdit={() => onEdit(true)}
+            onDrop={() => onKeep(null)}
+            onDecide={onDecide}
+          />
         )}
       </section>
     </div>
@@ -172,12 +213,15 @@ function SuggestionDetail({ suggestion, release, words, document, actorName, edi
 }
 
 /** The plain decision: possible matches first, then accept, edit or reject. */
-function Decision({ suggestion, state, words, busy, onEdit, onDecide }: {
+function Decision({ suggestion, state, words, busy, kept, editButton, onEdit, onDrop, onDecide }: {
   suggestion: Suggestion;
   state: ReturnType<typeof suggestionState>;
   words: Lexicon;
   busy: boolean;
+  kept: boolean;
+  editButton: RefObject<HTMLButtonElement | null>;
   onEdit: () => void;
+  onDrop: () => void;
   onDecide: (accept: boolean, content?: SuggestionContent | null) => void;
 }) {
   const id = useId();
@@ -189,10 +233,28 @@ function Decision({ suggestion, state, words, busy, onEdit, onDecide }: {
   const why = unchosen.length
     ? "Say first whether the name means a system the draft has."
     : waits
-      ? `${waitsFor(suggestion, words)}. Accept ${waitsForMany(suggestion, words) ? "those" : "that"} first, or edit this to name what the draft has.`
+      ? `${waitsFor(suggestion, words)}. Accept ${waitsForMany(suggestion, words) ? "those" : "that"} first, or ${kept ? "go back to your edits if they name" : "edit this to name"} what the draft has.`
       : null;
   return (
     <div className="decision">
+      {/* Kept edits are said before the buttons, so Accept is never read as taking them. */}
+      {kept && (
+        <p className="decision__kept">
+          You have edits not accepted yet. They are kept while this page stays open.
+          <button
+            type="button"
+            className="text-button"
+            disabled={busy}
+            onClick={() => {
+              // The drop button goes; focus stays in the decision, on the edit button.
+              editButton.current?.focus();
+              onDrop();
+            }}
+          >
+            Drop the edits
+          </button>
+        </p>
+      )}
       {roles.map((role) => (
         <MatchChoices
           key={role}
@@ -212,11 +274,11 @@ function Decision({ suggestion, state, words, busy, onEdit, onDecide }: {
           onClick={() => onDecide(true, content)}
         >
           <Check size={16} aria-hidden="true" />
-          Accept
+          {kept ? "Accept as the document said" : "Accept"}
         </button>
-        <button type="button" className="text-button" disabled={busy} onClick={onEdit}>
+        <button ref={editButton} type="button" className="text-button" disabled={busy} onClick={onEdit}>
           <Pencil size={14} aria-hidden="true" />
-          Edit, then accept
+          {kept ? "Back to your edits" : "Edit, then accept"}
         </button>
         <button type="button" className="text-button" disabled={busy} onClick={() => onDecide(false)}>
           <X size={14} aria-hidden="true" />

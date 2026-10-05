@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import type { Channel, Journey, Offering, RelationshipKind, Release, Suggestion, SuggestionContent } from "../api/client";
 import { finishedOffering, journeyProblem, lines, offeringProblem, slug } from "./editing";
@@ -26,19 +26,25 @@ const emptyJourney = (name: string): Journey => ({
 
 /**
  * Edits a suggestion before it is accepted: every kind, offerings and journeys
- * whole. The edit keeps the kind; the service rejects anything else.
+ * whole. The edit keeps the kind; the service rejects anything else. It opens
+ * with focus on its title, starts from the edits kept earlier, and reports each
+ * change so stopping never loses them.
  */
-export function SuggestionEditor({ suggestion, release, words, busy, onAccept, onCancel }: {
+export function SuggestionEditor({ suggestion, release, words, busy, kept, onChange, onAccept, onCancel }: {
   suggestion: Suggestion;
   release: Release;
   words: Lexicon;
   busy: boolean;
+  kept?: SuggestionContent;
+  onChange: (content: SuggestionContent) => void;
   onAccept: (content: SuggestionContent) => void;
   onCancel: () => void;
 }) {
   const id = useId();
   const original = suggestion.content;
-  const [content, setContent] = useState<SuggestionContent>(() => ({
+  const title = useRef<HTMLHeadingElement>(null);
+  useEffect(() => title.current?.focus(), []);
+  const [content, setContent] = useState<SuggestionContent>(() => kept ?? ({
     ...original,
     system_id: original.kind === "landscape_domain" || original.kind === "product" || original.kind === "journey" || original.kind === "channel"
       ? original.system_id
@@ -47,7 +53,18 @@ export function SuggestionEditor({ suggestion, release, words, busy, onAccept, o
       ? startingSystem(release, suggestion.target_system_name, original.target_system_id)
       : original.target_system_id,
   }));
-  const set = (patch: Partial<SuggestionContent>) => setContent((current) => ({ ...current, ...patch }));
+  const touched = useRef(false);
+  const set = (patch: Partial<SuggestionContent>) => {
+    touched.current = true;
+    setContent((current) => ({ ...current, ...patch }));
+  };
+  const report = useRef(onChange);
+  useEffect(() => {
+    report.current = onChange;
+  });
+  useEffect(() => {
+    if (touched.current) report.current(content);
+  }, [content]);
   const systems = release.systems;
   const system = systems.find((item) => item.id === content.system_id);
   const domains = release.landscape_domains ?? [];
@@ -271,7 +288,7 @@ export function SuggestionEditor({ suggestion, release, words, busy, onAccept, o
         }
       }}
     >
-      <h3 id={`${id}-title`} className="suggestion-detail__label">Edit, then accept</h3>
+      <h3 ref={title} id={`${id}-title`} className="suggestion-detail__label" tabIndex={-1}>Edit, then accept</h3>
       {whole ? fields : <div className="form__grid">{fields}</div>}
       <p className="suggestion-editor__actions">
         <button type="submit" className="action-button" disabled={!!problem || busy} aria-describedby={problem ? `${id}-why` : undefined}>
