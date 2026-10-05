@@ -49,6 +49,12 @@ from knowledge_portal.domain.architecture.knowledge import (
     SystemDefinition,
     SystemRelationship,
 )
+from knowledge_portal.domain.architecture.lifecycle import (
+    MAX_TABLE_COLUMNS,
+    LifecycleNote,
+    NoteBlock,
+    NoteBlockKind,
+)
 from knowledge_portal.domain.architecture.products import (
     ComponentResponsibility,
     OfferingComponent,
@@ -90,6 +96,9 @@ TRACKING = "Tracking"
 TRACKING_FLOWS = "TrackingFlows"
 TRACKING_CHANNELS = "TrackingChannels"
 TRACKING_EVENTS = "TrackingEvents"
+LIFECYCLE_NOTES = "LifecycleNotes"
+LIFECYCLE_BLOCKS = "LifecycleBlocks"
+_CELLS = tuple(f"cell_{number}" for number in range(1, MAX_TABLE_COLUMNS + 1))
 INSTRUCTIONS = "Instructions"
 _DOMAIN_HEADERS = ("domain_id", "name", "name_ar", "parent_id", "description")
 _HEADERS: dict[str, tuple[str, ...]] = {
@@ -266,6 +275,27 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "confidence",
         "source",
     ),
+    LIFECYCLE_NOTES: (
+        "product_id",
+        "note_id",
+        "title",
+        "kind",
+        "summary",
+        "order_types",
+        "channels",
+        "confidence",
+        "source",
+    ),
+    LIFECYCLE_BLOCKS: (
+        "product_id",
+        "note_id",
+        "kind",
+        "title",
+        "text",
+        *_CELLS,
+        "confidence",
+        "source",
+    ),
 }
 # Headers a sheet cannot do without. Columns added later stay optional, so
 # workbooks filled from an older template still import.
@@ -293,6 +323,8 @@ _REQUIRED_HEADERS: dict[str, tuple[str, ...]] = {
     TRACKING_FLOWS: ("product_id", "from_system_id", "to_system_id", "label"),
     TRACKING_CHANNELS: ("product_id", "channel_id"),
     TRACKING_EVENTS: ("product_id", "kind", "label"),
+    LIFECYCLE_NOTES: ("product_id", "note_id", "title"),
+    LIFECYCLE_BLOCKS: ("product_id", "note_id", "kind"),
 }
 _KINDS = ", ".join(kind.value for kind in RelationshipKind)
 _REQUIRED_SHEETS = (SYSTEMS,)
@@ -362,6 +394,15 @@ _INSTRUCTIONS = (
     (
         "TrackingEvents: kind milestone (seen by the customer), status (internal) or fallout "
         "(label is what makes the order fall out, detail how it is handled).",
+    ),
+    (
+        "LifecycleNotes (optional): what happens to a product over its life, one row per "
+        "topic; order_types and channels by ; (none: every one).",
+    ),
+    (
+        "LifecycleBlocks: each note's content in order. kind text (text), list then one item "
+        "row per item (text), table (column heads in cell_1…, caption in text) then one row "
+        "row per table row (cells in cell_1…).",
     ),
     ("Row 1 of each sheet holds the headers; keep them as they are.",),
 )
@@ -873,6 +914,7 @@ def _offerings(entries: list[dict[str, Any]]) -> list[ProductOffering]:
                         for index, nfr in enumerate(_sub_entries(item, "nfrs", where), 1)
                     ),
                     tracking=_tracking(item, where),
+                    lifecycle_notes=_lifecycle_notes(item, where),
                 )
             )
         except InvalidKnowledgeError as exc:
@@ -949,6 +991,54 @@ def _event(item: dict[str, Any], where: str) -> TrackingEvent:
         _trust(item.get("confidence"), where),
         _optional_text(item.get("source"), where, "source"),
     )
+
+
+def _lifecycle_notes(item: dict[str, Any], where: str) -> tuple[LifecycleNote, ...]:
+    notes = []
+    for index, note in enumerate(_sub_entries(item, "lifecycle_notes", where), 1):
+        place = _where(note, f"{where}, lifecycle note {index}")
+        try:
+            blocks = []
+            for position, block in enumerate(_sub_entries(note, "blocks", place), 1):
+                spot = _where(block, f"{place}, block {position}")
+                rows = block.get("rows") or []
+                if not isinstance(rows, list) or not all(isinstance(row, list) for row in rows):
+                    raise InvalidKnowledgeError(f"{spot}: rows must be a list of lists.")
+                blocks.append(
+                    NoteBlock(
+                        kind=_text(block.get("kind"), spot, "kind"),  # type: ignore[arg-type]
+                        title=_optional_text(block.get("title"), spot, "title"),
+                        text=_optional_text(block.get("text"), spot, "text"),
+                        items=_text_list(block.get("items"), spot, "items"),
+                        columns=tuple(
+                            _optional_text(cell, spot, "columns") or ""
+                            for cell in block.get("columns") or []
+                        ),
+                        rows=tuple(
+                            tuple(_optional_text(cell, spot, "rows") or "" for cell in row)
+                            for row in rows
+                        ),
+                        caption=_optional_text(block.get("caption"), spot, "caption"),
+                        confidence=_trust(block.get("confidence"), spot),
+                        source=_optional_text(block.get("source"), spot, "source"),
+                    )
+                )
+            notes.append(
+                LifecycleNote(
+                    id=_text(note.get("id"), place, "id"),
+                    title=_text(note.get("title"), place, "title"),
+                    kind=_optional_text(note.get("kind"), place, "kind"),
+                    summary=_optional_text(note.get("summary"), place, "summary"),
+                    order_types=_text_list(note.get("order_types"), place, "order_types"),
+                    channels=_text_list(note.get("channels"), place, "channels"),
+                    blocks=tuple(blocks),
+                    confidence=_trust(note.get("confidence"), place),
+                    source=_optional_text(note.get("source"), place, "source"),
+                )
+            )
+        except InvalidKnowledgeError as exc:
+            raise _located(place, exc) from exc
+    return tuple(notes)
 
 
 def _nfr(item: dict[str, Any], where: str) -> OfferingNfr:
@@ -1049,6 +1139,38 @@ def _offering_mapping(offering: ProductOffering) -> dict[str, Any]:
             ],
         ),
         **({"tracking": _tracking_mapping(offering.tracking)} if offering.tracking else {}),
+        **_present(lifecycle_notes=[_note_mapping(note) for note in offering.lifecycle_notes]),
+    }
+
+
+def _note_mapping(note: LifecycleNote) -> dict[str, Any]:
+    return {
+        "id": note.id,
+        "title": note.title,
+        **_present(
+            kind=note.kind,
+            summary=note.summary,
+            order_types=list(note.order_types),
+            channels=list(note.channels),
+        ),
+        **_sourced(note),
+        **_present(
+            blocks=[
+                {
+                    "kind": block.kind.value,
+                    **_present(
+                        title=block.title,
+                        text=block.text,
+                        items=list(block.items),
+                        columns=list(block.columns),
+                        rows=[list(row) for row in block.rows],
+                        caption=block.caption,
+                    ),
+                    **_sourced(block),
+                }
+                for block in note.blocks
+            ]
+        ),
     }
 
 
@@ -1543,6 +1665,7 @@ def _sheet_offerings(workbook: Any) -> list[dict[str, Any]]:
             "values": [],
             "audiences": [],
             "nfrs": [],
+            "lifecycle_notes": [],
         }
 
     def offering(cells: dict[str, object], where: str) -> dict[str, Any]:
@@ -1622,6 +1745,56 @@ def _sheet_offerings(workbook: Any) -> list[dict[str, Any]]:
         found: dict[str, Any] = owner["tracking"]
         return found
 
+    notes: dict[tuple[str, str], dict[str, Any]] = {}
+    for number, cells in _rows(workbook, LIFECYCLE_NOTES):
+        where = f"{LIFECYCLE_NOTES} row {number}"
+        owner = offering(cells, where)
+        note = {
+            **cells,
+            "_where": where,
+            "id": cells.get("note_id"),
+            "order_types": list(_split(cells.get("order_types"), where, "order_types")),
+            "channels": list(_split(cells.get("channels"), where, "channels")),
+            "blocks": [],
+        }
+        notes[(owner["id"], _text(cells.get("note_id"), where, "note_id"))] = note
+        owner["lifecycle_notes"].append(note)
+    for number, cells in _rows(workbook, LIFECYCLE_BLOCKS):
+        where = f"{LIFECYCLE_BLOCKS} row {number}"
+        key = (offering(cells, where)["id"], _text(cells.get("note_id"), where, "note_id"))
+        if key not in notes:
+            raise InvalidKnowledgeError(
+                f"{where}: note {key[1]!r} is not listed on the {LIFECYCLE_NOTES} sheet."
+            )
+        blocks = notes[key]["blocks"]
+        kind = _text(cells.get("kind"), where, "kind").casefold()
+        row = [cells.get(name) for name in _CELLS]
+        while row and (row[-1] is None or str(row[-1]).strip() == ""):
+            row.pop()
+        if kind in {"item", "row"}:
+            opener = "list" if kind == "item" else "table"
+            if not blocks or blocks[-1].get("kind") != opener:
+                what = "a list item" if kind == "item" else "a table row"
+                raise InvalidKnowledgeError(f"{where}: {what} must follow its {opener}.")
+            if kind == "item":
+                blocks[-1]["items"].append(cells.get("text"))
+            else:
+                blocks[-1]["rows"].append(["" if cell is None else cell for cell in row])
+            continue
+        if kind not in {"text", "list", "table"}:
+            raise InvalidKnowledgeError(f"{where}: kind must be text, list, item, table or row.")
+        blocks.append(
+            {
+                **cells,
+                "_where": where,
+                "kind": kind,
+                "text": cells.get("text") if kind == "text" else None,
+                "caption": cells.get("text") if kind == "table" else None,
+                "items": [],
+                "columns": row if kind == "table" else [],
+                "rows": [],
+            }
+        )
     for number, cells in _rows(workbook, TRACKING):
         where = f"{TRACKING} row {number}"
         if offering(cells, where).get("tracking") is not None:
@@ -1783,6 +1956,8 @@ def _write_offering(sheets: dict[str, Any], product: ProductOffering) -> None:
             )
     if product.tracking is not None:
         _write_tracking(sheets, product.id, product.tracking)
+    for note in product.lifecycle_notes:
+        _write_note(sheets, product.id, note)
     for nfr in product.nfrs:
         _append(
             sheets[NFRS],
@@ -1801,6 +1976,57 @@ def _write_offering(sheets: dict[str, Any], product: ProductOffering) -> None:
                 sheets[PRODUCT_POINTS],
                 (product.id, kind, point.name, point.description, _confidence(point), point.source),
             )
+
+
+def _write_note(sheets: dict[str, Any], product_id: str, note: LifecycleNote) -> None:
+    joined = f"{_LIST_SEPARATOR} ".join
+    _append(
+        sheets[LIFECYCLE_NOTES],
+        (
+            product_id,
+            note.id,
+            note.title,
+            note.kind,
+            note.summary,
+            joined(note.order_types),
+            joined(note.channels),
+            _confidence(note),
+            note.source,
+        ),
+    )
+    blank = (None,) * len(_CELLS)
+
+    def row(kind: str, title: str | None, text: str | None, cells: tuple[object, ...]) -> None:
+        padded = (*cells, *blank)[: len(_CELLS)]
+        _append(
+            sheets[LIFECYCLE_BLOCKS], (product_id, note.id, kind, title, text, *padded, None, None)
+        )
+
+    for block in note.blocks:
+        if block.kind is NoteBlockKind.TEXT:
+            cells: tuple[object, ...] = ()
+            text = block.text
+        elif block.kind is NoteBlockKind.LIST:
+            cells, text = (), None
+        else:
+            cells, text = block.columns, block.caption
+        _append(
+            sheets[LIFECYCLE_BLOCKS],
+            (
+                product_id,
+                note.id,
+                block.kind.value,
+                block.title,
+                text,
+                *(*cells, *blank)[: len(_CELLS)],
+                _confidence(block),
+                block.source,
+            ),
+        )
+        for item in block.items:
+            row("item", None, item, ())
+        for table_row in block.rows:
+            row("row", None, None, table_row)
 
 
 def _write_tracking(sheets: dict[str, Any], product_id: str, tracking: OrderTracking) -> None:

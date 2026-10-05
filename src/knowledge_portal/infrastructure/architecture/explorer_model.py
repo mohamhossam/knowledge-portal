@@ -7,7 +7,7 @@ the file against a draft and imports it, and from then on the catalogue is the o
 home of these facts (requirement-portal ADR-0101).
 
 It is a seed, not a sync. Nothing is invented: a fact the catalogue cannot hold yet
-(lifecycle notes, source levels and conflicts, and so on) is counted in the
+(source levels and conflicts, information objects, and so on) is counted in the
 report, not squeezed into a field that means something else. Plans and prices are never
 carried over: the explorer reads them live from the product catalog by the offering's code.
 Channels carry
@@ -15,7 +15,8 @@ over (step 3): each channel with its entry system, the channels each order type 
 be ordered through, the channels each step happens in, and the steps the order's
 channel entry system performs. So do each component's CFS, RFS and resource layers,
 as its realisation, each offering's NFRs with how far their sources define them, and
-how its orders are tracked (step 4).
+how its orders are tracked, and its lifecycle notes, with the cross-product notes and the
+design-time realisation as notes of their own (step 4).
 Evidence keeps its confidence (CONFIRMED, INFERRED and GAP) and names its source.
 """
 
@@ -60,12 +61,7 @@ _READ_LIVE = (
     ("charges", "charges"),
 )
 # What the explorer holds and the catalogue cannot yet, per product.
-_NOT_YET = (
-    ("info", "information objects"),
-    ("lifecycle", "lifecycle notes"),
-    ("crossProduct", "cross-product notes"),
-    ("designTime", "design-time steps"),
-)
+_NOT_YET = (("info", "information objects"),)
 
 
 @dataclass(frozen=True)
@@ -276,6 +272,7 @@ class _Reader:
             "audiences": [self._point(item) for item in product.get("fits") or ()],
             "nfrs": self._nfrs(product),
             **self._tracking(product, order_types),
+            **_present(lifecycle_notes=self._lifecycle(product, order_types)),
         }
 
     def _point(self, item: Mapping[str, Any]) -> dict[str, Any]:
@@ -407,6 +404,113 @@ class _Reader:
                 ],
             }
         }
+
+    def _lifecycle(
+        self, product: Mapping[str, Any], order_types: list[str]
+    ) -> list[dict[str, Any]]:
+        """Its lifecycle topics as notes, with the cross-product notes and the design-time
+        realisation as notes of their own. A carry-over from another source keeps its
+        heading and its weaker confidence on each of its blocks."""
+        known = set(order_types)
+        names = {item["id"]: item["name"] for item in self.model.get("products") or ()}
+        notes = []
+        for item in product.get("lifecycle") or ():
+            scope = list(item.get("ots") or ())
+            orders = [] if "*" in scope else [code for code in scope if code in known]
+            if scope and "*" not in scope and len(orders) < len(scope):
+                self.dropped["lifecycle notes naming another product's order type"] += 1
+            notes.append(
+                {
+                    "id": item["id"],
+                    "title": item.get("title") or item["id"],
+                    **_present(
+                        kind=item.get("kind"),
+                        summary=item.get("summary"),
+                        order_types=orders,
+                        channels=[code for code in item.get("ch") or () if code in self.channels],
+                        blocks=self._blocks(item.get("blocks") or ()),
+                    ),
+                    **self._evidence(item.get("ev")),
+                }
+            )
+        for index, item in enumerate(product.get("crossProduct") or (), 1):
+            other = names.get(item.get("product") or "", item.get("product") or "another product")
+            notes.append(
+                {
+                    "id": f"{product['id']}-CROSS-{index}",
+                    "title": f"With {other}",
+                    "kind": "Cross-product",
+                    **_present(
+                        order_types=[item["ot"]] if item.get("ot") in known else [],
+                        blocks=[{"kind": "text", "text": item["text"]}] if item.get("text") else [],
+                    ),
+                    **self._evidence(item.get("ev")),
+                }
+            )
+        design = product.get("designTime") or {}
+        if design.get("steps"):
+            notes.append(
+                {
+                    "id": f"{product['id']}-DESIGN-TIME",
+                    "title": design.get("title") or "Design-time catalogue realisation",
+                    "kind": "Design time",
+                    **_present(summary=design.get("note")),
+                    "blocks": [
+                        {
+                            "kind": "table",
+                            "columns": ["System", "What it sets up", "Source"],
+                            "rows": [
+                                [
+                                    self.names.get(step.get("sys") or "", step.get("sys") or ""),
+                                    step.get("text") or "",
+                                    self._evidence(step.get("ev")).get("source", ""),
+                                ]
+                                for step in design["steps"]
+                            ],
+                        }
+                    ],
+                    **self._evidence(design.get("noteEv")),
+                }
+            )
+        return notes
+
+    def _blocks(
+        self,
+        blocks: Iterable[Mapping[str, Any]],
+        title: str | None = None,
+        evidence: Mapping[str, str] | None = None,
+    ) -> list[dict[str, Any]]:
+        out: list[dict[str, Any]] = []
+        for block in blocks:
+            kind = block.get("type")
+            heading = {"title": title} if title and not out else {}
+            sourced = dict(evidence or {})
+            if kind == "carry":
+                out.extend(
+                    self._blocks(
+                        block.get("blocks") or (),
+                        block.get("title"),
+                        self._evidence(block.get("ev")),
+                    )
+                )
+            elif kind == "p" and block.get("text"):
+                out.append({"kind": "text", **heading, "text": block["text"], **sourced})
+            elif kind == "ul" and block.get("items"):
+                out.append({"kind": "list", **heading, "items": list(block["items"]), **sourced})
+            elif kind == "table" and block.get("cols"):
+                out.append(
+                    {
+                        "kind": "table",
+                        **heading,
+                        "columns": list(block["cols"]),
+                        "rows": [[str(cell) for cell in row] for row in block.get("rows") or ()],
+                        **_present(caption=block.get("caption")),
+                        **sourced,
+                    }
+                )
+            else:
+                self.dropped["lifecycle blocks of an unknown kind"] += 1
+        return out
 
     def _nfrs(self, product: Mapping[str, Any]) -> list[dict[str, Any]]:
         """Each quality once, with how far the sources define it; a gap stays a gap."""

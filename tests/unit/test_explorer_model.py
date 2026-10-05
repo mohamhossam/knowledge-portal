@@ -121,6 +121,54 @@ def _model() -> dict[str, Any]:
                     }
                 ],
                 "journeys": {"NEW": _journey()},
+                "lifecycle": [
+                    {
+                        "id": "LC-REN",
+                        "title": "Renewal",
+                        "kind": "Commercial",
+                        "ots": ["NEW", "RENEWAL"],
+                        "ch": ["WEB", "PHONE"],
+                        "summary": "What a renewal carries over.",
+                        "ev": EV,
+                        "blocks": [
+                            {"type": "p", "text": "Tenure is inherited."},
+                            {
+                                "type": "carry",
+                                "title": "v8.2 carry-over (re-verify)",
+                                "ev": LATER,
+                                "blocks": [
+                                    {"type": "ul", "items": ["New → New", "Old → New"]},
+                                    {
+                                        "type": "table",
+                                        "cols": ["From", "To"],
+                                        "rows": [["200Mbps", "PO_KL"]],
+                                        "caption": "Rollover codes",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    {
+                        "id": "LC-ALL",
+                        "title": "SSO",
+                        "ots": ["*"],
+                        "blocks": [{"type": "p", "text": "SAML."}],
+                    },
+                ],
+                "crossProduct": [
+                    {
+                        "product": "BPP",
+                        "text": "Up/downgrades run on WF-2.",
+                        "ot": "CEASE",
+                        "ev": EV,
+                    }
+                ],
+                "designTime": {
+                    "title": "Design-time realisation",
+                    "note": "One-time, per bundle.",
+                    "noteEv": EV,
+                    "steps": [{"sys": "SYS-CRM", "text": "Define the offers.", "ev": LATER}],
+                },
                 "tracking": {
                     "applies": ["NEW", "GONE"],
                     "core": [
@@ -431,6 +479,41 @@ def test_order_tracking_carries_over_with_its_channels_and_gaps() -> None:
     assert "Not carried over yet: tracking facts naming an uncatalogued system (1)." in report
     assert "Not carried over yet: tracking of an uncatalogued channel (1)." in report
     assert not any("order tracking" in line for line in report)
+
+
+def test_lifecycle_notes_carry_over_with_their_carry_overs_cross_product_and_design_time() -> None:
+    mapping, report = _read()
+
+    renewal, sso, cross, design = mapping["products"][0]["lifecycle_notes"]
+    assert renewal["order_types"] == ["NEW"] and renewal["channels"] == ["WEB"]
+    assert (renewal["confidence"], renewal["summary"]) == (
+        "confirmed",
+        "What a renewal carries over.",
+    )
+    text, items, table = renewal["blocks"]
+    assert text == {"kind": "text", "text": "Tenure is inherited."}
+    # A carry-over keeps its heading on its first block and its weaker confidence on each.
+    assert items == {
+        "kind": "list",
+        "title": "v8.2 carry-over (re-verify)",
+        "items": ["New → New", "Old → New"],
+        "confidence": "inferred",
+        "source": "BPP SDD §12",
+    }
+    assert table["columns"] == ["From", "To"] and table["caption"] == "Rollover codes"
+    assert "title" not in table and table["confidence"] == "inferred"
+    assert "order_types" not in sso
+    assert (cross["title"], cross["kind"], cross["order_types"]) == (
+        "With Business Pro Plus",
+        "Cross-product",
+        ["CEASE"],
+    )
+    assert design["summary"] == "One-time, per bundle."
+    assert design["blocks"][0]["rows"] == [["BCRM", "Define the offers.", "BPP SDD §12"]]
+    assert (
+        "Not carried over yet: lifecycle notes naming another product's order type (1)." in report
+    )
+    assert not any("lifecycle notes (" in line or "design-time" in line for line in report)
 
 
 def test_the_report_counts_what_the_catalogue_cannot_hold_yet() -> None:

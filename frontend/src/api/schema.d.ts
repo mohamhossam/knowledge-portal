@@ -2420,6 +2420,38 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /**
+         * LifecycleNoteSchema
+         * @description What happens to an offering over its life, on one topic, as its sources say.
+         */
+        LifecycleNoteSchema: {
+            /**
+             * Blocks
+             * @default []
+             */
+            blocks: components["schemas"]["NoteBlockSchema"][];
+            /**
+             * Channels
+             * @default []
+             */
+            channels: string[];
+            confidence?: components["schemas"]["SourceConfidence"] | null;
+            /** Id */
+            id: string;
+            /** Kind */
+            kind?: string | null;
+            /**
+             * Order Types
+             * @default []
+             */
+            order_types: string[];
+            /** Source */
+            source?: string | null;
+            /** Summary */
+            summary?: string | null;
+            /** Title */
+            title: string;
+        };
         /** LoginChoiceResponse */
         LoginChoiceResponse: {
             /** Authorization Parameters */
@@ -2463,6 +2495,42 @@ export interface components {
          * @enum {string}
          */
         NfrCoverage: "defined" | "partial" | "missing";
+        /**
+         * NoteBlockKind
+         * @enum {string}
+         */
+        NoteBlockKind: "text" | "list" | "table";
+        /**
+         * NoteBlockSchema
+         * @description One part of a lifecycle note: a paragraph, a list, or a table.
+         */
+        NoteBlockSchema: {
+            /** Caption */
+            caption?: string | null;
+            /**
+             * Columns
+             * @default []
+             */
+            columns: string[];
+            confidence?: components["schemas"]["SourceConfidence"] | null;
+            /**
+             * Items
+             * @default []
+             */
+            items: string[];
+            kind: components["schemas"]["NoteBlockKind"];
+            /**
+             * Rows
+             * @default []
+             */
+            rows: string[][];
+            /** Source */
+            source?: string | null;
+            /** Text */
+            text?: string | null;
+            /** Title */
+            title?: string | null;
+        };
         /** OfferingComponentSchema */
         OfferingComponentSchema: {
             /** Code */
@@ -2738,6 +2806,11 @@ export interface components {
             id: string;
             /** Lifecycle */
             lifecycle?: string | null;
+            /**
+             * Lifecycle Notes
+             * @default []
+             */
+            lifecycle_notes: components["schemas"]["LifecycleNoteSchema"][];
             /** Name */
             name: string;
             /**

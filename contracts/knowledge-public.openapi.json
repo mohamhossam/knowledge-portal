@@ -3634,6 +3634,102 @@
         "title": "LibraryWithdrawalRequest",
         "type": "object"
       },
+      "LifecycleNoteSchema": {
+        "description": "What happens to an offering over its life, on one topic, as its sources say.",
+        "properties": {
+          "blocks": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/NoteBlockSchema"
+            },
+            "maxItems": 5000,
+            "title": "Blocks",
+            "type": "array"
+          },
+          "channels": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Channels",
+            "type": "array"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "maxLength": 200,
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "order_types": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Order Types",
+            "type": "array"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "title": {
+            "maxLength": 300,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "LifecycleNoteSchema",
+        "type": "object"
+      },
       "LoginChoiceResponse": {
         "properties": {
           "authorization_parameters": {
@@ -3722,6 +3818,120 @@
         ],
         "title": "NfrCoverage",
         "type": "string"
+      },
+      "NoteBlockKind": {
+        "enum": [
+          "text",
+          "list",
+          "table"
+        ],
+        "title": "NoteBlockKind",
+        "type": "string"
+      },
+      "NoteBlockSchema": {
+        "description": "One part of a lifecycle note: a paragraph, a list, or a table.",
+        "properties": {
+          "caption": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caption"
+          },
+          "columns": {
+            "default": [],
+            "items": {
+              "maxLength": 10000,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Columns",
+            "type": "array"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "items": {
+            "default": [],
+            "items": {
+              "maxLength": 10000,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Items",
+            "type": "array"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/NoteBlockKind"
+          },
+          "rows": {
+            "default": [],
+            "items": {
+              "items": {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              "maxItems": 10,
+              "type": "array"
+            },
+            "maxItems": 5000,
+            "title": "Rows",
+            "type": "array"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "NoteBlockSchema",
+        "type": "object"
       },
       "OfferingComponentSchema": {
         "properties": {
@@ -4559,6 +4769,15 @@
               }
             ],
             "title": "Lifecycle"
+          },
+          "lifecycle_notes": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/LifecycleNoteSchema"
+            },
+            "maxItems": 5000,
+            "title": "Lifecycle Notes",
+            "type": "array"
           },
           "name": {
             "maxLength": 300,

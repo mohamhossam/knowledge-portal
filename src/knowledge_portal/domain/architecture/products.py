@@ -28,6 +28,7 @@ from knowledge_portal.domain.architecture.invariants import (
     optional,
     required,
 )
+from knowledge_portal.domain.architecture.lifecycle import LifecycleNote, check_lifecycle_notes
 from knowledge_portal.domain.architecture.sources import (
     SourceConfidence as SourceConfidence,
 )
@@ -264,6 +265,8 @@ class ProductOffering:
     nfrs: tuple[OfferingNfr, ...] = ()
     # How its orders are tracked once placed, when its sources say.
     tracking: OrderTracking | None = None
+    # What happens to it over its life: up/downgrades, renewals, cessation and the like.
+    lifecycle_notes: tuple[LifecycleNote, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Offering id"))
@@ -290,6 +293,7 @@ class ProductOffering:
         known = set(codes)
         if self.tracking is not None:
             check_tracking(self.name, self.tracking, known)
+        check_lifecycle_notes(self.name, self.lifecycle_notes, known)
         for component in self.components:
             for responsibility in component.responsibilities:
                 unknown = [
@@ -328,14 +332,10 @@ def check_offerings(
     if len(set(ids)) != len(ids):
         raise InvalidKnowledgeError("Product offering ids must be unique.")
     for offering in offerings:
+        codes = [item.code for item in offering.order_types]
         if offering.tracking is not None:
-            check_tracking(
-                offering.name,
-                offering.tracking,
-                [item.code for item in offering.order_types],
-                system_ids,
-                channel_ids,
-            )
+            check_tracking(offering.name, offering.tracking, codes, system_ids, channel_ids)
+        check_lifecycle_notes(offering.name, offering.lifecycle_notes, codes, channel_ids)
         for order_type in offering.order_types:
             unknown = [item for item in order_type.channels if item not in channel_ids]
             if unknown:
@@ -395,10 +395,12 @@ def merge_offerings(first: ProductOffering, second: ProductOffering) -> ProductO
     A document's product section can be read in more than one call, or by the
     table reader and a model, each seeing part of it. Order types merge by code,
     components by id, responsibilities by system and role, points by name, realisation
-    by layer and name, NFRs by quality; tracking is taken whole, the first reading's if it has one.
+    by layer and name, NFRs by quality, lifecycle notes by id; tracking is taken whole, the
+    first reading's if it has one.
     """
     codes = {item.code.casefold() for item in first.order_types}
     qualities = {item.quality.casefold() for item in first.nfrs}
+    notes = {item.id for item in first.lifecycle_notes}
     parts = {item.id: item for item in first.components}
     for item in second.components:
         parts[item.id] = merge_components(parts[item.id], item) if item.id in parts else item
@@ -425,6 +427,10 @@ def merge_offerings(first: ProductOffering, second: ProductOffering) -> ProductO
             *(item for item in second.nfrs if item.quality.casefold() not in qualities),
         ),
         tracking=first_known(first.tracking, second.tracking),
+        lifecycle_notes=(
+            *first.lifecycle_notes,
+            *(item for item in second.lifecycle_notes if item.id not in notes),
+        ),
     )
 
 
