@@ -818,6 +818,12 @@
   background: var(--stock-band);
 }
 
+/* A focused field is never hidden under a pinned panel foot: tabbing scrolls it clear. */
+html:has(.edit-panel__foot),
+html:has(.suggestion-editor > .suggestion-editor__actions) {
+  scroll-padding-bottom: 9rem;
+}
+
 .govtable .cell--code {
   overflow-wrap: normal;
   white-space: nowrap;
