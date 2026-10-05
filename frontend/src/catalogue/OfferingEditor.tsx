@@ -1,11 +1,16 @@
 import type { CatalogueSystem, Channel, Offering, SourceConfidence } from "../api/client";
-import { CONFIDENCE } from "./catalogue";
+import { CONFIDENCE, COVERAGE, LAYERS } from "./catalogue";
 import { lines } from "./editing";
 import { AreaField, CheckField, LinesField, Rows, SelectField, SystemField, TextField } from "./forms";
 
 type Part = Offering["components"][number];
 type Responsibility = Part["responsibilities"][number];
 type Point = Offering["values"][number];
+type Realised = Part["realisation"][number];
+type Nfr = Offering["nfrs"][number];
+
+const LAYER_OPTIONS = LAYERS.map(({ layer, short, long }) => ({ value: layer, label: short === long ? long : `${short}: ${long}` }));
+const COVERAGE_OPTIONS = (Object.keys(COVERAGE) as Nfr["coverage"][]).map((value) => ({ value, label: COVERAGE[value] }));
 
 const CONFIDENCE_OPTIONS = [
   { value: "", label: "Not stated" },
@@ -96,7 +101,7 @@ export function OfferingEditor({ value, onChange, systems, channels = [], names 
         one="part"
         items={value.components}
         onChange={(components) => set({ components })}
-        blank={() => ({ id: "", name: "", responsibilities: [] })}
+        blank={() => ({ id: "", name: "", responsibilities: [], realisation: [] })}
         itemLabel={(part, index) => `part ${part.name || index + 1}`}
         render={(part, update) => (
           <>
@@ -146,6 +151,46 @@ export function OfferingEditor({ value, onChange, systems, channels = [], names 
                 </>
               )}
             />
+            <Rows<Realised>
+              legend="Realised as"
+              one="layer"
+              items={part.realisation ?? []}
+              onChange={(realisation) => update({ realisation })}
+              blank={() => ({ layer: "cfs", name: "" })}
+              itemLabel={(item, index) => `layer ${item.name || index + 1}`}
+              render={(item, change) => (
+                <>
+                  <SelectField
+                    label="Layer"
+                    value={item.layer}
+                    options={LAYER_OPTIONS}
+                    onChange={(layer) => change({ layer: layer as Realised["layer"] })}
+                  />
+                  <TextField label="Name" value={item.name} required onChange={(name) => change({ name })} />
+                </>
+              )}
+            />
+          </>
+        )}
+      />
+
+      <Rows<Nfr>
+        legend="Non-functional requirements"
+        one="non-functional requirement"
+        items={value.nfrs ?? []}
+        onChange={(nfrs) => set({ nfrs })}
+        blank={() => ({ quality: "", coverage: "missing" })}
+        itemLabel={(item, index) => `requirement ${item.quality || index + 1}`}
+        render={(item, change) => (
+          <>
+            <TextField label="Quality" value={item.quality} required onChange={(quality) => change({ quality })} />
+            <SelectField
+              label="Defined"
+              value={item.coverage}
+              options={COVERAGE_OPTIONS}
+              onChange={(coverage) => change({ coverage: coverage as Nfr["coverage"] })}
+            />
+            <AreaField label="What the sources say" value={item.statement} onChange={(statement) => change({ statement: statement || null })} />
           </>
         )}
       />

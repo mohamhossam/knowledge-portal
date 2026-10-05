@@ -26,6 +26,7 @@ _OFFERING_FIELDS = (
     "components",
     "values",
     "audiences",
+    "nfrs",
 )
 
 
@@ -55,13 +56,14 @@ _JOURNEY_FIELDS = (
 
 
 def _bare(offering: ProductOffering) -> tuple[object, ...]:
-    """An offering's components without their responsibilities."""
-    return tuple(replace(item, responsibilities=()) for item in offering.components)
+    """An offering's components without their responsibilities and realisation."""
+    return tuple(replace(item, responsibilities=(), realisation=()) for item in offering.components)
 
 
 def _offering_fields(before: ProductOffering, after: ProductOffering) -> tuple[str, ...]:
     """Which parts of an offering changed; a component's responsibilities count as
-    "responsibilities", apart from the rest of the component."""
+    "responsibilities" and its realisation as "realisation", apart from the rest of
+    the component."""
     fields = [
         field
         for field in _OFFERING_FIELDS
@@ -73,6 +75,10 @@ def _offering_fields(before: ProductOffering, after: ProductOffering) -> tuple[s
         item.responsibilities for item in after.components
     ]:
         fields.append("responsibilities")
+    if [item.realisation for item in before.components] != [
+        item.realisation for item in after.components
+    ]:
+        fields.append("realisation")
     return tuple(fields)
 
 

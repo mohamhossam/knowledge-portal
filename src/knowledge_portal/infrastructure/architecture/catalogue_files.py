@@ -52,9 +52,11 @@ from knowledge_portal.domain.architecture.knowledge import (
 from knowledge_portal.domain.architecture.products import (
     ComponentResponsibility,
     OfferingComponent,
+    OfferingNfr,
     OfferingPoint,
     OrderType,
     ProductOffering,
+    Realisation,
     SourceConfidence,
 )
 
@@ -75,6 +77,8 @@ ACTIVITIES = "Activities"
 FLOW_RULES = "FlowRules"
 ACTIVITY_INTEGRATIONS = "ActivityIntegrations"
 CHANNELS = "Channels"
+REALISATION = "Realisation"
+NFRS = "NFRs"
 INSTRUCTIONS = "Instructions"
 _DOMAIN_HEADERS = ("domain_id", "name", "name_ar", "parent_id", "description")
 _HEADERS: dict[str, tuple[str, ...]] = {
@@ -211,6 +215,8 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "confidence",
         "source",
     ),
+    REALISATION: ("product_id", "component_id", "layer", "name", "confidence", "source"),
+    NFRS: ("product_id", "quality", "coverage", "statement", "confidence", "source"),
 }
 # Headers a sheet cannot do without. Columns added later stay optional, so
 # workbooks filled from an older template still import.
@@ -232,6 +238,8 @@ _REQUIRED_HEADERS: dict[str, tuple[str, ...]] = {
     FLOW_RULES: ("journey_id", "kind", "from_activity", "to_activity"),
     ACTIVITY_INTEGRATIONS: ("journey_id", "from_activity", "to_activity"),
     CHANNELS: ("channel_id", "name"),
+    REALISATION: ("product_id", "component_id", "layer", "name"),
+    NFRS: ("product_id", "quality", "coverage"),
 }
 _KINDS = ", ".join(kind.value for kind in RelationshipKind)
 _REQUIRED_SHEETS = (SYSTEMS,)
@@ -277,6 +285,14 @@ _INSTRUCTIONS = (
     (
         "Activities channels (optional): the channel ids the step happens in, by ; (none: every "
         "channel); channel_entry yes when the order's channel entry system performs it.",
+    ),
+    (
+        "Realisation (optional): how a component is realised; layer is CFS (what the customer "
+        "is sold), RFS (what delivers it) or resource (what it runs on).",
+    ),
+    (
+        "NFRs (optional): an offering's non-functional requirements, one row per quality such "
+        "as Availability; coverage is defined, partial or missing.",
     ),
     ("Row 1 of each sheet holds the headers; keep them as they are.",),
 )
@@ -719,6 +735,16 @@ def _offerings(entries: list[dict[str, Any]]) -> list[ProductOffering]:
                     for index, duty in enumerate(_sub_entries(part, "responsibilities", place), 1)
                     for spot in [_where(duty, f"{place}, responsibility {index}")]
                 ]
+                realisation = [
+                    Realisation(
+                        _text(layer.get("layer"), spot, "layer"),  # type: ignore[arg-type]
+                        _text(layer.get("name"), spot, "name"),
+                        _trust(layer.get("confidence"), spot),
+                        _optional_text(layer.get("source"), spot, "source"),
+                    )
+                    for index, layer in enumerate(_sub_entries(part, "realisation", place), 1)
+                    for spot in [_where(layer, f"{place}, realisation {index}")]
+                ]
                 components.append(
                     OfferingComponent(
                         id=_text(part.get("id"), place, "id"),
@@ -742,6 +768,7 @@ def _offerings(entries: list[dict[str, Any]]) -> list[ProductOffering]:
                         responsibilities=tuple(responsibilities),
                         confidence=_trust(part.get("confidence"), place),
                         source=_optional_text(part.get("source"), place, "source"),
+                        realisation=tuple(realisation),
                     )
                 )
             offerings.append(
@@ -766,11 +793,25 @@ def _offerings(entries: list[dict[str, Any]]) -> list[ProductOffering]:
                     ),
                     confidence=_trust(item.get("confidence"), where),
                     source=_optional_text(item.get("source"), where, "source"),
+                    nfrs=tuple(
+                        _nfr(nfr, _where(nfr, f"{where}, NFR {index}"))
+                        for index, nfr in enumerate(_sub_entries(item, "nfrs", where), 1)
+                    ),
                 )
             )
         except InvalidKnowledgeError as exc:
             raise _located(where, exc) from exc
     return offerings
+
+
+def _nfr(item: dict[str, Any], where: str) -> OfferingNfr:
+    return OfferingNfr(
+        _text(item.get("quality"), where, "quality"),
+        _text(item.get("coverage"), where, "coverage"),  # type: ignore[arg-type]
+        _optional_text(item.get("statement"), where, "statement"),
+        _trust(item.get("confidence"), where),
+        _optional_text(item.get("source"), where, "source"),
+    )
 
 
 def _present(**values: object) -> dict[str, Any]:
@@ -833,7 +874,11 @@ def _offering_mapping(offering: ProductOffering) -> dict[str, Any]:
                                 **_sourced(duty),
                             }
                             for duty in part.responsibilities
-                        ]
+                        ],
+                        realisation=[
+                            {"layer": item.layer.value, "name": item.name, **_sourced(item)}
+                            for item in part.realisation
+                        ],
                     ),
                 }
                 for part in offering.components
@@ -845,6 +890,15 @@ def _offering_mapping(offering: ProductOffering) -> dict[str, Any]:
             audiences=[
                 {"name": point.name, **_present(description=point.description), **_sourced(point)}
                 for point in offering.audiences
+            ],
+            nfrs=[
+                {
+                    "quality": nfr.quality,
+                    "coverage": nfr.coverage.value,
+                    **_present(statement=nfr.statement),
+                    **_sourced(nfr),
+                }
+                for nfr in offering.nfrs
             ],
         ),
     }
@@ -1285,6 +1339,7 @@ def _sheet_offerings(workbook: Any) -> list[dict[str, Any]]:
             "components": [],
             "values": [],
             "audiences": [],
+            "nfrs": [],
         }
 
     def offering(cells: dict[str, object], where: str) -> dict[str, Any]:
@@ -1313,6 +1368,7 @@ def _sheet_offerings(workbook: Any) -> list[dict[str, Any]]:
             "_where": where,
             "id": cells.get("component_id"),
             "responsibilities": [],
+            "realisation": [],
         }
         parts[(owner["id"], _text(cells.get("component_id"), where, "component_id"))] = part
         owner["components"].append(part)
@@ -1334,6 +1390,20 @@ def _sheet_offerings(workbook: Any) -> list[dict[str, Any]]:
                 "order_types": list(_split(cells.get("order_types"), where, "order_types")),
             }
         )
+    for number, cells in _rows(workbook, REALISATION):
+        where = f"{REALISATION} row {number}"
+        key = (
+            offering(cells, where)["id"],
+            _text(cells.get("component_id"), where, "component_id"),
+        )
+        if key not in parts:
+            raise InvalidKnowledgeError(
+                f"{where}: component {key[1]!r} is not listed on the {OFFERING_COMPONENTS} sheet."
+            )
+        parts[key]["realisation"].append({**cells, "_where": where})
+    for number, cells in _rows(workbook, NFRS):
+        where = f"{NFRS} row {number}"
+        offering(cells, where)["nfrs"].append({**cells, "_where": where})
     for number, cells in _rows(workbook, PRODUCT_POINTS):
         where = f"{PRODUCT_POINTS} row {number}"
         kind = (_text(cells.get("kind"), where, "kind")).casefold()
@@ -1448,6 +1518,23 @@ def _write_offering(sheets: dict[str, Any], product: ProductOffering) -> None:
                     duty.source,
                 ),
             )
+        for item in part.realisation:
+            _append(
+                sheets[REALISATION],
+                (product.id, part.id, item.layer.value, item.name, _confidence(item), item.source),
+            )
+    for nfr in product.nfrs:
+        _append(
+            sheets[NFRS],
+            (
+                product.id,
+                nfr.quality,
+                nfr.coverage.value,
+                nfr.statement,
+                _confidence(nfr),
+                nfr.source,
+            ),
+        )
     for kind, points in (("value", product.values), ("audience", product.audiences)):
         for point in points:
             _append(

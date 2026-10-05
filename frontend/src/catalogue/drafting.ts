@@ -141,6 +141,8 @@ const FIELD: Record<string, string> = {
   rules: "rules",
   channel_kind: "kind of channel",
   entry_system_id: "entry system",
+  realisation: "how its parts are realised",
+  nfrs: "non-functional requirements",
 };
 
 /** A changed item's fields, said as words: "Arabic name and where it sits". */

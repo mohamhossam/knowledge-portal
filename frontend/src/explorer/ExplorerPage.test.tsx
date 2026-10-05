@@ -59,6 +59,24 @@ describe("ExplorerPage", () => {
     expect(section.getByText("Step 4 names no system that performs it.")).toHaveClass("explorer__gap");
   });
 
+  it("says how each part is realised, layer by layer", async () => {
+    open();
+    const parts = within(await screen.findByRole("table", { name: /Parts of Business Pro Plus/ }));
+    const broadband = parts.getByRole("row", { name: /Broadband/ });
+    expect(within(broadband).getAllByRole("listitem").at(-2)).toHaveTextContent("CFS GPON internet CFSInferred, not stated in its source");
+    expect(within(broadband).getAllByRole("listitem").at(-1)).toHaveTextContent("Resource GPON line");
+    expect(parts.getByRole("row", { name: /Firewall/ })).toHaveTextContent("Not stated");
+  });
+
+  it("lists the offering's non-functional requirements, an undefined one as due", async () => {
+    open();
+    const table = within(await screen.findByRole("table", { name: "Non-functional requirements of Business Pro Plus" }));
+    expect(table.getByRole("row", { name: /Availability/ })).toHaveClass("row--due");
+    expect(table.getByText("Not defined")).toHaveClass("nfr__missing");
+    expect(table.getByRole("row", { name: /Security/ })).toHaveTextContent("Partly definedSAML SSO for the portal.SDD §11");
+    expect(screen.getByText(/1 quality is not defined/)).toBeInTheDocument();
+  });
+
   it("changes scenario from the choices and keeps it in the address", async () => {
     open();
     fireEvent.change(await screen.findByLabelText("Order type"), { target: { value: "CEASE" } });

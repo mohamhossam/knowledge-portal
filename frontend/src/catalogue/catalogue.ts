@@ -336,3 +336,19 @@ export function changeSentence(diff: CatalogueDiff): string | null {
   // Each clause may hold its own "and", so the clauses take a serial comma.
   return `${clauses.slice(0, -1).join(", ")}, and ${clauses.at(-1)}`;
 }
+
+type Layer = Offering["components"][number]["realisation"][number]["layer"];
+type Coverage = Offering["nfrs"][number]["coverage"];
+
+/** The realisation layers, in the order a part is realised: what is sold, what delivers it, what it runs on. */
+export const LAYERS: { layer: Layer; short: string; long: string }[] = [
+  { layer: "cfs", short: "CFS", long: "Customer-facing service" },
+  { layer: "rfs", short: "RFS", long: "Resource-facing service" },
+  { layer: "resource", short: "Resource", long: "Resource" },
+];
+
+export const COVERAGE: Record<Coverage, string> = {
+  defined: "Defined",
+  partial: "Partly defined",
+  missing: "Not defined",
+};

@@ -66,10 +66,14 @@ from knowledge_portal.domain.architecture.knowledge import (
 )
 from knowledge_portal.domain.architecture.products import (
     ComponentResponsibility,
+    NfrCoverage,
     OfferingComponent,
+    OfferingNfr,
     OfferingPoint,
     OrderType,
     ProductOffering,
+    Realisation,
+    RealisationLayer,
     SourceConfidence,
 )
 from knowledge_portal.domain.architecture.samples import MAX_SAMPLES, SampleRequirementSet
@@ -239,6 +243,49 @@ class OfferingPointSchema(BaseModel):
         return OfferingPoint(self.name, self.description, self.confidence, self.source)
 
 
+class RealisationSchema(BaseModel):
+    """One thing a component is realised as: its CFS, an RFS behind it, or a resource."""
+
+    layer: RealisationLayer
+    name: Text
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
+
+    @classmethod
+    def from_domain(cls, item: Realisation) -> RealisationSchema:
+        return cls.model_construct(
+            layer=item.layer, name=item.name, confidence=item.confidence, source=item.source
+        )
+
+    def to_domain(self) -> Realisation:
+        return Realisation(self.layer, self.name, self.confidence, self.source)
+
+
+class OfferingNfrSchema(BaseModel):
+    """A non-functional requirement of an offering and how far its sources define it."""
+
+    quality: Name
+    coverage: NfrCoverage
+    statement: Text | None = None
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
+
+    @classmethod
+    def from_domain(cls, item: OfferingNfr) -> OfferingNfrSchema:
+        return cls.model_construct(
+            quality=item.quality,
+            coverage=item.coverage,
+            statement=item.statement,
+            confidence=item.confidence,
+            source=item.source,
+        )
+
+    def to_domain(self) -> OfferingNfr:
+        return OfferingNfr(
+            self.quality, self.coverage, self.statement, self.confidence, self.source
+        )
+
+
 class OrderTypeSchema(BaseModel):
     code: Identifier
     name: Name
@@ -319,6 +366,7 @@ class OfferingComponentSchema(BaseModel):
     )
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    realisation: list[RealisationSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, component: OfferingComponent) -> OfferingComponentSchema:
@@ -339,6 +387,7 @@ class OfferingComponentSchema(BaseModel):
             ],
             confidence=component.confidence,
             source=component.source,
+            realisation=[RealisationSchema.from_domain(item) for item in component.realisation],
         )
 
     def to_domain(self) -> OfferingComponent:
@@ -356,6 +405,7 @@ class OfferingComponentSchema(BaseModel):
             responsibilities=tuple(item.to_domain() for item in self.responsibilities),
             confidence=self.confidence,
             source=self.source,
+            realisation=tuple(item.to_domain() for item in self.realisation),
         )
 
 
@@ -376,6 +426,7 @@ class ProductOfferingSchema(BaseModel):
     audiences: list[OfferingPointSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    nfrs: list[OfferingNfrSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, offering: ProductOffering) -> ProductOfferingSchema:
@@ -394,6 +445,7 @@ class ProductOfferingSchema(BaseModel):
             audiences=[OfferingPointSchema.from_domain(item) for item in offering.audiences],
             confidence=offering.confidence,
             source=offering.source,
+            nfrs=[OfferingNfrSchema.from_domain(item) for item in offering.nfrs],
         )
 
     def to_domain(self) -> ProductOffering:
@@ -412,6 +464,7 @@ class ProductOfferingSchema(BaseModel):
             audiences=tuple(item.to_domain() for item in self.audiences),
             confidence=self.confidence,
             source=self.source,
+            nfrs=tuple(item.to_domain() for item in self.nfrs),
         )
 
 

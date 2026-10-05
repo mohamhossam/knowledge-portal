@@ -854,3 +854,54 @@
     width: auto;
   }
 }
+
+/* How a part is realised: the layer in the label style before each name, the name and its
+   confidence hanging beside it so a long name never wraps under the layer (DESIGN.md › Realisation). */
+.realised li {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  column-gap: var(--s2);
+  align-items: baseline;
+}
+
+.realised li > .govtable__by {
+  grid-column: 2;
+}
+
+.realised__name {
+  overflow-wrap: anywhere;
+}
+
+.realised__layer {
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+  font-stretch: var(--width-condensed);
+  font-weight: var(--w-medium);
+  text-decoration: none;
+}
+
+/* A quality no source defines is due (the Weight Is Rank Rule). */
+.govtable .nfr__missing {
+  font-weight: var(--w-bold);
+}
+
+/* On phones, how a part is realised rides in the part's cell rather than a third column. */
+.parts__realised-inline {
+  display: none;
+}
+
+@media (max-width: 45rem) {
+  .govtable .parts__realised {
+    display: none;
+  }
+
+  .parts__realised-inline {
+    display: block;
+    margin-top: var(--s2);
+    font-weight: var(--w-regular);
+  }
+
+  .realised li {
+    grid-template-columns: 4rem minmax(0, 1fr);
+  }
+}

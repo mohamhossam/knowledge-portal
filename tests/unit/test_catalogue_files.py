@@ -160,6 +160,8 @@ def test_template_has_instructions_and_every_sheet() -> None:
         "FlowRules",
         "ActivityIntegrations",
         "Channels",
+        "Realisation",
+        "NFRs",
     ]
     assert ADAPTER.read(CatalogueFileFormat.XLSX, ADAPTER.template()).systems == ()
 
