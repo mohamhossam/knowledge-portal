@@ -138,6 +138,13 @@
   font-size: var(--t-meta);
 }
 
+/* Trail links wrap onto lines of their own on a phone: each keeps a 24px target. */
+.sheet__trail > a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.5rem;
+}
+
 .sheet__all {
   display: inline-flex;
   align-items: center;
