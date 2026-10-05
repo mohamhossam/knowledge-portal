@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, type ReactNode } from "react";
 
 import type { Offering } from "../api/client";
 import { CONFIDENCE, COVERAGE, LAYERS } from "./catalogue";
@@ -82,7 +82,7 @@ export function RealisationKey({ offering }: { offering: Offering }) {
  * its sources leave undefined is a due line in bold (the Weight Is Rank Rule):
  * it is a gap someone has to fill, not an absence to skip over.
  */
-export function NfrSection({ offering, headingId }: { offering: Offering; headingId: string }) {
+export function NfrSection({ offering, headingId, action }: { offering: Offering; headingId: string; action?: ReactNode }) {
   const nfrs = offering.nfrs ?? [];
   const missing = nfrs.filter((item) => item.coverage === "missing").length;
   return (
@@ -90,6 +90,7 @@ export function NfrSection({ offering, headingId }: { offering: Offering; headin
       <h3 id={headingId} className="govsection__title">
         Non-functional requirements {nfrs.length > 0 && <span className="govsection__count">{nfrs.length}</span>}
       </h3>
+      {action && <p className="govsection__actions">{action}</p>}
       {nfrs.length ? (
         <>
           {missing > 0 && (

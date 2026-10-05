@@ -1,6 +1,9 @@
 /** What an edit sends, and why it cannot be sent yet: shared by the catalogue's editors. */
 import type { CatalogueSystem, Journey, Offering, Release } from "../api/client";
 
+/** A name or code as compared: no case, no surrounding space. */
+const fold = (text: string) => text.trim().toLocaleLowerCase();
+
 /** Trims a lines field's value at submit: no blank items. */
 export const lines = (items: string[]) => items.map((item) => item.trim()).filter(Boolean);
 
@@ -38,6 +41,10 @@ export function finishedOffering(value: Offering): Offering {
 export function offeringProblem(value: Offering): string | null {
   if (!value.name.trim()) return "Give the offering a name.";
   if (value.order_types.some((type) => !type.name.trim() || !type.code.trim())) return "Every order type needs a name and a code.";
+  const codes = value.order_types.map((type) => fold(type.code));
+  if (new Set(codes).size !== codes.length) return "Each order type needs its own code.";
+  const missing = orderTypeNamedElsewhere(value);
+  if (missing) return `${missing.where} still names the order type ‘${missing.code}’, which the offering no longer has; change it there first.`;
   if (value.components.some((part) => !part.name.trim())) return "Every part needs a name.";
   if (value.components.some((part) => part.responsibilities.some((item) => !item.role.trim() || !item.system_id))) {
     return "Every responsibility needs a system and a role.";
@@ -81,6 +88,32 @@ export function offeringProblem(value: Offering): string | null {
   if (qualities.some((quality) => !quality)) return "Every non-functional requirement needs a quality.";
   if (new Set(qualities).size !== qualities.length) return "Each quality is stated once.";
   return null;
+}
+
+/** The first part, tracking or note naming an order type the offering does not have. */
+function orderTypeNamedElsewhere(value: Offering): { where: string; code: string } | null {
+  const known = new Set(value.order_types.map((type) => fold(type.code)));
+  const unknown = (codes: string[]) => codes.find((code) => !known.has(fold(code)));
+  for (const part of value.components) {
+    for (const item of part.responsibilities) {
+      const code = unknown(item.order_types);
+      if (code) return { where: `${part.name || "A part"}’s responsibility ${item.role || ""}`.trim(), code };
+    }
+  }
+  const tracked = unknown(value.tracking?.order_types ?? []);
+  if (tracked) return { where: "Order tracking", code: tracked };
+  for (const note of value.lifecycle_notes ?? []) {
+    const code = unknown(note.order_types);
+    if (code) return { where: `The lifecycle note ${note.title || ""}`.trim(), code };
+  }
+  return null;
+}
+
+/** A journey of this offering whose order type the offering no longer has: it must change first. */
+export function journeyOrderProblem(value: Offering, journeys: Journey[]): string | null {
+  const known = new Set(value.order_types.map((type) => fold(type.code)));
+  const journey = journeys.find((item) => item.product_id === value.id && item.order_type_code && !known.has(fold(item.order_type_code)));
+  return journey ? `The journey ${journey.name} is for the order type ‘${journey.order_type_code}’; edit that journey first.` : null;
 }
 
 /** Why the journey cannot be accepted yet, if anything. */
@@ -128,7 +161,6 @@ export function finishedSystem(value: CatalogueSystem, release: Release): Catalo
 /** Why a system cannot be saved yet, if anything. */
 export function systemProblem(value: CatalogueSystem, release: Release): string | null {
   if (!value.name.trim()) return "Give the system a name.";
-  const fold = (text: string) => text.trim().toLocaleLowerCase();
   const names = [value.name, ...lines(value.aliases)].map(fold);
   const clash = release.systems
     .filter((system) => system.id !== value.id)

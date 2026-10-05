@@ -72,6 +72,7 @@
 }
 
 .check input {
+  flex-shrink: 0;
   width: 1.125rem;
   height: 1.125rem;
   margin: 0;

@@ -1,13 +1,14 @@
-import { type FormEvent, type ReactNode, useId, useState } from "react";
+import { type FormEvent, type ReactNode, type Ref, useEffect, useId, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import type { CatalogueSystem, Channel, Journey, Offering, Relationship, RelationshipKind } from "../api/client";
 import { ApiError, errorMessage } from "../api/errors";
 import { blankSystem, channelUses, draftBody, systemUses } from "./drafting";
-import { finishedOffering, finishedSystem, journeyProblem, offeringProblem, slug, systemProblem } from "./editing";
+import { finishedOffering, finishedSystem, journeyOrderProblem, journeyProblem, offeringProblem, slug, systemProblem } from "./editing";
 import { AreaField, Rows, SelectField, SystemField, TextField } from "./forms";
 import { JourneyEditor } from "./JourneyEditor";
-import { OfferingEditor } from "./OfferingEditor";
+import { OfferingFacts } from "./OfferingEditor";
+import { OFFERING_SECTIONS, type OfferingSection } from "./offeringSections";
 import { SystemEditor } from "./SystemEditor";
 import { useCatalogueContext } from "./useCatalogue";
 import { useEditing } from "./useEditing";
@@ -16,8 +17,10 @@ import { useEditing } from "./useEditing";
  * An edit opened in place where the thing is read: on the stock band, closing
  * on a heavy rule, never a modal. It says why its action waits and what failed.
  */
-export function EditPanel({ title, children, action, busy, problem, error, onSubmit, onCancel, danger, conflictMessage }: {
+export function EditPanel({ title, children, action, busy, problem, error, onSubmit, onCancel, danger, conflictMessage, focusOnOpen }: {
   title: string;
+  /** Take focus on its title when it opens, for a panel that replaces the button that opened it. */
+  focusOnOpen?: boolean;
   /** What a 409 means here; the draft's own sentence by default. */
   conflictMessage?: string;
   children?: ReactNode;
@@ -30,6 +33,10 @@ export function EditPanel({ title, children, action, busy, problem, error, onSub
   danger?: boolean;
 }) {
   const id = useId();
+  const heading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (focusOnOpen) heading.current?.focus();
+  }, [focusOnOpen]);
   const conflict = error instanceof ApiError && error.status === 409;
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -47,7 +54,7 @@ export function EditPanel({ title, children, action, busy, problem, error, onSub
         }
       }}
     >
-      <h3 id={`${id}-title`} className="edit-panel__title">{title}</h3>
+      <h3 id={`${id}-title`} ref={heading} tabIndex={focusOnOpen ? -1 : undefined} className="edit-panel__title">{title}</h3>
       {children}
       {error ? (
         <p className="docpage__failure" role="alert">
@@ -56,13 +63,15 @@ export function EditPanel({ title, children, action, busy, problem, error, onSub
             : errorMessage(error)}
         </p>
       ) : null}
-      <p className="edit-panel__actions">
-        <button type="submit" className="action-button" disabled={!!problem || busy} aria-describedby={problem ? `${id}-why` : undefined}>
-          {busy ? "Saving…" : action}
-        </button>
-        <button type="button" className="text-button" onClick={onCancel}>Cancel</button>
-      </p>
-      {problem && <p id={`${id}-why`} className="versions__waits">{problem}</p>}
+      <div className="edit-panel__foot">
+        <p className="edit-panel__actions">
+          <button type="submit" className="action-button" disabled={!!problem || busy} aria-describedby={problem ? `${id}-why` : undefined}>
+            {busy ? "Saving…" : action}
+          </button>
+          <button type="button" className="text-button" onClick={onCancel}>Cancel</button>
+        </p>
+        {problem && <p id={`${id}-why`} className="versions__waits">{problem}</p>}
+      </div>
     </form>
   );
 }
@@ -340,31 +349,69 @@ export function ChannelsEdit({ onDone }: { onDone: () => void }) {
   );
 }
 
-/** An offering edited whole, or added. */
-export function OfferingEdit({ offering, onDone }: { offering?: Offering; onDone: (saved?: string) => void }) {
+/** Adding an offering: what it is first; its sheet then takes each section on its own. */
+export function OfferingEdit({ onDone }: { onDone: (saved?: string) => void }) {
   const { book } = useCatalogueContext();
   const release = book.release;
   const { saveDraft } = useEditing(release);
   const [value, setValue] = useState<Offering>(
-    () => offering ?? { id: "", name: "", rules: [], order_types: [], components: [], values: [], audiences: [], nfrs: [], lifecycle_notes: [] },
+    () => ({ id: "", name: "", rules: [], order_types: [], components: [], values: [], audiences: [], nfrs: [], lifecycle_notes: [] }),
   );
   const products = release.products ?? [];
-  const clash = products.some((item) => item.id !== offering?.id && item.name.trim().toLocaleLowerCase() === value.name.trim().toLocaleLowerCase());
+  const clash = products.some((item) => item.name.trim().toLocaleLowerCase() === value.name.trim().toLocaleLowerCase());
   return (
     <EditPanel
-      title={offering ? `Edit ${offering.name}` : "Add an offering"}
-      action={offering ? "Save the offering" : "Add the offering"}
+      title="Add an offering"
+      focusOnOpen
+      action="Add the offering"
       busy={saveDraft.isPending}
       problem={offeringProblem(value) ?? (clash ? "Another offering has that name." : null)}
       error={saveDraft.error}
       onCancel={() => onDone()}
       onSubmit={() => {
-        const finished = finishedOffering({ ...value, id: value.id || slug(value.name) });
-        const next = offering ? products.map((item) => (item.id === offering.id ? finished : item)) : [...products, finished];
-        saveDraft.mutate(draftBody(release, { products: next }), { onSuccess: () => onDone(finished.id) });
+        const finished = finishedOffering({ ...value, id: slug(value.name) });
+        saveDraft.mutate(draftBody(release, { products: [...products, finished] }), { onSuccess: () => onDone(finished.id) });
       }}
     >
-      <OfferingEditor value={value} onChange={setValue} systems={release.systems} channels={release.channels ?? []} />
+      <p className="govsection__lead">Say what it is; its order types, parts and the rest are added on its sheet, one section at a time.</p>
+      <div className="form">
+        <OfferingFacts value={value} onChange={setValue} systems={release.systems} channels={release.channels ?? []} />
+      </div>
+    </EditPanel>
+  );
+}
+
+/**
+ * One section of an offering, edited in place of where it is read: the rest of the
+ * offering stays as it is and is sent unchanged with it.
+ */
+export function OfferingSectionEdit({ offering, section, onDone }: { offering: Offering; section: OfferingSection; onDone: () => void }) {
+  const { book } = useCatalogueContext();
+  const release = book.release;
+  const { saveDraft } = useEditing(release);
+  const [value, setValue] = useState<Offering>(offering);
+  const products = release.products ?? [];
+  const clash = products.some((item) => item.id !== offering.id && item.name.trim().toLocaleLowerCase() === value.name.trim().toLocaleLowerCase());
+  const { edit, save, Fields } = OFFERING_SECTIONS[section];
+  return (
+    <EditPanel
+      title={section === "facts" ? `Edit what ${offering.name} is` : `Edit ${edit} of ${offering.name}`}
+      focusOnOpen
+      action={save}
+      busy={saveDraft.isPending}
+      problem={offeringProblem(value) ?? journeyOrderProblem(value, release.journeys ?? []) ?? (clash ? "Another offering has that name." : null)}
+      error={saveDraft.error}
+      onCancel={onDone}
+      onSubmit={() => {
+        const finished = finishedOffering(value);
+        const next = products.map((item) => (item.id === offering.id ? finished : item));
+        saveDraft.mutate(draftBody(release, { products: next }), { onSuccess: onDone });
+      }}
+    >
+      <p className="govsection__lead">The other sections can be edited once this one is saved or cancelled.</p>
+      <div className="form">
+        <Fields value={value} onChange={setValue} systems={release.systems} channels={release.channels ?? []} />
+      </div>
     </EditPanel>
   );
 }
@@ -412,6 +459,7 @@ export function WholeRemove({ kind, item, onDone }: { kind: "offering" | "journe
   return (
     <EditPanel
       title={`Remove ${item.name}`}
+      focusOnOpen
       action="Remove it from the draft"
       danger
       busy={saveDraft.isPending}
@@ -436,9 +484,15 @@ export function WholeRemove({ kind, item, onDone }: { kind: "offering" | "journe
 }
 
 /** A draft-only text button that opens an edit, styled like the rest. */
-export function EditButton({ children, onClick, expanded }: { children: ReactNode; onClick: () => void; expanded?: boolean }) {
+export function EditButton({ children, onClick, expanded, id, ref }: {
+  children: ReactNode;
+  onClick: () => void;
+  expanded?: boolean;
+  id?: string;
+  ref?: Ref<HTMLButtonElement>;
+}) {
   return (
-    <button type="button" className="text-button" aria-expanded={expanded} onClick={onClick}>
+    <button type="button" ref={ref} id={id} className="text-button" aria-expanded={expanded} onClick={onClick}>
       {children}
     </button>
   );
