@@ -19,10 +19,10 @@ describe("the solution overview", () => {
   it("draws them with the scenario's title, a gap in red, and tracking beneath", () => {
     const { svg, w, h } = overviewSvg(scenario(), EXPLORED);
 
-    expect([w, h]).toEqual([1400, expect.any(Number)]);
+    expect([w, h]).toEqual([1200, expect.any(Number)]);
     expect(svg).toContain("Business Pro Plus: New Activation, through Online");
-    expect(svg).toContain(">ORCHESTRATE</text>");
+    expect(svg).toContain(">Orchestrate</text>");
     expect(svg).toMatch(/fill="#B3122B" font-weight="700">1 step: no system \(gap\)<\/text>/);
-    expect(svg).toContain(">ORDER TRACKING</text>");
+    expect(svg).toContain(">Order tracking</text>");
   });
 });

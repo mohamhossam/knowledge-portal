@@ -42,8 +42,8 @@ export function trackingChain(scenario: Scenario): string[] {
 
 const escape = (text: string) => text.replace(/[&<>"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[char]!);
 
-/** A name on at most two lines of about `width` characters, cut with an ellipsis when longer. */
-function lines(text: string, width: number): string[] {
+/** A name on at most `most` lines of about `width` characters, cut with an ellipsis when longer. */
+function lines(text: string, width: number, most = 2): string[] {
   const out: string[] = [];
   let line = "";
   for (const word of text.split(/\s+/)) {
@@ -55,8 +55,8 @@ function lines(text: string, width: number): string[] {
     }
   }
   if (line) out.push(line);
-  const kept = out.slice(0, 2).map((item) => (item.length > width ? `${item.slice(0, width - 1)}…` : item));
-  if (out.length > 2) kept[1] = `${kept[1]!.slice(0, width - 1)}…`;
+  const kept = out.slice(0, most).map((item) => (item.length > width ? `${item.slice(0, width - 1)}…` : item));
+  if (out.length > most) kept[most - 1] = `${kept[most - 1]!.slice(0, width - 1)}…`;
   return kept;
 }
 
@@ -73,11 +73,12 @@ export function overviewSvg(scenario: Scenario, release: ExplorerRelease): { svg
   const name = (systemId: string) => names.get(systemId) ?? systemId;
   const columns = stages(scenario);
   const tracking = trackingChain(scenario);
-  const W = 1400;
+  // Drawn to print at a readable size across a landscape page: about 0.6pt for each pixel.
+  const W = 1200;
   // Columns share the width, never wider than a box needs: two stages are not two banners.
   const colW = Math.min(220, Math.floor((W - 60) / Math.max(1, columns.length)));
   const boxW = colW - 26;
-  const boxH = 50;
+  const boxH = 64;
   const gap = 10;
   const top = 124;
   const tallest = Math.max(1, ...columns.map((column) => column.systems.length + (column.unnamed ? 1 : 0)));
@@ -85,14 +86,14 @@ export function overviewSvg(scenario: Scenario, release: ExplorerRelease): { svg
   const H = top + bodyH + (tracking.length ? 170 : 40);
   const title = `${scenario.offering.name}: ${scenario.orderType.name}${scenario.channel ? `, through ${scenario.channel.name}` : ""}`;
   const box = (x: number, y: number, w: number, text: string, due: boolean) => {
-    const label = lines(text, Math.max(8, Math.floor(w / 7.4)));
-    const first = y + boxH / 2 + 5 - (label.length - 1) * 8;
+    const label = lines(text, Math.max(8, Math.floor(w / 8.4)), 3);
+    const first = y + boxH / 2 + 5 - (label.length - 1) * 9;
     return (
       `<rect x="${x}" y="${y}" width="${w}" height="${boxH}" fill="${due ? RED_WASH : "#FFFFFF"}" stroke="${due ? RED : INK}" stroke-width="${due ? 1.5 : 1}"${due ? ' stroke-dasharray="5 4"' : ""}/>` +
       label
         .map(
           (line, index) =>
-            `<text x="${x + w / 2}" y="${first + index * 16}" font-size="13.5" text-anchor="middle" fill="${due ? RED : INK}"${due ? ' font-weight="700"' : ""}>${escape(line)}</text>`,
+            `<text x="${x + w / 2}" y="${first + index * 18}" font-size="15" text-anchor="middle" fill="${due ? RED : INK}"${due ? ' font-weight="700"' : ""}>${escape(line)}</text>`,
         )
         .join("")
     );
@@ -105,8 +106,9 @@ export function overviewSvg(scenario: Scenario, release: ExplorerRelease): { svg
     const x = 30 + index * colW;
     // A stage's name on up to two lines, so "Order Orchestration" is never cut to "Order".
     svg += `<rect x="${x}" y="${top - 46}" width="${boxW}" height="38" fill="${BAND}"/>`;
-    lines(column.phase.toUpperCase(), Math.floor(boxW / 7.6)).forEach((line, row) => {
-      svg += `<text x="${x + 6}" y="${top - 30 + row * 15}" font-size="12" font-weight="700" fill="${INK}">${escape(line)}</text>`;
+    // In the stage's own case: capitals would cut "Orchestration" in a column this narrow.
+    lines(column.phase, Math.floor(boxW / 7.2)).forEach((line, row) => {
+      svg += `<text x="${x + 6}" y="${top - 30 + row * 16}" font-size="13" font-weight="700" fill="${INK}">${escape(line)}</text>`;
     });
     const items = [...column.systems.map((systemId) => ({ text: name(systemId), due: false })), ...(column.unnamed ? [{ text: `${column.unnamed} step${column.unnamed === 1 ? "" : "s"}: no system (gap)`, due: true }] : [])];
     items.forEach((item, row) => {
@@ -118,7 +120,7 @@ export function overviewSvg(scenario: Scenario, release: ExplorerRelease): { svg
   if (tracking.length) {
     const y = top + bodyH + 80;
     svg += `<line x1="30" y1="${y - 40}" x2="${W - 30}" y2="${y - 40}" stroke="${RULE}" stroke-width="1"/>`;
-    svg += `<text x="30" y="${y - 14}" font-size="12" font-weight="700" fill="${INK}">ORDER TRACKING</text>`;
+    svg += `<text x="30" y="${y - 14}" font-size="13" font-weight="700" fill="${INK}">Order tracking</text>`;
     const w = Math.min(190, Math.floor((W - 60) / tracking.length) - 26);
     tracking.forEach((systemId, index) => {
       const x = 30 + index * (w + 26);

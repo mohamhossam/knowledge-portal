@@ -6,11 +6,11 @@
  * version does not hold, and a section the catalogue cannot hold yet says so.
  */
 import type { CatalogPlans, ExplorerRelease, Journey, SourceConfidence } from "../../api/client";
-import { CONFIDENCE, COVERAGE, LAYERS, concerns, orderedSteps } from "../../catalogue/catalogue";
+import { CONFIDENCE, COVERAGE, LAYERS, concerns, orderedSteps, roleLabel, sentenceCase } from "../../catalogue/catalogue";
 import { byLevel, questionOf, withLevel } from "../../catalogue/governance";
 import { count } from "../../home/format";
 import { falling, formatAmount } from "../plans";
-import { gaps, involvement, partsFor, performer, trackingFor, type Involvement, type Scenario } from "../scenario";
+import { gaps, involvement, journeyFor, listed, partsFor, performer, trackingFor, type Involvement, type Scenario } from "../scenario";
 import { stages, trackingChain } from "./overview";
 import type { DocBlock, DocCell, DocColumn, DocModel, DocTable } from "./wordml";
 
@@ -35,6 +35,12 @@ export type SolutionDocument = DocModel & {
   meta: { systems: string[]; handOvers: number; interfaces: string[]; systemSections: string[] };
 };
 
+/** The document's status, said the same way on the cover, in Document Control and in the footer. */
+export const STATUS = "DRAFT: generated from the catalogue; not approved until the architecture authority reviews it.";
+/** Steps no system performs, said one way everywhere: "2 steps: no system (gap)". */
+export const NO_SYSTEM = (n: number) => `${n} ${n === 1 ? "step" : "steps"}: no system (gap)`;
+/** Where a source is cited: its name, level and section, without the section's title after "›". */
+const citation = (text: string | null | undefined) => text?.split(" › ")[0]?.trim() || null;
 const NOT_HELD = (what: string) => `The catalogue does not hold ${what} yet, so this is a gap; nothing is filled in.`;
 const SHORT: Record<SourceConfidence, string> = { confirmed: "Confirmed", inferred: "Inferred", gap: "Gap" };
 const VALIDATE = /validat|check|eligib|verif|feasib/i;
@@ -62,8 +68,8 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
   const sourced = (text: string | null | undefined) => withLevel(text, sources);
   /** How sure a fact is, and where it is said: "Confirmed · BPP SDD (L2) §10". */
   const evidence = (fact: { confidence?: SourceConfidence | null; source?: string | null } | null | undefined): DocCell => {
-    const parts = [fact?.confidence ? SHORT[fact.confidence] : null, sourced(fact?.source)].filter(Boolean);
-    return { text: parts.join(" · ") || "Not stated", confidence: fact?.confidence ?? null };
+    const parts = [fact?.confidence ? SHORT[fact.confidence] : null, sourced(citation(fact?.source))].filter(Boolean);
+    return { text: parts.join("\n") || "Not stated", confidence: fact?.confidence ?? null };
   };
   const steps = journey ? orderedSteps(journey) : [];
   const step = new Map(steps.map((item) => [item.number, item]));
@@ -89,7 +95,7 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
   const role = (item: Involvement): string[] => [
     ...(item.performs.length ? [`Performs ${item.performs.length === 1 ? "step" : "steps"} ${item.performs.join(", ")}`] : []),
     ...(item.supports.length ? [`Supports ${item.supports.length === 1 ? "step" : "steps"} ${item.supports.join(", ")}`] : []),
-    ...unique(item.parts.map(({ part, responsibility }) => `${responsibility.role || "Responsible"} for ${part.name}`)),
+    ...unique(item.parts.map(({ part, responsibility }) => `${responsibility.role ? roleLabel(responsibility.role) : "Responsible"} for ${part.name}`)),
     ...(item.tracks ? ["Takes part in order tracking"] : []),
   ];
   const domain = (systemId: string): string => {
@@ -103,8 +109,30 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
     return path.join(" › ") || "Not placed in the landscape";
   };
 
+  /** Every fact of this scenario its source marks as a gap, with the section that shows it. */
+  const markedFacts = () => {
+    const found: { what: string; section: string; source?: string | null }[] = [];
+    const add = (fact: { confidence?: SourceConfidence | null; source?: string | null }, what: string, section: string) => {
+      if (fact.confidence === "gap") found.push({ what, section, source: fact.source });
+    };
+    add(offering, `The offering ${offering.name}`, "4");
+    add(orderType, `The order type ${orderType.name}`, "1.3");
+    for (const { part, responsibilities } of parts) {
+      add(part, `The component ${part.name}`, "4.5");
+      for (const item of part.realisation ?? []) add(item, `${part.name} · ${LAYERS.find((layer) => layer.layer === item.layer)?.short ?? item.layer} · ${item.name}`, "5");
+      for (const item of responsibilities) add(item, `${name(item.system_id)} is responsible for ${part.name}`, "5");
+    }
+    if (journey) {
+      add(journey, `The journey ${journey.name}`, "1.3");
+      for (const each of steps) add(each, `Step ${each.number}: ${each.name}`, "17");
+      for (const link of links) add(link, `Hand-over ${link.from_activity} → ${link.to_activity}`, "8.1");
+      for (const rule of journey.flow_rules) add(rule, `Rule ${rule.from_activity} → ${rule.to_activity}${rule.condition ? `: ${rule.condition}` : ""}`, "17");
+    }
+    return found;
+  };
   const blocks: DocBlock[] = [];
-  const h1 = (text: string) => blocks.push({ t: "h1", text });
+  /** A section; a short one (only a gap to say) runs on from the one before instead of opening a page. */
+  const h1 = (text: string, short = false) => blocks.push({ t: "h1", text, short });
   const h2 = (text: string) => blocks.push({ t: "h2", text });
   const p = (text: string, muted = false) => blocks.push({ t: "p", text, muted });
   const ul = (items: string[]) => items.length && blocks.push({ t: "ul", items });
@@ -123,7 +151,7 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
       ["Channel", channel ? channel.name : "Every channel: none is recorded for this order type"],
       ["Catalogue version", `'${release.name}', published ${day(release.published_at)}`],
       ["Generated", `${moment(at)}${input.by ? ` by ${input.by}` : ""}`],
-      ["Status", "DRAFT: generated from the catalogue; requires architecture review"],
+      ["Status", STATUS],
     ],
     note: "Generated from the knowledge catalogue version in service, the same version the product architecture explorer reads. The explorer and this document are two presentations of one scenario.",
   });
@@ -132,13 +160,12 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
     ["Document", `Solution Architecture: ${title}`],
     ["Purpose", "Solution architecture for one scenario (offering, order type and channel), generated from the catalogue version in service."],
     ["Scenario", [offering.id, orderType.code, channel?.id ?? "every channel"].join(" · ")],
-    ["Catalogue version", `'${release.name}' (${release.id}), published ${day(release.published_at)}`],
+    ["Catalogue version", `'${release.name}', published ${day(release.published_at)}`],
     ["Generated", `${moment(at)}${input.by ? ` by ${input.by}` : ""}`],
-    ["Status", "DRAFT: generated; not an approved design until the architecture authority reviews it."],
+    ["Status", STATUS],
   ], { firstColShade: true });
   h2("Source documents");
-  const ownSources = new Set(offering.sources ?? []);
-  const register = byLevel(sources).sort((a, b) => Number(ownSources.has(b.id)) - Number(ownSources.has(a.id)));
+  const register = byLevel(sources);
   if (register.length) {
     table(
       columns(["Level", 9], ["Source", 39], ["Version", 13], ["Supplied", 15], ["Authority", 24]),
@@ -159,7 +186,7 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
   h2("Architecture boundaries");
   ul([
     ...(offering.boundaries ?? []),
-    ...(offering.not_used ?? []).map((item) => `No longer uses: ${item}`),
+    ...((offering.not_used ?? []).length ? [`No longer uses: ${(offering.not_used ?? []).join(", ")}.`] : []),
     `Only the systems, hand-overs and steps of ${orderType.name}${channel ? ` through ${channel.name}` : ""} are in scope.`,
   ]);
   h2("Change history");
@@ -185,13 +212,11 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
   h2("1.4 Architecture overview");
   const stageRows = stages(scenario);
   if (stageRows.length) {
-    table(
-      columns(["Stage", 24], ["Systems", 76]),
-      [
-        ...stageRows.map((stage) => [stage.phase, [stage.systems.map(name).join(" · "), stage.unnamed ? `${count(stage.unnamed, "step names", "steps name")} no system (gap)` : ""].filter(Boolean).join("\n") || "—"]),
-        ...(trackingChain(scenario).length ? [["Order tracking", trackingChain(scenario).map(name).join(" → ")]] : []),
-      ],
-      { firstColShade: true },
+    const chain = trackingChain(scenario);
+    p(
+      `The order runs through ${count(stageRows.length, "stage")}: ${stageRows.map((stage) => stage.phase).join(" → ")}.` +
+        (chain.length ? ` Its tracking runs ${chain.map(name).join(" → ")}.` : "") +
+        " Section 2 names the systems of each stage.",
     );
   } else gap("No journey", `No journey is recorded for ${orderType.name}, so no stage, step or hand-over can be shown.`);
   h2("1.5 Scenario impact");
@@ -228,6 +253,7 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
       h: input.overview.h,
       alt: `Solution overview for ${title}: ${stageRows.map((stage) => `${stage.phase}, ${stage.systems.map(name).join(", ") || "no system"}`).join("; ")}.`,
       caption: "Figure 1: Solution overview, drawn from the catalogue",
+      landscape: true,
     });
   }
   const weakest = (stage: (typeof stageRows)[number]): DocCell => {
@@ -236,7 +262,7 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
     const found = rank.find((level) => facts.some((item) => item.confidence === level));
     return found ? { text: SHORT[found], confidence: found } : "Not stated";
   };
-  table(columns(["Stage", 22], ["Systems", 50], ["Weakest confidence", 28]), stageRows.map((stage) => [stage.phase, lines(stage.systems.map(name).concat(stage.unnamed ? [`${stage.unnamed} without a system (gap)`] : [])), weakest(stage)]), { firstColShade: true });
+  table(columns(["Stage", 22], ["Systems", 50], ["Weakest confidence", 28]), stageRows.map((stage) => [stage.phase, lines(stage.systems.map(name).concat(stage.unnamed ? [NO_SYSTEM(stage.unnamed)] : [])), weakest(stage)]), { firstColShade: true });
   h2("2.1 Hand-overs by interaction");
   const interactions = unique(links.map((link) => link.interaction?.trim() || "Not described"));
   if (interactions.length) {
@@ -306,8 +332,8 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
     columns(["Component", 34], ["Kind", 16], ["Obligation", 16], ["In this order", 14], ["Confidence", 20]),
     parts.map(({ part, responsibilities }) => [
       [part.name, part.code].filter(Boolean).join("\n"),
-      part.kind ?? "—",
-      part.mandatory === true ? "Mandatory" : part.mandatory === false ? "Optional" : "Not stated",
+      part.kind ? sentenceCase(part.kind) : "—",
+      part.mandatory === true ? "Mandatory" : part.mandatory === false ? "Optional" : { text: "Not recorded (gap)", due: true },
       responsibilities.length || steps.some((item) => item.component_ids.includes(part.id)) ? "Yes" : "No",
       evidence(part),
     ]),
@@ -329,7 +355,7 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
         layer("cfs"),
         layer("rfs"),
         layer("resource"),
-        responsibilities.length ? lines(unique(responsibilities.map((item) => `${name(item.system_id)}${item.role ? ` (${item.role})` : ""}`))) : { text: "None named (gap)", due: true },
+        responsibilities.length ? lines(unique(responsibilities.map((item) => `${name(item.system_id)}${item.role ? ` (${roleLabel(item.role).toLocaleLowerCase()})` : ""}`))) : { text: "None named (gap)", due: true },
         evidence(part),
       ];
     }),
@@ -348,7 +374,7 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
 
   /* 7 System by system */
   h1("7. System-by-System Design");
-  p(`One section for each of the ${count(taking.length, "system")} that take part. Each says only what the catalogue holds for this scenario; anything else is a gap.`);
+  p(`One section for each of the ${count(taking.length, "system")} that take part. Each says only what the catalogue holds for this scenario; anything else is a gap. Business objects (section 9), security (section 12) and non-functional requirements (section 13) are recorded for the offering, not for each system.`);
   const systemSections: string[] = [];
   taking.forEach((item, index) => {
     const system = names.get(item.systemId);
@@ -369,20 +395,17 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
         ["Purpose", system?.description || "The catalogue records no description (gap)."],
         ["Its part in this order", lines(role(item))],
         ["Sits in", domain(item.systemId)],
-        ["Responsibilities", lines(item.parts.map(({ part, responsibility }) => `${responsibility.role || "Responsible"} for ${part.name}${responsibility.description ? `: ${responsibility.description}` : ""}`), "No part names it as responsible in this order.")],
+        ["Responsibilities", lines(item.parts.map(({ part, responsibility }) => `${responsibility.role ? roleLabel(responsibility.role) : "Responsible"} for ${part.name}${responsibility.description ? `: ${responsibility.description}` : ""}`), "No part names it as responsible in this order.")],
         ["Steps", lines([...performed.map((each) => `${each.number} ${each.name}`), ...steps.filter((each) => each.supporting_system_ids.includes(item.systemId)).map((each) => `${each.number} supports: ${each.name}`)], "No step of the journey names it.")],
         ["Components handled", lines(unique(item.parts.map(({ part }) => part.name)), "None in this order.")],
         ["Inputs", lines(unique([...inbound.map((link) => `From ${name(from(link))}: ${link.payload || link.interaction || "not described"}`), ...performed.map((each) => each.input).filter((value): value is string => !!value)]), "No hand-over reaches it in this scenario.")],
         ["Outputs", lines(unique([...outbound.map((link) => `To ${name(to(link))}: ${link.payload || link.interaction || "not described"}`), ...performed.map((each) => each.output).filter((value): value is string => !!value)]), "No hand-over leaves it in this scenario.")],
-        ["Inbound integrations", lines(unique(inbound.map((link) => [handOver(link), link.interaction, link.interface].filter(Boolean).join(" · "))), "None.")],
-        ["Outbound integrations", lines(unique(outbound.map((link) => [handOver(link), link.interaction, link.interface].filter(Boolean).join(" · "))), "None.")],
+        ...(inbound.length ? [["Inbound integrations", lines(unique(inbound.map((link) => [handOver(link), link.interaction, link.interface].filter(Boolean).join(" · "))))]] : []),
+        ...(outbound.length ? [["Outbound integrations", lines(unique(outbound.map((link) => [handOver(link), link.interaction, link.interface].filter(Boolean).join(" · "))))]] : []),
         ["Interfaces", lines(unique([...inbound, ...outbound].map((link) => link.interface).filter((value): value is string => !!value)), "No interface is named for it in this scenario.")],
-        ["Business objects", { text: "Not in the catalogue yet (gap): see section 9.", due: true }],
         ["Validations", lines(validations.map((each) => `${each.number} ${each.name}`), "No step it performs validates.")],
         ["Failure handling", lines([...failing.map((edge) => `${edge.kind === "fail" ? "Rejection" : "Retry"}: ${edge.from_activity} → ${edge.to_activity}${edge.label ? ` (${edge.label})` : ""}`), ...fallout.map((each) => `${each.trigger}: ${each.handling}`)], "The catalogue records none for it.")],
         ["Tracking and correlation", lines([...trackingFlows.map((flow) => `${name(flow.from_system_id)} → ${name(flow.to_system_id)}: ${flow.label}`), ...(entry?.ui_system_id === item.systemId ? [`Correlation key: ${entry.correlation_key || "not defined (gap)"}`] : [])], "Not on the tracking path of this scenario.")],
-        ["Security", { text: "Not in the catalogue yet (gap): see section 12.", due: true }],
-        ["Non-functional requirements", "Recorded for the offering as a whole: section 13."],
         ["Gaps and open questions", lines([...performed.filter((each) => each.confidence === "gap").map((each) => `Step ${each.number} is marked in its source as a gap.`), ...questions.filter((question) => [label, ...(system?.aliases ?? [])].some((alias) => alias.length > 2 && question.text.includes(alias))).map((question) => `${question.id}: ${question.text}`)], "None recorded for this system.")],
       ],
       { firstColShade: true },
@@ -394,21 +417,31 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
   p("The hand-overs between this scenario's steps, from the journey. An interface is named only where a source names it; none is made up.");
   h2("8.1 Hand-overs");
   if (links.length) {
+    const timed = links.some((link) => link.timing);
+    const correlated = links.some((link) => link.correlation_key);
     table(
-      columns(["Steps", 7], ["From", 11], ["To", 11], ["Interaction", 15], ["Interface", 15], ["Timing", 7], ["Payload", 18], ["Correlation", 7], ["Confidence", 9]),
+      [
+        ...columns(["Steps", 7], ["From", 11], ["To", 11], ["Interaction", 14], ["Interface", 15]),
+        ...(timed ? columns(["Timing", 7]) : []),
+        ...columns(["Payload", 20]),
+        ...(correlated ? columns(["Correlation", 9]) : []),
+        ...columns(["Confidence", 16]),
+      ],
       links.map((link) => [
         `${link.from_activity} → ${link.to_activity}`,
         name(from(link)),
         name(to(link)),
-        link.interaction || "—",
-        link.interface || { text: "Not named", due: false },
-        link.timing || "—",
-        link.payload || "—",
-        link.correlation_key || "—",
+        link.interaction || "Not described",
+        link.interface || "Not named",
+        ...(timed ? [link.timing || "Not stated"] : []),
+        link.payload || "Not described",
+        ...(correlated ? [link.correlation_key || "Not stated"] : []),
         evidence(link),
       ]),
       { landscape: true, small: true },
     );
+    const silent = [!timed && "timing", !correlated && "a correlation key"].filter(Boolean);
+    if (silent.length) p(`No source gives ${silent.join(" or ")} for these hand-overs (gap).`, true);
   } else p("The journey records no hand-over between steps.");
   h2("8.2 Named interfaces");
   if (interfaces.length) {
@@ -428,7 +461,7 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
   } else p("No source names an interface for this scenario.");
 
   /* 9 Information */
-  h1("9. Information Architecture");
+  h1("9. Information Architecture", true);
   gap("Information objects", `${NOT_HELD("information objects or which system is the record for each")} The explorer says the same.`);
 
   /* 10 Tracking */
@@ -449,10 +482,10 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
           evidence(entry),
         ],
       ]);
-      if (entry?.story) p(entry.story);
+      if (entry?.story) p(`Story: ${entry.story}`, true);
       h2("10.2 Tracking flows");
       table(
-        columns(["From", 18], ["To", 18], ["What", 36], ["Interface", 16], ["Confidence", 12]),
+        columns(["From", 15], ["To", 15], ["What", 34], ["Interface", 18], ["Confidence", 18]),
         tracked.flows.map((flow) => [name(flow.from_system_id), name(flow.to_system_id), flow.from_system_id === flow.to_system_id ? `${flow.label} (logs to itself)` : flow.label, ("interface" in flow ? flow.interface : null) || (flow.readFor ? `Read for ${flow.readFor}` : "—"), evidence(flow)]),
       );
       h2("10.3 Customer-visible milestones");
@@ -487,7 +520,7 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
   });
 
   /* 12 to 14 */
-  h1("12. Security Architecture");
+  h1("12. Security Architecture", true);
   p(`${NOT_HELD("security attributes of their own")} Any security quality the sources state is among the non-functional requirements in section 13.`);
   h1("13. Non-Functional Requirements");
   const nfrs = offering.nfrs ?? [];
@@ -497,7 +530,7 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
       nfrs.map((item) => [item.quality, { text: COVERAGE[item.coverage], coverage: item.coverage }, item.statement || "No source defines it.", evidence(item)]),
     );
   } else gap("Non-functional requirements", `No non-functional requirement is recorded for ${offering.name}.`);
-  h1("14. Deployment & Runtime");
+  h1("14. Deployment & Runtime", true);
   gap("Deployment & runtime", `${NOT_HELD("hosting, network or platform facts")} No deployment diagram is drawn without them.`);
 
   /* 15, 16 Governance */
@@ -507,9 +540,14 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
   else p("No architecture decision is recorded for this offering.");
   h1("16. Architecture Gaps & Open Questions");
   h2("16.1 What the catalogue does not say yet");
-  if (missing.length) table(columns(["Gap", 100]), missing.map((item) => [{ text: item, due: true }]));
+  if (missing.length) ul(missing);
   else p("Nothing: the catalogue says all of it for this scenario.");
-  h2("16.2 Conflicts between sources");
+  const marked = markedFacts();
+  if (marked.length) {
+    h2("16.2 Facts marked in their sources as a gap");
+    table(columns(["Fact", 52], ["Section", 12], ["Source", 36]), marked.map((fact) => [{ text: fact.what, due: true }, fact.section, sourced(citation(fact.source)) ?? "Not stated"]));
+  }
+  h2(`16.${marked.length ? 3 : 2} Conflicts between sources`);
   if (conflicts.length) {
     for (const conflict of conflicts) {
       const side = (each: (typeof conflict)["a"]) => {
@@ -525,27 +563,34 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
           ["Another says", side(conflict.b)],
           ["What differs", conflict.difference || "—"],
           ["Meanwhile", conflict.impact || "—"],
-          ["Decision needed", { text: conflict.decision || "Not stated", due: true }],
+          ["Decision needed", { text: conflict.decision || "Not stated", strong: true }],
           ...(raises ? [["Raises the question", raises] as DocCell[]] : []),
         ],
         { firstColShade: true },
       );
     }
   } else p(`No conflict between sources concerns ${orderType.name}.`);
-  h2("16.3 Open questions");
+  h2(`16.${marked.length ? 4 : 3} Open questions`);
   if (questions.length) table(columns(["Id", 10], ["Question", 52], ["Meanwhile", 22], ["Confidence", 16]), questions.map((item) => [item.id, item.text, item.impact || "—", evidence(item)]));
   else p("No open question is recorded for this offering.");
 
   /* 17 Journey */
   h1("17. Complete End-to-End Journey");
-  p("Every step of the journey for this scenario, in order, with where it goes next, its hand-overs and its conditions.");
+  const whole = journeyFor(release, offering.id, orderType.code);
+  const elsewhere = (whole?.activities ?? []).map((each) => each.number).filter((number) => !step.has(number));
+  p(
+    "Every step of the journey for this scenario, in order, with where it goes next, its hand-overs and its conditions." +
+      (elsewhere.length && channel ? ` ${elsewhere.length === 1 ? `Step ${elsewhere[0]} belongs` : `Steps ${listed(elsewhere)} belong`} to other channels of ${orderType.name} and ${elsewhere.length === 1 ? "is" : "are"} left out.` : ""),
+  );
   if (journey) {
     const components = new Map(offering.components.map((part) => [part.id, part.name]));
     table(
-      columns(["Step", 5], ["Stage", 9], ["System", 11], ["Activity", 23], ["Next", 9], ["Hand-over", 13], ["Component", 10], ["Condition", 12], ["Confidence", 8]),
+      columns(["Step", 5], ["Stage", 9], ["System", 11], ["Activity", 23], ["Next", 6], ["Hand-over", 12], ["Component", 10], ["Condition", 10], ["Confidence", 14]),
       steps.map((each) => {
         const performing = by(each);
-        const conditions = journey.flow_rules.filter((rule) => rule.from_activity === each.number && rule.condition).map((rule) => `${rule.kind === "loop" ? "Retry" : rule.kind === "parallel" ? "Alongside" : "If"} → ${rule.to_activity}: ${rule.condition}`);
+        // A decision that only splits the journey by channel is already taken: the scenario is one channel's.
+        const byChannel = (condition: string) => channel !== null && /^channels?\b/i.test(condition.trim());
+        const conditions = journey.flow_rules.filter((rule) => rule.from_activity === each.number && rule.condition && !byChannel(rule.condition)).map((rule) => `${rule.kind === "loop" ? "Retry" : rule.kind === "parallel" ? "Alongside" : "If"} → ${rule.to_activity}: ${rule.condition}`);
         return [
           each.number,
           each.phase || "—",

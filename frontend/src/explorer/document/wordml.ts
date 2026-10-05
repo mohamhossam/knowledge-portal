@@ -8,8 +8,8 @@ import type { Offering, SourceConfidence } from "../../api/client";
 
 type NfrCoverage = NonNullable<Offering["nfrs"]>[number]["coverage"];
 
-/** A table cell: plain text, or text whose confidence or coverage sets its weight. */
-export type DocCell = string | { text: string; confidence?: SourceConfidence | null; coverage?: NfrCoverage | null; due?: boolean };
+/** A table cell: plain text, or text whose confidence or coverage sets its weight; `strong` is bold ink (a decision needed). */
+export type DocCell = string | { text: string; confidence?: SourceConfidence | null; coverage?: NfrCoverage | null; due?: boolean; strong?: boolean };
 export type DocColumn = { label: string; w: number };
 export type DocTable = {
   t: "table";
@@ -24,12 +24,15 @@ export type DocTable = {
 };
 export type DocBlock =
   | { t: "cover"; product: string; scenario: string; rows: [string, string][]; note: string }
-  | { t: "h1" | "h2" | "h3"; text: string }
+  /** A top-level section; a short one runs on from the one before rather than opening a page. */
+  | { t: "h1"; text: string; short?: boolean }
+  | { t: "h2" | "h3"; text: string }
   | { t: "p"; text: string; muted?: boolean }
   | { t: "ul"; items: string[] }
   | DocTable
   | { t: "callout"; kind: "gap" | "decision" | "carry"; title: string; text: string }
-  | { t: "image"; png: Uint8Array; w: number; h: number; alt: string; caption: string }
+  /** A figure; a landscape one sets its whole section landscape so it prints large enough to read. */
+  | { t: "image"; png: Uint8Array; w: number; h: number; alt: string; caption: string; landscape?: boolean }
   | { t: "toc" };
 
 export type DocModel = {
@@ -128,16 +131,16 @@ function textPara(text: string, run_: RunStyle, style: ParaStyle = {}): string {
 /** How a cell's confidence or coverage reads: a gap or a missing quality is red and bold, partial bold. */
 function cellLook(cell: Exclude<DocCell, string>): { fill: string | null; run: RunStyle } {
   if (cell.confidence === "gap" || cell.coverage === "missing" || cell.due) return { fill: RED_WASH, run: { b: true, color: RED } };
-  if (cell.coverage === "partial") return { fill: null, run: { b: true } };
+  if (cell.coverage === "partial" || cell.strong) return { fill: null, run: { b: true } };
   if (cell.confidence === "inferred") return { fill: null, run: { color: INK_2 } };
   return { fill: null, run: {} };
 }
 
-function cellXml(value: DocCell, width: number, options: { head?: boolean; first?: boolean; small?: boolean }): string {
+function cellXml(value: DocCell, width: number, options: { head?: boolean; first?: boolean; small?: boolean; keepNext?: boolean }): string {
   const cell = typeof value === "string" ? { text: value } : value;
   const look = options.head ? { fill: BAND, run: { b: true } } : options.first ? { fill: BAND, run: { b: true } } : cellLook(cell);
   const props = `<w:tcPr><w:tcW w:w="${width}" w:type="dxa"/>${look.fill ? `<w:shd w:val="clear" w:color="auto" w:fill="${look.fill}"/>` : ""}</w:tcPr>`;
-  return `<w:tc>${props}${textPara(cell.text, look.run, { style: options.small ? "TableSmall" : "TableText" })}</w:tc>`;
+  return `<w:tc>${props}${textPara(cell.text, look.run, { style: options.small ? "TableSmall" : "TableText", keepNext: options.head || options.keepNext })}</w:tc>`;
 }
 
 function tableXml(table: DocTable, content: number): string {
@@ -146,10 +149,12 @@ function tableXml(table: DocTable, content: number): string {
   const head = table.noHead
     ? ""
     : `<w:tr><w:trPr><w:tblHeader/><w:cantSplit/></w:trPr>${table.cols.map((col, i) => cellXml(col.label, widths[i]!, { head: true, small: table.small })).join("")}</w:tr>`;
+  // A table of up to eight rows is kept on one page: every row but the last keeps with the next.
+  const together = table.rows.length <= 8;
   const body = table.rows
     .map(
-      (row) =>
-        `<w:tr><w:trPr><w:cantSplit/></w:trPr>${row.map((value, i) => cellXml(value, widths[i]!, { first: table.firstColShade && i === 0, small: table.small })).join("")}</w:tr>`,
+      (row, index) =>
+        `<w:tr><w:trPr><w:cantSplit/></w:trPr>${row.map((value, i) => cellXml(value, widths[i]!, { first: table.firstColShade && i === 0, small: table.small, keepNext: together && index < table.rows.length - 1 })).join("")}</w:tr>`,
     )
     .join("");
   // Rules for structure: a heavy rule under the head, hairlines between rows, no verticals.
@@ -168,8 +173,12 @@ function calloutXml(block: Extract<DocBlock, { t: "callout" }>, content: number)
   return `<w:tbl><w:tblPr><w:tblW w:w="${content}" w:type="dxa"/><w:tblBorders><w:left w:val="single" w:sz="24" w:space="0" w:color="${rule}"/></w:tblBorders><w:tblCellMar><w:top w:w="80" w:type="dxa"/><w:left w:w="140" w:type="dxa"/><w:bottom w:w="80" w:type="dxa"/><w:right w:w="140" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid><w:gridCol w:w="${content}"/></w:tblGrid><w:tr><w:trPr><w:cantSplit/></w:trPr><w:tc><w:tcPr><w:tcW w:w="${content}" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="${fill}"/></w:tcPr>${inner}</w:tc></w:tr></w:tbl>`;
 }
 
-function imageXml(block: Extract<DocBlock, { t: "image" }>, rid: string, id: number, content: number): string {
-  const cx = Math.round((content / 1440) * 914400);
+function imageXml(block: Extract<DocBlock, { t: "image" }>, rid: string, id: number, page: Page): string {
+  // As wide as the text, unless that would leave no room on the page for its heading and caption.
+  const tallest = ((page.h - 2 * 1134 - 2600) / 1440) * 914400;
+  const wide = (page.content / 1440) * 914400;
+  const scale = Math.min(1, tallest / ((wide * block.h) / block.w));
+  const cx = Math.round(wide * scale);
   const cy = Math.round((cx * block.h) / block.w);
   const alt = xmlText(block.alt);
   return (
@@ -187,6 +196,8 @@ function sectPr(page: Page, first: boolean): string {
   return `<w:sectPr>${references}<w:type w:val="nextPage"/><w:pgSz w:w="${page.w}" w:h="${page.h}"${page.landscape ? ' w:orient="landscape"' : ""}/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/>${first ? "<w:titlePg/>" : ""}</w:sectPr>`;
 }
 
+/** The footer's status, the same DRAFT line the cover and Document Control give. */
+const FOOTER = "DRAFT: generated from the catalogue; not approved until the architecture authority reviews it.";
 const XML = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
 const CONTENT = "application/vnd.openxmlformats-officedocument.wordprocessingml";
 const REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
@@ -198,6 +209,7 @@ export function documentParts(model: DocModel, at: Date): Record<string, string 
   let firstSection = true;
   let freshPage = true;
   let lastTable = false;
+  let afterShort = false;
   // Orientation is decided per top-level section: one holding a wide table is landscape throughout.
   const wide = new Map<number, boolean>();
   let heading = -1;
@@ -205,7 +217,7 @@ export function documentParts(model: DocModel, at: Date): Record<string, string 
     if (block.t === "h1") {
       heading = index;
       wide.set(index, false);
-    } else if (heading >= 0 && block.t === "table" && block.landscape) wide.set(heading, true);
+    } else if (heading >= 0 && (block.t === "table" || block.t === "image") && block.landscape) wide.set(heading, true);
   });
   const push = (xml: string, isTable = false) => {
     // Word needs a paragraph between two tables; elsewhere the next paragraph carries the spacing.
@@ -228,17 +240,20 @@ export function documentParts(model: DocModel, at: Date): Record<string, string 
   model.blocks.forEach((block, index) => {
     switch (block.t) {
       case "cover":
-        out.push(para(run("SOLUTION ARCHITECTURE", { b: true, color: INK_2, sz: 22, caps: true }), { spacing: 'w:before="2400" w:after="120"' }));
-        out.push(textPara(block.product, {}, { style: "Title" }));
+        out.push(textPara(`${block.product}: Solution Architecture`, {}, { style: "Title", spacing: 'w:before="2400" w:after="80"' }));
         out.push(textPara(block.scenario, {}, { style: "Subtitle" }));
         out.push(tableXml({ t: "table", cols: [{ label: "Scenario", w: 30 }, { label: "Value", w: 70 }], rows: block.rows, firstColShade: true, noHead: true }, page.content));
         out.push(textPara(block.note, { color: INK_2, i: true }, { spacing: 'w:before="600"' }));
         freshPage = false;
         return;
-      case "h1":
+      case "h1": {
         switchTo(wide.get(index) ? LANDSCAPE : PORTRAIT);
-        push(textPara(block.text, {}, { style: "Heading1", pageBreakBefore: !freshPage }));
+        // A section that is only a gap to say, and the section after it, run on rather than open a page.
+        const runOn = Boolean(block.short) || afterShort;
+        afterShort = Boolean(block.short);
+        push(textPara(block.text, {}, { style: "Heading1", pageBreakBefore: !freshPage && !runOn, spacing: runOn && !freshPage ? 'w:before="480" w:after="200"' : undefined }));
         return;
+      }
       case "h2":
         push(textPara(block.text, {}, { style: "Heading2" }));
         return;
@@ -246,7 +261,7 @@ export function documentParts(model: DocModel, at: Date): Record<string, string 
         push(textPara(block.text, {}, { style: "Heading3" }));
         return;
       case "p":
-        push(textPara(block.text, block.muted ? { color: INK_2, i: true } : {}));
+        push(textPara(block.text, block.muted ? { color: INK_2, i: true, sz: 17 } : {}, block.muted ? { spacing: 'w:before="120" w:after="120"' } : {}));
         return;
       case "ul":
         for (const item of block.items) push(textPara(item, {}, { style: "ListBullet", bullet: true }));
@@ -260,7 +275,7 @@ export function documentParts(model: DocModel, at: Date): Record<string, string 
       case "image": {
         const rid = `rIdImg${media.length + 1}`;
         media.push({ rid, name: `image${media.length + 1}.png`, bytes: block.png });
-        push(imageXml(block, rid, media.length, page.content));
+        push(imageXml(block, rid, media.length, page));
         return;
       }
       case "toc": {
@@ -285,7 +300,7 @@ export function documentParts(model: DocModel, at: Date): Record<string, string 
   const footer = (on: boolean) =>
     `${XML}<w:ftr ${NS}>${
       on
-        ? `<w:p><w:pPr><w:pStyle w:val="Footer"/><w:tabs><w:tab w:val="right" w:pos="9638"/></w:tabs></w:pPr>${run("Generated from the knowledge catalogue · DRAFT for architecture review", { color: INK_2, sz: 16 })}<w:r><w:rPr><w:color w:val="${INK_2}"/><w:sz w:val="16"/></w:rPr><w:tab/><w:t xml:space="preserve">Page </w:t></w:r><w:fldSimple w:instr=" PAGE "><w:r><w:rPr><w:sz w:val="16"/></w:rPr><w:t>1</w:t></w:r></w:fldSimple><w:r><w:rPr><w:color w:val="${INK_2}"/><w:sz w:val="16"/></w:rPr><w:t xml:space="preserve"> of </w:t></w:r><w:fldSimple w:instr=" NUMPAGES "><w:r><w:rPr><w:sz w:val="16"/></w:rPr><w:t>1</w:t></w:r></w:fldSimple></w:p>`
+        ? `<w:p><w:pPr><w:pStyle w:val="Footer"/><w:tabs><w:tab w:val="right" w:pos="9638"/></w:tabs></w:pPr>${run(FOOTER, { color: INK_2, sz: 16 })}<w:r><w:rPr><w:color w:val="${INK_2}"/><w:sz w:val="16"/></w:rPr><w:tab/><w:t xml:space="preserve">Page </w:t></w:r><w:fldSimple w:instr=" PAGE "><w:r><w:rPr><w:sz w:val="16"/></w:rPr><w:t>1</w:t></w:r></w:fldSimple><w:r><w:rPr><w:color w:val="${INK_2}"/><w:sz w:val="16"/></w:rPr><w:t xml:space="preserve"> of </w:t></w:r><w:fldSimple w:instr=" NUMPAGES "><w:r><w:rPr><w:sz w:val="16"/></w:rPr><w:t>1</w:t></w:r></w:fldSimple></w:p>`
         : para("")
     }</w:ftr>`;
   const override = (part: string, type: string) => `<Override PartName="/${part}" ContentType="${type}"/>`;

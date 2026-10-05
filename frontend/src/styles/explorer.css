@@ -34,10 +34,17 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--s1) var(--s4);
-  max-width: 80ch;
   margin: 0;
 }
 
+/* The icon sits on the text column's edge, not indented by the button's padding. */
+.explorer__document-line > .text-button {
+  margin-inline-start: calc(-1 * var(--s1));
+}
+
+/* Writing: it reads as a disabled text button, without taking focus away. */
 .explorer__document-line .text-button[aria-disabled="true"] {
+  color: var(--ink-3);
+  text-decoration: none;
   cursor: progress;
 }

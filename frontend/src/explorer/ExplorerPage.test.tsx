@@ -309,6 +309,9 @@ describe("the Solution Architecture download", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Download the Solution Architecture (.docx)" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("The document could not be written: No room to save it.");
-    expect(within(screen.getByRole("alert")).getByRole("button", { name: "Try again" })).toBeInTheDocument();
+    fireEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: "Try again" }));
+    // The retry takes "Try again" away; focus lands on the download, never on the page.
+    expect(screen.getByRole("button", { name: /Solution Architecture|Writing the document/ })).toHaveFocus();
+    await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
   });
 });
