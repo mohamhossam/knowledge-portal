@@ -23,6 +23,11 @@ from collections.abc import Callable, Collection
 from dataclasses import dataclass
 from enum import StrEnum
 
+from knowledge_portal.domain.architecture.governance import (
+    ArchitectureDecision,
+    OpenQuestion,
+    check_offering_governance,
+)
 from knowledge_portal.domain.architecture.invariants import (
     InvalidKnowledgeError,
     optional,
@@ -267,6 +272,16 @@ class ProductOffering:
     tracking: OrderTracking | None = None
     # What happens to it over its life: up/downgrades, renewals, cessation and the like.
     lifecycle_notes: tuple[LifecycleNote, ...] = ()
+    # Its governance (requirement-portal ADR-0101, step 5): the registered sources it is
+    # read from and the primary one among them, the questions they leave open, the
+    # architecture decisions taken, what its sources cover and leave out, and what it no
+    # longer uses.
+    sources: tuple[str, ...] = ()
+    primary_source: str | None = None
+    questions: tuple[OpenQuestion, ...] = ()
+    decisions: tuple[ArchitectureDecision, ...] = ()
+    boundaries: tuple[str, ...] = ()
+    not_used: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Offering id"))
@@ -280,7 +295,21 @@ class ProductOffering:
         ):
             object.__setattr__(self, field, optional(getattr(self, field), label))
         object.__setattr__(self, "rules", tuple(required(item, "Rule") for item in self.rules))
+        for field, label in (
+            ("sources", "Source"),
+            ("boundaries", "Boundary"),
+            ("not_used", "What it no longer uses"),
+        ):
+            object.__setattr__(
+                self,
+                field,
+                tuple(dict.fromkeys(required(item, label) for item in getattr(self, field))),
+            )
+        object.__setattr__(self, "primary_source", optional(self.primary_source, "Primary source"))
         check_source(self)
+        check_offering_governance(
+            self.name, self.questions, self.decisions, self.sources, self.primary_source
+        )
         codes = [item.code.casefold() for item in self.order_types]
         if len(set(codes)) != len(codes):
             raise InvalidKnowledgeError(f"{self.name}: order type codes must be unique.")
@@ -395,10 +424,12 @@ def merge_offerings(first: ProductOffering, second: ProductOffering) -> ProductO
     A document's product section can be read in more than one call, or by the
     table reader and a model, each seeing part of it. Order types merge by code,
     components by id, responsibilities by system and role, points by name, realisation
-    by layer and name, NFRs by quality, lifecycle notes by id; tracking is taken whole, the
-    first reading's if it has one.
+    by layer and name, NFRs by quality, lifecycle notes, questions and decisions by id;
+    tracking is taken whole, the first reading's if it has one.
     """
     codes = {item.code.casefold() for item in first.order_types}
+    asked = {item.id.casefold() for item in first.questions}
+    decided = {item.id.casefold() for item in first.decisions}
     qualities = {item.quality.casefold() for item in first.nfrs}
     notes = {item.id for item in first.lifecycle_notes}
     parts = {item.id: item for item in first.components}
@@ -431,6 +462,18 @@ def merge_offerings(first: ProductOffering, second: ProductOffering) -> ProductO
             *first.lifecycle_notes,
             *(item for item in second.lifecycle_notes if item.id not in notes),
         ),
+        sources=tuple(dict.fromkeys((*first.sources, *second.sources))),
+        primary_source=first_known(first.primary_source, second.primary_source),
+        questions=(
+            *first.questions,
+            *(item for item in second.questions if item.id.casefold() not in asked),
+        ),
+        decisions=(
+            *first.decisions,
+            *(item for item in second.decisions if item.id.casefold() not in decided),
+        ),
+        boundaries=tuple(dict.fromkeys((*first.boundaries, *second.boundaries))),
+        not_used=tuple(dict.fromkeys((*first.not_used, *second.not_used))),
     )
 
 

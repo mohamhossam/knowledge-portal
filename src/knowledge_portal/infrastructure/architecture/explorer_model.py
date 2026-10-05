@@ -7,7 +7,7 @@ the file against a draft and imports it, and from then on the catalogue is the o
 home of these facts (requirement-portal ADR-0101).
 
 It is a seed, not a sync. Nothing is invented: a fact the catalogue cannot hold yet
-(source levels and conflicts, information objects, and so on) is counted in the
+(information objects, the capability library, and so on) is counted in the
 report, not squeezed into a field that means something else. Plans and prices are never
 carried over: the explorer reads them live from the product catalog by the offering's code.
 Channels carry
@@ -16,7 +16,9 @@ be ordered through, the channels each step happens in, and the steps the order's
 channel entry system performs. So do each component's CFS, RFS and resource layers,
 as its realisation, each offering's NFRs with how far their sources define them, and
 how its orders are tracked, and its lifecycle notes, with the cross-product notes and the
-design-time realisation as notes of their own (step 4).
+design-time realisation as notes of their own (step 4). The source register with each
+source's level, the conflicts between sources, and each offering's sources, open
+questions, architecture decisions and boundaries carry over too (step 5).
 Evidence keeps its confidence (CONFIRMED, INFERRED and GAP) and names its source.
 """
 
@@ -106,6 +108,12 @@ class _Reader:
             "products": [self._product(item) for item in products],
             "journeys": [journey for product in products for journey in self._journeys(product)],
             "channels": [self._channel(item) for item in self.channels.values()],
+            "sources": [self._source(item) for item in self.sources.values()],
+            "conflicts": [
+                conflict
+                for item in self.model.get("conflicts") or ()
+                if (conflict := self._conflict(item, products)) is not None
+            ],
         }
         self._check(mapping, products)
         self._count_dropped()
@@ -236,10 +244,6 @@ class _Reader:
         for key, label in _READ_LIVE:
             if product.get(key):
                 self.read_live[label] += 1
-        if (product.get("gov") or {}).get("decisions") or (product.get("gov") or {}).get(
-            "questions"
-        ):
-            self.dropped["governance decisions and questions"] += 1
         return {
             **_present(
                 id=product["id"],
@@ -273,6 +277,104 @@ class _Reader:
             "nfrs": self._nfrs(product),
             **self._tracking(product, order_types),
             **_present(lifecycle_notes=self._lifecycle(product, order_types)),
+            **self._governance(product),
+        }
+
+    # Governance (requirement-portal ADR-0101, step 5) -------------------------
+
+    @staticmethod
+    def _source(item: Mapping[str, Any]) -> dict[str, Any]:
+        return {
+            **_present(
+                id=item["id"],
+                title=item.get("title") or item["id"],
+                level=item.get("level"),
+                short=item.get("short"),
+                version=item.get("version"),
+                file=item.get("file"),
+                authority=item.get("authority"),
+                scope=item.get("scope"),
+                boundary=item.get("boundary"),
+            ),
+            **({} if item.get("supplied", True) else {"supplied": False}),
+        }
+
+    def _governance(self, product: Mapping[str, Any]) -> dict[str, Any]:
+        """The offering's sources, open questions, decisions and boundaries."""
+        gov = product.get("gov") or {}
+        sources = [item for item in product.get("sources") or () if item in self.sources]
+        unregistered = len(product.get("sources") or ()) - len(sources)
+        if unregistered:
+            self.dropped["product sources not in the register"] += unregistered
+        primary = product.get("primarySource")
+        return _present(
+            sources=sources,
+            primary_source=primary if primary in sources else None,
+            questions=[
+                {
+                    **_present(id=item["id"], text=item.get("text"), impact=item.get("impact")),
+                    **self._evidence(item.get("ev")),
+                }
+                for item in gov.get("questions") or ()
+            ],
+            decisions=[
+                {
+                    **_present(id=item["id"], title=item.get("title"), text=item.get("text")),
+                    **self._evidence(item.get("ev")),
+                }
+                for item in gov.get("decisions") or ()
+            ],
+            boundaries=list(gov.get("boundaries") or ()),
+            not_used=list(gov.get("superseded") or ()),
+        )
+
+    def _conflict(
+        self, item: Mapping[str, Any], products: list[Mapping[str, Any]]
+    ) -> dict[str, Any] | None:
+        """A conflict between two registered sources, its scope read against the offerings:
+        "*" is every order type, and each offering keeps the question it raises."""
+        sides = [item.get("a") or {}, item.get("b") or {}]
+        if any(side.get("src") not in self.sources or not side.get("statement") for side in sides):
+            self.dropped["source conflicts citing an unregistered source"] += 1
+            return None
+        known = {
+            product["id"]: (
+                {order["id"] for order in product.get("orderTypes") or ()},
+                {question["id"] for question in (product.get("gov") or {}).get("questions") or ()},
+            )
+            for product in products
+        }
+        scope = []
+        for product_id, wanted in (item.get("scope") or {}).items():
+            if product_id not in known:
+                self.dropped["conflict scopes naming another product"] += 1
+                continue
+            codes, questions = known[product_id]
+            order_types = [] if "*" in wanted else [code for code in wanted if code in codes]
+            question = (item.get("questions") or {}).get(product_id) or item.get("question")
+            scope.append(
+                _present(
+                    product=product_id,
+                    order_types=order_types,
+                    question=question if question in questions else None,
+                )
+            )
+        return {
+            **_present(
+                id=item["id"],
+                title=item.get("title") or item["id"],
+                difference=item.get("difference"),
+                impact=item.get("impact"),
+                decision=item.get("decision"),
+                scope=scope,
+            ),
+            **{
+                key: _present(
+                    source=side["src"], reference=side.get("ref"), statement=side["statement"]
+                )
+                for key, side in zip(("a", "b"), sides, strict=True)
+            },
+            **self._evidence(item.get("ev")),
         }
 
     def _point(self, item: Mapping[str, Any]) -> dict[str, Any]:
@@ -778,17 +880,12 @@ class _Reader:
         )
 
     def _count_dropped(self) -> None:
-        for section, label in (
-            ("conflicts", "source conflicts"),
-            ("changeHistory", "applied change requests"),
-        ):
+        for section, label in (("changeHistory", "applied change requests"),):
             if self.model.get(section):
                 self.dropped[label] += len(self.model[section])
         library = self.model.get("library") or {}
         if library.get("capabilities"):
             self.dropped["capability-library entries"] += len(library["capabilities"])
-        if self.sources:
-            self.dropped["source levels (L1/L2/L3)"] += len(self.sources)
         for label, count in sorted(self.dropped.items()):
             self.report.append(f"Not carried over yet: {label} ({count}).")
         for label, count in sorted(self.read_live.items()):

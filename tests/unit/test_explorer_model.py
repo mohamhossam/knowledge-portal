@@ -11,7 +11,10 @@ from fastapi.testclient import TestClient
 from knowledge_portal.application.ports.catalogue_file import CatalogueFileFormat
 from knowledge_portal.domain.architecture.journeys import journey_edges
 from knowledge_portal.domain.architecture.knowledge import InvalidKnowledgeError
-from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
+from knowledge_portal.infrastructure.architecture.catalogue_files import (
+    CatalogueFileAdapter,
+    content_from_mapping,
+)
 from knowledge_portal.infrastructure.architecture.explorer_model import read_explorer_model
 
 OWNER = {"X-Fake-Actor-Id": "fake-owner"}
@@ -542,11 +545,91 @@ def test_the_report_counts_what_the_catalogue_cannot_hold_yet() -> None:
     for line in (
         "Not carried over: plans and prices (1); the explorer reads them live from the product "
         "catalog by the offering's code.",
-        "Not carried over yet: source conflicts (1).",
-        "Not carried over yet: source levels (L1/L2/L3) (1).",
         "Not carried over yet: system owners (1).",
+        "Not carried over yet: source conflicts citing an unregistered source (1).",
     ):
         assert line in report
+    assert not any("source levels" in line or "governance" in line for line in report)
+
+
+def test_sources_conflicts_and_each_offerings_governance_carry_over() -> None:
+    model = _model()
+    model["sources"].append(
+        {"id": "V82", "level": "L3", "title": "v8.2 explorer", "short": "v8.2", "supplied": False}
+    )
+    product = model["products"][0]
+    product["sources"] = ["SDD", "V82", "GONE"]
+    product["primarySource"] = "SDD"
+    product["gov"] = {
+        "questions": [
+            {"id": "OQ-01", "text": "Is B2B in scope?", "impact": "Shown as not", "ev": EV}
+        ],
+        "decisions": [{"id": "AD-01", "title": "Reuse O2D", "text": "No new flow.", "ev": EV}],
+        "boundaries": ["Runtime from the SDD."],
+        "superseded": ["Siebel CRM"],
+    }
+    model["conflicts"] = [
+        {
+            "id": "CF-01",
+            "title": "Up / Downgrade channel scope",
+            "scope": {"BPP": ["NEW", "GONE"], "ELSEWHERE": ["*"]},
+            "question": "OQ-01",
+            "a": {"src": "SDD", "ref": "§11.1.3", "statement": "BCRM and SMB App only."},
+            "b": {"src": "V82", "ref": "OrderEvaluate", "statement": "B2B allowed."},
+            "difference": "Whether B2B is an entry channel.",
+            "impact": "B2B disabled until resolved.",
+            "decision": "Product owner to confirm.",
+            "ev": EV,
+        },
+        {
+            "id": "CF-02",
+            "title": "All of it",
+            "scope": {"BPP": ["*"]},
+            "question": "OQ-99",
+            "a": {"src": "SDD", "statement": "One."},
+            "b": {"src": "SDD", "statement": "Other."},
+        },
+    ]
+
+    seed = read_explorer_model(model)
+    mapping, report = seed.mapping, seed.report
+
+    assert [(item["id"], item["level"]) for item in mapping["sources"]] == [
+        ("SDD", "L2"),
+        ("V82", "L3"),
+    ]
+    assert mapping["sources"][1]["supplied"] is False
+    (offering,) = mapping["products"]
+    assert (offering["sources"], offering["primary_source"]) == (["SDD", "V82"], "SDD")
+    assert offering["questions"] == [
+        {
+            "id": "OQ-01",
+            "text": "Is B2B in scope?",
+            "impact": "Shown as not",
+            "confidence": "confirmed",
+            "source": "BPP SDD §11",
+        }
+    ]
+    assert offering["decisions"][0]["title"] == "Reuse O2D"
+    assert (offering["boundaries"], offering["not_used"]) == (
+        ["Runtime from the SDD."],
+        ["Siebel CRM"],
+    )
+    first, every = mapping["conflicts"]
+    assert first["a"] == {
+        "source": "SDD",
+        "reference": "§11.1.3",
+        "statement": "BCRM and SMB App only.",
+    }
+    # An order type the offering lacks is left out; "*" is every order type; a question the
+    # offering does not have is not linked.
+    assert first["scope"] == [{"product": "BPP", "order_types": ["NEW"], "question": "OQ-01"}]
+    assert every["scope"] == [{"product": "BPP"}]
+    assert "Not carried over yet: product sources not in the register (1)." in report
+    assert "Not carried over yet: conflict scopes naming another product (1)." in report
+    # The file the seed makes is one the catalogue accepts.
+    content = content_from_mapping(mapping)
+    assert [item.id for item in content.conflicts] == ["CF-01", "CF-02"]
 
 
 def test_another_schema_is_refused() -> None:

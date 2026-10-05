@@ -408,6 +408,60 @@
         "title": "ActorSnapshot",
         "type": "object"
       },
+      "ArchitectureDecisionSchema": {
+        "properties": {
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "maxLength": 200,
+            "title": "Id",
+            "type": "string"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "title": {
+            "maxLength": 300,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "ArchitectureDecisionSchema",
+        "type": "object"
+      },
       "ArchitectureJobKind": {
         "enum": [
           "index",
@@ -1314,7 +1368,9 @@
           "landscape_domain",
           "product",
           "journey",
-          "channel"
+          "channel",
+          "source",
+          "conflict"
         ],
         "title": "ChangedItem",
         "type": "string"
@@ -1590,6 +1646,74 @@
           "description"
         ],
         "title": "ComponentResponsibilitySchema",
+        "type": "object"
+      },
+      "ConflictScopeSchema": {
+        "properties": {
+          "order_types": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Order Types",
+            "type": "array"
+          },
+          "product_id": {
+            "maxLength": 200,
+            "title": "Product Id",
+            "type": "string"
+          },
+          "question_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Question Id"
+          }
+        },
+        "required": [
+          "product_id"
+        ],
+        "title": "ConflictScopeSchema",
+        "type": "object"
+      },
+      "ConflictSideSchema": {
+        "properties": {
+          "reference": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          },
+          "source_id": {
+            "maxLength": 200,
+            "title": "Source Id",
+            "type": "string"
+          },
+          "statement": {
+            "maxLength": 10000,
+            "title": "Statement",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_id",
+          "statement"
+        ],
+        "title": "ConflictSideSchema",
         "type": "object"
       },
       "CorpusActivationRequest": {
@@ -1987,6 +2111,21 @@
             ],
             "title": "Channels"
           },
+          "conflicts": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SourceConflictSchema"
+                },
+                "maxItems": 5000,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conflicts"
+          },
           "expected_revision": {
             "title": "Expected Revision",
             "type": "integer"
@@ -2044,6 +2183,21 @@
             "title": "Relationships",
             "type": "array"
           },
+          "sources": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/KnowledgeSourceSchema"
+                },
+                "maxItems": 5000,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sources"
+          },
           "systems": {
             "items": {
               "$ref": "#/components/schemas/SystemDefinitionSchema"
@@ -2083,6 +2237,14 @@
             },
             "maxItems": 5000,
             "title": "Channels",
+            "type": "array"
+          },
+          "conflicts": {
+            "items": {
+              "$ref": "#/components/schemas/SourceConflictSchema"
+            },
+            "maxItems": 5000,
+            "title": "Conflicts",
             "type": "array"
           },
           "id": {
@@ -2142,6 +2304,14 @@
             },
             "maxItems": 5000,
             "title": "Relationships",
+            "type": "array"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeSourceSchema"
+            },
+            "maxItems": 5000,
+            "title": "Sources",
             "type": "array"
           },
           "systems": {
@@ -2947,6 +3117,14 @@
             "title": "Channels",
             "type": "array"
           },
+          "conflicts": {
+            "items": {
+              "$ref": "#/components/schemas/SourceConflictSchema"
+            },
+            "maxItems": 5000,
+            "title": "Conflicts",
+            "type": "array"
+          },
           "created_by": {
             "anyOf": [
               {
@@ -3073,6 +3251,14 @@
             "title": "Revision",
             "type": "integer"
           },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeSourceSchema"
+            },
+            "maxItems": 5000,
+            "title": "Sources",
+            "type": "array"
+          },
           "status": {
             "$ref": "#/components/schemas/KnowledgeReleaseStatus",
             "default": "draft"
@@ -3117,6 +3303,108 @@
           "query"
         ],
         "title": "KnowledgeSearchRequest",
+        "type": "object"
+      },
+      "KnowledgeSourceSchema": {
+        "description": "A source the catalogue is read from, and its level (ADR-0101, step 5).",
+        "properties": {
+          "authority": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authority"
+          },
+          "boundary": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Boundary"
+          },
+          "file": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "id": {
+            "maxLength": 200,
+            "title": "Id",
+            "type": "string"
+          },
+          "level": {
+            "$ref": "#/components/schemas/SourceLevel"
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope"
+          },
+          "short": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Short"
+          },
+          "supplied": {
+            "default": true,
+            "title": "Supplied",
+            "type": "boolean"
+          },
+          "title": {
+            "maxLength": 300,
+            "title": "Title",
+            "type": "string"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "level"
+        ],
+        "title": "KnowledgeSourceSchema",
         "type": "object"
       },
       "LandscapeDomainSchema": {
@@ -4194,6 +4482,60 @@
         "title": "OfferingPointSchema",
         "type": "object"
       },
+      "OpenQuestionSchema": {
+        "properties": {
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "maxLength": 200,
+            "title": "Id",
+            "type": "string"
+          },
+          "impact": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Impact"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "text": {
+            "maxLength": 10000,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text"
+        ],
+        "title": "OpenQuestionSchema",
+        "type": "object"
+      },
       "OrderTrackingSchema": {
         "description": "How an offering's orders are tracked once placed (requirement-portal ADR-0101).",
         "properties": {
@@ -4715,6 +5057,16 @@
             "title": "Audiences",
             "type": "array"
           },
+          "boundaries": {
+            "default": [],
+            "items": {
+              "maxLength": 10000,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Boundaries",
+            "type": "array"
+          },
           "code": {
             "anyOf": [
               {
@@ -4745,6 +5097,15 @@
                 "type": "null"
               }
             ]
+          },
+          "decisions": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ArchitectureDecisionSchema"
+            },
+            "maxItems": 5000,
+            "title": "Decisions",
+            "type": "array"
           },
           "family": {
             "anyOf": [
@@ -4798,6 +5159,16 @@
             "title": "Nfrs",
             "type": "array"
           },
+          "not_used": {
+            "default": [],
+            "items": {
+              "maxLength": 300,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Not Used",
+            "type": "array"
+          },
           "order_types": {
             "default": [],
             "items": {
@@ -4806,6 +5177,18 @@
             "maxItems": 5000,
             "title": "Order Types",
             "type": "array"
+          },
+          "primary_source": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Source"
           },
           "proposition": {
             "anyOf": [
@@ -4818,6 +5201,15 @@
               }
             ],
             "title": "Proposition"
+          },
+          "questions": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/OpenQuestionSchema"
+            },
+            "maxItems": 5000,
+            "title": "Questions",
+            "type": "array"
           },
           "rules": {
             "default": [],
@@ -4840,6 +5232,16 @@
               }
             ],
             "title": "Source"
+          },
+          "sources": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Sources",
+            "type": "array"
           },
           "tracking": {
             "anyOf": [
@@ -5630,6 +6032,112 @@
           "gap"
         ],
         "title": "SourceConfidence",
+        "type": "string"
+      },
+      "SourceConflictSchema": {
+        "description": "Two sources contradicting each other, and the decision it needs (ADR-0101, step 5).",
+        "properties": {
+          "a": {
+            "$ref": "#/components/schemas/ConflictSideSchema"
+          },
+          "b": {
+            "$ref": "#/components/schemas/ConflictSideSchema"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "decision": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision"
+          },
+          "difference": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference"
+          },
+          "id": {
+            "maxLength": 200,
+            "title": "Id",
+            "type": "string"
+          },
+          "impact": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Impact"
+          },
+          "scope": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ConflictScopeSchema"
+            },
+            "maxItems": 5000,
+            "title": "Scope",
+            "type": "array"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "title": {
+            "maxLength": 300,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "a",
+          "b"
+        ],
+        "title": "SourceConflictSchema",
+        "type": "object"
+      },
+      "SourceLevel": {
+        "description": "How far a source can be relied on, as the original explorer ranked its sources.",
+        "enum": [
+          "L1",
+          "L2",
+          "L3"
+        ],
+        "title": "SourceLevel",
         "type": "string"
       },
       "SourceLineage": {

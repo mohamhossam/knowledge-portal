@@ -31,6 +31,14 @@ from knowledge_portal.application.ports.catalogue_file import (
     CatalogueFileFormat,
 )
 from knowledge_portal.domain.architecture.channels import Channel
+from knowledge_portal.domain.architecture.governance import (
+    ArchitectureDecision,
+    ConflictScope,
+    ConflictSide,
+    KnowledgeSource,
+    OpenQuestion,
+    SourceConflict,
+)
 from knowledge_portal.domain.architecture.journeys import (
     Activity,
     ActivityIntegration,
@@ -98,6 +106,12 @@ TRACKING_CHANNELS = "TrackingChannels"
 TRACKING_EVENTS = "TrackingEvents"
 LIFECYCLE_NOTES = "LifecycleNotes"
 LIFECYCLE_BLOCKS = "LifecycleBlocks"
+SOURCES = "Sources"
+CONFLICTS = "Conflicts"
+CONFLICT_SCOPES = "ConflictScopes"
+QUESTIONS = "Questions"
+DECISIONS = "Decisions"
+BOUNDARIES = "Boundaries"
 _CELLS = tuple(f"cell_{number}" for number in range(1, MAX_TABLE_COLUMNS + 1))
 INSTRUCTIONS = "Instructions"
 _DOMAIN_HEADERS = ("domain_id", "name", "name_ar", "parent_id", "description")
@@ -135,6 +149,8 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "rules",
         "confidence",
         "source",
+        "sources",
+        "primary_source",
     ),
     ORDER_TYPES: (
         "product_id",
@@ -297,6 +313,37 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "source",
         "to_verify",
     ),
+    SOURCES: (
+        "source_id",
+        "level",
+        "title",
+        "short",
+        "version",
+        "file",
+        "supplied",
+        "authority",
+        "scope",
+        "boundary",
+    ),
+    CONFLICTS: (
+        "conflict_id",
+        "title",
+        "a_source_id",
+        "a_reference",
+        "a_statement",
+        "b_source_id",
+        "b_reference",
+        "b_statement",
+        "difference",
+        "impact",
+        "decision",
+        "confidence",
+        "source",
+    ),
+    CONFLICT_SCOPES: ("conflict_id", "product_id", "order_types", "question_id"),
+    QUESTIONS: ("product_id", "question_id", "text", "impact", "confidence", "source"),
+    DECISIONS: ("product_id", "decision_id", "title", "text", "confidence", "source"),
+    BOUNDARIES: ("product_id", "kind", "text"),
 }
 # Headers a sheet cannot do without. Columns added later stay optional, so
 # workbooks filled from an older template still import.
@@ -326,6 +373,19 @@ _REQUIRED_HEADERS: dict[str, tuple[str, ...]] = {
     TRACKING_EVENTS: ("product_id", "kind", "label"),
     LIFECYCLE_NOTES: ("product_id", "note_id", "title"),
     LIFECYCLE_BLOCKS: ("product_id", "note_id", "kind"),
+    SOURCES: ("source_id", "level", "title"),
+    CONFLICTS: (
+        "conflict_id",
+        "title",
+        "a_source_id",
+        "a_statement",
+        "b_source_id",
+        "b_statement",
+    ),
+    CONFLICT_SCOPES: ("conflict_id", "product_id"),
+    QUESTIONS: ("product_id", "question_id", "text"),
+    DECISIONS: ("product_id", "decision_id", "title"),
+    BOUNDARIES: ("product_id", "kind", "text"),
 }
 _KINDS = ", ".join(kind.value for kind in RelationshipKind)
 _REQUIRED_SHEETS = (SYSTEMS,)
@@ -405,6 +465,24 @@ _INSTRUCTIONS = (
         "row per item (text), table (column heads in cell_1…, caption in text) then one row "
         "row per table row (cells in cell_1…). to_verify yes: carried over from another "
         "source, to re-verify.",
+    ),
+    (
+        "Sources (optional): the sources the catalogue is read from; level is L1 (the "
+        "canonical landscape), L2 (a primary source for its scope) or L3 (a baseline carried "
+        "forward); supplied no when it was not supplied and is carried forward unread.",
+    ),
+    (
+        "Conflicts: two sources contradicting each other, a and b each a source_id, where it "
+        "says so (reference) and what it says (statement); never reconciled by the catalogue.",
+    ),
+    (
+        "ConflictScopes: the products a conflict affects, its order types by ; (none: every "
+        "one), and the question_id it raises for that product.",
+    ),
+    (
+        "Products sources and primary_source (optional): the source_ids a product is read "
+        "from, by ;. Questions, Decisions: its open questions and architecture decisions. "
+        "Boundaries: kind boundary (what its sources cover) or not_used (what it no longer uses).",
     ),
     ("Row 1 of each sheet holds the headers; keep them as they are.",),
 )
@@ -581,6 +659,8 @@ def content_from_mapping(raw: object) -> CatalogueContent:
         _offerings(_entries(raw, "products")),
         _journeys(_entries(raw, "journeys")),
         _channels(_entries(raw, "channels")),
+        _sources(_entries(raw, "sources")),
+        _conflicts(_entries(raw, "conflicts")),
     )
 
 
@@ -917,11 +997,47 @@ def _offerings(entries: list[dict[str, Any]]) -> list[ProductOffering]:
                     ),
                     tracking=_tracking(item, where),
                     lifecycle_notes=_lifecycle_notes(item, where),
+                    sources=_text_list(item.get("sources"), where, "sources"),
+                    primary_source=_optional_text(
+                        item.get("primary_source"), where, "primary_source"
+                    ),
+                    questions=tuple(
+                        _part(spot, partial(_question, raw, spot))
+                        for index, raw in enumerate(_sub_entries(item, "questions", where), 1)
+                        for spot in [_where(raw, f"{where}, question {index}")]
+                    ),
+                    decisions=tuple(
+                        _part(spot, partial(_decision, raw, spot))
+                        for index, raw in enumerate(_sub_entries(item, "decisions", where), 1)
+                        for spot in [_where(raw, f"{where}, decision {index}")]
+                    ),
+                    boundaries=_text_list(item.get("boundaries"), where, "boundaries"),
+                    not_used=_text_list(item.get("not_used"), where, "not_used"),
                 )
             )
         except InvalidKnowledgeError as exc:
             raise _located(where, exc) from exc
     return offerings
+
+
+def _question(raw: dict[str, Any], where: str) -> OpenQuestion:
+    return OpenQuestion(
+        _text(raw.get("id"), where, "id"),
+        _text(raw.get("text"), where, "text"),
+        _optional_text(raw.get("impact"), where, "impact"),
+        _trust(raw.get("confidence"), where),
+        _optional_text(raw.get("source"), where, "source"),
+    )
+
+
+def _decision(raw: dict[str, Any], where: str) -> ArchitectureDecision:
+    return ArchitectureDecision(
+        _text(raw.get("id"), where, "id"),
+        _text(raw.get("title"), where, "title"),
+        _optional_text(raw.get("text"), where, "text"),
+        _trust(raw.get("confidence"), where),
+        _optional_text(raw.get("source"), where, "source"),
+    )
 
 
 def _tracking(item: dict[str, Any], where: str) -> OrderTracking | None:
@@ -1143,6 +1259,25 @@ def _offering_mapping(offering: ProductOffering) -> dict[str, Any]:
         ),
         **({"tracking": _tracking_mapping(offering.tracking)} if offering.tracking else {}),
         **_present(lifecycle_notes=[_note_mapping(note) for note in offering.lifecycle_notes]),
+        **_present(
+            sources=list(offering.sources),
+            primary_source=offering.primary_source,
+            questions=[
+                {
+                    "id": item.id,
+                    "text": item.text,
+                    **_present(impact=item.impact),
+                    **_sourced(item),
+                }
+                for item in offering.questions
+            ],
+            decisions=[
+                {"id": item.id, "title": item.title, **_present(text=item.text), **_sourced(item)}
+                for item in offering.decisions
+            ],
+            boundaries=list(offering.boundaries),
+            not_used=list(offering.not_used),
+        ),
     }
 
 
@@ -1262,6 +1397,8 @@ def _content(
     offerings: list[ProductOffering],
     journeys: list[Journey],
     channels: list[Channel] | None = None,
+    sources: list[KnowledgeSource] | None = None,
+    conflicts: list[SourceConflict] | None = None,
 ) -> CatalogueContent:
     """The file's content, refusing a placement in a domain the file does not list."""
     known = {item.id for item in domains}
@@ -1286,6 +1423,8 @@ def _content(
         tuple(offerings),
         tuple(journeys),
         tuple(channels or ()),
+        tuple(sources or ()),
+        tuple(conflicts or ()),
     )
 
 
@@ -1321,6 +1460,112 @@ def _channel_mapping(channel: Channel) -> dict[str, Any]:
             description=channel.description,
         ),
         **_sourced(channel),
+    }
+
+
+# Governance (requirement-portal ADR-0101, step 5): the source register and the conflicts
+# between sources.
+def _sources(entries: list[dict[str, Any]]) -> list[KnowledgeSource]:
+    sources = []
+    for number, item in enumerate(entries, start=1):
+        where = _where(item, f"sources entry {number}")
+        sources.append(_part(where, partial(_source, item, where)))
+    return sources
+
+
+def _source(item: dict[str, Any], where: str) -> KnowledgeSource:
+    return KnowledgeSource(
+        id=_text(item.get("id"), where, "id"),
+        title=_text(item.get("title"), where, "title"),
+        level=_text(item.get("level"), where, "level"),  # type: ignore[arg-type]
+        short=_optional_text(item.get("short"), where, "short"),
+        version=_optional_text(item.get("version"), where, "version"),
+        file=_optional_text(item.get("file"), where, "file"),
+        supplied=bool(_flag(item.get("supplied"), where, "supplied", True)),
+        authority=_optional_text(item.get("authority"), where, "authority"),
+        scope=_optional_text(item.get("scope"), where, "scope"),
+        boundary=_optional_text(item.get("boundary"), where, "boundary"),
+    )
+
+
+def _side(raw: object, where: str, field: str) -> ConflictSide:
+    if not isinstance(raw, dict):
+        raise InvalidKnowledgeError(f"{where}: {field} must be an object.")
+    return ConflictSide(
+        _text(raw.get("source"), where, f"{field}.source"),
+        _text(raw.get("statement"), where, f"{field}.statement"),
+        _optional_text(raw.get("reference"), where, f"{field}.reference"),
+    )
+
+
+def _conflicts(entries: list[dict[str, Any]]) -> list[SourceConflict]:
+    conflicts = []
+    for number, item in enumerate(entries, start=1):
+        where = _where(item, f"conflicts entry {number}")
+        conflicts.append(_part(where, partial(_conflict, item, where)))
+    return conflicts
+
+
+def _conflict(item: dict[str, Any], where: str) -> SourceConflict:
+    return SourceConflict(
+        id=_text(item.get("id"), where, "id"),
+        title=_text(item.get("title"), where, "title"),
+        a=_side(item.get("a"), where, "a"),
+        b=_side(item.get("b"), where, "b"),
+        scope=tuple(
+            ConflictScope(
+                _text(scope.get("product"), spot, "product"),
+                _text_list(scope.get("order_types"), spot, "order_types"),
+                _optional_text(scope.get("question"), spot, "question"),
+            )
+            for index, scope in enumerate(_sub_entries(item, "scope", where), 1)
+            for spot in [f"{where}, scope {index}"]
+        ),
+        difference=_optional_text(item.get("difference"), where, "difference"),
+        impact=_optional_text(item.get("impact"), where, "impact"),
+        decision=_optional_text(item.get("decision"), where, "decision"),
+        confidence=_trust(item.get("confidence"), where),
+        source=_optional_text(item.get("source"), where, "source"),
+    )
+
+
+def _source_mapping(source: KnowledgeSource) -> dict[str, Any]:
+    return {
+        "id": source.id,
+        "title": source.title,
+        "level": source.level.value,
+        **_present(short=source.short, version=source.version, file=source.file),
+        **({} if source.supplied else {"supplied": False}),
+        **_present(authority=source.authority, scope=source.scope, boundary=source.boundary),
+    }
+
+
+def _conflict_mapping(conflict: SourceConflict) -> dict[str, Any]:
+    def side(item: ConflictSide) -> dict[str, Any]:
+        return {
+            "source": item.source_id,
+            **_present(reference=item.reference),
+            "statement": item.statement,
+        }
+
+    return {
+        "id": conflict.id,
+        "title": conflict.title,
+        "a": side(conflict.a),
+        "b": side(conflict.b),
+        **_present(
+            scope=[
+                {
+                    "product": item.product_id,
+                    **_present(order_types=list(item.order_types), question=item.question_id),
+                }
+                for item in conflict.scope
+            ],
+            difference=conflict.difference,
+            impact=conflict.impact,
+            decision=conflict.decision,
+        ),
+        **_sourced(conflict),
     }
 
 
@@ -1416,6 +1661,10 @@ def release_to_mapping(release: ArchitectureKnowledge) -> dict[str, Any]:
             {"channels": [_channel_mapping(item) for item in release.channels]}
             if release.channels
             else {}
+        ),
+        **_present(
+            sources=[_source_mapping(item) for item in release.sources],
+            conflicts=[_conflict_mapping(item) for item in release.conflicts],
         ),
     }
 
@@ -1561,6 +1810,13 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                 for number, cells in _rows(workbook, CHANNELS)
             ]
         )
+        sources = _sources(
+            [
+                {**cells, "_where": f"{SOURCES} row {number}", "id": cells.get("source_id")}
+                for number, cells in _rows(workbook, SOURCES)
+            ]
+        )
+        conflicts = _conflicts(_sheet_conflicts(workbook))
     finally:
         workbook.close()
     definitions = []
@@ -1581,7 +1837,17 @@ def _read_workbook(content: bytes) -> CatalogueContent:
             )
         except InvalidKnowledgeError as exc:
             raise _located(data["where"], exc) from exc
-    return _content(definitions, relationships, domains, landscape, offerings, journeys, channels)
+    return _content(
+        definitions,
+        relationships,
+        domains,
+        landscape,
+        offerings,
+        journeys,
+        channels,
+        sources,
+        conflicts,
+    )
 
 
 def _sheet_journeys(workbook: Any) -> list[dict[str, Any]]:
@@ -1660,10 +1926,19 @@ def _sheet_offerings(workbook: Any) -> list[dict[str, Any]]:
         if product_id in offerings:
             raise InvalidKnowledgeError(f"{where}: product {product_id!r} is listed twice.")
         offerings[product_id] = {
-            **{key: cells.get(key) for key in _HEADERS[PRODUCTS][1:] if key != "rules"},
+            **{
+                key: cells.get(key)
+                for key in _HEADERS[PRODUCTS][1:]
+                if key not in {"rules", "sources"}
+            },
             "_where": where,
             "id": product_id,
             "rules": list(_split(cells.get("rules"), where, "rules")),
+            "sources": list(_split(cells.get("sources"), where, "sources")),
+            "questions": [],
+            "decisions": [],
+            "boundaries": [],
+            "not_used": [],
             "order_types": [],
             "components": [],
             "values": [],
@@ -1846,7 +2121,65 @@ def _sheet_offerings(workbook: Any) -> list[dict[str, Any]]:
             raise InvalidKnowledgeError(f"{where}: kind must be value or audience.")
         bucket = "values" if kind in _VALUE_KINDS else "audiences"
         offering(cells, where)[bucket].append({**cells, "_where": where})
+    for number, cells in _rows(workbook, QUESTIONS):
+        where = f"{QUESTIONS} row {number}"
+        offering(cells, where)["questions"].append(
+            {**cells, "_where": where, "id": cells.get("question_id")}
+        )
+    for number, cells in _rows(workbook, DECISIONS):
+        where = f"{DECISIONS} row {number}"
+        offering(cells, where)["decisions"].append(
+            {**cells, "_where": where, "id": cells.get("decision_id")}
+        )
+    for number, cells in _rows(workbook, BOUNDARIES):
+        where = f"{BOUNDARIES} row {number}"
+        kind = _text(cells.get("kind"), where, "kind").casefold().replace(" ", "_")
+        if kind not in {"boundary", "not_used"}:
+            raise InvalidKnowledgeError(f"{where}: kind must be boundary or not_used.")
+        bucket = "boundaries" if kind == "boundary" else "not_used"
+        offering(cells, where)[bucket].append(_text(cells.get("text"), where, "text"))
     return list(offerings.values())
+
+
+def _sheet_conflicts(workbook: Any) -> list[dict[str, Any]]:
+    """The conflict sheets in the YAML/JSON shape, each entry knowing its row."""
+    conflicts: dict[str, dict[str, Any]] = {}
+    for number, cells in _rows(workbook, CONFLICTS):
+        where = f"{CONFLICTS} row {number}"
+        conflict_id = _text(cells.get("conflict_id"), where, "conflict_id")
+        if conflict_id in conflicts:
+            raise InvalidKnowledgeError(f"{where}: conflict {conflict_id!r} is listed twice.")
+        conflicts[conflict_id] = {
+            **cells,
+            "_where": where,
+            "id": conflict_id,
+            "a": {
+                "source": cells.get("a_source_id"),
+                "reference": cells.get("a_reference"),
+                "statement": cells.get("a_statement"),
+            },
+            "b": {
+                "source": cells.get("b_source_id"),
+                "reference": cells.get("b_reference"),
+                "statement": cells.get("b_statement"),
+            },
+            "scope": [],
+        }
+    for number, cells in _rows(workbook, CONFLICT_SCOPES):
+        where = f"{CONFLICT_SCOPES} row {number}"
+        conflict_id = _text(cells.get("conflict_id"), where, "conflict_id")
+        if conflict_id not in conflicts:
+            raise InvalidKnowledgeError(
+                f"{where}: conflict {conflict_id!r} is not listed on the {CONFLICTS} sheet."
+            )
+        conflicts[conflict_id]["scope"].append(
+            {
+                "product": cells.get("product_id"),
+                "order_types": list(_split(cells.get("order_types"), where, "order_types")),
+                "question": cells.get("question_id"),
+            }
+        )
+    return list(conflicts.values())
 
 
 def _sheet_domains[DomainT: (CapabilityDomain, LandscapeDomain)](
@@ -1904,8 +2237,37 @@ def _write_offering(sheets: dict[str, Any], product: ProductOffering) -> None:
             f"{_LIST_SEPARATOR} ".join(product.rules),
             _confidence(product),
             product.source,
+            f"{_LIST_SEPARATOR} ".join(product.sources),
+            product.primary_source,
         ),
     )
+    for question in product.questions:
+        _append(
+            sheets[QUESTIONS],
+            (
+                product.id,
+                question.id,
+                question.text,
+                question.impact,
+                _confidence(question),
+                question.source,
+            ),
+        )
+    for decision in product.decisions:
+        _append(
+            sheets[DECISIONS],
+            (
+                product.id,
+                decision.id,
+                decision.title,
+                decision.text,
+                _confidence(decision),
+                decision.source,
+            ),
+        )
+    for kind, texts in (("boundary", product.boundaries), ("not_used", product.not_used)):
+        for text in texts:
+            _append(sheets[BOUNDARIES], (product.id, kind, text))
     for order in product.order_types:
         _append(
             sheets[ORDER_TYPES],
@@ -2268,6 +2630,51 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 channel.source,
             ),
         )
+    for source in release.sources if release is not None else ():
+        _append(
+            sheets[SOURCES],
+            (
+                source.id,
+                source.level.value,
+                source.title,
+                source.short,
+                source.version,
+                source.file,
+                _yes(source.supplied),
+                source.authority,
+                source.scope,
+                source.boundary,
+            ),
+        )
+    for conflict in release.conflicts if release is not None else ():
+        _append(
+            sheets[CONFLICTS],
+            (
+                conflict.id,
+                conflict.title,
+                conflict.a.source_id,
+                conflict.a.reference,
+                conflict.a.statement,
+                conflict.b.source_id,
+                conflict.b.reference,
+                conflict.b.statement,
+                conflict.difference,
+                conflict.impact,
+                conflict.decision,
+                _confidence(conflict),
+                conflict.source,
+            ),
+        )
+        for scope in conflict.scope:
+            _append(
+                sheets[CONFLICT_SCOPES],
+                (
+                    conflict.id,
+                    scope.product_id,
+                    f"{_LIST_SEPARATOR} ".join(scope.order_types),
+                    scope.question_id,
+                ),
+            )
     buffer = io.BytesIO()
     workbook.save(buffer)
     return buffer.getvalue()

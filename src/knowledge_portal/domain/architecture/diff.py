@@ -29,6 +29,12 @@ _OFFERING_FIELDS = (
     "nfrs",
     "tracking",
     "lifecycle_notes",
+    "sources",
+    "primary_source",
+    "questions",
+    "decisions",
+    "boundaries",
+    "not_used",
 )
 
 
@@ -41,6 +47,31 @@ _CHANNEL_FIELDS = (
     ("description", "description"),
     ("confidence", "confidence"),
     ("source", "source"),
+)
+
+
+# A registered source's attributes and a conflict's, as reported (ADR-0101, step 5).
+_SOURCE_FIELDS = (
+    "title",
+    "level",
+    "short",
+    "version",
+    "file",
+    "supplied",
+    "authority",
+    "scope",
+    "boundary",
+)
+_CONFLICT_FIELDS = (
+    "title",
+    "a",
+    "b",
+    "scope",
+    "difference",
+    "impact",
+    "decision",
+    "confidence",
+    "source",
 )
 
 
@@ -101,6 +132,8 @@ class ChangedItem(StrEnum):
     PRODUCT = "product"
     JOURNEY = "journey"
     CHANNEL = "channel"
+    SOURCE = "source"
+    CONFLICT = "conflict"
 
 
 @dataclass(frozen=True)
@@ -156,6 +189,34 @@ def _keyed_changes[T](
         for key, (label, _) in before.items()
         if key not in after
     )
+    return changes
+
+
+def _register_changes(
+    item: ChangedItem,
+    fields: tuple[str, ...],
+    before: dict[str, tuple[str, object]],
+    after: dict[str, tuple[str, object]],
+) -> list[CatalogueChange]:
+    """A register's added, removed and changed entries, each change naming its fields."""
+    changes = _keyed_changes(item, before, after)
+    for key, (label, value) in after.items():
+        previous = before.get(key)
+        if previous is None or previous[1] == value:
+            continue
+        changes.append(
+            CatalogueChange(
+                item,
+                ChangeKind.CHANGED,
+                key,
+                label,
+                tuple(
+                    field
+                    for field in fields
+                    if getattr(previous[1], field) != getattr(value, field)
+                ),
+            )
+        )
     return changes
 
 
@@ -378,6 +439,22 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
                 ),
             )
         )
+    changes.extend(
+        _register_changes(
+            ChangedItem.SOURCE,
+            _SOURCE_FIELDS,
+            {item.id: (item.title, item) for item in base.sources},
+            {item.id: (item.title, item) for item in draft.sources},
+        )
+    )
+    changes.extend(
+        _register_changes(
+            ChangedItem.CONFLICT,
+            _CONFLICT_FIELDS,
+            {item.id: (item.title, item) for item in base.conflicts},
+            {item.id: (item.title, item) for item in draft.conflicts},
+        )
+    )
     changes.extend(
         _keyed_changes(
             ChangedItem.DOCUMENT,

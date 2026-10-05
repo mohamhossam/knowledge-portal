@@ -168,6 +168,12 @@ def test_template_has_instructions_and_every_sheet() -> None:
         "TrackingEvents",
         "LifecycleNotes",
         "LifecycleBlocks",
+        "Sources",
+        "Conflicts",
+        "ConflictScopes",
+        "Questions",
+        "Decisions",
+        "Boundaries",
     ]
     assert ADAPTER.read(CatalogueFileFormat.XLSX, ADAPTER.template()).systems == ()
 

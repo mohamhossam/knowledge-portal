@@ -214,6 +214,14 @@ def update_draft(
             channels=(
                 None if body.channels is None else tuple(item.to_domain() for item in body.channels)
             ),
+            sources=(
+                None if body.sources is None else tuple(item.to_domain() for item in body.sources)
+            ),
+            conflicts=(
+                None
+                if body.conflicts is None
+                else tuple(item.to_domain() for item in body.conflicts)
+            ),
         )
     )
 

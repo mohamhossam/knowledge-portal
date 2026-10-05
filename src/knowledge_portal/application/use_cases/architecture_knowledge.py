@@ -24,6 +24,7 @@ from knowledge_portal.application.ports.identity import (
 )
 from knowledge_portal.domain.architecture.channels import Channel
 from knowledge_portal.domain.architecture.diff import CatalogueDiff, diff_releases
+from knowledge_portal.domain.architecture.governance import KnowledgeSource, SourceConflict
 from knowledge_portal.domain.architecture.journeys import Journey
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
@@ -210,6 +211,8 @@ class ManageArchitectureKnowledge:
         products: tuple[ProductOffering, ...] | None = None,
         journeys: tuple[Journey, ...] | None = None,
         channels: tuple[Channel, ...] | None = None,
+        sources: tuple[KnowledgeSource, ...] | None = None,
+        conflicts: tuple[SourceConflict, ...] | None = None,
     ) -> ArchitectureKnowledge:
         require_maintainer(actor)
         current = self.get(release_id)
@@ -223,6 +226,8 @@ class ManageArchitectureKnowledge:
             products=products,
             journeys=journeys,
             channels=channels,
+            sources=sources,
+            conflicts=conflicts,
         )
         self._repository.save(updated, expected_revision, actor.id, "edit_draft")
         return updated
@@ -335,6 +340,8 @@ class ManageArchitectureKnowledge:
             products=imported.products,
             journeys=imported.journeys,
             channels=imported.channels,
+            sources=imported.sources,
+            conflicts=imported.conflicts,
         )
 
     def preview_file_import(
@@ -366,6 +373,8 @@ class ManageArchitectureKnowledge:
             products=imported.products,
             journeys=imported.journeys,
             channels=imported.channels,
+            sources=imported.sources,
+            conflicts=imported.conflicts,
         )
 
     def export_file(self, release_id: str, file_format: CatalogueFileFormat, actor: Actor) -> bytes:

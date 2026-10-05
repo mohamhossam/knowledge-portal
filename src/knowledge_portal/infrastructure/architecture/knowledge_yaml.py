@@ -35,6 +35,8 @@ def knowledge_from_yaml(text: str) -> ArchitectureKnowledge:
         products=content.products,
         journeys=content.journeys,
         channels=content.channels,
+        sources=content.sources,
+        conflicts=content.conflicts,
     )
 
 

@@ -45,6 +45,15 @@ from knowledge_portal.domain.architecture.diff import (
     ChangedItem,
     ChangeKind,
 )
+from knowledge_portal.domain.architecture.governance import (
+    ArchitectureDecision,
+    ConflictScope,
+    ConflictSide,
+    KnowledgeSource,
+    OpenQuestion,
+    SourceConflict,
+    SourceLevel,
+)
 from knowledge_portal.domain.architecture.journeys import (
     Activity,
     ActivityIntegration,
@@ -236,6 +245,169 @@ class ChannelSchema(BaseModel):
             confidence=self.confidence,
             source=self.source,
         )
+
+
+class KnowledgeSourceSchema(BaseModel):
+    """A source the catalogue is read from, and its level (ADR-0101, step 5)."""
+
+    id: Identifier
+    title: Name
+    level: SourceLevel
+    short: Name | None = None
+    version: Name | None = None
+    file: Text | None = None
+    supplied: bool = True
+    authority: Text | None = None
+    scope: Text | None = None
+    boundary: Text | None = None
+
+    @classmethod
+    def from_domain(cls, item: KnowledgeSource) -> KnowledgeSourceSchema:
+        return cls.model_construct(
+            id=item.id,
+            title=item.title,
+            level=item.level,
+            short=item.short,
+            version=item.version,
+            file=item.file,
+            supplied=item.supplied,
+            authority=item.authority,
+            scope=item.scope,
+            boundary=item.boundary,
+        )
+
+    def to_domain(self) -> KnowledgeSource:
+        return KnowledgeSource(
+            id=self.id,
+            title=self.title,
+            level=self.level,
+            short=self.short,
+            version=self.version,
+            file=self.file,
+            supplied=self.supplied,
+            authority=self.authority,
+            scope=self.scope,
+            boundary=self.boundary,
+        )
+
+
+class ConflictSideSchema(BaseModel):
+    source_id: Identifier
+    statement: Text
+    reference: Name | None = None
+
+    @classmethod
+    def from_domain(cls, item: ConflictSide) -> ConflictSideSchema:
+        return cls.model_construct(
+            source_id=item.source_id, statement=item.statement, reference=item.reference
+        )
+
+    def to_domain(self) -> ConflictSide:
+        return ConflictSide(self.source_id, self.statement, self.reference)
+
+
+class ConflictScopeSchema(BaseModel):
+    product_id: Identifier
+    # Its order types by code; empty means every one.
+    order_types: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    question_id: Identifier | None = None
+
+    @classmethod
+    def from_domain(cls, item: ConflictScope) -> ConflictScopeSchema:
+        return cls.model_construct(
+            product_id=item.product_id,
+            order_types=list(item.order_types),
+            question_id=item.question_id,
+        )
+
+    def to_domain(self) -> ConflictScope:
+        return ConflictScope(self.product_id, tuple(self.order_types), self.question_id)
+
+
+class SourceConflictSchema(BaseModel):
+    """Two sources contradicting each other, and the decision it needs (ADR-0101, step 5)."""
+
+    id: Identifier
+    title: Name
+    a: ConflictSideSchema
+    b: ConflictSideSchema
+    scope: list[ConflictScopeSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    difference: Text | None = None
+    impact: Text | None = None
+    decision: Text | None = None
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
+
+    @classmethod
+    def from_domain(cls, item: SourceConflict) -> SourceConflictSchema:
+        return cls.model_construct(
+            id=item.id,
+            title=item.title,
+            a=ConflictSideSchema.from_domain(item.a),
+            b=ConflictSideSchema.from_domain(item.b),
+            scope=[ConflictScopeSchema.from_domain(scope) for scope in item.scope],
+            difference=item.difference,
+            impact=item.impact,
+            decision=item.decision,
+            confidence=item.confidence,
+            source=item.source,
+        )
+
+    def to_domain(self) -> SourceConflict:
+        return SourceConflict(
+            id=self.id,
+            title=self.title,
+            a=self.a.to_domain(),
+            b=self.b.to_domain(),
+            scope=tuple(scope.to_domain() for scope in self.scope),
+            difference=self.difference,
+            impact=self.impact,
+            decision=self.decision,
+            confidence=self.confidence,
+            source=self.source,
+        )
+
+
+class OpenQuestionSchema(BaseModel):
+    id: Identifier
+    text: Text
+    impact: Text | None = None
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
+
+    @classmethod
+    def from_domain(cls, item: OpenQuestion) -> OpenQuestionSchema:
+        return cls.model_construct(
+            id=item.id,
+            text=item.text,
+            impact=item.impact,
+            confidence=item.confidence,
+            source=item.source,
+        )
+
+    def to_domain(self) -> OpenQuestion:
+        return OpenQuestion(self.id, self.text, self.impact, self.confidence, self.source)
+
+
+class ArchitectureDecisionSchema(BaseModel):
+    id: Identifier
+    title: Name
+    text: Text | None = None
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
+
+    @classmethod
+    def from_domain(cls, item: ArchitectureDecision) -> ArchitectureDecisionSchema:
+        return cls.model_construct(
+            id=item.id,
+            title=item.title,
+            text=item.text,
+            confidence=item.confidence,
+            source=item.source,
+        )
+
+    def to_domain(self) -> ArchitectureDecision:
+        return ArchitectureDecision(self.id, self.title, self.text, self.confidence, self.source)
 
 
 class OfferingPointSchema(BaseModel):
@@ -694,6 +866,14 @@ class ProductOfferingSchema(BaseModel):
     nfrs: list[OfferingNfrSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     tracking: OrderTrackingSchema | None = None
     lifecycle_notes: list[LifecycleNoteSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    # Its governance (ADR-0101, step 5): registered sources by id, the primary one, open
+    # questions, architecture decisions, boundaries and what it no longer uses.
+    sources: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    primary_source: Identifier | None = None
+    questions: list[OpenQuestionSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    decisions: list[ArchitectureDecisionSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    boundaries: list[Text] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    not_used: list[Name] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, offering: ProductOffering) -> ProductOfferingSchema:
@@ -719,6 +899,12 @@ class ProductOfferingSchema(BaseModel):
             lifecycle_notes=[
                 LifecycleNoteSchema.from_domain(item) for item in offering.lifecycle_notes
             ],
+            sources=list(offering.sources),
+            primary_source=offering.primary_source,
+            questions=[OpenQuestionSchema.from_domain(item) for item in offering.questions],
+            decisions=[ArchitectureDecisionSchema.from_domain(item) for item in offering.decisions],
+            boundaries=list(offering.boundaries),
+            not_used=list(offering.not_used),
         )
 
     def to_domain(self) -> ProductOffering:
@@ -740,6 +926,12 @@ class ProductOfferingSchema(BaseModel):
             nfrs=tuple(item.to_domain() for item in self.nfrs),
             tracking=self.tracking.to_domain() if self.tracking else None,
             lifecycle_notes=tuple(item.to_domain() for item in self.lifecycle_notes),
+            sources=tuple(self.sources),
+            primary_source=self.primary_source,
+            questions=tuple(item.to_domain() for item in self.questions),
+            decisions=tuple(item.to_domain() for item in self.decisions),
+            boundaries=tuple(self.boundaries),
+            not_used=tuple(self.not_used),
         )
 
 
@@ -1070,6 +1262,12 @@ class KnowledgeReleaseResponse(BaseModel):
     )
     journeys: list[JourneySchema] = Field(default_factory=list, max_length=MAX_CATALOGUE_ITEMS)
     channels: list[ChannelSchema] = Field(default_factory=list, max_length=MAX_CATALOGUE_ITEMS)
+    sources: list[KnowledgeSourceSchema] = Field(
+        default_factory=list, max_length=MAX_CATALOGUE_ITEMS
+    )
+    conflicts: list[SourceConflictSchema] = Field(
+        default_factory=list, max_length=MAX_CATALOGUE_ITEMS
+    )
 
     @classmethod
     def from_domain(cls, release: ArchitectureKnowledge) -> KnowledgeReleaseResponse:
@@ -1101,6 +1299,8 @@ class KnowledgeReleaseResponse(BaseModel):
             products=[ProductOfferingSchema.from_domain(item) for item in release.products],
             journeys=[JourneySchema.from_domain(item) for item in release.journeys],
             channels=[ChannelSchema.from_domain(item) for item in release.channels],
+            sources=[KnowledgeSourceSchema.from_domain(item) for item in release.sources],
+            conflicts=[SourceConflictSchema.from_domain(item) for item in release.conflicts],
         )
 
 
@@ -1121,6 +1321,12 @@ class ExplorerReleaseResponse(BaseModel):
     )
     journeys: list[JourneySchema] = Field(default_factory=list, max_length=MAX_CATALOGUE_ITEMS)
     channels: list[ChannelSchema] = Field(default_factory=list, max_length=MAX_CATALOGUE_ITEMS)
+    sources: list[KnowledgeSourceSchema] = Field(
+        default_factory=list, max_length=MAX_CATALOGUE_ITEMS
+    )
+    conflicts: list[SourceConflictSchema] = Field(
+        default_factory=list, max_length=MAX_CATALOGUE_ITEMS
+    )
 
     @classmethod
     def from_domain(cls, release: ArchitectureKnowledge) -> ExplorerReleaseResponse:
@@ -1138,6 +1344,8 @@ class ExplorerReleaseResponse(BaseModel):
             products=[ProductOfferingSchema.from_domain(item) for item in release.products],
             journeys=[JourneySchema.from_domain(item) for item in release.journeys],
             channels=[ChannelSchema.from_domain(item) for item in release.channels],
+            sources=[KnowledgeSourceSchema.from_domain(item) for item in release.sources],
+            conflicts=[SourceConflictSchema.from_domain(item) for item in release.conflicts],
         )
 
 
@@ -1274,6 +1482,13 @@ class DraftUpdateRequest(BaseModel):
     journeys: list[JourneySchema] | None = Field(default=None, max_length=MAX_CATALOGUE_ITEMS)
     # Likewise for channels (requirement-portal ADR-0101, step 3).
     channels: list[ChannelSchema] | None = Field(default=None, max_length=MAX_CATALOGUE_ITEMS)
+    # Likewise for the source register and the conflicts between sources (step 5).
+    sources: list[KnowledgeSourceSchema] | None = Field(
+        default=None, max_length=MAX_CATALOGUE_ITEMS
+    )
+    conflicts: list[SourceConflictSchema] | None = Field(
+        default=None, max_length=MAX_CATALOGUE_ITEMS
+    )
 
 
 class SystemUpdateRequest(BaseModel):
