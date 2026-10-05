@@ -38,16 +38,23 @@ function Value({ gap, children }: { gap: boolean; children: ReactNode }) {
  * milestone events, what the customer sees, the internal statuses, and what
  * happens when an order falls out. What the sources leave undefined is due.
  */
-export function TrackingSection({ offering, headingId, system, channelName, orderName, focus }: {
+export function TrackingSection({ offering, headingId, system, channelName, orderName, focus, action }: {
   offering: Offering;
   headingId: string;
   system: (systemId: string) => ReactNode;
   channelName: (channelId: string) => string;
   orderName: (code: string) => string;
   focus?: TrackingFocus;
+  /** An edit offered under the title, on a draft's sheet. */
+  action?: ReactNode;
 }) {
   const tracking = offering.tracking;
-  const title = <h3 id={headingId} className="govsection__title">Order tracking</h3>;
+  const title = (
+    <>
+      <h3 id={headingId} className="govsection__title">Order tracking</h3>
+      {action}
+    </>
+  );
   if (!tracking) {
     return (
       <section className="govsection" aria-labelledby={headingId}>

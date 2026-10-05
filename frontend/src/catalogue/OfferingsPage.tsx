@@ -3,7 +3,8 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 
 import type { Offering } from "../api/client";
 import { CONFIDENCE, roleLabel, systemName } from "./catalogue";
-import { EditButton, OfferingEdit, WholeRemove } from "./DraftEdits";
+import { EditButton, OfferingEdit, OfferingSectionEdit, WholeRemove } from "./DraftEdits";
+import { OFFERING_SECTIONS, type OfferingSection } from "./offeringSections";
 import { NfrSection, RealisationKey, RealisedAs, RealisedInline } from "./Realisation";
 import { LifecycleSection } from "./LifecycleNotes";
 import { TrackingSection } from "./Tracking";
@@ -84,10 +85,32 @@ export function OfferingPage() {
 function OfferingSheet({ offering }: { offering: Offering }) {
   const { book, base, editable } = useCatalogueContext();
   const navigate = useNavigate();
-  const [editing, setEditing] = useState<"edit" | "remove" | null>(null);
+  // One section is edited at a time, in place of where it is read.
+  const [editing, setEditing] = useState<OfferingSection | "remove" | null>(null);
+  // The button a closing edit gives focus back to.
+  const returnTo = useRef<string | null>(null);
   const location = useLocation();
   const id = useId();
   const heading = useRef<HTMLHeadingElement>(null);
+  const buttonId = (key: OfferingSection | "remove") => `${id}-edit-${key}`;
+  useEffect(() => {
+    if (editing === null && returnTo.current) {
+      document.getElementById(returnTo.current)?.focus();
+      returnTo.current = null;
+    }
+  }, [editing]);
+  const close = (key: OfferingSection) => () => {
+    returnTo.current = buttonId(key);
+    setEditing(null);
+  };
+  /** A section's edit, offered under its title while nothing else is being edited. */
+  const offer = (key: OfferingSection) =>
+    editable && editing === null ? (
+      <p className="govsection__actions">
+        <EditButton id={buttonId(key)} onClick={() => setEditing(key)}>Edit {OFFERING_SECTIONS[key].edit}</EditButton>
+      </p>
+    ) : null;
+  const panel = (key: OfferingSection) => <OfferingSectionEdit offering={offering} section={key} onDone={close(key)} />;
   const journeys = (book.release.journeys ?? []).filter((journey) => journey.product_id === offering.id);
   const orderTypes = new Map(offering.order_types.map((item) => [item.code, item.name]));
   const channelNames = new Map((book.release.channels ?? []).map((item) => [item.id, item.name]));
@@ -129,22 +152,39 @@ function OfferingSheet({ offering }: { offering: Offering }) {
           {points("For", offering.audiences)}
           {points("Promises", offering.values)}
         </dl>
-        {editable && (
+        {editable && (editing === null || editing === "remove") && (
           <p className="docpage__actions">
-            <EditButton expanded={editing === "edit"} onClick={() => setEditing(editing === "edit" ? null : "edit")}>Edit this offering</EditButton>
-            <EditButton expanded={editing === "remove"} onClick={() => setEditing(editing === "remove" ? null : "remove")}>Remove this offering</EditButton>
+            {editing === null && <EditButton id={buttonId("facts")} onClick={() => setEditing("facts")}>Edit what it is</EditButton>}
+            <EditButton
+              id={buttonId("remove")}
+              expanded={editing === "remove"}
+              onClick={() => {
+                if (editing === "remove") returnTo.current = buttonId("remove");
+                setEditing(editing === "remove" ? null : "remove");
+              }}
+            >
+              Remove this offering
+            </EditButton>
           </p>
         )}
       </header>
-      {editing === "edit" && <OfferingEdit offering={offering} onDone={() => setEditing(null)} />}
+      {editing === "facts" && panel("facts")}
       {editing === "remove" && (
-        <WholeRemove kind="offering" item={offering} onDone={(removed) => (removed ? navigate(`${base}/offerings`) : setEditing(null))} />
+        <WholeRemove
+          kind="offering"
+          item={offering}
+          onDone={(removed) => {
+            if (removed) return navigate(`${base}/offerings`);
+            returnTo.current = buttonId("remove");
+            setEditing(null);
+          }}
+        />
       )}
-      {editing !== "edit" && (
-        <>
 
+      {editing === "orders" ? panel("orders") : (
       <section className="govsection" aria-labelledby={`${id}-orders`}>
         <h3 id={`${id}-orders`} className="govsection__title">Order types</h3>
+        {offer("orders")}
         {offering.order_types.length ? (
           <table className="govtable">
             <caption className="visually-hidden">Order types of {offering.name}</caption>
@@ -180,9 +220,12 @@ function OfferingSheet({ offering }: { offering: Offering }) {
           <p className="timetable__quiet">No order type is recorded.</p>
         )}
       </section>
+      )}
 
+      {editing === "parts" ? panel("parts") : (
       <section className="govsection" aria-labelledby={`${id}-parts`}>
         <h3 id={`${id}-parts`} className="govsection__title">Parts, and who is responsible</h3>
+        {offer("parts")}
         {offering.components.length ? (
           <table className="govtable">
             <caption className="visually-hidden">Parts of {offering.name} and the systems responsible for them</caption>
@@ -238,28 +281,37 @@ function OfferingSheet({ offering }: { offering: Offering }) {
         )}
         <RealisationKey offering={offering} />
       </section>
+      )}
 
-      <NfrSection offering={offering} headingId={`${id}-nfrs`} />
+      {editing === "nfrs" ? panel("nfrs") : <NfrSection offering={offering} headingId={`${id}-nfrs`} action={offer("nfrs")} />}
 
+      {editing === "tracking" ? panel("tracking") : (
       <TrackingSection
         offering={offering}
         headingId={`${id}-tracking`}
+        action={offer("tracking")}
         system={(systemId) => (
           <Link to={`${base}/systems/${encodeURIComponent(systemId)}`} dir="auto">{systemName(book, systemId)}</Link>
         )}
         channelName={(channelId) => channelNames.get(channelId) ?? channelId}
         orderName={(code) => orderTypes.get(code) ?? code}
       />
+      )}
 
+      {editing === "notes" ? panel("notes") : (
       <LifecycleSection
         offering={offering}
         headingId={`${id}-lifecycle`}
         orderName={(code) => orderTypes.get(code) ?? code}
         channelName={(channelId) => channelNames.get(channelId) ?? channelId}
+        action={offer("notes")}
       />
+      )}
 
+      {editing === "rules" ? panel("rules") : (
       <section className="govsection" aria-labelledby={`${id}-rules`}>
         <h3 id={`${id}-rules`} className="govsection__title">Rules</h3>
+        {offer("rules")}
         {offering.rules.length ? (
           <ul className="sheet__list">
             {offering.rules.map((rule) => <li key={rule} dir="auto">{rule}</li>)}
@@ -268,6 +320,7 @@ function OfferingSheet({ offering }: { offering: Offering }) {
           <p className="timetable__quiet">No rule is recorded.</p>
         )}
       </section>
+      )}
 
       <section className="govsection" aria-labelledby={`${id}-journeys`}>
         <h3 id={`${id}-journeys`} className="govsection__title">Journeys</h3>
@@ -286,8 +339,6 @@ function OfferingSheet({ offering }: { offering: Offering }) {
           <p className="timetable__quiet">No journey in this version fulfils it.</p>
         )}
       </section>
-        </>
-      )}
     </article>
   );
 }

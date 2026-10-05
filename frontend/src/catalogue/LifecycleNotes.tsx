@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
 import type { Offering } from "../api/client";
 import { CONFIDENCE, concerns } from "./catalogue";
@@ -102,12 +102,14 @@ function tableName(note: Note, block: Block): string {
  * open in place, so a long list reads as an index first. The explorer reads
  * the notes of its order type and channel; a sheet reads all.
  */
-export function LifecycleSection({ offering, headingId, orderName, channelName, focus }: {
+export function LifecycleSection({ offering, headingId, orderName, channelName, focus, action }: {
   offering: Offering;
   headingId: string;
   orderName: (code: string) => string;
   channelName: (channelId: string) => string;
   focus?: LifecycleFocus;
+  /** An edit offered under the title, on a draft's sheet. */
+  action?: ReactNode;
 }) {
   const notes = offering.lifecycle_notes ?? [];
   const shown = focus ? notes.filter((note) => concerns(note, focus.orderCode, focus.channelId)) : notes;
@@ -130,6 +132,7 @@ export function LifecycleSection({ offering, headingId, orderName, channelName, 
         {focus ? `Lifecycle notes for ${focus.orderName}` : "Lifecycle notes"}{" "}
         {shown.length > 0 && <span className="govsection__count">{shown.length}</span>}
       </h3>
+      {action}
       {shown.length > 1 && (
         <p className="lifecycle__toolbar">
           <button type="button" className="text-button" onClick={() => setOpen(allOpen ? new Set() : new Set(shown.map((note) => note.id)))}>
