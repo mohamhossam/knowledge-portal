@@ -64,8 +64,14 @@ describe("gaps", () => {
       "No system is named as responsible for Firewall in Cease.",
       "How Firewall is realised is not recorded.",
       "Availability is not defined by any source.",
+      "Lifecycle note ‘Renewal’ carries over content from another source, to re-verify.",
       "1 fact is marked in its source as a gap.",
     ]);
+  });
+
+  it("says which lifecycle notes carry over content to re-verify, for the notes that concern the scenario", () => {
+    expect(gaps(scenario("bpp", "NEW", "shop"))).toContain("Lifecycle note ‘Renewal’ carries over content from another source, to re-verify.");
+    expect(gaps(scenario())).not.toContain("Lifecycle note ‘Renewal’ carries over content from another source, to re-verify.");
   });
 
   it("says when the channel's entry system performs a step but the channel names none", () => {

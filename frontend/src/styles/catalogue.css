@@ -1009,3 +1009,151 @@
     display: block;
   }
 }
+
+/* Lifecycle notes: each a titled part of the section, its content as the source sets it out. */
+.lifecycle__note .govsection__part {
+  margin-top: var(--s3);
+}
+
+.lifecycle__meta {
+  max-width: 72ch;
+  margin: var(--s1) 0 0;
+  font-size: var(--t-meta);
+}
+
+/* A note's title opens it in place: the title itself is the button, its chevron before it. */
+.lifecycle__head {
+  padding: 0;
+}
+
+.lifecycle__toggle {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--s1);
+  min-height: 1.5rem;
+  padding: 0 0 var(--s1);
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.lifecycle__toggle svg {
+  flex: none;
+  align-self: center;
+  color: var(--ink-2);
+}
+
+.lifecycle__toggle:hover span {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.lifecycle__toolbar {
+  margin: var(--s2) 0 0;
+}
+
+.lifecycle__text {
+  max-width: 72ch;
+  margin: var(--s2) 0 0;
+}
+
+.lifecycle__block {
+  margin-top: var(--s2);
+}
+
+/* A block's own heading, such as a carry-over from an older source. */
+.lifecycle__aside {
+  margin: var(--s3) 0 0;
+  font-size: var(--t-meta);
+  font-weight: var(--w-medium);
+}
+
+.lifecycle__provenance,
+.lifecycle__others {
+  max-width: 72ch;
+  margin: var(--s1) 0 0;
+  font-size: var(--t-meta);
+}
+
+.lifecycle__list {
+  max-width: 72ch;
+  margin-top: var(--s1);
+}
+
+/* The source's own caption sits under its table, in meta size. */
+.lifecycle__caption {
+  caption-side: bottom;
+  padding-top: var(--s1);
+  font-size: var(--t-meta);
+  text-align: start;
+}
+
+.govtable.lifecycle__table th,
+.govtable.lifecycle__table td {
+  overflow-wrap: break-word;
+}
+
+/* On phones each source row stacks under its row header, every value beside its column
+   head, so a wide table keeps its words whole and never scrolls sideways. */
+@media (max-width: 45rem) {
+  .govtable.lifecycle__table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .govtable.lifecycle__table,
+  .govtable.lifecycle__table tbody,
+  .govtable.lifecycle__table tr,
+  .govtable.lifecycle__table th,
+  .govtable.lifecycle__table td {
+    display: block;
+  }
+
+  .govtable.lifecycle__table td[data-head]::before {
+    content: attr(data-head) ": ";
+    color: var(--ink-2);
+    font-size: var(--t-meta);
+  }
+
+  /* One record per row: a hairline between records, none between a record's values. */
+  .govtable.lifecycle__table tr {
+    padding: var(--s2) 0;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .govtable.lifecycle__table th,
+  .govtable.lifecycle__table td {
+    padding: 0.125rem 0;
+    border-bottom: 0;
+  }
+
+  .govtable.lifecycle__table .lifecycle__caption {
+    display: block;
+    width: 100%;
+  }
+}
+
+/* A repeating row named on its own heavy rule, for long groups such as lifecycle notes. */
+.form__row-title {
+  width: 100%;
+  margin-bottom: var(--s2);
+  padding: var(--s1) 0;
+  border-bottom: 2px solid var(--rule-heavy);
+  font-weight: var(--w-bold);
+}
+
+/* Long checkbox groups set in columns rather than one tall run. */
+.form .choices.form__field--wide {
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+}
+
+/* Content carried over from another source is due until someone re-verifies it. */
+.lifecycle__due {
+  font-weight: var(--w-bold);
+}

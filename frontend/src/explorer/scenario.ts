@@ -6,7 +6,7 @@
  * calls the service, and nothing is filled in that the version does not hold.
  */
 import type { Channel, ExplorerRelease, Journey, Offering } from "../api/client";
-import { orderedSteps } from "../catalogue/catalogue";
+import { concerns, orderedSteps } from "../catalogue/catalogue";
 import { count } from "../home/format";
 
 export type OrderType = Offering["order_types"][number];
@@ -249,6 +249,15 @@ export function gaps(scenario: Scenario): string[] {
   if (!nfrs.length) found.push(`No non-functional requirement is recorded for ${scenario.offering.name}.`);
   else if (undefinedQualities.length) {
     found.push(`${listed(undefinedQualities)} ${undefinedQualities.length === 1 ? "is" : "are"} not defined by any source.`);
+  }
+  const unverified = (scenario.offering.lifecycle_notes ?? [])
+    .filter((note) => concerns(note, scenario.orderType.code, scenario.channel?.id ?? null))
+    .filter((note) => note.blocks.some((block) => block.to_verify))
+    .map((note) => `‘${note.title}’`);
+  if (unverified.length) {
+    found.push(
+      `Lifecycle note${unverified.length === 1 ? "" : "s"} ${listed(unverified)} carr${unverified.length === 1 ? "ies" : "y"} over content from another source, to re-verify.`,
+    );
   }
   const tracked = trackingFor(scenario);
   if (!tracked) found.push(`No order tracking is recorded for ${scenario.offering.name}.`);

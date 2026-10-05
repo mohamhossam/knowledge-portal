@@ -144,6 +144,7 @@ const FIELD: Record<string, string> = {
   realisation: "how its parts are realised",
   nfrs: "non-functional requirements",
   tracking: "order tracking",
+  lifecycle_notes: "lifecycle notes",
 };
 
 /** A changed item's fields, said as words: "Arabic name and where it sits". */

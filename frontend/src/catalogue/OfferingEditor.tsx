@@ -2,6 +2,7 @@ import type { CatalogueSystem, Channel, Offering, SourceConfidence } from "../ap
 import { CONFIDENCE_OPTIONS, COVERAGE, LAYERS } from "./catalogue";
 import { lines } from "./editing";
 import { AreaField, CheckField, LinesField, Rows, SelectField, SystemField, TextField } from "./forms";
+import { LifecycleEditor } from "./LifecycleEditor";
 import { TrackingEditor } from "./TrackingEditor";
 
 type Part = Offering["components"][number];
@@ -54,7 +55,7 @@ export function OfferingEditor({ value, onChange, systems, channels = [], names 
         <TextField label="Code" value={value.code} onChange={(code) => set({ code: code || null })} />
         <TextField label="Family" value={value.family} onChange={(family) => set({ family: family || null })} />
         <TextField label="Version" value={value.version} onChange={(version) => set({ version: version || null })} />
-        <TextField label="Lifecycle" value={value.lifecycle} onChange={(lifecycle) => set({ lifecycle: lifecycle || null })} />
+        <TextField label="Lifecycle status" value={value.lifecycle} onChange={(lifecycle) => set({ lifecycle: lifecycle || null })} />
         <SelectField
           label="How sure its source is"
           value={value.confidence ?? ""}
@@ -204,6 +205,13 @@ export function OfferingEditor({ value, onChange, systems, channels = [], names 
         value={value.tracking}
         onChange={(tracking) => set({ tracking })}
         systems={systems}
+        channels={channels}
+        orderTypes={orderTypeOptions}
+      />
+
+      <LifecycleEditor
+        value={value.lifecycle_notes ?? []}
+        onChange={(lifecycle_notes) => set({ lifecycle_notes })}
         channels={channels}
         orderTypes={orderTypeOptions}
       />

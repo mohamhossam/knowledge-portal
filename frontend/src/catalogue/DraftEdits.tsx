@@ -346,7 +346,7 @@ export function OfferingEdit({ offering, onDone }: { offering?: Offering; onDone
   const release = book.release;
   const { saveDraft } = useEditing(release);
   const [value, setValue] = useState<Offering>(
-    () => offering ?? { id: "", name: "", rules: [], order_types: [], components: [], values: [], audiences: [], nfrs: [] },
+    () => offering ?? { id: "", name: "", rules: [], order_types: [], components: [], values: [], audiences: [], nfrs: [], lifecycle_notes: [] },
   );
   const products = release.products ?? [];
   const clash = products.some((item) => item.id !== offering?.id && item.name.trim().toLocaleLowerCase() === value.name.trim().toLocaleLowerCase());
