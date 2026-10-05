@@ -66,6 +66,7 @@ RENEWAL = LifecycleNote(
             title="v8.2 carry-over (not in SDD, re-verify)",
             items=("Inherit remaining tenure", "Fresh 24-month commitment"),
             confidence=SourceConfidence.INFERRED,
+            to_verify=True,
         ),
     ),
 )

@@ -108,7 +108,7 @@ export function LifecycleEditor({ value, onChange, channels, orderTypes }: {
             one={`part of ${note.title.trim() || "this note"}`}
             items={note.blocks}
             onChange={(blocks) => change({ blocks })}
-            blank={() => ({ kind: "text", items: [], columns: [], rows: [] })}
+            blank={() => ({ kind: "text", items: [], columns: [], rows: [], to_verify: false })}
             itemLabel={(block, index) => `${(KIND_OPTIONS.find((item) => item.value === block.kind)?.label ?? "part").toLocaleLowerCase()} ${index + 1}${block.title ? ` (${cut(block.title, index, "").trim()})` : ""}`}
             render={(block, edit) => (
               <>
@@ -119,6 +119,11 @@ export function LifecycleEditor({ value, onChange, channels, orderTypes }: {
                   onChange={(kind) => edit({ kind: kind as Block["kind"] })}
                 />
                 <TextField label="Its own heading" value={block.title} onChange={(title) => edit({ title: title || null })} />
+                <CheckField
+                  label="Carried over from another source; to re-verify"
+                  checked={block.to_verify === true}
+                  onChange={(to_verify) => edit({ to_verify })}
+                />
                 <BlockFields block={block} change={edit} />
               </>
             )}

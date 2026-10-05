@@ -3925,6 +3925,11 @@
               }
             ],
             "title": "Title"
+          },
+          "to_verify": {
+            "default": false,
+            "title": "To Verify",
+            "type": "boolean"
           }
         },
         "required": [

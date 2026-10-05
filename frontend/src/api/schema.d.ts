@@ -2530,6 +2530,11 @@ export interface components {
             text?: string | null;
             /** Title */
             title?: string | null;
+            /**
+             * To Verify
+             * @default false
+             */
+            to_verify: boolean;
         };
         /** OfferingComponentSchema */
         OfferingComponentSchema: {

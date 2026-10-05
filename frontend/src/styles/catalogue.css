@@ -1152,3 +1152,8 @@
 .form .choices.form__field--wide {
   grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
 }
+
+/* Content carried over from another source is due until someone re-verifies it. */
+.lifecycle__due {
+  font-weight: var(--w-bold);
+}

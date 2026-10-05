@@ -479,18 +479,21 @@ class _Reader:
         blocks: Iterable[Mapping[str, Any]],
         title: str | None = None,
         evidence: Mapping[str, str] | None = None,
+        carried: bool = False,
     ) -> list[dict[str, Any]]:
         out: list[dict[str, Any]] = []
         for block in blocks:
             kind = block.get("type")
             heading = {"title": title} if title and not out else {}
-            sourced = dict(evidence or {})
+            # A carry-over comes from another source than the note's: to re-verify.
+            sourced = {**(evidence or {}), **({"to_verify": True} if carried else {})}
             if kind == "carry":
                 out.extend(
                     self._blocks(
                         block.get("blocks") or (),
                         block.get("title"),
                         self._evidence(block.get("ev")),
+                        carried=True,
                     )
                 )
             elif kind == "p" and block.get("text"):

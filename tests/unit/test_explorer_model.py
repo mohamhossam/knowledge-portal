@@ -503,6 +503,7 @@ def test_lifecycle_notes_carry_over_with_their_carry_overs_cross_product_and_des
         "items": ["IP", "SIM"],
         "confidence": "inferred",
         "source": "BPP SDD §12",
+        "to_verify": True,
     }
     assert text == {"kind": "text", "text": "Tenure is inherited."}
     # A carry-over keeps its heading on its first block and its weaker confidence on each.
@@ -512,9 +513,12 @@ def test_lifecycle_notes_carry_over_with_their_carry_overs_cross_product_and_des
         "items": ["New → New", "Old → New"],
         "confidence": "inferred",
         "source": "BPP SDD §12",
+        "to_verify": True,
     }
     assert table["columns"] == ["From", "To"] and table["caption"] == "Rollover codes"
-    assert "title" not in table and table["confidence"] == "inferred"
+    assert "title" not in table and table["confidence"] == "inferred" and table["to_verify"]
+    # The note's own paragraph rests on the note's source: nothing to re-verify.
+    assert "to_verify" not in text
     assert "order_types" not in sso
     assert (cross["title"], cross["kind"], cross["order_types"]) == (
         "With Business Pro Plus",

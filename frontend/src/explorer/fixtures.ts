@@ -45,7 +45,7 @@ export const EXPLORED = {
           order_types: [],
           channels: ["shop"],
           summary: "What a renewal carries over.",
-          blocks: [{ kind: "list", title: "v8.2 carry-over (re-verify)", items: ["Inherit tenure"], columns: [], rows: [], confidence: "inferred" }],
+          blocks: [{ kind: "list", title: "v8.2 carry-over (re-verify)", items: ["Inherit tenure"], columns: [], rows: [], confidence: "inferred", to_verify: true }],
         },
         {
           id: "LC-CEASE",

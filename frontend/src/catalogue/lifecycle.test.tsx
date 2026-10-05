@@ -59,8 +59,8 @@ describe("lifecycle notes", () => {
     const with_ = (note: Partial<typeof MATRIX>) => offeringProblem({ ...OFFERING, lifecycle_notes: [{ ...MATRIX!, ...note }] });
     expect(with_({ title: " " })).toBe("Every lifecycle note needs a title.");
     expect(with_({ blocks: [], summary: null })).toBe("Up / Downgrade matrix: a note needs a summary or what it says.");
-    expect(with_({ blocks: [{ kind: "list", items: [" "], columns: [], rows: [] }] })).toBe("Up / Downgrade matrix: a list needs at least one item.");
-    expect(with_({ blocks: [{ kind: "table", items: [], columns: ["A"], rows: [["1", "2"]] }] })).toBe(
+    expect(with_({ blocks: [{ kind: "list", items: [" "], columns: [], rows: [], to_verify: false }] })).toBe("Up / Downgrade matrix: a list needs at least one item.");
+    expect(with_({ blocks: [{ kind: "table", items: [], columns: ["A"], rows: [["1", "2"]], to_verify: false }] })).toBe(
       "Up / Downgrade matrix: a table row has more cells than the table has columns.",
     );
   });

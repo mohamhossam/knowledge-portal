@@ -48,6 +48,9 @@ class NoteBlock:
     caption: str | None = None
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # Carried over from another source than the one the note rests on: to re-verify
+    # before anyone relies on it.
+    to_verify: bool = False
 
     def __post_init__(self) -> None:
         try:

@@ -69,7 +69,12 @@ function NoteBlock({ block, name }: { block: Block; name: string }) {
   const provenance = sourced(block);
   return (
     <div className="lifecycle__block">
-      {block.title && <p className="lifecycle__aside" dir="auto">{block.title}</p>}
+      {block.title && <p className={block.to_verify ? "lifecycle__aside lifecycle__due" : "lifecycle__aside"} dir="auto">{block.title}</p>}
+      {block.to_verify && (
+        <p className={block.title ? "secondary lifecycle__provenance" : "lifecycle__provenance lifecycle__due"}>
+          Carried over from another source: to re-verify before anyone relies on it.
+        </p>
+      )}
       {block.title && provenance && <p className="secondary lifecycle__provenance" dir="auto">{provenance}</p>}
       {block.kind === "text" && <p className="lifecycle__text" dir="auto">{block.text}</p>}
       {block.kind === "list" && (
@@ -152,6 +157,9 @@ export function LifecycleSection({ offering, headingId, orderName, channelName, 
               </h4>
               {scope.length > 0 && <p className="secondary lifecycle__meta" dir="auto">{scope.join(" · ")}</p>}
               {!isOpen && holds(note) && <p className="secondary lifecycle__meta">{holds(note)}</p>}
+              {!isOpen && note.blocks.some((block) => block.to_verify) && (
+                <p className="lifecycle__meta lifecycle__due">Carries over content to re-verify.</p>
+              )}
               <div id={bodyId} hidden={!isOpen}>
                 {note.summary && <p className="lifecycle__text" dir="auto">{note.summary}</p>}
                 {note.blocks.map((block, index) => (

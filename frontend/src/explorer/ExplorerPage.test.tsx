@@ -190,12 +190,14 @@ describe("ExplorerPage", () => {
     const renewal = within(section.getByRole("article", { name: "Renewal" }));
     expect(renewal.getByText("Commercial · Only in Shop")).toBeInTheDocument();
     expect(renewal.getByText("Holds a list of 1 item.")).toBeInTheDocument();
+    expect(renewal.getByText("Carries over content to re-verify.")).toHaveClass("lifecycle__due");
     expect(renewal.queryByRole("listitem")).not.toBeInTheDocument();
 
     fireEvent.click(toggle);
 
     expect(toggle).toHaveAttribute("aria-expanded", "true");
-    expect(renewal.getByText("v8.2 carry-over (re-verify)")).toHaveClass("lifecycle__aside");
+    expect(renewal.getByText("v8.2 carry-over (re-verify)")).toHaveClass("lifecycle__aside", "lifecycle__due");
+    expect(renewal.getByText("Carried over from another source: to re-verify before anyone relies on it.")).toBeInTheDocument();
     expect(renewal.getByText("Inferred, not stated in its source")).toBeInTheDocument();
     expect(renewal.getByRole("listitem")).toHaveTextContent("Inherit tenure");
 

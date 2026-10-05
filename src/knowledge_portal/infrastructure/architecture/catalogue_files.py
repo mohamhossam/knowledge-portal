@@ -295,6 +295,7 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         *_CELLS,
         "confidence",
         "source",
+        "to_verify",
     ),
 }
 # Headers a sheet cannot do without. Columns added later stay optional, so
@@ -402,7 +403,8 @@ _INSTRUCTIONS = (
     (
         "LifecycleBlocks: each note's content in order. kind text (text), list then one item "
         "row per item (text), table (column heads in cell_1…, caption in text) then one row "
-        "row per table row (cells in cell_1…).",
+        "row per table row (cells in cell_1…). to_verify yes: carried over from another "
+        "source, to re-verify.",
     ),
     ("Row 1 of each sheet holds the headers; keep them as they are.",),
 )
@@ -1021,6 +1023,7 @@ def _lifecycle_notes(item: dict[str, Any], where: str) -> tuple[LifecycleNote, .
                         caption=_optional_text(block.get("caption"), spot, "caption"),
                         confidence=_trust(block.get("confidence"), spot),
                         source=_optional_text(block.get("source"), spot, "source"),
+                        to_verify=bool(_flag(block.get("to_verify"), spot, "to_verify", False)),
                     )
                 )
             notes.append(
@@ -1167,6 +1170,7 @@ def _note_mapping(note: LifecycleNote) -> dict[str, Any]:
                         caption=block.caption,
                     ),
                     **_sourced(block),
+                    **({"to_verify": True} if block.to_verify else {}),
                 }
                 for block in note.blocks
             ]
@@ -1999,7 +2003,8 @@ def _write_note(sheets: dict[str, Any], product_id: str, note: LifecycleNote) ->
     def row(kind: str, title: str | None, text: str | None, cells: tuple[object, ...]) -> None:
         padded = (*cells, *blank)[: len(_CELLS)]
         _append(
-            sheets[LIFECYCLE_BLOCKS], (product_id, note.id, kind, title, text, *padded, None, None)
+            sheets[LIFECYCLE_BLOCKS],
+            (product_id, note.id, kind, title, text, *padded, None, None, None),
         )
 
     for block in note.blocks:
@@ -2021,6 +2026,7 @@ def _write_note(sheets: dict[str, Any], product_id: str, note: LifecycleNote) ->
                 *(*cells, *blank)[: len(_CELLS)],
                 _confidence(block),
                 block.source,
+                "yes" if block.to_verify else None,
             ),
         )
         for item in block.items:

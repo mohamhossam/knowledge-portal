@@ -477,6 +477,8 @@ class NoteBlockSchema(BaseModel):
     caption: Text | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # Carried over from another source: to re-verify before anyone relies on it.
+    to_verify: bool = False
 
     @classmethod
     def from_domain(cls, item: NoteBlock) -> NoteBlockSchema:
@@ -490,6 +492,7 @@ class NoteBlockSchema(BaseModel):
             caption=item.caption,
             confidence=item.confidence,
             source=item.source,
+            to_verify=item.to_verify,
         )
 
     def to_domain(self) -> NoteBlock:
@@ -503,6 +506,7 @@ class NoteBlockSchema(BaseModel):
             caption=self.caption,
             confidence=self.confidence,
             source=self.source,
+            to_verify=self.to_verify,
         )
 
 
