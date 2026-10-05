@@ -76,7 +76,8 @@ describe("GovernancePage", () => {
 
     const history = within(screen.getByRole("table", { name: "Change requests applied to this version" })).getAllByRole("row").slice(1);
     expect(history[0]).toHaveTextContent("CR-20261003-Business_Pro_Plus");
-    expect(history[0]).toHaveTextContent("From Requirement AI, asked by Layla Haddad");
+    expect(history[0]).toHaveTextContent("From Requirement AI");
+    expect(history[0]).not.toHaveTextContent("asked by");
     expect(history[0]).toHaveTextContent("REQ-2026-0412, revision 3, approved by Layla Haddad on 3 Oct 2026");
     expect(history[0]).toHaveTextContent("4 Oct 2026to Business Pro Plus");
     expect(history[0]).toHaveTextContent("FT-1 Asks of Business Pro Plus: Offer Microsoft 365");

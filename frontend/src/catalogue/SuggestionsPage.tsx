@@ -10,7 +10,7 @@ import { DraftChangeRequests } from "./ChangeRequests";
 import { DraftDocuments } from "./DraftDocuments";
 import { type RowFocus, SuggestionRow } from "./SuggestionRow";
 import {
-  type Filter, type SuggestionGroup, bulkAcceptable, changeSentence, inWords, lexicon, matchesFind, shown,
+  type Filter, type SuggestionGroup, bulkAcceptable, changeSentence, featureWarnings, inWords, lexicon, matchesFind, shown,
   suggestionGroups, suggestionState, tally,
 } from "./suggestions";
 import { useCatalogueContext } from "./useCatalogue";
@@ -77,6 +77,9 @@ function Suggestions() {
     });
   const counts = tally(all);
   const bulk = useMemo(() => bulkAcceptable(release, all), [release, all]);
+  const notes = useMemo(() => featureWarnings(draft.suggestions.data?.runs ?? []), [draft.suggestions.data]);
+  // The accepting order only matters when there is more than questions to accept.
+  const ordered = all.some((item) => item.status === "proposed" && item.content.kind !== "question");
   const bulkCount = bulk.ready.length + bulk.lifted.length;
   // Groups keep the place they first took this session, so deciding never moves the station being worked.
   const [placed, setPlaced] = useState<string[]>([]);
@@ -272,7 +275,8 @@ function Suggestions() {
                 {draft.acceptReady.isPending ? "Accepting…" : bulkLabel(bulk.ready.length, bulk.lifted.length)}
               </button>
               <span className="secondary">
-                Domains first, then systems, then what hangs on them. Matches, inferred links and replacements stay for you.
+                {ordered && "Domains first, then systems, then what hangs on them. "}Matches, inferred links and replacements stay
+                for you.
               </span>
             </div>
 
@@ -355,6 +359,11 @@ function Suggestions() {
                         focusable={focus ? focus.key === suggestion.id : suggestion === rows[0]}
                         busy={draft.pending > 0}
                         kept={edits[suggestion.id]}
+                        notes={
+                          suggestion.change_request
+                            ? notes.get(`${suggestion.change_request.change_request_id}/${suggestion.change_request.feature_id}`)
+                            : undefined
+                        }
                         toggleRef={(element) => {
                           if (element) rowRefs.current.set(suggestion.id, element);
                           else rowRefs.current.delete(suggestion.id);
@@ -420,7 +429,7 @@ function GroupRows({ group, visible, confirming, onConfirm, busy, onAcceptReady,
             ) : (
               <span dir="auto">{group.label}</span>
             )}
-          </span>
+          </span>{" "}
           <span className="galley__tally">
             {count(waiting.length, "waiting", "waiting")}
             {visible.length !== group.suggestions.length && ` · ${visible.length} of ${group.suggestions.length} shown`}

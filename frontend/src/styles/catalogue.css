@@ -1231,7 +1231,7 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
   }
 
   .govtable.lifecycle__table td[data-head]::before {
-    content: attr(data-head) ": ";
+    content: attr(data-head) ": " / "";
     color: var(--ink-2);
     font-size: var(--t-meta);
   }
@@ -1415,7 +1415,8 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
 
   .govtable.governance__table td[data-head]::before {
     display: block;
-    content: attr(data-head);
+    /* The column head is already announced; the label is for the eye only. */
+    content: attr(data-head) / "";
     color: var(--ink-2);
     font-size: var(--t-meta);
   }
@@ -1475,10 +1476,33 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
   display: grid;
   gap: 0.125rem;
   margin: var(--s1) 0 0;
-  padding-inline-start: var(--s4);
+  padding: 0;
+  list-style: none;
   color: var(--ink-2);
   font-size: var(--t-meta);
   max-width: 72ch;
+}
+
+.changerequests__col-reading {
+  width: 56%;
+}
+
+.changerequests__col-waiting {
+  width: 12%;
+}
+
+/* "Its suggestions": as tall as the buttons beside it. */
+.changerequests__link {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 1.5rem;
+}
+
+/* A warning a reading left on one feature, shown again on that feature's suggestion. */
+.suggestion__warning {
+  display: block;
+  color: var(--ink-2);
+  font-size: var(--t-meta);
 }
 
 .changerequests__dismiss {
@@ -1503,4 +1527,10 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
 
 .governance__col-changed {
   width: 48%;
+}
+
+/* "Versions · 2 waiting": change requests from Requirement AI, seen from every catalogue page. */
+.subindex__note {
+  color: var(--ink-2);
+  font-weight: var(--w-regular);
 }

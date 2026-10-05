@@ -166,7 +166,7 @@ def test_each_approved_feature_asks_the_offering_it_names_and_says_what_it_could
         "FT-1: Licence Hub is not in the draft, so the question names it as the mapping wrote it.",
         "FT-1: Business Pro Plus has no order type 'Change plan', so the question is asked "
         "of the offering as a whole.",
-        "FT-2 Welcome email: its mapping names no offering, so it asks nothing of the catalogue.",
+        "FT-2: its mapping names no offering, so “Welcome email” asks nothing of the catalogue.",
         "FT-3: the offering 'Office Presence' is not in the draft; its question waits for it.",
     )
 
@@ -196,7 +196,7 @@ def test_accepting_registers_the_change_request_as_a_source_and_records_it_in_th
     assert (source.id, source.level.value, source.version) == (
         "CR-20261003-Business_Pro_Plus",
         "L2",
-        "revision 3",
+        "3",
     )
     assert source.authority == (
         "Requirement AI requirement REQ-2026-0412, revision 3, approved by Layla Haddad on "
@@ -214,8 +214,8 @@ def test_accepting_registers_the_change_request_as_a_source_and_records_it_in_th
     assert [(item.feature_id, item.summary) for item in record.items] == [
         (
             "FT-1",
-            "Asks of Business Pro Plus: Offer Microsoft 365: Customers add Microsoft 365 "
-            "at activation.",
+            "Asks of Business Pro Plus (New Activation): Offer Microsoft 365: Customers add "
+            "Microsoft 365 at activation.",
         )
     ]
     # Accepting the same feature again replaces its item rather than adding a second.

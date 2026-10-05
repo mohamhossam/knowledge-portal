@@ -79,7 +79,9 @@ export function GovernancePage() {
       )}
       <ChangeHistory
         history={release.change_history ?? []}
-        offeringName={(id) => offerings.get(id)?.name ?? id}
+        offering={(id) => (
+          <Link to={`${base}/offerings/${encodeURIComponent(id)}`} dir="auto">{offerings.get(id)?.name ?? id}</Link>
+        )}
         headingId="governance-history"
       />
     </div>

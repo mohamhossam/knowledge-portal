@@ -504,6 +504,25 @@ function requires(suggestion: Suggestion): string[] {
 }
 
 /** The service's reading warnings count with "(s)"; say them as English. */
+/**
+ * What each change request's last reading said of one feature, keyed "<change request>/<feature>":
+ * a warning naming a feature opens with its id ("FT-2: …").
+ */
+export function featureWarnings(runs: ExtractionRun[]): Map<string, string[]> {
+  const notes = new Map<string, string[]>();
+  for (const run of runs) {
+    if (!run.change_request_id) continue;
+    for (const warning of run.warnings) {
+      const named = /^([^\s:]+): (.+)$/.exec(warning);
+      if (!named) continue;
+      const key = `${run.change_request_id}/${named[1]}`;
+      const said = warningInWords(named[2]!);
+      notes.set(key, [...(notes.get(key) ?? []), said.charAt(0).toUpperCase() + said.slice(1)]);
+    }
+  }
+  return notes;
+}
+
 export function warningInWords(text: string): string {
   return text
     .replace(/\b(\d+) ([^()]*?)\(s\)/g, (_, n: string, words: string) => `${n} ${n === "1" ? words : `${words}s`}`)

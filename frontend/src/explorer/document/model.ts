@@ -200,7 +200,7 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
         record.applied_at ? day(record.applied_at) : "Not recorded",
         [
           record.title,
-          [record.requester && `Requested by ${record.requester}`, record.priority && `${record.priority} priority`].filter(Boolean).join(" · "),
+          [record.requester && record.requester !== record.trace?.approved_by && `Requested by ${record.requester}`, record.priority && `${record.priority} priority`].filter(Boolean).join(" · "),
           record.trace
             ? `Requirement AI requirement ${record.trace.requirement_id}, revision ${record.trace.breakdown_revision}${record.trace.approved_by ? `, approved by ${record.trace.approved_by}` : ""}${record.trace.approved_at ? ` on ${day(record.trace.approved_at)}` : ""}`
             : record.origin === "explorer"

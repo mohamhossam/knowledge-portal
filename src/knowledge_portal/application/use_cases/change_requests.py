@@ -165,7 +165,7 @@ def read_change_request(
                 group[2].append(context.order_type)
         if not groups:
             warnings.append(
-                f"{feature.id} {feature.name}: its mapping names no offering, so it asks "
+                f"{feature.id}: its mapping names no offering, so “{feature.name}” asks "
                 "nothing of the catalogue."
             )
             continue

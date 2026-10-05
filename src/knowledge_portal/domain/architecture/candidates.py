@@ -1158,11 +1158,20 @@ def change_request_source(incoming: IncomingChangeRequest) -> KnowledgeSource:
         title=f"Requirement AI change request: {incoming.title}",
         level=SourceLevel.L2,
         short=incoming.id,
-        version=f"revision {trace.breakdown_revision}",
+        version=str(trace.breakdown_revision),
         supplied=True,
         authority=f"{trace.sentence()}.",
-        scope=f"The approved features of {trace.epic_name} ({trace.epic_id}).",
+        scope=f"Epic {trace.epic_id}: {trace.epic_name}",
     )
+
+
+def _asked_of(question: OpenQuestion, offering: ProductOffering | None, written: str) -> str:
+    """ "Business Pro Plus (New Activation)": the offering and the order types it is asked for."""
+    if offering is None:
+        return written
+    codes, _ = _resolved_question(question, offering)
+    names = [item.name for item in offering.order_types if item.code in codes.order_types]
+    return f"{offering.name} ({', '.join(names)})" if names else offering.name
 
 
 def accept_from_change_request(
@@ -1188,7 +1197,7 @@ def accept_from_change_request(
     question = content.question
     feature = next((item for item in incoming.features if item.id == feature_id), None)
     summary = (
-        f"Asks of {offering.name if offering else content.system_id}: {question.text}"
+        f"Asks of {_asked_of(question, offering, content.system_id)}: {question.text}"
         if question is not None
         else (feature.asks() if feature else feature_id)
     )

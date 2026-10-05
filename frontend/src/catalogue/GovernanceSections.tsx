@@ -317,9 +317,10 @@ const ITEM_STATUS: Record<ChangeRecord["items"][number]["status"] & string, stri
  * last as they were applied: who asked and why, and what each changed. History is written by
  * accepting from a change request, never edited by hand.
  */
-export function ChangeHistory({ history, offeringName, headingId }: {
+export function ChangeHistory({ history, offering, headingId }: {
   history: ChangeRecord[];
-  offeringName: (id: string) => string;
+  /** The offering a record changed, linked to its sheet. */
+  offering: (id: string) => ReactNode;
   headingId: string;
 }) {
   return (
@@ -354,7 +355,7 @@ export function ChangeHistory({ history, offeringName, headingId }: {
                   <span className="changerequests__title" dir="auto">{record.title}</span>
                   <span className="secondary govtable__by" dir="auto">
                     {record.origin === "explorer" ? "Drafted in the original explorer" : "From Requirement AI"}
-                    {record.requester && `, asked by ${record.requester}`}
+                    {record.requester && record.requester !== record.trace?.approved_by && `, asked by ${record.requester}`}
                     {record.priority && ` · ${record.priority} priority`}
                     {record.target_date && ` · wanted by ${formatDay(record.target_date)}`}
                   </span>
@@ -363,7 +364,7 @@ export function ChangeHistory({ history, offeringName, headingId }: {
                 </th>
                 <td role="cell" data-head="Applied">
                   {record.applied_at ? formatDay(record.applied_at) : <span className="secondary">Not recorded</span>}
-                  {record.product_id && <span className="secondary govtable__by" dir="auto">to {offeringName(record.product_id)}</span>}
+                  {record.product_id && <span className="secondary govtable__by">to {offering(record.product_id)}</span>}
                 </td>
                 <td role="cell" data-head="What it changed">
                   {record.items.length ? (

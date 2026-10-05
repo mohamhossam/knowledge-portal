@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { api, type ChangeRequest, type Release, type Suggestion } from "../api/client";
 import { ChangeRequestInbox } from "./ChangeRequests";
 import { traceLine } from "./inbox";
-import { changeSentence, lexicon, suggestionGroups, waitsFor } from "./suggestions";
+import { changeSentence, featureWarnings, lexicon, suggestionGroups, waitsFor } from "./suggestions";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -85,7 +85,7 @@ describe("the inbox of change requests from Requirement AI", () => {
 
     await waitFor(() => expect(read).toHaveBeenCalledWith("CR-20261003-Business_Pro_Plus"));
     expect(await screen.findByTestId("where")).toHaveTextContent(
-      "/architecture/versions/draft-1/sources CR-20261003-Business_Pro_Plus is read into ‘CR-20261003-Business_Pro_Plus’: 1 suggested question below.",
+      "/architecture/versions/draft-1/sources CR-20261003-Business_Pro_Plus is read into a new draft named after it: 1 suggested question below.",
     );
   });
 
@@ -104,15 +104,24 @@ describe("the inbox of change requests from Requirement AI", () => {
 
     expect(within(rows[0]!).getByRole("button", { name: /^Read it into ‘November’ ?\(CR-20261003-Business_Pro_Plus\)$/ })).toBeInTheDocument();
     expect(rows[1]).toHaveTextContent("Read into ‘November’by Amina on 4 Oct 2026");
-    expect(within(rows[1]!).getByRole("link", { name: /^Its suggestions → ?\(CR-2\)$/ })).toHaveAttribute("href", "/architecture/versions/draft-9/sources");
+    expect(within(rows[1]!).getByRole("link", { name: /^Its suggestions ?\(CR-2\)$/ })).toHaveAttribute("href", "/architecture/versions/draft-9/sources");
+    // Read into a draft still in preparation, it is settled there: no dismissing it.
+    expect(within(rows[1]!).queryByRole("button", { name: /^Dismiss it/ })).not.toBeInTheDocument();
     expect(rows[2]).toHaveClass("row--past");
     expect(rows[2]).toHaveTextContent("Dismissedby Amina on 4 Oct 2026: Covered by CR-2.");
 
-    fireEvent.click(within(rows[0]!).getByRole("button", { name: /^Dismiss it ?\(CR-20261003-Business_Pro_Plus\)$/ }));
+    const dismissButton = () => within(rows[0]!).getByRole("button", { name: /^Dismiss it ?\(CR-20261003-Business_Pro_Plus\)$/ });
+    fireEvent.click(dismissButton());
+    fireEvent.keyDown(screen.getByLabelText("Why it is dismissed"), { key: "Escape" });
+    // Closing the form hands focus back to the button that opened it.
+    await waitFor(() => expect(dismissButton()).toHaveFocus());
+
+    fireEvent.click(dismissButton());
     const form = screen.getByRole("form", { name: "Dismiss CR-20261003-Business_Pro_Plus" });
     const reason = within(form).getByLabelText("Why it is dismissed");
     expect(reason).toHaveFocus();
     expect(within(form).getByRole("button", { name: "Dismiss it" })).toHaveAttribute("aria-disabled", "true");
+    expect(within(form).getByRole("button", { name: "Dismiss it" })).toHaveAccessibleDescription("Give a reason first.");
     fireEvent.change(reason, { target: { value: "Already asked." } });
     fireEvent.submit(form);
     await waitFor(() => expect(dismiss).toHaveBeenCalledWith("CR-20261003-Business_Pro_Plus", "Already asked."));
@@ -149,5 +158,19 @@ describe("a question suggested by a change request", () => {
     expect(waitsFor(elsewhere, words)).toBe("Waits for the offering Office Presence");
     expect(waitsFor(lacking, words)).toBe("Waits for Business Pro Plus’s order type Change plan");
     expect(suggestionGroups(release, [asked], words).map((group) => group.label)).toEqual(["Questions for offerings"]);
+  });
+
+  it("carries what the reading said of a feature to that feature's suggestion", () => {
+    const run = { change_request_id: "CR-1", warnings: [
+      "The requirement was mapped against catalogue version 2026.09, not the version in service; check the systems it names.",
+      "FT-2: Partner Tenant Portal is not in the draft, so the question names it as the mapping wrote it.",
+      "FT-2: the offering 'Office Presence' is not in the draft; its question waits for it.",
+    ] } as never;
+    const notes = featureWarnings([run, { change_request_id: null, warnings: ["FT-2: not mine"] } as never]);
+    expect([...notes.keys()]).toEqual(["CR-1/FT-2"]);
+    expect(notes.get("CR-1/FT-2")).toEqual([
+      "Partner Tenant Portal is not in the draft, so the question names it as the mapping wrote it.",
+      "The offering 'Office Presence' is not in the draft; its question waits for it.",
+    ]);
   });
 });

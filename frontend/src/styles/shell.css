@@ -115,6 +115,13 @@
   text-decoration: none;
 }
 
+/* Waiting on something the person gives (a reason): it keeps focus, and looks unavailable. */
+.text-button[aria-disabled="true"] {
+  color: var(--ink-3);
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
 .spin {
   animation: spin 900ms linear infinite;
 }

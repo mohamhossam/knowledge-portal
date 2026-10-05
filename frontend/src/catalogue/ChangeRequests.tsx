@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { RotateCw } from "lucide-react";
-import { type FormEvent, useId, useState } from "react";
+import { type FormEvent, useId, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { api, type ChangeRequest, type ExtractionRun, type Release, type Suggestion } from "../api/client";
@@ -30,6 +30,13 @@ export function ChangeRequestInbox({ releases, actorName }: {
   const navigate = useNavigate();
   const inbox = useChangeRequests();
   const [dismissing, setDismissing] = useState<string | null>(null);
+  // Where focus goes back to when the dismiss form closes: the row's Dismiss button, or the
+  // row itself once the dismissal removed that button.
+  const returns = useRef(new Map<string, HTMLElement | null>());
+  const closeDismissal = (itemId: string, dismissed: boolean) => {
+    setDismissing(null);
+    requestAnimationFrame(() => returns.current.get(dismissed ? `${itemId}:row` : `${itemId}:dismiss`)?.focus());
+  };
   const draft = releases.find((release) => release.status === "draft");
   const named = (releaseId: string | null | undefined) => releases.find((release) => release.id === releaseId);
   const read = useMutation({
@@ -39,7 +46,9 @@ export function ChangeRequestInbox({ releases, actorName }: {
       const asked = reading.run.candidate_count;
       navigate(`/architecture/versions/${encodeURIComponent(reading.release.id)}/sources`, {
         state: {
-          notice: `${reading.change_request.id} is read into ‘${reading.release.name || "the draft"}’: ${count(asked, "suggested question")}${asked ? " below" : ""}.`,
+          notice: `${reading.change_request.id} is read into ${
+            reading.release.name === reading.change_request.id ? "a new draft named after it" : `‘${reading.release.name || "the draft"}’`
+          }: ${count(asked, "suggested question")}${asked ? " below" : ""}.`,
         },
       });
     },
@@ -52,11 +61,10 @@ export function ChangeRequestInbox({ releases, actorName }: {
         Change requests from Requirement AI {waiting > 0 && <span className="govsection__count">{waiting} waiting</span>}
       </h2>
       <p className="govsection__lead">
-        requirement-portal sends a breakdown here when its final approval is recorded. Reading one into the draft turns each
-        approved feature into a suggested question for the offering it names; nothing reaches the catalogue until it is
-        accepted.
+        Requirement AI sends a requirement’s approved backlog here when its final approval is recorded. Reading one into the
+        draft turns each approved feature into a suggested question for the offering it names; nothing reaches the catalogue
+        until it is accepted.
       </p>
-      {read.isError && <p className="docpage__failure" role="alert">{errorMessage(read.error)}</p>}
       {inbox.isPending ? (
         <p className="timetable__quiet">Reading the change requests…</p>
       ) : inbox.isError ? (
@@ -89,9 +97,14 @@ export function ChangeRequestInbox({ releases, actorName }: {
               const into = named(item.read_into);
               const stillOpen = into?.status === "draft";
               const offerings = offeringsNamed(item);
+              const reading = read.isPending && read.variables === item.id;
+              const failed = read.isError && read.variables === item.id;
+              // A request read into a draft still in preparation is settled there; it is dismissed
+              // only while waiting, or once that draft is gone.
+              const dismissable = item.status === "waiting" || (item.status === "read" && !stillOpen);
               return (
                 <tr key={item.id} role="row" className={RANK[item.status]}>
-                  <th scope="row" role="rowheader">
+                  <th scope="row" role="rowheader" tabIndex={-1} ref={(node) => void returns.current.set(`${item.id}:row`, node)}>
                     <span className="governance__id">{item.id}</span>
                     <span className="changerequests__title" dir="auto">{item.title}</span>
                     <span className="secondary govtable__by">
@@ -128,13 +141,15 @@ export function ChangeRequestInbox({ releases, actorName }: {
                             {!stillOpen && "; that draft is no longer in preparation"}
                           </span>
                         )}
+                        {failed && <p className="docpage__failure" role="alert">{errorMessage(read.error)}</p>}
                         {dismissing === item.id ? (
-                          <Dismissal item={item} onDone={() => setDismissing(null)} />
+                          <Dismissal item={item} onDone={(dismissed) => closeDismissal(item.id, dismissed)} />
                         ) : (
                           <span className="documents__actions">
                             {item.status === "read" && stillOpen ? (
-                              <Link to={`/architecture/versions/${encodeURIComponent(into.id)}/sources`}>
-                                Its suggestions →<span className="visually-hidden"> ({item.id})</span>
+                              <Link className="changerequests__link" to={`/architecture/versions/${encodeURIComponent(into.id)}/sources`}>
+                                Its suggestions <span aria-hidden="true">→</span>
+                                <span className="visually-hidden"> ({item.id})</span>
                               </Link>
                             ) : (
                               <button
@@ -143,13 +158,26 @@ export function ChangeRequestInbox({ releases, actorName }: {
                                 aria-disabled={read.isPending || undefined}
                                 onClick={() => !read.isPending && read.mutate(item.id)}
                               >
-                                {item.status === "read" ? "Read it again" : draft ? `Read it into ‘${draft.name || "the draft"}’` : "Read it into a new draft"}
+                                {reading
+                                  ? "Reading…"
+                                  : item.status === "read"
+                                    ? "Read it again"
+                                    : draft
+                                      ? `Read it into ‘${draft.name || "the draft"}’`
+                                      : "Read it into a new draft"}
                                 <span className="visually-hidden"> ({item.id})</span>
                               </button>
                             )}
-                            <button type="button" className="text-button" onClick={() => setDismissing(item.id)}>
-                              Dismiss it<span className="visually-hidden"> ({item.id})</span>
-                            </button>
+                            {dismissable && (
+                              <button
+                                type="button"
+                                className="text-button"
+                                ref={(node) => void returns.current.set(`${item.id}:dismiss`, node)}
+                                onClick={() => setDismissing(item.id)}
+                              >
+                                Dismiss it<span className="visually-hidden"> ({item.id})</span>
+                              </button>
+                            )}
                           </span>
                         )}
                       </>
@@ -166,7 +194,7 @@ export function ChangeRequestInbox({ releases, actorName }: {
 }
 
 /** Dismissing in place: a reason, then the choice. A dismissal stays. */
-function Dismissal({ item, onDone }: { item: ChangeRequest; onDone: () => void }) {
+function Dismissal({ item, onDone }: { item: ChangeRequest; onDone: (dismissed: boolean) => void }) {
   const id = useId();
   const queryClient = useQueryClient();
   const [reason, setReason] = useState("");
@@ -174,7 +202,7 @@ function Dismissal({ item, onDone }: { item: ChangeRequest; onDone: () => void }
     mutationFn: () => api.dismissChangeRequest(item.id, reason.trim()),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: CHANGE_REQUESTS_KEY });
-      onDone();
+      onDone(true);
     },
   });
   const submit = (event: FormEvent) => {
@@ -191,23 +219,30 @@ function Dismissal({ item, onDone }: { item: ChangeRequest; onDone: () => void }
           value={reason}
           autoFocus
           maxLength={1000}
+          aria-required="true"
           aria-describedby={`${id}-stays`}
           onChange={(event) => setReason(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === "Escape") onDone();
+            if (event.key === "Escape") onDone(false);
           }}
         />
       </label>
       <p id={`${id}-stays`} className="secondary">A dismissal stays: the change request cannot be read afterwards.</p>
       {dismiss.isError && <p className="docpage__failure" role="alert">{errorMessage(dismiss.error)}</p>}
       <span className="documents__actions">
-        <button type="submit" className="text-button" aria-disabled={!reason.trim() || dismiss.isPending || undefined}>
-          Dismiss it
+        <button
+          type="submit"
+          className="text-button documents__remove"
+          aria-disabled={!reason.trim() || dismiss.isPending || undefined}
+          aria-describedby={reason.trim() ? undefined : `${id}-first`}
+        >
+          {dismiss.isPending ? "Dismissing…" : "Dismiss it"}
         </button>
-        <button type="button" className="text-button" onClick={onDone}>
+        <button type="button" className="text-button" onClick={() => onDone(false)}>
           Keep it
         </button>
       </span>
+      {!reason.trim() && <p id={`${id}-first`} className="secondary">Give a reason first.</p>}
     </form>
   );
 }
@@ -242,26 +277,31 @@ export function DraftChangeRequests({ release, runs, suggestions }: {
         names.
       </p>
       {read.isError && <p className="docpage__failure" role="alert">{errorMessage(read.error)}</p>}
-      <table className="govtable documents">
+      <table className="govtable governance__table changerequests" role="table">
         <caption className="visually-hidden">The change requests read into this draft</caption>
-        <thead>
-          <tr>
-            <th scope="col">Change request</th>
-            <th scope="col">Reading</th>
-            <th scope="col" className="cell--end">Waiting</th>
+        <colgroup>
+          <col className="changerequests__col-request" />
+          <col className="changerequests__col-reading" />
+          <col className="changerequests__col-waiting" />
+        </colgroup>
+        <thead role="rowgroup">
+          <tr role="row">
+            <th scope="col" role="columnheader">Change request</th>
+            <th scope="col" role="columnheader">Reading</th>
+            <th scope="col" role="columnheader" className="cell--end">Waiting</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody role="rowgroup">
           {items.map((item) => {
             const run = readings.get(item.id);
             return (
-              <tr key={item.id} className="row">
-                <th scope="row">
+              <tr key={item.id} role="row" className="row">
+                <th scope="row" role="rowheader">
                   <span className="governance__id">{item.id}</span>
                   <span className="changerequests__title" dir="auto">{item.title}</span>
                   <span className="secondary govtable__by" dir="auto">{traceLine(item.trace)}</span>
                 </th>
-                <td>
+                <td role="cell" data-head="Reading">
                   <span className="status">Read</span>
                   {run && <span className="secondary govtable__by">{count(run.candidate_count, "suggestion")} on its last reading</span>}
                   {run && run.warnings.length > 0 && (
@@ -279,11 +319,12 @@ export function DraftChangeRequests({ release, runs, suggestions }: {
                       onClick={() => !read.isPending && read.mutate(item.id)}
                     >
                       <RotateCw size={14} aria-hidden="true" />
-                      Read it again<span className="visually-hidden"> ({item.id})</span>
+                      {read.isPending && read.variables === item.id ? "Reading…" : "Read it again"}
+                      <span className="visually-hidden"> ({item.id})</span>
                     </button>
                   </span>
                 </td>
-                <td className="cell--end">{waiting(item.id)}</td>
+                <td role="cell" data-head="Waiting" className="cell--end">{waiting(item.id)}</td>
               </tr>
             );
           })}
