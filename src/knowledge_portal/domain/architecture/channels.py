@@ -8,7 +8,8 @@ channel's entry system: then it is performed by whichever channel the order came
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import re
+from dataclasses import dataclass, replace
 
 from knowledge_portal.domain.architecture.invariants import (
     InvalidKnowledgeError,
@@ -63,3 +64,34 @@ def check_channels(channels: tuple[Channel, ...], system_ids: set[str]) -> set[s
 
 def unknown_channels(named: tuple[str, ...], channel_ids: set[str]) -> list[str]:
     return [item for item in named if item not in channel_ids]
+
+
+def _words(value: str) -> str:
+    return " ".join(re.findall(r"\w+", value.casefold()))
+
+
+def find_channel_among(channels: tuple[Channel, ...], reference: str) -> Channel | None:
+    """A channel named by id or, when only one has it, by name, ignoring case and punctuation."""
+    key = reference.strip().casefold()
+    exact = next((item for item in channels if item.id.casefold() == key), None)
+    if exact is not None or not key:
+        return exact
+    named = [item for item in channels if _words(reference) in {_words(item.name), _words(item.id)}]
+    return named[0] if len(named) == 1 else None
+
+
+def same_channel(first: Channel, second: Channel) -> bool:
+    """Whether two channels are one: the same id or the same name."""
+    return first.id == second.id or _words(first.name) == _words(second.name)
+
+
+def merge_channels(first: Channel, second: Channel) -> Channel:
+    """Two readings of one channel as one: the first's facts win, the second fills gaps."""
+    return replace(
+        first,
+        kind=first.kind or second.kind,
+        entry_system_id=first.entry_system_id or second.entry_system_id,
+        description=first.description or second.description,
+        confidence=first.confidence or second.confidence,
+        source=first.source or second.source,
+    )

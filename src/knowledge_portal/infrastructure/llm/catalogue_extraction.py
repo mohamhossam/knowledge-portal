@@ -33,6 +33,7 @@ from knowledge_portal.domain.architecture.candidates import (
     CandidateContent,
     CandidateKind,
 )
+from knowledge_portal.domain.architecture.channels import Channel
 from knowledge_portal.domain.architecture.journeys import (
     Activity,
     FlowRule,
@@ -115,6 +116,8 @@ class OrderTypeOutput(_Output):
     enabled: bool | None
     description: str | None = Field(max_length=_MAX_TEXT)
     confidence: _Confidence
+    # The channels it can be ordered through, as named; empty when the document does not say.
+    channels: list[str] = Field(max_length=20)
 
 
 class PointOutput(_Output):
@@ -145,6 +148,10 @@ class StepOutput(_Output):
     system: str | None = Field(max_length=_MAX_NAME)
     supporting: list[str] = Field(max_length=20)
     function: str | None = Field(max_length=_MAX_TEXT)
+    # The channels the step happens in, as named; empty for every channel.
+    channels: list[str] = Field(max_length=20)
+    # Performed by the system of whichever channel the order came through.
+    channel_entry: bool | None
 
 
 class RuleOutput(_Output):
@@ -195,6 +202,7 @@ class LeanChangeOutput(_Output):
     parent_domain: str | None = Field(max_length=_MAX_NAME)
     # The whole offering, for a product_offering; null for other kinds (ADR-0095).
     offering: OfferingOutput | None
+
     text: str | None = Field(max_length=_MAX_TEXT)
     evidence_numbers: list[int] = Field(min_length=1, max_length=10)
     quote: str = Field(max_length=_MAX_TEXT)
@@ -209,9 +217,12 @@ class LeanChangeOutput(_Output):
 
 
 class ChangeOutput(LeanChangeOutput):
-    kind: _LeanKind | Literal["journey"]  # type: ignore[assignment]
+    # A small context reads without journeys and channels; tables still give both.
+    kind: _LeanKind | Literal["journey", "channel"]  # type: ignore[assignment]
     # The whole journey, for a journey; null for other kinds (ADR-0096).
     journey: JourneyOutput | None
+    # A channel's kind, such as Digital or Assisted; null for other kinds (ADR-0101).
+    channel_kind: str | None = Field(max_length=_MAX_NAME)
 
 
 class ExtractionOutput(_Output):
@@ -311,6 +322,7 @@ def _proposed(
             CandidateKind.LANDSCAPE_DOMAIN,
             CandidateKind.PRODUCT,
             CandidateKind.JOURNEY,
+            CandidateKind.CHANNEL,
         }
         else item.system
     )
@@ -361,6 +373,7 @@ def _offering(item: ChangeOutput, names: _SystemNames) -> ProductOffering:
                 order.enabled is not False,
                 _text(order.description),
                 _trust(order.confidence),
+                channels=_names(order.channels),
             )
         )
     parts: dict[str, OfferingComponent] = {}
@@ -440,6 +453,8 @@ def _journey(item: ChangeOutput, names: _SystemNames) -> Journey:
         if not number or not title or number in steps:
             continue
         performer = plain_name(step.system or "")
+        # A named performer wins: the channel's entry system stands in only for no one.
+        entry = step.channel_entry is True and not performer
         steps[number] = Activity(
             number,
             title,
@@ -453,6 +468,8 @@ def _journey(item: ChangeOutput, names: _SystemNames) -> Journey:
                 )
             ),
             system_function=_text(step.function),
+            channels=_names(step.channels),
+            channel_entry=entry,
         )
     for rule in read.rules if read else []:
         start, end = rule.from_step.strip(), rule.to_step.strip()
@@ -473,6 +490,25 @@ def _journey(item: ChangeOutput, names: _SystemNames) -> Journey:
     )
 
 
+def _names(values: list[str]) -> tuple[str, ...]:
+    """Channel names as written, each once; they are matched to channels when reviewed."""
+    return tuple(dict.fromkeys(value.strip() for value in values if value.strip()))
+
+
+def _channel(item: ChangeOutput, names: _SystemNames) -> Channel:
+    """A channel as stated, its entry system resolved like any system reference."""
+    name = (item.name or item.system).strip()
+    entry = plain_name(item.target_system or "")
+    return Channel(
+        slug(name),
+        name,
+        kind=_text(item.channel_kind),
+        entry_system_id=names.resolve(entry) if entry else None,
+        description=_text(item.text),
+        confidence=SourceConfidence.CONFIRMED,
+    )
+
+
 def _content(item: ChangeOutput, names: _SystemNames) -> CandidateContent:
     if item.kind == "journey":
         journey = _journey(item, names)
@@ -483,6 +519,11 @@ def _content(item: ChangeOutput, names: _SystemNames) -> CandidateContent:
         offering = _offering(item, names)
         return CandidateContent(
             CandidateKind.PRODUCT, offering.id, name=offering.name, product=offering
+        )
+    if item.kind == "channel":
+        channel = _channel(item, names)
+        return CandidateContent(
+            CandidateKind.CHANNEL, channel.id, name=channel.name, channel=channel
         )
     kind = CandidateKind(item.kind)
     name = (item.name or "").strip()
@@ -929,7 +970,9 @@ class StructuredCatalogueExtractor:
             )
             output = ExtractionOutput(
                 changes=[
-                    ChangeOutput.model_validate({**item.model_dump(), "journey": None})
+                    ChangeOutput.model_validate(
+                        {**item.model_dump(), "journey": None, "channel_kind": None}
+                    )
                     for item in answered.changes
                 ]
             )

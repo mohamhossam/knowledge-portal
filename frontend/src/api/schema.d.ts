@@ -1474,6 +1474,7 @@ export interface components {
             aliases: string[];
             /** Capability Id */
             capability_id?: string | null;
+            channel?: components["schemas"]["ChannelSchema"] | null;
             /** Component Id */
             component_id?: string | null;
             /** Description */
@@ -1514,13 +1515,13 @@ export interface components {
          * CandidateKind
          * @enum {string}
          */
-        CandidateKind: "system" | "component" | "capability" | "constraint" | "relationship" | "landscape_domain" | "placement" | "product" | "journey";
+        CandidateKind: "system" | "component" | "capability" | "constraint" | "relationship" | "landscape_domain" | "placement" | "product" | "journey" | "channel";
         /**
          * CandidateMatch
          * @description How a candidate relates to the draft as it stands now.
          * @enum {string}
          */
-        CandidateMatch: "new" | "updates_existing" | "already_present" | "needs_system" | "needs_component" | "needs_domain" | "needs_offering";
+        CandidateMatch: "new" | "updates_existing" | "already_present" | "needs_system" | "needs_component" | "needs_domain" | "needs_offering" | "needs_channel";
         /**
          * CandidateStatus
          * @enum {string}

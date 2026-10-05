@@ -125,3 +125,47 @@ describe("in words", () => {
     expect(typedFile(new File(["x"], "notes.md", { type: "" })).type).toBe("text/markdown");
   });
 });
+
+describe("channel suggestions", () => {
+  const web = suggestion(
+    { kind: "channel", system_id: "business-web", name: "Business Web", channel: { id: "business-web", name: "Business Web", entry_system_id: "bcrm" } },
+  );
+  const till = suggestion(
+    { kind: "channel", system_id: "shop", name: "Shop", channel: { id: "shop", name: "Shop", entry_system_id: "shop-till" } },
+    { match: "needs_system" },
+  );
+  const office = suggestion(
+    {
+      kind: "product", system_id: "office", name: "Office Connect",
+      product: {
+        id: "office", name: "Office Connect", rules: [], components: [], values: [], audiences: [],
+        order_types: [{ code: "NEW", name: "New", enabled: true, channels: ["business-web", "Partner Feed"] }],
+      },
+    },
+    { match: "needs_channel" },
+  );
+  const channelWords = lexicon(release, [web, till, office]);
+
+  it("says what a channel adds and what it waits for, in the documents' names", () => {
+    expect(changeSentence(web, channelWords)).toBe("Adds the channel Business Web, its orders entering through BCRM");
+    expect(waitsFor(till, channelWords)).toBe("Waits for the system Shop Till");
+    expect(waitsFor(office, channelWords)).toBe("Waits for the channels Business Web, Partner Feed");
+    expect(inWords("Accept or add channel 'business-web' before the journey X that names them.", channelWords)).toBe(
+      "Accept or add the channel Business Web before the journey X that names them.",
+    );
+  });
+
+  it("sets channels in their own section, before offerings", () => {
+    const labels = suggestionGroups(release, [office, web], channelWords).map((group) => group.label);
+    expect(labels).toEqual(["Channels", "Offerings"]);
+  });
+
+  it("lifts an offering only once every channel it names is added", () => {
+    expect(bulkAcceptable(release, [web, office]).lifted).toEqual([]);
+    const named = suggestion(
+      { ...office.content, product: { ...office.content.product!, order_types: [{ code: "NEW", name: "New", enabled: true, channels: ["business-web"] }] } },
+      { match: "needs_channel" },
+    );
+    expect(bulkAcceptable(release, [web, named]).lifted).toEqual([named]);
+  });
+});
