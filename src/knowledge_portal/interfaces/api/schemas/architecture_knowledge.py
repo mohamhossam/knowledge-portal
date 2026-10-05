@@ -24,6 +24,7 @@ from knowledge_portal.application.use_cases.architecture_comparison import (
 )
 from knowledge_portal.application.use_cases.architecture_documents import DocumentPassage
 from knowledge_portal.application.use_cases.architecture_mapping_impact import MappingImpact
+from knowledge_portal.application.use_cases.catalog_plans import CatalogPlans, CatalogPlansStatus
 from knowledge_portal.application.use_cases.catalogue_candidates import (
     CandidateOverview,
     CandidateView,
@@ -64,6 +65,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     SystemDefinition,
     SystemRelationship,
 )
+from knowledge_portal.domain.architecture.plans import PriceKind
 from knowledge_portal.domain.architecture.products import (
     ComponentResponsibility,
     NfrCoverage,
@@ -866,6 +868,73 @@ class ExplorerReleaseResponse(BaseModel):
         )
 
 
+class PlanPriceResponse(BaseModel):
+    name: str
+    kind: PriceKind
+    # Exact, as the catalog states it; never a float.
+    amount: str
+    currency: str
+    period: str | None = None
+    unit: str | None = None
+
+
+class CatalogPlanResponse(BaseModel):
+    id: str
+    name: str
+    description: str | None = None
+    lifecycle: str | None = None
+    prices: list[PlanPriceResponse]
+    terms: list[str]
+
+
+class CatalogPlansResponse(BaseModel):
+    """An offering's plans and prices, read live from the product catalog by its code."""
+
+    status: CatalogPlansStatus
+    code: str | None = None
+    # What the screen calls the catalog that was read.
+    catalog: str | None = None
+    catalog_offering_id: str | None = None
+    catalog_offering_name: str | None = None
+    read_at: datetime | None = None
+    terms: list[str] = []
+    plans: list[CatalogPlanResponse] = []
+
+    @classmethod
+    def from_domain(cls, plans: CatalogPlans) -> CatalogPlansResponse:
+        found = plans.offering
+        return cls(
+            status=plans.status,
+            code=plans.code,
+            catalog=plans.catalog,
+            catalog_offering_id=found.id if found else None,
+            catalog_offering_name=found.name if found else None,
+            read_at=found.read_at if found else None,
+            terms=list(found.terms) if found else [],
+            plans=[
+                CatalogPlanResponse(
+                    id=plan.id,
+                    name=plan.name,
+                    description=plan.description,
+                    lifecycle=plan.lifecycle,
+                    prices=[
+                        PlanPriceResponse(
+                            name=price.name,
+                            kind=price.kind,
+                            amount=str(price.amount),
+                            currency=price.currency,
+                            period=price.period,
+                            unit=price.unit,
+                        )
+                        for price in plan.prices
+                    ],
+                    terms=list(plan.terms),
+                )
+                for plan in (found.plans if found else ())
+            ],
+        )
+
+
 class KnowledgeAuditEventResponse(BaseModel):
     release_id: str
     actor_id: str
@@ -1014,6 +1083,8 @@ class CandidateContentSchema(BaseModel):
     product: ProductOfferingSchema | None = None
     # The whole journey, for a journey suggestion (ADR-0096).
     journey: JourneySchema | None = None
+    # The whole channel, for a channel suggestion (requirement-portal ADR-0101).
+    channel: ChannelSchema | None = None
 
     @classmethod
     def from_domain(cls, content: CandidateContent) -> CandidateContentSchema:
@@ -1037,6 +1108,7 @@ class CandidateContentSchema(BaseModel):
                 ProductOfferingSchema.from_domain(content.product) if content.product else None
             ),
             journey=JourneySchema.from_domain(content.journey) if content.journey else None,
+            channel=ChannelSchema.from_domain(content.channel) if content.channel else None,
         )
 
     def to_domain(self) -> CandidateContent:
@@ -1058,6 +1130,7 @@ class CandidateContentSchema(BaseModel):
             self.parent_domain_id,
             self.product.to_domain() if self.product else None,
             self.journey.to_domain() if self.journey else None,
+            self.channel.to_domain() if self.channel else None,
         )
 
 

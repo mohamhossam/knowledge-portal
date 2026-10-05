@@ -3,9 +3,9 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { api } from "../api/client";
+import { api, type CatalogPlans } from "../api/client";
 import { ExplorerPage, NOT_YET } from "./ExplorerPage";
-import { EXPLORED } from "./fixtures";
+import { EXPLORED, PLANS } from "./fixtures";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -14,8 +14,9 @@ function Where() {
   return <p data-testid="where">{location.search}</p>;
 }
 
-function open(path = "/explorer", linkSystems = false) {
+function open(path = "/explorer", linkSystems = false, plans: () => Promise<CatalogPlans> = async () => PLANS) {
   vi.spyOn(api, "explorerRelease").mockResolvedValue(EXPLORED);
+  vi.spyOn(api, "explorerPlans").mockImplementation(plans);
   render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
       <MemoryRouter initialEntries={[path]}>
@@ -88,6 +89,41 @@ describe("ExplorerPage", () => {
     expect(availability.querySelector("th .nfr__defined-inline")).toHaveTextContent("Not defined");
     expect(table.getByRole("row", { name: /Security/ }).querySelectorAll("td")[1]).toHaveTextContent("SAML SSO for the portal.SDD §11");
     expect(screen.getByText(/1 quality is not defined/)).toBeInTheDocument();
+  });
+
+  it("reads the offering's plans and prices from the product catalog, saying which and when", async () => {
+    open();
+    const table = within(await screen.findByRole("table", { name: /Plans of Business Pro Plus/ }));
+    expect(api.explorerPlans).toHaveBeenCalledWith("bpp");
+    const section = within(table.getByRole("columnheader", { name: "Price" }).closest("section")!);
+    expect(section.getByText(/From the sample product catalog, by the code/)).toHaveTextContent(
+      "read at 09:30, 5 Oct 2026. The catalog holds the prices; the knowledge catalogue keeps no copy. Sold with: No contract · 24 months.",
+    );
+    const monthly = table.getByRole("row", { name: /Monthly, with a contract/ });
+    expect(monthly).toHaveTextContent("Every month");
+    expect(monthly).toHaveTextContent("AED 2,740.00");
+    expect(table.getByRole("row", { name: /Installation/ })).toHaveTextContent("Once");
+    expect(table.getByRole("columnheader", { name: /300Mbps \(sample\)RetiredSold with: 12 months/ })).toBeInTheDocument();
+    expect(table.getByText("The catalog states no price for this plan.")).toBeInTheDocument();
+    expect(screen.getByText(NOT_YET)).not.toHaveTextContent("Plans");
+  });
+
+  it.each([
+    [{ status: "not_configured" }, "This portal reads no product catalog, so plans and prices are not shown."],
+    [{ status: "no_code", catalog: "the product catalog" }, "Business Pro Plus has no code in the catalogue, so its plans cannot be looked up in the product catalog."],
+    [{ status: "not_in_catalog", code: "BPP", catalog: "the product catalog" }, "The product catalog has no offering with the code BPP."],
+  ])("says why no plan is shown: %o", async (answer, line) => {
+    open("/explorer", false, async () => ({ terms: [], plans: [], ...answer }) as CatalogPlans);
+    const title = await screen.findByRole("heading", { name: "Plans and prices" });
+    const quiet = await within(title.closest("section")!).findByText((_, node) => node?.tagName === "P" && node.textContent === line);
+    expect(quiet).toBeInTheDocument();
+  });
+
+  it("says when the product catalog cannot be read, with a way to try again", async () => {
+    open("/explorer", false, () => Promise.reject(new Error("The product catalog service is unavailable (503).")));
+    const section = within((await screen.findByRole("heading", { name: "Plans and prices" })).closest("section")!);
+    expect(await section.findByRole("alert")).toHaveTextContent("The product catalog service is unavailable (503).");
+    expect(section.getByRole("button", { name: "Try again" })).toBeInTheDocument();
   });
 
   it("changes scenario from the choices and keeps it in the address", async () => {

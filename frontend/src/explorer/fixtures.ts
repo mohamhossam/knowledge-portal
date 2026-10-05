@@ -1,4 +1,4 @@
-import type { ExplorerRelease } from "../api/client";
+import type { CatalogPlans, ExplorerRelease } from "../api/client";
 
 const system = (id: string, name: string) => ({ id, name, aliases: [], capabilities: [], components: [], constraints: [] });
 const step = (number: string, name: string, extra: object = {}) => ({
@@ -80,3 +80,26 @@ export const EXPLORED = {
     },
   ],
 } as unknown as ExplorerRelease;
+
+/** Business Pro Plus as a sample product catalog states it: two speed tiers. */
+export const PLANS: CatalogPlans = {
+  status: "found",
+  code: "BUSINESS_PRO_PLUS",
+  catalog: "the sample product catalog",
+  catalog_offering_id: "BUSINESS_PRO_PLUS",
+  catalog_offering_name: "Business Pro Plus",
+  read_at: "2026-10-05T09:30:00Z",
+  terms: ["No contract", "24 months"],
+  plans: [
+    {
+      id: "BPP-200",
+      name: "Business Pro Plus 200Mbps (sample)",
+      terms: [],
+      prices: [
+        { name: "Monthly, with a contract", kind: "recurring", amount: "2740", currency: "AED", period: "1 month" },
+        { name: "Installation", kind: "one_time", amount: "0", currency: "AED" },
+      ],
+    },
+    { id: "BPP-300", name: "Business Pro Plus 300Mbps (sample)", lifecycle: "Retired", terms: ["12 months"], prices: [] },
+  ],
+};

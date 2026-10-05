@@ -30,7 +30,7 @@ export const STATE_RANK: Record<SuggestionState, "due" | "service" | "running" |
 
 /** The order accepting-all walks, and the order rows sit inside a system. */
 export const KIND_ORDER: SuggestionKind[] = [
-  "landscape_domain", "system", "placement", "component", "capability", "constraint", "relationship", "product", "journey",
+  "landscape_domain", "system", "placement", "component", "capability", "constraint", "relationship", "channel", "product", "journey",
 ];
 
 /**
@@ -59,6 +59,7 @@ export type Lexicon = {
   component: (systemId: string, componentId: string) => string;
   domain: (id: string) => string;
   offering: (id: string) => string;
+  channel: (id: string) => string;
 };
 
 export function lexicon(release: Release, suggestions: Suggestion[]): Lexicon {
@@ -66,6 +67,8 @@ export function lexicon(release: Release, suggestions: Suggestion[]): Lexicon {
   const components = new Map<string, string>();
   const domains = new Map<string, string>();
   const offerings = new Map<string, string>();
+  const channels = new Map<string, string>();
+  for (const channel of release.channels ?? []) channels.set(channel.id, channel.name);
   for (const system of release.systems) {
     systems.set(system.id, system.name);
     for (const component of system.components) components.set(`${system.id}/${component.id}`, component.name);
@@ -80,6 +83,7 @@ export function lexicon(release: Release, suggestions: Suggestion[]): Lexicon {
     if (content.kind === "component" && content.component_id) set(components, `${content.system_id}/${content.component_id}`, content.name);
     if (content.kind === "landscape_domain") set(domains, content.system_id, content.name);
     if (content.kind === "product") set(offerings, content.system_id, content.name);
+    if (content.kind === "channel") set(channels, content.system_id, content.name);
   }
   // A name the document used for a system it may share with the draft keeps the document's spelling.
   for (const suggestion of suggestions) {
@@ -94,6 +98,8 @@ export function lexicon(release: Release, suggestions: Suggestion[]): Lexicon {
     component: (systemId, componentId) => components.get(`${systemId}/${componentId}`) ?? humane(componentId),
     domain: (id) => domains.get(id) ?? humane(id),
     offering: (id) => offerings.get(id) ?? humane(id),
+    // A channel the document named that no suggestion adds is kept as written.
+    channel: (id) => channels.get(id) ?? id,
   };
 }
 
@@ -138,6 +144,13 @@ export function changeSentence(suggestion: Suggestion, words: Lexicon): string {
       return replaces
         ? `Replaces the journey ${content.journey?.name ?? content.name} with the document's`
         : `Adds the journey ${content.journey?.name ?? content.name}`;
+    case "channel": {
+      const entry = content.channel?.entry_system_id;
+      const through = entry ? `, its orders entering through ${words.system(entry)}` : "";
+      return replaces
+        ? `Adds what the document says about the channel ${content.name}${through}`
+        : `Adds the channel ${content.name}${through}`;
+    }
   }
 }
 
@@ -150,6 +163,7 @@ export function waitsFor(suggestion: Suggestion, words: Lexicon): string {
   const { content } = suggestion;
   switch (suggestion.match) {
     case "needs_system": {
+      if (content.kind === "channel") return `Waits for the system ${words.system(content.channel?.entry_system_id ?? "")}`;
       const missing = !suggestion.system_name && content.kind !== "product" && content.kind !== "journey"
         ? content.system_id
         : content.target_system_id ?? content.system_id;
@@ -165,6 +179,10 @@ export function waitsFor(suggestion: Suggestion, words: Lexicon): string {
       return `Waits for the landscape domain ${words.domain(content.landscape_domain_id ?? content.parent_domain_id ?? "")}`;
     case "needs_offering":
       return `Waits for the offering ${words.offering(content.journey?.product_id ?? "")}`;
+    case "needs_channel": {
+      const named = [...new Set(channelsNamed(suggestion).map(words.channel))];
+      return `Waits for the ${named.length === 1 ? "channel" : "channels"} ${named.join(", ")}`;
+    }
     default:
       return "";
   }
@@ -190,7 +208,7 @@ export type SuggestionGroup = {
   suggestions: Suggestion[];
 };
 
-const SECTION = { domains: "Landscape domains", offerings: "Offerings", journeys: "Journeys" } as const;
+const SECTION = { domains: "Landscape domains", channels: "Channels", offerings: "Offerings", journeys: "Journeys" } as const;
 
 /** The galley's groups: new systems first, then the systems the draft has, then domains, offerings and journeys. */
 export function suggestionGroups(release: Release, suggestions: Suggestion[], words: Lexicon): SuggestionGroup[] {
@@ -203,6 +221,9 @@ export function suggestionGroups(release: Release, suggestions: Suggestion[], wo
     if (content.kind === "landscape_domain") {
       key = "section:domains";
       group = { key, isNew: false, label: SECTION.domains };
+    } else if (content.kind === "channel") {
+      key = "section:channels";
+      group = { key, isNew: false, label: SECTION.channels };
     } else if (content.kind === "product") {
       key = "section:offerings";
       group = { key, isNew: false, label: SECTION.offerings };
@@ -254,6 +275,7 @@ export function bulkAcceptable(release: Release, suggestions: Suggestion[]): { r
   }
   for (const domain of release.landscape_domains ?? []) known.add(`domain:${domain.id}`);
   for (const offering of release.products ?? []) known.add(`offering:${offering.id}`);
+  for (const channel of release.channels ?? []) known.add(`channel:${channel.id}`);
   const open = suggestions.filter((item) => item.status === "proposed" && !needsOneByOne(item));
   const ready = open.filter((item) => !item.match.startsWith("needs_"));
   const provided = new Set(known);
@@ -287,15 +309,29 @@ function provides(suggestion: Suggestion): string[] {
       return [`domain:${content.system_id}`];
     case "product":
       return [`offering:${content.system_id}`];
+    case "channel":
+      return [`channel:${content.system_id}`];
     default:
       return [];
   }
 }
 
+/** The channels an offering's order types or a journey's steps name. */
+function channelsNamed(suggestion: Suggestion): string[] {
+  const { content } = suggestion;
+  if (content.kind === "product") return (content.product?.order_types ?? []).flatMap((type) => type.channels ?? []);
+  if (content.kind === "journey") return (content.journey?.activities ?? []).flatMap((step) => step.channels ?? []);
+  return [];
+}
+
 function requires(suggestion: Suggestion): string[] {
   const { content } = suggestion;
   const system = suggestion.system_name ? [] : [`system:${content.system_id}`];
+  // An offering or a journey also waits for every channel it names, whatever it waits for first.
+  const channels = channelsNamed(suggestion).map((id) => `channel:${id}`);
   switch (suggestion.match) {
+    case "needs_channel":
+      return channels;
     case "needs_component":
       return [...system, `component:${content.system_id}/${content.component_id ?? ""}`];
     case "needs_domain":
@@ -304,13 +340,20 @@ function requires(suggestion: Suggestion): string[] {
     case "needs_offering":
       return [`offering:${content.journey?.product_id ?? ""}`];
     case "needs_system":
+      if (content.kind === "channel") return [`system:${content.channel?.entry_system_id ?? ""}`];
       if (content.kind === "product") {
-        return (content.product?.components ?? []).flatMap((part) => part.responsibilities.map((item) => `system:${item.system_id}`));
+        return [
+          ...(content.product?.components ?? []).flatMap((part) => part.responsibilities.map((item) => `system:${item.system_id}`)),
+          ...channels,
+        ];
       }
       if (content.kind === "journey") {
-        return (content.journey?.activities ?? []).flatMap((step) =>
-          [step.performing_system_id, ...step.supporting_system_ids].filter(Boolean).map((id) => `system:${id}`),
-        );
+        return [
+          ...(content.journey?.activities ?? []).flatMap((step) =>
+            [step.performing_system_id, ...step.supporting_system_ids].filter(Boolean).map((id) => `system:${id}`),
+          ),
+          ...channels,
+        ];
       }
       return [...system, ...(content.target_system_id && !suggestion.target_system_name ? [`system:${content.target_system_id}`] : [])];
     default:
@@ -361,7 +404,8 @@ export function inWords(message: string, words: Lexicon): string {
     .replace(/system '([^']+)'/g, (_, id: string) => `the system ${words.system(id)}`)
     .replace(/landscape domain '([^']+)'/g, (_, id: string) => `the landscape domain ${words.domain(id)}`)
     .replace(/component '([^']+)'/g, (_, id: string) => `the component ${id.replace(/[-_]+/g, " ")}`)
-    .replace(/product offering '([^']+)'/g, (_, id: string) => `the offering ${words.offering(id)}`);
+    .replace(/product offering '([^']+)'/g, (_, id: string) => `the offering ${words.offering(id)}`)
+    .replace(/channel '([^']+)'/g, (_, id: string) => `the channel ${words.channel(id)}`);
 }
 
 /** How the reading of one document stands. */

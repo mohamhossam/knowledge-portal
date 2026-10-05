@@ -1,6 +1,6 @@
 import { useId, useState } from "react";
 
-import type { Journey, Offering, RelationshipKind, Release, Suggestion, SuggestionContent } from "../api/client";
+import type { Channel, Journey, Offering, RelationshipKind, Release, Suggestion, SuggestionContent } from "../api/client";
 import { finishedOffering, journeyProblem, lines, offeringProblem, slug } from "./editing";
 import { AreaField, LinesField, SelectField, SystemField, TextField } from "./forms";
 import { JourneyEditor } from "./JourneyEditor";
@@ -40,7 +40,7 @@ export function SuggestionEditor({ suggestion, release, words, busy, onAccept, o
   const original = suggestion.content;
   const [content, setContent] = useState<SuggestionContent>(() => ({
     ...original,
-    system_id: original.kind === "landscape_domain" || original.kind === "product" || original.kind === "journey"
+    system_id: original.kind === "landscape_domain" || original.kind === "product" || original.kind === "journey" || original.kind === "channel"
       ? original.system_id
       : startingSystem(release, suggestion.system_name, original.system_id),
     target_system_id: original.target_system_id
@@ -59,6 +59,7 @@ export function SuggestionEditor({ suggestion, release, words, busy, onAccept, o
       return { ...base, product, system_id: product.id, name: product.name };
     }
     if (content.kind === "journey" && content.journey) return { ...base, system_id: content.journey.id, name: content.journey.name };
+    if (content.kind === "channel" && content.channel) return { ...base, name: content.channel.name };
     return base;
   };
 
@@ -83,6 +84,8 @@ export function SuggestionEditor({ suggestion, release, words, busy, onAccept, o
         return content.product ? offeringProblem(content.product) : "The offering is missing.";
       case "journey":
         return content.journey ? journeyProblem(content.journey) : "The journey is missing.";
+      case "channel":
+        return content.channel?.name.trim() ? null : "Give the channel a name.";
     }
   })();
 
@@ -210,14 +213,40 @@ export function SuggestionEditor({ suggestion, release, words, busy, onAccept, o
         );
       case "product":
         return content.product ? (
-          <OfferingEditor value={content.product} systems={systems} names={words} onChange={(product: Offering) => set({ product })} />
+          <OfferingEditor
+            value={content.product}
+            systems={systems}
+            channels={release.channels ?? []}
+            names={words}
+            onChange={(product: Offering) => set({ product })}
+          />
         ) : null;
+      case "channel": {
+        const channel = content.channel ?? { id: content.system_id, name: content.name };
+        const change = (patch: Partial<Channel>) => set({ channel: { ...channel, ...patch } });
+        return (
+          <>
+            <TextField label="Name" value={channel.name} required onChange={(name) => change({ name })} />
+            <TextField label="Kind" value={channel.kind} onChange={(kind) => change({ kind: kind || null })} />
+            <SystemField
+              label="Orders enter through"
+              value={channel.entry_system_id ?? ""}
+              systems={systems}
+              writtenAs={channel.entry_system_id ? words.system(channel.entry_system_id) : undefined}
+              allowNone
+              onChange={(entry) => change({ entry_system_id: entry || null })}
+            />
+            <AreaField label="What it is" value={channel.description} onChange={(description) => change({ description: description || null })} />
+          </>
+        );
+      }
       case "journey":
         return (
           <JourneyEditor
             value={content.journey ?? emptyJourney(content.name)}
             systems={systems}
             offerings={release.products ?? []}
+            channels={release.channels ?? []}
             names={words}
             onChange={(journey) => set({ journey })}
           />

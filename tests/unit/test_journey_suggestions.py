@@ -417,13 +417,21 @@ def _journey_change(journey: JourneyOutput | None, quote: str) -> ChangeOutput:
         basis="stated",
         reasoning=None,
         relationship_kind=None,
+        channel_kind=None,
         journey=journey,
     )
 
 
 def _step(number: str, name: str, system: str | None = None) -> StepOutput:
     return StepOutput(
-        number=number, name=name, track=None, system=system, supporting=[], function=None
+        number=number,
+        name=name,
+        track=None,
+        system=system,
+        supporting=[],
+        function=None,
+        channels=[],
+        channel_entry=None,
     )
 
 

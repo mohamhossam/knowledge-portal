@@ -35,6 +35,7 @@ from knowledge_portal.application.ports.architecture_mapping_stats import (
     ArchitectureMappingStatsPort,
 )
 from knowledge_portal.application.ports.knowledge_events import KnowledgeEventOutboxPort
+from knowledge_portal.application.ports.product_catalog import ProductCatalogPort
 from knowledge_portal.application.ports.requirement_dependents import RequirementDependentsPort
 from knowledge_portal.application.ports.source_impact import RequirementImpactPort
 from knowledge_portal.application.ports.transaction_manager import TransactionManagerPort
@@ -57,6 +58,7 @@ from knowledge_portal.application.use_cases.architecture_mapping_impact import (
 from knowledge_portal.application.use_cases.architecture_preview import (
     PreviewArchitectureImpact,
 )
+from knowledge_portal.application.use_cases.catalog_plans import ReadCatalogPlans
 from knowledge_portal.application.use_cases.catalogue_candidates import (
     DecideCatalogueCandidate,
 )
@@ -78,11 +80,20 @@ from knowledge_portal.application.use_cases.reference_knowledge import (
 )
 from knowledge_portal.application.use_cases.source_impact import DocumentSourceImpact
 from knowledge_portal.domain.identity.entities import ActorProfile
-from knowledge_portal.infrastructure.config.options import IdentityProvider
+from knowledge_portal.infrastructure.config.options import (
+    DEFAULT_PRODUCT_CATALOG_TIMEOUT_SECONDS,
+    IdentityProvider,
+    ProductCatalogProvider,
+)
 from knowledge_portal.infrastructure.config.settings import Settings
 from knowledge_portal.infrastructure.documents.library_worker import DocumentIngestionWorker
 from knowledge_portal.infrastructure.identity.fake_identity import FAKE_ACTORS
 from knowledge_portal.infrastructure.persistence.reference_index import Utf8BudgetCounter
+from knowledge_portal.infrastructure.product_catalog import (
+    CachedProductCatalog,
+    FakeProductCatalog,
+    Tmf620ProductCatalog,
+)
 from knowledge_portal.infrastructure.requirement_client import (
     FakeArchitectureMappingStats,
     FakeRequirementDependents,
@@ -144,6 +155,7 @@ class Container:
     architecture_knowledge: ArchitectureKnowledgePort
     manage_architecture_knowledge: ManageArchitectureKnowledge
     explore_architecture: ExploreArchitecture
+    catalog_plans: ReadCatalogPlans
     manage_organisation_catalogue: ManageOrganisationCatalogue
     preview_architecture_impact: PreviewArchitectureImpact
     manage_sample_requirements: ManageSampleRequirements
@@ -265,6 +277,10 @@ def _build_container(
         architecture_knowledge=architecture.knowledge,
         manage_architecture_knowledge=architecture.manage,
         explore_architecture=ExploreArchitecture(persistence.architecture_repository),
+        catalog_plans=ReadCatalogPlans(
+            persistence.architecture_repository,
+            _product_catalog(settings, resources, metrics, clock),
+        ),
         manage_organisation_catalogue=ManageOrganisationCatalogue(
             persistence.organisation_repository, persistence.architecture_repository
         ),
@@ -282,6 +298,33 @@ def _build_container(
         architecture_jobs=architecture.jobs,
         background_workers=workers,
     )
+
+
+def _product_catalog(
+    settings: Settings, resources: ExitStack, metrics: Metrics, clock: ClockPort
+) -> ProductCatalogPort | None:
+    """The product catalog plans and prices are read from, live (requirement-portal ADR-0101)."""
+    provider = settings.product_catalog_provider
+    catalog: ProductCatalogPort
+    if provider is ProductCatalogProvider.NONE:
+        return None
+    if provider is ProductCatalogProvider.FAKE:
+        catalog = FakeProductCatalog(clock)
+    else:
+        http = resources.enter_context(
+            httpx.Client(
+                transport=MeteredTransport(metrics, "product_catalog", httpx.HTTPTransport())
+            )
+        )
+        client = InternalHttpClient(
+            settings.product_catalog_url or "",
+            settings.product_catalog_token or "",
+            service="product catalog",
+            timeout_seconds=DEFAULT_PRODUCT_CATALOG_TIMEOUT_SECONDS,
+            http=http,
+        )
+        catalog = Tmf620ProductCatalog(client, clock, settings.product_catalog_code_field)
+    return CachedProductCatalog(catalog, clock, settings.product_catalog_cache_seconds)
 
 
 def _requirement_work(

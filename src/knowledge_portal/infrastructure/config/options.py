@@ -163,3 +163,17 @@ DEFAULT_PROVIDER_RATE_LIMIT_PER_MINUTE = 30
 
 
 DEFAULT_REQUEST_MAX_BODY_BYTES = 2 * 1024 * 1024
+
+
+class ProductCatalogProvider(Enum):
+    """Where plans and prices are read from (requirement-portal ADR-0101)."""
+
+    NONE = "none"
+    FAKE = "fake"
+    TMF620 = "tmf620"
+
+
+DEFAULT_PRODUCT_CATALOG_CACHE_SECONDS = 300
+
+
+DEFAULT_PRODUCT_CATALOG_TIMEOUT_SECONDS = 10.0

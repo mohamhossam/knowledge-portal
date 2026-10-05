@@ -25,8 +25,8 @@ const FILTERS: { key: Filter; label: string }[] = [
 
 /**
  * A draft's suggestions, gathered under the systems they would change: new
- * systems first, then the systems the draft has, then domains, offerings and
- * journeys. Decided from the keyboard or by pointer.
+ * systems first, then the systems the draft has, then domains, channels,
+ * offerings and journeys. Decided from the keyboard or by pointer.
  *
  * Keys on a suggestion: j or ↓ next, k or ↑ previous, Enter open or close,
  * a accept, r reject, e edit then accept, Esc close.
