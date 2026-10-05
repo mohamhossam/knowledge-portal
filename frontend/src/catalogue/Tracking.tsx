@@ -52,7 +52,7 @@ export function TrackingSection({ offering, headingId, system, channelName, orde
   const title = (
     <>
       <h3 id={headingId} className="govsection__title">Order tracking</h3>
-      {action}
+      {action && <p className="govsection__actions">{action}</p>}
     </>
   );
   if (!tracking) {

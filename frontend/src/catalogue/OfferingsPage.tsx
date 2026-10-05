@@ -15,6 +15,15 @@ export function OfferingsPage() {
   const { book, base, editable } = useCatalogueContext();
   const navigate = useNavigate();
   const [adding, setAdding] = useState(false);
+  const addButton = useRef<HTMLButtonElement>(null);
+  const returning = useRef(false);
+  useEffect(() => {
+    // A closed add gives focus back to the button that opened it.
+    if (!adding && returning.current) {
+      addButton.current?.focus();
+      returning.current = false;
+    }
+  }, [adding]);
   const offerings = book.release.products ?? [];
   const journeys = book.release.journeys ?? [];
   return (
@@ -23,14 +32,15 @@ export function OfferingsPage() {
       <p className="govsection__lead">What is sold, its parts, and which systems are responsible for each part.</p>
       {editable && !adding && (
         <p className="govsection__actions">
-          <EditButton onClick={() => setAdding(true)}>Add an offering</EditButton>
+          <EditButton ref={addButton} onClick={() => setAdding(true)}>Add an offering</EditButton>
         </p>
       )}
       {adding && (
         <OfferingEdit
           onDone={(saved) => {
+            if (saved) return navigate(`${base}/offerings/${encodeURIComponent(saved)}`);
+            returning.current = true;
             setAdding(false);
-            if (saved) navigate(`${base}/offerings/${encodeURIComponent(saved)}`);
           }}
         />
       )}
@@ -106,10 +116,12 @@ function OfferingSheet({ offering }: { offering: Offering }) {
   /** A section's edit, offered under its title while nothing else is being edited. */
   const offer = (key: OfferingSection) =>
     editable && editing === null ? (
-      <p className="govsection__actions">
-        <EditButton id={buttonId(key)} onClick={() => setEditing(key)}>Edit {OFFERING_SECTIONS[key].edit}</EditButton>
-      </p>
+      <EditButton id={buttonId(key)} onClick={() => setEditing(key)}>Edit {OFFERING_SECTIONS[key].edit}</EditButton>
     ) : null;
+  const actions = (key: OfferingSection) => {
+    const button = offer(key);
+    return button && <p className="govsection__actions">{button}</p>;
+  };
   const panel = (key: OfferingSection) => <OfferingSectionEdit offering={offering} section={key} onDone={close(key)} />;
   const journeys = (book.release.journeys ?? []).filter((journey) => journey.product_id === offering.id);
   const orderTypes = new Map(offering.order_types.map((item) => [item.code, item.name]));
@@ -184,7 +196,7 @@ function OfferingSheet({ offering }: { offering: Offering }) {
       {editing === "orders" ? panel("orders") : (
       <section className="govsection" aria-labelledby={`${id}-orders`}>
         <h3 id={`${id}-orders`} className="govsection__title">Order types</h3>
-        {offer("orders")}
+        {actions("orders")}
         {offering.order_types.length ? (
           <table className="govtable">
             <caption className="visually-hidden">Order types of {offering.name}</caption>
@@ -203,7 +215,7 @@ function OfferingSheet({ offering }: { offering: Offering }) {
                     {type.name}
                     {type.description && <span className="secondary govtable__by" dir="auto">{type.description}</span>}
                   </th>
-                  <td>{type.code}</td>
+                  <td className="cell--code" dir="ltr">{type.code}</td>
                   <td dir="auto">
                     {(type.channels ?? []).length ? (
                       (type.channels ?? []).map((id) => channelNames.get(id) ?? id).join(", ")
@@ -225,7 +237,7 @@ function OfferingSheet({ offering }: { offering: Offering }) {
       {editing === "parts" ? panel("parts") : (
       <section className="govsection" aria-labelledby={`${id}-parts`}>
         <h3 id={`${id}-parts`} className="govsection__title">Parts, and who is responsible</h3>
-        {offer("parts")}
+        {actions("parts")}
         {offering.components.length ? (
           <table className="govtable">
             <caption className="visually-hidden">Parts of {offering.name} and the systems responsible for them</caption>
@@ -311,7 +323,7 @@ function OfferingSheet({ offering }: { offering: Offering }) {
       {editing === "rules" ? panel("rules") : (
       <section className="govsection" aria-labelledby={`${id}-rules`}>
         <h3 id={`${id}-rules`} className="govsection__title">Rules</h3>
-        {offer("rules")}
+        {actions("rules")}
         {offering.rules.length ? (
           <ul className="sheet__list">
             {offering.rules.map((rule) => <li key={rule} dir="auto">{rule}</li>)}

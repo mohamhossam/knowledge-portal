@@ -99,6 +99,7 @@
 
 /* A section's quiet line sits under the section title's own heavy rule, never a second one. */
 .catalogue .govsection__title + .timetable__quiet,
+.catalogue .govsection__actions + .timetable__quiet,
 .catalogue .govsection__lead + .timetable__quiet {
   margin-top: 0;
   padding-top: var(--s1);
@@ -802,6 +803,24 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--s3) var(--s4);
+}
+
+/* A long panel (an offering's parts or tracking) keeps its action and waits line in reach:
+   they rest on the foot of the view, on the band above a heavy rule, while the form scrolls. */
+.edit-panel__foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: grid;
+  gap: var(--s2);
+  padding-block: var(--s3);
+  border-top: 2px solid var(--rule-heavy);
+  background: var(--stock-band);
+}
+
+.govtable .cell--code {
+  overflow-wrap: normal;
+  white-space: nowrap;
 }
 
 /* On the band, fields keep the stock so they read as places to write. */

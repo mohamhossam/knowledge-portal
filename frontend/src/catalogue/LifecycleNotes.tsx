@@ -132,12 +132,15 @@ export function LifecycleSection({ offering, headingId, orderName, channelName, 
         {focus ? `Lifecycle notes for ${focus.orderName}` : "Lifecycle notes"}{" "}
         {shown.length > 0 && <span className="govsection__count">{shown.length}</span>}
       </h3>
-      {action}
-      {shown.length > 1 && (
-        <p className="lifecycle__toolbar">
-          <button type="button" className="text-button" onClick={() => setOpen(allOpen ? new Set() : new Set(shown.map((note) => note.id)))}>
-            {allOpen ? "Close every note" : "Open every note"}
-          </button>
+      {/* One row: the edit first, then the reading toggle. */}
+      {(action || shown.length > 1) && (
+        <p className="govsection__actions lifecycle__toolbar">
+          {action}
+          {shown.length > 1 && (
+            <button type="button" className="text-button" onClick={() => setOpen(allOpen ? new Set() : new Set(shown.map((note) => note.id)))}>
+              {allOpen ? "Close every note" : "Open every note"}
+            </button>
+          )}
         </p>
       )}
       {shown.length ? (

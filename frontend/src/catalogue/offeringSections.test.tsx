@@ -100,8 +100,23 @@ describe("an offering edited one section at a time", () => {
     open(true, "/architecture/offerings");
     fireEvent.click(screen.getByRole("button", { name: "Add an offering" }));
     const panel = screen.getByRole("form", { name: "Add an offering" });
+    expect(within(panel).getByRole("heading", { name: "Add an offering" })).toHaveFocus();
     expect(within(panel).getByLabelText(/^Name/)).toBeInTheDocument();
     expect(within(panel).queryByRole("group", { name: "Order types" })).not.toBeInTheDocument();
+
+    fireEvent.keyDown(within(panel).getByLabelText(/^Name/), { key: "Escape" });
+    expect(screen.getByRole("button", { name: "Add an offering" })).toHaveFocus();
+  });
+
+  it("asks before removing, from the panel it opens, and gives focus back when kept", () => {
+    open(true);
+    fireEvent.click(screen.getByRole("button", { name: "Remove this offering" }));
+    const panel = screen.getByRole("form", { name: "Remove Business Pro Plus" });
+    expect(within(panel).getByRole("heading", { name: "Remove Business Pro Plus" })).toHaveFocus();
+
+    fireEvent.keyDown(panel, { key: "Escape" });
+    expect(screen.queryByRole("form")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Remove this offering" })).toHaveFocus();
   });
 });
 

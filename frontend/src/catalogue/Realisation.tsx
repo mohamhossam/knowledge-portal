@@ -90,7 +90,7 @@ export function NfrSection({ offering, headingId, action }: { offering: Offering
       <h3 id={headingId} className="govsection__title">
         Non-functional requirements {nfrs.length > 0 && <span className="govsection__count">{nfrs.length}</span>}
       </h3>
-      {action}
+      {action && <p className="govsection__actions">{action}</p>}
       {nfrs.length ? (
         <>
           {missing > 0 && (

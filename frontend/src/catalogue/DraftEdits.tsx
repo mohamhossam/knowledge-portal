@@ -1,4 +1,4 @@
-import { type FormEvent, type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { type FormEvent, type ReactNode, type Ref, useEffect, useId, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import type { CatalogueSystem, Channel, Journey, Offering, Relationship, RelationshipKind } from "../api/client";
@@ -63,13 +63,15 @@ export function EditPanel({ title, children, action, busy, problem, error, onSub
             : errorMessage(error)}
         </p>
       ) : null}
-      <p className="edit-panel__actions">
-        <button type="submit" className="action-button" disabled={!!problem || busy} aria-describedby={problem ? `${id}-why` : undefined}>
-          {busy ? "Saving…" : action}
-        </button>
-        <button type="button" className="text-button" onClick={onCancel}>Cancel</button>
-      </p>
-      {problem && <p id={`${id}-why`} className="versions__waits">{problem}</p>}
+      <div className="edit-panel__foot">
+        <p className="edit-panel__actions">
+          <button type="submit" className="action-button" disabled={!!problem || busy} aria-describedby={problem ? `${id}-why` : undefined}>
+            {busy ? "Saving…" : action}
+          </button>
+          <button type="button" className="text-button" onClick={onCancel}>Cancel</button>
+        </p>
+        {problem && <p id={`${id}-why`} className="versions__waits">{problem}</p>}
+      </div>
     </form>
   );
 }
@@ -360,6 +362,7 @@ export function OfferingEdit({ onDone }: { onDone: (saved?: string) => void }) {
   return (
     <EditPanel
       title="Add an offering"
+      focusOnOpen
       action="Add the offering"
       busy={saveDraft.isPending}
       problem={offeringProblem(value) ?? (clash ? "Another offering has that name." : null)}
@@ -405,6 +408,7 @@ export function OfferingSectionEdit({ offering, section, onDone }: { offering: O
         saveDraft.mutate(draftBody(release, { products: next }), { onSuccess: onDone });
       }}
     >
+      <p className="govsection__lead">The other sections can be edited once this one is saved or cancelled.</p>
       <div className="form">
         <Fields value={value} onChange={setValue} systems={release.systems} channels={release.channels ?? []} />
       </div>
@@ -455,6 +459,7 @@ export function WholeRemove({ kind, item, onDone }: { kind: "offering" | "journe
   return (
     <EditPanel
       title={`Remove ${item.name}`}
+      focusOnOpen
       action="Remove it from the draft"
       danger
       busy={saveDraft.isPending}
@@ -479,9 +484,15 @@ export function WholeRemove({ kind, item, onDone }: { kind: "offering" | "journe
 }
 
 /** A draft-only text button that opens an edit, styled like the rest. */
-export function EditButton({ children, onClick, expanded, id }: { children: ReactNode; onClick: () => void; expanded?: boolean; id?: string }) {
+export function EditButton({ children, onClick, expanded, id, ref }: {
+  children: ReactNode;
+  onClick: () => void;
+  expanded?: boolean;
+  id?: string;
+  ref?: Ref<HTMLButtonElement>;
+}) {
   return (
-    <button type="button" id={id} className="text-button" aria-expanded={expanded} onClick={onClick}>
+    <button type="button" ref={ref} id={id} className="text-button" aria-expanded={expanded} onClick={onClick}>
       {children}
     </button>
   );
