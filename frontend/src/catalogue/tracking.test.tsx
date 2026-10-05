@@ -70,3 +70,32 @@ describe("order tracking in the offering editor", () => {
     expect(fieldsInWords(["tracking"])).toBe("order tracking");
   });
 });
+
+describe("an offering read from a document, in the suggestion editor", () => {
+  it("shows the channels and systems the document named that the draft does not have yet", () => {
+    const read: Offering = {
+      ...OFFERING,
+      order_types: [{ code: "NEW", name: "New", enabled: true, channels: ["Business Web"] }],
+      tracking: {
+        order_types: [], statuses: [], fallout: [], milestones: [],
+        flows: [{ from_system_id: "order-store", to_system_id: "order-store", label: "Milestone log" }],
+        channels: [{ channel_id: "Business Web", ui_system_id: "order-portal" }],
+      },
+      lifecycle_notes: [{ id: "renewal", title: "Renewal", order_types: [], channels: ["Shop"], blocks: [] }],
+    };
+    const names = { system: (id: string) => ({ "order-store": "Order Store", "order-portal": "Order Portal" })[id] ?? id, channel: (id: string) => id };
+    render(<OfferingEditor value={read} onChange={() => undefined} systems={EXPLORED.systems} channels={[]} names={names} />);
+
+    const tracked = screen.getByRole("group", { name: "How each channel tracks its orders" });
+    expect(within(tracked).getByRole("group", { name: /Business Web/ })).toBeTruthy();
+    const channel = within(tracked).getByLabelText(/^Channel/) as HTMLSelectElement;
+    expect(channel.selectedOptions[0]!.textContent).toBe("Business Web (not in the draft yet)");
+    expect((within(tracked).getByLabelText("Tracked in") as HTMLSelectElement).selectedOptions[0]!.textContent).toBe(
+      "Order Portal (not in the draft yet)",
+    );
+    const flows = screen.getByRole("group", { name: "What carries the order's progress" });
+    expect((within(flows).getByLabelText("From") as HTMLSelectElement).selectedOptions[0]!.textContent).toBe("Order Store (not in the draft yet)");
+    expect((screen.getAllByRole("checkbox", { name: "Business Web (not in the draft yet)" })[0] as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByRole("checkbox", { name: "Shop (not in the draft yet)" }) as HTMLInputElement).checked).toBe(true);
+  });
+});

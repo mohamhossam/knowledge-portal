@@ -6,6 +6,7 @@
 import type {
   ArchitectureJob, CatalogueSystem, ExtractionRun, Offering, RelationshipKind, Release, Suggestion, SuggestionKind,
 } from "../api/client";
+import { COVERAGE, LAYERS } from "./catalogue";
 
 export type SuggestionState = "ready" | "decide" | "waits" | "present" | "accepted" | "rejected";
 
@@ -60,6 +61,8 @@ export type Lexicon = {
   domain: (id: string) => string;
   offering: (id: string) => string;
   channel: (id: string) => string;
+  /** Whether the draft already has a system or channel ("system:cwom", "channel:business-web"). */
+  inDraft: (key: string) => boolean;
 };
 
 export function lexicon(release: Release, suggestions: Suggestion[]): Lexicon {
@@ -92,6 +95,10 @@ export function lexicon(release: Release, suggestions: Suggestion[]): Lexicon {
       if (id) set(systems, id, match.written_as);
     }
   }
+  const drafted = new Set([
+    ...release.systems.map((system) => `system:${system.id}`),
+    ...(release.channels ?? []).flatMap((channel) => channelKeys(channel.id, channel.name)),
+  ]);
   const humane = (id: string) => id.split(/[-_]+/).filter(Boolean).map((word) => word.charAt(0).toLocaleUpperCase() + word.slice(1)).join(" ");
   return {
     system: (id) => systems.get(id) ?? humane(id),
@@ -100,6 +107,7 @@ export function lexicon(release: Release, suggestions: Suggestion[]): Lexicon {
     offering: (id) => offerings.get(id) ?? humane(id),
     // A channel the document named that no suggestion adds is kept as written.
     channel: (id) => channels.get(id) ?? id,
+    inDraft: (key) => drafted.has(key.startsWith("channel:") ? channelKeys(key.slice(8))[0]! : key),
   };
 }
 
@@ -115,11 +123,13 @@ const quoted = (items: string[]) => items.map((item) => `“${item}”`).join(",
 const listed = (items: string[]) => (items.length > 1 ? `${items.slice(0, -1).join(", ")} and ${items.at(-1)}` : items[0] ?? "");
 const count = (n: number, one: string) => `${n} ${one}${n === 1 ? "" : "s"}`;
 
+const realisedParts = (product: Offering) => product.components.filter((part) => (part.realisation ?? []).length > 0).length;
+
 /** What a suggested offering holds beyond its parts and order types (ADR-0101, step 4), so a reviewer sees it. */
 function details(product: Offering | null | undefined): string[] {
   if (!product) return [];
   return [
-    product.components.some((part) => (part.realisation ?? []).length > 0) ? "realisation" : "",
+    realisedParts(product) ? `realisation for ${count(realisedParts(product), "part")}` : "",
     product.nfrs?.length ? count(product.nfrs.length, "NFR") : "",
     product.tracking ? "order tracking" : "",
     product.lifecycle_notes?.length ? count(product.lifecycle_notes.length, "lifecycle note") : "",
@@ -153,7 +163,7 @@ export function changeSentence(suggestion: Suggestion, words: Lexicon): string {
       return `Adds the landscape domain ${content.name}${content.parent_domain_id ? `, inside ${words.domain(content.parent_domain_id)}` : ""}`;
     case "product": {
       const held = listed(details(content.product));
-      if (replaces) return `Replaces the offering ${content.name} with the document's${held ? `, which includes ${held}` : ""}`;
+      if (replaces) return `Replaces the offering ${content.name} with the document's version${held ? `, which includes ${held}` : ""}`;
       return `Adds the offering ${content.name}${held ? `, with ${held}` : ""}`;
     }
     case "journey":
@@ -183,9 +193,15 @@ export function waitsFor(suggestion: Suggestion, words: Lexicon): string {
       const missing = !suggestion.system_name && content.kind !== "product" && content.kind !== "journey"
         ? content.system_id
         : content.target_system_id ?? content.system_id;
-      return content.kind === "product" || content.kind === "journey"
-        ? "Waits for the systems it names"
-        : `Waits for the system ${words.system(missing)}`;
+      if (content.kind === "product" || content.kind === "journey") {
+        const { systems, channels } = awaited(suggestion, words);
+        const parts = [
+          systems.length ? `the ${systems.length === 1 ? "system" : "systems"} ${few(systems)}` : "",
+          channels.length ? `the ${channels.length === 1 ? "channel" : "channels"} ${few(channels)}` : "",
+        ].filter(Boolean);
+        return parts.length ? `Waits for ${parts.join(", and ")}` : "Waits for the systems it names";
+      }
+      return `Waits for the system ${words.system(missing)}`;
     }
     case "needs_component":
       return content.kind === "journey"
@@ -202,6 +218,64 @@ export function waitsFor(suggestion: Suggestion, words: Lexicon): string {
     default:
       return "";
   }
+}
+
+/**
+ * What a suggested offering holds beyond its parts and order types, one line each, so a
+ * reviewer can check it against the document without opening the editor.
+ */
+export function offeringHolds(product: Offering | null | undefined, words: Lexicon): { label: string; text: string; due?: boolean }[] {
+  if (!product) return [];
+  const order = (code: string) => product.order_types.find((item) => item.code === code)?.name ?? code;
+  const lines: { label: string; text: string; due?: boolean }[] = [];
+  const realised = product.components.filter((part) => (part.realisation ?? []).length > 0);
+  if (realised.length) {
+    const layers = (part: Offering["components"][number]) =>
+      [...new Set((part.realisation ?? []).map((item) => LAYERS.find((layer) => layer.layer === item.layer)?.short ?? item.layer))].join(", ");
+    lines.push({ label: "Realised as", text: realised.map((part) => `${part.name} (${layers(part)})`).join("; ") });
+  }
+  if (product.nfrs?.length) {
+    lines.push({ label: "NFRs", text: product.nfrs.map((item) => `${item.quality} (${COVERAGE[item.coverage].toLocaleLowerCase()})`).join("; ") });
+  }
+  const tracking = product.tracking;
+  if (tracking) {
+    const scope = tracking.order_types.length ? ` for ${tracking.order_types.map(order).join(", ")}` : "";
+    const parts = [
+      tracking.channels.length ? `Channels ${tracking.channels.map((item) => words.channel(item.channel_id)).join(", ")}` : "",
+      tracking.flows.length ? count(tracking.flows.length, "flow") : "",
+      tracking.milestones.length ? count(tracking.milestones.length, "milestone") : "",
+      tracking.statuses.length ? count(tracking.statuses.length, "internal status").replace(/statuss$/, "statuses") : "",
+      tracking.fallout.length ? count(tracking.fallout.length, "fallout case") : "",
+    ].filter(Boolean);
+    lines.push({ label: `Order tracking${scope}`, text: parts.join("; ") || "Its scope only" });
+  }
+  if (product.lifecycle_notes?.length) {
+    lines.push({ label: "Lifecycle notes", text: product.lifecycle_notes.map((note) => note.title).join("; ") });
+    const carried = product.lifecycle_notes.filter((note) => note.blocks.some((block) => block.to_verify));
+    if (carried.length) {
+      lines.push({ label: "To re-verify", text: `${carried.map((note) => note.title).join("; ")} carries over content from another source`, due: true });
+    }
+  }
+  return lines;
+}
+
+/** At most four names, then how many more: a waits line stays a line. */
+const few = (names: string[]) => (names.length > 4 ? `${names.slice(0, 3).join(", ")} and ${names.length - 3} more` : names.join(", "));
+
+/** The systems and channels an offering or journey names that the draft lacks, in the documents' names. */
+function awaited(suggestion: Suggestion, words: Lexicon): { systems: string[]; channels: string[] } {
+  const systems = [...new Set(systemsNamed(suggestion))].filter((id) => !words.inDraft(`system:${id}`)).map(words.system);
+  const channels = [...new Set(channelsNamed(suggestion))].filter((id) => !words.inDraft(`channel:${id}`)).map(words.channel);
+  return { systems: [...new Set(systems)], channels: [...new Set(channels)] };
+}
+
+/** Whether a waiting suggestion waits for more than one thing, so its line says "those". */
+export function waitsForMany(suggestion: Suggestion, words: Lexicon): boolean {
+  const { content } = suggestion;
+  if (suggestion.match === "needs_channel") return new Set(channelsNamed(suggestion)).size > 1;
+  if (suggestion.match !== "needs_system" || (content.kind !== "product" && content.kind !== "journey")) return false;
+  const { systems, channels } = awaited(suggestion, words);
+  return systems.length + channels.length !== 1;
 }
 
 /** Why a person must decide, in words. */
@@ -332,6 +406,24 @@ function provides(suggestion: Suggestion): string[] {
   }
 }
 
+/** The systems an offering's parts and order tracking, or a journey's steps, name. */
+function systemsNamed(suggestion: Suggestion): string[] {
+  const { content } = suggestion;
+  if (content.kind === "product") {
+    const tracking = content.product?.tracking;
+    return [
+      ...(content.product?.components ?? []).flatMap((part) => part.responsibilities.map((item) => item.system_id)),
+      ...(tracking?.flows ?? []).flatMap((flow) => [flow.from_system_id, flow.to_system_id]),
+      ...(tracking?.channels ?? []).flatMap((item) => [item.ui_system_id ?? "", item.read_system_id ?? ""]),
+      ...(tracking?.milestones ?? []).map((item) => item.system_id ?? ""),
+    ].filter(Boolean);
+  }
+  if (content.kind === "journey") {
+    return (content.journey?.activities ?? []).flatMap((step) => [step.performing_system_id ?? "", ...step.supporting_system_ids]).filter(Boolean);
+  }
+  return [];
+}
+
 /**
  * A channel's keys: its id and its name, without case. A document names a channel as
  * it writes it ("Business Web"), and the service finds it by id or name alike.
@@ -372,23 +464,8 @@ function requires(suggestion: Suggestion): string[] {
       return [`offering:${content.journey?.product_id ?? ""}`];
     case "needs_system":
       if (content.kind === "channel") return [`system:${content.channel?.entry_system_id ?? ""}`];
-      if (content.kind === "product") {
-        const tracking = content.product?.tracking;
-        return [
-          ...(content.product?.components ?? []).flatMap((part) => part.responsibilities.map((item) => `system:${item.system_id}`)),
-          ...(tracking?.flows ?? []).flatMap((flow) => [`system:${flow.from_system_id}`, `system:${flow.to_system_id}`]),
-          ...(tracking?.channels ?? []).flatMap((item) => [item.ui_system_id, item.read_system_id]).filter(Boolean).map((id) => `system:${id}`),
-          ...(tracking?.milestones ?? []).flatMap((item) => (item.system_id ? [`system:${item.system_id}`] : [])),
-          ...channels,
-        ];
-      }
-      if (content.kind === "journey") {
-        return [
-          ...(content.journey?.activities ?? []).flatMap((step) =>
-            [step.performing_system_id, ...step.supporting_system_ids].filter(Boolean).map((id) => `system:${id}`),
-          ),
-          ...channels,
-        ];
+      if (content.kind === "product" || content.kind === "journey") {
+        return [...systemsNamed(suggestion).map((id) => `system:${id}`), ...channels];
       }
       return [...system, ...(content.target_system_id && !suggestion.target_system_name ? [`system:${content.target_system_id}`] : [])];
     default:

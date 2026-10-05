@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { Release, Suggestion } from "../api/client";
 import {
   bulkAcceptable, changeSentence, inWords, lexicon, needsOneByOne, reading, suggestionGroups, suggestionState, tally, typedFile,
-  waitsFor, warningInWords,
+  offeringHolds, waitsFor, waitsForMany, warningInWords,
 } from "./suggestions";
 
 const release = {
@@ -203,11 +203,25 @@ describe("offering detail suggestions", () => {
   it("says what an offering holds beyond its parts, whether it adds or replaces one", () => {
     const words = lexicon(release, []);
     expect(changeSentence(detailed("new"), words)).toBe(
-      "Adds the offering Office Connect, with realisation, 2 NFRs, order tracking and 1 lifecycle note",
+      "Adds the offering Office Connect, with realisation for 1 part, 2 NFRs, order tracking and 1 lifecycle note",
     );
     expect(changeSentence(detailed("updates_existing", false), words)).toBe(
-      "Replaces the offering Office Connect with the document's, which includes realisation, 2 NFRs and 1 lifecycle note",
+      "Replaces the offering Office Connect with the document's version, which includes realisation for 1 part, 2 NFRs and 1 lifecycle note",
     );
+  });
+
+  it("names the systems and channels it waits for, and what it holds", () => {
+    const store = suggestion({ kind: "system", system_id: "Order Store", name: "Order Store" });
+    const words = lexicon(release, [store]);
+    const waiting = detailed("needs_system");
+    expect(waitsFor(waiting, words)).toBe("Waits for the systems Order Store, Order Portal, and the channels Business Web, Shop");
+    expect(waitsForMany(waiting, words)).toBe(true);
+    expect(offeringHolds(waiting.content.product, words)).toEqual([
+      { label: "Realised as", text: "Fibre (CFS)" },
+      { label: "NFRs", text: "Availability (defined); Security (not defined)" },
+      { label: "Order tracking", text: "Channels Business Web; 1 flow" },
+      { label: "Lifecycle notes", text: "Renewal" },
+    ]);
   });
 
   it("waits for the channels its order tracking and lifecycle notes name", () => {

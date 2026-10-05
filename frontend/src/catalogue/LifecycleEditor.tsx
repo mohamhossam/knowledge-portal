@@ -1,7 +1,7 @@
 import type { Channel, Offering, SourceConfidence } from "../api/client";
 import { CONFIDENCE_OPTIONS } from "./catalogue";
 import { AreaField, CheckField, LinesField, Rows, SelectField, TextField } from "./forms";
-import { ChannelChoices } from "./OfferingEditor";
+import { ChannelChoices, type Names } from "./OfferingEditor";
 
 type Note = Offering["lifecycle_notes"][number];
 type Block = Note["blocks"][number];
@@ -60,11 +60,12 @@ function BlockFields({ block, change }: { block: Block; change: (patch: Partial<
  * the order types and channels it concerns (none means every one), how sure
  * its source is, and its content as paragraphs, lists and tables. Controlled.
  */
-export function LifecycleEditor({ value, onChange, channels, orderTypes }: {
+export function LifecycleEditor({ value, onChange, channels, orderTypes, names }: {
   value: Note[];
   onChange: (value: Note[]) => void;
   channels: Channel[];
   orderTypes: { code: string; name: string }[];
+  names?: Names;
 }) {
   return (
     <Rows<Note>
@@ -100,8 +101,14 @@ export function LifecycleEditor({ value, onChange, channels, orderTypes }: {
               ))}
             </fieldset>
           )}
-          {channels.length > 0 && (
-            <ChannelChoices legend="Only in channels (none means every channel)" channels={channels} chosen={note.channels} onChange={(chosen) => change({ channels: chosen })} />
+          {(channels.length > 0 || note.channels.length > 0) && (
+            <ChannelChoices
+              legend="Only in channels (none means every channel)"
+              channels={channels}
+              chosen={note.channels}
+              names={names}
+              onChange={(chosen) => change({ channels: chosen })}
+            />
           )}
           <Rows<Block>
             legend="What it says"

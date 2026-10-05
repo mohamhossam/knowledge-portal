@@ -504,6 +504,47 @@
   font-weight: var(--w-medium);
 }
 
+/* What an offering suggestion holds beyond its parts: a hairlined definition list, label above text. */
+.suggestion-holds {
+  display: grid;
+  gap: var(--s1);
+  max-width: 64ch;
+}
+
+.suggestion-holds dl {
+  margin: 0;
+}
+
+.suggestion-holds__line {
+  display: grid;
+  grid-template-columns: minmax(8rem, 12rem) 1fr;
+  gap: var(--s1) var(--s3);
+  padding: var(--s1) 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.suggestion-holds__line dt {
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+.suggestion-holds__line dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.suggestion-holds__line--due dt,
+.suggestion-holds__line--due dd {
+  color: var(--ink);
+  font-weight: 680;
+}
+
+@media (max-width: 45rem) {
+  .suggestion-holds__line {
+    grid-template-columns: 1fr;
+  }
+}
+
 .suggestion-detail__rationale {
   display: grid;
   gap: var(--s1);
@@ -558,6 +599,17 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--s3) var(--s4);
+}
+
+/* A long editor (a whole offering) keeps its actions in reach: they rest on the foot of the
+   view, on the band, above a heavy rule, while the form scrolls under them. */
+.suggestion-editor > .suggestion-editor__actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  padding: var(--s3) 0;
+  border-top: 2px solid var(--rule-heavy);
+  background: var(--stock-band);
 }
 
 .decision__why,
