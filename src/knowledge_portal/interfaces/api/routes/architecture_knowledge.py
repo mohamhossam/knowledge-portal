@@ -211,6 +211,9 @@ def update_draft(
             journeys=(
                 None if body.journeys is None else tuple(item.to_domain() for item in body.journeys)
             ),
+            channels=(
+                None if body.channels is None else tuple(item.to_domain() for item in body.channels)
+            ),
         )
     )
 

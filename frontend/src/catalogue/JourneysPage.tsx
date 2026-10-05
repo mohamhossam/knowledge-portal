@@ -100,6 +100,8 @@ function JourneySheet({ journey }: { journey: Journey }) {
   useEffect(() => {
     if (location.key !== "default") heading.current?.focus();
   }, [location.key]);
+  const channels = new Map((book.release.channels ?? []).map((item) => [item.id, item.name]));
+  const channelName = (channelId: string) => channels.get(channelId) ?? channelId;
   const system = (systemId: string) => (
     <Link to={`${base}/systems/${encodeURIComponent(systemId)}`} dir="auto">{systemName(book, systemId)}</Link>
   );
@@ -136,7 +138,7 @@ function JourneySheet({ journey }: { journey: Journey }) {
       )}
       {editing !== "edit" && (
         <>
-          <JourneySteps journey={journey} headingId={`${id}-steps`} system={system} />
+          <JourneySteps journey={journey} headingId={`${id}-steps`} system={system} channelName={channelName} />
           <JourneyHandovers journey={journey} headingId={`${id}-handovers`} />
         </>
       )}

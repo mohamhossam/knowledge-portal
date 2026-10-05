@@ -1,4 +1,4 @@
-import type { CatalogueSystem, Offering, SourceConfidence } from "../api/client";
+import type { CatalogueSystem, Channel, Offering, SourceConfidence } from "../api/client";
 import { CONFIDENCE } from "./catalogue";
 import { lines } from "./editing";
 import { AreaField, CheckField, LinesField, Rows, SelectField, SystemField, TextField } from "./forms";
@@ -26,10 +26,12 @@ const linePoints = (items: string[], before: Point[]): Point[] =>
  * A whole product offering: what it is, its order types, its parts and the
  * systems responsible for each part. Controlled; the caller keeps the value.
  */
-export function OfferingEditor({ value, onChange, systems, names }: {
+export function OfferingEditor({ value, onChange, systems, channels = [], names }: {
   value: Offering;
   onChange: (value: Offering) => void;
   systems: CatalogueSystem[];
+  /** The draft's channels, to say which each order type can be ordered through. */
+  channels?: Channel[];
   /** Names for systems a document mentions that the draft does not have yet. */
   names?: { system: (id: string) => string };
 }) {
@@ -70,13 +72,21 @@ export function OfferingEditor({ value, onChange, systems, names }: {
         one="order type"
         items={value.order_types}
         onChange={(order_types) => set({ order_types })}
-        blank={() => ({ code: "", name: "", enabled: true })}
+        blank={() => ({ code: "", name: "", enabled: true, channels: [] })}
         itemLabel={(type, index) => `order type ${type.name || index + 1}`}
         render={(type, update) => (
           <>
             <TextField label="Name" value={type.name} required onChange={(name) => update({ name })} />
             <TextField label="Code" value={type.code} required dir="ltr" onChange={(code) => update({ code })} />
             <CheckField label="Offered" checked={type.enabled} onChange={(enabled) => update({ enabled })} />
+            {channels.length > 0 && (
+              <ChannelChoices
+                legend="Ordered through"
+                channels={channels}
+                chosen={type.channels ?? []}
+                onChange={(chosen) => update({ channels: chosen })}
+              />
+            )}
           </>
         )}
       />
@@ -140,5 +150,27 @@ export function OfferingEditor({ value, onChange, systems, names }: {
         )}
       />
     </div>
+  );
+}
+
+/** A group of channel checkboxes; the legend says what none chosen means. */
+export function ChannelChoices({ legend, channels, chosen, onChange }: {
+  legend: string;
+  channels: Channel[];
+  chosen: string[];
+  onChange: (chosen: string[]) => void;
+}) {
+  return (
+    <fieldset className="choices form__field--wide">
+      <legend className="field__label">{legend}</legend>
+      {channels.map((channel) => (
+        <CheckField
+          key={channel.id}
+          label={channel.name}
+          checked={chosen.includes(channel.id)}
+          onChange={(on) => onChange(on ? [...chosen, channel.id] : chosen.filter((id) => id !== channel.id))}
+        />
+      ))}
+    </fieldset>
   );
 }

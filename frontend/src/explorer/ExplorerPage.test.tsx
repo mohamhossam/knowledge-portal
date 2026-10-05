@@ -30,7 +30,7 @@ function open(path = "/explorer", linkSystems = false) {
 describe("ExplorerPage", () => {
   it("opens on the first scenario with a journey and names the version it reads", async () => {
     open();
-    expect(await screen.findByRole("heading", { level: 2, name: "Business Pro Plus: New Activation" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 2, name: "Business Pro Plus: New Activation, through Online" })).toBeInTheDocument();
     expect(screen.getByText("‘October’")).toBeInTheDocument();
     expect(screen.getByText("Business Pro Plus new activation")).toBeInTheDocument();
   });
@@ -64,8 +64,26 @@ describe("ExplorerPage", () => {
     fireEvent.change(await screen.findByLabelText("Order type"), { target: { value: "CEASE" } });
     expect(screen.getByRole("heading", { level: 2, name: "Business Pro Plus: Cease" })).toBeInTheDocument();
     expect(screen.getByTestId("where")).toHaveTextContent("?product=bpp&order=CEASE");
+    expect(screen.queryByLabelText("Channel")).not.toBeInTheDocument();
     expect(screen.getByText("No journey fulfils it yet")).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "Cease (no journey yet)" })).toBeInTheDocument();
+  });
+
+  it("reads one channel at a time, with its entry system performing the steps given to it", async () => {
+    open();
+    const steps = within(await screen.findByRole("table", { name: /Steps of/ }));
+    expect(steps.getByText("The entry system of Online")).toBeInTheDocument();
+    expect(steps.queryByText("Book a shop visit")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Channel"), { target: { value: "shop" } });
+
+    expect(screen.getByRole("heading", { level: 2, name: "Business Pro Plus: New Activation, through Shop" })).toBeInTheDocument();
+    expect(screen.getByTestId("where")).toHaveTextContent("?product=bpp&order=NEW&channel=shop");
+    const shop = within(screen.getByRole("table", { name: /Steps of/ }));
+    expect(shop.getByText("Book a shop visit")).toBeInTheDocument();
+    expect(shop.getByText("Only in Shop")).toBeInTheDocument();
+    expect(shop.getByText("The entry system of Shop, not named")).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Shop (no entry system)" })).toBeInTheDocument();
   });
 
   it("opens the scenario in the address", async () => {

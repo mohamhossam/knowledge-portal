@@ -37,6 +37,7 @@ from knowledge_portal.domain.architecture.candidates import (
     MatchRole,
     PossibleMatch,
 )
+from knowledge_portal.domain.architecture.channels import Channel
 from knowledge_portal.domain.architecture.diff import (
     CatalogueDiff,
     ChangedItem,
@@ -182,6 +183,41 @@ class LandscapeDomainSchema(BaseModel):
         return LandscapeDomain(self.id, self.name, self.name_ar, self.parent_id, self.description)
 
 
+class ChannelSchema(BaseModel):
+    """Where orders are placed, and the system each is entered through (ADR-0101, step 3)."""
+
+    id: Identifier
+    name: Name
+    kind: Name | None = None
+    entry_system_id: Identifier | None = None
+    description: Text | None = None
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
+
+    @classmethod
+    def from_domain(cls, channel: Channel) -> ChannelSchema:
+        return cls.model_construct(
+            id=channel.id,
+            name=channel.name,
+            kind=channel.kind,
+            entry_system_id=channel.entry_system_id,
+            description=channel.description,
+            confidence=channel.confidence,
+            source=channel.source,
+        )
+
+    def to_domain(self) -> Channel:
+        return Channel(
+            id=self.id,
+            name=self.name,
+            kind=self.kind,
+            entry_system_id=self.entry_system_id,
+            description=self.description,
+            confidence=self.confidence,
+            source=self.source,
+        )
+
+
 class OfferingPointSchema(BaseModel):
     """A customer value, or a kind of customer an offering is for."""
 
@@ -210,6 +246,8 @@ class OrderTypeSchema(BaseModel):
     description: Text | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # The channels it can be ordered through, by id; empty when the source does not say.
+    channels: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, order: OrderType) -> OrderTypeSchema:
@@ -220,11 +258,18 @@ class OrderTypeSchema(BaseModel):
             description=order.description,
             confidence=order.confidence,
             source=order.source,
+            channels=list(order.channels),
         )
 
     def to_domain(self) -> OrderType:
         return OrderType(
-            self.code, self.name, self.enabled, self.description, self.confidence, self.source
+            self.code,
+            self.name,
+            self.enabled,
+            self.description,
+            self.confidence,
+            self.source,
+            tuple(self.channels),
         )
 
 
@@ -387,6 +432,10 @@ class ActivitySchema(BaseModel):
     etom: Text | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # The channels the step happens in; empty means every channel.
+    channels: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    # Performed by the entry system of whichever channel the order came through.
+    channel_entry: bool = False
 
     @classmethod
     def from_domain(cls, item: Activity) -> ActivitySchema:
@@ -407,6 +456,8 @@ class ActivitySchema(BaseModel):
             etom=item.etom,
             confidence=item.confidence,
             source=item.source,
+            channels=list(item.channels),
+            channel_entry=item.channel_entry,
         )
 
     def to_domain(self) -> Activity:
@@ -427,6 +478,8 @@ class ActivitySchema(BaseModel):
             etom=self.etom,
             confidence=self.confidence,
             source=self.source,
+            channels=tuple(self.channels),
+            channel_entry=self.channel_entry,
         )
 
 
@@ -688,6 +741,7 @@ class KnowledgeReleaseResponse(BaseModel):
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
     )
     journeys: list[JourneySchema] = Field(default_factory=list, max_length=MAX_CATALOGUE_ITEMS)
+    channels: list[ChannelSchema] = Field(default_factory=list, max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, release: ArchitectureKnowledge) -> KnowledgeReleaseResponse:
@@ -718,6 +772,7 @@ class KnowledgeReleaseResponse(BaseModel):
             ],
             products=[ProductOfferingSchema.from_domain(item) for item in release.products],
             journeys=[JourneySchema.from_domain(item) for item in release.journeys],
+            channels=[ChannelSchema.from_domain(item) for item in release.channels],
         )
 
 
@@ -737,6 +792,7 @@ class ExplorerReleaseResponse(BaseModel):
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
     )
     journeys: list[JourneySchema] = Field(default_factory=list, max_length=MAX_CATALOGUE_ITEMS)
+    channels: list[ChannelSchema] = Field(default_factory=list, max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, release: ArchitectureKnowledge) -> ExplorerReleaseResponse:
@@ -753,6 +809,7 @@ class ExplorerReleaseResponse(BaseModel):
             ],
             products=[ProductOfferingSchema.from_domain(item) for item in release.products],
             journeys=[JourneySchema.from_domain(item) for item in release.journeys],
+            channels=[ChannelSchema.from_domain(item) for item in release.channels],
         )
 
 
@@ -820,6 +877,8 @@ class DraftUpdateRequest(BaseModel):
     )
     # Likewise for journeys (ADR-0096).
     journeys: list[JourneySchema] | None = Field(default=None, max_length=MAX_CATALOGUE_ITEMS)
+    # Likewise for channels (requirement-portal ADR-0101, step 3).
+    channels: list[ChannelSchema] | None = Field(default=None, max_length=MAX_CATALOGUE_ITEMS)
 
 
 class SystemUpdateRequest(BaseModel):

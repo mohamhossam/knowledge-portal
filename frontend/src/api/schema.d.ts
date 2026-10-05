@@ -1313,6 +1313,16 @@ export interface components {
         /** ActivitySchema */
         ActivitySchema: {
             /**
+             * Channel Entry
+             * @default false
+             */
+            channel_entry: boolean;
+            /**
+             * Channels
+             * @default []
+             */
+            channels: string[];
+            /**
              * Component Ids
              * @default []
              */
@@ -1610,7 +1620,26 @@ export interface components {
          * ChangedItem
          * @enum {string}
          */
-        ChangedItem: "system" | "capability" | "relationship" | "document" | "domain" | "component" | "landscape_domain" | "product" | "journey";
+        ChangedItem: "system" | "capability" | "relationship" | "document" | "domain" | "component" | "landscape_domain" | "product" | "journey" | "channel";
+        /**
+         * ChannelSchema
+         * @description Where orders are placed, and the system each is entered through (ADR-0101, step 3).
+         */
+        ChannelSchema: {
+            confidence?: components["schemas"]["SourceConfidence"] | null;
+            /** Description */
+            description?: string | null;
+            /** Entry System Id */
+            entry_system_id?: string | null;
+            /** Id */
+            id: string;
+            /** Kind */
+            kind?: string | null;
+            /** Name */
+            name: string;
+            /** Source */
+            source?: string | null;
+        };
         /**
          * CitingDependency
          * @description One requirement statement that cites a passage of the document.
@@ -1802,6 +1831,8 @@ export interface components {
         DraftUpdateRequest: {
             /** Capability Domains */
             capability_domains?: components["schemas"]["CapabilityDomainSchema"][] | null;
+            /** Channels */
+            channels?: components["schemas"]["ChannelSchema"][] | null;
             /** Expected Revision */
             expected_revision: number;
             /** Journeys */
@@ -1826,6 +1857,8 @@ export interface components {
          *     index or history (requirement-portal ADR-0101).
          */
         ExplorerReleaseResponse: {
+            /** Channels */
+            channels?: components["schemas"]["ChannelSchema"][];
             /** Id */
             id: string;
             /** Journeys */
@@ -2084,6 +2117,8 @@ export interface components {
             built_revision?: number | null;
             /** Capability Domains */
             capability_domains?: components["schemas"]["CapabilityDomainSchema"][];
+            /** Channels */
+            channels?: components["schemas"]["ChannelSchema"][];
             /** Created By */
             created_by?: string | null;
             /**
@@ -2387,6 +2422,11 @@ export interface components {
         };
         /** OrderTypeSchema */
         OrderTypeSchema: {
+            /**
+             * Channels
+             * @default []
+             */
+            channels: string[];
             /** Code */
             code: string;
             confidence?: components["schemas"]["SourceConfidence"] | null;

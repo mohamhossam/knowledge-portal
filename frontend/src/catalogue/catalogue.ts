@@ -306,6 +306,7 @@ const ITEM: Record<CatalogueDiff["changes"][number]["item"], [string, string]> =
   domain: ["business area", "business areas"],
   product: ["offering", "offerings"],
   journey: ["journey", "journeys"],
+  channel: ["channel", "channels"],
   document: ["document", "documents"],
 };
 

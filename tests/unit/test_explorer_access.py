@@ -47,6 +47,7 @@ def test_the_explorer_never_shows_documents_index_or_who_curated(client: TestCli
         "landscape_domains",
         "products",
         "journeys",
+        "channels",
     }
 
 

@@ -38,6 +38,8 @@ export type LandscapeDomain = Schemas["LandscapeDomainSchema"];
 export type CapabilityDomain = Schemas["CapabilityDomainSchema"];
 export type Offering = Schemas["ProductOfferingSchema"];
 export type Journey = Schemas["JourneySchema"];
+/** Where orders are placed, and the system each is entered through. */
+export type Channel = Schemas["ChannelSchema"];
 export type JourneyActivity = Schemas["ActivitySchema"];
 export type SourceConfidence = Schemas["SourceConfidence"];
 export type ReleaseAuditEvent = Schemas["KnowledgeAuditEventResponse"];

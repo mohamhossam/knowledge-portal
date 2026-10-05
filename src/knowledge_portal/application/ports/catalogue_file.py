@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Protocol
 
+from knowledge_portal.domain.architecture.channels import Channel
 from knowledge_portal.domain.architecture.journeys import Journey
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
@@ -54,6 +55,7 @@ class CatalogueContent:
     landscape_domains: tuple[LandscapeDomain, ...] = ()
     products: tuple[ProductOffering, ...] = ()
     journeys: tuple[Journey, ...] = ()
+    channels: tuple[Channel, ...] = ()
 
 
 class CatalogueFilePort(Protocol):

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import { EXPLORED } from "./fixtures";
-import { gaps, involvement, listed, partsFor, pickScenario } from "./scenario";
+import { gaps, involvement, listed, partsFor, performer, pickScenario } from "./scenario";
 
-const scenario = (product?: string, order?: string) => pickScenario(EXPLORED, product, order)!;
+const scenario = (product?: string, order?: string, channel?: string) => pickScenario(EXPLORED, product, order, channel)!;
 
 describe("pickScenario", () => {
   it("opens on the first order type that has a journey", () => {
@@ -49,13 +49,44 @@ describe("gaps", () => {
     ]);
   });
 
-  it("says so when no journey is recorded", () => {
-    expect(gaps(scenario("bpp", "CEASE"))[0]).toBe(
+  it("says so when no journey or channel is recorded", () => {
+    expect(gaps(scenario("bpp", "CEASE"))).toEqual([
+      "No channel is recorded for Cease, so the steps of every channel are shown together.",
       "No journey is recorded for Cease, so no step or hand-over can be shown.",
+      "No system is named as responsible for Firewall in Cease.",
+      "1 fact is marked in its source as a gap.",
+    ]);
+  });
+
+  it("says when the channel's entry system performs a step but the channel names none", () => {
+    expect(gaps(scenario("bpp", "NEW", "shop"))).toContain(
+      "Step 1 is performed by the channel’s entry system, but Shop names no entry system.",
     );
   });
 
   it("lists in words", () => {
     expect([listed(["3"]), listed(["3", "5"]), listed(["3", "5", "9"])]).toEqual(["3", "3 and 5", "3, 5 and 9"]);
+  });
+});
+
+describe("channels", () => {
+  it("reads the order type's first channel, or the one asked for", () => {
+    expect(scenario().channel?.id).toBe("online");
+    expect(scenario("bpp", "NEW", "shop").channel?.id).toBe("shop");
+    expect(scenario("bpp", "NEW", "gone").channel?.id).toBe("online");
+    expect(scenario("bpp", "CEASE").channel).toBeNull();
+  });
+
+  it("keeps a channel's own steps and the shared ones, and the arrows between them", () => {
+    const online = scenario().journey!;
+    expect(online.activities.map((step) => step.number)).toEqual(["1", "2", "3", "4"]);
+    expect(online.edges.some((edge) => edge.to_activity === "5")).toBe(false);
+    expect(scenario("bpp", "NEW", "shop").journey!.activities.map((step) => step.number)).toEqual(["1", "2", "3", "4", "5"]);
+  });
+
+  it("has the channel's entry system perform the steps given to it", () => {
+    expect(performer(scenario(), scenario().journey!.activities[0]!)).toBe("web");
+    expect(performer(scenario("bpp", "NEW", "shop"), scenario().journey!.activities[0]!)).toBeNull();
+    expect(involvement(scenario("bpp", "NEW", "shop")).map((item) => item.systemId)).toEqual(["rtf", "web", "cwom", "bscs", "wfm"]);
   });
 });

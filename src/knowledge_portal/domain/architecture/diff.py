@@ -29,6 +29,18 @@ _OFFERING_FIELDS = (
 )
 
 
+# A channel's attributes, and the field each is reported as: a relationship already
+# reports "kind" for how it depends.
+_CHANNEL_FIELDS = (
+    ("name", "name"),
+    ("kind", "channel_kind"),
+    ("entry_system_id", "entry_system_id"),
+    ("description", "description"),
+    ("confidence", "confidence"),
+    ("source", "source"),
+)
+
+
 _JOURNEY_FIELDS = (
     "name",
     "product_id",
@@ -80,6 +92,7 @@ class ChangedItem(StrEnum):
     LANDSCAPE_DOMAIN = "landscape_domain"
     PRODUCT = "product"
     JOURNEY = "journey"
+    CHANNEL = "channel"
 
 
 @dataclass(frozen=True)
@@ -334,6 +347,26 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
                     field
                     for field in _JOURNEY_FIELDS
                     if getattr(previous_journey[1], field) != getattr(journey, field)
+                ),
+            )
+        )
+    base_channels = {item.id: (item.name, item) for item in base.channels}
+    draft_channels = {item.id: (item.name, item) for item in draft.channels}
+    changes.extend(_keyed_changes(ChangedItem.CHANNEL, base_channels, draft_channels))
+    for key, (label, channel) in draft_channels.items():
+        previous_channel = base_channels.get(key)
+        if previous_channel is None or previous_channel[1] == channel:
+            continue
+        changes.append(
+            CatalogueChange(
+                ChangedItem.CHANNEL,
+                ChangeKind.CHANGED,
+                key,
+                label,
+                tuple(
+                    reported
+                    for field, reported in _CHANNEL_FIELDS
+                    if getattr(previous_channel[1], field) != getattr(channel, field)
                 ),
             )
         )

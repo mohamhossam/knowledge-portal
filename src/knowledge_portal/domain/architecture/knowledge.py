@@ -7,6 +7,8 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Protocol
 
+from knowledge_portal.domain.architecture.channels import Channel, check_channels
+
 # Re-exported: the rest of the codebase imports the error from here.
 from knowledge_portal.domain.architecture.invariants import (
     InvalidKnowledgeError as InvalidKnowledgeError,
@@ -354,6 +356,9 @@ class ArchitectureKnowledge:
     products: tuple[ProductOffering, ...] = ()
     # The activities that fulfil an offering's orders, and who performs them (ADR-0096).
     journeys: tuple[Journey, ...] = ()
+    # Where orders are placed, and the system each is entered through (requirement-portal
+    # ADR-0101, step 3).
+    channels: tuple[Channel, ...] = ()
 
     def __post_init__(self) -> None:
         _required(self.id, "Knowledge id")
@@ -401,8 +406,9 @@ class ArchitectureKnowledge:
                         f"{system.name}: {capability.name} is placed in a domain that is not "
                         "in the catalogue."
                     )
-        check_offerings(self.products, system_ids)
-        check_journeys(self.journeys, system_ids, self.products)
+        channel_ids = check_channels(self.channels, system_ids)
+        check_offerings(self.products, system_ids, channel_ids)
+        check_journeys(self.journeys, system_ids, self.products, channel_ids)
         landscape = _check_domains(self.landscape_domains, "Landscape domain")
         for system in self.systems:
             if (
@@ -427,6 +433,7 @@ class ArchitectureKnowledge:
         landscape_domains: tuple[LandscapeDomain, ...] | None = None,
         products: tuple[ProductOffering, ...] | None = None,
         journeys: tuple[Journey, ...] | None = None,
+        channels: tuple[Channel, ...] | None = None,
     ) -> ArchitectureKnowledge:
         if self.status is not KnowledgeReleaseStatus.DRAFT:
             raise KnowledgeConflictError("Published knowledge is immutable.")
@@ -448,6 +455,7 @@ class ArchitectureKnowledge:
             ),
             products=self.products if products is None else products,
             journeys=self.journeys if journeys is None else journeys,
+            channels=self.channels if channels is None else channels,
         )
 
     def domain_path(self, domain_id: str | None) -> tuple[CapabilityDomain, ...]:

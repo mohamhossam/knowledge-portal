@@ -2,7 +2,7 @@ import type { ExplorerRelease } from "../api/client";
 
 const system = (id: string, name: string) => ({ id, name, aliases: [], capabilities: [], components: [], constraints: [] });
 const step = (number: string, name: string, extra: object = {}) => ({
-  number, name, supporting_system_ids: [], component_ids: [], ...extra,
+  number, name, supporting_system_ids: [], component_ids: [], channels: [], channel_entry: false, ...extra,
 });
 
 /** A version in service with one offering, two order types and one journey. */
@@ -13,6 +13,10 @@ export const EXPLORED = {
   systems: [system("web", "B2B Web"), system("rtf", "RTF"), system("cwom", "CWOM"), system("wfm", "WFM"), system("bscs", "BSCS")],
   relationships: [],
   landscape_domains: [],
+  channels: [
+    { id: "online", name: "Online", kind: "Digital", entry_system_id: "web" },
+    { id: "shop", name: "Shop", kind: "Assisted" },
+  ],
   products: [
     {
       id: "bpp",
@@ -22,8 +26,8 @@ export const EXPLORED = {
       values: [],
       audiences: [],
       order_types: [
-        { code: "NEW", name: "New Activation", enabled: true },
-        { code: "CEASE", name: "Cease", enabled: true },
+        { code: "NEW", name: "New Activation", enabled: true, channels: ["online", "shop"] },
+        { code: "CEASE", name: "Cease", enabled: true, channels: [] },
       ],
       components: [
         {
@@ -49,10 +53,11 @@ export const EXPLORED = {
       order_type_code: "NEW",
       confidence: "confirmed",
       activities: [
-        step("1", "Capture the order", { performing_system_id: "web", phase: "Capture", customer_visible: true }),
+        step("1", "Capture the order", { channel_entry: true, phase: "Capture", customer_visible: true }),
         step("2", "Submit the service request", { performing_system_id: "rtf", supporting_system_ids: ["web"], phase: "Capture" }),
         step("3", "Orchestrate", { performing_system_id: "cwom", phase: "Orchestrate" }),
         step("4", "Ticket the onboarding", { phase: "Orchestrate", confidence: "gap" }),
+        step("5", "Book a shop visit", { performing_system_id: "bscs", phase: "Orchestrate", channels: ["shop"] }),
       ],
       flow_rules: [],
       integrations: [
@@ -62,6 +67,7 @@ export const EXPLORED = {
         { from_activity: "1", to_activity: "2", kind: "sequence" },
         { from_activity: "2", to_activity: "3", kind: "sequence" },
         { from_activity: "3", to_activity: "4", kind: "sequence" },
+        { from_activity: "4", to_activity: "5", kind: "sequence" },
       ],
     },
   ],

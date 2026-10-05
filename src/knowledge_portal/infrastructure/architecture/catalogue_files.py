@@ -30,6 +30,7 @@ from knowledge_portal.application.ports.catalogue_file import (
     CatalogueContent,
     CatalogueFileFormat,
 )
+from knowledge_portal.domain.architecture.channels import Channel
 from knowledge_portal.domain.architecture.journeys import (
     Activity,
     ActivityIntegration,
@@ -73,6 +74,7 @@ JOURNEYS = "Journeys"
 ACTIVITIES = "Activities"
 FLOW_RULES = "FlowRules"
 ACTIVITY_INTEGRATIONS = "ActivityIntegrations"
+CHANNELS = "Channels"
 INSTRUCTIONS = "Instructions"
 _DOMAIN_HEADERS = ("domain_id", "name", "name_ar", "parent_id", "description")
 _HEADERS: dict[str, tuple[str, ...]] = {
@@ -110,7 +112,16 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "confidence",
         "source",
     ),
-    ORDER_TYPES: ("product_id", "code", "name", "enabled", "description", "confidence", "source"),
+    ORDER_TYPES: (
+        "product_id",
+        "code",
+        "name",
+        "enabled",
+        "description",
+        "confidence",
+        "source",
+        "channels",
+    ),
     OFFERING_COMPONENTS: (
         "product_id",
         "component_id",
@@ -164,6 +175,8 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "etom",
         "confidence",
         "source",
+        "channels",
+        "channel_entry",
     ),
     FLOW_RULES: (
         "journey_id",
@@ -189,6 +202,15 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "confidence",
         "source",
     ),
+    CHANNELS: (
+        "channel_id",
+        "name",
+        "kind",
+        "entry_system_id",
+        "description",
+        "confidence",
+        "source",
+    ),
 }
 # Headers a sheet cannot do without. Columns added later stay optional, so
 # workbooks filled from an older template still import.
@@ -209,6 +231,7 @@ _REQUIRED_HEADERS: dict[str, tuple[str, ...]] = {
     ACTIVITIES: ("journey_id", "number", "name"),
     FLOW_RULES: ("journey_id", "kind", "from_activity", "to_activity"),
     ACTIVITY_INTEGRATIONS: ("journey_id", "from_activity", "to_activity"),
+    CHANNELS: ("channel_id", "name"),
 }
 _KINDS = ", ".join(kind.value for kind in RelationshipKind)
 _REQUIRED_SHEETS = (SYSTEMS,)
@@ -246,6 +269,15 @@ _INSTRUCTIONS = (
     ),
     ("FlowRules: kind decision, loop or parallel, from one activity number to another.",),
     ("ActivityIntegrations: how one activity hands over to another.",),
+    (
+        "Channels (optional): where orders are placed, such as B2B Web or a shop; "
+        "entry_system_id is the system that takes the order in.",
+    ),
+    ("OrderTypes channels (optional): the channel ids it can be ordered through, by ;.",),
+    (
+        "Activities channels (optional): the channel ids the step happens in, by ; (none: every "
+        "channel); channel_entry yes when the order's channel entry system performs it.",
+    ),
     ("Row 1 of each sheet holds the headers; keep them as they are.",),
 )
 
@@ -420,6 +452,7 @@ def content_from_mapping(raw: object) -> CatalogueContent:
         _mapped_domains(raw, "landscape_domains", LandscapeDomain),
         _offerings(_entries(raw, "products")),
         _journeys(_entries(raw, "journeys")),
+        _channels(_entries(raw, "channels")),
     )
 
 
@@ -454,6 +487,8 @@ def _activity(step: dict[str, Any], place: str) -> Activity:
         etom=_optional_text(step.get("etom"), place, "etom"),
         confidence=_trust(step.get("confidence"), place),
         source=_optional_text(step.get("source"), place, "source"),
+        channels=_text_list(step.get("channels"), place, "channels"),
+        channel_entry=bool(_flag(step.get("channel_entry"), place, "channel_entry", False)),
     )
 
 
@@ -556,6 +591,8 @@ def _journey_mapping(journey: Journey) -> dict[str, Any]:
                         input=step.input,
                         output=step.output,
                         etom=step.etom,
+                        channels=list(step.channels),
+                        channel_entry=step.channel_entry or None,
                     ),
                     **_sourced(step),
                 }
@@ -662,6 +699,7 @@ def _offerings(entries: list[dict[str, Any]]) -> list[ProductOffering]:
                     _optional_text(order.get("description"), place, "description"),
                     _trust(order.get("confidence"), place),
                     _optional_text(order.get("source"), place, "source"),
+                    _text_list(order.get("channels"), place, "channels"),
                 )
                 for position, order in enumerate(_sub_entries(item, "order_types", where), 1)
                 for place in [_where(order, f"{where}, order type {position}")]
@@ -765,7 +803,7 @@ def _offering_mapping(offering: ProductOffering) -> dict[str, Any]:
                     "code": order.code,
                     "name": order.name,
                     "enabled": order.enabled,
-                    **_present(description=order.description),
+                    **_present(description=order.description, channels=list(order.channels)),
                     **_sourced(order),
                 }
                 for order in offering.order_types
@@ -840,6 +878,7 @@ def _content(
     landscape: list[LandscapeDomain],
     offerings: list[ProductOffering],
     journeys: list[Journey],
+    channels: list[Channel] | None = None,
 ) -> CatalogueContent:
     """The file's content, refusing a placement in a domain the file does not list."""
     known = {item.id for item in domains}
@@ -863,7 +902,43 @@ def _content(
         tuple(landscape),
         tuple(offerings),
         tuple(journeys),
+        tuple(channels or ()),
     )
+
+
+# Channels (requirement-portal ADR-0101, step 3): where orders are placed.
+def _channels(entries: list[dict[str, Any]]) -> list[Channel]:
+    channels = []
+    for number, item in enumerate(entries, start=1):
+        where = _where(item, f"channels entry {number}")
+        try:
+            channels.append(
+                Channel(
+                    id=_text(item.get("id"), where, "id"),
+                    name=_text(item.get("name"), where, "name"),
+                    kind=_optional_text(item.get("kind"), where, "kind"),
+                    entry_system_id=_optional_text(item.get("entry_system"), where, "entry_system"),
+                    description=_optional_text(item.get("description"), where, "description"),
+                    confidence=_trust(item.get("confidence"), where),
+                    source=_optional_text(item.get("source"), where, "source"),
+                )
+            )
+        except InvalidKnowledgeError as exc:
+            raise _located(where, exc) from exc
+    return channels
+
+
+def _channel_mapping(channel: Channel) -> dict[str, Any]:
+    return {
+        "id": channel.id,
+        "name": channel.name,
+        **_present(
+            kind=channel.kind,
+            entry_system=channel.entry_system_id,
+            description=channel.description,
+        ),
+        **_sourced(channel),
+    }
 
 
 def _domain_mapping(item: CapabilityDomain | LandscapeDomain) -> dict[str, Any]:
@@ -952,6 +1027,11 @@ def release_to_mapping(release: ArchitectureKnowledge) -> dict[str, Any]:
         **(
             {"journeys": [_journey_mapping(item) for item in release.journeys]}
             if release.journeys
+            else {}
+        ),
+        **(
+            {"channels": [_channel_mapping(item) for item in release.channels]}
+            if release.channels
             else {}
         ),
     }
@@ -1087,6 +1167,17 @@ def _read_workbook(content: bytes) -> CatalogueContent:
         landscape = _sheet_domains(workbook, LANDSCAPE, LandscapeDomain)
         offerings = _offerings(_sheet_offerings(workbook))
         journeys = _journeys(_sheet_journeys(workbook))
+        channels = _channels(
+            [
+                {
+                    **cells,
+                    "_where": f"{CHANNELS} row {number}",
+                    "id": cells.get("channel_id"),
+                    "entry_system": cells.get("entry_system_id"),
+                }
+                for number, cells in _rows(workbook, CHANNELS)
+            ]
+        )
     finally:
         workbook.close()
     definitions = []
@@ -1107,7 +1198,7 @@ def _read_workbook(content: bytes) -> CatalogueContent:
             )
         except InvalidKnowledgeError as exc:
             raise _located(data["where"], exc) from exc
-    return _content(definitions, relationships, domains, landscape, offerings, journeys)
+    return _content(definitions, relationships, domains, landscape, offerings, journeys, channels)
 
 
 def _sheet_journeys(workbook: Any) -> list[dict[str, Any]]:
@@ -1151,6 +1242,7 @@ def _sheet_journeys(workbook: Any) -> list[dict[str, Any]]:
                     _split(cells.get("supporting_system_ids"), where, "supporting_system_ids")
                 ),
                 "components": list(_split(cells.get("component_ids"), where, "component_ids")),
+                "channels": list(_split(cells.get("channels"), where, "channels")),
             }
         )
     for number, cells in _rows(workbook, FLOW_RULES):
@@ -1205,7 +1297,13 @@ def _sheet_offerings(workbook: Any) -> list[dict[str, Any]]:
 
     for number, cells in _rows(workbook, ORDER_TYPES):
         where = f"{ORDER_TYPES} row {number}"
-        offering(cells, where)["order_types"].append({**cells, "_where": where})
+        offering(cells, where)["order_types"].append(
+            {
+                **cells,
+                "_where": where,
+                "channels": list(_split(cells.get("channels"), where, "channels")),
+            }
+        )
     parts: dict[tuple[str, str], dict[str, Any]] = {}
     for number, cells in _rows(workbook, OFFERING_COMPONENTS):
         where = f"{OFFERING_COMPONENTS} row {number}"
@@ -1314,6 +1412,7 @@ def _write_offering(sheets: dict[str, Any], product: ProductOffering) -> None:
                 order.description,
                 _confidence(order),
                 order.source,
+                f"{_LIST_SEPARATOR} ".join(order.channels),
             ),
         )
     for part in product.components:
@@ -1392,6 +1491,8 @@ def _write_journey(sheets: dict[str, Any], journey: Journey) -> None:
                 step.etom,
                 _confidence(step),
                 step.source,
+                joined(step.channels),
+                _yes(step.channel_entry) if step.channel_entry else None,
             ),
         )
     for rule in journey.flow_rules:
@@ -1440,7 +1541,7 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
     for name, sheet in sheets.items():
         _append(sheet, _HEADERS[name], header=True)
         sheet.freeze_panes = "A2"
-        for column in "ABCDEFGHIJKLMNOPQ":
+        for column in "ABCDEFGHIJKLMNOPQRS":
             sheet.column_dimensions[column].width = 32
     systems = release.systems if release is not None else ()
     for system in systems:
@@ -1505,6 +1606,19 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
         _write_offering(sheets, product)
     for journey in release.journeys if release is not None else ():
         _write_journey(sheets, journey)
+    for channel in release.channels if release is not None else ():
+        _append(
+            sheets[CHANNELS],
+            (
+                channel.id,
+                channel.name,
+                channel.kind,
+                channel.entry_system_id,
+                channel.description,
+                _confidence(channel),
+                channel.source,
+            ),
+        )
     buffer = io.BytesIO()
     workbook.save(buffer)
     return buffer.getvalue()

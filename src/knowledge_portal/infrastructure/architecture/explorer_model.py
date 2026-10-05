@@ -7,8 +7,11 @@ the file against a draft and imports it, and from then on the catalogue is the o
 home of these facts (requirement-portal ADR-0101).
 
 It is a seed, not a sync. Nothing is invented: a fact the catalogue cannot hold yet
-(channels, plans and prices, tracking, NFRs, source levels and conflicts, and so on)
-is counted in the report, not squeezed into a field that means something else.
+(plans and prices, tracking, NFRs, source levels and conflicts, and so on) is counted
+in the report, not squeezed into a field that means something else. Channels carry
+over (step 3): each channel with its entry system, the channels each order type can
+be ordered through, the channels each step happens in, and the steps the order's
+channel entry system performs.
 Evidence keeps its confidence (CONFIRMED, INFERRED and GAP) and names its source.
 """
 
@@ -19,6 +22,7 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from typing import Any
 
+from knowledge_portal.domain.architecture.channels import check_channels
 from knowledge_portal.domain.architecture.journeys import (
     MAIN_TRACK,
     check_journeys,
@@ -93,6 +97,7 @@ class _Reader:
             "dependencies": self._dependencies(products),
             "products": [self._product(item) for item in products],
             "journeys": [journey for product in products for journey in self._journeys(product)],
+            "channels": [self._channel(item) for item in self.channels.values()],
         }
         self._check(mapping, products)
         self._count_dropped()
@@ -191,6 +196,28 @@ class _Reader:
                     )
         return dependencies
 
+    def _channel(self, channel: Mapping[str, Any]) -> dict[str, Any]:
+        entry = channel.get("systemId")
+        return _present(
+            id=channel["id"],
+            name=channel.get("label") or channel["id"],
+            kind=str(channel.get("kind") or "").capitalize() or None,
+            entry_system=entry if entry in self.system_ids else None,
+            description=channel.get("desc"),
+        )
+
+    def _supported(self, order_type: Mapping[str, Any]) -> list[str]:
+        """The channels the order type can be ordered through; notes on support are counted."""
+        supported = []
+        for channel, support in (order_type.get("channels") or {}).items():
+            if channel not in self.channels:
+                continue
+            if (support or {}).get("note") or (support or {}).get("reason"):
+                self.dropped["notes on channel support"] += 1
+            if (support or {}).get("supported"):
+                supported.append(channel)
+        return supported
+
     # Products ---------------------------------------------------------------
 
     def _product(self, product: Mapping[str, Any]) -> dict[str, Any]:
@@ -221,6 +248,7 @@ class _Reader:
                         name=item["label"],
                         enabled=True,
                         description=item.get("desc"),
+                        channels=self._supported(item),
                     ),
                     **self._evidence(item.get("ev")),
                 }
@@ -342,11 +370,8 @@ class _Reader:
                 tracks[node_id] = END_TRACK
         main = [node_id for node_id in main if tracks[node_id] == MAIN_TRACK]
         following = dict(zip(main, main[1:], strict=False))
-        entry_systems = self._entry_systems(order_type)
         activities = [
-            self._activity(
-                node, number[node["id"]], tracks[node["id"]], components, apis, entry_systems
-            )
+            self._activity(node, number[node["id"]], tracks[node["id"]], components, apis)
             for node in nodes
         ]
         rules: list[dict[str, Any]] = []
@@ -380,15 +405,6 @@ class _Reader:
             "_edges": [(number[edge["from"]], number[edge["to"]]) for edge in edges],
         }
 
-    def _entry_systems(self, order_type: Mapping[str, Any]) -> dict[str, str]:
-        """The entry system of each channel that supports the order type."""
-        supported = {
-            channel: self.channels[channel].get("systemId")
-            for channel, support in (order_type.get("channels") or {}).items()
-            if channel in self.channels and (support or {}).get("supported")
-        }
-        return {channel: system for channel, system in supported.items() if system}
-
     def _activity(
         self,
         node: Mapping[str, Any],
@@ -396,34 +412,12 @@ class _Reader:
         track: str,
         components: set[str],
         apis: Mapping[str, Mapping[str, Any]],
-        entry_systems: Mapping[str, str],
     ) -> dict[str, Any]:
         notes: list[str] = []
         system = node.get("sys")
-        if system == ENTRY:
-            scoped = node.get("ch") or list(entry_systems)
-            candidates = {entry_systems[item] for item in scoped if item in entry_systems}
-            if len(candidates) == 1:
-                system = candidates.pop()
-            else:
-                system = None
-                self.dropped["channel entry steps left without a system"] += 1
-                notes.append(
-                    "Performed by the channel's entry system: "
-                    + ", ".join(
-                        f"{self.names.get(entry_systems[item], entry_systems[item])} "
-                        f"({self.channels[item]['label']})"
-                        for item in scoped
-                        if item in entry_systems
-                    )
-                    + "."
-                )
-        if node.get("ch"):
-            notes.append(
-                "Channels: "
-                + ", ".join(self.channels.get(item, {}).get("label", item) for item in node["ch"])
-                + "."
-            )
+        # Performed by whichever channel the order came through (step 3).
+        entry = system == ENTRY
+        channels = [item for item in node.get("ch") or () if item in self.channels]
         if node.get("actor"):
             notes.append(f"Actor: {node['actor']}.")
         if node.get("sysGap"):
@@ -451,6 +445,8 @@ class _Reader:
                 phase=phase.get("label") or node.get("phase"),
                 track=track,
                 system=system if system in self.system_ids else None,
+                channel_entry=entry or None,
+                channels=channels,
                 supporting=supporting,
                 system_function=node.get("fn"),
                 customer_visible=node.get("cv"),
@@ -517,8 +513,9 @@ class _Reader:
         expected = {item["id"]: item.pop("_edges") for item in mapping["journeys"]}
         content = content_from_mapping(mapping)
         system_ids = {item.id for item in content.systems}
-        check_offerings(content.products, system_ids)
-        check_journeys(content.journeys, system_ids, content.products)
+        channel_ids = check_channels(content.channels, system_ids)
+        check_offerings(content.products, system_ids, channel_ids)
+        check_journeys(content.journeys, system_ids, content.products, channel_ids)
         for journey in content.journeys:
             derived = {(edge.from_activity, edge.to_activity) for edge in journey_edges(journey)}
             wanted = set(expected[journey.id])
@@ -536,7 +533,6 @@ class _Reader:
 
     def _count_dropped(self) -> None:
         for section, label in (
-            ("channels", "channels"),
             ("conflicts", "source conflicts"),
             ("changeHistory", "applied change requests"),
         ):

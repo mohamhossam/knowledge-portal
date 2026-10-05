@@ -13,7 +13,7 @@ nor a system's components, which are its modules.
 from __future__ import annotations
 
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Collection
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Protocol
@@ -80,11 +80,18 @@ class OrderType:
     description: str | None = None
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # The channels it can be ordered through, by id; none named means the source does not say.
+    channels: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "code", required(self.code, "Order type code"))
         object.__setattr__(self, "name", required(self.name, "Order type name"))
         object.__setattr__(self, "description", optional(self.description, "Description"))
+        object.__setattr__(
+            self,
+            "channels",
+            tuple(dict.fromkeys(required(item, "Channel") for item in self.channels)),
+        )
         check_source(self)
 
 
@@ -213,16 +220,28 @@ class ProductOffering:
         )
 
 
-def check_offerings(offerings: tuple[ProductOffering, ...], system_ids: set[str]) -> None:
-    """Unique offerings whose responsibilities name only catalogued systems.
+def check_offerings(
+    offerings: tuple[ProductOffering, ...],
+    system_ids: set[str],
+    channel_ids: Collection[str] = (),
+) -> None:
+    """Unique offerings whose responsibilities name only catalogued systems, and whose order
+    types name only catalogued channels.
 
-    So a system still named by an offering cannot be removed: the message says
+    So a system or channel still named by an offering cannot be removed: the message says
     where it is named.
     """
     ids = [item.id for item in offerings]
     if len(set(ids)) != len(ids):
         raise InvalidKnowledgeError("Product offering ids must be unique.")
     for offering in offerings:
+        for order_type in offering.order_types:
+            unknown = [item for item in order_type.channels if item not in channel_ids]
+            if unknown:
+                raise InvalidKnowledgeError(
+                    f"{offering.name} › {order_type.name} names channel {unknown[0]!r}, which "
+                    "is not in the catalogue."
+                )
         for component in offering.components:
             for responsibility in component.responsibilities:
                 if responsibility.system_id not in system_ids:

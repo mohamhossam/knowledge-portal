@@ -11,6 +11,7 @@ so a person edits activities and rules, not arrows (ADR-0096).
 from __future__ import annotations
 
 import re
+from collections.abc import Collection
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -60,6 +61,10 @@ class Activity:
     etom: str | None = None
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # The channels the step happens in, by id; none named means every channel.
+    channels: tuple[str, ...] = ()
+    # Performed by the entry system of whichever channel the order came through.
+    channel_entry: bool = False
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "number", required(self.number, "Activity number"))
@@ -80,6 +85,12 @@ class Activity:
             self, "supporting_system_ids", _codes(self.supporting_system_ids, "Supporting system")
         )
         object.__setattr__(self, "component_ids", _codes(self.component_ids, "Component"))
+        object.__setattr__(self, "channels", _codes(self.channels, "Channel"))
+        if self.channel_entry and self.performing_system_id is not None:
+            raise InvalidKnowledgeError(
+                f"{self.number}. {self.name} is performed either by a named system or by the "
+                "channel's entry system, not both."
+            )
         check_source(self)
 
     @property
@@ -260,9 +271,13 @@ def journey_edges(journey: Journey) -> tuple[JourneyEdge, ...]:
 
 
 def check_journeys(
-    journeys: tuple[Journey, ...], system_ids: set[str], offerings: tuple[ProductOffering, ...]
+    journeys: tuple[Journey, ...],
+    system_ids: set[str],
+    offerings: tuple[ProductOffering, ...],
+    channel_ids: Collection[str] = (),
 ) -> None:
-    """Unique journeys whose systems, offerings, order types and components the release has.
+    """Unique journeys whose systems, offerings, order types, components and channels the
+    release has.
 
     So a system, offering or component a journey names cannot be removed: the
     message says which journey and activity name it.
@@ -299,6 +314,12 @@ def check_journeys(
                     f"{journey.name} › {activity.number}. {activity.name} names component "
                     f"{unknown[0]!r}, which is not part of its product offering."
                 )
+            unknown = [item for item in activity.channels if item not in channel_ids]
+            if unknown:
+                raise InvalidKnowledgeError(
+                    f"{journey.name} › {activity.number}. {activity.name} names channel "
+                    f"{unknown[0]!r}, which is not in the catalogue."
+                )
 
 
 def _merged_activity(first: Activity, second: Activity) -> Activity:
@@ -321,6 +342,9 @@ def _merged_activity(first: Activity, second: Activity) -> Activity:
         etom=first_known(first.etom, second.etom),
         confidence=first_known(first.confidence, second.confidence),
         source=first_known(first.source, second.source),
+        channels=first.channels or second.channels,
+        channel_entry=first.channel_entry
+        or (second.channel_entry and first.performing_system_id is None),
     )
 
 

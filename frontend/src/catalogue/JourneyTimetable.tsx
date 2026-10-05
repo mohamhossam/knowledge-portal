@@ -8,10 +8,17 @@ import { nextSteps, orderedSteps, phaseRuns } from "./catalogue";
  * explorer. Where a system name leads is the caller's: a sheet links it, a
  * reader without the catalogue reads it as text.
  */
-export function JourneySteps({ journey, headingId, system }: {
+export function JourneySteps({ journey, headingId, system, channelName, entry }: {
   journey: Journey;
   headingId: string;
   system: (systemId: string) => ReactNode;
+  /** A channel's name, to say which channels a step happens in. */
+  channelName?: (channelId: string) => string;
+  /**
+   * Who "the channel's entry system" is, when one channel is being read; on a
+   * journey sheet, which reads every channel, it stays the channel's.
+   */
+  entry?: { channel: string; systemId: string | null };
 }) {
   const steps = orderedSteps(journey);
   return (
@@ -46,11 +53,31 @@ export function JourneySteps({ journey, headingId, system }: {
                     <td dir="auto">
                       <span className="steps__name">{step.name}</span>
                       {step.customer_visible && <span className="secondary govtable__by">Seen by the customer</span>}
+                      {(step.channels ?? []).length > 0 && channelName && (
+                        <span className="secondary govtable__by" dir="auto">
+                          Only in {(step.channels ?? []).map(channelName).join(", ")}
+                        </span>
+                      )}
                       {step.description && <span className="secondary govtable__by" dir="auto">{step.description}</span>}
                       {next && <span className="secondary govtable__by">{next}</span>}
                     </td>
                     <td>
-                      {step.performing_system_id ? system(step.performing_system_id) : <span className="secondary">No system named</span>}
+                      {step.performing_system_id ? (
+                        system(step.performing_system_id)
+                      ) : step.channel_entry ? (
+                        entry?.systemId ? (
+                          <>
+                            {system(entry.systemId)}
+                            <span className="secondary govtable__by" dir="auto">The entry system of {entry.channel}</span>
+                          </>
+                        ) : entry ? (
+                          <span className="secondary" dir="auto">The entry system of {entry.channel}, not named</span>
+                        ) : (
+                          "The channel’s entry system"
+                        )
+                      ) : (
+                        <span className="secondary">No system named</span>
+                      )}
                       {step.supporting_system_ids.length > 0 && (
                         <span className="secondary govtable__by">
                           with{" "}

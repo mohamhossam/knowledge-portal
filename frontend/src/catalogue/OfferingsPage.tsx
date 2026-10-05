@@ -87,6 +87,7 @@ function OfferingSheet({ offering }: { offering: Offering }) {
   const heading = useRef<HTMLHeadingElement>(null);
   const journeys = (book.release.journeys ?? []).filter((journey) => journey.product_id === offering.id);
   const orderTypes = new Map(offering.order_types.map((item) => [item.code, item.name]));
+  const channelNames = new Map((book.release.channels ?? []).map((item) => [item.id, item.name]));
   useEffect(() => {
     if (location.key !== "default") heading.current?.focus();
   }, [location.key]);
@@ -148,6 +149,7 @@ function OfferingSheet({ offering }: { offering: Offering }) {
               <tr>
                 <th scope="col">Order type</th>
                 <th scope="col">Code</th>
+                <th scope="col">Ordered through</th>
                 <th scope="col">Offered</th>
               </tr>
             </thead>
@@ -159,6 +161,13 @@ function OfferingSheet({ offering }: { offering: Offering }) {
                     {type.description && <span className="secondary govtable__by" dir="auto">{type.description}</span>}
                   </th>
                   <td>{type.code}</td>
+                  <td dir="auto">
+                    {(type.channels ?? []).length ? (
+                      (type.channels ?? []).map((id) => channelNames.get(id) ?? id).join(", ")
+                    ) : (
+                      <span className="secondary">Not stated</span>
+                    )}
+                  </td>
                   <td>{type.enabled ? "Yes" : "Not offered"}</td>
                 </tr>
               ))}

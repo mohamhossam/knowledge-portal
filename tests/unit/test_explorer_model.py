@@ -253,26 +253,40 @@ def test_the_journey_keeps_the_explorers_flow_arrow_for_arrow() -> None:
     assert "Business Pro Plus › Cease: no journey." in report
 
 
-def test_steps_resolve_the_entry_system_only_when_one_channel_decides_it() -> None:
+def test_channels_carry_over_with_their_entry_systems() -> None:
+    mapping, _ = _read()
+
+    assert mapping["channels"] == [
+        {"id": "WEB", "name": "B2B Digital", "entry_system": "SYS-WEB"},
+        {"id": "APP", "name": "SMB App", "entry_system": "SYS-APP"},
+        {"id": "CRM", "name": "BCRM", "entry_system": "SYS-CRM"},
+    ]
+    new, cease = mapping["products"][0]["order_types"]
+    assert new["channels"] == ["WEB", "APP", "CRM"]
+    assert "channels" not in cease
+
+
+def test_steps_keep_their_channels_and_who_performs_them() -> None:
     mapping, report = _read()
 
     steps = {item["name"]: item for item in mapping["journeys"][0]["activities"]}
-    assert steps["Capture in BCRM"]["system"] == "SYS-CRM"
+    assert steps["Select bundle"]["channels"] == ["WEB", "APP"]
+    assert steps["Select bundle"]["channel_entry"] is True
     assert "system" not in steps["Select bundle"]
-    assert steps["Select bundle"]["description"] == (
-        "Performed by the channel's entry system: B2B Web (B2B Digital), SMB App (SMB App). "
-        "Channels: B2B Digital, SMB App."
-    )
+    assert "description" not in steps["Select bundle"]
+    assert steps["Capture in BCRM"]["channels"] == ["CRM"]
+    assert "channels" not in steps["Feasible?"]
+    assert "channel_entry" not in steps["Feasible?"]
     assert steps["Select bundle"]["components"] == ["BB"]
     assert steps["Select bundle"]["customer_visible"] is True
-    assert steps["Submit SR"]["description"].endswith("Calls RTF SR request.")
+    assert steps["Submit SR"]["description"] == "Calls RTF SR request."
     assert steps["Rejected"]["track"] == "END"
     assert steps["Field work order"]["supporting"] == ["SYS-RTF"]
     assert (steps["Field work order"]["phase"], steps["Field work order"]["etom"]) == (
         "Orchestrate",
         "Service Configuration",
     )
-    assert "Not carried over yet: channel entry steps left without a system (3)." in report
+    assert not [line for line in report if "entry steps" in line or "channels (" in line]
     assert "Not carried over yet: step components outside the product (1)." in report
 
 
@@ -309,7 +323,6 @@ def test_the_report_counts_what_the_catalogue_cannot_hold_yet() -> None:
     )
     for line in (
         "Not carried over yet: plans and prices (1).",
-        "Not carried over yet: channels (3).",
         "Not carried over yet: source conflicts (1).",
         "Not carried over yet: source levels (L1/L2/L3) (1).",
         "Not carried over yet: system owners (1).",
