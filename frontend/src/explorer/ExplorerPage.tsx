@@ -276,6 +276,21 @@ function ScenarioSheet({ release, scenario, linkSystems }: {
         </>
       )}
 
+      <TrackingSection
+        offering={offering}
+        headingId={`${id}-tracking`}
+        system={system}
+        channelName={channelName}
+        orderName={(code) => offering.order_types.find((item) => item.code === code)?.name ?? code}
+        focus={tracked ? {
+          orderName: orderType.name,
+          applies: tracked.applies,
+          channel: channel ? { id: channel.id, name: channel.name } : null,
+          entry: tracked.entry,
+          flows: tracked.flows,
+        } : undefined}
+      />
+
       <section className="govsection" aria-labelledby={`${id}-parts`}>
         <h3 id={`${id}-parts`} className="govsection__title">Parts, and who is responsible in this order</h3>
         {parts.length ? (
@@ -328,21 +343,6 @@ function ScenarioSheet({ release, scenario, linkSystems }: {
       </section>
 
       <NfrSection offering={offering} headingId={`${id}-nfrs`} />
-
-      <TrackingSection
-        offering={offering}
-        headingId={`${id}-tracking`}
-        system={system}
-        channelName={channelName}
-        orderName={(code) => offering.order_types.find((item) => item.code === code)?.name ?? code}
-        focus={tracked ? {
-          orderName: orderType.name,
-          applies: tracked.applies,
-          channel: channel ? { id: channel.id, name: channel.name } : null,
-          entry: tracked.entry,
-          flows: tracked.flows,
-        } : undefined}
-      />
 
       <section className="govsection" aria-labelledby={`${id}-gaps`}>
         <h3 id={`${id}-gaps`} className="govsection__title">What the catalogue does not say yet</h3>
