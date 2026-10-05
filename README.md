@@ -65,6 +65,23 @@ ones. `--verify` compares each table's row count and content checksum and fails 
 difference; `--verify-only` compares without copying. Admins are not imported: the portal
 remembers them as they sign in.
 
+## Seeding from the Product Architecture Explorer
+
+The original repository's Product Architecture Explorer kept its architecture in one hand-curated
+`model.json`. Here, the explorer reads the published catalogue instead (requirement-portal
+ADR-0101), so that model is brought in once, as a catalogue file:
+
+```bash
+uv run python scripts/convert_explorer_model.py \
+    --model ../smb-ai-requirement-agent/tools/architecture-explorer/src/data/model.json \
+    --out explorer-catalogue.json
+```
+
+Import the file into a draft from the draft's catalogue-file screen: preview it first, then
+import, review and publish. Evidence keeps its confidence and names its source. The script lists
+what the catalogue cannot hold yet, such as channels, plans and prices, tracking and source
+conflicts. Those arrive with later slices and are never filled in by guesswork.
+
 ## The browser app
 
 `frontend/` is the portal's own React + Vite app, served under `/knowledge/`. Its design system
