@@ -106,6 +106,9 @@ describe("the Solution Architecture document", () => {
     const control = words(section(model.blocks, "Document Control"));
     expect(control).toMatch(/Not supplied: carried forward unread/);
     expect(control).toMatch(/No longer uses: Siebel CRM/);
+    // The change requests applied to the offering, as the original explorer listed them.
+    expect(control).toMatch(/CR-20261003-Business_Pro_Plus \| 4 October 2026 \| Microsoft 365 for Business Pro Plus\nRequirement AI requirement REQ-2026-0412, revision 3, approved by Layla Haddad on 3 October 2026 \| Asks of Business Pro Plus: Offer Microsoft 365/);
+    expect(control).not.toMatch(/history of change requests/);
   });
 
   it("prints the plans the product catalog states, or says why there are none", () => {

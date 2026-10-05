@@ -315,6 +315,7 @@ const ITEM: Record<CatalogueDiff["changes"][number]["item"], [string, string]> =
   channel: ["channel", "channels"],
   source: ["source", "sources"],
   conflict: ["conflict between sources", "conflicts between sources"],
+  change_request: ["change request", "change requests"],
   document: ["document", "documents"],
 };
 

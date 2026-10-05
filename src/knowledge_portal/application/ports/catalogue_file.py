@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Protocol
 
+from knowledge_portal.domain.architecture.change_requests import ChangeRequestRecord
 from knowledge_portal.domain.architecture.channels import Channel
 from knowledge_portal.domain.architecture.governance import KnowledgeSource, SourceConflict
 from knowledge_portal.domain.architecture.journeys import Journey
@@ -59,6 +60,9 @@ class CatalogueContent:
     channels: tuple[Channel, ...] = ()
     sources: tuple[KnowledgeSource, ...] = ()
     conflicts: tuple[SourceConflict, ...] = ()
+    # The change requests applied (requirement-portal ADR-0101, step 7). None when the file
+    # has no change history, so importing it keeps the draft's own.
+    change_history: tuple[ChangeRequestRecord, ...] | None = None
 
 
 class CatalogueFilePort(Protocol):

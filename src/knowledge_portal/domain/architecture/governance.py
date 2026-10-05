@@ -171,11 +171,19 @@ class OpenQuestion:
     impact: str | None = None
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # The order types it is asked for; none means the offering as a whole (step 7: a
+    # question a change request raises for one order type).
+    order_types: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Question id"))
         object.__setattr__(self, "text", required(self.text, "Question"))
         object.__setattr__(self, "impact", optional(self.impact, "Impact"))
+        object.__setattr__(
+            self,
+            "order_types",
+            tuple(dict.fromkeys(required(item, "Order type") for item in self.order_types)),
+        )
         check_source(self)
 
 

@@ -320,6 +320,13 @@ class ProductOffering:
         if len(set(qualities)) != len(qualities):
             raise InvalidKnowledgeError(f"{self.name}: each NFR quality is stated once.")
         known = set(codes)
+        for question in self.questions:
+            unknown = [item for item in question.order_types if item.casefold() not in known]
+            if unknown:
+                raise InvalidKnowledgeError(
+                    f"{self.name}: the question {question.id} is asked for the order type "
+                    f"{unknown[0]!r}, which the offering does not have."
+                )
         if self.tracking is not None:
             check_tracking(self.name, self.tracking, known)
         check_lifecycle_notes(self.name, self.lifecycle_notes, known)

@@ -1,15 +1,16 @@
 import { ArrowRight, RotateCw } from "lucide-react";
 import { type KeyboardEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import type { Suggestion, SuggestionContent } from "../api/client";
 import { ApiError, errorMessage } from "../api/errors";
 import { count } from "../home/format";
 import { CatalogueFile } from "./CatalogueFile";
+import { DraftChangeRequests } from "./ChangeRequests";
 import { DraftDocuments } from "./DraftDocuments";
 import { type RowFocus, SuggestionRow } from "./SuggestionRow";
 import {
-  type Filter, type SuggestionGroup, bulkAcceptable, changeSentence, inWords, lexicon, matchesFind, shown,
+  type Filter, type SuggestionGroup, bulkAcceptable, changeSentence, featureWarnings, inWords, lexicon, matchesFind, shown,
   suggestionGroups, suggestionState, tally,
 } from "./suggestions";
 import { useCatalogueContext } from "./useCatalogue";
@@ -33,6 +34,15 @@ const KEPT = "Your edits are kept while this page stays open.";
  * Keys on a suggestion: j or ↓ next, k or ↑ previous, Enter open or close,
  * a accept, r reject, e edit then accept, Esc stop editing, then close.
  */
+/** "2 documents and 1 change request": where the suggestions came from. */
+function sourcesInWords(suggestions: Suggestion[]): string {
+  const documents = new Set(suggestions.filter((item) => !item.change_request).map((item) => item.document_version_id)).size;
+  const requests = new Set(suggestions.filter((item) => item.change_request).map((item) => item.document_version_id)).size;
+  return [documents || !requests ? count(documents, "document") : "", requests ? count(requests, "change request") : ""]
+    .filter(Boolean)
+    .join(" and ");
+}
+
 export function SuggestionsPage() {
   const { book } = useCatalogueContext();
   if (book.release.status !== "draft") {
@@ -46,6 +56,8 @@ function Suggestions() {
   const release = book.release;
   const draft = useDraft(release);
   const all = useMemo(() => draft.suggestions.data?.suggestions ?? [], [draft.suggestions.data]);
+  // Arriving from a change request read into the draft, the page says what the reading made.
+  const arrived = (useLocation().state as { notice?: string } | null)?.notice ?? null;
   const words = useMemo(() => lexicon(release, all), [release, all]);
   const [filter, setFilter] = useState<Filter>("waiting");
   const [find, setFind] = useState("");
@@ -65,6 +77,9 @@ function Suggestions() {
     });
   const counts = tally(all);
   const bulk = useMemo(() => bulkAcceptable(release, all), [release, all]);
+  const notes = useMemo(() => featureWarnings(draft.suggestions.data?.runs ?? []), [draft.suggestions.data]);
+  // The accepting order only matters when there is more than questions to accept.
+  const ordered = all.some((item) => item.status === "proposed" && item.content.kind !== "question");
   const bulkCount = bulk.ready.length + bulk.lifted.length;
   // Groups keep the place they first took this session, so deciding never moves the station being worked.
   const [placed, setPlaced] = useState<string[]>([]);
@@ -198,7 +213,9 @@ function Suggestions() {
 
   return (
     <>
+      {arrived && <p className="toolbar__notice" role="status">{arrived}</p>}
       <DraftDocuments release={release} draft={draft} actorName={actorName} />
+      <DraftChangeRequests release={release} runs={draft.suggestions.data?.runs ?? []} suggestions={all} />
       <CatalogueFile release={release} />
 
       <section className="govsection" aria-labelledby="suggestions-title">
@@ -235,7 +252,7 @@ function Suggestions() {
                 ))}
               </dl>
               <p className="notice-table__total">
-                {count(counts.all, "suggestion")} from {count(new Set(all.map((item) => item.document_version_id)).size, "document")}.
+                {count(counts.all, "suggestion")} from {sourcesInWords(all)}.
               </p>
             </div>
 
@@ -258,7 +275,8 @@ function Suggestions() {
                 {draft.acceptReady.isPending ? "Accepting…" : bulkLabel(bulk.ready.length, bulk.lifted.length)}
               </button>
               <span className="secondary">
-                Domains first, then systems, then what hangs on them. Matches, inferred links and replacements stay for you.
+                {ordered && "Domains first, then systems, then what hangs on them. "}Matches, inferred links and replacements stay
+                for you.
               </span>
             </div>
 
@@ -341,6 +359,11 @@ function Suggestions() {
                         focusable={focus ? focus.key === suggestion.id : suggestion === rows[0]}
                         busy={draft.pending > 0}
                         kept={edits[suggestion.id]}
+                        notes={
+                          suggestion.change_request
+                            ? notes.get(`${suggestion.change_request.change_request_id}/${suggestion.change_request.feature_id}`)
+                            : undefined
+                        }
                         toggleRef={(element) => {
                           if (element) rowRefs.current.set(suggestion.id, element);
                           else rowRefs.current.delete(suggestion.id);
@@ -406,7 +429,7 @@ function GroupRows({ group, visible, confirming, onConfirm, busy, onAcceptReady,
             ) : (
               <span dir="auto">{group.label}</span>
             )}
-          </span>
+          </span>{" "}
           <span className="galley__tally">
             {count(waiting.length, "waiting", "waiting")}
             {visible.length !== group.suggestions.length && ` · ${visible.length} of ${group.suggestions.length} shown`}

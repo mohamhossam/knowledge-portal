@@ -51,6 +51,9 @@ def test_the_explorer_never_shows_documents_index_or_who_curated(client: TestCli
         # Where the knowledge comes from, and where its sources disagree (ADR-0101, step 5).
         "sources",
         "conflicts",
+        # The change requests applied to it, for the Solution Architecture document (step 7):
+        # what was asked and who approved it in Requirement AI, never who accepted it here.
+        "change_history",
     }
 
 

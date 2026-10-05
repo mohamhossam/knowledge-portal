@@ -31,7 +31,7 @@ export const STATE_RANK: Record<SuggestionState, "due" | "service" | "running" |
 
 /** The order accepting-all walks, and the order rows sit inside a system. */
 export const KIND_ORDER: SuggestionKind[] = [
-  "landscape_domain", "system", "placement", "component", "capability", "constraint", "relationship", "channel", "product", "journey",
+  "landscape_domain", "system", "placement", "component", "capability", "constraint", "relationship", "channel", "product", "question", "journey",
 ];
 
 /**
@@ -61,6 +61,10 @@ export type Lexicon = {
   domain: (id: string) => string;
   offering: (id: string) => string;
   channel: (id: string) => string;
+  /** An offering's order type by code, or as a change request named it ("New Activation"). */
+  orderType: (offering: string, code: string) => string;
+  /** Whether the draft has the offering, by id or name. */
+  hasOffering: (reference: string) => boolean;
   /** Whether the draft already has a system or channel ("system:cwom", "channel:business-web"). */
   inDraft: (key: string) => boolean;
 };
@@ -100,7 +104,11 @@ export function lexicon(release: Release, suggestions: Suggestion[]): Lexicon {
     ...(release.channels ?? []).flatMap((channel) => channelKeys(channel.id, channel.name)),
   ]);
   const humane = (id: string) => id.split(/[-_]+/).filter(Boolean).map((word) => word.charAt(0).toLocaleUpperCase() + word.slice(1)).join(" ");
+  const offeringBy = (reference: string) =>
+    (release.products ?? []).find((item) => item.id === reference || item.name.toLocaleLowerCase() === reference.toLocaleLowerCase());
   return {
+    orderType: (offering, code) => offeringBy(offering)?.order_types.find((item) => item.code === code)?.name ?? code,
+    hasOffering: (reference) => offeringBy(reference) !== undefined,
     system: (id) => systems.get(id) ?? humane(id),
     component: (systemId, componentId) => components.get(`${systemId}/${componentId}`) ?? humane(componentId),
     domain: (id) => domains.get(id) ?? humane(id),
@@ -170,6 +178,13 @@ export function changeSentence(suggestion: Suggestion, words: Lexicon): string {
       return replaces
         ? `Replaces the journey ${content.journey?.name ?? content.name} with the document's`
         : `Adds the journey ${content.journey?.name ?? content.name}`;
+    case "question": {
+      const orders = (content.question?.order_types ?? []).map((code) => words.orderType(content.system_id, code));
+      const of = `${words.offering(content.system_id)}${orders.length ? ` (${orders.join(", ")})` : ""}`;
+      return replaces
+        ? `Rewords the question it asks of ${of}: ${content.question?.text ?? ""}`
+        : `Asks of ${of}: ${content.question?.text ?? ""}`;
+    }
     case "channel": {
       const entry = content.channel?.entry_system_id;
       const through = entry ? `, its orders entering through ${words.system(entry)}` : "";
@@ -210,6 +225,12 @@ export function waitsFor(suggestion: Suggestion, words: Lexicon): string {
     case "needs_domain":
       return `Waits for the landscape domain ${words.domain(content.landscape_domain_id ?? content.parent_domain_id ?? "")}`;
     case "needs_offering":
+      if (content.kind === "question") {
+        const missing = (content.question?.order_types ?? []).filter((code) => words.orderType(content.system_id, code) === code);
+        return words.hasOffering(content.system_id) && missing.length
+          ? `Waits for ${words.offering(content.system_id)}’s order type ${missing.join(", ")}`
+          : `Waits for the offering ${words.offering(content.system_id)}`;
+      }
       return `Waits for the offering ${words.offering(content.journey?.product_id ?? "")}`;
     case "needs_channel": {
       const named = [...new Set(channelsNamed(suggestion).map(words.channel))];
@@ -298,7 +319,13 @@ export type SuggestionGroup = {
   suggestions: Suggestion[];
 };
 
-const SECTION = { domains: "Landscape domains", channels: "Channels", offerings: "Offerings", journeys: "Journeys" } as const;
+const SECTION = {
+  domains: "Landscape domains",
+  channels: "Channels",
+  offerings: "Offerings",
+  questions: "Questions for offerings",
+  journeys: "Journeys",
+} as const;
 
 /** The galley's groups: new systems first, then the systems the draft has, then domains, offerings and journeys. */
 export function suggestionGroups(release: Release, suggestions: Suggestion[], words: Lexicon): SuggestionGroup[] {
@@ -317,6 +344,9 @@ export function suggestionGroups(release: Release, suggestions: Suggestion[], wo
     } else if (content.kind === "product") {
       key = "section:offerings";
       group = { key, isNew: false, label: SECTION.offerings };
+    } else if (content.kind === "question") {
+      key = "section:questions";
+      group = { key, isNew: false, label: SECTION.questions };
     } else if (content.kind === "journey") {
       key = "section:journeys";
       group = { key, isNew: false, label: SECTION.journeys };
@@ -461,7 +491,7 @@ function requires(suggestion: Suggestion): string[] {
       // A domain waits for its parent; a placement for the domain it places the system in.
       return [`domain:${(content.kind === "landscape_domain" ? content.parent_domain_id : content.landscape_domain_id) ?? ""}`];
     case "needs_offering":
-      return [`offering:${content.journey?.product_id ?? ""}`];
+      return [`offering:${content.kind === "question" ? content.system_id : content.journey?.product_id ?? ""}`];
     case "needs_system":
       if (content.kind === "channel") return [`system:${content.channel?.entry_system_id ?? ""}`];
       if (content.kind === "product" || content.kind === "journey") {
@@ -474,6 +504,25 @@ function requires(suggestion: Suggestion): string[] {
 }
 
 /** The service's reading warnings count with "(s)"; say them as English. */
+/**
+ * What each change request's last reading said of one feature, keyed "<change request>/<feature>":
+ * a warning naming a feature opens with its id ("FT-2: …").
+ */
+export function featureWarnings(runs: ExtractionRun[]): Map<string, string[]> {
+  const notes = new Map<string, string[]>();
+  for (const run of runs) {
+    if (!run.change_request_id) continue;
+    for (const warning of run.warnings) {
+      const named = /^([^\s:]+): (.+)$/.exec(warning);
+      if (!named) continue;
+      const key = `${run.change_request_id}/${named[1]}`;
+      const said = warningInWords(named[2]!);
+      notes.set(key, [...(notes.get(key) ?? []), said.charAt(0).toUpperCase() + said.slice(1)]);
+    }
+  }
+  return notes;
+}
+
 export function warningInWords(text: string): string {
   return text
     .replace(/\b(\d+) ([^()]*?)\(s\)/g, (_, n: string, words: string) => `${n} ${n === "1" ? words : `${words}s`}`)

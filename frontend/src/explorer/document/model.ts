@@ -190,7 +190,29 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
     `Only the systems, hand-overs and steps of ${orderType.name}${channel ? ` through ${channel.name}` : ""} are in scope.`,
   ]);
   h2("Change history");
-  p(NOT_HELD("the history of change requests applied to an offering"));
+  // The change requests applied to this offering, as the original explorer listed them (step 7).
+  const history = (release.change_history ?? []).filter((record) => record.product_id === offering.id);
+  if (history.length) {
+    table(
+      columns(["Change request", 20], ["Applied", 12], ["Request", 38], ["What it changed", 30]),
+      history.map((record) => [
+        record.id,
+        record.applied_at ? day(record.applied_at) : "Not recorded",
+        [
+          record.title,
+          [record.requester && record.requester !== record.trace?.approved_by && `Requested by ${record.requester}`, record.priority && `${record.priority} priority`].filter(Boolean).join(" · "),
+          record.trace
+            ? `Requirement AI requirement ${record.trace.requirement_id}, revision ${record.trace.breakdown_revision}${record.trace.approved_by ? `, approved by ${record.trace.approved_by}` : ""}${record.trace.approved_at ? ` on ${day(record.trace.approved_at)}` : ""}`
+            : record.origin === "explorer"
+              ? "Drafted in the original explorer"
+              : "",
+        ]
+          .filter(Boolean)
+          .join("\n"),
+        lines([...record.items.map((item) => item.summary), ...record.gaps.map((gap) => `Not mapped: ${gap}`)]),
+      ]),
+    );
+  } else p("No change request has been applied to this offering.");
   blocks.push({ t: "toc" });
 
   /* 1 Executive summary */

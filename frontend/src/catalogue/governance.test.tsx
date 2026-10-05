@@ -73,6 +73,14 @@ describe("GovernancePage", () => {
     expect(conflicts[0]).toHaveTextContent("Affects Business Pro Plus: New Activation, raises OQ-01");
     expect(conflicts[1]).toHaveTextContent("Business Pro Plus, every order type");
     expect(screen.queryByRole("button", { name: "Edit the sources" })).not.toBeInTheDocument();
+
+    const history = within(screen.getByRole("table", { name: "Change requests applied to this version" })).getAllByRole("row").slice(1);
+    expect(history[0]).toHaveTextContent("CR-20261003-Business_Pro_Plus");
+    expect(history[0]).toHaveTextContent("From Requirement AI");
+    expect(history[0]).not.toHaveTextContent("asked by");
+    expect(history[0]).toHaveTextContent("REQ-2026-0412, revision 3, approved by Layla Haddad on 3 Oct 2026");
+    expect(history[0]).toHaveTextContent("4 Oct 2026to Business Pro Plus");
+    expect(history[0]).toHaveTextContent("FT-1 Asks of Business Pro Plus: Offer Microsoft 365");
   });
 
   it("will not drop a source an offering or a conflict still names", () => {
@@ -123,6 +131,7 @@ describe("an offering's governance", () => {
     const questions = within(screen.getByRole("heading", { name: /^Open questions/ }).closest("section")!);
     expect(questions.getByText("1 more is raised by the decisions needed, and named with them.")).toBeInTheDocument();
     expect(questions.getAllByRole("listitem").map((item) => item.querySelector(".governance__id")!.textContent)).toEqual(["OQ-02"]);
+    expect(questions.getAllByRole("listitem")[0]).toHaveTextContent("Asked for New Activation");
     const decisions = within(screen.getByRole("heading", { name: /^Architecture decisions/ }).closest("section")!);
     expect(decisions.getByText("BPP SDD (L2) §11.2")).toBeInTheDocument();
     const sources = within(screen.getByRole("heading", { name: "Sources and boundaries" }).closest("section")!);

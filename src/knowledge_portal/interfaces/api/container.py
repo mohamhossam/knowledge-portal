@@ -62,6 +62,12 @@ from knowledge_portal.application.use_cases.catalog_plans import ReadCatalogPlan
 from knowledge_portal.application.use_cases.catalogue_candidates import (
     DecideCatalogueCandidate,
 )
+from knowledge_portal.application.use_cases.change_requests import (
+    DismissChangeRequest,
+    ListChangeRequests,
+    ReadChangeRequestIntoDraft,
+    ReceiveChangeRequest,
+)
 from knowledge_portal.application.use_cases.cited_passages import CitedPassages
 from knowledge_portal.application.use_cases.document_library import DocumentLibrary
 from knowledge_portal.application.use_cases.identity_access import (
@@ -164,6 +170,11 @@ class Container:
     upload_knowledge_document: UploadKnowledgeDocument
     read_knowledge_document: ReadKnowledgeDocument
     decide_catalogue_candidates: DecideCatalogueCandidate
+    # Change requests from Requirement AI (requirement-portal ADR-0101, step 7).
+    receive_change_request: ReceiveChangeRequest
+    list_change_requests: ListChangeRequests
+    read_change_request: ReadChangeRequestIntoDraft
+    dismiss_change_request: DismissChangeRequest
     architecture_jobs: ArchitectureJobs
     background_workers: Mapping[str, BackgroundWorker]
 
@@ -295,6 +306,10 @@ def _build_container(
         upload_knowledge_document=architecture.upload_document,
         read_knowledge_document=architecture.read_document,
         decide_catalogue_candidates=architecture.decide_candidates,
+        receive_change_request=architecture.receive_change_request,
+        list_change_requests=architecture.list_change_requests,
+        read_change_request=architecture.read_change_request,
+        dismiss_change_request=architecture.dismiss_change_request,
         architecture_jobs=architecture.jobs,
         background_workers=workers,
     )

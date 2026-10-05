@@ -21,6 +21,64 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/architecture-knowledge/change-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Change Requests
+         * @description Change requests from Requirement AI, newest first (requirement-portal ADR-0101, step 7).
+         */
+        get: operations["list_change_requests_architecture_knowledge_change_requests_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/architecture-knowledge/change-requests/{change_request_id}/dismissal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Dismiss Change Request */
+        post: operations["dismiss_change_request_architecture_knowledge_change_requests__change_request_id__dismissal_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/architecture-knowledge/change-requests/{change_request_id}/reading": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Read Change Request
+         * @description Read it into the draft in progress, or a new one: each approved feature becomes a
+         *     suggested question.
+         */
+        post: operations["read_change_request_architecture_knowledge_change_requests__change_request_id__reading_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/architecture-knowledge/documents": {
         parameters: {
             query?: never;
@@ -1525,6 +1583,7 @@ export interface components {
             /** Parent Domain Id */
             parent_domain_id?: string | null;
             product?: components["schemas"]["ProductOfferingSchema"] | null;
+            question?: components["schemas"]["OpenQuestionSchema"] | null;
             relationship_kind?: components["schemas"]["RelationshipKind"] | null;
             /** System Id */
             system_id: string;
@@ -1547,7 +1606,7 @@ export interface components {
          * CandidateKind
          * @enum {string}
          */
-        CandidateKind: "system" | "component" | "capability" | "constraint" | "relationship" | "landscape_domain" | "placement" | "product" | "journey" | "channel";
+        CandidateKind: "system" | "component" | "capability" | "constraint" | "relationship" | "landscape_domain" | "placement" | "product" | "journey" | "channel" | "question";
         /**
          * CandidateMatch
          * @description How a candidate relates to the draft as it stands now.
@@ -1647,6 +1706,7 @@ export interface components {
         /** CatalogueSuggestionResponse */
         CatalogueSuggestionResponse: {
             basis: components["schemas"]["CandidateBasis"];
+            change_request?: components["schemas"]["ChangeRequestCitationResponse"] | null;
             /** Citations */
             citations: components["schemas"]["CandidateCitationResponse"][];
             content: components["schemas"]["CandidateContentSchema"];
@@ -1691,16 +1751,132 @@ export interface components {
             /** Suggestions */
             suggestions: components["schemas"]["CatalogueSuggestionResponse"][];
         };
+        /** ChangeItemSchema */
+        ChangeItemSchema: {
+            /** Feature Id */
+            feature_id?: string | null;
+            /** Kind */
+            kind: string;
+            /** @default recorded */
+            status: components["schemas"]["ChangeItemStatus"];
+            /** Summary */
+            summary: string;
+        };
+        /**
+         * ChangeItemStatus
+         * @description What became of one item of a change request, as the original explorer said it.
+         * @enum {string}
+         */
+        ChangeItemStatus: "recorded" | "inferred" | "gap" | "conflict";
         /**
          * ChangeKind
          * @enum {string}
          */
         ChangeKind: "added" | "removed" | "changed";
         /**
+         * ChangeOrigin
+         * @description Where a change request came from.
+         * @enum {string}
+         */
+        ChangeOrigin: "requirement-ai" | "explorer";
+        /** ChangeRequestCitationResponse */
+        ChangeRequestCitationResponse: {
+            /** Change Request Id */
+            change_request_id: string;
+            /** Feature Id */
+            feature_id: string;
+        };
+        /** ChangeRequestDismissalRequest */
+        ChangeRequestDismissalRequest: {
+            /** Reason */
+            reason: string;
+        };
+        /** ChangeRequestReadingResponse */
+        ChangeRequestReadingResponse: {
+            change_request: components["schemas"]["ChangeRequestResponse"];
+            release: components["schemas"]["KnowledgeReleaseResponse"];
+            run: components["schemas"]["ExtractionRunResponse"];
+        };
+        /**
+         * ChangeRequestRecordSchema
+         * @description A change request applied to the version (requirement-portal ADR-0101, step 7).
+         */
+        ChangeRequestRecordSchema: {
+            /** Applied At */
+            applied_at?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /**
+             * Gaps
+             * @default []
+             */
+            gaps: string[];
+            /** Id */
+            id: string;
+            /**
+             * Items
+             * @default []
+             */
+            items: components["schemas"]["ChangeItemSchema"][];
+            /** @default requirement-ai */
+            origin: components["schemas"]["ChangeOrigin"];
+            /** Priority */
+            priority?: string | null;
+            /** Product Id */
+            product_id?: string | null;
+            /** Reason */
+            reason?: string | null;
+            /** Requester */
+            requester?: string | null;
+            /** Target Date */
+            target_date?: string | null;
+            /** Title */
+            title: string;
+            trace?: components["schemas"]["RequirementTraceSchema"] | null;
+        };
+        /**
+         * ChangeRequestResponse
+         * @description A change request in the inbox, as a knowledge admin sees it.
+         */
+        ChangeRequestResponse: {
+            /** Dismissal Reason */
+            dismissal_reason: string | null;
+            /** Dismissed At */
+            dismissed_at: string | null;
+            /** Dismissed By */
+            dismissed_by: string | null;
+            /** Features */
+            features: components["schemas"]["IncomingFeatureResponse"][];
+            /** Id */
+            id: string;
+            /** Read At */
+            read_at: string | null;
+            /** Read By */
+            read_by: string | null;
+            /** Read Into */
+            read_into: string | null;
+            /** Reason */
+            reason: string | null;
+            /**
+             * Received At
+             * Format: date-time
+             */
+            received_at: string;
+            status: components["schemas"]["IncomingStatus"];
+            /** Title */
+            title: string;
+            trace: components["schemas"]["RequirementTraceSchema"];
+        };
+        /** ChangeRequestsResponse */
+        ChangeRequestsResponse: {
+            /** Change Requests */
+            change_requests: components["schemas"]["ChangeRequestResponse"][];
+        };
+        /**
          * ChangedItem
          * @enum {string}
          */
-        ChangedItem: "system" | "capability" | "relationship" | "document" | "domain" | "component" | "landscape_domain" | "product" | "journey" | "channel" | "source" | "conflict";
+        ChangedItem: "system" | "capability" | "relationship" | "document" | "domain" | "component" | "landscape_domain" | "product" | "journey" | "channel" | "source" | "conflict" | "change_request";
         /**
          * ChannelSchema
          * @description Where orders are placed, and the system each is entered through (ADR-0101, step 3).
@@ -1959,9 +2135,12 @@ export interface components {
         /**
          * ExplorerReleaseResponse
          * @description The version in service as the explorer reads it: its content, never its documents,
-         *     index or history (requirement-portal ADR-0101).
+         *     index or version history (requirement-portal ADR-0101). The change requests applied to
+         *     it are part of its content, for the Solution Architecture document (step 7).
          */
         ExplorerReleaseResponse: {
+            /** Change History */
+            change_history?: components["schemas"]["ChangeRequestRecordSchema"][];
             /** Channels */
             channels?: components["schemas"]["ChannelSchema"][];
             /** Conflicts */
@@ -2004,6 +2183,8 @@ export interface components {
         ExtractionRunResponse: {
             /** Candidate Count */
             candidate_count: number;
+            /** Change Request Id */
+            change_request_id?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -2123,6 +2304,42 @@ export interface components {
          * @enum {string}
          */
         ImpactDecisionKind: "retain_historical" | "revise_content";
+        /** IncomingContextResponse */
+        IncomingContextResponse: {
+            /** Order Type */
+            order_type: string | null;
+            /** Product Id */
+            product_id: string | null;
+            /** Product Name */
+            product_name: string | null;
+        };
+        /** IncomingFeatureResponse */
+        IncomingFeatureResponse: {
+            /** Contexts */
+            contexts: components["schemas"]["IncomingContextResponse"][];
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Outcome */
+            outcome: string | null;
+            /** Sequence */
+            sequence: number;
+            /** Systems */
+            systems: components["schemas"]["IncomingSystemResponse"][];
+        };
+        /**
+         * IncomingStatus
+         * @enum {string}
+         */
+        IncomingStatus: "waiting" | "read" | "dismissed";
+        /** IncomingSystemResponse */
+        IncomingSystemResponse: {
+            /** Id */
+            id: string | null;
+            /** Name */
+            name: string;
+        };
         /**
          * IngestionStage
          * @enum {string}
@@ -2239,6 +2456,8 @@ export interface components {
             built_revision?: number | null;
             /** Capability Domains */
             capability_domains?: components["schemas"]["CapabilityDomainSchema"][];
+            /** Change History */
+            change_history?: components["schemas"]["ChangeRequestRecordSchema"][];
             /** Channels */
             channels?: components["schemas"]["ChannelSchema"][];
             /** Conflicts */
@@ -2679,6 +2898,11 @@ export interface components {
             id: string;
             /** Impact */
             impact?: string | null;
+            /**
+             * Order Types
+             * @default []
+             */
+            order_types: string[];
             /** Source */
             source?: string | null;
             /** Text */
@@ -3198,6 +3422,35 @@ export interface components {
             /** Name */
             name: string;
         };
+        /**
+         * RequirementTraceSchema
+         * @description The approved requirement a change request comes from; the approver by name only.
+         */
+        RequirementTraceSchema: {
+            /** Approval Id */
+            approval_id: string;
+            /** Approved At */
+            approved_at?: string | null;
+            /** Approved By */
+            approved_by?: string | null;
+            /** Breakdown Revision */
+            breakdown_revision: number;
+            /** Epic Id */
+            epic_id: string;
+            /** Epic Name */
+            epic_name: string;
+            /** Export Schema */
+            export_schema?: string | null;
+            /**
+             * Features
+             * @default []
+             */
+            features: components["schemas"]["TracedFeatureSchema"][];
+            /** Knowledge Version */
+            knowledge_version?: string | null;
+            /** Requirement Id */
+            requirement_id: string;
+        };
         /** ReviewedPassage */
         ReviewedPassage: {
             /** Block Id */
@@ -3413,6 +3666,13 @@ export interface components {
             expected_revision: number;
             system: components["schemas"]["SystemDefinitionSchema"];
         };
+        /** TracedFeatureSchema */
+        TracedFeatureSchema: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
         /**
          * TrackingChannelSchema
          * @description How one channel ties its order to the fulfilment order, and where progress is seen.
@@ -3528,6 +3788,107 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_change_requests_architecture_knowledge_change_requests_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangeRequestsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dismiss_change_request_architecture_knowledge_change_requests__change_request_id__dismissal_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                change_request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeRequestDismissalRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangeRequestResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_change_request_architecture_knowledge_change_requests__change_request_id__reading_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                change_request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangeRequestReadingResponse"];
                 };
             };
             /** @description Validation Error */

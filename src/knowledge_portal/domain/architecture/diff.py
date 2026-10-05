@@ -62,6 +62,19 @@ _SOURCE_FIELDS = (
     "scope",
     "boundary",
 )
+_CHANGE_REQUEST_FIELDS = (
+    "title",
+    "origin",
+    "product_id",
+    "requester",
+    "reason",
+    "priority",
+    "target_date",
+    "applied_at",
+    "trace",
+    "items",
+    "gaps",
+)
 _CONFLICT_FIELDS = (
     "title",
     "a",
@@ -134,6 +147,8 @@ class ChangedItem(StrEnum):
     CHANNEL = "channel"
     SOURCE = "source"
     CONFLICT = "conflict"
+    # A change request applied to the version (requirement-portal ADR-0101, step 7).
+    CHANGE_REQUEST = "change_request"
 
 
 @dataclass(frozen=True)
@@ -453,6 +468,14 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
             _CONFLICT_FIELDS,
             {item.id: (item.title, item) for item in base.conflicts},
             {item.id: (item.title, item) for item in draft.conflicts},
+        )
+    )
+    changes.extend(
+        _register_changes(
+            ChangedItem.CHANGE_REQUEST,
+            _CHANGE_REQUEST_FIELDS,
+            {item.id: (item.title, item) for item in base.change_history},
+            {item.id: (item.title, item) for item in draft.change_history},
         )
     )
     changes.extend(

@@ -33,15 +33,18 @@ from knowledge_portal.application.ports.catalogue_extractor import (
     CatalogueExtractionError,
     CatalogueExtractionUnsupportedError,
 )
+from knowledge_portal.application.ports.change_requests import ChangeRequestConflictError
 from knowledge_portal.application.ports.system_matcher import SystemMatchingError
 from knowledge_portal.application.use_cases.architecture_knowledge import (
     KnowledgeNotFoundError,
 )
+from knowledge_portal.application.use_cases.change_requests import ChangeRequestNotFoundError
 from knowledge_portal.domain.architecture.candidates import (
     CandidateDecisionConflictError,
     CandidateDependencyError,
     CandidateNotFoundError,
 )
+from knowledge_portal.domain.architecture.change_requests import ChangeRequestStateError
 from knowledge_portal.domain.architecture.errors import InvalidArchitectureContentError
 from knowledge_portal.domain.architecture.knowledge import (
     InvalidKnowledgeError as InvalidArchitectureKnowledgeError,
@@ -126,6 +129,9 @@ ERROR_CATALOGUE: tuple[tuple[type[Exception], str, FailureCategory], ...] = (
     ),
     (OrganisationNotFoundError, "organisation_not_found", FailureCategory.NOT_FOUND),
     (CandidateNotFoundError, "catalogue_suggestion_not_found", FailureCategory.NOT_FOUND),
+    (ChangeRequestNotFoundError, "change_request_not_found", FailureCategory.NOT_FOUND),
+    (ChangeRequestConflictError, "change_request_conflict", FailureCategory.CONFLICT),
+    (ChangeRequestStateError, "change_request_state", FailureCategory.CONFLICT),
     (
         CandidateDecisionConflictError,
         "catalogue_suggestion_conflict",

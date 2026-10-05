@@ -1,0 +1,153 @@
+{
+  "schema_version": "1.5",
+  "manifest": {
+    "requirement_id": "REQ-2026-0412",
+    "breakdown_revision": 3,
+    "revision_created_at": "2026-10-02T11:20:00Z",
+    "final_approval": {
+      "id": "APR-77",
+      "subject_fingerprint": "sha256:fixture",
+      "recorded_by": { "id": "u-17", "display_name": "Layla Haddad", "email": null },
+      "recorded_at": "2026-10-03T08:05:00Z",
+      "rationale": "Approved for the Q1 drop."
+    },
+    "counts": { "epics": 1, "features": 3, "stories": 3, "acceptance_criteria": 3 }
+  },
+  "epic": {
+    "id": "EP-1",
+    "requirement_id": "REQ-2026-0412",
+    "name": "Microsoft 365 for Business Pro Plus online buyers",
+    "outcome": "Small businesses buying Business Pro Plus online can add Microsoft 365 in the same order.",
+    "business_case": "Online buyers ask for productivity licences with their bundle; selling them at activation raises basket value and avoids a second order.",
+    "status": "approved",
+    "provenance": { "generated_at": "2026-10-02T11:00:00Z", "model": "fixture", "prompt_version": "fixture" },
+    "features": [
+      {
+        "sequence": 1,
+        "id": "FT-1",
+        "epic_id": "EP-1",
+        "name": "Offer Microsoft 365 Business Standard as an add-on",
+        "outcome": "Customers can add Microsoft 365 Business Standard licences when they order Business Pro Plus on the B2B portal.",
+        "delivery_drop": "Drop 1",
+        "splitting_pattern": "workflow",
+        "splitting_rationale": "Ordering first, fulfilment notices later.",
+        "status": "approved",
+        "provenance": { "generated_at": "2026-10-02T11:00:00Z", "model": "fixture", "prompt_version": "fixture" },
+        "architecture": {
+          "knowledge_version": "2026.09",
+          "mapped_at": "2026-10-02T11:05:00Z",
+          "systems": [
+            { "id": "APP-0007", "name": "B2B Portal", "catalogued": true, "capabilities": [], "squads": [], "value_streams": [], "products": [] },
+            { "id": "APP-0021", "name": "CWOM", "catalogued": true, "capabilities": [], "squads": [], "value_streams": [], "products": [] },
+            { "id": "APP-0033", "name": "XaaS", "catalogued": true, "capabilities": [], "squads": [], "value_streams": [], "products": [] }
+          ],
+          "dependencies": [],
+          "adjacent_systems": [],
+          "adjacent_dependencies": [],
+          "product_contexts": [
+            {
+              "product_id": "PO-BPP",
+              "product_name": "Business Pro Plus",
+              "matched_terms": ["Business Pro Plus"],
+              "order_type": "New Activation",
+              "responsibilities": [
+                { "component_id": "C-SAAS", "component_name": "SaaS", "system_id": "APP-0033", "system_name": "XaaS", "role": "Provisioning", "description": "Activates SaaS licences." }
+              ]
+            }
+          ],
+          "journey_steps": []
+        },
+        "stories": [
+          {
+            "sequence": 1,
+            "id": "ST-1",
+            "feature_id": "FT-1",
+            "role": "small-business buyer",
+            "action": "add Microsoft 365 licences to my Business Pro Plus order",
+            "value": "I get everything in one order",
+            "voice": "As a small-business buyer, I want to add Microsoft 365 licences to my Business Pro Plus order so that I get everything in one order.",
+            "status": "approved",
+            "provenance": { "generated_at": "2026-10-02T11:00:00Z", "model": "fixture", "prompt_version": "fixture" },
+            "acceptance_criteria": [ { "sequence": 1, "given": "a Business Pro Plus order on the B2B portal", "when": "I add 5 Microsoft 365 licences", "then": "the order shows them as an add-on" } ],
+            "architecture": null
+          }
+        ]
+      },
+      {
+        "sequence": 2,
+        "id": "FT-2",
+        "epic_id": "EP-1",
+        "name": "Send the tenant welcome email",
+        "outcome": "The customer's administrator receives the Microsoft tenant details after activation.",
+        "delivery_drop": "Drop 1",
+        "splitting_pattern": "workflow",
+        "splitting_rationale": "Notification after fulfilment.",
+        "status": "approved",
+        "provenance": { "generated_at": "2026-10-02T11:00:00Z", "model": "fixture", "prompt_version": "fixture" },
+        "architecture": {
+          "knowledge_version": "2026.09",
+          "mapped_at": "2026-10-02T11:05:00Z",
+          "systems": [
+            { "id": "APP-0040", "name": "Central Notification Service", "catalogued": true, "capabilities": [], "squads": [], "value_streams": [], "products": [] },
+            { "id": "APP-0099", "name": "Partner Tenant Portal", "catalogued": false, "capabilities": [], "squads": [], "value_streams": [], "products": [] }
+          ],
+          "dependencies": [],
+          "product_contexts": [
+            { "product_id": "PO-BPP", "product_name": "Business Pro Plus", "matched_terms": ["Business Pro Plus"], "order_type": "New Activation", "responsibilities": [] }
+          ],
+          "journey_steps": []
+        },
+        "stories": [
+          {
+            "sequence": 1,
+            "id": "ST-2",
+            "feature_id": "FT-2",
+            "role": "customer administrator",
+            "action": "receive my tenant details",
+            "value": "I can sign in to Microsoft 365",
+            "voice": "As a customer administrator, I want to receive my tenant details so that I can sign in to Microsoft 365.",
+            "status": "approved",
+            "provenance": { "generated_at": "2026-10-02T11:00:00Z", "model": "fixture", "prompt_version": "fixture" },
+            "acceptance_criteria": [ { "sequence": 1, "given": "an activated order with Microsoft 365", "when": "activation completes", "then": "the administrator receives the welcome email" } ],
+            "architecture": null
+          }
+        ]
+      },
+      {
+        "sequence": 3,
+        "id": "FT-3",
+        "epic_id": "EP-1",
+        "name": "Invoice line per licence",
+        "outcome": "Licences appear on the monthly invoice as a separate line.",
+        "delivery_drop": "Drop 2",
+        "splitting_pattern": "business rule",
+        "splitting_rationale": "Billing presentation is a separate change.",
+        "status": "approved",
+        "provenance": { "generated_at": "2026-10-02T11:00:00Z", "model": "fixture", "prompt_version": "fixture" },
+        "architecture": null,
+        "stories": [
+          {
+            "sequence": 1,
+            "id": "ST-3",
+            "feature_id": "FT-3",
+            "role": "finance contact",
+            "action": "see licences on a separate invoice line",
+            "value": "I can reconcile the bill",
+            "voice": "As a finance contact, I want to see licences on a separate invoice line so that I can reconcile the bill.",
+            "status": "approved",
+            "provenance": { "generated_at": "2026-10-02T11:00:00Z", "model": "fixture", "prompt_version": "fixture" },
+            "acceptance_criteria": [ { "sequence": 1, "given": "an account with 5 licences", "when": "the monthly invoice is produced", "then": "it shows one licence line" } ],
+            "architecture": {
+              "knowledge_version": "2026.09",
+              "mapped_at": "2026-10-02T11:05:00Z",
+              "systems": [ { "id": "APP-0050", "name": "BSCS", "catalogued": true, "capabilities": [], "squads": [], "value_streams": [], "products": [] } ],
+              "dependencies": [],
+              "product_contexts": [],
+              "journey_steps": []
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

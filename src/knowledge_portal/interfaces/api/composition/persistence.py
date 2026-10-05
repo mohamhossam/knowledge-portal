@@ -24,6 +24,7 @@ from knowledge_portal.application.ports.architecture_tokenizer import Architectu
 from knowledge_portal.application.ports.catalogue_candidates import (
     CatalogueCandidateRepositoryPort,
 )
+from knowledge_portal.application.ports.change_requests import ChangeRequestInboxPort
 from knowledge_portal.application.ports.document_library import DocumentLibraryPort
 from knowledge_portal.application.ports.knowledge_events import KnowledgeEventOutboxPort
 from knowledge_portal.application.ports.organisation_repository import OrganisationRepositoryPort
@@ -59,6 +60,9 @@ from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledg
 from knowledge_portal.infrastructure.persistence.in_memory_catalogue_candidates import (
     InMemoryCatalogueCandidates,
 )
+from knowledge_portal.infrastructure.persistence.in_memory_change_requests import (
+    InMemoryChangeRequests,
+)
 from knowledge_portal.infrastructure.persistence.in_memory_organisation import (
     InMemoryOrganisationRepository,
 )
@@ -81,6 +85,9 @@ from knowledge_portal.infrastructure.persistence.postgres_architecture_knowledge
 from knowledge_portal.infrastructure.persistence.postgres_catalogue_candidates import (
     PostgresCatalogueCandidates,
 )
+from knowledge_portal.infrastructure.persistence.postgres_change_requests import (
+    PostgresChangeRequests,
+)
 from knowledge_portal.infrastructure.persistence.postgres_organisation import (
     PostgresOrganisationRepository,
 )
@@ -102,6 +109,8 @@ class PersistenceAdapters:
     organisation_repository: OrganisationRepositoryPort
     sample_requirements: SampleRequirementsPort
     catalogue_candidates: CatalogueCandidateRepositoryPort
+    # Change requests from Requirement AI, waiting for an admin (ADR-0101, step 7).
+    change_requests: ChangeRequestInboxPort
     architecture_evidence_index: ArchitectureEvidenceIndexPort
     architecture_job_repository: ArchitectureJobRepositoryPort
     library_repository: DocumentLibraryPort
@@ -156,6 +165,7 @@ def _postgres(
         organisation_repository=PostgresOrganisationRepository(connector, clock),
         sample_requirements=PostgresSampleRequirements(connector),
         catalogue_candidates=PostgresCatalogueCandidates(connector),
+        change_requests=PostgresChangeRequests(connector),
         architecture_evidence_index=PostgresEvidenceIndex(
             connector, architecture_embeddings, architecture_tokenizer
         ),
@@ -190,6 +200,7 @@ def _memory(
         organisation_repository=InMemoryOrganisationRepository(clock),
         sample_requirements=InMemorySampleRequirements(),
         catalogue_candidates=InMemoryCatalogueCandidates(),
+        change_requests=InMemoryChangeRequests(),
         architecture_evidence_index=InMemoryEvidenceIndex(
             architecture_embeddings, architecture_tokenizer
         ),

@@ -32,6 +32,7 @@ from knowledge_portal.application.ports.catalogue_extractor import (
     KnownSystem,
     ProposedChange,
 )
+from knowledge_portal.application.ports.change_requests import ChangeRequestInboxPort
 from knowledge_portal.application.ports.identity import Actor, require_maintainer
 from knowledge_portal.application.ports.located_document_extractor import (
     LocatedDocumentExtractorPort,
@@ -60,6 +61,7 @@ from knowledge_portal.domain.architecture.candidates import (
     CatalogueCandidate,
     MatchRole,
     PossibleMatch,
+    accept_from_change_request,
     apply_candidate,
     classify,
     find_system,
@@ -111,6 +113,8 @@ _ORDER = (
     CandidateKind.CHANNEL,
     # then an offering names systems and channels that must be in the draft first,
     CandidateKind.PRODUCT,
+    # a question is asked of an offering,
+    CandidateKind.QUESTION,
     # and a journey names systems and the offering it fulfils.
     CandidateKind.JOURNEY,
 )
@@ -131,7 +135,7 @@ class CandidateView:
 
 def _view(candidate: CatalogueCandidate, release: ArchitectureKnowledge) -> CandidateView:
     # A channel's subject is the channel, not a system that may share its id.
-    channel = candidate.content.kind is CandidateKind.CHANNEL
+    channel = candidate.content.kind in {CandidateKind.CHANNEL, CandidateKind.QUESTION}
     source = None if channel else find_system(release, candidate.content.system_id)
     target = None if channel else find_system(release, candidate.content.target_system_id or "")
     return CandidateView(
@@ -495,6 +499,22 @@ def _linked(content: CandidateContent, release: ArchitectureKnowledge) -> bool:
     )
 
 
+def _accepted(
+    release: ArchitectureKnowledge, merged: ArchitectureKnowledge
+) -> ArchitectureKnowledge:
+    """The draft once, with what accepting suggestions changed: one revision, however many."""
+    return release.updated(
+        systems=merged.systems,
+        relationships=merged.relationships,
+        landscape_domains=merged.landscape_domains,
+        products=merged.products,
+        journeys=merged.journeys,
+        channels=merged.channels,
+        sources=merged.sources,
+        change_history=merged.change_history,
+    )
+
+
 def _draft(knowledge: ManageArchitectureKnowledge, release_id: str) -> ArchitectureKnowledge:
     release = knowledge.get(release_id)
     if release.status is not KnowledgeReleaseStatus.DRAFT:
@@ -737,10 +757,32 @@ class DecideCatalogueCandidate:
         knowledge: ManageArchitectureKnowledge,
         repository: ArchitectureKnowledgeRepositoryPort,
         candidates: CatalogueCandidateRepositoryPort,
+        inbox: ChangeRequestInboxPort | None = None,
     ) -> None:
         self._knowledge = knowledge
         self._repository = repository
         self._candidates = candidates
+        self._inbox = inbox
+
+    def _applied(
+        self,
+        candidate: CatalogueCandidate,
+        content: CandidateContent,
+        release: ArchitectureKnowledge,
+        at: datetime,
+    ) -> ArchitectureKnowledge:
+        """The draft with one suggestion accepted; one from a change request also registers
+        the change request as a source and records it in the change history."""
+        cited = candidate.change_request
+        if cited is None:
+            return apply_candidate(content, release)
+        incoming = self._inbox.get(cited.change_request_id) if self._inbox else None
+        if incoming is None:
+            raise CandidateDependencyError(
+                f"The change request {cited.change_request_id} this suggestion comes from is "
+                "no longer kept, so it cannot be accepted."
+            )
+        return accept_from_change_request(release, content, incoming, cited.feature_id, at)
 
     def overview(self, release_id: str, actor: Actor) -> CandidateOverview:
         require_maintainer(actor)
@@ -775,15 +817,8 @@ class DecideCatalogueCandidate:
         if not accept:
             self._candidates.save_decision(decided)
             return release
-        merged = apply_candidate(decided.content, release)
-        updated = release.updated(
-            systems=merged.systems,
-            relationships=merged.relationships,
-            landscape_domains=merged.landscape_domains,
-            products=merged.products,
-            journeys=merged.journeys,
-            channels=merged.channels,
-        )
+        merged = self._applied(decided, decided.content, release, at)
+        updated = _accepted(release, merged)
         self._save(updated, expected_revision, actor, (decided,))
         return updated
 
@@ -817,21 +852,14 @@ class DecideCatalogueCandidate:
             if needs_one_by_one(candidate, merged):
                 continue
             try:
-                merged = apply_candidate(candidate.content, merged)
+                merged = self._applied(candidate, candidate.content, merged, at)
             except (CandidateDependencyError, InvalidKnowledgeError):
                 # Left undecided for a one-by-one look; the rest still apply.
                 continue
             accepted.append(candidate.decide(True, actor.id, at))
         if not accepted:
             return release, len(pending)
-        updated = release.updated(
-            systems=merged.systems,
-            relationships=merged.relationships,
-            landscape_domains=merged.landscape_domains,
-            products=merged.products,
-            journeys=merged.journeys,
-            channels=merged.channels,
-        )
+        updated = _accepted(release, merged)
         self._save(updated, expected_revision, actor, tuple(accepted))
         return updated, len(pending) - len(accepted)
 

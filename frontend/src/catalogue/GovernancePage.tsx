@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 import type { SourceConflict } from "../api/client";
 import { EditButton } from "./DraftEdits";
-import { ConflictList, SourceRegister } from "./GovernanceSections";
+import { ChangeHistory, ConflictList, SourceRegister } from "./GovernanceSections";
 import { ConflictsEdit, SourcesEdit } from "./GovernanceEditor";
 import { useCatalogueContext } from "./useCatalogue";
 
@@ -77,6 +77,13 @@ export function GovernancePage() {
           affects={affects}
         />
       )}
+      <ChangeHistory
+        history={release.change_history ?? []}
+        offering={(id) => (
+          <Link to={`${base}/offerings/${encodeURIComponent(id)}`} dir="auto">{offerings.get(id)?.name ?? id}</Link>
+        )}
+        headingId="governance-history"
+      />
     </div>
   );
 }

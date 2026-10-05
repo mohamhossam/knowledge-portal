@@ -7,6 +7,10 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Protocol
 
+from knowledge_portal.domain.architecture.change_requests import (
+    ChangeRequestRecord,
+    check_change_history,
+)
 from knowledge_portal.domain.architecture.channels import Channel, check_channels
 from knowledge_portal.domain.architecture.governance import (
     KnowledgeSource,
@@ -369,6 +373,8 @@ class ArchitectureKnowledge:
     # contradict each other (requirement-portal ADR-0101, step 5).
     sources: tuple[KnowledgeSource, ...] = ()
     conflicts: tuple[SourceConflict, ...] = ()
+    # The change requests applied to it, newest last (requirement-portal ADR-0101, step 7).
+    change_history: tuple[ChangeRequestRecord, ...] = ()
 
     def __post_init__(self) -> None:
         _required(self.id, "Knowledge id")
@@ -433,6 +439,7 @@ class ArchitectureKnowledge:
                 for item in self.products
             },
         )
+        check_change_history(self.change_history)
         landscape = _check_domains(self.landscape_domains, "Landscape domain")
         for system in self.systems:
             if (
@@ -460,6 +467,7 @@ class ArchitectureKnowledge:
         channels: tuple[Channel, ...] | None = None,
         sources: tuple[KnowledgeSource, ...] | None = None,
         conflicts: tuple[SourceConflict, ...] | None = None,
+        change_history: tuple[ChangeRequestRecord, ...] | None = None,
     ) -> ArchitectureKnowledge:
         if self.status is not KnowledgeReleaseStatus.DRAFT:
             raise KnowledgeConflictError("Published knowledge is immutable.")
@@ -484,6 +492,7 @@ class ArchitectureKnowledge:
             channels=self.channels if channels is None else channels,
             sources=self.sources if sources is None else sources,
             conflicts=self.conflicts if conflicts is None else conflicts,
+            change_history=self.change_history if change_history is None else change_history,
         )
 
     def domain_path(self, domain_id: str | None) -> tuple[CapabilityDomain, ...]:

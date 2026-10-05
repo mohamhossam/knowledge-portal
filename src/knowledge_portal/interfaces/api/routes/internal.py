@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, FastAPI, Query
+from fastapi import APIRouter, Depends, FastAPI, Query, Response
 from pydantic import BaseModel, Field
 
 from knowledge_portal.application.ports.architecture_knowledge import (
@@ -23,6 +23,10 @@ from knowledge_portal.application.ports.knowledge_events import KnowledgeEvent
 from knowledge_portal.application.ports.reference_grounding import ReferenceEvidence
 from knowledge_portal.application.use_cases.cited_passages import CitedPassage, PassageCitation
 from knowledge_portal.interfaces.api.dependencies import ContainerDep, require_service_caller
+from knowledge_portal.interfaces.api.schemas.change_requests import (
+    ApprovedBacklogRequest,
+    ChangeRequestReceipt,
+)
 
 router = APIRouter(prefix="/internal", dependencies=[Depends(require_service_caller)])
 
@@ -70,6 +74,25 @@ def passage(
     """A cited passage, only while its publication is live (409 otherwise)."""
     return container.cited_passages.read(
         PassageCitation(document_id, publication_id, version_id, revision_id, block_id)
+    )
+
+
+@router.post(
+    "/change-requests",
+    status_code=201,
+    responses={200: {"description": "The same approval was delivered before."}},
+)
+def receive_change_request(
+    body: ApprovedBacklogRequest, response: Response, container: ContainerDep
+) -> ChangeRequestReceipt:
+    """An approved backlog, kept once per final approval for a knowledge admin to read into a
+    draft (requirement-portal ADR-0101, step 7). Delivering the same approval again answers
+    200 with the first change request; the same approval for another subject is a 409."""
+    item, created = container.receive_change_request.execute(body.to_backlog())
+    if not created:
+        response.status_code = 200
+    return ChangeRequestReceipt(
+        change_request_id=item.id, approval_id=item.approval_id, created=created
     )
 
 

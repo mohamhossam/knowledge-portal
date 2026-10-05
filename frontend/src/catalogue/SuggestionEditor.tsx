@@ -4,7 +4,7 @@ import type { Channel, Journey, Offering, RelationshipKind, Release, Suggestion,
 import { finishedOffering, journeyProblem, lines, offeringProblem, slug } from "./editing";
 import { AreaField, LinesField, SelectField, SystemField, TextField } from "./forms";
 import { JourneyEditor } from "./JourneyEditor";
-import { OfferingEditor } from "./OfferingEditor";
+import { OfferingEditor, QuestionFields } from "./OfferingEditor";
 import type { Lexicon } from "./suggestions";
 
 const HOW: { value: RelationshipKind; label: string }[] = [
@@ -103,6 +103,9 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
         return content.journey ? journeyProblem(content.journey) : "The journey is missing.";
       case "channel":
         return content.channel?.name.trim() ? null : "Give the channel a name.";
+      case "question":
+        if (!content.system_id.trim()) return "Choose the offering it asks.";
+        return content.question?.text.trim() ? null : "Say what it asks.";
     }
   })();
 
@@ -255,6 +258,32 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
               onChange={(entry) => change({ entry_system_id: entry || null })}
             />
             <AreaField label="What it is" value={channel.description} onChange={(description) => change({ description: description || null })} />
+          </>
+        );
+      }
+      case "question": {
+        const question = content.question ?? { id: "", text: "", order_types: [] };
+        const offerings = release.products ?? [];
+        const chosen = offerings.find((item) => item.id === content.system_id);
+        return (
+          <>
+            <SelectField
+              label="Asked of the offering"
+              value={content.system_id}
+              wide
+              options={[
+                ...(!chosen && original.system_id
+                  ? [{ value: original.system_id, label: `${words.offering(original.system_id)} (not in the draft yet)` }]
+                  : []),
+                ...offerings.map((item) => ({ value: item.id, label: item.name })),
+              ]}
+              onChange={(system_id) => set({ system_id, question: { ...question, order_types: [] } })}
+            />
+            <QuestionFields
+              item={question}
+              orders={(chosen?.order_types ?? []).map((type) => ({ code: type.code, name: type.name || type.code }))}
+              change={(patch) => set({ question: { ...question, ...patch } })}
+            />
           </>
         );
       }

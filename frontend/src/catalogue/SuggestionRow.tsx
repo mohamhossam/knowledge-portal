@@ -5,6 +5,7 @@ import { type KeyboardEvent, type RefObject, useEffect, useId, useMemo, useRef, 
 import { api, type CatalogueDocument, type PossibleMatch, type Release, type Suggestion, type SuggestionContent } from "../api/client";
 import { errorMessage } from "../api/errors";
 import { formatDay } from "../home/format";
+import { traceLine, useChangeRequests } from "./inbox";
 import { SuggestionEditor } from "./SuggestionEditor";
 import {
   type Lexicon, STATE_LABEL, STATE_RANK, changeSentence, decideWhy, offeringHolds, suggestionState, waitsFor, waitsForMany,
@@ -25,6 +26,8 @@ type Props = {
   busy: boolean;
   /** Edits made and not yet accepted; they outlive the editor until accepted or dropped. */
   kept: SuggestionContent | undefined;
+  /** What the reading of its change request said of its feature. */
+  notes?: string[];
   toggleRef: (element: HTMLButtonElement | null) => void;
   onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
   onFocus: (focus: RowFocus | null) => void;
@@ -39,7 +42,7 @@ type Props = {
  * reaches a screen reader (a plain table's row cannot carry `aria-expanded`).
  */
 export function SuggestionRow({
-  suggestion, release, words, documents, actorName, focus, focusable, busy, kept, toggleRef, onKeyDown, onFocus, onClose, onKeep, onDecide,
+  suggestion, release, words, documents, actorName, focus, focusable, busy, kept, notes, toggleRef, onKeyDown, onFocus, onClose, onKeep, onDecide,
 }: Props) {
   const detailId = useId();
   const state = suggestionState(suggestion);
@@ -73,15 +76,24 @@ export function SuggestionRow({
           </button>
           {relationship && suggestion.content.text && <span className="secondary govtable__by" dir="auto">For: {suggestion.content.text}</span>}
           <span className="secondary govtable__by suggestion__source" dir="ltr">
-            <bdi>{document?.title ?? "A document no longer in the draft"}</bdi>
-            {citation && <> · {citation.location}</>}
-            {suggestion.model === TABLE_READER && " · read from a table"}
+            {suggestion.change_request ? (
+              <>
+                <bdi>{suggestion.change_request.change_request_id}</bdi> · Feature {suggestion.change_request.feature_id} · from Requirement AI
+              </>
+            ) : (
+              <>
+                <bdi>{document?.title ?? "A document no longer in the draft"}</bdi>
+                {citation && <> · {citation.location}</>}
+                {suggestion.model === TABLE_READER && " · read from a table"}
+              </>
+            )}
           </span>
         </th>
         <td id={`${detailId}-state`} className="suggestion__state">
           <span className="status">{suggestion.status === "accepted" && suggestion.edited ? "Accepted with edits" : STATE_LABEL[state]}</span>
           {reason && <span className="secondary govtable__by">{reason}</span>}
           {kept && suggestion.status === "proposed" && <span className="secondary govtable__by">Edited, not accepted yet</span>}
+          {suggestion.status === "proposed" && notes?.map((note) => <span key={note} className="suggestion__warning" dir="auto">{note}</span>)}
         </td>
       </tr>
       {open && (
@@ -96,6 +108,7 @@ export function SuggestionRow({
               editing={focus.editing === true}
               busy={busy}
               kept={kept}
+              notes={notes}
               onKeep={onKeep}
               onEdit={(editing) => onFocus({ key: suggestion.id, open: true, editing })}
               onClose={onClose}
@@ -108,7 +121,7 @@ export function SuggestionRow({
   );
 }
 
-function SuggestionDetail({ suggestion, release, words, document, actorName, editing, busy, kept, onKeep, onEdit, onClose, onDecide }: {
+function SuggestionDetail({ suggestion, release, words, document, actorName, editing, busy, kept, notes, onKeep, onEdit, onClose, onDecide }: {
   suggestion: Suggestion;
   release: Release;
   words: Lexicon;
@@ -117,6 +130,7 @@ function SuggestionDetail({ suggestion, release, words, document, actorName, edi
   editing: boolean;
   busy: boolean;
   kept: SuggestionContent | undefined;
+  notes?: string[];
   onKeep: (content: SuggestionContent | null) => void;
   onEdit: (editing: boolean) => void;
   onClose: () => void;
@@ -143,8 +157,12 @@ function SuggestionDetail({ suggestion, release, words, document, actorName, edi
   return (
     <div className="suggestion-detail__body" onKeyDown={escape}>
       <section className="suggestion-detail__source" aria-labelledby={`${id}-source`}>
-        <h3 id={`${id}-source`} className="suggestion-detail__label">From the document</h3>
-        {suggestion.citations.length ? (
+        <h3 id={`${id}-source`} className="suggestion-detail__label">
+          {suggestion.change_request ? "From the change request" : "From the document"}
+        </h3>
+        {suggestion.change_request ? (
+          <ChangeRequestCitation suggestion={suggestion} notes={notes} />
+        ) : suggestion.citations.length ? (
           suggestion.citations.map((citation, index) => (
             <Citation key={`${citation.location}:${index}`} release={release} document={document} location={citation.location} quote={citation.quote} />
           ))
@@ -341,6 +359,34 @@ function linked(suggestion: Suggestion, choice: Record<string, string>): Suggest
 }
 
 /** One cited place: the quote, then the passage with its neighbours on request (or the image). */
+/** Where a suggestion from a change request comes from: the feature, and the approval it carries. */
+function ChangeRequestCitation({ suggestion, notes }: { suggestion: Suggestion; notes?: string[] }) {
+  const inbox = useChangeRequests();
+  const cited = suggestion.change_request;
+  const item = inbox.data?.find((each) => each.id === cited?.change_request_id);
+  const citation = suggestion.citations[0];
+  return (
+    <div className="citation">
+      {citation?.quote && <p className="citation__quote" dir="auto">“{citation.quote}”</p>}
+      <p className="citation__where" dir="ltr">
+        <bdi>{cited?.change_request_id}</bdi> · Feature {cited?.feature_id}
+      </p>
+      {item && (
+        <p className="secondary" dir="auto">
+          Requirement {traceLine(item.trace)}. Epic {item.trace.epic_id}: {item.trace.epic_name}.
+        </p>
+      )}
+      {notes && notes.length > 0 && (
+        <ul className="changerequests__warnings" aria-label="What its reading could not match">
+          {notes.map((note) => (
+            <li key={note} dir="auto">{note}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function Citation({ release, document, location, quote }: {
   release: Release;
   document?: CatalogueDocument;

@@ -7,6 +7,7 @@ import { api, type CatalogueFileFormat, type Release } from "../api/client";
 import { errorMessage } from "../api/errors";
 import { count, formatDay } from "../home/format";
 import { auditLabel, changeSentence, contents } from "./catalogue";
+import { ChangeRequestInbox } from "./ChangeRequests";
 import { StartDraft } from "./DraftActions";
 import { useActivate, useCatalogueContext, useMappingImpact, useReleases } from "./useCatalogue";
 
@@ -38,6 +39,7 @@ export function VersionsPage() {
   });
 
   return (
+    <>
     <section className="govsection catalogue__first" aria-labelledby="versions-title">
       <h2 id="versions-title" className="govsection__title">Versions</h2>
       <p className="govsection__lead">
@@ -138,6 +140,8 @@ export function VersionsPage() {
       )}
       {releases.data && <StartDraft draft={releases.data.find((release) => release.status === "draft")} />}
     </section>
+    {releases.data && <ChangeRequestInbox releases={releases.data} actorName={actorName} />}
+    </>
   );
 }
 

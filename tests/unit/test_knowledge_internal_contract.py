@@ -35,6 +35,8 @@ def test_the_contract_covers_every_seam_requirement_work_uses() -> None:
         "/internal/events",
         "/internal/library/passages",
         "/internal/architecture/releases/{release_id}/evidence/{chunk_id}",
+        # requirement-portal delivers an approved backlog here (ADR-0101, step 7).
+        "/internal/change-requests",
     }
 
 

@@ -128,6 +128,7 @@ export const DIFF_ORDER: { item: Item; one: string; many: string }[] = [
   { item: "channel", one: "Channel", many: "Channels" },
   { item: "source", one: "Source", many: "Sources" },
   { item: "conflict", one: "Conflict between sources", many: "Conflicts between sources" },
+  { item: "change_request", one: "Change request", many: "Change requests" },
   { item: "product", one: "Offering", many: "Offerings" },
   { item: "journey", one: "Journey", many: "Journeys" },
   { item: "document", one: "Document", many: "Documents" },
@@ -177,6 +178,17 @@ const FIELD: Record<string, string> = {
   impact: "impact",
   decision: "decision needed",
   scope: "what it affects",
+  title: "title",
+  origin: "where it came from",
+  product_id: "offering",
+  requester: "who asked",
+  reason: "why",
+  priority: "priority",
+  target_date: "target date",
+  applied_at: "when it was applied",
+  trace: "the approval it carries",
+  items: "what it asked for",
+  gaps: "what could not be mapped",
 };
 
 /** A changed item's fields, said as words: "Arabic name and where it sits". */

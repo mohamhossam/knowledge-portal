@@ -1231,7 +1231,7 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
   }
 
   .govtable.lifecycle__table td[data-head]::before {
-    content: attr(data-head) ": ";
+    content: attr(data-head) ": " / "";
     color: var(--ink-2);
     font-size: var(--t-meta);
   }
@@ -1415,7 +1415,8 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
 
   .govtable.governance__table td[data-head]::before {
     display: block;
-    content: attr(data-head);
+    /* The column head is already announced; the label is for the eye only. */
+    content: attr(data-head) / "";
     color: var(--ink-2);
     font-size: var(--t-meta);
   }
@@ -1434,4 +1435,102 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
   .governance__list > li {
     grid-template-columns: 1fr;
   }
+}
+
+/* Change requests from Requirement AI (requirement-portal ADR-0101, step 7): the inbox on
+   Versions, and the change history on Governance. */
+.changerequests__col-request {
+  width: 32%;
+}
+
+.changerequests__col-from {
+  width: 40%;
+}
+
+.changerequests__col-state {
+  width: 28%;
+}
+
+.changerequests__title {
+  display: block;
+  font-weight: var(--w-medium);
+}
+
+.changerequests__features,
+.governance__changes {
+  display: grid;
+  gap: 0.125rem;
+  margin: var(--s1) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--t-meta);
+}
+
+.changerequests__features .governance__id,
+.governance__changes .governance__id {
+  margin-inline-end: var(--s1);
+}
+
+/* What a reading could not match: ink 2 lines under its state, each its own sentence. */
+.changerequests__warnings {
+  display: grid;
+  gap: 0.125rem;
+  margin: var(--s1) 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+  max-width: 72ch;
+}
+
+.changerequests__col-reading {
+  width: 56%;
+}
+
+.changerequests__col-waiting {
+  width: 12%;
+}
+
+/* "Its suggestions": as tall as the buttons beside it. */
+.changerequests__link {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 1.5rem;
+}
+
+/* A warning a reading left on one feature, shown again on that feature's suggestion. */
+.suggestion__warning {
+  display: block;
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+.changerequests__dismiss {
+  display: grid;
+  gap: var(--s1);
+  margin-top: var(--s2);
+  max-width: 40ch;
+}
+
+.changerequests__dismiss .secondary {
+  margin: 0;
+  font-size: var(--t-meta);
+}
+
+.governance__col-request {
+  width: 36%;
+}
+
+.governance__col-applied {
+  width: 16%;
+}
+
+.governance__col-changed {
+  width: 48%;
+}
+
+/* "Versions · 2 waiting": change requests from Requirement AI, seen from every catalogue page. */
+.subindex__note {
+  color: var(--ink-2);
+  font-weight: var(--w-regular);
 }

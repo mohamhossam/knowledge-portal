@@ -803,6 +803,16 @@
               }
             ]
           },
+          "question": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OpenQuestionSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "relationship_kind": {
             "anyOf": [
               {
@@ -877,7 +887,8 @@
           "placement",
           "product",
           "journey",
-          "channel"
+          "channel",
+          "question"
         ],
         "title": "CandidateKind",
         "type": "string"
@@ -1187,6 +1198,16 @@
           "basis": {
             "$ref": "#/components/schemas/CandidateBasis"
           },
+          "change_request": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChangeRequestCitationResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "citations": {
             "items": {
               "$ref": "#/components/schemas/CandidateCitationResponse"
@@ -1348,6 +1369,53 @@
         "title": "CatalogueSuggestionsResponse",
         "type": "object"
       },
+      "ChangeItemSchema": {
+        "properties": {
+          "feature_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feature Id"
+          },
+          "kind": {
+            "maxLength": 200,
+            "title": "Kind",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ChangeItemStatus",
+            "default": "recorded"
+          },
+          "summary": {
+            "maxLength": 10000,
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "summary"
+        ],
+        "title": "ChangeItemSchema",
+        "type": "object"
+      },
+      "ChangeItemStatus": {
+        "description": "What became of one item of a change request, as the original explorer said it.",
+        "enum": [
+          "recorded",
+          "inferred",
+          "gap",
+          "conflict"
+        ],
+        "title": "ChangeItemStatus",
+        "type": "string"
+      },
       "ChangeKind": {
         "enum": [
           "added",
@@ -1356,6 +1424,349 @@
         ],
         "title": "ChangeKind",
         "type": "string"
+      },
+      "ChangeOrigin": {
+        "description": "Where a change request came from.",
+        "enum": [
+          "requirement-ai",
+          "explorer"
+        ],
+        "title": "ChangeOrigin",
+        "type": "string"
+      },
+      "ChangeRequestCitationResponse": {
+        "properties": {
+          "change_request_id": {
+            "title": "Change Request Id",
+            "type": "string"
+          },
+          "feature_id": {
+            "title": "Feature Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "change_request_id",
+          "feature_id"
+        ],
+        "title": "ChangeRequestCitationResponse",
+        "type": "object"
+      },
+      "ChangeRequestDismissalRequest": {
+        "properties": {
+          "reason": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "ChangeRequestDismissalRequest",
+        "type": "object"
+      },
+      "ChangeRequestReadingResponse": {
+        "properties": {
+          "change_request": {
+            "$ref": "#/components/schemas/ChangeRequestResponse"
+          },
+          "release": {
+            "$ref": "#/components/schemas/KnowledgeReleaseResponse"
+          },
+          "run": {
+            "$ref": "#/components/schemas/ExtractionRunResponse"
+          }
+        },
+        "required": [
+          "release",
+          "run",
+          "change_request"
+        ],
+        "title": "ChangeRequestReadingResponse",
+        "type": "object"
+      },
+      "ChangeRequestRecordSchema": {
+        "description": "A change request applied to the version (requirement-portal ADR-0101, step 7).",
+        "properties": {
+          "applied_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applied At"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "gaps": {
+            "default": [],
+            "items": {
+              "maxLength": 10000,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Gaps",
+            "type": "array"
+          },
+          "id": {
+            "maxLength": 200,
+            "title": "Id",
+            "type": "string"
+          },
+          "items": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ChangeItemSchema"
+            },
+            "maxItems": 5000,
+            "title": "Items",
+            "type": "array"
+          },
+          "origin": {
+            "$ref": "#/components/schemas/ChangeOrigin",
+            "default": "requirement-ai"
+          },
+          "priority": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Priority"
+          },
+          "product_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Id"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "requester": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requester"
+          },
+          "target_date": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Date"
+          },
+          "title": {
+            "maxLength": 300,
+            "title": "Title",
+            "type": "string"
+          },
+          "trace": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RequirementTraceSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "ChangeRequestRecordSchema",
+        "type": "object"
+      },
+      "ChangeRequestResponse": {
+        "description": "A change request in the inbox, as a knowledge admin sees it.",
+        "properties": {
+          "dismissal_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dismissal Reason"
+          },
+          "dismissed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dismissed At"
+          },
+          "dismissed_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dismissed By"
+          },
+          "features": {
+            "items": {
+              "$ref": "#/components/schemas/IncomingFeatureResponse"
+            },
+            "title": "Features",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "read_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read At"
+          },
+          "read_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read By"
+          },
+          "read_into": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read Into"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "received_at": {
+            "format": "date-time",
+            "title": "Received At",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/IncomingStatus"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "trace": {
+            "$ref": "#/components/schemas/RequirementTraceSchema"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "reason",
+          "trace",
+          "features",
+          "received_at",
+          "status",
+          "read_into",
+          "read_by",
+          "read_at",
+          "dismissed_by",
+          "dismissed_at",
+          "dismissal_reason"
+        ],
+        "title": "ChangeRequestResponse",
+        "type": "object"
+      },
+      "ChangeRequestsResponse": {
+        "properties": {
+          "change_requests": {
+            "items": {
+              "$ref": "#/components/schemas/ChangeRequestResponse"
+            },
+            "title": "Change Requests",
+            "type": "array"
+          }
+        },
+        "required": [
+          "change_requests"
+        ],
+        "title": "ChangeRequestsResponse",
+        "type": "object"
       },
       "ChangedItem": {
         "enum": [
@@ -1370,7 +1781,8 @@
           "journey",
           "channel",
           "source",
-          "conflict"
+          "conflict",
+          "change_request"
         ],
         "title": "ChangedItem",
         "type": "string"
@@ -2229,8 +2641,16 @@
         "type": "string"
       },
       "ExplorerReleaseResponse": {
-        "description": "The version in service as the explorer reads it: its content, never its documents,\nindex or history (requirement-portal ADR-0101).",
+        "description": "The version in service as the explorer reads it: its content, never its documents,\nindex or version history (requirement-portal ADR-0101). The change requests applied to\nit are part of its content, for the Solution Architecture document (step 7).",
         "properties": {
+          "change_history": {
+            "items": {
+              "$ref": "#/components/schemas/ChangeRequestRecordSchema"
+            },
+            "maxItems": 5000,
+            "title": "Change History",
+            "type": "array"
+          },
           "channels": {
             "items": {
               "$ref": "#/components/schemas/ChannelSchema"
@@ -2372,6 +2792,17 @@
           "candidate_count": {
             "title": "Candidate Count",
             "type": "integer"
+          },
+          "change_request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Request Id"
           },
           "created_at": {
             "format": "date-time",
@@ -2768,6 +3199,135 @@
         "title": "ImpactDecisionKind",
         "type": "string"
       },
+      "IncomingContextResponse": {
+        "properties": {
+          "order_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Type"
+          },
+          "product_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Id"
+          },
+          "product_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Name"
+          }
+        },
+        "required": [
+          "product_id",
+          "product_name",
+          "order_type"
+        ],
+        "title": "IncomingContextResponse",
+        "type": "object"
+      },
+      "IncomingFeatureResponse": {
+        "properties": {
+          "contexts": {
+            "items": {
+              "$ref": "#/components/schemas/IncomingContextResponse"
+            },
+            "title": "Contexts",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome"
+          },
+          "sequence": {
+            "title": "Sequence",
+            "type": "integer"
+          },
+          "systems": {
+            "items": {
+              "$ref": "#/components/schemas/IncomingSystemResponse"
+            },
+            "title": "Systems",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "sequence",
+          "name",
+          "outcome",
+          "contexts",
+          "systems"
+        ],
+        "title": "IncomingFeatureResponse",
+        "type": "object"
+      },
+      "IncomingStatus": {
+        "enum": [
+          "waiting",
+          "read",
+          "dismissed"
+        ],
+        "title": "IncomingStatus",
+        "type": "string"
+      },
+      "IncomingSystemResponse": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "IncomingSystemResponse",
+        "type": "object"
+      },
       "IngestionStage": {
         "enum": [
           "queued",
@@ -3107,6 +3667,14 @@
             },
             "maxItems": 5000,
             "title": "Capability Domains",
+            "type": "array"
+          },
+          "change_history": {
+            "items": {
+              "$ref": "#/components/schemas/ChangeRequestRecordSchema"
+            },
+            "maxItems": 5000,
+            "title": "Change History",
             "type": "array"
           },
           "channels": {
@@ -4511,6 +5079,16 @@
             ],
             "title": "Impact"
           },
+          "order_types": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Order Types",
+            "type": "array"
+          },
           "source": {
             "anyOf": [
               {
@@ -5888,6 +6466,101 @@
         "title": "RenameVersionRequest",
         "type": "object"
       },
+      "RequirementTraceSchema": {
+        "description": "The approved requirement a change request comes from; the approver by name only.",
+        "properties": {
+          "approval_id": {
+            "maxLength": 200,
+            "title": "Approval Id",
+            "type": "string"
+          },
+          "approved_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved At"
+          },
+          "approved_by": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved By"
+          },
+          "breakdown_revision": {
+            "title": "Breakdown Revision",
+            "type": "integer"
+          },
+          "epic_id": {
+            "maxLength": 200,
+            "title": "Epic Id",
+            "type": "string"
+          },
+          "epic_name": {
+            "maxLength": 300,
+            "title": "Epic Name",
+            "type": "string"
+          },
+          "export_schema": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Export Schema"
+          },
+          "features": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TracedFeatureSchema"
+            },
+            "maxItems": 5000,
+            "title": "Features",
+            "type": "array"
+          },
+          "knowledge_version": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Knowledge Version"
+          },
+          "requirement_id": {
+            "maxLength": 200,
+            "title": "Requirement Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requirement_id",
+          "breakdown_revision",
+          "approval_id",
+          "epic_id",
+          "epic_name"
+        ],
+        "title": "RequirementTraceSchema",
+        "type": "object"
+      },
       "ReviewedPassage": {
         "properties": {
           "block_id": {
@@ -6536,6 +7209,26 @@
         "title": "SystemUpdateRequest",
         "type": "object"
       },
+      "TracedFeatureSchema": {
+        "properties": {
+          "id": {
+            "maxLength": 200,
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 300,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "TracedFeatureSchema",
+        "type": "object"
+      },
       "TrackingChannelSchema": {
         "description": "How one channel ties its order to the fulfilment order, and where progress is seen.",
         "properties": {
@@ -6930,6 +7623,198 @@
           }
         ],
         "summary": "Catalogue Template",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
+    "/architecture-knowledge/change-requests": {
+      "get": {
+        "description": "Change requests from Requirement AI, newest first (requirement-portal ADR-0101, step 7).",
+        "operationId": "list_change_requests_architecture_knowledge_change_requests_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeRequestsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Change Requests",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
+    "/architecture-knowledge/change-requests/{change_request_id}/dismissal": {
+      "post": {
+        "operationId": "dismiss_change_request_architecture_knowledge_change_requests__change_request_id__dismissal_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "change_request_id",
+            "required": true,
+            "schema": {
+              "title": "Change Request Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeRequestDismissalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeRequestResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Dismiss Change Request",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
+    "/architecture-knowledge/change-requests/{change_request_id}/reading": {
+      "post": {
+        "description": "Read it into the draft in progress, or a new one: each approved feature becomes a\nsuggested question.",
+        "operationId": "read_change_request_architecture_knowledge_change_requests__change_request_id__reading_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "change_request_id",
+            "required": true,
+            "schema": {
+              "title": "Change Request Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeRequestReadingResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Read Change Request",
         "tags": [
           "architecture knowledge"
         ]

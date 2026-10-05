@@ -72,6 +72,11 @@ export type SampleRequirements = Schemas["SampleRequirementsResponse"];
 export type SampleRequirement = Schemas["SampleRequirementSchema"];
 export type ImpactComparison = Schemas["ImpactComparisonResponse"];
 export type DraftUpdate = Schemas["DraftUpdateRequest"];
+/** A change request from Requirement AI waiting in the inbox (requirement-portal ADR-0101, step 7). */
+export type ChangeRequest = Schemas["ChangeRequestResponse"];
+export type ChangeRequestReading = Schemas["ChangeRequestReadingResponse"];
+/** A change request applied to a version, in its change history. */
+export type ChangeRecord = Schemas["ChangeRequestRecordSchema"];
 /** One passage the draft's index holds, cited as evidence for a system. */
 export type Evidence = { id: string; source_label: string; location: string; text: string; document_version_id?: string | null };
 /** What this draft would map a requirement to, with the evidence behind each system. */
@@ -233,6 +238,13 @@ export const api = {
       expected_revision: expectedRevision,
       suggestion_ids: suggestionIds,
     }),
+  /** Change requests requirement-portal delivered, newest first (ADR-0101, step 7). */
+  changeRequests: async () => (await apiRequest<Schemas["ChangeRequestsResponse"]>("/architecture-knowledge/change-requests")).change_requests,
+  /** Reads one into the draft in progress, or a new draft named after it. */
+  readChangeRequest: (changeRequestId: string) =>
+    post<ChangeRequestReading>(`/architecture-knowledge/change-requests/${encodeURIComponent(changeRequestId)}/reading`, {}),
+  dismissChangeRequest: (changeRequestId: string, reason: string) =>
+    post<ChangeRequest>(`/architecture-knowledge/change-requests/${encodeURIComponent(changeRequestId)}/dismissal`, { reason }),
   /** The whole draft at once: systems and connections always; omitted lists are kept as they are. */
   saveDraft: (releaseId: string, body: DraftUpdate) =>
     apiRequest<Release>(releasePath(releaseId), { method: "PUT", body: JSON.stringify(body) }),

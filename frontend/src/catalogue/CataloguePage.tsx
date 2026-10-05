@@ -8,6 +8,7 @@ import { ApiError, errorMessage } from "../api/errors";
 import { count, formatDay } from "../home/format";
 import { changeSentence, contents } from "./catalogue";
 import { DraftActions } from "./DraftActions";
+import { useChangeRequests } from "./inbox";
 import { SourcesContext } from "./governance";
 import { type CatalogueContext, useActorNames, useMappingImpact, useRelease } from "./useCatalogue";
 
@@ -152,7 +153,9 @@ function Consequence({ release }: { release: Release }) {
 
 function SubIndex({ base, inService, draft }: { base: string; inService: boolean; draft: boolean }) {
   const { pathname } = useLocation();
-  const pages = [
+  // Change requests from Requirement AI wait on Versions; the count is seen from every page.
+  const waiting = (useChangeRequests().data ?? []).filter((item) => item.status === "waiting").length;
+  const pages: { label: string; to: string; current: boolean; note?: string }[] = [
     { label: "Systems", to: base, current: pathname === base || pathname.startsWith(`${base}/systems`) },
     { label: "Domains", to: `${base}/domains`, current: pathname.startsWith(`${base}/domains`) },
     { label: "Channels", to: `${base}/channels`, current: pathname.startsWith(`${base}/channels`) },
@@ -173,6 +176,7 @@ function SubIndex({ base, inService, draft }: { base: string; inService: boolean
       label: inService ? "Versions" : "All versions",
       to: "/architecture/versions",
       current: pathname === "/architecture/versions",
+      note: waiting ? `${waiting} waiting` : undefined,
     },
   ];
   return (
@@ -182,6 +186,7 @@ function SubIndex({ base, inService, draft }: { base: string; inService: boolean
           <li key={page.label}>
             <Link to={page.to} className="subindex__link" aria-current={page.current ? "page" : undefined}>
               {page.label}
+              {page.note && <span className="subindex__note"> · {page.note}</span>}
             </Link>
           </li>
         ))}
