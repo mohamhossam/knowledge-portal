@@ -8,6 +8,7 @@ import { finishedOffering, finishedSystem, journeyOrderProblem, journeyProblem, 
 import { AreaField, Rows, SelectField, SystemField, TextField } from "./forms";
 import { JourneyEditor } from "./JourneyEditor";
 import { OfferingFacts } from "./OfferingEditor";
+import { questionProblem } from "./governance";
 import { OFFERING_SECTIONS, type OfferingSection } from "./offeringSections";
 import { SystemEditor } from "./SystemEditor";
 import { useCatalogueContext } from "./useCatalogue";
@@ -17,8 +18,10 @@ import { useEditing } from "./useEditing";
  * An edit opened in place where the thing is read: on the stock band, closing
  * on a heavy rule, never a modal. It says why its action waits and what failed.
  */
-export function EditPanel({ title, children, action, busy, problem, error, onSubmit, onCancel, danger, conflictMessage, focusOnOpen }: {
+export function EditPanel({ title, children, action, busy, problem, error, onSubmit, onCancel, danger, conflictMessage, focusOnOpen, level = 3 }: {
   title: string;
+  /** Its title's heading level: 2 where it takes the place of a page's own section. */
+  level?: 2 | 3;
   /** Take focus on its title when it opens, for a panel that replaces the button that opened it. */
   focusOnOpen?: boolean;
   /** What a 409 means here; the draft's own sentence by default. */
@@ -34,6 +37,7 @@ export function EditPanel({ title, children, action, busy, problem, error, onSub
 }) {
   const id = useId();
   const heading = useRef<HTMLHeadingElement>(null);
+  const Heading = level === 2 ? "h2" : "h3";
   useEffect(() => {
     if (focusOnOpen) heading.current?.focus();
   }, [focusOnOpen]);
@@ -54,7 +58,7 @@ export function EditPanel({ title, children, action, busy, problem, error, onSub
         }
       }}
     >
-      <h3 id={`${id}-title`} ref={heading} tabIndex={focusOnOpen ? -1 : undefined} className="edit-panel__title">{title}</h3>
+      <Heading id={`${id}-title`} ref={heading} tabIndex={focusOnOpen ? -1 : undefined} className="edit-panel__title">{title}</Heading>
       {children}
       {error ? (
         <p className="docpage__failure" role="alert">
@@ -355,7 +359,10 @@ export function OfferingEdit({ onDone }: { onDone: (saved?: string) => void }) {
   const release = book.release;
   const { saveDraft } = useEditing(release);
   const [value, setValue] = useState<Offering>(
-    () => ({ id: "", name: "", rules: [], order_types: [], components: [], values: [], audiences: [], nfrs: [], lifecycle_notes: [] }),
+    () => ({
+      id: "", name: "", rules: [], order_types: [], components: [], values: [], audiences: [], nfrs: [], lifecycle_notes: [],
+      sources: [], questions: [], decisions: [], boundaries: [], not_used: [],
+    }),
   );
   const products = release.products ?? [];
   const clash = products.some((item) => item.name.trim().toLocaleLowerCase() === value.name.trim().toLocaleLowerCase());
@@ -399,7 +406,12 @@ export function OfferingSectionEdit({ offering, section, onDone }: { offering: O
       focusOnOpen
       action={save}
       busy={saveDraft.isPending}
-      problem={offeringProblem(value) ?? journeyOrderProblem(value, release.journeys ?? []) ?? (clash ? "Another offering has that name." : null)}
+      problem={
+        offeringProblem(value) ??
+        journeyOrderProblem(value, release.journeys ?? []) ??
+        questionProblem(value, release.conflicts ?? []) ??
+        (clash ? "Another offering has that name." : null)
+      }
       error={saveDraft.error}
       onCancel={onDone}
       onSubmit={() => {
@@ -410,7 +422,7 @@ export function OfferingSectionEdit({ offering, section, onDone }: { offering: O
     >
       <p className="govsection__lead">The other sections can be edited once this one is saved or cancelled.</p>
       <div className="form">
-        <Fields value={value} onChange={setValue} systems={release.systems} channels={release.channels ?? []} />
+        <Fields value={value} onChange={setValue} systems={release.systems} channels={release.channels ?? []} register={release.sources ?? []} />
       </div>
     </EditPanel>
   );

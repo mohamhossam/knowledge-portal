@@ -544,6 +544,32 @@ def _current_offering(
     return next((item for item in release.products if same_offering(item, offering)), None)
 
 
+def _kept_governance(offering: ProductOffering, current: ProductOffering) -> ProductOffering:
+    """The suggested offering in the draft's place, keeping the governance a person
+    recorded when the reading says none (ADR-0101, step 5): a conflict may still name its
+    questions, and a reading never drops what a person decided."""
+    said = (
+        offering.sources,
+        offering.primary_source,
+        offering.questions,
+        offering.decisions,
+        offering.boundaries,
+        offering.not_used,
+    )
+    if any(said):
+        return replace(offering, id=current.id)
+    return replace(
+        offering,
+        id=current.id,
+        sources=current.sources,
+        primary_source=current.primary_source,
+        questions=current.questions,
+        decisions=current.decisions,
+        boundaries=current.boundaries,
+        not_used=current.not_used,
+    )
+
+
 def _resolved_offering(
     offering: ProductOffering, release: ArchitectureKnowledge
 ) -> tuple[ProductOffering, tuple[str, ...]]:
@@ -694,7 +720,7 @@ def classify(content: CandidateContent, release: ArchitectureKnowledge) -> Candi
         existing = _current_offering(offering, release)
         if existing is None:
             return CandidateMatch.NEW
-        same = replace(offering, id=existing.id) == existing
+        same = _kept_governance(offering, existing) == existing
         return CandidateMatch.ALREADY_PRESENT if same else CandidateMatch.UPDATES_EXISTING
     if content.kind is CandidateKind.CHANNEL and content.channel is not None:
         channel, entry = _resolved_channel(content.channel, release)
@@ -990,7 +1016,7 @@ def _with_offering(
     current = _current_offering(resolved, release)
     if current is None:
         return release.updated(products=(*release.products, resolved))
-    kept = replace(resolved, id=current.id)
+    kept = _kept_governance(resolved, current)
     return release.updated(
         products=tuple(kept if item.id == current.id else item for item in release.products)
     )

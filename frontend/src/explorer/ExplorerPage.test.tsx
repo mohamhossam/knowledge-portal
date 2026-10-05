@@ -87,7 +87,7 @@ describe("ExplorerPage", () => {
     expect(availability.querySelector("td.nfr__defined")).toHaveTextContent("Not defined");
     // On phones the Defined column rides under the quality.
     expect(availability.querySelector("th .nfr__defined-inline")).toHaveTextContent("Not defined");
-    expect(table.getByRole("row", { name: /Security/ }).querySelectorAll("td")[1]).toHaveTextContent("SAML SSO for the portal.SDD §11");
+    expect(table.getByRole("row", { name: /Security/ }).querySelectorAll("td")[1]).toHaveTextContent("SAML SSO for the portal.SDD (L2) §11");
     expect(screen.getByText(/1 quality is not defined/)).toBeInTheDocument();
   });
 
@@ -173,13 +173,14 @@ describe("ExplorerPage", () => {
     // A lone note opens by itself.
     const matrix = within(section.getByRole("article", { name: "Up / Downgrade matrix" }));
     expect(matrix.getByRole("button", { name: "Up / Downgrade matrix" })).toHaveAttribute("aria-expanded", "true");
-    expect(matrix.getByText("Change · SDD §10")).toBeInTheDocument();
+    // The note's source names a registered source, so it says its level.
+    expect(matrix.getByText("Change · SDD (L2) §10")).toBeInTheDocument();
     const table = matrix.getByRole("table", { name: /its table/ });
     expect(table).toHaveTextContent("200Mbps300Mbps");
     expect(table.querySelector("td")).toHaveAttribute("data-head", "To");
     expect(within(table).getByText("Workflows are in the annexure.")).toBeInTheDocument();
     expect(section.getByText("2 more notes concern other order types or channels.")).toBeInTheDocument();
-    expect(screen.getByText(NOT_YET)).toHaveTextContent("Source levels and conflicts");
+    expect(screen.getByText(NOT_YET)).toHaveTextContent("Information objects");
   });
 
   it("closes notes to an index when there are several, each saying what it holds", async () => {

@@ -8,6 +8,12 @@ from enum import StrEnum
 from typing import Protocol
 
 from knowledge_portal.domain.architecture.channels import Channel, check_channels
+from knowledge_portal.domain.architecture.governance import (
+    KnowledgeSource,
+    OfferingFacts,
+    SourceConflict,
+    check_governance,
+)
 
 # Re-exported: the rest of the codebase imports the error from here.
 from knowledge_portal.domain.architecture.invariants import (
@@ -359,6 +365,10 @@ class ArchitectureKnowledge:
     # Where orders are placed, and the system each is entered through (requirement-portal
     # ADR-0101, step 3).
     channels: tuple[Channel, ...] = ()
+    # The sources the knowledge is read from, each with its level, and where they
+    # contradict each other (requirement-portal ADR-0101, step 5).
+    sources: tuple[KnowledgeSource, ...] = ()
+    conflicts: tuple[SourceConflict, ...] = ()
 
     def __post_init__(self) -> None:
         _required(self.id, "Knowledge id")
@@ -409,6 +419,20 @@ class ArchitectureKnowledge:
         channel_ids = check_channels(self.channels, system_ids)
         check_offerings(self.products, system_ids, channel_ids)
         check_journeys(self.journeys, system_ids, self.products, channel_ids)
+        check_governance(
+            self.sources,
+            self.conflicts,
+            {
+                item.id: OfferingFacts(
+                    item.name,
+                    [order.code for order in item.order_types],
+                    [question.id for question in item.questions],
+                    item.sources,
+                    item.primary_source,
+                )
+                for item in self.products
+            },
+        )
         landscape = _check_domains(self.landscape_domains, "Landscape domain")
         for system in self.systems:
             if (
@@ -434,6 +458,8 @@ class ArchitectureKnowledge:
         products: tuple[ProductOffering, ...] | None = None,
         journeys: tuple[Journey, ...] | None = None,
         channels: tuple[Channel, ...] | None = None,
+        sources: tuple[KnowledgeSource, ...] | None = None,
+        conflicts: tuple[SourceConflict, ...] | None = None,
     ) -> ArchitectureKnowledge:
         if self.status is not KnowledgeReleaseStatus.DRAFT:
             raise KnowledgeConflictError("Published knowledge is immutable.")
@@ -456,6 +482,8 @@ class ArchitectureKnowledge:
             products=self.products if products is None else products,
             journeys=self.journeys if journeys is None else journeys,
             channels=self.channels if channels is None else channels,
+            sources=self.sources if sources is None else sources,
+            conflicts=self.conflicts if conflicts is None else conflicts,
         )
 
     def domain_path(self, domain_id: str | None) -> tuple[CapabilityDomain, ...]:

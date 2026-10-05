@@ -18,6 +18,8 @@ export function draftBody(release: Release, patch: Partial<Omit<DraftUpdate, "ex
     products: release.products ?? [],
     journeys: release.journeys ?? [],
     channels: release.channels ?? [],
+    sources: release.sources ?? [],
+    conflicts: release.conflicts ?? [],
     ...patch,
   };
 }
@@ -49,6 +51,17 @@ export function channelUses(release: Release, channelId: string): string[] {
     .filter((journey) => journey.activities.some((step) => (step.channels ?? []).includes(channelId)))
     .map((journey) => `the journey ${journey.name}`);
   return [...orders, ...journeys];
+}
+
+/** Where a registered source is named: offerings and conflicts must let go of it before it can go. */
+export function sourceUses(release: Release, sourceId: string): string[] {
+  const offerings = (release.products ?? [])
+    .filter((offering) => (offering.sources ?? []).includes(sourceId) || offering.primary_source === sourceId)
+    .map((offering) => `the offering ${offering.name}`);
+  const conflicts = (release.conflicts ?? [])
+    .filter((conflict) => conflict.a.source_id === sourceId || conflict.b.source_id === sourceId)
+    .map((conflict) => `the conflict ${conflict.title}`);
+  return [...offerings, ...conflicts];
 }
 
 /** The draft without a system, and without every connection to or from it. */
@@ -113,6 +126,8 @@ export const DIFF_ORDER: { item: Item; one: string; many: string }[] = [
   { item: "landscape_domain", one: "Landscape domain", many: "Landscape domains" },
   { item: "domain", one: "Business area", many: "Business areas" },
   { item: "channel", one: "Channel", many: "Channels" },
+  { item: "source", one: "Source", many: "Sources" },
+  { item: "conflict", one: "Conflict between sources", many: "Conflicts between sources" },
   { item: "product", one: "Offering", many: "Offerings" },
   { item: "journey", one: "Journey", many: "Journeys" },
   { item: "document", one: "Document", many: "Documents" },
@@ -145,6 +160,23 @@ const FIELD: Record<string, string> = {
   nfrs: "non-functional requirements",
   tracking: "order tracking",
   lifecycle_notes: "lifecycle notes",
+  sources: "sources",
+  primary_source: "primary source",
+  questions: "open questions",
+  decisions: "architecture decisions",
+  boundaries: "source boundaries",
+  not_used: "what it no longer uses",
+  level: "level",
+  short: "short name",
+  supplied: "whether it was supplied",
+  authority: "what it is the authority for",
+  boundary: "what it cannot tell",
+  a: "first statement",
+  b: "second statement",
+  difference: "what differs",
+  impact: "impact",
+  decision: "decision needed",
+  scope: "what it affects",
 };
 
 /** A changed item's fields, said as words: "Arabic name and where it sits". */

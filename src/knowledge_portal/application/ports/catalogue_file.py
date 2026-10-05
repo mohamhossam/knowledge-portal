@@ -7,6 +7,7 @@ from enum import StrEnum
 from typing import Protocol
 
 from knowledge_portal.domain.architecture.channels import Channel
+from knowledge_portal.domain.architecture.governance import KnowledgeSource, SourceConflict
 from knowledge_portal.domain.architecture.journeys import Journey
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
@@ -56,6 +57,8 @@ class CatalogueContent:
     products: tuple[ProductOffering, ...] = ()
     journeys: tuple[Journey, ...] = ()
     channels: tuple[Channel, ...] = ()
+    sources: tuple[KnowledgeSource, ...] = ()
+    conflicts: tuple[SourceConflict, ...] = ()
 
 
 class CatalogueFilePort(Protocol):

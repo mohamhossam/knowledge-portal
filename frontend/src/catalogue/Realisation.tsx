@@ -2,6 +2,7 @@ import { Fragment, type ReactNode } from "react";
 
 import type { Offering } from "../api/client";
 import { CONFIDENCE, COVERAGE, LAYERS } from "./catalogue";
+import { useSourceText } from "./governance";
 
 type Part = Offering["components"][number];
 
@@ -85,6 +86,7 @@ export function RealisationKey({ offering }: { offering: Offering }) {
 export function NfrSection({ offering, headingId, action }: { offering: Offering; headingId: string; action?: ReactNode }) {
   const nfrs = offering.nfrs ?? [];
   const missing = nfrs.filter((item) => item.coverage === "missing").length;
+  const sourceText = useSourceText();
   return (
     <section className="govsection" aria-labelledby={headingId}>
       <h3 id={headingId} className="govsection__title">
@@ -117,7 +119,7 @@ export function NfrSection({ offering, headingId, action }: { offering: Offering
                   <td className={item.coverage === "missing" ? "nfr__defined nfr__missing" : "nfr__defined"}>{COVERAGE[item.coverage]}</td>
                   <td dir="auto">
                     {item.statement ?? <span className="secondary">Not stated</span>}
-                    {item.source && <span className="secondary govtable__by" dir="auto">{item.source}</span>}
+                    {item.source && <span className="secondary govtable__by" dir="auto">{sourceText(item.source)}</span>}
                   </td>
                 </tr>
               ))}

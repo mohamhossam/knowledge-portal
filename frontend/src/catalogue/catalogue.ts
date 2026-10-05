@@ -313,6 +313,8 @@ const ITEM: Record<CatalogueDiff["changes"][number]["item"], [string, string]> =
   product: ["offering", "offerings"],
   journey: ["journey", "journeys"],
   channel: ["channel", "channels"],
+  source: ["source", "sources"],
+  conflict: ["conflict between sources", "conflicts between sources"],
   document: ["document", "documents"],
 };
 

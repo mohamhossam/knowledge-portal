@@ -18,6 +18,10 @@ export function finishedOffering(value: Offering): Offering {
   return {
     ...value,
     rules: lines(value.rules),
+    boundaries: lines(value.boundaries ?? []),
+    not_used: lines(value.not_used ?? []),
+    questions: numbered(value.questions ?? [], "OQ"),
+    decisions: numbered(value.decisions ?? [], "AD"),
     components: value.components.map((part) => ({ ...part, id: part.id || slug(part.name) })),
     lifecycle_notes: (value.lifecycle_notes ?? []).map((note) => ({
       ...note,
@@ -35,6 +39,19 @@ export function finishedOffering(value: Offering): Offering {
       })),
     })),
   };
+}
+
+/** Items with ids: the one each has, or the next "OQ-03" free. */
+function numbered<T extends { id: string }>(items: T[], prefix: string): T[] {
+  const taken = new Set(items.map((item) => fold(item.id)).filter(Boolean));
+  let next = 1;
+  return items.map((item) => {
+    if (item.id.trim()) return { ...item, id: item.id.trim() };
+    let id = `${prefix}-${String(next).padStart(2, "0")}`;
+    while (taken.has(fold(id))) id = `${prefix}-${String(++next).padStart(2, "0")}`;
+    taken.add(fold(id));
+    return { ...item, id };
+  });
 }
 
 /** Why the offering cannot be accepted yet, if anything. */
@@ -84,6 +101,13 @@ export function offeringProblem(value: Offering): string | null {
       }
     }
   }
+  if ((value.questions ?? []).some((item) => !item.text.trim())) return "Every open question needs its question.";
+  if ((value.decisions ?? []).some((item) => !item.title.trim())) return "Every architecture decision needs what was decided.";
+  for (const [items, what] of [[value.questions ?? [], "question"], [value.decisions ?? [], "decision"]] as const) {
+    const ids = items.map((item) => fold(item.id)).filter(Boolean);
+    if (new Set(ids).size !== ids.length) return `Each ${what} needs its own id.`;
+  }
+  if (value.primary_source && !(value.sources ?? []).includes(value.primary_source)) return "Its primary source must be one of its sources.";
   const qualities = (value.nfrs ?? []).map((item) => item.quality.trim().toLocaleLowerCase());
   if (qualities.some((quality) => !quality)) return "Every non-functional requirement needs a quality.";
   if (new Set(qualities).size !== qualities.length) return "Each quality is stated once.";

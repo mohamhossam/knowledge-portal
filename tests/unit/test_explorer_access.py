@@ -48,6 +48,9 @@ def test_the_explorer_never_shows_documents_index_or_who_curated(client: TestCli
         "products",
         "journeys",
         "channels",
+        # Where the knowledge comes from, and where its sources disagree (ADR-0101, step 5).
+        "sources",
+        "conflicts",
     }
 
 

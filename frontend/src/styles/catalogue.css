@@ -138,6 +138,13 @@
   font-size: var(--t-meta);
 }
 
+/* Trail links wrap onto lines of their own on a phone: each keeps a 24px target. */
+.sheet__trail > a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.5rem;
+}
+
 .sheet__all {
   display: inline-flex;
   align-items: center;
@@ -1264,4 +1271,167 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
 /* Content carried over from another source is due until someone re-verifies it. */
 .lifecycle__due {
   font-weight: var(--w-bold);
+}
+
+/* Governance (requirement-portal ADR-0101, step 5): the source register, conflicts between
+   sources, and an offering's questions, decisions and sources. */
+.governance__level {
+  white-space: nowrap;
+}
+
+.governance__level abbr {
+  font-stretch: var(--width-condensed);
+  font-weight: var(--w-bold);
+  text-decoration: none;
+}
+
+.governance__id {
+  overflow-wrap: anywhere;
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+  font-stretch: var(--width-condensed);
+  font-weight: var(--w-medium);
+  white-space: nowrap;
+}
+
+/* A source carried forward unread is due (the Weight Is Rank Rule). */
+.governance__due {
+  display: block;
+  font-weight: var(--w-bold);
+}
+
+/* The statements get the room: the conflict and its decision frame them. */
+.governance__col-conflict {
+  width: 28%;
+}
+
+.governance__col-sides {
+  width: 42%;
+}
+
+.governance__col-decision {
+  width: 30%;
+}
+
+.governance__sides {
+  display: grid;
+  gap: var(--s2);
+  margin: 0;
+}
+
+/* The second statement sits under the first on a hairline, read as one against the other. */
+.governance__sides > div + div {
+  padding-top: var(--s2);
+  border-top: 1px solid var(--rule-faint);
+}
+
+.governance__sides dt {
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+.governance__sides dd {
+  margin: 0;
+}
+
+.governance__decision {
+  font-weight: var(--w-bold);
+}
+
+.governance__list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.governance__list > li {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  gap: var(--s1) var(--s3);
+  padding: var(--s2) 0;
+  border-bottom: 1px solid var(--rule-faint);
+}
+
+.governance__list p {
+  margin: 0;
+  max-width: 72ch;
+}
+
+.governance__title {
+  font-weight: var(--w-medium);
+}
+
+.governance__item--due p {
+  font-weight: var(--w-bold);
+}
+
+.governance__list--sources > li {
+  grid-template-columns: 9rem minmax(0, 1fr);
+}
+
+/* Up top in the explorer, one due line naming the decisions the order waits on. */
+.explorer__decisions {
+  max-width: 72ch;
+  margin: var(--s4) 0 0;
+  padding: var(--s2) 0;
+  border-top: 2px solid var(--rule-heavy);
+  border-bottom: 1px solid var(--rule);
+}
+
+.governance__primary {
+  color: var(--ink-2);
+}
+
+.governance__not-used {
+  margin: var(--s2) 0 0;
+}
+
+/* A conflict's side: a borderless group, labelled like a field. */
+.form__group {
+  display: grid;
+  gap: var(--s2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+@media (max-width: 45rem) {
+  .govtable.governance__table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .govtable.governance__table,
+  .govtable.governance__table tbody,
+  .govtable.governance__table tr,
+  .govtable.governance__table th,
+  .govtable.governance__table td {
+    display: block;
+  }
+
+  .govtable.governance__table td[data-head]::before {
+    display: block;
+    content: attr(data-head);
+    color: var(--ink-2);
+    font-size: var(--t-meta);
+  }
+
+  .govtable.governance__table tr {
+    padding: var(--s2) 0;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .govtable.governance__table th,
+  .govtable.governance__table td {
+    padding: 0.125rem 0;
+    border-bottom: 0;
+  }
+
+  .governance__list > li {
+    grid-template-columns: 1fr;
+  }
 }

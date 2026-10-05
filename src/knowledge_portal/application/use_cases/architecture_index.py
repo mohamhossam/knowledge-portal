@@ -128,6 +128,19 @@ def _offering_text(offering: ProductOffering, names: dict[str, str]) -> str:
     )
     lines.extend(_tracking_lines(offering, names))
     lines.extend(_lifecycle_lines(offering))
+    # Its governance (ADR-0101, step 5), so a requirement touching an open question or a
+    # decision finds it.
+    lines.extend(
+        f"Open question {item.id} for {offering.name}: {item.text}"
+        + (f" Impact: {item.impact}" if item.impact else "")
+        for item in offering.questions
+    )
+    lines.extend(
+        f"Architecture decision {item.id} for {offering.name}: {item.title}"
+        + (f". {item.text}" if item.text else "")
+        for item in offering.decisions
+    )
+    lines.extend(f"{offering.name} source boundary: {item}" for item in offering.boundaries)
     return "\n".join(line for line in lines if line)
 
 

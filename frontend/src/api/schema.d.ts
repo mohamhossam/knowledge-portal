@@ -1404,6 +1404,18 @@ export interface components {
             email?: string | null;
             id: components["schemas"]["ActorId"];
         };
+        /** ArchitectureDecisionSchema */
+        ArchitectureDecisionSchema: {
+            confidence?: components["schemas"]["SourceConfidence"] | null;
+            /** Id */
+            id: string;
+            /** Source */
+            source?: string | null;
+            /** Text */
+            text?: string | null;
+            /** Title */
+            title: string;
+        };
         /**
          * ArchitectureJobKind
          * @enum {string}
@@ -1688,7 +1700,7 @@ export interface components {
          * ChangedItem
          * @enum {string}
          */
-        ChangedItem: "system" | "capability" | "relationship" | "document" | "domain" | "component" | "landscape_domain" | "product" | "journey" | "channel";
+        ChangedItem: "system" | "capability" | "relationship" | "document" | "domain" | "component" | "landscape_domain" | "product" | "journey" | "channel" | "source" | "conflict";
         /**
          * ChannelSchema
          * @description Where orders are placed, and the system each is entered through (ADR-0101, step 3).
@@ -1777,6 +1789,27 @@ export interface components {
             source?: string | null;
             /** System Id */
             system_id: string;
+        };
+        /** ConflictScopeSchema */
+        ConflictScopeSchema: {
+            /**
+             * Order Types
+             * @default []
+             */
+            order_types: string[];
+            /** Product Id */
+            product_id: string;
+            /** Question Id */
+            question_id?: string | null;
+        };
+        /** ConflictSideSchema */
+        ConflictSideSchema: {
+            /** Reference */
+            reference?: string | null;
+            /** Source Id */
+            source_id: string;
+            /** Statement */
+            statement: string;
         };
         /** CorpusActivationRequest */
         CorpusActivationRequest: {
@@ -1901,6 +1934,8 @@ export interface components {
             capability_domains?: components["schemas"]["CapabilityDomainSchema"][] | null;
             /** Channels */
             channels?: components["schemas"]["ChannelSchema"][] | null;
+            /** Conflicts */
+            conflicts?: components["schemas"]["SourceConflictSchema"][] | null;
             /** Expected Revision */
             expected_revision: number;
             /** Journeys */
@@ -1911,6 +1946,8 @@ export interface components {
             products?: components["schemas"]["ProductOfferingSchema"][] | null;
             /** Relationships */
             relationships: components["schemas"]["SystemRelationshipSchema"][];
+            /** Sources */
+            sources?: components["schemas"]["KnowledgeSourceSchema"][] | null;
             /** Systems */
             systems: components["schemas"]["SystemDefinitionSchema"][];
         };
@@ -1927,6 +1964,8 @@ export interface components {
         ExplorerReleaseResponse: {
             /** Channels */
             channels?: components["schemas"]["ChannelSchema"][];
+            /** Conflicts */
+            conflicts?: components["schemas"]["SourceConflictSchema"][];
             /** Id */
             id: string;
             /** Journeys */
@@ -1941,6 +1980,8 @@ export interface components {
             published_at?: string | null;
             /** Relationships */
             relationships: components["schemas"]["SystemRelationshipSchema"][];
+            /** Sources */
+            sources?: components["schemas"]["KnowledgeSourceSchema"][];
             /** Systems */
             systems: components["schemas"]["SystemDefinitionSchema"][];
         };
@@ -2200,6 +2241,8 @@ export interface components {
             capability_domains?: components["schemas"]["CapabilityDomainSchema"][];
             /** Channels */
             channels?: components["schemas"]["ChannelSchema"][];
+            /** Conflicts */
+            conflicts?: components["schemas"]["SourceConflictSchema"][];
             /** Created By */
             created_by?: string | null;
             /**
@@ -2231,6 +2274,8 @@ export interface components {
             relationships: components["schemas"]["SystemRelationshipSchema"][];
             /** Revision */
             revision: number;
+            /** Sources */
+            sources?: components["schemas"]["KnowledgeSourceSchema"][];
             /** @default draft */
             status: components["schemas"]["KnowledgeReleaseStatus"];
             /** Systems */
@@ -2246,6 +2291,34 @@ export interface components {
         KnowledgeSearchRequest: {
             /** Query */
             query: string;
+        };
+        /**
+         * KnowledgeSourceSchema
+         * @description A source the catalogue is read from, and its level (ADR-0101, step 5).
+         */
+        KnowledgeSourceSchema: {
+            /** Authority */
+            authority?: string | null;
+            /** Boundary */
+            boundary?: string | null;
+            /** File */
+            file?: string | null;
+            /** Id */
+            id: string;
+            level: components["schemas"]["SourceLevel"];
+            /** Scope */
+            scope?: string | null;
+            /** Short */
+            short?: string | null;
+            /**
+             * Supplied
+             * @default true
+             */
+            supplied: boolean;
+            /** Title */
+            title: string;
+            /** Version */
+            version?: string | null;
         };
         /**
          * LandscapeDomainSchema
@@ -2599,6 +2672,18 @@ export interface components {
             /** Source */
             source?: string | null;
         };
+        /** OpenQuestionSchema */
+        OpenQuestionSchema: {
+            confidence?: components["schemas"]["SourceConfidence"] | null;
+            /** Id */
+            id: string;
+            /** Impact */
+            impact?: string | null;
+            /** Source */
+            source?: string | null;
+            /** Text */
+            text: string;
+        };
         /**
          * OrderTrackingSchema
          * @description How an offering's orders are tracked once placed (requirement-portal ADR-0101).
@@ -2797,6 +2882,11 @@ export interface components {
              * @default []
              */
             audiences: components["schemas"]["OfferingPointSchema"][];
+            /**
+             * Boundaries
+             * @default []
+             */
+            boundaries: string[];
             /** Code */
             code?: string | null;
             /**
@@ -2805,6 +2895,11 @@ export interface components {
              */
             components: components["schemas"]["OfferingComponentSchema"][];
             confidence?: components["schemas"]["SourceConfidence"] | null;
+            /**
+             * Decisions
+             * @default []
+             */
+            decisions: components["schemas"]["ArchitectureDecisionSchema"][];
             /** Family */
             family?: string | null;
             /** Id */
@@ -2824,12 +2919,24 @@ export interface components {
              */
             nfrs: components["schemas"]["OfferingNfrSchema"][];
             /**
+             * Not Used
+             * @default []
+             */
+            not_used: string[];
+            /**
              * Order Types
              * @default []
              */
             order_types: components["schemas"]["OrderTypeSchema"][];
+            /** Primary Source */
+            primary_source?: string | null;
             /** Proposition */
             proposition?: string | null;
+            /**
+             * Questions
+             * @default []
+             */
+            questions: components["schemas"]["OpenQuestionSchema"][];
             /**
              * Rules
              * @default []
@@ -2837,6 +2944,11 @@ export interface components {
             rules: string[];
             /** Source */
             source?: string | null;
+            /**
+             * Sources
+             * @default []
+             */
+            sources: string[];
             tracking?: components["schemas"]["OrderTrackingSchema"] | null;
             /**
              * Values
@@ -3139,6 +3251,38 @@ export interface components {
          * @enum {string}
          */
         SourceConfidence: "confirmed" | "inferred" | "gap";
+        /**
+         * SourceConflictSchema
+         * @description Two sources contradicting each other, and the decision it needs (ADR-0101, step 5).
+         */
+        SourceConflictSchema: {
+            a: components["schemas"]["ConflictSideSchema"];
+            b: components["schemas"]["ConflictSideSchema"];
+            confidence?: components["schemas"]["SourceConfidence"] | null;
+            /** Decision */
+            decision?: string | null;
+            /** Difference */
+            difference?: string | null;
+            /** Id */
+            id: string;
+            /** Impact */
+            impact?: string | null;
+            /**
+             * Scope
+             * @default []
+             */
+            scope: components["schemas"]["ConflictScopeSchema"][];
+            /** Source */
+            source?: string | null;
+            /** Title */
+            title: string;
+        };
+        /**
+         * SourceLevel
+         * @description How far a source can be relied on, as the original explorer ranked its sources.
+         * @enum {string}
+         */
+        SourceLevel: "L1" | "L2" | "L3";
         /** SourceLineage */
         SourceLineage: {
             citation: components["schemas"]["PublishedReference"];

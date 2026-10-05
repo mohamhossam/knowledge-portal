@@ -5,8 +5,9 @@
  * catalogue does not say yet. Pure functions over the version; nothing here
  * calls the service, and nothing is filled in that the version does not hold.
  */
-import type { Channel, ExplorerRelease, Journey, Offering } from "../api/client";
+import type { Channel, ExplorerRelease, Journey, Offering, SourceConflict } from "../api/client";
 import { concerns, orderedSteps } from "../catalogue/catalogue";
+import { conflictsFor } from "../catalogue/governance";
 import { count } from "../home/format";
 
 export type OrderType = Offering["order_types"][number];
@@ -25,6 +26,8 @@ export type Scenario = {
    * the steps of the channel being read.
    */
   journey: Journey | null;
+  /** The conflicts between sources that concern this offering and order type (ADR-0101, step 5). */
+  conflicts?: SourceConflict[];
 };
 
 /** What a system does in one scenario. */
@@ -106,7 +109,14 @@ export function pickScenario(
   const channels = (orderType.channels ?? []).map((id) => known.get(id)).filter((item): item is Channel => item !== undefined);
   const channel = channels.find((item) => item.id === channelId) ?? channels[0] ?? null;
   const journey = journeyFor(release, offering.id, orderType.code);
-  return { offering, orderType, channels, channel, journey: journey && forChannel(journey, channel?.id ?? null) };
+  return {
+    offering,
+    orderType,
+    channels,
+    channel,
+    journey: journey && forChannel(journey, channel?.id ?? null),
+    conflicts: conflictsFor(release.conflicts ?? [], offering.id, orderType.code),
+  };
 }
 
 /** Who performs a step in this scenario: its named system, else the channel's entry system. */
@@ -257,6 +267,12 @@ export function gaps(scenario: Scenario): string[] {
   if (unverified.length) {
     found.push(
       `Lifecycle note${unverified.length === 1 ? "" : "s"} ${listed(unverified)} carr${unverified.length === 1 ? "ies" : "y"} over content from another source, to re-verify.`,
+    );
+  }
+  const conflicts = scenario.conflicts ?? [];
+  if (conflicts.length) {
+    found.push(
+      `${count(conflicts.length, "conflict between its sources needs", "conflicts between its sources need")} a decision before ${scenario.orderType.name} can be relied on.`,
     );
   }
   const tracked = trackingFor(scenario);

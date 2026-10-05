@@ -8,6 +8,8 @@ import { errorMessage } from "../api/errors";
 import { CONFIDENCE, roleLabel, sentenceCase } from "../catalogue/catalogue";
 import { JourneyHandovers, JourneySteps } from "../catalogue/JourneyTimetable";
 import { NfrSection, RealisationKey, RealisedAs, RealisedInline } from "../catalogue/Realisation";
+import { ArchitectureDecisions, ConflictList, OfferingSourceList, OpenQuestions } from "../catalogue/GovernanceSections";
+import { conflictsFor, questionOf, SourcesContext } from "../catalogue/governance";
 import { LifecycleSection } from "../catalogue/LifecycleNotes";
 import { TrackingSection } from "../catalogue/Tracking";
 import { formatDay } from "../home/format";
@@ -16,7 +18,7 @@ import { gaps, involvement, journeyFor, listed, partsFor, pickScenario, type Sce
 
 /** What the catalogue cannot hold yet; each arrives with a later slice (requirement-portal ADR-0101). */
 export const NOT_YET =
-  "Source levels and conflicts are not in the catalogue yet, so the explorer does not show them.";
+  "Information objects are not in the catalogue yet, so the explorer does not show them.";
 
 function useExplorerRelease() {
   return useQuery({ queryKey: ["explorer", "release"], queryFn: api.explorerRelease });
@@ -87,12 +89,14 @@ export function ExplorerPage({ linkSystems }: { linkSystems: boolean }) {
       {scenario ? (
         <>
           <Choose release={release} scenario={scenario} onChoose={choose} />
-          <ScenarioSheet
-            key={`${scenario.offering.id}:${scenario.orderType.code}:${scenario.channel?.id ?? ""}`}
-            release={release}
-            scenario={scenario}
-            linkSystems={linkSystems}
-          />
+          <SourcesContext.Provider value={release.sources ?? []}>
+            <ScenarioSheet
+              key={`${scenario.offering.id}:${scenario.orderType.code}:${scenario.channel?.id ?? ""}`}
+              release={release}
+              scenario={scenario}
+              linkSystems={linkSystems}
+            />
+          </SourcesContext.Provider>
         </>
       ) : (
         <p className="docpage__quiet">The catalogue in service describes no offering with an order type yet.</p>
@@ -184,6 +188,11 @@ function ScenarioSheet({ release, scenario, linkSystems }: {
   const parts = partsFor(scenario);
   const missing = gaps(scenario);
   const tracked = trackingFor(scenario);
+  const decisions = scenario.conflicts ?? [];
+  const readFrom = [...(offering.sources ?? [])]
+    .sort((a, b) => Number(b === offering.primary_source) - Number(a === offering.primary_source))
+    .map((sourceId) => (release.sources ?? []).find((item) => item.id === sourceId))
+    .filter((item): item is NonNullable<typeof item> => !!item);
 
   return (
     <article className="sheet" aria-labelledby={`${id}-name`}>
@@ -215,7 +224,30 @@ function ScenarioSheet({ release, scenario, linkSystems }: {
             )}
           </p>
         )}
+        {readFrom.length > 0 && (
+          <p className="sheet__meta" dir="auto">
+            Read from{" "}
+            {readFrom
+              .map((source) => `${source.short ?? source.title} (${source.level}${source.id === offering.primary_source ? ", primary" : ""}${source.supplied === false ? ", not supplied" : ""})`)
+              .join(", ")}
+          </p>
+        )}
       </header>
+
+      {decisions.length > 0 && (
+        <p className="explorer__decisions" role="note">
+          <strong>
+            {decisions.length === 1 ? "1 decision is" : `${decisions.length} decisions are`} open for {orderType.name}:
+          </strong>{" "}
+          {decisions.map((conflict, index) => (
+            <span key={conflict.id}>
+              {index > 0 && " · "}
+              <a href={`#conflict-${conflict.id}`} dir="auto">{conflict.title}</a>
+            </span>
+          ))}
+          . Its sources contradict each other there, and the catalogue never picks one.
+        </p>
+      )}
 
       <section className="govsection" aria-labelledby={`${id}-systems`}>
         <h3 id={`${id}-systems`} className="govsection__title">
@@ -355,6 +387,29 @@ function ScenarioSheet({ release, scenario, linkSystems }: {
       <NfrSection offering={offering} headingId={`${id}-nfrs`} />
 
       <PlansAndPrices offering={offering} headingId={`${id}-plans`} />
+
+      {decisions.length > 0 && (
+        <ConflictList
+          conflicts={decisions}
+          sources={release.sources ?? []}
+          headingId={`${id}-conflicts`}
+          title={`Decisions needed for ${orderType.name}`}
+          lead="Its sources contradict each other here; the catalogue never picks one."
+          raises={(conflict) => questionOf(conflict, offering.id)}
+          level={3}
+        />
+      )}
+
+      <OpenQuestions
+        offering={offering}
+        conflicts={conflictsFor(release.conflicts ?? [], offering.id)}
+        beside={decisions}
+        headingId={`${id}-questions`}
+      />
+
+      <ArchitectureDecisions offering={offering} headingId={`${id}-decisions`} />
+
+      <OfferingSourceList offering={offering} sources={release.sources ?? []} headingId={`${id}-sources`} />
 
       <section className="govsection" aria-labelledby={`${id}-gaps`}>
         <h3 id={`${id}-gaps`} className="govsection__title">What the catalogue does not say yet</h3>
