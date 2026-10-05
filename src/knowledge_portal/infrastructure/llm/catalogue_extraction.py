@@ -6,6 +6,7 @@ import json
 import re
 import unicodedata
 from collections import deque
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from typing import Any, Literal
 
@@ -44,16 +45,34 @@ from knowledge_portal.domain.architecture.knowledge import (
     InvalidKnowledgeError,
     RelationshipKind,
 )
+from knowledge_portal.domain.architecture.lifecycle import (
+    MAX_LIST_ITEMS,
+    MAX_TABLE_COLUMNS,
+    MAX_TABLE_ROWS,
+    LifecycleNote,
+    NoteBlock,
+    NoteBlockKind,
+)
 from knowledge_portal.domain.architecture.products import (
     ComponentResponsibility,
     OfferingComponent,
+    OfferingNfr,
     OfferingPoint,
     OrderType,
     ProductOffering,
+    Realisation,
     SourceConfidence,
     merge_components,
 )
+from knowledge_portal.domain.architecture.tracking import (
+    FalloutCase,
+    OrderTracking,
+    TrackingChannel,
+    TrackingEvent,
+    TrackingFlow,
+)
 from knowledge_portal.infrastructure.llm.prompts.catalogue_extraction_prompt import (
+    DETAILED_SYSTEM_PROMPT,
     LEAN_SYSTEM_PROMPT,
     PROMPT_VERSION,
     SYSTEM_PROMPT,
@@ -139,6 +158,109 @@ class OfferingOutput(_Output):
     values: list[PointOutput] = Field(max_length=20)
     audiences: list[PointOutput] = Field(max_length=20)
     confidence: _Confidence
+
+
+# An offering's details (ADR-0101, step 4): asked for only in the full reading.
+
+
+class RealisationOutput(_Output):
+    layer: Literal["cfs", "rfs", "resource"]
+    name: str = Field(max_length=_MAX_NAME)
+    confidence: _Confidence
+
+
+class DetailedComponentOutput(ComponentOutput):
+    realisation: list[RealisationOutput] = Field(max_length=20)
+
+
+class NfrOutput(_Output):
+    quality: str = Field(max_length=_MAX_NAME)
+    coverage: Literal["defined", "partial", "missing"]
+    statement: str | None = Field(max_length=_MAX_TEXT)
+    confidence: _Confidence
+
+
+class TrackingFlowOutput(_Output):
+    from_system: str = Field(max_length=_MAX_NAME)
+    to_system: str = Field(max_length=_MAX_NAME)
+    what: str = Field(max_length=_MAX_NAME)
+    interface: str | None = Field(max_length=_MAX_NAME)
+
+
+class TrackingChannelOutput(_Output):
+    channel: str = Field(max_length=_MAX_NAME)
+    correlation_key: str | None = Field(max_length=_MAX_NAME)
+    # The system the customer follows the order in, and where it reads progress from.
+    tracked_in: str | None = Field(max_length=_MAX_NAME)
+    read_from: str | None = Field(max_length=_MAX_NAME)
+    read_over: str | None = Field(max_length=_MAX_NAME)
+
+
+class TrackingEventOutput(_Output):
+    label: str = Field(max_length=_MAX_NAME)
+    detail: str | None = Field(max_length=_MAX_TEXT)
+    # The system that raises a milestone; null for an internal status.
+    system: str | None = Field(max_length=_MAX_NAME)
+
+
+class FalloutOutput(_Output):
+    trigger: str = Field(max_length=_MAX_NAME)
+    handling: str | None = Field(max_length=_MAX_TEXT)
+
+
+class TrackingOutput(_Output):
+    order_types: list[str] = Field(max_length=20)
+    scope_note: str | None = Field(max_length=_MAX_TEXT)
+    not_applicable_note: str | None = Field(max_length=_MAX_TEXT)
+    flows: list[TrackingFlowOutput] = Field(max_length=40)
+    channels: list[TrackingChannelOutput] = Field(max_length=20)
+    milestones: list[TrackingEventOutput] = Field(max_length=40)
+    statuses: list[TrackingEventOutput] = Field(max_length=40)
+    fallout: list[FalloutOutput] = Field(max_length=40)
+    confidence: _Confidence
+
+
+class NoteBlockOutput(_Output):
+    kind: Literal["text", "list", "table"]
+    title: str | None = Field(max_length=_MAX_NAME)
+    text: str | None = Field(max_length=_MAX_TEXT)
+    items: list[str] = Field(max_length=MAX_LIST_ITEMS)
+    columns: list[str] = Field(max_length=MAX_TABLE_COLUMNS)
+    rows: list[list[str]] = Field(max_length=MAX_TABLE_ROWS)
+    to_verify: bool
+
+
+class LifecycleNoteOutput(_Output):
+    title: str = Field(max_length=_MAX_NAME)
+    kind: str | None = Field(max_length=_MAX_NAME)
+    summary: str | None = Field(max_length=_MAX_TEXT)
+    order_types: list[str] = Field(max_length=20)
+    channels: list[str] = Field(max_length=20)
+    blocks: list[NoteBlockOutput] = Field(max_length=20)
+    confidence: _Confidence
+
+
+class DetailedOfferingOutput(OfferingOutput):
+    """An offering with what it is made of and what happens to it, in the full reading."""
+
+    components: list[DetailedComponentOutput] = Field(max_length=40)  # type: ignore[assignment]
+    nfrs: list[NfrOutput] = Field(max_length=30)
+    tracking: TrackingOutput | None
+    lifecycle_notes: list[LifecycleNoteOutput] = Field(max_length=30)
+
+    @classmethod
+    def without_details(cls, offering: OfferingOutput) -> DetailedOfferingOutput:
+        """An offering read without its details, as a lean reading reads it."""
+        read = offering.model_dump()
+        return cls.model_validate(
+            {
+                **read,
+                "components": [{**part, "realisation": []} for part in read["components"]],
+                "nfrs": [],
+                "tracking": None,
+                "lifecycle_notes": [],
+            }
+        )
 
 
 class StepOutput(_Output):
@@ -235,6 +357,39 @@ class LeanExtractionOutput(_Output):
     changes: list[LeanChangeOutput] = Field(max_length=200)
 
 
+class DetailedChangeOutput(ChangeOutput):
+    """One suggestion, its offering with its details (ADR-0101, step 4); every reading's
+    answer is checked in this shape."""
+
+    offering: DetailedOfferingOutput | None
+
+
+class DetailedExtractionOutput(_Output):
+    changes: list[DetailedChangeOutput] = Field(max_length=200)
+
+
+_Reading = Literal["detailed", "standard", "lean"]
+
+
+def _detailed(item: LeanChangeOutput) -> DetailedChangeOutput:
+    """A reading's suggestion in the detailed shape: what it was not asked for, empty."""
+    if isinstance(item, DetailedChangeOutput):
+        return item
+    offering = item.offering
+    return DetailedChangeOutput.model_validate(
+        {
+            "journey": None,
+            "channel_kind": None,
+            **item.model_dump(),
+            "offering": (
+                offering
+                if offering is None or isinstance(offering, DetailedOfferingOutput)
+                else DetailedOfferingOutput.without_details(offering)
+            ),
+        }
+    )
+
+
 def slug(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", value.casefold()).strip("-")[:80] or "item"
 
@@ -269,7 +424,7 @@ def plain_name(value: str) -> str:
     return " ".join(kept.split())
 
 
-def _plain(item: ChangeOutput) -> ChangeOutput:
+def _plain(item: DetailedChangeOutput) -> DetailedChangeOutput:
     """The model's item with every system name written plainly; quotes stay verbatim."""
     return item.model_copy(
         update={
@@ -286,7 +441,9 @@ def _plain(item: ChangeOutput) -> ChangeOutput:
 class _SystemNames:
     """Resolves how the model named a system to a catalogue id."""
 
-    def __init__(self, known: tuple[KnownSystem, ...], proposed: list[ChangeOutput]) -> None:
+    def __init__(
+        self, known: tuple[KnownSystem, ...], proposed: list[DetailedChangeOutput]
+    ) -> None:
         self._ids: dict[str, str] = {}
         for system in known:
             for label in (system.id, system.name, *system.aliases):
@@ -303,7 +460,7 @@ class _SystemNames:
 
 
 def _proposed(
-    item: ChangeOutput, names: _SystemNames, locations: tuple[str, ...], quote: str
+    item: DetailedChangeOutput, names: _SystemNames, locations: tuple[str, ...], quote: str
 ) -> ProposedChange:
     """A checked proposal, or InvalidKnowledgeError when the model's item cannot be used.
 
@@ -351,7 +508,164 @@ def _trust(value: str | None) -> SourceConfidence | None:
     return SourceConfidence(value) if value else None
 
 
-def _offering(item: ChangeOutput, names: _SystemNames) -> ProductOffering:
+def _realisation(items: list[RealisationOutput]) -> tuple[Realisation, ...]:
+    found: dict[tuple[str, str], Realisation] = {}
+    for item in items:
+        try:
+            layer = Realisation(item.layer, item.name, _trust(item.confidence))  # type: ignore[arg-type]
+        except InvalidKnowledgeError:
+            continue
+        found.setdefault((layer.layer, layer.name.casefold()), layer)
+    return tuple(found.values())
+
+
+def _nfrs(items: list[NfrOutput]) -> tuple[OfferingNfr, ...]:
+    found: dict[str, OfferingNfr] = {}
+    for item in items:
+        try:
+            nfr = OfferingNfr(
+                item.quality,
+                item.coverage,  # type: ignore[arg-type]
+                _text(item.statement),
+                _trust(item.confidence),
+            )
+        except InvalidKnowledgeError:
+            continue
+        found.setdefault(nfr.quality.casefold(), nfr)
+    return tuple(found.values())
+
+
+def _codes(written: list[str], keys: dict[str, str]) -> tuple[str, ...] | None:
+    """The order types written, as the offering's codes; None when some were written and
+    none is the offering's, since naming none would mean every one."""
+    codes = tuple(
+        dict.fromkeys(
+            keys[key] for key in (name.strip().casefold() for name in written) if key in keys
+        )
+    )
+    return None if any(name.strip() for name in written) and not codes else codes
+
+
+def _built[T](build: Callable[..., T], *args: Any, **values: Any) -> T | None:
+    """One part of a detail, or None when the model's version of it is not valid."""
+    try:
+        return build(*args, **values)
+    except InvalidKnowledgeError:
+        return None
+
+
+def _tracking(
+    read: TrackingOutput | None, names: _SystemNames, keys: dict[str, str]
+) -> OrderTracking | None:
+    """The model's tracking made valid: its systems resolved, each channel and event once."""
+    if read is None:
+        return None
+    codes = _codes(read.order_types, keys)
+    if codes is None:
+        return None
+
+    def system(reference: str | None) -> str | None:
+        name = plain_name(reference or "")
+        return names.resolve(name) if name else None
+
+    flows = [
+        _built(
+            TrackingFlow,
+            system(flow.from_system) or "",
+            system(flow.to_system) or "",
+            flow.what,
+            _text(flow.interface),
+        )
+        for flow in read.flows
+    ]
+    channels: dict[str, TrackingChannel] = {}
+    for item in read.channels:
+        key = plain_name(item.channel)
+        channel = _built(
+            TrackingChannel,
+            key,
+            correlation_key=_text(item.correlation_key),
+            ui_system_id=system(item.tracked_in),
+            read_system_id=system(item.read_from),
+            read_interface=_text(item.read_over),
+        )
+        if channel is not None:
+            channels.setdefault(key.casefold(), channel)
+
+    def events(items: list[TrackingEventOutput], *, systems: bool) -> tuple[TrackingEvent, ...]:
+        found: dict[str, TrackingEvent] = {}
+        for item in items:
+            event = _built(
+                TrackingEvent,
+                item.label,
+                _text(item.detail),
+                system(item.system) if systems else None,
+            )
+            if event is not None:
+                found.setdefault(event.label.casefold(), event)
+        return tuple(found.values())
+
+    fallout = [_built(FalloutCase, case.trigger, _text(case.handling)) for case in read.fallout]
+    tracking = _built(
+        OrderTracking,
+        order_types=codes,
+        scope_note=_text(read.scope_note),
+        not_applicable_note=_text(read.not_applicable_note),
+        flows=tuple(item for item in flows if item is not None),
+        channels=tuple(channels.values()),
+        milestones=events(read.milestones, systems=True),
+        statuses=events(read.statuses, systems=False),
+        fallout=tuple(item for item in fallout if item is not None),
+        confidence=_trust(read.confidence),
+    )
+    # Tracking that says nothing but its confidence is no tracking.
+    if tracking is None or replace(tracking, confidence=None) == OrderTracking(order_types=codes):
+        return None
+    return tracking
+
+
+def _block(item: NoteBlockOutput) -> NoteBlock | None:
+    kind = NoteBlockKind(item.kind)
+    table = kind is NoteBlockKind.TABLE
+    return _built(
+        NoteBlock,
+        kind,
+        title=_text(item.title),
+        text=_text(item.text) if kind is NoteBlockKind.TEXT else None,
+        items=_clean(item.items) if kind is NoteBlockKind.LIST else (),
+        columns=tuple(column.strip() for column in item.columns) if table else (),
+        rows=tuple(tuple(row) for row in item.rows) if table else (),
+        to_verify=item.to_verify,
+    )
+
+
+def _lifecycle_notes(
+    items: list[LifecycleNoteOutput], keys: dict[str, str]
+) -> tuple[LifecycleNote, ...]:
+    """The model's notes made valid: each title once, keyed by it, naming only the offering's
+    order types; a part it cannot use is left out, and a note with nothing left too."""
+    notes: dict[str, LifecycleNote] = {}
+    for item in items:
+        codes = _codes(item.order_types, keys)
+        if codes is None:
+            continue
+        note = _built(
+            LifecycleNote,
+            slug(item.title),
+            item.title,
+            kind=_text(item.kind),
+            summary=_text(item.summary),
+            order_types=codes,
+            channels=_names(item.channels),
+            blocks=tuple(block for block in map(_block, item.blocks) if block is not None),
+            confidence=_trust(item.confidence),
+        )
+        if note is not None:
+            notes.setdefault(note.id, note)
+    return tuple(notes.values())
+
+
+def _offering(item: DetailedChangeOutput, names: _SystemNames) -> ProductOffering:
     """The model's offering made valid: order types keyed once, components by id, each
     system named once per role, and only order types the offering has."""
     read = item.offering
@@ -412,6 +726,7 @@ def _offering(item: ChangeOutput, names: _SystemNames) -> ProductOffering:
             description=_text(part.description),
             responsibilities=tuple(duties.values()),
             confidence=_trust(part.confidence),
+            realisation=_realisation(part.realisation),
         )
         previous = parts.get(component.id)
         parts[component.id] = merge_components(previous, component) if previous else component
@@ -437,10 +752,13 @@ def _offering(item: ChangeOutput, names: _SystemNames) -> ProductOffering:
         values=points(read.values),
         audiences=points(read.audiences),
         confidence=_trust(read.confidence),
+        nfrs=_nfrs(read.nfrs),
+        tracking=_tracking(read.tracking, names, keys),
+        lifecycle_notes=_lifecycle_notes(read.lifecycle_notes, keys),
     )
 
 
-def _journey(item: ChangeOutput, names: _SystemNames) -> Journey:
+def _journey(item: DetailedChangeOutput, names: _SystemNames) -> Journey:
     """The model's journey made valid: each activity number once, and only rules between
     activities it has; the offering, order type and systems are resolved when accepted."""
     read = item.journey
@@ -495,7 +813,7 @@ def _names(values: list[str]) -> tuple[str, ...]:
     return tuple(dict.fromkeys(value.strip() for value in values if value.strip()))
 
 
-def _channel(item: ChangeOutput, names: _SystemNames) -> Channel:
+def _channel(item: DetailedChangeOutput, names: _SystemNames) -> Channel:
     """A channel as stated, its entry system resolved like any system reference."""
     name = (item.name or item.system).strip()
     entry = plain_name(item.target_system or "")
@@ -509,7 +827,7 @@ def _channel(item: ChangeOutput, names: _SystemNames) -> Channel:
     )
 
 
-def _content(item: ChangeOutput, names: _SystemNames) -> CandidateContent:
+def _content(item: DetailedChangeOutput, names: _SystemNames) -> CandidateContent:
     if item.kind == "journey":
         journey = _journey(item, names)
         return CandidateContent(
@@ -605,10 +923,18 @@ MAX_TEXT_CHARACTERS_PER_CALL = 48_000
 _MIN_TEXT_TOKENS = 400
 _IMAGE_TOKENS = 1024
 _SCHEMA_TEXT = json.dumps(ExtractionOutput.model_json_schema())
+_DETAILED_SCHEMA_TEXT = json.dumps(DetailedExtractionOutput.model_json_schema())
 _LEAN_SCHEMA_TEXT = json.dumps(LeanExtractionOutput.model_json_schema())
 # With less room than this for document text, a reading leaves journeys out (ADR-0096).
 _JOURNEY_ROOM = 4 * _MIN_TEXT_TOKENS
 _JOURNEY_WORD = re.compile(r"\bjourneys?\b", re.IGNORECASE)
+# With less room than this for document text, a reading leaves an offering's details out
+# (ADR-0101, step 4): they cost each call over a thousand tokens of schema.
+_DETAIL_ROOM = 10 * _MIN_TEXT_TOKENS
+_DETAIL_WORD = re.compile(
+    r"\border tracking\b|\blifecycle\b|\bnon-functional\b|\bNFRs?\b|\breali[sz](?:ed|ation)\b",
+    re.IGNORECASE,
+)
 # Each part of a document is asked for at most this many times.
 _ATTEMPTS = 2
 # What one suggestion costs in the answer, keys and quote included, and how much
@@ -825,11 +1151,26 @@ class StructuredCatalogueExtractor:
         budget = self._max_input_tokens
         warnings: list[str] = []
         available = int(budget * 0.9) if budget is not None else 10**9
-        room = available - _tokens(SYSTEM_PROMPT) - _tokens(_SCHEMA_TEXT)
+        room = available - _tokens(DETAILED_SYSTEM_PROMPT) - _tokens(_DETAILED_SCHEMA_TEXT)
+        reading: _Reading = "detailed"
+        # An offering's details cost the most room of all; a context without ample room reads
+        # without them (ADR-0101, step 4).
+        if room < _DETAIL_ROOM:
+            reading = "standard"
+            room = available - _tokens(SYSTEM_PROMPT) - _tokens(_SCHEMA_TEXT)
+            if any(
+                _DETAIL_WORD.search(" ".join((*item.section, item.text)))
+                for item in request.segments
+            ):
+                warnings.append(
+                    "This model's context is too small to also read an offering's realisation, "
+                    "NFRs, order tracking and lifecycle notes from prose; those set out in "
+                    "tables are still read."
+                )
         # A journey is the largest answer shape; a small context reads without it rather than
         # with too little room left for the document (ADR-0096).
-        lean = room < _JOURNEY_ROOM
-        if lean:
+        if room < _JOURNEY_ROOM:
+            reading = "lean"
             room = available - _tokens(LEAN_SYSTEM_PROMPT) - _tokens(_LEAN_SCHEMA_TEXT)
             if any(
                 _JOURNEY_WORD.search(" ".join((*item.section, item.text)))
@@ -895,7 +1236,7 @@ class StructuredCatalogueExtractor:
                     request.checkpoint()
                 calls_left -= 1
                 try:
-                    answer = self._read(request, numbered, known, images, lean=lean)
+                    answer = self._read(request, numbered, known, images, reading)
                 except (StructuredOutputError, ValidationError, ModelTransportError) as exc:
                     last_error = exc
                     if truncated(exc):
@@ -951,40 +1292,40 @@ class StructuredCatalogueExtractor:
         numbered: tuple[ExtractionSegment, ...],
         known: tuple[KnownSystem, ...],
         images: tuple[tuple[str, bytes], ...],
-        *,
-        lean: bool = False,
+        reading: _Reading = "detailed",
     ) -> _Answer | None:
         """One call's checked changes and how many were dropped.
 
         None when the model suggested something but none of it cited the text
-        correctly: that part of the document was not read. A ``lean`` call asks
-        without journeys, for a model whose context has no room for them.
+        correctly: that part of the document was not read. A ``standard`` call asks
+        without an offering's details, and a ``lean`` one without journeys and channels
+        too, for a model whose context has no room for them.
         """
         prompt = build_user_prompt(ExtractionRequest(request.document_title, numbered, known))
-        if lean:
+        answered: Sequence[LeanChangeOutput]
+        if reading == "detailed":
+            answered = self._client.parse(
+                system_prompt=DETAILED_SYSTEM_PROMPT,
+                user_prompt=prompt,
+                schema_type=DetailedExtractionOutput,
+                images=images,
+            ).changes
+        elif reading == "standard":
+            answered = self._client.parse(
+                system_prompt=SYSTEM_PROMPT,
+                user_prompt=prompt,
+                schema_type=ExtractionOutput,
+                images=images,
+            ).changes
+        else:
             answered = self._client.parse(
                 system_prompt=LEAN_SYSTEM_PROMPT,
                 user_prompt=prompt,
                 schema_type=LeanExtractionOutput,
                 images=images,
-            )
-            output = ExtractionOutput(
-                changes=[
-                    ChangeOutput.model_validate(
-                        {**item.model_dump(), "journey": None, "channel_kind": None}
-                    )
-                    for item in answered.changes
-                ]
-            )
-        else:
-            output = self._client.parse(
-                system_prompt=SYSTEM_PROMPT,
-                user_prompt=prompt,
-                schema_type=ExtractionOutput,
-                images=images,
-            )
+            ).changes
         segments = {item.number: item for item in numbered}
-        given = [_plain(item) for item in output.changes]
+        given = [_plain(_detailed(item)) for item in answered]
         names = _SystemNames(request.known_systems, given)
         changes: list[ProposedChange] = []
         dropped = 0
@@ -1004,9 +1345,9 @@ class StructuredCatalogueExtractor:
                 dropped += 1
                 continue
             changes.append(change)
-        if output.changes and not changes:
+        if answered and not changes:
             return None
-        return _Answer(changes, dropped, len(output.changes))
+        return _Answer(changes, dropped, len(answered))
 
 
 class FakeCatalogueExtractor:
@@ -1018,7 +1359,9 @@ class FakeCatalogueExtractor:
     ``A depends on B for reason`` and ``A calls B for reason`` lines (the second
     as an API call), and reads ``A sends X to B`` as an inferred data transfer.
     An image yields one system named after the document so the review flow can
-    be exercised without a vision model.
+    be exercised without a vision model. Only prose is read: a table row arrives
+    as ``Column: value | Column: value`` and would otherwise match a label, so a
+    segment with cells, or a line holding `` | ``, is skipped.
     """
 
     _SYSTEM = re.compile(r"^system:\s*(?P<name>.+)$", re.IGNORECASE)
@@ -1068,7 +1411,11 @@ class FakeCatalogueExtractor:
                     )
                 )
                 continue
+            if segment.cells:
+                continue
             for line in (raw.strip() for raw in segment.text.splitlines()):
+                if " | " in line:
+                    continue
                 source_name, target_name = current_name, ""
                 basis, rationale = CandidateBasis.STATED, None
                 if match := self._SYSTEM.match(line):

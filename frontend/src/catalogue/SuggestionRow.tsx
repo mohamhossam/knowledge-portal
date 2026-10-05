@@ -7,7 +7,7 @@ import { errorMessage } from "../api/errors";
 import { formatDay } from "../home/format";
 import { SuggestionEditor } from "./SuggestionEditor";
 import {
-  type Lexicon, STATE_LABEL, STATE_RANK, changeSentence, decideWhy, suggestionState, waitsFor,
+  type Lexicon, STATE_LABEL, STATE_RANK, changeSentence, decideWhy, offeringHolds, suggestionState, waitsFor, waitsForMany,
 } from "./suggestions";
 
 const TABLE_READER = "catalogue-table-reader";
@@ -125,6 +125,7 @@ function SuggestionDetail({ suggestion, release, words, document, actorName, edi
   const id = useId();
   const state = suggestionState(suggestion);
   const proposed = suggestion.status === "proposed";
+  const holds = suggestion.content.kind === "product" ? offeringHolds(suggestion.content.product, words) : [];
   // Leaving the editor hands focus back to the button that opened it, not to the row.
   const editButton = useRef<HTMLButtonElement>(null);
   const wasEditing = useRef(editing);
@@ -149,6 +150,19 @@ function SuggestionDetail({ suggestion, release, words, document, actorName, edi
           ))
         ) : (
           <p className="secondary">The suggestion cites no passage.</p>
+        )}
+        {holds.length > 0 && (
+          <div className="suggestion-holds">
+            <h4 className="suggestion-detail__label">What it holds</h4>
+            <dl>
+              {holds.map((line) => (
+                <div key={line.label} className={line.due ? "suggestion-holds__line suggestion-holds__line--due" : "suggestion-holds__line"}>
+                  <dt>{line.label}</dt>
+                  <dd dir="auto">{line.text}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
         )}
         {suggestion.rationale && (
           <p className="suggestion-detail__rationale">
@@ -219,7 +233,7 @@ function Decision({ suggestion, state, words, busy, kept, editButton, onEdit, on
   const why = unchosen.length
     ? "Say first whether the name means a system the draft has."
     : waits
-      ? `${waitsFor(suggestion, words)}. Accept that first, or ${kept ? "go back to your edits if they name" : "edit this to name"} what the draft has.`
+      ? `${waitsFor(suggestion, words)}. Accept ${waitsForMany(suggestion, words) ? "those" : "that"} first, or ${kept ? "go back to your edits if they name" : "edit this to name"} what the draft has.`
       : null;
   return (
     <div className="decision">

@@ -37,6 +37,7 @@ from knowledge_portal.domain.architecture.products import (
     find_order_type,
     same_offering,
 )
+from knowledge_portal.domain.architecture.tracking import TrackingChannel
 
 
 class CandidateKind(StrEnum):
@@ -388,13 +389,28 @@ def _channel_ids(
 def _offering_channels(
     offering: ProductOffering, release: ArchitectureKnowledge
 ) -> tuple[ProductOffering, tuple[str, ...]]:
-    """The offering's order types naming the draft's channels by id, and the channels it lacks."""
+    """The offering's order types, order tracking and lifecycle notes naming the draft's
+    channels by id, and the channels it lacks."""
     missing: list[str] = []
     order_types = tuple(
         replace(item, channels=_channel_ids(item.channels, release, missing))
         for item in offering.order_types
     )
-    return replace(offering, order_types=order_types), tuple(dict.fromkeys(missing))
+    tracking = offering.tracking
+    if tracking is not None:
+        # Two names for one channel describe it once: the first description is kept.
+        described: dict[str, TrackingChannel] = {}
+        for item in tracking.channels:
+            (channel_id,) = _channel_ids((item.channel_id,), release, missing)
+            described.setdefault(channel_id, replace(item, channel_id=channel_id))
+        tracking = replace(tracking, channels=tuple(described.values()))
+    notes = tuple(
+        replace(item, channels=_channel_ids(item.channels, release, missing))
+        for item in offering.lifecycle_notes
+    )
+    return replace(
+        offering, order_types=order_types, tracking=tracking, lifecycle_notes=notes
+    ), tuple(dict.fromkeys(missing))
 
 
 def _journey_channels(
@@ -531,7 +547,8 @@ def _current_offering(
 def _resolved_offering(
     offering: ProductOffering, release: ArchitectureKnowledge
 ) -> tuple[ProductOffering, tuple[str, ...]]:
-    """The offering naming draft systems by their ids, and the names no draft system has."""
+    """The offering naming draft systems by their ids, in its responsibilities and its order
+    tracking, and the names no draft system has."""
     missing: list[str] = []
 
     def resolved(reference: str) -> str:
@@ -540,6 +557,9 @@ def _resolved_offering(
             missing.append(reference)
             return reference
         return system.id
+
+    def optional(reference: str | None) -> str | None:
+        return resolved(reference) if reference else None
 
     components = tuple(
         replace(
@@ -550,7 +570,33 @@ def _resolved_offering(
         )
         for part in offering.components
     )
-    return replace(offering, components=components), tuple(dict.fromkeys(missing))
+    tracking = offering.tracking
+    if tracking is not None:
+        tracking = replace(
+            tracking,
+            flows=tuple(
+                replace(
+                    item,
+                    from_system_id=resolved(item.from_system_id),
+                    to_system_id=resolved(item.to_system_id),
+                )
+                for item in tracking.flows
+            ),
+            channels=tuple(
+                replace(
+                    item,
+                    ui_system_id=optional(item.ui_system_id),
+                    read_system_id=optional(item.read_system_id),
+                )
+                for item in tracking.channels
+            ),
+            milestones=tuple(
+                replace(item, system_id=optional(item.system_id)) for item in tracking.milestones
+            ),
+        )
+    return replace(offering, components=components, tracking=tracking), tuple(
+        dict.fromkeys(missing)
+    )
 
 
 @dataclass(frozen=True)

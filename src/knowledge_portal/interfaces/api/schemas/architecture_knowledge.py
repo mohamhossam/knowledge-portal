@@ -8,6 +8,7 @@ the API returned when it serialised the domain dataclasses directly.
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Annotated
 
 from pydantic import BaseModel, Field
 
@@ -64,6 +65,12 @@ from knowledge_portal.domain.architecture.knowledge import (
     SystemComponent,
     SystemDefinition,
     SystemRelationship,
+)
+from knowledge_portal.domain.architecture.lifecycle import (
+    MAX_TABLE_COLUMNS,
+    LifecycleNote,
+    NoteBlock,
+    NoteBlockKind,
 )
 from knowledge_portal.domain.architecture.plans import PriceKind
 from knowledge_portal.domain.architecture.products import (
@@ -456,6 +463,94 @@ class OrderTrackingSchema(BaseModel):
         )
 
 
+class NoteBlockSchema(BaseModel):
+    """One part of a lifecycle note: a paragraph, a list, or a table."""
+
+    kind: NoteBlockKind
+    title: Text | None = None
+    text: Text | None = None
+    items: list[Text] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    columns: list[Text] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    rows: list[Annotated[list[Text], Field(max_length=MAX_TABLE_COLUMNS)]] = Field(
+        default=[], max_length=MAX_CATALOGUE_ITEMS
+    )
+    caption: Text | None = None
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
+    # Carried over from another source: to re-verify before anyone relies on it.
+    to_verify: bool = False
+
+    @classmethod
+    def from_domain(cls, item: NoteBlock) -> NoteBlockSchema:
+        return cls.model_construct(
+            kind=item.kind,
+            title=item.title,
+            text=item.text,
+            items=list(item.items),
+            columns=list(item.columns),
+            rows=[list(row) for row in item.rows],
+            caption=item.caption,
+            confidence=item.confidence,
+            source=item.source,
+            to_verify=item.to_verify,
+        )
+
+    def to_domain(self) -> NoteBlock:
+        return NoteBlock(
+            kind=self.kind,
+            title=self.title,
+            text=self.text,
+            items=tuple(self.items),
+            columns=tuple(self.columns),
+            rows=tuple(tuple(row) for row in self.rows),
+            caption=self.caption,
+            confidence=self.confidence,
+            source=self.source,
+            to_verify=self.to_verify,
+        )
+
+
+class LifecycleNoteSchema(BaseModel):
+    """What happens to an offering over its life, on one topic, as its sources say."""
+
+    id: Identifier
+    title: Name
+    kind: Name | None = None
+    summary: Text | None = None
+    order_types: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    channels: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    blocks: list[NoteBlockSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
+
+    @classmethod
+    def from_domain(cls, item: LifecycleNote) -> LifecycleNoteSchema:
+        return cls.model_construct(
+            id=item.id,
+            title=item.title,
+            kind=item.kind,
+            summary=item.summary,
+            order_types=list(item.order_types),
+            channels=list(item.channels),
+            blocks=[NoteBlockSchema.from_domain(block) for block in item.blocks],
+            confidence=item.confidence,
+            source=item.source,
+        )
+
+    def to_domain(self) -> LifecycleNote:
+        return LifecycleNote(
+            id=self.id,
+            title=self.title,
+            kind=self.kind,
+            summary=self.summary,
+            order_types=tuple(self.order_types),
+            channels=tuple(self.channels),
+            blocks=tuple(block.to_domain() for block in self.blocks),
+            confidence=self.confidence,
+            source=self.source,
+        )
+
+
 class OrderTypeSchema(BaseModel):
     code: Identifier
     name: Name
@@ -598,6 +693,7 @@ class ProductOfferingSchema(BaseModel):
     source: Text | None = None
     nfrs: list[OfferingNfrSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     tracking: OrderTrackingSchema | None = None
+    lifecycle_notes: list[LifecycleNoteSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, offering: ProductOffering) -> ProductOfferingSchema:
@@ -620,6 +716,9 @@ class ProductOfferingSchema(BaseModel):
             tracking=(
                 OrderTrackingSchema.from_domain(offering.tracking) if offering.tracking else None
             ),
+            lifecycle_notes=[
+                LifecycleNoteSchema.from_domain(item) for item in offering.lifecycle_notes
+            ],
         )
 
     def to_domain(self) -> ProductOffering:
@@ -640,6 +739,7 @@ class ProductOfferingSchema(BaseModel):
             source=self.source,
             nfrs=tuple(item.to_domain() for item in self.nfrs),
             tracking=self.tracking.to_domain() if self.tracking else None,
+            lifecycle_notes=tuple(item.to_domain() for item in self.lifecycle_notes),
         )
 
 

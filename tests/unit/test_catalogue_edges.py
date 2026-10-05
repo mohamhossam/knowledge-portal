@@ -417,6 +417,36 @@ def test_fake_extractor_reads_labelled_lines_and_slugs_names() -> None:
     assert slug("   ") == "item"
 
 
+def test_fake_extractor_skips_table_rows() -> None:
+    landscape_row = "System: Order Store | ID: SYS-STORE | Function: Order records"
+    component_row = "Component: Fibre Access | Code: PO_FIBRE | Type: Access"
+    proposal = FakeCatalogueExtractor().propose(
+        ExtractionRequest(
+            "Doc",
+            (
+                ExtractionSegment(
+                    1,
+                    "row 1",
+                    landscape_row,
+                    cells=(("System", "Order Store"), ("ID", "SYS-STORE")),
+                    read=True,
+                ),
+                ExtractionSegment(
+                    2,
+                    "row 2",
+                    component_row,
+                    cells=(("Component", "Fibre Access"), ("Code", "PO_FIBRE")),
+                ),
+                # A row whose cells were not kept still reads as a row, not prose.
+                ExtractionSegment(3, "row 3", f"{landscape_row}\n{component_row}"),
+            ),
+            (),
+        )
+    )
+
+    assert proposal.changes == ()
+
+
 def test_ai_mapping_of_a_published_release_records_organisation_ownership() -> None:
     repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
     index = InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer())

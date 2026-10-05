@@ -8,6 +8,7 @@ import { errorMessage } from "../api/errors";
 import { CONFIDENCE, roleLabel, sentenceCase } from "../catalogue/catalogue";
 import { JourneyHandovers, JourneySteps } from "../catalogue/JourneyTimetable";
 import { NfrSection, RealisationKey, RealisedAs, RealisedInline } from "../catalogue/Realisation";
+import { LifecycleSection } from "../catalogue/LifecycleNotes";
 import { TrackingSection } from "../catalogue/Tracking";
 import { formatDay } from "../home/format";
 import { PlansAndPrices } from "./PlansAndPrices";
@@ -15,7 +16,7 @@ import { gaps, involvement, journeyFor, listed, partsFor, pickScenario, type Sce
 
 /** What the catalogue cannot hold yet; each arrives with a later slice (requirement-portal ADR-0101). */
 export const NOT_YET =
-  "Lifecycle notes are not in the catalogue yet, so the explorer does not show them.";
+  "Source levels and conflicts are not in the catalogue yet, so the explorer does not show them.";
 
 function useExplorerRelease() {
   return useQuery({ queryKey: ["explorer", "release"], queryFn: api.explorerRelease });
@@ -290,6 +291,14 @@ function ScenarioSheet({ release, scenario, linkSystems }: {
           entry: tracked.entry,
           flows: tracked.flows,
         } : undefined}
+      />
+
+      <LifecycleSection
+        offering={offering}
+        headingId={`${id}-lifecycle`}
+        orderName={(code) => offering.order_types.find((item) => item.code === code)?.name ?? code}
+        channelName={channelName}
+        focus={{ orderCode: orderType.code, orderName: orderType.name, channelId: channel?.id ?? null }}
       />
 
       <section className="govsection" aria-labelledby={`${id}-parts`}>

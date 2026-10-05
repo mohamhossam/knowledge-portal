@@ -2,6 +2,7 @@ import type { CatalogueSystem, Channel, Offering, SourceConfidence } from "../ap
 import { CONFIDENCE_OPTIONS, COVERAGE, LAYERS } from "./catalogue";
 import { lines } from "./editing";
 import { AreaField, CheckField, LinesField, Rows, SelectField, SystemField, TextField } from "./forms";
+import { LifecycleEditor } from "./LifecycleEditor";
 import { TrackingEditor } from "./TrackingEditor";
 
 type Part = Offering["components"][number];
@@ -42,8 +43,8 @@ export function OfferingEditor({ value, onChange, systems, channels = [], names 
   systems: CatalogueSystem[];
   /** The draft's channels, to say which each order type can be ordered through. */
   channels?: Channel[];
-  /** Names for systems a document mentions that the draft does not have yet. */
-  names?: { system: (id: string) => string };
+  /** Names for systems and channels a document mentions that the draft does not have yet. */
+  names?: Names;
 }) {
   const set = (patch: Partial<Offering>) => onChange({ ...value, ...patch });
   const orderTypeOptions = value.order_types.map((type) => ({ code: type.code, name: type.name || type.code }));
@@ -54,7 +55,7 @@ export function OfferingEditor({ value, onChange, systems, channels = [], names 
         <TextField label="Code" value={value.code} onChange={(code) => set({ code: code || null })} />
         <TextField label="Family" value={value.family} onChange={(family) => set({ family: family || null })} />
         <TextField label="Version" value={value.version} onChange={(version) => set({ version: version || null })} />
-        <TextField label="Lifecycle" value={value.lifecycle} onChange={(lifecycle) => set({ lifecycle: lifecycle || null })} />
+        <TextField label="Lifecycle status" value={value.lifecycle} onChange={(lifecycle) => set({ lifecycle: lifecycle || null })} />
         <SelectField
           label="How sure its source is"
           value={value.confidence ?? ""}
@@ -89,11 +90,12 @@ export function OfferingEditor({ value, onChange, systems, channels = [], names 
             <TextField label="Name" value={type.name} required onChange={(name) => update({ name })} />
             <TextField label="Code" value={type.code} required dir="ltr" onChange={(code) => update({ code })} />
             <CheckField label="Offered" checked={type.enabled} onChange={(enabled) => update({ enabled })} />
-            {channels.length > 0 && (
+            {(channels.length > 0 || (type.channels ?? []).length > 0) && (
               <ChannelChoices
                 legend="Ordered through"
                 channels={channels}
                 chosen={type.channels ?? []}
+                names={names}
                 onChange={(chosen) => update({ channels: chosen })}
               />
             )}
@@ -206,21 +208,47 @@ export function OfferingEditor({ value, onChange, systems, channels = [], names 
         systems={systems}
         channels={channels}
         orderTypes={orderTypeOptions}
+        names={names}
+      />
+
+      <LifecycleEditor
+        value={value.lifecycle_notes ?? []}
+        onChange={(lifecycle_notes) => set({ lifecycle_notes })}
+        channels={channels}
+        orderTypes={orderTypeOptions}
+        names={names}
       />
     </div>
   );
 }
 
 /** A group of channel checkboxes; the legend says what none chosen means. */
-export function ChannelChoices({ legend, channels, chosen, onChange }: {
+/** Names for what a document mentions that the draft does not have yet. */
+export type Names = { system: (id: string) => string; channel?: (id: string) => string };
+
+/**
+ * The draft's channels as checkboxes; a channel a document named that the draft does not
+ * have yet is listed first, ticked, so a reviewer sees it was read.
+ */
+export function ChannelChoices({ legend, channels, chosen, onChange, names }: {
   legend: string;
   channels: Channel[];
   chosen: string[];
   onChange: (chosen: string[]) => void;
+  names?: Names;
 }) {
+  const written = chosen.filter((id) => !channels.some((channel) => channel.id === id));
   return (
     <fieldset className="choices form__field--wide">
       <legend className="field__label">{legend}</legend>
+      {written.map((id) => (
+        <CheckField
+          key={`written:${id}`}
+          label={`${names?.channel?.(id) ?? id} (not in the draft yet)`}
+          checked
+          onChange={() => onChange(chosen.filter((item) => item !== id))}
+        />
+      ))}
       {channels.map((channel) => (
         <CheckField
           key={channel.id}

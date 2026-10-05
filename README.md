@@ -79,8 +79,16 @@ uv run python scripts/convert_explorer_model.py \
 
 Import the file into a draft from the draft's catalogue-file screen: preview it first, then
 import, review and publish. Evidence keeps its confidence and names its source. The script lists
-what the catalogue cannot hold yet, such as lifecycle notes and source conflicts. Those arrive with
+what the catalogue cannot hold yet, such as source levels and conflicts. Those arrive with
 later slices and are never filled in by guesswork.
+
+New content comes from documents uploaded to a draft, as suggestions a person reviews. Under a
+document's `## Product: <name>` heading, the table reader reads an offering's realisation
+(Component · Layer · Realised as), its NFRs (Quality · Coverage · Statement), the tables and
+`**Applies to:**` / `**Not tracked:**` lines under its `### Order tracking` heading, and each
+`### Lifecycle: <title>` section as one lifecycle note, its paragraphs, lists and tables in order;
+`tests/fixtures/catalogue/synthetic_offering_details.md` shows every shape. The model reads the same
+details from prose when its context leaves ample room, and says so when it does not.
 
 Plans and prices are never carried over. The explorer reads them live from the product catalog,
 a TM Forum TMF620 Product Catalog Management API, by the offering's code, and caches them for a

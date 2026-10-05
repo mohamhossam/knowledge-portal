@@ -28,6 +28,7 @@ _OFFERING_FIELDS = (
     "audiences",
     "nfrs",
     "tracking",
+    "lifecycle_notes",
 )
 
 

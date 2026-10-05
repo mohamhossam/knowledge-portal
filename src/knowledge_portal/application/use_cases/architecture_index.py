@@ -127,7 +127,25 @@ def _offering_text(offering: ProductOffering, names: dict[str, str]) -> str:
         for item in offering.nfrs
     )
     lines.extend(_tracking_lines(offering, names))
+    lines.extend(_lifecycle_lines(offering))
     return "\n".join(line for line in lines if line)
+
+
+def _lifecycle_lines(offering: ProductOffering) -> list[str]:
+    """Each lifecycle note as evidence, so a requirement about an up/downgrade, a renewal
+    or cessation finds what the sources say of it."""
+    lines = []
+    for note in offering.lifecycle_notes:
+        lines.append(
+            f"Lifecycle of {offering.name}: {note.title}" + (f" ({note.kind})" if note.kind else "")
+        )
+        lines.append(note.summary or "")
+        for block in note.blocks:
+            lines.extend((block.title or "", block.text or "", *block.items, block.caption or ""))
+            if block.columns:
+                lines.append(" · ".join(item for item in block.columns if item))
+            lines.extend(" · ".join(cell for cell in row if cell) for row in block.rows)
+    return lines
 
 
 def _tracking_lines(offering: ProductOffering, names: dict[str, str]) -> list[str]:

@@ -358,3 +358,12 @@ export const COVERAGE: Record<Coverage, string> = {
   partial: "Partly defined",
   missing: "Not defined",
 };
+
+const sameCode = (a: string, b: string) => a.localeCompare(b, undefined, { sensitivity: "accent" }) === 0;
+
+/** Whether a note holds for an order type read through a channel; none named means every one. */
+export function concerns(note: Offering["lifecycle_notes"][number], orderCode: string, channelId: string | null): boolean {
+  const order = !note.order_types.length || note.order_types.some((code) => sameCode(code, orderCode));
+  const channel = channelId === null || !note.channels.length || note.channels.includes(channelId);
+  return order && channel;
+}
