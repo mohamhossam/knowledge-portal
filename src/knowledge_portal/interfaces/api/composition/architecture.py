@@ -33,6 +33,12 @@ from knowledge_portal.application.use_cases.catalogue_candidates import (
     DecideCatalogueCandidate,
     ProposeCatalogueChanges,
 )
+from knowledge_portal.application.use_cases.change_requests import (
+    DismissChangeRequest,
+    ListChangeRequests,
+    ReadChangeRequestIntoDraft,
+    ReceiveChangeRequest,
+)
 from knowledge_portal.application.use_cases.resolve_architecture_knowledge import (
     ResolveArchitectureKnowledge,
 )
@@ -74,6 +80,11 @@ class ArchitectureWiring:
     upload_document: UploadKnowledgeDocument
     read_document: ReadKnowledgeDocument
     decide_candidates: DecideCatalogueCandidate
+    # Change requests from Requirement AI (requirement-portal ADR-0101, step 7).
+    receive_change_request: ReceiveChangeRequest
+    list_change_requests: ListChangeRequests
+    read_change_request: ReadChangeRequestIntoDraft
+    dismiss_change_request: DismissChangeRequest
     jobs: ArchitectureJobs
     # Present only when jobs are queued; inline jobs finish inside the request.
     worker: ArchitectureJobWorker | None
@@ -159,8 +170,21 @@ def build_architecture(
             manage, persistence.document_storage, located_extractor
         ),
         decide_candidates=DecideCatalogueCandidate(
-            manage, persistence.architecture_repository, persistence.catalogue_candidates
+            manage,
+            persistence.architecture_repository,
+            persistence.catalogue_candidates,
+            persistence.change_requests,
         ),
+        receive_change_request=ReceiveChangeRequest(persistence.change_requests, clock),
+        list_change_requests=ListChangeRequests(persistence.change_requests),
+        read_change_request=ReadChangeRequestIntoDraft(
+            persistence.change_requests,
+            manage,
+            persistence.architecture_repository,
+            persistence.catalogue_candidates,
+            clock,
+        ),
+        dismiss_change_request=DismissChangeRequest(persistence.change_requests, clock),
         jobs=jobs,
         worker=ArchitectureJobWorker(
             jobs,

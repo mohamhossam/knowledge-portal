@@ -39,6 +39,14 @@ from knowledge_portal.domain.architecture.candidates import (
     MatchRole,
     PossibleMatch,
 )
+from knowledge_portal.domain.architecture.change_requests import (
+    ChangeItem,
+    ChangeItemStatus,
+    ChangeOrigin,
+    ChangeRequestRecord,
+    RequirementTrace,
+    TracedFeature,
+)
 from knowledge_portal.domain.architecture.channels import Channel
 from knowledge_portal.domain.architecture.diff import (
     CatalogueDiff,
@@ -374,6 +382,8 @@ class OpenQuestionSchema(BaseModel):
     impact: Text | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # The order types it is asked for; none means the offering as a whole (step 7).
+    order_types: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, item: OpenQuestion) -> OpenQuestionSchema:
@@ -383,10 +393,141 @@ class OpenQuestionSchema(BaseModel):
             impact=item.impact,
             confidence=item.confidence,
             source=item.source,
+            order_types=list(item.order_types),
         )
 
     def to_domain(self) -> OpenQuestion:
-        return OpenQuestion(self.id, self.text, self.impact, self.confidence, self.source)
+        return OpenQuestion(
+            self.id,
+            self.text,
+            self.impact,
+            self.confidence,
+            self.source,
+            tuple(self.order_types),
+        )
+
+
+class TracedFeatureSchema(BaseModel):
+    id: Identifier
+    name: Name
+
+
+class RequirementTraceSchema(BaseModel):
+    """The approved requirement a change request comes from; the approver by name only."""
+
+    requirement_id: Identifier
+    breakdown_revision: int
+    approval_id: Identifier
+    epic_id: Identifier
+    epic_name: Name
+    approved_by: Name | None = None
+    approved_at: datetime | None = None
+    features: list[TracedFeatureSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    export_schema: Identifier | None = None
+    knowledge_version: Identifier | None = None
+
+    @classmethod
+    def from_domain(cls, item: RequirementTrace) -> RequirementTraceSchema:
+        return cls.model_construct(
+            requirement_id=item.requirement_id,
+            breakdown_revision=item.breakdown_revision,
+            approval_id=item.approval_id,
+            epic_id=item.epic_id,
+            epic_name=item.epic_name,
+            approved_by=item.approved_by,
+            approved_at=item.approved_at,
+            features=[
+                TracedFeatureSchema.model_construct(id=each.id, name=each.name)
+                for each in item.features
+            ],
+            export_schema=item.export_schema,
+            knowledge_version=item.knowledge_version,
+        )
+
+    def to_domain(self) -> RequirementTrace:
+        return RequirementTrace(
+            requirement_id=self.requirement_id,
+            breakdown_revision=self.breakdown_revision,
+            approval_id=self.approval_id,
+            epic_id=self.epic_id,
+            epic_name=self.epic_name,
+            approved_by=self.approved_by,
+            approved_at=self.approved_at,
+            features=tuple(TracedFeature(each.id, each.name) for each in self.features),
+            export_schema=self.export_schema,
+            knowledge_version=self.knowledge_version,
+        )
+
+
+class ChangeItemSchema(BaseModel):
+    kind: Identifier
+    summary: Text
+    status: ChangeItemStatus = ChangeItemStatus.RECORDED
+    feature_id: Identifier | None = None
+
+
+class ChangeRequestRecordSchema(BaseModel):
+    """A change request applied to the version (requirement-portal ADR-0101, step 7)."""
+
+    id: Identifier
+    title: Name
+    origin: ChangeOrigin = ChangeOrigin.REQUIREMENT_AI
+    product_id: Identifier | None = None
+    requester: Name | None = None
+    reason: Text | None = None
+    priority: Name | None = None
+    target_date: Name | None = None
+    created_at: datetime | None = None
+    applied_at: datetime | None = None
+    trace: RequirementTraceSchema | None = None
+    items: list[ChangeItemSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    gaps: list[Text] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+
+    @classmethod
+    def from_domain(cls, item: ChangeRequestRecord) -> ChangeRequestRecordSchema:
+        return cls.model_construct(
+            id=item.id,
+            title=item.title,
+            origin=item.origin,
+            product_id=item.product_id,
+            requester=item.requester,
+            reason=item.reason,
+            priority=item.priority,
+            target_date=item.target_date,
+            created_at=item.created_at,
+            applied_at=item.applied_at,
+            trace=RequirementTraceSchema.from_domain(item.trace) if item.trace else None,
+            items=[
+                ChangeItemSchema.model_construct(
+                    kind=each.kind,
+                    summary=each.summary,
+                    status=each.status,
+                    feature_id=each.feature_id,
+                )
+                for each in item.items
+            ],
+            gaps=list(item.gaps),
+        )
+
+    def to_domain(self) -> ChangeRequestRecord:
+        return ChangeRequestRecord(
+            id=self.id,
+            title=self.title,
+            origin=self.origin,
+            product_id=self.product_id,
+            requester=self.requester,
+            reason=self.reason,
+            priority=self.priority,
+            target_date=self.target_date,
+            created_at=self.created_at,
+            applied_at=self.applied_at,
+            trace=self.trace.to_domain() if self.trace else None,
+            items=tuple(
+                ChangeItem(each.kind, each.summary, each.status, each.feature_id)
+                for each in self.items
+            ),
+            gaps=tuple(self.gaps),
+        )
 
 
 class ArchitectureDecisionSchema(BaseModel):
@@ -1268,6 +1409,10 @@ class KnowledgeReleaseResponse(BaseModel):
     conflicts: list[SourceConflictSchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
     )
+    # The change requests applied to it (requirement-portal ADR-0101, step 7).
+    change_history: list[ChangeRequestRecordSchema] = Field(
+        default_factory=list, max_length=MAX_CATALOGUE_ITEMS
+    )
 
     @classmethod
     def from_domain(cls, release: ArchitectureKnowledge) -> KnowledgeReleaseResponse:
@@ -1301,12 +1446,16 @@ class KnowledgeReleaseResponse(BaseModel):
             channels=[ChannelSchema.from_domain(item) for item in release.channels],
             sources=[KnowledgeSourceSchema.from_domain(item) for item in release.sources],
             conflicts=[SourceConflictSchema.from_domain(item) for item in release.conflicts],
+            change_history=[
+                ChangeRequestRecordSchema.from_domain(item) for item in release.change_history
+            ],
         )
 
 
 class ExplorerReleaseResponse(BaseModel):
     """The version in service as the explorer reads it: its content, never its documents,
-    index or history (requirement-portal ADR-0101)."""
+    index or version history (requirement-portal ADR-0101). The change requests applied to
+    it are part of its content, for the Solution Architecture document (step 7)."""
 
     id: str
     name: str | None = None
@@ -1325,6 +1474,9 @@ class ExplorerReleaseResponse(BaseModel):
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
     )
     conflicts: list[SourceConflictSchema] = Field(
+        default_factory=list, max_length=MAX_CATALOGUE_ITEMS
+    )
+    change_history: list[ChangeRequestRecordSchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
     )
 
@@ -1346,6 +1498,9 @@ class ExplorerReleaseResponse(BaseModel):
             channels=[ChannelSchema.from_domain(item) for item in release.channels],
             sources=[KnowledgeSourceSchema.from_domain(item) for item in release.sources],
             conflicts=[SourceConflictSchema.from_domain(item) for item in release.conflicts],
+            change_history=[
+                ChangeRequestRecordSchema.from_domain(item) for item in release.change_history
+            ],
         )
 
 
@@ -1573,6 +1728,8 @@ class CandidateContentSchema(BaseModel):
     journey: JourneySchema | None = None
     # The whole channel, for a channel suggestion (requirement-portal ADR-0101).
     channel: ChannelSchema | None = None
+    # An open question for the offering ``system_id`` names (step 7).
+    question: OpenQuestionSchema | None = None
 
     @classmethod
     def from_domain(cls, content: CandidateContent) -> CandidateContentSchema:
@@ -1597,6 +1754,9 @@ class CandidateContentSchema(BaseModel):
             ),
             journey=JourneySchema.from_domain(content.journey) if content.journey else None,
             channel=ChannelSchema.from_domain(content.channel) if content.channel else None,
+            question=(
+                OpenQuestionSchema.from_domain(content.question) if content.question else None
+            ),
         )
 
     def to_domain(self) -> CandidateContent:
@@ -1619,6 +1779,7 @@ class CandidateContentSchema(BaseModel):
             self.product.to_domain() if self.product else None,
             self.journey.to_domain() if self.journey else None,
             self.channel.to_domain() if self.channel else None,
+            self.question.to_domain() if self.question else None,
         )
 
 
@@ -1647,9 +1808,17 @@ class PossibleMatchResponse(BaseModel):
         )
 
 
+class ChangeRequestCitationResponse(BaseModel):
+    change_request_id: str
+    feature_id: str
+
+
 class CatalogueSuggestionResponse(BaseModel):
     id: str
+    # The document it was read from, or the change request's id for one from a change request.
     document_version_id: str
+    # Set when it comes from a change request from Requirement AI (step 7).
+    change_request: ChangeRequestCitationResponse | None = None
     content: CandidateContentSchema
     citations: list[CandidateCitationResponse]
     match: CandidateMatch
@@ -1676,6 +1845,14 @@ class CatalogueSuggestionResponse(BaseModel):
         return cls(
             id=item.id,
             document_version_id=item.document_version_id,
+            change_request=(
+                ChangeRequestCitationResponse(
+                    change_request_id=item.change_request.change_request_id,
+                    feature_id=item.change_request.feature_id,
+                )
+                if item.change_request
+                else None
+            ),
             content=CandidateContentSchema.from_domain(item.content),
             citations=[
                 CandidateCitationResponse(location=citation.location, quote=citation.quote)
@@ -1710,6 +1887,8 @@ class ExtractionRunResponse(BaseModel):
     created_at: datetime
     match_model: str | None
     match_prompt_version: str | None
+    # Set when the run read a change request rather than a document (step 7).
+    change_request_id: str | None = None
 
     @classmethod
     def from_domain(cls, run: ExtractionRun) -> ExtractionRunResponse:
@@ -1723,6 +1902,7 @@ class ExtractionRunResponse(BaseModel):
             created_at=run.created_at,
             match_model=run.match_model,
             match_prompt_version=run.match_prompt_version,
+            change_request_id=run.change_request_id,
         )
 
 

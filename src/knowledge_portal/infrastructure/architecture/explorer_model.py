@@ -64,6 +64,13 @@ _READ_LIVE = (
 )
 # What the explorer holds and the catalogue cannot yet, per product.
 _NOT_YET = (("info", "information objects"),)
+# What became of a change request's item, as the original explorer said it.
+_CHANGE_STATUS = {
+    "APPLIED": "recorded",
+    "INFERRED": "inferred",
+    "GAP": "gap",
+    "CONFLICT": "conflict",
+}
 # A reference the model fills with a dash where its source names no section.
 _NO_REFERENCE = re.compile(r"[\s\-–—]*")
 
@@ -121,6 +128,9 @@ class _Reader:
                 conflict
                 for item in self.model.get("conflicts") or ()
                 if (conflict := self._conflict(item, products)) is not None
+            ],
+            "change_history": [
+                self._applied(item) for item in self.model.get("changeHistory") or ()
             ],
         }
         self._check(mapping, products)
@@ -888,10 +898,54 @@ class _Reader:
             f"from {len(products)} explorer products.",
         )
 
+    def _applied(self, item: Mapping[str, Any]) -> dict[str, Any]:
+        """An applied change request as the version's change history records it (step 7).
+        What it did to each scenario was worked out by the original engine and is not kept."""
+        if item.get("scenarios"):
+            self.dropped["scenario impacts of applied change requests"] += len(item["scenarios"])
+        trace = item.get("trace") or None
+        return _present(
+            id=item["id"],
+            title=item.get("title") or item["id"],
+            origin=item.get("origin") or "explorer",
+            product=item.get("product"),
+            requester=item.get("requester"),
+            reason=item.get("reason"),
+            priority=item.get("priority"),
+            target_date=item.get("targetDate"),
+            created_at=item.get("createdAt"),
+            applied_at=item.get("appliedAt"),
+            trace=(
+                _present(
+                    requirement=trace.get("requirementId"),
+                    revision=trace.get("revision"),
+                    approval=trace.get("approvalId"),
+                    approved_by=trace.get("approvedBy"),
+                    approved_at=trace.get("approvedAt"),
+                    epic=(trace.get("epic") or {}).get("id"),
+                    epic_name=(trace.get("epic") or {}).get("name"),
+                    features=[
+                        {"id": feature["id"], "name": feature["name"]}
+                        for feature in trace.get("features") or ()
+                    ],
+                    export_schema=trace.get("exportSchema"),
+                )
+                if trace
+                else None
+            ),
+            items=[
+                _present(
+                    kind=entry.get("kind") or "other",
+                    summary=entry.get("summary"),
+                    status=_CHANGE_STATUS.get(str(entry.get("status") or "").upper(), "recorded"),
+                )
+                for entry in item.get("items") or ()
+                if entry.get("summary")
+            ],
+            gaps=list(item.get("gaps") or ()),
+        )
+
     def _count_dropped(self) -> None:
-        for section, label in (("changeHistory", "applied change requests"),):
-            if self.model.get(section):
-                self.dropped[label] += len(self.model[section])
         library = self.model.get("library") or {}
         if library.get("capabilities"):
             self.dropped["capability-library entries"] += len(library["capabilities"])

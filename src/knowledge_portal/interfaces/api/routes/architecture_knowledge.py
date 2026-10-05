@@ -36,6 +36,7 @@ from knowledge_portal.application.use_cases.catalogue_candidates import (
 )
 from knowledge_portal.domain.architecture.knowledge import InvalidKnowledgeError
 from knowledge_portal.interfaces.api.dependencies import (
+    ContainerDep,
     KnowledgeActorDep,
     get_architecture_jobs,
     get_clock,
@@ -77,6 +78,12 @@ from knowledge_portal.interfaces.api.schemas.architecture_knowledge import (
 )
 from knowledge_portal.interfaces.api.schemas.bounds import (
     Text,
+)
+from knowledge_portal.interfaces.api.schemas.change_requests import (
+    ChangeRequestDismissalRequest,
+    ChangeRequestReadingResponse,
+    ChangeRequestResponse,
+    ChangeRequestsResponse,
 )
 
 router = APIRouter(prefix="/architecture-knowledge", tags=["architecture knowledge"])
@@ -544,6 +551,44 @@ def list_extractions(
         )
         for version_id, job in jobs.extractions(release_id, actor)
     ]
+
+
+@router.get("/change-requests", response_model=ChangeRequestsResponse)
+def list_change_requests(
+    container: ContainerDep, actor: KnowledgeActorDep
+) -> ChangeRequestsResponse:
+    """Change requests from Requirement AI, newest first (requirement-portal ADR-0101, step 7)."""
+    return ChangeRequestsResponse(
+        change_requests=[
+            ChangeRequestResponse.from_domain(item)
+            for item in container.list_change_requests.execute(actor)
+        ]
+    )
+
+
+@router.post(
+    "/change-requests/{change_request_id}/reading", response_model=ChangeRequestReadingResponse
+)
+def read_change_request(
+    change_request_id: str, container: ContainerDep, actor: KnowledgeActorDep
+) -> ChangeRequestReadingResponse:
+    """Read it into the draft in progress, or a new one: each approved feature becomes a
+    suggested question."""
+    return ChangeRequestReadingResponse.from_domain(
+        container.read_change_request.execute(change_request_id, actor)
+    )
+
+
+@router.post("/change-requests/{change_request_id}/dismissal", response_model=ChangeRequestResponse)
+def dismiss_change_request(
+    change_request_id: str,
+    body: ChangeRequestDismissalRequest,
+    container: ContainerDep,
+    actor: KnowledgeActorDep,
+) -> ChangeRequestResponse:
+    return ChangeRequestResponse.from_domain(
+        container.dismiss_change_request.execute(change_request_id, body.reason, actor)
+    )
 
 
 @router.get("/releases/{release_id}/suggestions", response_model=CatalogueSuggestionsResponse)

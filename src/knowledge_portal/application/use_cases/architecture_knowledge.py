@@ -342,6 +342,11 @@ class ManageArchitectureKnowledge:
             channels=imported.channels,
             sources=imported.sources,
             conflicts=imported.conflicts,
+            change_history=(
+                current.change_history
+                if imported.change_history is None
+                else imported.change_history
+            ),
         )
 
     def preview_file_import(

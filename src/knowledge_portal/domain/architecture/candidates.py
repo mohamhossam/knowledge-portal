@@ -13,10 +13,19 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 from enum import StrEnum
 
+from knowledge_portal.domain.architecture.change_requests import (
+    ChangeItem,
+    IncomingChangeRequest,
+)
 from knowledge_portal.domain.architecture.channels import (
     Channel,
     find_channel_among,
     merge_channels,
+)
+from knowledge_portal.domain.architecture.governance import (
+    KnowledgeSource,
+    OpenQuestion,
+    SourceLevel,
 )
 from knowledge_portal.domain.architecture.journeys import Journey, same_journey
 from knowledge_portal.domain.architecture.knowledge import (
@@ -55,6 +64,8 @@ class CandidateKind(StrEnum):
     JOURNEY = "journey"
     # Where orders are placed, and the system that takes them in (requirement-portal ADR-0101).
     CHANNEL = "channel"
+    # A question an approved feature puts to an offering (requirement-portal ADR-0101, step 7).
+    QUESTION = "question"
 
 
 class CandidateStatus(StrEnum):
@@ -143,6 +154,8 @@ class CandidateContent:
     - journey: the whole ``journey``; its id is also the ``system_id``
     - channel: the whole ``channel``; its id is also the ``system_id``. Its entry
       system is named as the document names it until the draft resolves it
+    - question: an open ``question`` for the offering the ``system_id`` names, by id or
+      name, as the change request names it until the draft resolves it
     """
 
     kind: CandidateKind
@@ -163,6 +176,7 @@ class CandidateContent:
     product: ProductOffering | None = None
     journey: Journey | None = None
     channel: Channel | None = None
+    question: OpenQuestion | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "kind", CandidateKind(self.kind))
@@ -202,13 +216,19 @@ class CandidateContent:
             raise InvalidKnowledgeError("Only a journey suggestion holds a journey.")
         if (self.channel is not None) != (self.kind is CandidateKind.CHANNEL):
             raise InvalidKnowledgeError("Only a channel suggestion holds a channel.")
+        if (self.question is not None) != (self.kind is CandidateKind.QUESTION):
+            raise InvalidKnowledgeError("Only a question suggestion holds a question.")
         if self.kind in _PLACING:
             _required(self.landscape_domain_id or "", "Landscape domain")
         if self.kind is CandidateKind.LANDSCAPE_DOMAIN:
             _required(self.name, "Landscape domain name")
             if self.parent_domain_id == self.landscape_domain_id:
                 raise InvalidKnowledgeError("A landscape domain cannot be its own parent.")
-        elif self.kind in _WHOLE or self.kind in {CandidateKind.PLACEMENT, CandidateKind.CHANNEL}:
+        elif self.kind in _WHOLE or self.kind in {
+            CandidateKind.PLACEMENT,
+            CandidateKind.CHANNEL,
+            CandidateKind.QUESTION,
+        }:
             pass
         elif self.kind is CandidateKind.SYSTEM:
             _required(self.name, "System name")
@@ -235,6 +255,19 @@ class CandidateCitation:
     def __post_init__(self) -> None:
         _required(self.location, "Citation location")
         _required(self.quote, "Citation quote")
+
+
+@dataclass(frozen=True)
+class ChangeRequestCitation:
+    """The change request and approved feature a suggestion comes from, when it does not
+    come from a document (requirement-portal ADR-0101, step 7)."""
+
+    change_request_id: str
+    feature_id: str
+
+    def __post_init__(self) -> None:
+        _required(self.change_request_id, "Change request")
+        _required(self.feature_id, "Feature")
 
 
 @dataclass(frozen=True)
@@ -270,6 +303,9 @@ class CatalogueCandidate:
     basis: CandidateBasis = CandidateBasis.STATED
     rationale: str | None = None
     possible_matches: tuple[PossibleMatch, ...] = ()
+    # Set when it comes from a change request rather than a document. Its
+    # ``document_version_id`` then holds the change request's id, which scopes its reading.
+    change_request: ChangeRequestCitation | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "status", CandidateStatus(self.status))
@@ -693,7 +729,42 @@ def _resolved_journey(
     return resolved, _JourneyGaps(tuple(dict.fromkeys(systems)), gap, tuple(dict.fromkeys(parts)))
 
 
+def _question_offering(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> ProductOffering | None:
+    return find_offering(release.products, content.system_id)
+
+
+def _resolved_question(
+    question: OpenQuestion, offering: ProductOffering
+) -> tuple[OpenQuestion, tuple[str, ...]]:
+    """The question with its order types as the offering's codes, and those it does not have.
+    A change request names order types as the requirement did ("New Activation")."""
+    codes: list[str] = []
+    missing: list[str] = []
+    for written in question.order_types:
+        order_type = find_order_type(offering, written)
+        if order_type is None:
+            missing.append(written)
+        elif order_type.code not in codes:
+            codes.append(order_type.code)
+    return replace(question, order_types=tuple(codes)), tuple(missing)
+
+
 def classify(content: CandidateContent, release: ArchitectureKnowledge) -> CandidateMatch:
+    if content.kind is CandidateKind.QUESTION and content.question is not None:
+        offering = _question_offering(content, release)
+        if offering is None:
+            return CandidateMatch.NEEDS_OFFERING
+        question, missing = _resolved_question(content.question, offering)
+        if missing:
+            return CandidateMatch.NEEDS_OFFERING
+        asked = question.id.casefold()
+        before = next((item for item in offering.questions if item.id.casefold() == asked), None)
+        if before is None:
+            return CandidateMatch.NEW
+        same = replace(question, id=before.id) == before
+        return CandidateMatch.ALREADY_PRESENT if same else CandidateMatch.UPDATES_EXISTING
     if content.kind is CandidateKind.JOURNEY and content.journey is not None:
         journey, gaps = _resolved_journey(content.journey, release)
         if gaps.systems:
@@ -846,9 +917,11 @@ def open_matches(
 ) -> tuple[PossibleMatch, ...]:
     """The possible matches still to decide: those whose name no draft system answers to yet."""
     content = candidate.content
-    if content.kind in {CandidateKind.LANDSCAPE_DOMAIN, CandidateKind.CHANNEL} or (
-        content.kind in _WHOLE
-    ):
+    if content.kind in {
+        CandidateKind.LANDSCAPE_DOMAIN,
+        CandidateKind.CHANNEL,
+        CandidateKind.QUESTION,
+    } or (content.kind in _WHOLE):
         return ()
     if content.kind is CandidateKind.SYSTEM:
         still_new = classify(content, release) is CandidateMatch.NEW
@@ -1046,6 +1119,93 @@ def _with_journey(journey: Journey, release: ArchitectureKnowledge) -> Architect
     )
 
 
+def _with_question(
+    content: CandidateContent, question: OpenQuestion, release: ArchitectureKnowledge
+) -> ArchitectureKnowledge:
+    offering = _question_offering(content, release)
+    if offering is None:
+        raise CandidateDependencyError(
+            f"Accept or add the product offering {content.system_id!r} before the question it "
+            "is asked, or edit the question."
+        )
+    question, missing = _resolved_question(question, offering)
+    if missing:
+        raise CandidateDependencyError(
+            f"{offering.name} has no order type {missing[0]!r}; add it, or edit the question's "
+            "order types."
+        )
+    asked = question.id.casefold()
+    kept = tuple(item for item in offering.questions if item.id.casefold() != asked)
+    current = next((item for item in offering.questions if item.id.casefold() == asked), None)
+    placed = replace(question, id=current.id) if current is not None else question
+    # A question that was there keeps its place; a new one is asked last.
+    questions = (
+        tuple(placed if item is current else item for item in offering.questions)
+        if current is not None
+        else (*kept, placed)
+    )
+    changed = replace(offering, questions=questions)
+    return release.updated(
+        products=tuple(changed if item.id == offering.id else item for item in release.products)
+    )
+
+
+def change_request_source(incoming: IncomingChangeRequest) -> KnowledgeSource:
+    """The change request as a source: L2, its approval trace as its authority."""
+    trace = incoming.trace
+    return KnowledgeSource(
+        id=incoming.id,
+        title=f"Requirement AI change request: {incoming.title}",
+        level=SourceLevel.L2,
+        short=incoming.id,
+        version=f"revision {trace.breakdown_revision}",
+        supplied=True,
+        authority=f"{trace.sentence()}.",
+        scope=f"The approved features of {trace.epic_name} ({trace.epic_id}).",
+    )
+
+
+def accept_from_change_request(
+    release: ArchitectureKnowledge,
+    content: CandidateContent,
+    incoming: IncomingChangeRequest,
+    feature_id: str,
+    at: datetime,
+) -> ArchitectureKnowledge:
+    """A suggestion from a change request, accepted: the change request becomes a source of
+    the offering (registered first, since every version checks its sources), the question is
+    asked, and the version's change history records what it changed."""
+    source = change_request_source(incoming)
+    if not any(item.id == source.id for item in release.sources):
+        release = release.updated(sources=(*release.sources, source))
+    release = apply_candidate(content, release)
+    offering = _question_offering(content, release)
+    if offering is not None and source.id not in offering.sources:
+        sourced = replace(offering, sources=(*offering.sources, source.id))
+        release = release.updated(
+            products=tuple(sourced if item.id == offering.id else item for item in release.products)
+        )
+    question = content.question
+    feature = next((item for item in incoming.features if item.id == feature_id), None)
+    summary = (
+        f"Asks of {offering.name if offering else content.system_id}: {question.text}"
+        if question is not None
+        else (feature.asks() if feature else feature_id)
+    )
+    item = ChangeItem(kind=content.kind.value, summary=summary, feature_id=feature_id)
+    history = release.change_history
+    current = next((each for each in history if each.id == incoming.id), None)
+    record = current or replace(incoming.record(), product_id=offering.id if offering else None)
+    updated = record.with_item(item, at)
+    return release.updated(
+        change_history=(
+            tuple(updated if each.id == incoming.id else each for each in history)
+            if current is not None
+            else (*history, updated)
+        )
+    )
+
+
 def apply_candidate(
     content: CandidateContent, release: ArchitectureKnowledge
 ) -> ArchitectureKnowledge:
@@ -1056,6 +1216,8 @@ def apply_candidate(
     """
     if content.kind is CandidateKind.PRODUCT and content.product is not None:
         return _with_offering(content.product, release)
+    if content.kind is CandidateKind.QUESTION and content.question is not None:
+        return _with_question(content, content.question, release)
     if content.kind is CandidateKind.JOURNEY and content.journey is not None:
         return _with_journey(content.journey, release)
     if content.kind is CandidateKind.LANDSCAPE_DOMAIN:

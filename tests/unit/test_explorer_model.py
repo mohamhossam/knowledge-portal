@@ -668,3 +668,47 @@ def test_an_admin_imports_the_file_into_a_draft(client: TestClient) -> None:
     assert [item["id"] for item in release["products"]] == ["BPP"]
     assert [item["id"] for item in release["journeys"]] == ["BPP.NEW"]
     assert len(release["systems"]) == 5
+
+
+def test_an_applied_change_request_carries_over_into_the_change_history() -> None:
+    model = _model()
+    model["changeHistory"] = [
+        {
+            "id": "CR-20261004-Business_Pro_Plus",
+            "title": "Optional Microsoft 365 add-on",
+            "type": "CHANGE",
+            "product": model["products"][0]["id"],
+            "requester": "SMB Product Management",
+            "priority": "High",
+            "targetDate": "2027-01-31",
+            "createdAt": "2026-10-04T09:30:00.000Z",
+            "appliedAt": "2026-10-04",
+            "origin": "explorer",
+            "trace": None,
+            "items": [
+                {"kind": "component.add", "summary": "Add Microsoft 365", "status": "INFERRED"},
+                {"kind": "other", "summary": "Welcome email", "status": "GAP"},
+            ],
+            "gaps": ["Not mappable."],
+            "scenarios": [{"key": "A|B|C", "status": "CHANGED"}],
+        }
+    ]
+
+    seed = read_explorer_model(model)
+    history = content_from_mapping(seed.mapping).change_history
+    assert history is not None
+    (record,) = history
+
+    assert (record.id, record.origin.value, record.requester, record.target_date) == (
+        "CR-20261004-Business_Pro_Plus",
+        "explorer",
+        "SMB Product Management",
+        "2027-01-31",
+    )
+    assert [(item.kind, item.status.value) for item in record.items] == [
+        ("component.add", "inferred"),
+        ("other", "gap"),
+    ]
+    assert record.gaps == ("Not mappable.",)
+    assert "Not carried over yet: scenario impacts of applied change requests (1)." in seed.report
+    assert "Not carried over yet: applied change requests (1)." not in seed.report

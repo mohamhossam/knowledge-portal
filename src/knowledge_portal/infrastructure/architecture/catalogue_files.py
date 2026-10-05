@@ -13,6 +13,7 @@ import io
 import json
 import zipfile
 from collections.abc import Callable, Iterator, Sequence
+from datetime import UTC, datetime
 from functools import partial
 from typing import Any
 
@@ -29,6 +30,14 @@ from smb_kernel.documents.extraction_base import (
 from knowledge_portal.application.ports.catalogue_file import (
     CatalogueContent,
     CatalogueFileFormat,
+)
+from knowledge_portal.domain.architecture.change_requests import (
+    ChangeItem,
+    ChangeItemStatus,
+    ChangeOrigin,
+    ChangeRequestRecord,
+    RequirementTrace,
+    TracedFeature,
 )
 from knowledge_portal.domain.architecture.channels import Channel
 from knowledge_portal.domain.architecture.governance import (
@@ -112,6 +121,8 @@ CONFLICT_SCOPES = "ConflictScopes"
 QUESTIONS = "Questions"
 DECISIONS = "Decisions"
 BOUNDARIES = "Boundaries"
+CHANGE_HISTORY = "ChangeHistory"
+CHANGE_ITEMS = "ChangeItems"
 _CELLS = tuple(f"cell_{number}" for number in range(1, MAX_TABLE_COLUMNS + 1))
 INSTRUCTIONS = "Instructions"
 _DOMAIN_HEADERS = ("domain_id", "name", "name_ar", "parent_id", "description")
@@ -341,9 +352,41 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "source",
     ),
     CONFLICT_SCOPES: ("conflict_id", "product_id", "order_types", "question_id"),
-    QUESTIONS: ("product_id", "question_id", "text", "impact", "confidence", "source"),
+    QUESTIONS: (
+        "product_id",
+        "question_id",
+        "text",
+        "impact",
+        "confidence",
+        "source",
+        "order_types",
+    ),
     DECISIONS: ("product_id", "decision_id", "title", "text", "confidence", "source"),
     BOUNDARIES: ("product_id", "kind", "text"),
+    CHANGE_HISTORY: (
+        "change_request_id",
+        "title",
+        "origin",
+        "product_id",
+        "requester",
+        "reason",
+        "priority",
+        "target_date",
+        "created_at",
+        "applied_at",
+        "gaps",
+        "requirement_id",
+        "breakdown_revision",
+        "approval_id",
+        "approved_by",
+        "approved_at",
+        "epic_id",
+        "epic_name",
+        "features",
+        "export_schema",
+        "knowledge_version",
+    ),
+    CHANGE_ITEMS: ("change_request_id", "kind", "summary", "status", "feature_id"),
 }
 # Headers a sheet cannot do without. Columns added later stay optional, so
 # workbooks filled from an older template still import.
@@ -386,6 +429,8 @@ _REQUIRED_HEADERS: dict[str, tuple[str, ...]] = {
     QUESTIONS: ("product_id", "question_id", "text"),
     DECISIONS: ("product_id", "decision_id", "title"),
     BOUNDARIES: ("product_id", "kind", "text"),
+    CHANGE_HISTORY: ("change_request_id", "title"),
+    CHANGE_ITEMS: ("change_request_id", "kind", "summary"),
 }
 _KINDS = ", ".join(kind.value for kind in RelationshipKind)
 _REQUIRED_SHEETS = (SYSTEMS,)
@@ -483,6 +528,11 @@ _INSTRUCTIONS = (
         "Products sources and primary_source (optional): the source_ids a product is read "
         "from, by ;. Questions, Decisions: its open questions and architecture decisions. "
         "Boundaries: kind boundary (what its sources cover) or not_used (what it no longer uses).",
+    ),
+    (
+        "ChangeHistory (optional): the change requests applied to this version, one row each, "
+        "with the approved requirement they come from; features as id: name by ;, gaps by ;. "
+        "ChangeItems: what each asked for. Leave both out to keep the version's own history.",
     ),
     ("Row 1 of each sheet holds the headers; keep them as they are.",),
 )
@@ -661,6 +711,7 @@ def content_from_mapping(raw: object) -> CatalogueContent:
         _channels(_entries(raw, "channels")),
         _sources(_entries(raw, "sources")),
         _conflicts(_entries(raw, "conflicts")),
+        _history(_entries(raw, "change_history")) if "change_history" in raw else None,
     )
 
 
@@ -1021,12 +1072,16 @@ def _offerings(entries: list[dict[str, Any]]) -> list[ProductOffering]:
 
 
 def _question(raw: dict[str, Any], where: str) -> OpenQuestion:
+    order_types = raw.get("order_types")
     return OpenQuestion(
         _text(raw.get("id"), where, "id"),
         _text(raw.get("text"), where, "text"),
         _optional_text(raw.get("impact"), where, "impact"),
         _trust(raw.get("confidence"), where),
         _optional_text(raw.get("source"), where, "source"),
+        _text_list(order_types, where, "order_types")
+        if isinstance(order_types, list)
+        else _split(order_types, where, "order_types"),
     )
 
 
@@ -1266,7 +1321,7 @@ def _offering_mapping(offering: ProductOffering) -> dict[str, Any]:
                 {
                     "id": item.id,
                     "text": item.text,
-                    **_present(impact=item.impact),
+                    **_present(impact=item.impact, order_types=list(item.order_types)),
                     **_sourced(item),
                 }
                 for item in offering.questions
@@ -1399,6 +1454,7 @@ def _content(
     channels: list[Channel] | None = None,
     sources: list[KnowledgeSource] | None = None,
     conflicts: list[SourceConflict] | None = None,
+    history: list[ChangeRequestRecord] | None = None,
 ) -> CatalogueContent:
     """The file's content, refusing a placement in a domain the file does not list."""
     known = {item.id for item in domains}
@@ -1425,6 +1481,7 @@ def _content(
         tuple(channels or ()),
         tuple(sources or ()),
         tuple(conflicts or ()),
+        None if history is None else tuple(history),
     )
 
 
@@ -1665,6 +1722,7 @@ def release_to_mapping(release: ArchitectureKnowledge) -> dict[str, Any]:
         **_present(
             sources=[_source_mapping(item) for item in release.sources],
             conflicts=[_conflict_mapping(item) for item in release.conflicts],
+            change_history=[_history_mapping(item) for item in release.change_history],
         ),
     }
 
@@ -1817,6 +1875,9 @@ def _read_workbook(content: bytes) -> CatalogueContent:
             ]
         )
         conflicts = _conflicts(_sheet_conflicts(workbook))
+        history = (
+            _history(_sheet_history(workbook)) if CHANGE_HISTORY in workbook.sheetnames else None
+        )
     finally:
         workbook.close()
     definitions = []
@@ -1847,6 +1908,7 @@ def _read_workbook(content: bytes) -> CatalogueContent:
         channels,
         sources,
         conflicts,
+        history,
     )
 
 
@@ -2251,6 +2313,7 @@ def _write_offering(sheets: dict[str, Any], product: ProductOffering) -> None:
                 question.impact,
                 _confidence(question),
                 question.source,
+                f"{_LIST_SEPARATOR} ".join(question.order_types),
             ),
         )
     for decision in product.decisions:
@@ -2675,6 +2738,239 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                     scope.question_id,
                 ),
             )
+    for record in release.change_history if release is not None else ():
+        trace = record.trace
+        _append(
+            sheets[CHANGE_HISTORY],
+            (
+                record.id,
+                record.title,
+                record.origin.value,
+                record.product_id,
+                record.requester,
+                record.reason,
+                record.priority,
+                record.target_date,
+                _iso(record.created_at),
+                _iso(record.applied_at),
+                f"{_LIST_SEPARATOR} ".join(record.gaps),
+                trace.requirement_id if trace else None,
+                trace.breakdown_revision if trace else None,
+                trace.approval_id if trace else None,
+                trace.approved_by if trace else None,
+                _iso(trace.approved_at) if trace else None,
+                trace.epic_id if trace else None,
+                trace.epic_name if trace else None,
+                f"{_LIST_SEPARATOR} ".join(f"{item.id}: {item.name}" for item in trace.features)
+                if trace
+                else None,
+                trace.export_schema if trace else None,
+                trace.knowledge_version if trace else None,
+            ),
+        )
+        for item in record.items:
+            _append(
+                sheets[CHANGE_ITEMS],
+                (record.id, item.kind, item.summary, item.status.value, item.feature_id),
+            )
     buffer = io.BytesIO()
     workbook.save(buffer)
     return buffer.getvalue()
+
+
+def _sheet_history(workbook: Any) -> list[dict[str, Any]]:
+    """The change history sheets gathered into the YAML/JSON shape."""
+    records: dict[str, dict[str, Any]] = {}
+    for number, cells in _rows(workbook, CHANGE_HISTORY):
+        where = f"{CHANGE_HISTORY} row {number}"
+        record_id = _text(cells.get("change_request_id"), where, "change_request_id")
+        if record_id in records:
+            raise InvalidKnowledgeError(f"{where}: change request {record_id!r} is listed twice.")
+        features = [
+            dict(zip(("id", "name"), (part.strip() for part in item.split(":", 1)), strict=False))
+            for item in _split(cells.get("features"), where, "features")
+        ]
+        trace = (
+            {
+                "requirement": cells.get("requirement_id"),
+                "revision": cells.get("breakdown_revision"),
+                "approval": cells.get("approval_id"),
+                "approved_by": cells.get("approved_by"),
+                "approved_at": cells.get("approved_at"),
+                "epic": cells.get("epic_id"),
+                "epic_name": cells.get("epic_name"),
+                "features": features,
+                "export_schema": cells.get("export_schema"),
+                "knowledge_version": cells.get("knowledge_version"),
+            }
+            if cells.get("requirement_id")
+            else None
+        )
+        records[record_id] = {
+            **cells,
+            "_where": where,
+            "id": record_id,
+            "product": cells.get("product_id"),
+            "gaps": list(_split(cells.get("gaps"), where, "gaps")),
+            "trace": trace,
+            "items": [],
+        }
+    for number, cells in _rows(workbook, CHANGE_ITEMS):
+        where = f"{CHANGE_ITEMS} row {number}"
+        record_id = _text(cells.get("change_request_id"), where, "change_request_id")
+        if record_id not in records:
+            raise InvalidKnowledgeError(
+                f"{where}: change request {record_id!r} is not on {CHANGE_HISTORY}."
+            )
+        records[record_id]["items"].append(
+            {**cells, "feature": cells.get("feature_id"), "_where": where}
+        )
+    return list(records.values())
+
+
+def _iso(value: datetime | None) -> str | None:
+    return value.isoformat() if value is not None else None
+
+
+def _moment(value: object, where: str, field: str) -> datetime | None:
+    if value is None or value == "":
+        return None
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=UTC)
+    text = _text(value, where, field)
+    try:
+        moment = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise InvalidKnowledgeError(f"{where}: {field} must be a date and time.") from exc
+    return moment if moment.tzinfo else moment.replace(tzinfo=UTC)
+
+
+# Change history (requirement-portal ADR-0101, step 7): the change requests applied, each
+# with the approved requirement it comes from.
+
+
+def _history(entries: list[dict[str, Any]]) -> list[ChangeRequestRecord]:
+    return [
+        _part(where, partial(_record, item, where))
+        for number, item in enumerate(entries, start=1)
+        for where in (_where(item, f"change_history entry {number}"),)
+    ]
+
+
+def _record(item: dict[str, Any], where: str) -> ChangeRequestRecord:
+    raw_trace = item.get("trace")
+    trace = None
+    if isinstance(raw_trace, dict):
+        place = f"{where}, trace"
+        revision = raw_trace.get("revision")
+        trace = RequirementTrace(
+            requirement_id=_text(raw_trace.get("requirement"), place, "requirement"),
+            breakdown_revision=int(str(revision)) if revision not in (None, "") else 1,
+            approval_id=_text(raw_trace.get("approval"), place, "approval"),
+            epic_id=_text(raw_trace.get("epic"), place, "epic"),
+            epic_name=_text(raw_trace.get("epic_name"), place, "epic_name"),
+            approved_by=_optional_text(raw_trace.get("approved_by"), place, "approved_by"),
+            approved_at=_moment(raw_trace.get("approved_at"), place, "approved_at"),
+            features=tuple(
+                TracedFeature(
+                    _text(feature.get("id"), place, "feature id"),
+                    _text(feature.get("name"), place, "feature name"),
+                )
+                for feature in raw_trace.get("features") or []
+                if isinstance(feature, dict)
+            ),
+            export_schema=_optional_text(raw_trace.get("export_schema"), place, "export_schema"),
+            knowledge_version=_optional_text(
+                raw_trace.get("knowledge_version"), place, "knowledge_version"
+            ),
+        )
+    items = []
+    for position, raw in enumerate(item.get("items") or [], start=1):
+        place = _where(raw, f"{where}, item {position}") if isinstance(raw, dict) else where
+        if not isinstance(raw, dict):
+            raise InvalidKnowledgeError(f"{place}: an item must be an object.")
+        status = _optional_text(raw.get("status"), place, "status") or "recorded"
+        try:
+            known = ChangeItemStatus(status.casefold())
+        except ValueError as exc:
+            raise InvalidKnowledgeError(
+                f"{place}: status must be recorded, inferred, gap or conflict."
+            ) from exc
+        items.append(
+            ChangeItem(
+                _text(raw.get("kind"), place, "kind"),
+                _text(raw.get("summary"), place, "summary"),
+                known,
+                _optional_text(raw.get("feature"), place, "feature"),
+            )
+        )
+    origin = _optional_text(item.get("origin"), where, "origin") or "requirement-ai"
+    try:
+        source = ChangeOrigin(origin.casefold())
+    except ValueError as exc:
+        raise InvalidKnowledgeError(f"{where}: origin must be requirement-ai or explorer.") from exc
+    return ChangeRequestRecord(
+        id=_text(item.get("id"), where, "id"),
+        title=_text(item.get("title"), where, "title"),
+        origin=source,
+        product_id=_optional_text(item.get("product"), where, "product"),
+        requester=_optional_text(item.get("requester"), where, "requester"),
+        reason=_optional_text(item.get("reason"), where, "reason"),
+        priority=_optional_text(item.get("priority"), where, "priority"),
+        target_date=_optional_text(item.get("target_date"), where, "target_date"),
+        created_at=_moment(item.get("created_at"), where, "created_at"),
+        applied_at=_moment(item.get("applied_at"), where, "applied_at"),
+        trace=trace,
+        items=tuple(items),
+        gaps=_text_list(item.get("gaps"), where, "gaps"),
+    )
+
+
+def _history_mapping(record: ChangeRequestRecord) -> dict[str, Any]:
+    trace = record.trace
+    return {
+        "id": record.id,
+        "title": record.title,
+        "origin": record.origin.value,
+        **_present(
+            product=record.product_id,
+            requester=record.requester,
+            reason=record.reason,
+            priority=record.priority,
+            target_date=record.target_date,
+            created_at=_iso(record.created_at),
+            applied_at=_iso(record.applied_at),
+        ),
+        **(
+            {
+                "trace": {
+                    "requirement": trace.requirement_id,
+                    "revision": trace.breakdown_revision,
+                    "approval": trace.approval_id,
+                    "epic": trace.epic_id,
+                    "epic_name": trace.epic_name,
+                    **_present(
+                        approved_by=trace.approved_by,
+                        approved_at=_iso(trace.approved_at),
+                        features=[{"id": item.id, "name": item.name} for item in trace.features],
+                        export_schema=trace.export_schema,
+                        knowledge_version=trace.knowledge_version,
+                    ),
+                }
+            }
+            if trace
+            else {}
+        ),
+        **_present(
+            items=[
+                {
+                    "kind": item.kind,
+                    "summary": item.summary,
+                    "status": item.status.value,
+                    **_present(feature=item.feature_id),
+                }
+                for item in record.items
+            ],
+            gaps=list(record.gaps),
+        ),
+    }

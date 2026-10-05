@@ -24,6 +24,9 @@ class ExtractionRun:
     # The model that looked for existing systems behind unmatched names, if one ran.
     match_model: str | None = None
     match_prompt_version: str | None = None
+    # Set when the run read a change request from Requirement AI rather than a document; its
+    # ``document_version_id`` then holds the same id (requirement-portal ADR-0101, step 7).
+    change_request_id: str | None = None
 
 
 class CatalogueCandidateRepositoryPort(Protocol):

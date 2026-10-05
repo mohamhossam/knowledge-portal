@@ -16,6 +16,7 @@ import pytest
 from smb_kernel.persistence.connector import DirectPostgresConnector
 
 from knowledge_portal.infrastructure.persistence.migration_runner import (
+    MIGRATIONS,
     latest_packaged_migration,
     run_migrations,
 )
@@ -36,6 +37,8 @@ KNOWLEDGE_TABLES = {
     "architecture_knowledge_indexes",
     "architecture_knowledge_releases",
     "architecture_sample_requirements",
+    # Change requests from Requirement AI (requirement-portal ADR-0101, step 7).
+    "incoming_change_requests",
     "knowledge_document_blobs",
     "knowledge_events",
     "library_chunks",
@@ -92,7 +95,8 @@ def test_a_migrated_database_is_ready_and_migrating_again_changes_nothing(
                 f'SELECT version FROM "{schema}".schema_migrations'
             ).fetchall()
         ]
-    assert applied == [latest_packaged_migration()]
+    assert sorted(applied) == sorted(path.name for path in MIGRATIONS.glob("*.sql"))
+    assert max(applied) == latest_packaged_migration()
 
 
 def test_every_foreign_key_stays_inside_the_knowledge_schema(
