@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -264,5 +264,54 @@ describe("ExplorerPage", () => {
     );
     expect(await screen.findByRole("alert")).toHaveTextContent("The knowledge service is unavailable.");
     expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
+  });
+});
+
+describe("the Solution Architecture download", () => {
+  function saving() {
+    const saved: { name: string; blob: Blob }[] = [];
+    const blobs = new Map<string, Blob>();
+    Object.assign(URL, {
+      createObjectURL: vi.fn((blob: Blob) => {
+        const url = `blob:${blobs.size}`;
+        blobs.set(url, blob);
+        return url;
+      }),
+      revokeObjectURL: vi.fn(),
+    });
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+      saved.push({ name: this.download, blob: blobs.get(this.href)! });
+    });
+    return saved;
+  }
+
+  it("writes the scenario as a Word document for any reader, reading the plans it already read", async () => {
+    const saved = saving();
+    open("/explorer?product=bpp&order=NEW&channel=online");
+    const button = await screen.findByRole("button", { name: "Download the Solution Architecture (.docx)" });
+    expect(button).toHaveAccessibleDescription(/eighteen sections, for architecture review/);
+
+    fireEvent.click(button);
+
+    await waitFor(() => expect(saved).toHaveLength(1));
+    expect(saved[0]!.name).toBe("Business_Pro_Plus_New_Activation_Online_Solution_Architecture.docx");
+    expect(saved[0]!.blob.type).toBe("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    expect(api.explorerPlans).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: "Download the Solution Architecture (.docx)" })).not.toHaveAttribute("aria-disabled");
+  });
+
+  it("says when the document could not be written, and offers it again", async () => {
+    saving();
+    vi.mocked(URL.createObjectURL).mockImplementationOnce(() => {
+      throw new Error("No room to save it.");
+    });
+    open();
+    fireEvent.click(await screen.findByRole("button", { name: "Download the Solution Architecture (.docx)" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("The document could not be written: No room to save it.");
+    fireEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: "Try again" }));
+    // The retry takes "Try again" away; focus lands on the download, never on the page.
+    expect(screen.getByRole("button", { name: /Solution Architecture|Writing the document/ })).toHaveFocus();
+    await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
   });
 });
