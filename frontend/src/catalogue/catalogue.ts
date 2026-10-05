@@ -58,6 +58,12 @@ export const CONFIDENCE: Record<SourceConfidence, string> = {
   gap: "Its source leaves gaps",
 };
 
+/** How sure a source is, as a select's options; "Not stated" leaves it unsaid. */
+export const CONFIDENCE_OPTIONS = [
+  { value: "", label: "Not stated" },
+  ...(Object.keys(CONFIDENCE) as SourceConfidence[]).map((value) => ({ value, label: CONFIDENCE[value] })),
+];
+
 export const AUDIT_ACTION: Record<string, string> = {
   create_draft: "Started",
   rename: "Renamed",

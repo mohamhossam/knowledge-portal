@@ -253,7 +253,7 @@ function ScenarioSheet({ release, scenario, linkSystems }: {
                       <span className="secondary govtable__by">Takes part in order tracking</span>
                     )}
                   </td>
-                  <td className="cell--end">{new Set([...item.performs, ...item.supports]).size}</td>
+                  <td className="cell--end">{new Set([...item.performs, ...item.supports]).size || "—"}</td>
                 </tr>
               ))}
             </tbody>

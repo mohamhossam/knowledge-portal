@@ -963,7 +963,49 @@
   font-weight: var(--w-bold);
 }
 
+/* Internal statuses are identifiers, kept as the source writes them. */
 .tracking__status {
   font-stretch: var(--width-condensed);
   overflow-wrap: anywhere;
+}
+
+/* System and channel names keep their words whole. */
+.govtable.tracking__flows th,
+.govtable.tracking__flows td,
+.govtable.tracking__channels th,
+.govtable.tracking__channels td {
+  overflow-wrap: break-word;
+}
+
+.tracking__inline {
+  display: none;
+}
+
+/* Milestones are a sequence: numbered in tabular, condensed figures, as steps are. */
+.tracking__milestones {
+  counter-reset: milestone;
+}
+
+.tracking__milestones > li {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  counter-increment: milestone;
+}
+
+.tracking__milestones > li::before {
+  content: counter(milestone);
+  color: var(--ink-2);
+  font-stretch: var(--width-condensed);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 45rem) {
+  /* On phones the To and Correlation key columns ride under the row's first cell. */
+  .govtable .tracking__wide {
+    display: none;
+  }
+
+  .govtable .tracking__inline {
+    display: block;
+  }
 }

@@ -50,7 +50,7 @@ export type ScenarioTracking = {
   applies: boolean;
   /** The correlation of the channel being read, when tracking describes it. */
   entry: Tracking["channels"][number] | null;
-  /** The shared flows, then the read path of the channel's tracking screen. */
+  /** The shared flows, then how the channel's tracking screen reads the order's status. */
   flows: (TrackingFlow & { readFor?: string })[];
   /** What tracking leaves undefined for this scenario, each as a sentence. */
   gaps: string[];
@@ -129,9 +129,10 @@ export function trackingFor(scenario: Scenario): ScenarioTracking | null {
   const entry = channel ? tracking.channels.find((item) => item.channel_id === channel.id) ?? null : null;
   const flows: ScenarioTracking["flows"] = [...tracking.flows];
   if (applies && entry?.ui_system_id && entry.read_system_id) {
+    // The screen asks; the status flows from the system it reads to the screen.
     flows.push({
-      from_system_id: entry.ui_system_id,
-      to_system_id: entry.read_system_id,
+      from_system_id: entry.read_system_id,
+      to_system_id: entry.ui_system_id,
       label: entry.read_interface ?? "Reads the order's progress",
       readFor: channel?.name,
       confidence: entry.confidence,
@@ -141,7 +142,7 @@ export function trackingFor(scenario: Scenario): ScenarioTracking | null {
   const gaps: string[] = [];
   if (applies) {
     if (channel && !entry) gaps.push(`Order tracking does not say how ${channel.name} tracks its orders.`);
-    if (channel && entry && !entry.ui_system_id) gaps.push(`The screen ${channel.name} customers track their orders in is not named.`);
+    if (channel && entry && !entry.ui_system_id) gaps.push(`${channel.name}’s tracking screen is not named.`);
     if (channel && entry && !entry.correlation_key) gaps.push(`${channel.name} has no correlation key tying its order to the fulfilment order.`);
     const unclear = [...tracking.milestones.filter((item) => item.confidence === "gap").map((item) => item.label), ...tracking.fallout.filter((item) => item.confidence === "gap").map((item) => item.trigger)];
     if (unclear.length) gaps.push(`Tracking’s ${listed(unclear.map((item) => `‘${item}’`))} ${unclear.length === 1 ? "is" : "are"} marked in the sources as a gap.`);

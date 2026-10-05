@@ -106,13 +106,13 @@ describe("tracking", () => {
     const tracked = trackingFor(scenario())!;
     expect(tracked.applies).toBe(true);
     expect(tracked.entry?.ui_system_id).toBe("web");
-    expect(tracked.flows.map((flow) => `${flow.from_system_id}>${flow.to_system_id}`)).toEqual(["cwom>rtf", "rtf>rtf", "web>rtf"]);
+    expect(tracked.flows.map((flow) => `${flow.from_system_id}>${flow.to_system_id}`)).toEqual(["cwom>rtf", "rtf>rtf", "rtf>web"]);
     expect(tracked.flows.at(-1)).toMatchObject({ label: "getRealTimeOrderDetails", readFor: "Online" });
   });
 
   it("says what a channel leaves undefined", () => {
     expect(trackingFor(scenario("bpp", "NEW", "shop"))!.gaps).toEqual([
-      "The screen Shop customers track their orders in is not named.",
+      "Shop’s tracking screen is not named.",
       "Shop has no correlation key tying its order to the fulfilment order.",
       "Tracking’s ‘Installation done’ is marked in the sources as a gap.",
     ]);

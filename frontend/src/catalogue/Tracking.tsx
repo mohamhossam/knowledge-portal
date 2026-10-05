@@ -21,12 +21,15 @@ export type TrackingFocus = {
   flows: TrackingRow[];
 };
 
-const due = (gap: boolean) => (gap ? "row row--due" : "row");
-
 function Sourced({ item }: { item: { confidence?: string | null; source?: string | null } }) {
   const confidence = item.confidence && item.confidence !== "confirmed" ? CONFIDENCE[item.confidence as keyof typeof CONFIDENCE] : null;
   const line = [confidence, item.source].filter(Boolean).join(" · ");
   return line ? <span className="secondary govtable__by" dir="auto">{line}</span> : null;
+}
+
+/** A value its source marks as a gap is due (the Weight Is Rank Rule). */
+function Value({ gap, children }: { gap: boolean; children: ReactNode }) {
+  return gap ? <span className="tracking__missing">{children}</span> : <>{children}</>;
 }
 
 /**
@@ -53,17 +56,19 @@ export function TrackingSection({ offering, headingId, system, channelName, orde
       </section>
     );
   }
-  const scope = tracking.order_types.length
-    ? `Specified for ${tracking.order_types.map(orderName).join(", ")}.`
-    : "Specified for every order type.";
+  const others = tracking.order_types.length - 1;
+  const scope = !tracking.order_types.length
+    ? "Specified for every order type."
+    : focus?.applies && others > 0
+      ? `Specified for ${focus.orderName} and ${others === 1 ? "1 other order type" : `${others} other order types`}.`
+      : `Specified for ${tracking.order_types.map(orderName).join(", ")}.`;
 
   if (focus && !focus.applies) {
     return (
       <section className="govsection" aria-labelledby={headingId}>
         {title}
-        <p className="govsection__lead">{scope}</p>
-        <p className="timetable__quiet explorer__gap" dir="auto">
-          {tracking.not_applicable_note ?? `Its sources do not specify tracking for ${focus.orderName}.`}
+        <p className="govsection__lead" dir="auto">
+          Not specified for {focus.orderName}. {tracking.not_applicable_note ?? scope}
         </p>
         <Fallout tracking={tracking} />
       </section>
@@ -82,31 +87,36 @@ export function TrackingSection({ offering, headingId, system, channelName, orde
 
       <h4 className="govsection__part">{focus?.channel ? `How ${focus.channel.name} tracks its orders` : "How each channel tracks its orders"}</h4>
       {channels.length ? (
-        <table className="govtable">
-          <caption className="visually-hidden">Correlation and tracking screen per channel for {offering.name}</caption>
+        <table className="govtable tracking__channels">
+          <caption className="visually-hidden">
+            {focus?.channel ? `How ${focus.channel.name} tracks its orders of ${offering.name}` : `How each channel tracks its orders of ${offering.name}`}
+          </caption>
           <thead>
             <tr>
               <th scope="col">Channel</th>
-              <th scope="col">Correlation key</th>
+              <th scope="col" className="tracking__wide">Correlation key</th>
               <th scope="col">Tracked in</th>
             </tr>
           </thead>
           <tbody>
             {channels.map((item) => (
-              <tr key={item.channel_id} className={due(!item.correlation_key || !item.ui_system_id)}>
+              <tr key={item.channel_id} className={!item.correlation_key || !item.ui_system_id ? "row row--due" : "row"}>
                 <th scope="row" dir="auto">
                   {channelName(item.channel_id)}
                   {item.story && <span className="secondary govtable__by" dir="auto">{item.story}</span>}
-                </th>
-                <td dir="auto">
-                  {item.correlation_key ?? <span className="tracking__missing">Not defined</span>}
                   <Sourced item={item} />
+                  <span className="secondary govtable__by tracking__inline" dir="auto">
+                    Correlation key: {item.correlation_key ?? <span className="tracking__missing">Not defined</span>}
+                  </span>
+                </th>
+                <td dir="auto" className="tracking__wide">
+                  {item.correlation_key ?? <span className="tracking__missing">Not defined</span>}
                 </td>
                 <td>
                   {item.ui_system_id ? system(item.ui_system_id) : <span className="tracking__missing">Not named</span>}
                   {item.read_system_id && (
                     <span className="secondary govtable__by">
-                      Reads from {system(item.read_system_id)}
+                      Reads its status from {system(item.read_system_id)}
                       {item.read_interface && <> over <span dir="auto">{item.read_interface}</span></>}
                     </span>
                   )}
@@ -124,28 +134,34 @@ export function TrackingSection({ offering, headingId, system, channelName, orde
 
       <h4 className="govsection__part">What carries the order's progress</h4>
       {flows.length ? (
-        <table className="govtable">
+        <table className="govtable tracking__flows">
           <caption className="visually-hidden">Flows that carry order and milestone events for {offering.name}</caption>
           <thead>
             <tr>
               <th scope="col">From</th>
-              <th scope="col">To</th>
+              <th scope="col" className="tracking__wide">To</th>
               <th scope="col">What it carries</th>
             </tr>
           </thead>
           <tbody>
-            {flows.map((flow, index) => (
-              <tr key={`${flow.from_system_id}>${flow.to_system_id}:${flow.label}:${index}`} className={due(flow.confidence === "gap")}>
-                <th scope="row">{system(flow.from_system_id)}</th>
-                <td>{flow.from_system_id === flow.to_system_id ? <span className="secondary">Logs it itself</span> : system(flow.to_system_id)}</td>
-                <td dir="auto">
-                  {flow.label}
-                  {flow.readFor && <span className="secondary govtable__by">The read path of {flow.readFor}</span>}
-                  {flow.interface && <span className="secondary govtable__by" dir="auto">Over {flow.interface}</span>}
-                  <Sourced item={flow} />
-                </td>
-              </tr>
-            ))}
+            {flows.map((flow, index) => {
+              const to = flow.from_system_id === flow.to_system_id ? <span className="secondary">Logs it itself</span> : system(flow.to_system_id);
+              return (
+                <tr key={`${flow.from_system_id}>${flow.to_system_id}:${flow.label}:${index}`} className="row">
+                  <th scope="row">
+                    {system(flow.from_system_id)}
+                    <span className="secondary govtable__by tracking__inline">To {to}</span>
+                  </th>
+                  <td className="tracking__wide">{to}</td>
+                  <td dir="auto">
+                    <Value gap={flow.confidence === "gap"}>{flow.label}</Value>
+                    {flow.readFor && <span className="secondary govtable__by">How {flow.readFor}'s tracking screen reads the order's status</span>}
+                    {flow.interface && <span className="secondary govtable__by" dir="auto">Over {flow.interface}</span>}
+                    <Sourced item={flow} />
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       ) : (
@@ -156,11 +172,13 @@ export function TrackingSection({ offering, headingId, system, channelName, orde
       {tracking.milestones.length ? (
         <ol className="sheet__list tracking__milestones">
           {tracking.milestones.map((item) => (
-            <li key={item.label} className={item.confidence === "gap" ? "explorer__gap" : undefined}>
-              <span dir="auto">{item.label}</span>
-              {item.system_id && <span className="secondary"> · {system(item.system_id)}</span>}
-              {item.detail && <span className="secondary govtable__by" dir="auto">{item.detail}</span>}
-              <Sourced item={item} />
+            <li key={item.label}>
+              <span>
+                <span dir="auto"><Value gap={item.confidence === "gap"}>{item.label}</Value></span>
+                {item.system_id && <span className="secondary"> · {system(item.system_id)}</span>}
+                {item.detail && <span className="secondary govtable__by" dir="auto">{item.detail}</span>}
+                <Sourced item={item} />
+              </span>
             </li>
           ))}
         </ol>
@@ -202,10 +220,14 @@ function Fallout({ tracking }: { tracking: Tracking }) {
           </thead>
           <tbody>
             {tracking.fallout.map((item) => (
-              <tr key={item.trigger} className={due(item.confidence === "gap")}>
+              <tr key={item.trigger} className="row">
                 <th scope="row" dir="auto">{item.trigger}</th>
                 <td dir="auto">
-                  {item.handling ?? <span className="tracking__missing">Not stated</span>}
+                  {item.handling ? (
+                    <Value gap={item.confidence === "gap"}>{item.handling}</Value>
+                  ) : (
+                    <span className="tracking__missing">Not stated</span>
+                  )}
                   <Sourced item={item} />
                 </td>
               </tr>

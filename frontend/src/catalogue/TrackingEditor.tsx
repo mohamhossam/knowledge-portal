@@ -1,6 +1,7 @@
 import { Plus, X } from "lucide-react";
 
-import type { CatalogueSystem, Channel, Offering } from "../api/client";
+import type { CatalogueSystem, Channel, Offering, SourceConfidence } from "../api/client";
+import { CONFIDENCE_OPTIONS } from "./catalogue";
 import { AreaField, CheckField, Rows, SelectField, SystemField, TextField } from "./forms";
 
 type Tracking = NonNullable<Offering["tracking"]>;
@@ -10,6 +11,18 @@ type TrackingEvent = Tracking["milestones"][number];
 type Fallout = Tracking["fallout"][number];
 
 const BLANK: Tracking = { order_types: [], flows: [], channels: [], milestones: [], statuses: [], fallout: [] };
+
+/** How sure the source is of one fact, so a curator who settles a gap can say so. */
+function Sureness({ value, onChange }: { value: SourceConfidence | null | undefined; onChange: (value: SourceConfidence | null) => void }) {
+  return (
+    <SelectField
+      label="How sure its source is"
+      value={value ?? ""}
+      options={CONFIDENCE_OPTIONS}
+      onChange={(next) => onChange((next || null) as SourceConfidence | null)}
+    />
+  );
+}
 
 const cut = (text: string, index: number, what: string) => {
   const name = text.trim();
@@ -63,7 +76,7 @@ export function TrackingEditor({ value, onChange, systems, channels, orderTypes 
       )}
       <AreaField label="What its sources say of its scope" value={value.scope_note} onChange={(scope_note) => set({ scope_note: scope_note || null })} />
       <AreaField
-        label="What they say for the other order types"
+        label="What its sources say for the order types it does not cover"
         value={value.not_applicable_note}
         onChange={(not_applicable_note) => set({ not_applicable_note: not_applicable_note || null })}
       />
@@ -78,10 +91,12 @@ export function TrackingEditor({ value, onChange, systems, channels, orderTypes 
         render={(item, change) => (
           <>
             <SelectField label="Channel" value={item.channel_id} options={[{ value: "", label: "Choose a channel" }, ...channelOptions]} onChange={(channel_id) => change({ channel_id })} />
+            <Sureness value={item.confidence} onChange={(confidence) => change({ confidence })} />
             <TextField label="Correlation key" value={item.correlation_key} wide onChange={(key) => change({ correlation_key: key || null })} />
             <SystemField label="Tracked in" value={item.ui_system_id ?? ""} systems={systems} allowNone onChange={(id) => change({ ui_system_id: id || null })} />
-            <SystemField label="Which reads from" value={item.read_system_id ?? ""} systems={systems} allowNone onChange={(id) => change({ read_system_id: id || null })} />
-            <TextField label="Over" value={item.read_interface} onChange={(text) => change({ read_interface: text || null })} />
+            <SystemField label="Reads its status from" value={item.read_system_id ?? ""} systems={systems} allowNone onChange={(id) => change({ read_system_id: id || null })} />
+            <TextField label="Over (interface)" value={item.read_interface} wide onChange={(text) => change({ read_interface: text || null })} />
+            <TextField label="Its story" value={item.story} wide onChange={(story) => change({ story: story || null })} />
             <TextField label="What the sources say when the screen is not named" value={item.ui_note} wide onChange={(text) => change({ ui_note: text || null })} />
           </>
         )}
@@ -97,9 +112,10 @@ export function TrackingEditor({ value, onChange, systems, channels, orderTypes 
         render={(item, change) => (
           <>
             <SystemField label="From" value={item.from_system_id} systems={systems} onChange={(from_system_id) => change({ from_system_id })} />
-            <SystemField label="To (the same system: it logs it)" value={item.to_system_id} systems={systems} onChange={(to_system_id) => change({ to_system_id })} />
+            <SystemField label="To, or the same system when it logs the event" value={item.to_system_id} systems={systems} onChange={(to_system_id) => change({ to_system_id })} />
+            <Sureness value={item.confidence} onChange={(confidence) => change({ confidence })} />
             <TextField label="What it carries" value={item.label} required wide onChange={(label) => change({ label })} />
-            <TextField label="Over" value={item.interface} onChange={(text) => change({ interface: text || null })} />
+            <TextField label="Over (interface)" value={item.interface} wide onChange={(text) => change({ interface: text || null })} />
           </>
         )}
       />
@@ -115,6 +131,7 @@ export function TrackingEditor({ value, onChange, systems, channels, orderTypes 
           <>
             <TextField label="Milestone" value={item.label} required onChange={(label) => change({ label })} />
             <SystemField label="Raised by" value={item.system_id ?? ""} systems={systems} allowNone onChange={(id) => change({ system_id: id || null })} />
+            <Sureness value={item.confidence} onChange={(confidence) => change({ confidence })} />
             <TextField label="Detail" value={item.detail} wide onChange={(detail) => change({ detail: detail || null })} />
           </>
         )}
@@ -145,6 +162,7 @@ export function TrackingEditor({ value, onChange, systems, channels, orderTypes 
         render={(item, change) => (
           <>
             <TextField label="When" value={item.trigger} required wide onChange={(trigger) => change({ trigger })} />
+            <Sureness value={item.confidence} onChange={(confidence) => change({ confidence })} />
             <AreaField label="What happens" value={item.handling} onChange={(handling) => change({ handling: handling || null })} />
           </>
         )}
