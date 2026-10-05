@@ -10,7 +10,8 @@ organisation-wide knowledge that the requirement portal reasons with:
 - the squad (organisation) catalogue: people, value streams, products and squads.
 
 It is a separate service with its own database and its own UI, open to the `knowledge_admin`
-role only. The requirement portal reaches it only through the internal API recorded in
+role only, except the product architecture explorer: its read routes (`/explorer/*`) and screen
+are open to anyone signed in (requirement-portal ADR-0101). The requirement portal reaches it only through the internal API recorded in
 requirement-portal's ADR-0099.
 
 The coding agent MUST optimize for:

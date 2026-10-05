@@ -43,7 +43,8 @@ function oidcManager(config: IdentityConfig) {
  * OIDC provider (client `knowledge-spa`), and resolves who they are.
  *
  * A 403 from `/identity/me` is not an error: it is a signed-in person who is
- * not a knowledge admin, and the portal tells them so.
+ * not a knowledge admin. The portal tells them so, and opens the explorer to
+ * them, which anyone signed in may read.
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
@@ -51,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [actor, setActor] = useState<Actor | null>(null);
   const [loading, setLoading] = useState(true);
   const [denied, setDenied] = useState(false);
+  const [reader, setReader] = useState<Actor | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sessionExpired, setSessionExpired] = useState(false);
   const managerRef = useRef<UserManager | null>(null);
@@ -64,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (sequence !== transition.current) return;
       setActor(current);
       setDenied(false);
+      setReader(null);
       setError(null);
       setSessionExpired(false);
     } catch (reason) {
@@ -71,8 +74,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setActor(null);
       if (reason instanceof ApiError && reason.status === 403) {
         setDenied(true);
+        // Not an admin, but signed in: the explorer is still theirs to read.
+        const known = await api.explorerReader().catch(() => null);
+        if (sequence === transition.current) setReader(known);
         return;
       }
+      setReader(null);
       if (reason instanceof ApiError && reason.status === 401) {
         setSessionExpired(true);
         return;
@@ -146,6 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     config,
     loading,
     denied,
+    reader,
     error,
     sessionExpired,
     signIn: async (choiceId?: string) => {
@@ -171,6 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await queryClient.cancelQueries();
       queryClient.clear();
       setActor(null);
+      setReader(null);
       if (config?.mode === "oidc" && managerRef.current) await managerRef.current.signoutRedirect();
     },
     switchFakeActor: async (actorId: string) => {
@@ -180,7 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.clear();
       await loadActor();
     },
-  }), [actor, config, denied, error, loadActor, loading, queryClient, sessionExpired]);
+  }), [actor, config, denied, error, loadActor, loading, queryClient, reader, sessionExpired]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

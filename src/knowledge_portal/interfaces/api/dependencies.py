@@ -26,6 +26,7 @@ from knowledge_portal.application.use_cases.architecture_documents import (
     ReadKnowledgeDocument,
     UploadKnowledgeDocument,
 )
+from knowledge_portal.application.use_cases.architecture_explorer import ExploreArchitecture
 from knowledge_portal.application.use_cases.architecture_jobs import ArchitectureJobs
 from knowledge_portal.application.use_cases.architecture_knowledge import (
     ManageArchitectureKnowledge,
@@ -76,6 +77,22 @@ def get_current_actor(
 
 
 CurrentActorDep = Annotated[ActorProfile, Depends(get_current_actor)]
+
+
+def get_signed_in_actor(
+    container: ContainerDep,
+    credential: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
+    actor_hint: Annotated[str | None, Header(alias="X-Fake-Actor-Id")] = None,
+) -> ActorProfile:
+    """Anyone signed in, admin or not: only the explorer's read routes take this
+    (requirement-portal ADR-0101)."""
+    bearer = credential.credentials if credential is not None else None
+    if container.settings.identity_provider is IdentityProvider.OIDC and actor_hint:
+        raise AuthenticationRequiredError("Fake actor headers are disabled in OIDC mode.")
+    return container.resolve_signed_in_actor.execute(IdentityCredential(bearer, actor_hint))
+
+
+SignedInActorDep = Annotated[ActorProfile, Depends(get_signed_in_actor)]
 
 
 def require_service_caller(request: Request) -> str:
@@ -151,6 +168,10 @@ def get_reference_knowledge(container: ContainerDep) -> ReferenceKnowledge:
 
 def get_document_source_impact(container: ContainerDep) -> DocumentSourceImpact:
     return container.document_source_impact
+
+
+def get_explore_architecture(container: ContainerDep) -> ExploreArchitecture:
+    return container.explore_architecture
 
 
 def get_manage_architecture_knowledge(container: ContainerDep) -> ManageArchitectureKnowledge:

@@ -46,6 +46,7 @@ from knowledge_portal.application.use_cases.architecture_documents import (
     ReadKnowledgeDocument,
     UploadKnowledgeDocument,
 )
+from knowledge_portal.application.use_cases.architecture_explorer import ExploreArchitecture
 from knowledge_portal.application.use_cases.architecture_jobs import ArchitectureJobs
 from knowledge_portal.application.use_cases.architecture_knowledge import (
     ManageArchitectureKnowledge,
@@ -63,6 +64,7 @@ from knowledge_portal.application.use_cases.cited_passages import CitedPassages
 from knowledge_portal.application.use_cases.document_library import DocumentLibrary
 from knowledge_portal.application.use_cases.identity_access import (
     ResolveCurrentActor,
+    ResolveSignedInActor,
     SearchKnownActors,
 )
 from knowledge_portal.application.use_cases.library_governance import LibraryGovernance
@@ -129,6 +131,7 @@ class Container:
     # The sign-in picker's personas in offline identity mode; empty with OIDC.
     offline_personas: tuple[ActorProfile, ...]
     resolve_current_actor: ResolveCurrentActor
+    resolve_signed_in_actor: ResolveSignedInActor
     search_known_actors: SearchKnownActors
     provider_call_rate_limit: ProviderCallRateLimit
     document_storage: DocumentStoragePort
@@ -140,6 +143,7 @@ class Container:
     reference_knowledge: ReferenceKnowledge
     architecture_knowledge: ArchitectureKnowledgePort
     manage_architecture_knowledge: ManageArchitectureKnowledge
+    explore_architecture: ExploreArchitecture
     manage_organisation_catalogue: ManageOrganisationCatalogue
     preview_architecture_impact: PreviewArchitectureImpact
     manage_sample_requirements: ManageSampleRequirements
@@ -236,6 +240,7 @@ def _build_container(
         actor_directory=persistence.actor_directory,
         offline_personas=FAKE_ACTORS if settings.identity_provider is IdentityProvider.FAKE else (),
         resolve_current_actor=ResolveCurrentActor(identity, persistence.actor_directory),
+        resolve_signed_in_actor=ResolveSignedInActor(identity),
         search_known_actors=SearchKnownActors(persistence.actor_directory),
         provider_call_rate_limit=ProviderCallRateLimit(
             settings.provider_rate_limit_per_minute, clock
@@ -259,6 +264,7 @@ def _build_container(
         reference_knowledge=reference_knowledge,
         architecture_knowledge=architecture.knowledge,
         manage_architecture_knowledge=architecture.manage,
+        explore_architecture=ExploreArchitecture(persistence.architecture_repository),
         manage_organisation_catalogue=ManageOrganisationCatalogue(
             persistence.organisation_repository, persistence.architecture_repository
         ),

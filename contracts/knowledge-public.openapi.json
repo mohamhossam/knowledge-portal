@@ -1801,6 +1801,85 @@
         "title": "EvidenceBlockKind",
         "type": "string"
       },
+      "ExplorerReleaseResponse": {
+        "description": "The version in service as the explorer reads it: its content, never its documents,\nindex or history (requirement-portal ADR-0101).",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "journeys": {
+            "items": {
+              "$ref": "#/components/schemas/JourneySchema"
+            },
+            "maxItems": 5000,
+            "title": "Journeys",
+            "type": "array"
+          },
+          "landscape_domains": {
+            "items": {
+              "$ref": "#/components/schemas/LandscapeDomainSchema"
+            },
+            "maxItems": 5000,
+            "title": "Landscape Domains",
+            "type": "array"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "products": {
+            "items": {
+              "$ref": "#/components/schemas/ProductOfferingSchema"
+            },
+            "maxItems": 5000,
+            "title": "Products",
+            "type": "array"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "relationships": {
+            "items": {
+              "$ref": "#/components/schemas/SystemRelationshipSchema"
+            },
+            "maxItems": 5000,
+            "title": "Relationships",
+            "type": "array"
+          },
+          "systems": {
+            "items": {
+              "$ref": "#/components/schemas/SystemDefinitionSchema"
+            },
+            "maxItems": 5000,
+            "title": "Systems",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "systems",
+          "relationships"
+        ],
+        "title": "ExplorerReleaseResponse",
+        "type": "object"
+      },
       "ExtractionRevision": {
         "properties": {
           "created_at": {
@@ -7790,6 +7869,116 @@
         "summary": "Replace Sample Requirements",
         "tags": [
           "architecture knowledge"
+        ]
+      }
+    },
+    "/explorer/me": {
+      "get": {
+        "description": "Who is reading, admin or not.",
+        "operationId": "reader_explorer_me_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActorResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Reader",
+        "tags": [
+          "explorer"
+        ]
+      }
+    },
+    "/explorer/release": {
+      "get": {
+        "description": "The catalogue version in service, as the explorer reads it.",
+        "operationId": "release_in_service_explorer_release_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExplorerReleaseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Release In Service",
+        "tags": [
+          "explorer"
         ]
       }
     },

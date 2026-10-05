@@ -721,6 +721,41 @@ class KnowledgeReleaseResponse(BaseModel):
         )
 
 
+class ExplorerReleaseResponse(BaseModel):
+    """The version in service as the explorer reads it: its content, never its documents,
+    index or history (requirement-portal ADR-0101)."""
+
+    id: str
+    name: str | None = None
+    published_at: datetime | None = None
+    systems: list[SystemDefinitionSchema] = Field(max_length=MAX_CATALOGUE_ITEMS)
+    relationships: list[SystemRelationshipSchema] = Field(max_length=MAX_CATALOGUE_ITEMS)
+    landscape_domains: list[LandscapeDomainSchema] = Field(
+        default_factory=list, max_length=MAX_CATALOGUE_ITEMS
+    )
+    products: list[ProductOfferingSchema] = Field(
+        default_factory=list, max_length=MAX_CATALOGUE_ITEMS
+    )
+    journeys: list[JourneySchema] = Field(default_factory=list, max_length=MAX_CATALOGUE_ITEMS)
+
+    @classmethod
+    def from_domain(cls, release: ArchitectureKnowledge) -> ExplorerReleaseResponse:
+        return cls(
+            id=release.id,
+            name=release.name,
+            published_at=release.published_at,
+            systems=[SystemDefinitionSchema.from_domain(item) for item in release.systems],
+            relationships=[
+                SystemRelationshipSchema.from_domain(item) for item in release.relationships
+            ],
+            landscape_domains=[
+                LandscapeDomainSchema.from_domain(item) for item in release.landscape_domains
+            ],
+            products=[ProductOfferingSchema.from_domain(item) for item in release.products],
+            journeys=[JourneySchema.from_domain(item) for item in release.journeys],
+        )
+
+
 class KnowledgeAuditEventResponse(BaseModel):
     release_id: str
     actor_id: str

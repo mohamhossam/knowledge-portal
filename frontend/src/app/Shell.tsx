@@ -1,6 +1,7 @@
 import { LogOut, RotateCw } from "lucide-react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 
+import type { Actor } from "../api/client";
 import { useAuth } from "../auth/authContext";
 import { REQUIREMENT_APP_URL } from "../auth/paths";
 import { TABLES } from "../home/tables";
@@ -22,6 +23,7 @@ function extent(state: TableState) {
  * the page. Every screen of the portal sits inside it.
  */
 export function Shell() {
+  const auth = useAuth();
   const overview = useOverview();
   const extents = ENTRIES.map((entry) => extent(overview[entry.key]));
   const largest = Math.max(1, ...extents.map((item) => item?.value ?? 0));
@@ -50,7 +52,7 @@ export function Shell() {
             <span aria-hidden="true">{overview.refreshing ? "Refreshing" : "Refresh"}</span>
           </button>
         </p>
-        <Account />
+        <Account actor={auth?.actor ?? null} />
       </header>
 
       <nav className="index" aria-label="Tables">
@@ -88,16 +90,17 @@ export function Shell() {
   );
 }
 
-function Account() {
+/** Who is signed in: a persona switch offline, otherwise the name and Sign out. */
+export function Account({ actor }: { actor: Actor | null }) {
   const auth = useAuth();
-  if (!auth?.actor) return null;
+  if (!auth || !actor) return null;
   return (
     <div className="masthead__account">
       {auth.config?.mode === "fake" ? (
         <label className="persona">
           <span className="persona__label">Persona</span>
           <select
-            value={auth.actor.id}
+            value={actor.id}
             onChange={(event) => void auth.switchFakeActor(event.target.value)}
           >
             {auth.config.fake_actors.map((item) => (
@@ -107,7 +110,7 @@ function Account() {
         </label>
       ) : (
         <>
-          <span className="masthead__name">{auth.actor.display_name}</span>
+          <span className="masthead__name">{actor.display_name}</span>
           <button type="button" className="text-button" onClick={() => void auth.signOut()}>
             <LogOut size={14} aria-hidden="true" />
             Sign out

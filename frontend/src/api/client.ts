@@ -17,6 +17,8 @@ export type LibraryVersion = Schemas["LibraryVersion"];
 export type Publication = Schemas["Publication"];
 export type IngestionStage = Schemas["IngestionStage"];
 export type Release = Schemas["KnowledgeReleaseResponse"];
+/** The version in service as the explorer reads it: content only, for anyone signed in. */
+export type ExplorerRelease = Schemas["ExplorerReleaseResponse"];
 export type CatalogueSuggestions = Schemas["CatalogueSuggestionsResponse"];
 export type Organisation = Schemas["OrganisationResponse"];
 export type OrganisationAuditEvent = Schemas["OrganisationAuditEventResponse"];
@@ -160,6 +162,9 @@ async function allLibraryDocuments(): Promise<LibraryDocument[]> {
 export const api = {
   identityConfig: () => apiRequest<IdentityConfig>("/identity/config"),
   currentActor: () => apiRequest<Actor>("/identity/me"),
+  /** Who is reading the explorer, admin or not (requirement-portal ADR-0101). */
+  explorerReader: () => apiRequest<Actor>("/explorer/me"),
+  explorerRelease: () => apiRequest<ExplorerRelease>("/explorer/release"),
   /** The admins the portal has seen sign in, to name who published or prepared something. */
   knownActors: () => apiRequest<Actor[]>("/identity/actors?limit=100"),
   libraryDocuments: allLibraryDocuments,

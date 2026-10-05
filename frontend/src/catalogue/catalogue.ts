@@ -38,6 +38,11 @@ export function sentenceCase(text: string): string {
     : text;
 }
 
+/** A responsibility's role code in words: "PRIMARY_ORCHESTRATOR" reads "Primary orchestrator". */
+export function roleLabel(role: string): string {
+  return sentenceCase(role.replace(/_/g, " "));
+}
+
 /** The same, inside a sentence: "B2B Web calls the API of B2B BFF". */
 export const LINK_VERB: Record<RelationshipKind, string> = {
   calls_api: "calls the API of",

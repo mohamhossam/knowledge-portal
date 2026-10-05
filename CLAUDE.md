@@ -30,6 +30,8 @@ Paper. Do not copy requirement-portal's tokens, primitives or shell.
 
 ## Service rules
 
-- Every public route requires `knowledge_admin`.
+- Every public route requires `knowledge_admin`, except the explorer's read routes
+  (`/explorer/*`), which any signed-in user may read (requirement-portal ADR-0101). They read the
+  version in service only, never drafts, documents or history, and write nothing.
 - `/internal/*` routes require a service token (`smb_kernel.http.InternalRouteGuard`), and are
   public API for requirement-portal (`AGENTS.md` §2.1).

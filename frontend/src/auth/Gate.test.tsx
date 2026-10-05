@@ -7,7 +7,7 @@ import { safeReturnPath } from "./paths";
 
 function state(overrides: Partial<AuthState>): AuthState {
   return {
-    actor: null, config: null, loading: false, denied: false, error: null, sessionExpired: false,
+    actor: null, config: null, loading: false, denied: false, reader: null, error: null, sessionExpired: false,
     signIn: async () => undefined, signOut: async () => undefined, switchFakeActor: async () => undefined,
     ...overrides,
   };
@@ -16,16 +16,25 @@ function state(overrides: Partial<AuthState>): AuthState {
 function gate(auth: AuthState) {
   return render(
     <AuthContext.Provider value={auth}>
-      <Gate><p>The tables</p></Gate>
+      <Gate readers={<p>The explorer</p>}><p>The tables</p></Gate>
     </AuthContext.Provider>,
   );
 }
+
+const OBSERVER = { id: "fake-observer", display_name: "Omar", email: null, roles: [] };
 
 describe("Gate", () => {
   it("tells a signed-in person without the role where to go instead", () => {
     gate(state({ denied: true }));
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("This portal is for knowledge admins");
     expect(screen.getByRole("link", { name: "Go to Requirement AI" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "product architecture explorer" })).toHaveAttribute("href", "/explorer");
+    expect(screen.queryByText("The tables")).not.toBeInTheDocument();
+  });
+
+  it("opens the explorer, and only the explorer, to a signed-in reader who is not an admin", () => {
+    gate(state({ denied: true, reader: OBSERVER }));
+    expect(screen.getByText("The explorer")).toBeInTheDocument();
     expect(screen.queryByText("The tables")).not.toBeInTheDocument();
   });
 

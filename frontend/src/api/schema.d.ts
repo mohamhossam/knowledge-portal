@@ -546,6 +546,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/explorer/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Reader
+         * @description Who is reading, admin or not.
+         */
+        get: operations["reader_explorer_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/explorer/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Release In Service
+         * @description The catalogue version in service, as the explorer reads it.
+         */
+        get: operations["release_in_service_explorer_release_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -1780,6 +1820,29 @@ export interface components {
          * @enum {string}
          */
         EvidenceBlockKind: "heading" | "paragraph" | "list_item" | "table_row" | "image" | "worksheet_range" | "external_reference";
+        /**
+         * ExplorerReleaseResponse
+         * @description The version in service as the explorer reads it: its content, never its documents,
+         *     index or history (requirement-portal ADR-0101).
+         */
+        ExplorerReleaseResponse: {
+            /** Id */
+            id: string;
+            /** Journeys */
+            journeys?: components["schemas"]["JourneySchema"][];
+            /** Landscape Domains */
+            landscape_domains?: components["schemas"]["LandscapeDomainSchema"][];
+            /** Name */
+            name?: string | null;
+            /** Products */
+            products?: components["schemas"]["ProductOfferingSchema"][];
+            /** Published At */
+            published_at?: string | null;
+            /** Relationships */
+            relationships: components["schemas"]["SystemRelationshipSchema"][];
+            /** Systems */
+            systems: components["schemas"]["SystemDefinitionSchema"][];
+        };
         /** ExtractionRevision */
         ExtractionRevision: {
             /**
@@ -4257,6 +4320,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SampleRequirementsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reader_explorer_me_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    release_in_service_explorer_release_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExplorerReleaseResponse"];
                 };
             };
             /** @description Validation Error */
