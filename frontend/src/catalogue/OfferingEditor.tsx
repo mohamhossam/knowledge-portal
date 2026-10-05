@@ -1,7 +1,8 @@
 import type { CatalogueSystem, Channel, Offering, SourceConfidence } from "../api/client";
-import { CONFIDENCE, COVERAGE, LAYERS } from "./catalogue";
+import { CONFIDENCE_OPTIONS, COVERAGE, LAYERS } from "./catalogue";
 import { lines } from "./editing";
 import { AreaField, CheckField, LinesField, Rows, SelectField, SystemField, TextField } from "./forms";
+import { TrackingEditor } from "./TrackingEditor";
 
 type Part = Offering["components"][number];
 type Responsibility = Part["responsibilities"][number];
@@ -20,10 +21,6 @@ function realisedLabel(item: Realised, index: number): string {
 const LAYER_OPTIONS = LAYERS.map(({ layer, short, long }) => ({ value: layer, label: short === long ? long : `${short}: ${long}` }));
 const COVERAGE_OPTIONS = (Object.keys(COVERAGE) as Nfr["coverage"][]).map((value) => ({ value, label: COVERAGE[value] }));
 
-const CONFIDENCE_OPTIONS = [
-  { value: "", label: "Not stated" },
-  ...(Object.keys(CONFIDENCE) as SourceConfidence[]).map((value) => ({ value, label: CONFIDENCE[value] })),
-];
 
 /** "Name — description" per line, the way offering values and audiences are written. */
 const pointLines = (points: Point[]) => points.map((point) => (point.description ? `${point.name} — ${point.description}` : point.name));
@@ -201,6 +198,14 @@ export function OfferingEditor({ value, onChange, systems, channels = [], names 
             <AreaField label="What the sources say" value={item.statement} onChange={(statement) => change({ statement: statement || null })} />
           </>
         )}
+      />
+
+      <TrackingEditor
+        value={value.tracking}
+        onChange={(tracking) => set({ tracking })}
+        systems={systems}
+        channels={channels}
+        orderTypes={orderTypeOptions}
       />
     </div>
   );

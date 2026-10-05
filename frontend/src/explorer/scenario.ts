@@ -36,6 +36,24 @@ export type Involvement = {
   supports: string[];
   /** The parts it is responsible for in this order type. */
   parts: { part: Part; responsibility: Responsibility }[];
+  /** Whether it carries or shows this order's tracking. */
+  tracks: boolean;
+};
+
+type Tracking = NonNullable<Offering["tracking"]>;
+type TrackingFlow = Tracking["flows"][number];
+
+/** Order tracking as one scenario reads it: none when the offering records no tracking. */
+export type ScenarioTracking = {
+  tracking: Tracking;
+  /** Whether tracking is specified for this order type. */
+  applies: boolean;
+  /** The correlation of the channel being read, when tracking describes it. */
+  entry: Tracking["channels"][number] | null;
+  /** The shared flows, then how the channel's tracking screen reads the order's status. */
+  flows: (TrackingFlow & { readFor?: string })[];
+  /** What tracking leaves undefined for this scenario, each as a sentence. */
+  gaps: string[];
 };
 
 const same = (a: string, b: string) => a.localeCompare(b, undefined, { sensitivity: "accent" }) === 0;
@@ -97,6 +115,41 @@ export function performer(scenario: Scenario, step: Journey["activities"][number
   return step.channel_entry ? scenario.channel?.entry_system_id ?? null : null;
 }
 
+/**
+ * How this scenario's order is tracked, as the original explorer's tracking
+ * projection read it: specified for the order type or not, the chosen channel's
+ * correlation and tracking screen, the shared flows plus that screen's read path,
+ * and what is left undefined. Null when the offering records no tracking.
+ */
+export function trackingFor(scenario: Scenario): ScenarioTracking | null {
+  const tracking = scenario.offering.tracking;
+  if (!tracking) return null;
+  const applies = !tracking.order_types.length || tracking.order_types.some((code) => same(code, scenario.orderType.code));
+  const channel = scenario.channel;
+  const entry = channel ? tracking.channels.find((item) => item.channel_id === channel.id) ?? null : null;
+  const flows: ScenarioTracking["flows"] = [...tracking.flows];
+  if (applies && entry?.ui_system_id && entry.read_system_id) {
+    // The screen asks; the status flows from the system it reads to the screen.
+    flows.push({
+      from_system_id: entry.read_system_id,
+      to_system_id: entry.ui_system_id,
+      label: entry.read_interface ?? "Reads the order's progress",
+      readFor: channel?.name,
+      confidence: entry.confidence,
+      source: entry.source,
+    });
+  }
+  const gaps: string[] = [];
+  if (applies) {
+    if (channel && !entry) gaps.push(`Order tracking does not say how ${channel.name} tracks its orders.`);
+    if (channel && entry && !entry.ui_system_id) gaps.push(`${channel.name}’s tracking screen is not named.`);
+    if (channel && entry && !entry.correlation_key) gaps.push(`${channel.name} has no correlation key tying its order to the fulfilment order.`);
+    const unclear = [...tracking.milestones.filter((item) => item.confidence === "gap").map((item) => item.label), ...tracking.fallout.filter((item) => item.confidence === "gap").map((item) => item.trigger)];
+    if (unclear.length) gaps.push(`Tracking’s ${listed(unclear.map((item) => `‘${item}’`))} ${unclear.length === 1 ? "is" : "are"} marked in the sources as a gap.`);
+  }
+  return { tracking, applies, entry, flows: applies ? flows : [], gaps };
+}
+
 /** Whether a responsibility holds for an order type: it names none (so every one), or names this one. */
 export function appliesTo(responsibility: Responsibility, orderCode: string): boolean {
   return !responsibility.order_types.length || responsibility.order_types.some((code) => same(code, orderCode));
@@ -112,14 +165,15 @@ export function partsFor(scenario: Scenario): { part: Part; responsibilities: Re
 
 /**
  * Every system that takes part: first those the journey names, in the order its
- * steps first name them, then those named only for a part.
+ * steps first name them, then those named only for a part, then those that only
+ * carry or show the order's tracking.
  */
 export function involvement(scenario: Scenario): Involvement[] {
   const found = new Map<string, Involvement>();
   const entry = (systemId: string) => {
     let item = found.get(systemId);
     if (!item) {
-      item = { systemId, performs: [], supports: [], parts: [] };
+      item = { systemId, performs: [], supports: [], parts: [], tracks: false };
       found.set(systemId, item);
     }
     return item;
@@ -131,6 +185,15 @@ export function involvement(scenario: Scenario): Involvement[] {
   }
   for (const { part, responsibilities } of partsFor(scenario)) {
     for (const responsibility of responsibilities) entry(responsibility.system_id).parts.push({ part, responsibility });
+  }
+  const tracked = trackingFor(scenario);
+  if (tracked?.applies) {
+    const systems = [
+      ...tracked.flows.flatMap((flow) => [flow.from_system_id, flow.to_system_id]),
+      ...(tracked.entry ? [tracked.entry.ui_system_id, tracked.entry.read_system_id] : []),
+      ...tracked.tracking.milestones.map((item) => item.system_id),
+    ].filter((item): item is string => Boolean(item));
+    for (const systemId of systems) entry(systemId).tracks = true;
   }
   return [...found.values()];
 }
@@ -187,6 +250,9 @@ export function gaps(scenario: Scenario): string[] {
   else if (undefinedQualities.length) {
     found.push(`${listed(undefinedQualities)} ${undefinedQualities.length === 1 ? "is" : "are"} not defined by any source.`);
   }
+  const tracked = trackingFor(scenario);
+  if (!tracked) found.push(`No order tracking is recorded for ${scenario.offering.name}.`);
+  else found.push(...tracked.gaps);
   const marked = gapFacts(scenario);
   if (marked) found.push(`${count(marked, "fact is", "facts are")} marked in ${marked === 1 ? "its source" : "their sources"} as a gap.`);
   return found;

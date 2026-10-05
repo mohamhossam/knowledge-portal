@@ -2277,6 +2277,55 @@
         "title": "ExtractionWarningSeverity",
         "type": "string"
       },
+      "FalloutCaseSchema": {
+        "description": "What makes an order fall out, and how it is handled.",
+        "properties": {
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "handling": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handling"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "trigger": {
+            "maxLength": 10000,
+            "title": "Trigger",
+            "type": "string"
+          }
+        },
+        "required": [
+          "trigger"
+        ],
+        "title": "FalloutCaseSchema",
+        "type": "object"
+      },
       "FlowRuleKind": {
         "enum": [
           "decision",
@@ -3930,6 +3979,114 @@
         "title": "OfferingPointSchema",
         "type": "object"
       },
+      "OrderTrackingSchema": {
+        "description": "How an offering's orders are tracked once placed (requirement-portal ADR-0101).",
+        "properties": {
+          "channels": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TrackingChannelSchema"
+            },
+            "maxItems": 5000,
+            "title": "Channels",
+            "type": "array"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fallout": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/FalloutCaseSchema"
+            },
+            "maxItems": 5000,
+            "title": "Fallout",
+            "type": "array"
+          },
+          "flows": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TrackingFlowSchema"
+            },
+            "maxItems": 5000,
+            "title": "Flows",
+            "type": "array"
+          },
+          "milestones": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TrackingEventSchema"
+            },
+            "maxItems": 5000,
+            "title": "Milestones",
+            "type": "array"
+          },
+          "not_applicable_note": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Not Applicable Note"
+          },
+          "order_types": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Order Types",
+            "type": "array"
+          },
+          "scope_note": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Note"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "statuses": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TrackingEventSchema"
+            },
+            "maxItems": 5000,
+            "title": "Statuses",
+            "type": "array"
+          }
+        },
+        "title": "OrderTrackingSchema",
+        "type": "object"
+      },
       "OrderTypeSchema": {
         "properties": {
           "channels": {
@@ -4459,6 +4616,16 @@
               }
             ],
             "title": "Source"
+          },
+          "tracking": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrderTrackingSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "values": {
             "default": [],
@@ -5635,6 +5802,237 @@
           "system"
         ],
         "title": "SystemUpdateRequest",
+        "type": "object"
+      },
+      "TrackingChannelSchema": {
+        "description": "How one channel ties its order to the fulfilment order, and where progress is seen.",
+        "properties": {
+          "channel_id": {
+            "maxLength": 200,
+            "title": "Channel Id",
+            "type": "string"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "correlation_key": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correlation Key"
+          },
+          "read_interface": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read Interface"
+          },
+          "read_system_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read System Id"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "story": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Story"
+          },
+          "ui_note": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ui Note"
+          },
+          "ui_system_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ui System Id"
+          }
+        },
+        "required": [
+          "channel_id"
+        ],
+        "title": "TrackingChannelSchema",
+        "type": "object"
+      },
+      "TrackingEventSchema": {
+        "description": "A milestone the customer sees, or an internal status.",
+        "properties": {
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "label": {
+            "maxLength": 10000,
+            "title": "Label",
+            "type": "string"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "system_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System Id"
+          }
+        },
+        "required": [
+          "label"
+        ],
+        "title": "TrackingEventSchema",
+        "type": "object"
+      },
+      "TrackingFlowSchema": {
+        "description": "Order or milestone events from one system to another; to itself, a log.",
+        "properties": {
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "from_system_id": {
+            "maxLength": 200,
+            "title": "From System Id",
+            "type": "string"
+          },
+          "interface": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interface"
+          },
+          "label": {
+            "maxLength": 10000,
+            "title": "Label",
+            "type": "string"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "to_system_id": {
+            "maxLength": 200,
+            "title": "To System Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from_system_id",
+          "to_system_id",
+          "label"
+        ],
+        "title": "TrackingFlowSchema",
         "type": "object"
       },
       "ValidationError": {

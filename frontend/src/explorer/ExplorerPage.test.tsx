@@ -91,6 +91,46 @@ describe("ExplorerPage", () => {
     expect(screen.getByText(/1 quality is not defined/)).toBeInTheDocument();
   });
 
+  it("reads the order's tracking through the chosen channel, with its screen's read path", async () => {
+    open();
+    const section = within((await screen.findByRole("heading", { name: "Order tracking" })).closest("section")!);
+    expect(section.getByText("Specified for New Activation.")).toBeInTheDocument();
+    const correlation = within(section.getByRole("table", { name: "How Online tracks its orders of Business Pro Plus" }));
+    const online = correlation.getByRole("row", { name: /Online/ });
+    expect(online.querySelector("td.tracking__wide")).toHaveTextContent("Digital Order ID ↔ CWOM Order ID");
+    expect(online).toHaveTextContent("Reads its status from RTF over getRealTimeOrderDetails");
+    const flows = within(section.getByRole("table", { name: /Flows that carry/ })).getAllByRole("row").slice(1);
+    const cells = (row: HTMLElement) => [row.querySelector("th")!.firstChild!.textContent, ...[...row.querySelectorAll("td")].map((cell) => cell.textContent)];
+    expect(flows.map(cells)).toEqual([
+      ["CWOM", "RTF", "Sub-order milestonesOver notifyMilestone"],
+      ["RTF", "Logs it itself", "Timestamps"],
+      ["RTF", "B2B Web", "getRealTimeOrderDetailsHow Online's tracking screen reads the order's status"],
+    ]);
+    // On phones the To column rides under the From system.
+    expect(flows[0]!.querySelector(".tracking__inline")).toHaveTextContent("To RTF");
+    const milestone = section.getByText("Installation done");
+    expect(milestone).toHaveClass("tracking__missing");
+    expect(section.getByRole("row", { name: /Rejected by business rules/ })).toHaveTextContent("Back to the channel");
+  });
+
+  it("says what a channel leaves undefined, as due", async () => {
+    open("/explorer?product=bpp&order=NEW&channel=shop");
+    const section = within((await screen.findByRole("heading", { name: "Order tracking" })).closest("section")!);
+    const shop = section.getByRole("row", { name: /Shop/ });
+    expect(shop).toHaveClass("row--due");
+    expect(within(shop.querySelector("td.tracking__wide")! as HTMLElement).getByText("Not defined")).toHaveClass("tracking__missing");
+    expect(within(shop).getByText("Not named")).toHaveClass("tracking__missing");
+  });
+
+  it("says when tracking is not specified for the order type, as a fact rather than a gap", async () => {
+    open("/explorer?product=bpp&order=CEASE");
+    const section = within((await screen.findByRole("heading", { name: "Order tracking" })).closest("section")!);
+    const note = section.getByText("Not specified for Cease. Tracking is not specified for a cease.");
+    expect(note).toHaveClass("govsection__lead");
+    expect(section.queryByRole("table", { name: /Flows that carry/ })).not.toBeInTheDocument();
+    expect(section.getByRole("table", { name: /fall out/ })).toBeInTheDocument();
+  });
+
   it("reads the offering's plans and prices from the product catalog, saying which and when", async () => {
     open();
     const table = within(await screen.findByRole("table", { name: /Plans of Business Pro Plus/ }));

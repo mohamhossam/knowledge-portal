@@ -25,6 +25,31 @@ export const EXPLORED = {
       rules: [],
       values: [],
       audiences: [],
+      tracking: {
+        order_types: ["NEW"],
+        not_applicable_note: "Tracking is not specified for a cease.",
+        flows: [
+          { from_system_id: "cwom", to_system_id: "rtf", label: "Sub-order milestones", interface: "notifyMilestone" },
+          { from_system_id: "rtf", to_system_id: "rtf", label: "Timestamps" },
+        ],
+        channels: [
+          {
+            channel_id: "online",
+            correlation_key: "Digital Order ID ↔ CWOM Order ID",
+            ui_system_id: "web",
+            story: "US#44387: track installation by customer",
+            read_system_id: "rtf",
+            read_interface: "getRealTimeOrderDetails",
+          },
+          { channel_id: "shop", ui_note: "The shop's tracking screen is not named.", confidence: "gap" },
+        ],
+        milestones: [
+          { label: "Request received", system_id: "rtf", detail: "Email to the customer" },
+          { label: "Installation done", confidence: "gap" },
+        ],
+        statuses: [{ label: "VALIDATED" }],
+        fallout: [{ trigger: "Rejected by business rules", handling: "Back to the channel" }],
+      },
       nfrs: [
         { quality: "Availability", coverage: "missing", confidence: "gap" },
         { quality: "Security", coverage: "partial", statement: "SAML SSO for the portal.", source: "SDD §11" },

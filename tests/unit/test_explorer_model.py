@@ -121,6 +121,50 @@ def _model() -> dict[str, Any]:
                     }
                 ],
                 "journeys": {"NEW": _journey()},
+                "tracking": {
+                    "applies": ["NEW", "GONE"],
+                    "core": [
+                        {
+                            "from": "SYS-RTF",
+                            "to": "SYS-WFM",
+                            "label": "Milestones",
+                            "api": "API_SR",
+                            "ev": EV,
+                        },
+                        {
+                            "from": "SYS-RTF",
+                            "to": "SYS-RTF",
+                            "label": "Logs timestamps",
+                            "self": True,
+                        },
+                        {"from": "SYS-RTF", "to": "SYS-GONE", "label": "Lost"},
+                    ],
+                    "entry": {
+                        "WEB": {
+                            "id": "Digital Order ID ↔ RTF Order ID",
+                            "ui": "SYS-WEB",
+                            "story": "US#1 — track by customer",
+                            "read": {"from": "SYS-WEB", "to": "SYS-RTF", "label": "getOrder"},
+                            "corrEv": EV,
+                        },
+                        "CRM": {
+                            "id": "Correlation key not defined by the MD",
+                            "ui": None,
+                            "read": None,
+                            "uiGap": "The back-office screen is not named.",
+                            "corrEv": {"s": "GAP"},
+                        },
+                        "PHONE": {"id": "x"},
+                    },
+                    "milestones": [
+                        {"label": "Request received", "detail": "Email", "sys": "SYS-RTF", "ev": EV}
+                    ],
+                    "internal": [{"label": "VALIDATED", "detail": "", "ev": EV}],
+                    "fallout": [
+                        {"trigger": "Rejected", "handling": "Back to the channel", "ev": EV}
+                    ],
+                    "notApplicable": "Not specified for this order type.",
+                },
             }
         ],
         "conflicts": [{"id": "C1"}],
@@ -343,6 +387,50 @@ def test_rules_and_handoffs_say_why_the_flow_goes_where_it_does() -> None:
             "source": "BPP SDD §11",
         }
     ]
+
+
+def test_order_tracking_carries_over_with_its_channels_and_gaps() -> None:
+    mapping, report = _read()
+
+    tracking = mapping["products"][0]["tracking"]
+    assert tracking["order_types"] == ["NEW"]
+    assert tracking["not_applicable_note"] == "Not specified for this order type."
+    assert tracking["flows"] == [
+        {
+            "from_system": "SYS-RTF",
+            "to_system": "SYS-WFM",
+            "label": "Milestones",
+            "interface": "RTF SR request",
+            "confidence": "confirmed",
+            "source": "BPP SDD §11",
+        },
+        {"from_system": "SYS-RTF", "to_system": "SYS-RTF", "label": "Logs timestamps"},
+    ]
+    web, crm = tracking["channels"]
+    assert web == {
+        "channel": "WEB",
+        "correlation_key": "Digital Order ID ↔ RTF Order ID",
+        "ui_system": "SYS-WEB",
+        "story": "US#1 — track by customer",
+        "read_system": "SYS-RTF",
+        "read_interface": "getOrder",
+        "confidence": "confirmed",
+        "source": "BPP SDD §11",
+    }
+    # A key the source says is not defined is a gap, not a key.
+    assert crm == {
+        "channel": "CRM",
+        "ui_note": "The back-office screen is not named.",
+        "confidence": "gap",
+    }
+    assert tracking["milestones"][0]["system"] == "SYS-RTF"
+    assert tracking["statuses"] == [
+        {"label": "VALIDATED", "confidence": "confirmed", "source": "BPP SDD §11"}
+    ]
+    assert tracking["fallout"][0]["handling"] == "Back to the channel"
+    assert "Not carried over yet: tracking facts naming an uncatalogued system (1)." in report
+    assert "Not carried over yet: tracking of an uncatalogued channel (1)." in report
+    assert not any("order tracking" in line for line in report)
 
 
 def test_the_report_counts_what_the_catalogue_cannot_hold_yet() -> None:

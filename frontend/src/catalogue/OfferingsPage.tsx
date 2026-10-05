@@ -5,6 +5,7 @@ import type { Offering } from "../api/client";
 import { CONFIDENCE, roleLabel, systemName } from "./catalogue";
 import { EditButton, OfferingEdit, WholeRemove } from "./DraftEdits";
 import { NfrSection, RealisationKey, RealisedAs, RealisedInline } from "./Realisation";
+import { TrackingSection } from "./Tracking";
 import { useCatalogueContext } from "./useCatalogue";
 
 /** The product offerings in a version. */
@@ -238,6 +239,16 @@ function OfferingSheet({ offering }: { offering: Offering }) {
       </section>
 
       <NfrSection offering={offering} headingId={`${id}-nfrs`} />
+
+      <TrackingSection
+        offering={offering}
+        headingId={`${id}-tracking`}
+        system={(systemId) => (
+          <Link to={`${base}/systems/${encodeURIComponent(systemId)}`} dir="auto">{systemName(book, systemId)}</Link>
+        )}
+        channelName={(channelId) => channelNames.get(channelId) ?? channelId}
+        orderName={(code) => orderTypes.get(code) ?? code}
+      />
 
       <section className="govsection" aria-labelledby={`${id}-rules`}>
         <h3 id={`${id}-rules`} className="govsection__title">Rules</h3>

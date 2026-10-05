@@ -7,20 +7,21 @@ the file against a draft and imports it, and from then on the catalogue is the o
 home of these facts (requirement-portal ADR-0101).
 
 It is a seed, not a sync. Nothing is invented: a fact the catalogue cannot hold yet
-(tracking, lifecycle notes, source levels and conflicts, and so on) is counted in the
+(lifecycle notes, source levels and conflicts, and so on) is counted in the
 report, not squeezed into a field that means something else. Plans and prices are never
 carried over: the explorer reads them live from the product catalog by the offering's code.
 Channels carry
 over (step 3): each channel with its entry system, the channels each order type can
 be ordered through, the channels each step happens in, and the steps the order's
 channel entry system performs. So do each component's CFS, RFS and resource layers,
-as its realisation, and each offering's NFRs with how far their sources define them
-(step 4).
+as its realisation, each offering's NFRs with how far their sources define them, and
+how its orders are tracked (step 4).
 Evidence keeps its confidence (CONFIRMED, INFERRED and GAP) and names its source.
 """
 
 from __future__ import annotations
 
+import re
 from collections import Counter
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
@@ -45,6 +46,8 @@ _CONFIDENCE = {"CONFIRMED": "confirmed", "INFERRED": "inferred", "GAP": "gap"}
 _TIMING = {"SYNC": "Sync", "ASYNC": "Async"}
 _ROLE_BY_SCOPE = {"DESIGN": "DESIGN_TIME", "OPS": "OPERATIONS"}
 _FULFILMENT = "FULFILMENT"
+# A correlation key the source says it does not define ("Correlation key not defined by …").
+_NOT_DEFINED = re.compile(r"not defined", re.IGNORECASE)
 # How far the explorer's sources define an NFR, as the catalogue says it.
 _COVERAGE = {"DEFINED": "defined", "MET": "defined", "PARTIAL": "partial", "GAP": "missing"}
 # What the explorer curated by hand that the product catalog states instead: the explorer
@@ -58,7 +61,6 @@ _READ_LIVE = (
 )
 # What the explorer holds and the catalogue cannot yet, per product.
 _NOT_YET = (
-    ("tracking", "order tracking"),
     ("info", "information objects"),
     ("lifecycle", "lifecycle notes"),
     ("crossProduct", "cross-product notes"),
@@ -273,6 +275,7 @@ class _Reader:
             "values": [self._point(item) for item in product.get("values") or ()],
             "audiences": [self._point(item) for item in product.get("fits") or ()],
             "nfrs": self._nfrs(product),
+            **self._tracking(product, order_types),
         }
 
     def _point(self, item: Mapping[str, Any]) -> dict[str, Any]:
@@ -314,6 +317,96 @@ class _Reader:
                         {"layer": layer, "name": name, **self._evidence(entry.get("ev"))},
                     )
         return list(found.values())
+
+    def _tracking(self, product: Mapping[str, Any], order_types: list[str]) -> dict[str, Any]:
+        """How its orders are tracked: the order types tracking is specified for, the core
+        flows, each channel's correlation and tracking screen, milestones, internal statuses
+        and fallout. A correlation key the source says is not defined is left blank."""
+        raw = product.get("tracking") or {}
+        if not raw:
+            return {}
+        apis = {item["id"]: item.get("name") or item["id"] for item in product.get("apis") or ()}
+        known = set(order_types)
+
+        def system(system_id: object) -> str | None:
+            if system_id in (None, ""):
+                return None
+            if system_id in self.system_ids:
+                return str(system_id)
+            self.dropped["tracking facts naming an uncatalogued system"] += 1
+            return None
+
+        flows = []
+        for flow in raw.get("core") or ():
+            source, target = system(flow.get("from")), system(flow.get("to"))
+            if source and target:
+                flows.append(
+                    {
+                        "from_system": source,
+                        "to_system": target,
+                        "label": flow.get("label") or "Order events",
+                        **_present(interface=apis.get(flow.get("api") or "", flow.get("api"))),
+                        **self._evidence(flow.get("ev")),
+                    }
+                )
+        channels = []
+        for channel_id, entry in (raw.get("entry") or {}).items():
+            if channel_id not in self.channels:
+                self.dropped["tracking of an uncatalogued channel"] += 1
+                continue
+            read = entry.get("read") or {}
+            key = str(entry.get("id") or "").strip()
+            channels.append(
+                {
+                    "channel": channel_id,
+                    **_present(
+                        correlation_key=None if _NOT_DEFINED.search(key) else key,
+                        ui_system=system(entry.get("ui")),
+                        story=entry.get("story"),
+                        read_system=system(read.get("to")),
+                        read_interface=read.get("label")
+                        or apis.get(read.get("api") or "", read.get("api")),
+                        ui_note=entry.get("uiGap"),
+                    ),
+                    **self._evidence(entry.get("corrEv")),
+                }
+            )
+
+        def events(key: str) -> list[dict[str, Any]]:
+            return [
+                {
+                    **_present(
+                        label=item.get("label"),
+                        detail=item.get("detail"),
+                        system=system(item.get("sys")),
+                    ),
+                    **self._evidence(item.get("ev")),
+                }
+                for item in raw.get(key) or ()
+                if item.get("label")
+            ]
+
+        return {
+            "tracking": {
+                **_present(
+                    order_types=[item for item in raw.get("applies") or () if item in known],
+                    scope_note=raw.get("scopeNote"),
+                    not_applicable_note=raw.get("notApplicable"),
+                ),
+                "flows": flows,
+                "channels": channels,
+                "milestones": events("milestones"),
+                "statuses": events("internal"),
+                "fallout": [
+                    {
+                        **_present(trigger=item.get("trigger"), handling=item.get("handling")),
+                        **self._evidence(item.get("ev")),
+                    }
+                    for item in raw.get("fallout") or ()
+                    if item.get("trigger")
+                ],
+            }
+        }
 
     def _nfrs(self, product: Mapping[str, Any]) -> list[dict[str, Any]]:
         """Each quality once, with how far the sources define it; a gap stays a gap."""
