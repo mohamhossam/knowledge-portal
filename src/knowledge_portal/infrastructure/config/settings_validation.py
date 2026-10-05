@@ -7,6 +7,7 @@ alone reads the environment (AGENTS.md section 4.5).
 
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING
 from urllib.parse import urlsplit
 
@@ -19,6 +20,7 @@ from knowledge_portal.infrastructure.config.options import (
     IdentityProvider,
     LLMProvider,
     PersistenceProvider,
+    ProductCatalogProvider,
 )
 
 if TYPE_CHECKING:
@@ -44,6 +46,17 @@ def validate_settings(settings: Settings) -> None:
         and not settings.requirement_api_base_url.startswith(("http://", "https://"))
     ):
         raise ConfigurationError("REQUIREMENT_API_BASE_URL must be an http(s) URL.")
+    if settings.product_catalog_provider is ProductCatalogProvider.TMF620:
+        url = settings.product_catalog_url or ""
+        if not url.startswith(("http://", "https://")) or not settings.product_catalog_token:
+            raise ConfigurationError(
+                "PRODUCT_CATALOG_PROVIDER=tmf620 needs PRODUCT_CATALOG_URL (an http(s) URL) and "
+                "PRODUCT_CATALOG_TOKEN."
+            )
+    if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_.]{0,63}", settings.product_catalog_code_field):
+        raise ConfigurationError("PRODUCT_CATALOG_CODE_FIELD must be a TMF620 field name.")
+    if settings.product_catalog_cache_seconds < 0:
+        raise ConfigurationError("PRODUCT_CATALOG_CACHE_SECONDS must not be negative.")
     if settings.provider_rate_limit_per_minute < 0:
         raise ConfigurationError(
             "PROVIDER_RATE_LIMIT_PER_MINUTE must be 0 (unlimited) or a positive number."

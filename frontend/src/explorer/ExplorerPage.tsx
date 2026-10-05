@@ -8,11 +8,12 @@ import { errorMessage } from "../api/errors";
 import { CONFIDENCE, roleLabel, sentenceCase } from "../catalogue/catalogue";
 import { JourneyHandovers, JourneySteps } from "../catalogue/JourneyTimetable";
 import { formatDay } from "../home/format";
+import { PlansAndPrices } from "./PlansAndPrices";
 import { gaps, involvement, journeyFor, listed, partsFor, pickScenario, type Scenario } from "./scenario";
 
 /** What the catalogue cannot hold yet; each arrives with a later slice (requirement-portal ADR-0101). */
 export const NOT_YET =
-  "Plans and prices, order tracking and NFRs are not in the catalogue yet, so the explorer does not show them.";
+  "Order tracking and NFRs are not in the catalogue yet, so the explorer does not show them.";
 
 function useExplorerRelease() {
   return useQuery({ queryKey: ["explorer", "release"], queryFn: api.explorerRelease });
@@ -76,8 +77,8 @@ export function ExplorerPage({ linkSystems }: { linkSystems: boolean }) {
         <p className="docpage__edition">
           In service: <strong dir="auto">‘{release.name ?? release.id}’</strong>, published{" "}
           {formatDay(release.published_at)}. Choose an offering and an order type to see the journey
-          that fulfils it through each channel, the systems that take part, and what the catalogue
-          does not say yet.
+          that fulfils it through each channel, the systems that take part, its plans and prices, and
+          what the catalogue does not say yet.
         </p>,
       )}
       {scenario ? (
@@ -314,6 +315,8 @@ function ScenarioSheet({ release, scenario, linkSystems }: {
           <p className="timetable__quiet">No part is recorded.</p>
         )}
       </section>
+
+      <PlansAndPrices offering={offering} headingId={`${id}-plans`} />
 
       <section className="govsection" aria-labelledby={`${id}-gaps`}>
         <h3 id={`${id}-gaps`} className="govsection__title">What the catalogue does not say yet</h3>

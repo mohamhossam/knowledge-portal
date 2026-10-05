@@ -908,6 +908,157 @@
         "title": "CapabilityDomainSchema",
         "type": "object"
       },
+      "CatalogPlanResponse": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "lifecycle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lifecycle"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "prices": {
+            "items": {
+              "$ref": "#/components/schemas/PlanPriceResponse"
+            },
+            "title": "Prices",
+            "type": "array"
+          },
+          "terms": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Terms",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "prices",
+          "terms"
+        ],
+        "title": "CatalogPlanResponse",
+        "type": "object"
+      },
+      "CatalogPlansResponse": {
+        "description": "An offering's plans and prices, read live from the product catalog by its code.",
+        "properties": {
+          "catalog": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog"
+          },
+          "catalog_offering_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Offering Id"
+          },
+          "catalog_offering_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Offering Name"
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "plans": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CatalogPlanResponse"
+            },
+            "title": "Plans",
+            "type": "array"
+          },
+          "read_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read At"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CatalogPlansStatus"
+          },
+          "terms": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Terms",
+            "type": "array"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "CatalogPlansResponse",
+        "type": "object"
+      },
+      "CatalogPlansStatus": {
+        "enum": [
+          "found",
+          "no_code",
+          "not_in_catalog",
+          "not_configured"
+        ],
+        "title": "CatalogPlansStatus",
+        "type": "string"
+      },
       "CatalogueChangeResponse": {
         "properties": {
           "change": {
@@ -4003,6 +4154,55 @@
         "title": "PersonSchema",
         "type": "object"
       },
+      "PlanPriceResponse": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PriceKind"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "period": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "required": [
+          "name",
+          "kind",
+          "amount",
+          "currency"
+        ],
+        "title": "PlanPriceResponse",
+        "type": "object"
+      },
       "PossibleMatchResponse": {
         "description": "An existing system a name in the suggestion may mean; a maintainer confirms it.",
         "properties": {
@@ -4049,6 +4249,15 @@
         ],
         "title": "PreviewRequest",
         "type": "object"
+      },
+      "PriceKind": {
+        "enum": [
+          "recurring",
+          "one_time",
+          "usage"
+        ],
+        "title": "PriceKind",
+        "type": "string"
       },
       "ProductOfferingSchema": {
         "description": "A commercial offering, its order types and components, and the systems behind them.",
@@ -8070,6 +8279,71 @@
           }
         ],
         "summary": "Reader",
+        "tags": [
+          "explorer"
+        ]
+      }
+    },
+    "/explorer/offerings/{offering_id}/plans": {
+      "get": {
+        "description": "An offering's plans and prices, read live from the product catalog by its code.",
+        "operationId": "offering_plans_explorer_offerings__offering_id__plans_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "offering_id",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "title": "Offering Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogPlansResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Offering Plans",
         "tags": [
           "explorer"
         ]

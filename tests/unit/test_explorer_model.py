@@ -322,7 +322,8 @@ def test_the_report_counts_what_the_catalogue_cannot_hold_yet() -> None:
         "Read 5 systems, 2 API links, 1 products and 1 journeys from 1 explorer products."
     )
     for line in (
-        "Not carried over yet: plans and prices (1).",
+        "Not carried over: plans and prices (1); the explorer reads them live from the product "
+        "catalog by the offering's code.",
         "Not carried over yet: source conflicts (1).",
         "Not carried over yet: source levels (L1/L2/L3) (1).",
         "Not carried over yet: system owners (1).",

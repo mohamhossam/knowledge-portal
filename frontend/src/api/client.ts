@@ -19,6 +19,9 @@ export type IngestionStage = Schemas["IngestionStage"];
 export type Release = Schemas["KnowledgeReleaseResponse"];
 /** The version in service as the explorer reads it: content only, for anyone signed in. */
 export type ExplorerRelease = Schemas["ExplorerReleaseResponse"];
+/** An offering's plans and prices, read live from the product catalog by its code. */
+export type CatalogPlans = Schemas["CatalogPlansResponse"];
+export type PlanPrice = Schemas["PlanPriceResponse"];
 export type CatalogueSuggestions = Schemas["CatalogueSuggestionsResponse"];
 export type Organisation = Schemas["OrganisationResponse"];
 export type OrganisationAuditEvent = Schemas["OrganisationAuditEventResponse"];
@@ -167,6 +170,8 @@ export const api = {
   /** Who is reading the explorer, admin or not (requirement-portal ADR-0101). */
   explorerReader: () => apiRequest<Actor>("/explorer/me"),
   explorerRelease: () => apiRequest<ExplorerRelease>("/explorer/release"),
+  explorerPlans: (offeringId: string) =>
+    apiRequest<CatalogPlans>(`/explorer/offerings/${encodeURIComponent(offeringId)}/plans`),
   /** The admins the portal has seen sign in, to name who published or prepared something. */
   knownActors: () => apiRequest<Actor[]>("/identity/actors?limit=100"),
   libraryDocuments: allLibraryDocuments,

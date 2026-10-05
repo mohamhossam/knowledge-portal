@@ -79,8 +79,19 @@ uv run python scripts/convert_explorer_model.py \
 
 Import the file into a draft from the draft's catalogue-file screen: preview it first, then
 import, review and publish. Evidence keeps its confidence and names its source. The script lists
-what the catalogue cannot hold yet, such as plans and prices, tracking and source
-conflicts. Those arrive with later slices and are never filled in by guesswork.
+what the catalogue cannot hold yet, such as tracking and source conflicts. Those arrive with
+later slices and are never filled in by guesswork.
+
+Plans and prices are never carried over. The explorer reads them live from the product catalog,
+a TM Forum TMF620 Product Catalog Management API, by the offering's code, and caches them for a
+few minutes. The knowledge catalogue keeps no copy, and the explorer says which catalog it read
+and when. Set `PRODUCT_CATALOG_PROVIDER=tmf620` with `PRODUCT_CATALOG_URL` (the API root, such as
+`https://catalog.example/tmf-api/productCatalogManagement/v4`) and `PRODUCT_CATALOG_TOKEN`.
+By default an offering's code is looked up as the catalog's `productOffering` id. Where the
+catalog keys offerings differently, `PRODUCT_CATALOG_CODE_FIELD` names the field to search on,
+and a code that matches two offerings is refused, never guessed. Offline,
+`PRODUCT_CATALOG_PROVIDER=fake` reads a sample catalog whose plans say "(sample)"; unset, the
+explorer says no product catalog is read.
 
 ## The browser app
 
