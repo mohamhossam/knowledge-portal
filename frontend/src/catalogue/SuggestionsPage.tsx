@@ -1,11 +1,12 @@
 import { ArrowRight, RotateCw } from "lucide-react";
 import { type KeyboardEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import type { Suggestion, SuggestionContent } from "../api/client";
 import { ApiError, errorMessage } from "../api/errors";
 import { count } from "../home/format";
 import { CatalogueFile } from "./CatalogueFile";
+import { DraftChangeRequests } from "./ChangeRequests";
 import { DraftDocuments } from "./DraftDocuments";
 import { type RowFocus, SuggestionRow } from "./SuggestionRow";
 import {
@@ -33,6 +34,15 @@ const KEPT = "Your edits are kept while this page stays open.";
  * Keys on a suggestion: j or ↓ next, k or ↑ previous, Enter open or close,
  * a accept, r reject, e edit then accept, Esc stop editing, then close.
  */
+/** "2 documents and 1 change request": where the suggestions came from. */
+function sourcesInWords(suggestions: Suggestion[]): string {
+  const documents = new Set(suggestions.filter((item) => !item.change_request).map((item) => item.document_version_id)).size;
+  const requests = new Set(suggestions.filter((item) => item.change_request).map((item) => item.document_version_id)).size;
+  return [documents || !requests ? count(documents, "document") : "", requests ? count(requests, "change request") : ""]
+    .filter(Boolean)
+    .join(" and ");
+}
+
 export function SuggestionsPage() {
   const { book } = useCatalogueContext();
   if (book.release.status !== "draft") {
@@ -46,6 +56,8 @@ function Suggestions() {
   const release = book.release;
   const draft = useDraft(release);
   const all = useMemo(() => draft.suggestions.data?.suggestions ?? [], [draft.suggestions.data]);
+  // Arriving from a change request read into the draft, the page says what the reading made.
+  const arrived = (useLocation().state as { notice?: string } | null)?.notice ?? null;
   const words = useMemo(() => lexicon(release, all), [release, all]);
   const [filter, setFilter] = useState<Filter>("waiting");
   const [find, setFind] = useState("");
@@ -198,7 +210,9 @@ function Suggestions() {
 
   return (
     <>
+      {arrived && <p className="toolbar__notice" role="status">{arrived}</p>}
       <DraftDocuments release={release} draft={draft} actorName={actorName} />
+      <DraftChangeRequests release={release} runs={draft.suggestions.data?.runs ?? []} suggestions={all} />
       <CatalogueFile release={release} />
 
       <section className="govsection" aria-labelledby="suggestions-title">
@@ -235,7 +249,7 @@ function Suggestions() {
                 ))}
               </dl>
               <p className="notice-table__total">
-                {count(counts.all, "suggestion")} from {count(new Set(all.map((item) => item.document_version_id)).size, "document")}.
+                {count(counts.all, "suggestion")} from {sourcesInWords(all)}.
               </p>
             </div>
 

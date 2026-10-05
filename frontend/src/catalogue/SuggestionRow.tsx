@@ -5,6 +5,7 @@ import { type KeyboardEvent, type RefObject, useEffect, useId, useMemo, useRef, 
 import { api, type CatalogueDocument, type PossibleMatch, type Release, type Suggestion, type SuggestionContent } from "../api/client";
 import { errorMessage } from "../api/errors";
 import { formatDay } from "../home/format";
+import { traceLine, useChangeRequests } from "./inbox";
 import { SuggestionEditor } from "./SuggestionEditor";
 import {
   type Lexicon, STATE_LABEL, STATE_RANK, changeSentence, decideWhy, offeringHolds, suggestionState, waitsFor, waitsForMany,
@@ -73,9 +74,17 @@ export function SuggestionRow({
           </button>
           {relationship && suggestion.content.text && <span className="secondary govtable__by" dir="auto">For: {suggestion.content.text}</span>}
           <span className="secondary govtable__by suggestion__source" dir="ltr">
-            <bdi>{document?.title ?? "A document no longer in the draft"}</bdi>
-            {citation && <> · {citation.location}</>}
-            {suggestion.model === TABLE_READER && " · read from a table"}
+            {suggestion.change_request ? (
+              <>
+                <bdi>{suggestion.change_request.change_request_id}</bdi> · Feature {suggestion.change_request.feature_id} · from Requirement AI
+              </>
+            ) : (
+              <>
+                <bdi>{document?.title ?? "A document no longer in the draft"}</bdi>
+                {citation && <> · {citation.location}</>}
+                {suggestion.model === TABLE_READER && " · read from a table"}
+              </>
+            )}
           </span>
         </th>
         <td id={`${detailId}-state`} className="suggestion__state">
@@ -143,8 +152,12 @@ function SuggestionDetail({ suggestion, release, words, document, actorName, edi
   return (
     <div className="suggestion-detail__body" onKeyDown={escape}>
       <section className="suggestion-detail__source" aria-labelledby={`${id}-source`}>
-        <h3 id={`${id}-source`} className="suggestion-detail__label">From the document</h3>
-        {suggestion.citations.length ? (
+        <h3 id={`${id}-source`} className="suggestion-detail__label">
+          {suggestion.change_request ? "From the change request" : "From the document"}
+        </h3>
+        {suggestion.change_request ? (
+          <ChangeRequestCitation suggestion={suggestion} />
+        ) : suggestion.citations.length ? (
           suggestion.citations.map((citation, index) => (
             <Citation key={`${citation.location}:${index}`} release={release} document={document} location={citation.location} quote={citation.quote} />
           ))
@@ -341,6 +354,27 @@ function linked(suggestion: Suggestion, choice: Record<string, string>): Suggest
 }
 
 /** One cited place: the quote, then the passage with its neighbours on request (or the image). */
+/** Where a suggestion from a change request comes from: the feature, and the approval it carries. */
+function ChangeRequestCitation({ suggestion }: { suggestion: Suggestion }) {
+  const inbox = useChangeRequests();
+  const cited = suggestion.change_request;
+  const item = inbox.data?.find((each) => each.id === cited?.change_request_id);
+  const citation = suggestion.citations[0];
+  return (
+    <div className="citation">
+      {citation?.quote && <p className="citation__quote" dir="auto">“{citation.quote}”</p>}
+      <p className="citation__where" dir="ltr">
+        <bdi>{cited?.change_request_id}</bdi> · Feature {cited?.feature_id}
+      </p>
+      {item && (
+        <p className="secondary" dir="auto">
+          Requirement AI requirement {traceLine(item.trace)}. Epic {item.trace.epic_id}: {item.trace.epic_name}.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function Citation({ release, document, location, quote }: {
   release: Release;
   document?: CatalogueDocument;

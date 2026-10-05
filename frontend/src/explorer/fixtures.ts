@@ -113,7 +113,7 @@ export const EXPLORED = {
       primary_source: "SDD",
       questions: [
         { id: "OQ-01", text: "Is B2B Digital in scope for a new activation?", impact: "B2B shown as unsupported.", confidence: "confirmed", source: "BPP SDD §11.1.3" },
-        { id: "OQ-02", text: "Which FPC_SITE value does the SSO pass?" },
+        { id: "OQ-02", text: "Which FPC_SITE value does the SSO pass?", order_types: ["NEW"] },
       ],
       decisions: [{ id: "AD-01", title: "Reuse Order to Delivery", text: "No new order flow.", confidence: "confirmed", source: "BPP SDD §11.2" }],
       boundaries: ["Runtime comes from the SDD."],
@@ -144,6 +144,28 @@ export const EXPLORED = {
         },
         { id: "fw", name: "Firewall", mandatory: false, responsibilities: [], realisation: [] },
       ],
+    },
+  ],
+  change_history: [
+    {
+      id: "CR-20261003-Business_Pro_Plus",
+      title: "Microsoft 365 for Business Pro Plus",
+      origin: "requirement-ai",
+      product_id: "bpp",
+      requester: "Layla Haddad",
+      applied_at: "2026-10-04T10:00:00Z",
+      trace: {
+        requirement_id: "REQ-2026-0412",
+        breakdown_revision: 3,
+        approval_id: "APR-77",
+        epic_id: "EP-1",
+        epic_name: "Microsoft 365 for Business Pro Plus",
+        approved_by: "Layla Haddad",
+        approved_at: "2026-10-03T08:05:00Z",
+        features: [{ id: "FT-1", name: "Offer Microsoft 365" }],
+      },
+      items: [{ kind: "question", summary: "Asks of Business Pro Plus: Offer Microsoft 365", status: "recorded", feature_id: "FT-1" }],
+      gaps: [],
     },
   ],
   journeys: [

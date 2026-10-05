@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 
-import type { KnowledgeSource, Offering, SourceConflict } from "../api/client";
+import type { ChangeRecord, KnowledgeSource, Offering, SourceConflict } from "../api/client";
+import { formatDay } from "../home/format";
 import { CONFIDENCE } from "./catalogue";
+import { traceLine } from "./inbox";
 import { byLevel, LEVEL, levelTag, questionOf, useSourceText } from "./governance";
 
 type Sourced = { confidence?: string | null; source?: string | null };
@@ -198,6 +200,14 @@ export function OpenQuestions({ offering, conflicts, headingId, action, beside }
                 <span className="governance__id">{question.id}</span>
                 <div>
                   <p dir="auto">{question.text}</p>
+                  {(question.order_types ?? []).length > 0 && (
+                    <span className="secondary govtable__by">
+                      Asked for{" "}
+                      {(question.order_types ?? [])
+                        .map((code) => offering.order_types.find((type) => type.code === code)?.name ?? code)
+                        .join(", ")}
+                    </span>
+                  )}
                   {question.impact && <span className="secondary govtable__by" dir="auto">Meanwhile: {question.impact}</span>}
                   {conflicts.length > 0 && (
                     <span className="secondary govtable__by">Raised by {conflicts.map((item) => `the conflict ${item.id}`).join(", ")}</span>
@@ -290,6 +300,94 @@ export function OfferingSourceList({ offering, sources, headingId, action }: {
       )}
       {notUsed.length > 0 && (
         <p className="secondary governance__not-used" dir="auto">No longer uses: {notUsed.join(", ")}</p>
+      )}
+    </section>
+  );
+}
+
+const ITEM_STATUS: Record<ChangeRecord["items"][number]["status"] & string, string | null> = {
+  recorded: null,
+  inferred: "mapped automatically",
+  gap: "needs an architect's review",
+  conflict: "needs a decision",
+};
+
+/**
+ * The change requests applied to this version (requirement-portal ADR-0101, step 7), newest
+ * last as they were applied: who asked and why, and what each changed. History is written by
+ * accepting from a change request, never edited by hand.
+ */
+export function ChangeHistory({ history, offeringName, headingId }: {
+  history: ChangeRecord[];
+  offeringName: (id: string) => string;
+  headingId: string;
+}) {
+  return (
+    <section className="govsection" aria-labelledby={headingId}>
+      <h2 id={headingId} className="govsection__title">
+        Change history {history.length > 0 && <span className="govsection__count">{history.length}</span>}
+      </h2>
+      <p className="govsection__lead">
+        The change requests applied to this version: those from Requirement AI as their questions are accepted, and those the
+        original explorer applied.
+      </p>
+      {history.length ? (
+        <table className="govtable governance__table governance__history" role="table">
+          <caption className="visually-hidden">Change requests applied to this version</caption>
+          <colgroup>
+            <col className="governance__col-request" />
+            <col className="governance__col-applied" />
+            <col className="governance__col-changed" />
+          </colgroup>
+          <thead role="rowgroup">
+            <tr role="row">
+              <th scope="col" role="columnheader">Change request</th>
+              <th scope="col" role="columnheader">Applied</th>
+              <th scope="col" role="columnheader">What it changed</th>
+            </tr>
+          </thead>
+          <tbody role="rowgroup">
+            {history.map((record) => (
+              <tr key={record.id} role="row" className="row">
+                <th scope="row" role="rowheader">
+                  <span className="governance__id">{record.id}</span>
+                  <span className="changerequests__title" dir="auto">{record.title}</span>
+                  <span className="secondary govtable__by" dir="auto">
+                    {record.origin === "explorer" ? "Drafted in the original explorer" : "From Requirement AI"}
+                    {record.requester && `, asked by ${record.requester}`}
+                    {record.priority && ` · ${record.priority} priority`}
+                    {record.target_date && ` · wanted by ${formatDay(record.target_date)}`}
+                  </span>
+                  {record.trace && <span className="secondary govtable__by" dir="auto">{traceLine(record.trace)}</span>}
+                  {record.reason && <span className="secondary govtable__by" dir="auto">Why: {record.reason}</span>}
+                </th>
+                <td role="cell" data-head="Applied">
+                  {record.applied_at ? formatDay(record.applied_at) : <span className="secondary">Not recorded</span>}
+                  {record.product_id && <span className="secondary govtable__by" dir="auto">to {offeringName(record.product_id)}</span>}
+                </td>
+                <td role="cell" data-head="What it changed">
+                  {record.items.length ? (
+                    <ul className="governance__changes">
+                      {record.items.map((item, index) => (
+                        <li key={`${item.kind}:${item.feature_id ?? index}`} className={item.status === "gap" || item.status === "conflict" ? "governance__due" : undefined}>
+                          {item.feature_id && <span className="governance__id">{item.feature_id}</span>} <span dir="auto">{item.summary}</span>
+                          {ITEM_STATUS[item.status ?? "recorded"] && <span className="secondary"> ({ITEM_STATUS[item.status ?? "recorded"]})</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <span className="secondary">Nothing recorded</span>
+                  )}
+                  {record.gaps.map((text) => (
+                    <span key={text} className="governance__due" dir="auto">Not mapped: {text}</span>
+                  ))}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <p className="timetable__quiet">No change request has been applied to this version.</p>
       )}
     </section>
   );

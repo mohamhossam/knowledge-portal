@@ -253,6 +253,48 @@ export function OfferingNotes({ value, onChange, channels, names }: SectionProps
   );
 }
 
+/**
+ * An open question's fields, shared by the offering's editor and a suggested question's:
+ * the order types it is asked for, none meaning the offering as a whole. An order type a
+ * change request named that the offering does not have stays chosen, so it can be unticked.
+ */
+export function QuestionFields({ item, orders, change }: {
+  item: Question;
+  orders: { code: string; name: string }[];
+  change: (patch: Partial<Question>) => void;
+}) {
+  const asked = item.order_types ?? [];
+  const unknown = asked.filter((code) => !orders.some((type) => type.code === code));
+  const choices = [...orders, ...unknown.map((code) => ({ code, name: `${code} (not one of its order types)` }))];
+  return (
+    <>
+      <TextField label="Id" value={item.id} dir="ltr" hint="Such as OQ-01; made for you when left empty." onChange={(id) => change({ id })} />
+      <SelectField
+        label="How sure its source is"
+        value={item.confidence ?? ""}
+        options={CONFIDENCE_OPTIONS}
+        onChange={(confidence) => change({ confidence: (confidence || null) as SourceConfidence | null })}
+      />
+      <TextField label="Source" value={item.source} onChange={(source) => change({ source: source || null })} />
+      <AreaField label="Question" value={item.text} required onChange={(text) => change({ text })} />
+      <AreaField label="What the catalogue does meanwhile" value={item.impact} onChange={(impact) => change({ impact: impact || null })} />
+      {choices.length > 0 && (
+        <fieldset className="choices form__field--wide">
+          <legend className="field__label">Asked for the order types (none means the whole offering)</legend>
+          {choices.map((type) => (
+            <CheckField
+              key={type.code}
+              label={type.name}
+              checked={asked.includes(type.code)}
+              onChange={(on) => change({ order_types: on ? [...asked, type.code] : asked.filter((code) => code !== type.code) })}
+            />
+          ))}
+        </fieldset>
+      )}
+    </>
+  );
+}
+
 /** The questions its sources leave open. */
 export function OfferingQuestions({ value, onChange }: SectionProps) {
   return (
@@ -261,22 +303,9 @@ export function OfferingQuestions({ value, onChange }: SectionProps) {
       one="open question"
       items={value.questions ?? []}
       onChange={(questions) => onChange({ ...value, questions })}
-      blank={() => ({ id: "", text: "" })}
+      blank={() => ({ id: "", text: "", order_types: [] })}
       itemLabel={(item, index) => `question ${item.id || index + 1}`}
-      render={(item, change) => (
-        <>
-          <TextField label="Id" value={item.id} dir="ltr" hint="Such as OQ-01; made for you when left empty." onChange={(id) => change({ id })} />
-          <SelectField
-            label="How sure its source is"
-            value={item.confidence ?? ""}
-            options={CONFIDENCE_OPTIONS}
-            onChange={(confidence) => change({ confidence: (confidence || null) as SourceConfidence | null })}
-          />
-          <TextField label="Source" value={item.source} onChange={(source) => change({ source: source || null })} />
-          <AreaField label="Question" value={item.text} required onChange={(text) => change({ text })} />
-          <AreaField label="What the catalogue does meanwhile" value={item.impact} onChange={(impact) => change({ impact: impact || null })} />
-        </>
-      )}
+      render={(item, change) => <QuestionFields item={item} orders={orderTypeOptions(value)} change={change} />}
     />
   );
 }

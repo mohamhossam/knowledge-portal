@@ -34,8 +34,8 @@ These rows decide the 14 commits on the original's `smb-product-flow-architectur
 | `e755684` business change requests, phase 1 | Port: a change request becomes a draft release with suggestions (slice 7) | — |
 | `e629c77` dark-theme text on brand | Skip: styling of the static file; this portal has its own design system | — |
 | `8833e34` brand dot instead of a side stripe | Skip: styling of the static file; this portal has its own design system | — |
-| `dde1451` change requests from Requirement AI, phase 2 | Port: a Requirement AI backlog export becomes suggestions in a draft (slice 7) | — |
-| `acc1b3a` CR-20261004-Business_Pro_Plus applied to the model | Port as data: the applied request is in `model.json`, so it arrives with the seed | — |
+| `dde1451` change requests from Requirement AI, phase 2 | Ported: requirement-portal sends the approved backlog (schema 1.x) on its final approval; it waits in an inbox until an admin reads it into a draft, where each approved feature is a suggested question (slice 7) | this PR |
+| `acc1b3a` CR-20261004-Business_Pro_Plus applied to the model | Ported as data: the explorer-model converter carries it into the version's change history (slice 7) | this PR |
 | `e7b05f3` product profile page | Port onto the Offering page (slices 3–4) | — |
 | `8f19708` visual product page | Port onto the Offering page (slices 3–4) | — |
 | `94b35aa` one scroll, not two; lifecycle board for journeys | Port the lifecycle board onto Journeys (slice 1); frame sizing is not needed | — |

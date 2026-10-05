@@ -146,7 +146,9 @@ People with the `knowledge_admin` role curate. Anyone else who is signed in can 
 product architecture explorer at `/knowledge/explorer`: for each offering and order type in the
 catalogue version in service, the journey, the systems that take part and what the catalogue
 does not say yet (requirement-portal ADR-0101). Any reader can download a scenario as a Solution
-Architecture document (.docx), written in the browser from the same version. Citations and architecture evidence stay readable
+Architecture document (.docx), written in the browser from the same version. requirement-portal sends each
+approved backlog here when its final approval is recorded; admins read it into a draft as
+suggested questions or dismiss it (requirement-portal ADR-0101, step 7). Citations and architecture evidence stay readable
 through the read-only viewers in requirement-portal.
 
 ## Origin
