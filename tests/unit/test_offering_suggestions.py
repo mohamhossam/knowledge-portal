@@ -311,6 +311,7 @@ def _offering_change(offering: OfferingOutput) -> ChangeOutput:
         basis="stated",
         reasoning=None,
         relationship_kind=None,
+        channel_kind=None,
         journey=None,
     )
 
@@ -332,7 +333,12 @@ def test_the_models_offering_is_made_valid_before_anyone_sees_it() -> None:
         rules=[],
         order_types=[
             OrderTypeOutput(
-                name="New Activation", code=None, enabled=None, description=None, confidence=None
+                name="New Activation",
+                code=None,
+                enabled=None,
+                description=None,
+                confidence=None,
+                channels=[],
             ),
             OrderTypeOutput(
                 name="New activation",
@@ -340,6 +346,7 @@ def test_the_models_offering_is_made_valid_before_anyone_sees_it() -> None:
                 enabled=None,
                 description=None,
                 confidence=None,
+                channels=[],
             ),
         ],
         components=[

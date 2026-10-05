@@ -520,6 +520,7 @@ def test_extraction_adapter_builds_every_kind_and_skips_unusable_items() -> None
             "basis": "stated",
             "reasoning": None,
             "relationship_kind": None,
+            "channel_kind": None,
         }
         return ChangeOutput(**(base | values))
 

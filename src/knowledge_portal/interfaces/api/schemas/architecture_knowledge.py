@@ -961,6 +961,8 @@ class CandidateContentSchema(BaseModel):
     product: ProductOfferingSchema | None = None
     # The whole journey, for a journey suggestion (ADR-0096).
     journey: JourneySchema | None = None
+    # The whole channel, for a channel suggestion (requirement-portal ADR-0101).
+    channel: ChannelSchema | None = None
 
     @classmethod
     def from_domain(cls, content: CandidateContent) -> CandidateContentSchema:
@@ -984,6 +986,7 @@ class CandidateContentSchema(BaseModel):
                 ProductOfferingSchema.from_domain(content.product) if content.product else None
             ),
             journey=JourneySchema.from_domain(content.journey) if content.journey else None,
+            channel=ChannelSchema.from_domain(content.channel) if content.channel else None,
         )
 
     def to_domain(self) -> CandidateContent:
@@ -1005,6 +1008,7 @@ class CandidateContentSchema(BaseModel):
             self.parent_domain_id,
             self.product.to_domain() if self.product else None,
             self.journey.to_domain() if self.journey else None,
+            self.channel.to_domain() if self.channel else None,
         )
 
 

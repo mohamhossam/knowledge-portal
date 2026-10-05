@@ -127,6 +127,7 @@ def _change(**values: Any) -> ChangeOutput:
         "basis": "stated",
         "reasoning": None,
         "relationship_kind": None,
+        "channel_kind": None,
     }
     return ChangeOutput(**(defaults | values))
 

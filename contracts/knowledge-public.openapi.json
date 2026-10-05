@@ -650,6 +650,16 @@
             ],
             "title": "Capability Id"
           },
+          "channel": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChannelSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "component_id": {
             "anyOf": [
               {
@@ -812,7 +822,8 @@
           "landscape_domain",
           "placement",
           "product",
-          "journey"
+          "journey",
+          "channel"
         ],
         "title": "CandidateKind",
         "type": "string"
@@ -826,7 +837,8 @@
           "needs_system",
           "needs_component",
           "needs_domain",
-          "needs_offering"
+          "needs_offering",
+          "needs_channel"
         ],
         "title": "CandidateMatch",
         "type": "string"
