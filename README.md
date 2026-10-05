@@ -145,7 +145,8 @@ them by tag. CI needs the `KERNEL_READ_TOKEN` repository secret.
 People with the `knowledge_admin` role curate. Anyone else who is signed in can read the
 product architecture explorer at `/knowledge/explorer`: for each offering and order type in the
 catalogue version in service, the journey, the systems that take part and what the catalogue
-does not say yet (requirement-portal ADR-0101). Citations and architecture evidence stay readable
+does not say yet (requirement-portal ADR-0101). Any reader can download a scenario as a Solution
+Architecture document (.docx), written in the browser from the same version. Citations and architecture evidence stay readable
 through the read-only viewers in requirement-portal.
 
 ## Origin

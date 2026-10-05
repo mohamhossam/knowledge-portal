@@ -13,6 +13,7 @@ import { conflictsFor, questionOf, SourcesContext } from "../catalogue/governanc
 import { LifecycleSection } from "../catalogue/LifecycleNotes";
 import { TrackingSection } from "../catalogue/Tracking";
 import { formatDay } from "../home/format";
+import { DocumentDownload } from "./DocumentDownload";
 import { PlansAndPrices } from "./PlansAndPrices";
 import { gaps, involvement, journeyFor, listed, partsFor, pickScenario, type Scenario, trackingFor } from "./scenario";
 
@@ -232,6 +233,7 @@ function ScenarioSheet({ release, scenario, linkSystems }: {
               .join(", ")}
           </p>
         )}
+        <DocumentDownload release={release} scenario={scenario} />
       </header>
 
       {decisions.length > 0 && (

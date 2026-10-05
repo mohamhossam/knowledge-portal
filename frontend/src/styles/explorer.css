@@ -23,3 +23,21 @@
 .plans__amount {
   white-space: nowrap;
 }
+
+/* The Solution Architecture download: a text button under the scenario's head, what it writes beside it. */
+.explorer__document {
+  margin-top: var(--s3);
+}
+
+.explorer__document-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s4);
+  max-width: 80ch;
+  margin: 0;
+}
+
+.explorer__document-line .text-button[aria-disabled="true"] {
+  cursor: progress;
+}
