@@ -1359,7 +1359,9 @@ class FakeCatalogueExtractor:
     ``A depends on B for reason`` and ``A calls B for reason`` lines (the second
     as an API call), and reads ``A sends X to B`` as an inferred data transfer.
     An image yields one system named after the document so the review flow can
-    be exercised without a vision model.
+    be exercised without a vision model. Only prose is read: a table row arrives
+    as ``Column: value | Column: value`` and would otherwise match a label, so a
+    segment with cells, or a line holding `` | ``, is skipped.
     """
 
     _SYSTEM = re.compile(r"^system:\s*(?P<name>.+)$", re.IGNORECASE)
@@ -1409,7 +1411,11 @@ class FakeCatalogueExtractor:
                     )
                 )
                 continue
+            if segment.cells:
+                continue
             for line in (raw.strip() for raw in segment.text.splitlines()):
+                if " | " in line:
+                    continue
                 source_name, target_name = current_name, ""
                 basis, rationale = CandidateBasis.STATED, None
                 if match := self._SYSTEM.match(line):
