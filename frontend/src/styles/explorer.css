@@ -18,3 +18,8 @@
 .explorer__gap {
   font-weight: var(--w-bold);
 }
+
+/* Plans and prices: amounts are the catalog's, set end-aligned and never wrapped. */
+.plans__amount {
+  white-space: nowrap;
+}

@@ -566,6 +566,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/explorer/offerings/{offering_id}/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Offering Plans
+         * @description An offering's plans and prices, read live from the product catalog by its code.
+         */
+        get: operations["offering_plans_explorer_offerings__offering_id__plans_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/explorer/release": {
         parameters: {
             query?: never;
@@ -1539,6 +1559,53 @@ export interface components {
             /** Parent Id */
             parent_id?: string | null;
         };
+        /** CatalogPlanResponse */
+        CatalogPlanResponse: {
+            /** Description */
+            description?: string | null;
+            /** Id */
+            id: string;
+            /** Lifecycle */
+            lifecycle?: string | null;
+            /** Name */
+            name: string;
+            /** Prices */
+            prices: components["schemas"]["PlanPriceResponse"][];
+            /** Terms */
+            terms: string[];
+        };
+        /**
+         * CatalogPlansResponse
+         * @description An offering's plans and prices, read live from the product catalog by its code.
+         */
+        CatalogPlansResponse: {
+            /** Catalog */
+            catalog?: string | null;
+            /** Catalog Offering Id */
+            catalog_offering_id?: string | null;
+            /** Catalog Offering Name */
+            catalog_offering_name?: string | null;
+            /** Code */
+            code?: string | null;
+            /**
+             * Plans
+             * @default []
+             */
+            plans: components["schemas"]["CatalogPlanResponse"][];
+            /** Read At */
+            read_at?: string | null;
+            status: components["schemas"]["CatalogPlansStatus"];
+            /**
+             * Terms
+             * @default []
+             */
+            terms: string[];
+        };
+        /**
+         * CatalogPlansStatus
+         * @enum {string}
+         */
+        CatalogPlansStatus: "found" | "no_code" | "not_in_catalog" | "not_configured";
         /** CatalogueChangeResponse */
         CatalogueChangeResponse: {
             change: components["schemas"]["ChangeKind"];
@@ -2526,6 +2593,20 @@ export interface components {
             /** Team */
             team?: string | null;
         };
+        /** PlanPriceResponse */
+        PlanPriceResponse: {
+            /** Amount */
+            amount: string;
+            /** Currency */
+            currency: string;
+            kind: components["schemas"]["PriceKind"];
+            /** Name */
+            name: string;
+            /** Period */
+            period?: string | null;
+            /** Unit */
+            unit?: string | null;
+        };
         /**
          * PossibleMatchResponse
          * @description An existing system a name in the suggestion may mean; a maintainer confirms it.
@@ -2546,6 +2627,11 @@ export interface components {
             /** Query */
             query: string;
         };
+        /**
+         * PriceKind
+         * @enum {string}
+         */
+        PriceKind: "recurring" | "one_time" | "usage";
         /**
          * ProductOfferingSchema
          * @description A commercial offering, its order types and components, and the systems behind them.
@@ -4391,6 +4477,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ActorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    offering_plans_explorer_offerings__offering_id__plans_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                offering_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogPlansResponse"];
                 };
             };
             /** @description Validation Error */
