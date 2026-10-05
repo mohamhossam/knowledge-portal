@@ -51,7 +51,7 @@ export function DocumentDownload({ release, scenario }: { release: ExplorerRelea
           <FileDown size={16} aria-hidden="true" />
           {state.busy ? "Writing the document…" : "Download the Solution Architecture (.docx)"}
         </button>
-        <span id="explorer-document-what" className="secondary">
+        <span id="explorer-document-what" className="sheet__meta">
           A Word document of this scenario in the original explorer’s eighteen sections, for architecture review.
         </span>
       </p>
