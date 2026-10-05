@@ -90,6 +90,41 @@ describe("ExplorerPage", () => {
     expect(screen.getByText(/1 quality is not defined/)).toBeInTheDocument();
   });
 
+  it("reads the order's tracking through the chosen channel, with its screen's read path", async () => {
+    open();
+    const section = within((await screen.findByRole("heading", { name: "Order tracking" })).closest("section")!);
+    expect(section.getByText("Specified for New Activation.")).toBeInTheDocument();
+    const correlation = within(section.getByRole("table", { name: /Correlation and tracking screen/ }));
+    expect(correlation.getAllByRole("row")).toHaveLength(2);
+    expect(correlation.getByRole("row", { name: /Online/ })).toHaveTextContent("Digital Order ID ↔ CWOM Order ID");
+    expect(correlation.getByRole("row", { name: /Online/ })).toHaveTextContent("Reads from RTF over getRealTimeOrderDetails");
+    const flows = within(section.getByRole("table", { name: /Flows that carry/ })).getAllByRole("row").slice(1);
+    expect(flows.map((row) => row.textContent)).toEqual([
+      "CWOMRTFSub-order milestonesOver notifyMilestone",
+      "RTFLogs it itselfTimestamps",
+      "B2B WebRTFgetRealTimeOrderDetailsThe read path of Online",
+    ]);
+    expect(section.getByText("Installation done").closest("li")).toHaveClass("explorer__gap");
+    expect(section.getByRole("row", { name: /Rejected by business rules/ })).toHaveTextContent("Back to the channel");
+  });
+
+  it("says what a channel leaves undefined, as due", async () => {
+    open("/explorer?product=bpp&order=NEW&channel=shop");
+    const section = within((await screen.findByRole("heading", { name: "Order tracking" })).closest("section")!);
+    const shop = section.getByRole("row", { name: /Shop/ });
+    expect(shop).toHaveClass("row--due");
+    expect(within(shop).getByText("Not defined")).toHaveClass("tracking__missing");
+    expect(within(shop).getByText("Not named")).toHaveClass("tracking__missing");
+  });
+
+  it("says when tracking is not specified for the order type", async () => {
+    open("/explorer?product=bpp&order=CEASE");
+    const section = within((await screen.findByRole("heading", { name: "Order tracking" })).closest("section")!);
+    expect(section.getByText("Tracking is not specified for a cease.")).toHaveClass("explorer__gap");
+    expect(section.queryByRole("table", { name: /Flows that carry/ })).not.toBeInTheDocument();
+    expect(section.getByRole("table", { name: /fall out/ })).toBeInTheDocument();
+  });
+
   it("changes scenario from the choices and keeps it in the address", async () => {
     open();
     fireEvent.change(await screen.findByLabelText("Order type"), { target: { value: "CEASE" } });

@@ -79,7 +79,7 @@ uv run python scripts/convert_explorer_model.py \
 
 Import the file into a draft from the draft's catalogue-file screen: preview it first, then
 import, review and publish. Evidence keeps its confidence and names its source. The script lists
-what the catalogue cannot hold yet, such as plans and prices, tracking and source
+what the catalogue cannot hold yet, such as plans and prices and source
 conflicts. Those arrive with later slices and are never filled in by guesswork.
 
 ## The browser app

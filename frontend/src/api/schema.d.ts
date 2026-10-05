@@ -1921,6 +1921,19 @@ export interface components {
          */
         ExtractionWarningSeverity: "info" | "warning" | "blocking";
         /**
+         * FalloutCaseSchema
+         * @description What makes an order fall out, and how it is handled.
+         */
+        FalloutCaseSchema: {
+            confidence?: components["schemas"]["SourceConfidence"] | null;
+            /** Handling */
+            handling?: string | null;
+            /** Source */
+            source?: string | null;
+            /** Trigger */
+            trigger: string;
+        };
+        /**
          * FlowRuleKind
          * @enum {string}
          */
@@ -2445,6 +2458,49 @@ export interface components {
             /** Source */
             source?: string | null;
         };
+        /**
+         * OrderTrackingSchema
+         * @description How an offering's orders are tracked once placed (requirement-portal ADR-0101).
+         */
+        OrderTrackingSchema: {
+            /**
+             * Channels
+             * @default []
+             */
+            channels: components["schemas"]["TrackingChannelSchema"][];
+            confidence?: components["schemas"]["SourceConfidence"] | null;
+            /**
+             * Fallout
+             * @default []
+             */
+            fallout: components["schemas"]["FalloutCaseSchema"][];
+            /**
+             * Flows
+             * @default []
+             */
+            flows: components["schemas"]["TrackingFlowSchema"][];
+            /**
+             * Milestones
+             * @default []
+             */
+            milestones: components["schemas"]["TrackingEventSchema"][];
+            /** Not Applicable Note */
+            not_applicable_note?: string | null;
+            /**
+             * Order Types
+             * @default []
+             */
+            order_types: string[];
+            /** Scope Note */
+            scope_note?: string | null;
+            /** Source */
+            source?: string | null;
+            /**
+             * Statuses
+             * @default []
+             */
+            statuses: components["schemas"]["TrackingEventSchema"][];
+        };
         /** OrderTypeSchema */
         OrderTypeSchema: {
             /**
@@ -2616,6 +2672,7 @@ export interface components {
             rules: string[];
             /** Source */
             source?: string | null;
+            tracking?: components["schemas"]["OrderTrackingSchema"] | null;
             /**
              * Values
              * @default []
@@ -3046,6 +3103,61 @@ export interface components {
             /** Expected Revision */
             expected_revision: number;
             system: components["schemas"]["SystemDefinitionSchema"];
+        };
+        /**
+         * TrackingChannelSchema
+         * @description How one channel ties its order to the fulfilment order, and where progress is seen.
+         */
+        TrackingChannelSchema: {
+            /** Channel Id */
+            channel_id: string;
+            confidence?: components["schemas"]["SourceConfidence"] | null;
+            /** Correlation Key */
+            correlation_key?: string | null;
+            /** Read Interface */
+            read_interface?: string | null;
+            /** Read System Id */
+            read_system_id?: string | null;
+            /** Source */
+            source?: string | null;
+            /** Story */
+            story?: string | null;
+            /** Ui Note */
+            ui_note?: string | null;
+            /** Ui System Id */
+            ui_system_id?: string | null;
+        };
+        /**
+         * TrackingEventSchema
+         * @description A milestone the customer sees, or an internal status.
+         */
+        TrackingEventSchema: {
+            confidence?: components["schemas"]["SourceConfidence"] | null;
+            /** Detail */
+            detail?: string | null;
+            /** Label */
+            label: string;
+            /** Source */
+            source?: string | null;
+            /** System Id */
+            system_id?: string | null;
+        };
+        /**
+         * TrackingFlowSchema
+         * @description Order or milestone events from one system to another; to itself, a log.
+         */
+        TrackingFlowSchema: {
+            confidence?: components["schemas"]["SourceConfidence"] | null;
+            /** From System Id */
+            from_system_id: string;
+            /** Interface */
+            interface?: string | null;
+            /** Label */
+            label: string;
+            /** Source */
+            source?: string | null;
+            /** To System Id */
+            to_system_id: string;
         };
         /** ValidationError */
         ValidationError: {

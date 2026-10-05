@@ -27,6 +27,7 @@ _OFFERING_FIELDS = (
     "values",
     "audiences",
     "nfrs",
+    "tracking",
 )
 
 

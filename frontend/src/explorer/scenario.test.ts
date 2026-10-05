@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { EXPLORED } from "./fixtures";
-import { gaps, involvement, listed, partsFor, performer, pickScenario } from "./scenario";
+import { gaps, involvement, listed, partsFor, performer, pickScenario, trackingFor } from "./scenario";
 
 const scenario = (product?: string, order?: string, channel?: string) => pickScenario(EXPLORED, product, order, channel)!;
 
@@ -47,6 +47,7 @@ describe("gaps", () => {
       "No system is named as responsible for Firewall in New Activation.",
       "How Firewall is realised is not recorded.",
       "Availability is not defined by any source.",
+      "Tracking’s ‘Installation done’ is marked in the sources as a gap.",
       "1 fact is marked in its source as a gap.",
     ]);
   });
@@ -97,5 +98,38 @@ describe("channels", () => {
     expect(performer(scenario(), scenario().journey!.activities[0]!)).toBe("web");
     expect(performer(scenario("bpp", "NEW", "shop"), scenario().journey!.activities[0]!)).toBeNull();
     expect(involvement(scenario("bpp", "NEW", "shop")).map((item) => item.systemId)).toEqual(["rtf", "web", "cwom", "bscs", "wfm"]);
+  });
+});
+
+describe("tracking", () => {
+  it("reads the channel's correlation and adds its screen's read path to the shared flows", () => {
+    const tracked = trackingFor(scenario())!;
+    expect(tracked.applies).toBe(true);
+    expect(tracked.entry?.ui_system_id).toBe("web");
+    expect(tracked.flows.map((flow) => `${flow.from_system_id}>${flow.to_system_id}`)).toEqual(["cwom>rtf", "rtf>rtf", "web>rtf"]);
+    expect(tracked.flows.at(-1)).toMatchObject({ label: "getRealTimeOrderDetails", readFor: "Online" });
+  });
+
+  it("says what a channel leaves undefined", () => {
+    expect(trackingFor(scenario("bpp", "NEW", "shop"))!.gaps).toEqual([
+      "The screen Shop customers track their orders in is not named.",
+      "Shop has no correlation key tying its order to the fulfilment order.",
+      "Tracking’s ‘Installation done’ is marked in the sources as a gap.",
+    ]);
+  });
+
+  it("is not specified for an order type it does not name, and says nothing is missing there", () => {
+    const cease = trackingFor(scenario("bpp", "CEASE"))!;
+    expect([cease.applies, cease.flows, cease.gaps]).toEqual([false, [], []]);
+  });
+
+  it("marks the systems that carry or show the order's tracking", () => {
+    const taking = involvement(scenario());
+    expect(taking.filter((item) => item.tracks).map((item) => item.systemId)).toEqual(["web", "rtf", "cwom"]);
+  });
+
+  it("says when an offering records no tracking", () => {
+    const bare = { ...EXPLORED, products: EXPLORED.products!.map((item) => ({ ...item, tracking: null })) };
+    expect(gaps(pickScenario(bare, "bpp", "NEW")!)).toContain("No order tracking is recorded for Business Pro Plus.");
   });
 });

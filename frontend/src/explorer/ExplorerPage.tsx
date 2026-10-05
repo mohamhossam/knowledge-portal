@@ -8,12 +8,13 @@ import { errorMessage } from "../api/errors";
 import { CONFIDENCE, roleLabel, sentenceCase } from "../catalogue/catalogue";
 import { JourneyHandovers, JourneySteps } from "../catalogue/JourneyTimetable";
 import { NfrSection, RealisationKey, RealisedAs, RealisedInline } from "../catalogue/Realisation";
+import { TrackingSection } from "../catalogue/Tracking";
 import { formatDay } from "../home/format";
-import { gaps, involvement, journeyFor, listed, partsFor, pickScenario, type Scenario } from "./scenario";
+import { gaps, involvement, journeyFor, listed, partsFor, pickScenario, type Scenario, trackingFor } from "./scenario";
 
 /** What the catalogue cannot hold yet; each arrives with a later slice (requirement-portal ADR-0101). */
 export const NOT_YET =
-  "Plans and prices and order tracking are not in the catalogue yet, so the explorer does not show them.";
+  "Plans and prices are not in the catalogue yet, so the explorer does not show them.";
 
 function useExplorerRelease() {
   return useQuery({ queryKey: ["explorer", "release"], queryFn: api.explorerRelease });
@@ -180,6 +181,7 @@ function ScenarioSheet({ release, scenario, linkSystems }: {
   const taking = involvement(scenario);
   const parts = partsFor(scenario);
   const missing = gaps(scenario);
+  const tracked = trackingFor(scenario);
 
   return (
     <article className="sheet" aria-labelledby={`${id}-name`}>
@@ -236,7 +238,9 @@ function ScenarioSheet({ release, scenario, linkSystems }: {
                       ? `Performs ${steps(item.performs)}`
                       : item.supports.length
                         ? `Supports ${steps(item.supports)}`
-                        : "Responsible for a part; no step names it"}
+                        : item.parts.length
+                          ? "Responsible for a part; no step names it"
+                          : "Takes part in order tracking"}
                     {item.performs.length > 0 && item.supports.length > 0 && (
                       <span className="secondary govtable__by">Supports {steps(item.supports)}</span>
                     )}
@@ -245,6 +249,9 @@ function ScenarioSheet({ release, scenario, linkSystems }: {
                         {roleLabel(responsibility.role)} for {part.name}
                       </span>
                     ))}
+                    {item.tracks && (item.performs.length > 0 || item.supports.length > 0 || item.parts.length > 0) && (
+                      <span className="secondary govtable__by">Takes part in order tracking</span>
+                    )}
                   </td>
                   <td className="cell--end">{new Set([...item.performs, ...item.supports]).size}</td>
                 </tr>
@@ -321,6 +328,21 @@ function ScenarioSheet({ release, scenario, linkSystems }: {
       </section>
 
       <NfrSection offering={offering} headingId={`${id}-nfrs`} />
+
+      <TrackingSection
+        offering={offering}
+        headingId={`${id}-tracking`}
+        system={system}
+        channelName={channelName}
+        orderName={(code) => offering.order_types.find((item) => item.code === code)?.name ?? code}
+        focus={tracked ? {
+          orderName: orderType.name,
+          applies: tracked.applies,
+          channel: channel ? { id: channel.id, name: channel.name } : null,
+          entry: tracked.entry,
+          flows: tracked.flows,
+        } : undefined}
+      />
 
       <section className="govsection" aria-labelledby={`${id}-gaps`}>
         <h3 id={`${id}-gaps`} className="govsection__title">What the catalogue does not say yet</h3>

@@ -22,43 +22,22 @@ import re
 from collections.abc import Callable, Collection
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Protocol
 
 from knowledge_portal.domain.architecture.invariants import (
     InvalidKnowledgeError,
     optional,
     required,
 )
-
-
-class SourceConfidence(StrEnum):
-    """How sure the source document says it is of a fact."""
-
-    CONFIRMED = "confirmed"
-    INFERRED = "inferred"
-    GAP = "gap"
-
-
-class Sourced(Protocol):
-    @property
-    def confidence(self) -> SourceConfidence | str | None: ...
-
-    @property
-    def source(self) -> str | None: ...
-
-
-def check_source(item: Sourced) -> None:
-    """Checks where a fact comes from and how sure its source is; stored values arrive as text."""
-    confidence = item.confidence
-    if confidence is not None:
-        try:
-            confidence = SourceConfidence(str(confidence).strip().casefold())
-        except ValueError as exc:
-            raise InvalidKnowledgeError(
-                f"Confidence must be confirmed, inferred or gap, not {confidence!r}."
-            ) from exc
-    object.__setattr__(item, "confidence", confidence)
-    object.__setattr__(item, "source", optional(item.source, "Source"))
+from knowledge_portal.domain.architecture.sources import (
+    SourceConfidence as SourceConfidence,
+)
+from knowledge_portal.domain.architecture.sources import (
+    Sourced as Sourced,
+)
+from knowledge_portal.domain.architecture.sources import (
+    check_source as check_source,
+)
+from knowledge_portal.domain.architecture.tracking import OrderTracking, check_tracking
 
 
 @dataclass(frozen=True)
@@ -283,6 +262,8 @@ class ProductOffering:
     source: str | None = None
     # Its non-functional requirements, one per quality.
     nfrs: tuple[OfferingNfr, ...] = ()
+    # How its orders are tracked once placed, when its sources say.
+    tracking: OrderTracking | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Offering id"))
@@ -307,6 +288,8 @@ class ProductOffering:
         if len(set(qualities)) != len(qualities):
             raise InvalidKnowledgeError(f"{self.name}: each NFR quality is stated once.")
         known = set(codes)
+        if self.tracking is not None:
+            check_tracking(self.name, self.tracking, known)
         for component in self.components:
             for responsibility in component.responsibilities:
                 unknown = [
@@ -335,8 +318,8 @@ def check_offerings(
     system_ids: set[str],
     channel_ids: Collection[str] = (),
 ) -> None:
-    """Unique offerings whose responsibilities name only catalogued systems, and whose order
-    types name only catalogued channels.
+    """Unique offerings whose responsibilities and order tracking name only catalogued
+    systems, and whose order types and tracking name only catalogued channels.
 
     So a system or channel still named by an offering cannot be removed: the message says
     where it is named.
@@ -345,6 +328,14 @@ def check_offerings(
     if len(set(ids)) != len(ids):
         raise InvalidKnowledgeError("Product offering ids must be unique.")
     for offering in offerings:
+        if offering.tracking is not None:
+            check_tracking(
+                offering.name,
+                offering.tracking,
+                [item.code for item in offering.order_types],
+                system_ids,
+                channel_ids,
+            )
         for order_type in offering.order_types:
             unknown = [item for item in order_type.channels if item not in channel_ids]
             if unknown:
@@ -404,7 +395,7 @@ def merge_offerings(first: ProductOffering, second: ProductOffering) -> ProductO
     A document's product section can be read in more than one call, or by the
     table reader and a model, each seeing part of it. Order types merge by code,
     components by id, responsibilities by system and role, points by name, realisation
-    by layer and name, NFRs by quality.
+    by layer and name, NFRs by quality; tracking is taken whole, the first reading's if it has one.
     """
     codes = {item.code.casefold() for item in first.order_types}
     qualities = {item.quality.casefold() for item in first.nfrs}
@@ -433,6 +424,7 @@ def merge_offerings(first: ProductOffering, second: ProductOffering) -> ProductO
             *first.nfrs,
             *(item for item in second.nfrs if item.quality.casefold() not in qualities),
         ),
+        tracking=first_known(first.tracking, second.tracking),
     )
 
 

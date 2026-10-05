@@ -2,6 +2,7 @@ import type { CatalogueSystem, Channel, Offering, SourceConfidence } from "../ap
 import { CONFIDENCE, COVERAGE, LAYERS } from "./catalogue";
 import { lines } from "./editing";
 import { AreaField, CheckField, LinesField, Rows, SelectField, SystemField, TextField } from "./forms";
+import { TrackingEditor } from "./TrackingEditor";
 
 type Part = Offering["components"][number];
 type Responsibility = Part["responsibilities"][number];
@@ -201,6 +202,14 @@ export function OfferingEditor({ value, onChange, systems, channels = [], names 
             <AreaField label="What the sources say" value={item.statement} onChange={(statement) => change({ statement: statement || null })} />
           </>
         )}
+      />
+
+      <TrackingEditor
+        value={value.tracking}
+        onChange={(tracking) => set({ tracking })}
+        systems={systems}
+        channels={channels}
+        orderTypes={orderTypeOptions}
       />
     </div>
   );

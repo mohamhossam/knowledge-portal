@@ -77,6 +77,13 @@ from knowledge_portal.domain.architecture.products import (
     SourceConfidence,
 )
 from knowledge_portal.domain.architecture.samples import MAX_SAMPLES, SampleRequirementSet
+from knowledge_portal.domain.architecture.tracking import (
+    FalloutCase,
+    OrderTracking,
+    TrackingChannel,
+    TrackingEvent,
+    TrackingFlow,
+)
 from knowledge_portal.interfaces.api.schemas.bounds import (
     MAX_CATALOGUE_ITEMS,
     Identifier,
@@ -286,6 +293,167 @@ class OfferingNfrSchema(BaseModel):
         )
 
 
+class TrackingFlowSchema(BaseModel):
+    """Order or milestone events from one system to another; to itself, a log."""
+
+    from_system_id: Identifier
+    to_system_id: Identifier
+    label: Text
+    interface: Text | None = None
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
+
+    @classmethod
+    def from_domain(cls, item: TrackingFlow) -> TrackingFlowSchema:
+        return cls.model_construct(
+            from_system_id=item.from_system_id,
+            to_system_id=item.to_system_id,
+            label=item.label,
+            interface=item.interface,
+            confidence=item.confidence,
+            source=item.source,
+        )
+
+    def to_domain(self) -> TrackingFlow:
+        return TrackingFlow(
+            self.from_system_id,
+            self.to_system_id,
+            self.label,
+            self.interface,
+            self.confidence,
+            self.source,
+        )
+
+
+class TrackingChannelSchema(BaseModel):
+    """How one channel ties its order to the fulfilment order, and where progress is seen."""
+
+    channel_id: Identifier
+    correlation_key: Text | None = None
+    ui_system_id: Identifier | None = None
+    story: Text | None = None
+    read_system_id: Identifier | None = None
+    read_interface: Text | None = None
+    ui_note: Text | None = None
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
+
+    @classmethod
+    def from_domain(cls, item: TrackingChannel) -> TrackingChannelSchema:
+        return cls.model_construct(
+            channel_id=item.channel_id,
+            correlation_key=item.correlation_key,
+            ui_system_id=item.ui_system_id,
+            story=item.story,
+            read_system_id=item.read_system_id,
+            read_interface=item.read_interface,
+            ui_note=item.ui_note,
+            confidence=item.confidence,
+            source=item.source,
+        )
+
+    def to_domain(self) -> TrackingChannel:
+        return TrackingChannel(
+            self.channel_id,
+            self.correlation_key,
+            self.ui_system_id,
+            self.story,
+            self.read_system_id,
+            self.read_interface,
+            self.ui_note,
+            self.confidence,
+            self.source,
+        )
+
+
+class TrackingEventSchema(BaseModel):
+    """A milestone the customer sees, or an internal status."""
+
+    label: Text
+    detail: Text | None = None
+    system_id: Identifier | None = None
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
+
+    @classmethod
+    def from_domain(cls, item: TrackingEvent) -> TrackingEventSchema:
+        return cls.model_construct(
+            label=item.label,
+            detail=item.detail,
+            system_id=item.system_id,
+            confidence=item.confidence,
+            source=item.source,
+        )
+
+    def to_domain(self) -> TrackingEvent:
+        return TrackingEvent(self.label, self.detail, self.system_id, self.confidence, self.source)
+
+
+class FalloutCaseSchema(BaseModel):
+    """What makes an order fall out, and how it is handled."""
+
+    trigger: Text
+    handling: Text | None = None
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
+
+    @classmethod
+    def from_domain(cls, item: FalloutCase) -> FalloutCaseSchema:
+        return cls.model_construct(
+            trigger=item.trigger,
+            handling=item.handling,
+            confidence=item.confidence,
+            source=item.source,
+        )
+
+    def to_domain(self) -> FalloutCase:
+        return FalloutCase(self.trigger, self.handling, self.confidence, self.source)
+
+
+class OrderTrackingSchema(BaseModel):
+    """How an offering's orders are tracked once placed (requirement-portal ADR-0101)."""
+
+    order_types: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    scope_note: Text | None = None
+    not_applicable_note: Text | None = None
+    flows: list[TrackingFlowSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    channels: list[TrackingChannelSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    milestones: list[TrackingEventSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    statuses: list[TrackingEventSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    fallout: list[FalloutCaseSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
+
+    @classmethod
+    def from_domain(cls, item: OrderTracking) -> OrderTrackingSchema:
+        return cls.model_construct(
+            order_types=list(item.order_types),
+            scope_note=item.scope_note,
+            not_applicable_note=item.not_applicable_note,
+            flows=[TrackingFlowSchema.from_domain(flow) for flow in item.flows],
+            channels=[TrackingChannelSchema.from_domain(channel) for channel in item.channels],
+            milestones=[TrackingEventSchema.from_domain(event) for event in item.milestones],
+            statuses=[TrackingEventSchema.from_domain(event) for event in item.statuses],
+            fallout=[FalloutCaseSchema.from_domain(case) for case in item.fallout],
+            confidence=item.confidence,
+            source=item.source,
+        )
+
+    def to_domain(self) -> OrderTracking:
+        return OrderTracking(
+            order_types=tuple(self.order_types),
+            scope_note=self.scope_note,
+            not_applicable_note=self.not_applicable_note,
+            flows=tuple(flow.to_domain() for flow in self.flows),
+            channels=tuple(channel.to_domain() for channel in self.channels),
+            milestones=tuple(event.to_domain() for event in self.milestones),
+            statuses=tuple(event.to_domain() for event in self.statuses),
+            fallout=tuple(case.to_domain() for case in self.fallout),
+            confidence=self.confidence,
+            source=self.source,
+        )
+
+
 class OrderTypeSchema(BaseModel):
     code: Identifier
     name: Name
@@ -427,6 +595,7 @@ class ProductOfferingSchema(BaseModel):
     confidence: SourceConfidence | None = None
     source: Text | None = None
     nfrs: list[OfferingNfrSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    tracking: OrderTrackingSchema | None = None
 
     @classmethod
     def from_domain(cls, offering: ProductOffering) -> ProductOfferingSchema:
@@ -446,6 +615,9 @@ class ProductOfferingSchema(BaseModel):
             confidence=offering.confidence,
             source=offering.source,
             nfrs=[OfferingNfrSchema.from_domain(item) for item in offering.nfrs],
+            tracking=(
+                OrderTrackingSchema.from_domain(offering.tracking) if offering.tracking else None
+            ),
         )
 
     def to_domain(self) -> ProductOffering:
@@ -465,6 +637,7 @@ class ProductOfferingSchema(BaseModel):
             confidence=self.confidence,
             source=self.source,
             nfrs=tuple(item.to_domain() for item in self.nfrs),
+            tracking=self.tracking.to_domain() if self.tracking else None,
         )
 
 

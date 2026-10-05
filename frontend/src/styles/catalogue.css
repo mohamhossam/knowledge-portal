@@ -948,3 +948,22 @@
     hyphens: auto;
   }
 }
+
+/* A part of a governance section, such as Order tracking's tables: medium weight on a hairline. */
+.govsection__part {
+  margin: var(--s4) 0 0;
+  padding: 0 0 var(--s1);
+  border-bottom: 1px solid var(--rule);
+  font-size: var(--t-body);
+  font-weight: var(--w-medium);
+}
+
+/* What tracking leaves undefined is due (the Weight Is Rank Rule). */
+.tracking__missing {
+  font-weight: var(--w-bold);
+}
+
+.tracking__status {
+  font-stretch: var(--width-condensed);
+  overflow-wrap: anywhere;
+}

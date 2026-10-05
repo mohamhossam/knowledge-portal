@@ -32,6 +32,21 @@ export function offeringProblem(value: Offering): string | null {
     const keys = realised.map((item) => `${item.layer}:${item.name.trim().toLocaleLowerCase()}`);
     if (new Set(keys).size !== keys.length) return `${part.name}: the same thing is named twice in one layer.`;
   }
+  const tracking = value.tracking;
+  if (tracking) {
+    if (tracking.channels.some((item) => !item.channel_id)) return "Order tracking: choose the channel of each channel's tracking.";
+    const channels = tracking.channels.map((item) => item.channel_id);
+    if (new Set(channels).size !== channels.length) return "Order tracking: each channel is described once.";
+    if (tracking.flows.some((item) => !item.label.trim() || !item.from_system_id || !item.to_system_id)) {
+      return "Order tracking: every flow needs its two systems and what it carries.";
+    }
+    for (const [items, what] of [[tracking.milestones, "milestone"], [tracking.statuses, "status"]] as const) {
+      const labels = items.map((item) => item.label.trim().toLocaleLowerCase());
+      if (labels.some((label) => !label)) return `Order tracking: every ${what} needs a name.`;
+      if (new Set(labels).size !== labels.length) return `Order tracking: each ${what} is named once.`;
+    }
+    if (tracking.fallout.some((item) => !item.trigger.trim())) return "Order tracking: every fallout case needs what makes it fall out.";
+  }
   const qualities = (value.nfrs ?? []).map((item) => item.quality.trim().toLocaleLowerCase());
   if (qualities.some((quality) => !quality)) return "Every non-functional requirement needs a quality.";
   if (new Set(qualities).size !== qualities.length) return "Each quality is stated once.";

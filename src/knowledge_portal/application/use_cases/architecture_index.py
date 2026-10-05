@@ -126,7 +126,48 @@ def _offering_text(offering: ProductOffering, names: dict[str, str]) -> str:
         + (f": {item.statement}" if item.statement else "")
         for item in offering.nfrs
     )
+    lines.extend(_tracking_lines(offering, names))
     return "\n".join(line for line in lines if line)
+
+
+def _tracking_lines(offering: ProductOffering, names: dict[str, str]) -> list[str]:
+    """How the offering's orders are tracked, so a requirement about order status or
+    milestones finds the systems that carry them."""
+    tracking = offering.tracking
+    if tracking is None:
+        return []
+
+    def name(system_id: str | None) -> str:
+        return names.get(system_id or "", system_id or "")
+
+    lines = [f"Order tracking of {offering.name}", tracking.scope_note or ""]
+    lines.extend(
+        (
+            f"{name(flow.from_system_id)} logs {flow.label}"
+            if flow.is_log
+            else f"{name(flow.from_system_id)} sends {flow.label} to {name(flow.to_system_id)}"
+        )
+        + (f" over {flow.interface}" if flow.interface else "")
+        for flow in tracking.flows
+    )
+    lines.extend(
+        f"Channel {channel.channel_id}: tracked in {name(channel.ui_system_id)}"
+        + (f", reading from {name(channel.read_system_id)}" if channel.read_system_id else "")
+        + (f"; correlation key {channel.correlation_key}" if channel.correlation_key else "")
+        for channel in tracking.channels
+        if channel.ui_system_id
+    )
+    lines.extend(
+        f"Milestone {item.label}"
+        + (f" ({name(item.system_id)})" if item.system_id else "")
+        + (f": {item.detail}" if item.detail else "")
+        for item in tracking.milestones
+    )
+    lines.extend(
+        f"Fallout: {case.trigger}" + (f" — {case.handling}" if case.handling else "")
+        for case in tracking.fallout
+    )
+    return lines
 
 
 def _journey_text(

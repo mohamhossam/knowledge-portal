@@ -59,6 +59,13 @@ from knowledge_portal.domain.architecture.products import (
     Realisation,
     SourceConfidence,
 )
+from knowledge_portal.domain.architecture.tracking import (
+    FalloutCase,
+    OrderTracking,
+    TrackingChannel,
+    TrackingEvent,
+    TrackingFlow,
+)
 
 SYSTEMS = "Systems"
 COMPONENTS = "Components"
@@ -79,6 +86,10 @@ ACTIVITY_INTEGRATIONS = "ActivityIntegrations"
 CHANNELS = "Channels"
 REALISATION = "Realisation"
 NFRS = "NFRs"
+TRACKING = "Tracking"
+TRACKING_FLOWS = "TrackingFlows"
+TRACKING_CHANNELS = "TrackingChannels"
+TRACKING_EVENTS = "TrackingEvents"
 INSTRUCTIONS = "Instructions"
 _DOMAIN_HEADERS = ("domain_id", "name", "name_ar", "parent_id", "description")
 _HEADERS: dict[str, tuple[str, ...]] = {
@@ -217,6 +228,44 @@ _HEADERS: dict[str, tuple[str, ...]] = {
     ),
     REALISATION: ("product_id", "component_id", "layer", "name", "confidence", "source"),
     NFRS: ("product_id", "quality", "coverage", "statement", "confidence", "source"),
+    TRACKING: (
+        "product_id",
+        "order_types",
+        "scope_note",
+        "not_applicable_note",
+        "confidence",
+        "source",
+    ),
+    TRACKING_FLOWS: (
+        "product_id",
+        "from_system_id",
+        "to_system_id",
+        "label",
+        "interface",
+        "confidence",
+        "source",
+    ),
+    TRACKING_CHANNELS: (
+        "product_id",
+        "channel_id",
+        "correlation_key",
+        "ui_system_id",
+        "story",
+        "read_system_id",
+        "read_interface",
+        "ui_note",
+        "confidence",
+        "source",
+    ),
+    TRACKING_EVENTS: (
+        "product_id",
+        "kind",
+        "label",
+        "detail",
+        "system_id",
+        "confidence",
+        "source",
+    ),
 }
 # Headers a sheet cannot do without. Columns added later stay optional, so
 # workbooks filled from an older template still import.
@@ -240,6 +289,10 @@ _REQUIRED_HEADERS: dict[str, tuple[str, ...]] = {
     CHANNELS: ("channel_id", "name"),
     REALISATION: ("product_id", "component_id", "layer", "name"),
     NFRS: ("product_id", "quality", "coverage"),
+    TRACKING: ("product_id",),
+    TRACKING_FLOWS: ("product_id", "from_system_id", "to_system_id", "label"),
+    TRACKING_CHANNELS: ("product_id", "channel_id"),
+    TRACKING_EVENTS: ("product_id", "kind", "label"),
 }
 _KINDS = ", ".join(kind.value for kind in RelationshipKind)
 _REQUIRED_SHEETS = (SYSTEMS,)
@@ -293,6 +346,22 @@ _INSTRUCTIONS = (
     (
         "NFRs (optional): an offering's non-functional requirements, one row per quality such "
         "as Availability; coverage is defined, partial or missing.",
+    ),
+    (
+        "Tracking (optional): one row per product whose order tracking its sources describe; "
+        "order_types are the codes it is specified for, by ; (none: every order type).",
+    ),
+    (
+        "TrackingFlows: order and milestone events from one system to another (the same "
+        "system twice: it logs them); interface is the API or message used.",
+    ),
+    (
+        "TrackingChannels: per channel, the correlation_key tying its order to the fulfilment "
+        "order, the ui_system_id the customer follows progress in, and what it reads from.",
+    ),
+    (
+        "TrackingEvents: kind milestone (seen by the customer), status (internal) or fallout "
+        "(label is what makes the order fall out, detail how it is handled).",
     ),
     ("Row 1 of each sheet holds the headers; keep them as they are.",),
 )
@@ -653,6 +722,12 @@ def _journey_mapping(journey: Journey) -> dict[str, Any]:
 _YES = frozenset({"yes", "y", "true", "1"})
 _NO = frozenset({"no", "n", "false", "0"})
 _VALUE_KINDS = frozenset({"value", "values", "customer value"})
+_EVENT_KINDS = {
+    "milestone": "milestones",
+    "status": "statuses",
+    "internal status": "statuses",
+    "fallout": "fallout",
+}
 _AUDIENCE_KINDS = frozenset({"audience", "audiences", "who it is for"})
 
 
@@ -797,11 +872,83 @@ def _offerings(entries: list[dict[str, Any]]) -> list[ProductOffering]:
                         _nfr(nfr, _where(nfr, f"{where}, NFR {index}"))
                         for index, nfr in enumerate(_sub_entries(item, "nfrs", where), 1)
                     ),
+                    tracking=_tracking(item, where),
                 )
             )
         except InvalidKnowledgeError as exc:
             raise _located(where, exc) from exc
     return offerings
+
+
+def _tracking(item: dict[str, Any], where: str) -> OrderTracking | None:
+    raw = item.get("tracking")
+    if raw is None:
+        return None
+    if not isinstance(raw, dict):
+        raise InvalidKnowledgeError(f"{where}: tracking must be an entry.")
+    place = _where(raw, f"{where}, tracking")
+
+    def each(key: str, label: str) -> list[tuple[dict[str, Any], str]]:
+        return [
+            (entry, _where(entry, f"{place}, {label} {index}"))
+            for index, entry in enumerate(_sub_entries(raw, key, place), 1)
+        ]
+
+    return OrderTracking(
+        order_types=_text_list(raw.get("order_types"), place, "order_types"),
+        scope_note=_optional_text(raw.get("scope_note"), place, "scope_note"),
+        not_applicable_note=_optional_text(
+            raw.get("not_applicable_note"), place, "not_applicable_note"
+        ),
+        flows=tuple(
+            TrackingFlow(
+                _text(flow.get("from_system"), spot, "from_system"),
+                _text(flow.get("to_system"), spot, "to_system"),
+                _text(flow.get("label"), spot, "label"),
+                _optional_text(flow.get("interface"), spot, "interface"),
+                _trust(flow.get("confidence"), spot),
+                _optional_text(flow.get("source"), spot, "source"),
+            )
+            for flow, spot in each("flows", "flow")
+        ),
+        channels=tuple(
+            TrackingChannel(
+                _text(channel.get("channel"), spot, "channel"),
+                _optional_text(channel.get("correlation_key"), spot, "correlation_key"),
+                _optional_text(channel.get("ui_system"), spot, "ui_system"),
+                _optional_text(channel.get("story"), spot, "story"),
+                _optional_text(channel.get("read_system"), spot, "read_system"),
+                _optional_text(channel.get("read_interface"), spot, "read_interface"),
+                _optional_text(channel.get("ui_note"), spot, "ui_note"),
+                _trust(channel.get("confidence"), spot),
+                _optional_text(channel.get("source"), spot, "source"),
+            )
+            for channel, spot in each("channels", "channel")
+        ),
+        milestones=tuple(_event(event, spot) for event, spot in each("milestones", "milestone")),
+        statuses=tuple(_event(event, spot) for event, spot in each("statuses", "status")),
+        fallout=tuple(
+            FalloutCase(
+                _text(case.get("trigger"), spot, "trigger"),
+                _optional_text(case.get("handling"), spot, "handling"),
+                _trust(case.get("confidence"), spot),
+                _optional_text(case.get("source"), spot, "source"),
+            )
+            for case, spot in each("fallout", "fallout")
+        ),
+        confidence=_trust(raw.get("confidence"), place),
+        source=_optional_text(raw.get("source"), place, "source"),
+    )
+
+
+def _event(item: dict[str, Any], where: str) -> TrackingEvent:
+    return TrackingEvent(
+        _text(item.get("label"), where, "label"),
+        _optional_text(item.get("detail"), where, "detail"),
+        _optional_text(item.get("system"), where, "system"),
+        _trust(item.get("confidence"), where),
+        _optional_text(item.get("source"), where, "source"),
+    )
 
 
 def _nfr(item: dict[str, Any], where: str) -> OfferingNfr:
@@ -899,6 +1046,62 @@ def _offering_mapping(offering: ProductOffering) -> dict[str, Any]:
                     **_sourced(nfr),
                 }
                 for nfr in offering.nfrs
+            ],
+        ),
+        **({"tracking": _tracking_mapping(offering.tracking)} if offering.tracking else {}),
+    }
+
+
+def _tracking_mapping(tracking: OrderTracking) -> dict[str, Any]:
+    def event(item: TrackingEvent) -> dict[str, Any]:
+        return {
+            "label": item.label,
+            **_present(detail=item.detail, system=item.system_id),
+            **_sourced(item),
+        }
+
+    return {
+        **_present(
+            order_types=list(tracking.order_types),
+            scope_note=tracking.scope_note,
+            not_applicable_note=tracking.not_applicable_note,
+        ),
+        **_sourced(tracking),
+        **_present(
+            flows=[
+                {
+                    "from_system": flow.from_system_id,
+                    "to_system": flow.to_system_id,
+                    "label": flow.label,
+                    **_present(interface=flow.interface),
+                    **_sourced(flow),
+                }
+                for flow in tracking.flows
+            ],
+            channels=[
+                {
+                    "channel": channel.channel_id,
+                    **_present(
+                        correlation_key=channel.correlation_key,
+                        ui_system=channel.ui_system_id,
+                        story=channel.story,
+                        read_system=channel.read_system_id,
+                        read_interface=channel.read_interface,
+                        ui_note=channel.ui_note,
+                    ),
+                    **_sourced(channel),
+                }
+                for channel in tracking.channels
+            ],
+            milestones=[event(item) for item in tracking.milestones],
+            statuses=[event(item) for item in tracking.statuses],
+            fallout=[
+                {
+                    "trigger": case.trigger,
+                    **_present(handling=case.handling),
+                    **_sourced(case),
+                }
+                for case in tracking.fallout
             ],
         ),
     }
@@ -1404,6 +1607,61 @@ def _sheet_offerings(workbook: Any) -> list[dict[str, Any]]:
     for number, cells in _rows(workbook, NFRS):
         where = f"{NFRS} row {number}"
         offering(cells, where)["nfrs"].append({**cells, "_where": where})
+
+    def tracking(cells: dict[str, object], where: str) -> dict[str, Any]:
+        owner = offering(cells, where)
+        if owner.get("tracking") is None:
+            owner["tracking"] = {
+                "_where": where,
+                "flows": [],
+                "channels": [],
+                "milestones": [],
+                "statuses": [],
+                "fallout": [],
+            }
+        found: dict[str, Any] = owner["tracking"]
+        return found
+
+    for number, cells in _rows(workbook, TRACKING):
+        where = f"{TRACKING} row {number}"
+        if offering(cells, where).get("tracking") is not None:
+            raise InvalidKnowledgeError(f"{where}: a product's tracking is one row.")
+        tracking(cells, where).update(
+            {
+                **cells,
+                "order_types": list(_split(cells.get("order_types"), where, "order_types")),
+            }
+        )
+    for number, cells in _rows(workbook, TRACKING_FLOWS):
+        where = f"{TRACKING_FLOWS} row {number}"
+        tracking(cells, where)["flows"].append(
+            {
+                **cells,
+                "_where": where,
+                "from_system": cells.get("from_system_id"),
+                "to_system": cells.get("to_system_id"),
+            }
+        )
+    for number, cells in _rows(workbook, TRACKING_CHANNELS):
+        where = f"{TRACKING_CHANNELS} row {number}"
+        tracking(cells, where)["channels"].append(
+            {
+                **cells,
+                "_where": where,
+                "channel": cells.get("channel_id"),
+                "ui_system": cells.get("ui_system_id"),
+                "read_system": cells.get("read_system_id"),
+            }
+        )
+    for number, cells in _rows(workbook, TRACKING_EVENTS):
+        where = f"{TRACKING_EVENTS} row {number}"
+        kind = _text(cells.get("kind"), where, "kind").casefold()
+        if kind not in _EVENT_KINDS:
+            raise InvalidKnowledgeError(f"{where}: kind must be milestone, status or fallout.")
+        entry = {**cells, "_where": where, "system": cells.get("system_id")}
+        if kind == "fallout":
+            entry = {**entry, "trigger": cells.get("label"), "handling": cells.get("detail")}
+        tracking(cells, where)[_EVENT_KINDS[kind]].append(entry)
     for number, cells in _rows(workbook, PRODUCT_POINTS):
         where = f"{PRODUCT_POINTS} row {number}"
         kind = (_text(cells.get("kind"), where, "kind")).casefold()
@@ -1523,6 +1781,8 @@ def _write_offering(sheets: dict[str, Any], product: ProductOffering) -> None:
                 sheets[REALISATION],
                 (product.id, part.id, item.layer.value, item.name, _confidence(item), item.source),
             )
+    if product.tracking is not None:
+        _write_tracking(sheets, product.id, product.tracking)
     for nfr in product.nfrs:
         _append(
             sheets[NFRS],
@@ -1541,6 +1801,76 @@ def _write_offering(sheets: dict[str, Any], product: ProductOffering) -> None:
                 sheets[PRODUCT_POINTS],
                 (product.id, kind, point.name, point.description, _confidence(point), point.source),
             )
+
+
+def _write_tracking(sheets: dict[str, Any], product_id: str, tracking: OrderTracking) -> None:
+    _append(
+        sheets[TRACKING],
+        (
+            product_id,
+            f"{_LIST_SEPARATOR} ".join(tracking.order_types),
+            tracking.scope_note,
+            tracking.not_applicable_note,
+            _confidence(tracking),
+            tracking.source,
+        ),
+    )
+    for flow in tracking.flows:
+        _append(
+            sheets[TRACKING_FLOWS],
+            (
+                product_id,
+                flow.from_system_id,
+                flow.to_system_id,
+                flow.label,
+                flow.interface,
+                _confidence(flow),
+                flow.source,
+            ),
+        )
+    for channel in tracking.channels:
+        _append(
+            sheets[TRACKING_CHANNELS],
+            (
+                product_id,
+                channel.channel_id,
+                channel.correlation_key,
+                channel.ui_system_id,
+                channel.story,
+                channel.read_system_id,
+                channel.read_interface,
+                channel.ui_note,
+                _confidence(channel),
+                channel.source,
+            ),
+        )
+    for kind, events in (("milestone", tracking.milestones), ("status", tracking.statuses)):
+        for event in events:
+            _append(
+                sheets[TRACKING_EVENTS],
+                (
+                    product_id,
+                    kind,
+                    event.label,
+                    event.detail,
+                    event.system_id,
+                    _confidence(event),
+                    event.source,
+                ),
+            )
+    for case in tracking.fallout:
+        _append(
+            sheets[TRACKING_EVENTS],
+            (
+                product_id,
+                "fallout",
+                case.trigger,
+                case.handling,
+                None,
+                _confidence(case),
+                case.source,
+            ),
+        )
 
 
 def _write_journey(sheets: dict[str, Any], journey: Journey) -> None:
