@@ -3664,6 +3664,16 @@
         "title": "MatchRole",
         "type": "string"
       },
+      "NfrCoverage": {
+        "description": "How far the sources define a non-functional requirement.",
+        "enum": [
+          "defined",
+          "partial",
+          "missing"
+        ],
+        "title": "NfrCoverage",
+        "type": "string"
+      },
       "OfferingComponentSchema": {
         "properties": {
           "code": {
@@ -3756,6 +3766,15 @@
             "title": "Name",
             "type": "string"
           },
+          "realisation": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/RealisationSchema"
+            },
+            "maxItems": 5000,
+            "title": "Realisation",
+            "type": "array"
+          },
           "responsibilities": {
             "default": [],
             "items": {
@@ -3807,6 +3826,59 @@
           "name"
         ],
         "title": "OfferingComponentSchema",
+        "type": "object"
+      },
+      "OfferingNfrSchema": {
+        "description": "A non-functional requirement of an offering and how far its sources define it.",
+        "properties": {
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/NfrCoverage"
+          },
+          "quality": {
+            "maxLength": 300,
+            "title": "Quality",
+            "type": "string"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "statement": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Statement"
+          }
+        },
+        "required": [
+          "quality",
+          "coverage"
+        ],
+        "title": "OfferingNfrSchema",
         "type": "object"
       },
       "OfferingPointSchema": {
@@ -4336,6 +4408,15 @@
             "title": "Name",
             "type": "string"
           },
+          "nfrs": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/OfferingNfrSchema"
+            },
+            "maxItems": 5000,
+            "title": "Nfrs",
+            "type": "array"
+          },
           "order_types": {
             "default": [],
             "items": {
@@ -4742,6 +4823,57 @@
           "lineage_hash"
         ],
         "title": "PublishedReference",
+        "type": "object"
+      },
+      "RealisationLayer": {
+        "description": "Where a part is realised: what the customer is sold, what delivers it, what it runs on.",
+        "enum": [
+          "cfs",
+          "rfs",
+          "resource"
+        ],
+        "title": "RealisationLayer",
+        "type": "string"
+      },
+      "RealisationSchema": {
+        "description": "One thing a component is realised as: its CFS, an RFS behind it, or a resource.",
+        "properties": {
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "layer": {
+            "$ref": "#/components/schemas/RealisationLayer"
+          },
+          "name": {
+            "maxLength": 10000,
+            "title": "Name",
+            "type": "string"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          }
+        },
+        "required": [
+          "layer",
+          "name"
+        ],
+        "title": "RealisationSchema",
         "type": "object"
       },
       "ReferenceChunk": {

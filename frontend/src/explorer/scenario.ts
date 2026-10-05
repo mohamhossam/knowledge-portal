@@ -147,6 +147,7 @@ function gapFacts(scenario: Scenario): number {
     offering,
     orderType,
     ...offering.components,
+    ...offering.components.flatMap((part) => part.realisation ?? []),
     ...partsFor(scenario).flatMap((item) => item.responsibilities),
     ...(journey ? [journey, ...journey.activities, ...journey.integrations, ...journey.flow_rules] : []),
   ];
@@ -177,6 +178,14 @@ export function gaps(scenario: Scenario): string[] {
   const unowned = partsFor(scenario).filter((item) => !item.responsibilities.length).map((item) => item.part.name);
   if (unowned.length) {
     found.push(`No system is named as responsible for ${listed(unowned)} in ${scenario.orderType.name}.`);
+  }
+  const unrealised = scenario.offering.components.filter((part) => !(part.realisation ?? []).length).map((part) => part.name);
+  if (unrealised.length) found.push(`How ${listed(unrealised)} ${unrealised.length === 1 ? "is" : "are"} realised is not recorded.`);
+  const nfrs = scenario.offering.nfrs ?? [];
+  const undefinedQualities = nfrs.filter((item) => item.coverage === "missing").map((item) => item.quality);
+  if (!nfrs.length) found.push(`No non-functional requirement is recorded for ${scenario.offering.name}.`);
+  else if (undefinedQualities.length) {
+    found.push(`${listed(undefinedQualities)} ${undefinedQualities.length === 1 ? "is" : "are"} not defined by any source.`);
   }
   const marked = gapFacts(scenario);
   if (marked) found.push(`${count(marked, "fact is", "facts are")} marked in ${marked === 1 ? "its source" : "their sources"} as a gap.`);

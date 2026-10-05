@@ -7,12 +7,15 @@ the file against a draft and imports it, and from then on the catalogue is the o
 home of these facts (requirement-portal ADR-0101).
 
 It is a seed, not a sync. Nothing is invented: a fact the catalogue cannot hold yet
-(tracking, NFRs, source levels and conflicts, and so on) is counted in the report, not
-squeezed into a field that means something else. Plans and prices are never carried
-over: the explorer reads them live from the product catalog by the offering's code. Channels carry
+(tracking, lifecycle notes, source levels and conflicts, and so on) is counted in the
+report, not squeezed into a field that means something else. Plans and prices are never
+carried over: the explorer reads them live from the product catalog by the offering's code.
+Channels carry
 over (step 3): each channel with its entry system, the channels each order type can
 be ordered through, the channels each step happens in, and the steps the order's
-channel entry system performs.
+channel entry system performs. So do each component's CFS, RFS and resource layers,
+as its realisation, and each offering's NFRs with how far their sources define them
+(step 4).
 Evidence keeps its confidence (CONFIRMED, INFERRED and GAP) and names its source.
 """
 
@@ -42,6 +45,8 @@ _CONFIDENCE = {"CONFIRMED": "confirmed", "INFERRED": "inferred", "GAP": "gap"}
 _TIMING = {"SYNC": "Sync", "ASYNC": "Async"}
 _ROLE_BY_SCOPE = {"DESIGN": "DESIGN_TIME", "OPS": "OPERATIONS"}
 _FULFILMENT = "FULFILMENT"
+# How far the explorer's sources define an NFR, as the catalogue says it.
+_COVERAGE = {"DEFINED": "defined", "MET": "defined", "PARTIAL": "partial", "GAP": "missing"}
 # What the explorer curated by hand that the product catalog states instead: the explorer
 # reads plans and prices live from it, by the offering's code, and keeps no copy.
 _READ_LIVE = (
@@ -56,7 +61,6 @@ _NOT_YET = (
     ("tracking", "order tracking"),
     ("info", "information objects"),
     ("lifecycle", "lifecycle notes"),
-    ("nfr", "NFRs"),
     ("crossProduct", "cross-product notes"),
     ("designTime", "design-time steps"),
 )
@@ -268,6 +272,7 @@ class _Reader:
             ],
             "values": [self._point(item) for item in product.get("values") or ()],
             "audiences": [self._point(item) for item in product.get("fits") or ()],
+            "nfrs": self._nfrs(product),
         }
 
     def _point(self, item: Mapping[str, Any]) -> dict[str, Any]:
@@ -277,11 +282,6 @@ class _Reader:
         }
 
     def _component(self, part: Mapping[str, Any], order_types: list[str]) -> dict[str, Any]:
-        layers = "; ".join(
-            f"{label}: {' | '.join(str(entry['name']) for entry in part.get(key) or ())}"
-            for key, label in (("cfs", "CFS"), ("rfs", "RFS"), ("res", "Resources"))
-            if part.get(key)
-        )
         # The explorer's third obligation: neither always in nor an add-on.
         configurable = part.get("mandatory") == "CONFIGURABLE"
         return {
@@ -296,11 +296,38 @@ class _Reader:
                 commercial_spec="Configurable" if configurable else None,
                 customer_visible=part.get("visible"),
                 description=part.get("desc"),
-                technical_details=layers,
             ),
             **self._evidence(part.get("ev")),
             "responsibilities": self._responsibilities(part, order_types),
+            "realisation": self._realisation(part),
         }
+
+    def _realisation(self, part: Mapping[str, Any]) -> list[dict[str, Any]]:
+        """Its CFS, RFS and resource layers, each named once per layer."""
+        found: dict[tuple[str, str], dict[str, Any]] = {}
+        for key, layer in (("cfs", "cfs"), ("rfs", "rfs"), ("res", "resource")):
+            for entry in part.get(key) or ():
+                name = str(entry.get("name") or "").strip()
+                if name:
+                    found.setdefault(
+                        (layer, name.casefold()),
+                        {"layer": layer, "name": name, **self._evidence(entry.get("ev"))},
+                    )
+        return list(found.values())
+
+    def _nfrs(self, product: Mapping[str, Any]) -> list[dict[str, Any]]:
+        """Each quality once, with how far the sources define it; a gap stays a gap."""
+        found: dict[str, dict[str, Any]] = {}
+        for item in product.get("nfr") or ():
+            quality = str(item.get("attr") or "").strip()
+            if quality and quality.casefold() not in found:
+                found[quality.casefold()] = {
+                    "quality": quality,
+                    "coverage": _COVERAGE.get(str(item.get("status") or ""), "partial"),
+                    **_present(statement=item.get("text")),
+                    **self._evidence(item.get("ev")),
+                }
+        return list(found.values())
 
     def _responsibilities(
         self, part: Mapping[str, Any], order_types: list[str]

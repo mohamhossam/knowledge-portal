@@ -7,13 +7,14 @@ import { api, type ExplorerRelease } from "../api/client";
 import { errorMessage } from "../api/errors";
 import { CONFIDENCE, roleLabel, sentenceCase } from "../catalogue/catalogue";
 import { JourneyHandovers, JourneySteps } from "../catalogue/JourneyTimetable";
+import { NfrSection, RealisationKey, RealisedAs, RealisedInline } from "../catalogue/Realisation";
 import { formatDay } from "../home/format";
 import { PlansAndPrices } from "./PlansAndPrices";
 import { gaps, involvement, journeyFor, listed, partsFor, pickScenario, type Scenario } from "./scenario";
 
 /** What the catalogue cannot hold yet; each arrives with a later slice (requirement-portal ADR-0101). */
 export const NOT_YET =
-  "Order tracking and NFRs are not in the catalogue yet, so the explorer does not show them.";
+  "Order tracking is not in the catalogue yet, so the explorer does not show it.";
 
 function useExplorerRelease() {
   return useQuery({ queryKey: ["explorer", "release"], queryFn: api.explorerRelease });
@@ -278,6 +279,7 @@ function ScenarioSheet({ release, scenario, linkSystems }: {
               <tr>
                 <th scope="col">Part</th>
                 <th scope="col">Responsible systems</th>
+                <th scope="col" className="parts__realised">Realised as</th>
               </tr>
             </thead>
             <tbody>
@@ -306,7 +308,9 @@ function ScenarioSheet({ release, scenario, linkSystems }: {
                     ) : (
                       <span className="secondary">No system is named for this order</span>
                     )}
+                    <RealisedInline part={part} />
                   </td>
+                  <td className="parts__realised"><RealisedAs part={part} /></td>
                 </tr>
               ))}
             </tbody>
@@ -314,7 +318,10 @@ function ScenarioSheet({ release, scenario, linkSystems }: {
         ) : (
           <p className="timetable__quiet">No part is recorded.</p>
         )}
+        <RealisationKey offering={offering} />
       </section>
+
+      <NfrSection offering={offering} headingId={`${id}-nfrs`} />
 
       <PlansAndPrices offering={offering} headingId={`${id}-plans`} />
 

@@ -29,7 +29,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     RelationshipKind,
     SystemRelationship,
 )
-from knowledge_portal.domain.architecture.products import ProductOffering
+from knowledge_portal.domain.architecture.products import ProductOffering, RealisationLayer
 from knowledge_portal.domain.document.value_objects import DocumentVersionId
 
 SECTION_TOKENS = 400
@@ -78,6 +78,13 @@ def _landscape(release: ArchitectureKnowledge, domain_id: str | None) -> str:
     return f"Landscape: {' › '.join(item.name for item in path)}" if path else ""
 
 
+_LAYERS = {
+    RealisationLayer.CFS: "customer-facing service",
+    RealisationLayer.RFS: "resource-facing service",
+    RealisationLayer.RESOURCE: "resource",
+}
+
+
 def _offering_text(offering: ProductOffering, names: dict[str, str]) -> str:
     """An offering as evidence: what it is, how it is ordered, and which system delivers
     each component in which role, so a requirement about a product finds its systems."""
@@ -110,6 +117,15 @@ def _offering_text(offering: ProductOffering, names: dict[str, str]) -> str:
             f"({item.role.replace('_', ' ').casefold()}): {item.description}"
             for item in component.responsibilities
         )
+        lines.extend(
+            f"{component.name} is realised by the {_LAYERS[item.layer]} {item.name}"
+            for item in component.realisation
+        )
+    lines.extend(
+        f"Non-functional requirement {item.quality} ({item.coverage.value})"
+        + (f": {item.statement}" if item.statement else "")
+        for item in offering.nfrs
+    )
     return "\n".join(line for line in lines if line)
 
 

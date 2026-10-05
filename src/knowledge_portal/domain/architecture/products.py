@@ -6,6 +6,12 @@ router), and each component is delivered by catalogued systems, each in a role
 ("primary orchestrator", "field fulfilment"). The document's own confidence in
 each fact is kept as written: confirmed, inferred or a known gap (ADR-0095).
 
+A component can say how it is realised, layer by layer (TM Forum SID): the
+customer-facing service it is sold as, the resource-facing services that deliver
+it, and the resources it runs on. An offering can state its non-functional
+requirements, each with how far its sources define it, so a missing one is a
+recorded gap rather than silence (requirement-portal ADR-0101).
+
 These are not the organisation catalogue's products, which group ownership,
 nor a system's components, which are its modules.
 """
@@ -95,6 +101,98 @@ class OrderType:
         check_source(self)
 
 
+class RealisationLayer(StrEnum):
+    """Where a part is realised: what the customer is sold, what delivers it, what it runs on."""
+
+    CFS = "cfs"
+    RFS = "rfs"
+    RESOURCE = "resource"
+
+
+_LAYER_WORDS = {
+    "cfs": RealisationLayer.CFS,
+    "customerfacingservice": RealisationLayer.CFS,
+    "rfs": RealisationLayer.RFS,
+    "resourcefacingservice": RealisationLayer.RFS,
+    "resource": RealisationLayer.RESOURCE,
+    "res": RealisationLayer.RESOURCE,
+}
+
+
+def realisation_layer(value: RealisationLayer | str) -> RealisationLayer:
+    """A layer however it is written: "CFS", "Customer-facing service", "resource"."""
+    found = _LAYER_WORDS.get("".join(re.findall(r"[a-z]", str(value).casefold())))
+    if found is None:
+        raise InvalidKnowledgeError(f"A realisation layer is CFS, RFS or resource, not {value!r}.")
+    return found
+
+
+@dataclass(frozen=True)
+class Realisation:
+    """One thing a component is realised as, in one layer, such as the CFS
+    "CFSS_ONPREM_FIREWALL_HE" or the resource "Fortinet HE CPE"."""
+
+    layer: RealisationLayer
+    name: str
+    confidence: SourceConfidence | None = None
+    source: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "layer", realisation_layer(self.layer))
+        object.__setattr__(self, "name", required(self.name, "Realisation"))
+        check_source(self)
+
+
+class NfrCoverage(StrEnum):
+    """How far the sources define a non-functional requirement."""
+
+    DEFINED = "defined"
+    PARTIAL = "partial"
+    MISSING = "missing"
+
+
+_COVERAGE_WORDS = {
+    "defined": NfrCoverage.DEFINED,
+    "partial": NfrCoverage.PARTIAL,
+    "partlydefined": NfrCoverage.PARTIAL,
+    "missing": NfrCoverage.MISSING,
+    "gap": NfrCoverage.MISSING,
+    "notdefined": NfrCoverage.MISSING,
+}
+
+
+def nfr_coverage(value: NfrCoverage | str) -> NfrCoverage:
+    """Coverage however it is written: "Partial", "gap", "not defined"."""
+    found = _COVERAGE_WORDS.get("".join(re.findall(r"[a-z]", str(value).casefold())))
+    if found is None:
+        raise InvalidKnowledgeError(
+            f"An NFR's coverage is defined, partial or missing, not {value!r}."
+        )
+    return found
+
+
+@dataclass(frozen=True)
+class OfferingNfr:
+    """A non-functional requirement of an offering, such as Availability, and what the
+    sources say of it; a missing one is kept so the gap is visible."""
+
+    quality: str
+    coverage: NfrCoverage
+    statement: str | None = None
+    confidence: SourceConfidence | None = None
+    source: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "quality", required(self.quality, "Quality"))
+        object.__setattr__(self, "coverage", nfr_coverage(self.coverage))
+        object.__setattr__(self, "statement", optional(self.statement, "Statement"))
+        check_source(self)
+
+
+def _realisation_key(item: Realisation) -> tuple[RealisationLayer, str]:
+    return item.layer, item.name.casefold()
+
+
 def role_code(value: str) -> str:
     """A role as one code: "Primary orchestrator" and "PRIMARY_ORCHESTRATOR" are the same."""
     return "_".join(required(value, "Role").upper().replace("-", " ").split())
@@ -139,6 +237,8 @@ class OfferingComponent:
     responsibilities: tuple[ComponentResponsibility, ...] = ()
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # How it is realised, layer by layer: its CFS, the RFSs behind it, its resources.
+    realisation: tuple[Realisation, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Component id"))
@@ -158,6 +258,11 @@ class OfferingComponent:
             raise InvalidKnowledgeError(
                 f"{self.name}: a system has the same role in it more than once."
             )
+        layers = [_realisation_key(item) for item in self.realisation]
+        if len(set(layers)) != len(layers):
+            raise InvalidKnowledgeError(
+                f"{self.name}: it is realised by the same thing twice in one layer."
+            )
 
 
 @dataclass(frozen=True)
@@ -176,6 +281,8 @@ class ProductOffering:
     audiences: tuple[OfferingPoint, ...] = ()
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # Its non-functional requirements, one per quality.
+    nfrs: tuple[OfferingNfr, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Offering id"))
@@ -196,6 +303,9 @@ class ProductOffering:
         ids = [item.id for item in self.components]
         if len(set(ids)) != len(ids):
             raise InvalidKnowledgeError(f"{self.name}: component ids must be unique.")
+        qualities = [item.quality.casefold() for item in self.nfrs]
+        if len(set(qualities)) != len(qualities):
+            raise InvalidKnowledgeError(f"{self.name}: each NFR quality is stated once.")
         known = set(codes)
         for component in self.components:
             for responsibility in component.responsibilities:
@@ -267,6 +377,9 @@ def merge_components(first: OfferingComponent, second: OfferingComponent) -> Off
     duties = {(item.system_id, item.role): item for item in first.responsibilities}
     for item in second.responsibilities:
         duties.setdefault((item.system_id, item.role), item)
+    layers = {_realisation_key(item): item for item in first.realisation}
+    for realised in second.realisation:
+        layers.setdefault(_realisation_key(realised), realised)
     return OfferingComponent(
         id=first.id,
         name=first.name,
@@ -281,6 +394,7 @@ def merge_components(first: OfferingComponent, second: OfferingComponent) -> Off
         responsibilities=tuple(duties.values()),
         confidence=first_known(first.confidence, second.confidence),
         source=first_known(first.source, second.source),
+        realisation=tuple(layers.values()),
     )
 
 
@@ -289,9 +403,11 @@ def merge_offerings(first: ProductOffering, second: ProductOffering) -> ProductO
 
     A document's product section can be read in more than one call, or by the
     table reader and a model, each seeing part of it. Order types merge by code,
-    components by id, responsibilities by system and role, points by name.
+    components by id, responsibilities by system and role, points by name, realisation
+    by layer and name, NFRs by quality.
     """
     codes = {item.code.casefold() for item in first.order_types}
+    qualities = {item.quality.casefold() for item in first.nfrs}
     parts = {item.id: item for item in first.components}
     for item in second.components:
         parts[item.id] = merge_components(parts[item.id], item) if item.id in parts else item
@@ -313,6 +429,10 @@ def merge_offerings(first: ProductOffering, second: ProductOffering) -> ProductO
         audiences=_merged_points(first.audiences, second.audiences),
         confidence=first_known(first.confidence, second.confidence),
         source=first_known(first.source, second.source),
+        nfrs=(
+            *first.nfrs,
+            *(item for item in second.nfrs if item.quality.casefold() not in qualities),
+        ),
     )
 
 

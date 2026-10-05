@@ -60,6 +60,37 @@ describe("ExplorerPage", () => {
     expect(section.getByText("Step 4 names no system that performs it.")).toHaveClass("explorer__gap");
   });
 
+  it("says how each part is realised, layer by layer", async () => {
+    open();
+    const parts = within(await screen.findByRole("table", { name: /Parts of Business Pro Plus/ }));
+    const broadband = parts.getByRole("row", { name: /Broadband/ });
+    const realised = within(broadband.querySelector("td.parts__realised")! as HTMLElement);
+    expect(realised.getAllByRole("listitem").map((item) => item.textContent)).toEqual([
+      "CFS GPON internet CFSInferred, not stated in its source",
+      "Resource GPON line",
+    ]);
+    expect(realised.getByText("CFS")).toHaveAttribute("title", "Customer-facing service");
+    expect(realised.getByText("Resource").tagName).toBe("SPAN");
+    // A part with nothing recorded is due, not quiet; the phone fold sits in a cell, never the row header.
+    const firewall = parts.getByRole("row", { name: /^Firewall/ });
+    expect(within(firewall.querySelector("td.parts__realised")! as HTMLElement).getByText("Not stated")).toHaveClass("realised__missing");
+    expect(within(firewall).getByRole("rowheader").querySelector(".parts__realised-inline")).toBeNull();
+    expect(screen.getByText(/what the customer is sold/)).toHaveClass("realised__key");
+  });
+
+  it("lists the offering's non-functional requirements, an undefined one as due", async () => {
+    open();
+    const table = within(await screen.findByRole("table", { name: "Non-functional requirements of Business Pro Plus" }));
+    expect(table.getByRole("row", { name: /Availability/ })).toHaveClass("row--due");
+    const availability = table.getByRole("row", { name: /Availability/ });
+    expect(availability.querySelector("td.nfr__defined")).toHaveClass("nfr__missing");
+    expect(availability.querySelector("td.nfr__defined")).toHaveTextContent("Not defined");
+    // On phones the Defined column rides under the quality.
+    expect(availability.querySelector("th .nfr__defined-inline")).toHaveTextContent("Not defined");
+    expect(table.getByRole("row", { name: /Security/ }).querySelectorAll("td")[1]).toHaveTextContent("SAML SSO for the portal.SDD §11");
+    expect(screen.getByText(/1 quality is not defined/)).toBeInTheDocument();
+  });
+
   it("reads the offering's plans and prices from the product catalog, saying which and when", async () => {
     open();
     const table = within(await screen.findByRole("table", { name: /Plans of Business Pro Plus/ }));

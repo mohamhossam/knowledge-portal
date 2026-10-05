@@ -45,8 +45,15 @@ describe("gaps", () => {
     expect(gaps(scenario())).toEqual([
       "Step 4 names no system that performs it.",
       "No system is named as responsible for Firewall in New Activation.",
+      "How Firewall is realised is not recorded.",
+      "Availability is not defined by any source.",
       "1 fact is marked in its source as a gap.",
     ]);
+  });
+
+  it("says when an offering records no non-functional requirement", () => {
+    const bare = { ...EXPLORED, products: EXPLORED.products!.map((item) => ({ ...item, nfrs: [] })) };
+    expect(gaps(pickScenario(bare, "bpp", "NEW")!)).toContain("No non-functional requirement is recorded for Business Pro Plus.");
   });
 
   it("says so when no journey or channel is recorded", () => {
@@ -54,6 +61,8 @@ describe("gaps", () => {
       "No channel is recorded for Cease, so the steps of every channel are shown together.",
       "No journey is recorded for Cease, so no step or hand-over can be shown.",
       "No system is named as responsible for Firewall in Cease.",
+      "How Firewall is realised is not recorded.",
+      "Availability is not defined by any source.",
       "1 fact is marked in its source as a gap.",
     ]);
   });

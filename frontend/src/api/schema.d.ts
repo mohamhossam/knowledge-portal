@@ -2444,6 +2444,12 @@ export interface components {
          * @enum {string}
          */
         MatchRole: "system" | "target";
+        /**
+         * NfrCoverage
+         * @description How far the sources define a non-functional requirement.
+         * @enum {string}
+         */
+        NfrCoverage: "defined" | "partial" | "missing";
         /** OfferingComponentSchema */
         OfferingComponentSchema: {
             /** Code */
@@ -2464,6 +2470,11 @@ export interface components {
             /** Name */
             name: string;
             /**
+             * Realisation
+             * @default []
+             */
+            realisation: components["schemas"]["RealisationSchema"][];
+            /**
              * Responsibilities
              * @default []
              */
@@ -2474,6 +2485,20 @@ export interface components {
             technical_details?: string | null;
             /** Technical Spec */
             technical_spec?: string | null;
+        };
+        /**
+         * OfferingNfrSchema
+         * @description A non-functional requirement of an offering and how far its sources define it.
+         */
+        OfferingNfrSchema: {
+            confidence?: components["schemas"]["SourceConfidence"] | null;
+            coverage: components["schemas"]["NfrCoverage"];
+            /** Quality */
+            quality: string;
+            /** Source */
+            source?: string | null;
+            /** Statement */
+            statement?: string | null;
         };
         /**
          * OfferingPointSchema
@@ -2660,6 +2685,11 @@ export interface components {
             /** Name */
             name: string;
             /**
+             * Nfrs
+             * @default []
+             */
+            nfrs: components["schemas"]["OfferingNfrSchema"][];
+            /**
              * Order Types
              * @default []
              */
@@ -2804,6 +2834,24 @@ export interface components {
             version_id: string;
             /** Version Number */
             version_number: number;
+        };
+        /**
+         * RealisationLayer
+         * @description Where a part is realised: what the customer is sold, what delivers it, what it runs on.
+         * @enum {string}
+         */
+        RealisationLayer: "cfs" | "rfs" | "resource";
+        /**
+         * RealisationSchema
+         * @description One thing a component is realised as: its CFS, an RFS behind it, or a resource.
+         */
+        RealisationSchema: {
+            confidence?: components["schemas"]["SourceConfidence"] | null;
+            layer: components["schemas"]["RealisationLayer"];
+            /** Name */
+            name: string;
+            /** Source */
+            source?: string | null;
         };
         /** ReferenceChunk */
         ReferenceChunk: {

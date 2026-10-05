@@ -138,7 +138,7 @@ describe("channel suggestions", () => {
     {
       kind: "product", system_id: "office", name: "Office Connect",
       product: {
-        id: "office", name: "Office Connect", rules: [], components: [], values: [], audiences: [],
+        id: "office", name: "Office Connect", rules: [], components: [], values: [], audiences: [], nfrs: [],
         order_types: [{ code: "NEW", name: "New", enabled: true, channels: ["business-web", "Partner Feed"] }],
       },
     },

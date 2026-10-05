@@ -64,6 +64,16 @@ def _model() -> dict[str, Any]:
                 "values": [{"title": "Continuity", "desc": "5G failover", "ev": LATER}],
                 "fits": [{"title": "SMB", "desc": "Premium internet", "ev": EV}],
                 "plans": [{"tier": "S"}],
+                "nfr": [
+                    {
+                        "attr": "Availability",
+                        "status": "GAP",
+                        "text": "No availability targets.",
+                        "ev": {"s": "GAP"},
+                    },
+                    {"attr": "Security", "status": "PARTIAL", "text": "SAML SSO.", "ev": EV},
+                    {"attr": "security", "status": "GAP", "text": "Repeated.", "ev": EV},
+                ],
                 "orderTypes": [
                     {
                         "id": "NEW",
@@ -209,7 +219,27 @@ def test_the_offering_keeps_its_evidence_and_reads_roles_from_scope() -> None:
     assert [item["code"] for item in product["order_types"]] == ["NEW", "CEASE"]
     broadband, saas = product["components"]
     assert broadband["code"] == "PO_1; PO_2"
-    assert broadband["technical_details"] == "CFS: GPON CFS; RFS: Speed profile; Resources: Line"
+    assert "technical_details" not in broadband
+    assert broadband["realisation"] == [
+        {"layer": "cfs", "name": "GPON CFS", "confidence": "gap"},
+        {"layer": "rfs", "name": "Speed profile"},
+        {"layer": "resource", "name": "Line"},
+    ]
+    assert product["nfrs"] == [
+        {
+            "quality": "Availability",
+            "coverage": "missing",
+            "statement": "No availability targets.",
+            "confidence": "gap",
+        },
+        {
+            "quality": "Security",
+            "coverage": "partial",
+            "statement": "SAML SSO.",
+            "confidence": "confirmed",
+            "source": "BPP SDD §11",
+        },
+    ]
     assert "mandatory" not in saas
     assert saas["commercial_spec"] == "Configurable"
     duties = {(item["system"], item["role"]): item for item in broadband["responsibilities"]}

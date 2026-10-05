@@ -25,6 +25,10 @@ export const EXPLORED = {
       rules: [],
       values: [],
       audiences: [],
+      nfrs: [
+        { quality: "Availability", coverage: "missing", confidence: "gap" },
+        { quality: "Security", coverage: "partial", statement: "SAML SSO for the portal.", source: "SDD §11" },
+      ],
       order_types: [
         { code: "NEW", name: "New Activation", enabled: true, channels: ["online", "shop"] },
         { code: "CEASE", name: "Cease", enabled: true, channels: [] },
@@ -40,8 +44,12 @@ export const EXPLORED = {
             { system_id: "wfm", role: "FULFILMENT", description: "Installs the line", order_types: ["NEW"] },
             { system_id: "bscs", role: "FULFILMENT", description: "Stops billing", order_types: ["CEASE"], confidence: "gap" },
           ],
+          realisation: [
+            { layer: "resource", name: "GPON line" },
+            { layer: "cfs", name: "GPON internet CFS", confidence: "inferred" },
+          ],
         },
-        { id: "fw", name: "Firewall", mandatory: false, responsibilities: [] },
+        { id: "fw", name: "Firewall", mandatory: false, responsibilities: [], realisation: [] },
       ],
     },
   ],

@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import type { Offering } from "../api/client";
 import { CONFIDENCE, roleLabel, systemName } from "./catalogue";
 import { EditButton, OfferingEdit, WholeRemove } from "./DraftEdits";
+import { NfrSection, RealisationKey, RealisedAs, RealisedInline } from "./Realisation";
 import { useCatalogueContext } from "./useCatalogue";
 
 /** The product offerings in a version. */
@@ -187,6 +188,7 @@ function OfferingSheet({ offering }: { offering: Offering }) {
               <tr>
                 <th scope="col">Part</th>
                 <th scope="col">Responsible systems</th>
+                <th scope="col" className="parts__realised">Realised as</th>
               </tr>
             </thead>
             <tbody>
@@ -222,7 +224,9 @@ function OfferingSheet({ offering }: { offering: Offering }) {
                     ) : (
                       <span className="secondary">No system is named</span>
                     )}
+                    <RealisedInline part={part} />
                   </td>
+                  <td className="parts__realised"><RealisedAs part={part} /></td>
                 </tr>
               ))}
             </tbody>
@@ -230,7 +234,10 @@ function OfferingSheet({ offering }: { offering: Offering }) {
         ) : (
           <p className="timetable__quiet">No part is recorded.</p>
         )}
+        <RealisationKey offering={offering} />
       </section>
+
+      <NfrSection offering={offering} headingId={`${id}-nfrs`} />
 
       <section className="govsection" aria-labelledby={`${id}-rules`}>
         <h3 id={`${id}-rules`} className="govsection__title">Rules</h3>
