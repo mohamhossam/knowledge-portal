@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import type { SourceConflict } from "../api/client";
@@ -35,25 +35,27 @@ export function GovernancePage() {
       </EditButton>
     ) : null;
   const offerings = new Map((release.products ?? []).map((item) => [item.id, item]));
+  // One line per offering it affects: its order types, and the question it raises there.
   const affects = (conflict: SourceConflict) =>
     conflict.scope.length ? (
-      <>
-        Affects{" "}
-        {conflict.scope.map((scope, index) => {
-          const offering = offerings.get(scope.product_id);
-          const orders = (scope.order_types ?? []).map((code) => offering?.order_types.find((type) => type.code === code)?.name ?? code);
-          return (
-            <Fragment key={scope.product_id}>
-              {index > 0 && "; "}
-              <Link to={`${base}/offerings/${encodeURIComponent(scope.product_id)}`} dir="auto">{offering?.name ?? scope.product_id}</Link>
-              {orders.length ? `: ${orders.join(", ")}` : ", every order type"}
-              {scope.question_id && ` (raises ${scope.question_id})`}
-            </Fragment>
-          );
-        })}
-      </>
+      conflict.scope.map((scope) => {
+        const offering = offerings.get(scope.product_id);
+        const orders = (scope.order_types ?? []).map((code) => offering?.order_types.find((type) => type.code === code)?.name ?? code);
+        return (
+          <span key={scope.product_id} className="secondary govtable__by">
+            Affects <Link to={`${base}/offerings/${encodeURIComponent(scope.product_id)}`} dir="auto">{offering?.name ?? scope.product_id}</Link>
+            {orders.length ? `: ${orders.join(", ")}` : ", every order type"}
+            {scope.question_id && (
+              <>
+                {", raises "}
+                <span className="governance__id">{scope.question_id}</span>
+              </>
+            )}
+          </span>
+        );
+      })
     ) : (
-      "Affects no offering yet"
+      <span className="secondary govtable__by">Affects no offering yet</span>
     );
   return (
     <div className="catalogue__first">

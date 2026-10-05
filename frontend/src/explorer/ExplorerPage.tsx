@@ -9,7 +9,7 @@ import { CONFIDENCE, roleLabel, sentenceCase } from "../catalogue/catalogue";
 import { JourneyHandovers, JourneySteps } from "../catalogue/JourneyTimetable";
 import { NfrSection, RealisationKey, RealisedAs, RealisedInline } from "../catalogue/Realisation";
 import { ArchitectureDecisions, ConflictList, OfferingSourceList, OpenQuestions } from "../catalogue/GovernanceSections";
-import { SourcesContext } from "../catalogue/governance";
+import { conflictsFor, questionOf, SourcesContext } from "../catalogue/governance";
 import { LifecycleSection } from "../catalogue/LifecycleNotes";
 import { TrackingSection } from "../catalogue/Tracking";
 import { formatDay } from "../home/format";
@@ -188,6 +188,7 @@ function ScenarioSheet({ release, scenario, linkSystems }: {
   const parts = partsFor(scenario);
   const missing = gaps(scenario);
   const tracked = trackingFor(scenario);
+  const decisions = scenario.conflicts ?? [];
   const readFrom = [...(offering.sources ?? [])]
     .sort((a, b) => Number(b === offering.primary_source) - Number(a === offering.primary_source))
     .map((sourceId) => (release.sources ?? []).find((item) => item.id === sourceId))
@@ -233,15 +234,19 @@ function ScenarioSheet({ release, scenario, linkSystems }: {
         )}
       </header>
 
-      {(scenario.conflicts ?? []).length > 0 && (
-        <ConflictList
-          conflicts={scenario.conflicts ?? []}
-          sources={release.sources ?? []}
-          headingId={`${id}-conflicts`}
-          title={`Decisions needed for ${orderType.name}`}
-          lead="Its sources contradict each other here; the catalogue never picks one, so read these first."
-          level={3}
-        />
+      {decisions.length > 0 && (
+        <p className="explorer__decisions" role="note">
+          <strong>
+            {decisions.length === 1 ? "1 decision is" : `${decisions.length} decisions are`} open for {orderType.name}:
+          </strong>{" "}
+          {decisions.map((conflict, index) => (
+            <span key={conflict.id}>
+              {index > 0 && " · "}
+              <a href={`#conflict-${conflict.id}`} dir="auto">{conflict.title}</a>
+            </span>
+          ))}
+          . Its sources contradict each other there, and the catalogue never picks one.
+        </p>
       )}
 
       <section className="govsection" aria-labelledby={`${id}-systems`}>
@@ -383,7 +388,24 @@ function ScenarioSheet({ release, scenario, linkSystems }: {
 
       <PlansAndPrices offering={offering} headingId={`${id}-plans`} />
 
-      <OpenQuestions offering={offering} conflicts={scenario.conflicts ?? []} headingId={`${id}-questions`} />
+      {decisions.length > 0 && (
+        <ConflictList
+          conflicts={decisions}
+          sources={release.sources ?? []}
+          headingId={`${id}-conflicts`}
+          title={`Decisions needed for ${orderType.name}`}
+          lead="Its sources contradict each other here; the catalogue never picks one."
+          raises={(conflict) => questionOf(conflict, offering.id)}
+          level={3}
+        />
+      )}
+
+      <OpenQuestions
+        offering={offering}
+        conflicts={conflictsFor(release.conflicts ?? [], offering.id)}
+        beside={decisions}
+        headingId={`${id}-questions`}
+      />
 
       <ArchitectureDecisions offering={offering} headingId={`${id}-decisions`} />
 

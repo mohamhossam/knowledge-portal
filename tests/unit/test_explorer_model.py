@@ -586,8 +586,9 @@ def test_sources_conflicts_and_each_offerings_governance_carry_over() -> None:
             "title": "All of it",
             "scope": {"BPP": ["*"]},
             "question": "OQ-99",
-            "a": {"src": "SDD", "statement": "One."},
+            "a": {"src": "SDD", "ref": "—", "statement": "One."},
             "b": {"src": "SDD", "statement": "Other."},
+            "ev": {"s": "INFERRED", "src": "SDD", "ref": " - "},
         },
     ]
 
@@ -625,6 +626,9 @@ def test_sources_conflicts_and_each_offerings_governance_carry_over() -> None:
     # offering does not have is not linked.
     assert first["scope"] == [{"product": "BPP", "order_types": ["NEW"], "question": "OQ-01"}]
     assert every["scope"] == [{"product": "BPP"}]
+    # A dash where the model names no section is no reference at all.
+    assert every["a"] == {"source": "SDD", "statement": "One."}
+    assert every["source"] == "BPP SDD"
     assert "Not carried over yet: product sources not in the register (1)." in report
     assert "Not carried over yet: conflict scopes naming another product (1)." in report
     # The file the seed makes is one the catalogue accepts.

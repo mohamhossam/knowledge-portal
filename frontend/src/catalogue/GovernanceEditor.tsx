@@ -52,12 +52,14 @@ export function SourcesEdit({ onDone }: { onDone: () => void }) {
       title="Edit the sources"
       action="Save the sources"
       focusOnOpen
+      level={2}
       busy={saveDraft.isPending}
       problem={problem}
       error={saveDraft.error}
       onCancel={onDone}
       onSubmit={() => saveDraft.mutate(draftBody(release, { sources: finished }), { onSuccess: onDone })}
     >
+      <div className="form">
       <Rows<KnowledgeSource>
         legend="Sources"
         one="source"
@@ -81,6 +83,7 @@ export function SourcesEdit({ onDone }: { onDone: () => void }) {
           </>
         )}
       />
+      </div>
     </EditPanel>
   );
 }
@@ -102,7 +105,7 @@ function SideFields({ legend, side, sources, onChange }: { legend: string; side:
           ]}
           onChange={(source_id) => onChange({ ...side, source_id })}
         />
-        <TextField label="Where it says so" value={side.reference} onChange={(reference) => onChange({ ...side, reference: reference || null })} />
+        <TextField label="Where it says so" value={side.reference} wide onChange={(reference) => onChange({ ...side, reference: reference || null })} />
       </div>
       <AreaField label="What it says" value={side.statement} required onChange={(statement) => onChange({ ...side, statement })} />
     </fieldset>
@@ -136,12 +139,14 @@ export function ConflictsEdit({ onDone }: { onDone: () => void }) {
       title="Edit the conflicts between sources"
       action="Save the conflicts"
       focusOnOpen
+      level={2}
       busy={saveDraft.isPending}
       problem={problem}
       error={saveDraft.error}
       onCancel={onDone}
       onSubmit={() => saveDraft.mutate(draftBody(release, { conflicts: finished }), { onSuccess: onDone })}
     >
+      <div className="form">
       <Rows<SourceConflict>
         legend="Conflicts between sources"
         one="conflict"
@@ -167,11 +172,11 @@ export function ConflictsEdit({ onDone }: { onDone: () => void }) {
             <AreaField label="The decision it needs" value={item.decision} onChange={(decision) => update({ decision: decision || null })} />
             <Rows<Scope>
               legend="What it affects"
-              one={`offering ${item.title.trim() || "this conflict"} affects`}
+              one="offering it affects"
               items={item.scope}
               onChange={(scope) => update({ scope })}
               blank={() => ({ product_id: offerings.find((offering) => !item.scope.some((scope) => scope.product_id === offering.id))?.id ?? "", order_types: [] })}
-              itemLabel={(scope, index) => cut(offerings.find((offering) => offering.id === scope.product_id)?.name ?? "", index, "offering")}
+              itemLabel={(scope, index) => `${cut(offerings.find((offering) => offering.id === scope.product_id)?.name ?? "", index, "offering")} from this conflict`}
               render={(scope, change) => {
                 const offering = offerings.find((candidate) => candidate.id === scope.product_id);
                 return (
@@ -184,6 +189,7 @@ export function ConflictsEdit({ onDone }: { onDone: () => void }) {
                     />
                     <SelectField
                       label="The question it raises"
+                      wide
                       value={scope.question_id ?? ""}
                       options={[
                         { value: "", label: "None named" },
@@ -215,6 +221,7 @@ export function ConflictsEdit({ onDone }: { onDone: () => void }) {
           </>
         )}
       />
+      </div>
     </EditPanel>
   );
 }

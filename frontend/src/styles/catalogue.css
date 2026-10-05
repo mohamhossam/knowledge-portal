@@ -1248,6 +1248,7 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
 }
 
 .governance__id {
+  overflow-wrap: anywhere;
   color: var(--ink-2);
   font-size: var(--t-meta);
   font-stretch: var(--width-condensed);
@@ -1261,10 +1262,29 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
   font-weight: var(--w-bold);
 }
 
+/* The statements get the room: the conflict and its decision frame them. */
+.governance__col-conflict {
+  width: 28%;
+}
+
+.governance__col-sides {
+  width: 42%;
+}
+
+.governance__col-decision {
+  width: 30%;
+}
+
 .governance__sides {
   display: grid;
   gap: var(--s2);
   margin: 0;
+}
+
+/* The second statement sits under the first on a hairline, read as one against the other. */
+.governance__sides > div + div {
+  padding-top: var(--s2);
+  border-top: 1px solid var(--rule-faint);
 }
 
 .governance__sides dt {
@@ -1289,7 +1309,7 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
 
 .governance__list > li {
   display: grid;
-  grid-template-columns: minmax(4.5rem, max-content) 1fr;
+  grid-template-columns: 7rem minmax(0, 1fr);
   gap: var(--s1) var(--s3);
   padding: var(--s2) 0;
   border-bottom: 1px solid var(--rule-faint);
@@ -1306,6 +1326,19 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
 
 .governance__item--due p {
   font-weight: var(--w-bold);
+}
+
+.governance__list--sources > li {
+  grid-template-columns: 9rem minmax(0, 1fr);
+}
+
+/* Up top in the explorer, one due line naming the decisions the order waits on. */
+.explorer__decisions {
+  max-width: 72ch;
+  margin: var(--s4) 0 0;
+  padding: var(--s2) 0;
+  border-top: 2px solid var(--rule-heavy);
+  border-bottom: 1px solid var(--rule);
 }
 
 .governance__primary {

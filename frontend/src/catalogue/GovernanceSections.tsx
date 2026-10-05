@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import type { KnowledgeSource, Offering, SourceConflict } from "../api/client";
 import { CONFIDENCE } from "./catalogue";
-import { byLevel, LEVEL, questionOf, useSourceText } from "./governance";
+import { byLevel, LEVEL, levelTag, questionOf, useSourceText } from "./governance";
 
 type Sourced = { confidence?: string | null; source?: string | null };
 
@@ -82,7 +82,7 @@ export function SourceRegister({ sources, headingId, action }: { sources: Knowle
  * with both statements and where each is said, what differs, what it affects, and
  * the decision it needs. Used for the whole register and for one offering's.
  */
-export function ConflictList({ conflicts, sources, headingId, title, lead, action, affects, level = 2 }: {
+export function ConflictList({ conflicts, sources, headingId, title, lead, action, affects, raises, level = 2 }: {
   conflicts: SourceConflict[];
   sources: KnowledgeSource[];
   headingId: string;
@@ -91,12 +91,14 @@ export function ConflictList({ conflicts, sources, headingId, title, lead, actio
   action?: ReactNode;
   /** What a conflict affects, in words, for the register; an offering's list leaves it out. */
   affects?: (conflict: SourceConflict) => ReactNode;
+  /** The question a conflict raises for the offering being read, for an offering's list. */
+  raises?: (conflict: SourceConflict) => string | null;
   level?: 2 | 3;
 }) {
   const Heading = level === 2 ? "h2" : "h3";
   const said = (side: SourceConflict["a"]) => {
     const source = sources.find((item) => item.id === side.source_id);
-    return [source ? `${sourceName(source)} (${source.level})` : side.source_id, side.reference].filter(Boolean).join(" ");
+    return [source ? `${sourceName(source)} ${levelTag(source)}` : side.source_id, side.reference].filter(Boolean).join(" ");
   };
   return (
     <section className="govsection" aria-labelledby={headingId}>
@@ -108,6 +110,11 @@ export function ConflictList({ conflicts, sources, headingId, title, lead, actio
       {conflicts.length ? (
         <table className="govtable governance__table governance__conflicts" role="table">
           <caption className="visually-hidden">{title}</caption>
+          <colgroup>
+            <col className="governance__col-conflict" />
+            <col className="governance__col-sides" />
+            <col className="governance__col-decision" />
+          </colgroup>
           <thead role="rowgroup">
             <tr role="row">
               <th scope="col" role="columnheader">Conflict</th>
@@ -117,11 +124,16 @@ export function ConflictList({ conflicts, sources, headingId, title, lead, actio
           </thead>
           <tbody role="rowgroup">
             {conflicts.map((conflict) => (
-              <tr key={conflict.id} role="row" className="row row--due">
+              <tr key={conflict.id} id={`conflict-${conflict.id}`} role="row" className="row row--due">
                 <th scope="row" role="rowheader" dir="auto">
                   <span className="governance__id">{conflict.id}</span> {conflict.title}
                   {conflict.difference && <span className="secondary govtable__by" dir="auto">{conflict.difference}</span>}
-                  {affects && <span className="secondary govtable__by">{affects(conflict)}</span>}
+                  {affects?.(conflict)}
+                  {raises?.(conflict) && (
+                    <span className="secondary govtable__by">
+                      Raises the question <span className="governance__id">{raises(conflict)}</span>
+                    </span>
+                  )}
                 </th>
                 <td role="cell" data-head="What each source says">
                   <dl className="governance__sides">
@@ -150,26 +162,39 @@ export function ConflictList({ conflicts, sources, headingId, title, lead, actio
 }
 
 /** The questions an offering's sources leave open; one a conflict raises says which. */
-export function OpenQuestions({ offering, conflicts, headingId, action }: {
+export function OpenQuestions({ offering, conflicts, headingId, action, beside }: {
   offering: Offering;
+  /** Every conflict that concerns the offering. */
   conflicts: SourceConflict[];
   headingId: string;
   action?: ReactNode;
+  /**
+   * The conflicts listed with the questions, which say the questions they raise; the
+   * questions of the offering's other conflicts concern other order types and are left out.
+   */
+  beside?: SourceConflict[];
 }) {
-  const questions = offering.questions ?? [];
-  const raisedBy = (id: string) => conflicts.filter((conflict) => questionOf(conflict, offering.id)?.toLocaleLowerCase() === id.toLocaleLowerCase());
+  const all = offering.questions ?? [];
+  const raised = (id: string) => conflicts.filter((conflict) => questionOf(conflict, offering.id)?.toLocaleLowerCase() === id.toLocaleLowerCase());
+  const shown = beside ? all.filter((question) => raised(question.id).length === 0) : all;
+  const withConflicts = beside ? all.filter((question) => raised(question.id).some((conflict) => beside.includes(conflict))).length : 0;
   return (
     <section className="govsection" aria-labelledby={headingId}>
       <h3 id={headingId} className="govsection__title">
-        Open questions {questions.length > 0 && <span className="govsection__count">{questions.length}</span>}
+        Open questions {shown.length > 0 && <span className="govsection__count">{shown.length}</span>}
       </h3>
+      {withConflicts > 0 && (
+        <p className="govsection__lead">
+          {withConflicts === 1 ? "1 more is raised" : `${withConflicts} more are raised`} by the decisions needed, and named with them.
+        </p>
+      )}
       {action && <p className="govsection__actions">{action}</p>}
-      {questions.length ? (
+      {shown.length ? (
         <ol className="governance__list">
-          {questions.map((question) => {
-            const conflicts = raisedBy(question.id);
+          {shown.map((question) => {
+            const conflicts = raised(question.id);
             return (
-              <li key={question.id}>
+              <li key={question.id} id={`question-${question.id}`}>
                 <span className="governance__id">{question.id}</span>
                 <div>
                   <p dir="auto">{question.text}</p>
@@ -235,7 +260,7 @@ export function OfferingSourceList({ offering, sources, headingId, action }: {
       <h3 id={headingId} className="govsection__title">Sources and boundaries</h3>
       {action && <p className="govsection__actions">{action}</p>}
       {ordered.length ? (
-        <ul className="governance__list">
+        <ul className="governance__list governance__list--sources">
           {ordered.map((source) => (
             <li key={source.id} className={source.supplied === false ? "governance__item--due" : undefined}>
               <Level level={source.level} />
@@ -245,10 +270,9 @@ export function OfferingSourceList({ offering, sources, headingId, action }: {
                   {source.id === offering.primary_source && <span className="governance__primary"> · its primary source</span>}
                 </p>
                 <span className="secondary govtable__by" dir="auto">
-                  {[source.short, source.version && `version ${source.version}`, source.supplied === false ? "not supplied: carried forward unread" : null]
-                    .filter(Boolean)
-                    .join(" · ")}
+                  {[source.short, source.version && `version ${source.version}`].filter(Boolean).join(" · ")}
                 </span>
+                {source.supplied === false && <span className="governance__due">Not supplied: carried forward unread</span>}
               </div>
             </li>
           ))}

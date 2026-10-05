@@ -40,8 +40,9 @@ describe("source levels on facts", () => {
   it("finds the registered source a fact's source text begins with, the longest name first", () => {
     expect(namedSource("BPP SDD §11.1.3", SOURCES)?.id).toBe("SDD");
     expect(namedSource("SDDX §1", SOURCES)).toBeNull();
-    expect(withLevel("BPP SDD §10", SOURCES)).toBe("BPP SDD §10 · L2");
-    expect(withLevel("v8.2 OrderEvaluate", SOURCES)).toBe("v8.2 OrderEvaluate · L3, not supplied");
+    expect(withLevel("BPP SDD §10", SOURCES)).toBe("BPP SDD (L2) §10");
+    expect(withLevel("v8.2 OrderEvaluate", SOURCES)).toBe("v8.2 (L3, not supplied) OrderEvaluate");
+    expect(withLevel("SDD", SOURCES)).toBe("SDD (L2)");
     expect(withLevel("An email", SOURCES)).toBe("An email");
   });
 
@@ -69,7 +70,7 @@ describe("GovernancePage", () => {
     const conflicts = within(screen.getByRole("table", { name: "Conflicts between sources" })).getAllByRole("row").slice(1);
     expect(conflicts[0]).toHaveTextContent("CF-01 Up / Downgrade channel scope");
     expect(conflicts[0]).toHaveTextContent("BPP SDD (L2) §11.1.3");
-    expect(conflicts[0]).toHaveTextContent("Affects Business Pro Plus: New Activation (raises OQ-01)");
+    expect(conflicts[0]).toHaveTextContent("Affects Business Pro Plus: New Activation, raises OQ-01");
     expect(conflicts[1]).toHaveTextContent("Business Pro Plus, every order type");
     expect(screen.queryByRole("button", { name: "Edit the sources" })).not.toBeInTheDocument();
   });
@@ -117,9 +118,13 @@ describe("an offering's governance", () => {
 
     const needed = within(screen.getByRole("heading", { name: /^Decisions needed/ }).closest("section")!);
     expect(needed.getAllByRole("row")).toHaveLength(3);
+    expect(needed.getByText(/Raises the question/)).toHaveTextContent("Raises the question OQ-01");
+    // A question a conflict raises is said with it; the rest stand alone.
     const questions = within(screen.getByRole("heading", { name: /^Open questions/ }).closest("section")!);
-    expect(questions.getByText("Raised by the conflict CF-01")).toBeInTheDocument();
-    expect(questions.getByText(/BPP SDD §11.1.3 · L2/)).toBeInTheDocument();
+    expect(questions.getByText("1 more is raised by the decisions needed, and named with them.")).toBeInTheDocument();
+    expect(questions.getAllByRole("listitem").map((item) => item.querySelector(".governance__id")!.textContent)).toEqual(["OQ-02"]);
+    const decisions = within(screen.getByRole("heading", { name: /^Architecture decisions/ }).closest("section")!);
+    expect(decisions.getByText("BPP SDD (L2) §11.2")).toBeInTheDocument();
     const sources = within(screen.getByRole("heading", { name: "Sources and boundaries" }).closest("section")!);
     expect(sources.getAllByRole("listitem")[0]).toHaveTextContent("Business Pro Plus Solution Design · its primary source");
     expect(sources.getByText("No longer uses: Siebel CRM")).toBeInTheDocument();

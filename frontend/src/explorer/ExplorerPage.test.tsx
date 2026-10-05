@@ -87,7 +87,7 @@ describe("ExplorerPage", () => {
     expect(availability.querySelector("td.nfr__defined")).toHaveTextContent("Not defined");
     // On phones the Defined column rides under the quality.
     expect(availability.querySelector("th .nfr__defined-inline")).toHaveTextContent("Not defined");
-    expect(table.getByRole("row", { name: /Security/ }).querySelectorAll("td")[1]).toHaveTextContent("SAML SSO for the portal.SDD §11");
+    expect(table.getByRole("row", { name: /Security/ }).querySelectorAll("td")[1]).toHaveTextContent("SAML SSO for the portal.SDD (L2) §11");
     expect(screen.getByText(/1 quality is not defined/)).toBeInTheDocument();
   });
 
@@ -174,7 +174,7 @@ describe("ExplorerPage", () => {
     const matrix = within(section.getByRole("article", { name: "Up / Downgrade matrix" }));
     expect(matrix.getByRole("button", { name: "Up / Downgrade matrix" })).toHaveAttribute("aria-expanded", "true");
     // The note's source names a registered source, so it says its level.
-    expect(matrix.getByText("Change · SDD §10 · L2")).toBeInTheDocument();
+    expect(matrix.getByText("Change · SDD (L2) §10")).toBeInTheDocument();
     const table = matrix.getByRole("table", { name: /its table/ });
     expect(table).toHaveTextContent("200Mbps300Mbps");
     expect(table.querySelector("td")).toHaveAttribute("data-head", "To");

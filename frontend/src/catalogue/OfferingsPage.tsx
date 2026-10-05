@@ -7,7 +7,7 @@ import { EditButton, OfferingEdit, OfferingSectionEdit, WholeRemove } from "./Dr
 import { OFFERING_SECTIONS, type OfferingSection } from "./offeringSections";
 import { NfrSection, RealisationKey, RealisedAs, RealisedInline } from "./Realisation";
 import { ArchitectureDecisions, ConflictList, OfferingSourceList, OpenQuestions } from "./GovernanceSections";
-import { conflictsFor } from "./governance";
+import { conflictsFor, questionOf } from "./governance";
 import { LifecycleSection } from "./LifecycleNotes";
 import { TrackingSection } from "./Tracking";
 import { useCatalogueContext } from "./useCatalogue";
@@ -331,12 +331,19 @@ function OfferingSheet({ offering }: { offering: Offering }) {
           title="Decisions needed"
           lead="Its sources contradict each other here; the catalogue never picks one."
           action={<Link to={`${base}/governance`}>See every conflict between sources</Link>}
+          raises={(conflict) => questionOf(conflict, offering.id)}
           level={3}
         />
       )}
 
       {editing === "questions" ? panel("questions") : (
-        <OpenQuestions offering={offering} conflicts={offeringConflicts} headingId={`${id}-questions`} action={offer("questions")} />
+        <OpenQuestions
+          offering={offering}
+          conflicts={offeringConflicts}
+          beside={offeringConflicts}
+          headingId={`${id}-questions`}
+          action={offer("questions")}
+        />
       )}
 
       {editing === "decisions" ? panel("decisions") : (

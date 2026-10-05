@@ -18,8 +18,10 @@ import { useEditing } from "./useEditing";
  * An edit opened in place where the thing is read: on the stock band, closing
  * on a heavy rule, never a modal. It says why its action waits and what failed.
  */
-export function EditPanel({ title, children, action, busy, problem, error, onSubmit, onCancel, danger, conflictMessage, focusOnOpen }: {
+export function EditPanel({ title, children, action, busy, problem, error, onSubmit, onCancel, danger, conflictMessage, focusOnOpen, level = 3 }: {
   title: string;
+  /** Its title's heading level: 2 where it takes the place of a page's own section. */
+  level?: 2 | 3;
   /** Take focus on its title when it opens, for a panel that replaces the button that opened it. */
   focusOnOpen?: boolean;
   /** What a 409 means here; the draft's own sentence by default. */
@@ -35,6 +37,7 @@ export function EditPanel({ title, children, action, busy, problem, error, onSub
 }) {
   const id = useId();
   const heading = useRef<HTMLHeadingElement>(null);
+  const Heading = level === 2 ? "h2" : "h3";
   useEffect(() => {
     if (focusOnOpen) heading.current?.focus();
   }, [focusOnOpen]);
@@ -55,7 +58,7 @@ export function EditPanel({ title, children, action, busy, problem, error, onSub
         }
       }}
     >
-      <h3 id={`${id}-title`} ref={heading} tabIndex={focusOnOpen ? -1 : undefined} className="edit-panel__title">{title}</h3>
+      <Heading id={`${id}-title`} ref={heading} tabIndex={focusOnOpen ? -1 : undefined} className="edit-panel__title">{title}</Heading>
       {children}
       {error ? (
         <p className="docpage__failure" role="alert">

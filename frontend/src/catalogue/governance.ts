@@ -37,12 +37,27 @@ export function namedSource(text: string | null | undefined, sources: KnowledgeS
   return best?.source ?? null;
 }
 
-/** A fact's source text with its source's level when it names a registered one: "BPP SDD §10 · L2". */
+/** A source's level as it follows its name: "(L2)", "(L3, not supplied)". */
+export function levelTag(source: KnowledgeSource): string {
+  return `(${source.level}${source.supplied === false ? ", not supplied" : ""})`;
+}
+
+/**
+ * A fact's source text with its source's level after the name it cites, when it names a
+ * registered one: "BPP SDD §10" reads "BPP SDD (L2) §10", as a conflict's sides do.
+ */
 export function withLevel(text: string | null | undefined, sources: KnowledgeSource[]): string | null {
   const written = (text ?? "").trim();
   if (!written) return null;
   const source = namedSource(written, sources);
-  return source ? `${written} · ${source.level}${source.supplied === false ? ", not supplied" : ""}` : written;
+  if (!source) return written;
+  const name = [source.short, source.id]
+    .filter((item): item is string => !!item)
+    .sort((a, b) => b.length - a.length)
+    .find((item) => written.toLocaleLowerCase().startsWith(item.trim().toLocaleLowerCase())) ?? "";
+  const cited = written.slice(0, name.trim().length);
+  const rest = written.slice(name.trim().length).trim();
+  return [cited, levelTag(source), rest].filter(Boolean).join(" ");
 }
 
 /** The source register a page reads from, so any fact's source can say its level. */

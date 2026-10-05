@@ -64,6 +64,14 @@ _READ_LIVE = (
 )
 # What the explorer holds and the catalogue cannot yet, per product.
 _NOT_YET = (("info", "information objects"),)
+# A reference the model fills with a dash where its source names no section.
+_NO_REFERENCE = re.compile(r"[\s\-–—]*")
+
+
+def _reference(value: Any) -> str | None:
+    """A reference into a source, or None for an empty or dash-only one ("—")."""
+    text = str(value or "").strip()
+    return None if _NO_REFERENCE.fullmatch(text) else text
 
 
 @dataclass(frozen=True)
@@ -131,9 +139,8 @@ class _Reader:
         elif ev.get("s"):
             self.dropped[f"evidence status {ev['s']} (read as no confidence)"] += 1
         source = self.sources.get(ev.get("src") or "")
-        ref = str(ev.get("ref") or "").strip()
         label = str(source.get("short") or source["id"]) if source else ""
-        text = " ".join(part for part in (label, ref) if part)
+        text = " ".join(part for part in (label, _reference(ev.get("ref"))) if part)
         if text:
             out["source"] = text
         return out
@@ -370,7 +377,9 @@ class _Reader:
             ),
             **{
                 key: _present(
-                    source=side["src"], reference=side.get("ref"), statement=side["statement"]
+                    source=side["src"],
+                    reference=_reference(side.get("ref")),
+                    statement=side["statement"],
                 )
                 for key, side in zip(("a", "b"), sides, strict=True)
             },
