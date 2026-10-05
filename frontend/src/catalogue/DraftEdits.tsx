@@ -1,9 +1,9 @@
 import { type FormEvent, type ReactNode, useId, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import type { CatalogueSystem, Journey, Offering, Relationship, RelationshipKind } from "../api/client";
+import type { CatalogueSystem, Channel, Journey, Offering, Relationship, RelationshipKind } from "../api/client";
 import { ApiError, errorMessage } from "../api/errors";
-import { blankSystem, draftBody, systemUses } from "./drafting";
+import { blankSystem, channelUses, draftBody, systemUses } from "./drafting";
 import { finishedOffering, finishedSystem, journeyProblem, offeringProblem, slug, systemProblem } from "./editing";
 import { AreaField, Rows, SelectField, SystemField, TextField } from "./forms";
 import { JourneyEditor } from "./JourneyEditor";
@@ -277,6 +277,69 @@ export function DomainsEdit({ tree, onDone }: { tree: "landscape" | "areas"; onD
   );
 }
 
+/** The channels edited whole: where orders are placed and the system that takes them in. */
+export function ChannelsEdit({ onDone }: { onDone: () => void }) {
+  const { book } = useCatalogueContext();
+  const release = book.release;
+  const { saveDraft } = useEditing(release);
+  const original = release.channels ?? [];
+  const [items, setItems] = useState<Channel[]>(original);
+  const finished = (() => {
+    const taken = new Set(items.map((item) => item.id).filter(Boolean));
+    return items.map((item) => {
+      if (item.id) return item;
+      let id = slug(item.name);
+      for (let n = 2; taken.has(id); n += 1) id = `${slug(item.name)}-${n}`;
+      taken.add(id);
+      return { ...item, id };
+    });
+  })();
+  const gone = original.filter((item) => !items.some((kept) => kept.id === item.id));
+  const named = gone.flatMap((item) => channelUses(release, item.id).map((use) => `${item.name} (${use})`));
+  const names = items.map((item) => item.name.trim().toLocaleLowerCase());
+  const problem = items.some((item) => !item.name.trim())
+    ? "Every channel needs a name."
+    : new Set(names).size !== names.length
+      ? "Two channels have the same name."
+      : named.length
+        ? `Still named: ${named.join(", ")}. Take the channel off those first.`
+        : null;
+  return (
+    <EditPanel
+      title="Edit the channels"
+      action="Save the channels"
+      busy={saveDraft.isPending}
+      problem={problem}
+      error={saveDraft.error}
+      onCancel={onDone}
+      onSubmit={() => saveDraft.mutate(draftBody(release, { channels: finished }), { onSuccess: onDone })}
+    >
+      <Rows<Channel>
+        legend="Channels"
+        one="channel"
+        items={items}
+        onChange={setItems}
+        blank={() => ({ id: "", name: "" })}
+        itemLabel={(item, index) => `channel ${item.name || index + 1}`}
+        render={(item, update) => (
+          <>
+            <TextField label="Name" value={item.name} required onChange={(name) => update({ name })} />
+            <TextField label="Kind" value={item.kind} onChange={(kind) => update({ kind: kind || null })} />
+            <SystemField
+              label="Orders enter through"
+              value={item.entry_system_id ?? ""}
+              systems={release.systems}
+              allowNone
+              onChange={(id) => update({ entry_system_id: id || null })}
+            />
+            <AreaField label="What it is" value={item.description} onChange={(description) => update({ description: description || null })} />
+          </>
+        )}
+      />
+    </EditPanel>
+  );
+}
+
 /** An offering edited whole, or added. */
 export function OfferingEdit({ offering, onDone }: { offering?: Offering; onDone: (saved?: string) => void }) {
   const { book } = useCatalogueContext();
@@ -301,7 +364,7 @@ export function OfferingEdit({ offering, onDone }: { offering?: Offering; onDone
         saveDraft.mutate(draftBody(release, { products: next }), { onSuccess: () => onDone(finished.id) });
       }}
     >
-      <OfferingEditor value={value} onChange={setValue} systems={release.systems} />
+      <OfferingEditor value={value} onChange={setValue} systems={release.systems} channels={release.channels ?? []} />
     </EditPanel>
   );
 }
@@ -329,7 +392,13 @@ export function JourneyEdit({ journey, onDone }: { journey?: Journey; onDone: (s
         saveDraft.mutate(draftBody(release, { journeys: next }), { onSuccess: () => onDone(finished.id) });
       }}
     >
-      <JourneyEditor value={value} onChange={setValue} systems={release.systems} offerings={release.products ?? []} />
+      <JourneyEditor
+        value={value}
+        onChange={setValue}
+        systems={release.systems}
+        offerings={release.products ?? []}
+        channels={release.channels ?? []}
+      />
     </EditPanel>
   );
 }

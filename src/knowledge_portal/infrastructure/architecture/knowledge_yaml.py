@@ -34,6 +34,7 @@ def knowledge_from_yaml(text: str) -> ArchitectureKnowledge:
         landscape_domains=content.landscape_domains,
         products=content.products,
         journeys=content.journeys,
+        channels=content.channels,
     )
 
 

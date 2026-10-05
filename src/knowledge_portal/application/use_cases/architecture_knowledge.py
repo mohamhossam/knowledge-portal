@@ -22,6 +22,7 @@ from knowledge_portal.application.ports.identity import (
     require_maintainer,
     require_reader,
 )
+from knowledge_portal.domain.architecture.channels import Channel
 from knowledge_portal.domain.architecture.diff import CatalogueDiff, diff_releases
 from knowledge_portal.domain.architecture.journeys import Journey
 from knowledge_portal.domain.architecture.knowledge import (
@@ -208,6 +209,7 @@ class ManageArchitectureKnowledge:
         landscape_domains: tuple[LandscapeDomain, ...] | None = None,
         products: tuple[ProductOffering, ...] | None = None,
         journeys: tuple[Journey, ...] | None = None,
+        channels: tuple[Channel, ...] | None = None,
     ) -> ArchitectureKnowledge:
         require_maintainer(actor)
         current = self.get(release_id)
@@ -220,6 +222,7 @@ class ManageArchitectureKnowledge:
             landscape_domains=landscape_domains,
             products=products,
             journeys=journeys,
+            channels=channels,
         )
         self._repository.save(updated, expected_revision, actor.id, "edit_draft")
         return updated
@@ -331,6 +334,7 @@ class ManageArchitectureKnowledge:
             landscape_domains=imported.landscape_domains,
             products=imported.products,
             journeys=imported.journeys,
+            channels=imported.channels,
         )
 
     def preview_file_import(
@@ -361,6 +365,7 @@ class ManageArchitectureKnowledge:
             landscape_domains=imported.landscape_domains,
             products=imported.products,
             journeys=imported.journeys,
+            channels=imported.channels,
         )
 
     def export_file(self, release_id: str, file_format: CatalogueFileFormat, actor: Actor) -> bytes:

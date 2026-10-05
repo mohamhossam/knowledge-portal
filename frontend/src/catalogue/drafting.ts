@@ -17,11 +17,12 @@ export function draftBody(release: Release, patch: Partial<Omit<DraftUpdate, "ex
     landscape_domains: release.landscape_domains ?? [],
     products: release.products ?? [],
     journeys: release.journeys ?? [],
+    channels: release.channels ?? [],
     ...patch,
   };
 }
 
-/** Where else a system is named: offerings and journeys must let go of it before it can go. */
+/** Where else a system is named: offerings, journeys and channels must let go of it before it can go. */
 export function systemUses(release: Release, systemId: string): string[] {
   const offerings = (release.products ?? [])
     .filter((offering) => offering.components.some((part) => part.responsibilities.some((item) => item.system_id === systemId)))
@@ -31,7 +32,23 @@ export function systemUses(release: Release, systemId: string): string[] {
       journey.activities.some((step) => step.performing_system_id === systemId || step.supporting_system_ids.includes(systemId)),
     )
     .map((journey) => `the journey ${journey.name}`);
-  return [...offerings, ...journeys];
+  const channels = (release.channels ?? [])
+    .filter((channel) => channel.entry_system_id === systemId)
+    .map((channel) => `the channel ${channel.name}`);
+  return [...offerings, ...journeys, ...channels];
+}
+
+/** Where a channel is named: order types and journey steps must let go of it before it can go. */
+export function channelUses(release: Release, channelId: string): string[] {
+  const orders = (release.products ?? []).flatMap((offering) =>
+    offering.order_types
+      .filter((type) => (type.channels ?? []).includes(channelId))
+      .map((type) => `${offering.name}: ${type.name}`),
+  );
+  const journeys = (release.journeys ?? [])
+    .filter((journey) => journey.activities.some((step) => (step.channels ?? []).includes(channelId)))
+    .map((journey) => `the journey ${journey.name}`);
+  return [...orders, ...journeys];
 }
 
 /** The draft without a system, and without every connection to or from it. */
@@ -95,6 +112,7 @@ export const DIFF_ORDER: { item: Item; one: string; many: string }[] = [
   { item: "relationship", one: "Connection", many: "Connections" },
   { item: "landscape_domain", one: "Landscape domain", many: "Landscape domains" },
   { item: "domain", one: "Business area", many: "Business areas" },
+  { item: "channel", one: "Channel", many: "Channels" },
   { item: "product", one: "Offering", many: "Offerings" },
   { item: "journey", one: "Journey", many: "Journeys" },
   { item: "document", one: "Document", many: "Documents" },
@@ -121,6 +139,8 @@ const FIELD: Record<string, string> = {
   integrations: "hand-overs",
   order_types: "order types",
   rules: "rules",
+  channel_kind: "kind of channel",
+  entry_system_id: "entry system",
 };
 
 /** A changed item's fields, said as words: "Arabic name and where it sits". */

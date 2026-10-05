@@ -136,6 +136,21 @@
       },
       "ActivitySchema": {
         "properties": {
+          "channel_entry": {
+            "default": false,
+            "title": "Channel Entry",
+            "type": "boolean"
+          },
+          "channels": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Channels",
+            "type": "array"
+          },
           "component_ids": {
             "default": [],
             "items": {
@@ -1135,10 +1150,90 @@
           "component",
           "landscape_domain",
           "product",
-          "journey"
+          "journey",
+          "channel"
         ],
         "title": "ChangedItem",
         "type": "string"
+      },
+      "ChannelSchema": {
+        "description": "Where orders are placed, and the system each is entered through (ADR-0101, step 3).",
+        "properties": {
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "entry_system_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entry System Id"
+          },
+          "id": {
+            "maxLength": 200,
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "name": {
+            "maxLength": 300,
+            "title": "Name",
+            "type": "string"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "ChannelSchema",
+        "type": "object"
       },
       "CitingDependency": {
         "description": "One requirement statement that cites a passage of the document.",
@@ -1714,6 +1809,21 @@
             ],
             "title": "Capability Domains"
           },
+          "channels": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ChannelSchema"
+                },
+                "maxItems": 5000,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channels"
+          },
           "expected_revision": {
             "title": "Expected Revision",
             "type": "integer"
@@ -1804,6 +1914,14 @@
       "ExplorerReleaseResponse": {
         "description": "The version in service as the explorer reads it: its content, never its documents,\nindex or history (requirement-portal ADR-0101).",
         "properties": {
+          "channels": {
+            "items": {
+              "$ref": "#/components/schemas/ChannelSchema"
+            },
+            "maxItems": 5000,
+            "title": "Channels",
+            "type": "array"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -2607,6 +2725,14 @@
             },
             "maxItems": 5000,
             "title": "Capability Domains",
+            "type": "array"
+          },
+          "channels": {
+            "items": {
+              "$ref": "#/components/schemas/ChannelSchema"
+            },
+            "maxItems": 5000,
+            "title": "Channels",
             "type": "array"
           },
           "created_by": {
@@ -3571,6 +3697,16 @@
       },
       "OrderTypeSchema": {
         "properties": {
+          "channels": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Channels",
+            "type": "array"
+          },
           "code": {
             "maxLength": 200,
             "title": "Code",

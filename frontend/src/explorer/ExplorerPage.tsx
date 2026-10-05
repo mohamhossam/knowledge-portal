@@ -12,7 +12,7 @@ import { gaps, involvement, journeyFor, listed, partsFor, pickScenario, type Sce
 
 /** What the catalogue cannot hold yet; each arrives with a later slice (requirement-portal ADR-0101). */
 export const NOT_YET =
-  "Channels, plans and prices, order tracking and NFRs are not in the catalogue yet, so the explorer does not show them.";
+  "Plans and prices, order tracking and NFRs are not in the catalogue yet, so the explorer does not show them.";
 
 function useExplorerRelease() {
   return useQuery({ queryKey: ["explorer", "release"], queryFn: api.explorerRelease });
@@ -66,9 +66,9 @@ export function ExplorerPage({ linkSystems }: { linkSystems: boolean }) {
   }
 
   const release = query.data;
-  const scenario = pickScenario(release, params.get("product"), params.get("order"));
-  const choose = (product: string, order: string | null) =>
-    setParams(order ? { product, order } : { product }, { replace: true });
+  const scenario = pickScenario(release, params.get("product"), params.get("order"), params.get("channel"));
+  const choose = (product: string, order: string | null, channel: string | null = null) =>
+    setParams({ product, ...(order ? { order } : {}), ...(channel ? { channel } : {}) }, { replace: true });
 
   return (
     <section className="docpage catalogue explorer" aria-labelledby="explorer-title">
@@ -76,13 +76,19 @@ export function ExplorerPage({ linkSystems }: { linkSystems: boolean }) {
         <p className="docpage__edition">
           In service: <strong dir="auto">‘{release.name ?? release.id}’</strong>, published{" "}
           {formatDay(release.published_at)}. Choose an offering and an order type to see the journey
-          that fulfils it, the systems that take part, and what the catalogue does not say yet.
+          that fulfils it through each channel, the systems that take part, and what the catalogue
+          does not say yet.
         </p>,
       )}
       {scenario ? (
         <>
           <Choose release={release} scenario={scenario} onChoose={choose} />
-          <ScenarioSheet key={`${scenario.offering.id}:${scenario.orderType.code}`} release={release} scenario={scenario} linkSystems={linkSystems} />
+          <ScenarioSheet
+            key={`${scenario.offering.id}:${scenario.orderType.code}:${scenario.channel?.id ?? ""}`}
+            release={release}
+            scenario={scenario}
+            linkSystems={linkSystems}
+          />
         </>
       ) : (
         <p className="docpage__quiet">The catalogue in service describes no offering with an order type yet.</p>
@@ -94,7 +100,7 @@ export function ExplorerPage({ linkSystems }: { linkSystems: boolean }) {
 function Choose({ release, scenario, onChoose }: {
   release: ExplorerRelease;
   scenario: Scenario;
-  onChoose: (product: string, order: string | null) => void;
+  onChoose: (product: string, order: string | null, channel?: string | null) => void;
 }) {
   const id = useId();
   const offerings = (release.products ?? []).filter((item) => item.order_types.length > 0);
@@ -127,6 +133,24 @@ function Choose({ release, scenario, onChoose }: {
           ))}
         </select>
       </label>
+      {scenario.channels.length > 0 && (
+        <label className="field" htmlFor={`${id}-channel`}>
+          <span className="field__label">Channel</span>
+          <select
+            id={`${id}-channel`}
+            className="field__input form__select"
+            value={scenario.channel?.id ?? ""}
+            onChange={(event) => onChoose(scenario.offering.id, scenario.orderType.code, event.target.value)}
+          >
+            {scenario.channels.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+                {item.entry_system_id ? "" : " (no entry system)"}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
     </form>
   );
 }
@@ -142,7 +166,9 @@ function ScenarioSheet({ release, scenario, linkSystems }: {
   linkSystems: boolean;
 }) {
   const id = useId();
-  const { offering, orderType, journey } = scenario;
+  const { offering, orderType, journey, channel } = scenario;
+  const channelNames = new Map((release.channels ?? []).map((item) => [item.id, item.name]));
+  const channelName = (channelId: string) => channelNames.get(channelId) ?? channelId;
   const names = new Map(release.systems.map((item) => [item.id, item.name]));
   const system = (systemId: string) =>
     linkSystems ? (
@@ -157,7 +183,10 @@ function ScenarioSheet({ release, scenario, linkSystems }: {
   return (
     <article className="sheet" aria-labelledby={`${id}-name`}>
       <header className="sheet__head">
-        <h2 id={`${id}-name`} className="sheet__title" dir="auto">{offering.name}: {orderType.name}</h2>
+        <h2 id={`${id}-name`} className="sheet__title" dir="auto">
+          {offering.name}: {orderType.name}
+          {channel && <>, through {channel.name}</>}
+        </h2>
         <p className="sheet__meta">
           {journey ? (
             <>
@@ -228,7 +257,13 @@ function ScenarioSheet({ release, scenario, linkSystems }: {
 
       {journey && (
         <>
-          <JourneySteps journey={journey} headingId={`${id}-steps`} system={system} />
+          <JourneySteps
+            journey={journey}
+            headingId={`${id}-steps`}
+            system={system}
+            channelName={channelName}
+            entry={channel ? { channel: channel.name, systemId: channel.entry_system_id ?? null } : undefined}
+          />
           <JourneyHandovers journey={journey} headingId={`${id}-handovers`} />
         </>
       )}

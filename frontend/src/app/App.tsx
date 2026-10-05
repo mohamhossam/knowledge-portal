@@ -3,6 +3,7 @@ import { Link, Navigate, Route, Routes } from "react-router-dom";
 
 import { CALLBACK_PATH, SILENT_CALLBACK_PATH } from "../auth/paths";
 import { CataloguePage } from "../catalogue/CataloguePage";
+import { ChannelsPage } from "../catalogue/ChannelsPage";
 import { ChangesPage } from "../catalogue/ChangesPage";
 import { CheckPage } from "../catalogue/CheckPage";
 import { EvidencePage } from "../catalogue/EvidencePage";
@@ -34,6 +35,7 @@ const catalogueRoutes = (
     <Route index element={<SystemsPage />} />
     <Route path="systems/:systemId" element={<SystemsPage />} />
     <Route path="domains" element={<DomainsPage />} />
+    <Route path="channels" element={<ChannelsPage />} />
     <Route path="offerings" element={<OfferingsPage />} />
     <Route path="offerings/:offeringId" element={<OfferingPage />} />
     <Route path="journeys" element={<JourneysPage />} />

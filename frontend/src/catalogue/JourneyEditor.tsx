@@ -1,8 +1,9 @@
 import { X } from "lucide-react";
 
-import type { CatalogueSystem, Journey, JourneyActivity, Offering, SourceConfidence } from "../api/client";
+import type { CatalogueSystem, Channel, Journey, JourneyActivity, Offering, SourceConfidence } from "../api/client";
 import { CONFIDENCE, orderedSteps } from "./catalogue";
 import { AreaField, CheckField, Rows, SelectField, SystemField, TextField } from "./forms";
+import { ChannelChoices } from "./OfferingEditor";
 
 type Rule = Journey["flow_rules"][number];
 type Handover = Journey["integrations"][number];
@@ -22,11 +23,13 @@ const RULE_KINDS = [
  * A whole journey: the offering it fulfils, its steps and who performs each,
  * where it branches, and how steps hand over. Controlled; the caller keeps the value.
  */
-export function JourneyEditor({ value, onChange, systems, offerings, names }: {
+export function JourneyEditor({ value, onChange, systems, offerings, channels = [], names }: {
   value: Journey;
   onChange: (value: Journey) => void;
   systems: CatalogueSystem[];
   offerings: Offering[];
+  /** The draft's channels, to say which channels a step happens in. */
+  channels?: Channel[];
   /** Names for things a document mentions that the draft does not have yet. */
   names?: { system: (id: string) => string; offering: (id: string) => string };
 }) {
@@ -84,6 +87,8 @@ export function JourneyEditor({ value, onChange, systems, offerings, names }: {
           name: "",
           supporting_system_ids: [],
           component_ids: [],
+          channels: [],
+          channel_entry: false,
         })}
         itemLabel={(step) => `step ${step.number}`}
         render={(step, update) => (
@@ -91,14 +96,23 @@ export function JourneyEditor({ value, onChange, systems, offerings, names }: {
             <TextField label="No." value={step.number} required dir="ltr" onChange={(number) => update({ number })} />
             <TextField label="Step" value={step.name} required onChange={(name) => update({ name })} wide />
             <TextField label="Phase" value={step.phase} onChange={(phase) => update({ phase: phase || null })} />
-            <SystemField
-              label="Performed by"
-              value={step.performing_system_id ?? ""}
-              systems={systems}
-              writtenAs={step.performing_system_id ? names?.system(step.performing_system_id) : undefined}
-              allowNone
-              onChange={(id) => update({ performing_system_id: id || null })}
-            />
+            {!step.channel_entry && (
+              <SystemField
+                label="Performed by"
+                value={step.performing_system_id ?? ""}
+                systems={systems}
+                writtenAs={step.performing_system_id ? names?.system(step.performing_system_id) : undefined}
+                allowNone
+                onChange={(id) => update({ performing_system_id: id || null })}
+              />
+            )}
+            {channels.length > 0 && (
+              <CheckField
+                label="Performed by the channel’s entry system"
+                checked={step.channel_entry === true}
+                onChange={(channel_entry) => update({ channel_entry, ...(channel_entry ? { performing_system_id: null } : {}) })}
+              />
+            )}
             <Supporting
               chosen={step.supporting_system_ids}
               systems={systems}
@@ -106,6 +120,14 @@ export function JourneyEditor({ value, onChange, systems, offerings, names }: {
             />
             <TextField label="Mode" value={step.mode} onChange={(mode) => update({ mode: mode || null })} />
             <CheckField label="Seen by the customer" checked={step.customer_visible === true} onChange={(customer_visible) => update({ customer_visible })} />
+            {channels.length > 0 && (
+              <ChannelChoices
+                legend="Happens in (none means every channel)"
+                channels={channels}
+                chosen={step.channels ?? []}
+                onChange={(chosen) => update({ channels: chosen })}
+              />
+            )}
           </>
         )}
       />
