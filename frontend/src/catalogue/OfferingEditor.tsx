@@ -9,6 +9,14 @@ type Point = Offering["values"][number];
 type Realised = Part["realisation"][number];
 type Nfr = Offering["nfrs"][number];
 
+/** "CFS CFSS_ONPREM_FIREWALL_HE", cut short, to name one row on its legend and its Remove button. */
+function realisedLabel(item: Realised, index: number): string {
+  const short = LAYERS.find((entry) => entry.layer === item.layer)?.short ?? item.layer;
+  const name = item.name.trim();
+  if (!name) return `${short} ${index + 1}`;
+  return `${short} ${name.length > 40 ? `${name.slice(0, 39)}…` : name}`;
+}
+
 const LAYER_OPTIONS = LAYERS.map(({ layer, short, long }) => ({ value: layer, label: short === long ? long : `${short}: ${long}` }));
 const COVERAGE_OPTIONS = (Object.keys(COVERAGE) as Nfr["coverage"][]).map((value) => ({ value, label: COVERAGE[value] }));
 
@@ -153,11 +161,11 @@ export function OfferingEditor({ value, onChange, systems, channels = [], names 
             />
             <Rows<Realised>
               legend="Realised as"
-              one="layer"
+              one={`thing ${part.name || "this part"} is realised as`}
               items={part.realisation ?? []}
               onChange={(realisation) => update({ realisation })}
               blank={() => ({ layer: "cfs", name: "" })}
-              itemLabel={(item, index) => `layer ${item.name || index + 1}`}
+              itemLabel={(item, index) => realisedLabel(item, index)}
               render={(item, change) => (
                 <>
                   <SelectField
@@ -166,7 +174,7 @@ export function OfferingEditor({ value, onChange, systems, channels = [], names 
                     options={LAYER_OPTIONS}
                     onChange={(layer) => change({ layer: layer as Realised["layer"] })}
                   />
-                  <TextField label="Name" value={item.name} required onChange={(name) => change({ name })} />
+                  <TextField label="Name" value={item.name} required wide onChange={(name) => change({ name })} />
                 </>
               )}
             />

@@ -642,6 +642,11 @@
   justify-self: start;
 }
 
+/* Repeating rows inside a row (a part's responsibilities, its layers) take the whole width. */
+.form__grid > .form__rows {
+  grid-column: 1 / -1;
+}
+
 .form__chosen {
   display: flex;
   flex-wrap: wrap;
@@ -869,7 +874,25 @@
 }
 
 .realised__name {
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+}
+
+/* A part with no layer recorded, and a layer its source marks as a gap, are due. */
+.realised__missing,
+.realised__item--due .realised__name {
+  font-weight: var(--w-bold);
+}
+
+/* The layers in words, once under a Parts table, in the keys-line style. */
+.realised__key {
+  margin: var(--s2) 0 0;
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+.realised__key strong {
+  color: var(--ink);
+  font-weight: var(--w-medium);
 }
 
 .realised__layer {
@@ -883,6 +906,14 @@
 /* A quality no source defines is due (the Weight Is Rank Rule). */
 .govtable .nfr__missing {
   font-weight: var(--w-bold);
+}
+
+.govtable .nfr__defined {
+  white-space: nowrap;
+}
+
+.nfr__defined-inline {
+  display: none;
 }
 
 /* On phones, how a part is realised rides in the part's cell rather than a third column. */
@@ -901,7 +932,19 @@
     font-weight: var(--w-regular);
   }
 
-  .realised li {
-    grid-template-columns: 4rem minmax(0, 1fr);
+  /* The Defined column rides under the quality (the Kept Column Rule). */
+  .govtable .nfr__defined {
+    display: none;
+  }
+
+  .govtable .nfr__defined-inline {
+    display: block;
+  }
+
+  /* A quality's name keeps its words whole: the statement column gives way instead. */
+  .govtable.nfrs th[scope="row"] {
+    width: 9.5rem;
+    overflow-wrap: normal;
+    hyphens: auto;
   }
 }

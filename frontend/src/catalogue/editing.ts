@@ -26,7 +26,12 @@ export function offeringProblem(value: Offering): string | null {
   if (value.components.some((part) => part.responsibilities.some((item) => !item.role.trim() || !item.system_id))) {
     return "Every responsibility needs a system and a role.";
   }
-  if (value.components.some((part) => (part.realisation ?? []).some((item) => !item.name.trim()))) return "Every layer a part is realised in needs a name.";
+  for (const part of value.components) {
+    const realised = part.realisation ?? [];
+    if (realised.some((item) => !item.name.trim())) return `${part.name}: everything it is realised as needs a name.`;
+    const keys = realised.map((item) => `${item.layer}:${item.name.trim().toLocaleLowerCase()}`);
+    if (new Set(keys).size !== keys.length) return `${part.name}: the same thing is named twice in one layer.`;
+  }
   const qualities = (value.nfrs ?? []).map((item) => item.quality.trim().toLocaleLowerCase());
   if (qualities.some((quality) => !quality)) return "Every non-functional requirement needs a quality.";
   if (new Set(qualities).size !== qualities.length) return "Each quality is stated once.";

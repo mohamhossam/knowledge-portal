@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import type { Offering } from "../api/client";
 import { CONFIDENCE, roleLabel, systemName } from "./catalogue";
 import { EditButton, OfferingEdit, WholeRemove } from "./DraftEdits";
-import { NfrSection, RealisedAs, RealisedInline } from "./Realisation";
+import { NfrSection, RealisationKey, RealisedAs, RealisedInline } from "./Realisation";
 import { useCatalogueContext } from "./useCatalogue";
 
 /** The product offerings in a version. */
@@ -204,7 +204,6 @@ function OfferingSheet({ offering }: { offering: Offering }) {
                         part.code,
                       ].filter(Boolean).join(" · ")}
                     </span>
-                    <RealisedInline part={part} />
                   </th>
                   <td>
                     {part.responsibilities.length ? (
@@ -225,6 +224,7 @@ function OfferingSheet({ offering }: { offering: Offering }) {
                     ) : (
                       <span className="secondary">No system is named</span>
                     )}
+                    <RealisedInline part={part} />
                   </td>
                   <td className="parts__realised"><RealisedAs part={part} /></td>
                 </tr>
@@ -234,6 +234,7 @@ function OfferingSheet({ offering }: { offering: Offering }) {
         ) : (
           <p className="timetable__quiet">No part is recorded.</p>
         )}
+        <RealisationKey offering={offering} />
       </section>
 
       <NfrSection offering={offering} headingId={`${id}-nfrs`} />

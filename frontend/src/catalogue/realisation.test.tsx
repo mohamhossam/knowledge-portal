@@ -21,10 +21,11 @@ describe("realisation and NFRs in the offering editor", () => {
     render(<Editing seen={(value) => (last = value)} />);
 
     const firewall = screen.getAllByRole("group", { name: "Realised as" })[1]!;
-    fireEvent.click(within(firewall).getByRole("button", { name: /Add a layer/ }));
+    fireEvent.click(within(firewall).getByRole("button", { name: "Add a thing Firewall is realised as" }));
     fireEvent.change(within(firewall).getByLabelText("Layer"), { target: { value: "resource" } });
     fireEvent.change(within(firewall).getByLabelText(/^Name/), { target: { value: "Fortinet HE CPE" } });
     expect(last.components[1]!.realisation).toEqual([{ layer: "resource", name: "Fortinet HE CPE" }]);
+    expect(within(firewall).getByRole("button", { name: "Remove Resource Fortinet HE CPE" })).toBeInTheDocument();
 
     const nfrs = screen.getByRole("group", { name: "Non-functional requirements" });
     fireEvent.click(within(nfrs).getByRole("button", { name: /Add another non-functional requirement/ }));
@@ -35,7 +36,9 @@ describe("realisation and NFRs in the offering editor", () => {
 
   it("says why an offering cannot be sent yet", () => {
     const unnamed = { ...OFFERING, components: [{ ...OFFERING.components[0]!, realisation: [{ layer: "cfs" as const, name: " " }] }] };
-    expect(offeringProblem(unnamed)).toBe("Every layer a part is realised in needs a name.");
+    expect(offeringProblem(unnamed)).toBe("Broadband: everything it is realised as needs a name.");
+    const twice = { ...OFFERING, components: [{ ...OFFERING.components[0]!, realisation: [{ layer: "cfs" as const, name: "X" }, { layer: "cfs" as const, name: "x " }] }] };
+    expect(offeringProblem(twice)).toBe("Broadband: the same thing is named twice in one layer.");
     expect(offeringProblem({ ...OFFERING, nfrs: [{ quality: "", coverage: "missing" }] })).toBe(
       "Every non-functional requirement needs a quality.",
     );

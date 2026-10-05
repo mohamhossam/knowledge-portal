@@ -7,7 +7,7 @@ import { api, type ExplorerRelease } from "../api/client";
 import { errorMessage } from "../api/errors";
 import { CONFIDENCE, roleLabel, sentenceCase } from "../catalogue/catalogue";
 import { JourneyHandovers, JourneySteps } from "../catalogue/JourneyTimetable";
-import { NfrSection, RealisedAs, RealisedInline } from "../catalogue/Realisation";
+import { NfrSection, RealisationKey, RealisedAs, RealisedInline } from "../catalogue/Realisation";
 import { formatDay } from "../home/format";
 import { gaps, involvement, journeyFor, listed, partsFor, pickScenario, type Scenario } from "./scenario";
 
@@ -293,7 +293,6 @@ function ScenarioSheet({ release, scenario, linkSystems }: {
                         part.customer_visible ? "Seen by the customer" : null,
                       ].filter(Boolean).join(" · ")}
                     </span>
-                    <RealisedInline part={part} />
                   </th>
                   <td>
                     {responsibilities.length ? (
@@ -308,6 +307,7 @@ function ScenarioSheet({ release, scenario, linkSystems }: {
                     ) : (
                       <span className="secondary">No system is named for this order</span>
                     )}
+                    <RealisedInline part={part} />
                   </td>
                   <td className="parts__realised"><RealisedAs part={part} /></td>
                 </tr>
@@ -317,6 +317,7 @@ function ScenarioSheet({ release, scenario, linkSystems }: {
         ) : (
           <p className="timetable__quiet">No part is recorded.</p>
         )}
+        <RealisationKey offering={offering} />
       </section>
 
       <NfrSection offering={offering} headingId={`${id}-nfrs`} />

@@ -1,25 +1,47 @@
+import { Fragment } from "react";
+
 import type { Offering } from "../api/client";
 import { CONFIDENCE, COVERAGE, LAYERS } from "./catalogue";
 
 type Part = Offering["components"][number];
 
+/** "CFSS_INTERNET_CPE_HE" may break after each underscore, never between letters. */
+function breakable(name: string) {
+  const pieces = name.split("_");
+  return pieces.map((piece, index) => (
+    <Fragment key={index}>
+      {piece}
+      {index < pieces.length - 1 && (
+        <>
+          _<wbr />
+        </>
+      )}
+    </Fragment>
+  ));
+}
+
 /**
  * How a part is realised, layer by layer, as a list for a table cell: "CFS
  * CFSS_ONPREM_FIREWALL_HE", then its RFSs and resources. A layer its sources
- * name nothing for is left out; none at all says so.
+ * name nothing for is left out. A part with none, and a layer its source marks
+ * as a gap, are due (the Weight Is Rank Rule): someone has to fill them.
  */
 export function RealisedAs({ part }: { part: Part }) {
   const realisation = part.realisation ?? [];
-  if (!realisation.length) return <span className="secondary">Not stated</span>;
+  if (!realisation.length) return <span className="realised__missing">Not stated</span>;
   return (
     <ul className="sheet__roles realised">
       {LAYERS.flatMap(({ layer, short, long }) =>
         realisation
           .filter((item) => item.layer === layer)
           .map((item) => (
-            <li key={`${layer}:${item.name}`}>
-              <abbr className="realised__layer" title={long}>{short}</abbr>{" "}
-              <span dir="auto" className="realised__name">{item.name}</span>
+            <li key={`${layer}:${item.name}`} className={item.confidence === "gap" ? "realised__item--due" : undefined}>
+              {short === long ? (
+                <span className="realised__layer">{short}</span>
+              ) : (
+                <abbr className="realised__layer" title={long}>{short}</abbr>
+              )}{" "}
+              <span dir="auto" className="realised__name">{breakable(item.name)}</span>
               {item.confidence && item.confidence !== "confirmed" && (
                 <span className="secondary govtable__by">{CONFIDENCE[item.confidence]}</span>
               )}
@@ -31,17 +53,27 @@ export function RealisedAs({ part }: { part: Part }) {
 }
 
 /**
- * The same, under a part's name, for phones: there the Realised as column is
- * folded into the part's cell, so the table keeps two readable columns. Only
- * one of the two is ever displayed, so a screen reader meets it once.
+ * The same, folded under a part's responsible systems on phones, where the
+ * Realised as column is not shown; only one of the two is ever displayed, so a
+ * screen reader meets it once, and never as part of the row's header.
  */
 export function RealisedInline({ part }: { part: Part }) {
-  if (!(part.realisation ?? []).length) return null;
   return (
     <span className="parts__realised-inline">
       <span className="secondary govtable__by">Realised as</span>
       <RealisedAs part={part} />
     </span>
+  );
+}
+
+/** The layers in words, once under a Parts table, so no one has to recall or hover for them. */
+export function RealisationKey({ offering }: { offering: Offering }) {
+  if (!offering.components.some((part) => (part.realisation ?? []).length)) return null;
+  return (
+    <p className="realised__key">
+      Realised as: <strong>CFS</strong>, what the customer is sold · <strong>RFS</strong>, what delivers it ·{" "}
+      <strong>Resource</strong>, what it runs on.
+    </p>
   );
 }
 
@@ -65,22 +97,25 @@ export function NfrSection({ offering, headingId }: { offering: Offering; headin
               <strong>{missing === 1 ? "1 quality is" : `${missing} qualities are`} not defined</strong> by any source yet.
             </p>
           )}
-          <table className="govtable">
+          <table className="govtable nfrs">
             <caption className="visually-hidden">Non-functional requirements of {offering.name}</caption>
             <thead>
               <tr>
                 <th scope="col">Quality</th>
-                <th scope="col">Defined</th>
+                <th scope="col" className="nfr__defined">Defined</th>
                 <th scope="col">What the sources say</th>
               </tr>
             </thead>
             <tbody>
               {nfrs.map((item) => (
                 <tr key={item.quality} className={item.coverage === "missing" ? "row row--due" : "row"}>
-                  <th scope="row" dir="auto">{item.quality}</th>
-                  <td className={item.coverage === "missing" ? "nfr__missing" : undefined}>{COVERAGE[item.coverage]}</td>
+                  <th scope="row" dir="auto">
+                    {item.quality}
+                    <span className="secondary govtable__by nfr__defined-inline">{COVERAGE[item.coverage]}</span>
+                  </th>
+                  <td className={item.coverage === "missing" ? "nfr__defined nfr__missing" : "nfr__defined"}>{COVERAGE[item.coverage]}</td>
                   <td dir="auto">
-                    {item.statement ?? <span className="secondary">Nothing</span>}
+                    {item.statement ?? <span className="secondary">Not stated</span>}
                     {item.source && <span className="secondary govtable__by" dir="auto">{item.source}</span>}
                   </td>
                 </tr>
