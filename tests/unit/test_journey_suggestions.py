@@ -77,6 +77,7 @@ from knowledge_portal.infrastructure.architecture.markdown_passages import markd
 from knowledge_portal.infrastructure.architecture.tokenizer import FakeWordTokenizer
 from knowledge_portal.infrastructure.llm.catalogue_extraction import (
     ChangeOutput,
+    DetailedExtractionOutput,
     ExtractionOutput,
     JourneyOutput,
     LeanExtractionOutput,
@@ -86,6 +87,7 @@ from knowledge_portal.infrastructure.llm.catalogue_extraction import (
 )
 from knowledge_portal.infrastructure.llm.catalogue_matching import FakeSystemMatcher
 from knowledge_portal.infrastructure.llm.prompts.catalogue_extraction_prompt import (
+    DETAILED_SYSTEM_PROMPT,
     JOURNEY_RULE,
     LEAN_SYSTEM_PROMPT,
     SYSTEM_PROMPT,
@@ -476,7 +478,7 @@ def test_the_models_journey_is_made_valid_before_anyone_sees_it() -> None:
     assert [(rule.kind, rule.to_activity, rule.condition) for rule in journey.flow_rules] == [
         (FlowRuleKind.LOOP, "10", "Rejected")
     ]
-    assert client.asked == [(SYSTEM_PROMPT, ExtractionOutput)]
+    assert client.asked == [(DETAILED_SYSTEM_PROMPT, DetailedExtractionOutput)]
 
 
 def test_a_small_context_reads_without_journeys_and_says_so() -> None:
@@ -495,12 +497,18 @@ def test_a_small_context_reads_without_journeys_and_says_so() -> None:
         "This model's context is too small to also propose journeys from prose; journeys set "
         "out in tables are still read."
     )
-    # A context with room asks for journeys.
+    # A context with room asks for journeys, and one with ample room for an offering's
+    # details too (ADR-0101, step 4).
     roomy: Any = _Answer(ExtractionOutput(changes=[]))
-    StructuredCatalogueExtractor(roomy, supports_images=False, max_input_tokens=32_000).propose(
+    StructuredCatalogueExtractor(roomy, supports_images=False, max_input_tokens=8192).propose(
         request
     )
     assert roomy.asked == [(SYSTEM_PROMPT, ExtractionOutput)]
+    ample: Any = _Answer(ExtractionOutput(changes=[]))
+    StructuredCatalogueExtractor(ample, supports_images=False, max_input_tokens=32_000).propose(
+        request
+    )
+    assert ample.asked == [(DETAILED_SYSTEM_PROMPT, DetailedExtractionOutput)]
 
 
 def test_a_journey_the_tables_gave_is_not_repeated_from_its_read_rows() -> None:

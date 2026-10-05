@@ -169,3 +169,52 @@ describe("channel suggestions", () => {
     expect(bulkAcceptable(release, [web, named]).lifted).toEqual([named]);
   });
 });
+
+describe("offering detail suggestions", () => {
+  const detailed = (match: Suggestion["match"], tracking = true) =>
+    suggestion(
+      {
+        kind: "product", system_id: "office", name: "Office Connect",
+        product: {
+          id: "office", name: "Office Connect", rules: [], values: [], audiences: [],
+          order_types: [{ code: "NEW", name: "New", enabled: true, channels: [] }],
+          components: [{ id: "fibre", name: "Fibre", responsibilities: [], realisation: [{ layer: "cfs", name: "Fibre CFS" }] }],
+          nfrs: [{ quality: "Availability", coverage: "defined" }, { quality: "Security", coverage: "missing" }],
+          tracking: tracking
+            ? {
+                order_types: [], flows: [{ from_system_id: "cwom", to_system_id: "Order Store", label: "Events" }],
+                channels: [{ channel_id: "Business Web", ui_system_id: "Order Portal" }], milestones: [], statuses: [], fallout: [],
+              }
+            : null,
+          lifecycle_notes: [{ id: "renewal", title: "Renewal", order_types: [], channels: ["Shop"], blocks: [] }],
+        },
+      },
+      { match },
+    );
+
+  it("says what an offering holds beyond its parts, whether it adds or replaces one", () => {
+    const words = lexicon(release, []);
+    expect(changeSentence(detailed("new"), words)).toBe(
+      "Adds the offering Office Connect, with realisation, 2 NFRs, order tracking and 1 lifecycle note",
+    );
+    expect(changeSentence(detailed("updates_existing", false), words)).toBe(
+      "Replaces the offering Office Connect with the document's, which includes realisation, 2 NFRs and 1 lifecycle note",
+    );
+  });
+
+  it("waits for the channels its order tracking and lifecycle notes name", () => {
+    expect(waitsFor(detailed("needs_channel"), lexicon(release, []))).toBe("Waits for the channels Business Web, Shop");
+  });
+
+  it("is lifted only once the systems its order tracking names are added", () => {
+    const store = suggestion({ kind: "system", system_id: "Order Store", name: "Order Store" });
+    const portal = suggestion({ kind: "system", system_id: "Order Portal", name: "Order Portal" });
+    const offering = detailed("needs_system");
+    const channels = [
+      suggestion({ kind: "channel", system_id: "Business Web", name: "Business Web", channel: { id: "Business Web", name: "Business Web" } }),
+      suggestion({ kind: "channel", system_id: "Shop", name: "Shop", channel: { id: "Shop", name: "Shop" } }),
+    ];
+    expect(bulkAcceptable(release, [store, ...channels, offering]).lifted).toEqual([]);
+    expect(bulkAcceptable(release, [store, portal, ...channels, offering]).lifted).toEqual([offering]);
+  });
+});

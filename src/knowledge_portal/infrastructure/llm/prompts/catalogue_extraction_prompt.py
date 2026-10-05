@@ -4,7 +4,7 @@ import json
 
 from knowledge_portal.application.ports.catalogue_extractor import ExtractionRequest
 
-PROMPT_VERSION = "catalogue-extraction-v11"
+PROMPT_VERSION = "catalogue-extraction-v12"
 
 # A journey is the largest answer shape. A model whose context leaves too little room for
 # it reads without it (ADR-0096): LEAN_SYSTEM_PROMPT and an answer schema without journeys.
@@ -16,6 +16,23 @@ performs it, supporting systems, its system function, the channels it happens in
 document limits it to some, and channel_entry true when the channel the order came through \
 performs it rather than a named system) and only the rules that leave the main order: a \
 decision, a loop back, or a parallel track with the activity where it rejoins."""
+
+# An offering's details (ADR-0101, step 4) cost the most room of all: only a context with
+# ample room asks for them (DETAILED_SYSTEM_PROMPT); tables still give them.
+DETAIL_RULE = """ In the offering also give, only where the document says: per component, what \
+it is realised as (realisation: the layer, cfs for what the customer is sold, rfs for what \
+delivers it or resource for what it runs on, and the name); its non-functional requirements \
+(nfrs: the quality, such as Availability, whether the document defines, partly defines or \
+leaves it missing, and the statement); its order tracking (tracking: the order types it is \
+specified for, each flow of order or milestone events from one system to another and the \
+interface used, per channel the correlation key tying its order to the fulfilment order, the \
+system the customer follows the order in and the system and interface it reads from, the \
+milestones the customer sees, internal statuses, and what makes an order fall out with how it \
+is handled); and its lifecycle notes (lifecycle_notes: what happens to it once sold, such as \
+an up/downgrade matrix, renewal or cessation, each a title, the order types and channels it \
+concerns when the document limits it, and its content as the document sets it out, in \
+paragraphs, lists and tables, to_verify true for content the document says is carried over \
+from another source or to re-verify)."""
 
 # Channels likewise: only the full prompt proposes them (ADR-0101); tables still give them.
 CHANNEL_RULE = """
@@ -64,7 +81,7 @@ specific domain it sits in (domain) and, for a sub-domain, the domain that holds
 channels each is ordered through, if stated), components \
 and, per component, the systems that deliver it (system, role, what it does, order types), \
 its values and audiences. Confidence only where the document marks it. One per offering per \
-answer; parts read elsewhere are merged.{journey}{channel}
+answer; parts read elsewhere are merged.{details}{journey}{channel}
 
 Every item has a basis:
 - "stated": the document says it outright ("A depends on B", "A calls B").
@@ -124,8 +141,19 @@ short passage is about, but quote only from the segment's text.
 a stated item.
 - Return an empty list when the document describes no catalogue content."""
 
-SYSTEM_PROMPT = _SYSTEM_PROMPT.replace("{journey}", JOURNEY_RULE).replace("{channel}", CHANNEL_RULE)
-LEAN_SYSTEM_PROMPT = _SYSTEM_PROMPT.replace("{journey}", "").replace("{channel}", "")
+DETAILED_SYSTEM_PROMPT = (
+    _SYSTEM_PROMPT.replace("{details}", DETAIL_RULE)
+    .replace("{journey}", JOURNEY_RULE)
+    .replace("{channel}", CHANNEL_RULE)
+)
+SYSTEM_PROMPT = (
+    _SYSTEM_PROMPT.replace("{details}", "")
+    .replace("{journey}", JOURNEY_RULE)
+    .replace("{channel}", CHANNEL_RULE)
+)
+LEAN_SYSTEM_PROMPT = (
+    _SYSTEM_PROMPT.replace("{details}", "").replace("{journey}", "").replace("{channel}", "")
+)
 
 
 def build_user_prompt(request: ExtractionRequest) -> str:

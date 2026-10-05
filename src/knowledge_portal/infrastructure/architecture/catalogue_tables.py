@@ -7,6 +7,11 @@ another table names. Reading those cells directly gives every row, cited by its
 own line, the same way each time. The model still reads everything else, and the
 system rows' Function cells for capabilities, which need wording.
 
+A product section's details are read the same way (requirement-portal ADR-0101, step 4):
+its realisation and NFR tables, the tables and notes under its "Order tracking" heading,
+and each "Lifecycle: <title>" section as one lifecycle note, its paragraphs, lists and
+tables in the order the document sets them out.
+
 Only rows that carry their cells are read here (Markdown tables, ADR-0090).
 Nothing is decided: every result is a suggestion a maintainer reviews.
 """
@@ -15,6 +20,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field, replace
+from typing import Any
 
 from knowledge_portal.application.ports.catalogue_extractor import (
     CatalogueExtractionError,
@@ -41,20 +47,36 @@ from knowledge_portal.domain.architecture.knowledge import (
     InvalidKnowledgeError,
     RelationshipKind,
 )
+from knowledge_portal.domain.architecture.lifecycle import (
+    LifecycleNote,
+    NoteBlock,
+    NoteBlockKind,
+)
 from knowledge_portal.domain.architecture.products import (
     ComponentResponsibility,
     OfferingComponent,
+    OfferingNfr,
     OfferingPoint,
     OrderType,
     ProductOffering,
+    Realisation,
     SourceConfidence,
     find_offering_component,
     find_order_type,
+    nfr_coverage,
+    realisation_layer,
+)
+from knowledge_portal.domain.architecture.tracking import (
+    FalloutCase,
+    OrderTracking,
+    TrackingChannel,
+    TrackingEvent,
+    TrackingFlow,
 )
 from knowledge_portal.infrastructure.llm.catalogue_extraction import plain_name, slug
 
 READER = "catalogue-table-reader"
-READER_VERSION = "catalogue-tables-v5"
+READER_VERSION = "catalogue-tables-v6"
 # An Integrations entry longer than this is a phrase ("Same service context as
 # B2B Web"), not the name of a system.
 _MAX_ENTRY_WORDS = 4
@@ -238,7 +260,14 @@ def _proposed(
 
 class CatalogueTableReader:
     def read(self, request: ExtractionRequest) -> TableReading:
-        rows = [row for row in map(_row, request.segments) if row.values]
+        # A product's tracking and lifecycle tables are its own: their "Channel" or "From"
+        # columns never make a channel or a dependency.
+        details = {item.number for item in request.segments if _detail(item) is not None}
+        rows = [
+            row
+            for row in map(_row, request.segments)
+            if row.values and row.segment.number not in details
+        ]
         names = _Names(request)
         reading = TableReading()
         landscape = _Landscape()
@@ -474,6 +503,12 @@ _ROLE = frozenset({"role"})
 _RESPONSIBILITY = frozenset({"responsibility"})
 _ORDER_TYPES = frozenset({"order types"})
 _CONFIDENCE = {"CONFIRMED": "confirmed", "INFERRED": "inferred", "GAP": "gap"}
+# A component's realisation, and the offering's NFRs (ADR-0101, step 4).
+_LAYER = frozenset({"layer", "realisation layer", "realization layer"})
+_REALISED = frozenset({"realised as", "realized as", "realisation", "realization"})
+_QUALITY = frozenset({"quality", "nfr", "quality attribute", "non functional requirement"})
+_COVERAGE = frozenset({"coverage"})
+_STATEMENT = frozenset({"statement", "requirement", "target"})
 
 
 def _product_name(segment: ExtractionSegment) -> str | None:
@@ -512,7 +547,22 @@ class _OfferingSection:
         proposition: list[str] = []
         rules: list[str] = []
         order_keys: dict[str, str] = {}
+        layers: list[tuple[str, Realisation]] = []
+        nfrs: dict[str, OfferingNfr] = {}
+        tracking: list[tuple[ExtractionSegment, tuple[str, ...]]] = []
+        notes: dict[str, _NoteSection] = {}
         for segment in self.segments:
+            detail = _detail(segment)
+            if detail is not None:
+                reading.consumed.add(segment.number)
+                kind, title, below = detail
+                if kind == "tracking":
+                    tracking.append((segment, below))
+                else:
+                    notes.setdefault(title.casefold(), _NoteSection(title)).parts.append(
+                        (segment, below)
+                    )
+                continue
             if not segment.cells:
                 text = segment.text.strip()
                 if _RULES.match(text):
@@ -527,7 +577,37 @@ class _OfferingSection:
             row = _row(segment)
             columns = frozenset(row.values)
             # An offering keeps a known gap as one, rather than leaving the row out.
-            if columns & _COMPONENT and columns & _SYSTEM and columns & _ROLE:
+            if columns & _COMPONENT and columns & _LAYER:
+                reading.consumed.add(segment.number)
+                written, layer = row.get(_COMPONENT), row.get(_LAYER)
+                realised = row.get(_REALISED) or row.get(_DESCRIPTION)
+                if written and layer and realised:
+                    try:
+                        found = Realisation(
+                            realisation_layer(layer),
+                            realised,
+                            _trust(row),
+                            row.get(_SOURCE) or None,
+                        )
+                    except InvalidKnowledgeError as exc:
+                        reading.notes.append(f"{self.name} › {written}: {exc}")
+                    else:
+                        layers.append((written, found))
+            elif columns & _QUALITY and columns & _COVERAGE:
+                reading.consumed.add(segment.number)
+                quality, coverage = row.get(_QUALITY), row.get(_COVERAGE)
+                if quality and coverage and quality.casefold() not in nfrs:
+                    try:
+                        nfrs[quality.casefold()] = OfferingNfr(
+                            quality,
+                            nfr_coverage(coverage),
+                            row.get(_STATEMENT) or row.get(_DESCRIPTION) or None,
+                            _trust(row),
+                            row.get(_SOURCE) or None,
+                        )
+                    except InvalidKnowledgeError as exc:
+                        reading.notes.append(f"{self.name} › {quality}: {exc}")
+            elif columns & _COMPONENT and columns & _SYSTEM and columns & _ROLE:
                 reading.read.add(segment.number)
                 system = plain_name(row.get(_SYSTEM))
                 delivered = row.get(_COMPONENT)
@@ -608,6 +688,15 @@ class _OfferingSection:
             parts[part_id] = replace(
                 part, responsibilities=(*part.responsibilities, replace(duty, order_types=known))
             )
+        for written, realisation in layers:
+            part_id = by_name.get(written.casefold()) or slug(written)
+            part = parts.get(part_id) or OfferingComponent(part_id, written)
+            key = (realisation.layer, realisation.name.casefold())
+            if all((item.layer, item.name.casefold()) != key for item in part.realisation):
+                parts[part_id] = replace(part, realisation=(*part.realisation, realisation))
+        orders_named = _OrderNames(self.name, order_keys, reading)
+        tracked = _tracking(self.name, tracking, names, orders_named, reading)
+        noted = _notes(self.name, notes, orders_named, reading)
         code = facts.get(_CODE) if facts else ""
         try:
             offering = ProductOffering(
@@ -625,11 +714,14 @@ class _OfferingSection:
                 audiences=tuple(audiences),
                 confidence=_trust(facts) if facts else None,
                 source=(facts.get(_SOURCE) if facts else "") or None,
+                nfrs=tuple(nfrs.values()),
+                tracking=tracked,
+                lifecycle_notes=noted,
             )
         except InvalidKnowledgeError as exc:
             reading.notes.append(f"The product offering {self.name} could not be read: {exc}")
             return None
-        if not (orders or parts or values or audiences or facts):
+        if not (orders or parts or values or audiences or facts or nfrs or tracked or noted):
             return None
         cited = self.heading or (self.segments[0] if self.segments else None)
         if cited is None:
@@ -661,6 +753,378 @@ def _offering_sections(segments: tuple[ExtractionSegment, ...]) -> list[_Offerin
         if name is not None:
             sections.setdefault(name.casefold(), _OfferingSection(name)).segments.append(segment)
     return list(sections.values())
+
+
+# Offering details: order tracking and lifecycle notes (ADR-0101, step 4) ------------------
+
+_TRACKING_HEADING = re.compile(r"^(?:order\s+)?tracking\b", re.IGNORECASE)
+_NOTE_HEADING = re.compile(r"^lifecycle(?:\s+note)?\s*:\s*(?P<title>\S.*)$", re.IGNORECASE)
+_NOTES_HEADING = re.compile(r"^lifecycle(?:\s+notes)?$", re.IGNORECASE)
+# A sub-heading saying its content is carried over from another source, to re-verify.
+_REVERIFY = re.compile(r"\bre-?verify\b|\bto verify\b|\bcarr(?:y|ied)[- ]over\b", re.IGNORECASE)
+# "- **Kind:** Change" or "Applies to: New Activation".
+_FACT = re.compile(
+    r"^\s*(?:[-*+]\s+)?"
+    r"(?:\*\*(?P<bold>[^*]+?)\s*:?\s*\*\*\s*:?|(?P<plain>[A-Za-z][\w /-]{0,30}?)\s*:)"
+    r"\s*(?P<value>.*)$"
+)
+_NOT_DEFINED = re.compile(r"\bnot defined\b|\bundefined\b|^tbd$", re.IGNORECASE)
+_ITEM = re.compile(r"^\s*(?:[-+*]|\d{1,9}[.)])\s+(?P<item>.*)$")
+_TRACKING_FACTS = frozenset(
+    {"applies to", "order types", "scope", "scope note", "not tracked", "not applicable"}
+    | {"evidence", "source"}
+)
+_NOTE_FACTS = frozenset(
+    {"kind", "order types", "for order types", "channels", "only in", "evidence", "source"}
+    | {"summary"}
+)
+_WHAT = frozenset({"what", "carries", "event", "events", "label"})
+_TRACKED_IN = frozenset({"tracked in", "tracking screen", "tracking ui", "ui", "ui system"})
+_READ_FROM = frozenset({"read from", "reads from", "read system"})
+_READ_OVER = frozenset({"read over", "read through", "read interface", "read api"})
+_STORY = frozenset({"story", "how"})
+_UI_NOTE = frozenset({"ui note", "note"})
+_MILESTONE = frozenset({"milestone", "customer milestone"})
+_STATUS = frozenset({"status", "internal status"})
+_FALLOUT = frozenset({"fallout", "trigger", "fallout trigger"})
+_HANDLING = frozenset({"handling", "what happens", "then"})
+_DETAIL = frozenset({"detail", "description", "shown"})
+
+
+def _detail(segment: ExtractionSegment) -> tuple[str, str, tuple[str, ...]] | None:
+    """The detail of a product section a segment belongs to, with the headings below it:
+    ("tracking", "", below) under an "Order tracking" heading, ("note", title, below) in a
+    "Lifecycle: <title>" section or under a "Lifecycle notes" heading's own sub-heading."""
+    section = tuple(plain_name(heading) for heading in segment.section)
+    start = next(
+        (index for index, heading in enumerate(section) if _PRODUCT_HEADING.match(heading)), None
+    )
+    if start is None:
+        return None
+    for index in range(start + 1, len(section)):
+        heading = section[index]
+        if match := _NOTE_HEADING.match(heading):
+            return "note", match["title"].strip(), section[index + 1 :]
+        if _NOTES_HEADING.match(heading) and index + 1 < len(section):
+            return "note", section[index + 1], section[index + 2 :]
+        if _TRACKING_HEADING.match(heading):
+            return "tracking", "", section[index + 1 :]
+    return None
+
+
+def _facts(text: str, known: frozenset[str]) -> dict[str, str] | None:
+    """A paragraph of "Key: value" lines, every key one of ``known``; None when it is prose."""
+    found: dict[str, str] = {}
+    for line in (item for item in text.splitlines() if item.strip()):
+        match = _FACT.match(line)
+        key = _column(match["bold"] or match["plain"]) if match else ""
+        if key not in known:
+            return None
+        found[key] = match["value"].strip() if match else ""
+    return found or None
+
+
+def _named(value: str) -> list[str]:
+    """The names a fact lists, "New Activation; Cessation." as two."""
+    return [item.rstrip(".").strip() for item in _entries(value) if item.rstrip(".").strip()]
+
+
+def _items(text: str) -> list[str] | None:
+    """A Markdown list's items, or None when the paragraph is not a list."""
+    lines = [line for line in text.splitlines() if line.strip()]
+    matches = [_ITEM.match(line) for line in lines]
+    if not lines or not matches[0]:
+        return None
+    items: list[str] = []
+    for line, match in zip(lines, matches, strict=True):
+        if match:
+            items.append(match["item"].strip())
+        elif items:
+            # A wrapped line continues the item above it.
+            items[-1] = f"{items[-1]} {line.strip()}"
+    return [item for item in items if item]
+
+
+def _evidence(value: str) -> tuple[SourceConfidence | None, str | None]:
+    """ "CONFIRMED — SDD §10" as a confidence and a source."""
+    if not value:
+        return None, None
+    parts = _DASH.split(value, maxsplit=1)
+    found = _CONFIDENCE.get(parts[0].strip().upper())
+    if found is None:
+        return None, value.strip()
+    return SourceConfidence(found), (_value(parts[1]) if len(parts) > 1 else None)
+
+
+class _OrderNames:
+    """The order types a detail names, as the offering's codes; a name it lacks is noted."""
+
+    def __init__(self, offering: str, keys: dict[str, str], reading: TableReading) -> None:
+        self._offering = offering
+        self._codes = {_order_key(key): code for key, code in keys.items()}
+        self._reading = reading
+
+    def codes(self, written: list[str], where: str) -> tuple[str, ...] | None:
+        """The codes of the order types written; None when none is the offering's, since
+        naming none would mean every one."""
+        codes: list[str] = []
+        for name in written:
+            code = self._codes.get(_order_key(name))
+            if code is None:
+                self._reading.notes.append(
+                    f"{self._offering} › {where} names the order type {name!r}, which the "
+                    "offering does not have; it was left out."
+                )
+            else:
+                codes.append(code)
+        if written and not codes:
+            return None
+        return tuple(dict.fromkeys(codes))
+
+
+def _order_key(value: str) -> str:
+    return "".join(re.findall(r"[^\W_]", value.casefold()))
+
+
+def _tracking(
+    offering: str,
+    parts: list[tuple[ExtractionSegment, tuple[str, ...]]],
+    names: _Names,
+    orders: _OrderNames,
+    reading: TableReading,
+) -> OrderTracking | None:
+    """The tables and notes under a product's "Order tracking" heading as its tracking."""
+    if not parts:
+        return None
+    flows: list[TrackingFlow] = []
+    channels: dict[str, TrackingChannel] = {}
+    milestones: dict[str, TrackingEvent] = {}
+    statuses: dict[str, TrackingEvent] = {}
+    fallout: list[FalloutCase] = []
+    applies: list[str] = []
+    scope: list[str] = []
+    absent: list[str] = []
+    trust: SourceConfidence | None = None
+    source: str | None = None
+    titles = {below[-1] for _, below in parts if below}
+
+    def system(cell: str) -> str | None:
+        name = plain_name(cell)
+        return names.resolve(name) if name else None
+
+    for segment, _ in parts:
+        if not segment.cells:
+            text = segment.text.strip()
+            if plain_name(text) in titles:
+                continue
+            facts = _facts(text, _TRACKING_FACTS)
+            if facts is None:
+                scope.append(text)
+                continue
+            for key, value in facts.items():
+                if key in {"applies to", "order types"}:
+                    applies.extend(_named(value))
+                elif key in {"scope", "scope note"}:
+                    scope.append(value)
+                elif key in {"not tracked", "not applicable"}:
+                    absent.append(value)
+                elif key == "evidence":
+                    trust, source = _evidence(value)
+                elif key == "source":
+                    source = value or None
+            continue
+        row = _row(segment)
+        columns = frozenset(row.values)
+        evidence = (_trust(row), row.get(_SOURCE) or None)
+        try:
+            if columns & _FROM and columns & _TO:
+                start, end, label = system(row.get(_FROM)), system(row.get(_TO)), row.get(_WHAT)
+                if start and end and label:
+                    flows.append(
+                        TrackingFlow(start, end, label, row.get(_INTERFACE) or None, *evidence)
+                    )
+            elif columns & _CHANNEL:
+                channel = plain_name(row.get(_CHANNEL))
+                if channel and channel.casefold() not in channels:
+                    channels[channel.casefold()] = TrackingChannel(
+                        channel,
+                        # A key the source says it does not define is no key.
+                        correlation_key=(
+                            None
+                            if _NOT_DEFINED.search(row.get(_CORRELATION))
+                            else row.get(_CORRELATION) or None
+                        ),
+                        ui_system_id=system(row.get(_TRACKED_IN)),
+                        story=row.get(_STORY) or None,
+                        read_system_id=system(row.get(_READ_FROM)),
+                        read_interface=row.get(_READ_OVER) or None,
+                        ui_note=row.get(_UI_NOTE) or None,
+                        confidence=evidence[0],
+                        source=evidence[1],
+                    )
+            elif columns & _MILESTONE:
+                label = row.get(_MILESTONE)
+                if label and label.casefold() not in milestones:
+                    milestones[label.casefold()] = TrackingEvent(
+                        label, row.get(_DETAIL) or None, system(row.get(_SYSTEM)), *evidence
+                    )
+            elif columns & _FALLOUT:
+                trigger = row.get(_FALLOUT)
+                if trigger:
+                    fallout.append(FalloutCase(trigger, row.get(_HANDLING) or None, *evidence))
+            elif columns & _STATUS:
+                label = row.get(_STATUS)
+                if label and label.casefold() not in statuses:
+                    statuses[label.casefold()] = TrackingEvent(
+                        label, row.get(_DETAIL) or None, None, *evidence
+                    )
+        except InvalidKnowledgeError as exc:
+            reading.notes.append(f"{offering} › order tracking, {segment.location}: {exc}")
+    codes = orders.codes(applies, "order tracking")
+    if codes is None:
+        reading.notes.append(
+            f"{offering} › order tracking was left out: it names none of the offering's "
+            "order types."
+        )
+        return None
+    if not (flows or channels or milestones or statuses or fallout or scope or absent):
+        return None
+    return OrderTracking(
+        order_types=codes,
+        scope_note="\n\n".join(scope) or None,
+        not_applicable_note="\n\n".join(absent) or None,
+        flows=tuple(flows),
+        channels=tuple(channels.values()),
+        milestones=tuple(milestones.values()),
+        statuses=tuple(statuses.values()),
+        fallout=tuple(fallout),
+        confidence=trust,
+        source=source,
+    )
+
+
+@dataclass
+class _NoteSection:
+    """One lifecycle note of a product section, and its segments in document order."""
+
+    title: str
+    parts: list[tuple[ExtractionSegment, tuple[str, ...]]] = field(default_factory=list)
+
+
+def _note_blocks(note: _NoteSection) -> tuple[dict[str, str], str | None, list[NoteBlock]]:
+    """A note's facts, its summary, and its parts as the document sets them out.
+
+    Facts and the summary are what sits straight under the note's heading before any
+    part. A sub-heading names the first part below it, and one saying its content is
+    carried over or to re-verify marks every part below it so. The rows of one table
+    are one part.
+    """
+    facts: dict[str, str] = {}
+    summary: str | None = None
+    drafts: list[dict[str, Any]] = []
+    titles = {below[-1] for _, below in note.parts if below}
+    titled: set[tuple[str, ...]] = set()
+
+    def start(below: tuple[str, ...], **values: Any) -> dict[str, Any]:
+        title = below[-1] if below and below not in titled else None
+        titled.add(below)
+        draft = {
+            "title": title,
+            "to_verify": any(_REVERIFY.search(heading) for heading in below),
+            "below": below,
+            **values,
+        }
+        drafts.append(draft)
+        return draft
+
+    for segment, below in note.parts:
+        if segment.cells:
+            columns = tuple(name for name, _ in segment.cells)
+            cells = tuple(value.replace("\\|", "|").strip() for _, value in segment.cells)
+            last = drafts[-1] if drafts else None
+            if (
+                last is not None
+                and last["kind"] is NoteBlockKind.TABLE
+                and (last["below"], last["columns"]) == (below, columns)
+            ):
+                last["rows"].append(cells)
+            else:
+                start(below, kind=NoteBlockKind.TABLE, columns=columns, rows=[cells])
+            continue
+        text = segment.text.strip()
+        if plain_name(text) in titles:
+            continue
+        lead = not below and not drafts
+        if lead and summary is None and (found := _facts(text, _NOTE_FACTS)) is not None:
+            facts.update(found)
+            continue
+        items = _items(text)
+        if items:
+            start(below, kind=NoteBlockKind.LIST, items=items)
+        elif lead and summary is None:
+            summary = text
+        else:
+            start(below, kind=NoteBlockKind.TEXT, text=text)
+    blocks = [
+        NoteBlock(
+            draft["kind"],
+            title=draft["title"],
+            text=draft.get("text"),
+            items=tuple(draft.get("items", ())),
+            columns=draft.get("columns", ()),
+            rows=tuple(draft.get("rows", ())),
+            to_verify=draft["to_verify"],
+        )
+        for draft in drafts
+    ]
+    return facts, facts.get("summary") or summary, blocks
+
+
+def _notes(
+    offering: str,
+    sections: dict[str, _NoteSection],
+    orders: _OrderNames,
+    reading: TableReading,
+) -> tuple[LifecycleNote, ...]:
+    """Each "Lifecycle: <title>" section as one note; one that cannot be read is noted."""
+    notes: list[LifecycleNote] = []
+    ids: set[str] = set()
+    for section in sections.values():
+        try:
+            facts, summary, blocks = _note_blocks(section)
+            written = _named(facts.get("order types") or facts.get("for order types") or "")
+            codes = orders.codes(written, f"the lifecycle note {section.title}")
+            if codes is None:
+                reading.notes.append(
+                    f"{offering} › the lifecycle note {section.title} was left out: it names "
+                    "none of the offering's order types."
+                )
+                continue
+            trust, source = _evidence(facts.get("evidence", ""))
+            note_id = slug(section.title)
+            while note_id in ids:
+                note_id = f"{note_id}-{len(ids) + 1}"
+            notes.append(
+                LifecycleNote(
+                    note_id,
+                    section.title,
+                    kind=facts.get("kind") or None,
+                    summary=summary,
+                    order_types=codes,
+                    channels=tuple(
+                        dict.fromkeys(_named(facts.get("channels") or facts.get("only in") or ""))
+                    ),
+                    blocks=tuple(blocks),
+                    confidence=trust,
+                    source=facts.get("source") or source,
+                )
+            )
+            ids.add(note_id)
+        except InvalidKnowledgeError as exc:
+            reading.notes.append(
+                f"{offering} › the lifecycle note {section.title} could not be read: {exc}"
+            )
+    return tuple(notes)
 
 
 # Journeys (ADR-0096) -----------------------------------------------------------------------

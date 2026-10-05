@@ -4,7 +4,7 @@
  * Pure functions over the suggestions payload and the draft.
  */
 import type {
-  ArchitectureJob, CatalogueSystem, ExtractionRun, RelationshipKind, Release, Suggestion, SuggestionKind,
+  ArchitectureJob, CatalogueSystem, ExtractionRun, Offering, RelationshipKind, Release, Suggestion, SuggestionKind,
 } from "../api/client";
 
 export type SuggestionState = "ready" | "decide" | "waits" | "present" | "accepted" | "rejected";
@@ -112,6 +112,19 @@ const VERB: Record<RelationshipKind, string> = {
 };
 
 const quoted = (items: string[]) => items.map((item) => `“${item}”`).join(", ");
+const listed = (items: string[]) => (items.length > 1 ? `${items.slice(0, -1).join(", ")} and ${items.at(-1)}` : items[0] ?? "");
+const count = (n: number, one: string) => `${n} ${one}${n === 1 ? "" : "s"}`;
+
+/** What a suggested offering holds beyond its parts and order types (ADR-0101, step 4), so a reviewer sees it. */
+function details(product: Offering | null | undefined): string[] {
+  if (!product) return [];
+  return [
+    product.components.some((part) => (part.realisation ?? []).length > 0) ? "realisation" : "",
+    product.nfrs?.length ? count(product.nfrs.length, "NFR") : "",
+    product.tracking ? "order tracking" : "",
+    product.lifecycle_notes?.length ? count(product.lifecycle_notes.length, "lifecycle note") : "",
+  ].filter(Boolean);
+}
 
 /** The change a suggestion would make, said as a sentence about its system. */
 export function changeSentence(suggestion: Suggestion, words: Lexicon): string {
@@ -138,8 +151,11 @@ export function changeSentence(suggestion: Suggestion, words: Lexicon): string {
       return `Places it in ${words.domain(content.landscape_domain_id ?? "")}`;
     case "landscape_domain":
       return `Adds the landscape domain ${content.name}${content.parent_domain_id ? `, inside ${words.domain(content.parent_domain_id)}` : ""}`;
-    case "product":
-      return replaces ? `Replaces the offering ${content.name} with the document's` : `Adds the offering ${content.name}`;
+    case "product": {
+      const held = listed(details(content.product));
+      if (replaces) return `Replaces the offering ${content.name} with the document's${held ? `, which includes ${held}` : ""}`;
+      return `Adds the offering ${content.name}${held ? `, with ${held}` : ""}`;
+    }
     case "journey":
       return replaces
         ? `Replaces the journey ${content.journey?.name ?? content.name} with the document's`
@@ -316,10 +332,17 @@ function provides(suggestion: Suggestion): string[] {
   }
 }
 
-/** The channels an offering's order types or a journey's steps name. */
+/** The channels an offering's order types, order tracking and lifecycle notes, or a journey's steps, name. */
 function channelsNamed(suggestion: Suggestion): string[] {
   const { content } = suggestion;
-  if (content.kind === "product") return (content.product?.order_types ?? []).flatMap((type) => type.channels ?? []);
+  if (content.kind === "product") {
+    const product = content.product;
+    return [
+      ...(product?.order_types ?? []).flatMap((type) => type.channels ?? []),
+      ...(product?.tracking?.channels ?? []).map((item) => item.channel_id),
+      ...(product?.lifecycle_notes ?? []).flatMap((note) => note.channels ?? []),
+    ];
+  }
   if (content.kind === "journey") return (content.journey?.activities ?? []).flatMap((step) => step.channels ?? []);
   return [];
 }
@@ -342,8 +365,12 @@ function requires(suggestion: Suggestion): string[] {
     case "needs_system":
       if (content.kind === "channel") return [`system:${content.channel?.entry_system_id ?? ""}`];
       if (content.kind === "product") {
+        const tracking = content.product?.tracking;
         return [
           ...(content.product?.components ?? []).flatMap((part) => part.responsibilities.map((item) => `system:${item.system_id}`)),
+          ...(tracking?.flows ?? []).flatMap((flow) => [`system:${flow.from_system_id}`, `system:${flow.to_system_id}`]),
+          ...(tracking?.channels ?? []).flatMap((item) => [item.ui_system_id, item.read_system_id]).filter(Boolean).map((id) => `system:${id}`),
+          ...(tracking?.milestones ?? []).flatMap((item) => (item.system_id ? [`system:${item.system_id}`] : [])),
           ...channels,
         ];
       }
