@@ -2,13 +2,18 @@ import { LogIn, LogOut } from "lucide-react";
 import { type ReactNode, useEffect } from "react";
 
 import { useAuth } from "./authContext";
-import { REQUIREMENT_APP_URL } from "./paths";
+import { BASE, REQUIREMENT_APP_URL } from "./paths";
+
+/** Where a signed-in reader who is not an admin reads the catalogue in service. */
+export const EXPLORER_URL = `${BASE}/explorer`;
 
 /**
  * Nobody reaches a table until the portal knows who they are and that they
  * are a knowledge admin. Each refusal says why and where to go instead.
+ * Someone signed in without the role gets `readers`: the explorer, which
+ * anyone signed in may read (requirement-portal ADR-0101).
  */
-export function Gate({ children }: { children: ReactNode }) {
+export function Gate({ children, readers }: { children: ReactNode; readers?: ReactNode }) {
   const auth = useAuth();
   if (!auth || auth.loading) {
     return (
@@ -17,7 +22,7 @@ export function Gate({ children }: { children: ReactNode }) {
       </Notice>
     );
   }
-  if (auth.denied) return <NoAccess />;
+  if (auth.denied) return auth.reader && readers ? <>{readers}</> : <NoAccess />;
   if (!auth.actor) return <SignIn />;
   return <>{children}</>;
 }
@@ -39,7 +44,7 @@ function Notice({ title, busy = false, children }: { title: string; busy?: boole
   );
 }
 
-function NoAccess() {
+export function NoAccess() {
   const auth = useAuth();
   return (
     <Notice title="This portal is for knowledge admins">
@@ -48,8 +53,9 @@ function NoAccess() {
         so the library and the catalogues stay closed to you here.
       </p>
       <p>
-        You can still read what requirement work relies on: citations and architecture evidence
-        open, read-only, from each requirement in Requirement AI.
+        You can still read the <a href={EXPLORER_URL}>product architecture explorer</a>: for each
+        offering and order type, the journey and the systems that take part. Citations and
+        architecture evidence also open, read-only, from each requirement in Requirement AI.
       </p>
       <p>To curate, ask your platform administrator to add you to the knowledge-admins group.</p>
       <p className="notice__actions">
@@ -71,7 +77,10 @@ function SignIn() {
   return (
     <Notice title={auth?.sessionExpired ? "Your session has ended" : "Sign in to the knowledge portal"}>
       {auth?.error && <p className="notice__error" role="alert">{auth.error}</p>}
-      <p>Use the same account you use for Requirement AI. Only knowledge admins get in.</p>
+      <p>
+        Use the same account you use for Requirement AI. Knowledge admins curate here; anyone
+        signed in can read the product architecture explorer.
+      </p>
       <p className="notice__actions">
         {choices.length > 0 ? choices.map((choice) => (
           <button key={choice.id} type="button" className="notice__primary" onClick={() => void auth?.signIn(choice.id)}>

@@ -16,12 +16,14 @@ import "./styles/timetable.css";
 import "./styles/library.css";
 import "./styles/catalogue.css";
 import "./styles/squads.css";
+import "./styles/explorer.css";
 
 import { ApiError } from "./api/errors";
 import { App } from "./app/App";
 import { AuthProvider } from "./auth/AuthProvider";
 import { Gate } from "./auth/Gate";
 import { BASE } from "./auth/paths";
+import { ReaderApp } from "./explorer/ReaderApp";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,7 +43,13 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Gate>
+        <Gate
+          readers={
+            <BrowserRouter basename={BASE || "/"}>
+              <ReaderApp />
+            </BrowserRouter>
+          }
+        >
           <BrowserRouter basename={BASE || "/"}>
             <App />
           </BrowserRouter>

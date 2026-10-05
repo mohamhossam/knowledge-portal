@@ -30,6 +30,20 @@ class ResolveCurrentActor:
         return actor
 
 
+class ResolveSignedInActor:
+    """Authenticate anyone signed in, admin or not, for what every signed-in person may read.
+
+    Only the product architecture explorer uses it (requirement-portal ADR-0101). It admits
+    no one to curation and remembers no one: the directory holds admitted admins only.
+    """
+
+    def __init__(self, identity: IdentityProviderPort) -> None:
+        self._identity = identity
+
+    def execute(self, credential: IdentityCredential) -> ActorProfile:
+        return self._identity.authenticate(credential)
+
+
 class SearchKnownActors:
     def __init__(self, actors: ActorDirectoryPort) -> None:
         self._actors = actors

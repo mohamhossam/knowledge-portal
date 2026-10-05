@@ -3,6 +3,11 @@
 Internal operations (ADR-0099) are the one other kind: they resolve an
 authenticated *service* caller instead, and never a user.
 
+The product architecture explorer's read operations resolve a signed-in user
+without requiring the knowledge_admin role (requirement-portal ADR-0101). They
+are listed here, so opening another operation to non-admins is a deliberate
+change to this list.
+
 Authentication is attached per router, so a new router that forgets the
 dependency would silently expose its operations. This walks the dependency tree
 FastAPI actually executes for each route, router-level dependencies included.
@@ -13,6 +18,7 @@ from fastapi.routing import APIRoute, iter_route_contexts
 
 from knowledge_portal.interfaces.api.dependencies import (
     get_current_actor,
+    get_signed_in_actor,
     require_service_caller,
 )
 from knowledge_portal.interfaces.api.main import create_app
@@ -24,13 +30,19 @@ PUBLIC_OPERATIONS = {
     ("GET", "/identity/config"),
 }
 
+# Signed in, but not necessarily a knowledge admin: the explorer reads only.
+READER_OPERATIONS = {
+    ("GET", "/explorer/me"),
+    ("GET", "/explorer/release"),
+}
+
 
 def _resolves(dependant: Dependant, call: object) -> bool:
     return dependant.call is call or any(_resolves(child, call) for child in dependant.dependencies)
 
 
 def _resolves_actor(dependant: Dependant) -> bool:
-    return _resolves(dependant, get_current_actor)
+    return _resolves(dependant, get_current_actor) or _resolves(dependant, get_signed_in_actor)
 
 
 def _service_operations() -> list[tuple[str, str, bool, bool]]:
@@ -88,3 +100,18 @@ def test_every_internal_operation_requires_a_service_caller_and_no_user() -> Non
     assert all(service and not user for _, _, service, user in operations), [
         (method, path) for method, path, service, user in operations if not service or user
     ]
+
+
+def test_only_the_explorer_reads_without_the_admin_role() -> None:
+    application = create_app()
+    readers = {
+        (method, str(context.path))
+        for context in iter_route_contexts(application.routes)
+        if isinstance(context.original_route, APIRoute)
+        and _resolves(context.dependant, get_signed_in_actor)
+        and not _resolves(context.dependant, get_current_actor)
+        for method in sorted(context.methods or ())
+    }
+
+    assert readers == READER_OPERATIONS
+    assert all(method == "GET" for method, _ in readers)

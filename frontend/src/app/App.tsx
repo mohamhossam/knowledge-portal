@@ -24,6 +24,7 @@ import { PeoplePage } from "../squads/PeoplePage";
 import { ProductsPage } from "../squads/ProductsPage";
 import { SquadListPage } from "../squads/SquadListPage";
 import { SquadsPage } from "../squads/SquadsPage";
+import { ExplorerPage } from "../explorer/ExplorerPage";
 import { HomePage } from "./HomePage";
 import { Shell } from "./Shell";
 
@@ -66,6 +67,7 @@ export function App() {
         <Route path="architecture/versions/:releaseId" element={<CataloguePage />}>
           {catalogueRoutes}
         </Route>
+        <Route path="explorer" element={<ExplorerPage linkSystems />} />
         <Route path="squads" element={<SquadsPage />}>
           <Route index element={<ProductsPage />} />
           <Route path="squads" element={<SquadListPage />} />

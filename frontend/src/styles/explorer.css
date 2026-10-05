@@ -1,0 +1,20 @@
+/* The product architecture explorer, inside the Timetable Book (DESIGN.md › Explorer). */
+
+/* The two choices sit side by side under the head, and wrap on phones. */
+.explorer__choose {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--s3) var(--s4);
+  padding-top: var(--s4);
+}
+
+.explorer__choose .field {
+  flex: 0 1 22rem;
+  min-width: 13rem;
+}
+
+/* What the catalogue does not say is due: a curator's to fill (the Weight Is Rank Rule). */
+.explorer__gap {
+  font-weight: var(--w-bold);
+}

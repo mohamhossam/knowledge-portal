@@ -2,7 +2,7 @@ import { Fragment, useEffect, useId, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 
 import type { Offering } from "../api/client";
-import { CONFIDENCE, sentenceCase, systemName } from "./catalogue";
+import { CONFIDENCE, roleLabel, systemName } from "./catalogue";
 import { EditButton, OfferingEdit, WholeRemove } from "./DraftEdits";
 import { useCatalogueContext } from "./useCatalogue";
 
@@ -199,7 +199,7 @@ function OfferingSheet({ offering }: { offering: Offering }) {
                       <ul className="sheet__roles">
                         {part.responsibilities.map((item) => (
                           <li key={`${item.system_id}:${item.role}`}>
-                            <span dir="auto">{sentenceCase(item.role)}</span>:{" "}
+                            <span dir="auto">{roleLabel(item.role)}</span>:{" "}
                             <Link to={`${base}/systems/${encodeURIComponent(item.system_id)}`} dir="auto">
                               {systemName(book, item.system_id)}
                             </Link>

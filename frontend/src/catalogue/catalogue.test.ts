@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { Release } from "../api/client";
 import {
   UNPLACED, allConnections, catalogue, changeSentence, connections, dependsHow, domainPath, findSystems, nextSteps,
-  orderedSteps, phaseRuns, sentenceCase, systemGroups, systemRoles, usedHow,
+  orderedSteps, phaseRuns, roleLabel, sentenceCase, systemGroups, systemRoles, usedHow,
 } from "./catalogue";
 
 const system = (id: string, name: string, extra: object = {}) => ({
@@ -98,6 +98,8 @@ describe("offerings and journeys", () => {
     expect(roles.journeys.map((role) => [role.activity.number, role.performs])).toEqual([["20", false], ["30", true]]);
     expect(sentenceCase("FULFILS")).toBe("Fulfils");
     expect(sentenceCase("Bills")).toBe("Bills");
+    expect(roleLabel("PRIMARY_ORCHESTRATOR")).toBe("Primary orchestrator");
+    expect(roleLabel("Design time")).toBe("Design time");
   });
 
   it("orders steps by number, groups consecutive phases, and says where a step branches", () => {

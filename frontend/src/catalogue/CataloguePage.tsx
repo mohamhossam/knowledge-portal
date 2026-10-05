@@ -154,6 +154,8 @@ function SubIndex({ base, inService, draft }: { base: string; inService: boolean
     { label: "Domains", to: `${base}/domains`, current: pathname.startsWith(`${base}/domains`) },
     { label: "Offerings", to: `${base}/offerings`, current: pathname.startsWith(`${base}/offerings`) },
     { label: "Journeys", to: `${base}/journeys`, current: pathname.startsWith(`${base}/journeys`) },
+    // The explorer reads the version in service only.
+    ...(inService ? [{ label: "Explorer", to: "/explorer", current: false }] : []),
     ...(draft
       ? [
           { label: "Sources", to: `${base}/sources`, current: pathname.startsWith(`${base}/sources`) },
