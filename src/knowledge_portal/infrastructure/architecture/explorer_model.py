@@ -7,8 +7,10 @@ the file against a draft and imports it, and from then on the catalogue is the o
 home of these facts (requirement-portal ADR-0101).
 
 It is a seed, not a sync. Nothing is invented: a fact the catalogue cannot hold yet
-(plans and prices, lifecycle notes, source levels and conflicts, and so on) is counted
-in the report, not squeezed into a field that means something else. Channels carry
+(lifecycle notes, source levels and conflicts, and so on) is counted in the
+report, not squeezed into a field that means something else. Plans and prices are never
+carried over: the explorer reads them live from the product catalog by the offering's code.
+Channels carry
 over (step 3): each channel with its entry system, the channels each order type can
 be ordered through, the channels each step happens in, and the steps the order's
 channel entry system performs. So do each component's CFS, RFS and resource layers,
@@ -48,13 +50,17 @@ _FULFILMENT = "FULFILMENT"
 _NOT_DEFINED = re.compile(r"not defined", re.IGNORECASE)
 # How far the explorer's sources define an NFR, as the catalogue says it.
 _COVERAGE = {"DEFINED": "defined", "MET": "defined", "PARTIAL": "partial", "GAP": "missing"}
-# What the explorer holds and the catalogue cannot yet, per product.
-_NOT_YET = (
+# What the explorer curated by hand that the product catalog states instead: the explorer
+# reads plans and prices live from it, by the offering's code, and keeps no copy.
+_READ_LIVE = (
     ("planColumns", "plan columns"),
     ("plans", "plans and prices"),
     ("planNotes", "plan notes"),
     ("commitments", "commitments"),
     ("charges", "charges"),
+)
+# What the explorer holds and the catalogue cannot yet, per product.
+_NOT_YET = (
     ("info", "information objects"),
     ("lifecycle", "lifecycle notes"),
     ("crossProduct", "cross-product notes"),
@@ -93,6 +99,7 @@ class _Reader:
         self.names = {item["id"]: item["name"] for item in self.systems}
         self.report: list[str] = []
         self.dropped: Counter[str] = Counter()
+        self.read_live: Counter[str] = Counter()
 
     def read(self) -> ExplorerSeed:
         products = list(self.model.get("products") or ())
@@ -230,6 +237,9 @@ class _Reader:
         for key, label in _NOT_YET:
             if product.get(key):
                 self.dropped[label] += 1
+        for key, label in _READ_LIVE:
+            if product.get(key):
+                self.read_live[label] += 1
         if (product.get("gov") or {}).get("decisions") or (product.get("gov") or {}).get(
             "questions"
         ):
@@ -664,6 +674,11 @@ class _Reader:
             self.dropped["source levels (L1/L2/L3)"] += len(self.sources)
         for label, count in sorted(self.dropped.items()):
             self.report.append(f"Not carried over yet: {label} ({count}).")
+        for label, count in sorted(self.read_live.items()):
+            self.report.append(
+                f"Not carried over: {label} ({count}); the explorer reads them live from the "
+                "product catalog by the offering's code."
+            )
 
 
 def _present(**values: Any) -> dict[str, Any]:

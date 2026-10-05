@@ -53,6 +53,7 @@ from knowledge_portal.infrastructure.config.options import (
     DEFAULT_OPENROUTER_MAX_OUTPUT_TOKENS,
     DEFAULT_OPENROUTER_MODEL,
     DEFAULT_OPENROUTER_TIMEOUT_SECONDS,
+    DEFAULT_PRODUCT_CATALOG_CACHE_SECONDS,
     DEFAULT_PROVIDER_RATE_LIMIT_PER_MINUTE,
     DEFAULT_REQUEST_MAX_BODY_BYTES,
     ConfigurationError,
@@ -60,6 +61,7 @@ from knowledge_portal.infrastructure.config.options import (
     LLMProvider,
     LogFormat,
     PersistenceProvider,
+    ProductCatalogProvider,
 )
 from knowledge_portal.infrastructure.config.settings_validation import validate_settings
 
@@ -186,6 +188,14 @@ class Settings:
     # presents there. Unset, offline fakes stand in for requirement work.
     requirement_api_base_url: str | None = None
     knowledge_service_token: str | None = field(default=None, repr=False)
+    # The product catalog plans and prices are read from, live (requirement-portal
+    # ADR-0101): none, the offline sample, or a TMF620 Product Catalog Management API.
+    product_catalog_provider: ProductCatalogProvider = ProductCatalogProvider.NONE
+    product_catalog_url: str | None = None
+    product_catalog_token: str | None = field(default=None, repr=False)
+    # The productOffering field an offering's code is looked up by; "id" fetches it by id.
+    product_catalog_code_field: str = "id"
+    product_catalog_cache_seconds: int = DEFAULT_PRODUCT_CATALOG_CACHE_SECONDS
 
     def __post_init__(self) -> None:
         validate_settings(self)
@@ -513,4 +523,26 @@ def _operability_from_env() -> dict[str, Any]:
         "requirement_service_token": os.getenv("REQUIREMENT_SERVICE_TOKEN", "").strip() or None,
         "requirement_api_base_url": os.getenv("REQUIREMENT_API_BASE_URL", "").strip() or None,
         "knowledge_service_token": os.getenv("KNOWLEDGE_SERVICE_TOKEN", "").strip() or None,
+        **_product_catalog_from_env(),
+    }
+
+
+def _product_catalog_from_env() -> dict[str, Any]:
+    """Where plans and prices come from; unset, the explorer says no catalog is read."""
+    raw_provider = os.getenv("PRODUCT_CATALOG_PROVIDER", "none").strip().lower() or "none"
+    raw_cache = os.getenv("PRODUCT_CATALOG_CACHE_SECONDS", "").strip()
+    try:
+        provider = ProductCatalogProvider(raw_provider)
+    except ValueError as exc:
+        raise ConfigurationError("PRODUCT_CATALOG_PROVIDER must be none, fake or tmf620.") from exc
+    try:
+        cache = int(raw_cache) if raw_cache else DEFAULT_PRODUCT_CATALOG_CACHE_SECONDS
+    except ValueError as exc:
+        raise ConfigurationError("PRODUCT_CATALOG_CACHE_SECONDS must be a whole number.") from exc
+    return {
+        "product_catalog_provider": provider,
+        "product_catalog_url": os.getenv("PRODUCT_CATALOG_URL", "").strip() or None,
+        "product_catalog_token": os.getenv("PRODUCT_CATALOG_TOKEN", "").strip() or None,
+        "product_catalog_code_field": os.getenv("PRODUCT_CATALOG_CODE_FIELD", "id").strip() or "id",
+        "product_catalog_cache_seconds": cache,
     }

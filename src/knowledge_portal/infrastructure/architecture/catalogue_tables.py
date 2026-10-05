@@ -29,6 +29,7 @@ from knowledge_portal.domain.architecture.candidates import (
     CandidateContent,
     CandidateKind,
 )
+from knowledge_portal.domain.architecture.channels import Channel
 from knowledge_portal.domain.architecture.journeys import (
     Activity,
     ActivityIntegration,
@@ -53,7 +54,7 @@ from knowledge_portal.domain.architecture.products import (
 from knowledge_portal.infrastructure.llm.catalogue_extraction import plain_name, slug
 
 READER = "catalogue-table-reader"
-READER_VERSION = "catalogue-tables-v4"
+READER_VERSION = "catalogue-tables-v5"
 # An Integrations entry longer than this is a phrase ("Same service context as
 # B2B Web"), not the name of a system.
 _MAX_ENTRY_WORDS = 4
@@ -77,6 +78,17 @@ _PAYLOAD = frozenset({"payload"})
 _DOMAIN = frozenset({"domain", "domain name", "landscape domain"})
 _CODE = frozenset({"code"})
 _SUBDOMAIN = frozenset({"sub domain", "subdomain"})
+# Channels (requirement-portal ADR-0101): a Channels table, and the channels an order type
+# or an activity names.
+_CHANNEL = frozenset({"channel", "channel name"})
+_CHANNELS = frozenset({"channels", "channel", "ordered through", "available channels"})
+_ENTRY = frozenset({"entry system", "orders enter through", "enters through", "system"})
+_CHANNEL_KIND = frozenset({"kind", "type", "channel kind", "channel type"})
+_CHANNEL_ENTRY = frozenset({"channel entry"})
+# A performer written as the ordering channel itself rather than a system.
+_BY_CHANNEL = frozenset(
+    {"channel", "the channel", "channel entry system", "entry system", "ordering channel", "entry"}
+)
 _NOTHING = frozenset({"", "-", "—", "–"})
 _VIA = re.compile(r"\s+via\s+", re.IGNORECASE)
 _QUALIFIER = re.compile(r"\s*\([^()]*\)\s*$")
@@ -101,6 +113,13 @@ class _Row:
             return "integration"
         if columns & _NUMBER and columns & _ACTIVITY and columns & _PERFORMER:
             return "activity"
+        # Before "system": a Channels table names the system its orders enter through.
+        if (
+            columns & _CHANNEL
+            and columns & (_ENTRY | _CHANNEL_KIND)
+            and not columns & (_FUNCTION | _INTEGRATIONS | _ALIASES)
+        ):
+            return "channel"
         if columns & _SYSTEM and columns & (_ID | _FUNCTION | _INTEGRATIONS | _ALIASES):
             return "system"
         if columns & _DOMAIN and columns & (_ID | _CODE):
@@ -255,6 +274,12 @@ class CatalogueTableReader:
             )
             reading.changes.append(_proposed(row, content, name))
             reading.changes.extend(self._placement(row, system_id, name, landscape))
+        # A channel names the system its orders enter through, so it is read after them.
+        for row in rows:
+            if row.shape == "channel":
+                reading.consumed.add(row.segment.number)
+                if not row.gap:
+                    reading.changes.extend(self._channel(row, names))
         # Integrations name systems that may appear in later rows, so they are read last.
         for row, system_id, name in systems:
             for entry in _entries(row.get(_INTEGRATIONS)):
@@ -277,6 +302,26 @@ class CatalogueTableReader:
         for journey in _journey_sections(request.segments):
             journey.read_into(reading, names, offerings.get((journey.product or "").casefold()))
         return reading
+
+    def _channel(self, row: _Row, names: _Names) -> list[ProposedChange]:
+        """A row of a Channels table: where orders are placed, and who takes them in."""
+        name = plain_name(row.get(_CHANNEL))
+        if not name:
+            return []
+        entry = plain_name(row.get(_ENTRY))
+        channel = Channel(
+            slug(row.get(_ID) or name),
+            name,
+            kind=row.get(_CHANNEL_KIND) or None,
+            entry_system_id=names.resolve(entry) if entry else None,
+            description=row.get(_DESCRIPTION) or None,
+            confidence=_trust(row),
+            source=row.get(_SOURCE) or None,
+        )
+        content = CandidateContent(
+            CandidateKind.CHANNEL, channel.id, name=channel.name, channel=channel
+        )
+        return [_proposed(row, content, name, entry)]
 
     def _domain(self, row: _Row, landscape: _Landscape) -> list[ProposedChange]:
         """A row of a Domains table: its ID is the domain's key, its code a description."""
@@ -399,6 +444,7 @@ _FROM_CELLS = frozenset(
         CandidateKind.PLACEMENT,
         CandidateKind.PRODUCT,
         CandidateKind.JOURNEY,
+        CandidateKind.CHANNEL,
     }
 )
 
@@ -536,6 +582,7 @@ class _OfferingSection:
                             row.get(_DESCRIPTION) or None,
                             _trust(row),
                             row.get(_SOURCE) or None,
+                            channels=tuple(dict.fromkeys(_entries(row.get(_CHANNELS)))),
                         )
                     )
             elif columns & _VALUE or columns & _AUDIENCE:
@@ -818,7 +865,11 @@ class _JourneySection:
             read.add(number)
             step, name = row.get(_NUMBER), row.get(_ACTIVITY)
             if step and name and step not in steps:
-                performers = _systems(row.get(_PERFORMER), names)
+                by_channel = (
+                    _column(row.get(_PERFORMER)) in _BY_CHANNEL
+                    or _yes(row.get(_CHANNEL_ENTRY)) is True
+                )
+                performers = () if by_channel else _systems(row.get(_PERFORMER), names)
                 steps[step] = Activity(
                     step,
                     name,
@@ -831,6 +882,8 @@ class _JourneySection:
                     customer_visible=_yes(row.get(_VISIBLE)),
                     confidence=_trust(row),
                     source=source,
+                    channels=tuple(dict.fromkeys(_entries(row.get(_CHANNELS)))),
+                    channel_entry=by_channel and not performers,
                 )
         elif row.shape == "integration":
             if row.get(_FROM) and row.get(_TO):

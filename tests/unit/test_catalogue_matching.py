@@ -343,6 +343,7 @@ def _change(**values: Any) -> ChangeOutput:
         "basis": "implied",
         "reasoning": "Order Hub hands invoices to Dynamics CRM, so it relies on it.",
         "relationship_kind": None,
+        "channel_kind": None,
     }
     return ChangeOutput(**(base | values))
 

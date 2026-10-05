@@ -13,6 +13,11 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 from enum import StrEnum
 
+from knowledge_portal.domain.architecture.channels import (
+    Channel,
+    find_channel_among,
+    merge_channels,
+)
 from knowledge_portal.domain.architecture.journeys import Journey, same_journey
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
@@ -47,6 +52,8 @@ class CandidateKind(StrEnum):
     PRODUCT = "product"
     # A whole journey: its activities, rules and integrations, reviewed as one (ADR-0096).
     JOURNEY = "journey"
+    # Where orders are placed, and the system that takes them in (requirement-portal ADR-0101).
+    CHANNEL = "channel"
 
 
 class CandidateStatus(StrEnum):
@@ -68,6 +75,8 @@ class CandidateMatch(StrEnum):
     NEEDS_DOMAIN = "needs_domain"
     # A journey whose product offering, or that offering's order type, the draft does not have.
     NEEDS_OFFERING = "needs_offering"
+    # An offering or journey that names a channel the draft does not have yet.
+    NEEDS_CHANNEL = "needs_channel"
 
 
 class CandidateBasis(StrEnum):
@@ -131,6 +140,8 @@ class CandidateContent:
     - product: the whole ``product`` offering; its id is also the ``system_id``,
       the suggestion's subject
     - journey: the whole ``journey``; its id is also the ``system_id``
+    - channel: the whole ``channel``; its id is also the ``system_id``. Its entry
+      system is named as the document names it until the draft resolves it
     """
 
     kind: CandidateKind
@@ -150,6 +161,7 @@ class CandidateContent:
     parent_domain_id: str | None = None
     product: ProductOffering | None = None
     journey: Journey | None = None
+    channel: Channel | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "kind", CandidateKind(self.kind))
@@ -187,13 +199,15 @@ class CandidateContent:
             raise InvalidKnowledgeError("Only a product offering suggestion holds an offering.")
         if (self.journey is not None) != (self.kind is CandidateKind.JOURNEY):
             raise InvalidKnowledgeError("Only a journey suggestion holds a journey.")
+        if (self.channel is not None) != (self.kind is CandidateKind.CHANNEL):
+            raise InvalidKnowledgeError("Only a channel suggestion holds a channel.")
         if self.kind in _PLACING:
             _required(self.landscape_domain_id or "", "Landscape domain")
         if self.kind is CandidateKind.LANDSCAPE_DOMAIN:
             _required(self.name, "Landscape domain name")
             if self.parent_domain_id == self.landscape_domain_id:
                 raise InvalidKnowledgeError("A landscape domain cannot be its own parent.")
-        elif self.kind in _WHOLE or self.kind is CandidateKind.PLACEMENT:
+        elif self.kind in _WHOLE or self.kind in {CandidateKind.PLACEMENT, CandidateKind.CHANNEL}:
             pass
         elif self.kind is CandidateKind.SYSTEM:
             _required(self.name, "System name")
@@ -351,6 +365,64 @@ def find_landscape_domain(release: ArchitectureKnowledge, reference: str) -> Lan
         if _words(item.name) == _words(reference) or _words(item.id) == _words(reference)
     ]
     return named[0] if len(named) == 1 else None
+
+
+def find_channel(release: ArchitectureKnowledge, reference: str) -> Channel | None:
+    """A draft channel named by id or, when only one has it, by name."""
+    return find_channel_among(release.channels, reference)
+
+
+def _channel_ids(
+    references: tuple[str, ...], release: ArchitectureKnowledge, missing: list[str]
+) -> tuple[str, ...]:
+    """Channel references as the draft's ids; those it does not have are kept and noted."""
+    resolved = []
+    for reference in references:
+        found = find_channel(release, reference)
+        if found is None:
+            missing.append(reference)
+        resolved.append(found.id if found is not None else reference)
+    return tuple(dict.fromkeys(resolved))
+
+
+def _offering_channels(
+    offering: ProductOffering, release: ArchitectureKnowledge
+) -> tuple[ProductOffering, tuple[str, ...]]:
+    """The offering's order types naming the draft's channels by id, and the channels it lacks."""
+    missing: list[str] = []
+    order_types = tuple(
+        replace(item, channels=_channel_ids(item.channels, release, missing))
+        for item in offering.order_types
+    )
+    return replace(offering, order_types=order_types), tuple(dict.fromkeys(missing))
+
+
+def _journey_channels(
+    journey: Journey, release: ArchitectureKnowledge
+) -> tuple[Journey, tuple[str, ...]]:
+    """The journey's steps naming the draft's channels by id, and the channels it lacks."""
+    missing: list[str] = []
+    activities = tuple(
+        replace(item, channels=_channel_ids(item.channels, release, missing))
+        for item in journey.activities
+    )
+    return replace(journey, activities=activities), tuple(dict.fromkeys(missing))
+
+
+def _resolved_channel(
+    channel: Channel, release: ArchitectureKnowledge
+) -> tuple[Channel, str | None]:
+    """The channel naming its entry system by the draft's id, or the name the draft lacks."""
+    if channel.entry_system_id is None:
+        return channel, None
+    system = find_system(release, channel.entry_system_id)
+    if system is None:
+        return channel, channel.entry_system_id
+    return replace(channel, entry_system_id=system.id), None
+
+
+def _current_channel(channel: Channel, release: ArchitectureKnowledge) -> Channel | None:
+    return find_channel(release, channel.id) or find_channel(release, channel.name)
 
 
 def _suggested_domain(
@@ -558,6 +630,9 @@ def classify(content: CandidateContent, release: ArchitectureKnowledge) -> Candi
             return CandidateMatch.NEEDS_OFFERING
         if gaps.components:
             return CandidateMatch.NEEDS_COMPONENT
+        journey, channels = _journey_channels(journey, release)
+        if channels:
+            return CandidateMatch.NEEDS_CHANNEL
         kept = _current_journey(journey, release)
         if kept is None:
             return CandidateMatch.NEW
@@ -567,11 +642,26 @@ def classify(content: CandidateContent, release: ArchitectureKnowledge) -> Candi
         offering, missing = _resolved_offering(content.product, release)
         if missing:
             return CandidateMatch.NEEDS_SYSTEM
+        offering, channels = _offering_channels(offering, release)
+        if channels:
+            return CandidateMatch.NEEDS_CHANNEL
         existing = _current_offering(offering, release)
         if existing is None:
             return CandidateMatch.NEW
         same = replace(offering, id=existing.id) == existing
         return CandidateMatch.ALREADY_PRESENT if same else CandidateMatch.UPDATES_EXISTING
+    if content.kind is CandidateKind.CHANNEL and content.channel is not None:
+        channel, entry = _resolved_channel(content.channel, release)
+        if entry is not None:
+            return CandidateMatch.NEEDS_SYSTEM
+        recorded = _current_channel(channel, release)
+        if recorded is None:
+            return CandidateMatch.NEW
+        return (
+            CandidateMatch.UPDATES_EXISTING
+            if _channel_fill(recorded, channel) != recorded
+            else CandidateMatch.ALREADY_PRESENT
+        )
     if content.kind is CandidateKind.LANDSCAPE_DOMAIN:
         domain = _suggested_domain(content, release)
         if domain is None:
@@ -684,7 +774,9 @@ def open_matches(
 ) -> tuple[PossibleMatch, ...]:
     """The possible matches still to decide: those whose name no draft system answers to yet."""
     content = candidate.content
-    if content.kind is CandidateKind.LANDSCAPE_DOMAIN or content.kind in _WHOLE:
+    if content.kind in {CandidateKind.LANDSCAPE_DOMAIN, CandidateKind.CHANNEL} or (
+        content.kind in _WHOLE
+    ):
         return ()
     if content.kind is CandidateKind.SYSTEM:
         still_new = classify(content, release) is CandidateMatch.NEW
@@ -810,6 +902,33 @@ def _with_domain(
     return release.updated(landscape_domains=(*release.landscape_domains, domain))
 
 
+def _channel_fill(current: Channel, suggested: Channel) -> Channel:
+    """The draft's channel with what the suggestion adds; what a person set is kept."""
+    return merge_channels(current, suggested)
+
+
+def _with_channel(channel: Channel, release: ArchitectureKnowledge) -> ArchitectureKnowledge:
+    """The draft with a suggested channel added, or its gaps filled."""
+    resolved, entry = _resolved_channel(channel, release)
+    if entry is not None:
+        raise CandidateDependencyError(
+            f"Accept or add {entry!r} before the channel {channel.name} whose orders enter "
+            "through it."
+        )
+    current = _current_channel(resolved, release)
+    if current is None:
+        return release.updated(channels=(*release.channels, resolved))
+    filled = _channel_fill(current, resolved)
+    return release.updated(
+        channels=tuple(filled if item.id == current.id else item for item in release.channels)
+    )
+
+
+def _channel_dependency(missing: tuple[str, ...], what: str) -> CandidateDependencyError:
+    names = ", ".join(f"channel {item!r}" for item in missing)
+    return CandidateDependencyError(f"Accept or add {names} before {what} that names them.")
+
+
 def _with_offering(
     offering: ProductOffering, release: ArchitectureKnowledge
 ) -> ArchitectureKnowledge:
@@ -819,6 +938,9 @@ def _with_offering(
             f"Accept or add {', '.join(repr(item) for item in missing)} before the product "
             f"offering {offering.name} that names them."
         )
+    resolved, channels = _offering_channels(resolved, release)
+    if channels:
+        raise _channel_dependency(channels, f"the product offering {offering.name}")
     current = _current_offering(resolved, release)
     if current is None:
         return release.updated(products=(*release.products, resolved))
@@ -840,6 +962,9 @@ def _with_journey(journey: Journey, release: ArchitectureKnowledge) -> Architect
             f"Accept or add {', '.join(missing)} before the journey {journey.name} that names "
             "them, or edit the journey."
         )
+    resolved, channels = _journey_channels(resolved, release)
+    if channels:
+        raise _channel_dependency(channels, f"the journey {journey.name}")
     current = _current_journey(resolved, release)
     if current is None:
         return release.updated(journeys=(*release.journeys, resolved))
@@ -863,6 +988,8 @@ def apply_candidate(
         return _with_journey(content.journey, release)
     if content.kind is CandidateKind.LANDSCAPE_DOMAIN:
         return _with_domain(content, release)
+    if content.kind is CandidateKind.CHANNEL and content.channel is not None:
+        return _with_channel(content.channel, release)
     if content.kind is CandidateKind.SYSTEM:
         existing = find_system(release, content.system_id) or find_system(release, content.name)
         arabic = (content.name_ar,) if content.name_ar else ()

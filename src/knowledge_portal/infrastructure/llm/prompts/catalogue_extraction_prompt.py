@@ -4,7 +4,7 @@ import json
 
 from knowledge_portal.application.ports.catalogue_extractor import ExtractionRequest
 
-PROMPT_VERSION = "catalogue-extraction-v10"
+PROMPT_VERSION = "catalogue-extraction-v11"
 
 # A journey is the largest answer shape. A model whose context leaves too little room for
 # it reads without it (ADR-0096): LEAN_SYSTEM_PROMPT and an answer schema without journeys.
@@ -12,8 +12,17 @@ JOURNEY_RULE = """
 - journey: the ordered activities that fulfil an order, such as "New Activation" (name; leave \
 "system" empty). In "journey" give the product offering and order type it is for when the \
 document says, each activity (number, name, track such as MAIN or FIELD, the system that \
-performs it, supporting systems, its system function) and only the rules that leave the main \
-order: a decision, a loop back, or a parallel track with the activity where it rejoins."""
+performs it, supporting systems, its system function, the channels it happens in when the \
+document limits it to some, and channel_entry true when the channel the order came through \
+performs it rather than a named system) and only the rules that leave the main order: a \
+decision, a loop back, or a parallel track with the activity where it rejoins."""
+
+# Channels likewise: only the full prompt proposes them (ADR-0101); tables still give them.
+CHANNEL_RULE = """
+- channel: where orders are placed, such as a web portal, an app or an assisted sales tool \
+(name; leave "system" empty), its kind (channel_kind, such as Digital or Assisted) and the \
+system its orders enter through (target_system) only if stated. A row of a Channels table is \
+one channel. Never propose a channel as a system or a dependency."""
 
 _SYSTEM_PROMPT = """You read architecture documents and propose entries for an architecture \
 catalogue. A human maintainer reviews every proposal before anything changes.
@@ -51,10 +60,11 @@ the landscape, not business processes, teams or products.
 specific domain it sits in (domain) and, for a sub-domain, the domain that holds it \
 (parent_domain).
 - product_offering: a product the business sells, such as "Business Pro Plus" (name; leave \
-"system" empty). Put what the segments say in "offering": its facts, order types, components \
+"system" empty). Put what the segments say in "offering": its facts, order types (and the \
+channels each is ordered through, if stated), components \
 and, per component, the systems that deliver it (system, role, what it does, order types), \
 its values and audiences. Confidence only where the document marks it. One per offering per \
-answer; parts read elsewhere are merged.{journey}
+answer; parts read elsewhere are merged.{journey}{channel}
 
 Every item has a basis:
 - "stated": the document says it outright ("A depends on B", "A calls B").
@@ -114,8 +124,8 @@ short passage is about, but quote only from the segment's text.
 a stated item.
 - Return an empty list when the document describes no catalogue content."""
 
-SYSTEM_PROMPT = _SYSTEM_PROMPT.replace("{journey}", JOURNEY_RULE)
-LEAN_SYSTEM_PROMPT = _SYSTEM_PROMPT.replace("{journey}", "")
+SYSTEM_PROMPT = _SYSTEM_PROMPT.replace("{journey}", JOURNEY_RULE).replace("{channel}", CHANNEL_RULE)
+LEAN_SYSTEM_PROMPT = _SYSTEM_PROMPT.replace("{journey}", "").replace("{channel}", "")
 
 
 def build_user_prompt(request: ExtractionRequest) -> str:

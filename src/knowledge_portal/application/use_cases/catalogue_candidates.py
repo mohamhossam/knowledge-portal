@@ -66,6 +66,12 @@ from knowledge_portal.domain.architecture.candidates import (
     needs_one_by_one,
     open_matches,
 )
+from knowledge_portal.domain.architecture.channels import (
+    Channel,
+    find_channel_among,
+    merge_channels,
+    same_channel,
+)
 from knowledge_portal.domain.architecture.journeys import (
     Journey,
     merge_journeys,
@@ -101,7 +107,9 @@ _ORDER = (
     CandidateKind.CAPABILITY,
     CandidateKind.CONSTRAINT,
     CandidateKind.RELATIONSHIP,
-    # Last: an offering names systems that must be in the draft first,
+    # A channel names the system its orders enter through,
+    CandidateKind.CHANNEL,
+    # then an offering names systems and channels that must be in the draft first,
     CandidateKind.PRODUCT,
     # and a journey names systems and the offering it fulfils.
     CandidateKind.JOURNEY,
@@ -122,8 +130,10 @@ class CandidateView:
 
 
 def _view(candidate: CatalogueCandidate, release: ArchitectureKnowledge) -> CandidateView:
-    source = find_system(release, candidate.content.system_id)
-    target = find_system(release, candidate.content.target_system_id or "")
+    # A channel's subject is the channel, not a system that may share its id.
+    channel = candidate.content.kind is CandidateKind.CHANNEL
+    source = None if channel else find_system(release, candidate.content.system_id)
+    target = None if channel else find_system(release, candidate.content.target_system_id or "")
     return CandidateView(
         candidate,
         classify(candidate.content, release),
@@ -162,6 +172,7 @@ def _references(
         CandidateKind.LANDSCAPE_DOMAIN,
         CandidateKind.PRODUCT,
         CandidateKind.JOURNEY,
+        CandidateKind.CHANNEL,
     }:
         return ()
     if content.kind is CandidateKind.SYSTEM:
@@ -203,6 +214,20 @@ def _canonical(
         *release.products,
         *(item.content.product for item in changes if item.content.product is not None),
     )
+    # Likewise the channels an order type or a step may name.
+    channels = (
+        *release.channels,
+        *(item.content.channel for item in changes if item.content.channel is not None),
+    )
+
+    def channel_ids(references: tuple[str, ...]) -> tuple[str, ...]:
+        found = (find_channel_among(channels, item) for item in references)
+        return tuple(
+            dict.fromkeys(
+                item.id if item is not None else reference
+                for item, reference in zip(found, references, strict=True)
+            )
+        )
 
     result: list[ProposedChange] = []
     for change in changes:
@@ -210,6 +235,11 @@ def _canonical(
         if content.kind is CandidateKind.LANDSCAPE_DOMAIN:
             # Its subject is a domain, not a system.
             result.append(change)
+            continue
+        if content.kind is CandidateKind.CHANNEL and content.channel is not None:
+            entry = content.channel.entry_system_id
+            channel = replace(content.channel, entry_system_id=resolved(entry) if entry else None)
+            result.append(replace(change, content=replace(content, channel=channel)))
             continue
         if content.kind is CandidateKind.PRODUCT and content.product is not None:
             offering = content.product
@@ -223,14 +253,28 @@ def _canonical(
                 )
                 for part in offering.components
             )
+            orders = tuple(
+                replace(item, channels=channel_ids(item.channels)) for item in offering.order_types
+            )
             result.append(
                 replace(
-                    change, content=replace(content, product=replace(offering, components=parts))
+                    change,
+                    content=replace(
+                        content,
+                        product=replace(offering, components=parts, order_types=orders),
+                    ),
                 )
             )
             continue
         if content.kind is CandidateKind.JOURNEY and content.journey is not None:
             journey = _canonical_journey(content.journey, resolved, offerings)
+            journey = replace(
+                journey,
+                activities=tuple(
+                    replace(item, channels=channel_ids(item.channels))
+                    for item in journey.activities
+                ),
+            )
             result.append(replace(change, content=replace(content, journey=journey)))
             continue
         target = content.target_system_id
@@ -310,6 +354,42 @@ def _one_journey_each(changes: tuple[ProposedChange, ...]) -> tuple[ProposedChan
         result[index] = replace(
             first,
             content=replace(first.content, journey=merged),
+            locations=tuple(dict.fromkeys((*first.locations, *change.locations))),
+            basis=(
+                CandidateBasis.STATED
+                if CandidateBasis.STATED in {first.basis, change.basis}
+                else first.basis
+            ),
+        )
+    return tuple(result)
+
+
+def _one_channel_each(changes: tuple[ProposedChange, ...]) -> tuple[ProposedChange, ...]:
+    """Every reading of one channel as one suggestion: the first's facts win, with every
+    reading's citations."""
+    result: list[ProposedChange] = []
+    channels: list[Channel | None] = []
+    for change in changes:
+        channel = change.content.channel
+        index = next(
+            (
+                number
+                for number, kept in enumerate(channels)
+                if channel is not None and kept is not None and same_channel(kept, channel)
+            ),
+            None,
+        )
+        first_channel = channels[index] if index is not None else None
+        if index is None or channel is None or first_channel is None:
+            result.append(change)
+            channels.append(channel)
+            continue
+        first = result[index]
+        merged = merge_channels(first_channel, channel)
+        channels[index] = merged
+        result[index] = replace(
+            first,
+            content=replace(first.content, channel=merged),
             locations=tuple(dict.fromkeys((*first.locations, *change.locations))),
             basis=(
                 CandidateBasis.STATED
@@ -512,7 +592,7 @@ class ProposeCatalogueChanges:
         kinds: dict[CandidateContent, list[tuple[bool, RelationshipKind | None]]] = {}
         self_linked = 0
         canonical = _canonical(proposal.changes, release)
-        for change in _one_journey_each(_one_offering_each(canonical)):
+        for change in _one_journey_each(_one_offering_each(_one_channel_each(canonical))):
             if _self_dependency(change.content):
                 # A table row naming one system twice is not a dependency, and
                 # accepting it would fail; it is left out rather than offered.
@@ -702,6 +782,7 @@ class DecideCatalogueCandidate:
             landscape_domains=merged.landscape_domains,
             products=merged.products,
             journeys=merged.journeys,
+            channels=merged.channels,
         )
         self._save(updated, expected_revision, actor, (decided,))
         return updated
@@ -749,6 +830,7 @@ class DecideCatalogueCandidate:
             landscape_domains=merged.landscape_domains,
             products=merged.products,
             journeys=merged.journeys,
+            channels=merged.channels,
         )
         self._save(updated, expected_revision, actor, tuple(accepted))
         return updated, len(pending) - len(accepted)

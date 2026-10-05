@@ -37,6 +37,7 @@ from knowledge_portal.application.use_cases.architecture_mapping_impact import (
 from knowledge_portal.application.use_cases.architecture_preview import (
     PreviewArchitectureImpact,
 )
+from knowledge_portal.application.use_cases.catalog_plans import ReadCatalogPlans
 from knowledge_portal.application.use_cases.catalogue_candidates import (
     DecideCatalogueCandidate,
 )
@@ -172,6 +173,10 @@ def get_document_source_impact(container: ContainerDep) -> DocumentSourceImpact:
 
 def get_explore_architecture(container: ContainerDep) -> ExploreArchitecture:
     return container.explore_architecture
+
+
+def get_catalog_plans(container: ContainerDep) -> ReadCatalogPlans:
+    return container.catalog_plans
 
 
 def get_manage_architecture_knowledge(container: ContainerDep) -> ManageArchitectureKnowledge:

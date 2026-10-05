@@ -34,6 +34,7 @@ PUBLIC_OPERATIONS = {
 READER_OPERATIONS = {
     ("GET", "/explorer/me"),
     ("GET", "/explorer/release"),
+    ("GET", "/explorer/offerings/{offering_id}/plans"),
 }
 
 
