@@ -23,13 +23,15 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: "all", label: "All" },
 ];
 
+const KEPT = "Your edits are kept while this page stays open.";
+
 /**
  * A draft's suggestions, gathered under the systems they would change: new
  * systems first, then the systems the draft has, then domains, channels,
  * offerings and journeys. Decided from the keyboard or by pointer.
  *
  * Keys on a suggestion: j or ↓ next, k or ↑ previous, Enter open or close,
- * a accept, r reject, e edit then accept, Esc close.
+ * a accept, r reject, e edit then accept, Esc stop editing, then close.
  */
 export function SuggestionsPage() {
   const { book } = useCatalogueContext();
@@ -51,6 +53,16 @@ function Suggestions() {
   const [said, say] = useState("");
   const [confirming, setConfirming] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Edits made in a suggestion's editor and not yet accepted: closing the row or stopping never loses them.
+  const [edits, setEdits] = useState<Record<string, SuggestionContent>>({});
+  const keep = (key: string, content: SuggestionContent | null) =>
+    setEdits((current) => {
+      if (content ? current[key] === content : !(key in current)) return current;
+      const next = { ...current };
+      if (content) next[key] = content;
+      else delete next[key];
+      return next;
+    });
   const counts = tally(all);
   const bulk = useMemo(() => bulkAcceptable(release, all), [release, all]);
   const bulkCount = bulk.ready.length + bulk.lifted.length;
@@ -75,8 +87,8 @@ function Suggestions() {
   const rows = groups.flatMap((group) => group.visible);
   const documents = useMemo(() => new Map(release.documents.map((item) => [item.id, item])), [release.documents]);
 
-  // Keyboard focus follows the focused row, and never leaves it hidden.
-  const rowRefs = useRef(new Map<string, HTMLTableRowElement>());
+  // Keyboard focus follows the focused row's change button, and never leaves the row hidden.
+  const rowRefs = useRef(new Map<string, HTMLButtonElement>());
   // Rows remount when a decision moves their group (a new system, once accepted, joins the draft's
   // systems), so focus is put back after every change unless it has gone somewhere else on purpose.
   useEffect(() => {
@@ -87,9 +99,21 @@ function Suggestions() {
     const ours = active === document.body || active === null || active.closest(focus.open ? ".timetable__next" : ".galley, .timetable__next") !== null;
     if (element && active !== element && ours) {
       element.focus({ preventScroll: true });
-      element.scrollIntoView({ block: "nearest" });
+      (element.closest("tr") ?? element).scrollIntoView({ block: "nearest" });
     }
   }, [focus, rows]);
+  // A row opened near the foot of the view brings its detail up with it, the row itself kept in view,
+  // and whatever took focus inside the detail (the editor's title) kept in view too.
+  const opened = focus?.open ? focus.key : null;
+  useEffect(() => {
+    const row = opened ? rowRefs.current.get(opened)?.closest("tr") : null;
+    const detail = row?.nextElementSibling;
+    if (!row || !(detail instanceof HTMLElement)) return;
+    detail.scrollIntoView({ block: "nearest" });
+    row.scrollIntoView({ block: "nearest" });
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && detail.contains(active)) active.scrollIntoView({ block: "nearest" });
+  }, [opened]);
   // A focused row that left the view (decided under "Waiting") hands focus to where it stood.
   const lastIndex = useRef(0);
   useEffect(() => {
@@ -109,22 +133,38 @@ function Suggestions() {
     const next = nextWaiting(suggestion);
     say(`${accept ? "Accepting" : "Rejecting"}: ${changeSentence(suggestion, words)}.`);
     void draft.decide({ suggestionId: suggestion.id, accept, content }).then((done) => {
-      if (done) say(`${accept ? "Accepted" : "Rejected"}: ${changeSentence(suggestion, words)}.`);
+      if (!done) return;
+      say(`${accept ? "Accepted" : "Rejected"}: ${changeSentence(suggestion, words)}.`);
+      // Edits are dropped only once the decision is taken; a refused one keeps them.
+      keep(suggestion.id, null);
     });
     setFocus(next ? { key: next.id, open: false } : null);
+  };
+
+  // Leaving an open row never drops its edits; with some kept, it says so, whichever way it was left.
+  const leaving = (key: string) => {
+    if (focus?.key === key && focus.open && edits[key]) say(`Closed. ${KEPT}`);
   };
 
   const move = (step: number) => {
     const index = focus ? rows.findIndex((row) => row.id === focus.key) : -1;
     const next = rows[Math.min(rows.length - 1, Math.max(0, index + step))];
-    if (next) setFocus({ key: next.id, open: focus?.open ?? false });
+    if (!next) return;
+    if (focus && next.id !== focus.key) leaving(focus.key);
+    setFocus({ key: next.id, open: focus?.open ?? false });
   };
 
-  const onRowKey = (event: KeyboardEvent<HTMLTableRowElement>, suggestion: Suggestion) => {
+  const closeRow = (suggestion: Suggestion) => {
+    leaving(suggestion.id);
+    setFocus({ key: suggestion.id, open: false });
+  };
+
+  const onRowKey = (event: KeyboardEvent<HTMLButtonElement>, suggestion: Suggestion) => {
     if (event.target !== event.currentTarget || event.altKey || event.ctrlKey || event.metaKey) return;
     const proposed = suggestion.status === "proposed";
     const state = suggestionState(suggestion);
     const open = focus?.key === suggestion.id && focus.open;
+    const close = () => closeRow(suggestion);
     const handled = (() => {
       switch (event.key) {
         case "j":
@@ -134,13 +174,13 @@ function Suggestions() {
         case "ArrowUp":
           return move(-1), true;
         case "Enter":
-          return setFocus({ key: suggestion.id, open: !open }), true;
+          return open ? close() : setFocus({ key: suggestion.id, open: true }), true;
         case "Escape":
-          return setFocus({ key: suggestion.id, open: false }), true;
+          return close(), true;
         case "a":
           if (!proposed) return false;
-          // A match to choose or a wait to clear is decided in the open row.
-          if (suggestion.possible_matches.length || state === "waits") return setFocus({ key: suggestion.id, open: true }), true;
+          // A match to choose, a wait to clear or edits kept is decided in the open row.
+          if (suggestion.possible_matches.length || state === "waits" || edits[suggestion.id]) return setFocus({ key: suggestion.id, open: true }), true;
           return decide(suggestion, true), true;
         case "r":
           return proposed ? (decide(suggestion, false), true) : false;
@@ -177,7 +217,7 @@ function Suggestions() {
           <p className="timetable__quiet">No suggestion yet. Add a document above; what it says arrives here to be decided.</p>
         ) : (
           <>
-            <div className="notice-table" aria-labelledby="suggestions-title">
+            <div className="notice-table" role="group" aria-labelledby="suggestions-title">
               <dl className="notice-table__grid">
                 {([
                   ["Waiting", counts.waiting],
@@ -256,7 +296,7 @@ function Suggestions() {
             </div>
             <p className="keys">
               Keys on a suggestion: <kbd>j</kbd>/<kbd>k</kbd> move, <kbd>Enter</kbd> open, <kbd>a</kbd> accept,{" "}
-              <kbd>r</kbd> reject, <kbd>e</kbd> edit then accept, <kbd>Esc</kbd> close.
+              <kbd>r</kbd> reject, <kbd>e</kbd> edit then accept, <kbd>Esc</kbd> stop editing, then close.
             </p>
 
             {rows.length ? (
@@ -300,12 +340,18 @@ function Suggestions() {
                         focus={focus}
                         focusable={focus ? focus.key === suggestion.id : suggestion === rows[0]}
                         busy={draft.pending > 0}
-                        rowRef={(element) => {
+                        kept={edits[suggestion.id]}
+                        toggleRef={(element) => {
                           if (element) rowRefs.current.set(suggestion.id, element);
                           else rowRefs.current.delete(suggestion.id);
                         }}
                         onKeyDown={(event) => onRowKey(event, suggestion)}
                         onFocus={setFocus}
+                        onClose={() => closeRow(suggestion)}
+                        onKeep={(content) => {
+                          keep(suggestion.id, content);
+                          if (!content) say("Your edits are dropped.");
+                        }}
                         onDecide={(accept, content) => decide(suggestion, accept, content)}
                       />
                     ))}
