@@ -170,22 +170,38 @@ describe("ExplorerPage", () => {
     open();
     const section = within((await screen.findByRole("heading", { name: /^Lifecycle notes for New Activation/ })).closest("section")!);
     expect(section.getAllByRole("article")).toHaveLength(1);
+    // A lone note opens by itself.
     const matrix = within(section.getByRole("article", { name: "Up / Downgrade matrix" }));
+    expect(matrix.getByRole("button", { name: "Up / Downgrade matrix" })).toHaveAttribute("aria-expanded", "true");
     expect(matrix.getByText("Change · SDD §10")).toBeInTheDocument();
-    expect(matrix.getByRole("table", { name: "Up / Downgrade matrix" })).toHaveTextContent("200Mbps300Mbps");
-    expect(matrix.getByText("Workflows are in the annexure.")).toHaveClass("lifecycle__caption");
+    const table = matrix.getByRole("table", { name: /its table/ });
+    expect(table).toHaveTextContent("200Mbps300Mbps");
+    expect(table.querySelector("td")).toHaveAttribute("data-head", "To");
+    expect(within(table).getByText("Workflows are in the annexure.")).toBeInTheDocument();
     expect(section.getByText("2 more notes concern other order types or channels.")).toBeInTheDocument();
     expect(screen.getByText(NOT_YET)).toHaveTextContent("Source levels and conflicts");
   });
 
-  it("reads a channel's own notes, with a carry-over's heading and how sure it is", async () => {
+  it("closes notes to an index when there are several, each saying what it holds", async () => {
     open("/explorer?product=bpp&order=NEW&channel=shop");
     const section = within((await screen.findByRole("heading", { name: /^Lifecycle notes for New Activation/ })).closest("section")!);
+    const toggle = section.getByRole("button", { name: "Renewal" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
     const renewal = within(section.getByRole("article", { name: "Renewal" }));
     expect(renewal.getByText("Commercial · Only in Shop")).toBeInTheDocument();
+    expect(renewal.getByText("Holds a list of 1 item.")).toBeInTheDocument();
+    expect(renewal.queryByRole("listitem")).not.toBeInTheDocument();
+
+    fireEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(renewal.getByText("v8.2 carry-over (re-verify)")).toHaveClass("lifecycle__aside");
     expect(renewal.getByText("Inferred, not stated in its source")).toBeInTheDocument();
     expect(renewal.getByRole("listitem")).toHaveTextContent("Inherit tenure");
+
+    fireEvent.click(section.getByRole("button", { name: "Open every note" }));
+    expect(section.getByRole("button", { name: "Up / Downgrade matrix" })).toHaveAttribute("aria-expanded", "true");
+    expect(section.getByRole("button", { name: "Close every note" })).toBeInTheDocument();
   });
 
   it("changes scenario from the choices and keeps it in the address", async () => {

@@ -141,8 +141,10 @@ export function SystemField({ label, value, onChange, systems, writtenAs, allowN
   return <SelectField label={label} value={value} onChange={onChange} options={options} />;
 }
 
+const sentence = (text: string) => text.charAt(0).toLocaleUpperCase() + text.slice(1);
+
 /** Repeating rows: each a ruled fieldset with its own remove, and one add at the foot. */
-export function Rows<T>({ legend, one, items, onChange, blank, render, itemLabel }: {
+export function Rows<T>({ legend, one, items, onChange, blank, render, itemLabel, labelled }: {
   legend: string;
   /** One of them, for the add button: "branch", "hand-over". */
   one: string;
@@ -151,6 +153,8 @@ export function Rows<T>({ legend, one, items, onChange, blank, render, itemLabel
   blank: () => T;
   render: (item: T, update: (patch: Partial<T>) => void, index: number) => ReactNode;
   itemLabel: (item: T, index: number) => string;
+  /** Show each row's name as its heading, for rows long enough to lose one's place in. */
+  labelled?: boolean;
 }) {
   return (
     <fieldset className="form__rows">
@@ -158,7 +162,9 @@ export function Rows<T>({ legend, one, items, onChange, blank, render, itemLabel
       {items.length === 0 && <p className="form__hint">None yet.</p>}
       {items.map((item, index) => (
         <fieldset key={index} className="form__row">
-          <legend className="visually-hidden">{itemLabel(item, index)}</legend>
+          <legend className={labelled ? "form__row-title" : "visually-hidden"}>
+            {labelled ? sentence(itemLabel(item, index)) : itemLabel(item, index)}
+          </legend>
           <div className="form__grid">
             {render(item, (patch) => onChange(items.map((current, at) => (at === index ? { ...current, ...patch } : current))), index)}
           </div>

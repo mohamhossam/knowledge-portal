@@ -55,7 +55,7 @@ export function OfferingEditor({ value, onChange, systems, channels = [], names 
         <TextField label="Code" value={value.code} onChange={(code) => set({ code: code || null })} />
         <TextField label="Family" value={value.family} onChange={(family) => set({ family: family || null })} />
         <TextField label="Version" value={value.version} onChange={(version) => set({ version: version || null })} />
-        <TextField label="Lifecycle" value={value.lifecycle} onChange={(lifecycle) => set({ lifecycle: lifecycle || null })} />
+        <TextField label="Lifecycle status" value={value.lifecycle} onChange={(lifecycle) => set({ lifecycle: lifecycle || null })} />
         <SelectField
           label="How sure its source is"
           value={value.confidence ?? ""}

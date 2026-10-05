@@ -497,6 +497,16 @@ class _Reader:
                 out.append({"kind": "text", **heading, "text": block["text"], **sourced})
             elif kind == "ul" and block.get("items"):
                 out.append({"kind": "list", **heading, "items": list(block["items"]), **sourced})
+            elif kind == "table" and len(block.get("cols") or ()) == 1:
+                # A one-column table is a list under its column head.
+                out.append(
+                    {
+                        "kind": "list",
+                        "title": heading.get("title") or str(block["cols"][0]),
+                        "items": [str(row[0]) for row in block.get("rows") or () if row and row[0]],
+                        **sourced,
+                    }
+                )
             elif kind == "table" and block.get("cols"):
                 out.append(
                     {

@@ -12,10 +12,13 @@ const KIND_OPTIONS = [
   { value: "table", label: "Table" },
 ];
 
-/** A table's cells as one line each, " | " between cells, so a table can be typed. */
-const CELL = " | ";
-const toLine = (cells: string[]) => cells.join(CELL);
-const fromLine = (line: string) => line.split("|").map((cell) => cell.trim());
+/**
+ * A table's cells as one line each, "|" between cells, so a table can be typed.
+ * Cells keep their spaces while typing, so "From | To" reads back exactly as typed;
+ * they are trimmed when the offering is sent.
+ */
+const toLine = (cells: string[]) => cells.join("|");
+const fromLine = (line: string) => line.split("|");
 
 const cut = (text: string, index: number, what: string) => {
   const name = text.trim();
@@ -39,7 +42,7 @@ function BlockFields({ block, change }: { block: Block; change: (patch: Partial<
         required
         wide
         hint="Separated by |, such as From | To | Workflow."
-        onChange={(line) => change({ columns: line.trim() ? fromLine(line) : [] })}
+        onChange={(line) => change({ columns: line ? fromLine(line) : [] })}
       />
       <LinesField
         label="Rows"
@@ -70,11 +73,12 @@ export function LifecycleEditor({ value, onChange, channels, orderTypes }: {
       items={value}
       onChange={onChange}
       blank={() => ({ id: "", title: "", order_types: [], channels: [], blocks: [] })}
+      labelled
       itemLabel={(item, index) => cut(item.title, index, "note")}
       render={(note, change) => (
         <>
           <TextField label="Title" value={note.title} required wide onChange={(title) => change({ title })} />
-          <TextField label="Kind" value={note.kind} hint="As the source groups it, such as Change or Commercial." onChange={(kind) => change({ kind: kind || null })} />
+          <TextField label="Kind, as the source groups it" value={note.kind} onChange={(kind) => change({ kind: kind || null })} />
           <SelectField
             label="How sure its source is"
             value={note.confidence ?? ""}
@@ -105,7 +109,7 @@ export function LifecycleEditor({ value, onChange, channels, orderTypes }: {
             items={note.blocks}
             onChange={(blocks) => change({ blocks })}
             blank={() => ({ kind: "text", items: [], columns: [], rows: [] })}
-            itemLabel={(block, index) => cut(block.title ?? block.text ?? block.items[0] ?? block.columns.join(" "), index, KIND_OPTIONS.find((item) => item.value === block.kind)?.label ?? "part")}
+            itemLabel={(block, index) => `${(KIND_OPTIONS.find((item) => item.value === block.kind)?.label ?? "part").toLocaleLowerCase()} ${index + 1}${block.title ? ` (${cut(block.title, index, "").trim()})` : ""}`}
             render={(block, edit) => (
               <>
                 <SelectField

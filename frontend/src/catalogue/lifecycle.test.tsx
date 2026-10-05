@@ -44,12 +44,15 @@ describe("lifecycle notes", () => {
     fireEvent.click(within(parts).getByRole("button", { name: "Add a part of Cessation" }));
     fireEvent.change(within(parts).getByLabelText("Kind of part"), { target: { value: "table" } });
     fireEvent.change(within(parts).getByLabelText(/^Column heads/), { target: { value: "When | Then" } });
+    // Spaces survive typing: what was typed reads back exactly.
+    expect(within(parts).getByLabelText(/^Column heads/)).toHaveValue("When | Then");
     fireEvent.change(within(parts).getByLabelText(/^Rows/), { target: { value: "Activating | Blocked\n\nActive | Allowed" } });
 
     const sent = finishedOffering(last).lifecycle_notes[0]!;
     expect(sent.id).toBe("cessation");
     expect(sent.blocks[0]).toMatchObject({ kind: "table", columns: ["When", "Then"], rows: [["Activating", "Blocked"], ["Active", "Allowed"]] });
     expect(offeringProblem(last)).toBeNull();
+    expect(within(group).getByText("Note Cessation")).toHaveClass("form__row-title");
   });
 
   it("say why one cannot be sent yet", () => {

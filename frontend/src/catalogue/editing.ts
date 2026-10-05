@@ -23,7 +23,10 @@ export function finishedOffering(value: Offering): Offering {
         ...block,
         items: block.kind === "list" ? lines(block.items) : [],
         columns: block.kind === "table" ? block.columns.map((cell) => cell.trim()) : [],
-        rows: block.kind === "table" ? block.rows.filter((row) => row.some((cell) => cell.trim())) : [],
+        rows:
+          block.kind === "table"
+            ? block.rows.map((row) => row.map((cell) => cell.trim())).filter((row) => row.some(Boolean))
+            : [],
         text: block.kind === "text" ? block.text : null,
         caption: block.kind === "table" ? block.caption : null,
       })),

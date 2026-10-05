@@ -140,6 +140,11 @@ def _model() -> dict[str, Any]:
                                     {"type": "ul", "items": ["New → New", "Old → New"]},
                                     {
                                         "type": "table",
+                                        "cols": ["Excluded"],
+                                        "rows": [["IP"], ["SIM"]],
+                                    },
+                                    {
+                                        "type": "table",
                                         "cols": ["From", "To"],
                                         "rows": [["200Mbps", "PO_KL"]],
                                         "caption": "Rollover codes",
@@ -490,7 +495,15 @@ def test_lifecycle_notes_carry_over_with_their_carry_overs_cross_product_and_des
         "confirmed",
         "What a renewal carries over.",
     )
-    text, items, table = renewal["blocks"]
+    text, items, excluded, table = renewal["blocks"]
+    # A one-column table reads as a list under its head.
+    assert excluded == {
+        "kind": "list",
+        "title": "Excluded",
+        "items": ["IP", "SIM"],
+        "confidence": "inferred",
+        "source": "BPP SDD §12",
+    }
     assert text == {"kind": "text", "text": "Tenure is inherited."}
     # A carry-over keeps its heading on its first block and its weaker confidence on each.
     assert items == {
