@@ -25,6 +25,36 @@ export const EXPLORED = {
       rules: [],
       values: [],
       audiences: [],
+      lifecycle_notes: [
+        {
+          id: "LC-UD",
+          title: "Up / Downgrade matrix",
+          kind: "Change",
+          order_types: ["NEW"],
+          channels: [],
+          blocks: [
+            { kind: "table", columns: ["From", "To"], rows: [["200Mbps", "300Mbps"]], items: [], caption: "Workflows are in the annexure." },
+          ],
+          confidence: "confirmed",
+          source: "SDD §10",
+        },
+        {
+          id: "LC-REN",
+          title: "Renewal",
+          kind: "Commercial",
+          order_types: [],
+          channels: ["shop"],
+          summary: "What a renewal carries over.",
+          blocks: [{ kind: "list", title: "v8.2 carry-over (re-verify)", items: ["Inherit tenure"], columns: [], rows: [], confidence: "inferred" }],
+        },
+        {
+          id: "LC-CEASE",
+          title: "Cessation",
+          order_types: ["CEASE"],
+          channels: [],
+          blocks: [{ kind: "text", text: "Blocked while activating.", items: [], columns: [], rows: [] }],
+        },
+      ],
       tracking: {
         order_types: ["NEW"],
         not_applicable_note: "Tracking is not specified for a cease.",

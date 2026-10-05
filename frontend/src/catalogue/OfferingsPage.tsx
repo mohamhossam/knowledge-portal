@@ -5,6 +5,7 @@ import type { Offering } from "../api/client";
 import { CONFIDENCE, roleLabel, systemName } from "./catalogue";
 import { EditButton, OfferingEdit, WholeRemove } from "./DraftEdits";
 import { NfrSection, RealisationKey, RealisedAs, RealisedInline } from "./Realisation";
+import { LifecycleSection } from "./LifecycleNotes";
 import { TrackingSection } from "./Tracking";
 import { useCatalogueContext } from "./useCatalogue";
 
@@ -248,6 +249,13 @@ function OfferingSheet({ offering }: { offering: Offering }) {
         )}
         channelName={(channelId) => channelNames.get(channelId) ?? channelId}
         orderName={(code) => orderTypes.get(code) ?? code}
+      />
+
+      <LifecycleSection
+        offering={offering}
+        headingId={`${id}-lifecycle`}
+        orderName={(code) => orderTypes.get(code) ?? code}
+        channelName={(channelId) => channelNames.get(channelId) ?? channelId}
       />
 
       <section className="govsection" aria-labelledby={`${id}-rules`}>

@@ -1009,3 +1009,62 @@
     display: block;
   }
 }
+
+/* Lifecycle notes: each a titled part of the section, its content as the source sets it out. */
+.lifecycle__note + .lifecycle__note {
+  margin-top: var(--s3);
+}
+
+.lifecycle__meta {
+  margin: var(--s1) 0 0;
+  font-size: var(--t-meta);
+}
+
+.lifecycle__text {
+  max-width: 72ch;
+  margin: var(--s2) 0 0;
+}
+
+.lifecycle__block {
+  margin-top: var(--s2);
+}
+
+/* A block's own heading, such as a carry-over from an older source. */
+.lifecycle__aside {
+  margin: var(--s3) 0 0;
+  font-size: var(--t-meta);
+  font-weight: var(--w-medium);
+}
+
+.lifecycle__provenance,
+.lifecycle__caption,
+.lifecycle__others {
+  margin: var(--s1) 0 0;
+  font-size: var(--t-meta);
+}
+
+.lifecycle__list {
+  margin-top: var(--s1);
+}
+
+/* A source table scrolls in its own frame rather than breaking its words; the grid items
+   around it may shrink below the table's width, or the page would scroll instead. */
+.lifecycle__scroll {
+  overflow-x: auto;
+}
+
+.govsection:has(.lifecycle__note),
+.lifecycle__note {
+  min-width: 0;
+}
+
+.lifecycle__scroll:focus-visible {
+  outline: 2px solid var(--reference);
+  outline-offset: 2px;
+}
+
+.govtable.lifecycle__table th,
+.govtable.lifecycle__table td {
+  overflow-wrap: normal;
+  min-width: 5.5rem;
+}

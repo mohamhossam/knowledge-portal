@@ -9,12 +9,25 @@ export function slug(name: string): string {
   return name.normalize("NFKD").toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "") || "item";
 }
 
-/** What the service is sent: trimmed lists, and an id for every new part. */
+/** What the service is sent: trimmed lists, and an id for every new part and note. */
 export function finishedOffering(value: Offering): Offering {
+  const noteIds = new Set((value.lifecycle_notes ?? []).map((note) => note.id).filter(Boolean));
   return {
     ...value,
     rules: lines(value.rules),
     components: value.components.map((part) => ({ ...part, id: part.id || slug(part.name) })),
+    lifecycle_notes: (value.lifecycle_notes ?? []).map((note) => ({
+      ...note,
+      id: note.id || freeId(note.title, noteIds),
+      blocks: note.blocks.map((block) => ({
+        ...block,
+        items: block.kind === "list" ? lines(block.items) : [],
+        columns: block.kind === "table" ? block.columns.map((cell) => cell.trim()) : [],
+        rows: block.kind === "table" ? block.rows.filter((row) => row.some((cell) => cell.trim())) : [],
+        text: block.kind === "text" ? block.text : null,
+        caption: block.kind === "table" ? block.caption : null,
+      })),
+    })),
   };
 }
 
@@ -46,6 +59,20 @@ export function offeringProblem(value: Offering): string | null {
       if (new Set(labels).size !== labels.length) return `Order tracking: each ${what} is named once.`;
     }
     if (tracking.fallout.some((item) => !item.trigger.trim())) return "Order tracking: every fallout case needs what makes it fall out.";
+  }
+  for (const note of value.lifecycle_notes ?? []) {
+    const name = note.title.trim();
+    if (!name) return "Every lifecycle note needs a title.";
+    if (!note.summary?.trim() && !note.blocks.length) return `${name}: a note needs a summary or what it says.`;
+    for (const block of note.blocks) {
+      if (block.kind === "text" && !block.text?.trim()) return `${name}: a paragraph needs its text.`;
+      if (block.kind === "list" && !lines(block.items).length) return `${name}: a list needs at least one item.`;
+      if (block.kind === "table") {
+        const width = block.columns.filter((cell) => cell.trim()).length;
+        if (!width) return `${name}: a table needs its column heads.`;
+        if (block.rows.some((row) => row.length > block.columns.length)) return `${name}: a table row has more cells than the table has columns.`;
+      }
+    }
   }
   const qualities = (value.nfrs ?? []).map((item) => item.quality.trim().toLocaleLowerCase());
   if (qualities.some((quality) => !quality)) return "Every non-functional requirement needs a quality.";

@@ -2,6 +2,7 @@ import type { CatalogueSystem, Channel, Offering, SourceConfidence } from "../ap
 import { CONFIDENCE_OPTIONS, COVERAGE, LAYERS } from "./catalogue";
 import { lines } from "./editing";
 import { AreaField, CheckField, LinesField, Rows, SelectField, SystemField, TextField } from "./forms";
+import { LifecycleEditor } from "./LifecycleEditor";
 import { TrackingEditor } from "./TrackingEditor";
 
 type Part = Offering["components"][number];
@@ -204,6 +205,13 @@ export function OfferingEditor({ value, onChange, systems, channels = [], names 
         value={value.tracking}
         onChange={(tracking) => set({ tracking })}
         systems={systems}
+        channels={channels}
+        orderTypes={orderTypeOptions}
+      />
+
+      <LifecycleEditor
+        value={value.lifecycle_notes ?? []}
+        onChange={(lifecycle_notes) => set({ lifecycle_notes })}
         channels={channels}
         orderTypes={orderTypeOptions}
       />

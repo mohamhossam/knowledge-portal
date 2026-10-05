@@ -166,6 +166,28 @@ describe("ExplorerPage", () => {
     expect(section.getByRole("button", { name: "Try again" })).toBeInTheDocument();
   });
 
+  it("reads the lifecycle notes of the order type and channel, and counts the others", async () => {
+    open();
+    const section = within((await screen.findByRole("heading", { name: /^Lifecycle notes for New Activation/ })).closest("section")!);
+    expect(section.getAllByRole("article")).toHaveLength(1);
+    const matrix = within(section.getByRole("article", { name: "Up / Downgrade matrix" }));
+    expect(matrix.getByText("Change · SDD §10")).toBeInTheDocument();
+    expect(matrix.getByRole("table", { name: "Up / Downgrade matrix" })).toHaveTextContent("200Mbps300Mbps");
+    expect(matrix.getByText("Workflows are in the annexure.")).toHaveClass("lifecycle__caption");
+    expect(section.getByText("2 more notes concern other order types or channels.")).toBeInTheDocument();
+    expect(screen.getByText(NOT_YET)).toHaveTextContent("Source levels and conflicts");
+  });
+
+  it("reads a channel's own notes, with a carry-over's heading and how sure it is", async () => {
+    open("/explorer?product=bpp&order=NEW&channel=shop");
+    const section = within((await screen.findByRole("heading", { name: /^Lifecycle notes for New Activation/ })).closest("section")!);
+    const renewal = within(section.getByRole("article", { name: "Renewal" }));
+    expect(renewal.getByText("Commercial · Only in Shop")).toBeInTheDocument();
+    expect(renewal.getByText("v8.2 carry-over (re-verify)")).toHaveClass("lifecycle__aside");
+    expect(renewal.getByText("Inferred, not stated in its source")).toBeInTheDocument();
+    expect(renewal.getByRole("listitem")).toHaveTextContent("Inherit tenure");
+  });
+
   it("changes scenario from the choices and keeps it in the address", async () => {
     open();
     fireEvent.change(await screen.findByLabelText("Order type"), { target: { value: "CEASE" } });
