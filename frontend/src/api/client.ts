@@ -90,6 +90,7 @@ export type HistoricBreakdown = Schemas["BreakdownView"];
 export type LineageNode = Schemas["LineageNodeView"];
 export type HistoricWorkItem = Schemas["WorkItemView"];
 export type HistoricChange = Schemas["ItemChangeView"];
+export type HistoricSharedRoot = Schemas["SharedRootView"];
 /** When knowledge was last confirmed still right, by whom, and when it falls due (Knowledge Center D). */
 export type ReviewStanding = Schemas["ReviewStanding"];
 export type ReviewState = Schemas["ReviewState"];
@@ -460,6 +461,8 @@ export const api = {
     return apiRequest<Schemas["HistoricImportResponse"]>("/historic-requirements/batch", { method: "POST", body });
   },
   historic: (historicId: string) => apiRequest<HistoricDetail>(historicPath(historicId)),
+  historicSharedRoots: (historicId: string) =>
+    apiRequest<Schemas["SharedRootsResponse"]>(`${historicPath(historicId)}/shared-roots`),
   renameHistoric: (historicId: string, title: string, expectedVersion: number) =>
     apiRequest<HistoricDetail>(historicPath(historicId), {
       method: "PATCH",

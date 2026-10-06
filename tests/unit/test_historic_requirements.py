@@ -288,8 +288,10 @@ def test_publishing_refreshing_and_withdrawing_each_tell_requirement_work(
     assert [(c.kind, c.work_item_id, c.fields) for c in waiting.pending_refresh.changes] == [
         (ChangeKind.CHANGED, 48218, ("state",))
     ]
+    assert imports.refresh_waiting() == 1
     accepted = imports.accept_refresh(historic_id, waiting.version, CURATOR)
     assert len(accepted.publications) == 2 and accepted.pending_refresh is None
+    assert imports.refresh_waiting() == 0
     republished = container.knowledge_events.after(0, 100)[-1].payload
     assert isinstance(republished, dict) and republished["published"]["publication"] == 2
 
@@ -417,7 +419,30 @@ def test_the_routes(container: Container) -> None:
         assert published.status_code == 200 and published.json()["blockers"] == []
         listed = client.get("/historic-requirements", params={"status": "published"}).json()
         assert [item["id"] for item in listed["items"]] == [historic_id]
-        assert listed["counts"] == {"draft": 0, "published": 1, "withdrawn": 0}
+        assert listed["counts"] == {
+            "draft": 0,
+            "published": 1,
+            "withdrawn": 0,
+            "refresh_waiting": 0,
+        }
+        # A second BRD naming the same Epic is told the Epic is already another record's root.
+        (second,) = client.post(
+            "/historic-requirements/batch",
+            files=[("files", ("XGPON_v2.docx", word("Also Epic 48213."), DOCX_MIME))],
+        ).json()["results"]
+        drain(container)
+        shared = client.get(f"/historic-requirements/{second['version_id']}/shared-roots")
+        assert shared.json()["items"] == [
+            {
+                "work_item_id": 48213,
+                "historic_id": historic_id,
+                "title": "XGPON bundles",
+                "status": "published",
+            }
+        ]
+        assert client.get(f"/historic-requirements/{historic_id}/shared-roots").json() == {
+            "items": []
+        }
         assert client.get("/historic-requirements", params={"status": "nope"}).status_code == 422
         assert client.get("/historic-requirements/missing").status_code == 404
         assert (
@@ -436,3 +461,9 @@ def test_the_routes(container: Container) -> None:
         )
         observer = {"X-Fake-Actor-Id": "fake-observer"}
         assert client.get("/historic-requirements", headers=observer).status_code == 403
+        assert (
+            client.get(
+                f"/historic-requirements/{historic_id}/shared-roots", headers=observer
+            ).status_code
+            == 403
+        )

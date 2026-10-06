@@ -3711,6 +3711,11 @@
             "title": "Published",
             "type": "integer"
           },
+          "refresh_waiting": {
+            "description": "Published records with a newer read waiting.",
+            "title": "Refresh Waiting",
+            "type": "integer"
+          },
           "withdrawn": {
             "title": "Withdrawn",
             "type": "integer"
@@ -3719,7 +3724,8 @@
         "required": [
           "draft",
           "published",
-          "withdrawn"
+          "withdrawn",
+          "refresh_waiting"
         ],
         "title": "HistoricCounts",
         "type": "object"
@@ -8741,6 +8747,50 @@
           "updated_at"
         ],
         "title": "SampleRequirementsResponse",
+        "type": "object"
+      },
+      "SharedRootView": {
+        "description": "A work item that is also the root of another historic requirement.",
+        "properties": {
+          "historic_id": {
+            "title": "Historic Id",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/HistoricStatus"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "work_item_id": {
+            "title": "Work Item Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "work_item_id",
+          "historic_id",
+          "title",
+          "status"
+        ],
+        "title": "SharedRootView",
+        "type": "object"
+      },
+      "SharedRootsResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SharedRootView"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "SharedRootsResponse",
         "type": "object"
       },
       "SourceConfidence": {
@@ -14057,6 +14107,70 @@
           }
         ],
         "summary": "Accept Refresh",
+        "tags": [
+          "historic requirements"
+        ]
+      }
+    },
+    "/historic-requirements/{historic_id}/shared-roots": {
+      "get": {
+        "description": "Its roots and suggested ids that other historic requirements already hold as roots.",
+        "operationId": "shared_roots_historic_requirements__historic_id__shared_roots_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "historic_id",
+            "required": true,
+            "schema": {
+              "title": "Historic Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedRootsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Shared Roots",
         "tags": [
           "historic requirements"
         ]

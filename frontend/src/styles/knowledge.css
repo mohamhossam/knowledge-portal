@@ -509,6 +509,8 @@
 .historic__lineage .historic__no {
   width: 4.5rem;
   color: var(--ink-2);
+  overflow-wrap: normal;
+  white-space: nowrap;
   font-variant-numeric: tabular-nums lining-nums;
 }
 
@@ -560,13 +562,121 @@
   display: none;
 }
 
+/* The decision a record waits on, under its edition line. */
+.historic__next {
+  margin-top: var(--s2);
+}
+
+.historic h3[tabindex="-1"]:focus {
+  outline: none;
+}
+
+.historic h3[tabindex="-1"]:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* A withdrawn record reads as past: its title in ink 3, like a past row. */
+.historic--withdrawn .sheet__title {
+  color: var(--ink-3);
+}
+
+.historic__warnings,
+.historic__suggestions .form__hint {
+  max-width: 72ch;
+}
+
+.historic__passage {
+  display: block;
+  max-width: 72ch;
+}
+
+.historic__suggestions-title {
+  font-weight: var(--w-bold);
+}
+
+.historic__found {
+  display: grid;
+  gap: var(--s2);
+}
+
+.historic__found li {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.historic__found-id {
+  font-weight: var(--w-bold);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.historic__quote {
+  max-width: 72ch;
+  color: var(--ink-2);
+}
+
+.historic__shared {
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+/* Status words and states never break inside a word. */
+.historic__lineage .historic__state,
+.historic__changes .historic__kind {
+  overflow-wrap: normal;
+  white-space: nowrap;
+}
+
+.historic__kind {
+  display: block;
+}
+
+.historic__deltas {
+  display: grid;
+  gap: 0.15rem;
+  font-size: var(--t-meta);
+}
+
+.historic__field {
+  color: var(--ink-2);
+  font-stretch: var(--width-condensed);
+  font-weight: var(--w-medium);
+}
+
+/* "What it says" sits clear of the id link above it, so both keep a 24px target (WCAG 2.5.8). */
+.historic__lineage .historic__says {
+  margin-top: var(--s1);
+}
+
+/* What an item says is set at the item's own indent, under its title. */
+.historic__lineage .historic__depth--1 .historic__said-cell {
+  padding-left: 1.25rem;
+}
+
+.historic__lineage .historic__depth--2 .historic__said-cell,
+.historic__lineage .historic__depth--3 .historic__said-cell {
+  padding-left: 2.5rem;
+}
+
 @media (max-width: 45rem) {
   .historic__narrow {
     display: block;
   }
 
+  .historic__lineage .historic__no {
+    width: 3.25rem;
+    padding-right: var(--s2);
+  }
+
   .historic__lineage .historic__depth--2 th,
-  .historic__lineage .historic__depth--3 th {
+  .historic__lineage .historic__depth--3 th,
+  .historic__lineage .historic__depth--2 .historic__said-cell,
+  .historic__lineage .historic__depth--3 .historic__said-cell {
     padding-left: 1.75rem;
+  }
+
+  /* On a phone the passage takes the width; where it sits is a short meta column. */
+  .historic__passages .passages__where {
+    width: 6rem;
   }
 }

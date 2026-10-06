@@ -84,6 +84,19 @@ def test_a_record_round_trips_its_publication_commits_with_its_event_and_version
     found = records.list(HistoricStatus.PUBLISHED, unique[:8], 0, 10)
     assert draft.id in {item.id for item in found}
     assert records.counts()[HistoricStatus.PUBLISHED] >= 1
+    # Records holding a root are found by it; a newer read waiting is counted.
+    assert draft.id in {item.id for item in records.rooted_in((48213, 1), 500)}
+    assert records.rooted_in((), 10) == ()
+    waiting_before = records.refresh_waiting()
+    run = ImportRun(f"refresh-{unique}", RunKind.REFRESH, (), NOW, ADA)
+    refreshing = published.refresh(run)
+    epic = WorkItem(48213, WorkItemType.EPIC, "XGPON bundles", "Resolved", 4, "u/48213")
+    waiting = refreshing.breakdown_read(run.id, Breakdown((48213,), (epic,), NOW), NOW)
+    assert waiting.pending_refresh is not None
+    with store.transaction():
+        records.save(refreshing, published.version)
+        records.save(waiting, refreshing.version)
+    assert records.refresh_waiting() == waiting_before + 1
     # A draft is removed only at its version.
     other = _record(uuid.uuid4().hex)
     with store.transaction():

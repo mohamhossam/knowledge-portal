@@ -8,7 +8,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, Field
 
 from knowledge_portal.application.use_cases.architecture_documents import FileResult
-from knowledge_portal.application.use_cases.historic_requirements import HistoricPage
+from knowledge_portal.application.use_cases.historic_requirements import HistoricPage, SharedRoot
 from knowledge_portal.domain.historic.historic_requirement import (
     REASON_MAX,
     ROOTS_MAX,
@@ -345,6 +345,7 @@ class HistoricCounts(BaseModel):
     draft: int
     published: int
     withdrawn: int
+    refresh_waiting: int = Field(description="Published records with a newer read waiting.")
 
 
 class HistoricPageResponse(BaseModel):
@@ -353,7 +354,9 @@ class HistoricPageResponse(BaseModel):
     counts: HistoricCounts
 
     @classmethod
-    def of(cls, page: HistoricPage, counts: dict[HistoricStatus, int]) -> HistoricPageResponse:
+    def of(
+        cls, page: HistoricPage, counts: dict[HistoricStatus, int], refresh_waiting: int
+    ) -> HistoricPageResponse:
         return cls(
             items=[HistoricSummary.of(item) for item in page.items],
             next_offset=page.next_offset,
@@ -361,8 +364,31 @@ class HistoricPageResponse(BaseModel):
                 draft=counts.get(HistoricStatus.DRAFT, 0),
                 published=counts.get(HistoricStatus.PUBLISHED, 0),
                 withdrawn=counts.get(HistoricStatus.WITHDRAWN, 0),
+                refresh_waiting=refresh_waiting,
             ),
         )
+
+
+class SharedRootView(BaseModel):
+    """A work item that is also the root of another historic requirement."""
+
+    work_item_id: int
+    historic_id: str
+    title: str
+    status: HistoricStatus
+
+    @classmethod
+    def of(cls, shared: SharedRoot) -> SharedRootView:
+        return cls(
+            work_item_id=shared.work_item_id,
+            historic_id=shared.holder.id,
+            title=shared.holder.title,
+            status=shared.holder.status,
+        )
+
+
+class SharedRootsResponse(BaseModel):
+    items: list[SharedRootView]
 
 
 class HistoricImportResponse(BaseModel):

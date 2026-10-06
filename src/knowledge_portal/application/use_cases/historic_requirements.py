@@ -107,6 +107,18 @@ class HistoricPage:
     next_offset: int | None
 
 
+@dataclass(frozen=True)
+class SharedRoot:
+    """A work item this record links or suggests that is also another record's root."""
+
+    work_item_id: int
+    holder: HistoricRequirement
+
+
+# One Epic can serve two BRDs, so a shared root is said, never refused (ADR-0102).
+SHARED_ROOTS_MAX = 200
+
+
 class HistoricImportJobs(LeasedJobs):
     """The import's own queue: reading a BRD, and reading a breakdown from Azure DevOps."""
 
@@ -274,6 +286,21 @@ class HistoricImports:
 
     def counts(self) -> dict[HistoricStatus, int]:
         return self._records.counts()
+
+    def refresh_waiting(self) -> int:
+        return self._records.refresh_waiting()
+
+    def shared_roots(self, historic_id: str) -> tuple[SharedRoot, ...]:
+        """Its roots and suggested ids that other records already hold as roots."""
+        record = self.get(historic_id)
+        ids = set(record.root_ids) | {item.work_item_id for item in record.suggestions}
+        holders = self._records.rooted_in(ids, SHARED_ROOTS_MAX)
+        return tuple(
+            SharedRoot(work_item_id, holder)
+            for work_item_id in sorted(ids)
+            for holder in holders
+            if holder.id != record.id and work_item_id in holder.root_ids
+        )
 
     # --- Importing ----------------------------------------------------------------------
 

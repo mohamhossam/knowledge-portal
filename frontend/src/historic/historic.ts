@@ -1,6 +1,16 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { api, type HistoricDetail, type HistoricStatus, type HistoricSummary } from "../api/client";
+import {
+  api,
+  type HistoricBreakdown,
+  type HistoricDetail,
+  type HistoricSharedRoot,
+  type HistoricStatus,
+  type HistoricSummary,
+  type HistoricWorkItem,
+  type LineageNode,
+} from "../api/client";
+import { count } from "../home/format";
 import { HISTORIC_PATH } from "../requirements/knowledge";
 import type { Rank } from "../timetable/TimetableTable";
 
@@ -33,6 +43,51 @@ export function useHistoric(id: string) {
     refetchInterval: (state) => (state.state.data && busy(state.state.data) ? 1500 : false),
   });
 }
+
+/**
+ * Its roots and suggested ids that other historic Requirements already hold as roots, by id.
+ * One Epic can serve two BRDs, so this is said beside the id, never refused (ADR-0102).
+ */
+export function useSharedRoots(record: HistoricDetail) {
+  const query = useQuery({
+    queryKey: [...historicKey(record.id), "shared-roots", record.version],
+    queryFn: () => api.historicSharedRoots(record.id),
+    enabled: record.root_ids.length > 0 || record.suggestions.length > 0,
+  });
+  const byId = new Map<number, HistoricSharedRoot[]>();
+  for (const item of query.data?.items ?? []) byId.set(item.work_item_id, [...(byId.get(item.work_item_id) ?? []), item]);
+  return byId;
+}
+
+/** Every work item of a breakdown's lineage, by id. */
+export function itemsOf(breakdown: HistoricBreakdown | null | undefined): Map<number, HistoricWorkItem> {
+  const items = new Map<number, HistoricWorkItem>();
+  const walk = (nodes: LineageNode[]) => nodes.forEach((node) => { items.set(node.item.id, node.item); walk(node.children); });
+  walk(breakdown?.lineage ?? []);
+  return items;
+}
+
+/** The one decision a record waits on, said in its head and anchored to its section; or none. */
+export function nextStep(record: HistoricDetail): { target: string; label: string } | null {
+  const pending = record.pending_refresh;
+  if (pending) {
+    return {
+      target: "historic-refresh",
+      label: pending.changes.length > 0
+        ? `A newer read from Azure DevOps is waiting: ${count(pending.changes.length, "work item")} changed`
+        : "A newer read from Azure DevOps is waiting, with nothing changed",
+    };
+  }
+  if (record.status !== "draft" || busy(record)) return null;
+  if (record.brds_failed > 0) return { target: "historic-brds", label: "A BRD could not be read: read it again" };
+  if (record.run?.status === "failed") return { target: "historic-work-items", label: "Read the breakdown again" };
+  if (!record.breakdown) return { target: "historic-work-items", label: "Link its work items" };
+  return record.blockers.length === 0
+    ? { target: "historic-publish", label: "Publish it as reference knowledge" }
+    : { target: "historic-publish", label: "See what publishing waits on" };
+}
+
+export const STATUS_WORDS: Record<HistoricStatus, string> = { draft: "draft", published: "published", withdrawn: "withdrawn" };
 
 /** A change to it: answered with the whole record, which replaces the cached one. */
 export function useHistoricChange<Input>(id: string, run: (input: Input) => Promise<HistoricDetail>) {

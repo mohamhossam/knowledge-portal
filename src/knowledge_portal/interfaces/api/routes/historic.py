@@ -30,6 +30,8 @@ from knowledge_portal.interfaces.api.schemas.historic import (
     HistoricPageResponse,
     LinkRequest,
     RenameRequest,
+    SharedRootsResponse,
+    SharedRootView,
     StatusFilter,
     Versioned,
     WithdrawRequest,
@@ -54,7 +56,7 @@ def list_historic(
 ) -> HistoricPageResponse:
     """Newest first, with how many there are in each state."""
     page = imports.list(None if status is None else HistoricStatus(status), q, offset, limit)
-    return HistoricPageResponse.of(page, imports.counts())
+    return HistoricPageResponse.of(page, imports.counts(), imports.refresh_waiting())
 
 
 async def _incoming(file: UploadFile, max_bytes: int) -> IncomingFile:
@@ -80,6 +82,14 @@ async def import_brds(
 @router.get("/{historic_id}")
 def get_historic(historic_id: str, imports: ImportsDep) -> HistoricDetail:
     return HistoricDetail.of(imports.get(historic_id))
+
+
+@router.get("/{historic_id}/shared-roots")
+def shared_roots(historic_id: str, imports: ImportsDep) -> SharedRootsResponse:
+    """Its roots and suggested ids that other historic requirements already hold as roots."""
+    return SharedRootsResponse(
+        items=[SharedRootView.of(shared) for shared in imports.shared_roots(historic_id)]
+    )
 
 
 @router.patch("/{historic_id}")

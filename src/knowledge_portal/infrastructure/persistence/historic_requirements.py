@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from collections.abc import Collection
 from threading import RLock
 from typing import cast
 
@@ -97,6 +98,26 @@ class InMemoryHistoricRequirements:
         with self._lock:
             tally = Counter(item.status for item in self._items.values())
         return {status: tally.get(status, 0) for status in HistoricStatus}
+
+    def refresh_waiting(self) -> int:
+        with self._lock:
+            return sum(
+                1
+                for item in self._items.values()
+                if item.status is HistoricStatus.PUBLISHED and item.pending_refresh is not None
+            )
+
+    def rooted_in(
+        self, work_item_ids: Collection[int], limit: int
+    ) -> tuple[HistoricRequirement, ...]:
+        wanted = set(work_item_ids)
+        with self._lock:
+            found = sorted(
+                (item for item in self._items.values() if wanted.intersection(item.root_ids)),
+                key=lambda item: (item.created_at, item.id),
+                reverse=True,
+            )
+        return tuple(found[:limit])
 
 
 def _decode(raw: object) -> HistoricRequirement:
@@ -205,3 +226,27 @@ class PostgresHistoricRequirements:
             ).fetchall()
         found = {str(row[0]): int(cast(int, row[1])) for row in rows}
         return {status: found.get(status.value, 0) for status in HistoricStatus}
+
+    def refresh_waiting(self) -> int:
+        with self._store.connection() as connection:
+            row = connection.execute(
+                "SELECT count(*) FROM historic_requirements WHERE status = %s "
+                "AND jsonb_typeof(payload->'pending_refresh') = 'object'",
+                (HistoricStatus.PUBLISHED.value,),
+            ).fetchone()
+        return 0 if row is None else int(cast(int, row[0]))
+
+    def rooted_in(
+        self, work_item_ids: Collection[int], limit: int
+    ) -> tuple[HistoricRequirement, ...]:
+        if not work_item_ids:
+            return ()
+        with self._store.connection() as connection:
+            rows = connection.execute(
+                "SELECT payload FROM historic_requirements WHERE EXISTS ("
+                "SELECT 1 FROM jsonb_array_elements_text(payload->'root_ids') AS root(id) "
+                "WHERE root.id::bigint = ANY(%s)) "
+                "ORDER BY created_at DESC, historic_requirement_id DESC LIMIT %s",
+                (sorted(set(work_item_ids)), limit),
+            ).fetchall()
+        return tuple(_decode(row[0]) for row in rows)

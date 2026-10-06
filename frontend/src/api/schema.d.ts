@@ -899,6 +899,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/historic-requirements/{historic_id}/shared-roots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Shared Roots
+         * @description Its roots and suggested ids that other historic requirements already hold as roots.
+         */
+        get: operations["shared_roots_historic_requirements__historic_id__shared_roots_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/historic-requirements/{historic_id}/withdrawal": {
         parameters: {
             query?: never;
@@ -3010,6 +3030,11 @@ export interface components {
             draft: number;
             /** Published */
             published: number;
+            /**
+             * Refresh Waiting
+             * @description Published records with a newer read waiting.
+             */
+            refresh_waiting: number;
             /** Withdrawn */
             withdrawn: number;
         };
@@ -4729,6 +4754,24 @@ export interface components {
             updated_at: string | null;
             /** Updated By */
             updated_by: string | null;
+        };
+        /**
+         * SharedRootView
+         * @description A work item that is also the root of another historic requirement.
+         */
+        SharedRootView: {
+            /** Historic Id */
+            historic_id: string;
+            status: components["schemas"]["HistoricStatus"];
+            /** Title */
+            title: string;
+            /** Work Item Id */
+            work_item_id: number;
+        };
+        /** SharedRootsResponse */
+        SharedRootsResponse: {
+            /** Items */
+            items: components["schemas"]["SharedRootView"][];
         };
         /**
          * SourceConfidence
@@ -7188,6 +7231,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HistoricDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    shared_roots_historic_requirements__historic_id__shared_roots_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                historic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SharedRootsResponse"];
                 };
             };
             /** @description Validation Error */

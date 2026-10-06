@@ -1,24 +1,31 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, RotateCw, Upload } from "lucide-react";
-import { type FormEvent, type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, RotateCw, Upload } from "lucide-react";
+import { Fragment, type FormEvent, type MouseEvent, type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
-import { api, type HistoricBrd, type HistoricDetail, type HistoricRun } from "../api/client";
+import { api, type HistoricBrd, type HistoricDetail, type HistoricRun, type HistoricSharedRoot } from "../api/client";
 import { ApiError, errorMessage } from "../api/errors";
 import { count, formatDay, formatMoment } from "../home/format";
 import { KnowledgePage } from "../requirements/knowledgeHead";
-import { BreakdownTable, ChangeTable, ItemErrors } from "./Breakdown";
+import { AdoLink, BreakdownTable, ChangeTable, ItemErrors, SharedRootNote } from "./Breakdown";
 import {
   HISTORIC_LIST_KEY,
   HISTORIC_PATH,
   historicKey,
+  itemsOf,
+  nextStep,
   parseIds,
   runFailure,
   useHistoric,
   useHistoricChange,
+  useSharedRoots,
 } from "./historic";
 
-const PASSAGES_SHOWN = 12;
+/** A draft's passages are read to find its work items; a published record's are reference. */
+const PASSAGES_SHOWN = { draft: 12, settled: 3 };
+
+/** The extractor's note on where Word passages sit; nothing a curator acts on here. */
+const QUIET_WARNINGS = new Set(["word_prose_structure"]);
 
 /** One historic Requirement: its BRDs, the work items they were delivered as, and its lineage. */
 export function HistoricRecordPage() {
@@ -73,25 +80,58 @@ function Edition({ record }: { record: HistoricDetail }) {
   return <>Draft, imported by {record.created_by.display_name} on {formatDay(record.created_at)}. Nothing reads it until it is published.</>;
 }
 
-function Record({ record }: { record: HistoricDetail }) {
+/** The decision it waits on, as the book's next-decision line: it takes the reader to its section. */
+function NextStep({ record }: { record: HistoricDetail }) {
+  const step = nextStep(record);
+  if (!step) return null;
+  const go = (event: MouseEvent<HTMLAnchorElement>) => {
+    const heading = document.getElementById(step.target);
+    if (!heading) return;
+    event.preventDefault();
+    heading.focus();
+    heading.scrollIntoView?.({ block: "start" });
+  };
   return (
-    <article className="historic" aria-labelledby="historic-name">
+    <p className="timetable__next historic__next">
+      <a href={`#${step.target}`} onClick={go}>
+        {step.label}
+        <ArrowRight size={16} aria-hidden="true" />
+      </a>
+    </p>
+  );
+}
+
+/**
+ * Decisions lead and reference follows: what is being read, a refresh waiting, its work items,
+ * its lineage and publishing come before the BRD passages they were read from.
+ */
+function Record({ record }: { record: HistoricDetail }) {
+  const shared = useSharedRoots(record);
+  return (
+    <article className={`historic historic--${record.status}`} aria-labelledby="historic-name">
       <header className="historic__head">
         <h2 id="historic-name" className="sheet__title" dir="auto">{record.title}</h2>
         <p className="docpage__edition"><Edition record={record} /></p>
+        <NextStep record={record} />
         {record.status === "draft" && <Rename record={record} />}
       </header>
       <Processing record={record} />
-      <Brds record={record} />
-      <WorkItems record={record} />
       {record.pending_refresh && <PendingRefresh record={record} />}
+      <WorkItems record={record} shared={shared} />
       {record.breakdown && (
         <section className="govsection" aria-labelledby="historic-lineage">
-          <h3 id="historic-lineage" className="govsection__title">Lineage</h3>
-          <BreakdownTable breakdown={record.breakdown} brds={record.brd_files.map((brd) => brd.filename)} />
+          <h3 id="historic-lineage" className="govsection__title" tabIndex={-1}>What it was delivered as</h3>
+          <BreakdownTable
+            breakdown={record.breakdown}
+            brds={record.brd_files.map((brd) => brd.filename)}
+            shared={shared}
+            past={record.status === "withdrawn"}
+            note={record.pending_refresh ? "This is the published read; the newer one waits above." : undefined}
+          />
         </section>
       )}
       {record.status === "draft" && <Publish record={record} />}
+      <Brds record={record} />
       {record.status === "published" && <Withdraw record={record} />}
     </article>
   );
@@ -198,7 +238,7 @@ const STAGE_WORDS: Record<HistoricBrd["stage"], string> = { queued: "Being read"
 function Brds({ record }: { record: HistoricDetail }) {
   return (
     <section className="govsection" aria-labelledby="historic-brds">
-      <h3 id="historic-brds" className="govsection__title">
+      <h3 id="historic-brds" className="govsection__title" tabIndex={-1}>
         BRDs <span className="govsection__count">· {record.brd_files.length}</span>
       </h3>
       {record.brd_files.map((brd) => <Brd key={brd.id} record={record} brd={brd} />)}
@@ -210,7 +250,9 @@ function Brds({ record }: { record: HistoricDetail }) {
 function Brd({ record, brd }: { record: HistoricDetail; brd: HistoricBrd }) {
   const [all, setAll] = useState(false);
   const again = useHistoricChange(record.id, () => api.readHistoricBrdAgain(record.id, brd.id, record.version));
-  const shown = all ? brd.passages : brd.passages.slice(0, PASSAGES_SHOWN);
+  const first = record.status === "draft" ? PASSAGES_SHOWN.draft : PASSAGES_SHOWN.settled;
+  const shown = all ? brd.passages : brd.passages.slice(0, first);
+  const warnings = brd.warnings.filter((warning) => !QUIET_WARNINGS.has(warning.code));
   const id = useId();
   return (
     <div className={`historic__brd historic__brd--${brd.stage}`}>
@@ -232,9 +274,9 @@ function Brd({ record, brd }: { record: HistoricDetail; brd: HistoricBrd }) {
           )}
         </p>
       )}
-      {brd.warnings.length > 0 && (
+      {warnings.length > 0 && (
         <ul className="historic__warnings">
-          {brd.warnings.map((warning, index) => (
+          {warnings.map((warning, index) => (
             <li key={index} className={warning.severity === "blocking" ? "status status--failed" : "secondary"}>{warning.message}</li>
           ))}
         </ul>
@@ -252,16 +294,16 @@ function Brd({ record, brd }: { record: HistoricDetail; brd: HistoricBrd }) {
             {shown.map((passage) => (
               <tr key={passage.block_id} className="passage">
                 <th scope="row" className="cell passages__where">{passage.label}</th>
-                <td className="cell passages__working" dir="auto">{passage.text}</td>
+                <td className="cell passages__working" dir="auto"><span className="historic__passage">{passage.text}</span></td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
-      {brd.passages.length > PASSAGES_SHOWN && (
+      {brd.passages.length > first && (
         <p className="govsection__actions">
           <button type="button" className="text-button" aria-expanded={all} onClick={() => setAll(!all)}>
-            {all ? `Show the first ${PASSAGES_SHOWN}` : `Show all ${brd.passages.length} passages`}
+            {all ? `Show the first ${first}` : `Show all ${brd.passages.length} passages`}
           </button>
         </p>
       )}
@@ -298,8 +340,8 @@ function AddBrd({ record }: { record: HistoricDetail }) {
   );
 }
 
-function WorkItems({ record }: { record: HistoricDetail }) {
-  const id = useId();
+function WorkItems({ record, shared }: { record: HistoricDetail; shared: Map<number, HistoricSharedRoot[]> }) {
+  const id = "historic-work-items";
   const reload = useReload(record.id);
   const linked = record.root_ids.join(", ");
   const [text, setText] = useState(linked);
@@ -319,6 +361,7 @@ function WorkItems({ record }: { record: HistoricDetail }) {
     : ids.length === 0 ? "Name at least one work item." : ids.length > 50 ? "Link at most 50 work items." : null;
   const reading = record.run?.status === "queued" || record.run?.status === "running";
   const draft = record.status === "draft";
+  const urls = linkedUrls(record);
   const submit = (event: FormEvent) => {
     event.preventDefault();
     setTried(true);
@@ -327,18 +370,18 @@ function WorkItems({ record }: { record: HistoricDetail }) {
   };
   return (
     <section className="govsection" aria-labelledby={`${id}-title`}>
-      <h3 id={`${id}-title`} className="govsection__title">Work items in Azure DevOps</h3>
+      <h3 id={id} className="govsection__title" tabIndex={-1}>Work items in Azure DevOps</h3>
       <p className="govsection__lead">
-        The root work items this BRD was delivered as. Their Features and User Stories beneath are read from Azure DevOps,
-        read-only.
+        The top-level work items, usually Epics, that this BRD was delivered as. The Features and User Stories beneath
+        them are read from Azure DevOps, read-only.
       </p>
       {draft && record.suggestions.length > 0 && (
-        <Suggestions record={record} onUse={(value) => { setText(value); setTried(false); field.current?.focus(); }} />
+        <Suggestions record={record} shared={shared} onUse={(value) => { setText(value); setTried(false); field.current?.focus(); }} />
       )}
       {draft ? (
-        <form className="historic__link" onSubmit={submit} aria-labelledby={`${id}-title`}>
+        <form className="historic__link" onSubmit={submit} aria-labelledby={id}>
           <label className="field" htmlFor={`${id}-ids`}>
-            <span className="field__label">Root work item ids</span>
+            <span className="field__label">Top-level work item ids</span>
             <input
               ref={field}
               id={`${id}-ids`}
@@ -363,7 +406,13 @@ function WorkItems({ record }: { record: HistoricDetail }) {
       ) : (
         <>
           <p>
-            {count(record.root_ids.length, "root")}: {record.root_ids.map((rootId) => `#${rootId}`).join(", ")}
+            Delivered as{" "}
+            {record.root_ids.map((rootId, index) => (
+              <Fragment key={rootId}>
+                {index > 0 && (index === record.root_ids.length - 1 ? " and " : ", ")}
+                <AdoLink id={rootId} url={urls.get(rootId)} />
+              </Fragment>
+            ))}
             {record.breakdown && <span className="secondary"> · read {formatMoment(new Date(record.breakdown.fetched_at))}</span>}
           </p>
           {record.status === "published" && !record.pending_refresh && (
@@ -384,25 +433,37 @@ function WorkItems({ record }: { record: HistoricDetail }) {
   );
 }
 
-function Suggestions({ record, onUse }: { record: HistoricDetail; onUse: (value: string) => void }) {
+/** Where a linked root opens in Azure DevOps, when its breakdown read it. */
+function linkedUrls(record: HistoricDetail): Map<number, string> {
+  return new Map([...itemsOf(record.breakdown)].map(([itemId, item]) => [itemId, item.url]));
+}
+
+/** Ids the BRD mentions, each with the words it was found in, for the curator to check. */
+function Suggestions({ record, shared, onUse }: {
+  record: HistoricDetail;
+  shared: Map<number, HistoricSharedRoot[]>;
+  onUse: (value: string) => void;
+}) {
   const all = record.suggestions.map((item) => item.work_item_id).join(", ");
   return (
     <div className="historic__suggestions">
-      <p>
-        <strong>Found in the BRD:</strong>{" "}
-        {record.suggestions.map((item, index) => (
-          <span key={item.work_item_id}>
-            {index > 0 && ", "}
-            <span title={item.quote}>#{item.work_item_id}</span>{" "}
-            <span className="secondary">({item.label})</span>
-          </span>
+      <p className="historic__suggestions-title">Found in the BRD</p>
+      <ul className="historic__found">
+        {record.suggestions.map((item) => (
+          <li key={item.work_item_id}>
+            <span className="historic__found-id">#{item.work_item_id}</span>{" "}
+            <span className="secondary">{item.label}</span>
+            <span className="historic__quote" dir="auto">“{item.quote}”</span>
+            <SharedRootNote holders={shared.get(item.work_item_id)} />
+          </li>
         ))}
-        <span aria-hidden="true"> · </span>
+      </ul>
+      <p className="form__hint">Suggested from the text only. Check each is the work item this BRD was delivered as.</p>
+      <p>
         <button type="button" className="text-button knowledge__act" onClick={() => onUse(all)}>
           {record.suggestions.length === 1 ? "Use it" : "Use these"}
         </button>
       </p>
-      <p className="form__hint">Suggested from the text only. Check each is the work item this BRD was delivered as.</p>
     </div>
   );
 }
@@ -412,7 +473,7 @@ function RunReport({ run }: { run: HistoricRun }) {
     <div className="historic__report">
       <p className="historic__report-title">
         {count(run.item_errors.length, "work item")} could not be read
-        <span className="secondary"> · {formatMoment(new Date(run.finished_at ?? run.started_at))}</span>
+        <span className="secondary"> · in the read of {formatMoment(new Date(run.finished_at ?? run.started_at))}</span>
       </p>
       <ItemErrors errors={run.item_errors} />
     </div>
@@ -427,14 +488,14 @@ function PendingRefresh({ record }: { record: HistoricDetail }) {
   const busy = accept.isPending || discard.isPending;
   return (
     <section className="govsection historic__refresh" aria-labelledby="historic-refresh">
-      <h3 id="historic-refresh" className="govsection__title">A newer read is waiting</h3>
+      <h3 id="historic-refresh" className="govsection__title" tabIndex={-1}>A newer read is waiting</h3>
       <p className="govsection__lead">
         Read from Azure DevOps {formatMoment(new Date(pending.breakdown.fetched_at))}.{" "}
         {pending.changes.length === 0
           ? "Nothing changed since it was published."
           : `${count(pending.changes.length, "work item")} changed. Accepting publishes it again, and requirement work reads the new breakdown.`}
       </p>
-      {pending.changes.length > 0 && <ChangeTable changes={pending.changes} />}
+      {pending.changes.length > 0 && <ChangeTable changes={pending.changes} before={record.breakdown} after={pending.breakdown} />}
       <p className="govsection__actions">
         <button type="button" className="action-button" aria-disabled={busy || undefined} onClick={() => { if (!busy) accept.mutate(undefined); }}>
           {accept.isPending ? "Publishing…" : "Accept the refresh and publish"}
@@ -449,7 +510,7 @@ function PendingRefresh({ record }: { record: HistoricDetail }) {
 }
 
 function Publish({ record }: { record: HistoricDetail }) {
-  const id = useId();
+  const id = "historic-publish";
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const reload = useReload(record.id);
@@ -464,8 +525,8 @@ function Publish({ record }: { record: HistoricDetail }) {
   const { open, setOpen, trigger } = useInPlace();
   const waits = record.blockers.length > 0;
   return (
-    <section className="govsection historic__publish" aria-labelledby={`${id}-title`}>
-      <h3 id={`${id}-title`} className="govsection__title">Publish as reference knowledge</h3>
+    <section className="govsection historic__publish" aria-labelledby={id}>
+      <h3 id={id} className="govsection__title" tabIndex={-1}>Publish as reference knowledge</h3>
       <p className="govsection__lead">
         Requirement work then reads its BRD passages and breakdown as prior art for new requirements: labelled historic,
         never confirmed intent, and never blocking a decision. Azure DevOps is not changed.
@@ -479,9 +540,9 @@ function Publish({ record }: { record: HistoricDetail }) {
         <button
           type="button"
           className="action-button"
-          disabled={waits || publish.isPending}
+          aria-disabled={waits || publish.isPending || undefined}
           aria-describedby={waits ? `${id}-waits` : undefined}
-          onClick={() => publish.mutate(undefined)}
+          onClick={() => { if (!waits && !publish.isPending) publish.mutate(undefined); }}
         >
           {publish.isPending ? "Publishing…" : "Publish it"}
         </button>
@@ -566,7 +627,10 @@ function Withdraw({ record }: { record: HistoricDetail }) {
       onKeyDown={(event) => { if (event.key === "Escape" && !withdraw.isPending) setOpen(false); }}
     >
       <h3 id={`${id}-title`} className="withdraw__title">Withdraw from requirement work</h3>
-      <p>Requirement work stops reading it as prior art. It stays here, withdrawn, with your reason.</p>
+      <p>
+        Requirement work stops reading it as prior art. It stays here, withdrawn, with your reason. Withdrawing cannot be
+        undone, and its BRDs cannot be imported again.
+      </p>
       <label className="field" htmlFor={`${id}-reason`}>
         <span className="field__label">Why (required)</span>
         <textarea
@@ -584,7 +648,8 @@ function Withdraw({ record }: { record: HistoricDetail }) {
       </label>
       {missing && <p id={`${id}-missing`} className="docpage__failure">Say why it is withdrawn.</p>}
       <p className="withdraw__actions">
-        <button type="submit" className="action-button" aria-disabled={withdraw.isPending || undefined}>
+        {/* Waits for a reason, yet stays reachable so pressing it says what is missing. */}
+        <button type="submit" className="action-button" aria-disabled={!reason.trim() || withdraw.isPending || undefined}>
           {withdraw.isPending ? "Withdrawing…" : "Withdraw it"}
         </button>
         <button type="button" className="text-button" onClick={() => setOpen(false)}>Keep it published</button>

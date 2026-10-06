@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Collection
 from typing import Protocol
 
 from knowledge_portal.domain.historic.historic_requirement import (
@@ -42,3 +43,13 @@ class HistoricRequirementsPort(Protocol):
         ...
 
     def counts(self) -> dict[HistoricStatus, int]: ...
+
+    def refresh_waiting(self) -> int:
+        """How many published records have a newer read waiting to be accepted or discarded."""
+        ...
+
+    def rooted_in(
+        self, work_item_ids: Collection[int], limit: int
+    ) -> tuple[HistoricRequirement, ...]:
+        """Records any of whose root work items is one of these, newest first, at most `limit`."""
+        ...

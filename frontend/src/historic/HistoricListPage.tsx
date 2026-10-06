@@ -89,7 +89,14 @@ export function HistoricListPage() {
           <p className="timetable__quiet">Reading historic requirements…</p>
         ) : items.length === 0 ? (
           <p className="timetable__quiet">
-            {query || status ? "No historic requirement matches." : "None yet. Import the first BRDs below."}
+            {query || status ? (
+              <>
+                No historic requirement matches.{" "}
+                <button type="button" className="text-button" onClick={() => { setFind(""); setQuery(""); setStatus(null); }}>
+                  Show all
+                </button>
+              </>
+            ) : "None yet. Import the first BRDs below."}
           </p>
         ) : (
           <table className="govtable historic__table">
@@ -100,7 +107,7 @@ export function HistoricListPage() {
                 <th scope="col">State</th>
                 <th scope="col" className="cell--end cell--p2">BRDs</th>
                 <th scope="col" className="cell--end cell--p2">Work items</th>
-                <th scope="col" className="cell--end cell--p3">Since</th>
+                <th scope="col" className="cell--end cell--p3">State since</th>
               </tr>
             </thead>
             <tbody>
@@ -133,7 +140,7 @@ function HistoricRow({ item }: { item: HistoricSummary }) {
         <Link to={historicHref(item.id)} dir="auto">{item.title}</Link>
         {/* BRDs and work items leave the grid on phones; they stay with the title. */}
         <span className="secondary govtable__by historic__narrow">
-          {count(item.brds, "BRD")} · {count(item.work_items, "work item")}
+          {count(item.brds, "BRD")}{item.work_items > 0 ? ` · ${count(item.work_items, "work item")}` : ""}
         </span>
       </th>
       <td>
@@ -198,9 +205,9 @@ function ImportBrds() {
         />
       </label>
       <p className="add__actions">
-        <button type="submit" className="action-button" disabled={!!waits || importing.isPending} aria-describedby={waits ? `${id}-waits` : undefined}>
+        <button type="submit" className="action-button" aria-disabled={!!waits || importing.isPending || undefined} aria-describedby={waits ? `${id}-waits` : undefined}>
           <Upload size={16} aria-hidden="true" />
-          {importing.isPending ? "Importing…" : files.length > 1 ? `Import the ${files.length} BRDs` : "Import it"}
+          {importing.isPending ? "Importing…" : files.length > 1 ? `Import the ${files.length} BRDs` : files.length === 1 ? "Import the BRD" : "Import the BRDs"}
         </button>
       </p>
       {waits && <p id={`${id}-waits`} className="versions__waits">{waits}</p>}
