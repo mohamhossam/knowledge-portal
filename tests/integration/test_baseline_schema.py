@@ -50,6 +50,8 @@ KNOWLEDGE_TABLES = {
     "library_submissions",
     "organisation_audit",
     "organisation_catalogue",
+    # Confirmations that catalogue systems are still right (Knowledge Center D).
+    "system_reviews",
 }
 
 

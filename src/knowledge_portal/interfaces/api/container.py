@@ -12,6 +12,7 @@ import multiprocessing
 from collections.abc import Callable, Mapping
 from contextlib import ExitStack
 from dataclasses import dataclass, field, replace
+from datetime import timedelta
 from typing import Protocol
 
 import httpx
@@ -79,6 +80,11 @@ from knowledge_portal.application.use_cases.identity_access import (
     ResolveCurrentActor,
     ResolveSignedInActor,
     SearchKnownActors,
+)
+from knowledge_portal.application.use_cases.knowledge_reviews import (
+    ConfirmLibraryReview,
+    ReviewReminders,
+    SystemReviews,
 )
 from knowledge_portal.application.use_cases.library_admin import (
     AdministerLibraryDocument,
@@ -176,6 +182,10 @@ class Container:
     library_governance: LibraryGovernance
     library_admin: AdministerLibraryDocument
     library_retry: BulkRetryLibrary
+    # Re-confirming knowledge on a cycle (Knowledge Center D).
+    library_review: ConfirmLibraryReview
+    system_reviews: SystemReviews
+    review_reminders: ReviewReminders
     document_source_impact: DocumentSourceImpact
     cited_passages: CitedPassages
     reference_knowledge: ReferenceKnowledge
@@ -253,6 +263,15 @@ def _build_container(
     architecture = build_architecture(
         settings, persistence, retrieval, llm, llm.architecture_reasoner, clock
     )
+    review_cycle = timedelta(days=settings.knowledge_review_cycle_days)
+    system_reviews = SystemReviews(
+        persistence.architecture_repository,
+        persistence.system_reviews,
+        persistence.actor_directory,
+        persistence.transaction_manager,
+        clock,
+        review_cycle,
+    )
     stewardship = LibraryStewardship(
         persistence.library_admin_grants, persistence.library_admin_record, clock
     )
@@ -278,6 +297,7 @@ def _build_container(
         settings.document_max_file_bytes,
         stewardship,
         requirement_work.citations,
+        timedelta(days=settings.knowledge_review_cycle_days),
     )
     workers: dict[str, BackgroundWorker] = {
         "document_worker": DocumentIngestionWorker(library, reference_knowledge)
@@ -323,12 +343,23 @@ def _build_container(
         library_retry=BulkRetryLibrary(
             persistence.library_repository, stewardship, persistence.transaction_manager
         ),
+        library_review=ConfirmLibraryReview(
+            persistence.library_repository, stewardship, persistence.transaction_manager, clock
+        ),
+        system_reviews=system_reviews,
+        review_reminders=ReviewReminders(
+            persistence.library_repository,
+            system_reviews,
+            persistence.transaction_manager,
+            clock,
+            review_cycle,
+        ),
         document_source_impact=DocumentSourceImpact(
             persistence.library_repository,
             requirement_work.impact,
             persistence.transaction_manager,
         ),
-        cited_passages=CitedPassages(persistence.library_repository),
+        cited_passages=CitedPassages(persistence.library_repository, review_cycle),
         reference_knowledge=reference_knowledge,
         architecture_knowledge=architecture.knowledge,
         manage_architecture_knowledge=architecture.manage,

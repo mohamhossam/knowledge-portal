@@ -44,6 +44,11 @@ from knowledge_portal.application.use_cases.catalogue_candidates import (
 )
 from knowledge_portal.application.use_cases.document_library import DocumentLibrary
 from knowledge_portal.application.use_cases.identity_access import SearchKnownActors
+from knowledge_portal.application.use_cases.knowledge_reviews import (
+    ConfirmLibraryReview,
+    ReviewReminders,
+    SystemReviews,
+)
 from knowledge_portal.application.use_cases.library_admin import AdministerLibraryDocument
 from knowledge_portal.application.use_cases.library_bulk import BulkRetryLibrary
 from knowledge_portal.application.use_cases.library_governance import LibraryGovernance
@@ -177,6 +182,18 @@ def get_library_admin(container: ContainerDep) -> AdministerLibraryDocument:
 
 def get_library_retry(container: ContainerDep) -> BulkRetryLibrary:
     return container.library_retry
+
+
+def get_library_review(container: ContainerDep) -> ConfirmLibraryReview:
+    return container.library_review
+
+
+def get_system_reviews(container: ContainerDep) -> SystemReviews:
+    return container.system_reviews
+
+
+def get_review_reminders(container: ContainerDep) -> ReviewReminders:
+    return container.review_reminders
 
 
 def get_reference_knowledge(container: ContainerDep) -> ReferenceKnowledge:

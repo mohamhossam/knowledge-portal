@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from datetime import datetime
+from datetime import datetime, timedelta
 from threading import RLock
 from typing import cast
 
@@ -17,6 +17,7 @@ from knowledge_portal.application.ports.knowledge_events import (
     KnowledgeEventOutboxPort,
 )
 from knowledge_portal.domain.document.library import IngestionStage, LibraryDocument
+from knowledge_portal.infrastructure.config.options import DEFAULT_KNOWLEDGE_REVIEW_CYCLE_DAYS
 from knowledge_portal.infrastructure.persistence.postgres_session import PostgresSession
 
 
@@ -334,12 +335,21 @@ class PublishingDocumentLibrary:
     document's citable state, caught up by polling the outbox (ADR-0099).
     """
 
-    def __init__(self, inner: DocumentLibraryPort, outbox: KnowledgeEventOutboxPort) -> None:
+    def __init__(
+        self,
+        inner: DocumentLibraryPort,
+        outbox: KnowledgeEventOutboxPort,
+        review_cycle: timedelta = timedelta(days=DEFAULT_KNOWLEDGE_REVIEW_CYCLE_DAYS),
+    ) -> None:
         self._inner = inner
         self._outbox = outbox
+        self._review_cycle = review_cycle
 
     def _publish(self, document: LibraryDocument) -> None:
-        state = document.citable_state()
+        # Requirement work flags a citation once this day has passed (Knowledge Center D).
+        last = document.last_review()
+        due = None if last is None else (last[0] + self._review_cycle).date()
+        state = document.citable_state(due)
         self._outbox.append(REFERENCE_DOCUMENT_CHANGED, document.id, state.to_payload())
 
     def add(self, document: LibraryDocument) -> None:

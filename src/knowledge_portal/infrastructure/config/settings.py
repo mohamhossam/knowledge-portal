@@ -37,6 +37,7 @@ from knowledge_portal.infrastructure.config.options import (
     DEFAULT_DOCUMENT_MAX_SPREADSHEET_CELLS,
     DEFAULT_DOCUMENT_MAX_XML_NODES,
     DEFAULT_DOCUMENT_STORAGE_PATH,
+    DEFAULT_KNOWLEDGE_REVIEW_CYCLE_DAYS,
     DEFAULT_LOCAL_LLM_BASE_URL,
     DEFAULT_LOCAL_LLM_CONTEXT_WINDOW_TOKENS,
     DEFAULT_LOCAL_LLM_MAX_OUTPUT_TOKENS,
@@ -196,6 +197,8 @@ class Settings:
     # The productOffering field an offering's code is looked up by; "id" fetches it by id.
     product_catalog_code_field: str = "id"
     product_catalog_cache_seconds: int = DEFAULT_PRODUCT_CATALOG_CACHE_SECONDS
+    # Days after its last confirmation that a document or system is due for review again.
+    knowledge_review_cycle_days: int = DEFAULT_KNOWLEDGE_REVIEW_CYCLE_DAYS
 
     def __post_init__(self) -> None:
         validate_settings(self)
@@ -524,7 +527,16 @@ def _operability_from_env() -> dict[str, Any]:
         "requirement_api_base_url": os.getenv("REQUIREMENT_API_BASE_URL", "").strip() or None,
         "knowledge_service_token": os.getenv("KNOWLEDGE_SERVICE_TOKEN", "").strip() or None,
         **_product_catalog_from_env(),
+        "knowledge_review_cycle_days": _review_cycle_from_env(),
     }
+
+
+def _review_cycle_from_env() -> int:
+    raw = os.getenv("KNOWLEDGE_REVIEW_CYCLE_DAYS", "").strip()
+    try:
+        return int(raw) if raw else DEFAULT_KNOWLEDGE_REVIEW_CYCLE_DAYS
+    except ValueError as exc:
+        raise ConfigurationError("KNOWLEDGE_REVIEW_CYCLE_DAYS must be a whole number.") from exc
 
 
 def _product_catalog_from_env() -> dict[str, Any]:

@@ -51,6 +51,7 @@ from knowledge_portal.domain.document.value_objects import (
 )
 from knowledge_portal.domain.identity.entities import ActorProfile, ActorSnapshot
 from knowledge_portal.domain.identity.errors import AuthorizationDeniedError
+from knowledge_portal.domain.shared.review import ReviewStanding, standing
 
 CHUNKING_POLICY = "structure-512-768-v1"
 TABLE_CHUNKING_POLICY = "table-fields-512-768-v2"
@@ -133,6 +134,8 @@ class LibraryView:
     newest: VersionOutline | None = None
     # Requirements citing it now, across the portfolio; None when requirement work can't say.
     citations: int | None = None
+    # When it was last confirmed and when it falls due again; None while nothing is in service.
+    review: ReviewStanding | None = None
 
 
 @dataclass(frozen=True)
@@ -154,8 +157,10 @@ class DocumentLibrary:
         max_file_bytes: int,
         stewardship: LibraryStewardship | None = None,
         citations: RequirementCitationCountsPort | None = None,
+        review_cycle: timedelta = timedelta(days=180),
     ) -> None:
         self._citations = citations
+        self._review_cycle = review_cycle
         self._stewardship = stewardship or LibraryStewardship.owner_only(clock)
         self._repository = repository
         self._storage = storage
@@ -289,8 +294,17 @@ class DocumentLibrary:
         )
         return safe_source, publication
 
+    def _reviewed(self, document: LibraryDocument, view: LibraryView) -> LibraryView:
+        last = document.last_review()
+        if last is None:
+            return view
+        return replace(
+            view, review=standing(last[0], last[1], self._review_cycle, self._clock.now())
+        )
+
     def get(self, document_id: str, actor: ActorProfile) -> LibraryView:
-        return self._visible(self._get(document_id), actor)
+        document = self._get(document_id)
+        return self._reviewed(document, self._visible(document, actor))
 
     def list(
         self, actor: ActorProfile, offset: int = 0, limit: int = 50
@@ -301,7 +315,7 @@ class DocumentLibrary:
             if KNOWLEDGE_ADMIN in actor.roles
             else self._repository.list_visible(actor.id.value, offset, limit)
         )
-        views = tuple(self._visible(d, actor) for d in documents)
+        views = tuple(self._reviewed(d, self._visible(d, actor)) for d in documents)
         counts = self._citation_counts(tuple(view.id for view in views))
         return tuple(replace(view, citations=counts.get(view.id)) for view in views)
 

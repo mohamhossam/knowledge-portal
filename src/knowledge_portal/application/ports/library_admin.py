@@ -35,6 +35,8 @@ class LibraryAdminAction(StrEnum):
     APPROVE = "approve"
     RETRY_READING = "retry_reading"
     RETRY_INDEXING = "retry_indexing"
+    # Confirmed still right on the owner's behalf (Knowledge Center D).
+    CONFIRM_REVIEW = "confirm_review"
 
 
 # What an override changed on one document: its owner, what is published, and its version.

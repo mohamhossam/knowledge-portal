@@ -174,6 +174,8 @@ class ProductCatalogProvider(Enum):
 
 
 DEFAULT_PRODUCT_CATALOG_CACHE_SECONDS = 300
+# How often library documents and catalogue systems are re-confirmed (Knowledge Center D).
+DEFAULT_KNOWLEDGE_REVIEW_CYCLE_DAYS = 180
 
 
 DEFAULT_PRODUCT_CATALOG_TIMEOUT_SECONDS = 10.0

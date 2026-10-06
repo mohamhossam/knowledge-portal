@@ -98,8 +98,10 @@ def receive_change_request(
 
 @router.get("/architecture/releases/{release_id}/evidence/{chunk_id}")
 def evidence(release_id: str, chunk_id: str, container: ContainerDep) -> EvidenceChunk:
-    """Evidence of a published release; a draft answers 404."""
-    return container.manage_architecture_knowledge.published_evidence(release_id, chunk_id)
+    """Evidence of a published release; a draft answers 404. A system's own record says when
+    that system falls due for review (Knowledge Center D)."""
+    chunk = container.manage_architecture_knowledge.published_evidence(release_id, chunk_id)
+    return container.system_reviews.with_review(chunk)
 
 
 @router.get("/events")
