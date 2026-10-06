@@ -20,6 +20,9 @@ It is one of three repositories:
 
 ## Run it offline
 
+`START_GUIDE.md` walks through every way to start the portal: offline with sample content, with
+PostgreSQL, and beside requirement-portal. The short version:
+
 ```bash
 uv sync
 cp .env.example .env
