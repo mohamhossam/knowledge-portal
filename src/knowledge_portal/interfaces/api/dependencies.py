@@ -49,6 +49,7 @@ from knowledge_portal.application.use_cases.organisation_catalogue import (
 )
 from knowledge_portal.application.use_cases.reference_knowledge import ReferenceKnowledge
 from knowledge_portal.application.use_cases.requirement_corpus import (
+    ActOnRequirementCorpus,
     NudgeFindingOwners,
     ReadRequirementCorpus,
 )
@@ -229,3 +230,7 @@ def get_read_requirement_corpus(container: ContainerDep) -> ReadRequirementCorpu
 
 def get_nudge_finding_owners(container: ContainerDep) -> NudgeFindingOwners:
     return container.nudge_finding_owners
+
+
+def get_act_on_requirement_corpus(container: ContainerDep) -> ActOnRequirementCorpus:
+    return container.act_on_requirement_corpus

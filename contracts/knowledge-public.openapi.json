@@ -2128,6 +2128,22 @@
         "title": "ConflictSideSchema",
         "type": "object"
       },
+      "CorpusActionRequest": {
+        "description": "Why: requirement work records it with the action and tells the owner.",
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "CorpusActionRequest",
+        "type": "object"
+      },
       "CorpusActivationRequest": {
         "properties": {
           "expected_version": {
@@ -2345,6 +2361,16 @@
             "title": "Requirement Id",
             "type": "string"
           },
+          "retired": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RetiredMarkResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "title": {
             "title": "Title",
             "type": "string"
@@ -2357,7 +2383,8 @@
           "owner",
           "index_state",
           "last_screened_at",
-          "open_findings"
+          "open_findings",
+          "retired"
         ],
         "title": "CorpusRequirementResponse",
         "type": "object"
@@ -2390,6 +2417,14 @@
         ],
         "title": "CorpusRequirementsResponse",
         "type": "object"
+      },
+      "CorpusState": {
+        "enum": [
+          "active",
+          "retired"
+        ],
+        "title": "CorpusState",
+        "type": "string"
       },
       "CreateVersionRequest": {
         "properties": {
@@ -4899,6 +4934,46 @@
         "title": "MatchRole",
         "type": "string"
       },
+      "MembershipResponse": {
+        "properties": {
+          "changed_at": {
+            "format": "date-time",
+            "title": "Changed At",
+            "type": "string"
+          },
+          "closed_findings": {
+            "title": "Closed Findings",
+            "type": "integer"
+          },
+          "notified": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notified"
+          },
+          "requirement_id": {
+            "title": "Requirement Id",
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/CorpusState"
+          }
+        },
+        "required": [
+          "requirement_id",
+          "state",
+          "changed_at",
+          "closed_findings",
+          "notified"
+        ],
+        "title": "MembershipResponse",
+        "type": "object"
+      },
       "NfrCoverage": {
         "description": "How far the sources define a non-functional requirement.",
         "enum": [
@@ -6714,6 +6789,49 @@
         "title": "ReferenceChunk",
         "type": "object"
       },
+      "ReindexRequest": {
+        "properties": {
+          "requirement_ids": {
+            "items": {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 500,
+            "title": "Requirement Ids",
+            "type": "array"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/ReindexScope"
+          }
+        },
+        "required": [
+          "scope"
+        ],
+        "title": "ReindexRequest",
+        "type": "object"
+      },
+      "ReindexResponse": {
+        "properties": {
+          "requirements": {
+            "title": "Requirements",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "requirements"
+        ],
+        "title": "ReindexResponse",
+        "type": "object"
+      },
+      "ReindexScope": {
+        "enum": [
+          "failed",
+          "requirements"
+        ],
+        "title": "ReindexScope",
+        "type": "string"
+      },
       "RejectSuggestionsRequest": {
         "properties": {
           "expected_revision": {
@@ -6825,6 +6943,10 @@
             "title": "Requirements",
             "type": "integer"
           },
+          "retired": {
+            "title": "Retired",
+            "type": "integer"
+          },
           "waiting": {
             "title": "Waiting",
             "type": "integer"
@@ -6838,7 +6960,8 @@
           "failed",
           "rebuild_required",
           "open_findings",
-          "as_of"
+          "as_of",
+          "retired"
         ],
         "title": "RequirementCorpusResponse",
         "type": "object"
@@ -6936,6 +7059,30 @@
           "epic_name"
         ],
         "title": "RequirementTraceSchema",
+        "type": "object"
+      },
+      "RetiredMarkResponse": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "by": {
+            "title": "By",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "at",
+          "by",
+          "reason"
+        ],
+        "title": "RetiredMarkResponse",
         "type": "object"
       },
       "ReviewedPassage": {
@@ -11555,6 +11702,77 @@
         ]
       }
     },
+    "/knowledge-center/requirement-corpus/reindex": {
+      "post": {
+        "description": "Retry every requirement that stopped indexing, or index the chosen ones again.",
+        "operationId": "reindex_corpus_knowledge_center_requirement_corpus_reindex_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReindexRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReindexResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Requirement work has no such requirement"
+          },
+          "409": {
+            "description": "Requirement work refused, with its reason"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Reindex Corpus",
+        "tags": [
+          "knowledge-center"
+        ]
+      }
+    },
     "/knowledge-center/requirement-corpus/requirements": {
       "get": {
         "description": "The corpus Requirement by Requirement, by title: identity and state, never content.",
@@ -11635,6 +11853,16 @@
           },
           {
             "in": "query",
+            "name": "retired_only",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Retired Only",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
             "name": "offset",
             "required": false,
             "schema": {
@@ -11701,6 +11929,166 @@
           }
         ],
         "summary": "Corpus Requirements",
+        "tags": [
+          "knowledge-center"
+        ]
+      }
+    },
+    "/knowledge-center/requirement-corpus/requirements/{requirement_id}/reinstatement": {
+      "post": {
+        "description": "Return a retired requirement to the corpus; it is indexed and screened again.",
+        "operationId": "reinstate_requirement_knowledge_center_requirement_corpus_requirements__requirement_id__reinstatement_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "requirement_id",
+            "required": true,
+            "schema": {
+              "title": "Requirement Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorpusActionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Requirement work has no such requirement"
+          },
+          "409": {
+            "description": "Requirement work refused, with its reason"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Reinstate Requirement",
+        "tags": [
+          "knowledge-center"
+        ]
+      }
+    },
+    "/knowledge-center/requirement-corpus/requirements/{requirement_id}/retirement": {
+      "post": {
+        "description": "Take a requirement out of the corpus, in the admin's name and with their reason.\n\nRequirement work closes the findings that cite it and tells its owner.",
+        "operationId": "retire_requirement_knowledge_center_requirement_corpus_requirements__requirement_id__retirement_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "requirement_id",
+            "required": true,
+            "schema": {
+              "title": "Requirement Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorpusActionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Requirement work has no such requirement"
+          },
+          "409": {
+            "description": "Requirement work refused, with its reason"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Retire Requirement",
         "tags": [
           "knowledge-center"
         ]

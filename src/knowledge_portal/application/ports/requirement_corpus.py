@@ -37,6 +37,8 @@ class CorpusSummary:
     rebuild_required: bool
     open_findings: OpenFindingAges
     as_of: datetime
+    # Retired from the corpus by a knowledge admin (B3); kept readable, out of screening.
+    retired: int = 0
 
 
 class IndexState(StrEnum):
@@ -67,6 +69,15 @@ class PersonName:
 
 
 @dataclass(frozen=True)
+class RetiredMark:
+    """A Requirement retired from the corpus: when, by which knowledge admin, and why."""
+
+    at: datetime
+    by: str
+    reason: str
+
+
+@dataclass(frozen=True)
 class CorpusRequirement:
     requirement_id: str
     title: str
@@ -77,6 +88,7 @@ class CorpusRequirement:
     last_screened_at: datetime | None
     # Findings in force that name this Requirement.
     open_findings: int
+    retired: RetiredMark | None = None
 
 
 @dataclass(frozen=True)
@@ -94,6 +106,8 @@ class CorpusQuery:
     open_findings_only: bool = False
     # Never screened, or last screened longer ago than this.
     not_screened_for_days: int | None = None
+    # Only Requirements retired from the corpus.
+    retired_only: bool = False
 
 
 @dataclass(frozen=True)
@@ -148,6 +162,43 @@ class NudgeReceipt:
     next_nudge_at: datetime
 
 
+class CorpusState(StrEnum):
+    ACTIVE = "active"
+    RETIRED = "retired"
+
+
+@dataclass(frozen=True)
+class MembershipResult:
+    requirement_id: str
+    state: CorpusState
+    changed_at: datetime
+    # Findings requirement work closed as "source retired"; none on reinstatement.
+    closed_findings: int
+    # The owner told of it, by display name; None when the Requirement has no owner.
+    notified: str | None
+
+
+class ReindexScope(StrEnum):
+    # Retry every Requirement that stopped indexing.
+    FAILED = "failed"
+    # Index the chosen Requirements again.
+    REQUIREMENTS = "requirements"
+
+
+@dataclass(frozen=True)
+class ReindexResult:
+    # Requirements retried or marked for indexing again.
+    requirements: int
+
+
+class RequirementNotInCorpusError(Exception):
+    """Requirement work has no such Requirement."""
+
+
+class RequirementCorpusConflictError(Exception):
+    """Requirement work refused a corpus action; the message says why, in its words."""
+
+
 class RequirementFindingNotFoundError(Exception):
     """Requirement work has no such finding."""
 
@@ -169,4 +220,26 @@ class RequirementCorpusPort(Protocol):
 
     def nudge(self, finding_id: str, actor_id: str, actor_name: str) -> NudgeReceipt:
         """Ask both Requirements' owners to decide a finding; at most once a week."""
+        ...
+
+    def retire(
+        self, requirement_id: str, actor_id: str, actor_name: str, reason: str
+    ) -> MembershipResult:
+        """Take a Requirement out of the corpus; requirement work closes the findings citing it."""
+        ...
+
+    def reinstate(
+        self, requirement_id: str, actor_id: str, actor_name: str, reason: str
+    ) -> MembershipResult:
+        """Return a retired Requirement to the corpus."""
+        ...
+
+    def reindex(
+        self,
+        scope: ReindexScope,
+        requirement_ids: tuple[str, ...],
+        actor_id: str,
+        actor_name: str,
+    ) -> ReindexResult:
+        """Retry what stopped indexing, or index chosen Requirements again."""
         ...

@@ -25,10 +25,15 @@ from knowledge_portal.application.ports.requirement_corpus import (
     CorpusRequirementsPage,
     CorpusSummary,
     FindingQuery,
+    MembershipResult,
     NudgeReceipt,
     OpenFindingAges,
+    ReindexResult,
+    ReindexScope,
+    RequirementCorpusConflictError,
     RequirementFindingConflictError,
     RequirementFindingNotFoundError,
+    RequirementNotInCorpusError,
 )
 from knowledge_portal.application.ports.requirement_dependents import (
     ProposalStatus,
@@ -46,6 +51,8 @@ _CORPUS = TypeAdapter(CorpusSummary)
 _REQUIREMENTS = TypeAdapter(CorpusRequirementsPage)
 _FINDINGS = TypeAdapter(CorpusFindingsPage)
 _NUDGE = TypeAdapter(NudgeReceipt)
+_MEMBERSHIP = TypeAdapter(MembershipResult)
+_REINDEX = TypeAdapter(ReindexResult)
 
 
 def _decode[T](adapter: TypeAdapter[T], body: Any, what: str) -> T:
@@ -185,6 +192,8 @@ class HttpRequirementCorpus:
             params["owner_id"] = query.owner_id
         if query.not_screened_for_days is not None:
             params["not_screened_for_days"] = query.not_screened_for_days
+        if query.retired_only:
+            params["retired_only"] = "true"
         body = self._client.get_json("/internal/knowledge/corpus", params)
         return _decode(_REQUIREMENTS, body, "corpus rows")
 
@@ -215,8 +224,61 @@ class HttpRequirementCorpus:
             ) from exc
         return _decode(_NUDGE, body, "nudge receipt")
 
+    def retire(
+        self, requirement_id: str, actor_id: str, actor_name: str, reason: str
+    ) -> MembershipResult:
+        return self._membership("retirement", requirement_id, actor_id, actor_name, reason)
 
-def _refusal(detail: str) -> str:
+    def reinstate(
+        self, requirement_id: str, actor_id: str, actor_name: str, reason: str
+    ) -> MembershipResult:
+        return self._membership("reinstatement", requirement_id, actor_id, actor_name, reason)
+
+    def _membership(
+        self, action: str, requirement_id: str, actor_id: str, actor_name: str, reason: str
+    ) -> MembershipResult:
+        body = self._post(
+            f"/internal/knowledge/requirements/{_segment(requirement_id)}/{action}",
+            {"actor_id": actor_id, "actor_name": actor_name, "reason": reason},
+        )
+        return _decode(_MEMBERSHIP, body, "corpus membership")
+
+    def reindex(
+        self,
+        scope: ReindexScope,
+        requirement_ids: tuple[str, ...],
+        actor_id: str,
+        actor_name: str,
+    ) -> ReindexResult:
+        body = self._post(
+            "/internal/knowledge/reindex",
+            {
+                "actor_id": actor_id,
+                "actor_name": actor_name,
+                "scope": scope.value,
+                "requirement_ids": list(requirement_ids),
+            },
+        )
+        return _decode(_REINDEX, body, "reindex result")
+
+    def _post(self, path: str, body: dict[str, Any]) -> Any:
+        try:
+            return self._client.post_json(path, body)
+        except ServiceResponseError as exc:
+            if exc.status_code == 404:
+                raise RequirementNotInCorpusError(
+                    "Requirement work has no such requirement."
+                ) from exc
+            if exc.status_code in (409, 422):
+                raise RequirementCorpusConflictError(
+                    _refusal(exc.detail, "Requirement work refused the action.")
+                ) from exc
+            raise ServiceUnavailableError(
+                f"Requirement work refused the action ({exc.status_code})."
+            ) from exc
+
+
+def _refusal(detail: str, fallback: str = "Requirement work refused the nudge.") -> str:
     """Requirement work's own reason for a refusal: its error body's message."""
     try:
         message = json.loads(detail).get("message")
@@ -224,7 +286,7 @@ def _refusal(detail: str) -> str:
         message = None
     if isinstance(message, str) and message.strip():
         return message.strip()
-    return "Requirement work refused the nudge."
+    return fallback
 
 
 class FakeRequirementCorpus:
@@ -246,6 +308,25 @@ class FakeRequirementCorpus:
 
     def nudge(self, finding_id: str, actor_id: str, actor_name: str) -> NudgeReceipt:
         raise RequirementFindingNotFoundError("This finding no longer exists.")
+
+    def retire(
+        self, requirement_id: str, actor_id: str, actor_name: str, reason: str
+    ) -> MembershipResult:
+        raise RequirementNotInCorpusError("Requirement work has no such requirement.")
+
+    def reinstate(
+        self, requirement_id: str, actor_id: str, actor_name: str, reason: str
+    ) -> MembershipResult:
+        raise RequirementNotInCorpusError("Requirement work has no such requirement.")
+
+    def reindex(
+        self,
+        scope: ReindexScope,
+        requirement_ids: tuple[str, ...],
+        actor_id: str,
+        actor_name: str,
+    ) -> ReindexResult:
+        return ReindexResult(0)
 
 
 class FakeRequirementDependents:

@@ -15,6 +15,7 @@ const summary: RequirementCorpus = {
   requirements: 12, duplicates: 1, current: 9, waiting: 2, failed: 1, rebuild_required: false,
   open_findings: { under_7_days: 3, from_7_to_30_days: 1, over_30_days: 2 },
   as_of: "2026-10-06T09:00:00Z",
+  retired: 0,
 };
 
 const amina = { id: "fake-owner", display_name: "Amina Owner" };
@@ -22,7 +23,7 @@ const ravi = { id: "fake-reviewer", display_name: "Ravi Reviewer" };
 
 const requirement = (overrides: Partial<CorpusRequirement> = {}): CorpusRequirement => ({
   requirement_id: "REQ-1", title: "XGPON bundles", duplicate: false, owner: amina,
-  index_state: "current", last_screened_at: "2026-10-01T09:00:00Z", open_findings: 0, ...overrides,
+  index_state: "current", last_screened_at: "2026-10-01T09:00:00Z", open_findings: 0, retired: null, ...overrides,
 });
 
 const finding = (overrides: Partial<CorpusFinding> = {}): CorpusFinding => ({
@@ -128,6 +129,105 @@ describe("CorpusRequirementsPage", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Requirement work did not answer: Requirement work is unavailable.");
     expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
+  });
+});
+
+describe("Corpus actions on the Requirements page", () => {
+  it("retires a requirement in place, with a required reason, and says what it came to", async () => {
+    vi.spyOn(api, "corpusRequirements").mockResolvedValue({ items: [requirement({ open_findings: 1 })], next_offset: null });
+    const retire = vi.spyOn(api, "retireRequirement").mockResolvedValue({
+      requirement_id: "REQ-1", state: "retired", changed_at: "2026-10-07T09:00:00Z", closed_findings: 1, notified: "Amina Owner",
+    });
+    renderAt("/requirement-knowledge/requirements", <CorpusRequirementsPage />);
+
+    const trigger = await screen.findByRole("button", { name: "Retire from the corpus: XGPON bundles" });
+    fireEvent.click(trigger);
+    const form = screen.getByRole("form", { name: /Retire it from the corpus/ });
+    expect(form).toHaveTextContent("Its open finding closes as “source retired”. Amina Owner is told why.");
+    const why = within(form).getByRole("textbox", { name: "Why" });
+    expect(why).toHaveFocus();
+    fireEvent.click(within(form).getByRole("button", { name: "Retire it" }));
+    expect(retire).not.toHaveBeenCalled();
+    expect(within(form).getByText(/Say why/)).toBeInTheDocument();
+    expect(why).toHaveFocus();
+
+    fireEvent.change(why, { target: { value: "Cancelled launch." } });
+    fireEvent.click(within(form).getByRole("button", { name: "Retire it" }));
+
+    await waitFor(() => expect(retire).toHaveBeenCalledWith("REQ-1", "Cancelled launch."));
+    expect(await screen.findByText("Retired ‘XGPON bundles’ from the corpus. 1 finding closed as “source retired”. Amina Owner was told.")).toBeInTheDocument();
+    expect(screen.queryByRole("form")).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Retire from the corpus: XGPON bundles" })).toHaveFocus());
+    expect(screen.getByRole("link", { name: /^XGPON bundles/ }).closest("tr")).toHaveClass("is-lit");
+  });
+
+  it("shows who retired a requirement and offers to reinstate it, passing requirement work's refusal", async () => {
+    vi.spyOn(api, "corpusRequirements").mockResolvedValue({
+      items: [requirement({ retired: { at: "2026-10-07T09:00:00Z", by: "Omar Observer", reason: "Cancelled launch." } })],
+      next_offset: null,
+    });
+    vi.spyOn(api, "reinstateRequirement").mockRejectedValue(new ApiError(409, "This Requirement is not retired."));
+    renderAt("/requirement-knowledge/requirements?state=retired", <CorpusRequirementsPage />);
+
+    const row = (await screen.findByText("Cancelled launch.")).closest("tr")!;
+    expect(row).toHaveClass("row--past");
+    expect(within(row).getByText(/Retired by Omar Observer on 7 Oct 2026/)).toBeInTheDocument();
+    fireEvent.click(within(row).getByRole("button", { name: "Reinstate: XGPON bundles" }));
+    const form = screen.getByRole("form", { name: /Return it to the corpus/ });
+    fireEvent.change(within(form).getByRole("textbox", { name: "Why" }), { target: { value: "Back on." } });
+    fireEvent.click(within(form).getByRole("button", { name: "Reinstate it" }));
+
+    const refusal = await within(form).findByRole("alert");
+    expect(refusal).toHaveTextContent("This Requirement is not retired.");
+    expect(refusal).toHaveFocus();
+    fireEvent.keyDown(form, { key: "Escape" });
+    expect(screen.queryByRole("form")).not.toBeInTheDocument();
+  });
+
+  it("asks before retrying what stopped indexing, then says how many", async () => {
+    vi.spyOn(api, "requirementCorpus").mockResolvedValue(summary);
+    vi.spyOn(api, "corpusRequirements").mockResolvedValue({ items: [requirement()], next_offset: null });
+    const reindex = vi.spyOn(api, "reindexCorpus").mockResolvedValue({ requirements: 1 });
+    renderAt("/requirement-knowledge/requirements", <CorpusRequirementsPage />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /Retry the 1 requirement that stopped indexing/ }));
+    const confirm = screen.getByRole("group", { name: "Retry the 1 requirement that stopped indexing?" });
+    expect(within(confirm).getByText("Retry the 1 requirement that stopped indexing?")).toHaveFocus();
+    expect(reindex).not.toHaveBeenCalled();
+    fireEvent.click(within(confirm).getByRole("button", { name: "Retry it" }));
+
+    await waitFor(() => expect(reindex).toHaveBeenCalledWith("failed", []));
+    const said = await screen.findByText(/Retrying 1 requirement/);
+    await waitFor(() => expect(said).toHaveFocus());
+  });
+
+  it("closes a bulk confirmation on Escape and returns focus to its button", async () => {
+    vi.spyOn(api, "corpusRequirements").mockResolvedValue({ items: [requirement()], next_offset: null });
+    renderAt("/requirement-knowledge/requirements", <CorpusRequirementsPage />);
+
+    const reindex = await screen.findByRole("button", { name: "Reindex the 1 requirement shown" });
+    fireEvent.click(reindex);
+    fireEvent.keyDown(screen.getByRole("group", { name: "Index this requirement again?" }), { key: "Escape" });
+
+    expect(screen.queryByRole("group", { name: "Index this requirement again?" })).not.toBeInTheDocument();
+    await waitFor(() => expect(reindex).toHaveFocus());
+  });
+
+  it("reindexes the requirements shown, leaving retired ones out", async () => {
+    vi.spyOn(api, "corpusRequirements").mockResolvedValue({
+      items: [
+        requirement(),
+        requirement({ requirement_id: "REQ-2", title: "Gone", retired: { at: "2026-10-07T09:00:00Z", by: "Omar", reason: "Old." } }),
+      ],
+      next_offset: null,
+    });
+    const reindex = vi.spyOn(api, "reindexCorpus").mockResolvedValue({ requirements: 1 });
+    renderAt("/requirement-knowledge/requirements", <CorpusRequirementsPage />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Reindex the 1 requirement shown" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reindex it" }));
+
+    await waitFor(() => expect(reindex).toHaveBeenCalledWith("requirements", ["REQ-1"]));
   });
 });
 

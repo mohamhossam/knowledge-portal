@@ -849,6 +849,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/knowledge-center/requirement-corpus/reindex": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reindex Corpus
+         * @description Retry every requirement that stopped indexing, or index the chosen ones again.
+         */
+        post: operations["reindex_corpus_knowledge_center_requirement_corpus_reindex_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/knowledge-center/requirement-corpus/requirements": {
         parameters: {
             query?: never;
@@ -863,6 +883,48 @@ export interface paths {
         get: operations["corpus_requirements_knowledge_center_requirement_corpus_requirements_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/knowledge-center/requirement-corpus/requirements/{requirement_id}/reinstatement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reinstate Requirement
+         * @description Return a retired requirement to the corpus; it is indexed and screened again.
+         */
+        post: operations["reinstate_requirement_knowledge_center_requirement_corpus_requirements__requirement_id__reinstatement_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/knowledge-center/requirement-corpus/requirements/{requirement_id}/retirement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retire Requirement
+         * @description Take a requirement out of the corpus, in the admin's name and with their reason.
+         *
+         *     Requirement work closes the findings that cite it and tells its owner.
+         */
+        post: operations["retire_requirement_knowledge_center_requirement_corpus_requirements__requirement_id__retirement_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2070,6 +2132,14 @@ export interface components {
             /** Statement */
             statement: string;
         };
+        /**
+         * CorpusActionRequest
+         * @description Why: requirement work records it with the action and tells the owner.
+         */
+        CorpusActionRequest: {
+            /** Reason */
+            reason: string;
+        };
         /** CorpusActivationRequest */
         CorpusActivationRequest: {
             /** Expected Version */
@@ -2140,6 +2210,7 @@ export interface components {
             owner: components["schemas"]["PersonNameResponse"] | null;
             /** Requirement Id */
             requirement_id: string;
+            retired: components["schemas"]["RetiredMarkResponse"] | null;
             /** Title */
             title: string;
         };
@@ -2153,6 +2224,11 @@ export interface components {
             /** Next Offset */
             next_offset: number | null;
         };
+        /**
+         * CorpusState
+         * @enum {string}
+         */
+        CorpusState: "active" | "retired";
         /** CreateVersionRequest */
         CreateVersionRequest: {
             /** Name */
@@ -2941,6 +3017,21 @@ export interface components {
          * @enum {string}
          */
         MatchRole: "system" | "target";
+        /** MembershipResponse */
+        MembershipResponse: {
+            /**
+             * Changed At
+             * Format: date-time
+             */
+            changed_at: string;
+            /** Closed Findings */
+            closed_findings: number;
+            /** Notified */
+            notified: string | null;
+            /** Requirement Id */
+            requirement_id: string;
+            state: components["schemas"]["CorpusState"];
+        };
         /**
          * NfrCoverage
          * @description How far the sources define a non-functional requirement.
@@ -3598,6 +3689,22 @@ export interface components {
             /** Version Number */
             version_number: number;
         };
+        /** ReindexRequest */
+        ReindexRequest: {
+            /** Requirement Ids */
+            requirement_ids?: string[];
+            scope: components["schemas"]["ReindexScope"];
+        };
+        /** ReindexResponse */
+        ReindexResponse: {
+            /** Requirements */
+            requirements: number;
+        };
+        /**
+         * ReindexScope
+         * @enum {string}
+         */
+        ReindexScope: "failed" | "requirements";
         /** RejectSuggestionsRequest */
         RejectSuggestionsRequest: {
             /** Expected Revision */
@@ -3649,6 +3756,8 @@ export interface components {
             rebuild_required: boolean;
             /** Requirements */
             requirements: number;
+            /** Retired */
+            retired: number;
             /** Waiting */
             waiting: number;
         };
@@ -3680,6 +3789,18 @@ export interface components {
             knowledge_version?: string | null;
             /** Requirement Id */
             requirement_id: string;
+        };
+        /** RetiredMarkResponse */
+        RetiredMarkResponse: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** By */
+            by: string;
+            /** Reason */
+            reason: string;
         };
         /** ReviewedPassage */
         ReviewedPassage: {
@@ -5849,6 +5970,55 @@ export interface operations {
             };
         };
     };
+    reindex_corpus_knowledge_center_requirement_corpus_reindex_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReindexRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReindexResponse"];
+                };
+            };
+            /** @description Requirement work has no such requirement */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requirement work refused, with its reason */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     corpus_requirements_knowledge_center_requirement_corpus_requirements_get: {
         parameters: {
             query?: {
@@ -5857,6 +6027,7 @@ export interface operations {
                 q?: string;
                 open_findings_only?: boolean;
                 not_screened_for_days?: number | null;
+                retired_only?: boolean;
                 offset?: number;
                 limit?: number;
             };
@@ -5876,6 +6047,108 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["CorpusRequirementsResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reinstate_requirement_knowledge_center_requirement_corpus_requirements__requirement_id__reinstatement_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                requirement_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CorpusActionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipResponse"];
+                };
+            };
+            /** @description Requirement work has no such requirement */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requirement work refused, with its reason */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retire_requirement_knowledge_center_requirement_corpus_requirements__requirement_id__retirement_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                requirement_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CorpusActionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipResponse"];
+                };
+            };
+            /** @description Requirement work has no such requirement */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requirement work refused, with its reason */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
