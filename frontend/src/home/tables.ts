@@ -12,6 +12,10 @@ export type TableSpec = {
   quiet: string;
   /** Who answers the table's reads, named when they cannot be read. */
   answerer: string;
+  /** What the grid lists, for its hidden caption, when not what needs a curator. */
+  caption?: string;
+  /** A grid narrower than the page, for a table of few short columns. */
+  narrow?: boolean;
 };
 
 export const TABLES = {
@@ -65,9 +69,11 @@ export const TABLES = {
     title: "Requirement knowledge",
     to: "/requirement-knowledge",
     noun: "requirement knowledge",
-    totalsLabel: "In the Requirement corpus",
-    quiet: "Every Requirement is indexed, and no finding stands open.",
+    totalsLabel: "In the corpus",
+    quiet: "Every requirement is indexed, and no finding stands open.",
     answerer: "Requirement work",
+    caption: "what stands in requirement work's corpus",
+    narrow: true,
     columns: [
       { key: "name", label: "In the corpus" },
       { key: "status", label: "Status" },

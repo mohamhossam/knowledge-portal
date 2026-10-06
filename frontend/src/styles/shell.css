@@ -165,7 +165,7 @@
 }
 
 .index__number {
-  grid-row: 1 / span 2;
+  grid-row: 1 / span 3;
   font-size: 2.25rem;
   font-stretch: var(--width-monument);
   font-weight: var(--w-heavy);
@@ -201,6 +201,21 @@
 
 .index__count {
   white-space: nowrap;
+}
+
+/* An entry's most pressing state, set as its table sets the row: red when disrupted, bold when due. */
+.index__alert {
+  grid-column: 2;
+  font-size: var(--t-meta);
+}
+
+.index__alert--delayed {
+  color: var(--disruption);
+  font-weight: var(--w-medium);
+}
+
+.index__alert--due {
+  font-weight: var(--w-bold);
 }
 
 /* The page the tables sit on. */

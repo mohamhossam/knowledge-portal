@@ -19,6 +19,19 @@ function extent(state: TableState) {
   return state.status === "ready" ? state.overview.extent : null;
 }
 
+/** An entry's most pressing state, in its rows' rank styling; said only when there is one. */
+function Alert({ state }: { state: TableState }) {
+  if (state.status === "error") return <span className="index__alert index__alert--delayed">Could not be read</span>;
+  const alert = state.status === "ready" ? state.overview.alert : undefined;
+  if (!alert) return null;
+  return (
+    <span className={`index__alert index__alert--${alert.rank}`}>
+      <span className="visually-hidden">, </span>
+      {alert.text}
+    </span>
+  );
+}
+
 /**
  * The timetable book's binding: a masthead strip, the index of tables, and
  * the page. Every screen of the portal sits inside it.
@@ -69,6 +82,7 @@ export function Shell() {
                     {entry.spec.title}
                   </span>
                   <span className="index__extent">
+                    <span className="visually-hidden">: </span>
                     <span className="index__count">{size?.label ?? "—"}</span>
                     <span className="index__track" aria-hidden="true">
                       <span
@@ -77,6 +91,7 @@ export function Shell() {
                       />
                     </span>
                   </span>
+                  <Alert state={overview[entry.key]} />
                 </NavLink>
               </li>
             );

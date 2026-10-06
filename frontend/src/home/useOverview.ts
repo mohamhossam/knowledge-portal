@@ -3,6 +3,7 @@ import { useMemo } from "react";
 
 import { api, type CatalogueSuggestions } from "../api/client";
 import { useAuth } from "../auth/authContext";
+import { REQUIREMENT_APP_URL } from "../auth/paths";
 import {
   architectureOverview,
   libraryOverview,
@@ -105,7 +106,7 @@ export function useOverview(): OverviewState {
   const requirements: TableState = corpus.isError
     ? { status: "error", error: corpus.error, retry: () => void corpus.refetch() }
     : corpus.data
-      ? { status: "ready", overview: requirementOverview(corpus.data) }
+      ? { status: "ready", overview: requirementOverview(corpus.data, REQUIREMENT_APP_URL) }
       : { status: "loading" };
 
   return {

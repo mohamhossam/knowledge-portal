@@ -13,5 +13,13 @@ export function RequirementKnowledgePage() {
   useEffect(() => {
     document.title = "Requirement knowledge · Knowledge portal";
   }, []);
-  return <OverviewTable spec={TABLES.requirements} state={overview.requirements} headingLevel="h1" />;
+  return (
+    <>
+      <OverviewTable spec={TABLES.requirements} state={overview.requirements} headingLevel="h1" />
+      <p className="page__preparing">
+        Which requirements these are, and the findings across them, join this table next. Until then their
+        teams see them in requirement work, on each requirement&rsquo;s Knowledge step.
+      </p>
+    </>
+  );
 }

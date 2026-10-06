@@ -37,7 +37,8 @@ describe("libraryOverview", () => {
     const overview = libraryOverview([awaiting, published]);
 
     expect(overview.lines.map((line) => [line.name, line.cells.status])).toEqual([["Awaiting", "Awaiting your review"]]);
-    expect(overview.totals.find((total) => total.key === "service")?.value).toBe("1 document");
+    expect(overview.totals.find((total) => total.key === "service")?.value).toBe("1");
+    expect(overview.alert).toEqual({ rank: "due", text: "1 to review" });
     expect(overview.next).toEqual({ to: "/library", label: "1 document awaits your review" });
   });
 
@@ -66,10 +67,10 @@ describe("libraryOverview", () => {
       "Latest publication: ‘Discounts’ version 1, approved by Amina Owner on 2 Oct 2026.",
       "Version 1, the latest publication (note 1), stays in service until version 2 is approved.",
     ]);
-    expect(overview.edition).toEqual({ text: "Edition of 2 Oct 2026 · 1 document in service", note: "latest" });
+    expect(overview.edition).toEqual({ text: "Edition of 2 Oct 2026 · 1 document in service · last change 2 Oct 2026", note: "latest" });
   });
 
-  it("says when the library last changed, from the newest upload, approval or withdrawal", () => {
+  it("says on its edition line when the library last changed: the newest upload, approval or withdrawal", () => {
     const published = document({ id: "p", approvedVersion: true });
     const withdrawn = {
       ...published,
@@ -77,9 +78,9 @@ describe("libraryOverview", () => {
       publications: [{ ...published.publications[0]!, withdrawn_at: "2026-10-04T08:00:00Z" }],
     } as LibraryDocument;
 
-    expect(libraryOverview([published]).totals.at(-1)).toEqual({ key: "changed", label: "Last change", value: "2 Oct 2026" });
-    expect(libraryOverview([published, withdrawn]).totals.at(-1)?.value).toBe("4 Oct 2026");
-    expect(libraryOverview([]).totals.map((total) => total.key)).toEqual(["service", "withdrawn"]);
+    expect(libraryOverview([published]).edition.text).toBe("Edition of 2 Oct 2026 · 1 document in service · last change 2 Oct 2026");
+    expect(libraryOverview([published, withdrawn]).edition.text).toContain("· last change 4 Oct 2026");
+    expect(libraryOverview([]).edition.text).toBe("Nothing published yet. Requirement work can cite only what is published here.");
   });
 
   it("says when nothing awaits a curator, without a link", () => {
@@ -126,22 +127,33 @@ describe("architectureOverview", () => {
     new Map([["oct", jobs]]),
   );
 
-  it("puts a failed build or reading first, above suggestions to decide, and sends it where it is mended", () => {
-    const built = draftOnly({ build: job("failed", "attempts_exhausted"), extractions: [] });
-    const read = draftOnly({
-      build: job("succeeded"),
-      extractions: [{ document_version_id: "v1", job: job("failed", "catalogue_extraction_unsupported")! }],
-    });
+  it("puts a failed build first and sends it to Check, where an index is rebuilt", () => {
+    const overview = draftOnly({ build: job("failed", "attempts_exhausted"), extractions: [] });
 
-    expect(built.lines).toMatchObject([{ rank: "delayed", cells: { status: "Index build failed" } }]);
-    expect(built.next).toEqual({ to: "/architecture/versions/oct/check", label: "‘October update’: index build failed" });
-    expect(built.notes.at(-1)?.text).toContain("Its evidence index build failed (attempts exhausted).");
-    expect(read.lines).toMatchObject([{ rank: "delayed", cells: { status: "1 reading failed" } }]);
-    expect(read.next.to).toBe("/architecture/versions/oct/sources");
-    expect(read.notes.at(-1)?.text).toContain("Reading failed: this kind of file cannot be read here.");
+    expect(overview.lines).toMatchObject([{ rank: "delayed", cells: { status: "Index build failed" }, statusDetail: "1 suggestion to decide" }]);
+    expect(overview.next).toEqual({ to: "/architecture/versions/oct/check", label: "Rebuild the evidence index of ‘October update’" });
+    expect(overview.notes.at(-1)?.text).toContain("Its evidence index could not be built: it stopped after three attempts.");
+    expect(overview.alert).toEqual({ rank: "delayed", text: "1 draft failed" });
   });
 
-  it("shows no failures to a reader who may not see builds, and says when the catalogue last changed", () => {
+  it("names the document a failed reading was of, and sends the reader to Sources to read it again", () => {
+    const overview = architectureOverview(
+      [release({ id: "oct", name: "October update", documents: [{ id: "v1", title: "Target state", filename: "target.md" }] as never })],
+      null,
+      new Map([["oct", { runs: [], suggestions: [] } as never]]),
+      nameDirectory([]),
+      new Map([["oct", {
+        build: job("failed"),
+        extractions: [{ document_version_id: "v1", job: job("failed", "catalogue_extraction_unsupported")! }],
+      }]]),
+    );
+
+    expect(overview.lines[0]?.cells.status).toBe("Build and 1 reading failed");
+    expect(overview.next).toEqual({ to: "/architecture/versions/oct/sources", label: "Read 1 document again in ‘October update’, then rebuild" });
+    expect(overview.notes.at(-1)?.text).toContain("‘Target state’ could not be read: this kind of file cannot be read here.");
+  });
+
+  it("does not call a draft ready to a reader who may not see its builds, and says on the edition line what last changed", () => {
     const unseen = architectureOverview(
       [release({ id: "oct", name: "October update" })],
       null,
@@ -149,8 +161,9 @@ describe("architectureOverview", () => {
       nameDirectory([]),
     );
 
-    expect(unseen.lines).toMatchObject([{ rank: "service", cells: { status: "Ready to review and publish" } }]);
-    expect(unseen.totals).toEqual([{ key: "changed", label: "Last change", value: "3 Oct 2026" }]);
+    expect(unseen.lines).toMatchObject([{ rank: "service", cells: { status: "No suggestions to decide" } }]);
+    expect(unseen.totals).toEqual([]);
+    expect(unseen.edition.text).toContain("Last change 3 Oct 2026, a reading in ‘October update’.");
   });
 
   it("names the packaged initial catalogue rather than its actor id", () => {
@@ -206,49 +219,63 @@ const corpus = (overrides: Partial<RequirementCorpus> = {}): RequirementCorpus =
 });
 
 describe("requirementOverview", () => {
+  const WORK = "/";
+
   it("is quiet when everything is indexed and no finding stands open", () => {
-    const overview = requirementOverview(corpus());
+    const overview = requirementOverview(corpus(), WORK);
 
     expect(overview.lines).toEqual([]);
-    expect(overview.next).toEqual({ label: "Nothing in requirement knowledge awaits a curator." });
-    expect(overview.extent).toEqual({ value: 12, label: "12 Requirements" });
+    expect(overview.next).toEqual({ label: "Nothing in requirement knowledge awaits anyone." });
+    expect(overview.alert).toBeUndefined();
+    expect(overview.extent).toEqual({ value: 12, label: "12 requirements" });
+    expect(overview.edition).toEqual({ text: "12 requirements, 12 indexed and current", note: "source" });
     expect(overview.totals.map((total) => [total.label, total.value])).toEqual([
       ["Requirements", "12"],
       ["Indexed and current", "12"],
-      ["Closed as duplicates", "1"],
+      ["Of them closed as duplicates", "1"],
       ["Open findings", "0"],
     ]);
   });
 
-  it("ranks stopped indexing and month-old findings as disruptions, ahead of what is due or running", () => {
+  it("ranks stopped indexing and month-old findings as disruptions and sends the next decision to requirement work", () => {
     const overview = requirementOverview(corpus({
       current: 9, waiting: 2, failed: 1,
       open_findings: { under_7_days: 3, from_7_to_30_days: 1, over_30_days: 2 },
-    }));
+    }), WORK);
 
     expect(overview.lines.map((line) => [line.rank, line.name, line.cells.count])).toEqual([
       ["delayed", "Requirements that stopped indexing", "1"],
       ["delayed", "Findings open over 30 days", "2"],
       ["due", "Findings open 7 to 30 days", "1"],
-      ["due", "Findings open under 7 days", "3"],
+      ["running", "Findings open under 7 days", "3"],
       ["running", "Requirements waiting to be indexed", "2"],
     ]);
-    expect(overview.next).toEqual({ label: "1 Requirement stopped indexing; its team retries it in requirement work." });
+    expect(overview.next).toEqual({
+      href: "/",
+      leaves: "opens requirement work",
+      label: "See to the 1 requirement that stopped indexing and the 2 overdue findings in requirement work",
+    });
+    expect(overview.alert).toEqual({ rank: "delayed", text: "1 stopped indexing, 2 overdue" });
     expect(overview.notes.map((note) => note.id)).toEqual(["source", "failed", "findings"]);
     expect(overview.totals.at(-1)?.value).toBe("6");
   });
 
-  it("says findings await their owners while none is overdue", () => {
-    const overview = requirementOverview(corpus({ open_findings: { under_7_days: 1, from_7_to_30_days: 0, over_30_days: 0 } }));
+  it("treats a finding this week as in progress, and one older as awaiting its owners", () => {
+    const recent = requirementOverview(corpus({ open_findings: { under_7_days: 1, from_7_to_30_days: 0, over_30_days: 0 } }), WORK);
+    const older = requirementOverview(corpus({ open_findings: { under_7_days: 0, from_7_to_30_days: 1, over_30_days: 0 } }), WORK);
 
-    expect(overview.next).toEqual({ label: "1 finding awaits its owners' decision in requirement work." });
+    expect(recent.next).toEqual({ label: "Nothing in requirement knowledge awaits anyone." });
+    expect(recent.alert).toBeUndefined();
+    expect(older.next).toMatchObject({ href: "/", label: "1 finding awaits its owners in requirement work" });
+    expect(older.alert).toEqual({ rank: "due", text: "1 finding awaiting owners" });
   });
 
   it("says a model change needs a rebuild before anything else", () => {
-    const overview = requirementOverview(corpus({ rebuild_required: true, current: 0, requirements: 0 }));
+    const overview = requirementOverview(corpus({ rebuild_required: true, current: 0, requirements: 0 }), WORK);
 
     expect(overview.lines[0]).toMatchObject({ rank: "delayed", name: "Requirement index", cells: { status: "Rebuild required" } });
-    expect(overview.next.label).toBe("The Requirement index must be rebuilt in requirement work before screening resumes.");
+    expect(overview.next).toMatchObject({ href: "/", label: "Rebuild the requirement index in requirement work" });
+    expect(overview.edition.text).toBe("0 requirements · the index must be rebuilt");
   });
 });
 
