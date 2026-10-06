@@ -34,7 +34,7 @@ export function OverviewTable({ spec, state, headingLevel }: {
         columns={spec.columns}
         rows={[]}
         notes={[]}
-        quiet={state.status === "loading" ? "Reading…" : `The knowledge service did not answer: ${errorMessage(state.error)}`}
+        quiet={state.status === "loading" ? "Reading…" : `${spec.answerer} did not answer: ${errorMessage(state.error)}`}
         next={{ label: "" }}
         failure={state.status === "error" ? state.retry : undefined}
       />

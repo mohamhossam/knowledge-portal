@@ -27,6 +27,7 @@ import { ProductsPage } from "../squads/ProductsPage";
 import { SquadListPage } from "../squads/SquadListPage";
 import { SquadsPage } from "../squads/SquadsPage";
 import { ExplorerPage } from "../explorer/ExplorerPage";
+import { RequirementKnowledgePage } from "../requirements/RequirementKnowledgePage";
 import { HomePage } from "./HomePage";
 import { Shell } from "./Shell";
 
@@ -57,6 +58,7 @@ export function App() {
       <Route element={<Shell />}>
         <Route index element={<HomePage />} />
         <Route path="library" element={<LibraryPage />} />
+        <Route path="requirement-knowledge" element={<RequirementKnowledgePage />} />
         <Route path="library/search" element={<SearchPage />} />
         <Route path="library/:documentId" element={<DocumentPage />}>
           <Route index element={<ReviewPage />} />

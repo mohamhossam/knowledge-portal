@@ -5,18 +5,23 @@
  * without a browser: a document awaits review when its newest version has been
  * read and no publication was approved from it (a version's ingestion stage
  * stays "ready_for_review" after approval, so the stage alone cannot say); a catalogue draft needs someone while it
- * holds proposed suggestions; a system needs an owner when no squad holds it.
+ * holds proposed suggestions, and is disrupted when its build or a reading failed; a system needs an owner when no
+ * squad holds it; and requirement work's corpus needs someone when indexing stopped or a finding has stood a month.
  */
 import type {
   Actor,
+  ArchitectureJob,
   CatalogueSuggestions,
+  DocumentExtraction,
   LibraryDocument,
   Organisation,
   OrganisationAuditEvent,
   Release,
+  RequirementCorpus,
 } from "../api/client";
+import { reading } from "../catalogue/suggestions";
 import type { Rank } from "../timetable/TimetableTable";
-import { count, formatDay } from "./format";
+import { count, formatDay, formatMoment } from "./format";
 
 export type Line = {
   key: string;
@@ -60,6 +65,16 @@ function inReadingOrder(notes: DerivedNote[], editionNote: string | undefined, l
     if (note) byId.delete(note.id);
     return note ? [note] : [];
   });
+}
+
+/** The newest of some ISO moments, or null when none is known. */
+function latestOf(moments: (string | null | undefined)[]): string | null {
+  return moments.reduce<string | null>((latest, at) => (at && (!latest || at > latest) ? at : latest), null);
+}
+
+/** Freshness: when a table's body last changed, as one more total. */
+function lastChange(at: string | null): Overview["totals"] {
+  return at ? [{ key: "changed", label: "Last change", value: formatDay(at) }] : [];
 }
 
 export type NameOf = (actorId: string | null | undefined) => string;
@@ -175,6 +190,10 @@ export function libraryOverview(documents: LibraryDocument[]): Overview {
     totals: [
       { key: "service", label: "In service", value: count(inService, "document") },
       { key: "withdrawn", label: "Withdrawn", value: count(withdrawn, "document") },
+      ...lastChange(latestOf(documents.flatMap((document) => [
+        ...document.versions.map((version) => version.uploaded_at),
+        ...document.publications.flatMap((item) => [item.approved_at, item.activated_at, item.built_at, item.withdrawn_at]),
+      ]))),
     ],
     edition: latest
       ? { text: `Edition of ${formatDay(latest.at)} · ${count(inService, "document")} in service`, note: "latest" }
@@ -192,11 +211,36 @@ export function libraryOverview(documents: LibraryDocument[]): Overview {
 
 // Table 2 ----------------------------------------------------------------------
 
+/** A draft's latest index build and its documents' latest readings. */
+export type DraftJobs = { build: ArchitectureJob | null; extractions: DocumentExtraction[] };
+
+/** What failed on a draft, in a status cell's words; null when nothing did. */
+function draftFailure(
+  jobs: DraftJobs | undefined,
+): { status: string; detail: string; buildOnly: boolean } | null {
+  if (!jobs) return null;
+  const build = jobs.build?.status === "failed";
+  const readings = jobs.extractions.filter((item) => item.job.status === "failed");
+  if (!build && readings.length === 0) return null;
+  const why = [
+    ...(build ? [`Its evidence index build failed${jobs.build?.error_category ? ` (${jobs.build.error_category.replace(/_/g, " ")})` : ""}.`] : []),
+    ...readings.map((item) => `${reading(item.job).label}.`),
+  ];
+  const status = build && readings.length > 0
+    ? `Build and ${count(readings.length, "reading")} failed`
+    : build
+      ? "Index build failed"
+      : `${count(readings.length, "reading")} failed`;
+  return { status, detail: [...new Set(why)].join(" "), buildOnly: build && readings.length === 0 };
+}
+
 export function architectureOverview(
   releases: Release[],
   active: Release | null,
   suggestions: Map<string, CatalogueSuggestions>,
   nameOf: NameOf,
+  /** Each draft's builds and readings, when the reader may see them; failures are then disruptions. */
+  jobs: Map<string, DraftJobs> | null = null,
 ): Overview {
   const drafts = releases.filter((release) => release.status === "draft");
   const notes: DerivedNote[] = [];
@@ -207,22 +251,24 @@ export function architectureOverview(
     });
   }
   let pendingTotal = 0;
+  const failures = new Map(drafts.map((draft) => [draft.id, draftFailure(jobs?.get(draft.id))]));
   const lines = drafts.map((draft): Line => {
-    const reading = suggestions.get(draft.id);
-    const pending = (reading?.suggestions ?? []).filter((item) => item.status === "proposed").length;
+    const read = suggestions.get(draft.id);
+    const pending = (read?.suggestions ?? []).filter((item) => item.status === "proposed").length;
     pendingTotal += pending;
+    const failure = failures.get(draft.id) ?? null;
     const note = `draft-${draft.id}`;
     notes.push({
       id: note,
-      text: `Prepared by ${nameOf(draft.created_by)}, now at revision ${draft.revision}. ${count(reading?.runs.length ?? 0, "catalogue reading")} proposed ${count(reading?.suggestions.length ?? 0, "suggestion")}; each waits for a curator's decision.`,
+      text: `Prepared by ${nameOf(draft.created_by)}, now at revision ${draft.revision}. ${count(read?.runs.length ?? 0, "catalogue reading")} proposed ${count(read?.suggestions.length ?? 0, "suggestion")}; each waits for a curator's decision.${failure ? ` ${failure.detail}` : ""}`,
     });
     return {
       note,
       key: draft.id,
-      rank: pending > 0 ? "due" : "service",
+      rank: failure ? "delayed" : pending > 0 ? "due" : "service",
       name: draft.name ?? "Unnamed draft",
       cells: {
-        status: pending > 0 ? `${count(pending, "suggestion")} to decide` : "Ready to review and publish",
+        status: failure ? failure.status : pending > 0 ? `${count(pending, "suggestion")} to decide` : "Ready to review and publish",
         preparedBy: nameOf(draft.created_by),
         systems: String(draft.systems.length),
         revision: `r${draft.revision}`,
@@ -231,6 +277,12 @@ export function architectureOverview(
   }).sort(byRank);
 
   const pendingDrafts = lines.filter((line) => line.rank === "due");
+  const failedDrafts = lines.filter((line) => line.rank === "delayed");
+  const firstFailed = failedDrafts[0];
+  const changed = latestOf([
+    ...releases.map((release) => release.published_at),
+    ...[...suggestions.values()].flatMap((read) => read?.runs.map((run) => run.created_at) ?? []),
+  ]);
   return {
     lines,
     notes: inReadingOrder(notes, active ? "edition" : undefined, lines),
@@ -240,12 +292,25 @@ export function architectureOverview(
           { key: "relationships", label: "Relationships", value: String(active.relationships.length) },
           { key: "domains", label: "Capability domains", value: String(active.capability_domains?.length ?? 0) },
           { key: "journeys", label: "Journeys", value: String(active.journeys?.length ?? 0) },
+          ...lastChange(changed),
         ]
-      : [],
+      : lastChange(changed),
     edition: active
       ? { text: `Edition ‘${active.name ?? active.id}’ in force`, note: "edition" }
       : { text: "No edition is in force. Requirement work maps against nothing until a release is published." },
-    next: pendingTotal > 0
+    next: firstFailed
+      ? {
+          // A build alone is mended on Check; a failed reading on Sources, where its document is.
+          to: failedDrafts.length > 1
+            ? "/architecture/versions"
+            : failures.get(firstFailed.key)?.buildOnly
+              ? draftCheck(firstFailed.key)
+              : draftSuggestions(firstFailed.key),
+          label: failedDrafts.length === 1
+            ? `‘${firstFailed.name}’: ${firstFailed.cells.status?.toLowerCase()}`
+            : `${count(failedDrafts.length, "draft")} have failed work to mend`,
+        }
+    : pendingTotal > 0
       ? {
           to: pendingDrafts.length === 1 && pendingDrafts[0] ? draftSuggestions(pendingDrafts[0].key) : "/architecture/versions",
           label: pendingDrafts.length === 1
@@ -264,6 +329,8 @@ export function architectureOverview(
 
 /** Where a draft is worked on: its sources, documents and suggestions. */
 const draftSuggestions = (releaseId: string) => `/architecture/versions/${encodeURIComponent(releaseId)}/sources`;
+/** Where a draft's evidence index is built and checked. */
+const draftCheck = (releaseId: string) => `/architecture/versions/${encodeURIComponent(releaseId)}/check`;
 
 // Table 3 ----------------------------------------------------------------------
 
@@ -310,6 +377,7 @@ export function squadOverview(
       { key: "streams", label: "Value streams", value: String(organisation.value_streams.length) },
       { key: "products", label: "Products", value: String(organisation.products.length) },
       { key: "people", label: "People", value: String(activePeople) },
+      ...lastChange(latest?.created_at ?? null),
     ],
     edition: {
       text: `${count(organisation.squads.length, "squad")} owning ${count(owner.size, "system")}${active ? ` of the ${systems.length} in force (Table 2)` : ""}`,
@@ -319,5 +387,80 @@ export function squadOverview(
       ? { to: "/squads", label: `${count(unowned.length, "system")} in force ${unowned.length === 1 ? "has" : "have"} no owning squad` }
       : { label: active ? "Every system in force has an owning squad." : "No edition is in force, so no system needs an owner yet." },
     extent: { value: organisation.squads.length, label: count(organisation.squads.length, "squad") },
+  };
+}
+
+// Table 4 ----------------------------------------------------------------------
+
+/**
+ * Requirement work's corpus, in counts (requirement-portal ADR-0099, Amendment 1). Its owners
+ * decide findings and retry indexing in requirement work, so this table says what stands and
+ * where, and offers no action of its own yet.
+ */
+export function requirementOverview(corpus: RequirementCorpus): Overview {
+  const ages = corpus.open_findings;
+  const open = ages.under_7_days + ages.from_7_to_30_days + ages.over_30_days;
+  const notes: DerivedNote[] = [{
+    id: "source",
+    text: `Read from requirement work at ${formatMoment(new Date(corpus.as_of))}. Requirement work keeps the Requirements and their findings; it answers in counts, never naming a Requirement.`,
+  }];
+  const lines: Line[] = [];
+  const row = (key: string, rank: Rank, name: string, status: string, value: string, note?: string) =>
+    lines.push({ key, rank, name, cells: { status, count: value }, note });
+
+  if (corpus.rebuild_required) {
+    notes.push({
+      id: "rebuild",
+      text: "The embedding model changed. Until the index is rebuilt in requirement work, no Requirement is screened against the others.",
+    });
+    row("rebuild", "delayed", "Requirement index", "Rebuild required", "—", "rebuild");
+  }
+  if (corpus.failed > 0) {
+    notes.push({
+      id: "failed",
+      text: "Indexing stops after three failed attempts on the same change. The Requirement's team retries it from the Requirement, or a later change starts it afresh.",
+    });
+    row("failed", "delayed", "Requirements that stopped indexing", "Indexing failed", String(corpus.failed), "failed");
+  }
+  if (ages.over_30_days > 0) {
+    notes.push({
+      id: "findings",
+      text: "A possible duplicate or contradiction stays open until the Requirements' owners decide it on the Knowledge step. One left over a month is overdue.",
+    });
+    row("over30", "delayed", "Findings open over 30 days", "Overdue", String(ages.over_30_days), "findings");
+  }
+  if (ages.from_7_to_30_days > 0) {
+    row("over7", "due", "Findings open 7 to 30 days", "Awaiting owners", String(ages.from_7_to_30_days));
+  }
+  if (ages.under_7_days > 0) {
+    row("recent", "due", "Findings open under 7 days", "Awaiting owners", String(ages.under_7_days));
+  }
+  if (corpus.waiting > 0) {
+    row("waiting", "running", "Requirements waiting to be indexed", "Indexing", String(corpus.waiting));
+  }
+
+  return {
+    lines,
+    notes: inReadingOrder(notes, "source", lines),
+    totals: [
+      { key: "requirements", label: "Requirements", value: String(corpus.requirements) },
+      { key: "current", label: "Indexed and current", value: String(corpus.current) },
+      { key: "duplicates", label: "Closed as duplicates", value: String(corpus.duplicates) },
+      { key: "open", label: "Open findings", value: String(open) },
+    ],
+    edition: {
+      text: `Corpus of ${formatDay(corpus.as_of)} · ${count(corpus.requirements, "Requirement")}, ${corpus.current} indexed and current`,
+      note: "source",
+    },
+    next: corpus.rebuild_required
+      ? { label: "The Requirement index must be rebuilt in requirement work before screening resumes." }
+      : corpus.failed > 0
+        ? { label: `${count(corpus.failed, "Requirement")} stopped indexing; ${corpus.failed === 1 ? "its team retries it" : "their teams retry them"} in requirement work.` }
+        : ages.over_30_days > 0
+          ? { label: `${count(ages.over_30_days, "finding")} ${ages.over_30_days === 1 ? "has" : "have"} stood over a month; owners decide ${ages.over_30_days === 1 ? "it" : "them"} in requirement work.` }
+          : open > 0
+            ? { label: `${count(open, "finding")} ${open === 1 ? "awaits its" : "await their"} owners' decision in requirement work.` }
+            : { label: "Nothing in requirement knowledge awaits a curator." },
+    extent: { value: corpus.requirements, label: count(corpus.requirements, "Requirement") },
   };
 }

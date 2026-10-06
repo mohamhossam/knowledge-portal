@@ -61,6 +61,7 @@ export type PossibleMatch = Schemas["PossibleMatchResponse"];
 export type ExtractionRun = Schemas["ExtractionRunResponse"];
 export type ArchitectureJob = Schemas["ArchitectureJobResponse"];
 export type DocumentExtraction = Schemas["DocumentExtractionResponse"];
+export type RequirementCorpus = Schemas["RequirementCorpusResponse"];
 export type CitedPassage = Schemas["DocumentPassageResponse"];
 export type CatalogueDocument = Schemas["KnowledgeDocumentVersionResponse"];
 export type DocumentLanguage = "en" | "ar" | "mixed";
@@ -290,6 +291,9 @@ export const api = {
       body: JSON.stringify({ expected_revision: expectedRevision }),
     }),
   organisationAudit: () => apiRequest<OrganisationAuditEvent[]>("/organisation/audit"),
+
+  // Knowledge Center: requirement work's corpus, in counts (A′).
+  requirementCorpus: () => apiRequest<RequirementCorpus>("/knowledge-center/requirement-corpus"),
 
   // Library: one document and its curation. Every change names the version it saw.
   libraryDocument: (documentId: string) => apiRequest<LibraryDocument>(documentPath(documentId)),

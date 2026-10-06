@@ -12,6 +12,7 @@ const ENTRIES = [
   { key: "library", spec: TABLES.library },
   { key: "architecture", spec: TABLES.architecture },
   { key: "squads", spec: TABLES.squads },
+  { key: "requirements", spec: TABLES.requirements },
 ] as const;
 
 function extent(state: TableState) {
