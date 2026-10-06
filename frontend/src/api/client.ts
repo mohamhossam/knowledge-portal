@@ -62,6 +62,22 @@ export type ExtractionRun = Schemas["ExtractionRunResponse"];
 export type ArchitectureJob = Schemas["ArchitectureJobResponse"];
 export type DocumentExtraction = Schemas["DocumentExtractionResponse"];
 export type RequirementCorpus = Schemas["RequirementCorpusResponse"];
+export type CorpusRequirementsPage = Schemas["CorpusRequirementsResponse"];
+export type CorpusRequirement = Schemas["CorpusRequirementResponse"];
+export type CorpusFindingsPage = Schemas["CorpusFindingsResponse"];
+export type CorpusFinding = Schemas["CorpusFindingResponse"];
+export type IndexState = Schemas["IndexState"];
+export type FindingAge = Schemas["FindingAge"];
+export type FindingKind = Schemas["FindingKind"];
+export type Nudge = Schemas["NudgeResponse"];
+export type CorpusFilters = {
+  indexState?: IndexState;
+  ownerId?: string;
+  query?: string;
+  openFindingsOnly?: boolean;
+  notScreenedForDays?: number;
+};
+export type FindingFilters = { kind?: FindingKind; age?: FindingAge; ownerId?: string };
 export type CitedPassage = Schemas["DocumentPassageResponse"];
 export type CatalogueDocument = Schemas["KnowledgeDocumentVersionResponse"];
 export type DocumentLanguage = "en" | "ar" | "mixed";
@@ -294,6 +310,27 @@ export const api = {
 
   // Knowledge Center: requirement work's corpus, in counts (A′).
   requirementCorpus: () => apiRequest<RequirementCorpus>("/knowledge-center/requirement-corpus"),
+  /** The corpus by title, 50 at a time: identity and state, never content (B2). */
+  corpusRequirements: (filters: CorpusFilters, offset: number) => {
+    const params = new URLSearchParams({ offset: String(offset), limit: "50" });
+    if (filters.indexState) params.set("index_state", filters.indexState);
+    if (filters.ownerId) params.set("owner_id", filters.ownerId);
+    if (filters.query) params.set("q", filters.query);
+    if (filters.openFindingsOnly) params.set("open_findings_only", "true");
+    if (filters.notScreenedForDays) params.set("not_screened_for_days", String(filters.notScreenedForDays));
+    return apiRequest<CorpusRequirementsPage>(`/knowledge-center/requirement-corpus/requirements?${params}`);
+  },
+  /** Findings in force, the longest-standing first. */
+  corpusFindings: (filters: FindingFilters, offset: number) => {
+    const params = new URLSearchParams({ offset: String(offset), limit: "50" });
+    if (filters.kind) params.set("kind", filters.kind);
+    if (filters.age) params.set("age", filters.age);
+    if (filters.ownerId) params.set("owner_id", filters.ownerId);
+    return apiRequest<CorpusFindingsPage>(`/knowledge-center/requirement-corpus/findings?${params}`);
+  },
+  /** Ask both requirements' owners to decide a finding; requirement work sends it, at most weekly. */
+  nudgeFinding: (findingId: string) =>
+    post<Nudge>(`/knowledge-center/requirement-corpus/findings/${encodeURIComponent(findingId)}/nudge`, {}),
 
   // Library: one document and its curation. Every change names the version it saw.
   libraryDocument: (documentId: string) => apiRequest<LibraryDocument>(documentPath(documentId)),

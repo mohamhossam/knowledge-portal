@@ -237,23 +237,22 @@ describe("requirementOverview", () => {
     ]);
   });
 
-  it("ranks stopped indexing and month-old findings as disruptions and sends the next decision to requirement work", () => {
+  it("ranks stopped indexing and month-old findings as disruptions and leads to the overdue findings", () => {
     const overview = requirementOverview(corpus({
       current: 9, waiting: 2, failed: 1,
       open_findings: { under_7_days: 3, from_7_to_30_days: 1, over_30_days: 2 },
     }), WORK);
 
-    expect(overview.lines.map((line) => [line.rank, line.name, line.cells.count])).toEqual([
-      ["delayed", "Requirements that stopped indexing", "1"],
-      ["delayed", "Findings open over 30 days", "2"],
-      ["due", "Findings open 7 to 30 days", "1"],
-      ["running", "Findings open under 7 days", "3"],
-      ["running", "Requirements waiting to be indexed", "2"],
+    expect(overview.lines.map((line) => [line.rank, line.name, line.cells.count, line.to])).toEqual([
+      ["delayed", "Requirements that stopped indexing", "1", "/requirement-knowledge/requirements?state=failed"],
+      ["delayed", "Findings open over 30 days", "2", "/requirement-knowledge/findings?age=over_30_days"],
+      ["due", "Findings open 7 to 30 days", "1", "/requirement-knowledge/findings?age=from_7_to_30_days"],
+      ["running", "Findings open under 7 days", "3", "/requirement-knowledge/findings?age=under_7_days"],
+      ["running", "Requirements waiting to be indexed", "2", "/requirement-knowledge/requirements?state=waiting"],
     ]);
     expect(overview.next).toEqual({
-      href: "/",
-      leaves: "opens requirement work",
-      label: "See to the 1 requirement that stopped indexing and the 2 overdue findings in requirement work",
+      to: "/requirement-knowledge/findings?age=over_30_days",
+      label: "Ask the owners of the 2 overdue findings to decide them",
     });
     expect(overview.alert).toEqual({ rank: "delayed", text: "1 stopped indexing, 2 overdue" });
     expect(overview.notes.map((note) => note.id)).toEqual(["source", "failed", "findings"]);
@@ -266,8 +265,17 @@ describe("requirementOverview", () => {
 
     expect(recent.next).toEqual({ label: "Nothing in requirement knowledge awaits anyone." });
     expect(recent.alert).toBeUndefined();
-    expect(older.next).toMatchObject({ href: "/", label: "1 finding awaits its owners in requirement work" });
+    expect(older.next).toEqual({ to: "/requirement-knowledge/findings?age=from_7_to_30_days", label: "1 finding awaits its owners" });
     expect(older.alert).toEqual({ rank: "due", text: "1 finding awaiting owners" });
+  });
+
+  it("leads to the requirements that stopped indexing when no finding is overdue", () => {
+    const overview = requirementOverview(corpus({ current: 11, failed: 1 }), WORK);
+
+    expect(overview.next).toEqual({
+      to: "/requirement-knowledge/requirements?state=failed",
+      label: "See the 1 requirement that stopped indexing",
+    });
   });
 
   it("says a model change needs a rebuild before anything else", () => {

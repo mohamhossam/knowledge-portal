@@ -1,0 +1,73 @@
+/* Table 4's pages: requirement work's corpus row by row, and its findings (B2). */
+
+/* On the overview, the sub-index sits in the toolbar slot, across the table column. */
+.timetable__toolbar > .subindex {
+  flex-basis: 100%;
+  margin-top: 0;
+}
+
+/* The two checks under the filter strip sit on one line, left. */
+.filters--checks {
+  justify-content: start;
+}
+
+.knowledge__owner {
+  color: var(--ink-2);
+}
+
+.knowledge__owner strong {
+  color: var(--ink);
+}
+
+/* A person in a row: a quiet link that narrows the page to their requirements. */
+.knowledge__person {
+  display: inline-block;
+  min-height: 1.5rem;
+  color: inherit;
+  text-decoration-color: var(--rule);
+  text-underline-offset: 0.2em;
+}
+
+.knowledge__person:hover {
+  color: var(--ink);
+  text-decoration-color: currentColor;
+}
+
+/* The two requirements of a finding, one above the other, each with its owner beneath. */
+.knowledge__side {
+  display: block;
+}
+
+.knowledge__side + .knowledge__side {
+  margin-top: var(--s2);
+}
+
+.knowledge__findings tbody th {
+  width: 34%;
+}
+
+.knowledge__findings tbody th .clamp {
+  max-width: 60ch;
+  margin-top: var(--s1);
+}
+
+.knowledge__nudge {
+  display: block;
+  margin-top: var(--s1);
+}
+
+.knowledge__nudge .text-button {
+  margin-left: calc(-1 * var(--s1));
+}
+
+/* The table's dates and counts read as figures. */
+.knowledge__table .cell--end {
+  font-variant-numeric: tabular-nums lining-nums;
+  white-space: nowrap;
+}
+
+@media (max-width: 40rem) {
+  .knowledge__findings tbody th {
+    width: auto;
+  }
+}

@@ -27,6 +27,8 @@ import { ProductsPage } from "../squads/ProductsPage";
 import { SquadListPage } from "../squads/SquadListPage";
 import { SquadsPage } from "../squads/SquadsPage";
 import { ExplorerPage } from "../explorer/ExplorerPage";
+import { CorpusFindingsPage } from "../requirements/CorpusFindingsPage";
+import { CorpusRequirementsPage } from "../requirements/CorpusRequirementsPage";
 import { RequirementKnowledgePage } from "../requirements/RequirementKnowledgePage";
 import { HomePage } from "./HomePage";
 import { Shell } from "./Shell";
@@ -59,6 +61,8 @@ export function App() {
         <Route index element={<HomePage />} />
         <Route path="library" element={<LibraryPage />} />
         <Route path="requirement-knowledge" element={<RequirementKnowledgePage />} />
+        <Route path="requirement-knowledge/requirements" element={<CorpusRequirementsPage />} />
+        <Route path="requirement-knowledge/findings" element={<CorpusFindingsPage />} />
         <Route path="library/search" element={<SearchPage />} />
         <Route path="library/:documentId" element={<DocumentPage />}>
           <Route index element={<ReviewPage />} />
@@ -96,7 +100,7 @@ function NotFound() {
   return (
     <section className="missing" aria-labelledby="missing-title">
       <h1 id="missing-title" className="missing__title">There is no table at this address</h1>
-      <p>The portal has three tables: the library, the architecture catalogue and the squad catalogue.</p>
+      <p>The portal has four tables: the library, the architecture catalogue, the squad catalogue and requirement knowledge.</p>
       <p><Link to="/">Back to the front page</Link></p>
     </section>
   );
