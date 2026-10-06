@@ -47,6 +47,11 @@ export function VersionsPage() {
         be put back, with a reason.
       </p>
       {notice && <p className="toolbar__notice" role="status">{notice}</p>}
+      {(releases.data?.length ?? 0) > 1 && (
+        <p className="versions__compare">
+          <Link to="/architecture/compare">Compare any two versions</Link>
+        </p>
+      )}
       {releases.isPending ? (
         <p className="timetable__quiet">Reading the versions…</p>
       ) : releases.isError ? (
@@ -170,7 +175,8 @@ function VersionDetail({ release, canPutBack, onPutBack, onKeep }: {
   onPutBack: () => void;
   onKeep: () => void;
 }) {
-  const { actorName } = useCatalogueContext();
+  const { actorName, book } = useCatalogueContext();
+  const activeId = book.release.id;
   const id = useId();
   const audit = useQuery({
     queryKey: ["architecture", "releases", release.id, "audit"],
@@ -206,6 +212,15 @@ function VersionDetail({ release, canPutBack, onPutBack, onKeep }: {
         ))}
       </p>
       {failure && <p className="docpage__failure" role="alert">{failure}</p>}
+      <p className="govsection__actions">
+        <Link to={`/architecture/compare?${new URLSearchParams(
+          // The version in service compares with the newest other one, which the page picks.
+          release.id === activeId ? { from: activeId } : { from: activeId, to: release.id },
+        )}`}>
+          {release.id === activeId ? "Compare it with another version" : "Compare it with the version in service"}
+          <span className="visually-hidden">: {release.name}</span>
+        </Link>
+      </p>
 
       <h3 id={`${id}-history`} className="govsection__title versions__title">What happened to it</h3>
       {audit.isPending ? (

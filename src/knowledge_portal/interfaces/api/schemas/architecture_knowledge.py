@@ -23,7 +23,11 @@ from knowledge_portal.application.use_cases.architecture_comparison import (
     ComparedImpact,
     ImpactComparison,
 )
-from knowledge_portal.application.use_cases.architecture_documents import DocumentPassage
+from knowledge_portal.application.use_cases.architecture_documents import (
+    BatchUploadResult,
+    DocumentPassage,
+    FileResult,
+)
 from knowledge_portal.application.use_cases.architecture_mapping_impact import MappingImpact
 from knowledge_portal.application.use_cases.catalog_plans import CatalogPlans, CatalogPlansStatus
 from knowledge_portal.application.use_cases.catalogue_candidates import (
@@ -2054,4 +2058,18 @@ class DocumentPassageResponse(BaseModel):
             passage=one(found.passage),
             before=[one(item) for item in found.before],
             after=[one(item) for item in found.after],
+        )
+
+
+class BatchUploadResponse(BaseModel):
+    """Several files into a draft: the draft after them, and what became of each (C)."""
+
+    release: KnowledgeReleaseResponse
+    results: list[FileResult]
+
+    @classmethod
+    def from_domain(cls, value: BatchUploadResult) -> BatchUploadResponse:
+        return cls(
+            release=KnowledgeReleaseResponse.from_domain(value.release),
+            results=list(value.results),
         )

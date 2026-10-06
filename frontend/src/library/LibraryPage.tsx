@@ -6,8 +6,9 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { errorMessage } from "../api/errors";
 import { libraryOverview } from "../home/derive";
-import { formatDay } from "../home/format";
+import { count, formatDay } from "../home/format";
 import { type Column, NoteMark, TimetableTable } from "../timetable/TimetableTable";
+import { LibraryRetry } from "./LibraryRetry";
 import { RANK_ORDER, libraryRow } from "./libraryRow";
 
 const COLUMNS: Column[] = [
@@ -15,12 +16,20 @@ const COLUMNS: Column[] = [
   { key: "status", label: "Status" },
   { key: "version", label: "In service", align: "end", priority: 2 },
   { key: "owner", label: "Owner", priority: 3 },
+  { key: "cited", label: "Cited by", align: "end", priority: 3 },
   { key: "since", label: "Since", align: "end", priority: 2 },
 ];
+
+/** Requirements citing it now, across the portfolio; a dash when requirement work can't say. */
+function citedBy(citations: number | null | undefined): string {
+  if (citations === null || citations === undefined) return "—";
+  return citations === 0 ? "None" : count(citations, "requirement");
+}
 
 /** The library: every document an admin may see, and a way to add one. */
 export function LibraryPage() {
   const documents = useQuery({ queryKey: ["library", "documents"], queryFn: api.libraryDocuments });
+  const queryClient = useQueryClient();
   const [find, setFind] = useState("");
   const findId = useId();
   const notice = (useLocation().state as { notice?: string } | null)?.notice;
@@ -41,8 +50,14 @@ export function LibraryPage() {
   const ranked = (documents.data ?? [])
     .map((item) => ({ document: item, ...libraryRow(item) }))
     .sort((a, b) => RANK_ORDER[a.rank] - RANK_ORDER[b.rank] || a.document.title.localeCompare(b.document.title));
-  const yours = ranked.filter((item) => item.rank === "due" && item.document.can_edit);
-  const broken = ranked.filter((item) => item.rank === "delayed" && item.document.can_edit);
+  const yours = ranked.filter((item) => item.rank === "due" && item.document.is_owner);
+  const broken = ranked.filter((item) => item.rank === "delayed" && item.document.is_owner);
+  // What a knowledge admin can retry in one go, whoever owns it.
+  const stopped = {
+    reading: ranked.filter((item) => item.status === "Extraction failed").map((item) => item.document.title),
+    indexing: ranked.filter((item) => item.status === "Indexing stopped").map((item) => item.document.title),
+  };
+  const others = stopped.reading.length + stopped.indexing.length;
   const next = yours[0]
     ? {
         to: `/library/${encodeURIComponent(yours[0].document.id)}`,
@@ -52,7 +67,13 @@ export function LibraryPage() {
       }
     : broken[0]
       ? { to: `/library/${encodeURIComponent(broken[0].document.id)}`, label: `‘${broken[0].document.title}’ could not be read` }
-      : { label: documents.data ? "Nothing in the library awaits you." : "" };
+      : {
+          label: !documents.data
+            ? ""
+            : others > 0
+              ? `Nothing awaits your review. ${count(others, "document")} of other owners stopped; retry ${others === 1 ? "it" : "them"} above the table.`
+              : "Nothing in the library awaits you.",
+        };
 
   return (
     <>
@@ -68,10 +89,19 @@ export function LibraryPage() {
           key: document.id,
           rank,
           cells: {
-            name: <Link to={`/library/${encodeURIComponent(document.id)}`} dir="auto">{document.title}</Link>,
+            name: (
+              <>
+                <Link to={`/library/${encodeURIComponent(document.id)}`} dir="auto">{document.title}</Link>
+                {/* Owner and Cited by leave the grid below desktop width; they stay with the title. */}
+                <span className="secondary library__aside">
+                  {document.is_owner ? "Yours" : document.owner.display_name} · Cited by {citedBy(document.citations).toLocaleLowerCase()}
+                </span>
+              </>
+            ),
             status: <span className="status">{status}</span>,
             version: inService,
-            owner: document.can_edit ? `${document.owner.display_name} (you)` : document.owner.display_name,
+            owner: document.is_owner ? `${document.owner.display_name} (you)` : document.owner.display_name,
+            cited: citedBy(document.citations),
             since: formatDay(since),
           },
         }))}
@@ -84,6 +114,10 @@ export function LibraryPage() {
         toolbar={
           <>
             {notice && <p className="toolbar__notice" role="status">{notice}</p>}
+            <LibraryRetry
+              stopped={stopped}
+              onDone={() => void queryClient.invalidateQueries({ queryKey: ["library", "documents"] })}
+            />
             <label className="field field--inline" htmlFor={findId}>
               <span className="field__label">Find a document</span>
               <input id={findId} type="search" className="field__input" value={find} onChange={(event) => setFind(event.target.value)} />

@@ -9,6 +9,7 @@ import {
   IN_PROGRESS, approvalBlocker, comparisonBasis, counts, initialDrafts, isTheEdition, latestRevision, matches, newestVersion,
   reviewBody, reviewRows, saveProblems, standing, unsaved, type Draft, type Filter,
 } from "./model";
+import { ActAsAdmin, ActingBanner } from "./AdminGrant";
 import { type Focus, PassageTable } from "./PassageTable";
 import { type DocumentContext, type ReviewState, useDocumentContext } from "./documentContext";
 import { useDocument } from "./useDocument";
@@ -67,7 +68,8 @@ function EditionLine({ document }: { document: LibraryDocument }) {
   if (state.kind === "service") {
     return (
       <>
-        In service: version {state.versionNumber ?? "?"}, approved by {state.publication.approved_by.display_name} on{" "}
+        In service: version {state.versionNumber ?? "?"}, approved by {state.publication.approved_by.display_name}
+        {state.publication.on_behalf ? " as admin, on its owner’s behalf," : ""} on{" "}
         {formatDay(state.publication.approved_at)}. Requirement work cites this edition.
       </>
     );
@@ -93,7 +95,7 @@ function Head({ document, version, actions, pages }: {
     <header className="docpage__head">
       <p className="docpage__number" aria-hidden="true">1</p>
       <div className="docpage__heading">
-        <h1 className="docpage__title" dir="auto">{document.title}</h1>
+        <h1 id="doc-title" className="docpage__title" dir="auto">{document.title}</h1>
         <p className="docpage__edition"><EditionLine document={document} /></p>
         {version && (
           <p className="docpage__version">
@@ -108,15 +110,35 @@ function Head({ document, version, actions, pages }: {
   );
 }
 
-/** What any other admin sees: the passages in service, read-only. */
+/** Where the newest version stands, for an admin who sees only the document's outline. */
+const OUTLINE_STAGE: Record<string, string> = {
+  ...STAGE,
+  ready_for_review: "Read; awaiting its owner's review",
+};
+
+/** What any other admin sees: the passages in service, read-only, and where the newest stands. */
 function ReaderView({ document }: { document: LibraryDocument }) {
   const version = document.versions[0];
   const passages = version?.revisions[0]?.passages.filter((item) => item.included) ?? [];
   const labels = new Map(version?.blocks.map((block) => [block.id, block.label]) ?? []);
+  const newest = document.newest;
+  const approved = newest && document.publications.some((item) => item.version_id === newest.id);
   return (
     <section className="docpage" aria-labelledby="doc-title">
       <Head document={document} />
-      <p className="docpage__notice">Only its owner, {document.owner.display_name}, can review or change this document.</p>
+      {newest && !approved && (
+        <p className="docpage__version">
+          Newest: version {newest.number}, uploaded by {newest.uploaded_by.display_name} on {formatDay(newest.uploaded_at)}.{" "}
+          <span className={newest.stage === "failed" || newest.stage === "quarantined" ? "status status--failed" : "status"}>
+            {OUTLINE_STAGE[newest.stage] ?? newest.stage}
+          </span>
+          {newest.error && <span className="docpage__why">{newest.error}</span>}
+        </p>
+      )}
+      <ActAsAdmin document={document} />
+      {passages.length === 0 ? (
+        <p className="docpage__quiet">Nothing of it is in service, so there are no passages to show.</p>
+      ) : (
       <table className="passages passages--read">
         <caption className="visually-hidden">Passages in service</caption>
         <thead>
@@ -134,6 +156,7 @@ function ReaderView({ document }: { document: LibraryDocument }) {
           ))}
         </tbody>
       </table>
+      )}
     </section>
   );
 }
@@ -179,12 +202,14 @@ function OwnerView({ document, hook }: { document: LibraryDocument; hook: Hook }
   const live = document.publications.some((item) => !item.withdrawn_at);
   const actions = (
     <>
-      <label className="text-button file-button" htmlFor={replaceId}>
-        <Upload size={14} aria-hidden="true" />
-        Upload a new version
-        <input id={replaceId} type="file" className="visually-hidden" onChange={replace} disabled={pending || dirty > 0}
-          accept=".pdf,.docx,.xlsx,.pptx,.csv,.tsv,.txt,.md,.png,.jpg,.jpeg" />
-      </label>
+      {document.is_owner && (
+        <label className="text-button file-button" htmlFor={replaceId}>
+          <Upload size={14} aria-hidden="true" />
+          Upload a new version
+          <input id={replaceId} type="file" className="visually-hidden" onChange={replace} disabled={pending || dirty > 0}
+            accept=".pdf,.docx,.xlsx,.pptx,.csv,.tsv,.txt,.md,.png,.jpg,.jpeg" />
+        </label>
+      )}
       {version && (
         <button type="button" className="text-button" onClick={() => void download()}>
           <Download size={14} aria-hidden="true" />
@@ -199,10 +224,11 @@ function OwnerView({ document, hook }: { document: LibraryDocument; hook: Hook }
 
   return (
     <section className="docpage" aria-labelledby="doc-title">
+      <ActingBanner document={document} />
       <Head document={document} version={version} actions={actions} pages={<SubIndex dirty={dirty} />} />
       {hook.replace.isPending && <p className="docpage__notice" role="status">Uploading the new version…</p>}
       {failure ? <Failure error={failure} onReload={hook.reload} /> : null}
-      {withdrawing && <Withdraw hook={hook} onDone={() => setWithdrawing(false)} />}
+      {withdrawing && <Withdraw document={document} hook={hook} onDone={() => setWithdrawing(false)} />}
       {version && <Processing document={document} version={version} hook={hook} />}
       <Outlet context={{ document, hook, review, setReview, dirty } satisfies DocumentContext} />
     </section>
@@ -270,13 +296,13 @@ function Processing({ document, version, hook }: { document: LibraryDocument; ve
         {" "}· version {version.number}
         {version.error && <> — {version.error}</>}
       </p>
-      {running && (
+      {running && document.is_owner && (
         <button type="button" className="text-button" onClick={() => hook.cancel.mutate(version.id)} disabled={hook.cancel.isPending}>
           <X size={14} aria-hidden="true" />
           Cancel processing
         </button>
       )}
-      {(version.stage === "failed" || version.stage === "cancelled") && (
+      {(version.stage === "failed" || version.stage === "cancelled") && document.is_owner && (
         <button type="button" className="text-button" onClick={() => hook.retry.mutate(version.id)} disabled={hook.retry.isPending}>
           <RotateCw size={14} aria-hidden="true" />
           Read it again
@@ -290,7 +316,7 @@ function Processing({ document, version, hook }: { document: LibraryDocument; ve
   );
 }
 
-function Withdraw({ hook, onDone }: { hook: Hook; onDone: () => void }) {
+function Withdraw({ document, hook, onDone }: { document: LibraryDocument; hook: Hook; onDone: () => void }) {
   const [reason, setReason] = useState("");
   const id = useId();
   return (
@@ -314,7 +340,9 @@ function Withdraw({ hook, onDone }: { hook: Hook; onDone: () => void }) {
       </label>
       <p className="withdraw__actions">
         <button type="submit" className="action-button" disabled={!reason.trim() || hook.withdraw.isPending}>
-          {hook.withdraw.isPending ? "Withdrawing…" : "Withdraw it"}
+          {hook.withdraw.isPending
+            ? "Withdrawing…"
+            : document.is_owner ? "Withdraw it" : `Withdraw it on ${document.owner.display_name}’s behalf`}
         </button>
         <button type="button" className="text-button" onClick={onDone}>Keep it in service</button>
       </p>
@@ -491,7 +519,9 @@ function Review({ document, version, hook, review, setReview }: {
           aria-describedby={blocker ? `${summaryId}-blocker` : undefined}
           onClick={() => revision && hook.approve.mutate({ versionId: version.id, revisionId: revision.id })}
         >
-          {hook.approve.isPending ? "Approving…" : "Approve and publish"}
+          {hook.approve.isPending
+            ? "Approving…"
+            : document.is_owner ? "Approve and publish" : `Approve on ${document.owner.display_name}’s behalf`}
         </button>
         {((problems.length > 0 && (dirty > 0 || !revision)) || blocker) && (
           <p className="savebar__why">

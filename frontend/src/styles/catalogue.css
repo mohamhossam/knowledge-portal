@@ -1534,3 +1534,97 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
   color: var(--ink-2);
   font-weight: var(--w-regular);
 }
+
+/* Knowledge Center C: what became of each file of a multi-file upload. */
+.add__chosen {
+  align-self: end;
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.uploads {
+  margin-block: var(--s3) 0;
+  max-width: 72ch;
+}
+
+.uploads__summary {
+  margin: 0 0 var(--s2);
+  font-weight: var(--w-bold);
+}
+
+.uploads__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--rule);
+}
+
+.uploads__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s1) var(--s3);
+  padding-block: var(--s2);
+  border-bottom: 1px solid var(--rule-faint);
+}
+
+.uploads__name {
+  flex: 1 1 14rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.uploads__why {
+  flex-basis: 100%;
+}
+
+.uploads__item--refused .status {
+  color: var(--disruption);
+  font-weight: var(--w-bold);
+}
+
+.uploads__summary:focus {
+  outline: none;
+}
+
+.uploads__summary:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* A plain way back, tall enough to hit. */
+.compare__back {
+  margin-top: var(--s5);
+}
+
+.compare__back a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.5rem;
+}
+
+/* Knowledge Center C: any two versions, side by side. */
+.versions__compare {
+  margin: 0 0 var(--s3);
+}
+
+.compare__pick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--s3) var(--s4);
+  margin-block: var(--s3) var(--s5);
+}
+
+.compare__pick .field {
+  flex: 1 1 18rem;
+  min-width: 0;
+}
+
+.compare__pick .form__select {
+  width: 100%;
+}
+
+.compare__swap {
+  min-height: 2.75rem;
+}

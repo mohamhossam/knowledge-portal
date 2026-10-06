@@ -307,7 +307,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Release Changes */
+        /**
+         * Release Changes
+         * @description What changed from `base` (the version in service when omitted) to this release.
+         */
         get: operations["release_changes_architecture_knowledge_releases__release_id__changes_get"];
         put?: never;
         post?: never;
@@ -349,6 +352,26 @@ export interface paths {
         put: operations["select_documents_architecture_knowledge_releases__release_id__documents_put"];
         /** Upload Document */
         post: operations["upload_document_architecture_knowledge_releases__release_id__documents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/architecture-knowledge/releases/{release_id}/documents/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Documents
+         * @description Up to twenty files into a draft at once; each is added or refused with its reason.
+         */
+        post: operations["upload_documents_architecture_knowledge_releases__release_id__documents_batch_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -982,6 +1005,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/library/documents/{document_id}/admin-grant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Open Admin Grant
+         * @description Act as admin on this document, on its owner's behalf, for the next eight hours.
+         */
+        post: operations["open_admin_grant_library_documents__document_id__admin_grant_post"];
+        /** End Admin Grant */
+        delete: operations["end_admin_grant_library_documents__document_id__admin_grant_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/library/documents/{document_id}/admin-record": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Admin Record
+         * @description Every override and bulk action that touched this document, newest first.
+         */
+        get: operations["admin_record_library_documents__document_id__admin_record_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/library/documents/{document_id}/builds": {
         parameters: {
             query?: never;
@@ -1285,6 +1349,46 @@ export interface paths {
         put?: never;
         /** Submit */
         post: operations["submit_library_ingestions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/library/retry/indexing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry Every Stopped Index
+         * @description Index again every approval whose indexing stopped; counted like a per-document retry.
+         */
+        post: operations["retry_every_stopped_index_library_retry_indexing_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/library/retry/reading": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry Every Failed Reading
+         * @description Read again every document whose newest version's reading failed, whoever owns it.
+         */
+        post: operations["retry_every_failed_reading_library_retry_reading_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1607,6 +1711,48 @@ export interface components {
             email?: string | null;
             id: components["schemas"]["ActorId"];
         };
+        /**
+         * AdminGrant
+         * @description One admin may act as a document's owner until it expires or they end it.
+         */
+        AdminGrant: {
+            admin: components["schemas"]["ActorSnapshot"];
+            /** Document Id */
+            document_id: string;
+            /** Ended At */
+            ended_at?: string | null;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /**
+             * Granted At
+             * Format: date-time
+             */
+            granted_at: string;
+            /** Id */
+            id: string;
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * AdminGrantRequest
+         * @description Why a knowledge admin needs to act on a document they don't own.
+         */
+        AdminGrantRequest: {
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * AdminOverride
+         * @description A knowledge admin acting on a document they don't own, and why (Knowledge Center C).
+         */
+        AdminOverride: {
+            admin: components["schemas"]["ActorSnapshot"];
+            /** Reason */
+            reason: string;
+        };
         /** ArchitectureDecisionSchema */
         ArchitectureDecisionSchema: {
             confidence?: components["schemas"]["SourceConfidence"] | null;
@@ -1651,6 +1797,15 @@ export interface components {
          * @enum {string}
          */
         ArchitectureJobStatus: "queued" | "running" | "succeeded" | "failed" | "cancelled";
+        /**
+         * BatchUploadResponse
+         * @description Several files into a draft: the draft after them, and what became of each (C).
+         */
+        BatchUploadResponse: {
+            release: components["schemas"]["KnowledgeReleaseResponse"];
+            /** Results */
+            results: components["schemas"]["FileResult"][];
+        };
         /** Body_import_catalogue_file_architecture_knowledge_releases__release_id__catalogue_file_post */
         Body_import_catalogue_file_architecture_knowledge_releases__release_id__catalogue_file_post: {
             /** Expected Revision */
@@ -1686,6 +1841,15 @@ export interface components {
             language: string;
             /** Title */
             title: string;
+        };
+        /** Body_upload_documents_architecture_knowledge_releases__release_id__documents_batch_post */
+        Body_upload_documents_architecture_knowledge_releases__release_id__documents_batch_post: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** Files */
+            files: string[];
+            /** Language */
+            language: string;
         };
         /**
          * CandidateBasis
@@ -2389,6 +2553,7 @@ export interface components {
             explanation: string;
             /** Id */
             id: string;
+            on_behalf?: components["schemas"]["AdminOverride"] | null;
             /** Passages */
             passages: components["schemas"]["ReviewedPassage"][];
         };
@@ -2435,6 +2600,18 @@ export interface components {
             source?: string | null;
             /** Trigger */
             trigger: string;
+        };
+        /** FileResult */
+        FileResult: {
+            /** Filename */
+            filename: string;
+            outcome: components["schemas"]["UploadOutcome"];
+            /** Reason */
+            reason?: string | null;
+            /** Title */
+            title?: string | null;
+            /** Version Id */
+            version_id?: string | null;
         };
         /**
          * FindingAge
@@ -2791,6 +2968,35 @@ export interface components {
             /** Parent Id */
             parent_id?: string | null;
         };
+        /**
+         * LibraryAdminAction
+         * @enum {string}
+         */
+        LibraryAdminAction: "grant" | "end" | "reassign" | "withdraw" | "review" | "approve" | "retry_reading" | "retry_indexing";
+        /** LibraryAdminRecord */
+        LibraryAdminRecord: {
+            /**
+             * Acted At
+             * Format: date-time
+             */
+            acted_at: string;
+            action: components["schemas"]["LibraryAdminAction"];
+            admin: components["schemas"]["ActorSnapshot"];
+            /** After */
+            after?: {
+                [key: string]: string | number | null;
+            } | null;
+            /** Before */
+            before?: {
+                [key: string]: string | number | null;
+            } | null;
+            /** Document Ids */
+            document_ids: string[];
+            /** Id */
+            id: string;
+            /** Reason */
+            reason: string | null;
+        };
         /** LibraryApprovalRequest */
         LibraryApprovalRequest: {
             /** Expected Version */
@@ -2842,6 +3048,17 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** LibraryRetryResult */
+        LibraryRetryResult: {
+            /** Documents */
+            documents: number;
+            scope: components["schemas"]["LibraryRetryScope"];
+        };
+        /**
+         * LibraryRetryScope
+         * @enum {string}
+         */
+        LibraryRetryScope: "reading" | "indexing";
         /** LibraryReviewRequest */
         LibraryReviewRequest: {
             /** Expected Version */
@@ -2921,12 +3138,21 @@ export interface components {
         };
         /** LibraryView */
         LibraryView: {
+            acting_as_admin?: components["schemas"]["AdminGrant"] | null;
             /** Build Fingerprint */
             build_fingerprint?: string | null;
             /** Can Edit */
             can_edit: boolean;
+            /** Citations */
+            citations?: number | null;
             /** Id */
             id: string;
+            /**
+             * Is Owner
+             * @default false
+             */
+            is_owner: boolean;
+            newest?: components["schemas"]["VersionOutline"] | null;
             owner: components["schemas"]["ActorSnapshot"];
             /** Publications */
             publications: components["schemas"]["Publication"][];
@@ -3297,6 +3523,7 @@ export interface components {
         /** OwnershipTransfer */
         OwnershipTransfer: {
             new_owner: components["schemas"]["ActorSnapshot"];
+            on_behalf?: components["schemas"]["AdminOverride"] | null;
             performed_by: components["schemas"]["ActorSnapshot"];
             previous_owner: components["schemas"]["ActorSnapshot"];
             /** Reason */
@@ -3551,6 +3778,7 @@ export interface components {
             indexing_attempts: number;
             /** Indexing Error */
             indexing_error?: string | null;
+            on_behalf?: components["schemas"]["AdminOverride"] | null;
             /** Replaces Publication Id */
             replaces_publication_id?: string | null;
             /**
@@ -3566,6 +3794,8 @@ export interface components {
             withdrawal_reason?: string | null;
             /** Withdrawn At */
             withdrawn_at?: string | null;
+            withdrawn_by?: components["schemas"]["ActorSnapshot"] | null;
+            withdrawn_on_behalf?: components["schemas"]["AdminOverride"] | null;
         };
         /** PublishRequest */
         PublishRequest: {
@@ -4079,6 +4309,11 @@ export interface components {
             /** To System Id */
             to_system_id: string;
         };
+        /**
+         * UploadOutcome
+         * @enum {string}
+         */
+        UploadOutcome: "added" | "refused";
         /** ValidationError */
         ValidationError: {
             /** Context */
@@ -4111,6 +4346,25 @@ export interface components {
              * @default 1
              */
             revision: number;
+        };
+        /**
+         * VersionOutline
+         * @description A version's place in the pipeline, without any of its content.
+         */
+        VersionOutline: {
+            /** Error */
+            error?: string | null;
+            /** Id */
+            id: string;
+            /** Number */
+            number: number;
+            stage: components["schemas"]["IngestionStage"];
+            /**
+             * Uploaded At
+             * Format: date-time
+             */
+            uploaded_at: string;
+            uploaded_by: components["schemas"]["ActorSnapshot"];
         };
     };
     responses: never;
@@ -4834,7 +5088,9 @@ export interface operations {
     };
     release_changes_architecture_knowledge_releases__release_id__changes_get: {
         parameters: {
-            query?: never;
+            query?: {
+                base?: string | null;
+            };
             header?: {
                 "X-Fake-Actor-Id"?: string | null;
             };
@@ -4963,6 +5219,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KnowledgeReleaseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_documents_architecture_knowledge_releases__release_id__documents_batch_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_documents_architecture_knowledge_releases__release_id__documents_batch_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchUploadResponse"];
                 };
             };
             /** @description Validation Error */
@@ -6263,6 +6556,107 @@ export interface operations {
             };
         };
     };
+    open_admin_grant_library_documents__document_id__admin_grant_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminGrantRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminGrant"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    end_admin_grant_library_documents__document_id__admin_grant_delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_record_library_documents__document_id__admin_record_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryAdminRecord"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     build_corpus_member_library_documents__document_id__builds_post: {
         parameters: {
             query?: never;
@@ -6903,6 +7297,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LibraryView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_every_stopped_index_library_retry_indexing_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryRetryResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_every_failed_reading_library_retry_reading_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryRetryResult"];
                 };
             };
             /** @description Validation Error */

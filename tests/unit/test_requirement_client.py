@@ -22,6 +22,9 @@ from knowledge_portal.application.ports.architecture_mapping_stats import (
     ArchitectureMappingStatsPort,
     MappingCount,
 )
+from knowledge_portal.application.ports.requirement_citations import (
+    RequirementCitationCountsPort,
+)
 from knowledge_portal.application.ports.requirement_corpus import (
     CorpusQuery,
     CorpusState,
@@ -49,10 +52,12 @@ from knowledge_portal.application.ports.source_impact import (
 from knowledge_portal.domain.identity.entities import ActorId
 from knowledge_portal.infrastructure.requirement_client import (
     FakeArchitectureMappingStats,
+    FakeRequirementCitationCounts,
     FakeRequirementCorpus,
     FakeRequirementDependents,
     FakeRequirementImpact,
     HttpArchitectureMappingStats,
+    HttpRequirementCitationCounts,
     HttpRequirementCorpus,
     HttpRequirementDependents,
     HttpRequirementImpact,
@@ -203,6 +208,27 @@ def test_a_document_s_impact_is_read_with_its_filters_and_decoded() -> None:
     assert item.dependency.lineage.citation.publication_id == "pub-1"
     assert item.decisions[0].decision is ImpactDecisionKind.RETAIN
     assert item.decisions[0].actor.id == ActorId("fake-reviewer")
+
+
+def test_citation_counts_are_asked_for_each_document_and_decoded() -> None:
+    seen: list[httpx.Request] = []
+    body = {"counts": {"d1": 3, "d/2": 0}}
+    counts = HttpRequirementCitationCounts(_client(_answering(body), seen)).counts(("d1", "d/2"))
+    _assert_in_contract(seen[0])
+    assert seen[0].url.params.get_list("document_id") == ["d1", "d/2"]
+    assert counts == {"d1": 3, "d/2": 0}
+    # Nothing to count asks nothing.
+    assert HttpRequirementCitationCounts(_client(_answering(body), seen)).counts(()) == {}
+    assert len(seen) == 1
+
+
+@pytest.mark.parametrize(
+    "body",
+    [{"counts": {"d1": -1}}, {"counts": {"d1": "many"}}, {"counts": {}}, {"other": {}}, []],
+)
+def test_unusable_citation_counts_are_an_explicit_failure(body: Any) -> None:
+    with pytest.raises(ServiceUnavailableError):
+        HttpRequirementCitationCounts(_client(_answering(body))).counts(("d1",))
 
 
 def test_mapping_counts_are_decoded() -> None:
@@ -521,3 +547,5 @@ def test_the_fakes_stand_in_for_each_port_deterministically() -> None:
     with pytest.raises(RequirementNotInCorpusError):
         corpus.retire("R", "a", "A", "x")
     assert corpus.reindex(ReindexScope.FAILED, (), "a", "A").requirements == 0
+    citations: RequirementCitationCountsPort = FakeRequirementCitationCounts()
+    assert citations.counts(("d1", "d2")) == {"d1": 0, "d2": 0}

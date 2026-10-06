@@ -14,7 +14,7 @@ from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import quote
 
-from pydantic import TypeAdapter
+from pydantic import NonNegativeInt, TypeAdapter
 from smb_kernel.errors import ServiceResponseError, ServiceUnavailableError
 from smb_kernel.http.client import InternalHttpClient
 
@@ -53,6 +53,7 @@ _FINDINGS = TypeAdapter(CorpusFindingsPage)
 _NUDGE = TypeAdapter(NudgeReceipt)
 _MEMBERSHIP = TypeAdapter(MembershipResult)
 _REINDEX = TypeAdapter(ReindexResult)
+_CITATION_COUNTS = TypeAdapter(dict[str, dict[str, NonNegativeInt]])
 
 
 def _decode[T](adapter: TypeAdapter[T], body: Any, what: str) -> T:
@@ -169,6 +170,22 @@ class HttpArchitectureMappingStats:
     def by_release(self) -> tuple[MappingCount, ...]:
         body = self._client.get_json("/internal/architecture-mapping/stats")
         return _decode(_COUNTS, body, "mapping counts")
+
+
+class HttpRequirementCitationCounts:
+    def __init__(self, client: InternalHttpClient) -> None:
+        self._client = client
+
+    def counts(self, document_ids: tuple[str, ...]) -> dict[str, int]:
+        if not document_ids:
+            return {}
+        body = self._client.get_json(
+            "/internal/references/citation-counts", params={"document_id": list(document_ids)}
+        )
+        counts = _decode(_CITATION_COUNTS, body, "citation counts").get("counts")
+        if counts is None or not set(document_ids) <= set(counts):
+            raise ServiceUnavailableError("Requirement work returned unusable citation counts.")
+        return {document_id: counts[document_id] for document_id in document_ids}
 
 
 class HttpRequirementCorpus:
@@ -336,6 +353,13 @@ class FakeRequirementDependents:
         self, actor_id: ActorId, document_id: str, offset: int, limit: int
     ) -> RequirementDependentsPage:
         return RequirementDependentsPage((), None)
+
+
+class FakeRequirementCitationCounts:
+    """Running without requirement work: nothing cites anything."""
+
+    def counts(self, document_ids: tuple[str, ...]) -> dict[str, int]:
+        return dict.fromkeys(document_ids, 0)
 
 
 class FakeArchitectureMappingStats:

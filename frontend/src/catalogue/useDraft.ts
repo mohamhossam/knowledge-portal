@@ -2,7 +2,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { api, type DocumentLanguage, type Release, type SuggestionContent } from "../api/client";
+import { ApiError, errorMessage } from "../api/errors";
 import { typedFile } from "./suggestions";
+
+/** What became of one file of a multi-file upload. */
+export type UploadLine =
+  | { filename: string; state: "reading"; versionId: string }
+  | { filename: string; state: "unread"; versionId: string; reason: string }
+  | { filename: string; state: "refused"; reason: string };
 
 const releaseKey = (releaseId: string) => ["architecture", "releases", releaseId] as const;
 const suggestionsKey = (releaseId: string) => ["architecture", "releases", releaseId, "suggestions"] as const;
@@ -103,6 +110,43 @@ export function useDraft(release: Release) {
       void queryClient.invalidateQueries({ queryKey: suggestionsKey(releaseId) });
     },
   });
+  // Several files at once (Knowledge Center C): each added file starts reading, one after
+  // another, within the per-minute model budget; one the budget refuses waits to be read.
+  const addDocuments = useMutation({
+    mutationFn: async (input: { files: File[]; language: DocumentLanguage }): Promise<UploadLine[]> => {
+      const batch = await api.addCatalogueDocuments(releaseId, {
+        files: input.files.map(typedFile),
+        language: input.language,
+        expectedRevision: revision.current,
+      });
+      settle(batch.release);
+      const lines: UploadLine[] = [];
+      for (const result of batch.results) {
+        if (result.outcome === "refused" || !result.version_id) {
+          lines.push({ filename: result.filename, state: "refused", reason: result.reason ?? "" });
+          continue;
+        }
+        try {
+          await api.readCatalogueDocument(releaseId, result.version_id);
+          lines.push({ filename: result.filename, state: "reading", versionId: result.version_id });
+        } catch (error) {
+          lines.push({
+            filename: result.filename,
+            state: "unread",
+            versionId: result.version_id,
+            reason: error instanceof ApiError && error.status === 429
+              ? "The model budget for this minute is spent."
+              : errorMessage(error),
+          });
+        }
+      }
+      return lines;
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: extractionsKey(releaseId) });
+      void queryClient.invalidateQueries({ queryKey: suggestionsKey(releaseId) });
+    },
+  });
   const removeDocument = useMutation({
     mutationFn: (versionId: string) =>
       api.selectCatalogueDocuments(releaseId, {
@@ -124,7 +168,7 @@ export function useDraft(release: Release) {
   }, [queryClient]);
 
   return {
-    suggestions, extractions, decide, pending, failure, acceptReady, rejectMany, addDocument, removeDocument, read, cancel, retry, reload,
+    suggestions, extractions, decide, pending, failure, acceptReady, rejectMany, addDocument, addDocuments, removeDocument, read, cancel, retry, reload,
   };
 }
 

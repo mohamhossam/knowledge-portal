@@ -69,7 +69,7 @@ export function VersionsPage() {
         ) : (
           <p className="timetable__quiet">Nothing has been approved yet. Approve a saved review on the Review page.</p>
         )}
-        {canRetryIndexing(document) && (
+        {canRetryIndexing(document) && document.is_owner && (
           <p className="govsection__action">
             Indexing stopped after three attempts.{" "}
             <button type="button" className="text-button" disabled={hook.retryIndexing.isPending} onClick={() => hook.retryIndexing.mutate()}>
@@ -80,7 +80,11 @@ export function VersionsPage() {
         )}
       </section>
 
-      {pending ? <PendingBuild /> : <NewBuild dirty={dirty} />}
+      {!document.is_owner ? (
+        <p className="govsection__lead">
+          Building and activating its search versions stay with {document.owner.display_name}, its owner.
+        </p>
+      ) : pending ? <PendingBuild /> : <NewBuild dirty={dirty} />}
       <SavedChunks dirty={dirty} />
     </>
   );

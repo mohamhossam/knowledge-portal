@@ -6,6 +6,8 @@ import hashlib
 import re
 from dataclasses import dataclass
 from datetime import datetime
+from enum import StrEnum
+from pathlib import PurePosixPath
 from uuid import uuid4
 
 from smb_kernel.documents.ports import DocumentExtractorPort, DocumentStoragePort
@@ -14,7 +16,11 @@ from knowledge_portal.application.document_upload_validation import (
     SUPPORTED_EXTENSIONS,
     validate_document_upload,
 )
-from knowledge_portal.application.errors import PersistenceError
+from knowledge_portal.application.errors import (
+    DocumentExtractionError,
+    PersistenceError,
+    UnsupportedDocumentError,
+)
 from knowledge_portal.application.ports.architecture_knowledge_repository import (
     ArchitectureKnowledgeRepositoryPort,
 )
@@ -134,6 +140,115 @@ class UploadKnowledgeDocument:
             self._storage.delete(blob_id)
             raise
         return updated
+
+
+# One choice of files at a time; each is still held to the per-file limit.
+MAX_BATCH_FILES = 20
+
+
+@dataclass(frozen=True)
+class IncomingFile:
+    filename: str
+    mime_type: str
+    content: bytes
+
+
+class UploadOutcome(StrEnum):
+    ADDED = "added"
+    REFUSED = "refused"
+
+
+@dataclass(frozen=True)
+class FileResult:
+    filename: str
+    outcome: UploadOutcome
+    # The new document version, when it was added.
+    version_id: str | None = None
+    title: str | None = None
+    # Why it was refused, in words the curator can act on.
+    reason: str | None = None
+
+
+@dataclass(frozen=True)
+class BatchUploadResult:
+    release: ArchitectureKnowledge
+    results: tuple[FileResult, ...]
+
+
+def _title(filename: str) -> str:
+    return PurePosixPath(filename.strip()).stem.strip() or filename.strip()
+
+
+class UploadArchitectureDocuments:
+    """Several files into a draft at once, each added or refused on its own (C).
+
+    The draft's revision is checked once, before the first file; each file is then saved
+    as the single upload saves it, so one unreadable file doesn't stop the rest.
+    """
+
+    def __init__(
+        self, single: UploadKnowledgeDocument, knowledge: ManageArchitectureKnowledge
+    ) -> None:
+        self._single, self._knowledge = single, knowledge
+
+    @property
+    def max_bytes(self) -> int:
+        return self._single.max_bytes
+
+    def execute(
+        self,
+        release_id: str,
+        expected_revision: int,
+        files: tuple[IncomingFile, ...],
+        language: str,
+        actor: Actor,
+        uploaded_at: datetime,
+    ) -> BatchUploadResult:
+        require_maintainer(actor)
+        if not 0 < len(files) <= MAX_BATCH_FILES:
+            raise InvalidKnowledgeError(f"Choose between 1 and {MAX_BATCH_FILES} files at a time.")
+        current = self._knowledge.get(release_id)
+        if (
+            current.status is not KnowledgeReleaseStatus.DRAFT
+            or current.revision != expected_revision
+        ):
+            raise KnowledgeConflictError("The draft changed; reload before uploading.")
+        revision = expected_revision
+        results: list[FileResult] = []
+        for incoming in files:
+            title = _title(incoming.filename)
+            try:
+                updated = self._single.execute(
+                    release_id,
+                    revision,
+                    title,
+                    incoming.filename,
+                    incoming.mime_type,
+                    language,
+                    incoming.content,
+                    actor,
+                    uploaded_at,
+                )
+            except (
+                UnsupportedDocumentError,
+                DocumentExtractionError,
+                InvalidKnowledgeError,
+                KnowledgeConflictError,
+            ) as refused:
+                results.append(
+                    FileResult(incoming.filename, UploadOutcome.REFUSED, reason=str(refused))
+                )
+                continue
+            revision = updated.revision
+            results.append(
+                FileResult(
+                    incoming.filename,
+                    UploadOutcome.ADDED,
+                    version_id=updated.documents[-1].id,
+                    title=title,
+                )
+            )
+        return BatchUploadResult(self._knowledge.get(release_id), tuple(results))
 
 
 @dataclass(frozen=True)

@@ -27,6 +27,10 @@ from knowledge_portal.application.ports.catalogue_candidates import (
 from knowledge_portal.application.ports.change_requests import ChangeRequestInboxPort
 from knowledge_portal.application.ports.document_library import DocumentLibraryPort
 from knowledge_portal.application.ports.knowledge_events import KnowledgeEventOutboxPort
+from knowledge_portal.application.ports.library_admin import (
+    LibraryAdminGrantsPort,
+    LibraryAdminRecordPort,
+)
 from knowledge_portal.application.ports.organisation_repository import OrganisationRepositoryPort
 from knowledge_portal.application.ports.reference_index import ReferenceIndexPort
 from knowledge_portal.application.ports.sample_requirements import SampleRequirementsPort
@@ -76,6 +80,12 @@ from knowledge_portal.infrastructure.persistence.knowledge_events import (
     InMemoryKnowledgeEvents,
     PostgresKnowledgeEvents,
 )
+from knowledge_portal.infrastructure.persistence.library_admin import (
+    InMemoryLibraryAdmin,
+    InMemoryLibraryAdminRecord,
+    PostgresLibraryAdminGrants,
+    PostgresLibraryAdminRecord,
+)
 from knowledge_portal.infrastructure.persistence.postgres_architecture_jobs import (
     PostgresArchitectureJobs,
 )
@@ -114,6 +124,9 @@ class PersistenceAdapters:
     architecture_evidence_index: ArchitectureEvidenceIndexPort
     architecture_job_repository: ArchitectureJobRepositoryPort
     library_repository: DocumentLibraryPort
+    # Knowledge admins acting on documents they don't own (Knowledge Center C).
+    library_admin_grants: LibraryAdminGrantsPort
+    library_admin_record: LibraryAdminRecordPort
     knowledge_events: KnowledgeEventOutboxPort
     reference_index: ReferenceIndexPort
     transaction_manager: TransactionManagerPort
@@ -173,6 +186,8 @@ def _postgres(
         library_repository=PublishingDocumentLibrary(
             PostgresDocumentLibrary(postgres), knowledge_events
         ),
+        library_admin_grants=PostgresLibraryAdminGrants(postgres),
+        library_admin_record=PostgresLibraryAdminRecord(postgres),
         knowledge_events=knowledge_events,
         reference_index=PostgresReferenceIndex(postgres),
         transaction_manager=postgres,
@@ -192,7 +207,8 @@ def _memory(
     storage = InMemoryDocumentStorage(lock=lock)
     actors = InMemoryActorDirectory(lock=lock)
     transactions = InMemoryTransactionManager(lock)
-    transactions.enroll(library, events, reference_index, storage, actors)
+    library_admin = InMemoryLibraryAdmin(lock)
+    transactions.enroll(library, events, reference_index, storage, actors, library_admin)
     return PersistenceAdapters(
         document_storage=storage,
         actor_directory=actors,
@@ -206,6 +222,8 @@ def _memory(
         ),
         architecture_job_repository=InMemoryArchitectureJobs(),
         library_repository=PublishingDocumentLibrary(library, events),
+        library_admin_grants=library_admin,
+        library_admin_record=InMemoryLibraryAdminRecord(library_admin),
         knowledge_events=events,
         reference_index=reference_index,
         transaction_manager=transactions,

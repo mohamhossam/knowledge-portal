@@ -7,7 +7,7 @@ import hashlib
 import re
 import uuid
 from dataclasses import dataclass, replace
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from smb_kernel.documents.ports import DocumentExtractorPort, DocumentStoragePort
 from smb_kernel.time.clock import ClockPort
@@ -17,18 +17,26 @@ from knowledge_portal.application.errors import (
     DocumentExtractionTimeoutError,
     DocumentNotFoundError,
     DocumentVersionConflictError,
+    ServiceUnavailableError,
     UnsupportedDocumentError,
 )
 from knowledge_portal.application.ports.document_library import (
     DocumentLibraryPort,
     DocumentScannerPort,
 )
+from knowledge_portal.application.ports.library_admin import AdminGrant, LibraryAdminAction
+from knowledge_portal.application.ports.requirement_citations import (
+    RequirementCitationCountsPort,
+)
 from knowledge_portal.application.ports.transaction_manager import TransactionManagerPort
 from knowledge_portal.application.use_cases.documents import (
     UploadDocumentInput,
     validate_ingested_upload,
 )
+from knowledge_portal.application.use_cases.identity_access import KNOWLEDGE_ADMIN
+from knowledge_portal.application.use_cases.library_admin import LibraryStewardship
 from knowledge_portal.domain.document.library import (
+    AdminOverride,
     ExtractionRevision,
     IngestionStage,
     LibraryDocument,
@@ -48,6 +56,63 @@ CHUNKING_POLICY = "structure-512-768-v1"
 TABLE_CHUNKING_POLICY = "table-fields-512-768-v2"
 
 
+# A publication stops being picked up for indexing after this many attempts (the worker's
+# `pending_publication`), until someone retries it.
+INDEXING_ATTEMPTS = 3
+
+
+def indexing_stopped(document: LibraryDocument) -> bool:
+    """The latest approval has stopped indexing after repeated failures."""
+    if not document.publications:
+        return False
+    publication = document.publications[-1]
+    return (
+        publication.withdrawn_at is None
+        and publication.activated_at is None
+        and publication.built_at is None
+        and publication.indexing_attempts >= INDEXING_ATTEMPTS
+    )
+
+
+def indexing_retried(document: LibraryDocument) -> LibraryDocument:
+    publication = document.publications[-1]
+    return replace(
+        document,
+        version=document.version + 1,
+        publications=(
+            *document.publications[:-1],
+            replace(publication, indexing_attempts=0, indexing_error=None, index_lease_until=None),
+        ),
+    )
+
+
+def reading_retried(document: LibraryDocument, version: LibraryVersion) -> LibraryDocument:
+    """Queue a version to be read again from the start; the worker picks it up."""
+    return document.update_file(
+        replace(
+            version,
+            stage=IngestionStage.QUEUED,
+            attempt=0,
+            lease_token=None,
+            lease_until=None,
+            error=None,
+        )
+    )
+
+
+@dataclass(frozen=True)
+class VersionOutline:
+    """A version's place in the pipeline, without any of its content."""
+
+    id: str
+    number: int
+    stage: IngestionStage
+    uploaded_at: datetime
+    uploaded_by: ActorSnapshot
+    # Why its reading failed, in the reader's words; never any of its content.
+    error: str | None = None
+
+
 @dataclass(frozen=True)
 class LibraryView:
     id: str
@@ -60,6 +125,14 @@ class LibraryView:
     can_edit: bool
     review_fingerprint: str | None
     build_fingerprint: str | None = None
+    # The owner's own view; False for an admin acting on the owner's behalf.
+    is_owner: bool = False
+    # The signed-in admin's live grant on a document they don't own (Knowledge Center C).
+    acting_as_admin: AdminGrant | None = None
+    # For an admin who neither owns it nor holds a grant: where its newest version stands.
+    newest: VersionOutline | None = None
+    # Requirements citing it now, across the portfolio; None when requirement work can't say.
+    citations: int | None = None
 
 
 @dataclass(frozen=True)
@@ -79,7 +152,11 @@ class DocumentLibrary:
         transactions: TransactionManagerPort,
         clock: ClockPort,
         max_file_bytes: int,
+        stewardship: LibraryStewardship | None = None,
+        citations: RequirementCitationCountsPort | None = None,
     ) -> None:
+        self._citations = citations
+        self._stewardship = stewardship or LibraryStewardship.owner_only(clock)
         self._repository = repository
         self._storage = storage
         self._extractor = extractor
@@ -102,9 +179,23 @@ class DocumentLibrary:
             raise DocumentVersionConflictError("Document changed. Reload before retrying.")
         return document
 
-    @staticmethod
-    def _visible(document: LibraryDocument, actor: ActorProfile) -> LibraryView:
-        if document.owner.id == actor.id:
+    def _stewarded(
+        self, document_id: str, actor: ActorProfile, expected: int
+    ) -> tuple[LibraryDocument, AdminOverride | None]:
+        """The owner, or an admin with a live grant acting on the owner's behalf."""
+        document = self._get(document_id)
+        override = self._stewardship.acting_for(
+            document,
+            actor,
+            "Only the document owner, or an admin acting for them, can change this document.",
+        )
+        if document.version != expected:
+            raise DocumentVersionConflictError("Document changed. Reload before retrying.")
+        return document, override
+
+    def _visible(self, document: LibraryDocument, actor: ActorProfile) -> LibraryView:
+        grant = self._stewardship.grant(document, actor)
+        if document.owner.id == actor.id or grant is not None:
             latest = document.versions[-1]
             return LibraryView(
                 document.id,
@@ -124,7 +215,52 @@ class DocumentLibrary:
                 latest.revisions[-1].fingerprint(latest.id, TABLE_CHUNKING_POLICY)
                 if latest.revisions
                 else None,
+                is_owner=grant is None,
+                acting_as_admin=grant,
             )
+        published = self._published(document)
+        if KNOWLEDGE_ADMIN in actor.roles:
+            # A knowledge admin who doesn't own it sees its state, not its content: enough to
+            # find work waiting on someone else's document (reading failed, awaiting review,
+            # indexing stopped) and act on it through a grant. Only what is published is read.
+            newest = document.versions[-1]
+            return LibraryView(
+                document.id,
+                document.title,
+                document.owner,
+                (published[0],) if published else (),
+                document.version,
+                document.publications,
+                document.published_id,
+                False,
+                None,
+                newest=VersionOutline(
+                    newest.id,
+                    newest.number,
+                    newest.stage,
+                    newest.uploaded_at,
+                    newest.uploaded_by,
+                    newest.error,
+                ),
+            )
+        if published is None:
+            raise DocumentNotFoundError("Published library document was not found.")
+        safe_source, publication = published
+        return LibraryView(
+            document.id,
+            document.title,
+            document.owner,
+            (safe_source,),
+            document.version,
+            (publication,),
+            document.published_id,
+            False,
+            None,
+        )
+
+    @staticmethod
+    def _published(document: LibraryDocument) -> tuple[LibraryVersion, Publication] | None:
+        """The version in service as anyone may read it, with the approval that published it."""
         publication = next(
             (
                 p
@@ -134,7 +270,7 @@ class DocumentLibrary:
             None,
         )
         if publication is None:
-            raise DocumentNotFoundError("Published library document was not found.")
+            return None
         source = document.file_version(publication.version_id)
         revision = next(r for r in source.revisions if r.id == publication.revision_id)
         selected = {p.block_id: p for p in revision.passages if p.included}
@@ -151,17 +287,7 @@ class DocumentLibrary:
             ),
             revisions=(replace(revision, passages=tuple(selected.values())),),
         )
-        return LibraryView(
-            document.id,
-            document.title,
-            document.owner,
-            (safe_source,),
-            document.version,
-            (publication,),
-            document.published_id,
-            False,
-            None,
-        )
+        return safe_source, publication
 
     def get(self, document_id: str, actor: ActorProfile) -> LibraryView:
         return self._visible(self._get(document_id), actor)
@@ -169,10 +295,24 @@ class DocumentLibrary:
     def list(
         self, actor: ActorProfile, offset: int = 0, limit: int = 50
     ) -> tuple[LibraryView, ...]:
-        return tuple(
-            self._visible(d, actor)
-            for d in self._repository.list_visible(actor.id.value, offset, limit)
+        # A knowledge admin sees every document's state, so work waiting on anyone's shows.
+        documents = (
+            self._repository.list_all(offset, limit)
+            if KNOWLEDGE_ADMIN in actor.roles
+            else self._repository.list_visible(actor.id.value, offset, limit)
         )
+        views = tuple(self._visible(d, actor) for d in documents)
+        counts = self._citation_counts(tuple(view.id for view in views))
+        return tuple(replace(view, citations=counts.get(view.id)) for view in views)
+
+    def _citation_counts(self, document_ids: tuple[str, ...]) -> dict[str, int]:
+        """Counts for the library list; the list still loads when requirement work is down."""
+        if self._citations is None or not document_ids:
+            return {}
+        try:
+            return self._citations.counts(document_ids)
+        except ServiceUnavailableError:
+            return {}
 
     def submit(
         self,
@@ -248,9 +388,10 @@ class DocumentLibrary:
         self, document_id: str, version_id: str, actor: ActorProfile
     ) -> tuple[LibraryVersion, bytes]:
         document = self._get(document_id)
-        if document.owner.id != actor.id:
+        if not self._stewardship.may_act(document, actor):
             raise AuthorizationDeniedError(
-                "Original files may contain excluded material; only the owner can download them."
+                "Original files may contain excluded material; only the owner, or an admin "
+                "acting for them, can download them."
             )
         version = document.file_version(version_id)
         return version, self._storage.get(DocumentVersionId(version.id))
@@ -316,7 +457,7 @@ class DocumentLibrary:
     ) -> LibraryDocument:
         require_submittable_passages(passages)
         with self._transactions.transaction():
-            document = self._owned(document_id, actor, expected)
+            document, override = self._stewarded(document_id, actor, expected)
             if sum(len(p.text) for p in passages) > 2_000_000:
                 raise UnsupportedDocumentError(
                     "Reviewed text exceeds the two-million-character limit."
@@ -324,10 +465,18 @@ class DocumentLibrary:
             updated = document.review(
                 version_id,
                 ExtractionRevision(
-                    str(uuid.uuid4()), self._clock.now(), actor.snapshot(), passages, explanation
+                    str(uuid.uuid4()),
+                    self._clock.now(),
+                    actor.snapshot(),
+                    passages,
+                    explanation,
+                    override,
                 ),
             )
             self._repository.save(updated, expected)
+            self._stewardship.overridden(
+                LibraryAdminAction.REVIEW, actor, override, document, updated
+            )
             return updated
 
     def approve(
@@ -340,7 +489,7 @@ class DocumentLibrary:
         actor: ActorProfile,
     ) -> LibraryDocument:
         with self._transactions.transaction():
-            document = self._owned(document_id, actor, expected)
+            document, override = self._stewarded(document_id, actor, expected)
             if any(
                 p.requires_activation and p.activated_at is None and p.withdrawn_at is None
                 for p in document.publications
@@ -355,18 +504,25 @@ class DocumentLibrary:
                     CHUNKING_POLICY,
                     actor.snapshot(),
                     self._clock.now(),
+                    on_behalf=override,
                 )
             )
             self._repository.save(updated, expected)
+            self._stewardship.overridden(
+                LibraryAdminAction.APPROVE, actor, override, document, updated
+            )
             return updated
 
     def withdraw(
         self, document_id: str, expected: int, actor: ActorProfile, reason: str
     ) -> LibraryDocument:
         with self._transactions.transaction():
-            document = self._owned(document_id, actor, expected)
-            updated = document.withdraw(self._clock.now(), reason)
+            document, override = self._stewarded(document_id, actor, expected)
+            updated = document.withdraw(self._clock.now(), reason, actor.snapshot(), override)
             self._repository.save(updated, expected)
+            self._stewardship.overridden(
+                LibraryAdminAction.WITHDRAW, actor, override, document, updated
+            )
             return updated
 
     def retry_index(self, document_id: str, expected: int, actor: ActorProfile) -> LibraryDocument:
@@ -374,26 +530,9 @@ class DocumentLibrary:
             document = self._owned(document_id, actor, expected)
             if not document.publications or document.publications[-1].withdrawn_at is not None:
                 raise DocumentVersionConflictError("No eligible publication exists to retry.")
-            publication = document.publications[-1]
-            if (
-                publication.activated_at is not None
-                or publication.built_at is not None
-                or publication.indexing_attempts < 3
-            ):
+            if not indexing_stopped(document):
                 raise DocumentVersionConflictError("Indexing has not reached a terminal failure.")
-            updated = replace(
-                document,
-                version=document.version + 1,
-                publications=(
-                    *document.publications[:-1],
-                    replace(
-                        publication,
-                        indexing_attempts=0,
-                        indexing_error=None,
-                        index_lease_until=None,
-                    ),
-                ),
-            )
+            updated = indexing_retried(document)
             self._repository.save(updated, expected)
             return updated
 
@@ -412,14 +551,17 @@ class DocumentLibrary:
                 raise DocumentVersionConflictError(
                     "This processing state does not allow that action."
                 )
-            updated = document.update_file(
-                replace(
-                    version,
-                    stage=IngestionStage.QUEUED if retry else IngestionStage.CANCELLED,
-                    attempt=0 if retry else version.attempt,
-                    lease_token=None,
-                    lease_until=None,
-                    error=None,
+            updated = (
+                reading_retried(document, version)
+                if retry
+                else document.update_file(
+                    replace(
+                        version,
+                        stage=IngestionStage.CANCELLED,
+                        lease_token=None,
+                        lease_until=None,
+                        error=None,
+                    )
                 )
             )
             self._repository.save(updated, expected)

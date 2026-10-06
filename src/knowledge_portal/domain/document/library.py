@@ -60,6 +60,33 @@ def require_submittable_passages(passages: tuple[ReviewedPassage, ...]) -> None:
             )
 
 
+# Long enough to say why; short enough to show beside the action it explains.
+ADMIN_REASON_MAX = 500
+
+
+@dataclass(frozen=True)
+class AdminOverride:
+    """A knowledge admin acting on a document they don't own, and why (Knowledge Center C)."""
+
+    admin: ActorSnapshot
+    reason: str
+
+    def __post_init__(self) -> None:
+        if not self.reason.strip() or len(self.reason) > ADMIN_REASON_MAX:
+            raise InvalidDocumentError(
+                f"Acting as admin requires a reason up to {ADMIN_REASON_MAX} characters."
+            )
+
+
+def _acts_for_owner(
+    actor: ActorSnapshot, owner: ActorSnapshot, on_behalf: AdminOverride | None
+) -> bool:
+    """The owner acts for themselves; anyone else only as an admin, on the owner's behalf."""
+    if on_behalf is None:
+        return actor.id == owner.id
+    return on_behalf.admin.id == actor.id and actor.id != owner.id
+
+
 @dataclass(frozen=True)
 class ExtractionRevision:
     id: str
@@ -67,9 +94,12 @@ class ExtractionRevision:
     created_by: ActorSnapshot
     passages: tuple[ReviewedPassage, ...]
     explanation: str
+    on_behalf: AdminOverride | None = None
 
     def __post_init__(self) -> None:
         require_aware(self.created_at, "extraction revision time")
+        if self.on_behalf is not None and self.on_behalf.admin.id != self.created_by.id:
+            raise InvalidDocumentError("An admin review names the admin who made it.")
         if not self.id or not self.explanation.strip() or not self.passages:
             raise InvalidDocumentError("An extraction revision requires content and rationale.")
         ids = [item.block_id for item in self.passages]
@@ -166,6 +196,11 @@ class Publication:
     chunk_count: int = 0
     chunk_manifest: str | None = None
     replaces_publication_id: str | None = None
+    # Set when a knowledge admin approved it on the owner's behalf.
+    on_behalf: AdminOverride | None = None
+    # Who withdrew it; absent on withdrawals recorded before Knowledge Center C.
+    withdrawn_by: ActorSnapshot | None = None
+    withdrawn_on_behalf: AdminOverride | None = None
 
     def __post_init__(self) -> None:
         if not all((self.id, self.version_id, self.revision_id, self.chunking_policy)):
@@ -209,6 +244,8 @@ class OwnershipTransfer:
     performed_by: ActorSnapshot
     recorded_at: datetime
     reason: str
+    # Set when a knowledge admin handed it over on the owner's behalf.
+    on_behalf: AdminOverride | None = None
 
     def __post_init__(self) -> None:
         require_aware(self.recorded_at, "ownership transfer time")
@@ -218,8 +255,10 @@ class OwnershipTransfer:
             )
         if self.previous_owner.id == self.new_owner.id:
             raise InvalidDocumentError("Choose a different document owner.")
-        if self.performed_by.id != self.previous_owner.id:
-            raise InvalidDocumentError("Only the current owner can transfer ownership.")
+        if not _acts_for_owner(self.performed_by, self.previous_owner, self.on_behalf):
+            raise InvalidDocumentError(
+                "Only the current owner, or an admin on their behalf, can transfer ownership."
+            )
 
 
 @dataclass(frozen=True)
@@ -359,8 +398,10 @@ class LibraryDocument:
             raise InvalidDocumentError(
                 "Publication fingerprint does not match the reviewed content."
             )
-        if publication.approved_by.id != self.owner.id:
-            raise InvalidDocumentError("Publication must be approved by the document owner.")
+        if not _acts_for_owner(publication.approved_by, self.owner, publication.on_behalf):
+            raise InvalidDocumentError(
+                "Publication must be approved by the document owner, or an admin on their behalf."
+            )
         if not publication.requires_activation and any(
             p.fingerprint == publication.fingerprint and p.withdrawn_at is None
             for p in self.publications
@@ -395,15 +436,31 @@ class LibraryDocument:
             ),
         )
 
-    def withdraw(self, at: datetime, reason: str) -> LibraryDocument:
+    def withdraw(
+        self,
+        at: datetime,
+        reason: str,
+        by: ActorSnapshot,
+        on_behalf: AdminOverride | None = None,
+    ) -> LibraryDocument:
         if not reason.strip():
             raise InvalidDocumentError("Withdrawal requires a rationale.")
+        if not _acts_for_owner(by, self.owner, on_behalf):
+            raise InvalidDocumentError(
+                "Only the document owner, or an admin on their behalf, can withdraw it."
+            )
         return replace(
             self,
             published_id=None,
             version=self.version + 1,
             publications=tuple(
-                replace(p, withdrawn_at=at, withdrawal_reason=reason)
+                replace(
+                    p,
+                    withdrawn_at=at,
+                    withdrawal_reason=reason,
+                    withdrawn_by=by,
+                    withdrawn_on_behalf=on_behalf,
+                )
                 if p.withdrawn_at is None
                 else p
                 for p in self.publications

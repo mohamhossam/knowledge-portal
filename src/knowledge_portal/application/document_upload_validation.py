@@ -10,6 +10,12 @@ SUPPORTED_EXTENSIONS = {
     "text/plain": ".txt",
 }
 
+# Word 97–2003 files are a binary format no reader here understands.
+LEGACY_WORD_MIME = "application/msword"
+LEGACY_WORD_REFUSAL = (
+    "Word 97–2003 (.doc) files can't be read. Open it in Word, save it as .docx, and upload that."
+)
+
 
 def validate_document_upload(
     filename: str,
@@ -31,6 +37,8 @@ def validate_document_upload(
     if len(content) > max_bytes:
         raise UnsupportedDocumentError(f"Document exceeds the {max_bytes} byte upload limit.")
     mime_type = mime_type.split(";", 1)[0].strip().lower()
+    if filename.lower().endswith(".doc") or mime_type == LEGACY_WORD_MIME:
+        raise UnsupportedDocumentError(LEGACY_WORD_REFUSAL)
     extensions = supported.get(mime_type, "")
     if not extensions or not filename.lower().endswith(tuple(extensions.split(","))):
         kinds = ", ".join(sorted({value.split(",")[0][1:].upper() for value in supported.values()}))

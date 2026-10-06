@@ -20,7 +20,7 @@ function document(overrides: Partial<LibraryDocument> & { stage?: string; approv
     approved_by: amina, withdrawn_at: null, indexing_error: null,
   };
   return {
-    id: "doc", title: "Coverage policy", can_edit: true, owner: amina, version: 1,
+    id: "doc", title: "Coverage policy", can_edit: true, is_owner: true, owner: amina, version: 1,
     published_id: approvedVersion ? publication.id : null,
     publications: approvedVersion ? [publication] : [],
     versions: [version],

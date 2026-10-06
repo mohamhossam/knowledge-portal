@@ -408,6 +408,92 @@
         "title": "ActorSnapshot",
         "type": "object"
       },
+      "AdminGrant": {
+        "description": "One admin may act as a document's owner until it expires or they end it.",
+        "properties": {
+          "admin": {
+            "$ref": "#/components/schemas/ActorSnapshot"
+          },
+          "document_id": {
+            "title": "Document Id",
+            "type": "string"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "granted_at": {
+            "format": "date-time",
+            "title": "Granted At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "document_id",
+          "admin",
+          "reason",
+          "granted_at",
+          "expires_at"
+        ],
+        "title": "AdminGrant",
+        "type": "object"
+      },
+      "AdminGrantRequest": {
+        "description": "Why a knowledge admin needs to act on a document they don't own.",
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "AdminGrantRequest",
+        "type": "object"
+      },
+      "AdminOverride": {
+        "description": "A knowledge admin acting on a document they don't own, and why (Knowledge Center C).",
+        "properties": {
+          "admin": {
+            "$ref": "#/components/schemas/ActorSnapshot"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "admin",
+          "reason"
+        ],
+        "title": "AdminOverride",
+        "type": "object"
+      },
       "ArchitectureDecisionSchema": {
         "properties": {
           "confidence": {
@@ -545,6 +631,27 @@
         "title": "ArchitectureJobStatus",
         "type": "string"
       },
+      "BatchUploadResponse": {
+        "description": "Several files into a draft: the draft after them, and what became of each (C).",
+        "properties": {
+          "release": {
+            "$ref": "#/components/schemas/KnowledgeReleaseResponse"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/FileResult"
+            },
+            "title": "Results",
+            "type": "array"
+          }
+        },
+        "required": [
+          "release",
+          "results"
+        ],
+        "title": "BatchUploadResponse",
+        "type": "object"
+      },
       "Body_import_catalogue_file_architecture_knowledge_releases__release_id__catalogue_file_post": {
         "properties": {
           "expected_revision": {
@@ -651,6 +758,35 @@
           "expected_revision"
         ],
         "title": "Body_upload_document_architecture_knowledge_releases__release_id__documents_post",
+        "type": "object"
+      },
+      "Body_upload_documents_architecture_knowledge_releases__release_id__documents_batch_post": {
+        "properties": {
+          "expected_revision": {
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "files": {
+            "items": {
+              "contentMediaType": "application/octet-stream",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Files",
+            "type": "array"
+          },
+          "language": {
+            "maxLength": 20,
+            "title": "Language",
+            "type": "string"
+          }
+        },
+        "required": [
+          "files",
+          "language",
+          "expected_revision"
+        ],
+        "title": "Body_upload_documents_architecture_knowledge_releases__release_id__documents_batch_post",
         "type": "object"
       },
       "CandidateBasis": {
@@ -2982,6 +3118,16 @@
             "title": "Id",
             "type": "string"
           },
+          "on_behalf": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AdminOverride"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "passages": {
             "items": {
               "$ref": "#/components/schemas/ReviewedPassage"
@@ -3138,6 +3284,56 @@
           "trigger"
         ],
         "title": "FalloutCaseSchema",
+        "type": "object"
+      },
+      "FileResult": {
+        "properties": {
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/UploadOutcome"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Id"
+          }
+        },
+        "required": [
+          "filename",
+          "outcome"
+        ],
+        "title": "FileResult",
         "type": "object"
       },
       "FindingAge": {
@@ -4301,6 +4497,115 @@
         "title": "LandscapeDomainSchema",
         "type": "object"
       },
+      "LibraryAdminAction": {
+        "enum": [
+          "grant",
+          "end",
+          "reassign",
+          "withdraw",
+          "review",
+          "approve",
+          "retry_reading",
+          "retry_indexing"
+        ],
+        "title": "LibraryAdminAction",
+        "type": "string"
+      },
+      "LibraryAdminRecord": {
+        "properties": {
+          "acted_at": {
+            "format": "date-time",
+            "title": "Acted At",
+            "type": "string"
+          },
+          "action": {
+            "$ref": "#/components/schemas/LibraryAdminAction"
+          },
+          "admin": {
+            "$ref": "#/components/schemas/ActorSnapshot"
+          },
+          "after": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "After"
+          },
+          "before": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Before"
+          },
+          "document_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Document Ids",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "id",
+          "action",
+          "document_ids",
+          "admin",
+          "reason",
+          "acted_at"
+        ],
+        "title": "LibraryAdminRecord",
+        "type": "object"
+      },
       "LibraryApprovalRequest": {
         "properties": {
           "expected_version": {
@@ -4468,6 +4773,31 @@
         ],
         "title": "LibraryOwnershipRequest",
         "type": "object"
+      },
+      "LibraryRetryResult": {
+        "properties": {
+          "documents": {
+            "title": "Documents",
+            "type": "integer"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/LibraryRetryScope"
+          }
+        },
+        "required": [
+          "scope",
+          "documents"
+        ],
+        "title": "LibraryRetryResult",
+        "type": "object"
+      },
+      "LibraryRetryScope": {
+        "enum": [
+          "reading",
+          "indexing"
+        ],
+        "title": "LibraryRetryScope",
+        "type": "string"
       },
       "LibraryReviewRequest": {
         "properties": {
@@ -4657,6 +4987,16 @@
       },
       "LibraryView": {
         "properties": {
+          "acting_as_admin": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AdminGrant"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "build_fingerprint": {
             "anyOf": [
               {
@@ -4672,9 +5012,35 @@
             "title": "Can Edit",
             "type": "boolean"
           },
+          "citations": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Citations"
+          },
           "id": {
             "title": "Id",
             "type": "string"
+          },
+          "is_owner": {
+            "default": false,
+            "title": "Is Owner",
+            "type": "boolean"
+          },
+          "newest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VersionOutline"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "owner": {
             "$ref": "#/components/schemas/ActorSnapshot"
@@ -5779,6 +6145,16 @@
           "new_owner": {
             "$ref": "#/components/schemas/ActorSnapshot"
           },
+          "on_behalf": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AdminOverride"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "performed_by": {
             "$ref": "#/components/schemas/ActorSnapshot"
           },
@@ -6447,6 +6823,16 @@
             ],
             "title": "Indexing Error"
           },
+          "on_behalf": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AdminOverride"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "replaces_publication_id": {
             "anyOf": [
               {
@@ -6493,6 +6879,26 @@
               }
             ],
             "title": "Withdrawn At"
+          },
+          "withdrawn_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActorSnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "withdrawn_on_behalf": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AdminOverride"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -7984,6 +8390,14 @@
         "title": "TrackingFlowSchema",
         "type": "object"
       },
+      "UploadOutcome": {
+        "enum": [
+          "added",
+          "refused"
+        ],
+        "title": "UploadOutcome",
+        "type": "string"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -8083,6 +8497,50 @@
           "name"
         ],
         "title": "ValueStreamSchema",
+        "type": "object"
+      },
+      "VersionOutline": {
+        "description": "A version's place in the pipeline, without any of its content.",
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "stage": {
+            "$ref": "#/components/schemas/IngestionStage"
+          },
+          "uploaded_at": {
+            "format": "date-time",
+            "title": "Uploaded At",
+            "type": "string"
+          },
+          "uploaded_by": {
+            "$ref": "#/components/schemas/ActorSnapshot"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "stage",
+          "uploaded_at",
+          "uploaded_by"
+        ],
+        "title": "VersionOutline",
         "type": "object"
       }
     },
@@ -9454,6 +9912,7 @@
     },
     "/architecture-knowledge/releases/{release_id}/changes": {
       "get": {
+        "description": "What changed from `base` (the version in service when omitted) to this release.",
         "operationId": "release_changes_architecture_knowledge_releases__release_id__changes_get",
         "parameters": [
           {
@@ -9463,6 +9922,24 @@
             "schema": {
               "title": "Release Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "base",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Base"
             }
           },
           {
@@ -9728,6 +10205,80 @@
           }
         ],
         "summary": "Select Documents",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
+    "/architecture-knowledge/releases/{release_id}/documents/batch": {
+      "post": {
+        "description": "Up to twenty files into a draft at once; each is added or refused with its reason.",
+        "operationId": "upload_documents_architecture_knowledge_releases__release_id__documents_batch_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_documents_architecture_knowledge_releases__release_id__documents_batch_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchUploadResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Upload Documents",
         "tags": [
           "architecture knowledge"
         ]
@@ -12306,6 +12857,202 @@
         ]
       }
     },
+    "/library/documents/{document_id}/admin-grant": {
+      "delete": {
+        "operationId": "end_admin_grant_library_documents__document_id__admin_grant_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "End Admin Grant",
+        "tags": [
+          "library"
+        ]
+      },
+      "post": {
+        "description": "Act as admin on this document, on its owner's behalf, for the next eight hours.",
+        "operationId": "open_admin_grant_library_documents__document_id__admin_grant_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminGrantRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminGrant"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Open Admin Grant",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/library/documents/{document_id}/admin-record": {
+      "get": {
+        "description": "Every override and bulk action that touched this document, newest first.",
+        "operationId": "admin_record_library_documents__document_id__admin_record_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LibraryAdminRecord"
+                  },
+                  "title": "Response Admin Record Library Documents  Document Id  Admin Record Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Record",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/library/documents/{document_id}/builds": {
       "post": {
         "operationId": "build_corpus_member_library_documents__document_id__builds_post",
@@ -13691,6 +14438,116 @@
           }
         ],
         "summary": "Submit",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/library/retry/indexing": {
+      "post": {
+        "description": "Index again every approval whose indexing stopped; counted like a per-document retry.",
+        "operationId": "retry_every_stopped_index_library_retry_indexing_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryRetryResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Retry Every Stopped Index",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/library/retry/reading": {
+      "post": {
+        "description": "Read again every document whose newest version's reading failed, whoever owns it.",
+        "operationId": "retry_every_failed_reading_library_retry_reading_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryRetryResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Retry Every Failed Reading",
         "tags": [
           "library"
         ]

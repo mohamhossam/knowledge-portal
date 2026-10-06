@@ -389,10 +389,15 @@ class ManageArchitectureKnowledge:
         require_maintainer(actor)
         return self._files.template()
 
-    def changes(self, release_id: str, actor: Actor) -> CatalogueDiff:
-        """How a release differs from the active one, for review before publishing."""
+    def changes(self, release_id: str, actor: Actor, base_id: str | None = None) -> CatalogueDiff:
+        """How a release differs from another: the one in service unless a base is named.
+
+        Any two versions compare, in either order, so a curator can see what one published
+        version changed from the one before it (Knowledge Center C).
+        """
         require_maintainer(actor)
-        return diff_releases(self._repository.active(), self.get(release_id))
+        base = self._repository.active() if base_id is None else self.get(base_id)
+        return diff_releases(base, self.get(release_id))
 
     def select_documents(
         self,
