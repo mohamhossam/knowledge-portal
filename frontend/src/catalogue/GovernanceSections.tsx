@@ -4,7 +4,7 @@ import type { ChangeRecord, KnowledgeSource, Offering, SourceConflict } from "..
 import { formatDay } from "../home/format";
 import { CONFIDENCE } from "./catalogue";
 import { traceLine } from "./inbox";
-import { byLevel, LEVEL, levelTag, questionOf, useSourceText } from "./governance";
+import { byLevel, LEVEL, levelTag, raisedBy, shownQuestions, useSourceText } from "./governance";
 
 type Sourced = { confidence?: string | null; source?: string | null };
 
@@ -176,10 +176,7 @@ export function OpenQuestions({ offering, conflicts, headingId, action, beside }
    */
   beside?: SourceConflict[];
 }) {
-  const all = offering.questions ?? [];
-  const raised = (id: string) => conflicts.filter((conflict) => questionOf(conflict, offering.id)?.toLocaleLowerCase() === id.toLocaleLowerCase());
-  const shown = beside ? all.filter((question) => raised(question.id).length === 0) : all;
-  const withConflicts = beside ? all.filter((question) => raised(question.id).some((conflict) => beside.includes(conflict))).length : 0;
+  const { shown, withConflicts } = shownQuestions(offering, conflicts, beside);
   return (
     <section className="govsection" aria-labelledby={headingId}>
       <h3 id={headingId} className="govsection__title">
@@ -194,7 +191,7 @@ export function OpenQuestions({ offering, conflicts, headingId, action, beside }
       {shown.length ? (
         <ol className="governance__list">
           {shown.map((question) => {
-            const conflicts = raised(question.id);
+            const raising = raisedBy(offering, conflicts, question.id);
             return (
               <li key={question.id} id={`question-${question.id}`}>
                 <span className="governance__id">{question.id}</span>
@@ -209,8 +206,8 @@ export function OpenQuestions({ offering, conflicts, headingId, action, beside }
                     </span>
                   )}
                   {question.impact && <span className="secondary govtable__by" dir="auto">Meanwhile: {question.impact}</span>}
-                  {conflicts.length > 0 && (
-                    <span className="secondary govtable__by">Raised by {conflicts.map((item) => `the conflict ${item.id}`).join(", ")}</span>
+                  {raising.length > 0 && (
+                    <span className="secondary govtable__by">Raised by {raising.map((item) => `the conflict ${item.id}`).join(", ")}</span>
                   )}
                   <Provenance item={question} />
                 </div>

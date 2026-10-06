@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { EXPLORED } from "./fixtures";
-import { gaps, involvement, listed, partsFor, performer, pickScenario, trackingFor } from "./scenario";
+import { gaps, glance, involvement, listed, partsFor, performer, pickScenario, trackingFor } from "./scenario";
 
 const scenario = (product?: string, order?: string, channel?: string) => pickScenario(EXPLORED, product, order, channel)!;
 
@@ -140,5 +140,28 @@ describe("tracking", () => {
   it("says when an offering records no tracking", () => {
     const bare = { ...EXPLORED, products: EXPLORED.products!.map((item) => ({ ...item, tracking: null })) };
     expect(gaps(pickScenario(bare, "bpp", "NEW")!)).toContain("No order tracking is recorded for Business Pro Plus.");
+  });
+});
+
+describe("glance", () => {
+  it("sizes the scenario for the chosen channel", () => {
+    const online = glance(scenario("bpp", "NEW", "online"));
+    expect(online.steps).toEqual({ total: 4, someChannels: 0 });
+    expect([online.systems, online.parts, online.channels.map((item) => item.name)]).toEqual([4, 2, ["Online", "Shop"]]);
+    expect(glance(scenario("bpp", "NEW", "shop")).steps).toEqual({ total: 5, someChannels: 1 });
+  });
+
+  it("counts how sure the sources are, a fact that does not say as not stated, never as confirmed", () => {
+    expect(glance(scenario("bpp", "NEW", "online")).sureness).toEqual({ confirmed: 1, inferred: 1, gap: 1, unstated: 11, total: 14 });
+  });
+
+  it("counts the same gap facts the gaps section names", () => {
+    const opened = scenario("bpp", "NEW", "online");
+    expect(gaps(opened)).toContain(`${glance(opened).sureness.gap} fact is marked in its source as a gap.`);
+  });
+
+  it("has no steps to size without a journey", () => {
+    const cease = glance(scenario("bpp", "CEASE"));
+    expect([cease.steps, cease.channels]).toEqual([null, []]);
   });
 });

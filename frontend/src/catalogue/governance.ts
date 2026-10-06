@@ -85,6 +85,28 @@ export function questionOf(conflict: SourceConflict, productId: string): string 
   return conflict.scope.find((scope) => scope.product_id === productId)?.question_id ?? null;
 }
 
+/** The conflicts that raise one of the offering's questions. */
+export function raisedBy(offering: Offering, conflicts: SourceConflict[], questionId: string): SourceConflict[] {
+  return conflicts.filter((conflict) => questionOf(conflict, offering.id)?.toLocaleLowerCase() === questionId.toLocaleLowerCase());
+}
+
+/**
+ * The offering's open questions a list shows. Beside a list of conflicts, a question some
+ * conflict of the offering raises is left out: the conflicts listed say it, and another order
+ * type's conflict leaves it to that order type.
+ */
+export function shownQuestions(offering: Offering, conflicts: SourceConflict[], beside?: SourceConflict[]): {
+  shown: NonNullable<Offering["questions"]>;
+  withConflicts: number;
+} {
+  const all = offering.questions ?? [];
+  const raised = (id: string) => raisedBy(offering, conflicts, id);
+  return {
+    shown: beside ? all.filter((question) => raised(question.id).length === 0) : all,
+    withConflicts: beside ? all.filter((question) => raised(question.id).some((conflict) => beside.includes(conflict))).length : 0,
+  };
+}
+
 /** A conflict that still raises a question the offering would no longer have: it must change first. */
 export function questionProblem(value: Offering, conflicts: SourceConflict[]): string | null {
   const asked = new Set((value.questions ?? []).map((item) => item.id.trim().toLocaleLowerCase()));

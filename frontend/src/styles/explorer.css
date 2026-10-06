@@ -48,3 +48,18 @@
   text-decoration: none;
   cursor: progress;
 }
+
+/* The scenario at a glance: the sheet's facts list, its figures in the page's tabular lining figures. */
+.explorer__glance .secondary {
+  display: block;
+  font-size: var(--t-meta);
+}
+
+.explorer__glance-aside {
+  color: var(--ink-2);
+}
+
+/* Gaps are due (the Weight Is Rank Rule): bold, and a way down to what is missing. */
+.explorer__glance-gap {
+  font-weight: var(--w-bold);
+}

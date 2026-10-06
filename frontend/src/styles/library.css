@@ -750,6 +750,12 @@ html:has(.savebar) {
   font-weight: var(--w-regular);
 }
 
+/* A link is a flex box, which drops a leading space; a count or note keeps its own. */
+.subindex__count,
+.subindex__note {
+  white-space: pre;
+}
+
 @media (max-width: 45rem) {
   .subindex__list {
     gap: 0 var(--s3);

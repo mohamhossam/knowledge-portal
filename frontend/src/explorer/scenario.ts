@@ -5,7 +5,7 @@
  * catalogue does not say yet. Pure functions over the version; nothing here
  * calls the service, and nothing is filled in that the version does not hold.
  */
-import type { Channel, ExplorerRelease, Journey, Offering, SourceConflict } from "../api/client";
+import type { Channel, ExplorerRelease, Journey, Offering, SourceConfidence, SourceConflict } from "../api/client";
 import { concerns, orderedSteps } from "../catalogue/catalogue";
 import { conflictsFor } from "../catalogue/governance";
 import { count } from "../home/format";
@@ -213,10 +213,14 @@ export function listed(items: string[]): string {
   return items.length > 1 ? `${items.slice(0, -1).join(", ")} and ${items.at(-1)}` : items[0] ?? "";
 }
 
-/** The facts of a scenario its sources leave as gaps. */
-function gapFacts(scenario: Scenario): number {
+/**
+ * The facts a scenario reads whose sources say how sure they are: the offering, the order
+ * type, the parts and how they are realised, the responsibilities that hold for the order
+ * type, and the journey with its steps, hand-overs and flow rules.
+ */
+function scenarioFacts(scenario: Scenario): { confidence?: SourceConfidence | null }[] {
   const { offering, orderType, journey } = scenario;
-  const facts = [
+  return [
     offering,
     orderType,
     ...offering.components,
@@ -224,7 +228,37 @@ function gapFacts(scenario: Scenario): number {
     ...partsFor(scenario).flatMap((item) => item.responsibilities),
     ...(journey ? [journey, ...journey.activities, ...journey.integrations, ...journey.flow_rules] : []),
   ];
-  return facts.filter((fact) => fact.confidence === "gap").length;
+}
+
+/** How sure the catalogue is of a scenario's facts; "unstated" counts those whose source does not say. */
+export type Sureness = Record<SourceConfidence | "unstated", number> & { total: number };
+
+/** A scenario at a glance (DESIGN.md › Explorer): its size, and how sure the catalogue is of it. */
+export type Glance = {
+  /** The steps read for the chosen channel, and how many of them only some channels take. */
+  steps: { total: number; someChannels: number } | null;
+  systems: number;
+  parts: number;
+  channels: Channel[];
+  sureness: Sureness;
+};
+
+export function glance(scenario: Scenario): Glance {
+  const sureness: Sureness = { confirmed: 0, inferred: 0, gap: 0, unstated: 0, total: 0 };
+  for (const fact of scenarioFacts(scenario)) {
+    sureness[fact.confidence ?? "unstated"] += 1;
+    sureness.total += 1;
+  }
+  const { journey } = scenario;
+  return {
+    steps: journey
+      ? { total: journey.activities.length, someChannels: journey.activities.filter((step) => (step.channels ?? []).length > 0).length }
+      : null,
+    systems: involvement(scenario).length,
+    parts: scenario.offering.components.length,
+    channels: scenario.channels,
+    sureness,
+  };
 }
 
 /** What the catalogue does not say about this scenario, each as a sentence. */
@@ -278,7 +312,7 @@ export function gaps(scenario: Scenario): string[] {
   const tracked = trackingFor(scenario);
   if (!tracked) found.push(`No order tracking is recorded for ${scenario.offering.name}.`);
   else found.push(...tracked.gaps);
-  const marked = gapFacts(scenario);
+  const marked = scenarioFacts(scenario).filter((fact) => fact.confidence === "gap").length;
   if (marked) found.push(`${count(marked, "fact is", "facts are")} marked in ${marked === 1 ? "its source" : "their sources"} as a gap.`);
   return found;
 }

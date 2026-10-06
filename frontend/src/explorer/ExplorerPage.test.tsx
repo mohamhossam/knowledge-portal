@@ -315,3 +315,54 @@ describe("the Solution Architecture download", () => {
     await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
   });
 });
+
+describe("the scenario at a glance", () => {
+  const glanceOf = async () => within((await screen.findByText("How sure")).closest("dl")! as HTMLElement);
+
+  it("sizes the scenario and says how sure its sources are, before any section", async () => {
+    open("/explorer?product=bpp&order=NEW&channel=shop");
+    const facts = await glanceOf();
+    expect(facts.getByText("Steps").nextElementSibling).toHaveTextContent("5 · 1 of them only in some channels");
+    expect(facts.getByText("Systems").nextElementSibling).toHaveTextContent("take part");
+    expect(facts.getByText("Channels").nextElementSibling).toHaveTextContent("Ordered through Online and Shop");
+    const sure = facts.getByText("How sure").nextElementSibling!;
+    expect(sure).toHaveTextContent(/^Confirmed 1 · Inferred 1 · Gap 1 · Not stated \d+Counted over the \d+ facts/);
+    expect(within(sure as HTMLElement).getByRole("link", { name: "Gap 1" })).toHaveAttribute("href", "#scenario-gaps");
+  });
+
+  it("says when no journey sizes the order type", async () => {
+    open("/explorer?product=bpp&order=CEASE");
+    const facts = await glanceOf();
+    expect(facts.getByText("Steps").nextElementSibling).toHaveTextContent("No journey yet");
+    expect(facts.getByText("Channels").nextElementSibling).toHaveTextContent("Not recorded");
+  });
+
+  it("indexes the sheet's sections in reading order, with their counts", async () => {
+    open("/explorer?product=bpp&order=NEW&channel=online");
+    const index = within(await screen.findByRole("navigation", { name: "This scenario" }));
+    expect(index.getAllByRole("link").map((link) => link.textContent)).toEqual([
+      "Systems 4", "Steps 4", "Hand-overs 1", "Order tracking", "Lifecycle notes 1", "Parts 2", "NFRs 2", "Plans and prices",
+      "Decisions needed 2", "Open questions 1", "Architecture decisions 1", "Sources", expect.stringMatching(/^Not said yet \d+$/),
+    ]);
+    for (const link of index.getAllByRole("link")) {
+      expect(document.getElementById(link.getAttribute("href")!.slice(1))).not.toBeNull();
+    }
+  });
+
+  it("leaves out the sections a scenario without a journey does not have", async () => {
+    open("/explorer?product=bpp&order=CEASE");
+    const index = within(await screen.findByRole("navigation", { name: "This scenario" }));
+    expect(index.queryByRole("link", { name: /^Steps/ })).toBeNull();
+    expect(index.queryByRole("link", { name: /^Hand-overs/ })).toBeNull();
+  });
+
+  it("takes focus to the section followed, so Tab continues from there", async () => {
+    open("/explorer?product=bpp&order=NEW&channel=online");
+    const index = within(await screen.findByRole("navigation", { name: "This scenario" }));
+    fireEvent.click(index.getByRole("link", { name: /^Parts/ }));
+    const heading = screen.getByRole("heading", { name: "Parts, and who is responsible in this order" });
+    expect(heading).toHaveFocus();
+    expect(heading).toHaveAttribute("tabindex", "-1");
+    expect(window.location.hash).toBe("#scenario-parts");
+  });
+});

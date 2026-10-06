@@ -1,7 +1,12 @@
 # Slice plan — Explorer readability
 
-**Status:** Proposed 2026-10-06, not yet on `ROADMAP.md`. Approve, trim or reorder before any
-slice starts (`AGENTS.md` §3).
+**Status:** Proposed 2026-10-06, not yet on `ROADMAP.md`. The user asked on 2026-10-06 for the
+slices to be built in order, one session each.
+
+| Slice | Status | Branch |
+|---|---|---|
+| A1 | Delivered 2026-10-06; see A1's Validation Evidence | `feat/explorer-at-a-glance` |
+| A2, A5, A3, A4, B1 | Not started | — |
 
 ## Why
 
@@ -77,6 +82,60 @@ checks that the sub-index links only to the sections present and that each link 
 its heading.
 
 **`DESIGN.md`:** add the facts list and the sub-index to the Explorer entry.
+
+#### A1 — As delivered
+
+- `explorer/scenario.ts`: `glance()` and the shared `scenarioFacts()`. "How sure" counts exactly
+  the facts the gaps section counts, so "Gap N" and "N facts are marked … as a gap" always agree.
+- `catalogue/governance.ts`: `shownQuestions()` and `raisedBy()`, moved out of `OpenQuestions`
+  so the section and the sub-index count the same questions.
+- `explorer/ExplorerPage.tsx`: the facts list after "Read from"; the "This scenario" sub-index
+  after the head. The sheet's section ids are stable (`scenario-…`, not `useId`), so a section
+  can be linked. `jumpTo` moves focus to the heading and keeps the scenario in the address.
+- `styles/library.css`: the sub-index's count and note keep their leading space. The link is a
+  flex box, which dropped it ("Systems21"). This also fixes the library's "Review · N unsaved"
+  and the catalogue's "Versions · N waiting".
+- `DESIGN.md` › Explorer: the scenario at a glance and the "This scenario" sub-index.
+- **Changed from the plan:** the last link reads "Not said yet", not "Gaps". "Gap 7" in How sure
+  counts facts, while the section counts missing things, and the same word for both misled.
+
+#### A1 — Validation Evidence
+
+Run on 2026-10-06, Windows, Node 24; `TZ=UTC` as on CI's runners.
+
+| Command | Result |
+|---|---|
+| `npm run lint` | PASS |
+| `npm run typecheck` | PASS |
+| `npm run api:check` | PASS (no contract change) |
+| `npm run build` | PASS |
+| `TZ=UTC npx vitest run src/explorer` | PASS, 73 tests, 9 of them new |
+| `TZ=UTC npx vitest run` | 219 passed, 1 failed: `catalogue/lifecycle.test.tsx` timed out (5.7 s against 5 s). Rerun alone, PASS (4 tests). It fails at random under load on this machine, and failed the same way before this slice. |
+
+Two existing problems this slice did not cause and does not fix:
+- **Timeouts under load:** `lifecycle.test.tsx` and `tracking.test.tsx` time out under
+  parallel load on this machine.
+- **A timezone-dependent test:** `ExplorerPage.test.tsx` › "reads the offering's plans and
+  prices…" expects "read at 09:30" from a UTC fixture. It fails off UTC (13:30 at UTC+4), with or
+  without this slice.
+
+**Live check:** the Docker stack (`deploy/compose.local.yaml`) with the original `model.json`
+imported, at
+`/knowledge/explorer?product=BUSINESS_PRO_PLUS&order=NEW&channel=B2B_DIGITAL`:
+- **Facts:** Steps 35 · 7 only in some channels; 21 systems; 20 parts; three channels;
+  Confirmed 153 · Inferred 7 · Gap 7 of 167.
+- **Sub-index:** all 13 links have a target, and each is 36px tall.
+- **Keyboard:** Enter on "Parts" focuses its heading with a visible focus ring. The heading sits
+  at 80px, below a masthead ending at 46px, and the address keeps the scenario with
+  `#scenario-parts`.
+- **Phone, 375px:** the facts stack, the sub-index wraps, and nothing scrolls sideways.
+- **Console:** no errors.
+
+**Critique:** the impeccable skill is not installed in this environment, so it was not run.
+Instead, the page was reviewed by hand against `DESIGN.md` (no cards, pills or badges; the three
+rule weights; weight as rank; existing patterns only). That review found the two problems fixed
+above: the lost space and the "Gaps" label. Run impeccable before the pull request where it is
+available (`CLAUDE.md`).
 
 ### A2 — Sections that fold
 

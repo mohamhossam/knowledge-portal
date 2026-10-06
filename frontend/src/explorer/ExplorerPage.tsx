@@ -1,21 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
 import { RotateCw } from "lucide-react";
-import { type ReactNode, useEffect, useId } from "react";
+import { type MouseEvent, type ReactNode, useEffect, useId } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { api, type ExplorerRelease } from "../api/client";
 import { errorMessage } from "../api/errors";
-import { CONFIDENCE, roleLabel, sentenceCase } from "../catalogue/catalogue";
+import { CONFIDENCE, concerns, roleLabel, sentenceCase } from "../catalogue/catalogue";
 import { JourneyHandovers, JourneySteps } from "../catalogue/JourneyTimetable";
 import { NfrSection, RealisationKey, RealisedAs, RealisedInline } from "../catalogue/Realisation";
 import { ArchitectureDecisions, ConflictList, OfferingSourceList, OpenQuestions } from "../catalogue/GovernanceSections";
-import { conflictsFor, questionOf, SourcesContext } from "../catalogue/governance";
+import { conflictsFor, questionOf, shownQuestions, SourcesContext } from "../catalogue/governance";
 import { LifecycleSection } from "../catalogue/LifecycleNotes";
 import { TrackingSection } from "../catalogue/Tracking";
 import { formatDay } from "../home/format";
 import { DocumentDownload } from "./DocumentDownload";
 import { PlansAndPrices } from "./PlansAndPrices";
-import { gaps, involvement, journeyFor, listed, partsFor, pickScenario, type Scenario, trackingFor } from "./scenario";
+import { gaps, glance, type Glance, involvement, journeyFor, listed, partsFor, pickScenario, type Scenario, trackingFor } from "./scenario";
 
 /** What the catalogue cannot hold yet; each arrives with a later slice (requirement-portal ADR-0101). */
 export const NOT_YET =
@@ -168,13 +168,104 @@ function steps(numbers: string[]): string {
   return numbers.length === 1 ? `step ${numbers[0]}` : `steps ${listed(numbers)}`;
 }
 
+/** The prefix of the scenario sheet's section ids: `scenario-steps`, `scenario-gaps`. */
+const SCENARIO = "scenario";
+
+type SectionLink = { label: ReactNode; target: string; count?: number };
+
+/** The sheet's sections in reading order, each with its count; a section the sheet leaves out has no link. */
+function sectionsOf(scenario: Scenario, release: ExplorerRelease, counted: { systems: number; parts: number; gaps: number }): SectionLink[] {
+  const { offering, orderType, journey, channel } = scenario;
+  const decisions = scenario.conflicts ?? [];
+  const notes = (offering.lifecycle_notes ?? []).filter((note) => concerns(note, orderType.code, channel?.id ?? null));
+  const questions = shownQuestions(offering, conflictsFor(release.conflicts ?? [], offering.id), decisions).shown;
+  const links: (SectionLink | false)[] = [
+    { label: "Systems", target: "systems", count: counted.systems },
+    !!journey && { label: "Steps", target: "steps", count: journey.activities.length },
+    !!journey?.integrations.length && { label: "Hand-overs", target: "handovers", count: journey.integrations.length },
+    { label: "Order tracking", target: "tracking" },
+    { label: "Lifecycle notes", target: "lifecycle", count: notes.length },
+    { label: "Parts", target: "parts", count: counted.parts },
+    { label: <abbr title="Non-functional requirements">NFRs</abbr>, target: "nfrs", count: (offering.nfrs ?? []).length },
+    { label: "Plans and prices", target: "plans" },
+    decisions.length > 0 && { label: "Decisions needed", target: "conflicts", count: decisions.length },
+    { label: "Open questions", target: "questions", count: questions.length },
+    { label: "Architecture decisions", target: "decisions", count: (offering.decisions ?? []).length },
+    { label: "Sources", target: "sources" },
+    { label: "Not said yet", target: "gaps", count: counted.gaps },
+  ];
+  return links.filter((link): link is SectionLink => link !== false).map((link) => ({ ...link, target: `${SCENARIO}-${link.target}` }));
+}
+
+/**
+ * Follow an in-page link to a section's heading and take focus there, so the next Tab
+ * continues from the section. The address keeps the section, so the link can be shared.
+ */
+function jumpTo(event: MouseEvent<HTMLAnchorElement>, targetId: string) {
+  const heading = document.getElementById(targetId);
+  if (!heading) return;
+  event.preventDefault();
+  if (!heading.hasAttribute("tabindex")) heading.setAttribute("tabindex", "-1");
+  heading.scrollIntoView?.({ block: "start" });
+  heading.focus({ preventScroll: true });
+  window.history.replaceState(window.history.state, "", `#${targetId}`);
+}
+
+/** The scenario's size and how sure the catalogue is of it, before any detail (DESIGN.md › Explorer). */
+function AtAGlance({ at }: { at: Glance }) {
+  const { steps, sureness } = at;
+  return (
+    <dl className="sheet__facts explorer__glance">
+      <div>
+        <dt>Steps</dt>
+        <dd>
+          {steps ? steps.total : "No journey yet"}
+          {steps && steps.someChannels > 0 && <span className="explorer__glance-aside"> · {steps.someChannels} of them only in some channels</span>}
+        </dd>
+      </div>
+      <div>
+        <dt>Systems</dt>
+        <dd>{at.systems} take part</dd>
+      </div>
+      <div>
+        <dt>Parts</dt>
+        <dd>{at.parts}</dd>
+      </div>
+      <div>
+        <dt>Channels</dt>
+        <dd dir="auto">{at.channels.length ? `Ordered through ${listed(at.channels.map((item) => item.name))}` : "Not recorded"}</dd>
+      </div>
+      <div>
+        <dt>How sure</dt>
+        <dd>
+          Confirmed {sureness.confirmed}
+          {" · "}Inferred {sureness.inferred}
+          {sureness.gap > 0 && (
+            <>
+              {" · "}
+              <a href={`#${SCENARIO}-gaps`} className="explorer__glance-gap" onClick={(event) => jumpTo(event, `${SCENARIO}-gaps`)}>
+                Gap {sureness.gap}
+              </a>
+            </>
+          )}
+          {sureness.unstated > 0 && <>{" · "}Not stated {sureness.unstated}</>}
+          <span className="secondary">
+            Counted over the {sureness.total} facts this scenario reads from the offering, its parts and its journey.
+          </span>
+        </dd>
+      </div>
+    </dl>
+  );
+}
+
 /** One scenario as a sheet: the systems first, then the timetable, the parts and the gaps. */
 function ScenarioSheet({ release, scenario, linkSystems }: {
   release: ExplorerRelease;
   scenario: Scenario;
   linkSystems: boolean;
 }) {
-  const id = useId();
+  // One scenario per page, so its sections take stable ids a link can name.
+  const id = SCENARIO;
   const { offering, orderType, journey, channel } = scenario;
   const channelNames = new Map((release.channels ?? []).map((item) => [item.id, item.name]));
   const channelName = (channelId: string) => channelNames.get(channelId) ?? channelId;
@@ -190,7 +281,8 @@ function ScenarioSheet({ release, scenario, linkSystems }: {
   const missing = gaps(scenario);
   const tracked = trackingFor(scenario);
   const decisions = scenario.conflicts ?? [];
-  const readFrom = [...(offering.sources ?? [])]
+  const sections = sectionsOf(scenario, release, { systems: taking.length, parts: parts.length, gaps: missing.length });
+  const readFrom =[...(offering.sources ?? [])]
     .sort((a, b) => Number(b === offering.primary_source) - Number(a === offering.primary_source))
     .map((sourceId) => (release.sources ?? []).find((item) => item.id === sourceId))
     .filter((item): item is NonNullable<typeof item> => !!item);
@@ -233,8 +325,22 @@ function ScenarioSheet({ release, scenario, linkSystems }: {
               .join(", ")}
           </p>
         )}
+        <AtAGlance at={glance(scenario)} />
         <DocumentDownload release={release} scenario={scenario} />
       </header>
+
+      <nav className="subindex explorer__subindex" aria-label="This scenario">
+        <ul className="subindex__list">
+          {sections.map((section) => (
+            <li key={section.target}>
+              <a href={`#${section.target}`} className="subindex__link" onClick={(event) => jumpTo(event, section.target)}>
+                {section.label}
+                {section.count ? <span className="subindex__count"> {section.count}</span> : null}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
 
       {decisions.length > 0 && (
         <p className="explorer__decisions" role="note">
