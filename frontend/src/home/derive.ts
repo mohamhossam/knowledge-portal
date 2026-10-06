@@ -431,6 +431,13 @@ export function squadOverview(
 /** Requirement work, where its owners act on what Table 4 reports. */
 export const REQUIREMENT_WORK_LEAVES = "opens requirement work";
 
+// Table 4's own pages, filtered to what a row counts.
+const REQUIREMENTS = "/requirement-knowledge/requirements";
+const FINDINGS = "/requirement-knowledge/findings";
+const STOPPED = `${REQUIREMENTS}?state=failed`;
+const OVERDUE = `${FINDINGS}?age=over_30_days`;
+const AWAITING = `${FINDINGS}?age=from_7_to_30_days`;
+
 /**
  * Requirement work's corpus, in counts (requirement-portal ADR-0099, Amendment 1). Its teams
  * decide findings and retry indexing there, so the table's next decision leads there.
@@ -440,11 +447,11 @@ export function requirementOverview(corpus: RequirementCorpus, requirementWork: 
   const open = ages.under_7_days + ages.from_7_to_30_days + ages.over_30_days;
   const notes: DerivedNote[] = [{
     id: "source",
-    text: "Requirement work keeps the requirements and their findings, and answers in counts, never naming a requirement. The figures are as of the time in the masthead.",
+    text: "Requirement work keeps the requirements and their findings, and answers this table in counts. Its Requirements and Findings pages name them. The figures are as of the time in the masthead.",
   }];
   const lines: Line[] = [];
-  const row = (key: string, rank: Rank, name: string, status: string, value: number, note?: string) =>
-    lines.push({ key, rank, name, cells: { status, count: String(value) }, note });
+  const row = (key: string, rank: Rank, name: string, status: string, value: number, to: string, note?: string) =>
+    lines.push({ key, rank, name, to, cells: { status, count: String(value) }, note });
 
   if (corpus.rebuild_required) {
     notes.push({
@@ -458,25 +465,21 @@ export function requirementOverview(corpus: RequirementCorpus, requirementWork: 
       id: "failed",
       text: "Indexing stops after three failed attempts on the same change. The requirement's team retries it from the requirement, or a later change starts it afresh.",
     });
-    row("failed", "delayed", "Requirements that stopped indexing", "Indexing failed", corpus.failed, "failed");
+    row("failed", "delayed", "Requirements that stopped indexing", "Indexing failed", corpus.failed, STOPPED, "failed");
   }
   if (ages.over_30_days > 0) {
     notes.push({
       id: "findings",
       text: "A possible duplicate or contradiction stays open until the requirements' owners decide it on the Knowledge step. One left over a month is overdue.",
     });
-    row("over30", "delayed", "Findings open over 30 days", "Overdue", ages.over_30_days, "findings");
+    row("over30", "delayed", "Findings open over 30 days", "Overdue", ages.over_30_days, OVERDUE, "findings");
   }
-  if (ages.from_7_to_30_days > 0) row("over7", "due", "Findings open 7 to 30 days", "Awaiting owners", ages.from_7_to_30_days);
+  if (ages.from_7_to_30_days > 0) row("over7", "due", "Findings open 7 to 30 days", "Awaiting owners", ages.from_7_to_30_days, AWAITING);
   // A finding this week is screening at its normal pace: in progress, not yet anyone's concern.
-  if (ages.under_7_days > 0) row("recent", "running", "Findings open under 7 days", "With their owners", ages.under_7_days);
-  if (corpus.waiting > 0) row("waiting", "running", "Requirements waiting to be indexed", "Indexing", corpus.waiting);
+  if (ages.under_7_days > 0) row("recent", "running", "Findings open under 7 days", "With their owners", ages.under_7_days, `${FINDINGS}?age=under_7_days`);
+  if (corpus.waiting > 0) row("waiting", "running", "Requirements waiting to be indexed", "Indexing", corpus.waiting, `${REQUIREMENTS}?state=waiting`);
 
   const present = (items: (string | null)[]) => items.filter((item): item is string => item !== null);
-  const troubles = present([
-    corpus.failed > 0 ? `the ${count(corpus.failed, "requirement")} that stopped indexing` : null,
-    ages.over_30_days > 0 ? `the ${count(ages.over_30_days, "overdue finding")}` : null,
-  ]);
   // The index's clause: the same troubles, as short as a timetable's margin note.
   const brief = present([
     corpus.failed > 0 ? `${corpus.failed} stopped indexing` : null,
@@ -499,13 +502,16 @@ export function requirementOverview(corpus: RequirementCorpus, requirementWork: 
         : `${count(corpus.requirements, "requirement")}, ${corpus.current} indexed and current`,
       note: "source",
     },
+    // A rebuild is requirement work's to start; overdue findings an admin can nudge from here.
     next: corpus.rebuild_required
       ? leave("Rebuild the requirement index in requirement work")
-      : troubles.length > 0
-        ? leave(`See to ${troubles.join(" and ")} in requirement work`)
-        : ages.from_7_to_30_days > 0
-          ? leave(`${count(ages.from_7_to_30_days, "finding")} ${ages.from_7_to_30_days === 1 ? "awaits its" : "await their"} owners in requirement work`)
-          : { label: "Nothing in requirement knowledge awaits anyone." },
+      : ages.over_30_days > 0
+        ? { to: OVERDUE, label: ages.over_30_days === 1 ? "Ask the owners to decide the overdue finding" : `Ask the owners to decide the ${ages.over_30_days} overdue findings` }
+        : corpus.failed > 0
+          ? { to: STOPPED, label: `See the ${count(corpus.failed, "requirement")} that stopped indexing` }
+          : ages.from_7_to_30_days > 0
+            ? { to: AWAITING, label: `${count(ages.from_7_to_30_days, "finding")} ${ages.from_7_to_30_days === 1 ? "awaits its" : "await their"} owners` }
+            : { label: "Nothing in requirement knowledge awaits anyone." },
     extent: { value: corpus.requirements, label: count(corpus.requirements, "requirement") },
     alert: alertOf(
       corpus.rebuild_required ? "rebuild required" : brief.length > 0 ? brief.join(", ") : null,

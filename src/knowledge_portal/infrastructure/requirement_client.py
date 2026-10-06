@@ -9,16 +9,27 @@ running without requirement work.
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import quote
 
 from pydantic import TypeAdapter
-from smb_kernel.errors import ServiceUnavailableError
+from smb_kernel.errors import ServiceResponseError, ServiceUnavailableError
 from smb_kernel.http.client import InternalHttpClient
 
 from knowledge_portal.application.ports.architecture_mapping_stats import MappingCount
-from knowledge_portal.application.ports.requirement_corpus import CorpusSummary, OpenFindingAges
+from knowledge_portal.application.ports.requirement_corpus import (
+    CorpusFindingsPage,
+    CorpusQuery,
+    CorpusRequirementsPage,
+    CorpusSummary,
+    FindingQuery,
+    NudgeReceipt,
+    OpenFindingAges,
+    RequirementFindingConflictError,
+    RequirementFindingNotFoundError,
+)
 from knowledge_portal.application.ports.requirement_dependents import (
     ProposalStatus,
     RequirementDependent,
@@ -32,6 +43,9 @@ _CITATION = TypeAdapter(PublishedReference)
 _COUNTS = TypeAdapter(tuple[MappingCount, ...])
 _IMPACT = TypeAdapter(DependencyImpactPage)
 _CORPUS = TypeAdapter(CorpusSummary)
+_REQUIREMENTS = TypeAdapter(CorpusRequirementsPage)
+_FINDINGS = TypeAdapter(CorpusFindingsPage)
+_NUDGE = TypeAdapter(NudgeReceipt)
 
 
 def _decode[T](adapter: TypeAdapter[T], body: Any, what: str) -> T:
@@ -158,6 +172,60 @@ class HttpRequirementCorpus:
         body = self._client.get_json("/internal/knowledge/corpus/summary")
         return _decode(_CORPUS, body, "corpus summary")
 
+    def requirements(self, query: CorpusQuery, offset: int, limit: int) -> CorpusRequirementsPage:
+        params: dict[str, Any] = {
+            "q": query.text,
+            "open_findings_only": "true" if query.open_findings_only else "false",
+            "offset": offset,
+            "limit": limit,
+        }
+        if query.index_state is not None:
+            params["index_state"] = query.index_state.value
+        if query.owner_id is not None:
+            params["owner_id"] = query.owner_id
+        if query.not_screened_for_days is not None:
+            params["not_screened_for_days"] = query.not_screened_for_days
+        body = self._client.get_json("/internal/knowledge/corpus", params)
+        return _decode(_REQUIREMENTS, body, "corpus rows")
+
+    def findings(self, query: FindingQuery, offset: int, limit: int) -> CorpusFindingsPage:
+        params: dict[str, Any] = {"offset": offset, "limit": limit}
+        if query.kind is not None:
+            params["kind"] = query.kind.value
+        if query.age is not None:
+            params["age"] = query.age.value
+        if query.owner_id is not None:
+            params["owner_id"] = query.owner_id
+        body = self._client.get_json("/internal/knowledge/findings", params)
+        return _decode(_FINDINGS, body, "findings")
+
+    def nudge(self, finding_id: str, actor_id: str, actor_name: str) -> NudgeReceipt:
+        try:
+            body = self._client.post_json(
+                f"/internal/knowledge/findings/{_segment(finding_id)}/nudge",
+                {"actor_id": actor_id, "actor_name": actor_name},
+            )
+        except ServiceResponseError as exc:
+            if exc.status_code == 404:
+                raise RequirementFindingNotFoundError("This finding no longer exists.") from exc
+            if exc.status_code == 409:
+                raise RequirementFindingConflictError(_refusal(exc.detail)) from exc
+            raise ServiceUnavailableError(
+                f"Requirement work refused the nudge ({exc.status_code})."
+            ) from exc
+        return _decode(_NUDGE, body, "nudge receipt")
+
+
+def _refusal(detail: str) -> str:
+    """Requirement work's own reason for a refusal: its error body's message."""
+    try:
+        message = json.loads(detail).get("message")
+    except (ValueError, AttributeError):
+        message = None
+    if isinstance(message, str) and message.strip():
+        return message.strip()
+    return "Requirement work refused the nudge."
+
 
 class FakeRequirementCorpus:
     """No Requirements: offline, the corpus is empty and fully indexed."""
@@ -169,6 +237,15 @@ class FakeRequirementCorpus:
         return CorpusSummary(
             0, 0, 0, 0, 0, False, OpenFindingAges(0, 0, 0), self._at or datetime.now(UTC)
         )
+
+    def requirements(self, query: CorpusQuery, offset: int, limit: int) -> CorpusRequirementsPage:
+        return CorpusRequirementsPage((), None)
+
+    def findings(self, query: FindingQuery, offset: int, limit: int) -> CorpusFindingsPage:
+        return CorpusFindingsPage((), None)
+
+    def nudge(self, finding_id: str, actor_id: str, actor_name: str) -> NudgeReceipt:
+        raise RequirementFindingNotFoundError("This finding no longer exists.")
 
 
 class FakeRequirementDependents:

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { errorMessage } from "../api/errors";
@@ -31,10 +32,12 @@ function failureLine(answerer: string, error: unknown): string {
 }
 
 /** One table of the overview, in whatever state its answers are in. */
-export function OverviewTable({ spec, state, headingLevel }: {
+export function OverviewTable({ spec, state, headingLevel, toolbar }: {
   spec: TableSpec;
   state: TableState;
   headingLevel?: "h1" | "h2";
+  /** Set between the head and the grid, such as a table page's sub-index. */
+  toolbar?: ReactNode;
 }) {
   if (state.status !== "ready") {
     return (
@@ -43,6 +46,7 @@ export function OverviewTable({ spec, state, headingLevel }: {
         title={spec.title}
         to={headingLevel === "h1" ? undefined : spec.to}
         headingLevel={headingLevel}
+      toolbar={toolbar}
         edition={state.status === "loading" ? `Reading ${spec.noun}…` : "This table could not be read."}
         columns={spec.columns}
         rows={[]}
@@ -60,6 +64,7 @@ export function OverviewTable({ spec, state, headingLevel }: {
       title={spec.title}
       to={headingLevel === "h1" ? undefined : spec.to}
       headingLevel={headingLevel}
+      toolbar={toolbar}
       edition={<>{overview.edition.text}{overview.edition.note && <NoteMark note={overview.edition.note} />}</>}
       columns={spec.columns}
       rows={overview.lines.map((line) => ({

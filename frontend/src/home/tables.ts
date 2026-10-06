@@ -75,7 +75,7 @@ export const TABLES = {
     caption: "what stands in requirement work's corpus",
     narrow: true,
     columns: [
-      { key: "name", label: "In the corpus" },
+      { key: "name", label: "What stands" },
       { key: "status", label: "Status" },
       { key: "count", label: "Count", align: "end" },
     ],

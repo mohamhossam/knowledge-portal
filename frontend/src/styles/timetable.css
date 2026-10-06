@@ -155,6 +155,11 @@
   line-height: 0;
 }
 
+/* Beside a linked row name, a mark keeps clear of the link: two targets, never touching. */
+.timetable__grid th a + .mark-wrap {
+  margin-left: 0.75rem;
+}
+
 .mark {
   padding: 0 0.15em;
   color: var(--reference);

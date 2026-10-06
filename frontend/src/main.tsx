@@ -17,6 +17,7 @@ import "./styles/library.css";
 import "./styles/catalogue.css";
 import "./styles/squads.css";
 import "./styles/explorer.css";
+import "./styles/knowledge.css";
 
 import { ApiError } from "./api/errors";
 import { App } from "./app/App";
