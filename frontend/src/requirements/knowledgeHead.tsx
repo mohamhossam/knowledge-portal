@@ -3,15 +3,16 @@ import { Link, useLocation } from "react-router-dom";
 
 import { REQUIREMENT_APP_URL } from "../auth/paths";
 import { requirementOverview } from "../home/derive";
-import { FINDINGS_PATH, KNOWLEDGE_PATH, REQUIREMENTS_PATH, useCorpusSummary } from "./knowledge";
+import { FINDINGS_PATH, HISTORIC_PATH, KNOWLEDGE_PATH, REQUIREMENTS_PATH, useCorpusSummary } from "./knowledge";
 
-/** Overview · Requirements · Findings: the pages of Table 4. */
+/** Overview · Requirements · Findings · Historic: the pages of Table 4. */
 export function KnowledgeSubIndex() {
   const { pathname } = useLocation();
   const pages = [
     { label: "Overview", to: KNOWLEDGE_PATH, current: pathname === KNOWLEDGE_PATH || pathname === `${KNOWLEDGE_PATH}/` },
     { label: "Requirements", to: REQUIREMENTS_PATH, current: pathname.startsWith(REQUIREMENTS_PATH) },
     { label: "Findings", to: FINDINGS_PATH, current: pathname.startsWith(FINDINGS_PATH) },
+    { label: "Historic", to: HISTORIC_PATH, current: pathname.startsWith(HISTORIC_PATH) },
   ];
   return (
     <nav className="subindex" aria-label="This table">

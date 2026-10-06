@@ -94,7 +94,7 @@
   cursor: pointer;
 }
 
-.action-button:hover:not(:disabled) {
+.action-button:hover:not(:disabled):not([aria-disabled="true"]) {
   background: var(--stock);
   color: var(--ink);
 }
@@ -104,12 +104,14 @@
   color: var(--ink);
 }
 
-.action-button--secondary:hover:not(:disabled) {
+.action-button--secondary:hover:not(:disabled):not([aria-disabled="true"]) {
   background: var(--ink);
   color: var(--stock);
 }
 
-.action-button:disabled {
+/* aria-disabled keeps a waiting action focusable, so the reason tied to it is still read. */
+.action-button:disabled,
+.action-button[aria-disabled="true"] {
   border-color: var(--rule);
   background: var(--stock-band);
   color: var(--ink-3);

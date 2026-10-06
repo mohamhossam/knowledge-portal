@@ -32,6 +32,8 @@ import { CorpusFindingsPage } from "../requirements/CorpusFindingsPage";
 import { CorpusRequirementsPage } from "../requirements/CorpusRequirementsPage";
 import { RequirementKnowledgePage } from "../requirements/RequirementKnowledgePage";
 import { RemindersPage } from "../reviews/RemindersPage";
+import { HistoricListPage } from "../historic/HistoricListPage";
+import { HistoricRecordPage } from "../historic/HistoricRecordPage";
 import { HomePage } from "./HomePage";
 import { Shell } from "./Shell";
 
@@ -66,6 +68,8 @@ export function App() {
         <Route path="requirement-knowledge" element={<RequirementKnowledgePage />} />
         <Route path="requirement-knowledge/requirements" element={<CorpusRequirementsPage />} />
         <Route path="requirement-knowledge/findings" element={<CorpusFindingsPage />} />
+        <Route path="requirement-knowledge/historic" element={<HistoricListPage />} />
+        <Route path="requirement-knowledge/historic/:historicId" element={<HistoricRecordPage />} />
         <Route path="library/search" element={<SearchPage />} />
         <Route path="library/:documentId" element={<DocumentPage />}>
           <Route index element={<ReviewPage />} />

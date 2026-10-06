@@ -49,6 +49,7 @@ where = ["src"]
 [tool.setuptools.package-data]
 "knowledge_portal.infrastructure.persistence" = ["migrations/*.sql"]
 "knowledge_portal.infrastructure.architecture" = ["knowledge/*.yaml"]
+"knowledge_portal.infrastructure.ado" = ["fixtures/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

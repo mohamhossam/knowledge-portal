@@ -79,6 +79,18 @@ export type FindingKind = Schemas["FindingKind"];
 export type Nudge = Schemas["NudgeResponse"];
 export type Membership = Schemas["MembershipResponse"];
 export type ReindexScope = Schemas["ReindexScope"];
+/** A historic Requirement: an old BRD with its Azure DevOps breakdown (Knowledge Center E). */
+export type HistoricDetail = Schemas["HistoricDetail"];
+export type HistoricSummary = Schemas["HistoricSummary"];
+export type HistoricPage = Schemas["HistoricPageResponse"];
+export type HistoricStatus = Schemas["HistoricStatus"];
+export type HistoricBrd = Schemas["BrdView"];
+export type HistoricRun = Schemas["RunView"];
+export type HistoricBreakdown = Schemas["BreakdownView"];
+export type LineageNode = Schemas["LineageNodeView"];
+export type HistoricWorkItem = Schemas["WorkItemView"];
+export type HistoricChange = Schemas["ItemChangeView"];
+export type HistoricSharedRoot = Schemas["SharedRootView"];
 /** When knowledge was last confirmed still right, by whom, and when it falls due (Knowledge Center D). */
 export type ReviewStanding = Schemas["ReviewStanding"];
 export type ReviewState = Schemas["ReviewState"];
@@ -129,6 +141,7 @@ const documentPath = (documentId: string) => `/library/documents/${encodeURIComp
 const versionPath = (documentId: string, versionId: string) =>
   `${documentPath(documentId)}/versions/${encodeURIComponent(versionId)}`;
 
+const historicPath = (historicId: string) => `/historic-requirements/${encodeURIComponent(historicId)}`;
 const releasePath = (releaseId: string) => `/architecture-knowledge/releases/${encodeURIComponent(releaseId)}`;
 
 const baseUrl = (import.meta.env.VITE_API_BASE ?? "/knowledge-api").replace(/\/$/, "");
@@ -436,6 +449,55 @@ export const api = {
   systemReviewHistory: (systemId: string) =>
     apiRequest<ReviewConfirmation[]>(`/architecture-knowledge/systems/${encodeURIComponent(systemId)}/reviews`),
   reminders: () => apiRequest<Reminders>("/reviews/reminders"),
+  historicList: (input: { status?: HistoricStatus; query?: string; offset?: number }) => {
+    const params = new URLSearchParams({ offset: String(input.offset ?? 0), limit: "50" });
+    if (input.status) params.set("status", input.status);
+    if (input.query) params.set("q", input.query);
+    return apiRequest<HistoricPage>(`/historic-requirements?${params}`);
+  },
+  importHistoric: (files: File[]) => {
+    const body = new FormData();
+    for (const file of files) body.append("files", file);
+    return apiRequest<Schemas["HistoricImportResponse"]>("/historic-requirements/batch", { method: "POST", body });
+  },
+  historic: (historicId: string) => apiRequest<HistoricDetail>(historicPath(historicId)),
+  historicSharedRoots: (historicId: string) =>
+    apiRequest<Schemas["SharedRootsResponse"]>(`${historicPath(historicId)}/shared-roots`),
+  renameHistoric: (historicId: string, title: string, expectedVersion: number) =>
+    apiRequest<HistoricDetail>(historicPath(historicId), {
+      method: "PATCH",
+      body: JSON.stringify({ title, expected_version: expectedVersion }),
+    }),
+  discardHistoric: async (historicId: string, expectedVersion: number) => {
+    await send(`${historicPath(historicId)}?expected_version=${expectedVersion}`, { method: "DELETE" });
+  },
+  addHistoricBrd: (historicId: string, file: File, expectedVersion: number) => {
+    const body = new FormData();
+    body.set("file", file);
+    body.set("expected_version", String(expectedVersion));
+    return apiRequest<HistoricDetail>(`${historicPath(historicId)}/brds`, { method: "POST", body });
+  },
+  readHistoricBrdAgain: (historicId: string, brdId: string, expectedVersion: number) =>
+    post<HistoricDetail>(`${historicPath(historicId)}/brds/${encodeURIComponent(brdId)}/reading`, {
+      expected_version: expectedVersion,
+    }),
+  linkWorkItems: (historicId: string, rootIds: number[], expectedVersion: number) =>
+    apiRequest<HistoricDetail>(`${historicPath(historicId)}/work-items`, {
+      method: "PUT",
+      body: JSON.stringify({ root_ids: rootIds, expected_version: expectedVersion }),
+    }),
+  publishHistoric: (historicId: string, expectedVersion: number) =>
+    post<HistoricDetail>(`${historicPath(historicId)}/publication`, { expected_version: expectedVersion }),
+  withdrawHistoric: (historicId: string, reason: string, expectedVersion: number) =>
+    post<HistoricDetail>(`${historicPath(historicId)}/withdrawal`, { reason, expected_version: expectedVersion }),
+  refreshHistoric: (historicId: string, expectedVersion: number) =>
+    post<HistoricDetail>(`${historicPath(historicId)}/refresh`, { expected_version: expectedVersion }),
+  acceptHistoricRefresh: (historicId: string, expectedVersion: number) =>
+    post<HistoricDetail>(`${historicPath(historicId)}/refresh/acceptance`, { expected_version: expectedVersion }),
+  discardHistoricRefresh: (historicId: string, expectedVersion: number) =>
+    apiRequest<HistoricDetail>(`${historicPath(historicId)}/refresh?expected_version=${expectedVersion}`, {
+      method: "DELETE",
+    }),
   /** The uploaded file itself, for the owner to compare against. */
   original: async (documentId: string, versionId: string) =>
     (await send(`${versionPath(documentId, versionId)}/original`)).blob(),

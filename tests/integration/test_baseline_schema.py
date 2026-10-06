@@ -52,6 +52,9 @@ KNOWLEDGE_TABLES = {
     "organisation_catalogue",
     # Confirmations that catalogue systems are still right (Knowledge Center D).
     "system_reviews",
+    # Historic Requirements and their own import queue (Knowledge Center E).
+    "historic_requirements",
+    "historic_import_jobs",
 }
 
 

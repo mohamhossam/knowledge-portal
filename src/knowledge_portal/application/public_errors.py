@@ -26,6 +26,10 @@ from knowledge_portal.application.errors import (
     ServiceUnavailableError,
     UnsupportedDocumentError,
 )
+from knowledge_portal.application.ports.ado_work_items import (
+    AdoNotConfiguredError,
+    AdoUnavailableError,
+)
 from knowledge_portal.application.ports.architecture_rag import ArchitectureEvidenceError
 from knowledge_portal.application.ports.catalogue_extractor import (
     CatalogueAnswerUnusableError,
@@ -34,6 +38,10 @@ from knowledge_portal.application.ports.catalogue_extractor import (
     CatalogueExtractionUnsupportedError,
 )
 from knowledge_portal.application.ports.change_requests import ChangeRequestConflictError
+from knowledge_portal.application.ports.historic_requirements import (
+    HistoricRequirementConflictError,
+    HistoricRequirementNotFoundError,
+)
 from knowledge_portal.application.ports.requirement_corpus import (
     RequirementCorpusConflictError,
     RequirementFindingConflictError,
@@ -59,6 +67,10 @@ from knowledge_portal.domain.architecture.knowledge import KnowledgeConflictErro
 from knowledge_portal.domain.document.errors import (
     DocumentInclusionError,
     InvalidDocumentError,
+)
+from knowledge_portal.domain.historic.errors import (
+    HistoricRequirementStateError,
+    InvalidHistoricRequirementError,
 )
 from knowledge_portal.domain.identity.errors import (
     AuthorizationDeniedError,
@@ -149,6 +161,25 @@ ERROR_CATALOGUE: tuple[tuple[type[Exception], str, FailureCategory], ...] = (
     (RequirementNotInCorpusError, "requirement_not_in_corpus", FailureCategory.NOT_FOUND),
     (RequirementCorpusConflictError, "requirement_corpus_conflict", FailureCategory.CONFLICT),
     (ChangeRequestConflictError, "change_request_conflict", FailureCategory.CONFLICT),
+    (
+        HistoricRequirementNotFoundError,
+        "historic_requirement_not_found",
+        FailureCategory.NOT_FOUND,
+    ),
+    (
+        HistoricRequirementConflictError,
+        "historic_requirement_conflict",
+        FailureCategory.CONFLICT,
+    ),
+    (HistoricRequirementStateError, "historic_requirement_state", FailureCategory.CONFLICT),
+    (
+        InvalidHistoricRequirementError,
+        "invalid_historic_requirement",
+        FailureCategory.INVALID_INPUT,
+    ),
+    # Said to the curator as it is: nothing about the connection is secret.
+    (AdoNotConfiguredError, "ado_not_configured", FailureCategory.CONFLICT),
+    (AdoUnavailableError, "ado_unavailable", FailureCategory.UNAVAILABLE),
     (ChangeRequestStateError, "change_request_state", FailureCategory.CONFLICT),
     (
         CandidateDecisionConflictError,

@@ -62,10 +62,15 @@ export function useOverview(): OverviewState {
     })),
   });
   const corpus = useQuery({ queryKey: ["knowledge-center", "requirement-corpus"], queryFn: api.requirementCorpus });
+  // Historic Requirements are this portal's own; their counts sit beside the corpus on Table 4.
+  const historic = useQuery({
+    queryKey: ["historic", "list", "counts"],
+    queryFn: async () => (await api.historicList({})).counts,
+  });
   // Where each system in service stands for review; nothing to read until a version is in service.
   const standings = useQuery({ queryKey: SYSTEM_REVIEWS_KEY, queryFn: api.systemReviews, enabled: Boolean(active.data) });
 
-  const all = [documents, releases, active, organisation, audit, actors, corpus, standings, ...suggestions, ...builds, ...readings];
+  const all = [documents, releases, active, organisation, audit, actors, corpus, historic, standings, ...suggestions, ...builds, ...readings];
   const fetchedAt = all.map((query) => query.dataUpdatedAt).filter((at) => at > 0);
   const nameOf = useMemo(() => nameDirectory(actors.data), [actors.data]);
 
@@ -111,7 +116,7 @@ export function useOverview(): OverviewState {
   const requirements: TableState = corpus.isError
     ? { status: "error", error: corpus.error, retry: () => void corpus.refetch() }
     : corpus.data
-      ? { status: "ready", overview: requirementOverview(corpus.data, REQUIREMENT_APP_URL) }
+      ? { status: "ready", overview: requirementOverview(corpus.data, REQUIREMENT_APP_URL, historic.data ?? null) }
       : { status: "loading" };
 
   return {

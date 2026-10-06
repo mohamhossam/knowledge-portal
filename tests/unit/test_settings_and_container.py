@@ -146,7 +146,11 @@ def test_each_provider_builds_its_catalogue_models_and_queues_jobs(
         extractor = container.architecture_jobs._proposer._extractor
         assert isinstance(extractor._model, StructuredCatalogueExtractor)  # type: ignore[attr-defined]
         # Real models run catalogue jobs on the background worker, not in the request.
-        assert set(container.background_workers) == {"document_worker", "architecture_job_worker"}
+        assert set(container.background_workers) == {
+            "document_worker",
+            "architecture_job_worker",
+            "historic_import_worker",
+        }
     finally:
         container.close_resources()
 
@@ -154,7 +158,8 @@ def test_each_provider_builds_its_catalogue_models_and_queues_jobs(
 def test_fake_models_finish_catalogue_jobs_inside_the_request() -> None:
     container = build_container(FAKE_PROVIDER_SETTINGS)
     try:
-        assert set(container.background_workers) == {"document_worker"}
+        # Historic imports always queue: reading a BRD never runs inside a request.
+        assert set(container.background_workers) == {"document_worker", "historic_import_worker"}
     finally:
         container.close_resources()
 

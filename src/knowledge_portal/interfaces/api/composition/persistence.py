@@ -27,6 +27,7 @@ from knowledge_portal.application.ports.catalogue_candidates import (
 )
 from knowledge_portal.application.ports.change_requests import ChangeRequestInboxPort
 from knowledge_portal.application.ports.document_library import DocumentLibraryPort
+from knowledge_portal.application.ports.historic_requirements import HistoricRequirementsPort
 from knowledge_portal.application.ports.knowledge_events import KnowledgeEventOutboxPort
 from knowledge_portal.application.ports.library_admin import (
     LibraryAdminGrantsPort,
@@ -56,6 +57,10 @@ from knowledge_portal.infrastructure.persistence.document_library import (
 from knowledge_portal.infrastructure.persistence.document_storage import (
     InMemoryDocumentStorage,
     PostgresDocumentStorage,
+)
+from knowledge_portal.infrastructure.persistence.historic_requirements import (
+    InMemoryHistoricRequirements,
+    PostgresHistoricRequirements,
 )
 from knowledge_portal.infrastructure.persistence.in_memory_architecture_jobs import (
     InMemoryArchitectureJobs,
@@ -136,6 +141,9 @@ class PersistenceAdapters:
     # Confirmations that catalogue systems are still right (Knowledge Center D).
     system_reviews: SystemReviewsPort
     knowledge_events: KnowledgeEventOutboxPort
+    # Historic Requirements and their own import queue (Knowledge Center E, ADR-0102).
+    historic_requirements: HistoricRequirementsPort
+    historic_job_repository: ArchitectureJobRepositoryPort
     reference_index: ReferenceIndexPort
     transaction_manager: TransactionManagerPort
     readiness_check: Callable[[], bool]
@@ -205,6 +213,8 @@ def _postgres(
         library_admin_record=PostgresLibraryAdminRecord(postgres),
         system_reviews=PostgresSystemReviews(postgres),
         knowledge_events=knowledge_events,
+        historic_requirements=PostgresHistoricRequirements(postgres),
+        historic_job_repository=PostgresArchitectureJobs(connector, "historic_import_jobs"),
         reference_index=PostgresReferenceIndex(postgres),
         transaction_manager=postgres,
         readiness_check=postgres.readiness,
@@ -226,8 +236,9 @@ def _memory(
     transactions = InMemoryTransactionManager(lock)
     library_admin = InMemoryLibraryAdmin(lock)
     system_reviews = InMemorySystemReviews(lock)
+    historic = InMemoryHistoricRequirements(lock)
     transactions.enroll(
-        library, events, reference_index, storage, actors, library_admin, system_reviews
+        library, events, reference_index, storage, actors, library_admin, system_reviews, historic
     )
     return PersistenceAdapters(
         document_storage=storage,
@@ -246,6 +257,8 @@ def _memory(
         library_admin_record=InMemoryLibraryAdminRecord(library_admin),
         system_reviews=system_reviews,
         knowledge_events=events,
+        historic_requirements=historic,
+        historic_job_repository=InMemoryArchitectureJobs(),
         reference_index=reference_index,
         transaction_manager=transactions,
         readiness_check=_always_ready,

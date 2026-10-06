@@ -529,12 +529,21 @@ const FINDINGS = "/requirement-knowledge/findings";
 const STOPPED = `${REQUIREMENTS}?state=failed`;
 const OVERDUE = `${FINDINGS}?age=over_30_days`;
 const AWAITING = `${FINDINGS}?age=from_7_to_30_days`;
+const HISTORIC = "/requirement-knowledge/historic";
+
+/** How many historic Requirements stand in each state (Knowledge Center E). */
+export type HistoricTally = { draft: number; published: number; withdrawn: number; refresh_waiting: number };
 
 /**
  * Requirement work's corpus, in counts (requirement-portal ADR-0099, Amendment 1). Its teams
  * decide findings and retry indexing there, so the table's next decision leads there.
  */
-export function requirementOverview(corpus: RequirementCorpus, requirementWork: string): Overview {
+export function requirementOverview(
+  corpus: RequirementCorpus,
+  requirementWork: string,
+  /** Historic Requirements, kept here in the knowledge portal; none until read. */
+  historic: HistoricTally | null = null,
+): Overview {
   const ages = corpus.open_findings;
   const open = ages.under_7_days + ages.from_7_to_30_days + ages.over_30_days;
   const notes: DerivedNote[] = [{
@@ -570,6 +579,20 @@ export function requirementOverview(corpus: RequirementCorpus, requirementWork: 
   // A finding this week is screening at its normal pace: in progress, not yet anyone's concern.
   if (ages.under_7_days > 0) row("recent", "running", "Findings open under 7 days", "With their owners", ages.under_7_days, `${FINDINGS}?age=under_7_days`);
   if (corpus.waiting > 0) row("waiting", "running", "Requirements waiting to be indexed", "Indexing", corpus.waiting, `${REQUIREMENTS}?state=waiting`);
+  if (historic && historic.draft > 0) {
+    notes.push({
+      id: "historic",
+      text: "Old BRDs imported with their Azure DevOps breakdown wait as drafts until a curator links their work items and publishes them. Requirement work reads only published ones, as prior art.",
+    });
+    row("historic", "due", "Historic requirements in draft", "Awaiting a curator", historic.draft, `${HISTORIC}?status=draft`, "historic");
+  }
+  if (historic && historic.refresh_waiting > 0) {
+    notes.push({
+      id: "refresh",
+      text: "A published historic requirement read again from Azure DevOps keeps its published breakdown until a curator accepts or discards what changed.",
+    });
+    row("refresh", "due", "Historic requirements with a newer read", "Refresh waiting", historic.refresh_waiting, `${HISTORIC}?status=published`, "refresh");
+  }
 
   const present = (items: (string | null)[]) => items.filter((item): item is string => item !== null);
   // The index's clause: the same troubles, as short as a timetable's margin note.
@@ -588,6 +611,7 @@ export function requirementOverview(corpus: RequirementCorpus, requirementWork: 
       { key: "duplicates", label: "Of them closed as duplicates", value: String(corpus.duplicates) },
       { key: "retired", label: "Of them retired", value: String(corpus.retired) },
       { key: "open", label: "Open findings", value: String(open) },
+      ...(historic ? [{ key: "historic", label: "Historic requirements published", value: String(historic.published) }] : []),
     ],
     edition: {
       text: corpus.rebuild_required
@@ -604,11 +628,19 @@ export function requirementOverview(corpus: RequirementCorpus, requirementWork: 
           ? { to: STOPPED, label: `Retry the ${count(corpus.failed, "requirement")} that stopped indexing` }
           : ages.from_7_to_30_days > 0
             ? { to: AWAITING, label: `${count(ages.from_7_to_30_days, "finding")} ${ages.from_7_to_30_days === 1 ? "awaits its" : "await their"} owners` }
-            : { label: "Nothing in requirement knowledge awaits anyone." },
+            : historic && historic.refresh_waiting > 0
+              ? { to: `${HISTORIC}?status=published`, label: `Accept or discard the newer read of ${count(historic.refresh_waiting, "historic requirement")}` }
+              : historic && historic.draft > 0
+                ? { to: `${HISTORIC}?status=draft`, label: `Link and publish the ${count(historic.draft, "historic requirement")} in draft` }
+                : { label: "Nothing in requirement knowledge awaits anyone." },
     extent: { value: corpus.requirements, label: count(corpus.requirements, "requirement") },
     alert: alertOf(
       corpus.rebuild_required ? "rebuild required" : brief.length > 0 ? brief.join(", ") : null,
-      ages.from_7_to_30_days > 0 ? `${count(ages.from_7_to_30_days, "finding")} awaiting owners` : null,
+      clause([
+        ages.from_7_to_30_days > 0 ? `${count(ages.from_7_to_30_days, "finding")} awaiting owners` : "",
+        historic && historic.draft > 0 ? `${historic.draft} historic in draft` : "",
+        historic && historic.refresh_waiting > 0 ? `${historic.refresh_waiting} historic refresh${historic.refresh_waiting === 1 ? "" : "es"} waiting` : "",
+      ]),
     ),
   };
 }

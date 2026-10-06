@@ -12,10 +12,12 @@ from typing import TYPE_CHECKING
 from urllib.parse import urlsplit
 
 from knowledge_portal.infrastructure.config.options import (
+    ADO_IMPORT_MAX_ITEMS_CEILING,
     LOG_LEVELS,
     SUPPORTED_LOCAL_REASONING_EFFORTS,
     SUPPORTED_OIDC_ALGORITHMS,
     SUPPORTED_OPENROUTER_DATA_COLLECTION,
+    AdoProvider,
     ConfigurationError,
     IdentityProvider,
     LLMProvider,
@@ -59,6 +61,14 @@ def validate_settings(settings: Settings) -> None:
         raise ConfigurationError("PRODUCT_CATALOG_CACHE_SECONDS must not be negative.")
     if settings.knowledge_review_cycle_days < 1:
         raise ConfigurationError("KNOWLEDGE_REVIEW_CYCLE_DAYS must be at least one day.")
+    if not 1 <= settings.ado_import_max_items <= ADO_IMPORT_MAX_ITEMS_CEILING:
+        raise ConfigurationError(
+            f"ADO_IMPORT_MAX_ITEMS must be between 1 and {ADO_IMPORT_MAX_ITEMS_CEILING}."
+        )
+    if settings.app_environment == "production" and settings.ado_provider is AdoProvider.FAKE:
+        raise ConfigurationError(
+            "APP_ENV=production refuses ADO_PROVIDER=fake: historic breakdowns must be real."
+        )
     if settings.provider_rate_limit_per_minute < 0:
         raise ConfigurationError(
             "PROVIDER_RATE_LIMIT_PER_MINUTE must be 0 (unlimited) or a positive number."

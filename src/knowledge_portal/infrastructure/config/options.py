@@ -178,4 +178,16 @@ DEFAULT_PRODUCT_CATALOG_CACHE_SECONDS = 300
 DEFAULT_KNOWLEDGE_REVIEW_CYCLE_DAYS = 180
 
 
+class AdoProvider(Enum):
+    """Where historic breakdowns are read from (Knowledge Center E, ADR-0102). Read-only."""
+
+    NONE = "none"
+    FAKE = "fake"
+
+
+# Work items one import reads at most, and the ceiling an operator may raise it to.
+DEFAULT_ADO_IMPORT_MAX_ITEMS = 2000
+ADO_IMPORT_MAX_ITEMS_CEILING = 20000
+
+
 DEFAULT_PRODUCT_CATALOG_TIMEOUT_SECONDS = 10.0
