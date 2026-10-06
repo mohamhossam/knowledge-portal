@@ -9,11 +9,11 @@ It is one of three repositories, and you need only this one to start:
 
 - **knowledge-portal** (this repository): the knowledge service and its browser app.
 - [**requirement-portal**](https://github.com/mohamhossam/requirement-portal): requirement work,
-  its review UI and the whole-platform Docker deployment. Optional here; section 7 runs it beside
+  its review UI and the whole-platform Docker deployment. Optional here; section 8 runs it beside
   this portal.
 - [**platform-kernel**](https://github.com/mohamhossam/platform-kernel): the shared library
   `smb_kernel`. `uv sync` installs its pinned release for you. Clone it only to change it
-  (section 9).
+  (section 10).
 
 Out of the box everything runs offline: in-memory storage, fake AI models and fake sign-in. You
 need no API key, no database and no external account.
@@ -24,7 +24,8 @@ need no API key, no database and no external account.
 |---|---|---|
 | See the portal with sample content, offline | API, demo seed and browser app | 3–4 |
 | Keep your data across restarts | PostgreSQL | 6 |
-| Work with requirement work connected | Both portals side by side | 7 |
+| Run the portal in containers, with only Docker installed | `deploy/compose.local.yaml` | 7 |
+| Work with requirement work connected | Both portals side by side | 8 |
 | Run the whole platform in containers, or deploy it | requirement-portal's Docker stack | requirement-portal `START_GUIDE.md`, sections 2–3 |
 
 ## 2. Prerequisites
@@ -37,8 +38,9 @@ need no API key, no database and no external account.
 
 Optional, only for the features that need them:
 
-- Docker, for PostgreSQL (section 6) and the ClamAV malware scanner.
-- An API key or a local OpenAI-compatible model server, for real AI output (section 8).
+- Docker, for PostgreSQL and the ClamAV malware scanner (section 6), or to run everything in
+  containers (section 7).
+- An API key or a local OpenAI-compatible model server, for real AI output (section 9).
 
 Confirm the tools are available:
 
@@ -244,7 +246,129 @@ uv run python -m knowledge_portal.interfaces.worker
 The worker requires `PERSISTENCE_PROVIDER=postgres`, because it cannot see the API's in-memory
 queues.
 
-## 7. Run beside requirement-portal
+## 7. Run it all in Docker
+
+`deploy/compose.local.yaml` runs the whole portal in containers, built from this checkout. You
+need only Docker: no Python, uv or Node.js. Use it to try the portal as it runs in a deployment,
+with durable storage and real malware scanning.
+
+| Container | Purpose |
+|---|---|
+| `postgres` | PostgreSQL 17 with pgvector; a named volume keeps the data |
+| `clamav` | Malware scanner for library uploads |
+| `migrate` | Applies the migrations, then exits |
+| `api` | The knowledge API (HTTP only) |
+| `worker` | Library ingestion and catalogue jobs |
+| `web` | The browser app, nginx serving `/knowledge/` |
+| `edge` | nginx on `127.0.0.1:8090`: `/knowledge/` to `web`, `/knowledge-api/` to `api`, internal routes blocked |
+
+The edge stands in for requirement-portal's `web`, which serves both portals on one address in
+the platform. This stack is for one machine. A shared deployment is requirement-portal's
+`deploy/compose.production.yaml` (its `START_GUIDE.md`, sections 2–3).
+
+### Prerequisites
+
+- Docker Desktop on Windows or macOS, or Docker Engine with the Compose v2 plugin on Linux.
+  Confirm with `docker compose version`.
+- About 3 GB of memory for Docker, most of it for ClamAV, and about 4 GB of disk space.
+- Port `8090` free.
+- A GitHub token that can read
+  [platform-kernel](https://github.com/mohamhossam/platform-kernel), for the API image build.
+  It is a private dependency, so the build fetches it with this token. A fine-grained personal
+  access token with **Contents: read** on that repository works. If you use the GitHub CLI with
+  access to it, `gh auth token` prints one.
+
+### Step 1: create the settings file
+
+```bash
+cp .env.example deploy/local.env
+```
+
+```powershell
+# Windows PowerShell
+Copy-Item .env.example deploy/local.env
+```
+
+`deploy/local.env` is ignored by Git. Its defaults are fake models and fake sign-in, which need
+no account. Leave `LIBRARY_SCAN_MODE` as `clamav`. The compose file sets the storage, database
+address and scanner address itself, so the values for those in `deploy/local.env` have no
+effect. Set anything else there, such as a real model provider (section 9).
+
+### Step 2: build and start
+
+```bash
+export KERNEL_READ_TOKEN=your-token        # or: export KERNEL_READ_TOKEN=$(gh auth token)
+docker compose -f deploy/compose.local.yaml up -d --build
+```
+
+```powershell
+# Windows PowerShell
+$env:KERNEL_READ_TOKEN = "your-token"
+docker compose -f deploy/compose.local.yaml up -d --build
+```
+
+The first build takes several minutes. The token reaches only the build step, as a BuildKit
+secret, and is never stored in an image. `up` starts PostgreSQL and ClamAV, applies the
+migrations, then starts the API, the worker, the browser app and the edge. It returns once the
+edge is up.
+
+### Step 3: confirm it is running
+
+```bash
+docker compose -f deploy/compose.local.yaml ps -a
+```
+
+`postgres`, `clamav`, `api`, `web` and `edge` show `(healthy)`, `worker` is `Up`, and `migrate`
+has exited with code 0, which is expected.
+
+| Address | Purpose |
+|---|---|
+| `http://localhost:8090/knowledge/` | The knowledge portal (`http://localhost:8090/` redirects here) |
+| `http://localhost:8090/knowledge-api/ready` | The API is ready; returns `"status":"ready"` |
+| `http://localhost:8090/knowledge-api/openapi.json` | The API's OpenAPI description. The interactive `/docs` page works only when you run from source (section 3) |
+
+The personas are the same as in section 4. The port is published on `127.0.0.1` only, because
+fake sign-in lets anyone who reaches it act as any persona. To use another port, set
+`KNOWLEDGE_PORT` before `up`, for example `KNOWLEDGE_PORT=8091`.
+
+On its first start, ClamAV updates its signatures, which can take a few minutes. An upload made
+before it is ready fails with "Malware scanner unavailable"; retry it. Without internet access
+the update fails, and ClamAV scans with the signatures in its image.
+
+### Everyday commands
+
+```bash
+docker compose -f deploy/compose.local.yaml ps -a           # container status
+docker compose -f deploy/compose.local.yaml logs -f api     # follow a container's log (also: worker, edge)
+docker compose -f deploy/compose.local.yaml stop            # stop; data is kept
+docker compose -f deploy/compose.local.yaml up -d           # start again
+docker compose -f deploy/compose.local.yaml down            # remove the containers; data is kept
+docker compose -f deploy/compose.local.yaml down -v         # remove the containers and delete all data
+```
+
+After a `git pull`, rebuild and restart with `up -d --build` (with `KERNEL_READ_TOKEN` set).
+`migrate` runs again first and applies any new migrations. Data is kept.
+
+After editing `deploy/local.env`, run `up -d` again: the containers are recreated with the new
+values.
+
+### Run a released version instead
+
+To run the images a release published to ghcr.io instead of building, name them and skip the
+build. No token is needed, because the images are public:
+
+```bash
+export KNOWLEDGE_API_IMAGE=ghcr.io/mohamhossam/knowledge-api:v0.1.0
+export KNOWLEDGE_WEB_IMAGE=ghcr.io/mohamhossam/knowledge-web:v0.1.0
+docker compose -f deploy/compose.local.yaml pull api web
+docker compose -f deploy/compose.local.yaml up -d --no-build
+```
+
+Pass `--no-build` on every `up` while these are set. Otherwise a build replaces the released
+image with one from your checkout under the release's name. A release can be older than your
+checkout.
+
+## 8. Run beside requirement-portal
 
 On its own, the portal uses offline stand-ins for requirement work: no requirement cites
 anything and nothing is mapped. To connect the two services, clone
@@ -291,7 +415,7 @@ portals.
 To have both portals behind one address, as in production, use requirement-portal's Docker stack
 (its `START_GUIDE.md`, section 2). It pulls this portal's published images by release tag.
 
-## 8. Use a real AI provider
+## 9. Use a real AI provider
 
 The fake provider is the right choice for a first run. For real output, set the provider and its
 key in `.env`. `.env.example` lists each provider's variables, and the API refuses to start, and
@@ -310,7 +434,7 @@ The plans and prices in the explorer come from a product catalog, never from thi
 sample plans offline, set `PRODUCT_CATALOG_PROVIDER=fake`; `README.md` describes a real TMF620
 catalog.
 
-## 9. Change platform-kernel locally
+## 10. Change platform-kernel locally
 
 `uv sync` installs platform-kernel at the tag `pyproject.toml` pins. To try an unreleased kernel
 change, clone platform-kernel next to this repository and install it over the pinned copy:
@@ -324,7 +448,7 @@ Pass `--no-sync` to every `uv run` while you do this; a plain `uv run` or `uv sy
 pinned release back. Never commit a path to a local kernel. A kernel change reaches this portal
 through a tagged kernel release and a pin bump (platform-kernel `README.md`, "Releasing").
 
-## 10. Checks before a pull request
+## 11. Checks before a pull request
 
 Backend:
 
@@ -344,7 +468,9 @@ cd frontend
 npm run lint && npm run typecheck && npm test && npm run api:check && npm run build
 ```
 
-## 11. Common startup problems
+## 12. Common startup problems
+
+### Running from source
 
 #### "LLM_PROVIDER=openai requires OPENAI_API_KEY to be set"
 
@@ -391,12 +517,46 @@ only the API.
 
 #### "... must be at least 32 characters"
 
-A service token is too short. Generate one as in section 7.
+A service token is too short. Generate one as in section 8.
 
 #### `uv sync` cannot download platform-kernel
 
 uv fetches it from `github.com/mohamhossam/platform-kernel` with Git. Check that `git` is
 installed and that you can reach and read that repository.
+
+### Docker (section 7)
+
+#### "env file ... deploy/local.env not found"
+
+Copy `.env.example` to `deploy/local.env` (section 7, step 1). A `.env` in the repository root
+is not read by the Docker stack.
+
+#### The API image build fails at the `uv sync` step
+
+The build could not read platform-kernel. Set `KERNEL_READ_TOKEN` in the same terminal, to a
+token that can read the repository, and run `up -d --build` again. The token must be set for
+every build, not only the first.
+
+#### `up` stops with "dependency failed to start" or `api` stays unhealthy
+
+Read the API's log: `docker compose -f deploy/compose.local.yaml logs api migrate`. A
+configuration error names the setting to fix in `deploy/local.env`; then run `up -d` again.
+
+#### Port 8090 is already in use
+
+Set another port for this terminal, for example `export KNOWLEDGE_PORT=8091`, and run `up -d`
+again.
+
+#### Uploads fail with "Malware scanner unavailable" in Docker
+
+ClamAV is still loading or updating its signatures. Wait a few minutes, check
+`docker compose -f deploy/compose.local.yaml logs clamav`, and retry the upload. If the
+container keeps restarting, give Docker more memory.
+
+#### The build fails while downloading
+
+The build downloads base images and packages from Docker Hub, ghcr.io, Debian, PyPI and npm.
+Check your network or corporate proxy settings in Docker, then build again.
 
 ## More information
 

@@ -21,7 +21,8 @@ It is one of three repositories:
 ## Run it offline
 
 `START_GUIDE.md` walks through every way to start the portal: offline with sample content, with
-PostgreSQL, and beside requirement-portal. The short version:
+PostgreSQL, in Docker with `deploy/compose.local.yaml`, and beside requirement-portal. The short
+version:
 
 ```bash
 uv sync
@@ -132,6 +133,9 @@ it needs read access to platform-kernel as a BuildKit secret:
 ```bash
 docker build --secret id=kernel_read_token,env=KERNEL_READ_TOKEN -f deploy/api/Dockerfile .
 ```
+
+To run both images on one machine, with PostgreSQL, ClamAV and an edge proxy, use
+`deploy/compose.local.yaml` (`START_GUIDE.md`, section 7).
 
 The browser app ships as its own image, nginx serving `/knowledge/`
 (`docker build -f deploy/web/Dockerfile .`, with `CSP_IDENTITY_ORIGINS` set to the OIDC issuer's
