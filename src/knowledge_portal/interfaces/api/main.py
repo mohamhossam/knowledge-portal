@@ -29,6 +29,9 @@ from knowledge_portal.interfaces.api.routes.identity import (
 )
 from knowledge_portal.interfaces.api.routes.identity import router as identity_router
 from knowledge_portal.interfaces.api.routes.internal import router as internal_router
+from knowledge_portal.interfaces.api.routes.knowledge_center import (
+    router as knowledge_center_router,
+)
 from knowledge_portal.interfaces.api.routes.library import router as library_router
 from knowledge_portal.interfaces.api.routes.library import search_router
 from knowledge_portal.interfaces.api.routes.organisation import router as organisation_router
@@ -220,6 +223,7 @@ def create_app(container_factory: Callable[[], Container] = build_container) -> 
         architecture_job_router,
         organisation_router,
         explorer_router,
+        knowledge_center_router,
     ):
         application.include_router(router)
     application.include_router(internal_router, include_in_schema=False)

@@ -124,6 +124,18 @@
   font-weight: var(--w-regular);
 }
 
+/* A fact kept under a status, on its own meta line. */
+.status-detail {
+  display: block;
+  margin-top: var(--s1);
+  font-size: var(--t-meta);
+}
+
+/* A table of few short columns keeps its grid to a reading width (Table 4). */
+.timetable--narrow .timetable__grid {
+  max-width: 48rem;
+}
+
 .row--past .secondary {
   color: var(--ink-3);
 }

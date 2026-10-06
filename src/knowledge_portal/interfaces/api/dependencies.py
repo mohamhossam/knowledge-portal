@@ -48,6 +48,7 @@ from knowledge_portal.application.use_cases.organisation_catalogue import (
     ManageOrganisationCatalogue,
 )
 from knowledge_portal.application.use_cases.reference_knowledge import ReferenceKnowledge
+from knowledge_portal.application.use_cases.requirement_corpus import ReadRequirementCorpus
 from knowledge_portal.application.use_cases.source_impact import DocumentSourceImpact
 from knowledge_portal.domain.identity.entities import ActorProfile
 from knowledge_portal.infrastructure.config.options import IdentityProvider
@@ -217,3 +218,7 @@ def get_compare_architecture_impact(container: ContainerDep) -> CompareArchitect
 
 def get_report_mapping_impact(container: ContainerDep) -> ReportMappingImpact:
     return container.report_mapping_impact
+
+
+def get_read_requirement_corpus(container: ContainerDep) -> ReadRequirementCorpus:
+    return container.read_requirement_corpus

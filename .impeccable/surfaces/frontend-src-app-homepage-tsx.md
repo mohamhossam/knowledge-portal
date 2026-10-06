@@ -11,7 +11,7 @@ The portal home at `/knowledge/`, plus the shell every later screen inherits (ma
 
 ## Audience and job
 
-Knowledge admins: architects, business analysts and knowledge owners. They come in two rhythms. In a short check-in they see what needs them and go there. Before a heavy session they get an overview of the library, the architecture catalogue and the squad catalogue, with each one's current published state.
+Knowledge admins: architects, business analysts and knowledge owners. They come in two rhythms. In a short check-in they see what needs them and go there. Before a heavy session they get an overview of the library, the architecture catalogue, the squad catalogue and requirement work's corpus, with each one's current state and when it last changed.
 
 ## Content
 
@@ -34,9 +34,9 @@ STORY: The admin sees at once what is in service and what is due, delayed or wit
 
 FIRST VIEWPORT:
 - **Masthead:** a thin strip with "Requirement AI · Knowledge portal" and "Valid as of" plus the fetch time and a refresh control. The account sits at the right.
-- **Table index:** below the masthead. Three numbered entries, each with a proportional extent rule.
+- **Table index:** below the masthead. Four numbered entries, each with a proportional extent rule and a state clause naming its table's most pressing state.
 - **Table 1, Library:** fills the rest. A monumental condensed "1" in the left margin column, the title, and the edition line. Then due and delayed rows, an in-service summary row, footnotes, and the next-decision line as the primary action.
-- **Tables 2 and 3** follow on scroll.
+- **Tables 2, 3 and 4** follow on scroll. Table 4 is requirement work's corpus, in counts, its next decision leading out to requirement work.
 
 SIGNATURE INTERACTION: Following a reference. Focusing or hovering a footnote mark lights its note at the table foot, and the note lights its mark back. Activating the mark jumps to the note, and a return mark jumps back. Rows never reflow when a state changes; cells change in place.
 

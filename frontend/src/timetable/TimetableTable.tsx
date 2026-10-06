@@ -1,4 +1,4 @@
-import { ArrowRight, CornerLeftUp, RotateCw } from "lucide-react";
+import { ArrowRight, ArrowUpRight, CornerLeftUp, RotateCw } from "lucide-react";
 import { type ReactNode, createContext, useContext, useId, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -32,7 +32,11 @@ export type Row = {
 
 export type Note = { id: string; text: ReactNode };
 
-export type NextDecision = { to: string; label: string } | { to?: undefined; label: string };
+export type NextDecision =
+  | { to: string; href?: undefined; label: string }
+  /** A decision taken in another application: an ordinary link that says it leaves the portal. */
+  | { to?: undefined; href: string; leaves: string; label: string }
+  | { to?: undefined; href?: undefined; label: string };
 
 type Props = {
   number: number;
@@ -58,6 +62,10 @@ type Props = {
   failure?: () => void;
   /** Controls that act on the table (find, filters), set between its head and its grid. */
   toolbar?: ReactNode;
+  /** What the grid lists, for its hidden caption; by default what needs a curator. */
+  caption?: string;
+  /** A grid of few short columns, kept to a reading width rather than the page's. */
+  narrow?: boolean;
 };
 
 type NoteContext = {
@@ -97,7 +105,7 @@ export function NoteMark({ note }: { note: string }) {
 
 export function TimetableTable({
   number, title, to, edition, columns, rows, more, totals = [], totalsLabel, notes, next, quiet,
-  headingLevel = "h2", failure, toolbar,
+  headingLevel = "h2", failure, toolbar, caption = "what needs a curator", narrow = false,
 }: Props) {
   const prefix = `t${number}${useId().replace(/:/g, "")}`;
   const [lit, light] = useState<string | null>(null);
@@ -108,7 +116,7 @@ export function TimetableTable({
 
   return (
     <Notes.Provider value={context}>
-      <section className="timetable" aria-labelledby={headingId}>
+      <section className={narrow ? "timetable timetable--narrow" : "timetable"} aria-labelledby={headingId}>
         <p className="timetable__number" aria-hidden="true">{number}</p>
         <header className="timetable__head">
           <Heading id={headingId} className="timetable__title">
@@ -122,7 +130,7 @@ export function TimetableTable({
           {toolbar && <div className="timetable__toolbar">{toolbar}</div>}
           {rows.length > 0 ? (
             <table className="timetable__grid">
-              <caption className="visually-hidden">{title}: what needs a curator</caption>
+              <caption className="visually-hidden">{title}: {caption}</caption>
               <thead>
                 <tr>
                   {columns.map((column) => (
@@ -205,12 +213,18 @@ export function TimetableTable({
             </ol>
           )}
 
-          {next.label && <p className={next.to ? "timetable__next" : "timetable__next timetable__next--quiet"}>
+          {next.label && <p className={next.to || next.href !== undefined ? "timetable__next" : "timetable__next timetable__next--quiet"}>
             {next.to ? (
               <Link to={next.to}>
                 {next.label}
                 <ArrowRight size={16} aria-hidden="true" />
               </Link>
+            ) : next.href !== undefined ? (
+              <a href={next.href}>
+                {next.label}
+                <span className="visually-hidden"> ({next.leaves})</span>
+                <ArrowUpRight size={16} aria-hidden="true" />
+              </a>
             ) : next.label}
           </p>}
         </div>

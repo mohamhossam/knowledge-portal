@@ -580,6 +580,11 @@ const JOB_ERROR: Record<string, string> = {
   architecture_knowledge_conflict: "the draft changed while it was read",
 };
 
+/** Why a catalogue job failed, in a curator's words. */
+export function jobReason(category: string | null | undefined): string {
+  return category ? JOB_ERROR[category] ?? category.replace(/_/g, " ") : "the reason was not recorded";
+}
+
 export function reading(job: ArchitectureJob | undefined): Reading {
   if (!job) return { label: "Not read yet", failed: false, busy: false };
   switch (job.status) {

@@ -9,6 +9,7 @@ running without requirement work.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import quote
 
@@ -17,6 +18,7 @@ from smb_kernel.errors import ServiceUnavailableError
 from smb_kernel.http.client import InternalHttpClient
 
 from knowledge_portal.application.ports.architecture_mapping_stats import MappingCount
+from knowledge_portal.application.ports.requirement_corpus import CorpusSummary, OpenFindingAges
 from knowledge_portal.application.ports.requirement_dependents import (
     ProposalStatus,
     RequirementDependent,
@@ -29,6 +31,7 @@ from knowledge_portal.domain.identity.entities import ActorId
 _CITATION = TypeAdapter(PublishedReference)
 _COUNTS = TypeAdapter(tuple[MappingCount, ...])
 _IMPACT = TypeAdapter(DependencyImpactPage)
+_CORPUS = TypeAdapter(CorpusSummary)
 
 
 def _decode[T](adapter: TypeAdapter[T], body: Any, what: str) -> T:
@@ -145,6 +148,27 @@ class HttpArchitectureMappingStats:
     def by_release(self) -> tuple[MappingCount, ...]:
         body = self._client.get_json("/internal/architecture-mapping/stats")
         return _decode(_COUNTS, body, "mapping counts")
+
+
+class HttpRequirementCorpus:
+    def __init__(self, client: InternalHttpClient) -> None:
+        self._client = client
+
+    def summary(self) -> CorpusSummary:
+        body = self._client.get_json("/internal/knowledge/corpus/summary")
+        return _decode(_CORPUS, body, "corpus summary")
+
+
+class FakeRequirementCorpus:
+    """No Requirements: offline, the corpus is empty and fully indexed."""
+
+    def __init__(self, at: datetime | None = None) -> None:
+        self._at = at
+
+    def summary(self) -> CorpusSummary:
+        return CorpusSummary(
+            0, 0, 0, 0, 0, False, OpenFindingAges(0, 0, 0), self._at or datetime.now(UTC)
+        )
 
 
 class FakeRequirementDependents:
