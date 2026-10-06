@@ -146,7 +146,8 @@ def _title(value: str) -> str:
 def title_from_filename(filename: str) -> str:
     """A draft's first title: its BRD's file name without the extension, tidied."""
     stem = filename.rsplit("/", 1)[-1].rsplit(".", 1)[0]
-    return " ".join(stem.replace("_", " ").replace("-", " ").split())[:TITLE_MAX] or "Untitled BRD"
+    # Hyphens stay: "BRD-2025-014" is a reference people search by.
+    return " ".join(stem.replace("_", " ").split())[:TITLE_MAX] or "Untitled BRD"
 
 
 @dataclass(frozen=True)

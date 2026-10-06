@@ -183,7 +183,9 @@ def test_rich_text_from_azure_devops_is_kept_as_plain_text() -> None:
 
 
 def test_a_draft_takes_its_title_from_its_file() -> None:
-    assert title_from_filename("BRD_XGPON-bundles v2.docx") == "BRD XGPON bundles v2"
+    assert (
+        title_from_filename("BRD-2025-014_XGPON bundles v2.docx") == "BRD-2025-014 XGPON bundles v2"
+    )
 
 
 # --- Importing -----------------------------------------------------------------------------
