@@ -120,13 +120,23 @@
 }
 
 /* Corpus actions (B3): a quiet text button per row, its form opened in place beneath. */
-.knowledge__act {
-  display: block;
-  margin-top: var(--s1);
+/* The row's corpus action sits on its owner line, as quiet as the line, until it is wanted. */
+.text-button.knowledge__act {
+  display: inline-flex;
+  min-height: 1.5rem;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+  font-weight: var(--w-regular);
+  text-decoration-color: var(--rule);
+  vertical-align: baseline;
 }
 
-.knowledge__act .text-button {
-  margin-left: calc(-1 * var(--s1));
+.text-button.knowledge__act:hover,
+.text-button.knowledge__act:focus-visible,
+.text-button.knowledge__act[aria-expanded="true"] {
+  color: var(--ink);
+  text-decoration-color: currentColor;
 }
 
 .knowledge__retired {
@@ -153,8 +163,13 @@
   font-weight: var(--w-bold);
 }
 
-.knowledge__act-lead {
-  max-width: 72ch;
+.knowledge__act-lead,
+.knowledge__confirm-lead {
+  max-width: 65ch;
+}
+
+.knowledge__act-form .field__input[aria-invalid="true"] {
+  border-color: var(--disruption);
 }
 
 .knowledge__act-form .field__input {
@@ -180,6 +195,23 @@
   vertical-align: -0.15em;
 }
 
+/* The state columns hold their width whatever the filter, so the head stays put. */
+.knowledge__requirements {
+  table-layout: fixed;
+}
+
+.knowledge__requirements th:nth-child(2) {
+  width: 13rem;
+}
+
+.knowledge__requirements th:nth-child(3) {
+  width: 9rem;
+}
+
+.knowledge__requirements th:nth-child(4) {
+  width: 8rem;
+}
+
 /* Folded lines show only where their columns are dropped. */
 .knowledge__narrow {
   display: none;
@@ -188,6 +220,10 @@
 @media (max-width: 45rem) {
   .knowledge__table .knowledge__wide {
     display: none;
+  }
+
+  .knowledge__requirements th:nth-child(4) {
+    width: 6rem;
   }
 
   .knowledge__table .knowledge__narrow {

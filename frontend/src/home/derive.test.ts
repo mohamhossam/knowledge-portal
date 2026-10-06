@@ -275,7 +275,7 @@ describe("requirementOverview", () => {
 
     expect(overview.next).toEqual({
       to: "/requirement-knowledge/requirements?state=failed",
-      label: "See the 1 requirement that stopped indexing",
+      label: "Retry the 1 requirement that stopped indexing",
     });
   });
 

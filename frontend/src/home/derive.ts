@@ -463,7 +463,7 @@ export function requirementOverview(corpus: RequirementCorpus, requirementWork: 
   if (corpus.failed > 0) {
     notes.push({
       id: "failed",
-      text: "Indexing stops after three failed attempts on the same change. The requirement's team retries it from the requirement, or a later change starts it afresh.",
+      text: "Indexing stops after three failed attempts on the same change. A knowledge admin retries it from the Requirements page, its team from the requirement, or a later change starts it afresh.",
     });
     row("failed", "delayed", "Requirements that stopped indexing", "Indexing failed", corpus.failed, STOPPED, "failed");
   }
@@ -509,7 +509,7 @@ export function requirementOverview(corpus: RequirementCorpus, requirementWork: 
       : ages.over_30_days > 0
         ? { to: OVERDUE, label: ages.over_30_days === 1 ? "Ask the owners to decide the overdue finding" : `Ask the owners to decide the ${ages.over_30_days} overdue findings` }
         : corpus.failed > 0
-          ? { to: STOPPED, label: `See the ${count(corpus.failed, "requirement")} that stopped indexing` }
+          ? { to: STOPPED, label: `Retry the ${count(corpus.failed, "requirement")} that stopped indexing` }
           : ages.from_7_to_30_days > 0
             ? { to: AWAITING, label: `${count(ages.from_7_to_30_days, "finding")} ${ages.from_7_to_30_days === 1 ? "awaits its" : "await their"} owners` }
             : { label: "Nothing in requirement knowledge awaits anyone." },

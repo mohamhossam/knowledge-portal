@@ -10,6 +10,7 @@ import { BulkReindex } from "./BulkReindex";
 import { CorpusActionForm, type CorpusActionKind } from "./CorpusActionForm";
 import { LEAVES, REQUIREMENTS_PATH, knowledgeStepHref, useCorpusSummary } from "./knowledge";
 import { KnowledgePage } from "./knowledgeHead";
+import { useAuth } from "../auth/authContext";
 
 /** How long since a screen before a requirement counts as not screened lately. */
 export const STALE_DAYS = 30;
@@ -54,32 +55,42 @@ export function CorpusRequirementsPage() {
   const [find, setFind] = useState(filters.query ?? "");
   const summary = useCorpusSummary();
   const queryClient = useQueryClient();
-  // The row whose retire or reinstate form is open, and what each action came to, said in its row.
+  const me = useAuth()?.actor?.id;
+  // The row whose retire or reinstate form is open; what the last action came to, said once for
+  // the page; and the row it acted on, lit until the reader's next action.
   const [acting, setActing] = useState<{ id: string; kind: CorpusActionKind } | null>(null);
-  const [said, setSaid] = useState<Record<string, { text: string; failed: boolean }>>({});
+  const [outcome, setOutcome] = useState("");
+  const [lit, setLit] = useState<string | null>(null);
   const triggers = useRef<Record<string, HTMLButtonElement | null>>({});
+  const outcomeLine = useRef<HTMLParagraphElement>(null);
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["knowledge-center", "requirement-corpus"] });
   const act = useMutation({
     mutationFn: ({ item, kind, reason }: { item: CorpusRequirement; kind: CorpusActionKind; reason: string }) =>
       kind === "retire" ? api.retireRequirement(item.requirement_id, reason) : api.reinstateRequirement(item.requirement_id, reason),
-    onSuccess: (result, { item, kind }) => {
-      const told = result.notified ? `; ${result.notified} was told` : "";
-      setSaid((current) => ({
-        ...current,
-        [item.requirement_id]: {
-          text: kind === "retire"
-            ? `Retired${result.closed_findings ? `, ${count(result.closed_findings, "finding")} closed` : ""}${told}.`
-            : `Back in the corpus${told}.`,
-          failed: false,
-        },
-      }));
+    onSuccess: async (result, { item, kind }) => {
+      const told = result.notified ? ` ${result.notified === actorName ? "You were" : `${result.notified} was`} told.` : "";
+      const closed = result.closed_findings ? ` ${count(result.closed_findings, "finding")} closed as “source retired”.` : "";
+      setOutcome(
+        kind === "retire"
+          ? `Retired ‘${item.title}’ from the corpus.${closed}${told}`
+          : `Returned ‘${item.title}’ to the corpus.${told}`,
+      );
       setActing(null);
-      triggers.current[item.requirement_id]?.focus();
-      void refresh();
+      setLit(item.requirement_id);
+      await refresh();
+      // Back to the row's action once the table is read again, or to the outcome when the row
+      // no longer matches the filters (a reinstated row leaves "Retired").
+      window.requestAnimationFrame(() => (triggers.current[item.requirement_id] ?? outcomeLine.current)?.focus());
     },
   });
+  const actorName = useAuth()?.actor?.display_name;
+  const settle = () => {
+    setOutcome("");
+    setLit(null);
+  };
   const open = (id: string, kind: CorpusActionKind) => {
     act.reset();
+    settle();
     setActing({ id, kind });
   };
   const cancel = () => {
@@ -88,13 +99,15 @@ export function CorpusRequirementsPage() {
     if (id) triggers.current[id]?.focus();
   };
 
-  const set = (key: string, value: string | null) =>
-    setParams((current) => {
+  const set = (key: string, value: string | null) => {
+    settle();
+    return setParams((current) => {
       const next = new URLSearchParams(current);
       if (value) next.set(key, value);
       else next.delete(key);
       return next;
     }, { replace: true });
+  };
   const clear = () => {
     setFind("");
     setParams(new URLSearchParams(), { replace: true });
@@ -188,8 +201,10 @@ export function CorpusRequirementsPage() {
         <BulkReindex
           failed={tally?.failed ?? 0}
           shown={items.filter((item) => !item.retired).map((item) => item.requirement_id)}
-          onDone={() => void refresh()}
+          offerReindex={filters.indexState !== "failed"}
+          onDone={() => { settle(); void refresh(); }}
         />
+        <p ref={outcomeLine} tabIndex={-1} className="toolbar__notice" role="status">{outcome}</p>
 
         {pages.isError ? (
           <p className="docpage__failure" role="alert">
@@ -226,7 +241,7 @@ export function CorpusRequirementsPage() {
                 <Fragment key={item.requirement_id}>
                   <RequirementRow
                     item={item}
-                    said={said[item.requirement_id]}
+                    lit={lit === item.requirement_id}
                     open={acting?.id === item.requirement_id}
                     trigger={(node) => { triggers.current[item.requirement_id] = node; }}
                     onAct={(kind) => open(item.requirement_id, kind)}
@@ -237,6 +252,7 @@ export function CorpusRequirementsPage() {
                         <CorpusActionForm
                           item={item}
                           kind={acting.kind}
+                          me={me}
                           busy={act.isPending}
                           error={act.error ? errorMessage(act.error) : null}
                           onSubmit={(reason) => act.mutate({ item, kind: acting.kind, reason })}
@@ -277,17 +293,17 @@ function IndexWords({ item }: { item: CorpusRequirement }) {
     : <span className="status">{STATE_WORDS[item.index_state]}</span>;
 }
 
-function RequirementRow({ item, said, open, trigger, onAct }: {
+function RequirementRow({ item, lit, open, trigger, onAct }: {
   item: CorpusRequirement;
-  said: { text: string; failed: boolean } | undefined;
+  lit: boolean;
   open: boolean;
   trigger: (node: HTMLButtonElement | null) => void;
   onAct: (kind: CorpusActionKind) => void;
 }) {
   const kind: CorpusActionKind | null = item.retired ? "reinstate" : item.duplicate ? null : "retire";
   return (
-    <tr className={`row ${rank(item)}${open ? " is-acting" : ""}`}>
-      <th scope="row">
+    <tr className={`row ${rank(item)}${open ? " is-acting" : ""}${lit ? " is-lit" : ""}`}>
+      <th scope="row" aria-label={item.title}>
         <a href={knowledgeStepHref(item.requirement_id)} className="knowledge__title" dir="auto">
           {item.title}
           <span className="visually-hidden">{LEAVES}</span>
@@ -306,6 +322,21 @@ function RequirementRow({ item, said, open, trigger, onAct }: {
             </>
           ) : "No owner"}
           {item.duplicate && " · closed as a duplicate"}
+          {kind && (
+            <>
+              <span aria-hidden="true"> · </span>
+              <button
+                ref={trigger}
+                type="button"
+                className="text-button knowledge__act"
+                aria-expanded={open}
+                aria-label={`${kind === "retire" ? "Retire from the corpus" : "Reinstate"}: ${item.title}`}
+                onClick={() => onAct(kind)}
+              >
+                {kind === "retire" ? "Retire from the corpus" : "Reinstate"}
+              </button>
+            </>
+          )}
         </span>
         {item.retired && (
           <span className="secondary govtable__by knowledge__retired">
@@ -316,25 +347,6 @@ function RequirementRow({ item, said, open, trigger, onAct }: {
         <span className="secondary govtable__by knowledge__narrow">
           <IndexWords item={item} /> · screened {screened(item)}
         </span>
-        {kind && (
-          <span className="knowledge__act">
-            <button
-              ref={trigger}
-              type="button"
-              className="text-button"
-              aria-expanded={open}
-              onClick={() => onAct(kind)}
-            >
-              {kind === "retire" ? "Retire from the corpus" : "Reinstate"}
-              <span className="visually-hidden">: {item.title}</span>
-            </button>
-          </span>
-        )}
-        {said && (
-          <span className={said.failed ? "govtable__by knowledge__said--failed" : "secondary govtable__by"} role="status">
-            {said.text}
-          </span>
-        )}
       </th>
       <td className="knowledge__wide"><IndexWords item={item} /></td>
       <td className="knowledge__wide cell--end">{screened(item)}</td>
