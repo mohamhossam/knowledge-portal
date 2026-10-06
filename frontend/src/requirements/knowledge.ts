@@ -5,6 +5,8 @@ import { api } from "../api/client";
 export const KNOWLEDGE_PATH = "/requirement-knowledge";
 export const REQUIREMENTS_PATH = `${KNOWLEDGE_PATH}/requirements`;
 export const FINDINGS_PATH = `${KNOWLEDGE_PATH}/findings`;
+/** Old BRDs with their Azure DevOps lineage, as reference knowledge (Knowledge Center E). */
+export const HISTORIC_PATH = `${KNOWLEDGE_PATH}/historic`;
 
 /** The summary Table 4 is read from; its counts label the filters. Shared with the overview's cache. */
 export function useCorpusSummary() {

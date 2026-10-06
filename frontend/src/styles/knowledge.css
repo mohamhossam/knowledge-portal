@@ -394,3 +394,179 @@
     display: inline;
   }
 }
+
+/* Historic Requirements (E): old BRDs with their Azure DevOps lineage, on Table 4's pages. */
+.historic {
+  display: grid;
+  gap: var(--s3);
+}
+
+.historic__trail {
+  margin-top: var(--s4);
+}
+
+.historic__head {
+  display: grid;
+  gap: var(--s1);
+}
+
+.historic__inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--s2) var(--s4);
+}
+
+/* Under Table 4 the import sits in the table column, not indented again. */
+.historic__import {
+  margin-left: 0;
+  margin-top: var(--s5);
+}
+
+.historic__brd {
+  display: grid;
+  gap: var(--s2);
+  padding-block: var(--s3);
+  border-bottom: 1px solid var(--rule-faint);
+}
+
+.historic__brd-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s1) var(--s3);
+}
+
+.historic__brd-name {
+  font-weight: var(--w-bold);
+}
+
+.historic__brd--queued .status {
+  color: var(--ink-2);
+}
+
+.historic__brd--failed .status {
+  color: var(--disruption);
+  font-weight: var(--w-bold);
+}
+
+.historic__brd-head .secondary,
+.historic__warnings {
+  font-size: var(--t-meta);
+}
+
+.historic__warnings {
+  display: grid;
+  gap: var(--s1);
+}
+
+.historic__passages .passage {
+  cursor: default;
+}
+
+.historic__add-brd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2) var(--s4);
+  padding-top: var(--s2);
+}
+
+.historic__suggestions,
+.historic__link {
+  display: grid;
+  gap: var(--s2);
+  max-width: 44rem;
+}
+
+.historic__link .field__input {
+  width: 100%;
+}
+
+.historic__link .field__input[aria-invalid="true"] {
+  border-color: var(--disruption);
+}
+
+.historic__report {
+  display: grid;
+  gap: var(--s2);
+  margin-top: var(--s3);
+}
+
+.historic__report-title {
+  font-weight: var(--w-bold);
+}
+
+.historic__blockers {
+  display: grid;
+  gap: var(--s1);
+  padding-left: 1.25rem;
+  list-style: disc;
+  color: var(--ink-2);
+}
+
+/* The lineage: numbered rows, indented by level, as a timetable sets its stops. */
+.historic__lineage .historic__no {
+  width: 4.5rem;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.historic__lineage .historic__depth--1 th {
+  padding-left: 1.25rem;
+}
+
+.historic__lineage .historic__depth--2 th,
+.historic__lineage .historic__depth--3 th {
+  padding-left: 2.5rem;
+}
+
+.historic__lineage .historic__depth--0 th {
+  font-weight: var(--w-bold);
+}
+
+.historic__type {
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+  font-stretch: var(--width-condensed);
+  font-weight: var(--w-medium);
+}
+
+.historic__id {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15em;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.historic__said {
+  display: grid;
+  gap: var(--s2);
+  max-width: 72ch;
+}
+
+.historic__said dt {
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+  font-stretch: var(--width-condensed);
+  font-weight: var(--w-medium);
+}
+
+.historic__said dd {
+  white-space: pre-line;
+}
+
+.historic__narrow {
+  display: none;
+}
+
+@media (max-width: 45rem) {
+  .historic__narrow {
+    display: block;
+  }
+
+  .historic__lineage .historic__depth--2 th,
+  .historic__lineage .historic__depth--3 th {
+    padding-left: 1.75rem;
+  }
+}

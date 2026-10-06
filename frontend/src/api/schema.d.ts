@@ -748,6 +748,194 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/historic-requirements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Historic
+         * @description Newest first, with how many there are in each state.
+         */
+        get: operations["list_historic_historic_requirements_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/historic-requirements/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Brds
+         * @description Up to twenty BRDs (Word or PDF): each starts its own draft, or is refused with why.
+         */
+        post: operations["import_brds_historic_requirements_batch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/historic-requirements/{historic_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Historic */
+        get: operations["get_historic_historic_requirements__historic_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Discard Historic
+         * @description Remove a draft that was never published, with its files.
+         */
+        delete: operations["discard_historic_historic_requirements__historic_id__delete"];
+        options?: never;
+        head?: never;
+        /** Rename Historic */
+        patch: operations["rename_historic_historic_requirements__historic_id__patch"];
+        trace?: never;
+    };
+    "/historic-requirements/{historic_id}/brds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Brd */
+        post: operations["add_brd_historic_requirements__historic_id__brds_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/historic-requirements/{historic_id}/brds/{brd_id}/reading": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Read Brd Again */
+        post: operations["read_brd_again_historic_requirements__historic_id__brds__brd_id__reading_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/historic-requirements/{historic_id}/publication": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish Historic */
+        post: operations["publish_historic_historic_requirements__historic_id__publication_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/historic-requirements/{historic_id}/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refresh Historic
+         * @description Read a published breakdown again; what changed waits to be accepted or discarded.
+         */
+        post: operations["refresh_historic_historic_requirements__historic_id__refresh_post"];
+        /** Discard Refresh */
+        delete: operations["discard_refresh_historic_requirements__historic_id__refresh_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/historic-requirements/{historic_id}/refresh/acceptance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept Refresh */
+        post: operations["accept_refresh_historic_requirements__historic_id__refresh_acceptance_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/historic-requirements/{historic_id}/withdrawal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Withdraw Historic */
+        post: operations["withdraw_historic_historic_requirements__historic_id__withdrawal_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/historic-requirements/{historic_id}/work-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Link Work Items
+         * @description Name its root work items, and read the breakdown beneath them from Azure DevOps.
+         */
+        put: operations["link_work_items_historic_requirements__historic_id__work_items_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/identity/actors": {
         parameters: {
             query?: never;
@@ -1776,6 +1964,13 @@ export interface components {
             /** Value */
             value: string;
         };
+        /** ActorRef */
+        ActorRef: {
+            /** Display Name */
+            display_name: string;
+            /** Id */
+            id: string;
+        };
         /** ActorResponse */
         ActorResponse: {
             /** Display Name */
@@ -1853,7 +2048,7 @@ export interface components {
          * ArchitectureJobKind
          * @enum {string}
          */
-        ArchitectureJobKind: "index" | "extraction";
+        ArchitectureJobKind: "index" | "extraction" | "historic_read_brd" | "historic_read_breakdown";
         /** ArchitectureJobResponse */
         ArchitectureJobResponse: {
             /** Actor Id */
@@ -1889,6 +2084,18 @@ export interface components {
             release: components["schemas"]["KnowledgeReleaseResponse"];
             /** Results */
             results: components["schemas"]["FileResult"][];
+        };
+        /** Body_add_brd_historic_requirements__historic_id__brds_post */
+        Body_add_brd_historic_requirements__historic_id__brds_post: {
+            /** Expected Version */
+            expected_version: number;
+            /** File */
+            file: string;
+        };
+        /** Body_import_brds_historic_requirements_batch_post */
+        Body_import_brds_historic_requirements_batch_post: {
+            /** Files */
+            files: string[];
         };
         /** Body_import_catalogue_file_architecture_knowledge_releases__release_id__catalogue_file_post */
         Body_import_catalogue_file_architecture_knowledge_releases__release_id__catalogue_file_post: {
@@ -1934,6 +2141,59 @@ export interface components {
             files: string[];
             /** Language */
             language: string;
+        };
+        /**
+         * BrdStage
+         * @enum {string}
+         */
+        BrdStage: "queued" | "read" | "failed";
+        /** BrdView */
+        BrdView: {
+            /** Checksum */
+            checksum: string;
+            /** Error */
+            error: string | null;
+            /** Filename */
+            filename: string;
+            /** Id */
+            id: string;
+            /** Mime Type */
+            mime_type: string;
+            /** Passages */
+            passages: components["schemas"]["PassageView"][];
+            /** Size Bytes */
+            size_bytes: number;
+            stage: components["schemas"]["BrdStage"];
+            /**
+             * Uploaded At
+             * Format: date-time
+             */
+            uploaded_at: string;
+            uploaded_by: components["schemas"]["ActorRef"];
+            /** Warnings */
+            warnings: components["schemas"]["ReadingWarning"][];
+        };
+        /** BreakdownView */
+        BreakdownView: {
+            /** Epics */
+            epics: number;
+            /** Errors */
+            errors: components["schemas"]["ItemErrorView"][];
+            /** Features */
+            features: number;
+            /**
+             * Fetched At
+             * Format: date-time
+             */
+            fetched_at: string;
+            /** Lineage */
+            lineage: components["schemas"]["LineageNodeView"][];
+            /** Not Imported */
+            not_imported: components["schemas"]["TypeCount"][];
+            /** Root Ids */
+            root_ids: number[];
+            /** Stories */
+            stories: number;
         };
         /**
          * CandidateBasis
@@ -2744,6 +3004,119 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /** HistoricCounts */
+        HistoricCounts: {
+            /** Draft */
+            draft: number;
+            /** Published */
+            published: number;
+            /** Withdrawn */
+            withdrawn: number;
+        };
+        /** HistoricDetail */
+        HistoricDetail: {
+            /** Blockers */
+            blockers: string[];
+            /** Brd Files */
+            brd_files: components["schemas"]["BrdView"][];
+            /** Brds */
+            brds: number;
+            /** Brds Failed */
+            brds_failed: number;
+            /** Brds Reading */
+            brds_reading: number;
+            breakdown: components["schemas"]["BreakdownView"] | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            created_by: components["schemas"]["ActorRef"];
+            /** Id */
+            id: string;
+            pending_refresh: components["schemas"]["PendingRefreshView"] | null;
+            /** Publications */
+            publications: components["schemas"]["PublicationView"][];
+            /** Published At */
+            published_at: string | null;
+            /** Refresh Waiting */
+            refresh_waiting: boolean;
+            /** Root Ids */
+            root_ids: number[];
+            run: components["schemas"]["RunView"] | null;
+            /** Run Failure */
+            run_failure: string | null;
+            run_status: components["schemas"]["RunStatus"] | null;
+            status: components["schemas"]["HistoricStatus"];
+            /** Suggestions */
+            suggestions: components["schemas"]["SuggestionView"][];
+            /** Title */
+            title: string;
+            /** Version */
+            version: number;
+            withdrawal: components["schemas"]["WithdrawalView"] | null;
+            /** Withdrawn At */
+            withdrawn_at: string | null;
+            /** Work Items */
+            work_items: number;
+        };
+        /**
+         * HistoricImportResponse
+         * @description Each BRD of a batch: started as a draft, or refused with why. `version_id` is its id.
+         */
+        HistoricImportResponse: {
+            /** Results */
+            results: components["schemas"]["FileResult"][];
+        };
+        /** HistoricPageResponse */
+        HistoricPageResponse: {
+            counts: components["schemas"]["HistoricCounts"];
+            /** Items */
+            items: components["schemas"]["HistoricSummary"][];
+            /** Next Offset */
+            next_offset: number | null;
+        };
+        /**
+         * HistoricStatus
+         * @enum {string}
+         */
+        HistoricStatus: "draft" | "published" | "withdrawn";
+        /**
+         * HistoricSummary
+         * @description One row of the historic list: where it stands, without its content.
+         */
+        HistoricSummary: {
+            /** Brds */
+            brds: number;
+            /** Brds Failed */
+            brds_failed: number;
+            /** Brds Reading */
+            brds_reading: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            created_by: components["schemas"]["ActorRef"];
+            /** Id */
+            id: string;
+            /** Published At */
+            published_at: string | null;
+            /** Refresh Waiting */
+            refresh_waiting: boolean;
+            /** Run Failure */
+            run_failure: string | null;
+            run_status: components["schemas"]["RunStatus"] | null;
+            status: components["schemas"]["HistoricStatus"];
+            /** Title */
+            title: string;
+            /** Version */
+            version: number;
+            /** Withdrawn At */
+            withdrawn_at: string | null;
+            /** Work Items */
+            work_items: number;
+        };
         /** IdentityConfigResponse */
         IdentityConfigResponse: {
             /** Audience */
@@ -2842,6 +3215,29 @@ export interface components {
          * @enum {string}
          */
         IngestionStage: "queued" | "scanning" | "extracting" | "ready_for_review" | "failed" | "quarantined" | "cancelled";
+        /** ItemChangeView */
+        ItemChangeView: {
+            /** Fields */
+            fields: string[];
+            kind: components["schemas"]["ChangeKind"];
+            /** Title */
+            title: string;
+            /** Work Item Id */
+            work_item_id: number;
+        };
+        /** ItemErrorView */
+        ItemErrorView: {
+            /** Detail */
+            detail: string;
+            problem: components["schemas"]["ItemProblem"];
+            /** Work Item Id */
+            work_item_id: number;
+        };
+        /**
+         * ItemProblem
+         * @enum {string}
+         */
+        ItemProblem: "not_found" | "not_permitted" | "unsupported_type" | "over_limit";
         /** JourneyEdgeResponse */
         JourneyEdgeResponse: {
             /** From Activity */
@@ -3291,6 +3687,19 @@ export interface components {
             /** Title */
             title: string;
         };
+        /** LineageNodeView */
+        LineageNodeView: {
+            /** Children */
+            children: components["schemas"]["LineageNodeView"][];
+            item: components["schemas"]["WorkItemView"];
+        };
+        /** LinkRequest */
+        LinkRequest: {
+            /** Expected Version */
+            expected_version: number;
+            /** Root Ids */
+            root_ids: number[];
+        };
         /** LoginChoiceResponse */
         LoginChoiceResponse: {
             /** Authorization Parameters */
@@ -3626,6 +4035,23 @@ export interface components {
             /** Text */
             text: string;
         };
+        /** PassageView */
+        PassageView: {
+            /** Block Id */
+            block_id: string;
+            /** Label */
+            label: string;
+            /** Section Path */
+            section_path: string[];
+            /** Text */
+            text: string;
+        };
+        /** PendingRefreshView */
+        PendingRefreshView: {
+            breakdown: components["schemas"]["BreakdownView"];
+            /** Changes */
+            changes: components["schemas"]["ItemChangeView"][];
+        };
         /**
          * PersonNameResponse
          * @description An id and a display name; never an email.
@@ -3882,6 +4308,19 @@ export interface components {
             withdrawn_by?: components["schemas"]["ActorSnapshot"] | null;
             withdrawn_on_behalf?: components["schemas"]["AdminOverride"] | null;
         };
+        /** PublicationView */
+        PublicationView: {
+            /** Fingerprint */
+            fingerprint: string;
+            /** Number */
+            number: number;
+            /**
+             * Published At
+             * Format: date-time
+             */
+            published_at: string;
+            published_by: components["schemas"]["ActorRef"];
+        };
         /** PublishRequest */
         PublishRequest: {
             /** Expected Revision */
@@ -3917,6 +4356,17 @@ export interface components {
             version_id: string;
             /** Version Number */
             version_number: number;
+        };
+        /** ReadingWarning */
+        ReadingWarning: {
+            /** Block Id */
+            block_id?: string | null;
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /** Severity */
+            severity: string;
         };
         /**
          * RealisationLayer
@@ -4069,6 +4519,13 @@ export interface components {
             /** Expected Revision */
             expected_revision: number;
         };
+        /** RenameRequest */
+        RenameRequest: {
+            /** Expected Version */
+            expected_version: number;
+            /** Title */
+            title: string;
+        };
         /** RenameVersionRequest */
         RenameVersionRequest: {
             /** Expected Revision */
@@ -4211,6 +4668,41 @@ export interface components {
             expected_revision: number;
         };
         /**
+         * RunKind
+         * @enum {string}
+         */
+        RunKind: "fetch" | "refresh";
+        /**
+         * RunStatus
+         * @enum {string}
+         */
+        RunStatus: "queued" | "running" | "succeeded" | "failed";
+        /** RunView */
+        RunView: {
+            /** Done */
+            done: number;
+            /** Failure */
+            failure: string | null;
+            /** Finished At */
+            finished_at: string | null;
+            /** Id */
+            id: string;
+            /** Item Errors */
+            item_errors: components["schemas"]["ItemErrorView"][];
+            kind: components["schemas"]["RunKind"];
+            /** Root Ids */
+            root_ids: number[];
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            started_by: components["schemas"]["ActorRef"];
+            status: components["schemas"]["RunStatus"];
+            /** Total */
+            total: number;
+        };
+        /**
          * SampleRequirementSchema
          * @description A sample requirement; omit `id` for a new one and the server assigns it.
          */
@@ -4326,6 +4818,17 @@ export interface components {
             content?: components["schemas"]["CandidateContentSchema"] | null;
             /** Expected Revision */
             expected_revision: number;
+        };
+        /** SuggestionView */
+        SuggestionView: {
+            /** Block Id */
+            block_id: string;
+            /** Label */
+            label: string;
+            /** Quote */
+            quote: string;
+            /** Work Item Id */
+            work_item_id: number;
         };
         /** SystemComponentSchema */
         SystemComponentSchema: {
@@ -4488,6 +4991,13 @@ export interface components {
             /** To System Id */
             to_system_id: string;
         };
+        /** TypeCount */
+        TypeCount: {
+            /** Count */
+            count: number;
+            /** Type */
+            type: string;
+        };
         /**
          * UploadOutcome
          * @enum {string}
@@ -4544,6 +5054,60 @@ export interface components {
              */
             uploaded_at: string;
             uploaded_by: components["schemas"]["ActorSnapshot"];
+        };
+        /** Versioned */
+        Versioned: {
+            /** Expected Version */
+            expected_version: number;
+        };
+        /** WithdrawRequest */
+        WithdrawRequest: {
+            /** Expected Version */
+            expected_version: number;
+            /** Reason */
+            reason: string;
+        };
+        /** WithdrawalView */
+        WithdrawalView: {
+            /** Reason */
+            reason: string;
+            /**
+             * Withdrawn At
+             * Format: date-time
+             */
+            withdrawn_at: string;
+            withdrawn_by: components["schemas"]["ActorRef"];
+        };
+        /**
+         * WorkItemType
+         * @enum {string}
+         */
+        WorkItemType: "epic" | "feature" | "user_story";
+        /** WorkItemView */
+        WorkItemView: {
+            /** Acceptance Criteria */
+            acceptance_criteria: string;
+            /** Area Path */
+            area_path: string;
+            /** Description */
+            description: string;
+            /** Id */
+            id: number;
+            /** Iteration Path */
+            iteration_path: string;
+            /** Parent Id */
+            parent_id: number | null;
+            /** Revision */
+            revision: number;
+            /** State */
+            state: string;
+            /** Tags */
+            tags: string[];
+            /** Title */
+            title: string;
+            type: components["schemas"]["WorkItemType"];
+            /** Url */
+            url: string;
         };
     };
     responses: never;
@@ -6238,6 +6802,475 @@ export interface operations {
                     "application/json": {
                         [key: string]: string;
                     };
+                };
+            };
+        };
+    };
+    list_historic_historic_requirements_get: {
+        parameters: {
+            query?: {
+                status?: ("draft" | "published" | "withdrawn") | null;
+                q?: string;
+                offset?: number;
+                limit?: number;
+            };
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoricPageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_brds_historic_requirements_batch_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_brds_historic_requirements_batch_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoricImportResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_historic_historic_requirements__historic_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                historic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoricDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discard_historic_historic_requirements__historic_id__delete: {
+        parameters: {
+            query: {
+                expected_version: number;
+            };
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                historic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rename_historic_historic_requirements__historic_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                historic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenameRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoricDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_brd_historic_requirements__historic_id__brds_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                historic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_add_brd_historic_requirements__historic_id__brds_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoricDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_brd_again_historic_requirements__historic_id__brds__brd_id__reading_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                historic_id: string;
+                brd_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Versioned"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoricDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    publish_historic_historic_requirements__historic_id__publication_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                historic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Versioned"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoricDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refresh_historic_historic_requirements__historic_id__refresh_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                historic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Versioned"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoricDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discard_refresh_historic_requirements__historic_id__refresh_delete: {
+        parameters: {
+            query: {
+                expected_version: number;
+            };
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                historic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoricDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    accept_refresh_historic_requirements__historic_id__refresh_acceptance_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                historic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Versioned"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoricDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    withdraw_historic_historic_requirements__historic_id__withdrawal_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                historic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WithdrawRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoricDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    link_work_items_historic_requirements__historic_id__work_items_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                historic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoricDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
