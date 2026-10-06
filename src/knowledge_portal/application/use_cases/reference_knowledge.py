@@ -37,6 +37,7 @@ from knowledge_portal.application.use_cases.document_library import (
     CHUNKING_POLICY,
     TABLE_CHUNKING_POLICY,
 )
+from knowledge_portal.application.use_cases.library_admin import LibraryStewardship
 from knowledge_portal.domain.document.library import LibraryDocument, Publication
 from knowledge_portal.domain.document.reference import (
     PublishedReference,
@@ -326,11 +327,13 @@ class ReferenceKnowledge:
         transactions: TransactionManagerPort,
         clock: ClockPort,
         embedding_identity: str,
+        stewardship: LibraryStewardship | None = None,
     ) -> None:
         self._documents, self._index, self._embeddings = documents, index, embeddings
         self._chunks, self._transactions, self._clock = chunks, transactions, clock
         self._embedding_identity = embedding_identity
         self.identity = f"{embedding_identity}:{chunks.identity}"
+        self._stewardship = stewardship or LibraryStewardship.owner_only(clock)
 
     def _index_identity(self, policy: str) -> str:
         return (
@@ -505,8 +508,10 @@ class ReferenceKnowledge:
         document = self._documents.get(document_id)
         if document is None:
             raise DocumentNotFoundError("Library document was not found.")
-        if document.owner.id != actor.id:
-            raise AuthorizationDeniedError("Only the owner can preview unpublished chunks.")
+        if not self._stewardship.may_act(document, actor):
+            raise AuthorizationDeniedError(
+                "Only the owner, or an admin acting for them, can preview unpublished chunks."
+            )
         source = document.versions[-1]
         if not source.revisions:
             raise DocumentVersionConflictError(

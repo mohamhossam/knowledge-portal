@@ -408,6 +408,92 @@
         "title": "ActorSnapshot",
         "type": "object"
       },
+      "AdminGrant": {
+        "description": "One admin may act as a document's owner until it expires or they end it.",
+        "properties": {
+          "admin": {
+            "$ref": "#/components/schemas/ActorSnapshot"
+          },
+          "document_id": {
+            "title": "Document Id",
+            "type": "string"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "granted_at": {
+            "format": "date-time",
+            "title": "Granted At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "document_id",
+          "admin",
+          "reason",
+          "granted_at",
+          "expires_at"
+        ],
+        "title": "AdminGrant",
+        "type": "object"
+      },
+      "AdminGrantRequest": {
+        "description": "Why a knowledge admin needs to act on a document they don't own.",
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "AdminGrantRequest",
+        "type": "object"
+      },
+      "AdminOverride": {
+        "description": "A knowledge admin acting on a document they don't own, and why (Knowledge Center C).",
+        "properties": {
+          "admin": {
+            "$ref": "#/components/schemas/ActorSnapshot"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "admin",
+          "reason"
+        ],
+        "title": "AdminOverride",
+        "type": "object"
+      },
       "ArchitectureDecisionSchema": {
         "properties": {
           "confidence": {
@@ -2982,6 +3068,16 @@
             "title": "Id",
             "type": "string"
           },
+          "on_behalf": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AdminOverride"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "passages": {
             "items": {
               "$ref": "#/components/schemas/ReviewedPassage"
@@ -4301,6 +4397,115 @@
         "title": "LandscapeDomainSchema",
         "type": "object"
       },
+      "LibraryAdminAction": {
+        "enum": [
+          "grant",
+          "end",
+          "reassign",
+          "withdraw",
+          "review",
+          "approve",
+          "retry_reading",
+          "retry_indexing"
+        ],
+        "title": "LibraryAdminAction",
+        "type": "string"
+      },
+      "LibraryAdminRecord": {
+        "properties": {
+          "acted_at": {
+            "format": "date-time",
+            "title": "Acted At",
+            "type": "string"
+          },
+          "action": {
+            "$ref": "#/components/schemas/LibraryAdminAction"
+          },
+          "admin": {
+            "$ref": "#/components/schemas/ActorSnapshot"
+          },
+          "after": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "After"
+          },
+          "before": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Before"
+          },
+          "document_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Document Ids",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "id",
+          "action",
+          "document_ids",
+          "admin",
+          "reason",
+          "acted_at"
+        ],
+        "title": "LibraryAdminRecord",
+        "type": "object"
+      },
       "LibraryApprovalRequest": {
         "properties": {
           "expected_version": {
@@ -4657,6 +4862,16 @@
       },
       "LibraryView": {
         "properties": {
+          "acting_as_admin": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AdminGrant"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "build_fingerprint": {
             "anyOf": [
               {
@@ -4675,6 +4890,21 @@
           "id": {
             "title": "Id",
             "type": "string"
+          },
+          "is_owner": {
+            "default": false,
+            "title": "Is Owner",
+            "type": "boolean"
+          },
+          "newest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VersionOutline"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "owner": {
             "$ref": "#/components/schemas/ActorSnapshot"
@@ -5779,6 +6009,16 @@
           "new_owner": {
             "$ref": "#/components/schemas/ActorSnapshot"
           },
+          "on_behalf": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AdminOverride"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "performed_by": {
             "$ref": "#/components/schemas/ActorSnapshot"
           },
@@ -6447,6 +6687,16 @@
             ],
             "title": "Indexing Error"
           },
+          "on_behalf": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AdminOverride"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "replaces_publication_id": {
             "anyOf": [
               {
@@ -6493,6 +6743,26 @@
               }
             ],
             "title": "Withdrawn At"
+          },
+          "withdrawn_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActorSnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "withdrawn_on_behalf": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AdminOverride"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -8083,6 +8353,39 @@
           "name"
         ],
         "title": "ValueStreamSchema",
+        "type": "object"
+      },
+      "VersionOutline": {
+        "description": "A version's place in the pipeline, without any of its content.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "stage": {
+            "$ref": "#/components/schemas/IngestionStage"
+          },
+          "uploaded_at": {
+            "format": "date-time",
+            "title": "Uploaded At",
+            "type": "string"
+          },
+          "uploaded_by": {
+            "$ref": "#/components/schemas/ActorSnapshot"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "stage",
+          "uploaded_at",
+          "uploaded_by"
+        ],
+        "title": "VersionOutline",
         "type": "object"
       }
     },
@@ -12301,6 +12604,202 @@
           }
         ],
         "summary": "Get Document",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/library/documents/{document_id}/admin-grant": {
+      "delete": {
+        "operationId": "end_admin_grant_library_documents__document_id__admin_grant_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "End Admin Grant",
+        "tags": [
+          "library"
+        ]
+      },
+      "post": {
+        "description": "Act as admin on this document, on its owner's behalf, for the next eight hours.",
+        "operationId": "open_admin_grant_library_documents__document_id__admin_grant_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminGrantRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminGrant"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Open Admin Grant",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/library/documents/{document_id}/admin-record": {
+      "get": {
+        "description": "Every override and bulk action that touched this document, newest first.",
+        "operationId": "admin_record_library_documents__document_id__admin_record_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LibraryAdminRecord"
+                  },
+                  "title": "Response Admin Record Library Documents  Document Id  Admin Record Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Record",
         "tags": [
           "library"
         ]

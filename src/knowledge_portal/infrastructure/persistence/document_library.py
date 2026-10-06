@@ -141,6 +141,12 @@ class InMemoryDocumentLibrary:
                 if d.owner.id.value == actor_id or d.published_id
             )[offset : offset + limit]
 
+    def list_all(self, offset: int, limit: int) -> tuple[LibraryDocument, ...]:
+        with self._lock:
+            return tuple(sorted(self._documents.values(), key=lambda d: d.id))[
+                offset : offset + limit
+            ]
+
     def find_submission(self, actor_id: str, key: str) -> LibraryDocument | None:
         with self._lock:
             return next(
@@ -284,6 +290,14 @@ class PostgresDocumentLibrary:
             ).fetchall()
         return tuple(self._codec.validate_python(row[0]) for row in rows)
 
+    def list_all(self, offset: int, limit: int) -> tuple[LibraryDocument, ...]:
+        with self._store.connection() as connection:
+            rows = connection.execute(
+                "SELECT payload FROM library_documents ORDER BY id OFFSET %s LIMIT %s",
+                (offset, limit),
+            ).fetchall()
+        return tuple(self._codec.validate_python(row[0]) for row in rows)
+
     def find_submission(self, actor_id: str, key: str) -> LibraryDocument | None:
         with self._store.connection() as connection:
             row = connection.execute(
@@ -359,6 +373,9 @@ class PublishingDocumentLibrary:
 
     def list_visible(self, actor_id: str, offset: int, limit: int) -> tuple[LibraryDocument, ...]:
         return self._inner.list_visible(actor_id, offset, limit)
+
+    def list_all(self, offset: int, limit: int) -> tuple[LibraryDocument, ...]:
+        return self._inner.list_all(offset, limit)
 
     def find_submission(self, actor_id: str, key: str) -> LibraryDocument | None:
         return self._inner.find_submission(actor_id, key)

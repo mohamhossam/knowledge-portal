@@ -41,6 +41,9 @@ KNOWLEDGE_TABLES = {
     "incoming_change_requests",
     "knowledge_document_blobs",
     "knowledge_events",
+    # Knowledge admins acting on library documents they don't own (Knowledge Center C).
+    "library_admin_grants",
+    "library_admin_record",
     "library_chunks",
     "library_documents",
     "library_embedding_cache",

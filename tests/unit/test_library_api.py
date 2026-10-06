@@ -177,3 +177,77 @@ def test_library_owner_review_publication_and_authorization() -> None:
         )
         assert discarded.status_code == 200
         assert discarded.json()["published_id"] == ready["id"]
+
+
+def test_an_admin_acts_on_someone_elses_document_only_through_a_grant() -> None:
+    container = build_container(
+        Settings(llm_provider=LLMProvider.FAKE, library_scan_mode="offline")
+    )
+    admin = {"X-Fake-Actor-Id": "fake-reviewer"}
+    with TestClient(create_app(lambda: container)) as client:
+        uploaded = client.post(
+            "/library/ingestions",
+            data={"title": "Coverage", "idempotency_key": "grant-upload"},
+            files={"file": ("policy.txt", b"XGPON coverage is required.", "text/plain")},
+        )
+        path = f"/library/documents/{uploaded.json()['id']}"
+        for _ in range(100):
+            if client.get(path).json()["versions"][0]["stage"] == "ready_for_review":
+                break
+            time.sleep(0.05)
+        # Another admin finds it waiting, and sees where it stands but none of its content.
+        outline = client.get(path, headers=admin).json()
+        assert outline["versions"] == [] and outline["can_edit"] is False
+        assert outline["newest"]["stage"] == "ready_for_review"
+        assert outline["acting_as_admin"] is None
+        listed = client.get("/library/documents", headers=admin).json()
+        assert [item["id"] for item in listed] == [uploaded.json()["id"]]
+
+        assert (
+            client.post(f"{path}/admin-grant", json={"reason": " "}, headers=admin).status_code
+            == 422
+        )
+        assert (
+            client.post(
+                "/library/documents/unknown/admin-grant", json={"reason": "Why"}, headers=admin
+            ).status_code
+            == 404
+        )
+        assert (
+            client.post(
+                f"{path}/admin-grant",
+                json={"reason": "Why"},
+                headers={"X-Fake-Actor-Id": "fake-observer"},
+            ).status_code
+            == 403
+        )
+        opened = client.post(f"{path}/admin-grant", json={"reason": "Owner away."}, headers=admin)
+        assert opened.status_code == 201 and opened.json()["reason"] == "Owner away."
+
+        view = client.get(path, headers=admin).json()
+        assert view["can_edit"] is True and view["is_owner"] is False
+        assert view["acting_as_admin"]["reason"] == "Owner away."
+        source = view["versions"][0]
+        review = client.post(
+            f"{path}/versions/{source['id']}/review",
+            headers=admin,
+            json={
+                "expected_version": view["version"],
+                "explanation": "Reviewed for the owner",
+                "passages": [
+                    {"block_id": b["id"], "text": b["text"], "included": True}
+                    for b in source["blocks"]
+                ],
+            },
+        )
+        assert review.status_code == 200
+        revision = review.json()["versions"][0]["revisions"][-1]
+        assert revision["on_behalf"]["reason"] == "Owner away."
+        assert revision["on_behalf"]["admin"]["display_name"] == "Ravi Reviewer"
+        assert revision["created_by"]["display_name"] == "Ravi Reviewer"
+        record = client.get(f"{path}/admin-record", headers=admin).json()
+        assert [item["action"] for item in record] == ["review", "grant"]
+
+        assert client.delete(f"{path}/admin-grant", headers=admin).status_code == 204
+        assert client.get(path, headers=admin).json()["versions"] == []
+        assert client.get(f"{path}/admin-record").json()[0]["action"] == "end"

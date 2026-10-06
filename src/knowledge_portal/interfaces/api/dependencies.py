@@ -43,6 +43,7 @@ from knowledge_portal.application.use_cases.catalogue_candidates import (
 )
 from knowledge_portal.application.use_cases.document_library import DocumentLibrary
 from knowledge_portal.application.use_cases.identity_access import SearchKnownActors
+from knowledge_portal.application.use_cases.library_admin import AdministerLibraryDocument
 from knowledge_portal.application.use_cases.library_governance import LibraryGovernance
 from knowledge_portal.application.use_cases.organisation_catalogue import (
     ManageOrganisationCatalogue,
@@ -166,6 +167,10 @@ def get_document_library(container: ContainerDep) -> DocumentLibrary:
 
 def get_library_governance(container: ContainerDep) -> LibraryGovernance:
     return container.library_governance
+
+
+def get_library_admin(container: ContainerDep) -> AdministerLibraryDocument:
+    return container.library_admin
 
 
 def get_reference_knowledge(container: ContainerDep) -> ReferenceKnowledge:

@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
 from knowledge_portal.application.errors import UnsupportedDocumentError
+from knowledge_portal.application.ports.library_admin import AdminGrant, LibraryAdminRecord
 from knowledge_portal.application.ports.reference_index import ReferenceChunk
 from knowledge_portal.application.ports.source_impact import DependencyImpactPage
 from knowledge_portal.application.use_cases.document_library import (
@@ -16,6 +17,7 @@ from knowledge_portal.application.use_cases.document_library import (
     OriginalPreview,
 )
 from knowledge_portal.application.use_cases.documents import UploadDocumentInput
+from knowledge_portal.application.use_cases.library_admin import AdministerLibraryDocument
 from knowledge_portal.application.use_cases.library_governance import (
     LibraryDependencyPage,
     LibraryGovernance,
@@ -25,12 +27,17 @@ from knowledge_portal.application.use_cases.reference_knowledge import (
     ReferenceKnowledge,
 )
 from knowledge_portal.application.use_cases.source_impact import DocumentSourceImpact
-from knowledge_portal.domain.document.library import OwnershipTransfer, ReviewedPassage
+from knowledge_portal.domain.document.library import (
+    ADMIN_REASON_MAX,
+    OwnershipTransfer,
+    ReviewedPassage,
+)
 from knowledge_portal.domain.identity.entities import ActorId
 from knowledge_portal.interfaces.api.dependencies import (
     CurrentActorDep,
     get_document_library,
     get_document_source_impact,
+    get_library_admin,
     get_library_governance,
     get_reference_knowledge,
     limit_provider_calls,
@@ -44,6 +51,7 @@ LibraryDep = Annotated[DocumentLibrary, Depends(get_document_library)]
 KnowledgeDep = Annotated[ReferenceKnowledge, Depends(get_reference_knowledge)]
 GovernanceDep = Annotated[LibraryGovernance, Depends(get_library_governance)]
 ImpactDep = Annotated[DocumentSourceImpact, Depends(get_document_source_impact)]
+AdminDep = Annotated[AdministerLibraryDocument, Depends(get_library_admin)]
 
 
 @router.get("/documents/{document_id}/source-impact")
@@ -113,6 +121,33 @@ def transfer_ownership(
     return service.transfer(
         document_id, actor, ActorId(data.actor_id), data.expected_version, data.reason
     )
+
+
+class AdminGrantRequest(BaseModel):
+    """Why a knowledge admin needs to act on a document they don't own."""
+
+    reason: str = Field(min_length=1, max_length=ADMIN_REASON_MAX)
+
+
+@router.post("/documents/{document_id}/admin-grant", status_code=201)
+def open_admin_grant(
+    document_id: str, data: AdminGrantRequest, service: AdminDep, actor: CurrentActorDep
+) -> AdminGrant:
+    """Act as admin on this document, on its owner's behalf, for the next eight hours."""
+    return service.open(document_id, actor, data.reason)
+
+
+@router.delete("/documents/{document_id}/admin-grant", status_code=204)
+def end_admin_grant(document_id: str, service: AdminDep, actor: CurrentActorDep) -> None:
+    service.end(document_id, actor)
+
+
+@router.get("/documents/{document_id}/admin-record")
+def admin_record(
+    document_id: str, service: AdminDep, actor: CurrentActorDep
+) -> tuple[LibraryAdminRecord, ...]:
+    """Every override and bulk action that touched this document, newest first."""
+    return service.history(document_id, actor)
 
 
 @router.get("/documents/{document_id}/ownership/history")

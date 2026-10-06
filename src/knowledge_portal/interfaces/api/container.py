@@ -76,6 +76,10 @@ from knowledge_portal.application.use_cases.identity_access import (
     ResolveSignedInActor,
     SearchKnownActors,
 )
+from knowledge_portal.application.use_cases.library_admin import (
+    AdministerLibraryDocument,
+    LibraryStewardship,
+)
 from knowledge_portal.application.use_cases.library_governance import LibraryGovernance
 from knowledge_portal.application.use_cases.organisation_catalogue import (
     ManageOrganisationCatalogue,
@@ -163,6 +167,7 @@ class Container:
     knowledge_events: KnowledgeEventOutboxPort
     document_library: DocumentLibrary
     library_governance: LibraryGovernance
+    library_admin: AdministerLibraryDocument
     document_source_impact: DocumentSourceImpact
     cited_passages: CitedPassages
     reference_knowledge: ReferenceKnowledge
@@ -238,6 +243,9 @@ def _build_container(
     architecture = build_architecture(
         settings, persistence, retrieval, llm, llm.architecture_reasoner, clock
     )
+    stewardship = LibraryStewardship(
+        persistence.library_admin_grants, persistence.library_admin_record, clock
+    )
     reference_knowledge = ReferenceKnowledge(
         persistence.library_repository,
         persistence.reference_index,
@@ -246,6 +254,7 @@ def _build_container(
         persistence.transaction_manager,
         clock,
         _embedding_identity(settings),
+        stewardship,
     )
     library = DocumentLibrary(
         persistence.library_repository,
@@ -257,6 +266,7 @@ def _build_container(
         persistence.transaction_manager,
         clock,
         settings.document_max_file_bytes,
+        stewardship,
     )
     workers: dict[str, BackgroundWorker] = {
         "document_worker": DocumentIngestionWorker(library, reference_knowledge)
@@ -289,6 +299,15 @@ def _build_container(
             persistence.transaction_manager,
             clock,
             requirement_work.dependents,
+            stewardship,
+        ),
+        library_admin=AdministerLibraryDocument(
+            persistence.library_repository,
+            persistence.library_admin_grants,
+            persistence.library_admin_record,
+            stewardship,
+            persistence.transaction_manager,
+            clock,
         ),
         document_source_impact=DocumentSourceImpact(
             persistence.library_repository,
