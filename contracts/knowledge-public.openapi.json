@@ -8502,6 +8502,17 @@
       "VersionOutline": {
         "description": "A version's place in the pipeline, without any of its content.",
         "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
           "id": {
             "title": "Id",
             "type": "string"

@@ -47,7 +47,7 @@ export function ComparePage() {
   const describe = (release: Release) =>
     release.status === "draft"
       ? `${name(release)} (in preparation)`
-      : `${name(release)} (${release.id === activeId ? "in service" : "replaced"}, published ${formatDay(release.published_at)})`;
+      : `${name(release)} (${release.id === activeId ? "in service" : "replaced"}, ${formatDay(release.published_at)})`;
   const choose = (key: "from" | "to", value: string) => setParams({ from, to, [key]: value }, { replace: true });
 
   return (
@@ -120,7 +120,7 @@ export function ComparePage() {
           )}
         </>
       )}
-      <p className="timetable__next">
+      <p className="compare__back">
         <Link to="/architecture/versions">Back to every version</Link>
       </p>
     </section>

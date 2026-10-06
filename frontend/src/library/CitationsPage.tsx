@@ -30,11 +30,25 @@ const TARGET: Record<string, string> = {
  * each requirement's owner decides in Requirement AI.
  */
 export function CitationsPage() {
+  const { document } = useDocumentContext();
   return (
     <>
       <Proposals />
-      <SourceImpact />
+      {document.is_owner ? <SourceImpact /> : <SourceImpactStaysWithOwner owner={document.owner.display_name} />}
     </>
+  );
+}
+
+/** An admin acting for the owner: where its content is cited is the owner's to inspect. */
+function SourceImpactStaysWithOwner({ owner }: { owner: string }) {
+  const id = useId();
+  return (
+    <section className="govsection" aria-labelledby={`${id}-title`}>
+      <h2 id={`${id}-title`} className="govsection__title">Source impact</h2>
+      <p className="timetable__quiet">
+        Which requirement content needs review when this document changes stays with {owner}, its owner.
+      </p>
+    </section>
   );
 }
 

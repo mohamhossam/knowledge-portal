@@ -66,7 +66,7 @@ describe("retrying the library in bulk", () => {
   it("asks in place, retries, says how many, and returns focus", async () => {
     const retry = vi.spyOn(api, "retryLibrary").mockResolvedValue({ scope: "indexing", documents: 3 });
     const done = vi.fn();
-    render(wrap(<LibraryRetry stopped={{ reading: 0, indexing: 3 }} onDone={done} />));
+    render(wrap(<LibraryRetry stopped={{ reading: [], indexing: ["Coverage", "Billing", "Roaming"] }} onDone={done} />));
     expect(screen.queryByRole("button", { name: /failed again/ })).not.toBeInTheDocument();
     const trigger = screen.getByRole("button", { name: "Retry the 3 documents whose indexing stopped" });
     fireEvent.click(trigger);
@@ -130,5 +130,13 @@ describe("acting as admin on someone else's document", () => {
     expect(banner).toHaveTextContent("Owner on leave.");
     fireEvent.click(within(banner).getByRole("button", { name: "Stop acting as admin" }));
     await waitFor(() => expect(end).toHaveBeenCalledWith("d1"));
+  });
+});
+
+describe("naming what a single retry touches", () => {
+  it("names the one document in the confirmation", () => {
+    render(wrap(<LibraryRetry stopped={{ reading: ["Old tariff sheet"], indexing: [] }} onDone={vi.fn()} />));
+    fireEvent.click(screen.getByRole("button", { name: "Read the 1 document that failed again" }));
+    expect(screen.getByText("Read ‘Old tariff sheet’ again?")).toHaveFocus();
   });
 });

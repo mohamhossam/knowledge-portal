@@ -1580,6 +1580,27 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
 
 .uploads__item--refused .status {
   color: var(--disruption);
+  font-weight: var(--w-bold);
+}
+
+.uploads__summary:focus {
+  outline: none;
+}
+
+.uploads__summary:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* A plain way back, tall enough to hit. */
+.compare__back {
+  margin-top: var(--s5);
+}
+
+.compare__back a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.5rem;
 }
 
 /* Knowledge Center C: any two versions, side by side. */

@@ -68,7 +68,8 @@ function EditionLine({ document }: { document: LibraryDocument }) {
   if (state.kind === "service") {
     return (
       <>
-        In service: version {state.versionNumber ?? "?"}, approved by {state.publication.approved_by.display_name} on{" "}
+        In service: version {state.versionNumber ?? "?"}, approved by {state.publication.approved_by.display_name}
+        {state.publication.on_behalf ? " as admin, on its owner’s behalf," : ""} on{" "}
         {formatDay(state.publication.approved_at)}. Requirement work cites this edition.
       </>
     );
@@ -94,7 +95,7 @@ function Head({ document, version, actions, pages }: {
     <header className="docpage__head">
       <p className="docpage__number" aria-hidden="true">1</p>
       <div className="docpage__heading">
-        <h1 className="docpage__title" dir="auto">{document.title}</h1>
+        <h1 id="doc-title" className="docpage__title" dir="auto">{document.title}</h1>
         <p className="docpage__edition"><EditionLine document={document} /></p>
         {version && (
           <p className="docpage__version">
@@ -128,7 +129,10 @@ function ReaderView({ document }: { document: LibraryDocument }) {
       {newest && !approved && (
         <p className="docpage__version">
           Newest: version {newest.number}, uploaded by {newest.uploaded_by.display_name} on {formatDay(newest.uploaded_at)}.{" "}
-          <span className="status">{OUTLINE_STAGE[newest.stage] ?? newest.stage}</span>
+          <span className={newest.stage === "failed" || newest.stage === "quarantined" ? "status status--failed" : "status"}>
+            {OUTLINE_STAGE[newest.stage] ?? newest.stage}
+          </span>
+          {newest.error && <span className="docpage__why">{newest.error}</span>}
         </p>
       )}
       <ActAsAdmin document={document} />

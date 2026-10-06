@@ -372,6 +372,9 @@ def _stopped(library: Library, key: str, *, reading: bool) -> LibraryDocument:
 def test_bulk_retry_reads_again_only_what_failed_and_records_it(library: Library) -> None:
     failed = _stopped(library, "failed", reading=True)
     waiting = _awaiting_review(library)
+    # An admin who doesn't own it sees why it failed, and nothing of its content.
+    outline = library.documents.get(failed.id, ADMIN).newest
+    assert outline is not None and outline.error == "Timed out"
     result = library.retry.execute(LibraryRetryScope.READING, ADMIN)
     assert result.documents == 1
     again = library.repository.get(failed.id)

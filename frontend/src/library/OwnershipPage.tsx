@@ -108,7 +108,12 @@ function AdminRecord() {
           <tbody>
             {entries.map((entry) => (
               <tr key={entry.id} className="row">
-                <th scope="row" className="nowrap">{formatDay(entry.acted_at)}</th>
+                <th scope="row" className="nowrap">
+                  {formatDay(entry.acted_at)}
+                  <span className="secondary govtable__by">
+                    {new Date(entry.acted_at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hourCycle: "h23" })}
+                  </span>
+                </th>
                 <td>
                   {ACTION[entry.action]}
                   <span className="secondary govtable__by">by {entry.admin.display_name}</span>
@@ -140,11 +145,20 @@ function Transfer() {
   const actors = useQuery({ queryKey: ["identity", "actors", query], queryFn: () => api.findActors(query) });
   const candidates = (actors.data ?? []).filter((actor) => actor.id !== document.owner.id.value);
   const chosen = candidates.find((actor) => actor.id === target);
+  // An admin acting for the owner may hand it on, or take it over themselves.
+  const owner = document.owner.display_name;
+  const acting = !document.is_owner;
+  const me = document.acting_as_admin?.admin.id.value;
+  const takingOver = acting && chosen !== undefined && chosen.id === me;
   const transfer = useMutation({
     mutationFn: () => api.transfer(document.id, { expected_version: document.version, actor_id: target, reason: reason.trim() }),
     onSuccess: (done) => {
       navigate("/library", {
-        state: { notice: `‘${document.title}’ now belongs to ${done.new_owner.display_name}.` },
+        state: {
+          notice: takingOver
+            ? `You now own ‘${document.title}’.`
+            : `‘${document.title}’ now belongs to ${done.new_owner.display_name}.`,
+        },
       });
       // After the page has left: what was private to us is gone, and the list has changed.
       window.setTimeout(() => {
@@ -160,10 +174,15 @@ function Transfer() {
   };
   return (
     <section className="govsection" aria-labelledby={`${id}-title`}>
-      <h2 id={`${id}-title`} className="govsection__title">Hand it to another knowledge admin</h2>
+      <h2 id={`${id}-title`} className="govsection__title">
+        {acting ? "Hand it on, or take it over" : "Hand it to another knowledge admin"}
+      </h2>
       <p className="govsection__lead">
-        {document.owner.display_name} owns it now. Only knowledge admins who have signed in to the portal can take it
-        over. Once handed over, you keep only what every admin sees: the version in service.
+        {acting
+          ? <>{owner} owns it now, and you act for them as admin. Hand it to another knowledge admin, or take it over
+            yourself. Either way {owner} keeps only what every admin sees: the version in service.</>
+          : <>{owner} owns it now. Only knowledge admins who have signed in to the portal can take it over. Once handed
+            over, you keep only what every admin sees: the version in service.</>}
       </p>
       <form className="add__form govsection__form" onSubmit={submit}>
         <label className="field" htmlFor={`${id}-find`}>
@@ -177,24 +196,32 @@ function Transfer() {
           {candidates.map((actor) => (
             <label key={actor.id} className="check">
               <input type="radio" name={`${id}-owner`} value={actor.id} checked={target === actor.id} onChange={() => setTarget(actor.id)} />
-              {actor.display_name}
+              {actor.display_name}{acting && actor.id === me ? " (you)" : ""}
               {actor.email && <span className="secondary"> · {actor.email}</span>}
             </label>
           ))}
         </fieldset>
         <label className="field" htmlFor={`${id}-reason`}>
-          <span className="field__label">Why you are handing it over</span>
+          <span className="field__label">{acting ? "Why it changes hands" : "Why you are handing it over"}</span>
           <textarea id={`${id}-reason`} className="field__input" rows={3} maxLength={2000} value={reason}
             onChange={(event) => setReason(event.target.value)} />
         </label>
         <label className="check">
           <input type="checkbox" checked={understood} onChange={(event) => setUnderstood(event.target.checked)} />
-          I understand I will lose access to this document's private versions and reviews.
+          {acting
+            ? `I understand ${owner} will lose access to this document’s private versions and reviews.`
+            : "I understand I will lose access to this document's private versions and reviews."}
         </label>
         <p className="add__actions">
           <button type="submit" className="action-button"
             disabled={!chosen || !reason.trim() || !understood || dirty > 0 || transfer.isPending}>
-            {transfer.isPending ? "Handing it over…" : chosen ? `Hand it to ${chosen.display_name}` : "Hand it over"}
+            {transfer.isPending
+              ? "Handing it over…"
+              : takingOver
+                ? `Take it over from ${owner}`
+                : chosen
+                  ? acting ? `Hand it to ${chosen.display_name} on ${owner}’s behalf` : `Hand it to ${chosen.display_name}`
+                  : "Hand it over"}
           </button>
         </p>
         {dirty > 0 && <p className="govsection__lead">Save or discard the {dirty} unsaved review {dirty === 1 ? "change" : "changes"} first.</p>}

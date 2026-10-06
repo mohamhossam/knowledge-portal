@@ -109,6 +109,8 @@ class VersionOutline:
     stage: IngestionStage
     uploaded_at: datetime
     uploaded_by: ActorSnapshot
+    # Why its reading failed, in the reader's words; never any of its content.
+    error: str | None = None
 
 
 @dataclass(frozen=True)
@@ -233,7 +235,12 @@ class DocumentLibrary:
                 False,
                 None,
                 newest=VersionOutline(
-                    newest.id, newest.number, newest.stage, newest.uploaded_at, newest.uploaded_by
+                    newest.id,
+                    newest.number,
+                    newest.stage,
+                    newest.uploaded_at,
+                    newest.uploaded_by,
+                    newest.error,
                 ),
             )
         if published is None:

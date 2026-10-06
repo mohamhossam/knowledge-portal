@@ -970,18 +970,49 @@ html:has(.savebar) {
   color: var(--ink-2);
 }
 
-/* While the grant lasts, a reference band above the head: whose document, until when, why. */
+/* While the grant lasts, a band above the head between heavy rules, as a confirmation is:
+   whose document, until when, why. */
 .admingrant--live {
   margin-block: 0 var(--s4);
-  padding: var(--s2) var(--s3);
-  border-inline-start: 4px solid var(--reference);
-  background: var(--reference-wash);
+  padding: var(--s2) 0;
+  border-block: 2px solid var(--rule-heavy);
+  background: var(--stock-band);
 }
 
 .admingrant--live .admingrant__line {
+  max-width: none;
+  padding-inline: var(--s3);
   color: var(--ink);
 }
 
+/* The reason, asked in place under the owner line: on the stock band, closed by a heavy rule. */
 .admingrant__form {
   max-width: 72ch;
+  margin-top: var(--s3);
+  padding: var(--s3);
+  border-top: 2px solid var(--rule-heavy);
+  background: var(--stock-band);
+}
+
+/* Why the newest version could not be read, under its status. */
+.docpage__why {
+  display: block;
+  color: var(--ink-2);
+}
+
+/* Owner and Cited by, kept with the title once their columns leave the grid. */
+.library__aside {
+  display: none;
+}
+
+@media (max-width: 60rem) {
+  .library__aside {
+    display: block;
+  }
+}
+
+/* The library's bulk line runs the toolbar's full width, so opening it moves nothing else. */
+.timetable__toolbar > .knowledge__batch {
+  flex-basis: 100%;
+  order: 1;
 }

@@ -4352,6 +4352,8 @@ export interface components {
          * @description A version's place in the pipeline, without any of its content.
          */
         VersionOutline: {
+            /** Error */
+            error?: string | null;
             /** Id */
             id: string;
             /** Number */

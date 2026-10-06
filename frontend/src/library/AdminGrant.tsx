@@ -9,7 +9,7 @@ import { documentKey } from "./useDocument";
 const REASON_MAX = 500;
 
 function timeOf(value: string): string {
-  return new Date(value).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  return new Date(value).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 }
 
 function useRefresh(documentId: string) {
@@ -41,8 +41,10 @@ export function ActAsAdmin({ document }: { document: LibraryDocument }) {
   });
   const owner = document.owner.display_name;
   useEffect(() => {
-    if (open) field.current?.focus();
-    else if (wasOpen.current) trigger.current?.focus();
+    if (open) {
+      field.current?.focus();
+      field.current?.closest("form")?.scrollIntoView?.({ block: "nearest" });
+    } else if (wasOpen.current) trigger.current?.focus();
     wasOpen.current = open;
   }, [open]);
   useEffect(() => {

@@ -213,7 +213,10 @@ function VersionDetail({ release, canPutBack, onPutBack, onKeep }: {
       </p>
       {failure && <p className="docpage__failure" role="alert">{failure}</p>}
       <p className="govsection__actions">
-        <Link to={`/architecture/compare?${new URLSearchParams({ from: activeId, to: release.id })}`}>
+        <Link to={`/architecture/compare?${new URLSearchParams(
+          // The version in service compares with the newest other one, which the page picks.
+          release.id === activeId ? { from: activeId } : { from: activeId, to: release.id },
+        )}`}>
           {release.id === activeId ? "Compare it with another version" : "Compare it with the version in service"}
           <span className="visually-hidden">: {release.name}</span>
         </Link>

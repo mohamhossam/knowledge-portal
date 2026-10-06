@@ -10,14 +10,14 @@ type Said = { text: string; failed: boolean };
 
 const CONFIRM: Record<LibraryRetryScope, {
   trigger: (n: number) => string;
-  title: (n: number) => string;
+  title: (n: number, only: string) => string;
   lead: (n: number) => string;
   commit: (n: number) => string;
   done: (n: number) => string;
 }> = {
   reading: {
     trigger: (n) => `Read the ${count(n, "document")} that failed again`,
-    title: (n) => `Read ${n === 1 ? "this document" : `these ${n} documents`} again?`,
+    title: (n, only) => `Read ${n === 1 ? `‘${only}’` : `these ${n} documents`} again?`,
     lead: (n) =>
       `${n === 1 ? "It is" : "Each is"} scanned and read from the start, whoever owns it. If the file itself is the problem, it fails again after three attempts and its owner sees why.`,
     commit: (n) => (n === 1 ? "Read it again" : "Read them again"),
@@ -25,7 +25,7 @@ const CONFIRM: Record<LibraryRetryScope, {
   },
   indexing: {
     trigger: (n) => `Retry the ${count(n, "document")} whose indexing stopped`,
-    title: (n) => `Index ${n === 1 ? "this document" : `these ${n} documents`} again?`,
+    title: (n, only) => `Index ${n === 1 ? `‘${only}’` : `these ${n} documents`} again?`,
     lead: () =>
       "Each approved version is indexed for search again, from where it stopped. Nothing is published that was not already approved.",
     commit: (n) => (n === 1 ? "Retry it" : "Retry them"),
@@ -40,10 +40,12 @@ const ORDER: LibraryRetryScope[] = ["reading", "indexing"];
  * Each asks in place first. The line of actions stays in place while a confirmation is open,
  * so focus always has somewhere to return to.
  */
-export function LibraryRetry({ stopped, onDone }: {
-  stopped: Record<LibraryRetryScope, number>;
+export function LibraryRetry({ stopped: titles, onDone }: {
+  /** The titles of the documents each retry would touch, whoever owns them. */
+  stopped: Record<LibraryRetryScope, string[]>;
   onDone: () => void;
 }) {
+  const stopped = { reading: titles.reading.length, indexing: titles.indexing.length };
   const [confirming, setConfirming] = useState<LibraryRetryScope | null>(null);
   const [outcome, setOutcome] = useState<Said | null>(null);
   const triggers = useRef<Partial<Record<LibraryRetryScope, HTMLButtonElement | null>>>({});
@@ -112,7 +114,7 @@ export function LibraryRetry({ stopped, onDone }: {
           }}
         >
           <p id="library-retry-title" ref={title} tabIndex={-1} className="knowledge__confirm-title">
-            {CONFIRM[confirming].title(stopped[confirming])}
+            {CONFIRM[confirming].title(stopped[confirming], titles[confirming][0] ?? "")}
           </p>
           <p className="knowledge__confirm-lead">{CONFIRM[confirming].lead(stopped[confirming])}</p>
           <p className="govsection__actions">

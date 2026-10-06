@@ -48,8 +48,8 @@ describe("comparing two catalogue versions", () => {
     // The draft first, then by when each was published; the one in service says so.
     expect([...screen.getByRole("combobox", { name: "To" }).querySelectorAll("option")].map((o) => o.textContent)).toEqual([
       "next (in preparation)",
-      "summer (in service, published 1 Jul 2026)",
-      "spring (replaced, published 1 Apr 2026)",
+      "summer (in service, 1 Jul 2026)",
+      "spring (replaced, 1 Apr 2026)",
     ]);
     fireEvent.click(screen.getByRole("button", { name: "Swap" }));
     await waitFor(() => expect(screen.getByTestId("address")).toHaveTextContent("?from=summer&to=spring"));
@@ -85,11 +85,31 @@ describe("adding several documents to a draft", () => {
     expect(screen.queryByRole("textbox", { name: "Title" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Add the 3 files and read them" }));
     expect(addDocuments).toHaveBeenCalledWith({ files, language: "en" }, expect.anything());
-    expect(screen.getByText("2 of 3 files added. Some wait to be read.")).toBeInTheDocument();
-    expect(screen.getByText("Added; being read")).toBeInTheDocument();
+    // The outcome takes focus, and only its summary is announced.
+    const summary = screen.getByRole("status");
+    expect(summary).toHaveTextContent("2 of 3 files added. Some wait to be read.");
+    expect(summary).toHaveFocus();
+    expect(screen.getByText("Added; reading started")).toBeInTheDocument();
     expect(screen.getByText("The model budget for this minute is spent.")).toBeInTheDocument();
     expect(screen.getByText("Not added")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Read it" }));
     expect(read).toHaveBeenCalledWith("v2");
+  });
+
+  it("moves focus into the form when it opens, and back when it is cancelled", () => {
+    const idle = { mutate: vi.fn(), isPending: false, isError: false, error: null };
+    const draft = {
+      extractions: { data: [] }, suggestions: { data: { runs: [], suggestions: [] } },
+      read: idle, cancel: idle, retry: idle, removeDocument: idle, addDocument: idle, addDocuments: idle,
+    } as unknown as DraftHook;
+    const withOne = release("next", {
+      status: "draft",
+      documents: [{ id: "v1", title: "Billing", filename: "billing.md", mime_type: "text/markdown", language: "en", checksum: "c", uploaded_by: "fake-owner", uploaded_at: "2026-10-06T09:00:00Z" }],
+    } as Partial<Release>);
+    render(<DraftDocuments release={withOne} draft={draft} actorName={() => "Amina"} />);
+    fireEvent.click(screen.getByRole("button", { name: "Add more documents" }));
+    expect(screen.getByRole("heading", { name: "Add documents" })).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.getByRole("button", { name: "Add more documents" })).toHaveFocus();
   });
 });

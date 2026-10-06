@@ -1,5 +1,5 @@
 import { CornerLeftUp, RotateCw, Upload, X } from "lucide-react";
-import { type FormEvent, useId, useRef, useState } from "react";
+import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 
 import type { CatalogueDocument, DocumentLanguage, Release } from "../api/client";
 import { errorMessage } from "../api/errors";
@@ -194,7 +194,7 @@ function RemoveConfirm({ document, busy, onKeep, onRemove }: {
 const MAX_FILES = 20;
 
 const LINE: Record<UploadLine["state"], string> = {
-  reading: "Added; being read",
+  reading: "Added; reading started",
   unread: "Added; not yet read",
   refused: "Not added",
 };
@@ -202,9 +202,12 @@ const LINE: Record<UploadLine["state"], string> = {
 /** What became of each file of a multi-file upload, one line each, in the order chosen. */
 function UploadResults({ lines, draft }: { lines: UploadLine[]; draft: DraftHook }) {
   const added = lines.filter((line) => line.state !== "refused").length;
+  const summary = useRef<HTMLParagraphElement>(null);
+  // The outcome takes focus once, so the reader goes on from it; only its summary is announced.
+  useEffect(() => summary.current?.focus(), []);
   return (
-    <div className="uploads" role="status">
-      <p className="uploads__summary">
+    <div className="uploads">
+      <p ref={summary} tabIndex={-1} className="uploads__summary" role="status">
         {added} of {count(lines.length, "file")} added
         {lines.some((line) => line.state === "unread") ? ". Some wait to be read." : "."}
       </p>
@@ -235,6 +238,15 @@ function AddDocument({ draft, collapsed }: { draft: DraftHook; collapsed: boolea
   const [added, setAdded] = useState<string | null>(null);
   const [lines, setLines] = useState<UploadLine[] | null>(null);
   const input = useRef<HTMLInputElement>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const more = useRef<HTMLButtonElement>(null);
+  // Opening the form moves focus to its heading; cancelling returns it to "Add more documents".
+  const focusOn = useRef<"form" | "more" | null>(null);
+  useEffect(() => {
+    if (focusOn.current === "form") heading.current?.focus();
+    if (focusOn.current === "more") more.current?.focus();
+    focusOn.current = null;
+  }, [opened]);
   const several = files.length > 1;
   const pending = draft.addDocument.isPending || draft.addDocuments.isPending;
   const waits = files.length === 0
@@ -278,7 +290,7 @@ function AddDocument({ draft, collapsed }: { draft: DraftHook; collapsed: boolea
     return (
       <>
         <p className="documents__more">
-          <button type="button" className="text-button" onClick={() => setOpened(true)}>
+          <button ref={more} type="button" className="text-button" onClick={() => { focusOn.current = "form"; setOpened(true); }}>
             <Upload size={14} aria-hidden="true" />
             Add more documents
           </button>
@@ -290,10 +302,11 @@ function AddDocument({ draft, collapsed }: { draft: DraftHook; collapsed: boolea
   }
   return (
     <form className="add documents__add" aria-labelledby={`${id}-title`} onSubmit={submit}>
-      <h3 id={`${id}-title`} className="add__title">Add documents</h3>
+      <h3 ref={heading} tabIndex={-1} id={`${id}-title`} className="add__title">Add documents</h3>
       <p className="add__lead">
         PDF, Word (.docx), Excel, CSV, Markdown, plain text or images, up to 10 MB each and {MAX_FILES} at a time. Markdown
-        tables of domains, systems, offerings and journeys are read row by row.
+        tables of domains, systems, offerings and journeys are read row by row. A Word 97–2003 .doc file needs saving as
+        .docx first.
       </p>
       <div className="form__grid">
         <label className="field form__field" htmlFor={`${id}-file`}>
@@ -325,7 +338,7 @@ function AddDocument({ draft, collapsed }: { draft: DraftHook; collapsed: boolea
           </label>
         )}
         <label className="field form__field" htmlFor={`${id}-language`}>
-          <span className="field__label">Written in</span>
+          <span className="field__label">{several ? "All written in" : "Written in"}</span>
           <select
             id={`${id}-language`}
             className="field__input form__select"
@@ -341,6 +354,12 @@ function AddDocument({ draft, collapsed }: { draft: DraftHook; collapsed: boolea
           <Upload size={16} aria-hidden="true" />
           {pending ? "Adding and reading…" : several ? `Add the ${files.length} files and read them` : "Add it and read it"}
         </button>
+        {collapsed && (
+          <button type="button" className="text-button" aria-disabled={pending || undefined}
+            onClick={() => { if (!pending) { focusOn.current = "more"; reset(); } }}>
+            Cancel
+          </button>
+        )}
       </p>
       {waits && <p id={`${id}-waits`} className="versions__waits">{waits}</p>}
       {failure && <p className="docpage__failure" role="alert">{errorMessage(failure)}</p>}

@@ -175,7 +175,8 @@ function SubIndex({ base, inService, draft }: { base: string; inService: boolean
     {
       label: inService ? "Versions" : "All versions",
       to: "/architecture/versions",
-      current: pathname === "/architecture/versions",
+      // Comparing two versions is part of reading them all.
+      current: pathname === "/architecture/versions" || pathname === "/architecture/compare",
       note: waiting ? `${waiting} waiting` : undefined,
     },
   ];

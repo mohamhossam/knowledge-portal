@@ -54,9 +54,10 @@ export function LibraryPage() {
   const broken = ranked.filter((item) => item.rank === "delayed" && item.document.is_owner);
   // What a knowledge admin can retry in one go, whoever owns it.
   const stopped = {
-    reading: ranked.filter((item) => item.status === "Extraction failed").length,
-    indexing: ranked.filter((item) => item.status === "Indexing stopped").length,
+    reading: ranked.filter((item) => item.status === "Extraction failed").map((item) => item.document.title),
+    indexing: ranked.filter((item) => item.status === "Indexing stopped").map((item) => item.document.title),
   };
+  const others = stopped.reading.length + stopped.indexing.length;
   const next = yours[0]
     ? {
         to: `/library/${encodeURIComponent(yours[0].document.id)}`,
@@ -66,7 +67,13 @@ export function LibraryPage() {
       }
     : broken[0]
       ? { to: `/library/${encodeURIComponent(broken[0].document.id)}`, label: `‘${broken[0].document.title}’ could not be read` }
-      : { label: documents.data ? "Nothing in the library awaits you." : "" };
+      : {
+          label: !documents.data
+            ? ""
+            : others > 0
+              ? `Nothing awaits your review. ${count(others, "document")} of other owners stopped; retry ${others === 1 ? "it" : "them"} above the table.`
+              : "Nothing in the library awaits you.",
+        };
 
   return (
     <>
@@ -82,7 +89,15 @@ export function LibraryPage() {
           key: document.id,
           rank,
           cells: {
-            name: <Link to={`/library/${encodeURIComponent(document.id)}`} dir="auto">{document.title}</Link>,
+            name: (
+              <>
+                <Link to={`/library/${encodeURIComponent(document.id)}`} dir="auto">{document.title}</Link>
+                {/* Owner and Cited by leave the grid below desktop width; they stay with the title. */}
+                <span className="secondary library__aside">
+                  {document.is_owner ? "Yours" : document.owner.display_name} · Cited by {citedBy(document.citations).toLocaleLowerCase()}
+                </span>
+              </>
+            ),
             status: <span className="status">{status}</span>,
             version: inService,
             owner: document.is_owner ? `${document.owner.display_name} (you)` : document.owner.display_name,
