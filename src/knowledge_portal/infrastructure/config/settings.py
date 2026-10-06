@@ -20,6 +20,7 @@ from smb_kernel.llm.profiles import (
 )
 
 from knowledge_portal.infrastructure.config.options import (
+    DEFAULT_ADO_IMPORT_MAX_ITEMS,
     DEFAULT_AI_JOB_POLL_INTERVAL_SECONDS,
     DEFAULT_AI_JOB_SHUTDOWN_GRACE_SECONDS,
     DEFAULT_DATABASE_POOL_MAX_SIZE,
@@ -57,6 +58,7 @@ from knowledge_portal.infrastructure.config.options import (
     DEFAULT_PRODUCT_CATALOG_CACHE_SECONDS,
     DEFAULT_PROVIDER_RATE_LIMIT_PER_MINUTE,
     DEFAULT_REQUEST_MAX_BODY_BYTES,
+    AdoProvider,
     ConfigurationError,
     IdentityProvider,
     LLMProvider,
@@ -199,6 +201,9 @@ class Settings:
     product_catalog_cache_seconds: int = DEFAULT_PRODUCT_CATALOG_CACHE_SECONDS
     # Days after its last confirmation that a document or system is due for review again.
     knowledge_review_cycle_days: int = DEFAULT_KNOWLEDGE_REVIEW_CYCLE_DAYS
+    # Where historic Requirements' breakdowns are read from, read-only (ADR-0102).
+    ado_provider: AdoProvider = AdoProvider.NONE
+    ado_import_max_items: int = DEFAULT_ADO_IMPORT_MAX_ITEMS
 
     def __post_init__(self) -> None:
         validate_settings(self)
@@ -528,7 +533,23 @@ def _operability_from_env() -> dict[str, Any]:
         "knowledge_service_token": os.getenv("KNOWLEDGE_SERVICE_TOKEN", "").strip() or None,
         **_product_catalog_from_env(),
         "knowledge_review_cycle_days": _review_cycle_from_env(),
+        **_ado_from_env(),
     }
+
+
+def _ado_from_env() -> dict[str, Any]:
+    """Knowledge Center E: the read-only Azure DevOps source of historic breakdowns."""
+    raw_provider = os.getenv("ADO_PROVIDER", "none").strip().lower() or "none"
+    raw_max = os.getenv("ADO_IMPORT_MAX_ITEMS", "").strip()
+    try:
+        provider = AdoProvider(raw_provider)
+    except ValueError as exc:
+        raise ConfigurationError("ADO_PROVIDER must be none or fake.") from exc
+    try:
+        max_items = int(raw_max) if raw_max else DEFAULT_ADO_IMPORT_MAX_ITEMS
+    except ValueError as exc:
+        raise ConfigurationError("ADO_IMPORT_MAX_ITEMS must be a whole number.") from exc
+    return {"ado_provider": provider, "ado_import_max_items": max_items}
 
 
 def _review_cycle_from_env() -> int:

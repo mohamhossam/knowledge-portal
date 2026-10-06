@@ -15,11 +15,16 @@ from knowledge_portal.application.ports.architecture_jobs import (
 )
 from knowledge_portal.domain.architecture.knowledge import KnowledgeConflictError
 
+# Each queue has its own table: `claim` takes any kind, so queues must never share one.
+QUEUE_TABLES = frozenset({"architecture_jobs", "historic_import_jobs"})
+
 
 class PostgresArchitectureJobs:
-    def __init__(self, connector: PostgresConnector) -> None:
+    def __init__(self, connector: PostgresConnector, table: str = "architecture_jobs") -> None:
+        if table not in QUEUE_TABLES:
+            raise ValueError(f"{table} is not a job queue table.")
         self._connector = connector
-        self._table = "architecture_jobs"
+        self._table = table
 
     @staticmethod
     def _job(row: tuple[object, ...]) -> ArchitectureJob:

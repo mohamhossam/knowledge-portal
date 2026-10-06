@@ -343,6 +343,24 @@
         "title": "ActorId",
         "type": "object"
       },
+      "ActorRef": {
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "display_name"
+        ],
+        "title": "ActorRef",
+        "type": "object"
+      },
       "ActorResponse": {
         "properties": {
           "display_name": {
@@ -551,7 +569,9 @@
       "ArchitectureJobKind": {
         "enum": [
           "index",
-          "extraction"
+          "extraction",
+          "historic_read_brd",
+          "historic_read_breakdown"
         ],
         "title": "ArchitectureJobKind",
         "type": "string"
@@ -650,6 +670,44 @@
           "results"
         ],
         "title": "BatchUploadResponse",
+        "type": "object"
+      },
+      "Body_add_brd_historic_requirements__historic_id__brds_post": {
+        "properties": {
+          "expected_version": {
+            "minimum": 1.0,
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file",
+          "expected_version"
+        ],
+        "title": "Body_add_brd_historic_requirements__historic_id__brds_post",
+        "type": "object"
+      },
+      "Body_import_brds_historic_requirements_batch_post": {
+        "properties": {
+          "files": {
+            "items": {
+              "contentMediaType": "application/octet-stream",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Files",
+            "type": "array"
+          }
+        },
+        "required": [
+          "files"
+        ],
+        "title": "Body_import_brds_historic_requirements_batch_post",
         "type": "object"
       },
       "Body_import_catalogue_file_architecture_knowledge_releases__release_id__catalogue_file_post": {
@@ -787,6 +845,151 @@
           "expected_revision"
         ],
         "title": "Body_upload_documents_architecture_knowledge_releases__release_id__documents_batch_post",
+        "type": "object"
+      },
+      "BrdStage": {
+        "enum": [
+          "queued",
+          "read",
+          "failed"
+        ],
+        "title": "BrdStage",
+        "type": "string"
+      },
+      "BrdView": {
+        "properties": {
+          "checksum": {
+            "title": "Checksum",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "mime_type": {
+            "title": "Mime Type",
+            "type": "string"
+          },
+          "passages": {
+            "items": {
+              "$ref": "#/components/schemas/PassageView"
+            },
+            "title": "Passages",
+            "type": "array"
+          },
+          "size_bytes": {
+            "title": "Size Bytes",
+            "type": "integer"
+          },
+          "stage": {
+            "$ref": "#/components/schemas/BrdStage"
+          },
+          "uploaded_at": {
+            "format": "date-time",
+            "title": "Uploaded At",
+            "type": "string"
+          },
+          "uploaded_by": {
+            "$ref": "#/components/schemas/ActorRef"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/ReadingWarning"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "filename",
+          "mime_type",
+          "size_bytes",
+          "checksum",
+          "uploaded_at",
+          "uploaded_by",
+          "stage",
+          "error",
+          "warnings",
+          "passages"
+        ],
+        "title": "BrdView",
+        "type": "object"
+      },
+      "BreakdownView": {
+        "properties": {
+          "epics": {
+            "title": "Epics",
+            "type": "integer"
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/ItemErrorView"
+            },
+            "title": "Errors",
+            "type": "array"
+          },
+          "features": {
+            "title": "Features",
+            "type": "integer"
+          },
+          "fetched_at": {
+            "format": "date-time",
+            "title": "Fetched At",
+            "type": "string"
+          },
+          "lineage": {
+            "items": {
+              "$ref": "#/components/schemas/LineageNodeView"
+            },
+            "title": "Lineage",
+            "type": "array"
+          },
+          "not_imported": {
+            "items": {
+              "$ref": "#/components/schemas/TypeCount"
+            },
+            "title": "Not Imported",
+            "type": "array"
+          },
+          "root_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Root Ids",
+            "type": "array"
+          },
+          "stories": {
+            "title": "Stories",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "root_ids",
+          "fetched_at",
+          "epics",
+          "features",
+          "stories",
+          "not_imported",
+          "errors",
+          "lineage"
+        ],
+        "title": "BreakdownView",
         "type": "object"
       },
       "CandidateBasis": {
@@ -3498,6 +3701,394 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "HistoricCounts": {
+        "properties": {
+          "draft": {
+            "title": "Draft",
+            "type": "integer"
+          },
+          "published": {
+            "title": "Published",
+            "type": "integer"
+          },
+          "withdrawn": {
+            "title": "Withdrawn",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "draft",
+          "published",
+          "withdrawn"
+        ],
+        "title": "HistoricCounts",
+        "type": "object"
+      },
+      "HistoricDetail": {
+        "properties": {
+          "blockers": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Blockers",
+            "type": "array"
+          },
+          "brd_files": {
+            "items": {
+              "$ref": "#/components/schemas/BrdView"
+            },
+            "title": "Brd Files",
+            "type": "array"
+          },
+          "brds": {
+            "title": "Brds",
+            "type": "integer"
+          },
+          "brds_failed": {
+            "title": "Brds Failed",
+            "type": "integer"
+          },
+          "brds_reading": {
+            "title": "Brds Reading",
+            "type": "integer"
+          },
+          "breakdown": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BreakdownView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/ActorRef"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "pending_refresh": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PendingRefreshView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "publications": {
+            "items": {
+              "$ref": "#/components/schemas/PublicationView"
+            },
+            "title": "Publications",
+            "type": "array"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "refresh_waiting": {
+            "title": "Refresh Waiting",
+            "type": "boolean"
+          },
+          "root_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Root Ids",
+            "type": "array"
+          },
+          "run": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "run_failure": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Failure"
+          },
+          "run_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/HistoricStatus"
+          },
+          "suggestions": {
+            "items": {
+              "$ref": "#/components/schemas/SuggestionView"
+            },
+            "title": "Suggestions",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          },
+          "withdrawal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WithdrawalView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "withdrawn_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withdrawn At"
+          },
+          "work_items": {
+            "title": "Work Items",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "status",
+          "version",
+          "created_at",
+          "created_by",
+          "brds",
+          "brds_reading",
+          "brds_failed",
+          "work_items",
+          "run_status",
+          "run_failure",
+          "refresh_waiting",
+          "published_at",
+          "withdrawn_at",
+          "brd_files",
+          "root_ids",
+          "suggestions",
+          "run",
+          "breakdown",
+          "pending_refresh",
+          "publications",
+          "withdrawal",
+          "blockers"
+        ],
+        "title": "HistoricDetail",
+        "type": "object"
+      },
+      "HistoricImportResponse": {
+        "description": "Each BRD of a batch: started as a draft, or refused with why. `version_id` is its id.",
+        "properties": {
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/FileResult"
+            },
+            "title": "Results",
+            "type": "array"
+          }
+        },
+        "required": [
+          "results"
+        ],
+        "title": "HistoricImportResponse",
+        "type": "object"
+      },
+      "HistoricPageResponse": {
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/HistoricCounts"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/HistoricSummary"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          }
+        },
+        "required": [
+          "items",
+          "next_offset",
+          "counts"
+        ],
+        "title": "HistoricPageResponse",
+        "type": "object"
+      },
+      "HistoricStatus": {
+        "enum": [
+          "draft",
+          "published",
+          "withdrawn"
+        ],
+        "title": "HistoricStatus",
+        "type": "string"
+      },
+      "HistoricSummary": {
+        "description": "One row of the historic list: where it stands, without its content.",
+        "properties": {
+          "brds": {
+            "title": "Brds",
+            "type": "integer"
+          },
+          "brds_failed": {
+            "title": "Brds Failed",
+            "type": "integer"
+          },
+          "brds_reading": {
+            "title": "Brds Reading",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/ActorRef"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "refresh_waiting": {
+            "title": "Refresh Waiting",
+            "type": "boolean"
+          },
+          "run_failure": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Failure"
+          },
+          "run_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/HistoricStatus"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          },
+          "withdrawn_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withdrawn At"
+          },
+          "work_items": {
+            "title": "Work Items",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "status",
+          "version",
+          "created_at",
+          "created_by",
+          "brds",
+          "brds_reading",
+          "brds_failed",
+          "work_items",
+          "run_status",
+          "run_failure",
+          "refresh_waiting",
+          "published_at",
+          "withdrawn_at"
+        ],
+        "title": "HistoricSummary",
+        "type": "object"
+      },
       "IdentityConfigResponse": {
         "properties": {
           "audience": {
@@ -3804,6 +4395,68 @@
           "cancelled"
         ],
         "title": "IngestionStage",
+        "type": "string"
+      },
+      "ItemChangeView": {
+        "properties": {
+          "fields": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Fields",
+            "type": "array"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ChangeKind"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "work_item_id": {
+            "title": "Work Item Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "work_item_id",
+          "title",
+          "fields"
+        ],
+        "title": "ItemChangeView",
+        "type": "object"
+      },
+      "ItemErrorView": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "problem": {
+            "$ref": "#/components/schemas/ItemProblem"
+          },
+          "work_item_id": {
+            "title": "Work Item Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "work_item_id",
+          "problem",
+          "detail"
+        ],
+        "title": "ItemErrorView",
+        "type": "object"
+      },
+      "ItemProblem": {
+        "enum": [
+          "not_found",
+          "not_permitted",
+          "unsupported_type",
+          "over_limit"
+        ],
+        "title": "ItemProblem",
         "type": "string"
       },
       "JourneyEdgeResponse": {
@@ -5232,6 +5885,52 @@
         "title": "LifecycleNoteSchema",
         "type": "object"
       },
+      "LineageNodeView": {
+        "properties": {
+          "children": {
+            "items": {
+              "$ref": "#/components/schemas/LineageNodeView"
+            },
+            "title": "Children",
+            "type": "array"
+          },
+          "item": {
+            "$ref": "#/components/schemas/WorkItemView"
+          }
+        },
+        "required": [
+          "item",
+          "children"
+        ],
+        "title": "LineageNodeView",
+        "type": "object"
+      },
+      "LinkRequest": {
+        "properties": {
+          "expected_version": {
+            "minimum": 1.0,
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "root_ids": {
+            "items": {
+              "maximum": 2147483647.0,
+              "minimum": 1.0,
+              "type": "integer"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Root Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "expected_version",
+          "root_ids"
+        ],
+        "title": "LinkRequest",
+        "type": "object"
+      },
       "LoginChoiceResponse": {
         "properties": {
           "authorization_parameters": {
@@ -6210,6 +6909,57 @@
         "title": "PassageResponse",
         "type": "object"
       },
+      "PassageView": {
+        "properties": {
+          "block_id": {
+            "title": "Block Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "section_path": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Section Path",
+            "type": "array"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "block_id",
+          "label",
+          "section_path",
+          "text"
+        ],
+        "title": "PassageView",
+        "type": "object"
+      },
+      "PendingRefreshView": {
+        "properties": {
+          "breakdown": {
+            "$ref": "#/components/schemas/BreakdownView"
+          },
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/ItemChangeView"
+            },
+            "title": "Changes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "breakdown",
+          "changes"
+        ],
+        "title": "PendingRefreshView",
+        "type": "object"
+      },
       "PersonNameResponse": {
         "description": "An id and a display name; never an email.",
         "properties": {
@@ -6924,6 +7674,34 @@
         "title": "Publication",
         "type": "object"
       },
+      "PublicationView": {
+        "properties": {
+          "fingerprint": {
+            "title": "Fingerprint",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "published_at": {
+            "format": "date-time",
+            "title": "Published At",
+            "type": "string"
+          },
+          "published_by": {
+            "$ref": "#/components/schemas/ActorRef"
+          }
+        },
+        "required": [
+          "number",
+          "published_at",
+          "published_by",
+          "fingerprint"
+        ],
+        "title": "PublicationView",
+        "type": "object"
+      },
       "PublishRequest": {
         "properties": {
           "expected_revision": {
@@ -7014,6 +7792,40 @@
           "lineage_hash"
         ],
         "title": "PublishedReference",
+        "type": "object"
+      },
+      "ReadingWarning": {
+        "properties": {
+          "block_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Block Id"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "severity": {
+            "title": "Severity",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "severity",
+          "message"
+        ],
+        "title": "ReadingWarning",
         "type": "object"
       },
       "RealisationLayer": {
@@ -7371,6 +8183,27 @@
         "title": "RemovalRequest",
         "type": "object"
       },
+      "RenameRequest": {
+        "properties": {
+          "expected_version": {
+            "minimum": 1.0,
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_version",
+          "title"
+        ],
+        "title": "RenameRequest",
+        "type": "object"
+      },
       "RenameVersionRequest": {
         "properties": {
           "expected_revision": {
@@ -7713,6 +8546,106 @@
           "expected_revision"
         ],
         "title": "RevisionRequest",
+        "type": "object"
+      },
+      "RunKind": {
+        "enum": [
+          "fetch",
+          "refresh"
+        ],
+        "title": "RunKind",
+        "type": "string"
+      },
+      "RunStatus": {
+        "enum": [
+          "queued",
+          "running",
+          "succeeded",
+          "failed"
+        ],
+        "title": "RunStatus",
+        "type": "string"
+      },
+      "RunView": {
+        "properties": {
+          "done": {
+            "title": "Done",
+            "type": "integer"
+          },
+          "failure": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "item_errors": {
+            "items": {
+              "$ref": "#/components/schemas/ItemErrorView"
+            },
+            "title": "Item Errors",
+            "type": "array"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/RunKind"
+          },
+          "root_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Root Ids",
+            "type": "array"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "started_by": {
+            "$ref": "#/components/schemas/ActorRef"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RunStatus"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "root_ids",
+          "started_at",
+          "started_by",
+          "done",
+          "total",
+          "item_errors",
+          "failure",
+          "finished_at"
+        ],
+        "title": "RunView",
         "type": "object"
       },
       "SampleRequirementSchema": {
@@ -8076,6 +9009,34 @@
           "accept"
         ],
         "title": "SuggestionDecisionRequest",
+        "type": "object"
+      },
+      "SuggestionView": {
+        "properties": {
+          "block_id": {
+            "title": "Block Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "quote": {
+            "title": "Quote",
+            "type": "string"
+          },
+          "work_item_id": {
+            "title": "Work Item Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "work_item_id",
+          "block_id",
+          "label",
+          "quote"
+        ],
+        "title": "SuggestionView",
         "type": "object"
       },
       "SystemComponentSchema": {
@@ -8666,6 +9627,24 @@
         "title": "TrackingFlowSchema",
         "type": "object"
       },
+      "TypeCount": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "count"
+        ],
+        "title": "TypeCount",
+        "type": "object"
+      },
       "UploadOutcome": {
         "enum": [
           "added",
@@ -8817,6 +9796,150 @@
           "uploaded_by"
         ],
         "title": "VersionOutline",
+        "type": "object"
+      },
+      "Versioned": {
+        "properties": {
+          "expected_version": {
+            "minimum": 1.0,
+            "title": "Expected Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_version"
+        ],
+        "title": "Versioned",
+        "type": "object"
+      },
+      "WithdrawRequest": {
+        "properties": {
+          "expected_version": {
+            "minimum": 1.0,
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_version",
+          "reason"
+        ],
+        "title": "WithdrawRequest",
+        "type": "object"
+      },
+      "WithdrawalView": {
+        "properties": {
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "withdrawn_at": {
+            "format": "date-time",
+            "title": "Withdrawn At",
+            "type": "string"
+          },
+          "withdrawn_by": {
+            "$ref": "#/components/schemas/ActorRef"
+          }
+        },
+        "required": [
+          "withdrawn_at",
+          "withdrawn_by",
+          "reason"
+        ],
+        "title": "WithdrawalView",
+        "type": "object"
+      },
+      "WorkItemType": {
+        "enum": [
+          "epic",
+          "feature",
+          "user_story"
+        ],
+        "title": "WorkItemType",
+        "type": "string"
+      },
+      "WorkItemView": {
+        "properties": {
+          "acceptance_criteria": {
+            "title": "Acceptance Criteria",
+            "type": "string"
+          },
+          "area_path": {
+            "title": "Area Path",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "iteration_path": {
+            "title": "Iteration Path",
+            "type": "string"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/WorkItemType"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "title",
+          "state",
+          "revision",
+          "url",
+          "description",
+          "acceptance_criteria",
+          "area_path",
+          "iteration_path",
+          "tags",
+          "parent_id"
+        ],
+        "title": "WorkItemView",
         "type": "object"
       }
     },
@@ -12116,6 +13239,974 @@
           }
         },
         "summary": "Health"
+      }
+    },
+    "/historic-requirements": {
+      "get": {
+        "description": "Newest first, with how many there are in each state.",
+        "operationId": "list_historic_historic_requirements_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "draft",
+                    "published",
+                    "withdrawn"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 200,
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoricPageResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Historic",
+        "tags": [
+          "historic requirements"
+        ]
+      }
+    },
+    "/historic-requirements/batch": {
+      "post": {
+        "description": "Up to twenty BRDs (Word or PDF): each starts its own draft, or is refused with why.",
+        "operationId": "import_brds_historic_requirements_batch_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_brds_historic_requirements_batch_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoricImportResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Import Brds",
+        "tags": [
+          "historic requirements"
+        ]
+      }
+    },
+    "/historic-requirements/{historic_id}": {
+      "delete": {
+        "description": "Remove a draft that was never published, with its files.",
+        "operationId": "discard_historic_historic_requirements__historic_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "historic_id",
+            "required": true,
+            "schema": {
+              "title": "Historic Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_version",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "title": "Expected Version",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Discard Historic",
+        "tags": [
+          "historic requirements"
+        ]
+      },
+      "get": {
+        "operationId": "get_historic_historic_requirements__historic_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "historic_id",
+            "required": true,
+            "schema": {
+              "title": "Historic Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoricDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Historic",
+        "tags": [
+          "historic requirements"
+        ]
+      },
+      "patch": {
+        "operationId": "rename_historic_historic_requirements__historic_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "historic_id",
+            "required": true,
+            "schema": {
+              "title": "Historic Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoricDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Rename Historic",
+        "tags": [
+          "historic requirements"
+        ]
+      }
+    },
+    "/historic-requirements/{historic_id}/brds": {
+      "post": {
+        "operationId": "add_brd_historic_requirements__historic_id__brds_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "historic_id",
+            "required": true,
+            "schema": {
+              "title": "Historic Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_add_brd_historic_requirements__historic_id__brds_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoricDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Add Brd",
+        "tags": [
+          "historic requirements"
+        ]
+      }
+    },
+    "/historic-requirements/{historic_id}/brds/{brd_id}/reading": {
+      "post": {
+        "operationId": "read_brd_again_historic_requirements__historic_id__brds__brd_id__reading_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "historic_id",
+            "required": true,
+            "schema": {
+              "title": "Historic Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "brd_id",
+            "required": true,
+            "schema": {
+              "title": "Brd Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Versioned"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoricDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Read Brd Again",
+        "tags": [
+          "historic requirements"
+        ]
+      }
+    },
+    "/historic-requirements/{historic_id}/publication": {
+      "post": {
+        "operationId": "publish_historic_historic_requirements__historic_id__publication_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "historic_id",
+            "required": true,
+            "schema": {
+              "title": "Historic Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Versioned"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoricDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Publish Historic",
+        "tags": [
+          "historic requirements"
+        ]
+      }
+    },
+    "/historic-requirements/{historic_id}/refresh": {
+      "delete": {
+        "operationId": "discard_refresh_historic_requirements__historic_id__refresh_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "historic_id",
+            "required": true,
+            "schema": {
+              "title": "Historic Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_version",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "title": "Expected Version",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoricDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Discard Refresh",
+        "tags": [
+          "historic requirements"
+        ]
+      },
+      "post": {
+        "description": "Read a published breakdown again; what changed waits to be accepted or discarded.",
+        "operationId": "refresh_historic_historic_requirements__historic_id__refresh_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "historic_id",
+            "required": true,
+            "schema": {
+              "title": "Historic Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Versioned"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoricDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Refresh Historic",
+        "tags": [
+          "historic requirements"
+        ]
+      }
+    },
+    "/historic-requirements/{historic_id}/refresh/acceptance": {
+      "post": {
+        "operationId": "accept_refresh_historic_requirements__historic_id__refresh_acceptance_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "historic_id",
+            "required": true,
+            "schema": {
+              "title": "Historic Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Versioned"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoricDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Accept Refresh",
+        "tags": [
+          "historic requirements"
+        ]
+      }
+    },
+    "/historic-requirements/{historic_id}/withdrawal": {
+      "post": {
+        "operationId": "withdraw_historic_historic_requirements__historic_id__withdrawal_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "historic_id",
+            "required": true,
+            "schema": {
+              "title": "Historic Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WithdrawRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoricDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Withdraw Historic",
+        "tags": [
+          "historic requirements"
+        ]
+      }
+    },
+    "/historic-requirements/{historic_id}/work-items": {
+      "put": {
+        "description": "Name its root work items, and read the breakdown beneath them from Azure DevOps.",
+        "operationId": "link_work_items_historic_requirements__historic_id__work_items_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "historic_id",
+            "required": true,
+            "schema": {
+              "title": "Historic Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoricDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Link Work Items",
+        "tags": [
+          "historic requirements"
+        ]
       }
     },
     "/identity/actors": {

@@ -15,6 +15,10 @@ _KEY_SEPARATOR = "|"
 class ArchitectureJobKind(StrEnum):
     INDEX = "index"
     EXTRACTION = "extraction"
+    # Historic imports (Knowledge Center E), on their own queue: reading a BRD, and reading
+    # a breakdown from Azure DevOps (a first read, or a refresh).
+    HISTORIC_READ_BRD = "historic_read_brd"
+    HISTORIC_READ_BREAKDOWN = "historic_read_breakdown"
 
 
 class ArchitectureJobStatus(StrEnum):

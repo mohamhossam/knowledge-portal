@@ -43,6 +43,7 @@ from knowledge_portal.application.use_cases.catalogue_candidates import (
     DecideCatalogueCandidate,
 )
 from knowledge_portal.application.use_cases.document_library import DocumentLibrary
+from knowledge_portal.application.use_cases.historic_requirements import HistoricImports
 from knowledge_portal.application.use_cases.identity_access import SearchKnownActors
 from knowledge_portal.application.use_cases.knowledge_reviews import (
     ConfirmLibraryReview,
@@ -222,6 +223,10 @@ def get_manage_organisation_catalogue(container: ContainerDep) -> ManageOrganisa
 
 def get_decide_catalogue_candidates(container: ContainerDep) -> DecideCatalogueCandidate:
     return container.decide_catalogue_candidates
+
+
+def get_historic_imports(container: ContainerDep) -> HistoricImports:
+    return container.historic_imports
 
 
 def get_architecture_jobs(container: ContainerDep) -> ArchitectureJobs:

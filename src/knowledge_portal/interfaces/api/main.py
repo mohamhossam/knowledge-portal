@@ -24,6 +24,7 @@ from knowledge_portal.interfaces.api.routes.architecture_knowledge import (
     router as architecture_knowledge_router,
 )
 from knowledge_portal.interfaces.api.routes.explorer import router as explorer_router
+from knowledge_portal.interfaces.api.routes.historic import router as historic_router
 from knowledge_portal.interfaces.api.routes.identity import (
     public_router as public_identity_router,
 )
@@ -226,6 +227,7 @@ def create_app(container_factory: Callable[[], Container] = build_container) -> 
         explorer_router,
         knowledge_center_router,
         reviews_router,
+        historic_router,
     ):
         application.include_router(router)
     application.include_router(internal_router, include_in_schema=False)

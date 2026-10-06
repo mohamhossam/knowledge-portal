@@ -13,6 +13,9 @@ from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge
 
 REFERENCE_DOCUMENT_CHANGED = "reference_document_changed"
 ARCHITECTURE_RELEASE_ACTIVATED = "architecture_release_activated"
+# A historic Requirement was published, published again after a refresh, or withdrawn
+# (Knowledge Center E, ADR-0102). Its payload is `HistoricRequirement.citable_state()`.
+HISTORIC_REQUIREMENT_CHANGED = "historic_requirement_changed"
 
 
 def activation(release: ArchitectureKnowledge) -> dict[str, object]:

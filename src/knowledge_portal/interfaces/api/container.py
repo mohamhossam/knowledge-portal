@@ -76,6 +76,10 @@ from knowledge_portal.application.use_cases.change_requests import (
 )
 from knowledge_portal.application.use_cases.cited_passages import CitedPassages
 from knowledge_portal.application.use_cases.document_library import DocumentLibrary
+from knowledge_portal.application.use_cases.historic_requirements import (
+    HistoricImportJobs,
+    HistoricImports,
+)
 from knowledge_portal.application.use_cases.identity_access import (
     ResolveCurrentActor,
     ResolveSignedInActor,
@@ -137,6 +141,7 @@ from knowledge_portal.interfaces.api.composition.architecture import (
     build_architecture,
     build_architecture_retrieval,
 )
+from knowledge_portal.interfaces.api.composition.historic import build_historic
 from knowledge_portal.interfaces.api.composition.identity import build_identity
 from knowledge_portal.interfaces.api.composition.llm import build_llm_adapters
 from knowledge_portal.interfaces.api.composition.persistence import build_persistence
@@ -211,6 +216,9 @@ class Container:
     read_change_request: ReadChangeRequestIntoDraft
     dismiss_change_request: DismissChangeRequest
     architecture_jobs: ArchitectureJobs
+    # Historic Requirements and their import queue (Knowledge Center E, ADR-0102).
+    historic_imports: HistoricImports
+    historic_jobs: HistoricImportJobs
     background_workers: Mapping[str, BackgroundWorker]
 
 
@@ -285,13 +293,18 @@ def _build_container(
         _embedding_identity(settings),
         stewardship,
     )
+    # One bounded extractor and one scanner, shared by the library and historic imports.
+    extractor = _library_extractor(settings)
+    scanner = (
+        OfflineDocumentScanner()
+        if settings.library_scan_mode == "offline"
+        else ClamAvDocumentScanner(settings.library_scanner_host, settings.library_scanner_port)
+    )
     library = DocumentLibrary(
         persistence.library_repository,
         persistence.document_storage,
-        _library_extractor(settings),
-        OfflineDocumentScanner()
-        if settings.library_scan_mode == "offline"
-        else ClamAvDocumentScanner(settings.library_scanner_host, settings.library_scanner_port),
+        extractor,
+        scanner,
         persistence.transaction_manager,
         clock,
         settings.document_max_file_bytes,
@@ -299,8 +312,10 @@ def _build_container(
         requirement_work.citations,
         timedelta(days=settings.knowledge_review_cycle_days),
     )
+    historic = build_historic(settings, persistence, clock, extractor, scanner)
     workers: dict[str, BackgroundWorker] = {
-        "document_worker": DocumentIngestionWorker(library, reference_knowledge)
+        "document_worker": DocumentIngestionWorker(library, reference_knowledge),
+        "historic_import_worker": historic.worker,
     }
     if architecture.worker is not None:
         workers["architecture_job_worker"] = architecture.worker
@@ -391,6 +406,8 @@ def _build_container(
         read_change_request=architecture.read_change_request,
         dismiss_change_request=architecture.dismiss_change_request,
         architecture_jobs=architecture.jobs,
+        historic_imports=historic.imports,
+        historic_jobs=historic.jobs,
         background_workers=workers,
     )
 
