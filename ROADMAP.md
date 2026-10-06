@@ -1,13 +1,13 @@
 # ROADMAP.md — knowledge-portal
 
-## Delivery status — 2026-10-05
+## Delivery status — 2026-10-06
 
 | Scope | Status | Remaining |
 |---|---|---|
 | Stage 0: repository scaffolding (`AGENTS.md`, `CLAUDE.md`, `ROADMAP.md`, `UPSTREAM.md`) | Done; CI arrived with 3.4 | Branch protection on `main`, and the `KERNEL_READ_TOKEN` secret |
 | Stage 3: the service | Done: the backend (3.1 to 3.4, and the owner's source-impact view), the UI foundation and front page, and the curation screens for the library, the architecture catalogue and the squads ([#11](https://github.com/mohamhossam/knowledge-portal/pull/11)–[#18](https://github.com/mohamhossam/knowledge-portal/pull/18)) | — |
 | The Product Architecture Explorer (requirement-portal ADR-0101, steps 1–7) | Done 2026-10-05: the explorer on the version in service for anyone signed in, channels, plans and prices (TMF620), realisation, NFRs, tracking and lifecycle notes, source levels and conflicts, the Solution Architecture `.docx`, and change requests from Requirement AI ([#22](https://github.com/mohamhossam/knowledge-portal/pull/22)–[#36](https://github.com/mohamhossam/knowledge-portal/pull/36); `UPSTREAM.md` names each) | Live-model extraction checks, and a live TMF620 catalog |
-| Knowledge Center sub-slices B–E (from requirement-portal's `docs/slices/enhancement-knowledge-center.md`) | Specified; not scheduled | Sequencing after Stage 3 |
+| Knowledge Center (requirement-portal's `docs/slices/enhancement-knowledge-center.md`, ADR-0099 Amendment 1) | **Re-planned 2026-10-06.** A is mostly delivered by this portal; F (catalogue suggestions) is delivered. Each remaining sub-slice is built where its data lives. **Here:** A′ (front page: freshness, catalogue failures, Requirement-corpus health), the screens for B2 (corpus browser, portfolio findings, nudges) and B3 (retire, reinstate, bulk reindex) over requirement-portal's new internal routes, C (admin reassign and withdraw, bulk retry, multi-file upload, any-two version comparison, `.doc` message, citation counts), D (review cycles with this portal's own reminders), and E's import screens. **In requirement-portal:** B1 (attachments in the requirement corpus), which is scheduled first, and the data and rules for B2 and B3 | B1 lands in requirement-portal first; then A′, B2, B3, C, D; E is unscheduled until its four open questions are answered |
 
 ## Stage 3 — The service
 
