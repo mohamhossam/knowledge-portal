@@ -28,6 +28,8 @@ deploy/keycloak/certs/*.crt
 deploy/keycloak/certs/*.key
 # Operator secrets for the reference deployment; see deploy/production.env.example.
 deploy/production.env
+# Settings for the local Docker stack (deploy/compose.local.yaml).
+deploy/local.env
 # Installed by the Impeccable skill; platform binaries, not source.
 .agents/skills/*/scripts/bin/
 .claude/skills/*/scripts/bin/
