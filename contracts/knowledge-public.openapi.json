@@ -631,6 +631,27 @@
         "title": "ArchitectureJobStatus",
         "type": "string"
       },
+      "BatchUploadResponse": {
+        "description": "Several files into a draft: the draft after them, and what became of each (C).",
+        "properties": {
+          "release": {
+            "$ref": "#/components/schemas/KnowledgeReleaseResponse"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/FileResult"
+            },
+            "title": "Results",
+            "type": "array"
+          }
+        },
+        "required": [
+          "release",
+          "results"
+        ],
+        "title": "BatchUploadResponse",
+        "type": "object"
+      },
       "Body_import_catalogue_file_architecture_knowledge_releases__release_id__catalogue_file_post": {
         "properties": {
           "expected_revision": {
@@ -737,6 +758,35 @@
           "expected_revision"
         ],
         "title": "Body_upload_document_architecture_knowledge_releases__release_id__documents_post",
+        "type": "object"
+      },
+      "Body_upload_documents_architecture_knowledge_releases__release_id__documents_batch_post": {
+        "properties": {
+          "expected_revision": {
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "files": {
+            "items": {
+              "contentMediaType": "application/octet-stream",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Files",
+            "type": "array"
+          },
+          "language": {
+            "maxLength": 20,
+            "title": "Language",
+            "type": "string"
+          }
+        },
+        "required": [
+          "files",
+          "language",
+          "expected_revision"
+        ],
+        "title": "Body_upload_documents_architecture_knowledge_releases__release_id__documents_batch_post",
         "type": "object"
       },
       "CandidateBasis": {
@@ -3236,6 +3286,56 @@
         "title": "FalloutCaseSchema",
         "type": "object"
       },
+      "FileResult": {
+        "properties": {
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/UploadOutcome"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Id"
+          }
+        },
+        "required": [
+          "filename",
+          "outcome"
+        ],
+        "title": "FileResult",
+        "type": "object"
+      },
       "FindingAge": {
         "enum": [
           "under_7_days",
@@ -4674,6 +4774,31 @@
         "title": "LibraryOwnershipRequest",
         "type": "object"
       },
+      "LibraryRetryResult": {
+        "properties": {
+          "documents": {
+            "title": "Documents",
+            "type": "integer"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/LibraryRetryScope"
+          }
+        },
+        "required": [
+          "scope",
+          "documents"
+        ],
+        "title": "LibraryRetryResult",
+        "type": "object"
+      },
+      "LibraryRetryScope": {
+        "enum": [
+          "reading",
+          "indexing"
+        ],
+        "title": "LibraryRetryScope",
+        "type": "string"
+      },
       "LibraryReviewRequest": {
         "properties": {
           "expected_version": {
@@ -4886,6 +5011,17 @@
           "can_edit": {
             "title": "Can Edit",
             "type": "boolean"
+          },
+          "citations": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Citations"
           },
           "id": {
             "title": "Id",
@@ -8254,6 +8390,14 @@
         "title": "TrackingFlowSchema",
         "type": "object"
       },
+      "UploadOutcome": {
+        "enum": [
+          "added",
+          "refused"
+        ],
+        "title": "UploadOutcome",
+        "type": "string"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -9757,6 +9901,7 @@
     },
     "/architecture-knowledge/releases/{release_id}/changes": {
       "get": {
+        "description": "What changed from `base` (the version in service when omitted) to this release.",
         "operationId": "release_changes_architecture_knowledge_releases__release_id__changes_get",
         "parameters": [
           {
@@ -9766,6 +9911,24 @@
             "schema": {
               "title": "Release Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "base",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Base"
             }
           },
           {
@@ -10031,6 +10194,80 @@
           }
         ],
         "summary": "Select Documents",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
+    "/architecture-knowledge/releases/{release_id}/documents/batch": {
+      "post": {
+        "description": "Up to twenty files into a draft at once; each is added or refused with its reason.",
+        "operationId": "upload_documents_architecture_knowledge_releases__release_id__documents_batch_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_documents_architecture_knowledge_releases__release_id__documents_batch_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchUploadResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Upload Documents",
         "tags": [
           "architecture knowledge"
         ]
@@ -14190,6 +14427,116 @@
           }
         ],
         "summary": "Submit",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/library/retry/indexing": {
+      "post": {
+        "description": "Index again every approval whose indexing stopped; counted like a per-document retry.",
+        "operationId": "retry_every_stopped_index_library_retry_indexing_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryRetryResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Retry Every Stopped Index",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/library/retry/reading": {
+      "post": {
+        "description": "Read again every document whose newest version's reading failed, whoever owns it.",
+        "operationId": "retry_every_failed_reading_library_retry_reading_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryRetryResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Retry Every Failed Reading",
         "tags": [
           "library"
         ]

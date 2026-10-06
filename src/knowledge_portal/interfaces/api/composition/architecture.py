@@ -16,6 +16,7 @@ from knowledge_portal.application.ports.architecture_tokenizer import Architectu
 from knowledge_portal.application.ports.embedding import KnowledgeEmbeddingPort
 from knowledge_portal.application.use_cases.architecture_documents import (
     ReadKnowledgeDocument,
+    UploadArchitectureDocuments,
     UploadKnowledgeDocument,
 )
 from knowledge_portal.application.use_cases.architecture_index import BuildArchitectureIndex
@@ -78,6 +79,7 @@ class ArchitectureWiring:
     build_index: BuildArchitectureIndex
     preview_impact: PreviewArchitectureImpact
     upload_document: UploadKnowledgeDocument
+    upload_documents: UploadArchitectureDocuments
     read_document: ReadKnowledgeDocument
     decide_candidates: DecideCatalogueCandidate
     # Change requests from Requirement AI (requirement-portal ADR-0101, step 7).
@@ -113,6 +115,13 @@ def build_architecture(
     )
     document_extractor = SafeDocumentTextExtractor()
     located_extractor = LocatedDocumentExtractor(document_extractor)
+    upload = UploadKnowledgeDocument(
+        manage,
+        persistence.architecture_repository,
+        persistence.document_storage,
+        document_extractor,
+        settings.document_max_file_bytes,
+    )
     build_index = BuildArchitectureIndex(
         manage,
         persistence.architecture_evidence_index,
@@ -159,13 +168,8 @@ def build_architecture(
         preview_impact=PreviewArchitectureImpact(
             manage, persistence.architecture_evidence_index, reasoner
         ),
-        upload_document=UploadKnowledgeDocument(
-            manage,
-            persistence.architecture_repository,
-            persistence.document_storage,
-            document_extractor,
-            settings.document_max_file_bytes,
-        ),
+        upload_document=upload,
+        upload_documents=UploadArchitectureDocuments(upload, manage),
         read_document=ReadKnowledgeDocument(
             manage, persistence.document_storage, located_extractor
         ),

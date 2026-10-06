@@ -11,14 +11,19 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, File, Form, Query, Response, UploadFile
 from pydantic import BaseModel
 from smb_kernel.time.clock import ClockPort
+from starlette.concurrency import run_in_threadpool
 
+from knowledge_portal.application.errors import UnsupportedDocumentError
 from knowledge_portal.application.ports.catalogue_file import CatalogueFileFormat
 from knowledge_portal.application.use_cases.architecture_comparison import (
     CompareArchitectureImpact,
     ManageSampleRequirements,
 )
 from knowledge_portal.application.use_cases.architecture_documents import (
+    MAX_BATCH_FILES,
+    IncomingFile,
     ReadKnowledgeDocument,
+    UploadArchitectureDocuments,
     UploadKnowledgeDocument,
 )
 from knowledge_portal.application.use_cases.architecture_jobs import ArchitectureJobs
@@ -47,6 +52,7 @@ from knowledge_portal.interfaces.api.dependencies import (
     get_preview_architecture_impact,
     get_read_knowledge_document,
     get_report_mapping_impact,
+    get_upload_architecture_documents,
     get_upload_knowledge_document,
     limit_provider_calls,
 )
@@ -54,6 +60,7 @@ from knowledge_portal.interfaces.api.schemas.architecture_knowledge import (
     AcceptAllResponse,
     ActivateRequest,
     ArchitectureJobResponse,
+    BatchUploadResponse,
     CatalogueDiffResponse,
     CatalogueSuggestionsResponse,
     CreateVersionRequest,
@@ -327,9 +334,13 @@ async def import_catalogue_file(
 
 @router.get("/releases/{release_id}/changes", response_model=CatalogueDiffResponse)
 def release_changes(
-    release_id: str, knowledge: KnowledgeDep, actor: KnowledgeActorDep
+    release_id: str,
+    knowledge: KnowledgeDep,
+    actor: KnowledgeActorDep,
+    base: Annotated[str | None, Query(min_length=1, max_length=200)] = None,
 ) -> CatalogueDiffResponse:
-    return CatalogueDiffResponse.from_domain(knowledge.changes(release_id, actor))
+    """What changed from `base` (the version in service when omitted) to this release."""
+    return CatalogueDiffResponse.from_domain(knowledge.changes(release_id, actor, base))
 
 
 def _file_response(content: bytes, file_format: CatalogueFileFormat, name: str) -> Response:
@@ -370,6 +381,38 @@ async def upload_document(
             clock.now(),
         )
     )
+
+
+@router.post(
+    "/releases/{release_id}/documents/batch", response_model=BatchUploadResponse, status_code=201
+)
+async def upload_documents(
+    release_id: str,
+    actor: KnowledgeActorDep,
+    clock: ClockDep,
+    use_case: Annotated[UploadArchitectureDocuments, Depends(get_upload_architecture_documents)],
+    files: Annotated[list[UploadFile], File(max_length=MAX_BATCH_FILES)],
+    language: Annotated[str, Form(max_length=20)],
+    expected_revision: Annotated[int, Form()],
+) -> BatchUploadResponse:
+    """Up to twenty files into a draft at once; each is added or refused with its reason."""
+    if len(files) > MAX_BATCH_FILES:
+        raise UnsupportedDocumentError(f"Choose at most {MAX_BATCH_FILES} files at a time.")
+    incoming = []
+    for file in files:
+        # One byte past the limit is enough for validation to refuse an oversized file.
+        content = await file.read(use_case.max_bytes + 1)
+        incoming.append(IncomingFile(file.filename or "", file.content_type or "", content))
+    result = await run_in_threadpool(
+        use_case.execute,
+        release_id,
+        expected_revision,
+        tuple(incoming),
+        language,
+        actor,
+        clock.now(),
+    )
+    return BatchUploadResponse.from_domain(result)
 
 
 @router.put("/releases/{release_id}/documents", response_model=KnowledgeReleaseResponse)

@@ -18,6 +18,11 @@ from knowledge_portal.application.use_cases.document_library import (
 )
 from knowledge_portal.application.use_cases.documents import UploadDocumentInput
 from knowledge_portal.application.use_cases.library_admin import AdministerLibraryDocument
+from knowledge_portal.application.use_cases.library_bulk import (
+    BulkRetryLibrary,
+    LibraryRetryResult,
+    LibraryRetryScope,
+)
 from knowledge_portal.application.use_cases.library_governance import (
     LibraryDependencyPage,
     LibraryGovernance,
@@ -39,6 +44,7 @@ from knowledge_portal.interfaces.api.dependencies import (
     get_document_source_impact,
     get_library_admin,
     get_library_governance,
+    get_library_retry,
     get_reference_knowledge,
     limit_provider_calls,
     require_authenticated_actor,
@@ -52,6 +58,7 @@ KnowledgeDep = Annotated[ReferenceKnowledge, Depends(get_reference_knowledge)]
 GovernanceDep = Annotated[LibraryGovernance, Depends(get_library_governance)]
 ImpactDep = Annotated[DocumentSourceImpact, Depends(get_document_source_impact)]
 AdminDep = Annotated[AdministerLibraryDocument, Depends(get_library_admin)]
+RetryDep = Annotated[BulkRetryLibrary, Depends(get_library_retry)]
 
 
 @router.get("/documents/{document_id}/source-impact")
@@ -148,6 +155,18 @@ def admin_record(
 ) -> tuple[LibraryAdminRecord, ...]:
     """Every override and bulk action that touched this document, newest first."""
     return service.history(document_id, actor)
+
+
+@router.post("/retry/reading", status_code=202)
+def retry_every_failed_reading(service: RetryDep, actor: CurrentActorDep) -> LibraryRetryResult:
+    """Read again every document whose newest version's reading failed, whoever owns it."""
+    return service.execute(LibraryRetryScope.READING, actor)
+
+
+@router.post("/retry/indexing", status_code=202, dependencies=[Depends(limit_provider_calls)])
+def retry_every_stopped_index(service: RetryDep, actor: CurrentActorDep) -> LibraryRetryResult:
+    """Index again every approval whose indexing stopped; counted like a per-document retry."""
+    return service.execute(LibraryRetryScope.INDEXING, actor)
 
 
 @router.get("/documents/{document_id}/ownership/history")

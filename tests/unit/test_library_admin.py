@@ -8,7 +8,7 @@ state before and after. Builds stay with the owner.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from threading import RLock
 
@@ -16,6 +16,7 @@ import pytest
 from smb_kernel.documents.text_extractor import SafeDocumentTextExtractor
 from smb_kernel.time.fixed import FixedClock
 
+from knowledge_portal.application.errors import ServiceUnavailableError
 from knowledge_portal.application.ports.library_admin import LibraryAdminAction
 from knowledge_portal.application.ports.requirement_dependents import RequirementDependentsPage
 from knowledge_portal.application.use_cases.document_library import (
@@ -26,6 +27,10 @@ from knowledge_portal.application.use_cases.documents import UploadDocumentInput
 from knowledge_portal.application.use_cases.library_admin import (
     AdministerLibraryDocument,
     LibraryStewardship,
+)
+from knowledge_portal.application.use_cases.library_bulk import (
+    BulkRetryLibrary,
+    LibraryRetryScope,
 )
 from knowledge_portal.application.use_cases.library_governance import LibraryGovernance
 from knowledge_portal.application.use_cases.reference_knowledge import (
@@ -73,6 +78,8 @@ class Library:
     governance: LibraryGovernance
     admin: AdministerLibraryDocument
     store: InMemoryLibraryAdmin
+    repository: InMemoryDocumentLibrary
+    retry: BulkRetryLibrary
 
 
 @pytest.fixture
@@ -116,7 +123,8 @@ def library() -> Library:
         stewardship,
     )
     admin = AdministerLibraryDocument(repository, store, record, stewardship, transactions, clock)
-    return Library(clock, documents, knowledge, governance, admin, store)
+    retry = BulkRetryLibrary(repository, stewardship, transactions)
+    return Library(clock, documents, knowledge, governance, admin, store, repository, retry)
 
 
 class _NoDependents:
@@ -328,3 +336,112 @@ def test_a_non_owner_transfer_or_approval_needs_an_override_in_the_domain() -> N
             "Handover",
             AdminOverride(NEW_OWNER.snapshot(), "Not them."),
         )
+
+
+def _stopped(library: Library, key: str, *, reading: bool) -> LibraryDocument:
+    """A document whose reading failed, or whose approval stopped indexing."""
+    document = library.documents.submit(
+        f"Policy {key}",
+        UploadDocumentInput(f"{key}.txt", "text/plain", f"Coverage {key}.".encode()),
+        key,
+        owner(),
+    )
+    assert library.documents.process_next()
+    current = library.repository.get(document.id)
+    assert current is not None
+    if reading:
+        version = current.versions[-1]
+        stopped = current.update_file(
+            replace(version, stage=IngestionStage.FAILED, attempt=3, error="Timed out")
+        )
+    else:
+        approved = _review_and_approve(library, document.id, owner())
+        stopped = replace(
+            approved,
+            version=approved.version + 1,
+            publications=(
+                *approved.publications[:-1],
+                replace(approved.publications[-1], indexing_attempts=3, indexing_error="Boom"),
+            ),
+        )
+        current = approved
+    library.repository.save(stopped, current.version)
+    return stopped
+
+
+def test_bulk_retry_reads_again_only_what_failed_and_records_it(library: Library) -> None:
+    failed = _stopped(library, "failed", reading=True)
+    waiting = _awaiting_review(library)
+    result = library.retry.execute(LibraryRetryScope.READING, ADMIN)
+    assert result.documents == 1
+    again = library.repository.get(failed.id)
+    assert again is not None and again.versions[-1].stage is IngestionStage.QUEUED
+    assert again.versions[-1].attempt == 0 and again.versions[-1].error is None
+    untouched = library.repository.get(waiting.id)
+    assert untouched is not None and untouched.versions[-1].stage is IngestionStage.READY
+    (entry,) = library.admin.history(failed.id, ADMIN)
+    assert entry.action is LibraryAdminAction.RETRY_READING and entry.document_ids == (failed.id,)
+    # Nothing left to retry: nothing is recorded.
+    assert library.retry.execute(LibraryRetryScope.READING, ADMIN).documents == 0
+    assert len(library.admin.history(failed.id, ADMIN)) == 1
+
+
+def test_bulk_retry_indexes_again_only_stopped_approvals(library: Library) -> None:
+    stopped = _stopped(library, "stopped", reading=False)
+    _stopped(library, "unread", reading=True)
+    result = library.retry.execute(LibraryRetryScope.INDEXING, ADMIN)
+    assert result.documents == 1
+    again = library.repository.get(stopped.id)
+    assert again is not None
+    assert again.publications[-1].indexing_attempts == 0
+    assert again.publications[-1].indexing_error is None
+    with pytest.raises(AuthorizationDeniedError):
+        library.retry.execute(LibraryRetryScope.INDEXING, NOT_ADMIN)
+
+
+class _Citations:
+    def __init__(self, counts: dict[str, int] | None) -> None:
+        self._counts = counts
+        self.asked: list[tuple[str, ...]] = []
+
+    def counts(self, document_ids: tuple[str, ...]) -> dict[str, int]:
+        self.asked.append(document_ids)
+        if self._counts is None:
+            raise ServiceUnavailableError("Requirement work is down.")
+        return {document_id: self._counts.get(document_id, 0) for document_id in document_ids}
+
+
+def _listing(citations: _Citations) -> tuple[DocumentLibrary, str]:
+    lock = RLock()
+    repository = InMemoryDocumentLibrary(lock)
+    transactions = InMemoryTransactionManager(lock)
+    transactions.enroll(repository)
+    documents = DocumentLibrary(
+        repository,
+        InMemoryDocumentStorage(),
+        SafeDocumentTextExtractor(),
+        OfflineDocumentScanner(),
+        transactions,
+        FixedClock(NOW),
+        100000,
+        citations=citations,
+    )
+    document = documents.submit(
+        "Policy", UploadDocumentInput("p.txt", "text/plain", b"Coverage."), "cited", owner()
+    )
+    return documents, document.id
+
+
+def test_the_list_says_how_many_requirements_cite_each_document() -> None:
+    citations = _Citations({})
+    documents, document_id = _listing(citations)
+    citations._counts = {document_id: 4}
+    (row,) = documents.list(ADMIN)
+    assert row.citations == 4
+    assert citations.asked == [(document_id,)]
+
+
+def test_the_list_still_loads_when_requirement_work_cannot_count() -> None:
+    documents, _ = _listing(_Citations(None))
+    (row,) = documents.list(ADMIN)
+    assert row.citations is None

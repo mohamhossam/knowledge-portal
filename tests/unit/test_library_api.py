@@ -251,3 +251,18 @@ def test_an_admin_acts_on_someone_elses_document_only_through_a_grant() -> None:
         assert client.delete(f"{path}/admin-grant", headers=admin).status_code == 204
         assert client.get(path, headers=admin).json()["versions"] == []
         assert client.get(f"{path}/admin-record").json()[0]["action"] == "end"
+
+
+def test_bulk_retry_is_for_knowledge_admins() -> None:
+    container = build_container(
+        Settings(llm_provider=LLMProvider.FAKE, library_scan_mode="offline")
+    )
+    with TestClient(create_app(lambda: container)) as client:
+        for scope in ("reading", "indexing"):
+            done = client.post(f"/library/retry/{scope}")
+            assert done.status_code == 202
+            assert done.json() == {"scope": scope, "documents": 0}
+            refused = client.post(
+                f"/library/retry/{scope}", headers={"X-Fake-Actor-Id": "fake-observer"}
+            )
+            assert refused.status_code == 403

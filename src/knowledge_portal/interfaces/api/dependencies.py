@@ -24,6 +24,7 @@ from knowledge_portal.application.use_cases.architecture_comparison import (
 )
 from knowledge_portal.application.use_cases.architecture_documents import (
     ReadKnowledgeDocument,
+    UploadArchitectureDocuments,
     UploadKnowledgeDocument,
 )
 from knowledge_portal.application.use_cases.architecture_explorer import ExploreArchitecture
@@ -44,6 +45,7 @@ from knowledge_portal.application.use_cases.catalogue_candidates import (
 from knowledge_portal.application.use_cases.document_library import DocumentLibrary
 from knowledge_portal.application.use_cases.identity_access import SearchKnownActors
 from knowledge_portal.application.use_cases.library_admin import AdministerLibraryDocument
+from knowledge_portal.application.use_cases.library_bulk import BulkRetryLibrary
 from knowledge_portal.application.use_cases.library_governance import LibraryGovernance
 from knowledge_portal.application.use_cases.organisation_catalogue import (
     ManageOrganisationCatalogue,
@@ -173,6 +175,10 @@ def get_library_admin(container: ContainerDep) -> AdministerLibraryDocument:
     return container.library_admin
 
 
+def get_library_retry(container: ContainerDep) -> BulkRetryLibrary:
+    return container.library_retry
+
+
 def get_reference_knowledge(container: ContainerDep) -> ReferenceKnowledge:
     return container.reference_knowledge
 
@@ -207,6 +213,10 @@ def get_architecture_jobs(container: ContainerDep) -> ArchitectureJobs:
 
 def get_upload_knowledge_document(container: ContainerDep) -> UploadKnowledgeDocument:
     return container.upload_knowledge_document
+
+
+def get_upload_architecture_documents(container: ContainerDep) -> UploadArchitectureDocuments:
+    return container.upload_architecture_documents
 
 
 def get_read_knowledge_document(container: ContainerDep) -> ReadKnowledgeDocument:

@@ -5,6 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import PurePosixPath, PureWindowsPath
 
+from knowledge_portal.application.document_upload_validation import (
+    LEGACY_WORD_MIME,
+    LEGACY_WORD_REFUSAL,
+)
 from knowledge_portal.application.errors import UnsupportedDocumentError
 
 SUPPORTED_EXTENSIONS: dict[str, str | tuple[str, ...]] = {
@@ -32,6 +36,8 @@ def validate_ingested_upload(
     filename = filename.strip()
     mime = mime_type.split(";", 1)[0].strip().lower()
     extension = PurePosixPath(filename).suffix.lower()
+    if extension == ".doc" or mime == LEGACY_WORD_MIME:
+        raise UnsupportedDocumentError(LEGACY_WORD_REFUSAL)
     if mime in {"", "application/octet-stream"}:
         mime = next(
             (

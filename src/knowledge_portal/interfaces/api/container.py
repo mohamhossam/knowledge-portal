@@ -36,6 +36,9 @@ from knowledge_portal.application.ports.architecture_mapping_stats import (
 )
 from knowledge_portal.application.ports.knowledge_events import KnowledgeEventOutboxPort
 from knowledge_portal.application.ports.product_catalog import ProductCatalogPort
+from knowledge_portal.application.ports.requirement_citations import (
+    RequirementCitationCountsPort,
+)
 from knowledge_portal.application.ports.requirement_corpus import RequirementCorpusPort
 from knowledge_portal.application.ports.requirement_dependents import RequirementDependentsPort
 from knowledge_portal.application.ports.source_impact import RequirementImpactPort
@@ -46,6 +49,7 @@ from knowledge_portal.application.use_cases.architecture_comparison import (
 )
 from knowledge_portal.application.use_cases.architecture_documents import (
     ReadKnowledgeDocument,
+    UploadArchitectureDocuments,
     UploadKnowledgeDocument,
 )
 from knowledge_portal.application.use_cases.architecture_explorer import ExploreArchitecture
@@ -80,6 +84,7 @@ from knowledge_portal.application.use_cases.library_admin import (
     AdministerLibraryDocument,
     LibraryStewardship,
 )
+from knowledge_portal.application.use_cases.library_bulk import BulkRetryLibrary
 from knowledge_portal.application.use_cases.library_governance import LibraryGovernance
 from knowledge_portal.application.use_cases.organisation_catalogue import (
     ManageOrganisationCatalogue,
@@ -112,10 +117,12 @@ from knowledge_portal.infrastructure.product_catalog import (
 )
 from knowledge_portal.infrastructure.requirement_client import (
     FakeArchitectureMappingStats,
+    FakeRequirementCitationCounts,
     FakeRequirementCorpus,
     FakeRequirementDependents,
     FakeRequirementImpact,
     HttpArchitectureMappingStats,
+    HttpRequirementCitationCounts,
     HttpRequirementCorpus,
     HttpRequirementDependents,
     HttpRequirementImpact,
@@ -168,6 +175,7 @@ class Container:
     document_library: DocumentLibrary
     library_governance: LibraryGovernance
     library_admin: AdministerLibraryDocument
+    library_retry: BulkRetryLibrary
     document_source_impact: DocumentSourceImpact
     cited_passages: CitedPassages
     reference_knowledge: ReferenceKnowledge
@@ -184,6 +192,7 @@ class Container:
     nudge_finding_owners: NudgeFindingOwners
     act_on_requirement_corpus: ActOnRequirementCorpus
     upload_knowledge_document: UploadKnowledgeDocument
+    upload_architecture_documents: UploadArchitectureDocuments
     read_knowledge_document: ReadKnowledgeDocument
     decide_catalogue_candidates: DecideCatalogueCandidate
     # Change requests from Requirement AI (requirement-portal ADR-0101, step 7).
@@ -203,6 +212,7 @@ class RequirementWork:
     mapping_stats: ArchitectureMappingStatsPort
     impact: RequirementImpactPort
     corpus: RequirementCorpusPort = field(default_factory=FakeRequirementCorpus)
+    citations: RequirementCitationCountsPort = field(default_factory=FakeRequirementCitationCounts)
 
 
 def build_container(
@@ -267,6 +277,7 @@ def _build_container(
         clock,
         settings.document_max_file_bytes,
         stewardship,
+        requirement_work.citations,
     )
     workers: dict[str, BackgroundWorker] = {
         "document_worker": DocumentIngestionWorker(library, reference_knowledge)
@@ -309,6 +320,9 @@ def _build_container(
             persistence.transaction_manager,
             clock,
         ),
+        library_retry=BulkRetryLibrary(
+            persistence.library_repository, stewardship, persistence.transaction_manager
+        ),
         document_source_impact=DocumentSourceImpact(
             persistence.library_repository,
             requirement_work.impact,
@@ -338,6 +352,7 @@ def _build_container(
             persistence.architecture_repository, requirement_work.mapping_stats
         ),
         upload_knowledge_document=architecture.upload_document,
+        upload_architecture_documents=architecture.upload_documents,
         read_knowledge_document=architecture.read_document,
         decide_catalogue_candidates=architecture.decide_candidates,
         receive_change_request=architecture.receive_change_request,
@@ -398,6 +413,7 @@ def _requirement_work(
         HttpArchitectureMappingStats(client),
         HttpRequirementImpact(client),
         HttpRequirementCorpus(client),
+        HttpRequirementCitationCounts(client),
     )
 
 
