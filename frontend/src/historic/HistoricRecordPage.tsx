@@ -147,13 +147,17 @@ function Record({ record }: { record: HistoricDetail }) {
   );
 }
 
-/** Where its standing in a citation leaves the Requirement, in words. */
-function citationState(item: HistoricCitation): { rank: string; words: string } {
+/** Where a citation stands, in words: a short status, and why on a kept second line. */
+function citationState(
+  item: HistoricCitation,
+  withdrawn: boolean,
+): { rank: string; words: string; detail?: string } {
+  if (withdrawn) return { rank: "row--past", words: "Cited before it was withdrawn", detail: "It no longer shows it." };
   if (item.duplicate) return { rank: "row--past", words: "Closed as a duplicate" };
   if (item.retired) return { rank: "row--past", words: "Retired from the corpus" };
   return item.current
     ? { rank: "", words: "Current check" }
-    : { rank: "row--due", words: "Older check; checked again when its Knowledge step opens" };
+    : { rank: "row--due", words: "Older check", detail: "Checked again when its Knowledge step opens." };
 }
 
 /**
@@ -164,10 +168,23 @@ function CitedBy({ record }: { record: HistoricDetail }) {
   const pages = useCitedBy(record);
   const items = pages.data?.pages.flatMap((page) => page.items) ?? [];
   const total = pages.data?.pages[0]?.total;
+  const rows = useRef<HTMLTableSectionElement>(null);
+  // Show more hands focus to the first row it added, so the reader goes on from there.
+  const focusAt = useRef<number | null>(null);
+  useEffect(() => {
+    const at = focusAt.current;
+    if (at === null || items.length <= at) return;
+    focusAt.current = null;
+    rows.current?.querySelectorAll<HTMLAnchorElement>("tr th a")[at]?.focus();
+  }, [items.length]);
+  const showMore = () => {
+    focusAt.current = items.length;
+    void pages.fetchNextPage();
+  };
   return (
     <section className="govsection historic__cited" aria-labelledby="historic-cited">
       <h3 id="historic-cited" className="govsection__title" tabIndex={-1}>
-        Cited by{total !== undefined && <span className="govsection__count"> · {count(total, "requirement")}</span>}
+        Cited by{total !== undefined && <span className="govsection__count"> · {total === 0 ? "none" : count(total, "requirement")}</span>}
       </h3>
       <p className="govsection__lead">
         Requirements whose prior-art check names it as a similar past requirement. Who and when only; what was matched
@@ -175,7 +192,7 @@ function CitedBy({ record }: { record: HistoricDetail }) {
       </p>
       {pages.isError ? (
         <p className="docpage__failure" role="alert">
-          Requirement work did not answer: {errorMessage(pages.error)}
+          Who cites it could not be read: {errorMessage(pages.error)}
           <button type="button" className="text-button" onClick={() => void pages.refetch()}>
             <RotateCw size={14} aria-hidden="true" />
             Try again
@@ -195,27 +212,30 @@ function CitedBy({ record }: { record: HistoricDetail }) {
           <thead>
             <tr>
               <th scope="col">Requirement</th>
-              <th scope="col">Check</th>
-              <th scope="col" className="cell--end cell--p2">Checked</th>
+              <th scope="col">Prior-art check</th>
+              <th scope="col" className="cell--end cell--p2">Checked on</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody ref={rows}>
             {items.map((item) => {
-              const state = citationState(item);
+              const state = citationState(item, record.status === "withdrawn");
               return (
                 <tr key={item.requirement_id} className={`row ${state.rank}`}>
                   <th scope="row" aria-label={item.title}>
-                    <a href={knowledgeStepHref(item.requirement_id)} dir="auto">
+                    <a href={knowledgeStepHref(item.requirement_id)} className="knowledge__title" dir="auto">
                       {item.title}
                       <span className="visually-hidden">{LEAVES}</span>
                     </a>
                     <span className="secondary govtable__by">
                       {item.owner ? `Owned by ${item.owner}` : "No owner"}
-                      <span className="historic__narrow"> · checked {formatDay(item.checked_at)}</span>
+                      <span className="historic__narrow-inline"> · checked {formatDay(item.checked_at)}</span>
                     </span>
                   </th>
-                  <td><span className="status">{state.words}</span></td>
-                  <td className="cell--end cell--p2">{formatDay(item.checked_at)}</td>
+                  <td>
+                    <span className="status">{state.words}</span>
+                    {state.detail && <span className="secondary govtable__by">{state.detail}</span>}
+                  </td>
+                  <td className="cell--end cell--p2 historic__checked">{formatDay(item.checked_at)}</td>
                 </tr>
               );
             })}
@@ -224,12 +244,30 @@ function CitedBy({ record }: { record: HistoricDetail }) {
       )}
       {pages.hasNextPage && (
         <p className="govsection__actions">
-          <button type="button" className="text-button" disabled={pages.isFetchingNextPage} onClick={() => void pages.fetchNextPage()}>
+          <button type="button" className="text-button" aria-disabled={pages.isFetchingNextPage || undefined} onClick={() => { if (!pages.isFetchingNextPage) showMore(); }}>
             {pages.isFetchingNextPage ? "Asking…" : "Show more"}
           </button>
         </p>
       )}
     </section>
+  );
+}
+
+/** What withdrawing does to the Requirements citing it, said even when their number is unknown. */
+function WithdrawCitations({ record }: { record: HistoricDetail }) {
+  const cited = useCitedBy(record);
+  const total = cited.data?.pages[0]?.total;
+  if (total === 0) return null;
+  if (total === undefined) {
+    return cited.isError
+      ? <>; requirement work could not say which Requirements cite it, and any that do stop showing it at once</>
+      : <>; any Requirements citing it stop showing it at once</>;
+  }
+  return (
+    <>
+      : <strong>{total === 1 ? "the 1 requirement" : `the ${total} requirements`}</strong> citing it{" "}
+      {total === 1 ? "stops" : "stop"} showing it at once
+    </>
   );
 }
 
@@ -701,7 +739,6 @@ function Withdraw({ record }: { record: HistoricDetail }) {
   const [tried, setTried] = useState(false);
   const withdraw = useHistoricChange(record.id, (why: string) => api.withdrawHistoric(record.id, why, record.version));
   const missing = tried && !reason.trim();
-  const cited = useCitedBy(record).data?.pages[0]?.total ?? 0;
   if (!open) {
     return (
       <p className="govsection__actions historic__withdraw-open">
@@ -725,8 +762,7 @@ function Withdraw({ record }: { record: HistoricDetail }) {
     >
       <h3 id={`${id}-title`} className="withdraw__title">Withdraw from requirement work</h3>
       <p>
-        Requirement work stops reading it as prior art
-        {cited > 0 ? `: the ${count(cited, "requirement")} citing it stop showing it at once` : ""}. It stays here,
+        Requirement work stops reading it as prior art<WithdrawCitations record={record} />. It stays here,
         withdrawn, with your reason. Withdrawing cannot be undone, and its BRDs cannot be imported again.
       </p>
       <label className="field" htmlFor={`${id}-reason`}>

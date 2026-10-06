@@ -218,10 +218,41 @@ describe("a historic requirement", () => {
     } as never));
     const cited = vi.spyOn(api, "historicCitedBy").mockRejectedValueOnce(new Error("Requirement work is unavailable."));
     render(wrap(<HistoricRecordPage />));
-    expect(await screen.findByText(/Requirement work did not answer/)).toBeInTheDocument();
+    expect(await screen.findByText(/Who cites it could not be read/)).toBeInTheDocument();
     cited.mockResolvedValueOnce({ total: 0, items: [], next_offset: null });
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByText(/Withdrawn, it is no longer offered as prior art/)).toBeInTheDocument();
+  });
+
+  it("warns before withdrawing even when requirement work cannot say who cites it", async () => {
+    vi.spyOn(api, "historic").mockResolvedValue(detail({
+      status: "published",
+      publications: [{ number: 1, published_at: "2026-10-06T09:10:00Z", published_by: ada, fingerprint: "f" }],
+    } as never));
+    vi.spyOn(api, "historicCitedBy").mockRejectedValue(new Error("Requirement work is unavailable."));
+    render(wrap(<HistoricRecordPage />));
+    expect(await screen.findByText(/Who cites it could not be read/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Withdraw from requirement work…" }));
+    const warning = await screen.findByText((_, element) => element?.tagName === "P" && /could not say which Requirements cite it/.test(element.textContent ?? ""));
+    expect(warning).toHaveTextContent("Requirement work stops reading it as prior art; requirement work could not say which Requirements cite it, and any that do stop showing it at once.");
+  });
+
+  it("marks citations of a withdrawn record as past, and hands focus to the rows Show more adds", async () => {
+    vi.spyOn(api, "historic").mockResolvedValue(detail({
+      status: "withdrawn",
+      publications: [{ number: 1, published_at: "2026-10-06T09:10:00Z", published_by: ada, fingerprint: "f" }],
+    } as never));
+    const row = (id: string, title: string) => ({
+      requirement_id: id, title, owner: "Mona Adel", checked_at: "2026-10-06T10:00:00Z", current: false, retired: false, duplicate: false,
+    });
+    vi.spyOn(api, "historicCitedBy")
+      .mockResolvedValueOnce({ total: 2, items: [row("R-1", "Fibre bundles for clinics")], next_offset: 1 })
+      .mockResolvedValueOnce({ total: 2, items: [row("R-2", "Branch fibre")], next_offset: null });
+    render(wrap(<HistoricRecordPage />));
+    const first = await screen.findByText("Cited before it was withdrawn");
+    expect(first.closest("tr")).toHaveClass("row--past");
+    fireEvent.click(screen.getByRole("button", { name: "Show more" }));
+    await waitFor(() => expect(screen.getByRole("link", { name: /^Branch fibre/ })).toHaveFocus());
   });
 
   it("shows its lineage as numbered rows and publishes it", async () => {
@@ -272,7 +303,8 @@ describe("a historic requirement", () => {
     expect(within(citing).getByRole("link", { name: /Branch fibre/ })).toHaveAttribute("href", "/requirements/R%2F2/knowledge");
     expect(within(citing).getByText(/^Owned by Mona Adel/)).toBeInTheDocument();
     expect(within(citing).getByText(/^No owner/)).toBeInTheDocument();
-    expect(within(citing).getByText(/^Older check/).closest("tr")).toHaveClass("row--due");
+    expect(within(citing).getByText("Older check").closest("tr")).toHaveClass("row--due");
+    expect(within(citing).getByText("Checked again when its Knowledge step opens.")).toBeInTheDocument();
     // From the published read to the newer one, value by value; long fields are only named.
     const [state, description] = within(changes).getAllByRole("listitem");
     expect(state).toHaveTextContent("state Closed → became Resolved");
@@ -287,7 +319,7 @@ describe("a historic requirement", () => {
     const why = screen.getByLabelText("Why (required)");
     expect(why).toHaveFocus();
     expect(screen.getByText(/Withdrawing cannot be undone/)).toBeInTheDocument();
-    expect(screen.getByText(/the 2 requirements citing it stop showing it at once/)).toBeInTheDocument();
+    expect(screen.getByText("the 2 requirements").closest("p")).toHaveTextContent(/the 2 requirements citing it stop showing it at once/);
     expect(screen.getByRole("button", { name: "Withdraw it" })).toHaveAttribute("aria-disabled", "true");
     fireEvent.click(screen.getByRole("button", { name: "Withdraw it" }));
     expect(screen.getByText("Say why it is withdrawn.")).toBeInTheDocument();

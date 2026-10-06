@@ -137,7 +137,7 @@ function HistoricRow({ item }: { item: HistoricSummary }) {
   const { rank, status, detail } = standing(item);
   return (
     <tr className={`row row--${rank}`}>
-      <th scope="row">
+      <th scope="row" aria-label={item.title}>
         <Link to={historicHref(item.id)} dir="auto">{item.title}</Link>
         {/* BRDs, work items and citations leave the grid on phones; they stay with the title. */}
         <span className="secondary govtable__by historic__narrow">

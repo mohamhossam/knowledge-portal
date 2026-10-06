@@ -558,8 +558,19 @@
   white-space: pre-line;
 }
 
-.historic__narrow {
+.historic__narrow,
+.historic__narrow-inline {
   display: none;
+}
+
+/* Cited by: the date never breaks, and a long check status keeps to its own column. */
+.historic__checked {
+  white-space: nowrap;
+}
+
+.historic__citations th:nth-child(2),
+.historic__citations td:nth-child(2) {
+  width: 15rem;
 }
 
 /* The decision a record waits on, under its edition line. */
@@ -661,6 +672,15 @@
 @media (max-width: 45rem) {
   .historic__narrow {
     display: block;
+  }
+
+  .historic__narrow-inline {
+    display: inline;
+  }
+
+  .historic__citations th:nth-child(2),
+  .historic__citations td:nth-child(2) {
+    width: auto;
   }
 
   .historic__lineage .historic__no {
