@@ -9,6 +9,7 @@ import {
   IN_PROGRESS, approvalBlocker, comparisonBasis, counts, initialDrafts, isTheEdition, latestRevision, matches, newestVersion,
   reviewBody, reviewRows, saveProblems, standing, unsaved, type Draft, type Filter,
 } from "./model";
+import { DocumentReview } from "../reviews/DocumentReview";
 import { ActAsAdmin, ActingBanner } from "./AdminGrant";
 import { type Focus, PassageTable } from "./PassageTable";
 import { type DocumentContext, type ReviewState, useDocumentContext } from "./documentContext";
@@ -97,6 +98,7 @@ function Head({ document, version, actions, pages }: {
       <div className="docpage__heading">
         <h1 id="doc-title" className="docpage__title" dir="auto">{document.title}</h1>
         <p className="docpage__edition"><EditionLine document={document} /></p>
+        <DocumentReview document={document} />
         {version && (
           <p className="docpage__version">
             Working copy: version {version.number} · <span dir="auto">{version.filename}</span> · uploaded by{" "}

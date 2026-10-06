@@ -8,6 +8,7 @@ import { errorMessage } from "../api/errors";
 import { libraryOverview } from "../home/derive";
 import { count, formatDay } from "../home/format";
 import { type Column, NoteMark, TimetableTable } from "../timetable/TimetableTable";
+import { dueWords } from "../reviews/review";
 import { LibraryRetry } from "./LibraryRetry";
 import { RANK_ORDER, libraryRow } from "./libraryRow";
 
@@ -17,6 +18,7 @@ const COLUMNS: Column[] = [
   { key: "version", label: "In service", align: "end", priority: 2 },
   { key: "owner", label: "Owner", priority: 3 },
   { key: "cited", label: "Cited by", align: "end", priority: 3 },
+  { key: "review", label: "Last review", align: "end", priority: 3 },
   { key: "since", label: "Since", align: "end", priority: 2 },
 ];
 
@@ -51,7 +53,9 @@ export function LibraryPage() {
     .map((item) => ({ document: item, ...libraryRow(item) }))
     .sort((a, b) => RANK_ORDER[a.rank] - RANK_ORDER[b.rank] || a.document.title.localeCompare(b.document.title));
   const yours = ranked.filter((item) => item.rank === "due" && item.document.is_owner);
-  const broken = ranked.filter((item) => item.rank === "delayed" && item.document.is_owner);
+  const broken = ranked.filter((item) => item.rank === "delayed" && item.document.is_owner && item.status !== "Review overdue");
+  // The owner's own documents due or overdue for review, confirmed from their reminders.
+  const toConfirm = ranked.filter((item) => item.document.is_owner && item.review && item.review.state !== "current");
   // What a knowledge admin can retry in one go, whoever owns it.
   const stopped = {
     reading: ranked.filter((item) => item.status === "Extraction failed").map((item) => item.document.title),
@@ -67,6 +71,11 @@ export function LibraryPage() {
       }
     : broken[0]
       ? { to: `/library/${encodeURIComponent(broken[0].document.id)}`, label: `‘${broken[0].document.title}’ could not be read` }
+      : toConfirm.length > 0
+        ? {
+            to: "/reminders",
+            label: `Confirm ${toConfirm.length === 1 ? `‘${toConfirm[0]?.document.title}’ is` : `${toConfirm.length} of your documents are`} still right`,
+          }
       : {
           label: !documents.data
             ? ""
@@ -85,7 +94,7 @@ export function LibraryPage() {
           ? <>{overview.edition.text}{overview.edition.note && <NoteMark note={overview.edition.note} />}</>
           : documents.isError ? "The library could not be read." : "Reading the library…"}
         columns={COLUMNS}
-        rows={rows.map(({ document, rank, status, inService, since }) => ({
+        rows={rows.map(({ document, rank, status, inService, since, review }) => ({
           key: document.id,
           rank,
           cells: {
@@ -95,6 +104,7 @@ export function LibraryPage() {
                 {/* Owner and Cited by leave the grid below desktop width; they stay with the title. */}
                 <span className="secondary library__aside">
                   {document.is_owner ? "Yours" : document.owner.display_name} · Cited by {citedBy(document.citations).toLocaleLowerCase()}
+                  {review && <> · Last review {formatDay(review.last_reviewed_at)}</>}
                 </span>
               </>
             ),
@@ -102,6 +112,12 @@ export function LibraryPage() {
             version: inService,
             owner: document.is_owner ? `${document.owner.display_name} (you)` : document.owner.display_name,
             cited: citedBy(document.citations),
+            review: review ? (
+              <>
+                {formatDay(review.last_reviewed_at)}
+                <span className="secondary govtable__by">{dueWords(review)}</span>
+              </>
+            ) : "—",
             since: formatDay(since),
           },
         }))}

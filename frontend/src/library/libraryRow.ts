@@ -37,5 +37,11 @@ export function libraryRow(document: LibraryDocument) {
     rank = newest?.stage === "cancelled" ? "past" : "due";
     status = newest?.stage === "cancelled" ? "Processing cancelled" : "Not yet reviewed";
   }
-  return { rank, status, inService, since };
+  // Due or overdue for review only matters once nothing else does: it stays in service meanwhile.
+  const review = document.review ?? null;
+  if (rank === "service" && review && review.state !== "current") {
+    rank = review.state === "overdue" ? "delayed" : "due";
+    status = review.state === "overdue" ? "Review overdue" : "Review due soon";
+  }
+  return { rank, status, inService, since, review };
 }

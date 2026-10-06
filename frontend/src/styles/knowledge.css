@@ -234,3 +234,78 @@
     width: auto;
   }
 }
+
+/* Review cycles (D): a review line under an edition line, its form in place beneath it. */
+.review {
+  display: grid;
+  gap: var(--s2);
+  max-width: 72ch;
+}
+
+.review__line {
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+/* Rank by weight: due soon is bold ink; overdue is bold in disruption red. */
+.review__line--due_soon .status {
+  color: var(--ink);
+  font-weight: var(--w-bold);
+}
+
+.review__line--overdue .status {
+  color: var(--disruption);
+  font-weight: var(--w-bold);
+}
+
+.review__note {
+  font-size: var(--t-meta);
+}
+
+.review .toolbar__notice:empty,
+.reminders > .toolbar__notice:empty {
+  display: none;
+}
+
+.review__form {
+  padding: var(--s3) var(--s4) var(--s4);
+  border-bottom: 2px solid var(--rule-heavy);
+  background: var(--stock-band);
+}
+
+.govtable tbody .knowledge__act-row .review__form {
+  padding: 0;
+  border-bottom: 0;
+}
+
+.review__table .cell--end {
+  white-space: nowrap;
+}
+
+.review__narrow {
+  display: none;
+}
+
+/* The masthead's count: bold ink for what is due, red for what is overdue. */
+.masthead__reviews:empty {
+  display: none;
+}
+
+.masthead__due {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.5rem;
+  font-size: var(--t-meta);
+  font-weight: var(--w-bold);
+}
+
+.masthead__overdue {
+  color: var(--disruption);
+  font-weight: var(--w-medium);
+}
+
+@media (max-width: 45rem) {
+  .review__narrow {
+    display: inline;
+  }
+}

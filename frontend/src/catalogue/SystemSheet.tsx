@@ -7,6 +7,7 @@ import { api, type CatalogueSystem, type Relationship } from "../api/client";
 import { errorMessage } from "../api/errors";
 import { connections, dependsHow, domainPath, sentenceCase, systemName, systemRoles, usedHow } from "./catalogue";
 import { ConnectionEdit, ConnectionRemove, EditButton, SystemEdit, SystemRemove } from "./DraftEdits";
+import { SystemReview } from "../reviews/SystemReview";
 import { useCatalogueContext } from "./useCatalogue";
 
 /** Where a sheet was reached from, so the way back can be lit and retraced. */
@@ -62,6 +63,7 @@ export function SystemSheet({ system }: { system: CatalogueSystem }) {
           </div>
         </dl>
         {system.description && <p className="sheet__description" dir="auto">{system.description}</p>}
+        <SystemReview system={system} />
         {editable && (
           <p className="docpage__actions">
             <EditButton expanded={editing === "system"} onClick={() => setEditing(editing === "system" ? null : "system")}>
