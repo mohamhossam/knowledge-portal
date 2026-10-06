@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useEffect, useId, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { api } from "../api/client";
+import { type AdminRecordEntry, api } from "../api/client";
 import { errorMessage } from "../api/errors";
 import { formatDay } from "../home/format";
 import { Failure } from "./DocumentPage";
@@ -48,7 +48,10 @@ export function OwnershipPage() {
                   <td>
                     From {transfer.previous_owner.display_name} to {transfer.new_owner.display_name}
                     {transfer.performed_by.display_name !== transfer.previous_owner.display_name && (
-                      <span className="secondary govtable__by">by {transfer.performed_by.display_name}</span>
+                      <span className="secondary govtable__by">
+                        by {transfer.performed_by.display_name}
+                        {transfer.on_behalf ? `, as admin on ${transfer.previous_owner.display_name}’s behalf` : ""}
+                      </span>
                     )}
                     <span className="secondary govtable__by" dir="auto">{transfer.reason}</span>
                   </td>
@@ -58,7 +61,65 @@ export function OwnershipPage() {
           </table>
         )}
       </section>
+      <AdminRecord />
     </>
+  );
+}
+
+const ACTION: Record<AdminRecordEntry["action"], string> = {
+  grant: "Began acting as admin",
+  end: "Stopped acting as admin",
+  reassign: "Handed it over",
+  withdraw: "Withdrew it",
+  review: "Saved a review",
+  approve: "Approved a version",
+  retry_reading: "Retried reading, with others",
+  retry_indexing: "Retried indexing, with others",
+};
+
+/** Everything a knowledge admin did to this document without owning it, newest first. */
+function AdminRecord() {
+  const { document } = useDocumentContext();
+  const id = useId();
+  const record = useQuery({
+    queryKey: ["library", "admin-record", document.id],
+    queryFn: () => api.adminRecord(document.id),
+  });
+  const entries = record.data ?? [];
+  return (
+    <section className="govsection" aria-labelledby={`${id}-title`}>
+      <h2 id={`${id}-title`} className="govsection__title">Admin record</h2>
+      <p className="govsection__lead">
+        What knowledge admins did to it on its owner&rsquo;s behalf, and the library-wide retries that included it.
+      </p>
+      {record.isError ? (
+        <p className="docpage__failure" role="alert">{errorMessage(record.error)}</p>
+      ) : entries.length === 0 ? (
+        <p className="timetable__quiet">{record.isPending ? "Reading…" : "No admin has acted on it for its owner."}</p>
+      ) : (
+        <table className="govtable">
+          <caption className="visually-hidden">Admin record, newest first</caption>
+          <thead>
+            <tr>
+              <th scope="col">When</th>
+              <th scope="col">What, and why</th>
+            </tr>
+          </thead>
+          <tbody>
+            {entries.map((entry) => (
+              <tr key={entry.id} className="row">
+                <th scope="row" className="nowrap">{formatDay(entry.acted_at)}</th>
+                <td>
+                  {ACTION[entry.action]}
+                  <span className="secondary govtable__by">by {entry.admin.display_name}</span>
+                  {entry.reason && <span className="secondary govtable__by" dir="auto">{entry.reason}</span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
   );
 }
 

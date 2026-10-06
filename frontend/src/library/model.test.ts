@@ -24,7 +24,7 @@ function version(id: string, number: number, blocks: Block[], extra: Partial<Lib
 function document(versions: LibraryVersion[], extra: Partial<LibraryDocument> = {}): LibraryDocument {
   return {
     id: "doc", title: "Coverage", owner: amina, versions, version: 4, publications: [], published_id: null,
-    can_edit: true, review_fingerprint: null, build_fingerprint: null, ...extra,
+    can_edit: true, is_owner: true, review_fingerprint: null, build_fingerprint: null, ...extra,
   } as unknown as LibraryDocument;
 }
 

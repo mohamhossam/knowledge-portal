@@ -14,7 +14,7 @@ const amina = { id: { value: "fake-owner" }, display_name: "Amina Owner", email:
 
 function documentWithBuild(extra: Partial<LibraryDocument> = {}): LibraryDocument {
   return {
-    id: "d", title: "Coverage", owner: amina, version: 7, can_edit: true,
+    id: "d", title: "Coverage", owner: amina, version: 7, can_edit: true, is_owner: true,
     published_id: "live", review_fingerprint: "f", build_fingerprint: "b",
     versions: [{ id: "v1", number: 1, revisions: [{ id: "r1" }], blocking_warnings: [] }],
     publications: [

@@ -20,6 +20,7 @@ import type {
   RequirementCorpus,
 } from "../api/client";
 import { jobReason, reading } from "../catalogue/suggestions";
+import { newestState } from "../library/model";
 import type { Rank } from "../timetable/TimetableTable";
 import { count, formatDay } from "./format";
 
@@ -121,7 +122,7 @@ export function libraryOverview(documents: LibraryDocument[]): Overview {
   }
 
   for (const document of documents) {
-    const newest = [...document.versions].sort((a, b) => b.number - a.number)[0];
+    const newest = newestState(document);
     const active = document.publications.find((item) => item.id === document.published_id);
     const activeVersion = active && document.versions.find((item) => item.id === active.version_id)?.number;
     if (active) {
@@ -138,7 +139,7 @@ export function libraryOverview(documents: LibraryDocument[]): Overview {
       cells: {
         status,
         version: newest ? `v${newest.number}` : "—",
-        owner: document.can_edit ? `${document.owner.display_name} (you)` : document.owner.display_name,
+        owner: document.is_owner ? `${document.owner.display_name} (you)` : document.owner.display_name,
         since: formatDay(since),
       },
       note,
@@ -166,11 +167,13 @@ export function libraryOverview(documents: LibraryDocument[]): Overview {
     const approved = newest !== undefined && document.publications.some((item) => item.version_id === newest.id);
     let entry: Line | null = null;
     if (stage === "ready_for_review" && !approved) {
-      entry = line("due", document.can_edit ? "Awaiting your review" : "Awaiting review", newest?.uploaded_at, serviceNote());
-      if (document.can_edit) yoursToReview += 1;
+      entry = line("due", document.is_owner ? "Awaiting your review" : "Awaiting review", newest?.uploaded_at, serviceNote());
+      if (document.is_owner) yoursToReview += 1;
     } else if (stage === "failed") {
       entry = line("delayed", "Extraction failed", newest?.uploaded_at,
-        uploadNote(`fail-${document.id}`, newest?.error ? `The file could not be read: ${newest.error}` : "The file could not be read."));
+        uploadNote(`fail-${document.id}`, newest && "error" in newest && newest.error
+          ? `The file could not be read: ${newest.error}`
+          : "The file could not be read."));
     } else if (stage === "quarantined") {
       entry = line("delayed", "Quarantined by the scanner", newest?.uploaded_at,
         uploadNote(`fail-${document.id}`, "The malware scanner held it back; it was never read."));

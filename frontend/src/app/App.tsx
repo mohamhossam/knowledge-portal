@@ -6,6 +6,7 @@ import { CataloguePage } from "../catalogue/CataloguePage";
 import { ChannelsPage } from "../catalogue/ChannelsPage";
 import { GovernancePage } from "../catalogue/GovernancePage";
 import { ChangesPage } from "../catalogue/ChangesPage";
+import { ComparePage } from "../catalogue/ComparePage";
 import { CheckPage } from "../catalogue/CheckPage";
 import { EvidencePage } from "../catalogue/EvidencePage";
 import { PublishPage } from "../catalogue/PublishPage";
@@ -73,6 +74,7 @@ export function App() {
         <Route path="architecture" element={<CataloguePage />}>
           {catalogueRoutes}
           <Route path="versions" element={<CatalogueVersionsPage />} />
+          <Route path="compare" element={<ComparePage />} />
         </Route>
         <Route path="architecture/versions/:releaseId" element={<CataloguePage />}>
           {catalogueRoutes}

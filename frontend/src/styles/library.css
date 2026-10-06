@@ -959,3 +959,29 @@ html:has(.savebar) {
 .nowrap {
   white-space: nowrap;
 }
+
+/* Knowledge Center C: an admin acting on a document they don't own. */
+.admingrant {
+  margin-block: var(--s3) 0;
+}
+
+.admingrant__line {
+  max-width: 72ch;
+  color: var(--ink-2);
+}
+
+/* While the grant lasts, a reference band above the head: whose document, until when, why. */
+.admingrant--live {
+  margin-block: 0 var(--s4);
+  padding: var(--s2) var(--s3);
+  border-inline-start: 4px solid var(--reference);
+  background: var(--reference-wash);
+}
+
+.admingrant--live .admingrant__line {
+  color: var(--ink);
+}
+
+.admingrant__form {
+  max-width: 72ch;
+}

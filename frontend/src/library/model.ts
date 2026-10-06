@@ -45,6 +45,13 @@ export function newestVersion(document: LibraryDocument): LibraryVersion | undef
   return [...document.versions].sort((a, b) => b.number - a.number)[0];
 }
 
+/** Where the newest version stands. An admin who doesn't own the document gets only its outline. */
+export type NewestState = LibraryVersion | Schemas["VersionOutline"];
+
+export function newestState(document: LibraryDocument): NewestState | undefined {
+  return document.newest ?? newestVersion(document);
+}
+
 export function latestRevision(version: LibraryVersion | undefined): Revision | undefined {
   return version?.revisions.at(-1);
 }

@@ -33,6 +33,13 @@ export type Dependency = Schemas["LibraryDependency"];
 export type ImpactPage = Schemas["DependencyImpactPage"];
 export type Impact = Schemas["DependencyImpact"];
 export type OwnershipTransfer = Schemas["OwnershipTransfer"];
+/** A knowledge admin's grant to act on a document they don't own (Knowledge Center C). */
+export type AdminGrant = Schemas["AdminGrant"];
+export type AdminRecordEntry = Schemas["LibraryAdminRecord"];
+export type LibraryRetryScope = Schemas["LibraryRetryScope"];
+export type LibraryRetryResult = Schemas["LibraryRetryResult"];
+export type BatchUpload = Schemas["BatchUploadResponse"];
+export type FileResult = Schemas["FileResult"];
 export type ReviewRequest = Schemas["LibraryReviewRequest"];
 export type CatalogueSystem = Schemas["SystemDefinitionSchema"];
 export type Relationship = Schemas["SystemRelationshipSchema"];
@@ -212,7 +219,9 @@ export const api = {
   release: (releaseId: string) => apiRequest<Release>(releasePath(releaseId)),
   releaseAudit: (releaseId: string) => apiRequest<ReleaseAuditEvent[]>(`${releasePath(releaseId)}/audit`),
   /** What changed from the version in service to this one. */
-  releaseChanges: (releaseId: string) => apiRequest<CatalogueDiff>(`${releasePath(releaseId)}/changes`),
+  /** What changed from `base` to this release; from the version in service when no base is given. */
+  releaseChanges: (releaseId: string, base?: string) =>
+    apiRequest<CatalogueDiff>(`${releasePath(releaseId)}/changes${base ? `?${new URLSearchParams({ base })}` : ""}`),
   /** Puts a published version back in service. */
   activateRelease: (releaseId: string, rationale: string) =>
     post<Release>(`${releasePath(releaseId)}/activate`, { rationale }),
@@ -232,6 +241,14 @@ export const api = {
     body.set("language", input.language);
     body.set("expected_revision", String(input.expectedRevision));
     return apiRequest<Release>(`${releasePath(releaseId)}/documents`, { method: "POST", body });
+  },
+  /** Several files at once: each is added or refused with its reason. */
+  addCatalogueDocuments: (releaseId: string, input: { files: File[]; language: DocumentLanguage; expectedRevision: number }) => {
+    const body = new FormData();
+    for (const file of input.files) body.append("files", file);
+    body.set("language", input.language);
+    body.set("expected_revision", String(input.expectedRevision));
+    return apiRequest<BatchUpload>(`${releasePath(releaseId)}/documents/batch`, { method: "POST", body });
   },
   /** The draft's documents, as the whole list that remains. */
   selectCatalogueDocuments: (releaseId: string, body: { expected_revision: number; version_ids: string[] }) =>
@@ -388,6 +405,13 @@ export const api = {
     apiRequest<ImpactPage>(`${documentPath(documentId)}/source-impact?${new URLSearchParams({
       offset: String(input.offset), limit: "50", active_only: String(input.activeOnly), query: input.query,
     })}`),
+  openAdminGrant: (documentId: string, reason: string) =>
+    post<AdminGrant>(`${documentPath(documentId)}/admin-grant`, { reason }),
+  endAdminGrant: async (documentId: string) => {
+    await send(`${documentPath(documentId)}/admin-grant`, { method: "DELETE" });
+  },
+  adminRecord: (documentId: string) => apiRequest<AdminRecordEntry[]>(`${documentPath(documentId)}/admin-record`),
+  retryLibrary: (scope: LibraryRetryScope) => post<LibraryRetryResult>(`/library/retry/${scope}`, {}),
   ownershipHistory: (documentId: string) => apiRequest<OwnershipTransfer[]>(`${documentPath(documentId)}/ownership/history`),
   transfer: (documentId: string, body: { expected_version: number; actor_id: string; reason: string }) =>
     post<OwnershipTransfer>(`${documentPath(documentId)}/ownership`, body),

@@ -5,7 +5,7 @@ import type { CatalogueDocument, DocumentLanguage, Release } from "../api/client
 import { errorMessage } from "../api/errors";
 import { count } from "../home/format";
 import { ACCEPTED_FILES, documentWarnings, reading, warningInWords } from "./suggestions";
-import type { DraftHook } from "./useDraft";
+import type { DraftHook, UploadLine } from "./useDraft";
 
 const LANGUAGE: Record<string, string> = { en: "English", ar: "Arabic", mixed: "English and Arabic" };
 
@@ -191,70 +191,139 @@ function RemoveConfirm({ document, busy, onKeep, onRemove }: {
   );
 }
 
+const MAX_FILES = 20;
+
+const LINE: Record<UploadLine["state"], string> = {
+  reading: "Added; being read",
+  unread: "Added; not yet read",
+  refused: "Not added",
+};
+
+/** What became of each file of a multi-file upload, one line each, in the order chosen. */
+function UploadResults({ lines, draft }: { lines: UploadLine[]; draft: DraftHook }) {
+  const added = lines.filter((line) => line.state !== "refused").length;
+  return (
+    <div className="uploads" role="status">
+      <p className="uploads__summary">
+        {added} of {count(lines.length, "file")} added
+        {lines.some((line) => line.state === "unread") ? ". Some wait to be read." : "."}
+      </p>
+      <ul className="uploads__list">
+        {lines.map((line, index) => (
+          <li key={`${index}-${line.filename}`} className={`uploads__item uploads__item--${line.state}`}>
+            <span className="uploads__name" dir="auto">{line.filename}</span>
+            <span className="status">{LINE[line.state]}</span>
+            {line.state !== "reading" && <span className="secondary uploads__why">{line.reason}</span>}
+            {line.state === "unread" && (
+              <button type="button" className="text-button" disabled={draft.read.isPending} onClick={() => draft.read.mutate(line.versionId)}>
+                Read it
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function AddDocument({ draft, collapsed }: { draft: DraftHook; collapsed: boolean }) {
   const id = useId();
   const [opened, setOpened] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [title, setTitle] = useState("");
   const [language, setLanguage] = useState<DocumentLanguage>("en");
   const [added, setAdded] = useState<string | null>(null);
+  const [lines, setLines] = useState<UploadLine[] | null>(null);
   const input = useRef<HTMLInputElement>(null);
-  const waits = !file ? "Choose a file first." : !title.trim() ? "Give the document a title." : null;
+  const several = files.length > 1;
+  const pending = draft.addDocument.isPending || draft.addDocuments.isPending;
+  const waits = files.length === 0
+    ? "Choose a file first."
+    : files.length > MAX_FILES
+      ? `Choose at most ${MAX_FILES} files at a time.`
+      : !several && !title.trim() ? "Give the document a title." : null;
+  const reset = () => {
+    setOpened(false);
+    setFiles([]);
+    setTitle("");
+    if (input.current) input.current.value = "";
+  };
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (!file || waits) return;
+    const [first] = files;
+    if (!first || waits) return;
     setAdded(null);
+    setLines(null);
+    if (several) {
+      draft.addDocuments.mutate({ files, language }, {
+        onSuccess: (result) => {
+          setLines(result);
+          reset();
+        },
+      });
+      return;
+    }
     draft.addDocument.mutate(
-      { file, title: title.trim(), language },
+      { file: first, title: title.trim(), language },
       {
         onSuccess: (document) => {
           setAdded(document ? `‘${document.title}’ was added and is being read.` : null);
-          setOpened(false);
-          setFile(null);
-          setTitle("");
-          if (input.current) input.current.value = "";
+          reset();
         },
       },
     );
   };
+  const failure = [draft.addDocument, draft.addDocuments].find((item) => item.isError)?.error;
   if (collapsed && !opened) {
     return (
-      <p className="documents__more">
-        <button type="button" className="text-button" onClick={() => setOpened(true)}>
-          <Upload size={14} aria-hidden="true" />
-          Add another document
-        </button>
-        {added && <span className="toolbar__notice" role="status">{added}</span>}
-      </p>
+      <>
+        <p className="documents__more">
+          <button type="button" className="text-button" onClick={() => setOpened(true)}>
+            <Upload size={14} aria-hidden="true" />
+            Add more documents
+          </button>
+          {added && <span className="toolbar__notice" role="status">{added}</span>}
+        </p>
+        {lines && <UploadResults lines={lines} draft={draft} />}
+      </>
     );
   }
   return (
     <form className="add documents__add" aria-labelledby={`${id}-title`} onSubmit={submit}>
-      <h3 id={`${id}-title`} className="add__title">Add a document</h3>
+      <h3 id={`${id}-title`} className="add__title">Add documents</h3>
       <p className="add__lead">
-        PDF, Word, Excel, CSV, Markdown, plain text or an image, up to 10 MB. Markdown tables of domains, systems, offerings
-        and journeys are read row by row.
+        PDF, Word (.docx), Excel, CSV, Markdown, plain text or images, up to 10 MB each and {MAX_FILES} at a time. Markdown
+        tables of domains, systems, offerings and journeys are read row by row.
       </p>
       <div className="form__grid">
         <label className="field form__field" htmlFor={`${id}-file`}>
-          <span className="field__label">File</span>
+          <span className="field__label">Files</span>
           <input
             ref={input}
             id={`${id}-file`}
             type="file"
+            multiple
             className="field__input field__input--file"
             accept={ACCEPTED_FILES}
+            aria-describedby={several ? `${id}-chosen` : undefined}
             onChange={(event) => {
-              const chosen = event.target.files?.[0] ?? null;
-              setFile(chosen);
-              if (chosen && !title) setTitle(chosen.name.replace(/\.[^.]+$/, ""));
+              const chosen = [...(event.target.files ?? [])];
+              setFiles(chosen);
+              const [only] = chosen;
+              if (only && chosen.length === 1 && !title) setTitle(only.name.replace(/\.[^.]+$/, ""));
             }}
           />
         </label>
-        <label className="field form__field" htmlFor={`${id}-name`}>
-          <span className="field__label">Title</span>
-          <input id={`${id}-name`} className="field__input" dir="auto" value={title} maxLength={300} onChange={(event) => setTitle(event.target.value)} />
-        </label>
+        {several ? (
+          <p id={`${id}-chosen`} className="form__field add__chosen">
+            {count(files.length, "file")} chosen; each is titled by its file name.
+          </p>
+        ) : (
+          <label className="field form__field" htmlFor={`${id}-name`}>
+            <span className="field__label">Title</span>
+            <input id={`${id}-name`} className="field__input" dir="auto" value={title} maxLength={300} onChange={(event) => setTitle(event.target.value)} />
+          </label>
+        )}
         <label className="field form__field" htmlFor={`${id}-language`}>
           <span className="field__label">Written in</span>
           <select
@@ -268,14 +337,15 @@ function AddDocument({ draft, collapsed }: { draft: DraftHook; collapsed: boolea
         </label>
       </div>
       <p className="add__actions">
-        <button type="submit" className="action-button" disabled={!!waits || draft.addDocument.isPending} aria-describedby={waits ? `${id}-waits` : undefined}>
+        <button type="submit" className="action-button" disabled={!!waits || pending} aria-describedby={waits ? `${id}-waits` : undefined}>
           <Upload size={16} aria-hidden="true" />
-          {draft.addDocument.isPending ? "Adding and reading…" : "Add it and read it"}
+          {pending ? "Adding and reading…" : several ? `Add the ${files.length} files and read them` : "Add it and read it"}
         </button>
       </p>
       {waits && <p id={`${id}-waits`} className="versions__waits">{waits}</p>}
-      {draft.addDocument.isError && <p className="docpage__failure" role="alert">{errorMessage(draft.addDocument.error)}</p>}
+      {failure && <p className="docpage__failure" role="alert">{errorMessage(failure)}</p>}
       {added && <p className="toolbar__notice" role="status">{added}</p>}
+      {lines && <UploadResults lines={lines} draft={draft} />}
     </form>
   );
 }

@@ -1,12 +1,12 @@
 import type { LibraryDocument } from "../api/client";
 import type { Rank } from "../timetable/TimetableTable";
-import { IN_PROGRESS, newestVersion, standing } from "./model";
+import { IN_PROGRESS, newestState, standing } from "./model";
 
 export const RANK_ORDER: Record<Rank, number> = { delayed: 0, due: 1, running: 2, service: 3, past: 4 };
 
 /** Where a document stands, as one row of the library table. */
 export function libraryRow(document: LibraryDocument) {
-  const newest = newestVersion(document);
+  const newest = newestState(document);
   const state = standing(document);
   const approved = newest !== undefined && document.publications.some((item) => item.version_id === newest.id);
   const inService = state.kind === "service" ? `v${state.versionNumber ?? "?"}` : "—";
@@ -23,7 +23,7 @@ export function libraryRow(document: LibraryDocument) {
     since = newest.uploaded_at;
   } else if (newest?.stage === "ready_for_review" && !approved) {
     rank = "due";
-    status = document.can_edit ? "Awaiting your review" : "Awaiting review";
+    status = document.is_owner ? "Awaiting your review" : "Awaiting review";
     since = newest.uploaded_at;
   } else if (state.kind === "indexing") {
     rank = state.stuck ? "delayed" : "running";
