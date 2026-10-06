@@ -28,3 +28,15 @@ export function sameMoment(a: string | null | undefined, b: string | null | unde
 export function cycleDays(standing: ReviewStanding): number {
   return Math.round((new Date(standing.due_at).getTime() - new Date(standing.last_reviewed_at).getTime()) / 86_400_000);
 }
+
+/** How long before its due date a review is reminded of (the service's window). */
+export const REMINDER_WINDOW_DAYS = 14;
+
+/** The cycle's statuses, kept apart from passage review's "Awaiting your review". */
+export const REVIEW_STATUS = { overdue: "Re-confirmation overdue", due_soon: "Re-confirmation due soon" } as const;
+
+/** Since when a standing has needed someone: its due date when overdue, else when its reminder window opened. */
+export function reviewSince(standing: ReviewStanding): string {
+  if (standing.state === "overdue") return standing.due_at;
+  return new Date(new Date(standing.due_at).getTime() - REMINDER_WINDOW_DAYS * 86_400_000).toISOString();
+}

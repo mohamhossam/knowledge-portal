@@ -69,11 +69,15 @@ describe("the reminders page", () => {
       document({ review: { ...standing("current"), due_at: "2027-04-04T09:00:00Z" } }),
     );
     render(wrap(<RemindersPage />, ["knowledge_admin", "knowledge_maintainer"]));
-    expect(await screen.findByText("2 overdue and 1 due within two weeks, of what you answer for. Each is confirmed again every 180 days; until then it stays in use, flagged where it is cited.")).toBeInTheDocument();
+    expect(await screen.findByText("2 overdue and 1 due within two weeks, of what you answer for. Each is re-confirmed every 180 days. It stays in use meanwhile; once overdue, requirement work flags citations of it.")).toBeInTheDocument();
     const row = screen.getByRole("link", { name: "Coverage policy" }).closest("tr")!;
     expect(row).toHaveClass("row--delayed");
-    expect(within(row).getByText("Overdue since 1 Oct 2026")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Customer care" }).closest("tr")).toHaveClass("row--due");
+    expect(within(row).getAllByText("Overdue since 1 Oct 2026").length).toBeGreaterThan(0);
+    // Systems falling due on one day share a head, overdue first.
+    expect(screen.getAllByRole("heading", { level: 3 }).map((head) => head.textContent)).toEqual([
+      "Fell due 30 Jun 2026 · 1 system",
+      "Falls due 15 Oct 2026 · 1 system",
+    ]);
 
     const trigger = screen.getByRole("button", { name: "Confirm it is still right: Coverage policy" });
     fireEvent.click(trigger);
@@ -97,16 +101,33 @@ describe("the reminders page", () => {
     const confirm = vi.spyOn(api, "confirmSystemReviews").mockResolvedValue([
       { system_id: "BRM", name: "Billing and Revenue", standing: { ...standing("current"), due_at: "2027-04-04T09:00:00Z" } } as SystemStanding,
     ]);
+    const sameDay = { ...REMINDERS, items: [
+      ...REMINDERS.items.slice(0, 2),
+      { kind: "system", id: "CRM", title: "Customer care", standing: standing("overdue", "2026-06-30T00:00:00Z") },
+    ] } as Reminders;
+    vi.spyOn(api, "reminders").mockResolvedValue(sameDay);
     const { unmount } = render(wrap(<RemindersPage />, ["knowledge_admin", "knowledge_maintainer"]));
-    fireEvent.click(await screen.findByRole("button", { name: "Confirm all 2 systems" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Confirm these 2 systems together: 30 Jun 2026" }));
+    // The bulk form names what it confirms, and asks what was checked.
+    expect(screen.getByText("Billing and Revenue and Customer care.")).toBeInTheDocument();
+    const checked = screen.getByLabelText("What you checked (required)");
+    expect(checked).toHaveFocus();
     fireEvent.click(screen.getByRole("button", { name: "Confirm 2 systems" }));
-    await waitFor(() => expect(confirm).toHaveBeenCalledWith(["BRM", "CRM"], { note: null, reason: null }));
+    expect(screen.getByText("Say what you checked: it stands for every one of them.")).toBeInTheDocument();
+    expect(confirm).not.toHaveBeenCalled();
+    fireEvent.change(checked, { target: { value: "Walked the landscape with the squads." } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirm 2 systems" }));
+    await waitFor(() => expect(confirm).toHaveBeenCalledWith(["BRM", "CRM"], { note: "Walked the landscape with the squads.", reason: null }));
     unmount();
 
     vi.spyOn(api, "reminders").mockResolvedValue({ ...REMINDERS, items: REMINDERS.items.slice(0, 1) });
+    vi.spyOn(api, "systemReviews").mockResolvedValue([
+      { system_id: "BRM", name: "Billing and Revenue", standing: standing("overdue", "2026-06-30T00:00:00Z") },
+    ] as SystemStanding[]);
     render(wrap(<RemindersPage />));
     await screen.findByRole("link", { name: "Coverage policy" });
-    expect(screen.queryByRole("heading", { name: /Catalogue systems/ })).not.toBeInTheDocument();
+    expect(await screen.findByText(/1 system is due for re-confirmation, 1 of them overdue/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /together/ })).not.toBeInTheDocument();
   });
 
   it("says when nothing is due", async () => {
@@ -120,7 +141,7 @@ describe("the masthead count", () => {
   it("links to the reminders, says what is overdue, and is absent at zero", async () => {
     vi.spyOn(api, "reminders").mockResolvedValue(REMINDERS);
     const { unmount } = render(wrap(<ReviewsDue />));
-    const link = await screen.findByRole("link", { name: "3 reviews due, 2 overdue" });
+    const link = await screen.findByRole("link", { name: "Reviews: 2 overdue · 1 due soon" });
     expect(link).toHaveAttribute("href", "/reminders");
     unmount();
     vi.spyOn(api, "reminders").mockResolvedValue({ overdue: 0, due_soon: 0, items: [] });
@@ -134,10 +155,10 @@ describe("a document's review line", () => {
   it("counts the approval as a review, and asks another admin why they confirm for its owner", async () => {
     const confirm = vi.spyOn(api, "confirmDocumentReview").mockResolvedValue(document({ review: standing("current", "2027-04-04T09:00:00Z") }));
     render(wrap(<DocumentReview document={document({ is_owner: false, can_edit: false })} />));
-    expect(screen.getByText(/Approved by Amina Owner on 4 Apr 2026/)).toBeInTheDocument();
+    expect(screen.getByText(/Not confirmed since its approval/)).toBeInTheDocument();
     expect(screen.getByText("Overdue since 1 Oct 2026")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Confirm on Amina Owner’s behalf…" }));
-    const why = screen.getByLabelText("Why you confirm it for Amina Owner");
+    fireEvent.click(screen.getByRole("button", { name: "Confirm it is still right for Amina Owner…" }));
+    const why = screen.getByLabelText("Why you confirm it for Amina Owner (required)");
     expect(why).toHaveFocus();
     fireEvent.click(screen.getByRole("button", { name: "Confirm for Amina Owner" }));
     expect(screen.getByText("Say why: it is kept with the confirmation.")).toBeInTheDocument();
@@ -156,16 +177,18 @@ describe("a document's review line", () => {
 
 describe("reviews in the tables", () => {
   it("ranks a document in service by its review, once nothing else needs it", () => {
-    expect(libraryRow(document())).toMatchObject({ rank: "delayed", status: "Review overdue" });
-    expect(libraryRow(document({ review: standing("due_soon") }))).toMatchObject({ rank: "due", status: "Review due soon" });
+    expect(libraryRow(document())).toMatchObject({ rank: "delayed", status: "Re-confirmation overdue", since: "2026-10-01T09:00:00Z" });
+    expect(libraryRow(document({ review: standing("due_soon") }))).toMatchObject({
+      rank: "due", status: "Re-confirmation due soon", since: "2026-09-17T09:00:00.000Z",
+    });
     expect(libraryRow(document({ review: standing("current") }))).toMatchObject({ rank: "service", status: "In service" });
   });
 
   it("flags overdue documents and systems on the front page", () => {
     const library = libraryOverview([document()]);
-    expect(library.lines).toMatchObject([{ rank: "delayed", cells: { status: "Review overdue" } }]);
-    expect(library.alert).toEqual({ rank: "delayed", text: "1 overdue for review" });
-    expect(library.next.label).toBe("1 document overdue for review by its owner");
+    expect(library.lines).toMatchObject([{ rank: "delayed", cells: { status: "Re-confirmation overdue", since: "1 Oct 2026" } }]);
+    expect(library.alert).toEqual({ rank: "delayed", text: "1 re-confirmation overdue" });
+    expect(library.next.label).toBe("1 document overdue for re-confirmation by its owner");
 
     const active = { id: "r1", name: "Edition 7", status: "active", revision: 3, published_by: "packaged-seed", published_at: "2026-01-01T00:00:00Z", systems: [{}, {}], relationships: [] } as unknown as Release;
     const standings = [
@@ -177,9 +200,10 @@ describe("reviews in the tables", () => {
       rank: "delayed",
       name: "Edition 7",
       statusDetail: "1 more due within two weeks",
-      cells: { status: "1 system overdue for review", preparedBy: "the packaged initial catalogue" },
+      cells: { status: "1 system: re-confirmation overdue", preparedBy: "the packaged initial catalogue" },
     }]);
-    expect(catalogue.alert).toEqual({ rank: "delayed", text: "1 overdue for review" });
-    expect(catalogue.next).toEqual({ to: "/reminders", label: "1 system overdue for review" });
+    expect(catalogue.alert).toEqual({ rank: "delayed", text: "1 re-confirmation overdue" });
+    expect(catalogue.next).toEqual({ to: "/reminders", label: "1 system overdue for re-confirmation" });
+    expect(catalogue.notes.find((note) => note.id === "reviews")?.text).toContain("The earliest, Billing and Revenue, fell due on 30 Jun 2026.");
   });
 });

@@ -8,7 +8,7 @@ import { errorMessage } from "../api/errors";
 import { libraryOverview } from "../home/derive";
 import { count, formatDay } from "../home/format";
 import { type Column, NoteMark, TimetableTable } from "../timetable/TimetableTable";
-import { dueWords } from "../reviews/review";
+import { REVIEW_STATUS, dueWords } from "../reviews/review";
 import { LibraryRetry } from "./LibraryRetry";
 import { RANK_ORDER, libraryRow } from "./libraryRow";
 
@@ -52,10 +52,10 @@ export function LibraryPage() {
   const ranked = (documents.data ?? [])
     .map((item) => ({ document: item, ...libraryRow(item) }))
     .sort((a, b) => RANK_ORDER[a.rank] - RANK_ORDER[b.rank] || a.document.title.localeCompare(b.document.title));
-  const yours = ranked.filter((item) => item.rank === "due" && item.document.is_owner);
-  const broken = ranked.filter((item) => item.rank === "delayed" && item.document.is_owner && item.status !== "Review overdue");
-  // The owner's own documents due or overdue for review, confirmed from their reminders.
-  const toConfirm = ranked.filter((item) => item.document.is_owner && item.review && item.review.state !== "current");
+  const yours = ranked.filter((item) => item.status === "Awaiting your review");
+  const broken = ranked.filter((item) => item.rank === "delayed" && item.document.is_owner && item.status !== REVIEW_STATUS.overdue);
+  // The owner's own documents to re-confirm, overdue first: they are confirmed from the reminders.
+  const toConfirm = ranked.filter((item) => item.document.is_owner && (item.status === REVIEW_STATUS.overdue || item.status === REVIEW_STATUS.due_soon));
   // What a knowledge admin can retry in one go, whoever owns it.
   const stopped = {
     reading: ranked.filter((item) => item.status === "Extraction failed").map((item) => item.document.title),

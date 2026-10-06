@@ -5,7 +5,7 @@ import type { Actor } from "../api/client";
 import { useAuth } from "../auth/authContext";
 import { REQUIREMENT_APP_URL } from "../auth/paths";
 import { TABLES } from "../home/tables";
-import { count, formatMoment } from "../home/format";
+import { formatMoment } from "../home/format";
 import { useOverview, type TableState } from "../home/useOverview";
 import { useReminders } from "../reviews/useReviews";
 
@@ -114,15 +114,16 @@ export function Shell() {
  */
 export function ReviewsDue() {
   const reminders = useReminders();
-  const due = (reminders.data?.overdue ?? 0) + (reminders.data?.due_soon ?? 0);
+  const overdue = reminders.data?.overdue ?? 0;
+  const soon = reminders.data?.due_soon ?? 0;
   return (
     <p className="masthead__reviews" aria-live="polite">
-      {due > 0 && reminders.data && (
+      {overdue + soon > 0 && (
         <Link to="/reminders" className="masthead__due">
-          {count(due, "review")} due
-          {reminders.data.overdue > 0 && (
-            <span className="masthead__overdue">, {reminders.data.overdue} overdue</span>
-          )}
+          Reviews:{" "}
+          {overdue > 0 && <span className="masthead__overdue">{overdue} overdue</span>}
+          {overdue > 0 && soon > 0 && " · "}
+          {soon > 0 && `${soon} due soon`}
         </Link>
       )}
     </p>

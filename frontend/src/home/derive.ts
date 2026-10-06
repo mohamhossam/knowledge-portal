@@ -21,6 +21,7 @@ import type {
   SystemStanding,
 } from "../api/client";
 import { jobReason, reading } from "../catalogue/suggestions";
+import { REVIEW_STATUS, reviewSince } from "../reviews/review";
 import { newestState } from "../library/model";
 import type { Rank } from "../timetable/TimetableTable";
 import { count, formatDay } from "./format";
@@ -88,9 +89,6 @@ function clause(parts: string[]): string | null {
   const said = parts.filter(Boolean);
   return said.length > 0 ? said.join(", ") : null;
 }
-
-/** How long before its due date a review is reminded of (the service's window). */
-const REMINDER_WINDOW_DAYS = 14;
 
 /** The index's clause for a table: its disruptions first, else what is due. */
 function alertOf(delayed: string | null, due: string | null): Overview["alert"] {
@@ -205,10 +203,9 @@ export function libraryOverview(documents: LibraryDocument[]): Overview {
       notes.push({
         id,
         text: `Last confirmed still right by ${review.reviewer.display_name} on ${formatDay(review.last_reviewed_at)}; ${
-          overdue ? "it fell due" : "it falls due"} for review on ${formatDay(review.due_at)}. It stays in service, and requirement work flags citations of it once it is overdue.`,
+          overdue ? "it fell due" : "it falls due"} for re-confirmation on ${formatDay(review.due_at)}. It stays in service meanwhile; once overdue, requirement work flags citations of it.`,
       });
-      const windowOpened = new Date(new Date(review.due_at).getTime() - REMINDER_WINDOW_DAYS * 86_400_000).toISOString();
-      lines.push(line(overdue ? "delayed" : "due", overdue ? "Review overdue" : "Review due soon", overdue ? review.due_at : windowOpened, id));
+      lines.push(line(overdue ? "delayed" : "due", overdue ? REVIEW_STATUS.overdue : REVIEW_STATUS.due_soon, reviewSince(review), id));
       if (overdue) reviewsOverdue += 1;
       else reviewsDue += 1;
     }
@@ -248,17 +245,17 @@ export function libraryOverview(documents: LibraryDocument[]): Overview {
             ? {
                 to: "/library",
                 label: reviewsOverdue > 0
-                  ? `${count(reviewsOverdue, "document")} overdue for review by ${reviewsOverdue === 1 ? "its owner" : "their owners"}`
-                  : `${count(reviewsDue, "document")} due for review within two weeks`,
+                  ? `${count(reviewsOverdue, "document")} overdue for re-confirmation by ${reviewsOverdue === 1 ? "its owner" : "their owners"}`
+                  : `${count(reviewsDue, "document")} due for re-confirmation within two weeks`,
               }
             : { label: "Nothing in the library awaits a curator." },
     extent: { value: documents.length, label: count(documents.length, "document") },
     alert: alertOf(
       clause([
         delayed > 0 ? `${delayed} ${delayed === 1 ? "needs" : "need"} attention` : "",
-        reviewsOverdue > 0 ? `${reviewsOverdue} overdue for review` : "",
+        reviewsOverdue > 0 ? `${count(reviewsOverdue, "re-confirmation")} overdue` : "",
       ]),
-      clause([due > 0 ? `${due} to review` : "", reviewsDue > 0 ? `${reviewsDue} due for review` : ""]),
+      clause([due > 0 ? `${due} to review` : "", reviewsDue > 0 ? `${count(reviewsDue, "re-confirmation")} due` : ""]),
     ),
   };
 }
@@ -347,10 +344,17 @@ export function architectureOverview(
   if (active && overdueSystems.length + dueSystems.length > 0) {
     const note = "reviews";
     const oldest = [...overdueSystems, ...dueSystems].sort((a, b) => a.standing.due_at.localeCompare(b.standing.due_at))[0];
+    const sameDay = oldest
+      ? [...overdueSystems, ...dueSystems].filter((item) => formatDay(item.standing.due_at) === formatDay(oldest.standing.due_at)).length
+      : 0;
     notes.push({
       id: note,
       text: `Every catalogue maintainer is reminded of each system, and any of them confirms it still right. ${
-        oldest ? `The first fell due on ${formatDay(oldest.standing.due_at)}: ${oldest.name}.` : ""} They stay in service meanwhile.`,
+        oldest
+          ? sameDay > 1
+            ? `The earliest, ${count(sameDay, "system")}, ${oldest.standing.state === "overdue" ? "fell" : "fall"} due on ${formatDay(oldest.standing.due_at)}.`
+            : `The earliest, ${oldest.name}, ${oldest.standing.state === "overdue" ? "fell" : "falls"} due on ${formatDay(oldest.standing.due_at)}.`
+          : ""} They stay in service meanwhile.`,
     });
     const overdue = overdueSystems.length > 0;
     lines.push({
@@ -362,8 +366,8 @@ export function architectureOverview(
       statusDetail: overdue && dueSystems.length > 0 ? `${dueSystems.length} more due within two weeks` : undefined,
       cells: {
         status: overdue
-          ? `${count(overdueSystems.length, "system")} overdue for review`
-          : `${count(dueSystems.length, "system")} due for review`,
+          ? `${count(overdueSystems.length, "system")}: re-confirmation overdue`
+          : `${count(dueSystems.length, "system")}: re-confirmation due soon`,
         preparedBy: nameOf(active.published_by),
         systems: String(active.systems.length),
         revision: `r${active.revision}`,
@@ -433,19 +437,19 @@ export function architectureOverview(
             ? {
                 to: "/reminders",
                 label: overdueSystems.length > 0
-                  ? `${count(overdueSystems.length, "system")} overdue for review`
-                  : `${count(dueSystems.length, "system")} due for review within two weeks`,
+                  ? `${count(overdueSystems.length, "system")} overdue for re-confirmation`
+                  : `${count(dueSystems.length, "system")} due for re-confirmation within two weeks`,
               }
             : { label: "Nothing in the architecture catalogue awaits a curator." },
     extent: { value: active?.systems.length ?? 0, label: count(active?.systems.length ?? 0, "system") },
     alert: alertOf(
       clause([
         failedDrafts.length > 0 ? `${count(failedDrafts.length, "draft")} failed` : "",
-        overdueSystems.length > 0 ? `${overdueSystems.length} overdue for review` : "",
+        overdueSystems.length > 0 ? `${count(overdueSystems.length, "re-confirmation")} overdue` : "",
       ]),
       clause([
         pendingTotal > 0 ? `${pendingTotal} to decide` : "",
-        dueSystems.length > 0 ? `${dueSystems.length} due for review` : "",
+        dueSystems.length > 0 ? `${count(dueSystems.length, "re-confirmation")} due` : "",
       ]),
     ),
   };

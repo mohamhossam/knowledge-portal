@@ -39,8 +39,7 @@ export function DocumentReview({ document }: { document: LibraryDocument }) {
   const published = document.publications.find((item) => item.id === document.published_id);
   // Approving the version in service counts as its review, until someone confirms it again.
   const byApproval = sameMoment(standing.last_reviewed_at, published?.approved_at);
-  const verb = byApproval ? "Approved" : "Last confirmed";
-  const label = document.is_owner ? "Confirm it is still right…" : `Confirm on ${owner}’s behalf…`;
+  const label = document.is_owner ? "Confirm it is still right…" : `Confirm it is still right for ${owner}…`;
   const close = () => {
     if (confirm.isPending) return;
     setOpen(false);
@@ -50,25 +49,29 @@ export function DocumentReview({ document }: { document: LibraryDocument }) {
   return (
     <div className="review">
       <p className={`review__line review__line--${standing.state}`}>
-        {verb} by {standing.reviewer.display_name} on {formatDay(standing.last_reviewed_at)}
+        {byApproval
+          ? "Not confirmed since its approval"
+          : <>Last confirmed by {standing.reviewer.display_name} on {formatDay(standing.last_reviewed_at)}</>}
         <span aria-hidden="true"> · </span>
-        <span className={standing.state === "current" ? undefined : "status"}>
-          {standing.state === "current" ? `due for review ${formatDay(standing.due_at)}` : dueWords(standing)}
+        <span className={standing.state === "current" ? "review__due" : "review__due status"}>
+          {standing.state === "current" ? `due for re-confirmation ${formatDay(standing.due_at)}` : dueWords(standing)}
+        </span>{" "}
+        <span className="review__act">
+          <span aria-hidden="true">· </span>
+          <button
+            ref={trigger}
+            type="button"
+            className="text-button knowledge__act"
+            aria-expanded={open}
+            onClick={() => {
+              setDone("");
+              if (open) close();
+              else setOpen(true);
+            }}
+          >
+            {label}
+          </button>
         </span>
-        <span aria-hidden="true"> · </span>
-        <button
-          ref={trigger}
-          type="button"
-          className="text-button knowledge__act"
-          aria-expanded={open}
-          onClick={() => {
-            setDone("");
-            if (open) close();
-            else setOpen(true);
-          }}
-        >
-          {label}
-        </button>
       </p>
       <p className="toolbar__notice" role="status">{done}</p>
       {open && (

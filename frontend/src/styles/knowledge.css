@@ -243,8 +243,15 @@
 }
 
 .review__line {
+  max-width: 72ch;
   color: var(--ink-2);
   font-size: var(--t-meta);
+}
+
+/* A status date and the action after it never break inside themselves. */
+.review__due,
+.review__act {
+  white-space: nowrap;
 }
 
 /* Rank by weight: due soon is bold ink; overdue is bold in disruption red. */
@@ -259,12 +266,18 @@
 }
 
 .review__note {
+  max-width: 72ch;
   font-size: var(--t-meta);
 }
 
+/* A status line stays in the accessibility tree while empty, so what it says next is announced. */
 .review .toolbar__notice:empty,
 .reminders > .toolbar__notice:empty {
-  display: none;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
 }
 
 .review__form {
@@ -273,20 +286,92 @@
   background: var(--stock-band);
 }
 
+.govtable tbody .knowledge__act-row .review__form,
+.review__item .review__form,
+.review__bulk .review__form {
+  margin-top: var(--s2);
+}
+
 .govtable tbody .knowledge__act-row .review__form {
   padding: 0;
   border-bottom: 0;
+  margin-top: 0;
 }
 
-.review__table .cell--end {
-  white-space: nowrap;
+/* Every row here is the reader's own: an overdue row's name is as heavy as a due one's. */
+.review__table .row--delayed th > a {
+  font-weight: var(--w-bold);
+}
+
+/* The action sits a step under its title, so the two targets keep apart. */
+.review__by {
+  margin-top: var(--s1);
 }
 
 .review__narrow {
   display: none;
 }
 
-/* The masthead's count: bold ink for what is due, red for what is overdue. */
+/* Systems falling due on one day share a head; red stays on the head. */
+.review__group {
+  display: grid;
+  gap: var(--s1);
+  margin-top: var(--s3);
+}
+
+.review__group-head {
+  padding-bottom: var(--s1);
+  border-bottom: 2px solid var(--rule-heavy);
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+  font-stretch: var(--width-condensed);
+  font-weight: var(--w-medium);
+  letter-spacing: 0.01em;
+}
+
+.review__group--due .review__group-due {
+  color: var(--ink);
+  font-weight: var(--w-bold);
+}
+
+.review__group--overdue .review__group-due {
+  color: var(--disruption);
+  font-weight: var(--w-bold);
+}
+
+.review__list {
+  display: grid;
+}
+
+.review__item {
+  padding-block: var(--s2);
+  border-bottom: 1px solid var(--rule-faint);
+}
+
+.review__item.is-acting {
+  padding-inline: var(--s2);
+  background: var(--stock-band);
+}
+
+.review__item-line {
+  max-width: 72ch;
+}
+
+.review__item-line .secondary {
+  font-size: var(--t-meta);
+}
+
+.review__bulk {
+  padding-top: var(--s2);
+}
+
+.review__named {
+  max-width: 72ch;
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+}
+
+/* The masthead's count: bold ink, its overdue clause bold in disruption red. */
 .masthead__reviews:empty {
   display: none;
 }
@@ -294,6 +379,7 @@
 .masthead__due {
   display: inline-flex;
   align-items: center;
+  gap: 0.25em;
   min-height: 1.5rem;
   font-size: var(--t-meta);
   font-weight: var(--w-bold);
@@ -301,7 +387,6 @@
 
 .masthead__overdue {
   color: var(--disruption);
-  font-weight: var(--w-medium);
 }
 
 @media (max-width: 45rem) {

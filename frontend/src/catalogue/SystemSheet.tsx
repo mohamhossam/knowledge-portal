@@ -46,6 +46,7 @@ export function SystemSheet({ system }: { system: CatalogueSystem }) {
         </p>
         <h2 id={`${id}-name`} ref={heading} tabIndex={-1} className="sheet__title" dir="auto">{system.name}</h2>
         {system.name_ar && <p className="sheet__arabic" lang="ar" dir="rtl">{system.name_ar}</p>}
+        <SystemReview system={system} />
         <dl className="sheet__facts">
           <div>
             <dt>Also called</dt>
@@ -63,7 +64,6 @@ export function SystemSheet({ system }: { system: CatalogueSystem }) {
           </div>
         </dl>
         {system.description && <p className="sheet__description" dir="auto">{system.description}</p>}
-        <SystemReview system={system} />
         {editable && (
           <p className="docpage__actions">
             <EditButton expanded={editing === "system"} onClick={() => setEditing(editing === "system" ? null : "system")}>

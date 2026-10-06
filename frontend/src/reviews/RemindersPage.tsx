@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, RotateCw } from "lucide-react";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { RotateCw } from "lucide-react";
+import { Fragment, type ReactNode, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { api, type ConfirmReview, type Reminder } from "../api/client";
@@ -9,12 +9,40 @@ import { useAuth } from "../auth/authContext";
 import { count, formatDay } from "../home/format";
 import { ConfirmReviewForm } from "./ConfirmReviewForm";
 import { REVIEW_READS, REVIEW_RANK, cycleDays, dueWords, sameMoment } from "./review";
-import { MAINTAINER, tally, useConfirmSystems, useReminders } from "./useReviews";
+import { MAINTAINER, tally, useConfirmSystems, useReminders, useSystemStandings } from "./useReviews";
 
 const href = (item: Reminder) =>
   item.kind === "document"
     ? `/library/${encodeURIComponent(item.id)}`
     : `/architecture/systems/${encodeURIComponent(item.id)}`;
+
+/** How many names a bulk confirmation spells out before "and N more". */
+const NAMED = 12;
+
+/** Systems that fall due on the same day, from the same kind of last review: one group head. */
+type Group = { key: string; overdue: boolean; dueAt: string; fromPublication: boolean; items: Reminder[] };
+
+function groups(items: Reminder[], publishedAt: string | null | undefined): Group[] {
+  const byKey = new Map<string, Group>();
+  for (const item of items) {
+    const fromPublication = sameMoment(item.standing.last_reviewed_at, publishedAt);
+    const overdue = item.standing.state === "overdue";
+    const key = `${overdue}|${formatDay(item.standing.due_at)}|${fromPublication}`;
+    const group = byKey.get(key) ?? { key, overdue, dueAt: item.standing.due_at, fromPublication, items: [] };
+    group.items.push(item);
+    byKey.set(key, group);
+  }
+  // The service already orders overdue first, then by due date; groups keep that order.
+  return [...byKey.values()];
+}
+
+/** "ADFS, BSCS, CNS and 20 more". */
+function named(items: Reminder[]): string {
+  const names = items.slice(0, NAMED).map((item) => item.title);
+  const rest = items.length - names.length;
+  if (rest > 0) return `${names.join(", ")} and ${rest} more`;
+  return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : names.join("");
+}
 
 /**
  * The signed-in person's reminders (Knowledge Center D): the library documents they own and,
@@ -24,13 +52,13 @@ const href = (item: Reminder) =>
 export function RemindersPage() {
   const reminders = useReminders();
   const maintainer = useAuth()?.actor?.roles?.includes(MAINTAINER) ?? false;
-  const active = useQuery({ queryKey: ["architecture", "active"], queryFn: api.activeRelease, enabled: maintainer });
+  const active = useQuery({ queryKey: ["architecture", "active"], queryFn: api.activeRelease });
+  // Someone who is not a maintainer is still told what the maintainers have due.
+  const standings = useSystemStandings(!maintainer);
   const queryClient = useQueryClient();
   const [acting, setActing] = useState<string | null>(null);
-  const [bulk, setBulk] = useState(false);
   const [outcome, setOutcome] = useState("");
   const triggers = useRef<Record<string, HTMLButtonElement | null>>({});
-  const bulkTrigger = useRef<HTMLButtonElement>(null);
   const outcomeLine = useRef<HTMLParagraphElement>(null);
   const refresh = () => Promise.all(REVIEW_READS.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
   const confirmDocument = useMutation({
@@ -49,16 +77,13 @@ export function RemindersPage() {
   const keyOf = (item: Reminder) => `${item.kind}:${item.id}`;
   const busy = confirmDocument.isPending || confirmSystems.isPending;
   const failure = confirmDocument.error ?? confirmSystems.error;
+  const publishedAt = active.data?.published_at;
 
-  const settle = () => {
+  const open = (key: string) => {
     confirmDocument.reset();
     confirmSystems.reset();
     setOutcome("");
-  };
-  const open = (item: Reminder) => {
-    settle();
-    setBulk(false);
-    setActing(keyOf(item));
+    setActing(key);
   };
   const cancel = () => {
     const key = acting;
@@ -69,7 +94,6 @@ export function RemindersPage() {
   const confirmed = (text: string) => {
     setOutcome(text);
     setActing(null);
-    setBulk(false);
     window.requestAnimationFrame(() => outcomeLine.current?.focus());
   };
   const confirm = (item: Reminder, body: ConfirmReview) => {
@@ -84,70 +108,75 @@ export function RemindersPage() {
     }
   };
 
+  const trigger = (key: string, label: string, name: string) => (
+    <button
+      ref={(node) => { triggers.current[key] = node; }}
+      type="button"
+      className="text-button knowledge__act"
+      aria-expanded={acting === key}
+      aria-label={`${label.replace(/…$/, "")}: ${name}`}
+      onClick={() => (acting === key ? cancel() : open(key))}
+    >
+      {label}
+    </button>
+  );
+  const form = (item: Reminder) => (
+    <ConfirmReviewForm
+      title={<>Confirm <span dir="auto">{item.kind === "document" ? `‘${item.title}’` : item.title}</span> is still right</>}
+      lead={item.kind === "document"
+        ? "Its version in service stays as it is. Confirming starts its review cycle again, and requirement work stops flagging citations of it as overdue."
+        : "Its sheet in the version in service stays as it is. Confirming starts its review cycle again for every catalogue maintainer."}
+      onBehalf={null}
+      commit="Confirm it"
+      busy={busy}
+      error={failure ? errorMessage(failure) : null}
+      onSubmit={(body) => confirm(item, body)}
+      onCancel={cancel}
+    />
+  );
+
   const cycle = items[0] ? cycleDays(items[0].standing) : null;
   const edition = reminders.data
     ? items.length === 0
       ? "Nothing you answer for falls due in the next two weeks."
-      : `${tally(reminders.data)}, of what you answer for.${cycle ? ` Each is confirmed again every ${cycle} days; until then it stays in use, flagged where it is cited.` : ""}`
+      : `${tally(reminders.data)}, of what you answer for.${cycle ? ` Each is re-confirmed every ${cycle} days. It stays in use meanwhile; once overdue, requirement work flags citations of it.` : ""}`
     : reminders.isError ? "Your reminders could not be read." : "Reading your reminders…";
 
-  const table = (rows: Reminder[], noun: string, caption: string) => (
+  const lastConfirmed = (item: Reminder) => `${item.standing.reviewer.display_name}, ${formatDay(item.standing.last_reviewed_at)}`;
+
+  const documentTable = (
     <table className="govtable review__table">
-      <caption className="visually-hidden">{caption}</caption>
+      <caption className="visually-hidden">Library documents you own that are due for re-confirmation</caption>
       <thead>
         <tr>
-          <th scope="col">{noun}</th>
-          <th scope="col" className="cell--end">Falls due</th>
-          <th scope="col" className="cell--p2">Last confirmed</th>
+          <th scope="col">Document</th>
+          <th scope="col" className="cell--end cell--p2">Falls due</th>
+          <th scope="col" className="cell--end cell--p2">Last confirmed</th>
         </tr>
       </thead>
       <tbody>
-        {rows.map((item) => {
+        {documents.map((item) => {
           const key = keyOf(item);
-          const isOpen = acting === key;
-          const fromPublication = item.kind === "system" && sameMoment(item.standing.last_reviewed_at, active.data?.published_at);
-          const last = fromPublication
-            ? `Never; published ${formatDay(item.standing.last_reviewed_at)}`
-            : `${item.standing.reviewer.display_name}, ${formatDay(item.standing.last_reviewed_at)}`;
           return (
             <Fragment key={key}>
-              <tr className={`row row--${REVIEW_RANK[item.standing.state]}${isOpen ? " is-acting" : ""}`}>
+              <tr className={`row row--${REVIEW_RANK[item.standing.state]}${acting === key ? " is-acting" : ""}`}>
                 <th scope="row">
                   <Link to={href(item)} dir="auto">{item.title}</Link>
-                  <span className="secondary govtable__by">
-                    {/* On phones Last confirmed leaves the grid; it stays with the name. */}
-                    <span className="review__narrow">Last confirmed: {last}<span aria-hidden="true"> · </span></span>
-                    <button
-                      ref={(node) => { triggers.current[key] = node; }}
-                      type="button"
-                      className="text-button knowledge__act"
-                      aria-expanded={isOpen}
-                      aria-label={`Confirm it is still right: ${item.title}`}
-                      onClick={() => (isOpen ? cancel() : open(item))}
-                    >
-                      Confirm it is still right…
-                    </button>
+                  <span className="secondary govtable__by review__by">
+                    {/* On phones both columns leave the grid; they stay with the name. */}
+                    <span className="review__narrow">
+                      <span className="status">{dueWords(item.standing)}</span> · last confirmed {lastConfirmed(item)}
+                      <br />
+                    </span>
+                    {trigger(key, "Confirm it is still right…", item.title)}
                   </span>
                 </th>
-                <td className="cell--end"><span className="status">{dueWords(item.standing)}</span></td>
-                <td className="cell--p2">{last}</td>
+                <td className="cell--end cell--p2"><span className="status review__due">{dueWords(item.standing)}</span></td>
+                <td className="cell--end cell--p2">{lastConfirmed(item)}</td>
               </tr>
-              {isOpen && (
+              {acting === key && (
                 <tr className="knowledge__act-row">
-                  <td colSpan={3}>
-                    <ConfirmReviewForm
-                      title={<>Confirm <span dir="auto">{item.kind === "document" ? `‘${item.title}’` : item.title}</span> is still right</>}
-                      lead={item.kind === "document"
-                        ? "Its version in service stays as it is. Confirming starts its review cycle again, and requirement work stops flagging citations of it as overdue."
-                        : "Its sheet in the version in service stays as it is. Confirming starts its review cycle again for every catalogue maintainer."}
-                      onBehalf={null}
-                      commit="Confirm it"
-                      busy={busy}
-                      error={failure ? errorMessage(failure) : null}
-                      onSubmit={(body) => confirm(item, body)}
-                      onCancel={cancel}
-                    />
-                  </td>
+                  <td colSpan={3}>{form(item)}</td>
                 </tr>
               )}
             </Fragment>
@@ -156,6 +185,72 @@ export function RemindersPage() {
       </tbody>
     </table>
   );
+
+  const systemGroup = (group: Group) => {
+    const bulkKey = `group:${group.key}`;
+    const date = formatDay(group.dueAt);
+    const head: ReactNode = (
+      <>
+        <span className={group.overdue ? "review__group-due status" : "review__group-due"}>
+          {group.overdue ? `Fell due ${date}` : `Falls due ${date}`}
+        </span>
+        {group.fromPublication && <> · never confirmed since its publication on {formatDay(group.items[0]?.standing.last_reviewed_at)}</>}
+        {" "}· {count(group.items.length, "system")}
+      </>
+    );
+    return (
+      <div key={group.key} className={`review__group review__group--${group.overdue ? "overdue" : "due"}`}>
+        <h3 className="review__group-head">{head}</h3>
+        <ul className="review__list">
+          {group.items.map((item) => {
+            const key = keyOf(item);
+            return (
+              <li key={key} className={acting === key ? "review__item is-acting" : "review__item"}>
+                <p className="review__item-line">
+                  <Link to={href(item)} dir="auto">{item.title}</Link>
+                  {!group.fromPublication && (
+                    <span className="secondary"> · last confirmed by {item.standing.reviewer.display_name}</span>
+                  )}
+                  {" "}
+                  <span className="review__act secondary">
+                    <span aria-hidden="true">· </span>
+                    {trigger(key, "Confirm it is still right…", item.title)}
+                  </span>
+                </p>
+                {acting === key && form(item)}
+              </li>
+            );
+          })}
+        </ul>
+        {group.items.length > 1 && (
+          <div className="review__bulk">
+            <p className="review__item-line">
+              {trigger(bulkKey, `Confirm these ${count(group.items.length, "system")} together…`, date)}
+            </p>
+            {acting === bulkKey && (
+              <ConfirmReviewForm
+                title={<>Confirm {count(group.items.length, "system")} still right</>}
+                lead="One confirmation for each of them, with your note. Their sheets stay as they are, and each starts its review cycle again."
+                detail={<p className="review__named" dir="auto">{named(group.items)}.</p>}
+                onBehalf={null}
+                noteRequired
+                commit={`Confirm ${count(group.items.length, "system")}`}
+                busy={busy}
+                error={failure ? errorMessage(failure) : null}
+                onSubmit={(body) => confirmSystems.mutate({ systemIds: group.items.map((item) => item.id), body }, {
+                  onSuccess: (result) => confirmed(`Confirmed ${count(result.length, "system")}. They fall due again on ${formatDay(result[0]?.standing.due_at)}.`),
+                })}
+                onCancel={cancel}
+              />
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const othersDue = (standings.data ?? []).filter((item) => item.standing.state !== "current");
+  const othersOverdue = othersDue.filter((item) => item.standing.state === "overdue").length;
 
   return (
     <section className="docpage reminders" aria-labelledby="reminders-title">
@@ -183,63 +278,36 @@ export function RemindersPage() {
               Your library documents
               {documents.length > 0 && <span className="govsection__count"> · {documents.length}</span>}
             </h2>
-            {documents.length > 0 ? (
-              table(documents, "Document", "Library documents you own that are due for review")
-            ) : (
+            {documents.length > 0 ? documentTable : (
               <p className="timetable__quiet">None of the documents you own falls due in the next two weeks.</p>
             )}
           </section>
-          {maintainer && (
-            <section className="govsection" aria-labelledby="reminders-systems">
-              <h2 id="reminders-systems" className="govsection__title">
-                Catalogue systems in service
-                {systems.length > 0 && <span className="govsection__count"> · {systems.length}</span>}
-              </h2>
+          <section className="govsection" aria-labelledby="reminders-systems">
+            <h2 id="reminders-systems" className="govsection__title">
+              Catalogue systems in service
+              {maintainer && systems.length > 0 && <span className="govsection__count"> · {systems.length}</span>}
+            </h2>
+            {maintainer ? (
+              <>
+                <p className="govsection__lead">
+                  Every catalogue maintainer is reminded of every system, and any of you may confirm one.
+                </p>
+                {systems.length > 0
+                  ? groups(systems, publishedAt).map(systemGroup)
+                  : <p className="timetable__quiet">No system in service falls due in the next two weeks.</p>}
+              </>
+            ) : (
               <p className="govsection__lead">
-                Every catalogue maintainer is reminded of every system, and any of you may confirm one.
+                {othersDue.length > 0 ? (
+                  <>
+                    {count(othersDue.length, "system")} {othersDue.length === 1 ? "is" : "are"} due for re-confirmation
+                    {othersOverdue > 0 ? `, ${othersOverdue} of them overdue` : ""}. Catalogue maintainers confirm them;
+                    you can confirm one for them from its sheet in the <Link to="/architecture">architecture catalogue</Link>.
+                  </>
+                ) : standings.isPending ? "Reading the catalogue’s reviews…" : "No system in service falls due in the next two weeks."}
               </p>
-              {systems.length > 0 ? (
-                <>
-                  <p className="knowledge__bulk">
-                    <button
-                      ref={bulkTrigger}
-                      type="button"
-                      className="next-button"
-                      aria-expanded={bulk}
-                      onClick={() => {
-                        settle();
-                        setActing(null);
-                        setBulk(!bulk);
-                      }}
-                    >
-                      Confirm all {count(systems.length, "system")}
-                      <ArrowRight size={16} aria-hidden="true" />
-                    </button>
-                  </p>
-                  {bulk && (
-                    <ConfirmReviewForm
-                      title={<>Confirm all {count(systems.length, "system")} still right</>}
-                      lead="Only the systems listed here. Their sheets stay as they are; each starts its review cycle again, with one note for them all."
-                      onBehalf={null}
-                      commit={`Confirm ${count(systems.length, "system")}`}
-                      busy={busy}
-                      error={failure ? errorMessage(failure) : null}
-                      onSubmit={(body) => confirmSystems.mutate({ systemIds: systems.map((item) => item.id), body }, {
-                        onSuccess: (result) => confirmed(`Confirmed ${count(result.length, "system")}. They fall due again on ${formatDay(result[0]?.standing.due_at)}.`),
-                      })}
-                      onCancel={() => {
-                        setBulk(false);
-                        bulkTrigger.current?.focus();
-                      }}
-                    />
-                  )}
-                  {table(systems, "System", "Catalogue systems in service that are due for review")}
-                </>
-              ) : (
-                <p className="timetable__quiet">No system in service falls due in the next two weeks.</p>
-              )}
-            </section>
-          )}
+            )}
+          </section>
         </>
       )}
     </section>

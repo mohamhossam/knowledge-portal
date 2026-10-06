@@ -44,27 +44,29 @@ export function SystemReview({ system }: { system: CatalogueSystem }) {
       <p className={`review__line review__line--${item.standing.state}`}>
         <ReviewSince item={item} publishedAt={book.release.published_at} />
         <span aria-hidden="true"> · </span>
-        <span className={item.standing.state === "current" ? undefined : "status"}>
-          {item.standing.state === "current" ? `due for review ${formatDay(item.standing.due_at)}` : dueWords(item.standing)}
+        <span className={item.standing.state === "current" ? "review__due" : "review__due status"}>
+          {item.standing.state === "current" ? `due for re-confirmation ${formatDay(item.standing.due_at)}` : dueWords(item.standing)}
+        </span>{" "}
+        <span className="review__act">
+          <span aria-hidden="true">· </span>
+          <button
+            ref={trigger}
+            type="button"
+            className="text-button knowledge__act"
+            aria-expanded={open}
+            onClick={() => {
+              setDone("");
+              if (open) close();
+              else setOpen(true);
+            }}
+          >
+            {maintainer ? "Confirm it is still right…" : "Confirm it is still right for the maintainers…"}
+          </button>
         </span>
-        <span aria-hidden="true"> · </span>
-        <button
-          ref={trigger}
-          type="button"
-          className="text-button knowledge__act"
-          aria-expanded={open}
-          onClick={() => {
-            setDone("");
-            if (open) close();
-            else setOpen(true);
-          }}
-        >
-          {maintainer ? "Confirm it is still right…" : "Confirm for the catalogue’s maintainers…"}
-        </button>
       </p>
       {item.note && (
         <p className="review__note secondary">
-          Their note: <span dir="auto">{item.note}</span>
+          Note from {item.standing.reviewer.display_name}: <span dir="auto">{item.note}</span>
           {item.on_behalf && <> (for the maintainers: <span dir="auto">{item.on_behalf.reason}</span>)</>}
         </p>
       )}
@@ -76,7 +78,7 @@ export function SystemReview({ system }: { system: CatalogueSystem }) {
             ? "Its sheet in the version in service stays as it is. Confirming starts its review cycle again for every catalogue maintainer."
             : "Catalogue maintainers confirm systems. Confirming for them names you and your reason, and starts its review cycle again."}
           onBehalf={maintainer ? null : "the catalogue’s maintainers"}
-          commit="Confirm it"
+          commit={maintainer ? "Confirm it" : "Confirm for the maintainers"}
           busy={confirm.isPending}
           error={confirm.isError ? errorMessage(confirm.error) : null}
           onSubmit={(body) => confirm.mutate({ systemIds: [system.id], body }, {
