@@ -806,6 +806,69 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/knowledge-center/requirement-corpus/findings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Corpus Findings
+         * @description Possible duplicates and contradictions in force, the longest-standing first.
+         */
+        get: operations["corpus_findings_knowledge_center_requirement_corpus_findings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/knowledge-center/requirement-corpus/findings/{finding_id}/nudge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Nudge Finding Owners
+         * @description Ask both Requirements' owners to decide a finding, in the admin's name.
+         *
+         *     409 with requirement work's reason when the finding was decided, a Requirement changed,
+         *     it was nudged in the last 7 days, or neither Requirement has an owner.
+         */
+        post: operations["nudge_finding_owners_knowledge_center_requirement_corpus_findings__finding_id__nudge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/knowledge-center/requirement-corpus/requirements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Corpus Requirements
+         * @description The corpus Requirement by Requirement, by title: identity and state, never content.
+         */
+        get: operations["corpus_requirements_knowledge_center_requirement_corpus_requirements_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/knowledge/search": {
         parameters: {
             query?: never;
@@ -2036,6 +2099,60 @@ export interface components {
             /** Index Identity */
             index_identity: string;
         };
+        /** CorpusFindingResponse */
+        CorpusFindingResponse: {
+            age: components["schemas"]["FindingAge"];
+            /** Finding Id */
+            finding_id: string;
+            kind: components["schemas"]["FindingKind"];
+            last_nudge: components["schemas"]["NudgeMarkResponse"] | null;
+            /** Next Nudge At */
+            next_nudge_at: string | null;
+            /**
+             * Raised At
+             * Format: date-time
+             */
+            raised_at: string;
+            /** Rationale */
+            rationale: string;
+            related: components["schemas"]["FindingSideResponse"];
+            subject: components["schemas"]["FindingSideResponse"];
+        };
+        /**
+         * CorpusFindingsResponse
+         * @description Findings in force, the longest-standing first.
+         */
+        CorpusFindingsResponse: {
+            /** Items */
+            items: components["schemas"]["CorpusFindingResponse"][];
+            /** Next Offset */
+            next_offset: number | null;
+        };
+        /** CorpusRequirementResponse */
+        CorpusRequirementResponse: {
+            /** Duplicate */
+            duplicate: boolean;
+            index_state: components["schemas"]["IndexState"];
+            /** Last Screened At */
+            last_screened_at: string | null;
+            /** Open Findings */
+            open_findings: number;
+            owner: components["schemas"]["PersonNameResponse"] | null;
+            /** Requirement Id */
+            requirement_id: string;
+            /** Title */
+            title: string;
+        };
+        /**
+         * CorpusRequirementsResponse
+         * @description Requirements by title: identity and state, never content.
+         */
+        CorpusRequirementsResponse: {
+            /** Items */
+            items: components["schemas"]["CorpusRequirementResponse"][];
+            /** Next Offset */
+            next_offset: number | null;
+        };
         /** CreateVersionRequest */
         CreateVersionRequest: {
             /** Name */
@@ -2244,6 +2361,24 @@ export interface components {
             trigger: string;
         };
         /**
+         * FindingAge
+         * @enum {string}
+         */
+        FindingAge: "under_7_days" | "from_7_to_30_days" | "over_30_days";
+        /**
+         * FindingKind
+         * @enum {string}
+         */
+        FindingKind: "possible_duplicate" | "possible_contradiction";
+        /** FindingSideResponse */
+        FindingSideResponse: {
+            owner: components["schemas"]["PersonNameResponse"] | null;
+            /** Requirement Id */
+            requirement_id: string;
+            /** Title */
+            title: string;
+        };
+        /**
          * FlowRuleKind
          * @enum {string}
          */
@@ -2360,6 +2495,11 @@ export interface components {
             /** Name */
             name: string;
         };
+        /**
+         * IndexState
+         * @enum {string}
+         */
+        IndexState: "current" | "waiting" | "failed" | "rebuild_required";
         /**
          * IngestionStage
          * @enum {string}
@@ -2848,6 +2988,33 @@ export interface components {
              */
             to_verify: boolean;
         };
+        /** NudgeMarkResponse */
+        NudgeMarkResponse: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** By */
+            by: string;
+        };
+        /** NudgeResponse */
+        NudgeResponse: {
+            /** Finding Id */
+            finding_id: string;
+            /**
+             * Next Nudge At
+             * Format: date-time
+             */
+            next_nudge_at: string;
+            /**
+             * Nudged At
+             * Format: date-time
+             */
+            nudged_at: string;
+            /** Recipients */
+            recipients: string[];
+        };
         /** OfferingComponentSchema */
         OfferingComponentSchema: {
             /** Code */
@@ -3055,6 +3222,16 @@ export interface components {
             location: string;
             /** Text */
             text: string;
+        };
+        /**
+         * PersonNameResponse
+         * @description An id and a display name; never an email.
+         */
+        PersonNameResponse: {
+            /** Display Name */
+            display_name: string;
+            /** Id */
+            id: string;
         };
         /**
          * PersonRequest
@@ -5575,6 +5752,129 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RequirementCorpusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    corpus_findings_knowledge_center_requirement_corpus_findings_get: {
+        parameters: {
+            query?: {
+                kind?: components["schemas"]["FindingKind"] | null;
+                age?: components["schemas"]["FindingAge"] | null;
+                owner_id?: string | null;
+                offset?: number;
+                limit?: number;
+            };
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorpusFindingsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    nudge_finding_owners_knowledge_center_requirement_corpus_findings__finding_id__nudge_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                finding_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NudgeResponse"];
+                };
+            };
+            /** @description No such finding */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not now */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    corpus_requirements_knowledge_center_requirement_corpus_requirements_get: {
+        parameters: {
+            query?: {
+                index_state?: components["schemas"]["IndexState"] | null;
+                owner_id?: string | null;
+                q?: string;
+                open_findings_only?: boolean;
+                not_screened_for_days?: number | null;
+                offset?: number;
+                limit?: number;
+            };
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorpusRequirementsResponse"];
                 };
             };
             /** @description Validation Error */

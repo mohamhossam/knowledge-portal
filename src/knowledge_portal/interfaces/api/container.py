@@ -85,7 +85,10 @@ from knowledge_portal.application.use_cases.reference_knowledge import (
     ReferenceKnowledge,
     StructureAwareChunks,
 )
-from knowledge_portal.application.use_cases.requirement_corpus import ReadRequirementCorpus
+from knowledge_portal.application.use_cases.requirement_corpus import (
+    NudgeFindingOwners,
+    ReadRequirementCorpus,
+)
 from knowledge_portal.application.use_cases.source_impact import DocumentSourceImpact
 from knowledge_portal.domain.identity.entities import ActorProfile
 from knowledge_portal.infrastructure.config.options import (
@@ -172,6 +175,7 @@ class Container:
     compare_architecture_impact: CompareArchitectureImpact
     report_mapping_impact: ReportMappingImpact
     read_requirement_corpus: ReadRequirementCorpus
+    nudge_finding_owners: NudgeFindingOwners
     upload_knowledge_document: UploadKnowledgeDocument
     read_knowledge_document: ReadKnowledgeDocument
     decide_catalogue_candidates: DecideCatalogueCandidate
@@ -307,6 +311,7 @@ def _build_container(
             architecture.manage, architecture.preview_impact, architecture.knowledge
         ),
         read_requirement_corpus=ReadRequirementCorpus(requirement_work.corpus),
+        nudge_finding_owners=NudgeFindingOwners(requirement_work.corpus),
         report_mapping_impact=ReportMappingImpact(
             persistence.architecture_repository, requirement_work.mapping_stats
         ),

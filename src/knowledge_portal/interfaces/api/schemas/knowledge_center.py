@@ -1,12 +1,21 @@
-"""The Knowledge Center front page's own reads (A′)."""
+"""The Knowledge Center's Requirement knowledge reads (A′) and its rows, findings and
+nudges (B2)."""
 
 from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-from knowledge_portal.application.ports.requirement_corpus import CorpusSummary
+from knowledge_portal.application.ports.requirement_corpus import (
+    CorpusFindingsPage,
+    CorpusRequirementsPage,
+    CorpusSummary,
+    FindingAge,
+    FindingKind,
+    IndexState,
+    NudgeReceipt,
+)
 
 
 class OpenFindingAgesResponse(BaseModel):
@@ -44,3 +53,80 @@ class RequirementCorpusResponse(BaseModel):
             ),
             as_of=summary.as_of,
         )
+
+
+class _FromDomain(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PersonNameResponse(_FromDomain):
+    """An id and a display name; never an email."""
+
+    id: str
+    display_name: str
+
+
+class CorpusRequirementResponse(_FromDomain):
+    requirement_id: str
+    title: str
+    duplicate: bool
+    owner: PersonNameResponse | None
+    index_state: IndexState
+    last_screened_at: datetime | None
+    open_findings: int
+
+
+class CorpusRequirementsResponse(_FromDomain):
+    """Requirements by title: identity and state, never content."""
+
+    items: list[CorpusRequirementResponse]
+    next_offset: int | None
+
+    @classmethod
+    def from_domain(cls, page: CorpusRequirementsPage) -> CorpusRequirementsResponse:
+        return cls.model_validate(page)
+
+
+class FindingSideResponse(_FromDomain):
+    requirement_id: str
+    title: str
+    owner: PersonNameResponse | None
+
+
+class NudgeMarkResponse(_FromDomain):
+    at: datetime
+    by: str
+
+
+class CorpusFindingResponse(_FromDomain):
+    finding_id: str
+    kind: FindingKind
+    rationale: str
+    raised_at: datetime
+    age: FindingAge
+    subject: FindingSideResponse
+    related: FindingSideResponse
+    last_nudge: NudgeMarkResponse | None
+    next_nudge_at: datetime | None
+
+
+class CorpusFindingsResponse(_FromDomain):
+    """Findings in force, the longest-standing first."""
+
+    items: list[CorpusFindingResponse]
+    next_offset: int | None
+
+    @classmethod
+    def from_domain(cls, page: CorpusFindingsPage) -> CorpusFindingsResponse:
+        return cls.model_validate(page)
+
+
+class NudgeResponse(_FromDomain):
+    finding_id: str
+    nudged_at: datetime
+    recipients: list[str]
+    next_nudge_at: datetime
+
+    @classmethod
+    def from_domain(cls, receipt: NudgeReceipt) -> NudgeResponse:
+        return cls.model_validate(receipt)

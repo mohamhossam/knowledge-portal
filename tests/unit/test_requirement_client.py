@@ -23,8 +23,16 @@ from knowledge_portal.application.ports.architecture_mapping_stats import (
     MappingCount,
 )
 from knowledge_portal.application.ports.requirement_corpus import (
+    CorpusQuery,
+    FindingAge,
+    FindingKind,
+    FindingQuery,
+    IndexState,
     OpenFindingAges,
+    PersonName,
     RequirementCorpusPort,
+    RequirementFindingConflictError,
+    RequirementFindingNotFoundError,
 )
 from knowledge_portal.application.ports.requirement_dependents import (
     ProposalStatus,
@@ -229,12 +237,152 @@ def test_the_corpus_summary_is_read_in_counts_and_decoded() -> None:
     assert summary.as_of.isoformat() == "2026-10-06T09:00:00+00:00"
 
 
+OWNER = {"id": "fake-owner", "display_name": "Amina Owner"}
+ROW = {
+    "requirement_id": "REQ-1",
+    "title": "XGPON bundles",
+    "duplicate": False,
+    "owner": OWNER,
+    "index_state": "failed",
+    "last_screened_at": None,
+    "open_findings": 2,
+}
+FINDING = {
+    "finding_id": "kf-1",
+    "kind": "possible_duplicate",
+    "rationale": "Both order XGPON bundles through BCRM.",
+    "raised_at": "2026-09-01T09:00:00+00:00",
+    "age": "over_30_days",
+    "subject": {"requirement_id": "REQ-2", "title": "XGPON for offices", "owner": None},
+    "related": {"requirement_id": "REQ-1", "title": "XGPON bundles", "owner": OWNER},
+    "last_nudge": {"at": "2026-10-01T09:00:00+00:00", "by": "Ravi Reviewer"},
+    "next_nudge_at": "2026-10-08T09:00:00+00:00",
+}
+RECEIPT = {
+    "finding_id": "kf-1",
+    "nudged_at": "2026-10-06T09:00:00+00:00",
+    "recipients": ["Amina Owner", "Ravi Reviewer"],
+    "next_nudge_at": "2026-10-13T09:00:00+00:00",
+}
+
+
+def _response_schema(request: httpx.Request) -> dict[str, Any]:
+    content = _operation(request)["responses"]["200"]["content"]["application/json"]
+    ref = content["schema"]["$ref"].rsplit("/", 1)[-1]
+    schema: dict[str, Any] = CONTRACT["components"]["schemas"][ref]
+    return schema
+
+
+def test_corpus_rows_are_read_with_their_filters_and_decoded() -> None:
+    seen: list[httpx.Request] = []
+    page = HttpRequirementCorpus(
+        _client(_answering({"items": [ROW], "next_offset": 50}), seen)
+    ).requirements(
+        CorpusQuery(IndexState.FAILED, "fake-owner", "xgpon", True, 30), offset=0, limit=50
+    )
+    (request,) = seen
+    _assert_in_contract(request)
+    assert request.url.path == "/internal/knowledge/corpus"
+    assert dict(request.url.params) == {
+        "index_state": "failed",
+        "owner_id": "fake-owner",
+        "q": "xgpon",
+        "open_findings_only": "true",
+        "not_screened_for_days": "30",
+        "offset": "0",
+        "limit": "50",
+    }
+    assert set(ROW) == set(CONTRACT["components"]["schemas"]["CorpusRow"]["properties"]), (
+        "the canned row drifted from the contract"
+    )
+    assert _response_schema(request)["title"] == "CorpusPage"
+    (row,) = page.items
+    assert (row.index_state, row.owner, page.next_offset) == (
+        IndexState.FAILED,
+        PersonName("fake-owner", "Amina Owner"),
+        50,
+    )
+
+
+def test_unset_filters_are_left_out() -> None:
+    seen: list[httpx.Request] = []
+    corpus = HttpRequirementCorpus(_client(_answering({"items": [], "next_offset": None}), seen))
+    corpus.requirements(CorpusQuery(), offset=0, limit=10)
+    corpus.findings(FindingQuery(), offset=0, limit=10)
+    for request in seen:
+        _assert_in_contract(request)
+    assert set(seen[0].url.params) == {"q", "open_findings_only", "offset", "limit"}
+    assert set(seen[1].url.params) == {"offset", "limit"}
+
+
+def test_findings_are_read_with_their_filters_and_decoded() -> None:
+    seen: list[httpx.Request] = []
+    page = HttpRequirementCorpus(
+        _client(_answering({"items": [FINDING], "next_offset": None}), seen)
+    ).findings(
+        FindingQuery(FindingKind.POSSIBLE_DUPLICATE, FindingAge.OVER_30_DAYS, "fake-owner"),
+        offset=50,
+        limit=50,
+    )
+    (request,) = seen
+    _assert_in_contract(request)
+    assert dict(request.url.params) == {
+        "kind": "possible_duplicate",
+        "age": "over_30_days",
+        "owner_id": "fake-owner",
+        "offset": "50",
+        "limit": "50",
+    }
+    assert set(FINDING) == set(CONTRACT["components"]["schemas"]["FindingRow"]["properties"])
+    (finding,) = page.items
+    assert finding.subject.owner is None
+    assert finding.related.owner == PersonName("fake-owner", "Amina Owner")
+    assert finding.last_nudge is not None and finding.last_nudge.by == "Ravi Reviewer"
+
+
+def test_a_nudge_posts_the_admin_and_decodes_the_receipt() -> None:
+    seen: list[httpx.Request] = []
+    receipt = HttpRequirementCorpus(_client(_answering(RECEIPT), seen)).nudge(
+        "kf/1", "fake-reviewer", "Ravi Reviewer"
+    )
+    (request,) = seen
+    _assert_in_contract(request)
+    assert request.method == "POST"
+    assert request.url.raw_path == b"/internal/knowledge/findings/kf%2F1/nudge"
+    body = json.loads(request.content)
+    assert body == {"actor_id": "fake-reviewer", "actor_name": "Ravi Reviewer"}
+    request_ref = _operation(request)["requestBody"]["content"]["application/json"]["schema"]
+    schema = CONTRACT["components"]["schemas"][request_ref["$ref"].rsplit("/", 1)[-1]]
+    assert set(body) == set(schema["required"])
+    assert receipt.recipients == ("Amina Owner", "Ravi Reviewer")
+
+
+def test_a_refused_nudge_keeps_requirement_work_s_reason() -> None:
+    refusal = {
+        "code": "knowledge_finding_conflict",
+        "message": "Its owners were asked on 6 Oct 2026; it can be nudged again from 13 Oct 2026.",
+        "correlation_id": "c-1",
+    }
+    corpus = HttpRequirementCorpus(_client(_answering(refusal, 409)))
+    with pytest.raises(RequirementFindingConflictError, match="again from 13 Oct 2026"):
+        corpus.nudge("kf-1", "a", "A")
+    with pytest.raises(RequirementFindingNotFoundError):
+        HttpRequirementCorpus(_client(_answering({}, 404))).nudge("kf-1", "a", "A")
+    with pytest.raises(RequirementFindingConflictError, match="refused the nudge"):
+        HttpRequirementCorpus(_client(_answering("not json", 409))).nudge("kf-1", "a", "A")
+    with pytest.raises(ServiceUnavailableError):
+        HttpRequirementCorpus(_client(_answering({}, 401))).nudge("kf-1", "a", "A")
+
+
 @pytest.mark.parametrize(
     "call",
     [
         lambda c: HttpRequirementDependents(c).proposals(ActorId("a"), "d", 0, 10),
         lambda c: HttpArchitectureMappingStats(c).by_release(),
         lambda c: HttpRequirementCorpus(c).summary(),
+        lambda c: HttpRequirementCorpus(c).requirements(CorpusQuery(), 0, 10),
+        lambda c: HttpRequirementCorpus(c).findings(FindingQuery(), 0, 10),
+        lambda c: HttpRequirementCorpus(c).nudge("kf-1", "a", "A"),
         lambda c: HttpRequirementImpact(c).document_impact(
             ActorId("a"), "d", active_only=False, query="", offset=0, limit=10
         ),
@@ -252,6 +400,9 @@ def test_the_corpus_summary_is_read_in_counts_and_decoded() -> None:
         {"items": [{**IMPACT, "publication_current": "maybe"}], "next_offset": None},
         {**CORPUS, "open_findings": {"under_7_days": 1}},
         {**CORPUS, "waiting": "several"},
+        {"items": [{**ROW, "index_state": "stale"}], "next_offset": None},
+        {"items": [{**FINDING, "owner": OWNER, "subject": None}], "next_offset": None},
+        {**RECEIPT, "nudged_at": "soon"},
     ],
 )
 def test_an_unusable_answer_is_an_explicit_failure(call: Any, body: Any) -> None:
@@ -274,3 +425,7 @@ def test_the_fakes_stand_in_for_each_port_deterministically() -> None:
     summary = corpus.summary()
     assert (summary.requirements, summary.waiting, summary.failed) == (0, 0, 0)
     assert summary.open_findings == OpenFindingAges(0, 0, 0)
+    assert corpus.requirements(CorpusQuery(), 0, 10).items == ()
+    assert corpus.findings(FindingQuery(), 0, 10).items == ()
+    with pytest.raises(RequirementFindingNotFoundError):
+        corpus.nudge("kf-1", "a", "A")
