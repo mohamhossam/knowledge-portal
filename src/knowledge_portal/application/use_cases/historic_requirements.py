@@ -13,7 +13,7 @@ from __future__ import annotations
 import hashlib
 import uuid
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import timedelta
 
 from smb_kernel.documents.ports import (
@@ -21,6 +21,7 @@ from smb_kernel.documents.ports import (
     DocumentScannerPort,
     DocumentStoragePort,
 )
+from smb_kernel.errors import ServiceUnavailableError
 from smb_kernel.time.clock import ClockPort
 
 from knowledge_portal.application.document_upload_validation import validate_document_upload
@@ -49,6 +50,10 @@ from knowledge_portal.application.ports.historic_requirements import (
 from knowledge_portal.application.ports.knowledge_events import (
     HISTORIC_REQUIREMENT_CHANGED,
     KnowledgeEventOutboxPort,
+)
+from knowledge_portal.application.ports.requirement_historic_citations import (
+    HistoricCitationPage,
+    RequirementHistoricCitationsPort,
 )
 from knowledge_portal.application.ports.transaction_manager import TransactionManagerPort
 from knowledge_portal.application.public_errors import describe_public_error
@@ -87,6 +92,8 @@ BRD_FORMATS = {
 _BY_EXTENSION = {extension: mime for mime, extension in BRD_FORMATS.items()}
 DEFAULT_MAX_ITEMS = 2000
 PAGE_MAX = 100
+# A page of the Requirements citing one historic requirement.
+CITATIONS_PAGE_MAX = 100
 # Progress is saved at most this often while a breakdown is read.
 PROGRESS_EVERY = timedelta(seconds=1)
 _RETRIES = 3
@@ -104,9 +111,19 @@ def _brd_mime(filename: str, declared: str) -> str:
 
 
 @dataclass(frozen=True)
+class CitedBy:
+    """How many Requirements cite a historic requirement, and a page of them."""
+
+    total: int
+    page: HistoricCitationPage
+
+
+@dataclass(frozen=True)
 class HistoricPage:
     items: tuple[HistoricRequirement, ...]
     next_offset: int | None
+    # Requirements citing each one, from requirement work; empty when it cannot answer.
+    citations: dict[str, int] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -261,7 +278,10 @@ class HistoricImports:
         transactions: TransactionManagerPort,
         clock: ClockPort,
         max_bytes: int,
+        *,
+        citations: RequirementHistoricCitationsPort | None = None,
     ) -> None:
+        self._citations = citations
         self._records, self._storage, self._jobs = records, storage, jobs
         self._events, self._transactions = events, transactions
         self._clock, self._max_bytes = clock, max_bytes
@@ -284,7 +304,35 @@ class HistoricImports:
         limit = max(1, min(limit, PAGE_MAX))
         found = self._records.list(status, query.strip(), max(0, offset), limit + 1)
         more = len(found) > limit
-        return HistoricPage(found[:limit], offset + limit if more else None)
+        items = found[:limit]
+        return HistoricPage(
+            items,
+            offset + limit if more else None,
+            self._citation_counts(tuple(item.id for item in items if item.publications)),
+        )
+
+    def _citation_counts(self, historic_ids: tuple[str, ...]) -> dict[str, int]:
+        """The list still loads when requirement work cannot answer: it just shows no counts."""
+        if self._citations is None or not historic_ids:
+            return {}
+        try:
+            return self._citations.counts(historic_ids)
+        except ServiceUnavailableError:
+            return {}
+
+    def cited_by(self, historic_id: str, offset: int, limit: int) -> CitedBy:
+        """Requirements whose prior art cites it (ADR-0102 Amendment 1); who and when only.
+
+        Fails as `ServiceUnavailableError` when requirement work cannot answer.
+        """
+        self.get(historic_id)
+        if self._citations is None:
+            return CitedBy(0, HistoricCitationPage((), None))
+        total = self._citations.counts((historic_id,)).get(historic_id, 0)
+        page = self._citations.citations(
+            historic_id, max(0, offset), max(1, min(limit, CITATIONS_PAGE_MAX))
+        )
+        return CitedBy(total, page)
 
     def counts(self) -> dict[HistoricStatus, int]:
         return self._records.counts()

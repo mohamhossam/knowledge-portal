@@ -3,9 +3,17 @@ import { ArrowLeft, ArrowRight, RotateCw, Upload } from "lucide-react";
 import { Fragment, type FormEvent, type MouseEvent, type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
-import { api, type HistoricBrd, type HistoricDetail, type HistoricRun, type HistoricSharedRoot } from "../api/client";
+import {
+  api,
+  type HistoricBrd,
+  type HistoricCitation,
+  type HistoricDetail,
+  type HistoricRun,
+  type HistoricSharedRoot,
+} from "../api/client";
 import { ApiError, errorMessage } from "../api/errors";
 import { count, formatDay, formatMoment } from "../home/format";
+import { knowledgeStepHref, LEAVES } from "../requirements/knowledge";
 import { KnowledgePage } from "../requirements/knowledgeHead";
 import { AdoLink, BreakdownTable, ChangeTable, ItemErrors, SharedRootNote } from "./Breakdown";
 import {
@@ -16,6 +24,7 @@ import {
   nextStep,
   parseIds,
   runFailure,
+  useCitedBy,
   useHistoric,
   useHistoricChange,
   useSharedRoots,
@@ -131,9 +140,96 @@ function Record({ record }: { record: HistoricDetail }) {
         </section>
       )}
       {record.status === "draft" && <Publish record={record} />}
+      {record.publications.length > 0 && <CitedBy record={record} />}
       <Brds record={record} />
       {record.status === "published" && <Withdraw record={record} />}
     </article>
+  );
+}
+
+/** Where its standing in a citation leaves the Requirement, in words. */
+function citationState(item: HistoricCitation): { rank: string; words: string } {
+  if (item.duplicate) return { rank: "row--past", words: "Closed as a duplicate" };
+  if (item.retired) return { rank: "row--past", words: "Retired from the corpus" };
+  return item.current
+    ? { rank: "", words: "Current check" }
+    : { rank: "row--due", words: "Older check; checked again when its Knowledge step opens" };
+}
+
+/**
+ * The Requirements whose prior art cites it, from requirement work. Who and when only: what was
+ * matched stays with the Requirement's owner (ADR-0102 Amendment 1).
+ */
+function CitedBy({ record }: { record: HistoricDetail }) {
+  const pages = useCitedBy(record);
+  const items = pages.data?.pages.flatMap((page) => page.items) ?? [];
+  const total = pages.data?.pages[0]?.total;
+  return (
+    <section className="govsection historic__cited" aria-labelledby="historic-cited">
+      <h3 id="historic-cited" className="govsection__title" tabIndex={-1}>
+        Cited by{total !== undefined && <span className="govsection__count"> · {count(total, "requirement")}</span>}
+      </h3>
+      <p className="govsection__lead">
+        Requirements whose prior-art check names it as a similar past requirement. Who and when only; what was matched
+        stays with each Requirement.
+      </p>
+      {pages.isError ? (
+        <p className="docpage__failure" role="alert">
+          Requirement work did not answer: {errorMessage(pages.error)}
+          <button type="button" className="text-button" onClick={() => void pages.refetch()}>
+            <RotateCw size={14} aria-hidden="true" />
+            Try again
+          </button>
+        </p>
+      ) : pages.isPending ? (
+        <p className="timetable__quiet">Asking requirement work…</p>
+      ) : items.length === 0 ? (
+        <p className="timetable__quiet">
+          {record.status === "withdrawn"
+            ? "No requirement cites it. Withdrawn, it is no longer offered as prior art."
+            : "No requirement cites it yet. A Requirement is checked when it changes or its Knowledge step opens."}
+        </p>
+      ) : (
+        <table className="govtable historic__citations">
+          <caption className="visually-hidden">Requirements citing {record.title}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Requirement</th>
+              <th scope="col">Check</th>
+              <th scope="col" className="cell--end cell--p2">Checked</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item) => {
+              const state = citationState(item);
+              return (
+                <tr key={item.requirement_id} className={`row ${state.rank}`}>
+                  <th scope="row" aria-label={item.title}>
+                    <a href={knowledgeStepHref(item.requirement_id)} dir="auto">
+                      {item.title}
+                      <span className="visually-hidden">{LEAVES}</span>
+                    </a>
+                    <span className="secondary govtable__by">
+                      {item.owner ? `Owned by ${item.owner}` : "No owner"}
+                      <span className="historic__narrow"> · checked {formatDay(item.checked_at)}</span>
+                    </span>
+                  </th>
+                  <td><span className="status">{state.words}</span></td>
+                  <td className="cell--end cell--p2">{formatDay(item.checked_at)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+      {pages.hasNextPage && (
+        <p className="govsection__actions">
+          <button type="button" className="text-button" disabled={pages.isFetchingNextPage} onClick={() => void pages.fetchNextPage()}>
+            {pages.isFetchingNextPage ? "Asking…" : "Show more"}
+          </button>
+        </p>
+      )}
+    </section>
   );
 }
 
@@ -605,6 +701,7 @@ function Withdraw({ record }: { record: HistoricDetail }) {
   const [tried, setTried] = useState(false);
   const withdraw = useHistoricChange(record.id, (why: string) => api.withdrawHistoric(record.id, why, record.version));
   const missing = tried && !reason.trim();
+  const cited = useCitedBy(record).data?.pages[0]?.total ?? 0;
   if (!open) {
     return (
       <p className="govsection__actions historic__withdraw-open">
@@ -628,8 +725,9 @@ function Withdraw({ record }: { record: HistoricDetail }) {
     >
       <h3 id={`${id}-title`} className="withdraw__title">Withdraw from requirement work</h3>
       <p>
-        Requirement work stops reading it as prior art. It stays here, withdrawn, with your reason. Withdrawing cannot be
-        undone, and its BRDs cannot be imported again.
+        Requirement work stops reading it as prior art
+        {cited > 0 ? `: the ${count(cited, "requirement")} citing it stop showing it at once` : ""}. It stays here,
+        withdrawn, with your reason. Withdrawing cannot be undone, and its BRDs cannot be imported again.
       </p>
       <label className="field" htmlFor={`${id}-reason`}>
         <span className="field__label">Why (required)</span>

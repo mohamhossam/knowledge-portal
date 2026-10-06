@@ -59,6 +59,26 @@ export function useSharedRoots(record: HistoricDetail) {
   return byId;
 }
 
+/**
+ * The Requirements whose prior art cites it, from requirement work: who and when, never what
+ * was matched (ADR-0102 Amendment 1). Only a record that was ever published can be cited.
+ */
+export function useCitedBy(record: Pick<HistoricDetail, "id" | "publications">) {
+  return useInfiniteQuery({
+    queryKey: [...historicKey(record.id), "cited-by"],
+    queryFn: ({ pageParam }) => api.historicCitedBy(record.id, pageParam),
+    initialPageParam: 0,
+    getNextPageParam: (last) => last.next_offset ?? undefined,
+    enabled: record.publications.length > 0,
+  });
+}
+
+/** How many Requirements cite it, in words; a dash when requirement work could not say. */
+export function citedBy(citations: number | null | undefined): string {
+  if (citations === null || citations === undefined) return "—";
+  return citations === 0 ? "None" : count(citations, "requirement");
+}
+
 /** Every work item of a breakdown's lineage, by id. */
 export function itemsOf(breakdown: HistoricBreakdown | null | undefined): Map<number, HistoricWorkItem> {
   const items = new Map<number, HistoricWorkItem>();

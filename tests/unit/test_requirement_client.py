@@ -45,6 +45,9 @@ from knowledge_portal.application.ports.requirement_dependents import (
     ProposalStatus,
     RequirementDependentsPort,
 )
+from knowledge_portal.application.ports.requirement_historic_citations import (
+    RequirementHistoricCitationsPort,
+)
 from knowledge_portal.application.ports.source_impact import (
     ImpactDecisionKind,
     RequirementImpactPort,
@@ -55,11 +58,13 @@ from knowledge_portal.infrastructure.requirement_client import (
     FakeRequirementCitationCounts,
     FakeRequirementCorpus,
     FakeRequirementDependents,
+    FakeRequirementHistoricCitations,
     FakeRequirementImpact,
     HttpArchitectureMappingStats,
     HttpRequirementCitationCounts,
     HttpRequirementCorpus,
     HttpRequirementDependents,
+    HttpRequirementHistoricCitations,
     HttpRequirementImpact,
 )
 
@@ -229,6 +234,56 @@ def test_citation_counts_are_asked_for_each_document_and_decoded() -> None:
 def test_unusable_citation_counts_are_an_explicit_failure(body: Any) -> None:
     with pytest.raises(ServiceUnavailableError):
         HttpRequirementCitationCounts(_client(_answering(body))).counts(("d1",))
+
+
+def test_historic_citation_counts_are_asked_for_each_record_and_decoded() -> None:
+    seen: list[httpx.Request] = []
+    body = {"counts": {"h1": 2, "h/2": 0}}
+    adapter = HttpRequirementHistoricCitations(_client(_answering(body), seen))
+    assert adapter.counts(("h1", "h/2")) == {"h1": 2, "h/2": 0}
+    _assert_in_contract(seen[0])
+    assert seen[0].url.params.get_list("historic_id") == ["h1", "h/2"]
+    assert adapter.counts(()) == {}
+    assert len(seen) == 1
+
+
+HISTORIC_CITATION = {
+    "requirement_id": "R-1",
+    "title": "Fibre bundles",
+    "owner": "Mona Adel",
+    "checked_at": "2026-10-06T09:00:00Z",
+    "current": True,
+    "retired": False,
+    "duplicate": False,
+}
+
+
+def test_where_a_historic_requirement_is_cited_is_read_a_page_at_a_time() -> None:
+    seen: list[httpx.Request] = []
+    body = {"items": [HISTORIC_CITATION], "next_offset": 20}
+    page = HttpRequirementHistoricCitations(_client(_answering(body), seen)).citations("h/1", 0, 20)
+    _assert_in_contract(seen[0])
+    # An escaped slash keeps the id one path segment.
+    assert seen[0].url.raw_path.startswith(b"/internal/knowledge/historic/h%2F1/citations")
+    assert (seen[0].url.params["offset"], seen[0].url.params["limit"]) == ("0", "20")
+    assert page.next_offset == 20
+    assert (page.items[0].requirement_id, page.items[0].owner) == ("R-1", "Mona Adel")
+    assert page.items[0].current
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        {"counts": {"h1": -1}},
+        {"counts": {}},
+        {"items": [{**HISTORIC_CITATION, "current": "maybe"}], "next_offset": None},
+        {"items": [], "next_offset": "later"},
+    ],
+)
+def test_unusable_historic_citations_are_an_explicit_failure(body: Any) -> None:
+    adapter = HttpRequirementHistoricCitations(_client(_answering(body)))
+    with pytest.raises(ServiceUnavailableError):
+        adapter.counts(("h1",)) if "counts" in body else adapter.citations("h1", 0, 20)
 
 
 def test_mapping_counts_are_decoded() -> None:
@@ -549,3 +604,6 @@ def test_the_fakes_stand_in_for_each_port_deterministically() -> None:
     assert corpus.reindex(ReindexScope.FAILED, (), "a", "A").requirements == 0
     citations: RequirementCitationCountsPort = FakeRequirementCitationCounts()
     assert citations.counts(("d1", "d2")) == {"d1": 0, "d2": 0}
+    historic: RequirementHistoricCitationsPort = FakeRequirementHistoricCitations()
+    assert historic.counts(("h1",)) == {"h1": 0}
+    assert historic.citations("h1", 0, 10).items == ()

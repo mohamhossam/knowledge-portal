@@ -7,7 +7,7 @@ import { api, type HistoricStatus, type HistoricSummary } from "../api/client";
 import { errorMessage } from "../api/errors";
 import { count, formatDay } from "../home/format";
 import { KnowledgePage } from "../requirements/knowledgeHead";
-import { HISTORIC_LIST_KEY, historicHref, standing, useHistoricList } from "./historic";
+import { citedBy, HISTORIC_LIST_KEY, historicHref, standing, useHistoricList } from "./historic";
 
 const MAX_FILES = 20;
 const ACCEPTED = ".docx,.pdf";
@@ -107,6 +107,7 @@ export function HistoricListPage() {
                 <th scope="col">State</th>
                 <th scope="col" className="cell--end cell--p2">BRDs</th>
                 <th scope="col" className="cell--end cell--p2">Work items</th>
+                <th scope="col" className="cell--end cell--p2">Cited by</th>
                 <th scope="col" className="cell--end cell--p3">State since</th>
               </tr>
             </thead>
@@ -138,9 +139,10 @@ function HistoricRow({ item }: { item: HistoricSummary }) {
     <tr className={`row row--${rank}`}>
       <th scope="row">
         <Link to={historicHref(item.id)} dir="auto">{item.title}</Link>
-        {/* BRDs and work items leave the grid on phones; they stay with the title. */}
+        {/* BRDs, work items and citations leave the grid on phones; they stay with the title. */}
         <span className="secondary govtable__by historic__narrow">
           {count(item.brds, "BRD")}{item.work_items > 0 ? ` · ${count(item.work_items, "work item")}` : ""}
+          {item.citations ? ` · cited by ${count(item.citations, "requirement")}` : ""}
         </span>
       </th>
       <td>
@@ -149,6 +151,7 @@ function HistoricRow({ item }: { item: HistoricSummary }) {
       </td>
       <td className="cell--end cell--p2">{item.brds}</td>
       <td className="cell--end cell--p2">{item.work_items || "—"}</td>
+      <td className="cell--end cell--p2">{citedBy(item.citations)}</td>
       <td className="cell--end cell--p3">{formatDay(since(item))}</td>
     </tr>
   );

@@ -8,6 +8,9 @@ from smb_kernel.documents.ports import DocumentExtractorPort, DocumentScannerPor
 from smb_kernel.time.clock import ClockPort
 
 from knowledge_portal.application.ports.ado_work_items import AdoWorkItemSourcePort
+from knowledge_portal.application.ports.requirement_historic_citations import (
+    RequirementHistoricCitationsPort,
+)
 from knowledge_portal.application.use_cases.historic_requirements import (
     HistoricImportJobs,
     HistoricImports,
@@ -41,6 +44,7 @@ def build_historic(
     clock: ClockPort,
     extractor: DocumentExtractorPort,
     scanner: DocumentScannerPort,
+    citations: RequirementHistoricCitationsPort | None = None,
 ) -> HistoricWiring:
     # Always queued: reading a BRD runs the bounded extractor, never inside a request.
     jobs = HistoricImportJobs(
@@ -63,6 +67,7 @@ def build_historic(
         persistence.transaction_manager,
         clock,
         settings.document_max_file_bytes,
+        citations=citations,
     )
     worker = ArchitectureJobWorker(
         jobs,

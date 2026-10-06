@@ -42,6 +42,9 @@ from knowledge_portal.application.ports.requirement_citations import (
 )
 from knowledge_portal.application.ports.requirement_corpus import RequirementCorpusPort
 from knowledge_portal.application.ports.requirement_dependents import RequirementDependentsPort
+from knowledge_portal.application.ports.requirement_historic_citations import (
+    RequirementHistoricCitationsPort,
+)
 from knowledge_portal.application.ports.source_impact import RequirementImpactPort
 from knowledge_portal.application.ports.transaction_manager import TransactionManagerPort
 from knowledge_portal.application.use_cases.architecture_comparison import (
@@ -130,11 +133,13 @@ from knowledge_portal.infrastructure.requirement_client import (
     FakeRequirementCitationCounts,
     FakeRequirementCorpus,
     FakeRequirementDependents,
+    FakeRequirementHistoricCitations,
     FakeRequirementImpact,
     HttpArchitectureMappingStats,
     HttpRequirementCitationCounts,
     HttpRequirementCorpus,
     HttpRequirementDependents,
+    HttpRequirementHistoricCitations,
     HttpRequirementImpact,
 )
 from knowledge_portal.interfaces.api.composition.architecture import (
@@ -231,6 +236,9 @@ class RequirementWork:
     impact: RequirementImpactPort
     corpus: RequirementCorpusPort = field(default_factory=FakeRequirementCorpus)
     citations: RequirementCitationCountsPort = field(default_factory=FakeRequirementCitationCounts)
+    historic_citations: RequirementHistoricCitationsPort = field(
+        default_factory=FakeRequirementHistoricCitations
+    )
 
 
 def build_container(
@@ -312,7 +320,9 @@ def _build_container(
         requirement_work.citations,
         timedelta(days=settings.knowledge_review_cycle_days),
     )
-    historic = build_historic(settings, persistence, clock, extractor, scanner)
+    historic = build_historic(
+        settings, persistence, clock, extractor, scanner, requirement_work.historic_citations
+    )
     workers: dict[str, BackgroundWorker] = {
         "document_worker": DocumentIngestionWorker(library, reference_knowledge),
         "historic_import_worker": historic.worker,
@@ -462,6 +472,7 @@ def _requirement_work(
         HttpRequirementImpact(client),
         HttpRequirementCorpus(client),
         HttpRequirementCitationCounts(client),
+        HttpRequirementHistoricCitations(client),
     )
 
 
