@@ -786,6 +786,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/knowledge-center/requirement-corpus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Requirement Corpus
+         * @description Requirement work's corpus in counts. 503 when requirement work cannot answer.
+         */
+        get: operations["requirement_corpus_knowledge_center_requirement_corpus_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/knowledge/search": {
         parameters: {
             query?: never;
@@ -2891,6 +2911,15 @@ export interface components {
             /** Source */
             source?: string | null;
         };
+        /** OpenFindingAgesResponse */
+        OpenFindingAgesResponse: {
+            /** From 7 To 30 Days */
+            from_7_to_30_days: number;
+            /** Over 30 Days */
+            over_30_days: number;
+            /** Under 7 Days */
+            under_7_days: number;
+        };
         /** OpenQuestionSchema */
         OpenQuestionSchema: {
             confidence?: components["schemas"]["SourceConfidence"] | null;
@@ -3421,6 +3450,30 @@ export interface components {
             expected_revision: number;
             /** Name */
             name: string;
+        };
+        /**
+         * RequirementCorpusResponse
+         * @description Requirement work's corpus in counts; never which Requirements.
+         */
+        RequirementCorpusResponse: {
+            /**
+             * As Of
+             * Format: date-time
+             */
+            as_of: string;
+            /** Current */
+            current: number;
+            /** Duplicates */
+            duplicates: number;
+            /** Failed */
+            failed: number;
+            open_findings: components["schemas"]["OpenFindingAgesResponse"];
+            /** Rebuild Required */
+            rebuild_required: boolean;
+            /** Requirements */
+            requirements: number;
+            /** Waiting */
+            waiting: number;
         };
         /**
          * RequirementTraceSchema
@@ -5491,6 +5544,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ArchitectureJobResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    requirement_corpus_knowledge_center_requirement_corpus_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequirementCorpusResponse"];
                 };
             };
             /** @description Validation Error */

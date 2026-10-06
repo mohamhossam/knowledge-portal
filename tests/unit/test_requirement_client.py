@@ -22,6 +22,10 @@ from knowledge_portal.application.ports.architecture_mapping_stats import (
     ArchitectureMappingStatsPort,
     MappingCount,
 )
+from knowledge_portal.application.ports.requirement_corpus import (
+    OpenFindingAges,
+    RequirementCorpusPort,
+)
 from knowledge_portal.application.ports.requirement_dependents import (
     ProposalStatus,
     RequirementDependentsPort,
@@ -33,9 +37,11 @@ from knowledge_portal.application.ports.source_impact import (
 from knowledge_portal.domain.identity.entities import ActorId
 from knowledge_portal.infrastructure.requirement_client import (
     FakeArchitectureMappingStats,
+    FakeRequirementCorpus,
     FakeRequirementDependents,
     FakeRequirementImpact,
     HttpArchitectureMappingStats,
+    HttpRequirementCorpus,
     HttpRequirementDependents,
     HttpRequirementImpact,
 )
@@ -195,11 +201,40 @@ def test_mapping_counts_are_decoded() -> None:
     assert counts == (MappingCount("r1", 2, 3, 4),)
 
 
+CORPUS = {
+    "requirements": 12,
+    "duplicates": 1,
+    "current": 9,
+    "waiting": 2,
+    "failed": 1,
+    "rebuild_required": False,
+    "open_findings": {"under_7_days": 3, "from_7_to_30_days": 1, "over_30_days": 2},
+    "as_of": "2026-10-06T09:00:00+00:00",
+}
+
+
+def test_the_corpus_summary_is_read_in_counts_and_decoded() -> None:
+    seen: list[httpx.Request] = []
+    summary = HttpRequirementCorpus(_client(_answering(CORPUS), seen)).summary()
+    (request,) = seen
+    _assert_in_contract(request)
+    assert request.url.raw_path == b"/internal/knowledge/corpus/summary"
+    assert (summary.requirements, summary.current, summary.waiting, summary.failed) == (
+        12,
+        9,
+        2,
+        1,
+    )
+    assert summary.open_findings == OpenFindingAges(3, 1, 2)
+    assert summary.as_of.isoformat() == "2026-10-06T09:00:00+00:00"
+
+
 @pytest.mark.parametrize(
     "call",
     [
         lambda c: HttpRequirementDependents(c).proposals(ActorId("a"), "d", 0, 10),
         lambda c: HttpArchitectureMappingStats(c).by_release(),
+        lambda c: HttpRequirementCorpus(c).summary(),
         lambda c: HttpRequirementImpact(c).document_impact(
             ActorId("a"), "d", active_only=False, query="", offset=0, limit=10
         ),
@@ -215,6 +250,8 @@ def test_mapping_counts_are_decoded() -> None:
         {"items": [], "next_offset": "later"},
         {"items": [{**IMPACT, "decisions": [{**DECISION, "decision": "ignore"}]}]},
         {"items": [{**IMPACT, "publication_current": "maybe"}], "next_offset": None},
+        {**CORPUS, "open_findings": {"under_7_days": 1}},
+        {**CORPUS, "waiting": "several"},
     ],
 )
 def test_an_unusable_answer_is_an_explicit_failure(call: Any, body: Any) -> None:
@@ -233,3 +270,7 @@ def test_the_fakes_stand_in_for_each_port_deterministically() -> None:
         ActorId("a"), "d", active_only=False, query="", offset=0, limit=5
     )
     assert (empty.items, empty.next_offset) == ((), None)
+    corpus: RequirementCorpusPort = FakeRequirementCorpus()
+    summary = corpus.summary()
+    assert (summary.requirements, summary.waiting, summary.failed) == (0, 0, 0)
+    assert summary.open_findings == OpenFindingAges(0, 0, 0)

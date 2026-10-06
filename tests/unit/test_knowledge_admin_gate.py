@@ -20,6 +20,7 @@ OBSERVER = {"X-Fake-Actor-Id": "fake-observer"}
         ("POST", "/knowledge/search"),
         ("GET", "/architecture-knowledge/releases/active"),
         ("GET", "/organisation"),
+        ("GET", "/knowledge-center/requirement-corpus"),
     ],
 )
 def test_anyone_without_knowledge_admin_is_refused(

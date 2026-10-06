@@ -11,7 +11,7 @@ from __future__ import annotations
 import multiprocessing
 from collections.abc import Callable, Mapping
 from contextlib import ExitStack
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import Protocol
 
 import httpx
@@ -36,6 +36,7 @@ from knowledge_portal.application.ports.architecture_mapping_stats import (
 )
 from knowledge_portal.application.ports.knowledge_events import KnowledgeEventOutboxPort
 from knowledge_portal.application.ports.product_catalog import ProductCatalogPort
+from knowledge_portal.application.ports.requirement_corpus import RequirementCorpusPort
 from knowledge_portal.application.ports.requirement_dependents import RequirementDependentsPort
 from knowledge_portal.application.ports.source_impact import RequirementImpactPort
 from knowledge_portal.application.ports.transaction_manager import TransactionManagerPort
@@ -84,6 +85,7 @@ from knowledge_portal.application.use_cases.reference_knowledge import (
     ReferenceKnowledge,
     StructureAwareChunks,
 )
+from knowledge_portal.application.use_cases.requirement_corpus import ReadRequirementCorpus
 from knowledge_portal.application.use_cases.source_impact import DocumentSourceImpact
 from knowledge_portal.domain.identity.entities import ActorProfile
 from knowledge_portal.infrastructure.config.options import (
@@ -102,9 +104,11 @@ from knowledge_portal.infrastructure.product_catalog import (
 )
 from knowledge_portal.infrastructure.requirement_client import (
     FakeArchitectureMappingStats,
+    FakeRequirementCorpus,
     FakeRequirementDependents,
     FakeRequirementImpact,
     HttpArchitectureMappingStats,
+    HttpRequirementCorpus,
     HttpRequirementDependents,
     HttpRequirementImpact,
 )
@@ -167,6 +171,7 @@ class Container:
     manage_sample_requirements: ManageSampleRequirements
     compare_architecture_impact: CompareArchitectureImpact
     report_mapping_impact: ReportMappingImpact
+    read_requirement_corpus: ReadRequirementCorpus
     upload_knowledge_document: UploadKnowledgeDocument
     read_knowledge_document: ReadKnowledgeDocument
     decide_catalogue_candidates: DecideCatalogueCandidate
@@ -186,6 +191,7 @@ class RequirementWork:
     dependents: RequirementDependentsPort
     mapping_stats: ArchitectureMappingStatsPort
     impact: RequirementImpactPort
+    corpus: RequirementCorpusPort = field(default_factory=FakeRequirementCorpus)
 
 
 def build_container(
@@ -300,6 +306,7 @@ def _build_container(
         compare_architecture_impact=CompareArchitectureImpact(
             architecture.manage, architecture.preview_impact, architecture.knowledge
         ),
+        read_requirement_corpus=ReadRequirementCorpus(requirement_work.corpus),
         report_mapping_impact=ReportMappingImpact(
             persistence.architecture_repository, requirement_work.mapping_stats
         ),
@@ -363,6 +370,7 @@ def _requirement_work(
         HttpRequirementDependents(client),
         HttpArchitectureMappingStats(client),
         HttpRequirementImpact(client),
+        HttpRequirementCorpus(client),
     )
 
 

@@ -5050,6 +5050,29 @@
         "title": "OfferingPointSchema",
         "type": "object"
       },
+      "OpenFindingAgesResponse": {
+        "properties": {
+          "from_7_to_30_days": {
+            "title": "From 7 To 30 Days",
+            "type": "integer"
+          },
+          "over_30_days": {
+            "title": "Over 30 Days",
+            "type": "integer"
+          },
+          "under_7_days": {
+            "title": "Under 7 Days",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "under_7_days",
+          "from_7_to_30_days",
+          "over_30_days"
+        ],
+        "title": "OpenFindingAgesResponse",
+        "type": "object"
+      },
       "OpenQuestionSchema": {
         "properties": {
           "confidence": {
@@ -6464,6 +6487,55 @@
           "name"
         ],
         "title": "RenameVersionRequest",
+        "type": "object"
+      },
+      "RequirementCorpusResponse": {
+        "description": "Requirement work's corpus in counts; never which Requirements.",
+        "properties": {
+          "as_of": {
+            "format": "date-time",
+            "title": "As Of",
+            "type": "string"
+          },
+          "current": {
+            "title": "Current",
+            "type": "integer"
+          },
+          "duplicates": {
+            "title": "Duplicates",
+            "type": "integer"
+          },
+          "failed": {
+            "title": "Failed",
+            "type": "integer"
+          },
+          "open_findings": {
+            "$ref": "#/components/schemas/OpenFindingAgesResponse"
+          },
+          "rebuild_required": {
+            "title": "Rebuild Required",
+            "type": "boolean"
+          },
+          "requirements": {
+            "title": "Requirements",
+            "type": "integer"
+          },
+          "waiting": {
+            "title": "Waiting",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "requirements",
+          "duplicates",
+          "current",
+          "waiting",
+          "failed",
+          "rebuild_required",
+          "open_findings",
+          "as_of"
+        ],
+        "title": "RequirementCorpusResponse",
         "type": "object"
       },
       "RequirementTraceSchema": {
@@ -10922,6 +10994,61 @@
         "summary": "Retry Job",
         "tags": [
           "architecture jobs"
+        ]
+      }
+    },
+    "/knowledge-center/requirement-corpus": {
+      "get": {
+        "description": "Requirement work's corpus in counts. 503 when requirement work cannot answer.",
+        "operationId": "requirement_corpus_knowledge_center_requirement_corpus_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementCorpusResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Requirement Corpus",
+        "tags": [
+          "knowledge-center"
         ]
       }
     },
