@@ -14,3 +14,6 @@ export function useCorpusSummary() {
 /** A requirement's Knowledge step, in requirement work at the platform's root. */
 export const knowledgeStepHref = (requirementId: string) =>
   `/requirements/${encodeURIComponent(requirementId)}/knowledge`;
+
+/** Said after a link that leaves the portal for requirement work. */
+export const LEAVES = " (opens requirement work)";

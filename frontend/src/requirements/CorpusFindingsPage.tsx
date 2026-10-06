@@ -1,17 +1,21 @@
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { RotateCw } from "lucide-react";
-import { useState } from "react";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowRight, RotateCw } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { api, type CorpusFinding, type FindingAge, type FindingFilters, type FindingKind } from "../api/client";
-import { ApiError, errorMessage } from "../api/errors";
+import { errorMessage } from "../api/errors";
+import { useAuth } from "../auth/authContext";
 import { count, formatDay } from "../home/format";
-import { FINDINGS_PATH, knowledgeStepHref, useCorpusSummary } from "./knowledge";
+import { FINDINGS_PATH, LEAVES, knowledgeStepHref, useCorpusSummary } from "./knowledge";
 import { KnowledgePage } from "./knowledgeHead";
 
 const DAY = 24 * 60 * 60 * 1000;
+const FINDINGS_KEY = ["knowledge-center", "requirement-corpus", "findings"] as const;
 
-const AGES: { key: FindingAge | "all"; label: string }[] = [
+type AgeFilter = FindingAge | "all";
+
+const AGES: { key: AgeFilter; label: string }[] = [
   { key: "all", label: "All" },
   { key: "over_30_days", label: "Over 30 days" },
   { key: "from_7_to_30_days", label: "7 to 30 days" },
@@ -34,18 +38,48 @@ const isAge = (value: string | null): value is FindingAge =>
 const isKind = (value: string | null): value is FindingKind =>
   value === "possible_duplicate" || value === "possible_contradiction";
 
+type Person = NonNullable<CorpusFinding["subject"]["owner"]>;
+
 /** "today", "yesterday", "5 days ago". */
 function daysAgo(iso: string, now: number): string {
   const days = Math.max(0, Math.floor((now - new Date(iso).getTime()) / DAY));
   return days === 0 ? "today" : days === 1 ? "yesterday" : `${days} days ago`;
 }
 
-function owners(item: CorpusFinding): string[] {
-  const names = [item.subject.owner, item.related.owner]
-    .filter((owner): owner is NonNullable<typeof owner> => owner !== null)
-    .map((owner) => owner.display_name);
-  return [...new Set(names)];
+/** "Opened today", "Open 40 days". */
+function standing(item: CorpusFinding, now: number): string {
+  const days = Math.max(0, Math.floor((now - new Date(item.raised_at).getTime()) / DAY));
+  return days === 0 ? "Opened today" : `Open ${count(days, "day")}`;
 }
+
+/** The finding's owners, each once: requirement work notifies each distinct owner once. */
+function owners(item: CorpusFinding): Person[] {
+  const found = new Map<string, Person>();
+  for (const owner of [item.subject.owner, item.related.owner]) if (owner) found.set(owner.id, owner);
+  return [...found.values()];
+}
+
+/** "Ravi Reviewer and you": the others by name, the signed-in admin last, as "you". */
+function names(people: Person[], me: string | undefined): string {
+  const words = [...people.filter((person) => person.id !== me).map((person) => person.display_name)];
+  if (people.some((person) => person.id === me)) words.push("you");
+  return words.length <= 1 ? (words[0] ?? "") : `${words.slice(0, -1).join(", ")} and ${words.at(-1)}`;
+}
+
+/** A finding the batch may ask about: not waiting out its week, and someone to ask. */
+const askable = (item: CorpusFinding) => item.next_nudge_at === null && owners(item).length > 0;
+
+async function allOverdue(): Promise<CorpusFinding[]> {
+  const found: CorpusFinding[] = [];
+  for (let offset: number | null = 0; offset !== null && found.length < 1000;) {
+    const page = await api.corpusFindings({ age: "over_30_days" }, offset);
+    found.push(...page.items);
+    offset = page.next_offset;
+  }
+  return found;
+}
+
+type Said = { text: string; failed: boolean };
 
 /**
  * Possible duplicates and contradictions still in force across the corpus, the longest-standing
@@ -60,10 +94,13 @@ export function CorpusFindingsPage() {
     kind: isKind(kind) ? kind : undefined,
     ownerId: params.get("owner") ?? undefined,
   };
+  const actor = useAuth()?.actor;
+  const me = actor?.id;
   const summary = useCorpusSummary();
   const queryClient = useQueryClient();
-  const [notice, setNotice] = useState("");
-  const [failure, setFailure] = useState("");
+  // What each ask came to, said in its own row so no other row moves; and once for screen readers.
+  const [said, setSaid] = useState<Record<string, Said>>({});
+  const [announce, setAnnounce] = useState("");
 
   const set = (key: string, value: string | null) =>
     setParams((current) => {
@@ -74,36 +111,33 @@ export function CorpusFindingsPage() {
     }, { replace: true });
 
   const pages = useInfiniteQuery({
-    queryKey: ["knowledge-center", "requirement-corpus", "findings", filters],
+    queryKey: [...FINDINGS_KEY, filters],
     queryFn: ({ pageParam }) => api.corpusFindings(filters, pageParam),
     initialPageParam: 0,
     getNextPageParam: (last) => last.next_offset ?? undefined,
   });
+  const overdue = useQuery({ queryKey: [...FINDINGS_KEY, "all-overdue"], queryFn: allOverdue });
+  const refresh = () => queryClient.invalidateQueries({ queryKey: FINDINGS_KEY });
+
+  const record = (item: CorpusFinding, text: string, failed: boolean) => {
+    setSaid((current) => ({ ...current, [item.finding_id]: { text, failed } }));
+    setAnnounce(text);
+  };
   const nudge = useMutation({
     mutationFn: (item: CorpusFinding) => api.nudgeFinding(item.finding_id),
-    onMutate: () => {
-      setNotice("");
-      setFailure("");
-    },
-    onSuccess: (result, item) => {
-      const asked = result.recipients.length ? result.recipients.join(" and ") : "its owners";
-      setNotice(
-        `Asked ${asked} to decide the ${KIND_WORDS[item.kind].toLowerCase()} between ‘${item.subject.title}’ and ‘${item.related.title}’. It can be nudged again from ${formatDay(result.next_nudge_at)}.`,
-      );
-    },
-    onError: (error) => {
-      const conflict = error instanceof ApiError && (error.status === 409 || error.status === 404);
-      setFailure(conflict ? `Not sent: ${errorMessage(error)}` : `The nudge was not sent: ${errorMessage(error)}`);
-    },
-    // Either way the row's last nudge may have changed; read it again.
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ["knowledge-center", "requirement-corpus", "findings"] }),
+    onSuccess: (_result, item) => record(item, `Asked ${names(owners(item), me)}.`, false),
+    onError: (error, item) => record(item, `Not sent: ${errorMessage(error)}`, true),
+    // Either way the row's last ask may have changed; read it again.
+    onSettled: refresh,
   });
 
   const items = pages.data?.pages.flatMap((page) => page.items) ?? [];
   const sides = items.flatMap((item) => [item.subject.owner, item.related.owner]);
   const owner = filters.ownerId ? sides.find((person) => person?.id === filters.ownerId) : undefined;
   const ages = summary.data?.open_findings;
-  const counts: Record<string, number | undefined> = ages
+  const pressed: AgeFilter = filters.age ?? "all";
+  // The strip counts the whole corpus; with a kind or an owner chosen those counts would mislead.
+  const counts: Partial<Record<AgeFilter, number>> = ages && !filters.kind && !filters.ownerId
     ? {
         all: ages.under_7_days + ages.from_7_to_30_days + ages.over_30_days,
         over_30_days: ages.over_30_days,
@@ -111,29 +145,37 @@ export function CorpusFindingsPage() {
         under_7_days: ages.under_7_days,
       }
     : {};
+  const shown = AGES.filter((item) => item.key === "all" || item.key === pressed || !ages || ages[item.key] > 0);
   const narrowed = Boolean(filters.age || filters.kind || filters.ownerId);
   // Ages are counted to when requirement work answered.
   const now = pages.dataUpdatedAt;
 
   return (
-    <KnowledgePage
-      page="Findings"
-      edition="Possible duplicates and contradictions still in force, the longest-standing first. Their owners decide them on each requirement's Knowledge step in requirement work; from here you can ask them to, at most once a week."
-    >
+    <KnowledgePage page="Findings">
       <section className="govsection" aria-labelledby="corpus-findings-title">
-        <h2 id="corpus-findings-title" className="govsection__title">Findings</h2>
+        <h2 id="corpus-findings-title" className="govsection__title">Findings in force, the longest-standing first</h2>
+        <p className="govsection__lead">
+          Possible duplicates and contradictions between requirements. Their owners decide them on each
+          requirement&rsquo;s Knowledge step in requirement work. From here you can ask them to: requirement work sends
+          each owner a notification that links to that step, at most once a week per finding.
+        </p>
         <div className="filters">
           <div className="filters__set" role="group" aria-label="Show findings by how long they have stood">
-            {AGES.map((item) => (
+            {shown.map((item) => (
               <button
                 key={item.key}
                 type="button"
                 className="filter"
-                aria-pressed={(filters.age ?? "all") === item.key}
+                aria-pressed={pressed === item.key}
                 onClick={() => set("age", item.key === "all" ? null : item.key)}
               >
                 {item.label}
-                {counts[item.key] !== undefined && <span className="filter__count">{counts[item.key]}</span>}
+                {counts[item.key] !== undefined && (
+                  <>
+                    <span className="visually-hidden">, </span>
+                    <span className="filter__count">{counts[item.key]}</span>
+                  </>
+                )}
               </button>
             ))}
           </div>
@@ -148,12 +190,12 @@ export function CorpusFindingsPage() {
         </div>
         {filters.ownerId && (
           <p className="knowledge__owner">
-            Where <strong>{owner?.display_name ?? "one person"}</strong> owns either requirement.{" "}
+            {owner ? <>Where <strong>{owner.display_name}</strong> owns either requirement.</> : "Narrowed to one owner."}{" "}
             <button type="button" className="text-button" onClick={() => set("owner", null)}>Show every owner&rsquo;s</button>
           </p>
         )}
-        <p className="toolbar__notice" role="status">{notice}</p>
-        {failure && <p className="docpage__failure" role="alert">{failure}</p>}
+        <BatchAsk overdue={(overdue.data ?? []).filter(askable)} me={me} onDone={refresh} />
+        <p className="visually-hidden" role="status">{announce}</p>
 
         {pages.isError ? (
           <p className="docpage__failure" role="alert">
@@ -167,7 +209,14 @@ export function CorpusFindingsPage() {
           <p className="timetable__quiet">Asking requirement work…</p>
         ) : items.length === 0 ? (
           <p className="timetable__quiet">
-            {narrowed ? "No finding in force matches these filters." : "No possible duplicate or contradiction stands open."}
+            {narrowed ? (
+              <>
+                No finding in force matches these filters.{" "}
+                <button type="button" className="text-button" onClick={() => setParams(new URLSearchParams(), { replace: true })}>
+                  Show all findings
+                </button>
+              </>
+            ) : "No possible duplicate or contradiction stands open."}
           </p>
         ) : (
           <table className="govtable knowledge__table knowledge__findings">
@@ -176,8 +225,8 @@ export function CorpusFindingsPage() {
               <tr>
                 <th scope="col">Finding</th>
                 <th scope="col">Between</th>
-                <th scope="col">Status</th>
-                <th scope="col">Owners asked</th>
+                <th scope="col" className="knowledge__wide">Status</th>
+                <th scope="col">Last asked</th>
               </tr>
             </thead>
             <tbody>
@@ -186,8 +235,11 @@ export function CorpusFindingsPage() {
                   key={item.finding_id}
                   item={item}
                   now={now}
+                  me={me}
+                  meName={actor?.display_name}
+                  said={said[item.finding_id]}
                   sending={nudge.isPending && nudge.variables?.finding_id === item.finding_id}
-                  onNudge={() => nudge.mutate(item)}
+                  onAsk={() => nudge.mutate(item)}
                 />
               ))}
             </tbody>
@@ -205,11 +257,110 @@ export function CorpusFindingsPage() {
   );
 }
 
+/**
+ * Ask the owners of every overdue finding at once. The confirmation names everyone it reaches
+ * before anything is sent; findings waiting out their week, or with no owner, are left out.
+ */
+function BatchAsk({ overdue, me, onDone }: { overdue: CorpusFinding[]; me: string | undefined; onDone: () => void }) {
+  const [confirming, setConfirming] = useState(false);
+  const [progress, setProgress] = useState("");
+  const [outcome, setOutcome] = useState<Said | null>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (confirming) panel.current?.focus();
+  }, [confirming]);
+
+  const run = useMutation({
+    mutationFn: async (findings: CorpusFinding[]) => {
+      const refused: string[] = [];
+      for (const [index, item] of findings.entries()) {
+        setProgress(`Asking about finding ${index + 1} of ${findings.length}…`);
+        try {
+          await api.nudgeFinding(item.finding_id);
+        } catch (error) {
+          refused.push(`‘${item.subject.title}’ and ‘${item.related.title}’: ${errorMessage(error)}`);
+        }
+      }
+      return { asked: findings.length - refused.length, refused };
+    },
+    onSuccess: ({ asked, refused }) => {
+      setOutcome({
+        text: refused.length
+          ? `Asked the owners of ${count(asked, "overdue finding")}. Not sent for ${refused.length}: ${refused.join("; ")}.`
+          : `Asked the owners of ${count(asked, "overdue finding")}.`,
+        failed: refused.length > 0,
+      });
+    },
+    onSettled: () => {
+      setProgress("");
+      setConfirming(false);
+      onDone();
+      trigger.current?.focus();
+    },
+  });
+
+  // Who would be asked, and about how many findings each.
+  const reach = new Map<string, { person: Person; findings: number }>();
+  for (const item of overdue) {
+    for (const person of owners(item)) {
+      const entry = reach.get(person.id) ?? { person, findings: 0 };
+      entry.findings += 1;
+      reach.set(person.id, entry);
+    }
+  }
+  const people = [...reach.values()].sort((a, b) =>
+    a.person.id === me ? 1 : b.person.id === me ? -1 : a.person.display_name.localeCompare(b.person.display_name),
+  );
+
+  return (
+    <div className="knowledge__batch">
+      {outcome && <p className={outcome.failed ? "docpage__failure" : "toolbar__notice"} role="status">{outcome.text}</p>}
+      {overdue.length > 0 && !confirming && (
+        <p className="timetable__next">
+          <button ref={trigger} type="button" className="next-button" onClick={() => { setOutcome(null); setConfirming(true); }}>
+            Ask the owners of {overdue.length === 1 ? "the overdue finding" : `all ${overdue.length} overdue findings`}
+            <ArrowRight size={16} aria-hidden="true" />
+          </button>
+        </p>
+      )}
+      {confirming && (
+        <div ref={panel} className="knowledge__confirm" tabIndex={-1} role="group" aria-labelledby="batch-title">
+          <p id="batch-title" className="knowledge__confirm-title">
+            Ask the owners of {count(overdue.length, "overdue finding")}?
+          </p>
+          <p>Requirement work sends each of them one notification per finding, linked to its Knowledge step:</p>
+          <ul className="knowledge__reach">
+            {people.map(({ person, findings }) => (
+              <li key={person.id}>
+                {person.id === me ? `${person.display_name} (you)` : person.display_name}, about {count(findings, "finding")}
+              </li>
+            ))}
+          </ul>
+          <p className="secondary">Findings asked about in the last week, and findings with no owner, are left out.</p>
+          <p className="govsection__actions">
+            <button type="button" className="action-button" disabled={run.isPending} onClick={() => run.mutate(overdue)}>
+              {run.isPending ? "Asking…" : "Ask them"}
+            </button>
+            <button type="button" className="text-button" disabled={run.isPending} onClick={() => { setConfirming(false); trigger.current?.focus(); }}>
+              Cancel
+            </button>
+            {progress && <span className="secondary" role="status">{progress}</span>}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Side({ side }: { side: CorpusFinding["subject"] }) {
   return (
     <span className="knowledge__side">
-      <a href={knowledgeStepHref(side.requirement_id)} dir="auto">{side.title}</a>
-      <span className="secondary govtable__by">
+      <a href={knowledgeStepHref(side.requirement_id)} className="knowledge__title" dir="auto">
+        {side.title}
+        <span className="visually-hidden">{LEAVES}</span>
+      </a>
+      <span className="secondary govtable__by knowledge__owned">
         {side.owner ? (
           <Link
             to={`${FINDINGS_PATH}?owner=${encodeURIComponent(side.owner.id)}`}
@@ -224,61 +375,80 @@ function Side({ side }: { side: CorpusFinding["subject"] }) {
   );
 }
 
-function FindingRow({ item, now, sending, onNudge }: {
+function FindingRow({ item, now, me, meName, said, sending, onAsk }: {
   item: CorpusFinding;
   now: number;
+  me: string | undefined;
+  meName: string | undefined;
+  said: Said | undefined;
   sending: boolean;
-  onNudge: () => void;
+  onAsk: () => void;
 }) {
   const status = STATUS[item.age];
-  const asked = owners(item);
-  const reasonId = `nudge-why-${item.finding_id}`;
+  const people = owners(item);
+  const reasonId = `ask-why-${item.finding_id}`;
+  const mine = people.length > 0 && people.every((person) => person.id === me);
   const waitReason = item.next_nudge_at
     ? `Asked ${item.last_nudge ? daysAgo(item.last_nudge.at, now) : "lately"}; again from ${formatDay(item.next_nudge_at)}.`
-    : asked.length === 0
+    : people.length === 0
       ? "Neither requirement has an owner to ask."
       : null;
-  const days = Math.max(0, Math.floor((now - new Date(item.raised_at).getTime()) / DAY));
+  const mySide = item.subject.owner?.id === me ? item.subject : item.related;
+  // Nudges are recorded by the asking admin's display name.
+  const byMe = item.last_nudge !== null && meName !== undefined && item.last_nudge.by === meName;
   return (
     <tr className={`row ${status.rank}`}>
       <th scope="row">
         {KIND_WORDS[item.kind]}
-        <span className="secondary govtable__by clamp" dir="auto">{item.rationale}</span>
+        <span className="secondary govtable__by clamp knowledge__wide" dir="auto">{item.rationale}</span>
+        {/* On phones the Status column folds into this line. */}
+        <span className="secondary govtable__by knowledge__narrow">
+          <span className="status">{status.words}</span> · {standing(item, now).toLowerCase()}
+        </span>
       </th>
       <td>
         <Side side={item.subject} />
         <Side side={item.related} />
       </td>
-      <td>
+      <td className="knowledge__wide">
         <span className="status">{status.words}</span>
         <span className="secondary govtable__by">
-          Open {count(days, "day")}, since {formatDay(item.raised_at)}
+          {standing(item, now)}, since {formatDay(item.raised_at)}
         </span>
       </td>
       <td>
         {item.last_nudge ? (
           <>
             {formatDay(item.last_nudge.at)}
-            <span className="secondary govtable__by">by {item.last_nudge.by}</span>
+            <span className="secondary govtable__by">by {item.last_nudge.by}{byMe ? " (you)" : ""}</span>
           </>
         ) : (
           <span className="secondary">Not yet</span>
         )}
         <span className="knowledge__nudge">
-          <button
-            type="button"
-            className="text-button"
-            aria-disabled={waitReason !== null || sending ? true : undefined}
-            aria-describedby={waitReason ? reasonId : undefined}
-            onClick={() => {
-              if (waitReason === null && !sending) onNudge();
-            }}
-          >
-            {sending ? "Asking…" : asked.length === 1 ? "Nudge the owner" : "Nudge both owners"}
-          </button>
-          {waitReason && <span id={reasonId} className="secondary govtable__by">{waitReason}</span>}
+          {mine ? (
+            <a href={knowledgeStepHref(mySide.requirement_id)} className="knowledge__decide">
+              Decide it yourself
+              <span className="visually-hidden">{LEAVES}</span>
+            </a>
+          ) : (
+            <button
+              type="button"
+              className="text-button"
+              aria-disabled={waitReason !== null || sending ? true : undefined}
+              aria-describedby={waitReason ? reasonId : undefined}
+              onClick={() => {
+                if (waitReason === null && !sending) onAsk();
+              }}
+            >
+              {sending ? "Asking…" : people.length === 0 ? "No owner to ask" : `Ask ${names(people, me)}`}
+            </button>
+          )}
+          {!mine && waitReason && <span id={reasonId} className="secondary govtable__by">{waitReason}</span>}
+          {said && <span className={said.failed ? "govtable__by knowledge__said--failed" : "secondary govtable__by"}>{said.text}</span>}
         </span>
       </td>
     </tr>
   );
 }
+

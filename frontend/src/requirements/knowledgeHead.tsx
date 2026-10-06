@@ -1,7 +1,9 @@
 import { type ReactNode, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 
-import { FINDINGS_PATH, KNOWLEDGE_PATH, REQUIREMENTS_PATH } from "./knowledge";
+import { REQUIREMENT_APP_URL } from "../auth/paths";
+import { requirementOverview } from "../home/derive";
+import { FINDINGS_PATH, KNOWLEDGE_PATH, REQUIREMENTS_PATH, useCorpusSummary } from "./knowledge";
 
 /** Overview · Requirements · Findings: the pages of Table 4. */
 export function KnowledgeSubIndex() {
@@ -24,11 +26,20 @@ export function KnowledgeSubIndex() {
   );
 }
 
-/** Table 4's head over one of its pages: the margin number, the title, what the page lists. */
-export function KnowledgePage({ page, edition, children }: { page: string; edition: ReactNode; children: ReactNode }) {
+/**
+ * Table 4's head over one of its pages: the margin number, the title, and the same edition
+ * line the overview carries, so the head and its sub-index hold still from page to page.
+ */
+export function KnowledgePage({ page, children }: { page: string; children: ReactNode }) {
+  const summary = useCorpusSummary();
   useEffect(() => {
     document.title = `${page} · Requirement knowledge · Knowledge portal`;
   }, [page]);
+  const edition = summary.data
+    ? requirementOverview(summary.data, REQUIREMENT_APP_URL).edition.text
+    : summary.isError
+      ? "Requirement work did not answer with its counts."
+      : "Reading requirement knowledge…";
   return (
     <section className="docpage knowledge" aria-labelledby="knowledge-title">
       <header className="docpage__head">

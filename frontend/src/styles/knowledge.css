@@ -19,6 +19,17 @@
   color: var(--ink);
 }
 
+/* A title leads to requirement work; it is a full 24px target, clear of the owner line under it. */
+.knowledge__title {
+  display: inline-block;
+  min-height: 1.5rem;
+  padding-block: 0.125rem;
+}
+
+.knowledge__owned {
+  margin-top: var(--s1);
+}
+
 /* A person in a row: a quiet link that narrows the page to their requirements. */
 .knowledge__person {
   display: inline-block;
@@ -43,7 +54,7 @@
 }
 
 .knowledge__findings tbody th {
-  width: 34%;
+  width: 30%;
 }
 
 .knowledge__findings tbody th .clamp {
@@ -51,22 +62,77 @@
   margin-top: var(--s1);
 }
 
-.knowledge__nudge {
-  display: block;
-  margin-top: var(--s1);
+/* Status words and figures never break inside a word. */
+.knowledge__table .status,
+.knowledge__table .cell--end {
+  overflow-wrap: normal;
 }
 
-.knowledge__nudge .text-button {
-  margin-left: calc(-1 * var(--s1));
-}
-
-/* The table's dates and counts read as figures. */
 .knowledge__table .cell--end {
   font-variant-numeric: tabular-nums lining-nums;
   white-space: nowrap;
 }
 
-@media (max-width: 40rem) {
+.knowledge__nudge {
+  display: block;
+  margin-top: var(--s1);
+}
+
+/* The ask reads as a word in the line, start-aligned, its focus ring clear of the reason below. */
+.knowledge__nudge .text-button {
+  margin: 0 0 var(--s1) calc(-1 * var(--s1));
+  text-align: start;
+}
+
+.knowledge__decide {
+  display: inline-block;
+  min-height: 1.5rem;
+  font-size: var(--t-meta);
+  font-weight: var(--w-medium);
+}
+
+.knowledge__said--failed {
+  color: var(--disruption);
+  font-weight: var(--w-medium);
+}
+
+/* The batch ask: a next decision on the page, then a confirmation that names everyone it reaches. */
+.knowledge__batch .timetable__next {
+  margin-top: 0;
+}
+
+.knowledge__confirm {
+  display: grid;
+  gap: var(--s2);
+  max-width: 44rem;
+  padding-block: var(--s3);
+  border-block: 2px solid var(--rule-heavy);
+}
+
+.knowledge__confirm-title {
+  font-size: var(--t-lead);
+  font-weight: var(--w-bold);
+}
+
+.knowledge__reach {
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+
+/* Folded lines show only where their columns are dropped. */
+.knowledge__narrow {
+  display: none;
+}
+
+@media (max-width: 45rem) {
+  .knowledge__table .knowledge__wide {
+    display: none;
+  }
+
+  .knowledge__table .knowledge__narrow {
+    display: block;
+  }
+
   .knowledge__findings tbody th {
     width: auto;
   }

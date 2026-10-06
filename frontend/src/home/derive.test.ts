@@ -252,7 +252,7 @@ describe("requirementOverview", () => {
     ]);
     expect(overview.next).toEqual({
       to: "/requirement-knowledge/findings?age=over_30_days",
-      label: "Ask the owners of the 2 overdue findings to decide them",
+      label: "Ask the owners to decide the 2 overdue findings",
     });
     expect(overview.alert).toEqual({ rank: "delayed", text: "1 stopped indexing, 2 overdue" });
     expect(overview.notes.map((note) => note.id)).toEqual(["source", "failed", "findings"]);

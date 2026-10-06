@@ -69,25 +69,27 @@ describe("CorpusRequirementsPage", () => {
     });
     renderAt("/requirement-knowledge/requirements", <CorpusRequirementsPage />);
 
-    const archive = (await screen.findByRole("link", { name: "Archive" })).closest("tr")!;
+    const archive = (await screen.findByRole("link", { name: /^Archive/ })).closest("tr")!;
     expect(archive).toHaveClass("row--delayed");
-    expect(within(archive).getByText("Stopped indexing")).toBeInTheDocument();
-    expect(within(archive).getByText("Never")).toBeInTheDocument();
+    expect(within(archive).getAllByText("Stopped indexing")[0]).toHaveClass("status");
+    expect(within(archive).getAllByText("Never").length).toBeGreaterThan(0);
     expect(within(archive).getByText("No owner")).toBeInTheDocument();
-    const bundles = screen.getByRole("link", { name: "XGPON bundles" });
+    const bundles = screen.getByRole("link", { name: /^XGPON bundles\s*\(opens requirement work\)$/ });
     expect(bundles).toHaveAttribute("href", "/requirements/REQ-1/knowledge");
     expect(bundles.closest("tr")).toHaveClass("row--due");
-    expect(screen.getByRole("link", { name: "Old fibre" }).closest("tr")).toHaveClass("row--past");
+    expect(screen.getByRole("link", { name: /^Old fibre/ }).closest("tr")).toHaveClass("row--past");
+    // "Current" is the quiet default: it never takes the status weight, even on a due row.
+    expect(within(bundles.closest("tr")!).getAllByText("Current")[0]).not.toHaveClass("status");
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Requirement knowledge");
     expect(screen.getByRole("link", { name: "Requirements" })).toHaveAttribute("aria-current", "page");
-    expect(await screen.findByRole("button", { name: /Stopped indexing\s*1/ })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /^Stopped indexing\s*,\s*1$/ })).toBeInTheDocument();
   });
 
   it("keeps its filters in the address and asks requirement work with them", async () => {
     const read = vi.spyOn(api, "corpusRequirements").mockResolvedValue({ items: [requirement()], next_offset: null });
     renderAt("/requirement-knowledge/requirements?state=failed&open=1", <CorpusRequirementsPage />);
 
-    await screen.findByRole("link", { name: "XGPON bundles" });
+    await screen.findByRole("link", { name: /^XGPON bundles/ });
     expect(read).toHaveBeenCalledWith(
       expect.objectContaining({ indexState: "failed", openFindingsOnly: true, notScreenedForDays: undefined }),
       0,
@@ -113,7 +115,7 @@ describe("CorpusRequirementsPage", () => {
     renderAt("/requirement-knowledge/requirements", <CorpusRequirementsPage />);
 
     fireEvent.click(await screen.findByRole("button", { name: "Show more" }));
-    expect(await screen.findByRole("link", { name: "Zeta" })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: /^Zeta/ })).toBeInTheDocument();
     expect(read).toHaveBeenLastCalledWith(expect.anything(), 50);
 
     fireEvent.click(screen.getAllByRole("link", { name: "Amina Owner: show only their requirements" })[0]!);
@@ -137,26 +139,51 @@ describe("CorpusFindingsPage", () => {
     const row = (await screen.findByText("Both order XGPON bundles through BCRM.")).closest("tr")!;
     expect(row).toHaveClass("row--delayed");
     expect(within(row).getByRole("rowheader")).toHaveTextContent("Possible duplicate");
-    expect(within(row).getByText("Overdue")).toBeInTheDocument();
-    expect(within(row).getByRole("link", { name: "XGPON for offices" })).toHaveAttribute("href", "/requirements/REQ-2/knowledge");
+    expect(within(row).getAllByText("Overdue")[0]).toHaveClass("status");
+    expect(within(row).getByRole("link", { name: /^XGPON for offices\s*\(opens requirement work\)$/ })).toHaveAttribute("href", "/requirements/REQ-2/knowledge");
     expect(within(row).getByText("Not yet")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Over 30 days\s*2/ })).toHaveAttribute("aria-pressed", "true");
+    expect(await screen.findByRole("button", { name: /^Over 30 days\s*,\s*2$/ })).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("nudges both owners and says who was asked", async () => {
-    vi.spyOn(api, "corpusFindings").mockResolvedValue({ items: [finding()], next_offset: null });
+  it("asks both owners by name and says so in the row", async () => {
+    vi.spyOn(api, "corpusFindings").mockResolvedValue({ items: [finding({ age: "under_7_days" })], next_offset: null });
     const nudge = vi.spyOn(api, "nudgeFinding").mockResolvedValue({
       finding_id: "kf-1", nudged_at: "2026-10-06T09:00:00Z", recipients: ["Amina Owner", "Ravi Reviewer"],
       next_nudge_at: "2026-10-13T09:00:00Z",
     });
     renderAt("/requirement-knowledge/findings", <CorpusFindingsPage />);
 
-    fireEvent.click(await screen.findByRole("button", { name: "Nudge both owners" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Ask Amina Owner and Ravi Reviewer" }));
 
     await waitFor(() => expect(nudge).toHaveBeenCalledWith("kf-1"));
-    expect(await screen.findByRole("status")).toHaveTextContent(
-      "Asked Amina Owner and Ravi Reviewer to decide the possible duplicate between ‘XGPON for offices’ and ‘XGPON bundles’. It can be nudged again from 13 Oct 2026.",
-    );
+    const row = screen.getByText("Both order XGPON bundles through BCRM.").closest("tr")!;
+    expect(await within(row).findByText("Asked Amina Owner and Ravi Reviewer.")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Asked Amina Owner and Ravi Reviewer.");
+  });
+
+  it("asks the owners of every overdue finding after naming everyone it reaches", async () => {
+    const overdue = [
+      finding(),
+      finding({ finding_id: "kf-2", rationale: "Second.", related: { requirement_id: "REQ-5", title: "Five", owner: amina } }),
+      finding({ finding_id: "kf-3", rationale: "Asked lately.", next_nudge_at: "2026-10-11T09:00:00Z" }),
+    ];
+    vi.spyOn(api, "corpusFindings").mockResolvedValue({ items: overdue, next_offset: null });
+    const nudge = vi.spyOn(api, "nudgeFinding").mockResolvedValue({
+      finding_id: "x", nudged_at: "2026-10-06T09:00:00Z", recipients: [], next_nudge_at: "2026-10-13T09:00:00Z",
+    });
+    renderAt("/requirement-knowledge/findings", <CorpusFindingsPage />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /Ask the owners of all 2 overdue findings/ }));
+    const confirm = screen.getByRole("group", { name: "Ask the owners of 2 overdue findings?" });
+    expect(confirm).toHaveFocus();
+    expect(within(confirm).getByText("Amina Owner, about 2 findings")).toBeInTheDocument();
+    expect(within(confirm).getByText("Ravi Reviewer, about 1 finding")).toBeInTheDocument();
+    expect(nudge).not.toHaveBeenCalled();
+
+    fireEvent.click(within(confirm).getByRole("button", { name: "Ask them" }));
+
+    expect(await screen.findByText("Asked the owners of 2 overdue findings.")).toBeInTheDocument();
+    expect(nudge.mock.calls.map((call) => call[0])).toEqual(["kf-1", "kf-2"]);
   });
 
   it("explains why a finding cannot be nudged yet, and keeps the button reachable", async () => {
@@ -170,7 +197,7 @@ describe("CorpusFindingsPage", () => {
     const nudge = vi.spyOn(api, "nudgeFinding");
     renderAt("/requirement-knowledge/findings", <CorpusFindingsPage />);
 
-    const button = await screen.findByRole("button", { name: "Nudge both owners" });
+    const button = await screen.findByRole("button", { name: "Ask Amina Owner and Ravi Reviewer" });
     expect(button).toHaveAttribute("aria-disabled", "true");
     expect(button).toHaveAccessibleDescription(/again from 11 Oct 2026\.$/);
     expect(screen.getByText("by Ravi Reviewer")).toBeInTheDocument();
@@ -179,20 +206,21 @@ describe("CorpusFindingsPage", () => {
   });
 
   it("passes on requirement work's refusal", async () => {
-    vi.spyOn(api, "corpusFindings").mockResolvedValue({ items: [finding()], next_offset: null });
+    vi.spyOn(api, "corpusFindings").mockResolvedValue({ items: [finding({ age: "under_7_days" })], next_offset: null });
     vi.spyOn(api, "nudgeFinding").mockRejectedValue(
       new ApiError(409, "This finding is no longer open: its owners have decided it."),
     );
     renderAt("/requirement-knowledge/findings", <CorpusFindingsPage />);
 
-    fireEvent.click(await screen.findByRole("button", { name: "Nudge both owners" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Ask Amina Owner and Ravi Reviewer" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Not sent: This finding is no longer open: its owners have decided it.",
+    const row = screen.getByText("Both order XGPON bundles through BCRM.").closest("tr")!;
+    expect(await within(row).findByText("Not sent: This finding is no longer open: its owners have decided it.")).toHaveClass(
+      "knowledge__said--failed",
     );
   });
 
-  it("asks one owner when only one requirement has an owner, and none when neither has", async () => {
+  it("asks the one owner there is, and says when there is no one to ask", async () => {
     vi.spyOn(api, "corpusFindings").mockResolvedValue({
       items: [
         finding({ related: { requirement_id: "REQ-1", title: "XGPON bundles", owner: null } }),
@@ -207,9 +235,9 @@ describe("CorpusFindingsPage", () => {
     });
     renderAt("/requirement-knowledge/findings", <CorpusFindingsPage />);
 
-    expect(await screen.findByRole("button", { name: "Nudge the owner" })).not.toHaveAttribute("aria-disabled");
+    expect(await screen.findByRole("button", { name: "Ask Amina Owner" })).not.toHaveAttribute("aria-disabled");
     const orphan = screen.getByText("Nobody owns these.").closest("tr")!;
-    expect(within(orphan).getByRole("button", { name: "Nudge both owners" })).toHaveAccessibleDescription(
+    expect(within(orphan).getByRole("button", { name: "No owner to ask" })).toHaveAccessibleDescription(
       "Neither requirement has an owner to ask.",
     );
   });

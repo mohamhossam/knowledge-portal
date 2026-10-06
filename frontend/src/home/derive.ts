@@ -506,7 +506,7 @@ export function requirementOverview(corpus: RequirementCorpus, requirementWork: 
     next: corpus.rebuild_required
       ? leave("Rebuild the requirement index in requirement work")
       : ages.over_30_days > 0
-        ? { to: OVERDUE, label: `Ask the owners of the ${count(ages.over_30_days, "overdue finding")} to decide ${ages.over_30_days === 1 ? "it" : "them"}` }
+        ? { to: OVERDUE, label: ages.over_30_days === 1 ? "Ask the owners to decide the overdue finding" : `Ask the owners to decide the ${ages.over_30_days} overdue findings` }
         : corpus.failed > 0
           ? { to: STOPPED, label: `See the ${count(corpus.failed, "requirement")} that stopped indexing` }
           : ages.from_7_to_30_days > 0

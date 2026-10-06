@@ -46,7 +46,7 @@ export function OverviewTable({ spec, state, headingLevel, toolbar }: {
         title={spec.title}
         to={headingLevel === "h1" ? undefined : spec.to}
         headingLevel={headingLevel}
-        toolbar={toolbar}
+      toolbar={toolbar}
         edition={state.status === "loading" ? `Reading ${spec.noun}…` : "This table could not be read."}
         columns={spec.columns}
         rows={[]}
@@ -64,7 +64,7 @@ export function OverviewTable({ spec, state, headingLevel, toolbar }: {
       title={spec.title}
       to={headingLevel === "h1" ? undefined : spec.to}
       headingLevel={headingLevel}
-        toolbar={toolbar}
+      toolbar={toolbar}
       edition={<>{overview.edition.text}{overview.edition.note && <NoteMark note={overview.edition.note} />}</>}
       columns={spec.columns}
       rows={overview.lines.map((line) => ({
