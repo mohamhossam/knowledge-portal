@@ -70,12 +70,15 @@ export type IndexState = Schemas["IndexState"];
 export type FindingAge = Schemas["FindingAge"];
 export type FindingKind = Schemas["FindingKind"];
 export type Nudge = Schemas["NudgeResponse"];
+export type Membership = Schemas["MembershipResponse"];
+export type ReindexScope = Schemas["ReindexScope"];
 export type CorpusFilters = {
   indexState?: IndexState;
   ownerId?: string;
   query?: string;
   openFindingsOnly?: boolean;
   notScreenedForDays?: number;
+  retiredOnly?: boolean;
 };
 export type FindingFilters = { kind?: FindingKind; age?: FindingAge; ownerId?: string };
 export type CitedPassage = Schemas["DocumentPassageResponse"];
@@ -318,6 +321,7 @@ export const api = {
     if (filters.query) params.set("q", filters.query);
     if (filters.openFindingsOnly) params.set("open_findings_only", "true");
     if (filters.notScreenedForDays) params.set("not_screened_for_days", String(filters.notScreenedForDays));
+    if (filters.retiredOnly) params.set("retired_only", "true");
     return apiRequest<CorpusRequirementsPage>(`/knowledge-center/requirement-corpus/requirements?${params}`);
   },
   /** Findings in force, the longest-standing first. */
@@ -329,6 +333,15 @@ export const api = {
     return apiRequest<CorpusFindingsPage>(`/knowledge-center/requirement-corpus/findings?${params}`);
   },
   /** Ask both requirements' owners to decide a finding; requirement work sends it, at most weekly. */
+  /** Take a requirement out of the corpus, with the admin's reason (B3). */
+  retireRequirement: (requirementId: string, reason: string) =>
+    post<Membership>(`/knowledge-center/requirement-corpus/requirements/${encodeURIComponent(requirementId)}/retirement`, { reason }),
+  /** Return a retired requirement to the corpus. */
+  reinstateRequirement: (requirementId: string, reason: string) =>
+    post<Membership>(`/knowledge-center/requirement-corpus/requirements/${encodeURIComponent(requirementId)}/reinstatement`, { reason }),
+  /** Retry what stopped indexing, or index chosen requirements again. */
+  reindexCorpus: (scope: ReindexScope, requirementIds: string[] = []) =>
+    post<{ requirements: number }>("/knowledge-center/requirement-corpus/reindex", { scope, requirement_ids: requirementIds }),
   nudgeFinding: (findingId: string) =>
     post<Nudge>(`/knowledge-center/requirement-corpus/findings/${encodeURIComponent(findingId)}/nudge`, {}),
 

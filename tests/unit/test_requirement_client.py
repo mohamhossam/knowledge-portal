@@ -24,15 +24,19 @@ from knowledge_portal.application.ports.architecture_mapping_stats import (
 )
 from knowledge_portal.application.ports.requirement_corpus import (
     CorpusQuery,
+    CorpusState,
     FindingAge,
     FindingKind,
     FindingQuery,
     IndexState,
     OpenFindingAges,
     PersonName,
+    ReindexScope,
+    RequirementCorpusConflictError,
     RequirementCorpusPort,
     RequirementFindingConflictError,
     RequirementFindingNotFoundError,
+    RequirementNotInCorpusError,
 )
 from knowledge_portal.application.ports.requirement_dependents import (
     ProposalStatus,
@@ -246,6 +250,7 @@ ROW = {
     "index_state": "failed",
     "last_screened_at": None,
     "open_findings": 2,
+    "retired": None,
 }
 FINDING = {
     "finding_id": "kf-1",
@@ -374,6 +379,88 @@ def test_a_refused_nudge_keeps_requirement_work_s_reason() -> None:
         HttpRequirementCorpus(_client(_answering({}, 401))).nudge("kf-1", "a", "A")
 
 
+MEMBERSHIP = {
+    "requirement_id": "REQ-1",
+    "state": "retired",
+    "changed_at": "2026-10-07T09:00:00+00:00",
+    "closed_findings": 2,
+    "notified": "Ravi Reviewer",
+}
+
+
+def test_retirement_and_reinstatement_post_the_admin_and_reason() -> None:
+    seen: list[httpx.Request] = []
+    corpus = HttpRequirementCorpus(_client(_answering(MEMBERSHIP), seen))
+    retired = corpus.retire("REQ/1", "fake-owner", "Amina Owner", "Cancelled.")
+    corpus.reinstate("REQ-1", "fake-owner", "Amina Owner", "Back on.")
+    for request in seen:
+        _assert_in_contract(request)
+        assert request.method == "POST"
+    assert seen[0].url.raw_path == b"/internal/knowledge/requirements/REQ%2F1/retirement"
+    assert seen[1].url.raw_path == b"/internal/knowledge/requirements/REQ-1/reinstatement"
+    assert json.loads(seen[0].content) == {
+        "actor_id": "fake-owner",
+        "actor_name": "Amina Owner",
+        "reason": "Cancelled.",
+    }
+    assert set(MEMBERSHIP) == set(
+        CONTRACT["components"]["schemas"]["MembershipResult"]["properties"]
+    )
+    assert (retired.state, retired.closed_findings, retired.notified) == (
+        CorpusState.RETIRED,
+        2,
+        "Ravi Reviewer",
+    )
+
+
+def test_reindex_posts_its_scope_and_choice() -> None:
+    seen: list[httpx.Request] = []
+    result = HttpRequirementCorpus(_client(_answering({"requirements": 3}), seen)).reindex(
+        ReindexScope.REQUIREMENTS, ("REQ-1", "REQ-2"), "fake-owner", "Amina Owner"
+    )
+    (request,) = seen
+    _assert_in_contract(request)
+    assert request.url.path == "/internal/knowledge/reindex"
+    assert json.loads(request.content) == {
+        "actor_id": "fake-owner",
+        "actor_name": "Amina Owner",
+        "scope": "requirements",
+        "requirement_ids": ["REQ-1", "REQ-2"],
+    }
+    assert result.requirements == 3
+
+
+def test_retired_rows_are_asked_for_and_decoded() -> None:
+    seen: list[httpx.Request] = []
+    row = {**ROW, "retired": {"at": "2026-10-07T09:00:00+00:00", "by": "Omar", "reason": "Old."}}
+    page = HttpRequirementCorpus(
+        _client(_answering({"items": [row], "next_offset": None}), seen)
+    ).requirements(CorpusQuery(retired_only=True), offset=0, limit=50)
+    _assert_in_contract(seen[0])
+    assert seen[0].url.params["retired_only"] == "true"
+    (item,) = page.items
+    assert item.retired is not None and item.retired.reason == "Old."
+
+
+def test_an_unusable_reindex_count_is_an_explicit_failure() -> None:
+    with pytest.raises(ServiceUnavailableError):
+        HttpRequirementCorpus(_client(_answering({"requirements": "many"}))).reindex(
+            ReindexScope.FAILED, (), "a", "A"
+        )
+
+
+def test_a_refused_corpus_action_keeps_requirement_work_s_reason() -> None:
+    refusal = {"code": "corpus_membership_conflict", "message": "This Requirement is not retired."}
+    with pytest.raises(RequirementCorpusConflictError, match="is not retired"):
+        HttpRequirementCorpus(_client(_answering(refusal, 409))).reinstate("R", "a", "A", "x")
+    with pytest.raises(RequirementNotInCorpusError):
+        HttpRequirementCorpus(_client(_answering({}, 404))).retire("R", "a", "A", "x")
+    with pytest.raises(ServiceUnavailableError):
+        HttpRequirementCorpus(_client(_answering({}, 401))).reindex(
+            ReindexScope.FAILED, (), "a", "A"
+        )
+
+
 @pytest.mark.parametrize(
     "call",
     [
@@ -383,6 +470,7 @@ def test_a_refused_nudge_keeps_requirement_work_s_reason() -> None:
         lambda c: HttpRequirementCorpus(c).requirements(CorpusQuery(), 0, 10),
         lambda c: HttpRequirementCorpus(c).findings(FindingQuery(), 0, 10),
         lambda c: HttpRequirementCorpus(c).nudge("kf-1", "a", "A"),
+        lambda c: HttpRequirementCorpus(c).retire("R", "a", "A", "x"),
         lambda c: HttpRequirementImpact(c).document_impact(
             ActorId("a"), "d", active_only=False, query="", offset=0, limit=10
         ),
@@ -403,6 +491,7 @@ def test_a_refused_nudge_keeps_requirement_work_s_reason() -> None:
         {"items": [{**ROW, "index_state": "stale"}], "next_offset": None},
         {"items": [{**FINDING, "owner": OWNER, "subject": None}], "next_offset": None},
         {**RECEIPT, "nudged_at": "soon"},
+        {**MEMBERSHIP, "state": "gone"},
     ],
 )
 def test_an_unusable_answer_is_an_explicit_failure(call: Any, body: Any) -> None:
@@ -429,3 +518,6 @@ def test_the_fakes_stand_in_for_each_port_deterministically() -> None:
     assert corpus.findings(FindingQuery(), 0, 10).items == ()
     with pytest.raises(RequirementFindingNotFoundError):
         corpus.nudge("kf-1", "a", "A")
+    with pytest.raises(RequirementNotInCorpusError):
+        corpus.retire("R", "a", "A", "x")
+    assert corpus.reindex(ReindexScope.FAILED, (), "a", "A").requirements == 0

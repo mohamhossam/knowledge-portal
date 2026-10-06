@@ -494,6 +494,7 @@ export function requirementOverview(corpus: RequirementCorpus, requirementWork: 
       { key: "requirements", label: "Requirements", value: String(corpus.requirements) },
       { key: "current", label: "Indexed and current", value: String(corpus.current) },
       { key: "duplicates", label: "Of them closed as duplicates", value: String(corpus.duplicates) },
+      { key: "retired", label: "Of them retired", value: String(corpus.retired) },
       { key: "open", label: "Open findings", value: String(open) },
     ],
     edition: {

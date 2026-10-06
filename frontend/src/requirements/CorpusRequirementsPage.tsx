@@ -1,24 +1,27 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { RotateCw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { api, type CorpusFilters, type CorpusRequirement, type IndexState } from "../api/client";
 import { errorMessage } from "../api/errors";
-import { formatDay } from "../home/format";
+import { count, formatDay } from "../home/format";
+import { BulkReindex } from "./BulkReindex";
+import { CorpusActionForm, type CorpusActionKind } from "./CorpusActionForm";
 import { LEAVES, REQUIREMENTS_PATH, knowledgeStepHref, useCorpusSummary } from "./knowledge";
 import { KnowledgePage } from "./knowledgeHead";
 
 /** How long since a screen before a requirement counts as not screened lately. */
 export const STALE_DAYS = 30;
 
-type StateFilter = IndexState | "all";
+type StateFilter = IndexState | "all" | "retired";
 
 const STATES: { key: StateFilter; label: string; exceptional: boolean }[] = [
   { key: "all", label: "All", exceptional: false },
   { key: "failed", label: "Stopped indexing", exceptional: true },
   { key: "waiting", label: "Waiting", exceptional: true },
   { key: "current", label: "Current", exceptional: false },
+  { key: "retired", label: "Retired", exceptional: true },
 ];
 
 const STATE_WORDS: Record<IndexState, string> = {
@@ -46,9 +49,44 @@ export function CorpusRequirementsPage() {
     query: params.get("q") ?? undefined,
     openFindingsOnly: params.get("open") === "1",
     notScreenedForDays: params.get("stale") ? STALE_DAYS : undefined,
+    retiredOnly: state === "retired",
   };
   const [find, setFind] = useState(filters.query ?? "");
   const summary = useCorpusSummary();
+  const queryClient = useQueryClient();
+  // The row whose retire or reinstate form is open, and what each action came to, said in its row.
+  const [acting, setActing] = useState<{ id: string; kind: CorpusActionKind } | null>(null);
+  const [said, setSaid] = useState<Record<string, { text: string; failed: boolean }>>({});
+  const triggers = useRef<Record<string, HTMLButtonElement | null>>({});
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ["knowledge-center", "requirement-corpus"] });
+  const act = useMutation({
+    mutationFn: ({ item, kind, reason }: { item: CorpusRequirement; kind: CorpusActionKind; reason: string }) =>
+      kind === "retire" ? api.retireRequirement(item.requirement_id, reason) : api.reinstateRequirement(item.requirement_id, reason),
+    onSuccess: (result, { item, kind }) => {
+      const told = result.notified ? `; ${result.notified} was told` : "";
+      setSaid((current) => ({
+        ...current,
+        [item.requirement_id]: {
+          text: kind === "retire"
+            ? `Retired${result.closed_findings ? `, ${count(result.closed_findings, "finding")} closed` : ""}${told}.`
+            : `Back in the corpus${told}.`,
+          failed: false,
+        },
+      }));
+      setActing(null);
+      triggers.current[item.requirement_id]?.focus();
+      void refresh();
+    },
+  });
+  const open = (id: string, kind: CorpusActionKind) => {
+    act.reset();
+    setActing({ id, kind });
+  };
+  const cancel = () => {
+    const id = acting?.id;
+    setActing(null);
+    if (id) triggers.current[id]?.focus();
+  };
 
   const set = (key: string, value: string | null) =>
     setParams((current) => {
@@ -83,13 +121,13 @@ export function CorpusRequirementsPage() {
   // The strip's counts are the whole corpus's; once another filter narrows the page they would mislead.
   const otherwiseNarrowed = Boolean(filters.query || filters.openFindingsOnly || filters.notScreenedForDays || filters.ownerId);
   const counts: Partial<Record<StateFilter, number>> = tally && !otherwiseNarrowed
-    ? { all: tally.requirements, failed: tally.failed, waiting: tally.waiting, current: tally.current }
+    ? { all: tally.requirements, failed: tally.failed, waiting: tally.waiting, current: tally.current, retired: tally.retired }
     : {};
-  const pressed: StateFilter = filters.indexState ?? "all";
-  const shown = STATES.filter((item) =>
-    !item.exceptional || item.key === pressed || !tally || (item.key === "failed" ? tally.failed : tally.waiting) > 0,
-  );
-  const narrowed = Boolean(filters.indexState) || otherwiseNarrowed;
+  const pressed: StateFilter = filters.retiredOnly ? "retired" : filters.indexState ?? "all";
+  const exceptional = (key: StateFilter) =>
+    !tally ? 1 : key === "failed" ? tally.failed : key === "waiting" ? tally.waiting : tally.retired;
+  const shown = STATES.filter((item) => !item.exceptional || item.key === pressed || exceptional(item.key) > 0);
+  const narrowed = Boolean(filters.indexState || filters.retiredOnly) || otherwiseNarrowed;
 
   return (
     <KnowledgePage page="Requirements">
@@ -147,6 +185,12 @@ export function CorpusRequirementsPage() {
           </p>
         )}
 
+        <BulkReindex
+          failed={tally?.failed ?? 0}
+          shown={items.filter((item) => !item.retired).map((item) => item.requirement_id)}
+          onDone={() => void refresh()}
+        />
+
         {pages.isError ? (
           <p className="docpage__failure" role="alert">
             Requirement work did not answer: {errorMessage(pages.error)}
@@ -178,7 +222,31 @@ export function CorpusRequirementsPage() {
               </tr>
             </thead>
             <tbody>
-              {items.map((item) => <RequirementRow key={item.requirement_id} item={item} />)}
+              {items.map((item) => (
+                <Fragment key={item.requirement_id}>
+                  <RequirementRow
+                    item={item}
+                    said={said[item.requirement_id]}
+                    open={acting?.id === item.requirement_id}
+                    trigger={(node) => { triggers.current[item.requirement_id] = node; }}
+                    onAct={(kind) => open(item.requirement_id, kind)}
+                  />
+                  {acting?.id === item.requirement_id && (
+                    <tr className="knowledge__act-row">
+                      <td colSpan={4}>
+                        <CorpusActionForm
+                          item={item}
+                          kind={acting.kind}
+                          busy={act.isPending}
+                          error={act.error ? errorMessage(act.error) : null}
+                          onSubmit={(reason) => act.mutate({ item, kind: acting.kind, reason })}
+                          onCancel={cancel}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              ))}
             </tbody>
           </table>
         )}
@@ -196,21 +264,29 @@ export function CorpusRequirementsPage() {
 
 /** A stopped index is a disruption; open findings make a row due; a duplicate is past. */
 function rank(item: CorpusRequirement): string {
-  if (item.duplicate) return "row--past";
+  if (item.duplicate || item.retired) return "row--past";
   if (item.index_state === "failed") return "row--delayed";
   return item.open_findings > 0 ? "row--due" : "";
 }
 
 function IndexWords({ item }: { item: CorpusRequirement }) {
+  if (item.retired) return <span className="status">Retired</span>;
   // Only a state that needs someone carries the status weight; "Current" is the quiet default.
   return item.index_state === "current"
     ? <>{STATE_WORDS.current}</>
     : <span className="status">{STATE_WORDS[item.index_state]}</span>;
 }
 
-function RequirementRow({ item }: { item: CorpusRequirement }) {
+function RequirementRow({ item, said, open, trigger, onAct }: {
+  item: CorpusRequirement;
+  said: { text: string; failed: boolean } | undefined;
+  open: boolean;
+  trigger: (node: HTMLButtonElement | null) => void;
+  onAct: (kind: CorpusActionKind) => void;
+}) {
+  const kind: CorpusActionKind | null = item.retired ? "reinstate" : item.duplicate ? null : "retire";
   return (
-    <tr className={`row ${rank(item)}`}>
+    <tr className={`row ${rank(item)}${open ? " is-acting" : ""}`}>
       <th scope="row">
         <a href={knowledgeStepHref(item.requirement_id)} className="knowledge__title" dir="auto">
           {item.title}
@@ -231,10 +307,34 @@ function RequirementRow({ item }: { item: CorpusRequirement }) {
           ) : "No owner"}
           {item.duplicate && " · closed as a duplicate"}
         </span>
+        {item.retired && (
+          <span className="secondary govtable__by knowledge__retired">
+            Retired by {item.retired.by} on {formatDay(item.retired.at)}: <span dir="auto">{item.retired.reason}</span>
+          </span>
+        )}
         {/* On phones the two state columns fold into this line, as the Kept Column Rule asks. */}
         <span className="secondary govtable__by knowledge__narrow">
           <IndexWords item={item} /> · screened {screened(item)}
         </span>
+        {kind && (
+          <span className="knowledge__act">
+            <button
+              ref={trigger}
+              type="button"
+              className="text-button"
+              aria-expanded={open}
+              onClick={() => onAct(kind)}
+            >
+              {kind === "retire" ? "Retire from the corpus" : "Reinstate"}
+              <span className="visually-hidden">: {item.title}</span>
+            </button>
+          </span>
+        )}
+        {said && (
+          <span className={said.failed ? "govtable__by knowledge__said--failed" : "secondary govtable__by"} role="status">
+            {said.text}
+          </span>
+        )}
       </th>
       <td className="knowledge__wide"><IndexWords item={item} /></td>
       <td className="knowledge__wide cell--end">{screened(item)}</td>

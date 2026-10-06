@@ -86,6 +86,7 @@ from knowledge_portal.application.use_cases.reference_knowledge import (
     StructureAwareChunks,
 )
 from knowledge_portal.application.use_cases.requirement_corpus import (
+    ActOnRequirementCorpus,
     NudgeFindingOwners,
     ReadRequirementCorpus,
 )
@@ -176,6 +177,7 @@ class Container:
     report_mapping_impact: ReportMappingImpact
     read_requirement_corpus: ReadRequirementCorpus
     nudge_finding_owners: NudgeFindingOwners
+    act_on_requirement_corpus: ActOnRequirementCorpus
     upload_knowledge_document: UploadKnowledgeDocument
     read_knowledge_document: ReadKnowledgeDocument
     decide_catalogue_candidates: DecideCatalogueCandidate
@@ -312,6 +314,7 @@ def _build_container(
         ),
         read_requirement_corpus=ReadRequirementCorpus(requirement_work.corpus),
         nudge_finding_owners=NudgeFindingOwners(requirement_work.corpus),
+        act_on_requirement_corpus=ActOnRequirementCorpus(requirement_work.corpus),
         report_mapping_impact=ReportMappingImpact(
             persistence.architecture_repository, requirement_work.mapping_stats
         ),

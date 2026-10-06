@@ -4,17 +4,22 @@ nudges (B2)."""
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from knowledge_portal.application.ports.requirement_corpus import (
     CorpusFindingsPage,
     CorpusRequirementsPage,
+    CorpusState,
     CorpusSummary,
     FindingAge,
     FindingKind,
     IndexState,
+    MembershipResult,
     NudgeReceipt,
+    ReindexResult,
+    ReindexScope,
 )
 
 
@@ -35,6 +40,7 @@ class RequirementCorpusResponse(BaseModel):
     rebuild_required: bool
     open_findings: OpenFindingAgesResponse
     as_of: datetime
+    retired: int
 
     @classmethod
     def from_domain(cls, summary: CorpusSummary) -> RequirementCorpusResponse:
@@ -46,6 +52,7 @@ class RequirementCorpusResponse(BaseModel):
             waiting=summary.waiting,
             failed=summary.failed,
             rebuild_required=summary.rebuild_required,
+            retired=summary.retired,
             open_findings=OpenFindingAgesResponse(
                 under_7_days=ages.under_7_days,
                 from_7_to_30_days=ages.from_7_to_30_days,
@@ -74,6 +81,13 @@ class CorpusRequirementResponse(_FromDomain):
     index_state: IndexState
     last_screened_at: datetime | None
     open_findings: int
+    retired: RetiredMarkResponse | None
+
+
+class RetiredMarkResponse(_FromDomain):
+    at: datetime
+    by: str
+    reason: str
 
 
 class CorpusRequirementsResponse(_FromDomain):
@@ -130,3 +144,36 @@ class NudgeResponse(_FromDomain):
     @classmethod
     def from_domain(cls, receipt: NudgeReceipt) -> NudgeResponse:
         return cls.model_validate(receipt)
+
+
+class CorpusActionRequest(BaseModel):
+    """Why: requirement work records it with the action and tells the owner."""
+
+    reason: str = Field(min_length=1, max_length=500)
+
+
+class MembershipResponse(_FromDomain):
+    requirement_id: str
+    state: CorpusState
+    changed_at: datetime
+    closed_findings: int
+    notified: str | None
+
+    @classmethod
+    def from_domain(cls, result: MembershipResult) -> MembershipResponse:
+        return cls.model_validate(result)
+
+
+class ReindexRequest(BaseModel):
+    scope: ReindexScope
+    requirement_ids: list[Annotated[str, Field(min_length=1, max_length=200)]] = Field(
+        default_factory=list, max_length=500
+    )
+
+
+class ReindexResponse(_FromDomain):
+    requirements: int
+
+    @classmethod
+    def from_domain(cls, result: ReindexResult) -> ReindexResponse:
+        return cls.model_validate(result)

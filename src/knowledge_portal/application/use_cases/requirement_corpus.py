@@ -14,7 +14,10 @@ from knowledge_portal.application.ports.requirement_corpus import (
     CorpusRequirementsPage,
     CorpusSummary,
     FindingQuery,
+    MembershipResult,
     NudgeReceipt,
+    ReindexResult,
+    ReindexScope,
     RequirementCorpusPort,
 )
 from knowledge_portal.domain.identity.entities import ActorProfile
@@ -55,3 +58,24 @@ class NudgeFindingOwners:
 
     def execute(self, actor: ActorProfile, finding_id: str) -> NudgeReceipt:
         return self._corpus.nudge(finding_id, actor.id.value, actor.display_name)
+
+
+class ActOnRequirementCorpus:
+    """A knowledge admin's corpus actions, sent to requirement work in their name (B3).
+
+    Requirement work applies the rules, records each action and tells the owner.
+    """
+
+    def __init__(self, corpus: RequirementCorpusPort) -> None:
+        self._corpus = corpus
+
+    def retire(self, actor: ActorProfile, requirement_id: str, reason: str) -> MembershipResult:
+        return self._corpus.retire(requirement_id, actor.id.value, actor.display_name, reason)
+
+    def reinstate(self, actor: ActorProfile, requirement_id: str, reason: str) -> MembershipResult:
+        return self._corpus.reinstate(requirement_id, actor.id.value, actor.display_name, reason)
+
+    def reindex(
+        self, actor: ActorProfile, scope: ReindexScope, requirement_ids: tuple[str, ...]
+    ) -> ReindexResult:
+        return self._corpus.reindex(scope, requirement_ids, actor.id.value, actor.display_name)

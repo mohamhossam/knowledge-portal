@@ -212,7 +212,7 @@ describe("squadOverview", () => {
 });
 
 const corpus = (overrides: Partial<RequirementCorpus> = {}): RequirementCorpus => ({
-  requirements: 12, duplicates: 1, current: 12, waiting: 0, failed: 0, rebuild_required: false,
+  requirements: 12, duplicates: 1, retired: 0, current: 12, waiting: 0, failed: 0, rebuild_required: false,
   open_findings: { under_7_days: 0, from_7_to_30_days: 0, over_30_days: 0 },
   as_of: "2026-10-06T09:00:00Z",
   ...overrides,
@@ -233,6 +233,7 @@ describe("requirementOverview", () => {
       ["Requirements", "12"],
       ["Indexed and current", "12"],
       ["Of them closed as duplicates", "1"],
+      ["Of them retired", "0"],
       ["Open findings", "0"],
     ]);
   });

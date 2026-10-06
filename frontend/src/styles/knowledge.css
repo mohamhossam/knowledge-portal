@@ -119,6 +119,67 @@
   list-style: disc;
 }
 
+/* Corpus actions (B3): a quiet text button per row, its form opened in place beneath. */
+.knowledge__act {
+  display: block;
+  margin-top: var(--s1);
+}
+
+.knowledge__act .text-button {
+  margin-left: calc(-1 * var(--s1));
+}
+
+.knowledge__retired {
+  margin-top: var(--s1);
+}
+
+.row.is-acting,
+.knowledge__act-row td {
+  background: var(--stock-band);
+}
+
+.govtable tbody .knowledge__act-row td {
+  padding: var(--s3) var(--s4) var(--s4);
+  border-bottom: 2px solid var(--rule-heavy);
+}
+
+.knowledge__act-form {
+  display: grid;
+  gap: var(--s2);
+  max-width: 44rem;
+}
+
+.knowledge__act-title {
+  font-weight: var(--w-bold);
+}
+
+.knowledge__act-lead {
+  max-width: 72ch;
+}
+
+.knowledge__act-form .field__input {
+  width: 100%;
+  resize: vertical;
+}
+
+/* Bulk work: the next decision, and the reindex as a quiet word beside it. */
+.knowledge__bulk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s2) var(--s5);
+}
+
+.knowledge__bulk .next-button {
+  font-size: var(--t-lead);
+  font-weight: var(--w-bold);
+}
+
+.knowledge__bulk .next-button svg {
+  margin-left: var(--s1);
+  vertical-align: -0.15em;
+}
+
 /* Folded lines show only where their columns are dropped. */
 .knowledge__narrow {
   display: none;

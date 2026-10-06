@@ -35,8 +35,10 @@ from knowledge_portal.application.ports.catalogue_extractor import (
 )
 from knowledge_portal.application.ports.change_requests import ChangeRequestConflictError
 from knowledge_portal.application.ports.requirement_corpus import (
+    RequirementCorpusConflictError,
     RequirementFindingConflictError,
     RequirementFindingNotFoundError,
+    RequirementNotInCorpusError,
 )
 from knowledge_portal.application.ports.system_matcher import SystemMatchingError
 from knowledge_portal.application.use_cases.architecture_knowledge import (
@@ -144,6 +146,8 @@ ERROR_CATALOGUE: tuple[tuple[type[Exception], str, FailureCategory], ...] = (
         "requirement_finding_conflict",
         FailureCategory.CONFLICT,
     ),
+    (RequirementNotInCorpusError, "requirement_not_in_corpus", FailureCategory.NOT_FOUND),
+    (RequirementCorpusConflictError, "requirement_corpus_conflict", FailureCategory.CONFLICT),
     (ChangeRequestConflictError, "change_request_conflict", FailureCategory.CONFLICT),
     (ChangeRequestStateError, "change_request_state", FailureCategory.CONFLICT),
     (
