@@ -57,6 +57,8 @@ def validate_settings(settings: Settings) -> None:
         raise ConfigurationError("PRODUCT_CATALOG_CODE_FIELD must be a TMF620 field name.")
     if settings.product_catalog_cache_seconds < 0:
         raise ConfigurationError("PRODUCT_CATALOG_CACHE_SECONDS must not be negative.")
+    if settings.knowledge_review_cycle_days < 1:
+        raise ConfigurationError("KNOWLEDGE_REVIEW_CYCLE_DAYS must be at least one day.")
     if settings.provider_rate_limit_per_minute < 0:
         raise ConfigurationError(
             "PROVIDER_RATE_LIMIT_PER_MINUTE must be 0 (unlimited) or a positive number."

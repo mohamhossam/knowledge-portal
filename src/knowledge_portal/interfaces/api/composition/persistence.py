@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from contextlib import ExitStack
 from dataclasses import dataclass
+from datetime import timedelta
 from threading import RLock
 
 from smb_kernel.documents.ports import DocumentStoragePort
@@ -34,6 +35,7 @@ from knowledge_portal.application.ports.library_admin import (
 from knowledge_portal.application.ports.organisation_repository import OrganisationRepositoryPort
 from knowledge_portal.application.ports.reference_index import ReferenceIndexPort
 from knowledge_portal.application.ports.sample_requirements import SampleRequirementsPort
+from knowledge_portal.application.ports.system_reviews import SystemReviewsPort
 from knowledge_portal.application.ports.transaction_manager import TransactionManagerPort
 from knowledge_portal.infrastructure.architecture.evidence_index import InMemoryEvidenceIndex
 from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
@@ -109,6 +111,10 @@ from knowledge_portal.infrastructure.persistence.reference_index import (
     InMemoryReferenceIndex,
     PostgresReferenceIndex,
 )
+from knowledge_portal.infrastructure.persistence.system_reviews import (
+    InMemorySystemReviews,
+    PostgresSystemReviews,
+)
 
 
 @dataclass(frozen=True)
@@ -127,6 +133,8 @@ class PersistenceAdapters:
     # Knowledge admins acting on documents they don't own (Knowledge Center C).
     library_admin_grants: LibraryAdminGrantsPort
     library_admin_record: LibraryAdminRecordPort
+    # Confirmations that catalogue systems are still right (Knowledge Center D).
+    system_reviews: SystemReviewsPort
     knowledge_events: KnowledgeEventOutboxPort
     reference_index: ReferenceIndexPort
     transaction_manager: TransactionManagerPort
@@ -144,7 +152,12 @@ def build_persistence(
         return _postgres(
             settings, resources, clock, architecture_embeddings, architecture_tokenizer
         )
-    return _memory(clock, architecture_embeddings, architecture_tokenizer)
+    return _memory(
+        clock,
+        architecture_embeddings,
+        architecture_tokenizer,
+        timedelta(days=settings.knowledge_review_cycle_days),
+    )
 
 
 def _postgres(
@@ -184,10 +197,13 @@ def _postgres(
         ),
         architecture_job_repository=PostgresArchitectureJobs(connector),
         library_repository=PublishingDocumentLibrary(
-            PostgresDocumentLibrary(postgres), knowledge_events
+            PostgresDocumentLibrary(postgres),
+            knowledge_events,
+            timedelta(days=settings.knowledge_review_cycle_days),
         ),
         library_admin_grants=PostgresLibraryAdminGrants(postgres),
         library_admin_record=PostgresLibraryAdminRecord(postgres),
+        system_reviews=PostgresSystemReviews(postgres),
         knowledge_events=knowledge_events,
         reference_index=PostgresReferenceIndex(postgres),
         transaction_manager=postgres,
@@ -199,6 +215,7 @@ def _memory(
     clock: ClockPort,
     architecture_embeddings: EmbeddingPort,
     architecture_tokenizer: ArchitectureTokenizerPort,
+    review_cycle: timedelta,
 ) -> PersistenceAdapters:
     lock = RLock()
     events = InMemoryKnowledgeEvents(lock)
@@ -208,7 +225,10 @@ def _memory(
     actors = InMemoryActorDirectory(lock=lock)
     transactions = InMemoryTransactionManager(lock)
     library_admin = InMemoryLibraryAdmin(lock)
-    transactions.enroll(library, events, reference_index, storage, actors, library_admin)
+    system_reviews = InMemorySystemReviews(lock)
+    transactions.enroll(
+        library, events, reference_index, storage, actors, library_admin, system_reviews
+    )
     return PersistenceAdapters(
         document_storage=storage,
         actor_directory=actors,
@@ -221,9 +241,10 @@ def _memory(
             architecture_embeddings, architecture_tokenizer
         ),
         architecture_job_repository=InMemoryArchitectureJobs(),
-        library_repository=PublishingDocumentLibrary(library, events),
+        library_repository=PublishingDocumentLibrary(library, events, review_cycle),
         library_admin_grants=library_admin,
         library_admin_record=InMemoryLibraryAdminRecord(library_admin),
+        system_reviews=system_reviews,
         knowledge_events=events,
         reference_index=reference_index,
         transaction_manager=transactions,

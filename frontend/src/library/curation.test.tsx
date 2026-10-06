@@ -48,8 +48,8 @@ describe("the library list", () => {
     expect(within(coverage).getByText("2 requirements")).toBeInTheDocument();
     const billing = screen.getByRole("link", { name: "Billing rules" }).closest("tr")!;
     expect(within(billing).getByText("Extraction failed")).toBeInTheDocument();
-    // Not in service, and requirement work could not count: both say so with a dash.
-    expect(within(billing).getAllByText("—")).toHaveLength(2);
+    // Not in service, requirement work could not count, and never reviewed: each says so with a dash.
+    expect(within(billing).getAllByText("—")).toHaveLength(3);
     expect(within(screen.getByRole("link", { name: "Old tariffs" }).closest("tr")!).getByText("None")).toBeInTheDocument();
     // Its owner's name, never "(you)": it is not the admin's.
     expect(screen.queryByText(/\(you\)/)).not.toBeInTheDocument();

@@ -324,7 +324,7 @@ The palette is table stock and ink, plus two colours with a job each.
 - **Reference Wash** (`reference-wash`): the lit state of a row, mark or note when its partner is hovered or focused. Also text selection, and the way back on a system sheet: the connection row for the system the reader came from. In the squad catalogue, the row of a system just given to a squad, lit until the reader's next action.
 
 ### Secondary
-- **Disruption Red** (`disruption`): failure only. This means a delayed or failed status (for example "Extraction failed", or a draft document's "Reading failed: why"), a table that could not be read, a sign-in error, a failed processing line, a failed action (including an edit's failure line, the 409 line "The draft changed while you edited …", and the squad catalogue's "The squad catalogue changed while you edited …"), a failed build ("The build failed", bold), a sample that could not be compared, and anything blocking: the blocking count in the change notice, a blocking warning on a passage, a blocking file warning.
+- **Disruption Red** (`disruption`): failure only. This means a delayed or failed status (for example "Extraction failed", or a draft document's "Reading failed: why"), a table that could not be read, a sign-in error, a failed processing line, a failed action (including an edit's failure line, the 409 line "The draft changed while you edited …", and the squad catalogue's "The squad catalogue changed while you edited …"), a failed build ("The build failed", bold), a sample that could not be compared, knowledge overdue for re-confirmation ("Overdue since 1 Oct 2026", "Re-confirmation overdue", a reminders group head's date, "24 overdue" in the masthead count), and anything blocking: the blocking count in the change notice, a blocking warning on a passage, a blocking file warning.
 - **Disruption Wash** (`disruption-wash`): reserved as the wash partner of disruption. It is defined in the tokens but not yet used on a shipped surface.
 
 ### Neutral
@@ -431,7 +431,7 @@ Words with counts, not chips. Each filter is a 2rem-tall text control in medium 
 One ink-2 meta line under the filter strip naming the review keys. Each key is a `kbd` cap: 0.75rem medium text in the body face, 0 0.3em padding, a 1px rule-coloured outline and the 2px radius.
 
 ### Navigation
-- **Masthead:** a strip with "Requirement AI · Knowledge portal" set at 72% width. The portal name is in bold lead, the parent product in ink 2. Next come "Valid as of" with a medium-weight time and a refresh text button, then the account at the right. A 2px heavy rule sits underneath.
+- **Masthead:** a strip with "Requirement AI · Knowledge portal" set at 72% width. The portal name is in bold lead, the parent product in ink 2. Next come "Valid as of" with a medium-weight time and a refresh text button, then the reviews count, then the account at the right. The **reviews count** ("Reviews: 24 overdue · 4 due soon") is a bold meta link to the reminders, its overdue count bold disruption red; it is absent when nothing the person answers for is due, and its changes are announced politely. A 2px heavy rule sits underneath.
 - **Index of tables:** four entries: Library, Architecture catalogue, Squad catalogue and Requirement knowledge. Each has a monumental condensed number, a title at 88% width and bold weight, and a meta extent line with its count and a proportional rule. Under it, a meta **state clause** carries the table's most pressing state in its rows' rank styling: medium red for a disruption ("1 draft failed", "2 stopped indexing, 2 overdue"), bold ink for what is due ("3 to decide", "31 with no squad"), nothing when the table is quiet, and red "Could not be read" when it failed. A check-in reads the book from its index without scrolling. **Hover** underlines the title. **Current** adds the inset 3px ink bar. Each entry announces "Table N:", then its count and state after spoken separators.
 - **Document sub-index:** a labelled `nav` ("This document") under a document's head: Review · Search versions · Who cites it · Ownership. Each link is a 2.25rem-tall target in medium ink 2 with no underline; **hover** turns it to ink; **current** (`aria-current="page"`) sets it in bold ink with the inset 3px ink bar, above a 1px rule under the whole strip. While the working copy has unsaved changes, Review carries "· N unsaved" in regular weight. On phones the gap tightens to 0.75rem and the links drop to meta size; that override follows the base rule in the cascade. The catalogue uses the same strip, labelled "This catalogue": Systems · Domains · Channels · Offerings · Journeys, then Explorer on the version in service only, then on a draft only Sources · Changes · Check · Publish, then Versions, the last reading "All versions" while another version is being read. Check stays current while a cited passage from it is read. The squad catalogue uses it too, also labelled "This catalogue": Products · Squads · People · History. Table 4 uses it as "This table": Overview · Requirements · Findings; on the overview it sits in the table's toolbar slot.
 
@@ -712,6 +712,41 @@ Counts first, like a timetable's list of changes. A heading in the label style o
 
 ### Processing Line
 The working copy's state on one line, ruled above and below with heavy rules and 0.75rem of block padding. The status is bold ink, red when processing failed (and announced as an alert); text-button actions and an ink-2 meta aside share the line.
+
+### Review Cycles (Knowledge Center D)
+Knowledge is confirmed still right on a cycle (180 days by default). Being due never takes it out of use; it is only flagged. On screen the cycle keeps the word "review" ("Last review", "Due for review"), but its statuses say **re-confirmation** ("Re-confirmation overdue", "Re-confirmation due soon"), so they never read like passage review's "Awaiting your review".
+- **Review line:** one ink-2 meta line, capped at 72ch, under a document's edition line and under a system's title (and Arabic name) on its sheet in the version in service. It says who last confirmed it and when ("Not confirmed since its approval" when the approval of the version in service is the last review, so the edition line is not repeated; "Never confirmed since this version was published on …" for a system no maintainer has confirmed), then a middle dot and when it falls due. Current reads "due for re-confirmation 3 Apr 2027" in ink 2. Due within two weeks reads "Due 12 Oct 2026" in bold ink. Overdue reads "Overdue since 1 Oct 2026" in bold disruption red. The status date never breaks.
+  - After another middle dot comes the confirm action, a quiet row text button that never breaks from its dot.
+  - For the owner or a maintainer it reads "Confirm it is still right…".
+  - For any other knowledge admin it reads "Confirm it is still right for Amina Owner…" (a document) or "Confirm it is still right for the maintainers…" (a system).
+  - A system's last note follows on its own meta line: "Note from Max Maintainer: …".
+- **Confirm form:** opens in place beneath the line or row, on the stock band closed by a heavy rule. Focus moves to its first field, and back to the trigger on Cancel or Escape.
+  - It starts with a bold title ("Confirm ‘Coverage policy’ is still right"), then an ink-2 consequence lead.
+  - When it confirms several things, they are named next ("ADFS, BSCS … and 11 more").
+  - Confirming for someone else adds "Why you confirm it for … (required)".
+  - Then comes the note: "Note (optional)", with a form hint. When one confirmation stands for several systems, the note becomes "What you checked (required)".
+  - The action button ("Confirm it", "Confirm for Amina Owner", "Confirm for the maintainers", "Confirm 3 systems") sits beside Cancel.
+  - A missing field says why it is needed, and focus returns to it. A refusal takes focus.
+  - On success, one medium status line says when it falls due again. The line stays in the accessibility tree while empty, so it is announced.
+- **Reminders page** (`/reminders`): the document page's head without a margin number, titled "Due for review". Its edition line is the tally ("2 overdue and 1 due within two weeks, of what you answer for"), the cycle, and that the item stays in use meanwhile.
+  - **"Your library documents"** is a governance table: Document · Falls due · Last confirmed, with dates end-aligned.
+    - Overdue rows are delayed and due-soon rows are due. Every row is the reader's own, so an overdue row's name is bold too.
+    - Each row's confirm action sits a step under the name, so the two targets keep apart.
+    - On phones both date columns fold into that line.
+  - **"Catalogue systems in service"**, for a catalogue maintainer, groups systems that fall due on the same day under a label-style head on a heavy rule. For example, "**Fell due 30 Jun 2026** · never confirmed since its publication on 1 Jan 2026 · 23 systems", with red on the head's date only, never on each row.
+    - Each system is one line on a hairline: name, who last confirmed it when that was a person, then the confirm action.
+    - A group of several ends with a quiet "Confirm these N systems together…". It confirms only that group, names them, and requires a note.
+    - There is no page-wide confirm-everything control.
+  - For anyone else, the section is one lead line: how many systems are due and overdue, that maintainers confirm them, and where to confirm one for them.
+- **Masthead count:** "Reviews: 24 overdue · 4 due soon", a bold meta link to the reminders. "24 overdue" is bold disruption red; the two counts never overlap. It is absent when nothing is due.
+- **Library list:**
+  - A "Last review" column (priority 3) with the date and, under it, "Due …" or "Overdue since …" as a secondary line. Below desktop width it rides on the title's aside line.
+  - A document in service ranks by its review once nothing else needs it: "Re-confirmation due soon" is due, and "Re-confirmation overdue" is delayed. Its Since is then the day it fell due (or the day its reminder window opened), as on the front page.
+  - The owner's next decision becomes "Confirm ‘…’ is still right", overdue first, to the reminders. Passage review keeps "Review ‘…’".
+- **Front page:**
+  - Table 1 adds a row for each document due or overdue for re-confirmation, with a note saying who last confirmed it and that it stays in service.
+  - Table 2's first column is now "Release". While systems of the version in service are due or overdue, it gains one row for that version: "23 systems: re-confirmation overdue", with "3 more due within two weeks" kept under it. Its note names the earliest due day and how many fell due on it.
+  - Both index clauses add "N re-confirmations overdue" (red) and "N re-confirmations due" (bold).
 
 ### Withdraw Panel
 An inline, deliberate step under the document head, never a modal: a 62ch column ruled above and below with heavy rules, a lead title, the consequence in body text, a reason field, and an action button ("Withdraw it") beside a text button to keep it, disabled until a reason is given.

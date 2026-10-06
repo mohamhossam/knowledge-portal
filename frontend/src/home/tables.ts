@@ -41,10 +41,10 @@ export const TABLES = {
     to: "/architecture",
     noun: "the architecture catalogue",
     totalsLabel: "In the edition in force",
-    quiet: "No draft release is in preparation.",
+    quiet: "No draft release is in preparation, and no system is due for review.",
     answerer: "The knowledge service",
     columns: [
-      { key: "name", label: "Draft release" },
+      { key: "name", label: "Release" },
       { key: "status", label: "Status" },
       { key: "preparedBy", label: "Prepared by", priority: 3 },
       { key: "systems", label: "Systems", align: "end", priority: 2 },

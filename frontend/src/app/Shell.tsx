@@ -7,6 +7,7 @@ import { REQUIREMENT_APP_URL } from "../auth/paths";
 import { TABLES } from "../home/tables";
 import { formatMoment } from "../home/format";
 import { useOverview, type TableState } from "../home/useOverview";
+import { useReminders } from "../reviews/useReviews";
 
 const ENTRIES = [
   { key: "library", spec: TABLES.library },
@@ -66,6 +67,7 @@ export function Shell() {
             <span aria-hidden="true">{overview.refreshing ? "Refreshing" : "Refresh"}</span>
           </button>
         </p>
+        <ReviewsDue />
         <Account actor={auth?.actor ?? null} />
       </header>
 
@@ -103,6 +105,28 @@ export function Shell() {
         <Outlet />
       </main>
     </>
+  );
+}
+
+/**
+ * How many reviews the signed-in person answers for are due, linking to their reminders;
+ * nothing at all when none is. Changes are announced politely.
+ */
+export function ReviewsDue() {
+  const reminders = useReminders();
+  const overdue = reminders.data?.overdue ?? 0;
+  const soon = reminders.data?.due_soon ?? 0;
+  return (
+    <p className="masthead__reviews" aria-live="polite">
+      {overdue + soon > 0 && (
+        <Link to="/reminders" className="masthead__due">
+          Reviews:{" "}
+          {overdue > 0 && <span className="masthead__overdue">{overdue} overdue</span>}
+          {overdue > 0 && soon > 0 && " · "}
+          {soon > 0 && `${soon} due soon`}
+        </Link>
+      )}
+    </p>
   );
 }
 

@@ -6,9 +6,11 @@ extraction, an excluded passage or a withdrawn publication never is.
 """
 
 from dataclasses import dataclass
+from datetime import date, timedelta
 
 from knowledge_portal.application.errors import CitationNotCurrentError, DocumentNotFoundError
 from knowledge_portal.application.ports.document_library import DocumentLibraryPort
+from knowledge_portal.domain.document.library import LibraryDocument
 
 
 @dataclass(frozen=True)
@@ -23,6 +25,9 @@ class CitedPassage:
     section_path: tuple[str, ...]
     label: str
     text: str
+    # When its document falls due for review again (Knowledge Center D); requirement work
+    # shows "not reviewed since" once it has passed. Never a reason to withhold the passage.
+    review_due_on: date | None = None
 
 
 @dataclass(frozen=True)
@@ -35,8 +40,11 @@ class PassageCitation:
 
 
 class CitedPassages:
-    def __init__(self, documents: DocumentLibraryPort) -> None:
+    def __init__(
+        self, documents: DocumentLibraryPort, review_cycle: timedelta = timedelta(days=180)
+    ) -> None:
         self._documents = documents
+        self._review_cycle = review_cycle
 
     def read(self, citation: PassageCitation) -> CitedPassage:
         document = self._documents.get(citation.document_id)
@@ -99,4 +107,9 @@ class CitedPassages:
             block.section_path,
             block.label,
             passage.text,
+            self._due_on(document),
         )
+
+    def _due_on(self, document: LibraryDocument) -> date | None:
+        last = document.last_review()
+        return None if last is None else (last[0] + self._review_cycle).date()

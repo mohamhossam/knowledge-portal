@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass, replace
-from datetime import datetime
+from datetime import date, datetime
 
 from knowledge_portal.domain.document.entities import (
     DocumentAsset,
@@ -20,6 +20,9 @@ from knowledge_portal.domain.document.reference import (
 )
 from knowledge_portal.domain.document.value_objects import ExtractionWarningSeverity
 from knowledge_portal.domain.identity.entities import ActorSnapshot
+from knowledge_portal.domain.shared.review import ADMIN_REASON_MAX as ADMIN_REASON_MAX
+from knowledge_portal.domain.shared.review import AdminOverride as AdminOverride
+from knowledge_portal.domain.shared.review import ReviewConfirmation
 from knowledge_portal.domain.shared.staleness import require_aware
 
 # They bound what one review submission can carry. They are checked when a
@@ -57,24 +60,6 @@ def require_submittable_passages(passages: tuple[ReviewedPassage, ...]) -> None:
                 f"{MAX_PASSAGE_BLOCK_ID_CHARACTERS:,}-character identity, "
                 f"{MAX_PASSAGE_TEXT_CHARACTERS:,} characters of text and a "
                 f"{MAX_PASSAGE_EXCLUSION_REASON_CHARACTERS:,}-character exclusion reason."
-            )
-
-
-# Long enough to say why; short enough to show beside the action it explains.
-ADMIN_REASON_MAX = 500
-
-
-@dataclass(frozen=True)
-class AdminOverride:
-    """A knowledge admin acting on a document they don't own, and why (Knowledge Center C)."""
-
-    admin: ActorSnapshot
-    reason: str
-
-    def __post_init__(self) -> None:
-        if not self.reason.strip() or len(self.reason) > ADMIN_REASON_MAX:
-            raise InvalidDocumentError(
-                f"Acting as admin requires a reason up to {ADMIN_REASON_MAX} characters."
             )
 
 
@@ -271,6 +256,8 @@ class LibraryDocument:
     publications: tuple[Publication, ...] = ()
     published_id: str | None = None
     ownership_history: tuple[OwnershipTransfer, ...] = ()
+    # Confirmations that it is still right (Knowledge Center D), oldest first.
+    reviews: tuple[ReviewConfirmation, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.id or not self.title.strip() or self.version < 1 or not self.versions:
@@ -301,7 +288,36 @@ class LibraryDocument:
                 "Searchable publication must be activated and not withdrawn."
             )
 
-    def citable_state(self) -> ReferenceDocumentState:
+    def in_service(self) -> Publication | None:
+        return next(
+            (p for p in self.publications if p.id == self.published_id and p.withdrawn_at is None),
+            None,
+        )
+
+    def last_review(self) -> tuple[datetime, ActorSnapshot] | None:
+        """When it was last confirmed and by whom: approving a version counts as a review.
+
+        A document with nothing in service has no review cycle.
+        """
+        publication = self.in_service()
+        if publication is None:
+            return None
+        latest = (publication.approved_at, publication.approved_by)
+        for review in self.reviews:
+            if review.reviewed_at > latest[0]:
+                latest = (review.reviewed_at, review.reviewer)
+        return latest
+
+    def confirm_review(self, confirmation: ReviewConfirmation) -> LibraryDocument:
+        if self.in_service() is None:
+            raise InvalidDocumentError("Only a document in service can be confirmed as reviewed.")
+        if not _acts_for_owner(confirmation.reviewer, self.owner, confirmation.on_behalf):
+            raise InvalidDocumentError(
+                "Only the document owner, or an admin on their behalf, can confirm its review."
+            )
+        return replace(self, reviews=(*self.reviews, confirmation), version=self.version + 1)
+
+    def citable_state(self, review_due_on: date | None = None) -> ReferenceDocumentState:
         """What this document lets a citation prove, published as an event (ADR-0099)."""
         publication = next(
             (p for p in self.publications if p.id == self.published_id and p.withdrawn_at is None),
@@ -325,7 +341,7 @@ class LibraryDocument:
                 tuple(passages.items()),
             )
         return ReferenceDocumentState(
-            self.id, self.owner.id.value, self.title, self.version, published
+            self.id, self.owner.id.value, self.title, self.version, published, review_due_on
         )
 
     def file_version(self, version_id: str) -> LibraryVersion:

@@ -35,6 +35,7 @@ from knowledge_portal.interfaces.api.routes.knowledge_center import (
 from knowledge_portal.interfaces.api.routes.library import router as library_router
 from knowledge_portal.interfaces.api.routes.library import search_router
 from knowledge_portal.interfaces.api.routes.organisation import router as organisation_router
+from knowledge_portal.interfaces.api.routes.reviews import router as reviews_router
 from knowledge_portal.interfaces.runtime import (
     start_metrics,
     start_workers,
@@ -224,6 +225,7 @@ def create_app(container_factory: Callable[[], Container] = build_container) -> 
         organisation_router,
         explorer_router,
         knowledge_center_router,
+        reviews_router,
     ):
         application.include_router(router)
     application.include_router(internal_router, include_in_schema=False)

@@ -31,6 +31,7 @@ import { ExplorerPage } from "../explorer/ExplorerPage";
 import { CorpusFindingsPage } from "../requirements/CorpusFindingsPage";
 import { CorpusRequirementsPage } from "../requirements/CorpusRequirementsPage";
 import { RequirementKnowledgePage } from "../requirements/RequirementKnowledgePage";
+import { RemindersPage } from "../reviews/RemindersPage";
 import { HomePage } from "./HomePage";
 import { Shell } from "./Shell";
 
@@ -61,6 +62,7 @@ export function App() {
       <Route element={<Shell />}>
         <Route index element={<HomePage />} />
         <Route path="library" element={<LibraryPage />} />
+        <Route path="reminders" element={<RemindersPage />} />
         <Route path="requirement-knowledge" element={<RequirementKnowledgePage />} />
         <Route path="requirement-knowledge/requirements" element={<CorpusRequirementsPage />} />
         <Route path="requirement-knowledge/findings" element={<CorpusFindingsPage />} />

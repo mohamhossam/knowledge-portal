@@ -79,6 +79,15 @@ export type FindingKind = Schemas["FindingKind"];
 export type Nudge = Schemas["NudgeResponse"];
 export type Membership = Schemas["MembershipResponse"];
 export type ReindexScope = Schemas["ReindexScope"];
+/** When knowledge was last confirmed still right, by whom, and when it falls due (Knowledge Center D). */
+export type ReviewStanding = Schemas["ReviewStanding"];
+export type ReviewState = Schemas["ReviewState"];
+export type ReviewConfirmation = Schemas["ReviewConfirmation"];
+/** Confirming it is still right: an optional note, and why when it is not yours to confirm. */
+export type ConfirmReview = Schemas["ReviewRequest"];
+export type SystemStanding = Schemas["SystemStanding"];
+export type Reminders = Schemas["Reminders"];
+export type Reminder = Schemas["Reminder"];
 export type CorpusFilters = {
   indexState?: IndexState;
   ownerId?: string;
@@ -418,6 +427,15 @@ export const api = {
   findActors: (query: string) =>
     apiRequest<Actor[]>(`/identity/actors?${new URLSearchParams({ q: query, limit: "20" })}`),
   search: (query: string) => post<ReferenceChunk[]>("/knowledge/search", { query }),
+  confirmDocumentReview: (documentId: string, body: ConfirmReview) =>
+    post<LibraryDocument>(`${documentPath(documentId)}/review`, body),
+  systemReviews: () => apiRequest<SystemStanding[]>("/architecture-knowledge/systems/reviews"),
+  /** Confirm the named systems of the version in service; null names every one. */
+  confirmSystemReviews: (systemIds: string[] | null, body: ConfirmReview) =>
+    post<SystemStanding[]>("/architecture-knowledge/systems/reviews", { ...body, system_ids: systemIds }),
+  systemReviewHistory: (systemId: string) =>
+    apiRequest<ReviewConfirmation[]>(`/architecture-knowledge/systems/${encodeURIComponent(systemId)}/reviews`),
+  reminders: () => apiRequest<Reminders>("/reviews/reminders"),
   /** The uploaded file itself, for the owner to compare against. */
   original: async (documentId: string, versionId: string) =>
     (await send(`${versionPath(documentId, versionId)}/original`)).blob(),

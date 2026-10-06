@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { api, type CatalogueSuggestions } from "../api/client";
 import { useAuth } from "../auth/authContext";
 import { REQUIREMENT_APP_URL } from "../auth/paths";
+import { SYSTEM_REVIEWS_KEY } from "../reviews/review";
 import {
   architectureOverview,
   libraryOverview,
@@ -61,8 +62,10 @@ export function useOverview(): OverviewState {
     })),
   });
   const corpus = useQuery({ queryKey: ["knowledge-center", "requirement-corpus"], queryFn: api.requirementCorpus });
+  // Where each system in service stands for review; nothing to read until a version is in service.
+  const standings = useQuery({ queryKey: SYSTEM_REVIEWS_KEY, queryFn: api.systemReviews, enabled: Boolean(active.data) });
 
-  const all = [documents, releases, active, organisation, audit, actors, corpus, ...suggestions, ...builds, ...readings];
+  const all = [documents, releases, active, organisation, audit, actors, corpus, standings, ...suggestions, ...builds, ...readings];
   const fetchedAt = all.map((query) => query.dataUpdatedAt).filter((at) => at > 0);
   const nameOf = useMemo(() => nameDirectory(actors.data), [actors.data]);
 
@@ -72,7 +75,7 @@ export function useOverview(): OverviewState {
       ? { status: "ready", overview: libraryOverview(documents.data) }
       : { status: "loading" };
 
-  const architectureQueries = [releases, active, ...suggestions, ...builds, ...readings];
+  const architectureQueries = [releases, active, standings, ...suggestions, ...builds, ...readings];
   const jobs: Map<string, DraftJobs> | null = maintainer
     ? new Map(drafts.map((draft, index) => [
         draft.id,
@@ -83,6 +86,7 @@ export function useOverview(): OverviewState {
   const architecture: TableState = architectureFailure
     ? { status: "error", error: architectureFailure.error, retry: () => architectureQueries.forEach((query) => void query.refetch()) }
     : releases.data && active.isSuccess && [...suggestions, ...builds, ...readings].every((query) => query.isSuccess) && !actors.isPending
+        && (!active.data || standings.isSuccess)
       ? {
           status: "ready",
           overview: architectureOverview(
@@ -91,6 +95,7 @@ export function useOverview(): OverviewState {
             new Map(drafts.map((draft, index) => [draft.id, suggestions[index]?.data as CatalogueSuggestions])),
             nameOf,
             jobs,
+            standings.data ?? null,
           ),
         }
       : { status: "loading" };

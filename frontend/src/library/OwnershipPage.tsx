@@ -70,6 +70,7 @@ const ACTION: Record<AdminRecordEntry["action"], string> = {
   grant: "Began acting as admin",
   end: "Stopped acting as admin",
   reassign: "Handed it over",
+  confirm_review: "Confirmed it still right, for its owner",
   withdraw: "Withdrew it",
   review: "Saved a review",
   approve: "Approved a version",

@@ -7,6 +7,7 @@ import { api, type CatalogueSystem, type Relationship } from "../api/client";
 import { errorMessage } from "../api/errors";
 import { connections, dependsHow, domainPath, sentenceCase, systemName, systemRoles, usedHow } from "./catalogue";
 import { ConnectionEdit, ConnectionRemove, EditButton, SystemEdit, SystemRemove } from "./DraftEdits";
+import { SystemReview } from "../reviews/SystemReview";
 import { useCatalogueContext } from "./useCatalogue";
 
 /** Where a sheet was reached from, so the way back can be lit and retraced. */
@@ -45,6 +46,7 @@ export function SystemSheet({ system }: { system: CatalogueSystem }) {
         </p>
         <h2 id={`${id}-name`} ref={heading} tabIndex={-1} className="sheet__title" dir="auto">{system.name}</h2>
         {system.name_ar && <p className="sheet__arabic" lang="ar" dir="rtl">{system.name_ar}</p>}
+        <SystemReview system={system} />
         <dl className="sheet__facts">
           <div>
             <dt>Also called</dt>

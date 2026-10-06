@@ -627,6 +627,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/architecture-knowledge/systems/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * System Review Standings
+         * @description Where each system of the version in service stands for review.
+         */
+        get: operations["system_review_standings_architecture_knowledge_systems_reviews_get"];
+        put?: never;
+        /**
+         * Confirm System Reviews
+         * @description A catalogue maintainer, or an admin with a reason, confirms systems still right.
+         */
+        post: operations["confirm_system_reviews_architecture_knowledge_systems_reviews_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/architecture-knowledge/systems/{system_id}/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * System Review History
+         * @description Who confirmed this system, newest first.
+         */
+        get: operations["system_review_history_architecture_knowledge_systems__system_id__reviews_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/explorer/me": {
         parameters: {
             query?: never;
@@ -1199,6 +1243,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/library/documents/{document_id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Document Review
+         * @description Its owner, or an admin for them with a reason, confirms it is still right.
+         */
+        post: operations["confirm_document_review_library_documents__document_id__review_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/library/documents/{document_id}/source-impact": {
         parameters: {
             query?: never;
@@ -1602,6 +1666,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/reviews/reminders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Review Reminders
+         * @description What the signed-in person should confirm: overdue, then due within 14 days.
+         */
+        get: operations["review_reminders_reviews_reminders_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1746,7 +1830,7 @@ export interface components {
         };
         /**
          * AdminOverride
-         * @description A knowledge admin acting on a document they don't own, and why (Knowledge Center C).
+         * @description A knowledge admin acting for the owner of what they act on, and why (Knowledge Center C).
          */
         AdminOverride: {
             admin: components["schemas"]["ActorSnapshot"];
@@ -2972,7 +3056,7 @@ export interface components {
          * LibraryAdminAction
          * @enum {string}
          */
-        LibraryAdminAction: "grant" | "end" | "reassign" | "withdraw" | "review" | "approve" | "retry_reading" | "retry_indexing";
+        LibraryAdminAction: "grant" | "end" | "reassign" | "withdraw" | "review" | "approve" | "retry_reading" | "retry_indexing" | "confirm_review";
         /** LibraryAdminRecord */
         LibraryAdminRecord: {
             /**
@@ -3158,6 +3242,7 @@ export interface components {
             publications: components["schemas"]["Publication"][];
             /** Published Id */
             published_id: string | null;
+            review?: components["schemas"]["ReviewStanding"] | null;
             /** Review Fingerprint */
             review_fingerprint: string | null;
             /** Title */
@@ -3953,6 +4038,32 @@ export interface components {
          * @enum {string}
          */
         RelationshipKind: "calls_api" | "publishes_events_to" | "transfers_data_to" | "orchestrates" | "unspecified";
+        /** Reminder */
+        Reminder: {
+            /** Id */
+            id: string;
+            kind: components["schemas"]["ReminderKind"];
+            standing: components["schemas"]["ReviewStanding"];
+            /** Title */
+            title: string;
+        };
+        /**
+         * ReminderKind
+         * @enum {string}
+         */
+        ReminderKind: "document" | "system";
+        /**
+         * Reminders
+         * @description What the signed-in person should confirm: overdue first, then by due date.
+         */
+        Reminders: {
+            /** Due Soon */
+            due_soon: number;
+            /** Items */
+            items: components["schemas"]["Reminder"][];
+            /** Overdue */
+            overdue: number;
+        };
         /** RemovalRequest */
         RemovalRequest: {
             /** Expected Revision */
@@ -4032,6 +4143,54 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /**
+         * ReviewConfirmation
+         * @description Someone confirmed the knowledge is still right, on this day.
+         */
+        ReviewConfirmation: {
+            /** Note */
+            note?: string | null;
+            on_behalf?: components["schemas"]["AdminOverride"] | null;
+            /**
+             * Reviewed At
+             * Format: date-time
+             */
+            reviewed_at: string;
+            reviewer: components["schemas"]["ActorSnapshot"];
+        };
+        /**
+         * ReviewRequest
+         * @description Confirming it is still right: an optional note, and why when it is not yours.
+         */
+        ReviewRequest: {
+            /** Note */
+            note?: string | null;
+            /** Reason */
+            reason?: string | null;
+        };
+        /**
+         * ReviewStanding
+         * @description When it was last confirmed, by whom, and when it falls due.
+         */
+        ReviewStanding: {
+            /**
+             * Due At
+             * Format: date-time
+             */
+            due_at: string;
+            /**
+             * Last Reviewed At
+             * Format: date-time
+             */
+            last_reviewed_at: string;
+            reviewer: components["schemas"]["ActorSnapshot"];
+            state: components["schemas"]["ReviewState"];
+        };
+        /**
+         * ReviewState
+         * @enum {string}
+         */
+        ReviewState: "current" | "due_soon" | "overdue";
         /** ReviewedPassage */
         ReviewedPassage: {
             /** Block Id */
@@ -4240,6 +4399,26 @@ export interface components {
             source_system_id: string;
             /** Target System Id */
             target_system_id: string;
+        };
+        /** SystemReviewRequest */
+        SystemReviewRequest: {
+            /** Note */
+            note?: string | null;
+            /** Reason */
+            reason?: string | null;
+            /** System Ids */
+            system_ids?: string[] | null;
+        };
+        /** SystemStanding */
+        SystemStanding: {
+            /** Name */
+            name: string;
+            /** Note */
+            note?: string | null;
+            on_behalf?: components["schemas"]["AdminOverride"] | null;
+            standing: components["schemas"]["ReviewStanding"];
+            /** System Id */
+            system_id: string;
         };
         /** SystemUpdateRequest */
         SystemUpdateRequest: {
@@ -5847,6 +6026,105 @@ export interface operations {
             };
         };
     };
+    system_review_standings_architecture_knowledge_systems_reviews_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemStanding"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_system_reviews_architecture_knowledge_systems_reviews_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SystemReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemStanding"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    system_review_history_architecture_knowledge_systems__system_id__reviews_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                system_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewConfirmation"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     reader_explorer_me_get: {
         parameters: {
             query?: never;
@@ -6979,6 +7257,43 @@ export interface operations {
             };
         };
     };
+    confirm_document_review_library_documents__document_id__review_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     document_source_impact_library_documents__document_id__source_impact_get: {
         parameters: {
             query?: {
@@ -7884,6 +8199,37 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+        };
+    };
+    review_reminders_reviews_reminders_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reminders"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

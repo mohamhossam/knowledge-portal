@@ -1,5 +1,6 @@
 import type { LibraryDocument } from "../api/client";
 import type { Rank } from "../timetable/TimetableTable";
+import { REVIEW_STATUS, reviewSince } from "../reviews/review";
 import { IN_PROGRESS, newestState, standing } from "./model";
 
 export const RANK_ORDER: Record<Rank, number> = { delayed: 0, due: 1, running: 2, service: 3, past: 4 };
@@ -37,5 +38,12 @@ export function libraryRow(document: LibraryDocument) {
     rank = newest?.stage === "cancelled" ? "past" : "due";
     status = newest?.stage === "cancelled" ? "Processing cancelled" : "Not yet reviewed";
   }
-  return { rank, status, inService, since };
+  // Due or overdue for review only matters once nothing else does: it stays in service meanwhile.
+  const review = document.review ?? null;
+  if (rank === "service" && review && review.state !== "current") {
+    rank = review.state === "overdue" ? "delayed" : "due";
+    status = REVIEW_STATUS[review.state];
+    since = reviewSince(review);
+  }
+  return { rank, status, inService, since, review };
 }

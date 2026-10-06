@@ -1,6 +1,7 @@
 """Replaceable evidence index and reasoning boundaries for architecture mapping."""
 
 from dataclasses import dataclass
+from datetime import date
 from typing import Protocol
 
 from knowledge_portal.application.ports.architecture_knowledge import ArchitectureQuery
@@ -15,6 +16,9 @@ class EvidenceChunk:
     location: str
     text: str
     document_version_id: str | None = None
+    # For a catalogue system's own record: when the system falls due for review again
+    # (Knowledge Center D). None for passages of documents.
+    system_review_due_on: date | None = None
 
 
 @dataclass(frozen=True)

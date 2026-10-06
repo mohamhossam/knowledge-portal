@@ -18,8 +18,10 @@ import type {
   OrganisationAuditEvent,
   Release,
   RequirementCorpus,
+  SystemStanding,
 } from "../api/client";
 import { jobReason, reading } from "../catalogue/suggestions";
+import { REVIEW_STATUS, reviewSince } from "../reviews/review";
 import { newestState } from "../library/model";
 import type { Rank } from "../timetable/TimetableTable";
 import { count, formatDay } from "./format";
@@ -82,6 +84,12 @@ function lastChange(at: string | null, what?: string): string {
   return at ? ` · last change ${formatDay(at)}${what ? `, ${what}` : ""}` : "";
 }
 
+/** Several states of one rank, said as one clause; null when there are none. */
+function clause(parts: string[]): string | null {
+  const said = parts.filter(Boolean);
+  return said.length > 0 ? said.join(", ") : null;
+}
+
 /** The index's clause for a table: its disruptions first, else what is due. */
 function alertOf(delayed: string | null, due: string | null): Overview["alert"] {
   return delayed ? { rank: "delayed", text: delayed } : due ? { rank: "due", text: due } : undefined;
@@ -106,6 +114,8 @@ export function libraryOverview(documents: LibraryDocument[]): Overview {
   let inService = 0;
   let withdrawn = 0;
   let yoursToReview = 0;
+  let reviewsOverdue = 0;
+  let reviewsDue = 0;
   let latest: { title: string; version: number | undefined; by: string; at: string } | null = null;
   let latestId: string | null = null;
   for (const document of documents) {
@@ -183,12 +193,27 @@ export function libraryOverview(documents: LibraryDocument[]): Overview {
       entry = line("delayed", "Index build failed", active.built_at ?? active.approved_at,
         uploadNote(`fail-${document.id}`, `Its search index could not be built: ${active.indexing_error}`));
     }
-    if (entry) lines.push(entry);
+    if (entry) {
+      lines.push(entry);
+    } else if (document.review && document.review.state !== "current") {
+      // Due or overdue for review, once nothing else needs a curator; it stays in service meanwhile.
+      const review = document.review;
+      const overdue = review.state === "overdue";
+      const id = `review-${document.id}`;
+      notes.push({
+        id,
+        text: `Last confirmed still right by ${review.reviewer.display_name} on ${formatDay(review.last_reviewed_at)}; ${
+          overdue ? "it fell due" : "it falls due"} for re-confirmation on ${formatDay(review.due_at)}. It stays in service meanwhile; once overdue, requirement work flags citations of it.`,
+      });
+      lines.push(line(overdue ? "delayed" : "due", overdue ? REVIEW_STATUS.overdue : REVIEW_STATUS.due_soon, reviewSince(review), id));
+      if (overdue) reviewsOverdue += 1;
+      else reviewsDue += 1;
+    }
   }
 
   lines.sort(byRank);
-  const due = lines.filter((item) => item.rank === "due").length;
-  const delayed = lines.filter((item) => item.rank === "delayed").length;
+  const due = lines.filter((item) => item.rank === "due").length - reviewsDue;
+  const delayed = lines.filter((item) => item.rank === "delayed").length - reviewsOverdue;
   const changed = latestOf(documents.flatMap((document) => [
     ...document.versions.map((version) => version.uploaded_at),
     ...document.publications.flatMap((item) => [item.approved_at, item.activated_at, item.built_at, item.withdrawn_at]),
@@ -216,11 +241,21 @@ export function libraryOverview(documents: LibraryDocument[]): Overview {
         ? { to: "/library", label: `${count(due, "document")} ${due === 1 ? "awaits its owner's" : "await their owners'"} review` }
         : delayed > 0
           ? { to: "/library", label: `${count(delayed, "upload")} ${delayed === 1 ? "needs" : "need"} attention` }
-          : { label: "Nothing in the library awaits a curator." },
+          : reviewsOverdue + reviewsDue > 0
+            ? {
+                to: "/library",
+                label: reviewsOverdue > 0
+                  ? `${count(reviewsOverdue, "document")} overdue for re-confirmation by ${reviewsOverdue === 1 ? "its owner" : "their owners"}`
+                  : `${count(reviewsDue, "document")} due for re-confirmation within two weeks`,
+              }
+            : { label: "Nothing in the library awaits a curator." },
     extent: { value: documents.length, label: count(documents.length, "document") },
     alert: alertOf(
-      delayed > 0 ? `${delayed} ${delayed === 1 ? "needs" : "need"} attention` : null,
-      due > 0 ? `${due} to review` : null,
+      clause([
+        delayed > 0 ? `${delayed} ${delayed === 1 ? "needs" : "need"} attention` : "",
+        reviewsOverdue > 0 ? `${count(reviewsOverdue, "re-confirmation")} overdue` : "",
+      ]),
+      clause([due > 0 ? `${due} to review` : "", reviewsDue > 0 ? `${count(reviewsDue, "re-confirmation")} due` : ""]),
     ),
   };
 }
@@ -262,6 +297,8 @@ export function architectureOverview(
   nameOf: NameOf,
   /** Each draft's builds and readings, when the reader may see them; failures are then disruptions. */
   jobs: Map<string, DraftJobs> | null = null,
+  /** Where each system in service stands for review (Knowledge Center D), once read. */
+  standings: SystemStanding[] | null = null,
 ): Overview {
   const drafts = releases.filter((release) => release.status === "draft");
   const notes: DerivedNote[] = [];
@@ -299,10 +336,49 @@ export function architectureOverview(
         revision: `r${draft.revision}`,
       },
     };
-  }).sort(byRank);
+  });
 
-  const pendingDrafts = lines.filter((line) => line.rank === "due");
-  const failedDrafts = lines.filter((line) => line.rank === "delayed");
+  // The version in service, as one line, while any of its systems is due or overdue for review.
+  const overdueSystems = (standings ?? []).filter((item) => item.standing.state === "overdue");
+  const dueSystems = (standings ?? []).filter((item) => item.standing.state === "due_soon");
+  if (active && overdueSystems.length + dueSystems.length > 0) {
+    const note = "reviews";
+    const oldest = [...overdueSystems, ...dueSystems].sort((a, b) => a.standing.due_at.localeCompare(b.standing.due_at))[0];
+    const sameDay = oldest
+      ? [...overdueSystems, ...dueSystems].filter((item) => formatDay(item.standing.due_at) === formatDay(oldest.standing.due_at)).length
+      : 0;
+    notes.push({
+      id: note,
+      text: `Every catalogue maintainer is reminded of each system, and any of them confirms it still right. ${
+        oldest
+          ? sameDay > 1
+            ? `The earliest, ${count(sameDay, "system")}, ${oldest.standing.state === "overdue" ? "fell" : "fall"} due on ${formatDay(oldest.standing.due_at)}.`
+            : `The earliest, ${oldest.name}, ${oldest.standing.state === "overdue" ? "fell" : "falls"} due on ${formatDay(oldest.standing.due_at)}.`
+          : ""} They stay in service meanwhile.`,
+    });
+    const overdue = overdueSystems.length > 0;
+    lines.push({
+      note,
+      key: `reviews-${active.id}`,
+      rank: overdue ? "delayed" : "due",
+      name: active.name ?? "The version in service",
+      to: "/architecture",
+      statusDetail: overdue && dueSystems.length > 0 ? `${dueSystems.length} more due within two weeks` : undefined,
+      cells: {
+        status: overdue
+          ? `${count(overdueSystems.length, "system")}: re-confirmation overdue`
+          : `${count(dueSystems.length, "system")}: re-confirmation due soon`,
+        preparedBy: nameOf(active.published_by),
+        systems: String(active.systems.length),
+        revision: `r${active.revision}`,
+      },
+    });
+  }
+  lines.sort(byRank);
+
+  const reviewsKey = active ? `reviews-${active.id}` : null;
+  const pendingDrafts = lines.filter((line) => line.rank === "due" && line.key !== reviewsKey);
+  const failedDrafts = lines.filter((line) => line.rank === "delayed" && line.key !== reviewsKey);
   const firstFailed = failedDrafts[0];
   const firstFailure = firstFailed ? failures.get(firstFailed.key) ?? null : null;
 
@@ -357,11 +433,24 @@ export function architectureOverview(
               to: drafts.length === 1 && drafts[0] ? draftSuggestions(drafts[0].id) : "/architecture/versions",
               label: `${count(drafts.length, "draft release")} ${drafts.length === 1 ? "awaits" : "await"} publication`,
             }
-          : { label: "Nothing in the architecture catalogue awaits a curator." },
+          : overdueSystems.length + dueSystems.length > 0
+            ? {
+                to: "/reminders",
+                label: overdueSystems.length > 0
+                  ? `${count(overdueSystems.length, "system")} overdue for re-confirmation`
+                  : `${count(dueSystems.length, "system")} due for re-confirmation within two weeks`,
+              }
+            : { label: "Nothing in the architecture catalogue awaits a curator." },
     extent: { value: active?.systems.length ?? 0, label: count(active?.systems.length ?? 0, "system") },
     alert: alertOf(
-      failedDrafts.length > 0 ? `${count(failedDrafts.length, "draft")} failed` : null,
-      pendingTotal > 0 ? `${pendingTotal} to decide` : null,
+      clause([
+        failedDrafts.length > 0 ? `${count(failedDrafts.length, "draft")} failed` : "",
+        overdueSystems.length > 0 ? `${count(overdueSystems.length, "re-confirmation")} overdue` : "",
+      ]),
+      clause([
+        pendingTotal > 0 ? `${pendingTotal} to decide` : "",
+        dueSystems.length > 0 ? `${count(dueSystems.length, "re-confirmation")} due` : "",
+      ]),
     ),
   };
 }
