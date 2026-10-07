@@ -40,6 +40,9 @@ from knowledge_portal.application.ports.requirement_dependents import (
     RequirementDependent,
     RequirementDependentsPage,
 )
+from knowledge_portal.application.ports.requirement_historic_citations import (
+    HistoricCitationPage,
+)
 from knowledge_portal.application.ports.source_impact import DependencyImpactPage
 from knowledge_portal.domain.document.reference import PublishedReference
 from knowledge_portal.domain.identity.entities import ActorId
@@ -54,6 +57,7 @@ _NUDGE = TypeAdapter(NudgeReceipt)
 _MEMBERSHIP = TypeAdapter(MembershipResult)
 _REINDEX = TypeAdapter(ReindexResult)
 _CITATION_COUNTS = TypeAdapter(dict[str, dict[str, NonNegativeInt]])
+_HISTORIC_CITATIONS = TypeAdapter(HistoricCitationPage)
 
 
 def _decode[T](adapter: TypeAdapter[T], body: Any, what: str) -> T:
@@ -186,6 +190,32 @@ class HttpRequirementCitationCounts:
         if counts is None or not set(document_ids) <= set(counts):
             raise ServiceUnavailableError("Requirement work returned unusable citation counts.")
         return {document_id: counts[document_id] for document_id in document_ids}
+
+
+class HttpRequirementHistoricCitations:
+    """Where requirement work cites each historic requirement (ADR-0102 Amendment 1)."""
+
+    def __init__(self, client: InternalHttpClient) -> None:
+        self._client = client
+
+    def counts(self, historic_ids: tuple[str, ...]) -> dict[str, int]:
+        if not historic_ids:
+            return {}
+        body = self._client.get_json(
+            "/internal/knowledge/historic/citation-counts",
+            params={"historic_id": list(historic_ids)},
+        )
+        counts = _decode(_CITATION_COUNTS, body, "historic citation counts").get("counts")
+        if counts is None or not set(historic_ids) <= set(counts):
+            raise ServiceUnavailableError("Requirement work returned unusable citation counts.")
+        return {historic_id: counts[historic_id] for historic_id in historic_ids}
+
+    def citations(self, historic_id: str, offset: int, limit: int) -> HistoricCitationPage:
+        body = self._client.get_json(
+            f"/internal/knowledge/historic/{_segment(historic_id)}/citations",
+            params={"offset": offset, "limit": limit},
+        )
+        return _decode(_HISTORIC_CITATIONS, body, "historic citations")
 
 
 class HttpRequirementCorpus:
@@ -360,6 +390,16 @@ class FakeRequirementCitationCounts:
 
     def counts(self, document_ids: tuple[str, ...]) -> dict[str, int]:
         return dict.fromkeys(document_ids, 0)
+
+
+class FakeRequirementHistoricCitations:
+    """Running without requirement work: no Requirement cites a historic requirement."""
+
+    def counts(self, historic_ids: tuple[str, ...]) -> dict[str, int]:
+        return dict.fromkeys(historic_ids, 0)
+
+    def citations(self, historic_id: str, offset: int, limit: int) -> HistoricCitationPage:
+        return HistoricCitationPage((), None)
 
 
 class FakeArchitectureMappingStats:

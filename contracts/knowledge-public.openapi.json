@@ -2205,6 +2205,85 @@
         "title": "ChannelSchema",
         "type": "object"
       },
+      "CitationView": {
+        "description": "A Requirement whose prior art cites it: who and when, never what was matched.",
+        "properties": {
+          "checked_at": {
+            "format": "date-time",
+            "title": "Checked At",
+            "type": "string"
+          },
+          "current": {
+            "description": "Whether that check still stands for the Requirement.",
+            "title": "Current",
+            "type": "boolean"
+          },
+          "duplicate": {
+            "title": "Duplicate",
+            "type": "boolean"
+          },
+          "owner": {
+            "title": "Owner",
+            "type": "string"
+          },
+          "requirement_id": {
+            "title": "Requirement Id",
+            "type": "string"
+          },
+          "retired": {
+            "title": "Retired",
+            "type": "boolean"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requirement_id",
+          "title",
+          "owner",
+          "checked_at",
+          "current",
+          "retired",
+          "duplicate"
+        ],
+        "title": "CitationView",
+        "type": "object"
+      },
+      "CitedByResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CitationView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "items",
+          "next_offset"
+        ],
+        "title": "CitedByResponse",
+        "type": "object"
+      },
       "CitingDependency": {
         "description": "One requirement statement that cites a passage of the document.",
         "properties": {
@@ -3768,6 +3847,18 @@
               }
             ]
           },
+          "citations": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Requirements whose prior art cites it; null when unpublished or unknown.",
+            "title": "Citations"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -3997,6 +4088,18 @@
           "brds_reading": {
             "title": "Brds Reading",
             "type": "integer"
+          },
+          "citations": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Requirements whose prior art cites it; null when unpublished or unknown.",
+            "title": "Citations"
           },
           "created_at": {
             "format": "date-time",
@@ -13816,6 +13919,94 @@
           }
         ],
         "summary": "Read Brd Again",
+        "tags": [
+          "historic requirements"
+        ]
+      }
+    },
+    "/historic-requirements/{historic_id}/citations": {
+      "get": {
+        "description": "Requirements whose prior art cites it, from requirement work: who and when only.",
+        "operationId": "cited_by_historic_requirements__historic_id__citations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "historic_id",
+            "required": true,
+            "schema": {
+              "title": "Historic Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CitedByResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Cited By",
         "tags": [
           "historic requirements"
         ]

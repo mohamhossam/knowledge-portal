@@ -8,7 +8,11 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, Field
 
 from knowledge_portal.application.use_cases.architecture_documents import FileResult
-from knowledge_portal.application.use_cases.historic_requirements import HistoricPage, SharedRoot
+from knowledge_portal.application.use_cases.historic_requirements import (
+    CitedBy,
+    HistoricPage,
+    SharedRoot,
+)
 from knowledge_portal.domain.historic.historic_requirement import (
     REASON_MAX,
     ROOTS_MAX,
@@ -261,9 +265,13 @@ class HistoricSummary(BaseModel):
     refresh_waiting: bool
     published_at: datetime | None
     withdrawn_at: datetime | None
+    citations: int | None = Field(
+        default=None,
+        description="Requirements whose prior art cites it; null when unpublished or unknown.",
+    )
 
     @classmethod
-    def of(cls, item: HistoricRequirement) -> HistoricSummary:
+    def of(cls, item: HistoricRequirement, citations: int | None = None) -> HistoricSummary:
         return cls(
             id=item.id,
             title=item.title,
@@ -280,6 +288,7 @@ class HistoricSummary(BaseModel):
             refresh_waiting=item.pending_refresh is not None,
             published_at=item.publications[-1].published_at if item.publications else None,
             withdrawn_at=None if item.withdrawal is None else item.withdrawal.withdrawn_at,
+            citations=citations,
         )
 
 
@@ -296,10 +305,10 @@ class HistoricDetail(HistoricSummary):
     blockers: list[str]
 
     @classmethod
-    def of(cls, item: HistoricRequirement) -> HistoricDetail:
+    def of(cls, item: HistoricRequirement, citations: int | None = None) -> HistoricDetail:
         pending = item.pending_refresh
         return cls(
-            **HistoricSummary.of(item).model_dump(),
+            **HistoricSummary.of(item, citations).model_dump(),
             brd_files=[BrdView.of(brd) for brd in item.brds],
             root_ids=list(item.root_ids),
             suggestions=[
@@ -358,7 +367,7 @@ class HistoricPageResponse(BaseModel):
         cls, page: HistoricPage, counts: dict[HistoricStatus, int], refresh_waiting: int
     ) -> HistoricPageResponse:
         return cls(
-            items=[HistoricSummary.of(item) for item in page.items],
+            items=[HistoricSummary.of(item, page.citations.get(item.id)) for item in page.items],
             next_offset=page.next_offset,
             counts=HistoricCounts(
                 draft=counts.get(HistoricStatus.DRAFT, 0),
@@ -366,6 +375,34 @@ class HistoricPageResponse(BaseModel):
                 withdrawn=counts.get(HistoricStatus.WITHDRAWN, 0),
                 refresh_waiting=refresh_waiting,
             ),
+        )
+
+
+class CitationView(BaseModel):
+    """A Requirement whose prior art cites it: who and when, never what was matched."""
+
+    requirement_id: str
+    title: str
+    owner: str
+    checked_at: datetime
+    current: bool = Field(description="Whether that check still stands for the Requirement.")
+    retired: bool
+    duplicate: bool
+
+
+class CitedByResponse(BaseModel):
+    total: int
+    items: list[CitationView]
+    next_offset: int | None
+
+    @classmethod
+    def of(cls, cited: CitedBy) -> CitedByResponse:
+        return cls(
+            total=cited.total,
+            items=[
+                CitationView.model_validate(item, from_attributes=True) for item in cited.page.items
+            ],
+            next_offset=cited.page.next_offset,
         )
 
 

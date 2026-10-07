@@ -91,6 +91,9 @@ export type LineageNode = Schemas["LineageNodeView"];
 export type HistoricWorkItem = Schemas["WorkItemView"];
 export type HistoricChange = Schemas["ItemChangeView"];
 export type HistoricSharedRoot = Schemas["SharedRootView"];
+/** A Requirement whose prior art cites a historic one: who and when, never what (E2). */
+export type HistoricCitation = Schemas["CitationView"];
+export type HistoricCitedBy = Schemas["CitedByResponse"];
 /** When knowledge was last confirmed still right, by whom, and when it falls due (Knowledge Center D). */
 export type ReviewStanding = Schemas["ReviewStanding"];
 export type ReviewState = Schemas["ReviewState"];
@@ -463,6 +466,8 @@ export const api = {
   historic: (historicId: string) => apiRequest<HistoricDetail>(historicPath(historicId)),
   historicSharedRoots: (historicId: string) =>
     apiRequest<Schemas["SharedRootsResponse"]>(`${historicPath(historicId)}/shared-roots`),
+  historicCitedBy: (historicId: string, offset = 0) =>
+    apiRequest<HistoricCitedBy>(`${historicPath(historicId)}/citations?offset=${offset}&limit=20`),
   renameHistoric: (historicId: string, title: string, expectedVersion: number) =>
     apiRequest<HistoricDetail>(historicPath(historicId), {
       method: "PATCH",

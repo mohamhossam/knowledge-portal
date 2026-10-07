@@ -844,6 +844,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/historic-requirements/{historic_id}/citations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cited By
+         * @description Requirements whose prior art cites it, from requirement work: who and when only.
+         */
+        get: operations["cited_by_historic_requirements__historic_id__citations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/historic-requirements/{historic_id}/publication": {
         parameters: {
             query?: never;
@@ -2570,6 +2590,41 @@ export interface components {
             source?: string | null;
         };
         /**
+         * CitationView
+         * @description A Requirement whose prior art cites it: who and when, never what was matched.
+         */
+        CitationView: {
+            /**
+             * Checked At
+             * Format: date-time
+             */
+            checked_at: string;
+            /**
+             * Current
+             * @description Whether that check still stands for the Requirement.
+             */
+            current: boolean;
+            /** Duplicate */
+            duplicate: boolean;
+            /** Owner */
+            owner: string;
+            /** Requirement Id */
+            requirement_id: string;
+            /** Retired */
+            retired: boolean;
+            /** Title */
+            title: string;
+        };
+        /** CitedByResponse */
+        CitedByResponse: {
+            /** Items */
+            items: components["schemas"]["CitationView"][];
+            /** Next Offset */
+            next_offset: number | null;
+            /** Total */
+            total: number;
+        };
+        /**
          * CitingDependency
          * @description One requirement statement that cites a passage of the document.
          */
@@ -3052,6 +3107,11 @@ export interface components {
             brds_reading: number;
             breakdown: components["schemas"]["BreakdownView"] | null;
             /**
+             * Citations
+             * @description Requirements whose prior art cites it; null when unpublished or unknown.
+             */
+            citations?: number | null;
+            /**
              * Created At
              * Format: date-time
              */
@@ -3117,6 +3177,11 @@ export interface components {
             brds_failed: number;
             /** Brds Reading */
             brds_reading: number;
+            /**
+             * Citations
+             * @description Requirements whose prior art cites it; null when unpublished or unknown.
+             */
+            citations?: number | null;
             /**
              * Created At
              * Format: date-time
@@ -7085,6 +7150,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HistoricDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cited_by_historic_requirements__historic_id__citations_get: {
+        parameters: {
+            query?: {
+                offset?: number;
+                limit?: number;
+            };
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                historic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CitedByResponse"];
                 };
             };
             /** @description Validation Error */
