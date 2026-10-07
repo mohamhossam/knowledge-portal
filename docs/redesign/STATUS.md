@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Integration branch | `feat/kb-redesign`, from `main` @ `b6114b9` |
-| Current phase | **3: Develop (wireframes).** In progress |
+| Current phase | **3: Develop.** Steps 1–3 done; waiting at **GATE 3** (the user runs round 1) |
 | Last updated | 2026-10-08 |
 
 ## Phase log
@@ -13,7 +13,7 @@
 | 0: Branch, permissions, discovery, baseline | **Approved 2026-10-08** | `00-discovery.md`, `01-baseline.md`, `before/`, `tools/capture-routes.mjs`, `docs/design-history/timetable-book-DESIGN.md`, CLAUDE.md § Redesign epic |
 | 1: Discover | **Approved 2026-10-08** (GATE 1a: assumption mode; GATE 1b approved) | `docs/ux/research/01-heuristic-review.md`, `synthesis.md` (HYPOTHESIS), `product-md-proposal.md`, `docs/ux/research/plan.md`, `docs/ux/testing/benchmark-template.csv`, `docs/ux/research/raw/README.md`, `.impeccable/critique/*` |
 | 2: Define | **Approved 2026-10-08** (GATE 2a approved; GATE 2b = assumption mode) | `docs/ux/journeys/` (5 journeys + service blueprint), `docs/ux/ia/` (object model, navigation + archetypes, route map, tree-test kit), `docs/ux/interaction/model.md`, `docs/ux/content/` (voice and tone, microcopy, glossary) |
-| 3: Develop (wireframes) | Not started | |
+| 3: Develop (wireframes) | Steps 1–3 done; GATE 3 open | `frontend/src/design-lab/wireframes/` (dev-only lab), `docs/ux/journeys/cognitive-walkthrough.md`, `docs/ux/testing/round-1/` (kit, data sheet, 10 reference captures) |
 | 4: Visual direction | Not started | |
 | 5: Design system | Not started | |
 | 6: Hi-fi + round 2 | Not started | |
@@ -40,6 +40,9 @@
 | 2026-10-08 | **IA (HYPOTHESIS):** 5 primary areas (Your work · Library · Catalogue · Ownership · Requirements) plus Explorer; utilities (Jobs, Help, Account) on every page; a draft is a 5-step workspace; current URLs are kept with 10 redirect patterns; `/explorer` and `/library/:id` are unchanged. | Phase 2 proposal |
 | 2026-10-08 | **Undo** for suggestion decisions is a client-side delayed commit (6 s, HYPOTHESIS), because the API has no reopen (BG3). Seven backend gaps (BG1–BG7) are recorded as dependencies, never assumed. | Contract constraint |
 | 2026-10-08 | **GATE 2a approved; GATE 2b = assumption mode.** The tree test is not run, and the IA stays HYPOTHESIS. Its riskiest labels move into the round-1 tasks: "Decide", "Re-confirmation", "Ownership", "Cited by", and Jobs as a utility. | User |
+| 2026-10-08 | **Permissions fix (user-authorised):** the deny rule `Edit(./src/**)` also matched `frontend/src`. It is changed to `Edit(/src/knowledge_portal/**)`, so the backend stays protected and the frontend is editable. | User answer |
+| 2026-10-08 | **The wireframe lab** is dev-only at `/knowledge/design-lab/wireframes`. Reads are real and seeded; every write is simulated client-side; a Scenario control forces failure paths. Verified absent from the production bundle (main chunk 900.80 kB vs 900.79 kB baseline; CSS identical). | Phase 3 brief |
+| 2026-10-08 | Round 1 adds tasks **T10 (Jobs)** and **T11 (Re-confirmation)** plus a label-comprehension probe, because GATE 2b ran in assumption mode. | Phase 3 |
 | 2026-10-08 | The two tallest document-review captures (13k and 17k px) are clipped to the first 4,000 px. All "before" captures total 16 MB. | Repository weight |
 
 ## Brand source
@@ -67,7 +70,7 @@
 | Main JS chunk (min) | 900.79 kB | | | | ≤ 990.87 kB |
 | Main JS chunk (gzip) | 241.51 kB | | | | — |
 | CSS (min / gzip) | 58.99 / 10.88 kB | | | | — |
-| Frontend tests | 265 pass / 1 fail (TZ) | | | | all pass |
+| Frontend tests | 265 pass / 1 fail (TZ) | 280 pass / 2 fail: the TZ failure plus one load-timing flake that varies by run and passes alone; separate task offered | | | all pass |
 | Impeccable critique /40 (Home · Library · Cat. browse · Explorer · Curation · Req. knowledge · Squads) | 23 · **19** · 25 · 20 · 25 · 26 · 25 (mean 23.3, Acceptable) | | | | |
 | Task success / SEQ / SUS | — (Phase 1 benchmark, user-run) | | | | set in Phase 1b |
 
@@ -88,17 +91,15 @@ Still open:
    rows have no seeded data offline. Critique their empty states only, or add test fixtures?
    Fixtures would be frontend-only, because backend files are out of bounds.
 
+## Open wireframe items (from the cognitive walkthrough)
+
+O-1 to O-7 are listed in `docs/ux/journeys/cognitive-walkthrough.md`. They move to
+`docs/redesign/backlog.md` in Phase 7.
+
 ## Next exact action
 
-**At GATE 2a**, the user approves or edits:
+At **GATE 3**, the user runs round 1 (5 participants) with `docs/ux/testing/round-1/README.md`.
+Results go in `round-1-data.csv` and `raw/`. Alternatively, the user says "assumption mode".
 
-- the journeys and the service blueprint;
-- the object model;
-- the IA: navigation, archetypes, route map;
-- the interaction model;
-- the content guide.
-
-**At GATE 2b**, the user runs `docs/ux/ia/tree-test.md` and adds results to
-`docs/ux/testing/tree-test-results.csv`, or says "assumption mode". Analyse, adjust
-`navigation.md` and `route-map.md`, then start Phase 3: low-fidelity wireframes in a dev-only
-`/design-lab/wireframes` route.
+Then synthesise as severity × frequency, iterate the wireframes, record what changed, and start
+Phase 4: three calm visual directions applied to the validated wireframes.

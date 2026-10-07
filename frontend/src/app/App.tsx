@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Link, Navigate, Route, Routes } from "react-router-dom";
 
 import { CALLBACK_PATH, SILENT_CALLBACK_PATH } from "../auth/paths";
@@ -58,9 +58,22 @@ const catalogueRoutes = (
   </>
 );
 
+/**
+ * The redesign's wireframe lab (docs/redesign/STATUS.md, Phase 3). Development
+ * only: in a production build `import.meta.env.DEV` is false, so the import is
+ * dead code and the lab never reaches the bundle.
+ */
+const DesignLab = import.meta.env.DEV ? lazy(() => import("../design-lab/wireframes/WireframesApp")) : null;
+
 export function App() {
   return (
     <Routes>
+      {DesignLab && (
+        <Route
+          path="design-lab/wireframes/*"
+          element={<Suspense fallback={null}><DesignLab /></Suspense>}
+        />
+      )}
       <Route element={<Shell />}>
         <Route index element={<HomePage />} />
         <Route path="library" element={<LibraryPage />} />

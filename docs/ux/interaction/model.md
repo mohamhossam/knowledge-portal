@@ -151,7 +151,7 @@ blocking conflict (409) that needs a choice.
   5. **Actions:** the verb button with its object ("Withdraw 'X'"), then the safe default.
 - **Styling:**
   - The action uses the **danger semantic token** with an icon. It is **never brand red**.
-  - The panel itself is calm: the surface tint with a left rule in the danger tone.
+  - The panel itself is calm: the surface tint, a 1 px rule, and a heading with the danger icon. There is no thick coloured side border (craft floor).
 - **Keyboard:** focus moves to the first field. `Esc` and the safe default both close and
   return focus.
 - **Return to service:** a withdrawn document's approval becomes "Return to service…" with this
@@ -170,7 +170,7 @@ One vocabulary across every API enum:
 | Shown | Maps from | Icon | Tone |
 |---|---|---|---|
 | **Waiting** | queued | clock | neutral |
-| **Working** | running, scanning, extracting | progress ring (static under reduced motion) | info |
+| **Working** | running, scanning, extracting | loader icon (static under reduced motion) | info |
 | **Done** | succeeded, ready_for_review, read, current | check | success (quiet) |
 | **Needs attention** | failed, indexing failed | alert triangle | danger |
 | **Stopped** | cancelled | square | neutral |
