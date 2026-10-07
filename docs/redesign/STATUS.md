@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Integration branch | `feat/kb-redesign`, from `main` @ `b6114b9` |
-| Current phase | **4: Visual direction.** In progress |
+| Current phase | **4: Visual direction.** Done; waiting at **GATE 4** (choose A, B, C or a mix) |
 | Last updated | 2026-10-08 |
 
 ## Phase log
@@ -14,7 +14,7 @@
 | 1: Discover | **Approved 2026-10-08** (GATE 1a: assumption mode; GATE 1b approved) | `docs/ux/research/01-heuristic-review.md`, `synthesis.md` (HYPOTHESIS), `product-md-proposal.md`, `docs/ux/research/plan.md`, `docs/ux/testing/benchmark-template.csv`, `docs/ux/research/raw/README.md`, `.impeccable/critique/*` |
 | 2: Define | **Approved 2026-10-08** (GATE 2a approved; GATE 2b = assumption mode) | `docs/ux/journeys/` (5 journeys + service blueprint), `docs/ux/ia/` (object model, navigation + archetypes, route map, tree-test kit), `docs/ux/interaction/model.md`, `docs/ux/content/` (voice and tone, microcopy, glossary) |
 | 3: Develop (wireframes) | **Approved 2026-10-08** (GATE 3 = assumption mode; round 1 not run) | `frontend/src/design-lab/wireframes/` (dev-only lab), `docs/ux/journeys/cognitive-walkthrough.md`, `docs/ux/testing/round-1/` (kit, data sheet, 10 reference captures) |
-| 4: Visual direction | Not started | |
+| 4: Visual direction | Done; GATE 4 open | `docs/redesign/02-directions.md`, `docs/redesign/directions/` (48 captures), `frontend/src/design-lab/wireframes/directions.css`, Direction/Theme switch in the lab |
 | 5: Design system | Not started | |
 | 6: Hi-fi + round 2 | Not started | |
 | 7: Layer 2/3 install | Not started | |
@@ -44,6 +44,8 @@
 | 2026-10-08 | **The wireframe lab** is dev-only at `/knowledge/design-lab/wireframes`. Reads are real and seeded; every write is simulated client-side; a Scenario control forces failure paths. Verified absent from the production bundle (main chunk 900.80 kB vs 900.79 kB baseline; CSS identical). | Phase 3 brief |
 | 2026-10-08 | Round 1 adds tasks **T10 (Jobs)** and **T11 (Re-confirmation)** plus a label-comprehension probe, because GATE 2b ran in assumption mode. | Phase 3 |
 | 2026-10-08 | **GATE 3: assumption mode.** Round 1 was not run. The wireframe structure goes into visual direction unvalidated by users and stays HYPOTHESIS. Open items O-1 to O-7 carry forward. | User |
+| 2026-10-08 | Three directions are laid over the same wireframes: **A** Timetable, evolved (Archivo + Noto Sans Arabic); **B** Quiet desk (Source Sans 3 + Noto Sans Arabic); **C** Bilingual workbench (IBM Plex Sans + Plex Sans Arabic + Plex Mono). The candidate fonts are devDependencies, lab-only until GATE 4. | Phase 4 |
+| 2026-10-08 | **Recommendation: A, plus C's split-pane review desk.** The type pairing (Archivo/Noto vs Plex) is left open for the user. | 02-directions.md §6 |
 | 2026-10-08 | The two tallest document-review captures (13k and 17k px) are clipped to the first 4,000 px. All "before" captures total 16 MB. | Repository weight |
 
 ## Brand source
@@ -72,6 +74,8 @@
 | Main JS chunk (gzip) | 241.51 kB | | | | — |
 | CSS (min / gzip) | 58.99 / 10.88 kB | | | | — |
 | Frontend tests | 265 pass / 1 fail (TZ) | 280 pass / 2 fail: the TZ failure plus one load-timing flake that varies by run and passes alone; separate task offered | | | all pass |
+| Direction critique (A · B · C), applicable max | 20/28 · 23/32 · 17/24 (all ≈ 71–72%, Good), taken before fixes | | | | |
+| Maroon / red share (review desk, 1280, light) | A ≈ 6.8% / 0.1% · B ≈ 13% / 0.1% · C ≈ 1% / 0.1% | | | | maroon ~8–10%, red ≤ 2% |
 | Impeccable critique /40 (Home · Library · Cat. browse · Explorer · Curation · Req. knowledge · Squads) | 23 · **19** · 25 · 20 · 25 · 26 · 25 (mean 23.3, Acceptable) | | | | |
 | Task success / SEQ / SUS | — (Phase 1 benchmark, user-run) | | | | set in Phase 1b |
 
@@ -99,8 +103,11 @@ O-1 to O-7 are listed in `docs/ux/journeys/cognitive-walkthrough.md`. They move 
 
 ## Next exact action
 
-At **GATE 3**, the user runs round 1 (5 participants) with `docs/ux/testing/round-1/README.md`.
-Results go in `round-1-data.csv` and `raw/`. Alternatively, the user says "assumption mode".
+At **GATE 4**, the user chooses A, B, C or a mix, and the type pairing (Archivo + Noto Sans Arabic,
+or IBM Plex Sans + Plex Sans Arabic). Optionally, they run `/impeccable live` in the lab first.
 
-Then synthesise as severity × frequency, iterate the wireframes, record what changed, and start
-Phase 4: three calm visual directions applied to the validated wireframes.
+Then start Phase 5:
+
+- `ui-ux-pro-max:design-system` layered tokens in `frontend/src/design/tokens/{primitive,semantic,component}.css`;
+- move the chosen fonts from devDependencies to dependencies and remove the others;
+- move the contrast script into a test.

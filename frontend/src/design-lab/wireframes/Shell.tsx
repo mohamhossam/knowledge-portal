@@ -9,7 +9,7 @@ import { REQUIREMENT_APP_URL } from "../../auth/paths";
 import { newestVersion } from "../../library/model";
 import { helpFor } from "./help";
 import { useDisclosure, useGlobalShortcuts, useRouteFocus, useStickySize } from "./hooks";
-import { BASE_PATH, elapsed, type LabJob, SCENARIOS, type Scenario, useLab, wf } from "./lab-context";
+import { BASE_PATH, DIRECTIONS, type Direction, elapsed, type LabJob, SCENARIOS, type Scenario, type Theme, useLab, wf } from "./lab-context";
 import { useWorkQueue } from "./queue";
 import { Status } from "./ui";
 
@@ -56,11 +56,11 @@ export function WfShell({ children }: { children: ReactNode }) {
   const reader = path.startsWith("/explorer") && params.get("as") === "reader";
 
   return (
-    <div className={`wf density-${lab.density}`}>
+    <div className={`wf density-${lab.density}`} data-direction={lab.direction} data-theme={lab.theme}>
       <a className="wf-skip" href="#wf-main">Skip to content</a>
       {!reader && <a className="wf-skip" href="#wf-rail">Skip to navigation</a>}
 
-      <LabBar scenario={lab.scenario} onChange={lab.setScenario} />
+      <LabBar />
 
       <div className="wf-top" ref={top}>
         <div className="wf-brand">
@@ -129,16 +129,32 @@ export function WfShell({ children }: { children: ReactNode }) {
 }
 
 /** Lab-only controls: clearly outside the design. */
-function LabBar({ scenario, onChange }: { scenario: Scenario; onChange: (scenario: Scenario) => void }) {
-  const current = SCENARIOS.find((item) => item.id === scenario);
+function LabBar() {
+  const lab = useLab();
+  const current = SCENARIOS.find((item) => item.id === lab.scenario);
   return (
     <div className="wf-labbar" role="region" aria-label="Wireframe lab controls (not part of the design)">
       <label>
         Scenario{" "}
-        <select value={scenario} onChange={(event) => onChange(event.target.value as Scenario)}>
+        <select value={lab.scenario} onChange={(event) => lab.setScenario(event.target.value as Scenario)}>
           {SCENARIOS.map((item) => (
             <option key={item.id} value={item.id}>{item.label}</option>
           ))}
+        </select>
+      </label>
+      <label>
+        Direction{" "}
+        <select value={lab.direction} onChange={(event) => lab.setDirection(event.target.value as Direction)}>
+          {DIRECTIONS.map((item) => (
+            <option key={item.id} value={item.id}>{item.label}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Theme{" "}
+        <select value={lab.theme} onChange={(event) => lab.setTheme(event.target.value as Theme)}>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
         </select>
       </label>
       <span>{current?.what} Reads use the seeded data; every action is simulated and nothing is saved.</span>

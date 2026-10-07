@@ -4,6 +4,15 @@
  * it). Low fidelity on purpose: greyscale, system font, no brand.
  */
 import "./wf.css";
+// Phase 4 candidate faces, self-hosted (OFL): one pairing survives GATE 4.
+import "@fontsource-variable/noto-sans-arabic/wdth.css";
+import "@fontsource-variable/source-sans-3/wght.css";
+import "@fontsource-variable/ibm-plex-sans/wght.css";
+import "@fontsource/ibm-plex-sans-arabic/arabic-400.css";
+import "@fontsource/ibm-plex-sans-arabic/arabic-500.css";
+import "@fontsource/ibm-plex-sans-arabic/arabic-600.css";
+import "@fontsource/ibm-plex-mono/latin-400.css";
+import "./directions.css";
 
 import { Navigate, Route, Routes, useParams } from "react-router-dom";
 

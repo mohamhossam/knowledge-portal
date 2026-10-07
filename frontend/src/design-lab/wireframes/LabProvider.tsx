@@ -2,6 +2,8 @@ import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } fro
 
 import {
   type Density,
+  type Direction,
+  type Theme,
   type Lab,
   LabContext,
   type LabJob,
@@ -16,6 +18,10 @@ function stored<T extends string>(key: string, fallback: T): T {
   } catch {
     return fallback;
   }
+}
+
+function fromUrl(key: string): string | null {
+  return new URLSearchParams(window.location.search).get(key);
 }
 
 function store(key: string, value: string) {
@@ -41,6 +47,9 @@ export function LabProvider({ children }: { children: ReactNode }) {
   const [density, setDensityState] = useState<Density>(() => stored("wf.density", "automatic"));
   const [shortcuts, setShortcutsState] = useState(() => stored<string>("wf.shortcuts", "off") === "on");
   const [announcement, setAnnouncement] = useState("");
+  // ?direction=&theme= in the address wins for this page load (lets reviewers compare side by side in tabs).
+  const [direction, setDirectionState] = useState<Direction>(() => (fromUrl("direction") as Direction | null) ?? stored("wf.direction", "none"));
+  const [theme, setThemeState] = useState<Theme>(() => (fromUrl("theme") as Theme | null) ?? stored("wf.theme", "light"));
   const timers = useRef(new Set<ReturnType<typeof setTimeout>>());
   // A conflict happens once, then the reloaded state saves cleanly.
   const conflictSpent = useRef(false);
@@ -146,9 +155,19 @@ export function LabProvider({ children }: { children: ReactNode }) {
     setShortcutsState(on);
   }, []);
 
+  const setDirection = useCallback((next: Direction) => {
+    store("wf.direction", next);
+    setDirectionState(next);
+  }, []);
+
+  const setTheme = useCallback((next: Theme) => {
+    store("wf.theme", next);
+    setThemeState(next);
+  }, []);
+
   const value = useMemo<Lab>(
-    () => ({ scenario, setScenario, jobs, startJob, retryJob, cancelJob, writes, simulate, forget, density, setDensity, shortcuts, setShortcuts, announce, announcement }),
-    [scenario, setScenario, jobs, startJob, retryJob, cancelJob, writes, simulate, forget, density, setDensity, shortcuts, setShortcuts, announce, announcement],
+    () => ({ scenario, setScenario, jobs, startJob, retryJob, cancelJob, writes, simulate, forget, density, setDensity, shortcuts, setShortcuts, direction, setDirection, theme, setTheme, announce, announcement }),
+    [scenario, setScenario, jobs, startJob, retryJob, cancelJob, writes, simulate, forget, density, setDensity, shortcuts, setShortcuts, direction, setDirection, theme, setTheme, announce, announcement],
   );
 
   return <LabContext.Provider value={value}>{children}</LabContext.Provider>;

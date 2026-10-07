@@ -1,0 +1,677 @@
+/*
+ * Phase 4: three calm e& directions laid over the validated wireframes.
+ * Layering rule (CLAUDE.md § Redesign epic): e& values live only in the
+ * primitive block; everything below reads semantic tokens. Contrast for every
+ * text/surface pair is in docs/redesign/02-directions.md.
+ */
+
+/* ---------- 1. Primitives (the only place e& values appear) ---------- */
+.wf[data-direction]:not([data-direction="none"]) {
+  --eand-red: #e00800;
+  --eand-maroon: #4b0f1e;
+  --eand-grey: #636363;
+  --eand-beige: #e6e6dc;
+  --eand-white: #ffffff;
+}
+
+/* ---------- 2. Semantic tokens: light ---------- */
+.wf[data-direction]:not([data-direction="none"]) {
+  --color-surface: var(--eand-white);
+  --color-surface-1: #fbfaf7;
+  --color-surface-2: #f3f2ec;
+  --color-surface-3: var(--eand-beige);
+  --color-ink: #1f1b1a;
+  --color-ink-2: #4a4542;
+  --color-ink-3: var(--eand-grey);
+  --color-rule-soft: #e4e2da;
+  --color-rule: #cfccc1;
+  --color-rule-strong: #8a8579;
+  --color-action: var(--eand-maroon);
+  --color-action-hover: #6a1a2d;
+  --color-on-action: var(--eand-white);
+  --color-action-fill: var(--eand-maroon);
+  --color-action-fill-hover: #6a1a2d;
+  --color-on-action-fill: var(--eand-white);
+  --color-highlight: var(--eand-beige);
+  --color-selected: #f4eaec;
+  --color-on-selected: var(--eand-maroon);
+  --color-focus: var(--eand-maroon);
+  --color-link: #6a1a2d;
+  --color-brand-accent: var(--eand-red);
+  --color-danger: #8c3a1f;
+  --color-danger-bg: #f7eae3;
+  --color-warning: #7a5a00;
+  --color-warning-bg: #f6efd9;
+  --color-success: #2d6640;
+  --color-success-bg: #e6f0e8;
+  --color-info: #2b5a6e;
+  --color-info-bg: #e4eef1;
+  --elevation-overlay: 0 6px 24px rgb(31 27 26 / 0.12);
+
+  /* Wireframe variables read the semantic layer. */
+  --wf-ink: var(--color-ink);
+  --wf-ink-2: var(--color-ink-2);
+  --wf-ink-3: var(--color-ink-3);
+  --wf-rule: var(--color-rule);
+  --wf-rule-soft: var(--color-rule-soft);
+  --wf-surface: var(--color-surface);
+  --wf-band: var(--color-surface-2);
+  --wf-proof: var(--color-surface-3);
+  --wf-focus: var(--color-focus);
+}
+
+/* ---------- 2b. Semantic tokens: dark (warm charcoal) ---------- */
+.wf[data-direction]:not([data-direction="none"])[data-theme="dark"] {
+  color-scheme: dark;
+  --color-surface: #1c1917;
+  --color-surface-1: #221e1c;
+  --color-surface-2: #2a2623;
+  --color-surface-3: #35302c;
+  --color-ink: #ede8e1;
+  --color-ink-2: #c8c1b7;
+  --color-ink-3: #a29b91;
+  --color-rule-soft: #36312d;
+  --color-rule: #4a443f;
+  --color-rule-strong: #857d74;
+  --color-action: #e3b3bd;
+  --color-action-hover: #efc9d0;
+  --color-on-action: #2a0a12;
+  --color-action-fill: #7a2e3f;
+  --color-action-fill-hover: #8c4152;
+  --color-on-action-fill: #f7eef0;
+  --color-highlight: #4a443f;
+  --color-selected: #3a2329;
+  --color-on-selected: #f2d3d9;
+  --color-focus: #e3b3bd;
+  --color-link: #e9bec7;
+  --color-brand-accent: #ff4a3d;
+  --color-danger: #e8a58c;
+  --color-danger-bg: #3a2620;
+  --color-warning: #e2c27a;
+  --color-warning-bg: #33291a;
+  --color-success: #9ccba9;
+  --color-success-bg: #1f2e24;
+  --color-info: #9cc4d4;
+  --color-info-bg: #1d2b31;
+  --elevation-overlay: 0 6px 24px rgb(0 0 0 / 0.45);
+}
+
+/* ---------- 3. Shared component mapping (all directions) ---------- */
+.wf[data-direction]:not([data-direction="none"]) {
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+.wf[data-direction]:not([data-direction="none"]) a {
+  color: var(--color-link);
+}
+
+.wf[data-direction]:not([data-direction="none"]) :focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--color-surface);
+}
+
+/* Programmatic focus targets (route h1, panels) are not controls: no ring (§1). */
+.wf[data-direction]:not([data-direction="none"]) :is(h1, h2, h3, main, nav, section, aside)[tabindex="-1"]:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.wf[data-direction]:not([data-direction="none"]) ::selection {
+  background: var(--color-selected);
+  color: var(--color-on-selected);
+}
+
+.wf[data-direction]:not([data-direction="none"]) input:not([type="checkbox"]):not([type="radio"]),
+.wf[data-direction]:not([data-direction="none"]) select,
+.wf[data-direction]:not([data-direction="none"]) textarea {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border-color: var(--color-rule-strong);
+}
+
+.wf[data-direction]:not([data-direction="none"]) :where(input[type="checkbox"], input[type="radio"], progress) {
+  accent-color: var(--color-action);
+}
+
+.wf[data-direction]:not([data-direction="none"]) .wf-button,
+.wf[data-direction]:not([data-direction="none"]) .wf-utility,
+.wf[data-direction]:not([data-direction="none"]) .wf-icon-button {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border-color: var(--color-rule-strong);
+}
+
+.wf[data-direction]:not([data-direction="none"]) .wf-button:hover {
+  border-color: var(--color-action);
+}
+
+.wf[data-direction]:not([data-direction="none"]) .wf-button--primary {
+  background: var(--color-action-fill);
+  border-color: var(--color-action);
+  color: var(--color-on-action-fill);
+}
+
+.wf[data-direction]:not([data-direction="none"]) .wf-button--primary:hover {
+  background: var(--color-action-fill-hover);
+}
+
+.wf[data-direction]:not([data-direction="none"]) .wf-button--primary[aria-disabled="true"] {
+  background: var(--color-surface);
+  border-color: var(--color-rule-strong);
+  color: var(--color-ink-2);
+  opacity: 1;
+}
+
+/* Danger is its own semantic token with an icon — never brand red. */
+.wf[data-direction]:not([data-direction="none"]) .wf-button--danger {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: var(--color-surface);
+}
+
+.wf[data-direction]:not([data-direction="none"]) .wf-button--danger-quiet {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.wf[data-direction]:not([data-direction="none"]) .wf-link-button {
+  color: var(--color-link);
+}
+
+.wf[data-direction]:not([data-direction="none"]) .wf-status--attention { color: var(--color-danger); }
+.wf[data-direction]:not([data-direction="none"]) .wf-status--held { color: var(--color-warning); }
+.wf[data-direction]:not([data-direction="none"]) .wf-status--done { color: var(--color-success); }
+.wf[data-direction]:not([data-direction="none"]) .wf-status--working { color: var(--color-info); }
+.wf[data-direction]:not([data-direction="none"]) .wf-status--waiting,
+.wf[data-direction]:not([data-direction="none"]) .wf-status--stopped { color: var(--color-ink-2); }
+
+.wf[data-direction]:not([data-direction="none"]) .wf-suggested {
+  border: 1px solid var(--color-info);
+  background: var(--color-info-bg);
+  color: var(--color-info);
+}
+
+.wf[data-direction]:not([data-direction="none"]) .wf-badge,
+.wf[data-direction]:not([data-direction="none"]) .wf-count {
+  border-color: var(--color-rule-strong);
+  color: var(--color-ink-2);
+}
+
+/* Navigation reads as ink; location is shown by the marker, not by link colour. */
+.wf[data-direction]:not([data-direction="none"]) .wf-rail__link {
+  color: var(--color-ink);
+}
+
+/* The brand-red active marker: the only brand red in the chrome besides the logo. */
+.wf[data-direction]:not([data-direction="none"]) .wf-rail__link[aria-current="page"] {
+  background: var(--color-selected);
+  color: var(--color-on-selected);
+  box-shadow: inset 3px 0 0 var(--color-brand-accent);
+}
+
+.wf[data-direction]:not([data-direction="none"]) .wf-logo {
+  border: 0;
+  background: var(--color-brand-accent);
+  color: var(--eand-white);
+  border-radius: 4px;
+}
+
+.wf[data-direction]:not([data-direction="none"]) .wf-subnav a[aria-current="page"],
+.wf[data-direction]:not([data-direction="none"]) .wf-steps a[aria-current="step"] {
+  color: var(--color-action);
+  box-shadow: inset 0 -2px 0 var(--color-action);
+}
+
+.wf[data-direction]:not([data-direction="none"]) .wf-segmented button,
+.wf[data-direction]:not([data-direction="none"]) .wf-filters button {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border-color: var(--color-rule);
+}
+
+.wf[data-direction]:not([data-direction="none"]) .wf-segmented button[aria-pressed="true"],
+.wf[data-direction]:not([data-direction="none"]) .wf-filters button[aria-pressed="true"] {
+  background: var(--color-selected);
+  color: var(--color-on-selected);
+  border-color: var(--color-action);
+}
+
+.wf[data-direction]:not([data-direction="none"]) .wf-grid__row.is-active {
+  background: var(--color-selected);
+  box-shadow: inset 3px 0 0 var(--color-action);
+}
+
+.wf[data-direction]:not([data-direction="none"]) .wf-consequence--danger {
+  border-color: var(--color-danger);
+}
+
+.wf[data-direction]:not([data-direction="none"]) .wf-consequence--danger .wf-consequence__title {
+  color: var(--color-danger);
+}
+
+.wf[data-direction]:not([data-direction="none"]) .wf-stateline {
+  background: var(--color-surface-2);
+  border-color: var(--color-rule);
+}
+
+/* A version not in service reads on its own calm tint: different, not alarming. */
+.wf[data-direction]:not([data-direction="none"]) .wf-stateline--proof {
+  background: var(--color-surface-3);
+  border: 1px dashed var(--color-rule-strong);
+  color: var(--color-ink);
+}
+
+.wf[data-direction]:not([data-direction="none"]) .wf-undo {
+  background: var(--color-ink);
+  color: var(--color-surface);
+}
+
+.wf[data-direction]:not([data-direction="none"]) .wf-undo .wf-button {
+  background: var(--color-surface);
+}
+
+.wf[data-direction]:not([data-direction="none"]) .wf-drawer,
+.wf[data-direction]:not([data-direction="none"]) .wf-listbox {
+  background: var(--color-surface);
+  box-shadow: var(--elevation-overlay);
+}
+
+.wf[data-direction]:not([data-direction="none"]) .wf-quote mark {
+  background: var(--color-highlight);
+  color: var(--color-ink);
+}
+
+.wf[data-direction]:not([data-direction="none"]) .wf-note {
+  background: var(--color-surface-1);
+  color: var(--color-ink-2);
+  border-color: var(--color-rule-strong);
+}
+
+.wf[data-direction]:not([data-direction="none"]) .wf-skip {
+  background: var(--color-action);
+  color: var(--color-on-action) !important;
+}
+
+.wf[data-direction]:not([data-direction="none"]) .wf-num,
+.wf[data-direction]:not([data-direction="none"]) .wf-badge,
+.wf[data-direction]:not([data-direction="none"]) .wf-count {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.wf[data-direction]:not([data-direction="none"])[data-theme="dark"] .wf-labbar {
+  background: repeating-linear-gradient(45deg, #26221f 0 8px, #2e2a27 8px 16px);
+  color: var(--color-ink-2);
+}
+
+/* ---------- 4A. Timetable, evolved: white page, ruled tables, condensed numbers ---------- */
+.wf[data-direction="a"] {
+  --font-ui: "Archivo Variable", "Noto Sans Arabic Variable", system-ui, sans-serif;
+  font-family: var(--font-ui);
+  font-stretch: 100%;
+}
+
+.wf[data-direction="a"] :where(button, input, select, textarea) {
+  font-family: var(--font-ui);
+}
+
+.wf[data-direction="a"] .wf-button,
+.wf[data-direction="a"] .wf-utility,
+.wf[data-direction="a"] .wf-filters button,
+.wf[data-direction="a"] .wf-segmented button {
+  border-radius: 2px;
+}
+
+/* The table identity: a heavy rule under every column head and section head. */
+.wf[data-direction="a"] .wf-table thead th,
+.wf[data-direction="a"] .wf-grid__head {
+  border-block-end: 2px solid var(--a-heavy-rule);
+  font-stretch: 87%;
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+
+.wf[data-direction="a"] {
+  --a-heavy-rule: var(--color-ink);
+}
+
+.wf[data-direction="a"][data-theme="dark"] {
+  --a-heavy-rule: var(--color-ink-2);
+}
+
+/* The ledger rule carries every view, not only tables (critique A: the identity was uneven). */
+.wf[data-direction="a"] .wf-section,
+.wf[data-direction="a"] .wf-consequence,
+.wf[data-direction="a"] .wf-flowpanel {
+  border-block-start: 2px solid var(--a-heavy-rule);
+}
+
+/* The binding: a maroon masthead gives maroon its structural share of the view. */
+.wf[data-direction="a"]:not([data-direction="none"]) .wf-top {
+  background: var(--color-action-fill);
+  border-block-end: 0;
+}
+
+.wf[data-direction="a"]:not([data-direction="none"]) .wf-top :is(.wf-product, .wf-out) {
+  color: var(--color-on-action-fill) !important;
+}
+
+.wf[data-direction="a"]:not([data-direction="none"]) .wf-top .wf-utility {
+  background: transparent;
+  color: var(--color-on-action-fill);
+  border-color: rgb(255 255 255 / 0.45);
+}
+
+.wf[data-direction="a"]:not([data-direction="none"]) .wf-top :focus-visible {
+  outline-color: var(--eand-white);
+  box-shadow: none;
+}
+
+.wf[data-direction="a"] :is(a, p, span, td, th):dir(rtl) {
+  font-size: 1.05em;
+}
+
+.wf[data-direction="a"] .wf-num,
+.wf[data-direction="a"] .wf-count,
+.wf[data-direction="a"] .wf-badge {
+  font-stretch: 80%;
+  font-weight: 500;
+}
+
+.wf[data-direction="a"] .wf-page__head h1 {
+  font-stretch: 92%;
+  font-weight: 680;
+  letter-spacing: -0.01em;
+}
+
+/* ---------- 4B. Quiet desk: beige canvas, white panels, maroon rail, comfortable ---------- */
+.wf[data-direction="b"] {
+  --font-ui: "Source Sans 3 Variable", "Noto Sans Arabic Variable", system-ui, sans-serif;
+  --wf-text: 1rem;
+  --wf-row: 3rem;
+  --b-panel: var(--color-surface);
+  font-family: var(--font-ui);
+}
+
+/* The quiet desk itself: a beige canvas under white panels (critique B: lost to specificity). */
+.wf[data-direction="b"]:not([data-direction="none"]) {
+  background: var(--color-surface-2);
+}
+
+.wf[data-direction="b"][data-theme="dark"] {
+  --b-panel: var(--color-surface-2);
+}
+
+.wf[data-direction="b"]:not([data-direction="none"])[data-theme="dark"] {
+  background: var(--color-surface);
+}
+
+.wf[data-direction="b"] .wf-body {
+  grid-template-columns: 11.5rem minmax(0, 1fr) auto;
+}
+
+/* On the maroon rail the ring is white (a maroon ring on maroon was invisible, P0). */
+.wf[data-direction="b"]:not([data-direction="none"]) .wf-rail :focus-visible {
+  outline-color: var(--eand-white);
+  box-shadow: none;
+}
+
+.wf[data-direction="b"] :is(a, p, span, td, th):dir(rtl) {
+  font-size: 1.05em;
+}
+
+.wf[data-direction="b"].density-compact,
+.wf[data-direction="b"].density-automatic .wf-desk {
+  --wf-row: 2.25rem;
+  --wf-text: 0.9375rem;
+}
+
+.wf[data-direction="b"] :where(button, input, select, textarea) {
+  font-family: var(--font-ui);
+}
+
+.wf[data-direction="b"] .wf-top {
+  background: var(--color-surface);
+}
+
+.wf[data-direction="b"] .wf-rail {
+  background: var(--color-action);
+  border: 0;
+}
+
+.wf[data-direction="b"][data-theme="dark"] .wf-rail {
+  background: #2f1a1f;
+}
+
+.wf[data-direction="b"] .wf-rail__link,
+.wf[data-direction="b"] .wf-rail__lab {
+  color: #f7eef0 !important;
+}
+
+.wf[data-direction="b"] .wf-rail__more {
+  border-color: rgb(255 255 255 / 0.18) !important;
+}
+
+.wf[data-direction="b"] .wf-rail .wf-count {
+  color: #f7eef0;
+  border-color: rgb(255 255 255 / 0.5);
+}
+
+/* The red marker sits on the maroon ground itself (3.03:1); a lighter tint under it would drop below 3:1. */
+.wf[data-direction="b"]:not([data-direction="none"]) .wf-rail__link[aria-current="page"] {
+  background: transparent;
+  color: #ffffff !important;
+  font-weight: 700;
+  text-decoration: underline !important;
+  text-underline-offset: 0.3em;
+  box-shadow: inset 4px 0 0 var(--color-brand-accent);
+}
+
+.wf[data-direction="b"] .wf-section,
+.wf[data-direction="b"] .wf-table,
+.wf[data-direction="b"] .wf-detail,
+.wf[data-direction="b"] .wf-grid,
+.wf[data-direction="b"] .wf-queue,
+.wf[data-direction="b"] .wf-empty,
+.wf[data-direction="b"] .wf-consequence,
+.wf[data-direction="b"] .wf-flowpanel {
+  background: var(--b-panel);
+  border: 1px solid var(--color-rule);
+  border-radius: 8px;
+}
+
+/* One panel level only: what sits inside a panel is divided by rules, not boxed again. */
+.wf[data-direction="b"] .wf-section :is(.wf-grid, .wf-table, .wf-queue, .wf-detail, .wf-empty) {
+  border: 0;
+  border-radius: 0;
+  padding-inline: 0;
+}
+
+.wf[data-direction="b"] .wf-section,
+.wf[data-direction="b"] .wf-queue {
+  padding: 1rem 1.25rem;
+}
+
+.wf[data-direction="b"] .wf-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  padding: 0.25rem 1rem;
+}
+
+.wf[data-direction="b"] .wf-grid {
+  padding-inline: 0.5rem;
+}
+
+.wf[data-direction="b"] .wf-consequence {
+  background: var(--color-surface-1);
+  border-color: var(--color-rule-strong);
+}
+
+.wf[data-direction="b"] .wf-button,
+.wf[data-direction="b"] .wf-utility {
+  border-radius: 6px;
+  min-block-size: 2.25rem;
+}
+
+.wf[data-direction="b"] .wf-page__head h1 {
+  color: var(--color-action);
+  font-weight: 650;
+}
+
+.wf[data-direction="b"][data-theme="dark"] .wf-page__head h1 {
+  color: var(--color-ink);
+}
+
+.wf[data-direction="b"] .wf-savebar {
+  border-radius: 8px 8px 0 0;
+  box-shadow: 0 -1px 0 var(--color-rule);
+}
+
+/* ---------- 4C. Bilingual workbench: IBM Plex family, split panes, square, mono identifiers ---------- */
+.wf[data-direction="c"] {
+  --font-ui: "IBM Plex Sans Variable", "IBM Plex Sans Arabic", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --wf-row: 2.25rem;
+  --wf-text: 0.875rem;
+  font-family: var(--font-ui);
+}
+
+.wf[data-direction="c"] :where(button, input, select, textarea) {
+  font-family: var(--font-ui);
+}
+
+.wf[data-direction="c"] .wf-top {
+  border-block-end: 1px solid var(--color-rule-strong);
+}
+
+.wf[data-direction="c"] .wf-rail {
+  background: var(--color-surface-1);
+}
+
+.wf[data-direction="c"] .wf-main {
+  padding: 1rem 1.25rem 3rem;
+}
+
+.wf[data-direction="c"] .wf-button,
+.wf[data-direction="c"] .wf-utility,
+.wf[data-direction="c"] .wf-filters button,
+.wf[data-direction="c"] .wf-segmented button,
+.wf[data-direction="c"] .wf-suggested {
+  border-radius: 0;
+}
+
+/* Cells carry vertical rules: a worksheet, not a book. Block cells keep the ellipsis working. */
+.wf[data-direction="c"] .wf-grid__head > *,
+.wf[data-direction="c"] .wf-grid__row > [role="gridcell"] {
+  padding: 0.375rem 0.5rem;
+  border-inline-end: 1px solid var(--color-rule-soft);
+  align-self: stretch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The select column holds a 24px checkbox: no ellipsis, room to breathe. */
+.wf[data-direction="c"] .wf-grid__head:not(.wf-grid--decide *),
+.wf[data-direction="c"] .wf-grid:not(.wf-grid--decide) .wf-grid__row {
+  grid-template-columns: 3rem 11rem minmax(0, 1fr) 11rem;
+}
+
+.wf[data-direction="c"] .wf-grid__head > :first-child,
+.wf[data-direction="c"] .wf-grid:not(.wf-grid--decide) .wf-grid__row > [role="gridcell"]:first-child {
+  overflow: visible;
+  text-overflow: clip;
+  padding-inline: 0.75rem 0.25rem;
+}
+
+.wf[data-direction="c"] .wf-grid__head > :last-child,
+.wf[data-direction="c"] .wf-grid__row > [role="gridcell"]:last-child {
+  border-inline-end: 0;
+}
+
+/* One shared track set per grid, so the vertical rules line up row to row. */
+.wf[data-direction="c"] .wf-grid--decide .wf-grid__row {
+  grid-template-columns: 19.5rem minmax(0, 1fr) 10.5rem;
+  gap: 0;
+  padding-inline-start: 0;
+}
+
+/* The workbench split: list beside a full-height detail pane from 1200 px. */
+@media (min-width: 1200px) {
+  .wf[data-direction="c"] .wf-desk__body {
+    grid-template-columns: minmax(0, 1fr) clamp(22rem, 28vw, 34rem);
+    align-items: stretch;
+  }
+
+  .wf[data-direction="c"] .wf-detail {
+    position: sticky;
+    inset-block-start: calc(var(--wf-sticky-top) + var(--wf-sticky-state));
+    align-self: start;
+    min-block-size: calc(100vh - var(--wf-sticky-top) - var(--wf-sticky-state) - var(--wf-sticky-bottom));
+  }
+
+  .wf[data-direction="c"] .wf-page {
+    max-inline-size: none;
+  }
+}
+
+.wf[data-direction="c"] .wf-grid__head {
+  background: var(--color-surface-2);
+}
+
+.wf[data-direction="c"] .wf-table thead th {
+  background: var(--color-surface-2);
+  padding-inline: 0.5rem;
+}
+
+.wf[data-direction="c"] .wf-table td,
+.wf[data-direction="c"] .wf-table tbody th {
+  padding-inline: 0.5rem;
+  border-inline-end: 1px solid var(--color-rule-soft);
+}
+
+.wf[data-direction="c"] .wf-num,
+.wf[data-direction="c"] .wf-keys kbd,
+.wf[data-direction="c"] .wf-count,
+.wf[data-direction="c"] .wf-badge {
+  font-family: var(--font-mono);
+}
+
+.wf[data-direction="c"] .wf-desk__body,
+.wf[data-direction="c"] .wf-split {
+  gap: 0;
+}
+
+.wf[data-direction="c"] .wf-detail,
+.wf[data-direction="c"] .wf-record {
+  border: 0;
+  border-inline-start: 1px solid var(--color-rule-strong);
+  background: var(--color-surface-1);
+  padding: 1rem;
+}
+
+.wf[data-direction="c"] .wf-index {
+  padding-inline-end: 1rem;
+}
+
+.wf[data-direction="c"] .wf-page__head h1 {
+  font-size: 1.375rem;
+  font-weight: 600;
+}
+
+.wf[data-direction="c"] .wf-section h2 {
+  font-size: 0.9375rem;
+  color: var(--color-ink);
+}
+
+.wf[data-direction="c"] :is(a, p, span, td, th, [role="gridcell"]):dir(rtl) {
+  line-height: 1.7;
+}
+
+/* ---------- Motion: ≤ 200 ms, opacity/colour only; nothing under reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .wf[data-direction] * {
+    transition: none !important;
+  }
+}

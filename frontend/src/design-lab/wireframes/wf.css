@@ -86,7 +86,7 @@ html:has(.wf) {
 
 .wf kbd {
   font: inherit;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   padding-inline: 0.3em;
   border: 1px solid var(--wf-rule);
   border-radius: 3px;
@@ -129,7 +129,7 @@ html:has(.wf) {
   padding: 0.375rem 1rem;
   background: repeating-linear-gradient(45deg, #fafafa 0 8px, #f0f0f0 8px 16px);
   border-block-end: 1px dashed var(--wf-ink-3);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--wf-ink-2);
 }
 
@@ -170,7 +170,7 @@ html:has(.wf) {
 }
 
 .wf-out {
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--wf-ink-2) !important;
 }
 
@@ -235,11 +235,11 @@ html:has(.wf) {
 .wf-count {
   display: inline-grid;
   place-items: center;
-  min-inline-size: 1.25rem;
+  min-inline-size: 1.5rem;
   padding-inline: 0.3rem;
   border: 1px solid var(--wf-ink-2);
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
 }
 
@@ -303,7 +303,7 @@ html:has(.wf) {
 }
 
 .wf-rail__lab {
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--wf-ink-2) !important;
 }
 
@@ -418,7 +418,7 @@ html:has(.wf) {
 }
 
 .wf-hint {
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--wf-ink-2);
 }
 
@@ -459,7 +459,7 @@ html:has(.wf) {
   padding: 0.25rem 0.5rem;
   border: 1px solid var(--wf-ink-3);
   border-radius: 3px;
-  background: #ffffff;
+  background: var(--wf-surface);
   color: var(--wf-ink);
   font: inherit;
   inline-size: 100%;
@@ -480,8 +480,9 @@ html:has(.wf) {
 
 .wf input[type="checkbox"],
 .wf input[type="radio"] {
-  inline-size: 1.25rem;
-  block-size: 1.25rem;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  margin: 0;
   accent-color: var(--wf-ink);
 }
 
@@ -532,7 +533,7 @@ html:has(.wf) {
   padding-inline: 0.375rem;
   border: 1px dashed var(--wf-ink-2);
   border-radius: 3px;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   white-space: nowrap;
 }
 
@@ -565,7 +566,7 @@ html:has(.wf) {
 
 .wf-why {
   display: block;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--wf-ink-2);
 }
 
@@ -632,7 +633,7 @@ html:has(.wf) {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--wf-ink-2);
 }
 
@@ -654,6 +655,7 @@ html:has(.wf) {
 .wf-steps a {
   display: inline-flex;
   align-items: center;
+  gap: 0.3em;
   min-block-size: 2.25rem;
   padding-inline: 0.75rem;
   text-decoration: none !important;
@@ -740,7 +742,7 @@ html:has(.wf) {
 
 .wf-table thead th {
   border-block-end: 1px solid var(--wf-ink-3);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--wf-ink-2);
 }
 
@@ -768,6 +770,25 @@ html:has(.wf) {
 
 .wf-fromto {
   display: block;
+}
+
+/* 24px targets by their own size (synthesis §8): links inside table cells and lists. */
+.wf-table :is(th, td) a,
+.wf-index__list a,
+.wf-keys__more {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 1.5rem;
+}
+
+/* Bidi (model §13): Arabic gets air and an underline that clears its descenders. */
+.wf a {
+  text-decoration-skip-ink: auto;
+}
+
+.wf :is(a, p, span, td, th):dir(rtl) {
+  line-height: 1.7;
+  text-underline-offset: 0.4em;
 }
 
 /* Review desk */
@@ -814,7 +835,7 @@ html:has(.wf) {
 .wf-grid__head,
 .wf-grid__row {
   display: grid;
-  grid-template-columns: 2.25rem 11rem minmax(0, 1fr) 11rem;
+  grid-template-columns: 2.5rem 11rem minmax(0, 1fr) 11rem;
   align-items: center;
   gap: 0.5rem;
   min-block-size: var(--wf-row);
@@ -823,7 +844,7 @@ html:has(.wf) {
 }
 
 .wf-grid__head {
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--wf-ink-2);
   font-weight: 600;
 }
@@ -860,11 +881,12 @@ html:has(.wf) {
 }
 
 .wf-grid__state {
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
 }
 
 .wf-detail {
   display: grid;
+  align-content: start;
   gap: 0.5rem;
   padding: 1rem;
   border: 1px solid var(--wf-rule);

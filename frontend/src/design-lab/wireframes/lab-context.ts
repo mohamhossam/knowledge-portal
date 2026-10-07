@@ -47,6 +47,16 @@ export type LabJob = {
 
 export type Density = "automatic" | "comfortable" | "compact";
 
+/** Phase 4: the calm visual directions laid over the same wireframes ("none" is the greyscale wireframe). */
+export type Direction = "none" | "a" | "b" | "c";
+export type Theme = "light" | "dark";
+export const DIRECTIONS: { id: Direction; label: string }[] = [
+  { id: "none", label: "Wireframe (greyscale)" },
+  { id: "a", label: "A · Timetable, evolved" },
+  { id: "b", label: "B · Quiet desk" },
+  { id: "c", label: "C · Bilingual workbench" },
+];
+
 /** A simulated write, kept so screens can show its outcome. */
 export type Write = { key: string; value: unknown; at: number };
 
@@ -74,6 +84,10 @@ export type Lab = {
   setDensity: (density: Density) => void;
   shortcuts: boolean;
   setShortcuts: (on: boolean) => void;
+  direction: Direction;
+  setDirection: (direction: Direction) => void;
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
   /** One polite message for the shell's status line. */
   announce: (message: string) => void;
   announcement: string;

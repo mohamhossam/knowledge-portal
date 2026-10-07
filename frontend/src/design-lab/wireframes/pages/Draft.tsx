@@ -375,7 +375,7 @@ function Publish({ release, undecided, built, checked, stale, decided }: { relea
     <>
       <ul className="wf-lines">
         <li>{built ? <Status state="done">Built for matching</Status> : <Status state="waiting">Not built yet — publishing builds it first</Status>}</li>
-        <li>{checked ? (stale ? <Status state="held">Checked, but out of date</Status> : <Status state="done">Checked: 3 requirements would map differently</Status>) : <Status state="waiting">Not checked</Status>}</li>
+        <li>{checked ? (stale ? <Status state="held">Checked, but out of date</Status> : <><Status state="done">Checked</Status> · 3 requirements would map differently</>) : <Status state="waiting">Not checked</Status>}</li>
         <li>{undecided > 0 ? <Status state="waiting">{undecided} suggestions undecided — left out</Status> : <Status state="done">Every suggestion decided</Status>}</li>
       </ul>
       {!open ? (
