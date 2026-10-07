@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Integration branch | `feat/kb-redesign`, from `main` @ `b6114b9` |
-| Current phase | **2: Define.** In progress |
+| Current phase | **2: Define.** Steps 1–7 done; waiting at **GATE 2a** (then GATE 2b, the tree test) |
 | Last updated | 2026-10-08 |
 
 ## Phase log
@@ -12,7 +12,7 @@
 |---|---|---|
 | 0: Branch, permissions, discovery, baseline | **Approved 2026-10-08** | `00-discovery.md`, `01-baseline.md`, `before/`, `tools/capture-routes.mjs`, `docs/design-history/timetable-book-DESIGN.md`, CLAUDE.md § Redesign epic |
 | 1: Discover | **Approved 2026-10-08** (GATE 1a: assumption mode; GATE 1b approved) | `docs/ux/research/01-heuristic-review.md`, `synthesis.md` (HYPOTHESIS), `product-md-proposal.md`, `docs/ux/research/plan.md`, `docs/ux/testing/benchmark-template.csv`, `docs/ux/research/raw/README.md`, `.impeccable/critique/*` |
-| 2: Define | Not started | |
+| 2: Define | Steps 1–7 done; GATE 2a open | `docs/ux/journeys/` (5 journeys + service blueprint), `docs/ux/ia/` (object model, navigation + archetypes, route map, tree-test kit), `docs/ux/interaction/model.md`, `docs/ux/content/` (voice and tone, microcopy, glossary) |
 | 3: Develop (wireframes) | Not started | |
 | 4: Visual direction | Not started | |
 | 5: Design system | Not started | |
@@ -37,6 +37,8 @@
 | 2026-10-08 | **Priority weighting: calm + accessible first**, ahead of trustworthy review and queue-over-report. It covers red as status, consistent help, focus, screen-reader key collisions and zoom chrome. | User |
 | 2026-10-08 | **The Timetable Book's structure is not inherited.** That covers its sentence grammar, in-place rows and decision-on-the-row. The structure starts fresh, and the old grammar is evidence and anti-reference only. PRODUCT.md principles, such as consequence before commit, still bind as requirements; their old *form* does not. | User |
 | 2026-10-08 | **GATE 1b approved.** The synthesis and targets (HYPOTHESIS) are accepted, and the three PRODUCT.md additions are applied: Success Signals, a personas link, and the e& calm brand line. | User |
+| 2026-10-08 | **IA (HYPOTHESIS):** 5 primary areas (Your work · Library · Catalogue · Ownership · Requirements) plus Explorer; utilities (Jobs, Help, Account) on every page; a draft is a 5-step workspace; current URLs are kept with 10 redirect patterns; `/explorer` and `/library/:id` are unchanged. | Phase 2 proposal |
+| 2026-10-08 | **Undo** for suggestion decisions is a client-side delayed commit (6 s, HYPOTHESIS), because the API has no reopen (BG3). Seven backend gaps (BG1–BG7) are recorded as dependencies, never assumed. | Contract constraint |
 | 2026-10-08 | The two tallest document-review captures (13k and 17k px) are clipped to the first 4,000 px. All "before" captures total 16 MB. | Repository weight |
 
 ## Brand source
@@ -87,12 +89,15 @@ Still open:
 
 ## Next exact action
 
-At GATE 1b the user approves or edits:
+**At GATE 2a**, the user approves or edits:
 
-- `docs/ux/research/synthesis.md`: themes, proto-personas, top tasks and targets, all
-  HYPOTHESIS;
-- `docs/ux/research/product-md-proposal.md`.
+- the journeys and the service blueprint;
+- the object model;
+- the IA: navigation, archetypes, route map;
+- the interaction model;
+- the content guide.
 
-On approval, apply the three PRODUCT.md additions (this needs the user's permission prompt,
-because PRODUCT.md is on the ask list). Then start Phase 2, step 1: the journey maps in
-`docs/ux/journeys/`.
+**At GATE 2b**, the user runs `docs/ux/ia/tree-test.md` and adds results to
+`docs/ux/testing/tree-test-results.csv`, or says "assumption mode". Analyse, adjust
+`navigation.md` and `route-map.md`, then start Phase 3: low-fidelity wireframes in a dev-only
+`/design-lab/wireframes` route.
