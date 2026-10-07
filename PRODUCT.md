@@ -20,6 +20,9 @@ A mixed curation team, every member holding the `knowledge_admin` role:
 Everyone else in the organisation never opens this portal. They read citations and
 architecture evidence through read-only viewers in requirement-portal.
 
+Working proto-personas (hypotheses until research is run) and jobs to be done:
+`docs/ux/research/synthesis.md` §3–4.
+
 ## Product Purpose
 
 The knowledge portal is where the organisation's shared knowledge is curated before
@@ -95,6 +98,16 @@ existing architecture mappings.
   "Requirement AI"). Users move between the two through links. The two share one sign-in and
   should feel like one family, but they have distinct design systems.
 - The interface language is English. Content keeps its own language and direction.
+- **Brand: e& in calm mode.**
+  - Mostly calm neutrals (white and beige-derived tints, warm greys), with maroon for actions,
+    selection and focus.
+  - e& red only as a brand accent: the logo, the active-navigation marker, and at most one focal
+    accent per view. Never for status, errors or alerts.
+  - Status uses its own low-saturation colours, always with an icon and words.
+  - Flat surfaces; motion of 200 ms or less.
+  - Brand values are the redesign brief's e& primitives, unverified against official guidelines
+    (none are available). Fonts are self-hosted, because there is no e& font licence.
+  - Details live in DESIGN.md.
 
 ## Evidence on Hand
 
@@ -117,6 +130,26 @@ existing architecture mappings.
    one-change check-in.
 5. **Content keeps its language.** Arabic and English sit side by side without either being
    mangled.
+
+## Success Signals
+
+How we know the curation desk is working. User metrics are hypotheses until measured; see
+`docs/ux/research/synthesis.md` §8 for targets and how each is checked.
+
+- **Reviewed means seen.** Every approval records how much a person actually looked at, and
+  nothing AI-proposed is accepted in bulk without the set being inspectable.
+- **Yours first.** A curator with five minutes reaches the most urgent item that needs them in
+  one step from any page.
+- **Consequence in view.** Every withdraw, replace, publish and put-back shows its dependants or
+  mapping impact beside the action, before the commit.
+- **Provenance in one step.** From any published fact or change, one step reaches who decided it
+  and which passage, document version and release it came from.
+- **Calm over long sessions.** A 60-minute review burst does not rely on colour alone, never
+  loses the reviewer's place, and stays readable at 200% zoom.
+- **Usability targets** (to be measured with the benchmark in `docs/ux/research/plan.md`):
+  - task success of at least 90% on top tasks;
+  - an SEQ of at least 5.5;
+  - a SUS of at least 75.
 
 ## Accessibility & Inclusion
 
