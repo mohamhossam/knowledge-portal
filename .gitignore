@@ -42,3 +42,5 @@ deploy/local.env
 .impeccable/questions/
 .impeccable/review/
 .impeccable/hook.cache.json
+# A developer's own Claude Code permissions, never the repository's.
+.claude/settings.local.json
