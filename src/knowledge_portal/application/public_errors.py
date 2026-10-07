@@ -69,6 +69,7 @@ from knowledge_portal.domain.document.errors import (
     InvalidDocumentError,
 )
 from knowledge_portal.domain.historic.errors import (
+    HistoricPublicationSupersededError,
     HistoricRequirementStateError,
     InvalidHistoricRequirementError,
 )
@@ -172,6 +173,12 @@ ERROR_CATALOGUE: tuple[tuple[type[Exception], str, FailureCategory], ...] = (
         FailureCategory.CONFLICT,
     ),
     (HistoricRequirementStateError, "historic_requirement_state", FailureCategory.CONFLICT),
+    # Requirement work asked for an older publication; a newer event is on its way.
+    (
+        HistoricPublicationSupersededError,
+        "historic_publication_superseded",
+        FailureCategory.CONFLICT,
+    ),
     (
         InvalidHistoricRequirementError,
         "invalid_historic_requirement",

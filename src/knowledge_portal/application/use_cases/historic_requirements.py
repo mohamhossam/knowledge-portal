@@ -67,6 +67,8 @@ from knowledge_portal.domain.document.value_objects import DocumentVersionId
 from knowledge_portal.domain.historic.errors import InvalidHistoricRequirementError
 from knowledge_portal.domain.historic.historic_requirement import (
     BrdStage,
+    ContentPage,
+    ContentPart,
     HistoricBrd,
     HistoricRequirement,
     HistoricStatus,
@@ -286,6 +288,17 @@ class HistoricImports:
 
     def counts(self) -> dict[HistoricStatus, int]:
         return self._records.counts()
+
+    def content(
+        self, historic_id: str, publication: int, part: ContentPart, offset: int, limit: int
+    ) -> ContentPage:
+        """A page of what a publication says, for requirement work (ADR-0102, amendment 1).
+
+        Only a published record is read; a withdrawn or missing one is not found."""
+        record = self.get(historic_id)
+        if record.status is not HistoricStatus.PUBLISHED:
+            raise HistoricRequirementNotFoundError("No published historic requirement has that id.")
+        return record.content_page(publication, part, offset, limit)
 
     def refresh_waiting(self) -> int:
         return self._records.refresh_waiting()

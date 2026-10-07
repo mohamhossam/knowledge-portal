@@ -416,3 +416,51 @@ class WithdrawRequest(Versioned):
 StatusFilter = Literal["draft", "published", "withdrawn"]
 
 LineageNodeView.model_rebuild()
+
+
+# --- What requirement work reads, a page at a time (ADR-0102, amendment 1) -----------------
+
+
+class HistoricPassageEntry(BaseModel):
+    brd_id: str
+    filename: str
+    block_id: str
+    label: str
+    section_path: list[str]
+    text: str
+
+
+class HistoricItemEntry(BaseModel):
+    id: int
+    type: WorkItemType
+    title: str
+    state: str
+    revision: int
+    url: str
+    description: str
+    acceptance_criteria: str
+    area_path: str
+    iteration_path: str
+    tags: list[str]
+    parent_id: int | None
+    child_ids: list[int]
+
+
+class HistoricPassagesPage(BaseModel):
+    """Passages of a publication, in order. `fingerprint` is the publication's own."""
+
+    historic_requirement_id: str
+    publication: int
+    fingerprint: str
+    entries: list[HistoricPassageEntry]
+    next_offset: int | None
+
+
+class HistoricItemsPage(BaseModel):
+    """Work items of a publication, in order. `fingerprint` is the publication's own."""
+
+    historic_requirement_id: str
+    publication: int
+    fingerprint: str
+    entries: list[HistoricItemEntry]
+    next_offset: int | None

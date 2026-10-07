@@ -13,6 +13,7 @@ import json
 from dataclasses import dataclass, replace
 from datetime import datetime
 from enum import StrEnum
+from typing import Any, cast
 
 from smb_kernel.documents.model import (
     DocumentEvidenceBlock,
@@ -21,6 +22,7 @@ from smb_kernel.documents.model import (
 )
 
 from knowledge_portal.domain.historic.errors import (
+    HistoricPublicationSupersededError,
     HistoricRequirementStateError,
     InvalidHistoricRequirementError,
 )
@@ -38,6 +40,8 @@ REASON_MAX = 2000
 # A curator links at most this many root work items to one historic Requirement.
 ROOTS_MAX = 50
 BRDS_MAX = 10
+# Requirement work reads a publication's content a page at a time (ADR-0102, amendment 1).
+CONTENT_PAGE_MAX = 200
 
 
 class HistoricStatus(StrEnum):
@@ -125,6 +129,19 @@ class HistoricPublication:
     published_by: ActorSnapshot
     # Of the published state, so a consumer can tell one publication from the next.
     fingerprint: str
+
+
+class ContentPart(StrEnum):
+    PASSAGES = "passages"
+    ITEMS = "items"
+
+
+@dataclass(frozen=True)
+class ContentPage:
+    publication: int
+    fingerprint: str
+    entries: tuple[dict[str, object], ...]
+    next_offset: int | None
 
 
 @dataclass(frozen=True)
@@ -406,17 +423,67 @@ class HistoricRequirement:
             "fetched_at": None if breakdown is None else breakdown.fetched_at.isoformat(),
         }
 
+    def _passages(self) -> list[dict[str, object]]:
+        """Every read BRD's passages, in order, each saying which BRD it is from."""
+        return [
+            {"brd_id": brd["id"], "filename": brd["filename"], **passage}
+            for brd in cast(list[dict[str, Any]], self._content()["brds"])
+            for passage in brd["passages"]
+        ]
+
+    def _serving(self, publication: int) -> HistoricPublication:
+        if self.status is not HistoricStatus.PUBLISHED or not self.publications:
+            raise HistoricRequirementStateError("It is not published.")
+        latest = self.publications[-1]
+        if publication != latest.number:
+            raise HistoricPublicationSupersededError(
+                f"Publication {publication} is not the one in use; publication {latest.number} is."
+            )
+        return latest
+
+    def content_page(
+        self, publication: int, part: ContentPart, offset: int, limit: int
+    ) -> ContentPage:
+        """One page of a publication's passages or work items, in a stable order (ADR-0102).
+
+        Each page names the publication's fingerprint, so a reader can tell the pages it holds
+        all come from the publication its event announced."""
+        latest = self._serving(publication)
+        entries = (
+            self._passages()
+            if part is ContentPart.PASSAGES
+            else cast(list[dict[str, object]], self._content()["items"])
+        )
+        limit = max(1, min(limit, CONTENT_PAGE_MAX))
+        offset = max(0, offset)
+        page = tuple(entries[offset : offset + limit])
+        more = offset + limit < len(entries)
+        return ContentPage(
+            latest.number, latest.fingerprint, page, offset + limit if more else None
+        )
+
     def citable_state(self) -> dict[str, object]:
-        """The event payload: the whole published state, or none once withdrawn (ADR-0102)."""
+        """The event payload: a reference to the published state, or none once withdrawn.
+
+        It names the publication, not its content: requirement work reads the passages and
+        work items a page at a time, so no event is ever large (ADR-0102, amendment 1)."""
         published = self.status is HistoricStatus.PUBLISHED and self.publications
         latest = self.publications[-1] if self.publications else None
+        content = self._content() if published else {}
         return {
             "historic_requirement_id": self.id,
             "version": self.version,
             "published": None
             if not published or latest is None
             else {
-                **self._content(),
+                "title": self.title,
+                "root_ids": list(self.root_ids),
+                "fetched_at": content["fetched_at"],
+                "counts": {
+                    "brds": len(cast(list[object], content["brds"])),
+                    "passages": len(self._passages()),
+                    "items": len(cast(list[object], content["items"])),
+                },
                 "publication": latest.number,
                 "fingerprint": latest.fingerprint,
                 "published_at": latest.published_at.isoformat(),

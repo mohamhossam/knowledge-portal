@@ -3,7 +3,8 @@
 Every route needs the `requirements` service token. The request and response
 bodies are the shared contract values themselves: `ArchitectureQuery`,
 `ArchitectureKnowledgeMatch`, `ReferenceEvidence` and `KnowledgeEvent`, plus
-the read-only viewers' `CitedPassage` and `EvidenceChunk`.
+the read-only viewers' `CitedPassage` and `EvidenceChunk`, and a published historic
+requirement's content, read a page at a time (ADR-0102, amendment 1).
 `contracts/knowledge-internal.openapi.json` is the committed contract.
 """
 
@@ -11,7 +12,7 @@ from __future__ import annotations
 
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, FastAPI, Query, Response
+from fastapi import APIRouter, Depends, FastAPI, Path, Query, Response
 from pydantic import BaseModel, Field
 
 from knowledge_portal.application.ports.architecture_knowledge import (
@@ -22,10 +23,17 @@ from knowledge_portal.application.ports.architecture_rag import EvidenceChunk
 from knowledge_portal.application.ports.knowledge_events import KnowledgeEvent
 from knowledge_portal.application.ports.reference_grounding import ReferenceEvidence
 from knowledge_portal.application.use_cases.cited_passages import CitedPassage, PassageCitation
+from knowledge_portal.domain.historic.historic_requirement import CONTENT_PAGE_MAX, ContentPart
 from knowledge_portal.interfaces.api.dependencies import ContainerDep, require_service_caller
 from knowledge_portal.interfaces.api.schemas.change_requests import (
     ApprovedBacklogRequest,
     ChangeRequestReceipt,
+)
+from knowledge_portal.interfaces.api.schemas.historic import (
+    HistoricItemEntry,
+    HistoricItemsPage,
+    HistoricPassageEntry,
+    HistoricPassagesPage,
 )
 
 router = APIRouter(prefix="/internal", dependencies=[Depends(require_service_caller)])
@@ -111,6 +119,61 @@ def events(
     limit: int = Query(100, ge=1, le=500),
 ) -> list[dict[str, Any]]:
     return [_event(e) for e in container.knowledge_events.after(after, limit)]
+
+
+HistoricId = Annotated[str, Path(min_length=1, max_length=200)]
+Publication = Annotated[int, Query(ge=1, le=100_000)]
+Offset = Annotated[int, Query(ge=0, le=1_000_000)]
+PageLimit = Annotated[int, Query(ge=1, le=CONTENT_PAGE_MAX)]
+
+
+@router.get(
+    "/historic-requirements/{historic_requirement_id}/passages",
+    responses={404: {"description": "Not published"}, 409: {"description": "Superseded"}},
+)
+def historic_passages(
+    historic_requirement_id: HistoricId,
+    container: ContainerDep,
+    publication: Publication,
+    offset: Offset = 0,
+    limit: PageLimit = CONTENT_PAGE_MAX,
+) -> HistoricPassagesPage:
+    """A published historic requirement's BRD passages, a page at a time. An older
+    publication answers 409; a withdrawn or unknown record 404 (ADR-0102, amendment 1)."""
+    page = container.historic_imports.content(
+        historic_requirement_id, publication, ContentPart.PASSAGES, offset, limit
+    )
+    return HistoricPassagesPage(
+        historic_requirement_id=historic_requirement_id,
+        publication=page.publication,
+        fingerprint=page.fingerprint,
+        entries=[HistoricPassageEntry.model_validate(entry) for entry in page.entries],
+        next_offset=page.next_offset,
+    )
+
+
+@router.get(
+    "/historic-requirements/{historic_requirement_id}/items",
+    responses={404: {"description": "Not published"}, 409: {"description": "Superseded"}},
+)
+def historic_items(
+    historic_requirement_id: HistoricId,
+    container: ContainerDep,
+    publication: Publication,
+    offset: Offset = 0,
+    limit: PageLimit = CONTENT_PAGE_MAX,
+) -> HistoricItemsPage:
+    """A published historic requirement's Epics, Features and User Stories, a page at a time."""
+    page = container.historic_imports.content(
+        historic_requirement_id, publication, ContentPart.ITEMS, offset, limit
+    )
+    return HistoricItemsPage(
+        historic_requirement_id=historic_requirement_id,
+        publication=page.publication,
+        fingerprint=page.fingerprint,
+        entries=[HistoricItemEntry.model_validate(entry) for entry in page.entries],
+        next_offset=page.next_offset,
+    )
 
 
 def _event(event: KnowledgeEvent) -> dict[str, Any]:

@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import inspect
+import json
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -13,6 +15,7 @@ from smb_kernel.time.fixed import FixedClock
 from knowledge_portal.application.ports.ado_work_items import AdoWorkItemSourcePort
 from knowledge_portal.application.ports.historic_requirements import (
     HistoricRequirementConflictError,
+    HistoricRequirementNotFoundError,
 )
 from knowledge_portal.application.ports.knowledge_events import HISTORIC_REQUIREMENT_CHANGED
 from knowledge_portal.application.use_cases.architecture_documents import (
@@ -20,11 +23,13 @@ from knowledge_portal.application.use_cases.architecture_documents import (
     UploadOutcome,
 )
 from knowledge_portal.domain.historic.errors import (
+    HistoricPublicationSupersededError,
     HistoricRequirementStateError,
     InvalidHistoricRequirementError,
 )
 from knowledge_portal.domain.historic.historic_requirement import (
     BrdStage,
+    ContentPart,
     HistoricStatus,
     RunStatus,
     title_from_filename,
@@ -275,8 +280,19 @@ def test_publishing_refreshing_and_withdrawing_each_tell_requirement_work(
     assert (event.kind, event.subject_id) == (HISTORIC_REQUIREMENT_CHANGED, historic_id)
     state = event.payload
     assert isinstance(state, dict) and state["published"]["publication"] == 1
-    assert [p["text"] for p in state["published"]["brds"][0]["passages"]][0].startswith("Business")
-    assert {item["id"] for item in state["published"]["items"]} >= {48213, 48214, 48216}
+    # The event names the publication; its content is read a page at a time.
+    assert "brds" not in state["published"] and "items" not in state["published"]
+    counts = state["published"]["counts"]
+    assert counts["brds"] == 1 and counts["passages"] >= 1 and counts["items"] >= 3
+    passages = imports.content(historic_id, 1, ContentPart.PASSAGES, 0, 200)
+    assert str(passages.entries[0]["text"]).startswith("Business")
+    assert passages.fingerprint == state["published"]["fingerprint"]
+    items = imports.content(historic_id, 1, ContentPart.ITEMS, 0, 2)
+    assert len(items.entries) == 2 and items.next_offset == 2
+    rest = imports.content(historic_id, 1, ContentPart.ITEMS, 2, 200)
+    ids = {entry["id"] for entry in (*items.entries, *rest.entries)}
+    assert ids >= {48213, 48214, 48216} and len(ids) == counts["items"]
+    assert rest.next_offset is None
     with pytest.raises(HistoricRequirementStateError):
         imports.rename(historic_id, "Another", published.version)
 
@@ -294,6 +310,9 @@ def test_publishing_refreshing_and_withdrawing_each_tell_requirement_work(
     assert imports.refresh_waiting() == 0
     republished = container.knowledge_events.after(0, 100)[-1].payload
     assert isinstance(republished, dict) and republished["published"]["publication"] == 2
+    # Requirement work asking for the first publication is told a newer one is in use.
+    with pytest.raises(HistoricPublicationSupersededError):
+        imports.content(historic_id, 1, ContentPart.ITEMS, 0, 200)
 
     with pytest.raises(InvalidHistoricRequirementError):
         imports.withdraw(historic_id, "  ", accepted.version, CURATOR)
@@ -303,6 +322,8 @@ def test_publishing_refreshing_and_withdrawing_each_tell_requirement_work(
     assert withdrawn.status is HistoricStatus.WITHDRAWN
     gone = container.knowledge_events.after(0, 100)[-1].payload
     assert isinstance(gone, dict) and gone["published"] is None
+    with pytest.raises(HistoricRequirementNotFoundError):
+        imports.content(historic_id, 2, ContentPart.PASSAGES, 0, 200)
 
 
 def test_a_draft_cannot_be_published_until_it_has_been_read_and_linked(
@@ -467,3 +488,79 @@ def test_the_routes(container: Container) -> None:
             ).status_code
             == 403
         )
+
+
+# --- What requirement work reads (ADR-0102, amendment 1) -----------------------------------
+
+SERVICE = {"Authorization": f"Bearer {'r' * 40}"}
+EXAMPLE = (
+    Path(__file__).resolve().parents[2] / "contracts" / "historic-requirement-changed.example.json"
+)
+
+
+def _served(clock: FixedClock) -> Container:
+    return build_container(
+        Settings(
+            llm_provider=LLMProvider.FAKE,
+            library_scan_mode="offline",
+            ado_provider=AdoProvider.FAKE,
+            requirement_service_token="r" * 40,
+        ),
+        clock=clock,
+    )
+
+
+def test_requirement_work_reads_a_publication_a_page_at_a_time(clock: FixedClock) -> None:
+    container = _served(clock)
+    historic_id = _linked(container)
+    record = container.historic_imports.get(historic_id)
+    container.historic_imports.publish(historic_id, record.version, CURATOR)
+    base = f"/internal/historic-requirements/{historic_id}"
+    with TestClient(create_app(lambda: container)) as client:
+        assert client.get(f"{base}/items?publication=1").status_code == 401
+        first = client.get(f"{base}/items?publication=1&limit=2", headers=SERVICE)
+        assert first.status_code == 200, first.text
+        page = first.json()
+        assert page["publication"] == 1 and len(page["entries"]) == 2
+        assert page["next_offset"] == 2 and page["entries"][0]["type"] in {"epic", "feature"}
+        passages = client.get(f"{base}/passages?publication=1", headers=SERVICE).json()
+        assert passages["entries"][0]["filename"].endswith(".docx")
+        assert passages["fingerprint"] == page["fingerprint"]
+        assert client.get(f"{base}/items?publication=2", headers=SERVICE).status_code == 409
+        assert (
+            client.get(f"{base}/items?publication=1&limit=201", headers=SERVICE).status_code == 422
+        )
+        assert client.get(f"{base}/items?publication=0", headers=SERVICE).status_code == 422
+        missing = "/internal/historic-requirements/missing/items?publication=1"
+        assert client.get(missing, headers=SERVICE).status_code == 404
+
+
+def test_a_draft_is_not_read_by_requirement_work(clock: FixedClock) -> None:
+    container = _served(clock)
+    historic_id = _linked(container)
+    with TestClient(create_app(lambda: container)) as client:
+        answer = client.get(
+            f"/internal/historic-requirements/{historic_id}/passages?publication=1",
+            headers=SERVICE,
+        )
+        assert answer.status_code == 404
+
+
+def test_the_event_payload_is_pinned_for_requirement_work(container: Container) -> None:
+    """requirement-portal keeps a copy of this file and parses it (ADR-0102, amendment 1)."""
+    historic_id = _linked(container)
+    record = container.historic_imports.get(historic_id)
+    container.historic_imports.publish(historic_id, record.version, CURATOR)
+    payload = container.knowledge_events.after(0, 100)[-1].payload
+    # Ids vary run to run; the example keeps their shape with stable values.
+    assert isinstance(payload, dict) and isinstance(payload["published"], dict)
+    example = {
+        **payload,
+        "historic_requirement_id": "11111111-2222-3333-4444-555555555555",
+        "published": {**payload["published"], "fingerprint": "f" * 64},
+    }
+    text = json.dumps(example, indent=2, sort_keys=True) + "\n"
+    assert len(text.encode()) < 2048, "a historic event stays small"
+    if not EXAMPLE.exists() or EXAMPLE.read_text(encoding="utf-8") != text:
+        EXAMPLE.write_text(text, encoding="utf-8")
+        pytest.fail(f"{EXAMPLE.name} was stale and has been rewritten; commit it.")

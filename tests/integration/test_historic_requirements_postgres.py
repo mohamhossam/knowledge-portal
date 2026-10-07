@@ -19,6 +19,7 @@ from knowledge_portal.application.ports.historic_requirements import (
 )
 from knowledge_portal.application.ports.knowledge_events import HISTORIC_REQUIREMENT_CHANGED
 from knowledge_portal.domain.historic.historic_requirement import (
+    ContentPart,
     HistoricBrd,
     HistoricRequirement,
     HistoricStatus,
@@ -77,7 +78,10 @@ def test_a_record_round_trips_its_publication_commits_with_its_event_and_version
         seq = events.append(HISTORIC_REQUIREMENT_CHANGED, draft.id, published.citable_state())
     assert PostgresHistoricRequirements(store).get(draft.id) == published
     (event,) = [e for e in events.after(seq - 1, 1) if e.seq == seq]
-    assert event.payload["published"]["items"][0]["id"] == 48213  # type: ignore[index]
+    assert event.payload["published"]["counts"]["items"] == 1  # type: ignore[index]
+    page = PostgresHistoricRequirements(store).get(draft.id)
+    assert page is not None
+    assert page.content_page(1, ContentPart.ITEMS, 0, 10).entries[0]["id"] == 48213
     with pytest.raises(HistoricRequirementConflictError):
         with store.transaction():
             records.save(replace(published, version=published.version + 1), draft.version)
