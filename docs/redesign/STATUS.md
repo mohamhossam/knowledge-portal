@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Integration branch | `feat/kb-redesign`, from `main` @ `b6114b9` |
-| Current phase | **1: Discover.** Steps 1 and 2 done; waiting at **GATE 1a** (the user runs the research) |
+| Current phase | **1: Discover.** Steps 1–4 done (assumption mode); waiting at **GATE 1b** |
 | Last updated | 2026-10-08 |
 
 ## Phase log
@@ -11,7 +11,7 @@
 | Phase | State | Artefacts |
 |---|---|---|
 | 0: Branch, permissions, discovery, baseline | **Approved 2026-10-08** | `00-discovery.md`, `01-baseline.md`, `before/`, `tools/capture-routes.mjs`, `docs/design-history/timetable-book-DESIGN.md`, CLAUDE.md § Redesign epic |
-| 1: Discover | Steps 1–2 done; GATE 1a open | `docs/ux/research/01-heuristic-review.md`, `docs/ux/research/plan.md`, `docs/ux/testing/benchmark-template.csv`, `docs/ux/research/raw/README.md`, `.impeccable/critique/*` |
+| 1: Discover | Steps 1–4 done; GATE 1a = assumption mode; GATE 1b open | `docs/ux/research/01-heuristic-review.md`, `synthesis.md` (HYPOTHESIS), `product-md-proposal.md`, `docs/ux/research/plan.md`, `docs/ux/testing/benchmark-template.csv`, `docs/ux/research/raw/README.md`, `.impeccable/critique/*` |
 | 2: Define | Not started | |
 | 3: Develop (wireframes) | Not started | |
 | 4: Visual direction | Not started | |
@@ -33,6 +33,9 @@
 | 2026-10-08 | There are no official e& guidelines or font files. Use the brief's primitives (unverified) and self-hosted `@fontsource` fonts with Arabic. | User answer |
 | 2026-10-08 | The earlier e& revamp is **superseded in full**: branch `feat/ui-revamp-eand-theme` and the mock-up in `knowledge-portal-design-concept/`. Neither its visuals nor its IA count as evidence. The epic starts from `main` and this brief. The branch and its worktree are left untouched. | User answer |
 | 2026-10-08 | **GATE 0 approved.** Screenshots stay in git. The Phase 1 critique covers historic records, catalogue evidence and requirement-knowledge rows as empty states only, with no fixtures. The timezone test is fixed in a separate session. | User |
+| 2026-10-08 | **GATE 1a: assumption mode.** No user research will be run now. The synthesis, personas, top tasks and targets are **HYPOTHESIS**, built from expert review and PRODUCT.md. The baseline metrics for success rate, SEQ and SUS stay unmeasured. | User |
+| 2026-10-08 | **Priority weighting: calm + accessible first**, ahead of trustworthy review and queue-over-report. It covers red as status, consistent help, focus, screen-reader key collisions and zoom chrome. | User |
+| 2026-10-08 | **The Timetable Book's structure is not inherited.** That covers its sentence grammar, in-place rows and decision-on-the-row. The structure starts fresh, and the old grammar is evidence and anti-reference only. PRODUCT.md principles, such as consequence before commit, still bind as requirements; their old *form* does not. | User |
 | 2026-10-08 | The two tallest document-review captures (13k and 17k px) are clipped to the first 4,000 px. All "before" captures total 16 MB. | Repository weight |
 
 ## Brand source
@@ -83,11 +86,12 @@ Still open:
 
 ## Next exact action
 
-GATE 1a has two paths:
+At GATE 1b the user approves or edits:
 
-- **Run the research:** the user runs sessions with `docs/ux/research/plan.md` and adds anonymised
-  notes, survey results and benchmark data to `docs/ux/research/raw/`.
-- **Assumption mode:** the user says "assumption mode".
+- `docs/ux/research/synthesis.md`: themes, proto-personas, top tasks and targets, all
+  HYPOTHESIS;
+- `docs/ux/research/product-md-proposal.md`.
 
-Then do Phase 1, step 3: synthesis in `docs/ux/research/synthesis.md`, built from `raw/`, or
-labelled HYPOTHESIS and built from `01-heuristic-review.md` and PRODUCT.md.
+On approval, apply the three PRODUCT.md additions (this needs the user's permission prompt,
+because PRODUCT.md is on the ask list). Then start Phase 2, step 1: the journey maps in
+`docs/ux/journeys/`.
