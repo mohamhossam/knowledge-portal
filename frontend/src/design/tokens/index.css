@@ -1,0 +1,113 @@
+/*
+ * The design system's entry: the three token layers, then base element styles.
+ * Base styles are scoped to .ds-root so nothing changes on today's screens
+ * until an area migrates (redesign Phase 8); the legacy tokens.css stays until then.
+ */
+@import "./primitive.css";
+@import "./semantic.css";
+@import "./component.css";
+
+.ds-root {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-body);
+  font-stretch: var(--stretch-text);
+  line-height: var(--leading-ui);
+  font-kerning: normal;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+.ds-root *,
+.ds-root *::before,
+.ds-root *::after {
+  box-sizing: border-box;
+}
+
+.ds-root :where(h1, h2, h3, h4, p, ul, ol, dl, dd, figure, blockquote, fieldset) {
+  margin: 0;
+}
+
+.ds-root :where(h1, h2, h3, h4) {
+  font-weight: var(--weight-heading);
+  font-stretch: var(--stretch-title);
+  line-height: var(--leading-tight);
+  text-wrap: balance;
+}
+
+.ds-root :where(button, input, select, textarea) {
+  font: inherit;
+  color: inherit;
+}
+
+.ds-root :where(a) {
+  color: var(--color-link);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  text-decoration-skip-ink: auto;
+}
+
+/* §1.2: one visible ring for every control, never obscured (scroll padding below). */
+.ds-root :focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+  box-shadow: var(--focus-halo);
+}
+
+/* Programmatic focus targets are not controls: no ring. */
+.ds-root :is(h1, h2, h3, main, nav, section, aside, [role="region"])[tabindex="-1"]:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.ds-root ::selection {
+  background: var(--color-selected);
+  color: var(--color-on-selected);
+}
+
+.ds-root :where(table, .ds-num, time, data) {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* §13: Arabic and other RTL content gets air and its own face; the UI chrome never mirrors. */
+.ds-root :where(:lang(ar), [dir="rtl"]),
+.ds-root :where(p, span, a, td, th, li, dd, [role="gridcell"]):dir(rtl) {
+  font-family: var(--font-arabic);
+  line-height: var(--leading-arabic);
+  text-underline-offset: 0.4em;
+}
+
+.ds-root :where(kbd) {
+  font: inherit;
+  font-size: var(--text-meta);
+  padding-inline: 0.35em;
+  border: var(--rule-hair) solid var(--color-rule-strong);
+  border-radius: var(--radius-control);
+}
+
+/* §1.1: sticky regions publish their measured sizes; scrolling keeps focus clear of them. */
+html:has(.ds-root) {
+  scroll-padding-block:
+    calc(var(--sticky-top) + var(--sticky-state) + var(--space-2))
+    calc(var(--sticky-bottom) + var(--space-2));
+}
+
+.ds-visually-hidden {
+  position: absolute !important;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-root *,
+  .ds-root *::before,
+  .ds-root *::after {
+    animation-duration: 0ms !important;
+    transition-duration: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}

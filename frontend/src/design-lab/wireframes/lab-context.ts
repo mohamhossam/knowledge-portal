@@ -47,14 +47,12 @@ export type LabJob = {
 
 export type Density = "automatic" | "comfortable" | "compact";
 
-/** Phase 4: the calm visual directions laid over the same wireframes ("none" is the greyscale wireframe). */
-export type Direction = "none" | "a" | "b" | "c";
+/** Phase 4: direction A (chosen at GATE 4) over the wireframes; "none" is the greyscale wireframe. B and C are archived in docs/redesign/02-directions.md. */
+export type Direction = "none" | "a";
 export type Theme = "light" | "dark";
 export const DIRECTIONS: { id: Direction; label: string }[] = [
   { id: "none", label: "Wireframe (greyscale)" },
   { id: "a", label: "A · Timetable, evolved" },
-  { id: "b", label: "B · Quiet desk" },
-  { id: "c", label: "C · Bilingual workbench" },
 ];
 
 /** A simulated write, kept so screens can show its outcome. */
