@@ -1,0 +1,751 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-03T23:59:00Z",
+  "title": "Design System: Knowledge portal",
+  "extensions": {
+    "colorMeta": {
+      "stock": {
+        "role": "neutral",
+        "displayName": "Table Stock",
+        "canonical": "#fbfbfa",
+        "tonalRamp": [
+          "oklch(15% 0.003 100)",
+          "oklch(27% 0.003 100)",
+          "oklch(39% 0.003 100)",
+          "oklch(51% 0.003 100)",
+          "oklch(63% 0.003 100)",
+          "oklch(75% 0.003 100)",
+          "oklch(87% 0.003 100)",
+          "oklch(98.6% 0.002 100)"
+        ]
+      },
+      "stock-band": {
+        "role": "neutral",
+        "displayName": "Stock Band",
+        "canonical": "#f1f1ee",
+        "tonalRamp": [
+          "oklch(15% 0.005 100)",
+          "oklch(27% 0.005 100)",
+          "oklch(39% 0.005 100)",
+          "oklch(51% 0.005 100)",
+          "oklch(63% 0.005 100)",
+          "oklch(75% 0.005 100)",
+          "oklch(87% 0.005 100)",
+          "oklch(95.6% 0.005 100)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#16181d",
+        "tonalRamp": [
+          "oklch(20.5% 0.01 265)",
+          "oklch(30% 0.01 265)",
+          "oklch(40% 0.01 265)",
+          "oklch(50% 0.01 265)",
+          "oklch(62% 0.01 265)",
+          "oklch(74% 0.01 265)",
+          "oklch(86% 0.008 265)",
+          "oklch(95% 0.005 265)"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Ink 2",
+        "canonical": "#474c55",
+        "tonalRamp": [
+          "oklch(15% 0.015 260)",
+          "oklch(27% 0.015 260)",
+          "oklch(41.5% 0.015 260)",
+          "oklch(51% 0.015 260)",
+          "oklch(63% 0.015 260)",
+          "oklch(75% 0.012 260)",
+          "oklch(87% 0.008 260)",
+          "oklch(95% 0.005 260)"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Ink 3",
+        "canonical": "#686e78",
+        "tonalRamp": [
+          "oklch(15% 0.015 260)",
+          "oklch(27% 0.015 260)",
+          "oklch(39% 0.015 260)",
+          "oklch(52.5% 0.017 260)",
+          "oklch(63% 0.015 260)",
+          "oklch(75% 0.012 260)",
+          "oklch(87% 0.008 260)",
+          "oklch(95% 0.005 260)"
+        ]
+      },
+      "rule-heavy": {
+        "role": "neutral",
+        "displayName": "Heavy Rule",
+        "canonical": "#16181d",
+        "tonalRamp": [
+          "oklch(20.5% 0.01 265)",
+          "oklch(30% 0.01 265)",
+          "oklch(40% 0.01 265)",
+          "oklch(50% 0.01 265)",
+          "oklch(62% 0.01 265)",
+          "oklch(74% 0.01 265)",
+          "oklch(86% 0.008 265)",
+          "oklch(95% 0.005 265)"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Rule",
+        "canonical": "#cfd2d6",
+        "tonalRamp": [
+          "oklch(15% 0.006 255)",
+          "oklch(27% 0.006 255)",
+          "oklch(39% 0.006 255)",
+          "oklch(51% 0.006 255)",
+          "oklch(63% 0.006 255)",
+          "oklch(75% 0.006 255)",
+          "oklch(85.7% 0.006 255)",
+          "oklch(95% 0.004 255)"
+        ]
+      },
+      "rule-faint": {
+        "role": "neutral",
+        "displayName": "Faint Rule",
+        "canonical": "#e4e5e7",
+        "tonalRamp": [
+          "oklch(15% 0.003 265)",
+          "oklch(27% 0.003 265)",
+          "oklch(39% 0.003 265)",
+          "oklch(51% 0.003 265)",
+          "oklch(63% 0.003 265)",
+          "oklch(75% 0.003 265)",
+          "oklch(91.7% 0.003 265)",
+          "oklch(97% 0.002 265)"
+        ]
+      },
+      "disruption": {
+        "role": "secondary",
+        "displayName": "Disruption Red",
+        "canonical": "#b3122b",
+        "tonalRamp": [
+          "oklch(25% 0.1 20)",
+          "oklch(35% 0.14 20)",
+          "oklch(44% 0.17 20)",
+          "oklch(50.5% 0.19 20)",
+          "oklch(60% 0.18 20)",
+          "oklch(72% 0.12 20)",
+          "oklch(84% 0.06 20)",
+          "oklch(95% 0.02 20)"
+        ]
+      },
+      "disruption-wash": {
+        "role": "secondary",
+        "displayName": "Disruption Wash",
+        "canonical": "#fbeaec",
+        "tonalRamp": [
+          "oklch(25% 0.1 15)",
+          "oklch(35% 0.14 15)",
+          "oklch(45% 0.17 15)",
+          "oklch(55% 0.17 15)",
+          "oklch(65% 0.14 15)",
+          "oklch(75% 0.09 15)",
+          "oklch(86% 0.04 15)",
+          "oklch(95.4% 0.017 15)"
+        ]
+      },
+      "reference": {
+        "role": "primary",
+        "displayName": "Reference Blue",
+        "canonical": "#1d5ca3",
+        "tonalRamp": [
+          "oklch(22% 0.07 255)",
+          "oklch(32% 0.1 255)",
+          "oklch(42% 0.12 255)",
+          "oklch(48.5% 0.13 255)",
+          "oklch(58% 0.13 255)",
+          "oklch(70% 0.1 255)",
+          "oklch(83% 0.05 255)",
+          "oklch(94% 0.02 255)"
+        ]
+      },
+      "reference-wash": {
+        "role": "primary",
+        "displayName": "Reference Wash",
+        "canonical": "#e6eef8",
+        "tonalRamp": [
+          "oklch(22% 0.07 255)",
+          "oklch(32% 0.1 255)",
+          "oklch(42% 0.12 255)",
+          "oklch(52% 0.12 255)",
+          "oklch(62% 0.1 255)",
+          "oklch(74% 0.07 255)",
+          "oklch(85% 0.035 255)",
+          "oklch(94.4% 0.015 255)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "monument": {
+        "displayName": "Monument",
+        "purpose": "The condensed table number in the margin column (aria-hidden); index numbers use the same width and weight at 2.25rem."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Table and notice titles at 88% width; a catalogue sheet's title (system, offering, journey) without a margin number."
+      },
+      "lead": {
+        "displayName": "Lead",
+        "purpose": "The next-decision line, the masthead portal name, the titles of the add-a-document section, the withdraw panel, an edit panel and the catalogue file's preview, and governance section titles (bold, on a heavy rule)."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Rows, totals and edition lines; tabular lining figures. Governance leads cap at 72ch, a search result's passage at 64ch; sub-index links in medium weight, bold when current."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Column heads (including governance tables), totals labels, field labels, the change notice heading, passage detail labels the legend of a choices group, the systems index's group heads, a sheet's fact labels, a journey's phase heads, the diff table's heads and kind heads, and the system label over an open sample's evidence, at 72% width, sentence case, ink 2."
+      },
+      "meta": {
+        "displayName": "Meta",
+        "purpose": "Notes, the masthead 'Valid as of' line, text buttons, Arabic secondary lines, the passage Where column, reasons and flags, the keys line, the save bar's state and reason lines, governance secondary lines, a search result's surrounding text, sub-index links on phones, the catalogue's consequence and mapped-earlier lines, the systems index count and 'which name matched' lines, a sheet's meta line, and the connection phrases. Also the waits line under an edit panel, and the diff and samples tables' secondary lines. Key caps step down to 0.75rem."
+      },
+      "mark": {
+        "displayName": "Mark",
+        "purpose": "The superscript blue reference numeral."
+      },
+      "arabic": {
+        "displayName": "Arabic",
+        "purpose": "Noto Sans Arabic for any lang=ar or dir=rtl content; a script fallback, not a design voice."
+      }
+    },
+    "shadows": [
+      {
+        "name": "current-bar",
+        "value": "inset 0 -3px 0 var(--ink)",
+        "purpose": "A rule, not depth: the bar under the current index entry, the pressed filter the current sub-index link and the current systems index entry. The only box-shadow in the system."
+      }
+    ],
+    "rules": [
+      {
+        "name": "rule-heavy",
+        "value": "2px solid var(--rule-heavy)",
+        "purpose": "Under the masthead, table heads, totals label, quiet line, notice head and change notice heading; above and below the processing line and the withdraw panel; at the foot of an open passage's detail row; on top of the save bar. Under a governance section title and a governance table's column heads. In the catalogue: under each systems index group head, above a sheet's facts list, at the foot of an open version's detail row, above and below the put-back panel. A quiet line directly under a catalogue section title takes no second heavy rule. In a draft: above and below the rename and remove steps, under each galley group head, at the foot of an open suggestion's detail row, under a repeating form group's legend. Closing an edit panel and an open sample's evidence row; above and below the catalogue file's preview."
+      },
+      {
+        "name": "hairline",
+        "value": "1px solid var(--rule-faint)",
+        "purpose": "Between rows, totals and governance table rows; 1px var(--rule) between tables, under the index and under a document's sub-index. Hairlines also sit between systems index entries, a sheet's facts and its list items; 1px var(--rule) under a journey's phase head and the catalogue's sub-index. 1px var(--rule) also under an open suggestion's detail labels, at the foot of each repeating form row, and under a nested repeating legend. 1px var(--rule) under each kind head in the diff table and under each system label of an open sample's evidence."
+      },
+      {
+        "name": "double",
+        "value": "3px double var(--rule-heavy)",
+        "purpose": "Above the notes at a table's foot."
+      }
+    ],
+    "focus": {
+      "value": "outline: 2px solid var(--reference); outline-offset: 2px",
+      "purpose": "Every focusable element."
+    },
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "All state transitions."
+      },
+      {
+        "name": "light",
+        "value": "background-color 180ms var(--ease-out)",
+        "purpose": "Lighting a row, mark or note; background only, nothing reflows."
+      },
+      {
+        "name": "extent",
+        "value": "inline-size 400ms var(--ease-out)",
+        "purpose": "Index extent rules settling to their share."
+      },
+      {
+        "name": "busy-spin",
+        "value": "spin 900ms linear infinite",
+        "purpose": "The refresh icon while tables reload."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "0.01ms",
+        "purpose": "All transitions and animations under prefers-reduced-motion: reduce."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sheet-pair",
+        "value": "80rem",
+        "purpose": "Above it a system sheet sets Depends on and Used by side by side (2rem gap); below it they stack."
+      },
+      {
+        "name": "below-desktop",
+        "value": "60rem",
+        "purpose": "Priority-3 columns hide."
+      },
+      {
+        "name": "phone",
+        "value": "45rem",
+        "purpose": "Priority-2 columns hide; margin column collapses; masthead unsticks; index stacks; sub-index tightens to 0.75rem gaps at meta size. Catalogue: one column, the systems index in flow and replaced by a chosen sheet; All connections folds To into From; Versions carries state and disclosure in the version cell; sheet facts stack. The diff table's Change column and the samples table's result column give way to the content."
+      }
+    ],
+    "layout": [
+      {
+        "name": "save-bar-scroll-padding",
+        "value": "html:has(.savebar) { scroll-padding-bottom: 9rem }",
+        "purpose": "A passage moved to from the keyboard is never hidden under the sticky save bar."
+      },
+      {
+        "name": "save-bar-stack",
+        "value": "z-index 4 (masthead 5); position static at 45rem and below",
+        "purpose": "The save bar stays in view on desktop, sits in flow on phones."
+      },
+      {
+        "name": "governance-section",
+        "value": "padding-top 1rem; gap 0.75rem; lead max 72ch; form max 44rem; place column 14rem",
+        "purpose": "The rhythm of a document's governance pages."
+      },
+      {
+        "name": "search-bar",
+        "value": "field flex 1 1 28rem; field and action at min-height 2.25rem; align-items end; wraps",
+        "purpose": "One field and its action at one height; the button wraps beneath on phones."
+      },
+      {
+        "name": "catalogue-systems",
+        "value": "grid-template-columns: 15rem minmax(0, 1fr); column-gap 2rem; index sticky at top 3.5rem, max-height calc(100vh - 3.5rem - 1rem), overflow-y auto, overscroll contained",
+        "purpose": "The systems index on its own track beside the sheet; it scrolls itself to keep a followed entry in view."
+      },
+      {
+        "name": "catalogue-first-section",
+        "value": "padding-top 1rem",
+        "purpose": "A page's first governance section sits level with the index's find field."
+      },
+      {
+        "name": "sheet",
+        "value": "head gap 0.25rem; facts 7rem label column, gap 0.75rem, full column; description, facts and list items max 72ch",
+        "purpose": "A system, offering or journey sheet's rhythm."
+      },
+      {
+        "name": "versions-detail",
+        "value": "padding 0.5rem 1rem 1rem; inner tables max 62rem; put-back panel max 62ch",
+        "purpose": "An open catalogue version's detail row."
+      },
+      {
+        "name": "galley",
+        "value": "State column 15rem (9rem at 45rem and below); every galley cell, head and detail padding-inline 0.5rem; group head padding-top 1.5rem",
+        "purpose": "The band keeps a margin and the focus ring clears the first glyph."
+      },
+      {
+        "name": "suggestion-detail",
+        "value": "grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap 1.5rem; one column below 60rem; quote and rationale max 64ch",
+        "purpose": "An open suggestion: the source beside the decision."
+      },
+      {
+        "name": "form-grid",
+        "value": "grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap 0.75rem 1rem; align-items end; text areas and lines fields span 1 / -1",
+        "purpose": "The catalogue editors' fields."
+      },
+      {
+        "name": "draft-step",
+        "value": "margin-top 0.75rem; withdraw panel shape, max 62ch",
+        "purpose": "A draft's rename and remove steps under its head."
+      },
+      {
+        "name": "edit-panel",
+        "value": "margin-top 0.75rem; padding 0.75rem 1rem 1rem; gap 0.75rem; background stock-band; border-bottom 2px heavy; lead max 62ch; actions gap 0.75rem 1rem; inputs on stock",
+        "purpose": "A hand edit opened in place under what opened it; a sheet's sections step aside while it is edited."
+      },
+      {
+        "name": "row-actions",
+        "value": "flex wrap; gap 0.25rem 1rem; margin-top 0.25rem",
+        "purpose": "A row's own text buttons (Change, Remove; Compare, The evidence) under its text."
+      },
+      {
+        "name": "diff",
+        "value": "margin-top 0.75rem; Change column 15rem (auto at 45rem and below)",
+        "purpose": "The diff table under its counts."
+      },
+      {
+        "name": "samples",
+        "value": "result column 45% (auto at 45rem and below); open row and evidence row on stock-band, evidence row padding 0.5rem 1rem 1rem closing on a 2px heavy rule; evidence lists max 72ch, gap 0.75rem between systems, 0.5rem between quotes; try-a-requirement margin-top 1.5rem",
+        "purpose": "Check: the samples, their evidence and one requirement tried without saving."
+      },
+      {
+        "name": "publish",
+        "value": "consequence paragraphs gap 0.5rem, max 72ch; reason field max 44rem, input full width",
+        "purpose": "The consequence first, then the reason and the action."
+      },
+      {
+        "name": "catalogue-file-preview",
+        "value": "withdraw panel rules (2px heavy above and below), max-width none",
+        "purpose": "A brought-back file's diff at full column width before it replaces anything."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Solid ink action on notice screens only (sign-in, no access).",
+      "html": "<button class=\"ds-btn-primary\">Go to Requirement AI</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.5rem; padding: 0 1rem; border: 2px solid var(--ink, #16181d); border-radius: 2px; background: var(--ink, #16181d); color: var(--stock, #fbfbfa); font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; font-weight: 680; cursor: pointer; } .ds-btn-primary:hover { background: var(--stock, #fbfbfa); color: var(--ink, #16181d); } .ds-btn-primary:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Button",
+      "kind": "button",
+      "refersTo": "text-button",
+      "description": "A control that reads as a word in the line, still a 24px target.",
+      "html": "<button class=\"ds-text-button\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8\"/><path d=\"M21 3v5h-5\"/></svg>Refresh</button>",
+      "css": ".ds-text-button { display: inline-flex; align-items: center; gap: 0.25rem; min-height: 1.5rem; padding: 0 0.25rem; border: 0; background: none; color: var(--ink, #16181d); font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.8125rem; font-weight: 500; cursor: pointer; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.2em; } .ds-text-button:hover { text-decoration-thickness: 2px; } .ds-text-button:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-text-button:disabled { color: var(--ink-3, #686e78); text-decoration: none; cursor: progress; }"
+    },
+    {
+      "name": "Persona Select",
+      "kind": "input",
+      "refersTo": "select-persona",
+      "description": "The one framed field: hairline ink-3 border, 2px radius, inline chevron.",
+      "html": "<label class=\"ds-persona\"><span class=\"ds-persona__label\">Persona</span><select class=\"ds-persona__select\"><option>Amina Owner</option></select></label>",
+      "css": ".ds-persona { display: flex; align-items: center; gap: 0.5rem; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.8125rem; } .ds-persona__label { color: var(--ink-2, #474c55); } .ds-persona__select { min-height: 1.75rem; padding: 0 1.75rem 0 0.5rem; border: 1px solid var(--ink-3, #686e78); border-radius: 2px; appearance: none; background: var(--stock, #fbfbfa) url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2316181d' stroke-width='1.5'/%3E%3C/svg%3E\") no-repeat right 0.6rem center; color: var(--ink, #16181d); font: inherit; cursor: pointer; } .ds-persona__select:hover { border-color: var(--ink, #16181d); } .ds-persona__select:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; }"
+    },
+    {
+      "name": "Masthead",
+      "kind": "nav",
+      "refersTo": "masthead",
+      "description": "The running head of the book: product line, validity time, refresh, account; heavy rule under.",
+      "html": "<header class=\"ds-masthead\"><p class=\"ds-masthead__title\"><a href=\"#\">Requirement AI</a><span class=\"ds-masthead__dot\" aria-hidden=\"true\">·</span><a href=\"#\" class=\"ds-masthead__portal\">Knowledge portal</a></p><p class=\"ds-masthead__valid\">Valid as of <time>22:55, 2 Oct 2026</time></p></header>",
+      "css": ".ds-masthead { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1.5rem; padding: 0.5rem 1.5rem; border-bottom: 2px solid var(--rule-heavy, #16181d); background: var(--stock, #fbfbfa); font-family: var(--face, 'Archivo Variable', sans-serif); } .ds-masthead__title { display: flex; align-items: baseline; gap: 0.5rem; margin: 0 auto 0 0; font-stretch: 72%; } .ds-masthead__title a { color: var(--ink-2, #474c55); text-decoration-color: var(--rule, #cfd2d6); text-underline-offset: 0.2em; } .ds-masthead__title .ds-masthead__portal { color: var(--ink, #16181d); font-size: 1.0625rem; font-weight: 680; text-decoration: none; } .ds-masthead__title a:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-masthead__dot { color: var(--ink-3, #686e78); } .ds-masthead__valid { margin: 0; color: var(--ink-2, #474c55); font-size: 0.8125rem; } .ds-masthead__valid time { color: var(--ink, #16181d); font-weight: 500; }"
+    },
+    {
+      "name": "Index Entry",
+      "kind": "nav",
+      "refersTo": "index-entry",
+      "description": "One entry in the index of tables: condensed number, title, count and proportional extent rule.",
+      "html": "<a href=\"#\" class=\"ds-index-entry\" aria-current=\"page\"><span class=\"ds-index-entry__number\" aria-hidden=\"true\">2</span><span class=\"ds-index-entry__title\">Architecture catalogue</span><span class=\"ds-index-entry__extent\"><span>31 systems</span><span class=\"ds-index-entry__track\"><span class=\"ds-index-entry__rule\" style=\"inline-size: 90%\"></span></span></span></a>",
+      "css": ".ds-index-entry { display: inline-grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 0.75rem; padding: 0.75rem 1rem 0.75rem 0; color: var(--ink, #16181d); text-decoration: none; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; } .ds-index-entry[aria-current='page'] { box-shadow: inset 0 -3px 0 var(--ink, #16181d); } .ds-index-entry:hover .ds-index-entry__title { text-decoration: underline; text-underline-offset: 0.2em; } .ds-index-entry:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-index-entry__number { grid-row: 1 / span 2; font-size: 2.25rem; font-stretch: 62%; font-weight: 820; line-height: 0.85; } .ds-index-entry__title { font-weight: 680; font-stretch: 88%; } .ds-index-entry__extent { display: flex; align-items: center; gap: 0.5rem; color: var(--ink-2, #474c55); font-size: 0.8125rem; } .ds-index-entry__track { display: block; inline-size: 7rem; } .ds-index-entry__rule { display: block; block-size: 3px; background: var(--ink, #16181d); transition: inline-size 400ms cubic-bezier(0.16, 1, 0.3, 1); }"
+    },
+    {
+      "name": "Numbered Table",
+      "kind": "custom",
+      "refersTo": "table-row",
+      "description": "The portal's one container: monumental number in the margin column, title, edition, ruled grid with rank by weight, reference marks, double-ruled notes, next-decision line.",
+      "html": "<section class=\"ds-tt\"><p class=\"ds-tt__number\" aria-hidden=\"true\">1</p><header class=\"ds-tt__head\"><h2 class=\"ds-tt__title\">Library</h2><p class=\"ds-tt__edition\">Edition of 2 Oct 2026 · 4 documents in service</p></header><div class=\"ds-tt__body\"><table class=\"ds-tt__grid\"><thead><tr><th>Document</th><th>Status</th><th class=\"ds-end\">Since</th></tr></thead><tbody><tr class=\"ds-row ds-row--delayed\"><th>Site survey checklist<sup class=\"ds-mark-wrap\"><a class=\"ds-mark\" href=\"#\">1</a></sup></th><td class=\"ds-status\">Extraction failed</td><td class=\"ds-end\">2 Oct 2026</td></tr><tr class=\"ds-row ds-row--due\"><th>Invoice discount display<span class=\"ds-secondary\" lang=\"ar\" dir=\"rtl\">عرض خصم الفاتورة</span></th><td class=\"ds-status\">Awaiting your review</td><td class=\"ds-end\">2 Oct 2026</td></tr><tr class=\"ds-row ds-row--past\"><th>Old policy</th><td class=\"ds-status\">Withdrawn</td><td class=\"ds-end\">1 Jan 2026</td></tr></tbody></table><ol class=\"ds-tt__notes\"><li class=\"ds-note\"><span class=\"ds-note__number\">1</span><span>Version 1 uploaded by Amina Owner on 2 Oct 2026.</span></li></ol><p class=\"ds-tt__next\"><a href=\"#\">2 documents await your review →</a></p></div></section>",
+      "css": ".ds-tt { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); column-gap: 1.5rem; padding-block: 3rem 2rem; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; line-height: 1.45; color: var(--ink, #16181d); font-variant-numeric: tabular-nums lining-nums; } .ds-tt__number { grid-row: 1 / span 2; justify-self: end; margin: 0; font-size: clamp(4rem, 3rem + 3vw, 5.75rem); font-stretch: 62%; font-weight: 820; line-height: 0.8; letter-spacing: -0.02em; } .ds-tt__head, .ds-tt__body { grid-column: 2; } .ds-tt__title { margin: 0; font-size: 1.625rem; font-stretch: 88%; font-weight: 680; line-height: 1.1; letter-spacing: -0.01em; } .ds-tt__edition { margin: 0.25rem 0 0; color: var(--ink-2, #474c55); } .ds-tt__grid { width: 100%; margin-top: 1rem; border-collapse: collapse; } .ds-tt__grid thead th { padding: 0 1rem 0.5rem 0; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; text-align: start; } .ds-tt__grid tbody th, .ds-tt__grid tbody td { padding: 0.5rem 1rem 0.5rem 0; border-bottom: 1px solid var(--rule-faint, #e4e5e7); font-weight: inherit; text-align: start; vertical-align: baseline; } .ds-tt__grid .ds-end { text-align: end; padding-right: 0; } .ds-row { transition: background-color 180ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-row:hover { background: var(--reference-wash, #e6eef8); } .ds-row--due th, .ds-row--due .ds-status { font-weight: 680; } .ds-row--delayed .ds-status { color: var(--disruption, #b3122b); font-weight: 680; } .ds-row--past { color: var(--ink-3, #686e78); } .ds-secondary { display: block; color: var(--ink-2, #474c55); font-size: 0.8125rem; font-weight: 400; font-family: 'Noto Sans Arabic', sans-serif; } .ds-mark-wrap { line-height: 0; } .ds-mark { padding: 0 0.15em; color: var(--reference, #1d5ca3); font-size: 0.6875rem; font-weight: 680; text-decoration: none; } .ds-mark:hover { background: var(--reference-wash, #e6eef8); } .ds-mark:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-tt__notes { display: grid; gap: 0.25rem; margin: 1.5rem 0 0; padding: 0.75rem 0 0; list-style: none; border-top: 3px double var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; } .ds-note { display: grid; grid-template-columns: 1.75rem minmax(0, 1fr); gap: 0.5rem; padding: 0.25rem 0.25rem 0.25rem 0; } .ds-note__number { color: var(--reference, #1d5ca3); font-weight: 680; text-align: end; } .ds-tt__next { margin: 1.5rem 0 0; font-size: 1.0625rem; font-weight: 680; } .ds-tt__next a { color: var(--reference, #1d5ca3); text-decoration-thickness: 1px; text-underline-offset: 0.2em; } .ds-tt__next a:hover { text-decoration-thickness: 2px; } .ds-tt__next a:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; }"
+    },
+    {
+      "name": "Totals",
+      "kind": "custom",
+      "refersTo": "totals",
+      "description": "The table's running summary of what is in force: label over a heavy rule, hairline rows, end-aligned values.",
+      "html": "<div class=\"ds-totals\"><p class=\"ds-totals__label\">In the edition in force</p><dl class=\"ds-totals__list\"><div class=\"ds-total\"><dt>Systems</dt><dd>31</dd></div><div class=\"ds-total\"><dt>Relationships</dt><dd>11</dd></div></dl></div>",
+      "css": ".ds-totals { max-width: 34rem; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; color: var(--ink, #16181d); font-variant-numeric: tabular-nums lining-nums; } .ds-totals__label { margin: 0; padding-bottom: 0.25rem; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; } .ds-totals__list { display: grid; margin: 0; } .ds-total { display: flex; justify-content: space-between; gap: 1rem; padding-block: 0.5rem; border-bottom: 1px solid var(--rule-faint, #e4e5e7); } .ds-total dd { margin: 0; font-weight: 500; text-align: end; }"
+    },
+    {
+      "name": "Action Button",
+      "kind": "button",
+      "refersTo": "action-button",
+      "description": "The commit action outside notice screens (Save review, Withdraw it, Upload for review); secondary variant for Approve and publish; disabled on the stock band.",
+      "html": "<div class=\"ds-actions\"><button class=\"ds-action\">Save review</button><button class=\"ds-action ds-action--secondary\">Approve and publish</button><button class=\"ds-action\" disabled>Withdraw it</button></div>",
+      "css": ".ds-actions { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; } .ds-action { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.25rem; padding: 0 1rem; border: 2px solid var(--ink, #16181d); border-radius: 2px; background: var(--ink, #16181d); color: var(--stock, #fbfbfa); font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; font-weight: 680; cursor: pointer; } .ds-action:hover:not(:disabled) { background: var(--stock, #fbfbfa); color: var(--ink, #16181d); } .ds-action--secondary { background: var(--stock, #fbfbfa); color: var(--ink, #16181d); } .ds-action--secondary:hover:not(:disabled) { background: var(--ink, #16181d); color: var(--stock, #fbfbfa); } .ds-action:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-action:disabled { border-color: var(--rule, #cfd2d6); background: var(--stock-band, #f1f1ee); color: var(--ink-3, #686e78); cursor: not-allowed; }"
+    },
+    {
+      "name": "Field",
+      "kind": "input",
+      "refersTo": "field-input",
+      "description": "Label in the label style above a 1px ink-3 framed input with a 2px radius; hover darkens to ink. Checkbox takes the ink accent.",
+      "html": "<div class=\"ds-form\"><label class=\"ds-field\"><span class=\"ds-field__label\">Title</span><input class=\"ds-field__input\" value=\"Invoice discount display\"></label><label class=\"ds-check\"><input type=\"checkbox\" checked> Include in the publication</label></div>",
+      "css": ".ds-form { display: grid; gap: 1rem; max-width: 30rem; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; color: var(--ink, #16181d); } .ds-field { display: grid; gap: 0.25rem; } .ds-field__label { color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; letter-spacing: 0.01em; } .ds-field__input { min-height: 2rem; padding: 0.25rem 0.5rem; border: 1px solid var(--ink-3, #686e78); border-radius: 2px; background: var(--stock, #fbfbfa); color: inherit; font: inherit; line-height: 1.45; } .ds-field__input:hover { border-color: var(--ink, #16181d); } .ds-field__input:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-check { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 1.5rem; font-weight: 500; cursor: pointer; } .ds-check input { width: 1.125rem; height: 1.125rem; margin: 0; accent-color: var(--ink, #16181d); } .ds-check input:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; }"
+    },
+    {
+      "name": "Filter Strip and Keys Line",
+      "kind": "chip",
+      "refersTo": "filter",
+      "description": "Words with counts, not chips: pressed is bold ink with the inset 3px ink bar (aria-pressed); the keys line sets kbd caps in a ruled outline.",
+      "html": "<div class=\"ds-filters\"><div class=\"ds-filters__set\" role=\"group\" aria-label=\"Show passages\"><button class=\"ds-filter\" aria-pressed=\"true\">All <span class=\"ds-filter__count\">412</span></button><button class=\"ds-filter\" aria-pressed=\"false\">Changed <span class=\"ds-filter__count\">18</span></button><button class=\"ds-filter\" aria-pressed=\"false\">Flagged <span class=\"ds-filter__count\">3</span></button></div><p class=\"ds-keys\">Keys on a passage: <kbd>j</kbd>/<kbd>k</kbd> move, <kbd>Enter</kbd> open, <kbd>Esc</kbd> close.</p></div>",
+      "css": ".ds-filters { display: grid; gap: 0.75rem; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; } .ds-filters__set { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; } .ds-filter { min-height: 2rem; padding: 0 0.25rem; border: 0; background: none; color: var(--ink-2, #474c55); font: inherit; font-weight: 500; cursor: pointer; } .ds-filter:hover { color: var(--ink, #16181d); } .ds-filter:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-filter[aria-pressed='true'] { color: var(--ink, #16181d); font-weight: 680; box-shadow: inset 0 -3px 0 var(--ink, #16181d); } .ds-filter__count { margin-left: 0.25rem; font-weight: 400; font-variant-numeric: tabular-nums lining-nums; } .ds-keys { margin: 0; color: var(--ink-2, #474c55); font-size: 0.8125rem; } .ds-keys kbd { padding: 0 0.3em; border: 1px solid var(--rule, #cfd2d6); border-radius: 2px; font-family: inherit; font-size: 0.75rem; font-weight: 500; }"
+    },
+    {
+      "name": "Passage Table",
+      "kind": "custom",
+      "refersTo": "passage-row",
+      "description": "Aligned passage rows: comparison text in ink 2 against working text in ink; edited status with the blue 'e' edit mark (a 24px button, the scoped exception to the reference-mark grammar); open row on the stock band; excluded in ink 3 with its reason.",
+      "html": "<table class=\"ds-passages\"><thead><tr><th class=\"ds-p-no\">No.</th><th>In service · version 2</th><th>Working copy · version 3</th><th class=\"ds-p-status\">Status</th></tr></thead><tbody><tr class=\"ds-passage ds-passage--edited is-open\" tabindex=\"0\"><td class=\"ds-end\">14</td><td class=\"ds-basis\">Discounts show on the invoice total.</td><td>Discounts show per line and on the invoice total.</td><td><span class=\"ds-status\">Edited</span><sup class=\"ds-mark-wrap\"><button class=\"ds-edit-mark\" aria-label=\"Show what passage 14 was edited from\">e</button></sup></td></tr><tr class=\"ds-detail\"><td colspan=\"4\"><span class=\"ds-detail__label\">Edited from</span><br>Discounts show per line and on the invoice total</td></tr><tr class=\"ds-passage ds-passage--excluded\"><td class=\"ds-end\">15</td><td class=\"ds-basis\">Prices include VAT.</td><td>Prices include VAT.<span class=\"ds-reason\">Excluded: duplicated in the tax policy</span></td><td><span class=\"ds-status\">Excluded</span></td></tr></tbody></table>",
+      "css": ".ds-passages { width: 100%; border-collapse: collapse; table-layout: fixed; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; line-height: 1.45; color: var(--ink, #16181d); font-variant-numeric: tabular-nums lining-nums; } .ds-passages thead th { padding: 0 1rem 0.5rem 0; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; text-align: start; } .ds-p-no { width: 3.5rem; } .ds-p-status { width: 10rem; } .ds-passages tbody td { padding: 0.5rem 1rem 0.5rem 0; border-bottom: 1px solid var(--rule-faint, #e4e5e7); vertical-align: top; overflow-wrap: anywhere; } .ds-end { text-align: end; } .ds-basis { color: var(--ink-2, #474c55); } .ds-passage { cursor: pointer; transition: background-color 180ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-passage:hover, .ds-passage.is-open, .ds-detail { background: var(--stock-band, #f1f1ee); } .ds-passage:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: -2px; } .ds-passage--edited .ds-status { font-weight: 680; } .ds-passage--excluded td:nth-child(3), .ds-passage--excluded .ds-status { color: var(--ink-3, #686e78); } .ds-reason { display: block; margin-top: 0.25rem; color: var(--ink-2, #474c55); font-size: 0.8125rem; } .ds-mark-wrap { line-height: 1; } .ds-edit-mark { display: inline-grid; place-items: center; min-width: 1.5rem; min-height: 1.5rem; padding: 0 0.15em; border: 0; background: none; color: var(--reference, #1d5ca3); font: inherit; font-size: 0.6875rem; font-weight: 680; vertical-align: top; cursor: pointer; } .ds-edit-mark:hover { background: var(--reference-wash, #e6eef8); } .ds-edit-mark:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-detail td { padding: 0.5rem 1rem 1rem 3.5rem; border-bottom: 2px solid var(--rule-heavy, #16181d); } .ds-detail__label { color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; }"
+    },
+    {
+      "name": "Change Notice",
+      "kind": "custom",
+      "refersTo": "change-notice",
+      "description": "Counts first: label-style heading over a heavy rule, a wrapping row of label + fixed 4ch end-aligned counts, blocking in red.",
+      "html": "<section class=\"ds-notice\"><h2 class=\"ds-notice__title\">Changes from version 2</h2><dl class=\"ds-notice__grid\"><div class=\"ds-notice__item\"><dt>Edited</dt><dd>18</dd></div><div class=\"ds-notice__item\"><dt>New</dt><dd>4</dd></div><div class=\"ds-notice__item is-blocking\"><dt>Blocking</dt><dd>1</dd></div></dl></section>",
+      "css": ".ds-notice { font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; color: var(--ink, #16181d); font-variant-numeric: tabular-nums lining-nums; } .ds-notice__title { margin: 0; padding-bottom: 0.25rem; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; } .ds-notice__grid { display: flex; flex-wrap: wrap; gap: 0 2rem; margin: 0; padding-block: 0.5rem; border-bottom: 1px solid var(--rule-faint, #e4e5e7); } .ds-notice__item { display: grid; grid-template-columns: auto 4ch; align-items: baseline; gap: 0.5rem; padding-block: 0.25rem; white-space: nowrap; } .ds-notice__item dd { margin: 0; font-weight: 680; text-align: end; } .ds-notice__item.is-blocking dt, .ds-notice__item.is-blocking dd { color: var(--disruption, #b3122b); font-weight: 680; }"
+    },
+    {
+      "name": "Save Bar",
+      "kind": "custom",
+      "refersTo": "save-bar",
+      "description": "The review's sticky foot: heavy rule on top, unsaved count, summary field, actions, the reason it waits. Static on phones.",
+      "html": "<form class=\"ds-savebar\"><p class=\"ds-savebar__state\"><strong>3 unsaved changes</strong></p><label class=\"ds-savebar__summary\"><span class=\"ds-savebar__label\">Review summary</span><input class=\"ds-savebar__input\" placeholder=\"What you checked, and what you changed\"></label><button class=\"ds-savebar__btn\">Save review</button><button class=\"ds-savebar__btn ds-savebar__btn--secondary\" disabled>Approve and publish</button><p class=\"ds-savebar__why\">Save the review before approving it.</p></form>",
+      "css": ".ds-savebar { position: sticky; bottom: 0; z-index: 4; display: flex; flex-wrap: wrap; align-items: end; gap: 0.5rem 1rem; padding-block: 0.75rem; border-top: 2px solid var(--rule-heavy, #16181d); background: var(--stock, #fbfbfa); font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; color: var(--ink, #16181d); } .ds-savebar__state, .ds-savebar__why { flex-basis: 100%; margin: 0; color: var(--ink-2, #474c55); font-size: 0.8125rem; } .ds-savebar__state strong { color: var(--ink, #16181d); } .ds-savebar__summary { flex: 1 1 20rem; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0.5rem; } .ds-savebar__label { color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; } .ds-savebar__input { min-height: 2rem; padding: 0.25rem 0.5rem; border: 1px solid var(--ink-3, #686e78); border-radius: 2px; background: var(--stock, #fbfbfa); font: inherit; } .ds-savebar__input:hover { border-color: var(--ink, #16181d); } .ds-savebar__input:focus-visible, .ds-savebar__btn:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-savebar__btn { min-height: 2.25rem; padding: 0 1rem; border: 2px solid var(--ink, #16181d); border-radius: 2px; background: var(--ink, #16181d); color: var(--stock, #fbfbfa); font: inherit; font-weight: 680; cursor: pointer; } .ds-savebar__btn--secondary { background: var(--stock, #fbfbfa); color: var(--ink, #16181d); } .ds-savebar__btn:disabled { border-color: var(--rule, #cfd2d6); background: var(--stock-band, #f1f1ee); color: var(--ink-3, #686e78); cursor: not-allowed; }"
+    },
+    {
+      "name": "Document Sub-index",
+      "kind": "nav",
+      "refersTo": "subindex-link",
+      "description": "The document's own pages under its head: medium ink-2 links, current in bold ink with the inset 3px ink bar, a 1px rule under the strip; Review carries the unsaved count. The catalogue uses the same strip, 'This catalogue': Systems, Domains, Offerings, Journeys, Versions (All versions while another version is read).",
+      "html": "<nav class=\"ds-subindex\" aria-label=\"This document\"><ul class=\"ds-subindex__list\"><li><a href=\"#\" class=\"ds-subindex__link\">Review<span class=\"ds-subindex__count\">&nbsp;· 3 unsaved</span></a></li><li><a href=\"#\" class=\"ds-subindex__link\" aria-current=\"page\">Search versions</a></li><li><a href=\"#\" class=\"ds-subindex__link\">Who cites it</a></li><li><a href=\"#\" class=\"ds-subindex__link\">Ownership</a></li></ul></nav>",
+      "css": ".ds-subindex { border-bottom: 1px solid var(--rule, #cfd2d6); font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; } .ds-subindex__list { display: flex; flex-wrap: wrap; gap: 0 1.5rem; margin: 0; padding: 0; list-style: none; } .ds-subindex__link { display: inline-flex; align-items: center; min-height: 2.25rem; color: var(--ink-2, #474c55); font-weight: 500; text-decoration: none; } .ds-subindex__link:hover { color: var(--ink, #16181d); } .ds-subindex__link:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-subindex__link[aria-current='page'] { color: var(--ink, #16181d); font-weight: 680; box-shadow: inset 0 -3px 0 var(--ink, #16181d); } .ds-subindex__count { font-weight: 400; }"
+    },
+    {
+      "name": "Governance Section and Table",
+      "kind": "custom",
+      "refersTo": "govtable-row",
+      "description": "Lead-size bold title on a heavy rule, an ink-2 lead, then a ruled table whose secondary facts ride as ink-2 meta lines in kept columns.",
+      "html": "<section class=\"ds-govsection\"><h2 class=\"ds-govsection__title\">Search versions</h2><p class=\"ds-govsection__lead\">Each approval is indexed for search as a version. Requirement work cites the one in service.</p><table class=\"ds-govtable\"><thead><tr><th>Approved</th><th>State</th><th>Source</th></tr></thead><tbody><tr class=\"ds-row--due\"><th>3 Oct 2026<span class=\"ds-govtable__by\">Amina Owner</span></th><td><span class=\"ds-status\">Built, awaiting activation</span><span class=\"ds-govtable__by\">Table-aware · 9 indexed passages</span></td><td>version 1</td></tr><tr><th>1 Oct 2026<span class=\"ds-govtable__by\">Amina Owner</span></th><td><span class=\"ds-status\">In service</span><span class=\"ds-govtable__by\">Passages · 4 indexed passages</span></td><td>version 1</td></tr><tr class=\"ds-row--past\"><th>2 Sep 2026<span class=\"ds-govtable__by\">Ravi Reviewer</span></th><td><span class=\"ds-status\">Replaced</span><span class=\"ds-govtable__by\">Passages · 3 indexed passages</span></td><td>version 0</td></tr></tbody></table></section>",
+      "css": ".ds-govsection { display: grid; gap: 0.75rem; padding-top: 1rem; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; line-height: 1.45; color: var(--ink, #16181d); font-variant-numeric: tabular-nums lining-nums; } .ds-govsection__title { margin: 0; padding-bottom: 0.25rem; border-bottom: 2px solid var(--rule-heavy, #16181d); font-size: 1.0625rem; font-weight: 680; } .ds-govsection__lead { margin: 0; max-width: 72ch; color: var(--ink-2, #474c55); } .ds-govtable { width: 100%; border-collapse: collapse; } .ds-govtable thead th { padding: 0 1rem 0.5rem 0; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; text-align: start; } .ds-govtable tbody th, .ds-govtable tbody td { padding: 0.5rem 1rem 0.5rem 0; border-bottom: 1px solid var(--rule-faint, #e4e5e7); font-weight: inherit; text-align: start; vertical-align: top; overflow-wrap: anywhere; } .ds-govtable__by { display: block; color: var(--ink-2, #474c55); font-size: 0.8125rem; font-weight: 400; } .ds-row--due th, .ds-row--due .ds-status { font-weight: 680; } .ds-row--past { color: var(--ink-3, #686e78); } .ds-row--past .ds-govtable__by { color: var(--ink-3, #686e78); }"
+    },
+    {
+      "name": "Search Bar and Results",
+      "kind": "input",
+      "refersTo": "search-field",
+      "description": "One field and its action at 2.25rem; exact passages best first, the surrounding text opening in place on the stock band, the source as a body link with a secondary place line.",
+      "html": "<div class=\"ds-search\"><form class=\"ds-searchbar\" role=\"search\"><label class=\"ds-searchbar__field\"><span class=\"ds-searchbar__label\">What are you looking for?</span><input type=\"search\" class=\"ds-searchbar__input\" value=\"coverage before quoting\"></label><button class=\"ds-searchbar__btn\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.3-4.3\"/></svg>Search</button></form><p class=\"ds-search__count\">7 passages from 5 documents, best first.</p><table class=\"ds-results\"><thead><tr><th>Passage</th><th>Cited from</th></tr></thead><tbody><tr><th class=\"ds-results__passage\">Confirm XGPON coverage at the customer's address before quoting. <button class=\"ds-results__toggle\" aria-expanded=\"true\">Hide the surrounding text</button><span class=\"ds-results__context\">Line 1 # Ordering a business fibre bundle. Line 2 Confirm XGPON coverage at the customer's address before quoting. Line 3 Check the site has a free optical port.</span></th><td><a href=\"#\">Bundle ordering procedure</a><span class=\"ds-results__by\">version 1 · Heading at line 1 › Line 2</span></td></tr></tbody></table></div>",
+      "css": ".ds-search { font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; line-height: 1.45; color: var(--ink, #16181d); } .ds-searchbar { display: flex; flex-wrap: wrap; align-items: end; gap: 0.75rem; } .ds-searchbar__field { flex: 1 1 28rem; display: grid; gap: 0.25rem; } .ds-searchbar__label { color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; letter-spacing: 0.01em; } .ds-searchbar__input { width: 100%; min-height: 2.25rem; padding: 0.25rem 0.5rem; border: 1px solid var(--ink-3, #686e78); border-radius: 2px; background: var(--stock, #fbfbfa); color: inherit; font: inherit; } .ds-searchbar__input:hover { border-color: var(--ink, #16181d); } .ds-searchbar__btn { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.25rem; padding: 0 1rem; border: 2px solid var(--ink, #16181d); border-radius: 2px; background: var(--ink, #16181d); color: var(--stock, #fbfbfa); font: inherit; font-weight: 680; cursor: pointer; } .ds-searchbar__btn:hover { background: var(--stock, #fbfbfa); color: var(--ink, #16181d); } .ds-searchbar__input:focus-visible, .ds-searchbar__btn:focus-visible, .ds-results__toggle:focus-visible, .ds-results a:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-search__count { margin: 1rem 0 0; color: var(--ink-2, #474c55); } .ds-results { width: 100%; margin-top: 0.75rem; border-collapse: collapse; } .ds-results thead th { padding: 0 1rem 0.5rem 0; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; text-align: start; } .ds-results tbody th, .ds-results tbody td { padding: 0.5rem 1rem 0.5rem 0; border-bottom: 1px solid var(--rule-faint, #e4e5e7); font-weight: inherit; text-align: start; vertical-align: top; overflow-wrap: anywhere; } .ds-results__passage { max-width: 64ch; } .ds-results__toggle { min-height: 1.5rem; margin-top: 0.5rem; padding: 0 0.25rem; border: 0; background: none; color: var(--ink, #16181d); font: inherit; font-size: 0.8125rem; font-weight: 500; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.2em; cursor: pointer; } .ds-results__toggle:hover { text-decoration-thickness: 2px; } .ds-results__context { display: block; margin-top: 0.5rem; padding: 0.5rem 0.75rem; background: var(--stock-band, #f1f1ee); color: var(--ink-2, #474c55); font-size: 0.8125rem; } .ds-results a { color: var(--reference, #1d5ca3); text-decoration-thickness: 1px; text-underline-offset: 0.2em; } .ds-results a:hover { text-decoration-thickness: 2px; } .ds-results__by { display: block; color: var(--ink-2, #474c55); font-size: 0.8125rem; }"
+    },
+    {
+      "name": "Choices",
+      "kind": "input",
+      "refersTo": "field-label",
+      "description": "A borderless, unpadded fieldset of radio rows in the checkbox style, legend in the label style.",
+      "html": "<form class=\"ds-handover\"><fieldset class=\"ds-choices\"><legend class=\"ds-choices__legend\">New owner</legend><label class=\"ds-choice\"><input type=\"radio\" name=\"owner\"> Ravi Reviewer<span class=\"ds-choice__secondary\">&nbsp;· ravi.reviewer@example.test</span></label><label class=\"ds-choice\"><input type=\"radio\" name=\"owner\" checked> Amina Owner</label></fieldset></form>",
+      "css": ".ds-handover { max-width: 44rem; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; color: var(--ink, #16181d); } .ds-choices { display: grid; gap: 0.5rem; margin: 0; padding: 0; border: 0; } .ds-choices__legend { padding: 0; margin-bottom: 0.25rem; color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; letter-spacing: 0.01em; } .ds-choice { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 1.5rem; font-weight: 500; cursor: pointer; } .ds-choice input { width: 1.125rem; height: 1.125rem; margin: 0; accent-color: var(--ink, #16181d); } .ds-choice input:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-choice__secondary { color: var(--ink-2, #474c55); font-weight: 400; }"
+    },
+    {
+      "name": "Systems Index",
+      "kind": "nav",
+      "refersTo": "sysindex-link",
+      "description": "The catalogue's sticky systems index: a find field answered by a count, label-style group heads on heavy rules, entries on hairlines, the current entry bold with the inset 3px ink bar, and a 'which name matched' line while finding.",
+      "html": "<nav class=\"ds-sysindex\" aria-label=\"Systems in this version\"><label class=\"ds-sysindex__find\"><span class=\"ds-sysindex__label\">Find a system</span><input type=\"search\" value=\"order\" placeholder=\"Name, alias or phrase\"></label><p class=\"ds-sysindex__count\">2 systems known by “order”</p><section><h3 class=\"ds-sysindex__place\">Order orchestration › Fixed line</h3><ul class=\"ds-sysindex__list\"><li><a href=\"#\" class=\"ds-sysindex__link\" aria-current=\"page\">CWOM<span class=\"ds-sysindex__why\">Also called fixed order orchestration</span></a></li><li><a href=\"#\" class=\"ds-sysindex__link\">Milestone tracker<span class=\"ds-sysindex__why\">Matched by “order milestones”</span></a></li></ul></section></nav>",
+      "css": ".ds-sysindex { width: 15rem; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; color: var(--ink, #16181d); } .ds-sysindex__find { display: grid; gap: 0.25rem; } .ds-sysindex__label { color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; letter-spacing: 0.01em; } .ds-sysindex__find input { min-height: 2rem; padding: 0.25rem 0.5rem; border: 1px solid var(--ink-3, #686e78); border-radius: 2px; background: var(--stock, #fbfbfa); font: inherit; color: inherit; } .ds-sysindex__find input:hover { border-color: var(--ink, #16181d); } .ds-sysindex__find input:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-sysindex__count { margin: 0.5rem 0 0; color: var(--ink-2, #474c55); font-size: 0.8125rem; } .ds-sysindex__place { margin: 1rem 0 0; padding-bottom: 0.25rem; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; } .ds-sysindex__list { margin: 0; padding: 0; list-style: none; } .ds-sysindex__list li { border-bottom: 1px solid var(--rule-faint, #e4e5e7); } .ds-sysindex__link { display: flex; flex-direction: column; justify-content: center; min-height: 2rem; padding-block: 0.25rem; color: var(--ink, #16181d); text-decoration: none; } .ds-sysindex__link:hover { text-decoration: underline; text-underline-offset: 0.2em; } .ds-sysindex__link:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-sysindex__link[aria-current='page'] { font-weight: 680; box-shadow: inset 0 -3px 0 var(--ink, #16181d); } .ds-sysindex__why { color: var(--ink-2, #474c55); font-size: 0.8125rem; font-weight: 400; }"
+    },
+    {
+      "name": "System Sheet",
+      "kind": "custom",
+      "refersTo": "sheet-title",
+      "description": "One system's sheet: trail with the way back, title, Arabic line under the name, facts on a heavy rule then hairlines, and connections read as sentences naming the sheet's system, the row you came from lit.",
+      "html": "<article class=\"ds-sheet\"><p class=\"ds-sheet__trail\"><button type=\"button\" class=\"ds-sheet__back\">← Back to RTF</button><a href=\"#\">All systems and connections</a></p><h2 class=\"ds-sheet__title\">CWOM</h2><p class=\"ds-sheet__arabic\" lang=\"ar\" dir=\"rtl\">إدارة أوامر العمل</p><dl class=\"ds-sheet__facts\"><div><dt>Also called</dt><dd>fixed order orchestration</dd></div><div><dt>Sits in</dt><dd><a href=\"#\">Order orchestration</a></dd></div></dl><section><h3 class=\"ds-sheet__section\">Used by <span class=\"ds-sheet__count\">1</span></h3><table class=\"ds-sheet__table\"><thead><tr><th scope=\"col\">System</th><th scope=\"col\">For what</th></tr></thead><tbody><tr class=\"is-lit\"><th scope=\"row\"><a href=\"#\">RTF</a><span class=\"ds-sheet__how\">Orchestrates CWOM</span></th><td>RTF translates relevant orders into the fixed orchestration format.</td></tr></tbody></table></section></article>",
+      "css": ".ds-sheet { display: grid; gap: 0.25rem; max-width: 46rem; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; line-height: 1.45; color: var(--ink, #16181d); } .ds-sheet a { color: var(--reference, #1d5ca3); } .ds-sheet a:focus-visible, .ds-sheet__back:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-sheet__trail { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 1rem; margin: 0 0 0.5rem; font-size: 0.8125rem; } .ds-sheet__back { min-height: 1.5rem; padding: 0 0.25rem; border: 0; background: none; font: inherit; font-weight: 500; color: var(--ink, #16181d); text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; } .ds-sheet__back:hover { text-decoration-thickness: 2px; } .ds-sheet__title { margin: 0; font-size: 1.625rem; font-stretch: 88%; font-weight: 680; line-height: 1.1; } .ds-sheet__arabic { margin: 0; color: var(--ink-2, #474c55); font-family: 'Noto Sans Arabic', sans-serif; text-align: left; } .ds-sheet__facts { display: grid; margin: 0.75rem 0 0; } .ds-sheet__facts > div { display: grid; grid-template-columns: 7rem minmax(0, 1fr); gap: 0.75rem; padding-block: 0.25rem; border-bottom: 1px solid var(--rule-faint, #e4e5e7); } .ds-sheet__facts > div:first-child { border-top: 2px solid var(--rule-heavy, #16181d); } .ds-sheet__facts dt { color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; } .ds-sheet__facts dd { margin: 0; } .ds-sheet__section { margin: 1rem 0 0; padding-bottom: 0.25rem; border-bottom: 2px solid var(--rule-heavy, #16181d); font-size: 1.0625rem; font-weight: 680; } .ds-sheet__count { color: var(--ink-2, #474c55); font-weight: 400; } .ds-sheet__table { width: 100%; margin-top: 0.75rem; border-collapse: collapse; } .ds-sheet__table thead th { padding: 0 1rem 0.25rem 0; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; text-align: left; } .ds-sheet__table tbody th, .ds-sheet__table td { padding: 0.5rem 1rem 0.5rem 0; border-bottom: 1px solid var(--rule-faint, #e4e5e7); font-weight: 400; text-align: left; vertical-align: top; transition: background-color 180ms; } .ds-sheet__table tr.is-lit > * { background: var(--reference-wash, #e6eef8); } .ds-sheet__how { display: block; color: var(--ink-2, #474c55); font-size: 0.8125rem; }"
+    },
+    {
+      "name": "Journey Timetable",
+      "kind": "custom",
+      "refersTo": "steps-phase-head",
+      "description": "A journey's steps as a timetable: end-aligned No., phase group heads in the label style on a 1px rule, 'Back to <phase>' when a phase returns, and 'Then …' only when a step does not simply continue.",
+      "html": "<table class=\"ds-steps\"><thead><tr><th scope=\"col\" class=\"ds-steps__no\">No.</th><th scope=\"col\">Step</th><th scope=\"col\">Performed by</th></tr></thead><tbody><tr class=\"ds-steps__phase\"><th scope=\"colgroup\" colspan=\"3\">Feasibility</th></tr><tr><th scope=\"row\" class=\"ds-steps__no\">20</th><td><span class=\"ds-steps__name\">Check coverage</span><span class=\"ds-steps__by\">Then 30 if Covered; 80 if Not covered</span></td><td><a href=\"#\">GIS</a></td></tr></tbody><tbody><tr class=\"ds-steps__phase\"><th scope=\"colgroup\" colspan=\"3\">Back to feasibility</th></tr><tr><th scope=\"row\" class=\"ds-steps__no\">80</th><td><span class=\"ds-steps__name\">Offer an alternative</span><span class=\"ds-steps__by\">Seen by the customer</span></td><td><a href=\"#\">CBCM</a><span class=\"ds-steps__by\">with <a href=\"#\">CWOM</a></span></td></tr></tbody></table>",
+      "css": ".ds-steps { width: 100%; border-collapse: collapse; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; line-height: 1.45; font-variant-numeric: tabular-nums lining-nums; color: var(--ink, #16181d); } .ds-steps a { color: var(--reference, #1d5ca3); } .ds-steps a:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-steps thead th { padding: 0 1rem 0.25rem 0; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; text-align: left; } .ds-steps tbody th, .ds-steps td { padding: 0.5rem 1rem 0.5rem 0; border-bottom: 1px solid var(--rule-faint, #e4e5e7); font-weight: 400; text-align: left; vertical-align: top; } .ds-steps .ds-steps__no { width: 3.5rem; text-align: end; } .ds-steps .ds-steps__phase th { padding: 1rem 0 0.25rem; border-bottom: 1px solid var(--rule, #cfd2d6); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; } .ds-steps__name { font-weight: 500; } .ds-steps__by { display: block; color: var(--ink-2, #474c55); font-size: 0.8125rem; }"
+    },
+    {
+      "name": "Catalogue Versions",
+      "kind": "custom",
+      "refersTo": "version-detail",
+      "description": "Versions ranked by weight; a text-button disclosure opens a stock-band detail row in place, closing on a heavy rule, with file downloads, history and (on a replaced version) the put-back panel.",
+      "html": "<table class=\"ds-versions\"><thead><tr><th scope=\"col\">Version</th><th scope=\"col\">State</th><th scope=\"col\"><span hidden>Details</span></th></tr></thead><tbody><tr class=\"ds-due\"><th scope=\"row\"><a href=\"#\">October integration update</a><span class=\"ds-versions__by\">31 systems · 13 connections · 1 offering · 1 journey</span></th><td><span class=\"ds-versions__state\">In preparation</span><span class=\"ds-versions__by\">Started by Amina Owner · revision 2</span></td><td class=\"ds-end\"><button type=\"button\" class=\"ds-versions__toggle\" aria-expanded=\"false\">› History and files</button></td></tr><tr class=\"ds-past is-open\"><th scope=\"row\"><a href=\"#\">Initial catalogue</a><span class=\"ds-versions__by\">31 systems · 11 connections</span></th><td><span class=\"ds-versions__state\">Replaced</span><span class=\"ds-versions__by\">Published 1 Jan 2026 by the platform · revision 1</span></td><td class=\"ds-end\"><button type=\"button\" class=\"ds-versions__toggle\" aria-expanded=\"true\">⌄ History, files, put back</button></td></tr><tr class=\"ds-versions__detail\"><td colspan=\"3\"><span class=\"ds-versions__label\">Its catalogue file:</span> <button type=\"button\" class=\"ds-versions__toggle\">Excel</button> <button type=\"button\" class=\"ds-versions__toggle\">YAML</button> <button type=\"button\" class=\"ds-versions__toggle\">JSON</button></td></tr></tbody></table>",
+      "css": ".ds-versions { width: 100%; border-collapse: collapse; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; line-height: 1.45; color: var(--ink, #16181d); } .ds-versions a { color: var(--reference, #1d5ca3); } .ds-versions thead th { padding: 0 1rem 0.25rem 0; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; text-align: left; } .ds-versions tbody th, .ds-versions td { padding: 0.5rem 1rem 0.5rem 0; border-bottom: 1px solid var(--rule-faint, #e4e5e7); font-weight: 400; text-align: left; vertical-align: top; } .ds-versions .ds-end { text-align: end; } .ds-versions .ds-due th, .ds-versions .ds-due .ds-versions__state { font-weight: 680; } .ds-versions .ds-past, .ds-versions .ds-past a, .ds-versions .ds-past .ds-versions__by { color: var(--ink-3, #686e78); } .ds-versions .is-open > * { background: var(--stock-band, #f1f1ee); } .ds-versions__by { display: block; color: var(--ink-2, #474c55); font-size: 0.8125rem; font-weight: 400; } .ds-versions__toggle { min-height: 1.5rem; padding: 0 0.25rem; border: 0; background: none; font: inherit; font-size: 0.8125rem; font-weight: 500; color: var(--ink, #16181d); text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; } .ds-versions__toggle:hover { text-decoration-thickness: 2px; } .ds-versions__toggle:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-versions .ds-versions__detail td { padding: 0.5rem 1rem 1rem; border-bottom: 2px solid var(--rule-heavy, #16181d); background: var(--stock-band, #f1f1ee); } .ds-versions__label { color: var(--ink-2, #474c55); font-size: 0.8125rem; }"
+    },
+    {
+      "name": "Galley",
+      "kind": "custom",
+      "refersTo": "galley-head",
+      "description": "A draft's suggestions in one table, grouped under system heads with a tally and group actions; ranked by weight; the next decision at the foot as a question.",
+      "html": "<table class=\"ds-galley\"><thead><tr><th scope=\"col\">Change</th><th scope=\"col\" class=\"ds-galley__state\">State</th></tr></thead><tbody><tr class=\"ds-galley__head\"><th scope=\"colgroup\" colspan=\"2\"><span class=\"ds-galley__title\"><span class=\"ds-galley__new\">New system</span> Order Hub</span><span class=\"ds-galley__tally\">9 waiting</span><span class=\"ds-galley__actions\"><button type=\"button\" class=\"ds-text-button\">Accept the 1 ready here</button><button type=\"button\" class=\"ds-text-button\">Reject the 9 waiting here</button></span></th></tr><tr class=\"ds-row ds-due\" tabindex=\"0\"><th scope=\"row\"><span class=\"ds-sentence\">Depends on Dynamics CRM</span><span class=\"ds-secondary\">For: quotes</span><span class=\"ds-secondary\">Integration design · lines 1-12</span></th><td><span class=\"ds-status\">Needs your decision</span><span class=\"ds-secondary\">“Dynamics CRM” may be a system the draft already has</span></td></tr><tr class=\"ds-row\" tabindex=\"-1\"><th scope=\"row\"><span class=\"ds-sentence\">Adds the system Order Hub</span><span class=\"ds-secondary\">Integration design · lines 1-12</span></th><td><span class=\"ds-status\">Ready</span></td></tr><tr class=\"ds-row ds-running\" tabindex=\"-1\"><th scope=\"row\"><span class=\"ds-sentence\">Adds the component Order API, built with Microservice</span><span class=\"ds-secondary\">Integration design · lines 1-12</span></th><td><span class=\"ds-status\">Waits for another</span><span class=\"ds-secondary\">Waits for the system Order Hub</span></td></tr><tr class=\"ds-row ds-past\" tabindex=\"-1\"><th scope=\"row\"><span class=\"ds-sentence\">Calls the API of TIBCO</span><span class=\"ds-secondary\">Integration design · lines 1-12</span></th><td><span class=\"ds-status\">Rejected</span></td></tr></tbody></table><p class=\"ds-next\"><button type=\"button\" class=\"ds-next-button\">Decide whether “Dynamics CRM” is a system the draft already has →</button></p>",
+      "css": ".ds-galley { width: 100%; border-collapse: collapse; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; line-height: 1.45; color: var(--ink, #16181d); } .ds-galley thead th { padding: 0 0.5rem 0.25rem; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; text-align: left; } .ds-galley__state { width: 15rem; } .ds-galley__head th { padding: 1.5rem 0.5rem 0.5rem; border-bottom: 2px solid var(--rule-heavy, #16181d); font-weight: 400; text-align: left; } .ds-galley__title { margin-right: 1rem; font-stretch: 88%; font-weight: 680; } .ds-galley__new::after { content: ' ·'; font-weight: 400; } .ds-galley__tally { color: var(--ink-2, #474c55); font-size: 0.8125rem; } .ds-galley__actions { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; margin-top: 0.25rem; } .ds-text-button { min-height: 1.5rem; padding: 0 0.25rem; border: 0; background: none; color: var(--ink, #16181d); font: inherit; font-size: 0.8125rem; font-weight: 500; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.2em; cursor: pointer; } .ds-text-button:hover { text-decoration-thickness: 2px; } .ds-row { cursor: pointer; transition: background-color 180ms ease-out; } .ds-row:hover { background: var(--stock-band, #f1f1ee); } .ds-row:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: -2px; } .ds-row th, .ds-row td { padding: 0.5rem; border-bottom: 1px solid var(--rule-faint, #e4e5e7); font-weight: 400; text-align: left; vertical-align: top; } .ds-secondary { display: block; color: var(--ink-2, #474c55); font-size: 0.8125rem; } .ds-due .ds-sentence, .ds-due .ds-status { font-weight: 680; } .ds-running { color: var(--ink-2, #474c55); } .ds-past, .ds-past .ds-secondary { color: var(--ink-3, #686e78); } .ds-next { margin-top: 1.5rem; font-size: 1.0625rem; font-weight: 680; font-family: var(--face, 'Archivo Variable', sans-serif); } .ds-next-button { padding: 0.15rem 0; border: 0; background: none; color: var(--reference, #1d5ca3); font: inherit; text-align: start; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.2em; cursor: pointer; } .ds-next-button:hover { text-decoration-thickness: 2px; } .ds-next-button:focus-visible, .ds-text-button:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; }"
+    },
+    {
+      "name": "Open Suggestion",
+      "kind": "custom",
+      "refersTo": "suggestion-row-open",
+      "description": "A suggestion opened in place on the stock band: the cited source and the decision under labels on 1px rules, matches as choices, accept, edit or reject, and the waits line.",
+      "html": "<div class=\"ds-detail\"><section class=\"ds-detail__col\"><h4 class=\"ds-detail__label\">From the document</h4><p>“System: Dynamics CRM”</p><p class=\"ds-detail__where\">Integration design · lines 1-12</p><div class=\"ds-passage\"><span class=\"ds-place\"><span class=\"ds-place__where\">lines 1-12</span><span>System: Dynamics CRM</span></span></div></section><section class=\"ds-detail__col\"><h4 class=\"ds-detail__label\">Decision</h4><fieldset class=\"ds-choices\"><legend>Is “Dynamics CRM” a system the draft already has?</legend><label><input type=\"radio\" name=\"m\"> Yes, it is <strong>BCRM</strong><span class=\"ds-secondary\"> · Similar name to BCRM.</span></label><label><input type=\"radio\" name=\"m\"> No, it is a new system</label></fieldset><p class=\"ds-actions\"><button type=\"button\" class=\"ds-action\" disabled aria-describedby=\"ds-why\">Accept</button><button type=\"button\" class=\"ds-text\">Edit, then accept</button><button type=\"button\" class=\"ds-text\">Reject</button></p><p id=\"ds-why\" class=\"ds-secondary\">Say first whether the name means a system the draft has.</p></section></div>",
+      "css": ".ds-detail { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 1.5rem; padding: 0.5rem 0.5rem 1rem; border-bottom: 2px solid var(--rule-heavy, #16181d); background: var(--stock-band, #f1f1ee); font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; line-height: 1.45; color: var(--ink, #16181d); } .ds-detail__col { display: grid; gap: 0.75rem; align-content: start; min-width: 0; } .ds-detail__label { margin: 0; padding-bottom: 0.25rem; border-bottom: 1px solid var(--rule, #cfd2d6); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; } .ds-detail p { margin: 0; } .ds-detail__where, .ds-secondary { color: var(--ink-2, #474c55); font-size: 0.8125rem; font-weight: 400; } .ds-passage { padding: 0.5rem 0.75rem; background: var(--stock, #fbfbfa); color: var(--ink-2, #474c55); font-size: 0.8125rem; } .ds-place { display: grid; grid-template-columns: 6rem minmax(0, 1fr); } .ds-place__where { color: var(--ink-3, #686e78); } .ds-choices { display: grid; gap: 0.5rem; margin: 0; padding: 0; border: 0; } .ds-choices legend { padding: 0 0 0.25rem; color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; } .ds-choices label { display: inline-flex; gap: 0.5rem; align-items: center; min-height: 1.5rem; font-weight: 500; } .ds-choices input { width: 1.125rem; height: 1.125rem; accent-color: var(--ink, #16181d); } .ds-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1rem; } .ds-action { min-height: 2.25rem; padding: 0 1rem; border: 2px solid var(--ink, #16181d); border-radius: 2px; background: var(--ink, #16181d); color: var(--stock, #fbfbfa); font: inherit; font-weight: 680; cursor: pointer; } .ds-action:hover { background: var(--stock, #fbfbfa); color: var(--ink, #16181d); } .ds-action:disabled { border-color: var(--rule, #cfd2d6); background: var(--stock-band, #f1f1ee); color: var(--ink-3, #686e78); cursor: not-allowed; } .ds-text { min-height: 1.5rem; padding: 0 0.25rem; border: 0; background: none; color: var(--ink, #16181d); font: inherit; font-size: 0.8125rem; font-weight: 500; text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; } .ds-text:hover { text-decoration-thickness: 2px; } .ds-action:focus-visible, .ds-text:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; }"
+    },
+    {
+      "name": "Catalogue Form Rows",
+      "kind": "input",
+      "refersTo": "form-legend",
+      "description": "The editors' repeating rows: a borderless fieldset opened by a bold legend on a heavy rule, each row ruled at its foot with its own remove, one add at the foot; fields on a wrapping grid.",
+      "html": "<fieldset class=\"ds-rows\"><legend class=\"ds-rows__legend\">Steps</legend><fieldset class=\"ds-rows__row\"><div class=\"ds-grid\"><label class=\"ds-field\"><span>No.</span><input value=\"10\"></label><label class=\"ds-field\"><span>Name</span><input value=\"Capture the order\"></label><label class=\"ds-field\"><span>Performed by</span><select><option>Order Hub (not in the draft yet)</option></select></label></div><button type=\"button\" class=\"ds-text\">× Remove step 10</button></fieldset><button type=\"button\" class=\"ds-text\">+ Add another step</button></fieldset>",
+      "css": ".ds-rows { display: grid; gap: 0.5rem; margin: 0; padding: 0; border: 0; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; color: var(--ink, #16181d); } .ds-rows__legend { width: 100%; padding: 0 0 0.25rem; border-bottom: 2px solid var(--rule-heavy, #16181d); font-weight: 680; } .ds-rows__row { display: grid; gap: 0.5rem; margin: 0; padding: 0 0 0.75rem; border: 0; border-bottom: 1px solid var(--rule, #cfd2d6); } .ds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: 0.75rem 1rem; align-items: end; } .ds-field { display: grid; gap: 0.25rem; } .ds-field > span { color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; } .ds-field input, .ds-field select { min-height: 2rem; padding: 0.25rem 0.5rem; border: 1px solid var(--ink-3, #686e78); border-radius: 2px; background: var(--stock, #fbfbfa); color: inherit; font: inherit; } .ds-field input:hover, .ds-field select:hover { border-color: var(--ink, #16181d); } .ds-field input:focus-visible, .ds-field select:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-text { justify-self: start; min-height: 1.5rem; padding: 0 0.25rem; border: 0; background: none; color: var(--ink, #16181d); font: inherit; font-size: 0.8125rem; font-weight: 500; text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; } .ds-text:hover { text-decoration-thickness: 2px; } .ds-text:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; }"
+    },
+    {
+      "name": "Runs Table",
+      "kind": "custom",
+      "refersTo": "runs-system-column",
+      "description": "Table 3's product sub-table: System | Run by, the place as a secondary line, each squad with its contact; a system nobody runs is due, with 'Give it to a squad' on its line; a row just given is lit in the reference wash; a lapsed system is past.",
+      "html": "<h3 class=\"ds-product\">Customer care (sample)</h3><table class=\"ds-runs\"><thead><tr><th scope=\"col\" class=\"ds-runs__system\">System</th><th scope=\"col\">Run by</th></tr></thead><tbody><tr><th scope=\"row\"><a href=\"#\">CIM</a><span class=\"ds-runs__by\">Customer channels › Assisted channels</span></th><td><a href=\"#\">Care squad</a><span class=\"ds-runs__by\">Contact: Omar Saleh</span></td></tr><tr class=\"ds-runs__lit\"><th scope=\"row\"><a href=\"#\">WFM</a><span class=\"ds-runs__by\">Order orchestration</span></th><td><a href=\"#\">Fulfilment squad</a><span class=\"ds-runs__by\">No contact named</span></td></tr><tr class=\"ds-runs__due\"><th scope=\"row\"><a href=\"#\">ServiceNow</a><span class=\"ds-runs__by\">Service assurance</span></th><td><span class=\"ds-runs__status\">No squad</span><button type=\"button\" class=\"ds-runs__give\">Give it to a squad</button></td></tr><tr class=\"ds-runs__past\"><th scope=\"row\"><span>Old CRM</span><span class=\"ds-runs__by\">Not in the catalogue in service</span></th><td>—</td></tr></tbody><tbody><tr class=\"ds-runs__place\"><th scope=\"colgroup\" colspan=\"2\">Integration and enabling</th></tr><tr class=\"ds-runs__due\"><th scope=\"row\"><a href=\"#\">TIBCO</a></th><td><span class=\"ds-runs__status\">No squad</span><button type=\"button\" class=\"ds-runs__give\">Give it to a squad</button></td></tr></tbody></table>",
+      "css": ".ds-product { margin: 1rem 0 0.25rem; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; font-weight: 680; color: var(--ink, #16181d); } .ds-runs { width: 100%; border-collapse: collapse; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; line-height: 1.45; font-variant-numeric: tabular-nums lining-nums; color: var(--ink, #16181d); } .ds-runs a { color: var(--reference, #1d5ca3); } .ds-runs a:focus-visible, .ds-runs__give:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; } .ds-runs thead th { padding: 0 1rem 0.25rem 0; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; text-align: left; } .ds-runs__system { width: 40%; } .ds-runs tbody th, .ds-runs td { padding: 0.5rem 1rem 0.5rem 0; border-bottom: 1px solid var(--rule-faint, #e4e5e7); font-weight: 400; text-align: left; vertical-align: top; transition: background-color 180ms ease-out; } .ds-runs__by { display: block; color: var(--ink-2, #474c55); font-size: 0.8125rem; } .ds-runs__due th, .ds-runs__due .ds-runs__status { font-weight: 680; } .ds-runs__past { color: var(--ink-3, #686e78); } .ds-runs__past .ds-runs__by { color: inherit; } .ds-runs__lit th, .ds-runs__lit td { background: var(--reference-wash, #e6eef8); } .ds-runs__give { margin-inline-start: 0.75rem; min-height: 1.5rem; padding: 0 0.25rem; border: 0; background: none; color: var(--ink, #16181d); font: inherit; font-size: 0.8125rem; font-weight: 500; text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; } .ds-runs__give:hover { text-decoration-thickness: 2px; } .ds-runs .ds-runs__place th { padding: 1rem 0 0.25rem; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; }"
+    },
+    {
+      "name": "Edit Panel",
+      "kind": "custom",
+      "refersTo": "edit-panel",
+      "description": "A hand edit opened in place on the stock band, closing on a heavy rule: lead title, fields on stock, the action beside Cancel, the waits line; Escape cancels.",
+      "html": "<form class=\"ds-panel\"><h3 class=\"ds-panel__title\">Add a dependency of CWOM</h3><div class=\"ds-grid\"><label class=\"ds-field\"><span>Depends on</span><select><option>Order Hub</option></select></label><label class=\"ds-field\"><span>How</span><select><option>Calls its API</option></select></label></div><label class=\"ds-field\"><span>For what</span><input value=\"\"></label><p class=\"ds-panel__actions\"><button class=\"ds-action\" disabled aria-describedby=\"ds-why\">Add the dependency</button><button type=\"button\" class=\"ds-text\">Cancel</button></p><p id=\"ds-why\" class=\"ds-panel__waits\">Say what the dependency is for.</p></form>",
+      "css": ".ds-panel { display: grid; gap: 0.75rem; padding: 0.75rem 1rem 1rem; border-bottom: 2px solid var(--rule-heavy, #16181d); background: var(--stock-band, #f1f1ee); font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; color: var(--ink, #16181d); } .ds-panel__title { margin: 0; font-size: 1.0625rem; font-weight: 680; } .ds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: 0.75rem 1rem; align-items: end; } .ds-field { display: grid; gap: 0.25rem; } .ds-field > span { color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; } .ds-field input, .ds-field select { min-height: 2rem; padding: 0.25rem 0.5rem; border: 1px solid var(--ink-3, #686e78); border-radius: 2px; background: var(--stock, #fbfbfa); color: inherit; font: inherit; } .ds-field input:hover, .ds-field select:hover { border-color: var(--ink, #16181d); } .ds-panel__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1rem; margin: 0; } .ds-panel__waits { margin: 0; color: var(--ink-2, #474c55); font-size: 0.8125rem; } .ds-action { min-height: 2.25rem; padding: 0 1rem; border: 2px solid var(--ink, #16181d); border-radius: 2px; background: var(--ink, #16181d); color: var(--stock, #fbfbfa); font: inherit; font-weight: 680; cursor: pointer; } .ds-action:hover { background: var(--stock, #fbfbfa); color: var(--ink, #16181d); } .ds-action:disabled { border-color: var(--rule, #cfd2d6); background: var(--stock-band, #f1f1ee); color: var(--ink-3, #686e78); cursor: not-allowed; } .ds-text { display: inline-flex; align-items: center; gap: 0.25rem; min-height: 1.5rem; padding: 0 0.25rem; border: 0; background: none; color: var(--ink, #16181d); font: inherit; font-size: 0.8125rem; font-weight: 500; text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; } .ds-text:hover { text-decoration-thickness: 2px; } .ds-text:focus-visible, .ds-action:focus-visible, .ds-field input:focus-visible, .ds-field select:focus-visible, .ds-panel a:focus-visible, .ds-diff a:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; }"
+    },
+    {
+      "name": "Diff Table",
+      "kind": "custom",
+      "refersTo": "diff-change-column",
+      "description": "A list of alterations: counts, then kinds in the One Kind Order under label heads on a 1px rule; Added/Changed/Removed in regular weight; fields in words; a connection as a sentence with For what below; removed rows past.",
+      "html": "<table class=\"ds-diff\"><thead><tr><th scope=\"col\">What</th><th scope=\"col\" class=\"ds-diff__change\">Change</th></tr></thead><tbody><tr class=\"ds-diff__kind\"><th colspan=\"2\">Systems <span>2</span></th></tr><tr><th scope=\"row\"><a href=\"#\">Order Hub</a></th><td>Added</td></tr><tr><th scope=\"row\"><a href=\"#\">CWOM</a></th><td>Changed<span class=\"ds-diff__by\">Arabic name and where it sits</span></td></tr></tbody><tbody><tr class=\"ds-diff__kind\"><th colspan=\"2\">Connections <span>2</span></th></tr><tr><th scope=\"row\">Order Hub calls the API of CWOM<span class=\"ds-diff__by\">For what: Hands over captured orders</span></th><td>Added</td></tr><tr class=\"ds-diff__past\"><th scope=\"row\">B2B Web no longer depends on Felix<span class=\"ds-diff__by\">For what: Order status</span></th><td>Removed</td></tr></tbody></table>",
+      "css": ".ds-diff { width: 100%; border-collapse: collapse; font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; color: var(--ink, #16181d); font-variant-numeric: tabular-nums lining-nums; } .ds-diff thead th { padding: 0 1rem 0.25rem 0; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; text-align: start; } .ds-diff th, .ds-diff td { padding: 0.5rem 1rem 0.5rem 0; border-bottom: 1px solid var(--rule-faint, #e4e5e7); font-weight: 400; text-align: start; vertical-align: top; } .ds-diff__change { width: 15rem; } .ds-diff .ds-diff__kind th { padding: 1rem 0 0.25rem; border-bottom: 1px solid var(--rule, #cfd2d6); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; } .ds-diff__kind span { font-weight: 400; } .ds-diff__by { display: block; color: var(--ink-2, #474c55); font-size: 0.8125rem; } .ds-diff__past, .ds-diff__past .ds-diff__by { color: var(--ink-3, #686e78); } .ds-diff a { color: var(--reference, #1d5ca3); }"
+    },
+    {
+      "name": "Build State and Samples",
+      "kind": "custom",
+      "refersTo": "build-state",
+      "description": "Check: the build state line (status bold, red when failed), then samples with the verdict in words, moved rows bold, both mappings on a secondary line, and evidence opened in place on the band.",
+      "html": "<div class=\"ds-check\"><p class=\"ds-build\"><strong>Built for matching</strong> <span>at revision 5.</span></p><p class=\"ds-build ds-build--failed\" role=\"alert\"><strong>The build failed</strong> <span>: timeout.</span></p><table class=\"ds-samples\"><thead><tr><th scope=\"col\">Requirement</th><th scope=\"col\" class=\"ds-samples__result\">With this draft</th></tr></thead><tbody><tr class=\"ds-samples__moved ds-samples__open\"><th scope=\"row\">Order Hub captures business orders from the web.</th><td><strong>Now also finds Order Hub</strong><span class=\"ds-by\">In service: nothing · This draft: Order Hub</span><span class=\"ds-acts\"><button class=\"ds-text\">Compare again</button><button class=\"ds-text\" aria-expanded=\"true\">⌄ The evidence</button></span></td></tr><tr class=\"ds-samples__detail\"><td colspan=\"2\"><p class=\"ds-samples__label\"><a href=\"#\">Order Hub</a></p><p class=\"ds-samples__quote\">“Order Hub captures orders from the web channel…” <a href=\"#\">The passage</a></p></td></tr></tbody></table></div>",
+      "css": ".ds-check { font-family: var(--face, 'Archivo Variable', sans-serif); font-size: 0.9375rem; color: var(--ink, #16181d); } .ds-build { display: flex; flex-wrap: wrap; gap: 0 0.25rem; align-items: baseline; margin: 0 0 0.5rem; } .ds-build strong { font-weight: 680; } .ds-build span { color: var(--ink-2, #474c55); } .ds-build--failed strong { color: var(--disruption, #b3122b); } .ds-samples { width: 100%; border-collapse: collapse; margin-top: 1rem; } .ds-samples thead th { padding: 0 1rem 0.25rem 0; border-bottom: 2px solid var(--rule-heavy, #16181d); color: var(--ink-2, #474c55); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; text-align: start; } .ds-samples th, .ds-samples td { padding: 0.5rem 1rem 0.5rem 0; border-bottom: 1px solid var(--rule-faint, #e4e5e7); font-weight: 400; text-align: start; vertical-align: top; } .ds-samples__result { width: 45%; } .ds-samples__moved th, .ds-samples__moved strong { font-weight: 680; } .ds-samples__open th, .ds-samples__open td, .ds-samples .ds-samples__detail td { background: var(--stock-band, #f1f1ee); } .ds-samples .ds-samples__detail td { padding: 0.5rem 1rem 1rem; border-bottom: 2px solid var(--rule-heavy, #16181d); } .ds-samples__label { margin: 0; padding-bottom: 0.25rem; border-bottom: 1px solid var(--rule, #cfd2d6); font-size: 0.8125rem; font-stretch: 72%; font-weight: 500; } .ds-samples__quote { max-width: 72ch; margin: 0.5rem 0 0; } .ds-samples a { color: var(--reference, #1d5ca3); } .ds-by { display: block; color: var(--ink-2, #474c55); font-size: 0.8125rem; } .ds-acts { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; margin-top: 0.25rem; } .ds-text { display: inline-flex; align-items: center; gap: 0.25rem; min-height: 1.5rem; padding: 0 0.25rem; border: 0; background: none; color: var(--ink, #16181d); font: inherit; font-size: 0.8125rem; font-weight: 500; text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; } .ds-text:hover { text-decoration-thickness: 2px; } .ds-text:focus-visible, .ds-samples a:focus-visible { outline: 2px solid var(--reference, #1d5ca3); outline-offset: 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Timetable Book",
+    "overview": "The portal is set like a national railway timetable book. Each area of shared knowledge is a numbered table. Its number stands monumental and condensed in a left margin column. The table beside it has an exact column set, and each sourced fact carries a reference mark that leads to a numbered note at the table's foot. The page is near-white neutral stock with black ink. Hierarchy comes from three rule weights and from type weight, never from containers, fills or colour. Two colours are held back, and each has exactly one job.\n\nThe density is that of a reference work. Rows are tight (0.5rem block padding) and separated by hairlines. Numbers and dates use tabular, lining figures and sit right-aligned, as in any timetable. The surface is flat: no cards, no shadows for depth, no pills, no gradients. One sticky masthead strip and an index of the tables bind the book, and every screen sits inside that binding.\n\nThe architecture catalogue (Table 2) reads like the station pages of the same book: an index of systems held beside one system's sheet, each sheet a run of governance sections, each connection a sentence, each journey a timetable of numbered steps grouped by phase. A draft version adds the book's galley proofs: the documents being read for changes, and every suggested change set in one table under the system it would change, to be accepted or rejected line by line. Before it goes to press, a draft can be corrected by hand where it is read, its list of alterations read against the version in service, its sample requirements checked against it, and then it is published, the consequence stated first.\n\nThe squad catalogue (Table 3) is the book's list of who works each line. It is kept current in place, with no versions or drafts: each value stream is a section, each product a sub-table of the systems it rests on and the squad that runs each, and a system with no squad stands as the due row with its decision on the same line. Squads, People and History are plain governance tables under the same head.\n\nThe interface language is English. It calls the indexed units of a document \"passages\", and the units of the table-aware cut \"fields\"; it never says \"chunks\". Content keeps its own language and direction. Arabic names render in Noto Sans Arabic, in their own direction, beside the English in the same cell. The theme is light only. This is a decision for an office-daylight scene, not an omission.",
+    "keyCharacteristics": [
+      "Near-white neutral stock (never cream) and black ink; flat, ruled, unboxed.",
+      "One grotesk (Archivo Variable) in several widths: 100% for text, 88% for titles, 72% for labels, 62% for monumental table numbers.",
+      "Weight shows rank. Colour has only two jobs: red for disruption, blue for reference.",
+      "Three rule weights: a 2px heavy rule, a 1px hairline and a 3px double rule.",
+      "Notes are numbered in reading order. A mark and its note light each other.",
+      "Rows never reflow when a state changes. Only the background changes."
+    ],
+    "rules": [
+      {
+        "name": "The Two Jobs Rule",
+        "body": "Colour has exactly two jobs. Red marks a disruption. Blue marks a reference, meaning something you can follow, plus focus. No other hue appears, and neither colour ever decorates or ranks.",
+        "section": "colors"
+      },
+      {
+        "name": "The Stock Not Cream Rule",
+        "body": "The page is neutral near-white (`stock`). Never warm it toward paper or cream.",
+        "section": "colors"
+      },
+      {
+        "name": "The Weight Is Rank Rule",
+        "body": "A row's importance is set by weight and ink, never by colour or badge. A due row has its name and status in bold (680). A delayed row has its status in bold and in disruption red. A running row is set in ink 2, a row in service in regular ink, a past row in ink 3. Catalogue versions follow it: in preparation is due (bold), in service is regular ink, replaced is past. Suggestions follow it: \"Needs your decision\" is due (sentence and state bold), \"Ready\" is regular ink, \"Waits for another\" and \"Already in the draft\" are running (ink 2), and accepted or rejected suggestions are past. A draft document's reading follows it too: waiting or being read is running, a failed reading is delayed. A build's state line sets its status bold, and red when the build failed. A sample whose mapping would move is due (bold); one that keeps its systems is regular ink. A list of alterations is not a queue: \"Added\", \"Changed\" and \"Removed\" are all regular weight, and only a removed row drops to past.",
+        "section": "typography"
+      },
+      {
+        "name": "The Sentence Case Rule",
+        "body": "A value a source shouts (\"FULFILS\") is set in sentence case (\"Fulfils\") on screen. Labels, heads and group heads are sentence case too; nothing is uppercased for rank.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Family Rule",
+        "body": "Contrast comes from Archivo's width and weight axes, not from a second display face. Noto Sans Arabic is a script fallback, not a design voice.",
+        "section": "typography"
+      },
+      {
+        "name": "The Kept Column Rule",
+        "body": "In a governance table, a secondary fact (a version's cut and passage count, a handover's reason or who performed it, a citation's place or version, a field's label) rides as a secondary ink-2 meta line inside a kept column, never in a column of its own. Columns still drop by priority on phones, and these facts stay with the row.",
+        "section": "layout"
+      },
+      {
+        "name": "The Three Rules Rule",
+        "body": "Separation uses three weights only. A 2px heavy rule sits under the masthead and every table head, totals label, notice head and governance section title. A 1px hairline sits between rows, totals and tables. A 3px double rule sits above the notes. Do not add a fourth weight or a box.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Edit Mark Exception",
+        "body": "The edit mark is the one scoped exception to the reference-mark grammar: a letter, not a number, and it opens its passage in place instead of leading to a numbered note. A review holds thousands of passages, and numbered notes for every edit would bury the table's foot. Use it only for an edit to a passage; every sourced fact still takes a numbered mark and note.",
+        "section": "components"
+      },
+      {
+        "name": "The Passages Rule",
+        "body": "On screen the indexed units of a document are \"passages\", and the units of the table-aware cut are \"fields\". The cut itself reads \"Passages\" or \"Table-aware\". The word \"chunk\" belongs to code, never to a label, heading, count or caption.",
+        "section": "components"
+      },
+      {
+        "name": "The Connection Sentence Rule",
+        "body": "A connection reads as a sentence that names both systems. On a sheet the phrase names the sheet's system; in All connections the verb rides under From (\"calls the API of\", \"sends events to\"); in a diff the sentence says the change (\"now sends events to\", \"no longer depends on\"), with \"For what:\" on its own line. Never an arrow, a bare kind code or an unnamed \"this system\".",
+        "section": "components"
+      },
+      {
+        "name": "The Kept Place Rule",
+        "body": "Deciding never moves the work. Groups keep their first-seen place for the session, rows never reflow on a state change, and focus lands where the next decision is, never back at the top.",
+        "section": "components"
+      },
+      {
+        "name": "The One Kind Order Rule",
+        "body": "Changes are counted and listed in one order everywhere: systems, capabilities, components, connections, landscape domains, business areas, offerings, journeys, documents. The head's consequence line, the diff table's total line and its groups all follow it, so a count read in one place is found in the same place in the next.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "Do put every area in a numbered table: a monumental number in the 7.5rem margin column, a title, an edition line, a ruled grid, notes and one next-decision line.",
+      "Do show a row's rank by weight and ink: bold for due, red and bold status for delayed, ink 2 for running, ink 3 for past.",
+      "Do give every sourced fact a reference mark, and number the notes in reading order.",
+      "Do keep lit states to a background wash (`reference-wash`), so rows and cells never reflow or change size.",
+      "Do open a focused passage in place on the stock band (`stock-band`), with its detail row closing on a heavy rule.",
+      "Do keep deliberate steps such as withdrawal inline and ruled under the head.",
+      "Do say why a disabled action waits, in a line linked to it.",
+      "Do put a governance table's secondary facts on a secondary ink-2 meta line in a kept column, so phones keep them when columns drop.",
+      "Do mark the current page of a document's sub-index in bold ink with the inset 3px ink bar, and show the unsaved count on Review.",
+      "Do read a connection as a sentence that names both systems; on a sheet, name the sheet's own system in the phrase.",
+      "Do light the row a reader came from in the reference wash, and offer the way back as a \"Back to X\" text button.",
+      "Do group an index or a timetable under label-style heads: a heavy rule under a systems index place, a 1px rule under a journey phase, and \"Back to <phase>\" when a phase returns.",
+      "Do write \"Then …\" only when a step does not simply continue to the next.",
+      "Do state what putting a catalogue version in service would change before asking for the reason.",
+      "Do set shouted source values in sentence case, and name the platform's seed actor \"the platform\".",
+      "Do say \"passages\" for indexed units and \"fields\" for the table-aware cut.",
+      "Do use tabular, lining figures, and end-align numbers and dates.",
+      "Do let content keep its own direction: `dir=\"auto\"` on names, `lang=\"ar\" dir=\"rtl\"` on Arabic secondary lines, set in Noto Sans Arabic.",
+      "Do keep targets at least 24px (text buttons 1.5rem, return links 1.5rem) and show the 2px blue focus outline on everything focusable.",
+      "Do set a draft's suggestions in one galley under system heads, and keep each group's first-seen place for the session.",
+      "Do say a suggestion's change as a sentence, with its source and reason on secondary ink-2 lines.",
+      "Do word a bulk action as exactly what it takes (\"Accept the 4 ready and the 10 that wait on them\"), and leave matches, inferred links and replacements to a person.",
+      "Do confirm a group rejection inline in its head, and a destructive draft step with an acknowledgement checkbox.",
+      "Do word the next decision as the question it asks.",
+      "Do move focus after a decision to the next waiting suggestion, or to where the decided row stood.",
+      "Do edit a list one item per line, and keep a name the draft lacks choosable as \"(not in the draft yet)\".",
+      "Do open a hand edit in place where the thing is read: on the stock band under what opened it, closing on a heavy rule, its fields on the stock, Escape to cancel, and a waits line that names what to do first.",
+      "Do say a conflict in words and what to do about it (\"Reload the page; your edit was not saved.\").",
+      "Do edit a system's dependencies on its own sheet; a dependency on it is edited from the other system's sheet.",
+      "Do show what a catalogue file would change before it replaces anything, with Replace and Keep side by side.",
+      "Do count and list changes in the One Kind Order, and say a changed item's fields in words.",
+      "Do say a sample's verdict in words (\"Now also finds Order Hub\"), with both mappings on a secondary line, and set a sample whose mapping moves in bold.",
+      "Do cut a quoted passage at 280 characters so its closing quote mark is always shown.",
+      "Do state what publishing would change, and whether it builds first, before asking for the reason.",
+      "Do set a due decision on the row it concerns: \"Give it to a squad\" rides on the line of the bold \"No squad\".",
+      "Do hand focus back to what an in-place panel was about when it closes, and light a row just changed in the reference wash until the reader's next action.",
+      "Do group a long choice of squads under their value streams (`optgroup`), and leave out the ones that already apply.",
+      "Do disable a control that cannot be used yet and say why under it (\"still holds a role; hand it to someone else before marking them inactive\").",
+      "Do say roles in words (\"Leads Retail; Scrum master of Sales squad; Contact for 2 systems\"), and break an email only after its @.",
+      "Do word a conflict for the catalogue it happens in (\"The squad catalogue changed while you edited …\").",
+      "Do honour `prefers-reduced-motion`. All transitions and animations collapse to 0.01ms."
+    ],
+    "donts": [
+      "Don't use colour for anything except disruption (red) and reference or focus (blue).",
+      "Don't add cards, panels, elevation shadows, pills, badges or gradients. Separation comes from the three rule weights.",
+      "Don't warm the stock toward cream or paper.",
+      "Don't add a second display typeface. Width and weight on Archivo carry the contrast.",
+      "Don't add a dark theme without a new decision. Light only is the chosen office-daylight scene.",
+      "Don't scroll tables sideways. Drop columns by priority instead.",
+      "Don't open a modal or a card to edit or withdraw. Rows open in place; steps open inline.",
+      "Don't extend the letter edit mark beyond edited passages. Sourced facts keep numbered marks and notes.",
+      "Don't give a secondary fact (a cut, a count, a reason, a place) its own column.",
+      "Don't say \"chunks\" on screen.",
+      "Don't rule a quiet line twice. Directly under a section title it rests on the title's heavy rule.",
+      "Don't show a connection as an arrow or a bare kind code.",
+      "Don't offer a group action for nothing or for one: \"Accept the N ready here\" needs one ready, \"Reject the N waiting here\" needs two waiting.",
+      "Don't show a zero count for an exceptional state; \"Already in the draft\" and \"Links no longer in service\" appear only when they have members.",
+      "Don't box a repeating form row or an editor. Rows are ruled fieldsets, and editing happens in the open row.",
+      "Don't set \"Added\", \"Changed\" or \"Removed\" in bold; a list of alterations is not a queue.",
+      "Don't offer an edit control on a published version of the architecture catalogue. The squad catalogue has no versions; it is edited in place.",
+      "Don't put a decision a row needs anywhere but on that row; a gap is one row high.",
+      "Don't let the service's \"source → target\" label reach the screen; a changed connection is a sentence."
+    ]
+  }
+}

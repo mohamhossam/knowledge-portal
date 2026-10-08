@@ -38,9 +38,13 @@ Paper. Do not copy requirement-portal's tokens, primitives or shell.
 
 ## Redesign epic (e& calm)
 
-A complete UX redesign runs on the integration branch `feat/kb-redesign`. Until it merges, the
-Timetable Book `DESIGN.md` still describes what ships; its archived copy is
-`docs/design-history/timetable-book-DESIGN.md`.
+A complete UX redesign runs on the integration branch `feat/kb-redesign`.
+
+- On this branch, `DESIGN.md` ("The Calm Ledger", direction A) and `docs/design-system.md`
+  describe the new design system in `frontend/src/design/`.
+- Screens not yet migrated still follow the archived Timetable Book,
+  `docs/design-history/timetable-book-DESIGN.md`, until their area is rebuilt (Phase 8).
+- On `main`, the Timetable Book `DESIGN.md` still describes what ships.
 
 - **Status first.** `docs/redesign/STATUS.md` holds the phase, decisions, scores, metrics and
   the next exact action. Read it at session start; update it at the end of every phase, and

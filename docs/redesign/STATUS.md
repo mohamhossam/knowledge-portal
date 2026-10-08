@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Integration branch | `feat/kb-redesign`, from `main` @ `b6114b9` |
-| Current phase | **5: Design system foundation.** In progress |
+| Current phase | **5: Design system foundation.** Done; waiting at **GATE 5** |
 | Last updated | 2026-10-08 |
 
 ## Phase log
@@ -15,7 +15,7 @@
 | 2: Define | **Approved 2026-10-08** (GATE 2a approved; GATE 2b = assumption mode) | `docs/ux/journeys/` (5 journeys + service blueprint), `docs/ux/ia/` (object model, navigation + archetypes, route map, tree-test kit), `docs/ux/interaction/model.md`, `docs/ux/content/` (voice and tone, microcopy, glossary) |
 | 3: Develop (wireframes) | **Approved 2026-10-08** (GATE 3 = assumption mode; round 1 not run) | `frontend/src/design-lab/wireframes/` (dev-only lab), `docs/ux/journeys/cognitive-walkthrough.md`, `docs/ux/testing/round-1/` (kit, data sheet, 10 reference captures) |
 | 4: Visual direction | **Approved 2026-10-08**: A + C's split pane; Archivo + Noto Sans Arabic | `docs/redesign/02-directions.md`, `docs/redesign/directions/` (48 captures), `frontend/src/design-lab/wireframes/directions.css`, Direction/Theme switch in the lab |
-| 5: Design system | Not started | |
+| 5: Design system | Done; GATE 5 open | `frontend/src/design/` (tokens, 28 components, hooks; 159 tests), the dev-only gallery `/knowledge/design-system`, `docs/design-system.md`, new `DESIGN.md` + `.impeccable/design.json` (old sidecar archived) |
 | 6: Hi-fi + round 2 | Not started | |
 | 7: Layer 2/3 install | Not started | |
 | 8: Build by area | Not started | |
@@ -47,6 +47,8 @@
 | 2026-10-08 | Three directions are laid over the same wireframes: **A** Timetable, evolved (Archivo + Noto Sans Arabic); **B** Quiet desk (Source Sans 3 + Noto Sans Arabic); **C** Bilingual workbench (IBM Plex Sans + Plex Sans Arabic + Plex Mono). The candidate fonts are devDependencies, lab-only until GATE 4. | Phase 4 |
 | 2026-10-08 | **Recommendation: A, plus C's split-pane review desk.** The type pairing (Archivo/Noto vs Plex) is left open for the user. | 02-directions.md §6 |
 | 2026-10-08 | **GATE 4: the recommendation is adopted.** Direction **A "Timetable, evolved"**, plus **C's split-pane review desk** at ≥ 1200 px. Type pairing: **Archivo Variable + Noto Sans Arabic Variable**, for continuity and the condensed numerals. B and C are not carried forward; Source Sans 3 and the IBM Plex packages are removed in Phase 5. `/impeccable live` was declined. | User ("do as per your recommendation") |
+| 2026-10-08 | **Design system: "The Calm Ledger".** Three token layers (primitive, semantic, component), re-declared per theme and density scope. 28 components in 7 families. A 92-check token contract (contrast in both themes, layering, red never a state). The dark masthead is deepened to #4a1b26 so the red logo reaches 4.27:1. | Phase 5 |
+| 2026-10-08 | Calm rules override the ui-ux-pro-max defaults: no colour transitions, and an unavailable control is an outline with its reason, never faded. | Conflict order |
 | 2026-10-08 | The two tallest document-review captures (13k and 17k px) are clipped to the first 4,000 px. All "before" captures total 16 MB. | Repository weight |
 
 ## Brand source
@@ -102,13 +104,21 @@ Still open:
 O-1 to O-7 are listed in `docs/ux/journeys/cognitive-walkthrough.md`. They move to
 `docs/redesign/backlog.md` in Phase 7.
 
+## Known stale artefacts
+
+- `.impeccable/surfaces/*.md` still carry Timetable Book direction contracts. They are refreshed
+  in Phase 9 (`impeccable document` and surfaces), or per area in Phase 8.
+- The missing favicon logs a 404 on every page. This predates the redesign.
+
 ## Next exact action
 
-At **GATE 4**, the user chooses A, B, C or a mix, and the type pairing (Archivo + Noto Sans Arabic,
-or IBM Plex Sans + Plex Sans Arabic). Optionally, they run `/impeccable live` in the lab first.
+At **GATE 5**, the user reviews:
 
-Then start Phase 5:
+- the gallery (`http://localhost:5184/knowledge/design-system`, both themes and both densities);
+- `DESIGN.md`;
+- `docs/design-system.md`.
 
-- `ui-ux-pro-max:design-system` layered tokens in `frontend/src/design/tokens/{primitive,semantic,component}.css`;
-- move the chosen fonts from devDependencies to dependencies and remove the others;
-- move the contrast script into a test.
+Then start Phase 6:
+
+- upgrade the `/design-lab` journeys to high fidelity with `frontend/src/design` components;
+- write the manual accessibility kit and the round-2 kit.
