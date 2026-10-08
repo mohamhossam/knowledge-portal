@@ -1,0 +1,226 @@
+.ds-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ds-filters__button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-block-size: 2rem;
+  padding-inline: var(--space-3);
+  border: var(--rule-hair) solid var(--color-rule-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+.ds-filters__button[aria-pressed="true"] {
+  background: var(--color-selected);
+  border-color: var(--color-action);
+  color: var(--color-on-selected);
+  font-weight: var(--weight-strong);
+}
+
+.ds-filters__count {
+  font-stretch: var(--stretch-numeral);
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+  opacity: 0.85;
+}
+
+.ds-filters__find {
+  min-inline-size: 12rem;
+}
+
+/* The ledger table */
+.ds-table-wrap {
+  max-inline-size: 100%;
+  overflow-x: auto;
+}
+
+.ds-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: var(--table-text);
+}
+
+.ds-table__caption {
+  text-align: start;
+  font-weight: var(--weight-heading);
+  font-stretch: var(--stretch-title);
+  padding-block-end: var(--space-2);
+}
+
+.ds-table thead th {
+  position: sticky;
+  inset-block-start: calc(var(--sticky-top) + var(--sticky-state));
+  z-index: 1;
+  background: var(--color-surface);
+  border-block-end: var(--table-head-rule);
+  color: var(--table-head-fg);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-strong);
+  font-stretch: var(--stretch-label);
+  text-align: start;
+  white-space: nowrap;
+}
+
+.ds-table th,
+.ds-table td {
+  block-size: var(--table-row);
+  padding: var(--table-cell-block) var(--table-cell-inline);
+  text-align: start;
+  vertical-align: middle;
+  border-block-end: var(--table-row-rule);
+}
+
+.ds-table tbody th {
+  font-weight: var(--weight-emphasis);
+}
+
+.ds-table tbody tr:hover {
+  background: var(--table-row-hover);
+}
+
+.ds-table tbody tr.is-current {
+  background: var(--table-row-current);
+  box-shadow: inset 3px 0 0 var(--table-row-current-bar);
+}
+
+.ds-table tbody tr[aria-selected="true"] {
+  background: var(--table-row-current);
+}
+
+.ds-table__num {
+  text-align: end !important;
+  font-stretch: var(--table-numeral-stretch);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.ds-table__select {
+  inline-size: 2.5rem;
+}
+
+.ds-table__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-block-size: var(--target-min);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.ds-table__sort-idle {
+  opacity: 0.55;
+}
+
+.ds-table__empty {
+  color: var(--color-ink-2);
+}
+
+/* Cell links meet the 24 px target by their own size. */
+.ds-table :is(th, td) a {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-min);
+}
+
+/* An RTL cell aligns to its own start (§13.4). */
+.ds-table :is(th, td)[dir="auto"]:dir(rtl) {
+  text-align: start;
+}
+
+.ds-decision {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.ds-decision__state {
+  color: var(--color-ink-2);
+}
+
+.ds-bulkbar {
+  position: sticky;
+  inset-block-end: 0;
+  z-index: var(--z-sticky);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  border-block-start: var(--ledger-rule);
+}
+
+.ds-bulkbar__count {
+  font-weight: var(--weight-strong);
+}
+
+/* Diff: kind in an icon and a word; removed keeps full weight; no brand red. */
+.ds-diff {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.ds-diff__summary {
+  font-weight: var(--weight-strong);
+}
+
+.ds-diff__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-block-start: var(--ledger-rule);
+}
+
+.ds-diff__item {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr) auto;
+  gap: var(--space-1) var(--space-3);
+  padding-block: var(--space-2);
+  border-block-end: var(--hair-rule);
+}
+
+.ds-diff__kind {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-weight: var(--weight-strong);
+}
+
+.ds-diff__item--removed .ds-diff__what {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.ds-diff__fields {
+  grid-column: 2 / -1;
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: var(--text-meta);
+}
+
+.ds-diff__fields div {
+  display: grid;
+  grid-template-columns: 10rem 1fr;
+  gap: var(--space-2);
+}
+
+.ds-diff__fields dt {
+  color: var(--color-ink-2);
+}
+
+.ds-diff__origin {
+  font-size: var(--text-meta);
+  color: var(--color-ink-2);
+}
