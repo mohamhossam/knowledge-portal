@@ -111,3 +111,40 @@ html:has(.ds-root) {
     scroll-behavior: auto !important;
   }
 }
+
+/*
+ * Windows contrast themes (forced colours, WCAG 1.4.11): box-shadows and
+ * background tints are dropped, so every state they draw gets a system-colour
+ * line or outline instead. Words and icons carry the rest.
+ */
+@media (forced-colors: active) {
+  .ds-rail__link[aria-current="page"] {
+    border-inline-start: var(--rail-marker-width) solid Highlight;
+  }
+
+  .ds-subnav__link[aria-current="page"],
+  .ds-tabs__tab[aria-selected="true"] {
+    border-block-end: var(--rule-heavy) solid Highlight;
+  }
+
+  .ds-table tbody tr.is-current {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+
+  .ds-filters__button[aria-pressed="true"] {
+    border-width: 2px;
+    border-color: Highlight;
+    text-decoration: underline;
+  }
+
+  .ds-combobox__option[aria-selected="true"] {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .ds-root :focus-visible {
+    outline-color: Highlight;
+  }
+}

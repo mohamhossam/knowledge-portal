@@ -542,9 +542,9 @@ function ReviewDesk({ doc, version }: { doc: LibraryDocument; version: LibraryVe
             <TextField
               name="proto-summary"
               label="Review summary"
+              placeholder="What you checked, and what you changed"
               required
-              hint="What you checked, and what you changed. The document's reviewers see it."
-              error={summaryTried && !summary.trim() ? "Write a review summary before saving." : null}
+              error={summaryTried && !summary.trim() ? "Write a review summary before saving: what you checked, and what you changed." : null}
               value={summary}
               onChange={(event) => setSummary(event.target.value)}
             />

@@ -240,13 +240,32 @@
 .proto-savebar__row {
   display: flex;
   flex-wrap: wrap;
-  align-items: end;
+  align-items: center;
   gap: var(--space-3);
 }
 
+/* One line on desktop: label beside its field, so the bar takes one row of the viewport, not three. */
 .proto-savebar__row > .ds-field {
   flex: 1 1 22rem;
+  display: grid;
+  grid-template-columns: max-content minmax(14rem, 1fr);
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
   margin: 0;
+}
+
+.proto-savebar__row > .ds-field > .ds-field__error {
+  grid-column: 2;
+}
+
+@media (max-width: 1023px) {
+  .proto-savebar__row > .ds-field {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .proto-savebar__row > .ds-field > .ds-field__error {
+    grid-column: 1;
+  }
 }
 
 .proto-more {
@@ -401,5 +420,11 @@
 @media (max-width: 640px) {
   .proto-labbar a {
     margin-inline-start: 0;
+  }
+}
+
+@media (forced-colors: active) {
+  .proto-steps__link[aria-current="step"] {
+    border-block-end-color: Highlight;
   }
 }
