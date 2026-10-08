@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Integration branch | `feat/kb-redesign`, from `main` @ `b6114b9` |
-| Current phase | **5: Design system foundation.** Done; waiting at **GATE 5** |
+| Current phase | **6: Hi-fi prototype, a11y kit, round 2 kit.** Done; waiting at **GATE 6** |
 | Last updated | 2026-10-08 |
 
 ## Phase log
@@ -15,8 +15,8 @@
 | 2: Define | **Approved 2026-10-08** (GATE 2a approved; GATE 2b = assumption mode) | `docs/ux/journeys/` (5 journeys + service blueprint), `docs/ux/ia/` (object model, navigation + archetypes, route map, tree-test kit), `docs/ux/interaction/model.md`, `docs/ux/content/` (voice and tone, microcopy, glossary) |
 | 3: Develop (wireframes) | **Approved 2026-10-08** (GATE 3 = assumption mode; round 1 not run) | `frontend/src/design-lab/wireframes/` (dev-only lab), `docs/ux/journeys/cognitive-walkthrough.md`, `docs/ux/testing/round-1/` (kit, data sheet, 10 reference captures) |
 | 4: Visual direction | **Approved 2026-10-08**: A + C's split pane; Archivo + Noto Sans Arabic | `docs/redesign/02-directions.md`, `docs/redesign/directions/` (48 captures), `frontend/src/design-lab/wireframes/directions.css`, Direction/Theme switch in the lab |
-| 5: Design system | Done; GATE 5 open | `frontend/src/design/` (tokens, 28 components, hooks; 159 tests), the dev-only gallery `/knowledge/design-system`, `docs/design-system.md`, new `DESIGN.md` + `.impeccable/design.json` (old sidecar archived) |
-| 6: Hi-fi + round 2 | Not started | |
+| 5: Design system | **Approved 2026-10-08** | `frontend/src/design/` (tokens, 28 components, hooks; 159 tests), the dev-only gallery `/knowledge/design-system`, `docs/design-system.md`, new `DESIGN.md` + `.impeccable/design.json` (old sidecar archived) |
+| 6: Hi-fi + round 2 | Done; **GATE 6 open** | `frontend/src/design-lab/prototype/` (dev-only `/knowledge/design-lab/prototype`), `docs/ux/testing/a11y-manual.md` + `a11y-results.csv`, `docs/ux/testing/round-2/` (kit, data sheet, 33 captures) |
 | 7: Layer 2/3 install | Not started | |
 | 8: Build by area | Not started | |
 | 9: Validate and close | Not started | |
@@ -50,6 +50,12 @@
 | 2026-10-08 | **Design system: "The Calm Ledger".** Three token layers (primitive, semantic, component), re-declared per theme and density scope. 28 components in 7 families. A 92-check token contract (contrast in both themes, layering, red never a state). The dark masthead is deepened to #4a1b26 so the red logo reaches 4.27:1. | Phase 5 |
 | 2026-10-08 | Calm rules override the ui-ux-pro-max defaults: no colour transitions, and an unavailable control is an outline with its reason, never faded. | Conflict order |
 | 2026-10-08 | The two tallest document-review captures (13k and 17k px) are clipped to the first 4,000 px. All "before" captures total 16 MB. | Repository weight |
+| 2026-10-08 | **GATE 5 approved.** | User |
+| 2026-10-08 | **The hi-fi prototype is a second dev-only lab**, `/knowledge/design-lab/prototype`, built only from `frontend/src/design` over the wireframe lab's seeded reads, simulated writes and Scenario switch (the lab's base path moved into its context). The greyscale wireframes stay as the round-1 artefact until Phase 9 removes `/design-lab`. Absent from dist (main chunk 900.82 kB). | Phase 6 |
+| 2026-10-08 | **Design-system changes found by building the journeys** (all with tests): `DataTable` `onRowKey` (widget letter keys, grid only, never with modifiers); `StickyFooter`; an `AppShell` `panel` slot for Jobs, Help and Account; `AppShell` focuses a loading page's h1 when it arrives and lets a `#target` page keep its own focus; `Combobox` `search`; `JobTray` and `ProvenanceTrail` take a router `link`; `ImpactPanel` keeps focus on its title while checking; `Suggested` keeps its icon beside its words; forced-colours states for the rail marker, current tab, current row, pressed filter and combobox option (they were drawn by shadows or tints only). | Phase 6 |
+| 2026-10-08 | **A wireframe bug, fixed in the prototype only:** after a save, the review desk still said "Save your review before approving", because unsaved changes were counted against the read version rather than the last save. The wireframe lab is left as tested. | Phase 6 |
+| 2026-10-08 | **Round 2 T12 uses 'Customer care handbook (sample)'** (800 prose passages). The other documents waiting for review have 1 to 4 passages. | Seed check |
+| 2026-10-08 | Round 2 keeps T1–T11, the criteria, the times and the metrics of round 1 and the benchmark unchanged. It adds T12 (a 20-minute review, always last) and three questions (Q1 calm 1–7, Q2 fatigue 1–5 = the plan's scale, Q3 colour read as alarm). | Phase 6 brief |
 
 ## Brand source
 
@@ -73,7 +79,7 @@
 
 | Measure | Baseline | Round 1 | Round 2 | Final | Target |
 |---|---|---|---|---|---|
-| Main JS chunk (min) | 900.79 kB | | | | ≤ 990.87 kB |
+| Main JS chunk (min) | 900.79 kB | | 900.82 kB (prototype excluded) | | ≤ 990.87 kB |
 | Main JS chunk (gzip) | 241.51 kB | | | | — |
 | CSS (min / gzip) | 58.99 / 10.88 kB | | | | — |
 | Frontend tests | 265 pass / 1 fail (TZ) | 280 pass / 2 fail: the TZ failure plus one load-timing flake that varies by run and passes alone; separate task offered | | | all pass |
@@ -81,6 +87,10 @@
 | Maroon / red share (review desk, 1280, light) | A ≈ 6.8% / 0.1% · B ≈ 13% / 0.1% · C ≈ 1% / 0.1% | | | | maroon ~8–10%, red ≤ 2% |
 | Impeccable critique /40 (Home · Library · Cat. browse · Explorer · Curation · Req. knowledge · Squads) | 23 · **19** · 25 · 20 · 25 · 26 · 25 (mean 23.3, Acceptable) | | | | |
 | Task success / SEQ / SUS | — (Phase 1 benchmark, user-run) | | | | set in Phase 1b |
+| Review desk rows visible (compact, 1440×900) | ~2 (heuristic review) | | **15** (prototype, measured) | | ≥ 10 |
+| Chrome share of the viewport, review desk (masthead + table head + save bar) | — | | **14%** at 1440×900 · **22%** at 1280×800 (the save bar wraps to two lines) | | ≤ 15% at 1280×800 |
+| Design and lab tests | 159 (design 143 + wireframes 16) | | **181 pass, 0 fail**: design 147 (components 55, tokens 92), wireframes 16, prototype 18 | | all pass |
+| Perceived calm / fatigue after 20 min | — | | not measured yet (round 2, user-run) | | median fatigue ≤ 2 / 5 |
 
 ## Open questions (GATE 0)
 
@@ -110,15 +120,29 @@ O-1 to O-7 are listed in `docs/ux/journeys/cognitive-walkthrough.md`. They move 
   in Phase 9 (`impeccable document` and surfaces), or per area in Phase 8.
 - The missing favicon logs a 404 on every page. This predates the redesign.
 
+## Known issues before round 2 (from building and measuring, not from users)
+
+| # | Issue | Evidence | Proposed handling |
+|---|---|---|---|
+| K1 | At 1280×800 the review desk's save bar wraps to two lines, so chrome is 22% (target ≤ 15%). It is one line (14%) at 1440. The wrap is caused by the two "why unavailable" reasons beside the buttons. | Measured, `prototype/` captures | Phase 8 Library: put the reasons under the bar only while the button is unavailable **and** the bar is narrow, or shorten them; re-measure. Never hide the reason (§1.2). |
+| K2 | Content has `dir="auto"` but no `lang`, so NVDA probably reads Arabic titles with the English voice. | Markup review; a11y kit B1.10 | Phase 8: set `lang` where the language is known (a document's `language`); confirm with B1.10. |
+| K3 | Arabic titles inside English sentences render as `'(sample) …'` because of correct bidi isolation of an RTL title that ends in Latin text. It may still read oddly. | Captures (Your work, Library) | Observe in T3 and Q3; a content fix (the sample suffix) is a seed matter, not the UI. |
+| K4 | On a phone, the masthead's account name wraps to two lines. The lab bar takes about 140px (scaffolding only). | `*-16-library-390.jpg` | Phase 8 Shell: a short account label below 480px. |
+| K5 | The missing favicon 404 (predates the redesign). | Console | Unchanged; Phase 8 Shell. |
+
+These are inputs to the GATE 6 comparison, alongside what round 2 and the manual a11y kit find.
+
 ## Next exact action
 
-At **GATE 5**, the user reviews:
+At **GATE 6**, the user:
 
-- the gallery (`http://localhost:5184/knowledge/design-system`, both themes and both densities);
-- `DESIGN.md`;
-- `docs/design-system.md`.
+- runs round 2 (`docs/ux/testing/round-2/README.md`) and the manual a11y kit
+  (`docs/ux/testing/a11y-manual.md`) on the prototype, and puts the data in `round-2-data.csv`
+  and `a11y-results.csv`;
+- **or** chooses assumption mode.
 
-Then start Phase 6:
+Then the agent:
 
-- upgrade the `/design-lab` journeys to high fidelity with `frontend/src/design` components;
-- write the manual accessibility kit and the round-2 kit.
+1. compares the results with the baseline (not measured) and the `synthesis.md` §8 targets;
+2. lists the remaining issues (K1–K5 plus findings);
+3. updates the plans, before any production code (Phase 7).
