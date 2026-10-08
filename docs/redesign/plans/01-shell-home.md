@@ -1,6 +1,6 @@
 # Area 1: Shell, navigation, job tray, help + Home
 
-**Branch:** `feat/kb-redesign/shell-home` · **Gate:** GATE 8.1 · **Order:** first. Every later
+**Branch:** `feat/kb-redesign-shell-home` · **Gate:** GATE 8.1 · **Order:** first. Every later
 area renders inside this shell.
 
 ## 1. Goal
@@ -116,7 +116,7 @@ K3 (watch), K4 (a short account label below 480px), K5 (add a favicon in the e& 
 - **1.2** At most 3 tab stops before the primary content on every page: skip link → … (e2e).
 - **1.3** Jobs, Help and Account are in the same place, in the same order, on every route,
   including unmigrated pages (e2e over all routes).
-- **1.4** The chrome (masthead and rail) is at most 15% of a 1280×800 view on a non-desk page.
+- **1.4** The chrome is at most 15% of a 1280×800 view's **height** on a non-desk page (decided at GATE 8.1: measured vertically, so the labelled rail is kept).
 - **1.5** Unmigrated pages look unchanged inside the new shell, apart from the frame: their
   visual diff is limited to the frame region (a screenshot review at the gate).
 - **1.6** The prototype's Your work tests carry over: no write is called on load.

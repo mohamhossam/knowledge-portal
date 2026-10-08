@@ -1,6 +1,6 @@
 # Area 5: Requirement knowledge
 
-**Branch:** `feat/kb-redesign/requirement-knowledge` · **Gate:** GATE 8.5 · **Journey:** none of
+**Branch:** `feat/kb-redesign-requirement-knowledge` · **Gate:** GATE 8.5 · **Journey:** none of
 the five. It is the "Requirements" rail area.
 
 ## 1. Goal

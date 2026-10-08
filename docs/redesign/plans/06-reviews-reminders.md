@@ -1,6 +1,6 @@
 # Area 6: Reviews and reminders → Re-confirmations
 
-**Branch:** `feat/kb-redesign/re-confirmations` · **Gate:** GATE 8.6 · **Journey 4** (T11)
+**Branch:** `feat/kb-redesign-re-confirmations` · **Gate:** GATE 8.6 · **Journey 4** (T11)
 
 ## 1. Goal
 

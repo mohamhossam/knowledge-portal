@@ -1,0 +1,34 @@
+/*
+ * Your work (redesign area 1): the queue as the Calm Ledger sets it, a ruled
+ * table per kind of work at a reading measure. Tokens only.
+ */
+.work {
+  max-inline-size: 72rem;
+}
+
+/* A second, quieter line inside a cell: the detail you choose by. */
+.work__detail {
+  display: block;
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.ds-status + .work__detail {
+  margin-block-start: var(--space-1);
+}
+
+.work__none {
+  color: var(--color-ink-2);
+}
+
+.work__clear,
+.work__backlog {
+  margin-block: var(--space-4) 0;
+  padding-block-start: var(--space-3);
+  border-block-start: var(--hair-rule);
+  color: var(--color-ink-2);
+}
+
+.work__backlog {
+  font-size: var(--text-meta);
+}

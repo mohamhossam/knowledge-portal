@@ -1,6 +1,6 @@
 # Area 4: Catalogue browsing
 
-**Branch:** `feat/kb-redesign/catalogue-browsing` · **Gate:** GATE 8.4 · **Journeys 2 and 3**
+**Branch:** `feat/kb-redesign-catalogue-browsing` · **Gate:** GATE 8.4 · **Journeys 2 and 3**
 (T6 compare)
 
 ## 1. Goal

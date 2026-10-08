@@ -62,7 +62,7 @@ export const ROUTES: RouteDef[] = [
 ];
 
 /** Route keys rebuilt on the design system (Phase 8 adds to this, area by area). */
-export const REDESIGNED: string[] = [];
+export const REDESIGNED: string[] = ["home"];
 
 type Named = { id: string; title?: string; name?: string | null; status?: string };
 

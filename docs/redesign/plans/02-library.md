@@ -1,6 +1,6 @@
 # Area 2: Library
 
-**Branch:** `feat/kb-redesign/library` · **Gate:** GATE 8.2 · **Journey 1** (T2, T3, T4, T10)
+**Branch:** `feat/kb-redesign-library` · **Gate:** GATE 8.2 · **Journey 1** (T2, T3, T4, T10)
 
 ## 1. Goal
 

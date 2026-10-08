@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Integration branch | `feat/kb-redesign`, from `main` @ `b6114b9` |
-| Current phase | **7: Install layer 2 and layer 3.** Done. Next: Phase 8, area 1, started by the user with `/redesign-area` |
+| Current phase | **8: Build by area.** Area 1 (Shell + Your work) approved and merged; next is area 2 (Library) |
 | Last updated | 2026-10-08 |
 
 ## Phase log
@@ -18,7 +18,7 @@
 | 5: Design system | **Approved 2026-10-08** | `frontend/src/design/` (tokens, 28 components, hooks; 159 tests), the dev-only gallery `/knowledge/design-system`, `docs/design-system.md`, new `DESIGN.md` + `.impeccable/design.json` (old sidecar archived) |
 | 6: Hi-fi + round 2 | **Approved 2026-10-08** (GATE 6 = assumption mode; round 2 and the manual a11y kit not run) | `frontend/src/design-lab/prototype/` (dev-only `/knowledge/design-lab/prototype`), `docs/ux/testing/a11y-manual.md` + `a11y-results.csv`, `docs/ux/testing/round-2/` (kit, data sheet, 33 captures) |
 | 7: Layer 2/3 install | **Done 2026-10-08** | `docs/redesign/plans/` (README + 10 area plans), `.claude/skills/redesign-area/SKILL.md`, vitest-axe in the component tests (`src/test/axe.ts`), `frontend/e2e/` (Playwright + axe ratchet, visual spec), `scripts/brand-lint.mjs`, `scripts/bundle-budget.mjs`, CI `e2e` job |
-| 8: Build by area | Not started | |
+| 8: Build by area | Area 1 **approved 2026-10-08** (GATE 8.1); areas 2–10 to come | `docs/redesign/areas/01-shell-home/` (before/after captures) |
 | 9: Validate and close | Not started | |
 
 ## Decisions
@@ -26,6 +26,7 @@
 | Date | Decision | Source |
 |---|---|---|
 | 2026-10-07 | The epic runs on `feat/kb-redesign`. Areas run on `feat/kb-redesign/<area>`. | User brief |
+| 2026-10-08 | **Area branches are `feat/kb-redesign-<area>`**, not `feat/kb-redesign/<area>`: git can't create `refs/heads/feat/kb-redesign/…` while the branch `feat/kb-redesign` exists. The skill text keeps the brief's wording; the plans and CLAUDE.md say the real name. | git |
 | 2026-10-07 | `.claude/settings.local.json` is created and git-ignored (`.gitignore`). | User brief |
 | 2026-10-07 | The baseline runs on launch configs `redesign-api` :8110 and `redesign-web` :5184. Ports :8100 and :5174 are held by another session's servers. | Port conflict observed |
 | 2026-10-07 | "Before" screenshots are JPEG q80, not PNG. The first PNG capture was 30 MB. | Repository weight |
@@ -66,6 +67,10 @@
 | 2026-10-08 | **Brand lint** allows raw colours only in `src/design/tokens/primitive.css` and the legacy `src/styles/tokens.css`; it allows `--eand-*` only in the primitive and semantic layers. The ratchet allows 8 legacy colours, in `src/explorer/document/overview.ts` (the Word export palette). The Phase 3–4 wireframe lab is exempt in full: frozen as tested, removed in Phase 9. | Phase 7 |
 | 2026-10-08 | **Bundle budget:** the entry chunk is at most 990.87 kB (900.79 × 1.1), checked from `dist/index.html`. It is 900.83 kB today. | Phase 7 |
 | 2026-10-08 | **CI:** every existing step is kept. The frontend job adds the brand lint and the budget. A new `e2e` job runs the API (`uv`, fake env), seeds it, builds, and runs Playwright with Chromium, uploading the report on failure. The pinned `upload-artifact` SHA was checked against tag v4.6.2. | Phase 7 |
+| 2026-10-08 | **Area 1, the legacy island.** An unmigrated page renders inside the new shell in `.ds-legacy`. The design system's base element rules skip it (`:where(:not(.ds-legacy *))`, specificity unchanged). The island restores the Timetable Book's body typography and its own scroll padding for pinned bars. On a legacy route the whole frame is light (`data-theme="light"`); dark mode applies on rebuilt routes only until Phase 9. Two reviewers judged a dark frame around a light page worse. | Area 1 reviews |
+| 2026-10-08 | **Area 1 IA choices.** "Re-confirmations" sits in the rail's secondary group (plan 06: always reachable). The Gaps backlog is listed with its true number but kept out of the "need you" count, so the count can reach zero (critique P1). Your work's actions are plain tab stops, not a roving list, per the accessibility reviewers (a roving `<ul>` hides most actions from Tab). | Area 1 reviews and critique |
+| 2026-10-08 | **Route-change focus for legacy pages.** `AppShell` focuses the design-system h1, or else a legacy page's first h1 (it waits for it to load). Focus a legacy page placed itself, or a `#target`, is kept. | Area 1 |
+| 2026-10-08 | **GATE 8.1 approved.** Chrome share is measured by height (6%). The critique stands at 27–28/40, with acting from the queue deferred to area 2 and a re-critique after it. Queues use one tab stop per item (interaction model §2.2 amended). | User |
 
 ## Brand source
 
@@ -175,13 +180,32 @@ review only. Every user-facing claim in them stays HYPOTHESIS until a benchmark 
 (ExplorerPage) and the load flake (tracking, which passes alone). Both are being fixed in
 separate sessions.
 
+## Area 1: approved at GATE 8.1 (Shell, navigation, Jobs, Help + Your work)
+
+| Criterion | Result |
+|---|---|
+| A1 axe on routes | 33/33 pass; `home` with no allowance; the baseline is unchanged (2 legacy routes, 1 rule) |
+| A2 component axe | Shell, Your work and panels: axe after every test (Shell.test.tsx) |
+| A3 focus to h1 on route change | e2e `shell.spec.ts`: rebuilt and legacy pages |
+| A4 focus return | Panels: Esc and close return focus to the button pressed last (unit) |
+| 1.1 rail count = queue | Unit (gaps excluded from both, by design) |
+| 1.2 skip link first | e2e on every route |
+| 1.3 utilities the same on every route | e2e on every route |
+| 1.4 chrome ≤ 15% at 1280×800 | **6% of the height.** Pass: the user chose to measure vertically and keep the labelled rail (21% by area) |
+| 1.5 legacy pages look unchanged | Captured; the island keeps the old look; the frame is light |
+| 1.6 no write on load | Unit |
+| D1 lint, types, tests, api:check, build | Green, except the 2 known unrelated unit failures (timezone; tracking load flake) |
+| D2 budget | 938.17 kB (+4.15%; limit 990.87) |
+| B1 brand lint | Pass |
+| D4 visual | `home` 1280/1920 light/dark baselines (win32) |
+| D5 critique ≥ 30/40 | **28 → 27 → 27/40** over three independent runs (baseline 23); the ledger queue is built. The user chose a bounded last batch without another re-score; the remaining gap is in the backlog (acting from the queue, area 2) |
+
 ## Next exact action
 
-**Phase 8, area 1: Shell, navigation, job tray, help + Home.**
-- **You start it** with `/redesign-area Shell, navigation, job tray, help + Home: plan docs/redesign/plans/01-shell-home.md`.
-- **Fresh session recommended:** this one is long.
-- **Preconditions:**
-  - a clean tree on `feat/kb-redesign/shell-home`, created from `feat/kb-redesign`;
-  - the plan approved when you invoke it.
-- **First commit of the area:** the legacy token rename (plan 01, Risks).
-- **Then:** **GATE 8.1**.
+**Phase 8, area 2: Library** (plan `docs/redesign/plans/02-library.md`):
+- **Branch:** `feat/kb-redesign-library`, created from `feat/kb-redesign`.
+- **Scope added to it:** the area-1 backlog items it owns:
+  - "Try reading again" and "Upload a new version" on the failed-read row;
+  - Retry and Stop in Jobs, with attempts.
+- **Afterwards:** re-critique Your work.
+- **Then:** **GATE 8.2**.

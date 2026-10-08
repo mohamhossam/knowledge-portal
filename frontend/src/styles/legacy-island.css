@@ -1,0 +1,47 @@
+/*
+ * Transitional (redesign Phase 8): a page not yet rebuilt renders inside the
+ * new shell in this island, looking as it did in the Timetable Book. It
+ * restores what the book's <html> and <body> gave it, which the design
+ * system's .ds-root would otherwise set. Removed in Phase 9 with the rest of
+ * the legacy CSS.
+ *
+ * The island stays light in a dark theme: the book has no dark mode.
+ */
+.ds-main:has(> .ds-legacy) {
+  padding: 0;
+}
+
+.ds-legacy {
+  min-block-size: 100%;
+  background: var(--stock);
+  color: var(--ink);
+  color-scheme: light;
+  font-family: var(--face);
+  font-size: var(--t-body);
+  font-stretch: var(--width-text);
+  font-synthesis: none;
+  font-variant-numeric: tabular-nums lining-nums;
+  line-height: 1.45;
+  caret-color: var(--reference);
+  -webkit-font-smoothing: auto;
+}
+
+.ds-legacy > .page {
+  padding-block-start: var(--s5);
+}
+
+/*
+ * The book's own scroll padding for its pinned bars. The design system's
+ * measured padding (html:has(.ds-root), same specificity, loaded later) would
+ * otherwise replace it, and focus could scroll under a legacy save bar (WCAG
+ * 2.4.11). These are more specific, in the book's own order.
+ */
+html:has(.ds-legacy .galley) {
+  scroll-padding-bottom: var(--s6);
+}
+
+html:has(.ds-legacy .savebar),
+html:has(.ds-legacy .edit-panel__foot),
+html:has(.ds-legacy .suggestion-editor > .suggestion-editor__actions) {
+  scroll-padding-bottom: 9rem;
+}

@@ -28,7 +28,7 @@
   color: var(--masthead-fg);
 }
 
-.ds-masthead :focus-visible {
+.ds-root .ds-masthead :focus-visible {
   outline-color: var(--masthead-fg);
   box-shadow: none;
 }
@@ -148,6 +148,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-2);
   min-block-size: 2.25rem;
   padding-inline: var(--space-3);
   border-radius: var(--radius-control);
@@ -442,8 +443,12 @@
     padding-block: var(--space-2);
   }
 
-  .ds-masthead__out {
-    display: none;
+  /* A long name (the account button) stays on one line; its accessible name is whole. */
+  .ds-masthead__label {
+    max-inline-size: 7rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 

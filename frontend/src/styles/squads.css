@@ -90,7 +90,7 @@
 
 /* Each place in the closing section heads its systems on a heavy rule, like the systems index. */
 .govtable .runs__place th {
-  border-bottom: 2px solid var(--rule-heavy);
+  border-bottom: 2px solid var(--tt-rule-heavy);
 }
 
 .squads__gaps {

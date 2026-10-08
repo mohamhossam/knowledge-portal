@@ -5,7 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { api, type LibraryDocument, type Release, type Reminders, type ReviewStanding, type SystemStanding } from "../api/client";
-import { ReviewsDue } from "../app/Shell";
+import { ReviewsDue } from "../app/legacyMasthead";
 import { AuthContext, type AuthState } from "../auth/authContext";
 import { architectureOverview, libraryOverview, nameDirectory } from "../home/derive";
 import { libraryRow } from "../library/libraryRow";

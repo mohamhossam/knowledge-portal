@@ -1,6 +1,6 @@
 # Area 7: Squads → Ownership
 
-**Branch:** `feat/kb-redesign/ownership` · **Gate:** GATE 8.7 · **Journey 3** (T8)
+**Branch:** `feat/kb-redesign-ownership` · **Gate:** GATE 8.7 · **Journey 3** (T8)
 
 ## 1. Goal
 

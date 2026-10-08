@@ -2,6 +2,11 @@
  * The design system's entry: the three token layers, then base element styles.
  * Base styles are scoped to .ds-root so nothing changes on today's screens
  * until an area migrates (redesign Phase 8); the legacy tokens.css stays until then.
+ *
+ * During Phase 8 an unmigrated page renders inside the new shell in a legacy
+ * island (`.ds-legacy`, styles/legacy-island.css). The element rules below
+ * skip that island (`:not(.ds-legacy *)` inside `:where`, so specificity is
+ * unchanged), and the island keeps the Timetable Book's own base styles.
  */
 @import "./primitive.css";
 @import "./semantic.css";
@@ -25,23 +30,23 @@
   box-sizing: border-box;
 }
 
-.ds-root :where(h1, h2, h3, h4, p, ul, ol, dl, dd, figure, blockquote, fieldset) {
+.ds-root :where(h1, h2, h3, h4, p, ul, ol, dl, dd, figure, blockquote, fieldset):where(:not(.ds-legacy *)) {
   margin: 0;
 }
 
-.ds-root :where(h1, h2, h3, h4) {
+.ds-root :where(h1, h2, h3, h4):where(:not(.ds-legacy *)) {
   font-weight: var(--weight-heading);
   font-stretch: var(--stretch-title);
   line-height: var(--leading-tight);
   text-wrap: balance;
 }
 
-.ds-root :where(button, input, select, textarea) {
+.ds-root :where(button, input, select, textarea):where(:not(.ds-legacy *)) {
   font: inherit;
   color: inherit;
 }
 
-.ds-root :where(a) {
+.ds-root :where(a):where(:not(.ds-legacy *)) {
   color: var(--color-link);
   text-decoration-thickness: 1px;
   text-underline-offset: 0.2em;
@@ -49,7 +54,7 @@
 }
 
 /* §1.2: one visible ring for every control, never obscured (scroll padding below). */
-.ds-root :focus-visible {
+.ds-root :focus-visible:where(:not(.ds-legacy *)) {
   outline: var(--focus-ring);
   outline-offset: var(--focus-ring-offset);
   box-shadow: var(--focus-halo);
@@ -61,24 +66,24 @@
   box-shadow: none;
 }
 
-.ds-root ::selection {
+.ds-root :where(:not(.ds-legacy, .ds-legacy *))::selection {
   background: var(--color-selected);
   color: var(--color-on-selected);
 }
 
-.ds-root :where(table, .ds-num, time, data) {
+.ds-root :where(table, .ds-num, time, data):where(:not(.ds-legacy *)) {
   font-variant-numeric: tabular-nums lining-nums;
 }
 
 /* §13: Arabic and other RTL content gets air and its own face; the UI chrome never mirrors. */
-.ds-root :where(:lang(ar), [dir="rtl"]),
-.ds-root :where(p, span, a, td, th, li, dd, [role="gridcell"]):dir(rtl) {
+.ds-root :where(:lang(ar), [dir="rtl"]):where(:not(.ds-legacy *)),
+.ds-root :where(p, span, a, td, th, li, dd, [role="gridcell"]):dir(rtl):where(:not(.ds-legacy *)) {
   font-family: var(--font-arabic);
   line-height: var(--leading-arabic);
   text-underline-offset: 0.4em;
 }
 
-.ds-root :where(kbd) {
+.ds-root :where(kbd):where(:not(.ds-legacy *)) {
   font: inherit;
   font-size: var(--text-meta);
   padding-inline: 0.35em;
@@ -144,7 +149,7 @@ html:has(.ds-root) {
     color: HighlightText;
   }
 
-  .ds-root :focus-visible {
+  .ds-root :focus-visible:where(:not(.ds-legacy *)) {
     outline-color: Highlight;
   }
 }

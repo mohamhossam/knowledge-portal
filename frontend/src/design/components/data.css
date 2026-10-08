@@ -48,6 +48,12 @@
   .ds-table-wrap {
     overflow-x: auto;
   }
+
+  /* The wrapper scrolls here, so it would capture a sticky head and pin it over
+     the first rows: on narrow screens the head scrolls with the table. */
+  .ds-table-wrap .ds-table thead th {
+    position: static;
+  }
 }
 
 .ds-table {

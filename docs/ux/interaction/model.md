@@ -77,9 +77,8 @@ reader conflicts (theme T4).
 | | `g` then `j` | Open the Jobs panel |
 | | `/` | Focus the page's find or filter field |
 | Any panel or drawer | `Esc` | Close and return focus (see §1) |
-| Lists (Queue, Browse) | `↑` `↓` | Previous or next item (roving tabindex; one tab stop for the list) |
+| Lists and queues (Queue, Browse) | `Tab` | Each item's link is its own tab stop: no roving, no arrow keys (decided at GATE 8.1, 2026-10-08) |
 | | `Enter` | Open the item |
-| | `Home` `End` | First or last item |
 | Review grid: passages | `↑` `↓` (also `j` `k`) | Previous or next row |
 | | `Enter` | Open the row's detail (docked) |
 | | `x` | Exclude, which focuses the reason |
@@ -100,6 +99,7 @@ reader conflicts (theme T4).
 | | `Esc` | Clear |
 
 - **No other single-key bindings exist.**
+- **Why queues aren't roving lists (GATE 8.1).** A roving list of links hides every item but one from Tab, and nothing on screen says arrow keys exist. The accessibility reviewers found most actions undiscoverable that way. Arrow-key grids are kept where they pay off: the review desks, which say their keys under the grid.
 - The keys line under each grid lists that grid's keys, and is part of Help.
 - **Inside text fields, every shortcut is off.**
 

@@ -1,6 +1,6 @@
 # Area 10: Route redirects
 
-**Branch:** `feat/kb-redesign/redirects` · **Gate:** GATE 8.10 · **Last.** It runs once every
+**Branch:** `feat/kb-redesign-redirects` · **Gate:** GATE 8.10 · **Last.** It runs once every
 new route exists.
 
 ## 1. Goal
