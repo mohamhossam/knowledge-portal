@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "frontend/src/design-lab/gallery/gallery.css"
+        ],
+        "createdAt": "2026-10-08T00:18:27.678Z",
+        "reason": "Agent triage: L90 is the gallery's demo of the brief-mandated red active-nav marker (3px inset on the current area, same as .ds-rail__link[aria-current]); a navigation location marker, not a card accent. Dev-only gallery file."
+      }
+    ]
+  }
+}
