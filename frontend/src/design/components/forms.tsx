@@ -135,6 +135,7 @@ export function Combobox({
   placeholder,
   emptyText = "No matches.",
   suggested,
+  search,
 }: {
   label: ReactNode;
   hint?: ReactNode;
@@ -144,13 +145,15 @@ export function Combobox({
   emptyText?: string;
   /** An option to offer first, with its reason (e.g. the squad that runs related systems). */
   suggested?: { id: string; reason: string };
+  /** The caller's own matching (e.g. the catalogue's search over names, Arabic names and capabilities); replaces the label filter. */
+  search?: (query: string) => ComboOption[];
 }) {
   const id = useId();
   const [query, setQuery] = useState("");
   const [index, setIndex] = useState(0);
   const [open, setOpen] = useState(false);
   const wanted = query.trim().toLocaleLowerCase();
-  const filtered = options.filter((option) => !wanted || option.label.toLocaleLowerCase().includes(wanted) || option.hint?.toLocaleLowerCase().includes(wanted));
+  const filtered = search ? search(query) : options.filter((option) => !wanted || option.label.toLocaleLowerCase().includes(wanted) || option.hint?.toLocaleLowerCase().includes(wanted));
   const ordered = suggested ? [...filtered.filter((o) => o.id === suggested.id), ...filtered.filter((o) => o.id !== suggested.id)] : filtered;
   const pick = (option: ComboOption | undefined) => {
     if (!option) return;

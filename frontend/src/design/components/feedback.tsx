@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 
 import { type JobState, JOB_WORDS } from "../words";
 import { Button } from "./actions";
+import type { LinkLike } from "./layout";
 
 export type { JobState };
 
@@ -129,7 +130,7 @@ export type Job = {
  * §6: the Jobs panel body: running, needing attention, recently done; each with
  * its object, elapsed time, cause and fix. Background news is polite, never assertive.
  */
-export function JobTray({ jobs, empty = "No jobs are running. Reading, indexing and building appear here while they run." }: { jobs: Job[]; empty?: string }) {
+export function JobTray({ jobs, empty = "No jobs are running. Reading, indexing and building appear here while they run.", link: Link }: { jobs: Job[]; empty?: string; link?: LinkLike }) {
   const order: Record<JobState, number> = { attention: 0, held: 1, working: 2, waiting: 3, stopped: 4, done: 5 };
   const sorted = [...jobs].sort((a, b) => order[a.state] - order[b.state]);
   if (sorted.length === 0) return <p className="ds-jobs__empty">{empty}</p>;
@@ -140,7 +141,7 @@ export function JobTray({ jobs, empty = "No jobs are running. Reading, indexing 
           <JobStatus state={job.state} />
           <p className="ds-jobs__what">
             {job.kind}:{" "}
-            {job.subjectHref ? <a href={job.subjectHref}><bdi>{job.subject}</bdi></a> : <bdi>{job.subject}</bdi>}
+            {job.subjectHref ? (Link ? <Link href={job.subjectHref}><bdi>{job.subject}</bdi></Link> : <a href={job.subjectHref}><bdi>{job.subject}</bdi></a>) : <bdi>{job.subject}</bdi>}
           </p>
           {job.timing && <p className="ds-jobs__timing">{job.timing}</p>}
           {job.cause && <p className="ds-jobs__cause">{job.cause}</p>}

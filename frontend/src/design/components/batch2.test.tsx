@@ -1,10 +1,10 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { Button } from "./actions";
-import { AppShell, Breadcrumbs, MastheadButton, PageHeader, Pagination, Section, SplitPane, StateLine, SubNav, Tabs, Toolbar } from "./layout";
+import { AppShell, Breadcrumbs, MastheadButton, PageHeader, Pagination, Section, SplitPane, StateLine, StickyFooter, SubNav, Tabs, Toolbar } from "./layout";
 import { Dialog, Drawer, HelpContent, ShortcutHelp, Toggletip } from "./overlays";
 
 const NAV = [
@@ -37,6 +37,15 @@ describe("AppShell", () => {
     rerender(<AppShell homeHref="/" navigation={NAV} locationKey="/b"><PageHeader title="B">b</PageHeader></AppShell>);
     expect(screen.getByRole("heading", { level: 1, name: "B" })).toHaveFocus();
     expect(scroll).toHaveBeenCalledWith(0, 0);
+    scroll.mockRestore();
+  });
+
+  it("focuses the h1 when it arrives after the page has loaded (skeleton first)", async () => {
+    const scroll = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+    const { rerender } = render(<AppShell homeHref="/" navigation={NAV} locationKey="/a"><PageHeader title="A">a</PageHeader></AppShell>);
+    rerender(<AppShell homeHref="/" navigation={NAV} locationKey="/b"><p>Loading…</p></AppShell>);
+    rerender(<AppShell homeHref="/" navigation={NAV} locationKey="/b"><PageHeader title="B">b</PageHeader></AppShell>);
+    await waitFor(() => expect(screen.getByRole("heading", { level: 1, name: "B" })).toHaveFocus());
     scroll.mockRestore();
   });
 
@@ -167,5 +176,14 @@ describe("overlays", () => {
     render(<HelpContent page={{ title: "Reviewing a document", body: "Move through the passages." }} terms={[{ term: "Passage", meaning: "One reviewed unit." }]} contact={<p>Contact to be configured.</p>} />);
     const headings = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
     expect(headings).toEqual(["Reviewing a document", "Terms on this page", "Ask the knowledge team"]);
+  });
+});
+
+describe("StickyFooter", () => {
+  it("is a labelled region that holds the page's bottom actions", () => {
+    render(<StickyFooter label="Draft progress"><Button variant="primary">Save and continue</Button></StickyFooter>);
+    const region = screen.getByRole("region", { name: "Draft progress" });
+    expect(region).toHaveClass("ds-stickyfoot");
+    expect(region).toContainElement(screen.getByRole("button", { name: "Save and continue" }));
   });
 });

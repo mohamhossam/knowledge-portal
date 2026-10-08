@@ -18,14 +18,14 @@ const COLUMNS: Column<Doc>[] = [
   { id: "count", header: "Passages", cell: (d) => d.count, numeric: true, sortable: true },
 ];
 
-function Grid({ onActivate = vi.fn() }: { onActivate?: (d: Doc) => void }) {
+function Grid({ onActivate = vi.fn(), onRowKey }: { onActivate?: (d: Doc) => void; onRowKey?: (d: Doc, key: string) => boolean }) {
   const [current, setCurrent] = useState<string>();
   const [selected, setSelected] = useState(new Set<string>());
   const [sort, setSort] = useState<Sort>({ id: "title", direction: "ascending" });
   return (
     <DataTable caption="Documents" columns={COLUMNS} rows={DOCS} rowId={(d) => d.id} rowLabel={(d) => d.title}
       sort={sort} onSort={setSort} selected={selected} onSelectedChange={setSelected}
-      currentId={current} onCurrentChange={setCurrent} onActivate={onActivate} />
+      currentId={current} onCurrentChange={setCurrent} onActivate={onActivate} onRowKey={onRowKey} />
   );
 }
 
@@ -58,6 +58,19 @@ describe("DataTable", () => {
     expect(screen.getByRole("checkbox", { name: "Select XGPON coverage rules" })).toBeChecked();
     await userEvent.keyboard("{Shift>}{ArrowDown}{/Shift}");
     expect(screen.getByRole("checkbox", { name: "Select سياسة التحقق من العنوان" })).toBeChecked();
+  });
+
+  it("passes the widget's own letter keys to the current row, never with modifiers", async () => {
+    const onRowKey = vi.fn((_: Doc, key: string) => key === "x");
+    render(<Grid onRowKey={onRowKey} />);
+    screen.getAllByRole("rowheader")[0]!.focus();
+    await userEvent.keyboard("j");
+    await userEvent.keyboard("x");
+    expect(onRowKey).toHaveBeenLastCalledWith(DOCS[1], "x");
+    await userEvent.keyboard("{Control>}x{/Control}");
+    expect(onRowKey).toHaveBeenCalledTimes(1);
+    await userEvent.keyboard("q");
+    expect(onRowKey).toHaveBeenLastCalledWith(DOCS[1], "q");
   });
 
   it("gives bidi cells their own direction and numbers their own column style", () => {
@@ -173,6 +186,8 @@ describe("compare and evidence", () => {
     expect(screen.getByText(/Out of date/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Check again" }));
     expect(onCheck).toHaveBeenCalledOnce();
+    // The button goes away while the check runs, so focus stays on the panel's title.
+    expect(screen.getByRole("heading", { name: "Mapping impact" })).toHaveFocus();
   });
 
   it("lays the provenance trail out as an ordered, labelled list of hops", () => {

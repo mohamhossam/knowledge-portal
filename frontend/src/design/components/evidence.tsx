@@ -5,6 +5,7 @@ import { type ReactNode, type RefObject, useEffect, useId, useState } from "reac
 
 import { Button } from "./actions";
 import { Status } from "./feedback";
+import type { LinkLike } from "./layout";
 
 /**
  * §5: the consequence panel, in place, never a modal. In order: what happens,
@@ -133,20 +134,25 @@ export function ImpactPanel({
   onCheck?: () => void;
 }) {
   const id = useId();
+  // The button that started the check goes away while it runs; focus stays in the panel, on its title.
+  const check = onCheck && (() => {
+    onCheck();
+    document.getElementById(`${id}-t`)?.focus();
+  });
   return (
     <section className="ds-impact" aria-labelledby={`${id}-t`}>
-      <h3 id={`${id}-t`} className="ds-impact__title">{title}</h3>
+      <h3 id={`${id}-t`} className="ds-impact__title" tabIndex={-1}>{title}</h3>
       {state.kind === "unknown" ? (
         <p><Status tone="attention">{state.why} The impact is unknown, not zero.</Status></p>
       ) : state.kind === "not-checked" ? (
-        <p className="ds-impact__state">Not checked yet.{onCheck && <>{" "}<Button variant="link" onClick={onCheck}>Check now</Button></>}</p>
+        <p className="ds-impact__state">Not checked yet.{check && <>{" "}<Button variant="link" onClick={check}>Check now</Button></>}</p>
       ) : state.kind === "checking" ? (
         <p className="ds-impact__state"><Status tone="working">Checking…</Status></p>
       ) : (
         <>
           <p className="ds-impact__state">
             {state.kind === "stale" ? <Status tone="held">Out of date: changed since the check at {state.at}</Status> : <>Checked at {state.at}</>}
-            {state.kind === "stale" && onCheck && <>{" "}<Button variant="link" onClick={onCheck}>Check again</Button></>}
+            {state.kind === "stale" && check && <>{" "}<Button variant="link" onClick={check}>Check again</Button></>}
           </p>
           {counts && (
             <dl className="ds-impact__counts">
@@ -172,7 +178,7 @@ export type Hop = { label: string; value: ReactNode; href?: string };
  * §10: the provenance trail, one hop per link: fact → evidence passage →
  * document and version → catalogue version → decided by.
  */
-export function ProvenanceTrail({ hops, label = "Where this comes from" }: { hops: Hop[]; label?: string }) {
+export function ProvenanceTrail({ hops, label = "Where this comes from", link: Link }: { hops: Hop[]; label?: string; link?: LinkLike }) {
   return (
     <nav className="ds-trail" aria-label={label}>
       <ol>
@@ -180,7 +186,7 @@ export function ProvenanceTrail({ hops, label = "Where this comes from" }: { hop
           <li key={hop.label} className="ds-trail__hop">
             {index > 0 && <ChevronRight size={14} aria-hidden="true" className="ds-trail__sep" />}
             <span className="ds-trail__label">{hop.label}</span>
-            {hop.href ? <a href={hop.href}><bdi>{hop.value}</bdi></a> : <bdi>{hop.value}</bdi>}
+            {hop.href ? (Link ? <Link href={hop.href}><bdi>{hop.value}</bdi></Link> : <a href={hop.href}><bdi>{hop.value}</bdi></a>) : <bdi>{hop.value}</bdi>}
           </li>
         ))}
       </ol>

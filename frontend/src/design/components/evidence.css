@@ -128,3 +128,13 @@
   font-size: var(--text-meta);
   color: var(--color-ink-2);
 }
+
+/* Who and what it affects: counts, named items and an impact panel stack with even spacing. */
+.ds-consequence__affects {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.ds-consequence__affects > p {
+  margin: 0;
+}

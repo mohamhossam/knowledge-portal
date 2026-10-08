@@ -66,6 +66,8 @@ const catalogueRoutes = (
 const DesignLab = import.meta.env.DEV ? lazy(() => import("../design-lab/wireframes/WireframesApp")) : null;
 /** The design-system gallery (Phase 5); development only, like the lab. */
 const DesignGallery = import.meta.env.DEV ? lazy(() => import("../design-lab/gallery/Gallery")) : null;
+/** The hi-fi prototype for usability round 2 (Phase 6); development only, like the lab. */
+const DesignPrototype = import.meta.env.DEV ? lazy(() => import("../design-lab/prototype/PrototypeApp")) : null;
 
 export function App() {
   return (
@@ -74,6 +76,12 @@ export function App() {
         <Route
           path="design-system/*"
           element={<Suspense fallback={null}><DesignGallery /></Suspense>}
+        />
+      )}
+      {DesignPrototype && (
+        <Route
+          path="design-lab/prototype/*"
+          element={<Suspense fallback={null}><DesignPrototype /></Suspense>}
         />
       )}
       {DesignLab && (

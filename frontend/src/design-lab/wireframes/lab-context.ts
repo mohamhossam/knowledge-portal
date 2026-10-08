@@ -68,6 +68,8 @@ export class SimulatedFailure extends Error {
 }
 
 export type Lab = {
+  /** Where this lab is mounted: the wireframes or the hi-fi prototype (Phase 6). */
+  base: string;
   scenario: Scenario;
   setScenario: (scenario: Scenario) => void;
   jobs: LabJob[];

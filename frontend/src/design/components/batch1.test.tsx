@@ -150,6 +150,15 @@ describe("forms", () => {
     expect(input).toHaveValue("Care squad");
   });
 
+  it("lets the caller do the matching (e.g. by Arabic name or capability)", async () => {
+    const search = vi.fn((query: string) => (query.includes("فوترة") ? [{ id: "bscs", label: "BSCS", hint: "Arabic name" }] : []));
+    render(<Combobox label="Find a system" options={[]} search={search} onSelect={() => {}} />);
+    const input = screen.getByRole("combobox", { name: "Find a system" });
+    await userEvent.type(input, "فوترة");
+    expect(search).toHaveBeenLastCalledWith("فوترة");
+    expect(screen.getByRole("option")).toHaveTextContent("BSCS · Arabic name");
+  });
+
   it("lists uploaded files with their scan state in words", () => {
     render(<Upload items={[{ name: "eligibility.xlsx", state: "working", note: "Scanning" }, { name: "deck.pptx", state: "held", note: "Held by the malware scan" }]} onFiles={() => {}} />);
     expect(screen.getByRole("list", { name: "Uploaded files" })).toHaveTextContent("Held by the malware scan");

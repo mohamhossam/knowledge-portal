@@ -38,6 +38,7 @@ export function AppShell({
   locationKey,
   link: Link = Anchor,
   banner,
+  panel,
   children,
 }: {
   product?: string;
@@ -56,6 +57,8 @@ export function AppShell({
   link?: LinkLike;
   /** One shell-level banner, e.g. "The portal can't reach its service." */
   banner?: ReactNode;
+  /** A non-modal side panel (Jobs, Help, Account) beside the page; the page stays usable. */
+  panel?: ReactNode;
   children: ReactNode;
 }) {
   const masthead = useRef<HTMLElement>(null);
@@ -66,8 +69,32 @@ export function AppShell({
       first.current = false;
       return;
     }
+    // An address with a target ("#passage-…") is the page's to focus: if it already did, it keeps it.
+    const main = document.getElementById("ds-main");
+    const active = document.activeElement;
+    if (window.location.hash && main && active && active !== main && main.contains(active)) return;
     window.scrollTo(0, 0);
-    document.getElementById("ds-page-title")?.focus({ preventScroll: true });
+    const title = document.getElementById("ds-page-title");
+    if (title) {
+      title.focus({ preventScroll: true });
+      return;
+    }
+    // The page is still loading (a skeleton, no h1 yet): focus its h1 when it arrives,
+    // unless the person has moved focus somewhere themselves in the meantime.
+    if (!main) return;
+    const observer = new MutationObserver(() => {
+      const arrived = document.getElementById("ds-page-title");
+      if (!arrived) return;
+      observer.disconnect();
+      const now = document.activeElement;
+      if (!now || now === document.body || now === main) arrived.focus({ preventScroll: true });
+    });
+    observer.observe(main, { childList: true, subtree: true });
+    const stop = setTimeout(() => observer.disconnect(), 10000);
+    return () => {
+      observer.disconnect();
+      clearTimeout(stop);
+    };
   }, [locationKey]);
 
   const nav = (items: NavItem[]) =>
@@ -81,15 +108,15 @@ export function AppShell({
     ));
 
   return (
-    <div className={`ds-root ds-shell${reader ? " ds-shell--reader" : ""}`}>
+    <div className={`ds-root ds-shell${reader ? " ds-shell--reader" : ""}${panel ? " ds-shell--panel" : ""}`}>
       <a className="ds-skip" href="#ds-main">Skip to content</a>
       {!reader && <a className="ds-skip" href="#ds-rail">Skip to navigation</a>}
       <header className="ds-masthead" ref={masthead}>
         <div className="ds-masthead__brand">
-          <a href={homeHref} className="ds-masthead__home">
+          <Link href={homeHref} className="ds-masthead__home">
             {logo ?? <span className="ds-logo" role="img" aria-label="e&">e&</span>}
             <span className="ds-masthead__product">{product}</span>
-          </a>
+          </Link>
           {outbound && (
             <a className="ds-masthead__out" href={outbound.href}>
               {outbound.label}{" "}
@@ -110,6 +137,7 @@ export function AppShell({
         <main id="ds-main" className="ds-main" tabIndex={-1}>
           {children}
         </main>
+        {panel}
       </div>
     </div>
   );
@@ -179,6 +207,22 @@ export function StateLine({ tone = "plain", children }: { tone?: "plain" | "proo
   useStickySize(line, "--sticky-state");
   return (
     <div ref={line} className={`ds-stateline ds-stateline--${tone}`} role="status">
+      {children}
+    </div>
+  );
+}
+
+/**
+ * The page's own bottom bar (a draft's "Save and continue", the review desk's
+ * progress). Sticky and measured like the selection bar, so scroll padding
+ * keeps the focused row clear of it (§1.1). A labelled region, not a footer
+ * landmark: the page has one contentinfo at most.
+ */
+export function StickyFooter({ label, children }: { label: string; children: ReactNode }) {
+  const bar = useRef<HTMLDivElement>(null);
+  useStickySize(bar, "--sticky-bottom");
+  return (
+    <div ref={bar} className="ds-stickyfoot" role="region" aria-label={label}>
       {children}
     </div>
   );

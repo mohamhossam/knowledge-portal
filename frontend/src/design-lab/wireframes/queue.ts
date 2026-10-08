@@ -5,7 +5,7 @@
  */
 import { suggestionState } from "../../catalogue/suggestions";
 import { docState, gaps, useActiveRelease, useDocuments, useOrganisation, useReleases, useReminders, useSuggestions } from "./data";
-import { useLab, wf } from "./lab-context";
+import { useLab } from "./lab-context";
 
 export type Entry =
   | { kind: "unreadable"; id: string; mine: boolean; subject: string; to: string }
@@ -25,6 +25,7 @@ export const SIMULATED_DUE = [
 
 export function useWorkQueue() {
   const lab = useLab();
+  const wf = (path = "") => `${lab.base}${path}`;
   const documents = useDocuments();
   const releases = useReleases();
   const active = useActiveRelease();

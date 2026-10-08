@@ -59,7 +59,18 @@
   font-size: var(--text-meta);
 }
 
+/* The icon stays beside its words in a narrow cell; the words wrap, and model details take their own line. */
+.ds-suggested > svg {
+  flex: none;
+}
+
+.ds-suggested > span:first-of-type {
+  flex: 1 1 0;
+  min-inline-size: 10ch;
+}
+
 .ds-suggested__detail {
+  flex-basis: 100%;
   color: var(--color-ink-2);
 }
 

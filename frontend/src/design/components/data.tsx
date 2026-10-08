@@ -67,6 +67,9 @@ export type Sort = { id: string; direction: "ascending" | "descending" };
  * (aria-sort), optional selection (24 px checkboxes), and, when `onActivate`
  * is given, a keyboard grid: ↑ ↓ (or j k) move, Home/End jump, Enter opens,
  * Space selects, Shift+↑/↓ extends. One tab stop for the whole grid.
+ * `onRowKey` adds the widget's own keys (the review desk's i, x, e, a, r):
+ * return true when the key was handled. Plain letters only, never with Ctrl,
+ * Alt or Meta, and they reach only a focused grid (WCAG 2.1.4).
  */
 export function DataTable<T>({
   caption,
@@ -82,6 +85,7 @@ export function DataTable<T>({
   currentId,
   onCurrentChange,
   rowLabel,
+  onRowKey,
   emptyText = "Nothing to show.",
 }: {
   caption: string;
@@ -98,6 +102,7 @@ export function DataTable<T>({
   onCurrentChange?: (id: string) => void;
   /** Names a row for its checkbox and for announcements ("passage 14"). */
   rowLabel?: (row: T) => string;
+  onRowKey?: (row: T, key: string) => boolean;
   emptyText?: string;
 }) {
   const grid = Boolean(onActivate);
@@ -137,7 +142,10 @@ export function DataTable<T>({
       const row = rows[index];
       if (row) onActivate?.(row);
     } else if (key === " " && current) toggle(current);
-    else return;
+    else {
+      const row = rows[index];
+      if (!row || !onRowKey || event.ctrlKey || event.altKey || event.metaKey || key.length !== 1 || !onRowKey(row, key)) return;
+    }
     event.preventDefault();
   };
 

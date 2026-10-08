@@ -10,6 +10,7 @@ import {
   type Scenario,
   SimulatedFailure,
   type Write,
+  BASE_PATH,
 } from "./lab-context";
 
 function stored<T extends string>(key: string, fallback: T): T {
@@ -40,7 +41,7 @@ const FAILURE_COPY = {
 } as const;
 
 /** Holds the lab's scenario, simulated writes and jobs. Nothing here calls the API. */
-export function LabProvider({ children }: { children: ReactNode }) {
+export function LabProvider({ base = BASE_PATH, children }: { base?: string; children: ReactNode }) {
   const [scenario, setScenarioState] = useState<Scenario>(() => stored("wf.scenario", "none"));
   const [jobs, setJobs] = useState<LabJob[]>([]);
   const [writes, setWrites] = useState<Record<string, Write>>({});
@@ -166,8 +167,8 @@ export function LabProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<Lab>(
-    () => ({ scenario, setScenario, jobs, startJob, retryJob, cancelJob, writes, simulate, forget, density, setDensity, shortcuts, setShortcuts, direction, setDirection, theme, setTheme, announce, announcement }),
-    [scenario, setScenario, jobs, startJob, retryJob, cancelJob, writes, simulate, forget, density, setDensity, shortcuts, setShortcuts, direction, setDirection, theme, setTheme, announce, announcement],
+    () => ({ base, scenario, setScenario, jobs, startJob, retryJob, cancelJob, writes, simulate, forget, density, setDensity, shortcuts, setShortcuts, direction, setDirection, theme, setTheme, announce, announcement }),
+    [base, scenario, setScenario, jobs, startJob, retryJob, cancelJob, writes, simulate, forget, density, setDensity, shortcuts, setShortcuts, direction, setDirection, theme, setTheme, announce, announcement],
   );
 
   return <LabContext.Provider value={value}>{children}</LabContext.Provider>;

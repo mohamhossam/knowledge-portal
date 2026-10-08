@@ -5,7 +5,7 @@
 import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import { useLab, wf } from "./lab-context";
+import { useLab } from "./lab-context";
 
 /**
  * §1: on a route change, focus the page's h1 and start at the top (or at the
@@ -61,7 +61,7 @@ function inEditable(target: EventTarget | null): boolean {
  * never fire inside text fields or grids (WCAG 2.1.4).
  */
 export function useGlobalShortcuts(handlers: { help: () => void; jobs: () => void }) {
-  const { shortcuts } = useLab();
+  const { shortcuts, base } = useLab();
   const navigate = useNavigate();
   const pendingG = useRef(false);
   useEffect(() => {
@@ -76,7 +76,7 @@ export function useGlobalShortcuts(handlers: { help: () => void; jobs: () => voi
           handlers.jobs();
         } else if (event.key in go) {
           event.preventDefault();
-          navigate(wf(go[event.key]));
+          navigate(`${base}${go[event.key]}`);
         }
         return;
       }
@@ -87,7 +87,7 @@ export function useGlobalShortcuts(handlers: { help: () => void; jobs: () => voi
         event.preventDefault();
         handlers.help();
       } else if (event.key === "/") {
-        const find = document.querySelector<HTMLElement>("[data-wf-find]");
+        const find = document.querySelector<HTMLElement>("[data-wf-find],[data-find]");
         if (find) {
           event.preventDefault();
           find.focus();
@@ -96,7 +96,7 @@ export function useGlobalShortcuts(handlers: { help: () => void; jobs: () => voi
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [shortcuts, navigate, handlers]);
+  }, [shortcuts, base, navigate, handlers]);
 }
 
 /**
