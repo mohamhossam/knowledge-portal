@@ -1,6 +1,6 @@
 # Area 3: Catalogue curation (the draft workspace)
 
-**Branch:** `feat/kb-redesign/catalogue-curation` · **Gate:** GATE 8.3 · **Journey 2** (T5, T6,
+**Branch:** `feat/kb-redesign-catalogue-curation` · **Gate:** GATE 8.3 · **Journey 2** (T5, T6,
 T7)
 
 ## 1. Goal

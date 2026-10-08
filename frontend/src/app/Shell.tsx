@@ -1,162 +1,147 @@
-import { LogOut, RotateCw } from "lucide-react";
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { CircleHelp, ListChecks, UserRound, WifiOff } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Outlet, useLocation, useSearchParams } from "react-router-dom";
 
-import type { Actor } from "../api/client";
 import { useAuth } from "../auth/authContext";
 import { REQUIREMENT_APP_URL } from "../auth/paths";
-import { TABLES } from "../home/tables";
-import { formatMoment } from "../home/format";
-import { useOverview, type TableState } from "../home/useOverview";
-import { useReminders } from "../reviews/useReviews";
+import { AppShell, MastheadButton, type NavItem } from "../design/components";
+import { useDisclosure, useFocusAfterRender } from "../design/hooks";
+import { RouterLink } from "../shell/links";
+import { AccountPanel, HelpPanel, JobsPanel } from "../shell/panels";
+import { densityFor, usePreferences } from "../shell/preferences";
+import { useGlobalShortcuts } from "../shell/useGlobalShortcuts";
+import { activeJobs, useJobs } from "../shell/useJobs";
+import { useWorkQueue } from "../work/queue";
 
-const ENTRIES = [
-  { key: "library", spec: TABLES.library },
-  { key: "architecture", spec: TABLES.architecture },
-  { key: "squads", spec: TABLES.squads },
-  { key: "requirements", spec: TABLES.requirements },
-] as const;
+type Panel = "jobs" | "help" | "account";
 
-function extent(state: TableState) {
-  return state.status === "ready" ? state.overview.extent : null;
-}
+/**
+ * Routes rebuilt on the design system (redesign Phase 8). Any other route
+ * renders in the legacy island, looking as it did, until its area is built.
+ */
+const REDESIGNED: ((path: string) => boolean)[] = [(path) => path === "/"];
 
-/** An entry's most pressing state, in its rows' rank styling; said only when there is one. */
-function Alert({ state }: { state: TableState }) {
-  if (state.status === "error") return <span className="index__alert index__alert--delayed">Could not be read</span>;
-  const alert = state.status === "ready" ? state.overview.alert : undefined;
-  if (!alert) return null;
-  return (
-    <span className={`index__alert index__alert--${alert.rank}`}>
-      <span className="visually-hidden">, </span>
-      {alert.text}
-    </span>
-  );
+function useOnline() {
+  const [online, setOnline] = useState(() => navigator.onLine);
+  useEffect(() => {
+    const update = () => setOnline(navigator.onLine);
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    return () => {
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
+    };
+  }, []);
+  return online;
 }
 
 /**
- * The timetable book's binding: a masthead strip, the index of tables, and
- * the page. Every screen of the portal sits inside it.
+ * The portal's frame (IA §2): skip links, the maroon masthead with the same
+ * three utilities on every page (Jobs, Help, Account; WCAG 3.2.6), the
+ * five-area rail with the shared "need you" count, and Jobs, Help and Account
+ * as side panels beside the page. "?help" in the address opens Help.
  */
 export function Shell() {
   const auth = useAuth();
-  const overview = useOverview();
-  const extents = ENTRIES.map((entry) => extent(overview[entry.key]));
-  const largest = Math.max(1, ...extents.map((item) => item?.value ?? 0));
+  const location = useLocation();
+  const [params, setParams] = useSearchParams();
+  const { density } = usePreferences();
+  const online = useOnline();
+  const needsYou = useWorkQueue().mine;
+  const jobs = useJobs();
+  const openShortcuts = useCallback(() => {
+    setParams((previous) => {
+      const next = new URLSearchParams(previous);
+      next.set("help", "shortcuts");
+      return next;
+    }, { replace: true });
+  }, [setParams]);
+
+  // One side panel at a time, one disclosure for its focus in and back.
+  const [which, setWhich] = useState<Panel>("help");
+  const side = useDisclosure(() => document.getElementById(`shell-${which}`));
+  const focusLater = useFocusAfterRender();
+  const { open: sideOpen, show: sideShow, panel: sidePanel } = side;
+  const show = useCallback((next: Panel, event?: { currentTarget: EventTarget | null }) => {
+    setWhich(next);
+    // Re-show even when a panel is open, so focus goes back to the button pressed last.
+    sideShow(event);
+    if (sideOpen) focusLater(() => sidePanel.current?.querySelector<HTMLElement>("h2"));
+  }, [sideOpen, sideShow, sidePanel, focusLater]);
+  // "?" opens Help at its shortcuts (§2.2); "g j" opens Jobs.
+  const handlers = useMemo(() => ({ help: openShortcuts, jobs: () => show("jobs") }), [show, openShortcuts]);
+  useGlobalShortcuts(handlers);
+
+  const helpParam = params.get("help");
+  const isOpen = (panel: Panel) => (side.open && which === panel) || (panel === "help" && helpParam !== null && !(side.open && which !== "help"));
+  const close = () => {
+    if (helpParam !== null) {
+      setParams((previous) => {
+        const next = new URLSearchParams(previous);
+        next.delete("help");
+        return next;
+      }, { replace: true });
+    }
+    side.close();
+  };
+  const toggle = (panel: Panel) => (event: { currentTarget: EventTarget | null }) => (isOpen(panel) ? close() : show(panel, event));
+
+  const path = location.pathname;
+  const under = (prefix: string) => path === prefix || path.startsWith(`${prefix}/`);
+  const navigation: NavItem[] = [
+    { href: "/", label: "Your work", current: path === "/", count: needsYou, countLabel: "need you" },
+    { href: "/library", label: "Library", current: under("/library") },
+    { href: "/architecture", label: "Catalogue", current: under("/architecture") },
+    { href: "/squads", label: "Ownership", current: under("/squads") },
+    { href: "/requirement-knowledge", label: "Requirements", current: under("/requirement-knowledge") },
+  ];
+  const secondary: NavItem[] = [
+    { href: "/explorer", label: "Explorer", current: under("/explorer") },
+    { href: "/reminders", label: "Re-confirmations", current: under("/reminders") },
+  ];
+
+  const actor = auth?.actor ?? null;
+  const panel = isOpen("jobs") ? (
+    <JobsPanel jobs={jobs.jobs} state={jobs.state} onRetry={jobs.retry} onClose={close} panelRef={sidePanel} />
+  ) : isOpen("help") ? (
+    <HelpPanel path={path} section={helpParam} onClose={close} panelRef={sidePanel} />
+  ) : isOpen("account") && actor ? (
+    <AccountPanel actor={actor} onClose={close} panelRef={sidePanel} />
+  ) : null;
+
+  const redesigned = REDESIGNED.some((match) => match(path));
+  const busy = activeJobs(jobs.jobs);
 
   return (
-    <>
-      <a className="skip-link" href="#main">Skip to the tables</a>
-      <header className="masthead">
-        <p className="masthead__title">
-          <a href={REQUIREMENT_APP_URL}>Requirement AI</a>
-          <span aria-hidden="true" className="masthead__dot">·</span>
-          <Link to="/" className="masthead__portal">Knowledge portal</Link>
-        </p>
-        <p className="masthead__valid" aria-live="polite">
-          {overview.validAt ? (
-            <>Valid as of <time dateTime={overview.validAt.toISOString()}>{formatMoment(overview.validAt)}</time></>
-          ) : "Reading the tables…"}
-          <button
-            type="button"
-            className="text-button"
-            onClick={overview.refresh}
-            disabled={overview.refreshing}
-            aria-label={overview.refreshing ? "Refreshing the tables" : "Refresh the tables"}
-          >
-            <RotateCw size={14} aria-hidden="true" className={overview.refreshing ? "spin" : undefined} />
-            <span aria-hidden="true">{overview.refreshing ? "Refreshing" : "Refresh"}</span>
-          </button>
-        </p>
-        <ReviewsDue />
-        <Account actor={auth?.actor ?? null} />
-      </header>
-
-      <nav className="index" aria-label="Tables">
-        <ol className="index__list">
-          {ENTRIES.map((entry, index) => {
-            const size = extents[index];
-            return (
-              <li key={entry.key}>
-                <NavLink to={entry.spec.to} className="index__entry">
-                  <span className="index__number" aria-hidden="true">{entry.spec.number}</span>
-                  <span className="index__title">
-                    <span className="visually-hidden">Table {entry.spec.number}:</span>{" "}
-                    {entry.spec.title}
-                  </span>
-                  <span className="index__extent">
-                    <span className="visually-hidden">: </span>
-                    <span className="index__count">{size?.label ?? "—"}</span>
-                    <span className="index__track" aria-hidden="true">
-                      <span
-                        className="index__rule"
-                        style={{ inlineSize: `${size ? Math.max(3, (size.value / largest) * 100) : 0}%` }}
-                      />
-                    </span>
-                  </span>
-                  <Alert state={overview[entry.key]} />
-                </NavLink>
-              </li>
-            );
-          })}
-        </ol>
-      </nav>
-
-      <main id="main" className="page" tabIndex={-1}>
-        <Outlet />
-      </main>
-    </>
-  );
-}
-
-/**
- * How many reviews the signed-in person answers for are due, linking to their reminders;
- * nothing at all when none is. Changes are announced politely.
- */
-export function ReviewsDue() {
-  const reminders = useReminders();
-  const overdue = reminders.data?.overdue ?? 0;
-  const soon = reminders.data?.due_soon ?? 0;
-  return (
-    <p className="masthead__reviews" aria-live="polite">
-      {overdue + soon > 0 && (
-        <Link to="/reminders" className="masthead__due">
-          Reviews:{" "}
-          {overdue > 0 && <span className="masthead__overdue">{overdue} overdue</span>}
-          {overdue > 0 && soon > 0 && " · "}
-          {soon > 0 && `${soon} due soon`}
-        </Link>
-      )}
-    </p>
-  );
-}
-
-/** Who is signed in: a persona switch offline, otherwise the name and Sign out. */
-export function Account({ actor }: { actor: Actor | null }) {
-  const auth = useAuth();
-  if (!auth || !actor) return null;
-  return (
-    <div className="masthead__account">
-      {auth.config?.mode === "fake" ? (
-        <label className="persona">
-          <span className="persona__label">Persona</span>
-          <select
-            value={actor.id}
-            onChange={(event) => void auth.switchFakeActor(event.target.value)}
-          >
-            {auth.config.fake_actors.map((item) => (
-              <option key={item.id} value={item.id}>{item.display_name}</option>
-            ))}
-          </select>
-        </label>
-      ) : (
-        <>
-          <span className="masthead__name">{actor.display_name}</span>
-          <button type="button" className="text-button" onClick={() => void auth.signOut()}>
-            <LogOut size={14} aria-hidden="true" />
-            Sign out
-          </button>
-        </>
-      )}
+    // A page not rebuilt yet has no dark mode: its whole view stays light, so one view is one theme.
+    <div data-density={densityFor(density, "page")} data-theme={redesigned ? undefined : "light"}>
+      <AppShell
+        homeHref="/"
+        link={RouterLink}
+        outbound={{ href: REQUIREMENT_APP_URL, label: "Requirement AI" }}
+        locationKey={location.pathname}
+        navigation={navigation}
+        secondaryNavigation={secondary}
+        banner={online ? undefined : <><WifiOff size={16} aria-hidden="true" /> You're offline. Your unsaved work stays here; the portal carries on when your connection returns.</>}
+        utilities={
+          <>
+            <MastheadButton id="shell-jobs" icon={<ListChecks size={16} />} label="Jobs" count={busy} countLabel="active or needing attention" expanded={isOpen("jobs")} onClick={toggle("jobs")} />
+            <MastheadButton id="shell-help" icon={<CircleHelp size={16} />} label="Help" expanded={isOpen("help")} onClick={toggle("help")} />
+            <MastheadButton id="shell-account" icon={<UserRound size={16} />} label={actor?.display_name ?? "Account"} hiddenPrefix={actor ? "Account:" : undefined} expanded={isOpen("account")} onClick={toggle("account")} />
+          </>
+        }
+        panel={panel}
+      >
+        {redesigned ? (
+          <Outlet />
+        ) : (
+          <div className="ds-legacy">
+            <div className="page">
+              <Outlet />
+            </div>
+          </div>
+        )}
+      </AppShell>
     </div>
   );
 }

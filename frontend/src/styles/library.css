@@ -123,7 +123,7 @@
 }
 
 .file-button:focus-within {
-  outline: var(--focus-ring);
+  outline: var(--tt-focus-ring);
   outline-offset: 2px;
 }
 
@@ -250,7 +250,7 @@
   align-items: center;
   gap: var(--s2) var(--s4);
   padding-block: var(--s3);
-  border-block: 2px solid var(--rule-heavy);
+  border-block: 2px solid var(--tt-rule-heavy);
   color: var(--ink-2);
 }
 
@@ -274,7 +274,7 @@
   gap: var(--s3);
   max-width: 62ch;
   padding-block: var(--s4);
-  border-block: 2px solid var(--rule-heavy);
+  border-block: 2px solid var(--tt-rule-heavy);
 }
 
 .withdraw__title {
@@ -292,7 +292,7 @@
 /* The change notice: counts first, like a timetable's list of changes. */
 .notice-table__title {
   padding-bottom: var(--s1);
-  border-bottom: 2px solid var(--rule-heavy);
+  border-bottom: 2px solid var(--tt-rule-heavy);
   color: var(--ink-2);
   font-size: var(--t-meta);
   font-stretch: var(--width-condensed);
@@ -418,7 +418,7 @@ kbd {
 
 .passages thead th {
   padding: 0 var(--s4) var(--s2) 0;
-  border-bottom: 2px solid var(--rule-heavy);
+  border-bottom: 2px solid var(--tt-rule-heavy);
   color: var(--ink-2);
   font-size: var(--t-meta);
   font-stretch: var(--width-condensed);
@@ -472,7 +472,7 @@ kbd {
 }
 
 .passage:focus-visible {
-  outline: var(--focus-ring);
+  outline: var(--tt-focus-ring);
   outline-offset: -2px;
 }
 
@@ -544,7 +544,7 @@ kbd {
 
 .passage-detail td {
   padding: var(--s2) var(--s4) var(--s4) calc(3.5rem);
-  border-bottom: 2px solid var(--rule-heavy);
+  border-bottom: 2px solid var(--tt-rule-heavy);
 }
 
 .detail {
@@ -628,7 +628,7 @@ kbd {
   align-items: end;
   gap: var(--s2) var(--s4);
   padding-block: var(--s3);
-  border-top: 2px solid var(--rule-heavy);
+  border-top: 2px solid var(--tt-rule-heavy);
   background: var(--stock);
 }
 
@@ -771,7 +771,7 @@ html:has(.savebar) {
 
 .govsection__title {
   padding-bottom: var(--s1);
-  border-bottom: 2px solid var(--rule-heavy);
+  border-bottom: 2px solid var(--tt-rule-heavy);
   font-size: var(--t-lead);
   font-weight: var(--w-bold);
 }
@@ -804,7 +804,7 @@ html:has(.savebar) {
 
 .govtable thead th {
   padding: 0 var(--s4) var(--s2) 0;
-  border-bottom: 2px solid var(--rule-heavy);
+  border-bottom: 2px solid var(--tt-rule-heavy);
   color: var(--ink-2);
   font-size: var(--t-meta);
   font-stretch: var(--width-condensed);
@@ -977,7 +977,7 @@ html:has(.savebar) {
 .admingrant--live {
   margin-block: 0 var(--s4);
   padding: var(--s2) 0;
-  border-block: 2px solid var(--rule-heavy);
+  border-block: 2px solid var(--tt-rule-heavy);
   background: var(--stock-band);
 }
 
@@ -992,7 +992,7 @@ html:has(.savebar) {
   max-width: 72ch;
   margin-top: var(--s3);
   padding: var(--s3);
-  border-top: 2px solid var(--rule-heavy);
+  border-top: 2px solid var(--tt-rule-heavy);
   background: var(--stock-band);
 }
 

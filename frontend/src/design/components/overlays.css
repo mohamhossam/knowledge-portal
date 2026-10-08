@@ -41,6 +41,7 @@
 
 .ds-drawer {
   position: sticky;
+  overscroll-behavior: contain;
   inset-block-start: var(--sticky-top);
   z-index: var(--z-drawer);
   display: grid;
@@ -99,7 +100,7 @@
   gap: var(--space-4);
 }
 
-.ds-shortcuts h3,
+.ds-shortcuts h4,
 .ds-help h3 {
   font-size: var(--text-h3);
   margin-block-end: var(--space-2);

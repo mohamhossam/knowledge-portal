@@ -1,6 +1,6 @@
 # Area 9: System states
 
-**Branch:** `feat/kb-redesign/system-states` · **Gate:** GATE 8.9
+**Branch:** `feat/kb-redesign-system-states` · **Gate:** GATE 8.9
 
 ## 1. Goal
 

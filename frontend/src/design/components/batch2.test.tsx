@@ -31,7 +31,7 @@ describe("AppShell", () => {
     expect(screen.getByRole("main")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Library" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Your work 6 need you" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Requirement AI (opens Requirement AI)" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Requirement AI (leaves the knowledge portal)" })).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "e&" })).toBeInTheDocument();
   });
 

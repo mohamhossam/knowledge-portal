@@ -78,7 +78,8 @@ A complete UX redesign runs on the integration branch `feat/kb-redesign`.
 - **Fonts are self-hosted only** (`@fontsource` or licensed files, CSP-safe), with Arabic
   coverage.
 - **Branching.**
-  - Areas are built on `feat/kb-redesign/<area>` and merged back with `--no-ff` after their
+  - Areas are built on `feat/kb-redesign-<area>` (git cannot nest a branch under an existing
+    branch name) and merged back with `--no-ff` after their
     gate.
   - `main` stays shippable; one final PR goes into `main`.
   - Never push, rebase or open a PR without asking.

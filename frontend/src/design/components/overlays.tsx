@@ -136,12 +136,12 @@ export function ShortcutHelp({
     <div className="ds-shortcuts">
       {widget.map((group) => (
         <section key={group.title} aria-label={group.title}>
-          <h3>{group.title}</h3>
+          <h4>{group.title}</h4>
           <KeyList shortcuts={group.shortcuts} />
         </section>
       ))}
       <section aria-label="Page-wide shortcuts">
-        <h3>Page-wide</h3>
+        <h4>Page-wide</h4>
         <p className="ds-shortcuts__state">
           Page-wide shortcuts are {enabled ? "on" : "off"}.{" "}
           <Button variant="link" onClick={() => onToggle(!enabled)}>Turn them {enabled ? "off" : "on"}</Button>

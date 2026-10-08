@@ -8,10 +8,23 @@ import {
   useEffect,
   useId,
   useRef,
+  useSyncExternalStore,
 } from "react";
 
 import { rovingKeyDown, useFocusAfterRender, useStickySize } from "../hooks";
 import { Badge } from "./feedback";
+
+function useMediaQuery(query: string): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      if (typeof window.matchMedia !== "function") return () => {};
+      const list = window.matchMedia(query);
+      list.addEventListener("change", onChange);
+      return () => list.removeEventListener("change", onChange);
+    },
+    () => typeof window.matchMedia === "function" && window.matchMedia(query).matches,
+  );
+}
 
 /** Any link component (e.g. react-router's NavLink) or a plain anchor. */
 export type LinkLike = ComponentType<{ href: string; className?: string; "aria-current"?: "page"; children: ReactNode }>;
@@ -63,6 +76,10 @@ export function AppShell({
 }) {
   const masthead = useRef<HTMLElement>(null);
   useStickySize(masthead, "--sticky-top");
+  // Below 1024px a side panel overlays the page: the page goes inert, so focus can't
+  // move under the panel (WCAG 2.4.11). Esc or Close hands focus back.
+  const narrow = useMediaQuery("(max-width: 1023px)");
+  const covered = Boolean(panel) && narrow;
   const first = useRef(true);
   useEffect(() => {
     if (first.current) {
@@ -70,24 +87,32 @@ export function AppShell({
       return;
     }
     // An address with a target ("#passage-…") is the page's to focus: if it already did, it keeps it.
+    // So does a page in the legacy island (Phase 8) that moved focus itself, as it did before.
     const main = document.getElementById("ds-main");
     const active = document.activeElement;
-    if (window.location.hash && main && active && active !== main && main.contains(active)) return;
+    const placed = Boolean(main && active && active !== main && main.contains(active));
+    if (placed && (window.location.hash || active?.closest(".ds-legacy"))) return;
     window.scrollTo(0, 0);
-    const title = document.getElementById("ds-page-title");
-    if (title) {
+    // The page's h1: the design system's, or a legacy page's first h1.
+    const titleOf = () => document.getElementById("ds-page-title") ?? main?.querySelector<HTMLElement>("h1") ?? null;
+    const focusTitle = (title: HTMLElement) => {
+      if (!title.hasAttribute("tabindex")) title.setAttribute("tabindex", "-1");
       title.focus({ preventScroll: true });
+    };
+    const title = titleOf();
+    if (title) {
+      focusTitle(title);
       return;
     }
     // The page is still loading (a skeleton, no h1 yet): focus its h1 when it arrives,
     // unless the person has moved focus somewhere themselves in the meantime.
     if (!main) return;
     const observer = new MutationObserver(() => {
-      const arrived = document.getElementById("ds-page-title");
+      const arrived = titleOf();
       if (!arrived) return;
       observer.disconnect();
       const now = document.activeElement;
-      if (!now || now === document.body || now === main) arrived.focus({ preventScroll: true });
+      if (!now || now === document.body || now === main) focusTitle(arrived);
     });
     observer.observe(main, { childList: true, subtree: true });
     const stop = setTimeout(() => observer.disconnect(), 10000);
@@ -120,21 +145,22 @@ export function AppShell({
           {outbound && (
             <a className="ds-masthead__out" href={outbound.href}>
               {outbound.label}{" "}
-              <span className="ds-visually-hidden">(opens {outbound.label})</span>
+              <span className="ds-visually-hidden">(leaves the knowledge portal)</span>
             </a>
           )}
         </div>
         {utilities && <div className="ds-masthead__utilities">{utilities}</div>}
       </header>
-      {banner && <div className="ds-banner" role="status">{banner}</div>}
+      {/* Always present, so a banner that appears later is announced (a live region must exist first). */}
+      <div className={banner ? "ds-banner" : "ds-visually-hidden"} role="status">{banner}</div>
       <div className="ds-shell__body">
         {!reader && (
-          <nav id="ds-rail" className="ds-rail" aria-label="Areas" tabIndex={-1}>
+          <nav id="ds-rail" className="ds-rail" aria-label="Areas" tabIndex={-1} inert={covered || undefined}>
             <ul>{nav(navigation)}</ul>
             {secondaryNavigation.length > 0 && <ul className="ds-rail__secondary">{nav(secondaryNavigation)}</ul>}
           </nav>
         )}
-        <main id="ds-main" className="ds-main" tabIndex={-1}>
+        <main id="ds-main" className="ds-main" tabIndex={-1} inert={covered || undefined}>
           {children}
         </main>
         {panel}
@@ -144,11 +170,12 @@ export function AppShell({
 }
 
 /** A utility button for the masthead (Jobs, Help, Account): text label, icon, optional count. */
-export function MastheadButton({ icon, label, count, countLabel, expanded, onClick, id }: { icon: ReactNode; label: string; count?: number; countLabel?: string; expanded?: boolean; onClick: (event: { currentTarget: EventTarget | null }) => void; id?: string }) {
+export function MastheadButton({ icon, label, hiddenPrefix, count, countLabel, expanded, onClick, id }: { icon: ReactNode; label: string; /** Said before the label, e.g. "Account:" before a name. */ hiddenPrefix?: string; count?: number; countLabel?: string; expanded?: boolean; onClick: (event: { currentTarget: EventTarget | null }) => void; id?: string }) {
   return (
     <button id={id} type="button" className="ds-masthead__button" aria-expanded={expanded} onClick={onClick}>
       <span aria-hidden="true" className="ds-masthead__icon">{icon}</span>
-      {label}
+      {hiddenPrefix && <><span className="ds-visually-hidden">{hiddenPrefix}</span>{" "}</>}
+      <span className="ds-masthead__label" title={label}>{label}</span>
       {count !== undefined && count > 0 && <Badge count={count} label={countLabel} />}
     </button>
   );

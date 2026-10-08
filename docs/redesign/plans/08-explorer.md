@@ -1,6 +1,6 @@
 # Area 8: Explorer
 
-**Branch:** `feat/kb-redesign/explorer` · **Gate:** GATE 8.8 · **Journey 5** (T9)
+**Branch:** `feat/kb-redesign-explorer` · **Gate:** GATE 8.8 · **Journey 5** (T9)
 
 ## 1. Goal
 

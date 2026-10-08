@@ -1,7 +1,7 @@
 import "./data.css";
 
 import { ArrowDown, ArrowUp, ArrowUpDown, Minus, Plus, RefreshCw } from "lucide-react";
-import { type KeyboardEvent, type ReactNode, useId, useRef } from "react";
+import { type KeyboardEvent, type ReactNode, type RefObject, useEffect, useId, useRef, useState } from "react";
 
 import { useFocusAfterRender, useStickySize } from "../hooks";
 
@@ -44,6 +44,25 @@ export function FilterStrip({
       {onClear && <button type="button" className="ds-button ds-button--link" onClick={onClear}>Clear filters</button>}
     </div>
   );
+}
+
+/**
+ * Whether a table's frame is narrower than the table (it then scrolls
+ * sideways). Such a frame must be reachable by keyboard to scroll it
+ * (WCAG 2.1.1), so it becomes a focusable, labelled region only then.
+ */
+function useOverflowing(frame: RefObject<HTMLElement | null>) {
+  const [overflowing, setOverflowing] = useState(false);
+  useEffect(() => {
+    const element = frame.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    const measure = () => setOverflowing(element.scrollWidth > element.clientWidth + 1);
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    if (element.firstElementChild) observer.observe(element.firstElementChild);
+    return () => observer.disconnect();
+  }, [frame]);
+  return overflowing;
 }
 
 export type Column<T> = {
@@ -107,6 +126,8 @@ export function DataTable<T>({
 }) {
   const grid = Boolean(onActivate);
   const body = useRef<HTMLTableSectionElement>(null);
+  const frame = useRef<HTMLDivElement>(null);
+  const overflowing = useOverflowing(frame);
   const focusLater = useFocusAfterRender();
   const ids = rows.map(rowId);
   const current = currentId && ids.includes(currentId) ? currentId : ids[0];
@@ -166,7 +187,11 @@ export function DataTable<T>({
   };
 
   return (
-    <div className="ds-table-wrap">
+    <div
+      ref={frame}
+      className="ds-table-wrap"
+      {...(overflowing ? { tabIndex: 0, role: "region", "aria-label": `${caption} (scrolls sideways)` } : {})}
+    >
       <table className="ds-table" role={grid ? "grid" : undefined} aria-rowcount={grid ? rows.length + 1 : undefined}>
         <caption className={captionHidden ? "ds-visually-hidden" : "ds-table__caption"}>{caption}</caption>
         <thead>

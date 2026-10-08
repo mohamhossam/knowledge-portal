@@ -83,6 +83,19 @@ describe("DataTable", () => {
     expect(screen.getByRole("gridcell", { name: "404" })).toHaveClass("ds-table__num");
   });
 
+  it("makes a frame narrower than its table a labelled region that the keyboard can scroll (WCAG 2.1.1)", () => {
+    // jsdom lays nothing out: report a frame narrower than its table, and observe at once.
+    vi.stubGlobal("ResizeObserver", class { constructor(private callback: () => void) {} observe() { this.callback(); } disconnect() {} unobserve() {} });
+    const widths = vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(900);
+    const frame = vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(400);
+    render(<DataTable caption="Squads" columns={COLUMNS} rows={DOCS} rowId={(d) => d.id} />);
+    const region = screen.getByRole("region", { name: "Squads (scrolls sideways)" });
+    expect(region).toHaveAttribute("tabindex", "0");
+    widths.mockRestore();
+    frame.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
   it("is a plain table when nothing activates rows, and says when it is empty", () => {
     render(<DataTable caption="Squads" columns={COLUMNS} rows={[]} rowId={(d) => d.id} emptyText="No squads yet." />);
     expect(screen.getByRole("table", { name: "Squads" })).toBeInTheDocument();
