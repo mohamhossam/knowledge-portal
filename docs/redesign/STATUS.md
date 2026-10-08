@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Integration branch | `feat/kb-redesign`, from `main` @ `b6114b9` |
-| Current phase | **6: Hi-fi prototype, a11y kit, round 2 kit.** Done; waiting at **GATE 6** |
+| Current phase | **7: Install layer 2 and layer 3** (plans, `/redesign-area`, a11y, visual, brand and bundle gates) |
 | Last updated | 2026-10-08 |
 
 ## Phase log
@@ -16,7 +16,7 @@
 | 3: Develop (wireframes) | **Approved 2026-10-08** (GATE 3 = assumption mode; round 1 not run) | `frontend/src/design-lab/wireframes/` (dev-only lab), `docs/ux/journeys/cognitive-walkthrough.md`, `docs/ux/testing/round-1/` (kit, data sheet, 10 reference captures) |
 | 4: Visual direction | **Approved 2026-10-08**: A + C's split pane; Archivo + Noto Sans Arabic | `docs/redesign/02-directions.md`, `docs/redesign/directions/` (48 captures), `frontend/src/design-lab/wireframes/directions.css`, Direction/Theme switch in the lab |
 | 5: Design system | **Approved 2026-10-08** | `frontend/src/design/` (tokens, 28 components, hooks; 159 tests), the dev-only gallery `/knowledge/design-system`, `docs/design-system.md`, new `DESIGN.md` + `.impeccable/design.json` (old sidecar archived) |
-| 6: Hi-fi + round 2 | Done; **GATE 6 open** | `frontend/src/design-lab/prototype/` (dev-only `/knowledge/design-lab/prototype`), `docs/ux/testing/a11y-manual.md` + `a11y-results.csv`, `docs/ux/testing/round-2/` (kit, data sheet, 33 captures) |
+| 6: Hi-fi + round 2 | **Approved 2026-10-08** (GATE 6 = assumption mode; round 2 and the manual a11y kit not run) | `frontend/src/design-lab/prototype/` (dev-only `/knowledge/design-lab/prototype`), `docs/ux/testing/a11y-manual.md` + `a11y-results.csv`, `docs/ux/testing/round-2/` (kit, data sheet, 33 captures) |
 | 7: Layer 2/3 install | Not started | |
 | 8: Build by area | Not started | |
 | 9: Validate and close | Not started | |
@@ -56,6 +56,8 @@
 | 2026-10-08 | **A wireframe bug, fixed in the prototype only:** after a save, the review desk still said "Save your review before approving", because unsaved changes were counted against the read version rather than the last save. The wireframe lab is left as tested. | Phase 6 |
 | 2026-10-08 | **Round 2 T12 uses 'Customer care handbook (sample)'** (800 prose passages). The other documents waiting for review have 1 to 4 passages. | Seed check |
 | 2026-10-08 | Round 2 keeps T1–T11, the criteria, the times and the metrics of round 1 and the benchmark unchanged. It adds T12 (a 20-minute review, always last) and three questions (Q1 calm 1–7, Q2 fatigue 1–5 = the plan's scale, Q3 colour read as alarm). | Phase 6 brief |
+| 2026-10-08 | **GATE 6: assumption mode.** Round 2 and the manual a11y kit are not run. Every user metric stays **not measured**, never "met". The prototype's UX goes into Phase 7 plans validated by expert review and measurement only, and stays HYPOTHESIS. The kits stay ready for Phase 9 (or any earlier run). | User |
+| 2026-10-08 | O-1 to O-7 and K1–K6 move to `docs/redesign/backlog.md`, each with an owner area. | Phase 7 |
 
 ## Brand source
 
@@ -120,29 +122,43 @@ O-1 to O-7 are listed in `docs/ux/journeys/cognitive-walkthrough.md`. They move 
   in Phase 9 (`impeccable document` and surfaces), or per area in Phase 8.
 - The missing favicon logs a 404 on every page. This predates the redesign.
 
-## Known issues before round 2 (from building and measuring, not from users)
+## GATE 6 comparison (assumption mode, 2026-10-08)
 
-| # | Issue | Evidence | Proposed handling |
+Round 2 and the manual kit were not run, so this compares the prototype against the targets
+(`docs/ux/research/synthesis.md` §8) using only what can be measured without users. There is no
+baseline to compare against: the Phase 1 benchmark was not run either.
+
+| Target | Value | Prototype | How measured |
 |---|---|---|---|
-| K1 | At 1280×800 the review desk's save bar wraps to two lines, so chrome is 22% (target ≤ 15%). It is one line (14%) at 1440. The wrap is caused by the two "why unavailable" reasons beside the buttons. | Measured, `prototype/` captures | Phase 8 Library: put the reasons under the bar only while the button is unavailable **and** the bar is narrow, or shorten them; re-measure. Never hide the reason (§1.2). |
-| K2 | Content has `dir="auto"` but no `lang`, so NVDA probably reads Arabic titles with the English voice. | Markup review; a11y kit B1.10 | Phase 8: set `lang` where the language is known (a document's `language`); confirm with B1.10. |
-| K3 | Arabic titles inside English sentences render as `'(sample) …'` because of correct bidi isolation of an RTL title that ends in Latin text. It may still read oddly. | Captures (Your work, Library) | Observe in T3 and Q3; a content fix (the sample suffix) is a seed matter, not the UI. |
-| K4 | On a phone, the masthead's account name wraps to two lines. The lab bar takes about 140px (scaffolding only). | `*-16-library-390.jpg` | Phase 8 Shell: a short account label below 480px. |
-| K5 | The missing favicon 404 (predates the redesign). | Console | Unchanged; Phase 8 Shell. |
+| Task success, SEQ, SUS, time on task | ≥ 90%, ≥ 5.5, ≥ 75, −30% | **Not measured** | Needs round 2 or the final benchmark |
+| Fatigue after 20 min | median ≤ 2 / 5 | **Not measured** | Round 2 T12 + Q2 |
+| Red for status, alerts, errors or diff | 0 | **0 seen**; red is at most 0.06% of a view (logo + rail marker) | Pixel share on 8 captures, both themes; review of 33 captures |
+| Maroon share | ~8–10% | **4–6%** (K6, read as within the calm intent) | Same pixel method (approximate, JPEG) |
+| Status as icon + text | 100% | 100% by construction (`Status` renders both) | Component tests |
+| Text contrast | ≥ 4.5:1 / ≥ 3:1, both themes | Met for the 44 token pairs | `tokens.test.ts` |
+| Focus after a route change | 100% of routes | Met on the routes walked, including loading pages (fixed in Phase 6) | Browser walk + component test; Playwright in Phase 7 |
+| Focus return on panel close | 100% | Met for Help, Jobs, Account, consequence panels and give forms | Component + prototype tests, browser walk |
+| Disabled with reason | 0 native `disabled` where a reason exists | Met in the prototype (`Button unavailableReason`) | Code review |
+| Consistent help | the same place on every page | Met (masthead utilities, the same 4 parts) | Prototype test |
+| Passage review, rows visible | ≥ 10 at 1440×900 | **15** | Measured |
+| Chrome share | ≤ 15% | **14%** at 1440 · **22%** at 1280 (K1) | Measured |
+| axe serious or critical | 0 | Not yet run | Phase 7 suite |
+| Reflow 400%, target size, NVDA key collisions | as specified | **Not measured** (the manual kit wasn't run); built to the spec | The manual kit (kept for Phase 9) |
+| Bundle | ≤ 990.87 kB | 900.82 kB | Build |
 
-These are inputs to the GATE 6 comparison, alongside what round 2 and the manual a11y kit find.
+**Remaining issues** are O-1 to O-7 and K1–K6, now in `docs/redesign/backlog.md`. Each has an
+owner area, and the Phase 7 plans carry them as acceptance criteria.
+
+**Plans updated:** the Phase 7 area plans are written from the prototype as validated by expert
+review only. Every user-facing claim in them stays HYPOTHESIS until a benchmark runs.
 
 ## Next exact action
 
-At **GATE 6**, the user:
-
-- runs round 2 (`docs/ux/testing/round-2/README.md`) and the manual a11y kit
-  (`docs/ux/testing/a11y-manual.md`) on the prototype, and puts the data in `round-2-data.csv`
-  and `a11y-results.csv`;
-- **or** chooses assumption mode.
-
-Then the agent:
-
-1. compares the results with the baseline (not measured) and the `synthesis.md` §8 targets;
-2. lists the remaining issues (K1–K5 plus findings);
-3. updates the plans, before any production code (Phase 7).
+Phase 7, in order:
+1. Per-area plans in `docs/redesign/plans/`.
+2. `.claude/skills/redesign-area/SKILL.md`.
+3. vitest-axe in the design-system component tests.
+4. Playwright + axe e2e with a ratchet baseline.
+5. Brand lint and bundle budget.
+6. A CI e2e job.
+7. Commit "chore(redesign): plans, redesign-area pipeline, a11y/visual/brand/bundle gates".
