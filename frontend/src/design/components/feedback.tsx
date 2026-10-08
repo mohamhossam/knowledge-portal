@@ -35,9 +35,9 @@ export function Status({ tone, children }: { tone: StatusTone; children: ReactNo
 export function Badge({ count, label }: { count: number; label?: string }) {
   return (
     <span className="ds-badge">
-      <span className="ds-visually-hidden">, </span>
-      {count.toLocaleString("en")}
-      {label && <span className="ds-visually-hidden"> {label}</span>}
+      <span aria-hidden="true">{count.toLocaleString("en")}</span>
+      {/* One phrase; the badge box already separates it from the label before it. */}
+      <span className="ds-visually-hidden">{`${count.toLocaleString("en")}${label ? ` ${label}` : ""}`}</span>
     </span>
   );
 }

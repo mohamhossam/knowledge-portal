@@ -49,8 +49,8 @@ describe("feedback", () => {
   });
 
   it("names a count for screen readers", () => {
-    render(<p>Your work<Badge count={6} label="need you" /></p>);
-    expect(screen.getByText(/Your work/)).toHaveTextContent("Your work, 6 need you");
+    render(<a href="/">Your work<Badge count={6} label="need you" /></a>);
+    expect(screen.getByRole("link", { name: "Your work 6 need you" })).toBeInTheDocument();
   });
 
   it("marks a suggestion as suggested and says its basis", () => {
