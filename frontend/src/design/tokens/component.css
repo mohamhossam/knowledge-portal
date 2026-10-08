@@ -1,8 +1,14 @@
 /*
  * Layer 3 · Component tokens. Each reads semantic tokens only; a component's
  * stylesheet reads its own tokens. Change a component here, not in its CSS.
+ *
+ * Declared again on every theme and density scope: a custom property's var()
+ * resolves where it is declared, so tokens declared only on :root would carry
+ * the root theme into a [data-theme="dark"] or [data-density] subtree.
  */
-:root {
+:root,
+[data-theme],
+[data-density] {
   /* Button */
   --button-height: 2rem;
   --button-pad-inline: var(--space-3);

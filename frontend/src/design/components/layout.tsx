@@ -72,7 +72,7 @@ export function AppShell({
 
   const nav = (items: NavItem[]) =>
     items.map((item) => (
-      <li key={item.href}>
+      <li key={`${item.href}|${item.label}`}>
         <Link href={item.href} className="ds-rail__link" aria-current={item.current ? "page" : undefined}>
           <span>{item.label}</span>
           {item.count !== undefined && item.count > 0 && <Badge count={item.count} label={item.countLabel} />}
@@ -212,7 +212,7 @@ export function SubNav({ label, items, link: Link = Anchor }: { label: string; i
     <nav className="ds-subnav" aria-label={label}>
       <ul>
         {items.map((item) => (
-          <li key={item.href}>
+          <li key={`${item.href}|${item.label}`}>
             <Link href={item.href} aria-current={item.current ? "page" : undefined} className="ds-subnav__link">
               {item.label}
               {item.count !== undefined && <span className="ds-subnav__count"> {item.count}</span>}

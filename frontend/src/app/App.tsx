@@ -64,10 +64,18 @@ const catalogueRoutes = (
  * dead code and the lab never reaches the bundle.
  */
 const DesignLab = import.meta.env.DEV ? lazy(() => import("../design-lab/wireframes/WireframesApp")) : null;
+/** The design-system gallery (Phase 5); development only, like the lab. */
+const DesignGallery = import.meta.env.DEV ? lazy(() => import("../design-lab/gallery/Gallery")) : null;
 
 export function App() {
   return (
     <Routes>
+      {DesignGallery && (
+        <Route
+          path="design-system/*"
+          element={<Suspense fallback={null}><DesignGallery /></Suspense>}
+        />
+      )}
       {DesignLab && (
         <Route
           path="design-lab/wireframes/*"

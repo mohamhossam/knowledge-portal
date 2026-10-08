@@ -37,9 +37,17 @@
 }
 
 /* The ledger table */
+/* clip, not auto: a scroll container would capture the sticky head and pin it
+   inside the wrapper, over the first rows. Narrow screens scroll sideways instead. */
 .ds-table-wrap {
   max-inline-size: 100%;
-  overflow-x: auto;
+  overflow-x: clip;
+}
+
+@media (max-width: 1023px) {
+  .ds-table-wrap {
+    overflow-x: auto;
+  }
 }
 
 .ds-table {

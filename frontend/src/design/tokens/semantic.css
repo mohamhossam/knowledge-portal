@@ -58,9 +58,6 @@
   --color-info: var(--teal-700);
   --color-info-bg: var(--teal-50);
 
-  /* AI-suggested marking reads the info tone (the one cool hue) */
-  --color-suggested: var(--color-info);
-  --color-suggested-bg: var(--color-info-bg);
 
   /* Evidence highlight and the "not in service" proof tint */
   --color-highlight: var(--eand-beige);
@@ -176,6 +173,14 @@
   --color-chart-5: var(--chart-umber-dark);
   --color-chart-6: var(--chart-stone-dark);
   --elevation-overlay: 0 6px 24px var(--shadow-night);
+}
+
+/* Tokens derived from other semantic tokens: resolved again in every theme scope. */
+:root,
+[data-theme] {
+  /* AI-suggested marking reads the info tone (the one cool hue) */
+  --color-suggested: var(--color-info);
+  --color-suggested-bg: var(--color-info-bg);
 }
 
 /* Typography, space, motion, layers: theme-independent meanings */

@@ -1,0 +1,117 @@
+/* Gallery layout only (dev). Reads design tokens; never ships. */
+.gallery {
+  max-inline-size: var(--page-max);
+}
+
+.gallery-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  font-size: var(--text-meta);
+}
+
+.gallery-controls select {
+  margin-inline-start: var(--space-1);
+  min-block-size: var(--target-min);
+}
+
+.gallery-stack {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.gallery-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.gallery-swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: var(--space-3);
+}
+
+.gallery-swatch {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: var(--text-meta);
+}
+
+.gallery-swatch__chip {
+  block-size: 3rem;
+  border: var(--rule-hair) solid var(--color-rule);
+}
+
+.gallery-type {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.gallery-chart {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.gallery-chart span {
+  inline-size: 2.5rem;
+  block-size: 1.5rem;
+}
+
+.gallery-red {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: var(--space-5);
+}
+
+.gallery-red figure {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.gallery-red__sample {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: var(--rule-hair) solid var(--color-rule);
+}
+
+.gallery-red__nav {
+  padding: var(--space-1) var(--space-3);
+  background: var(--color-selected);
+  color: var(--color-on-selected);
+  box-shadow: inset 3px 0 0 var(--color-brand-accent);
+  font-weight: var(--weight-strong);
+}
+
+.gallery-red__sample--wrong {
+  text-decoration: line-through;
+}
+
+.gallery-red__wrong-status,
+.gallery-red__wrong-badge {
+  color: var(--color-brand-accent);
+  font-weight: var(--weight-strong);
+}
+
+.gallery-red__wrong-button {
+  padding: var(--space-1) var(--space-3);
+  background: var(--color-brand-accent);
+  color: var(--color-on-brand-accent);
+}
+
+.gallery-note {
+  font-size: var(--text-meta);
+  color: var(--color-ink-2);
+}
