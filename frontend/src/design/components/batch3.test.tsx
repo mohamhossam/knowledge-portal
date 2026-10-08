@@ -6,6 +6,10 @@ import { describe, expect, it, vi } from "vitest";
 import { Button } from "./actions";
 import { BulkActionBar, type Column, DataTable, DecisionButtons, DiffView, FilterStrip, type Sort } from "./data";
 import { ConsequencePanel, EvidenceQuote, ImpactPanel, ProvenanceTrail } from "./evidence";
+import { checkAxeAfterEach } from "../../test/axe";
+
+// Every test's rendered state is also checked by axe (Phase 7).
+checkAxeAfterEach();
 
 type Doc = { id: string; title: string; count: number };
 const DOCS: Doc[] = [

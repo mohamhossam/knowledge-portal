@@ -6,6 +6,10 @@ import { describe, expect, it, vi } from "vitest";
 import { Button } from "./actions";
 import { AppShell, Breadcrumbs, MastheadButton, PageHeader, Pagination, Section, SplitPane, StateLine, StickyFooter, SubNav, Tabs, Toolbar } from "./layout";
 import { Dialog, Drawer, HelpContent, ShortcutHelp, Toggletip } from "./overlays";
+import { checkAxeAfterEach } from "../../test/axe";
+
+// Every test's rendered state is also checked by axe (Phase 7).
+checkAxeAfterEach();
 
 const NAV = [
   { href: "/", label: "Your work", current: false, count: 6, countLabel: "need you" },

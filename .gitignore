@@ -20,6 +20,10 @@ frontend/dist/
 frontend/coverage/
 frontend/playwright-report/
 frontend/test-results/
+frontend/e2e/.results/
+frontend/e2e/.report/
+# The Impeccable design hook's cache (repo-level .impeccable/ stays tracked).
+frontend/.impeccable/
 frontend/*.tsbuildinfo
 # A registry override is a developer's own npm config, never the repository's.
 frontend/.npmrc

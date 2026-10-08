@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Integration branch | `feat/kb-redesign`, from `main` @ `b6114b9` |
-| Current phase | **7: Install layer 2 and layer 3** (plans, `/redesign-area`, a11y, visual, brand and bundle gates) |
+| Current phase | **7: Install layer 2 and layer 3.** Done. Next: Phase 8, area 1, started by the user with `/redesign-area` |
 | Last updated | 2026-10-08 |
 
 ## Phase log
@@ -17,7 +17,7 @@
 | 4: Visual direction | **Approved 2026-10-08**: A + C's split pane; Archivo + Noto Sans Arabic | `docs/redesign/02-directions.md`, `docs/redesign/directions/` (48 captures), `frontend/src/design-lab/wireframes/directions.css`, Direction/Theme switch in the lab |
 | 5: Design system | **Approved 2026-10-08** | `frontend/src/design/` (tokens, 28 components, hooks; 159 tests), the dev-only gallery `/knowledge/design-system`, `docs/design-system.md`, new `DESIGN.md` + `.impeccable/design.json` (old sidecar archived) |
 | 6: Hi-fi + round 2 | **Approved 2026-10-08** (GATE 6 = assumption mode; round 2 and the manual a11y kit not run) | `frontend/src/design-lab/prototype/` (dev-only `/knowledge/design-lab/prototype`), `docs/ux/testing/a11y-manual.md` + `a11y-results.csv`, `docs/ux/testing/round-2/` (kit, data sheet, 33 captures) |
-| 7: Layer 2/3 install | Not started | |
+| 7: Layer 2/3 install | **Done 2026-10-08** | `docs/redesign/plans/` (README + 10 area plans), `.claude/skills/redesign-area/SKILL.md`, vitest-axe in the component tests (`src/test/axe.ts`), `frontend/e2e/` (Playwright + axe ratchet, visual spec), `scripts/brand-lint.mjs`, `scripts/bundle-budget.mjs`, CI `e2e` job |
 | 8: Build by area | Not started | |
 | 9: Validate and close | Not started | |
 
@@ -58,6 +58,14 @@
 | 2026-10-08 | Round 2 keeps T1–T11, the criteria, the times and the metrics of round 1 and the benchmark unchanged. It adds T12 (a 20-minute review, always last) and three questions (Q1 calm 1–7, Q2 fatigue 1–5 = the plan's scale, Q3 colour read as alarm). | Phase 6 brief |
 | 2026-10-08 | **GATE 6: assumption mode.** Round 2 and the manual a11y kit are not run. Every user metric stays **not measured**, never "met". The prototype's UX goes into Phase 7 plans validated by expert review and measurement only, and stays HYPOTHESIS. The kits stay ready for Phase 9 (or any earlier run). | User |
 | 2026-10-08 | O-1 to O-7 and K1–K6 move to `docs/redesign/backlog.md`, each with an owner area. | Phase 7 |
+| 2026-10-08 | **Area plans** are written from the prototype as approved at GATE 6 (expert-validated only). Each plan is approved when its area is invoked. Areas 4 and 5 are only partly prototyped, and Impeccable resolves those gaps. | Phase 7 |
+| 2026-10-08 | **The token clash found while planning** blocks area 1's first commit. Legacy `styles/tokens.css` and the new layer both declare `--focus-ring`, `--gutter`, `--page-max` and `--rule-heavy` (a colour vs a width). The legacy four are renamed `--tt-*` before `./design` is imported app-wide. | Plan 01 |
+| 2026-10-08 | **Component a11y:** every test in the design-system component files runs axe on what it rendered (`checkAxeAfterEach`). Contrast is off in jsdom (the token contract covers it) and so is "region" (components are rendered alone). A deliberate `image-alt` probe confirmed the hook fails. | Phase 7 |
+| 2026-10-08 | **Route a11y ratchet:** 33 routes of the production build on the seeded fake stack, with tags wcag2a/aa, wcag21a/aa and wcag22aa; serious or critical issues block. Baseline: only `library-review` and `library-document` carry one rule (`aria-conditional-attr`). Redesigned routes get no allowance. Each run checks that the page is signed in (not the boot screen). | Phase 7 |
+| 2026-10-08 | **Visual baselines are per platform** (`{platform}` in the snapshot path). Edge on Windows and Chromium on Linux render text differently, so CI's Linux baselines are committed from the CI artefact at each area's gate. | Phase 7 |
+| 2026-10-08 | **Brand lint** allows raw colours only in `src/design/tokens/primitive.css` and the legacy `src/styles/tokens.css`; it allows `--eand-*` only in the primitive and semantic layers. The ratchet allows 8 legacy colours, in `src/explorer/document/overview.ts` (the Word export palette). The Phase 3–4 wireframe lab is exempt in full: frozen as tested, removed in Phase 9. | Phase 7 |
+| 2026-10-08 | **Bundle budget:** the entry chunk is at most 990.87 kB (900.79 × 1.1), checked from `dist/index.html`. It is 900.83 kB today. | Phase 7 |
+| 2026-10-08 | **CI:** every existing step is kept. The frontend job adds the brand lint and the budget. A new `e2e` job runs the API (`uv`, fake env), seeds it, builds, and runs Playwright with Chromium, uploading the report on failure. The pinned `upload-artifact` SHA was checked against tag v4.6.2. | Phase 7 |
 
 ## Brand source
 
@@ -81,7 +89,7 @@
 
 | Measure | Baseline | Round 1 | Round 2 | Final | Target |
 |---|---|---|---|---|---|
-| Main JS chunk (min) | 900.79 kB | | 900.82 kB (prototype excluded) | | ≤ 990.87 kB |
+| Main JS chunk (min) | 900.79 kB | | 900.82 kB (prototype excluded) · budget script 900.83 kB (Phase 7) | | ≤ 990.87 kB |
 | Main JS chunk (gzip) | 241.51 kB | | | | — |
 | CSS (min / gzip) | 58.99 / 10.88 kB | | | | — |
 | Frontend tests | 265 pass / 1 fail (TZ) | 280 pass / 2 fail: the TZ failure plus one load-timing flake that varies by run and passes alone; separate task offered | | | all pass |
@@ -145,6 +153,7 @@ baseline to compare against: the Phase 1 benchmark was not run either.
 | axe serious or critical | 0 | Not yet run | Phase 7 suite |
 | Reflow 400%, target size, NVDA key collisions | as specified | **Not measured** (the manual kit wasn't run); built to the spec | The manual kit (kept for Phase 9) |
 | Bundle | ≤ 990.87 kB | 900.82 kB | Build |
+| axe serious/critical (legacy routes) | ratchet, shrinking to 0 | 2 of 33 routes, 1 rule (`aria-conditional-attr`) | Phase 7 e2e |
 
 **Remaining issues** are O-1 to O-7 and K1–K6, now in `docs/redesign/backlog.md`. Each has an
 owner area, and the Phase 7 plans carry them as acceptance criteria.
@@ -152,13 +161,27 @@ owner area, and the Phase 7 plans carry them as acceptance criteria.
 **Plans updated:** the Phase 7 area plans are written from the prototype as validated by expert
 review only. Every user-facing claim in them stays HYPOTHESIS until a benchmark runs.
 
+## Quality gates (Phase 7)
+
+| Gate | Command | Where |
+|---|---|---|
+| Component a11y | `npm test` (axe after every design-system component test) | `src/test/axe.ts` |
+| Route a11y + visual | `npm run build && npm run e2e`, with `E2E_CHANNEL=msedge` locally; refresh the baseline with `A11Y_UPDATE_BASELINE=1 npx playwright test a11y --workers=1` | `frontend/e2e/` |
+| Brand | `npm run lint:brand` (`--update` rewrites the legacy list; counts may only fall) | `scripts/brand-lint.mjs` |
+| Bundle | `npm run budget`, after a build | `scripts/bundle-budget.mjs` |
+| CI | the `frontend` job (+ brand, budget) and the `e2e` job | `.github/workflows/ci.yml` |
+
+**Unit suite:** 445 pass, 2 fail. The two failures are the pre-existing timezone test
+(ExplorerPage) and the load flake (tracking, which passes alone). Both are being fixed in
+separate sessions.
+
 ## Next exact action
 
-Phase 7, in order:
-1. Per-area plans in `docs/redesign/plans/`.
-2. `.claude/skills/redesign-area/SKILL.md`.
-3. vitest-axe in the design-system component tests.
-4. Playwright + axe e2e with a ratchet baseline.
-5. Brand lint and bundle budget.
-6. A CI e2e job.
-7. Commit "chore(redesign): plans, redesign-area pipeline, a11y/visual/brand/bundle gates".
+**Phase 8, area 1: Shell, navigation, job tray, help + Home.**
+- **You start it** with `/redesign-area Shell, navigation, job tray, help + Home: plan docs/redesign/plans/01-shell-home.md`.
+- **Fresh session recommended:** this one is long.
+- **Preconditions:**
+  - a clean tree on `feat/kb-redesign/shell-home`, created from `feat/kb-redesign`;
+  - the plan approved when you invoke it.
+- **First commit of the area:** the legacy token rename (plan 01, Risks).
+- **Then:** **GATE 8.1**.

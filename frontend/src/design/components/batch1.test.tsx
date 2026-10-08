@@ -7,6 +7,10 @@ import { useDelayedCommit, useDisclosure } from "../hooks";
 import { Button } from "./actions";
 import { Badge, EmptyState, JobTray, Skeleton, Status, Suggested, UndoToast } from "./feedback";
 import { Checkbox, Combobox, RadioGroup, TextField, Upload } from "./forms";
+import { checkAxeAfterEach } from "../../test/axe";
+
+// Every test's rendered state is also checked by axe (Phase 7).
+checkAxeAfterEach();
 
 afterEach(() => vi.useRealTimers());
 
