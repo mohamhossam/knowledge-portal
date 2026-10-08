@@ -63,7 +63,3 @@ export function canRetryIndexing(document: LibraryDocument): boolean {
   return Boolean(latest && !latest.withdrawn_at && !latest.activated_at && !latest.built_at
     && latest.indexing_attempts >= ATTEMPT_LIMIT);
 }
-
-export function policyLabel(policy: string): string {
-  return policy.startsWith("table-fields") ? "Table-aware" : "Passages";
-}

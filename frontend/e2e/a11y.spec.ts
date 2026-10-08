@@ -32,6 +32,9 @@ function save(baseline: Baseline) {
 
 for (const route of ROUTES) {
   test(`${route.key}: no new serious or critical accessibility issue`, async ({ page }, info) => {
+    // axe over a full review desk (200 passages rendered) takes 15 s idle and more on a busy
+    // machine; the limit catches hangs, not slowness.
+    test.setTimeout(90_000);
     const path = route.path(await seeded());
     test.skip(path === undefined, "this seed has no such record");
     await page.goto(path!);

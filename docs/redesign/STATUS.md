@@ -202,10 +202,59 @@ separate sessions.
 
 ## Next exact action
 
-**Phase 8, area 2: Library** (plan `docs/redesign/plans/02-library.md`):
-- **Branch:** `feat/kb-redesign-library`, created from `feat/kb-redesign`.
-- **Scope added to it:** the area-1 backlog items it owns:
-  - "Try reading again" and "Upload a new version" on the failed-read row;
-  - Retry and Stop in Jobs, with attempts.
-- **Afterwards:** re-critique Your work.
-- **Then:** **GATE 8.2**.
+**Phase 8, area 2: Library: IN PROGRESS (handoff to a cloud session, 2026-10-08).**
+
+- **Branch:** `feat/kb-redesign-library`, pushed to `origin`. Its parent commit is `feat/kb-redesign` @ `5727806`: area 1 merged; that branch is local only, so recreate it with `git branch feat/kb-redesign 5727806` if it is needed. The top commit is a **WIP** commit of the whole of area 2 and has **not** passed GATE 8.2. The user asked for it to be committed and pushed so work can continue in the cloud.
+- **Done:**
+  - Pipeline steps 1–5: craft, harden, clarify, adapt, quieter.
+  - The four reviewers ran (step 6).
+  - Most CRITICAL/HIGH findings are fixed in this commit:
+    - the sticky pane scrolls;
+    - nothing sticks at 400% zoom;
+    - the sticky table head is measured;
+    - live regions stay mounted;
+    - the in-app leave guard;
+    - the honest Return-to-service copy;
+    - no false "Cited by: unknown" fact;
+    - Discard through a consequence panel;
+    - indexing jobs come from publications;
+    - the desk is memoized;
+    - the filter and find are in the URL;
+    - the current row is always rendered;
+    - the Shift+↑/↓ lost update;
+    - `<bdi>` names in panels.
+- **Resume here:**
+  1. **5 unit tests fail after the review fixes**: `cd frontend && npx vitest run src/library`. They are copy and label changes to adapt in the tests:
+     - "Discard it…" is now a consequence panel;
+     - "Exclude 2 passages…";
+     - "requirements you can see cite it now";
+     - the activation panel uses CitingNow;
+     - requirement links now carry "↗ (opens Requirement AI)".
+  2. **Log the MEDIUM/LOW review findings** that aren't fixed in `docs/redesign/backlog.md` (Area 2 rows). Among them:
+     - Jobs polls the whole list (needs a lighter endpoint, BG1);
+     - upload runs files one at a time;
+     - the Back button isn't guarded (no data router);
+     - "Flagged" uses the held (shield) icon;
+     - the 1280 table is squeezed with Jobs open (now scrolls via container queries; re-check);
+     - the reading line has no elapsed time on the record;
+     - `DocumentContext` is drilled through `Outlet` rather than a provider;
+     - YourWork effect dependencies (area 1).
+  3. **Verify:**
+     - `npm run lint && npm run typecheck && npm test && npm run api:check && npm run build && npm run budget && npm run lint:brand`
+     - then `E2E_CHANNEL=msedge npm run e2e` (drop the channel on Linux).
+     - The seeder can time out under load; seed the API on 8130 first, then rerun.
+     - Update the visual baselines for the library routes and `home` (its Your work table gained "Next step"): `npx playwright test visual --update-snapshots`.
+     - Re-measure 2.1 (it was 14.4% at 1280×800 before the review fixes).
+  4. **Re-capture:** `docs/redesign/areas/02-library/after-*.jpg` with `docs/redesign/tools/area-02/after.mjs` (copy it under `frontend/node_modules/.cache/` to run; `KP_API` is the seeded API).
+  5. **Critique:** dual `/impeccable:impeccable critique` of the Library on the live seeded stack, and a re-critique of Your work (target ≥ 30/40; it was 27–28).
+  6. **Report** in AGENTS.md §20 format, then stop at **GATE 8.2**. After "approved", per the brief: merge into `feat/kb-redesign` with `--no-ff`, remove unused `styles/library.css` selectors, and update STATUS.
+- **Measured so far:**
+  - Main chunk 888.79 kB (the library is lazy-loaded);
+  - a11y 34/34 routes with an empty baseline;
+  - 2.2 (T2, keyboard only) passes in e2e;
+  - forced colours captured (`after-forced-1440-review-desk.jpg`).
+- **Decisions (record them at the gate):**
+  - Return to service re-approves the last approved review: the API has no return endpoint and records no reason.
+  - K2 `lang` is a script heuristic (HYPOTHESIS), because documents have no language field.
+  - `#passage-…` focuses the passage on the desk, or in "Passages in service" on the Overview.
+  - The T2 e2e runs last on its own uploaded copy (Playwright project "journeys").

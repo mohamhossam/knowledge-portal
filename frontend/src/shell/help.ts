@@ -24,45 +24,91 @@ const PAGES: { match: (path: string) => boolean; entry: HelpEntry }[] = [
   {
     match: (path) => path === "/library/search",
     entry: {
-      title: "Search the library",
-      body: ["Search the passages of the documents in service. A result opens its document at that passage."],
+      title: "Search passages",
+      body: ["Search the passages of the documents in service, across all owners. A result opens its document at that passage."],
       terms: [["Passage", "One reviewed unit of a document's text that can be cited."]],
       keys: [],
     },
   },
   {
-    // A document's review (its own page, not versions, citations or ownership).
+    // A document's main page: its review desk while a version waits, else its overview.
     match: (path) => /^\/library\/[^/]+$/.test(path),
     entry: {
-      title: "Reviewing a document",
+      title: "A document and its review",
       body: [
-        "Move through the passages, keep, edit or exclude each, then save your review.",
-        "Approving publishes the reviewed passages: requirement work can cite them from then on.",
+        "While a version waits for review, move through its passages: keep, edit or exclude each, then save your review with a summary.",
+        "Approve and publish makes the reviewed passages citable by requirement work. Withdraw stops it citing them; Return to service publishes them again.",
       ],
       terms: [
         ["Passage", "One reviewed unit of a document's text that can be cited."],
+        ["Seen", "A passage you have opened or moved through in this review, in this browser tab."],
         ["Flagged", "Has a warning from reading."],
         ["Blocks approval", "A warning that must be resolved: exclude the passage, or upload a new version."],
+        ["In service", "The published version requirement work cites now."],
       ],
       keys: [
         ["↑ ↓ or j k", "Previous or next passage (in the passage table)"],
-        ["Enter / Esc", "Open or close the passage"],
-        ["x / i", "Exclude (then give the reason) / include"],
-        ["e", "Edit the text"],
+        ["Home / End", "First or last passage"],
+        ["n / Shift+n", "Next or previous flagged passage not seen yet, then the next not seen"],
+        ["x / i", "Exclude (then give the reason; Enter goes back) / include"],
+        ["e", "Edit the text (Esc goes back)"],
         ["o", "Show the original"],
+        ["Space / Shift+↑ ↓", "Select passages, for Exclude or Include in bulk"],
+        ["Ctrl+Enter", "Save the review, anywhere on the desk"],
       ],
+    },
+  },
+  {
+    match: (path) => /^\/library\/[^/]+\/(cited-by|citations)$/.test(path),
+    entry: {
+      title: "Cited by",
+      body: ["The requirements that cite this document, and the requirement content whose source changed. Each requirement's owner decides in Requirement AI."],
+      terms: [
+        ["Cited by", "The requirements that cite a document (only those you can see)."],
+        ["Unknown, not zero", "Requirement AI didn't answer, so the count isn't known."],
+      ],
+      keys: [],
+    },
+  },
+  {
+    match: (path) => /^\/library\/[^/]+\/versions$/.test(path),
+    entry: {
+      title: "A document's versions",
+      body: ["The files uploaded, what was published from them, and the optional search index for tables."],
+      terms: [
+        ["Version", "One uploaded file of a document."],
+        ["Search index for tables", "An optional second index that keeps table rows together."],
+      ],
+      keys: [],
+    },
+  },
+  {
+    match: (path) => /^\/library\/[^/]+\/ownership$/.test(path),
+    entry: {
+      title: "A document's ownership",
+      body: [
+        "Who owns the document, and handing it to another knowledge admin. The new owner gets its private versions and reviews; you keep what every admin sees.",
+        "The admin record lists what admins did on the owner's behalf.",
+      ],
+      terms: [["Knowledge admin", "The role that may curate the library."]],
+      keys: [],
     },
   },
   {
     match: (path) => path.startsWith("/library"),
     entry: {
       title: "Library",
-      body: ["Reviewed reference documents that requirement work can cite. Upload, review, approve, withdraw."],
+      body: [
+        "Reviewed reference documents that requirement work can cite. Filter by state or owner, find by title, or upload documents.",
+        "Each upload is scanned and read; you review what was read and publish it before requirement work can cite it.",
+      ],
       terms: [
         ["In service", "The published version requirement work cites now."],
+        ["Needs attention", "Reading failed or stopped: the row says why, and the document offers the fix."],
         ["Cited by", "The requirements that cite a document (only those you can see)."],
+        ["Withdraw", "Stop requirement work citing a document."],
       ],
-      keys: [],
+      keys: [["/", "Find a document (with page-wide shortcuts on)"]],
     },
   },
   {

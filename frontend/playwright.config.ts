@@ -34,7 +34,11 @@ export default defineConfig({
     reducedMotion: "reduce",
     trace: "retain-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], channel: process.env.E2E_CHANNEL } }],
+  projects: [
+    { name: "chromium", testIgnore: /library-journey\.spec\.ts/, use: { ...devices["Desktop Chrome"], channel: process.env.E2E_CHANNEL } },
+    // Journeys that change the seed run last, after every route has been checked as seeded.
+    { name: "journeys", testMatch: /library-journey\.spec\.ts/, dependencies: ["chromium"], use: { ...devices["Desktop Chrome"], channel: process.env.E2E_CHANNEL } },
+  ],
   webServer: [
     {
       command: `uv run python -m knowledge_portal.interfaces.api.serve --host 127.0.0.1 --port ${apiPort}`,

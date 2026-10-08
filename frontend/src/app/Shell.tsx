@@ -4,7 +4,7 @@ import { Outlet, useLocation, useSearchParams } from "react-router-dom";
 
 import { useAuth } from "../auth/authContext";
 import { REQUIREMENT_APP_URL } from "../auth/paths";
-import { AppShell, MastheadButton, type NavItem } from "../design/components";
+import { AppShell, LiveMessage, MastheadButton, type NavItem } from "../design/components";
 import { useDisclosure, useFocusAfterRender } from "../design/hooks";
 import { RouterLink } from "../shell/links";
 import { AccountPanel, HelpPanel, JobsPanel } from "../shell/panels";
@@ -19,7 +19,11 @@ type Panel = "jobs" | "help" | "account";
  * Routes rebuilt on the design system (redesign Phase 8). Any other route
  * renders in the legacy island, looking as it did, until its area is built.
  */
-const REDESIGNED: ((path: string) => boolean)[] = [(path) => path === "/"];
+const REDESIGNED: ((path: string) => boolean)[] = [
+  (path) => path === "/",
+  // Area 2: the library, its search and every document's pages.
+  (path) => path === "/library" || path.startsWith("/library/"),
+];
 
 function useOnline() {
   const [online, setOnline] = useState(() => navigator.onLine);
@@ -102,7 +106,7 @@ export function Shell() {
 
   const actor = auth?.actor ?? null;
   const panel = isOpen("jobs") ? (
-    <JobsPanel jobs={jobs.jobs} state={jobs.state} onRetry={jobs.retry} onClose={close} panelRef={sidePanel} />
+    <JobsPanel jobs={jobs.jobs} state={jobs.state} onRetry={jobs.retry} onAct={jobs.act} said={jobs.said} onClose={close} panelRef={sidePanel} />
   ) : isOpen("help") ? (
     <HelpPanel path={path} section={helpParam} onClose={close} panelRef={sidePanel} />
   ) : isOpen("account") && actor ? (
@@ -132,6 +136,7 @@ export function Shell() {
         }
         panel={panel}
       >
+        <LiveMessage message={jobs.announcement} />
         {redesigned ? (
           <Outlet />
         ) : (

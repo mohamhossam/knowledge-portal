@@ -28,13 +28,16 @@ const at = (path: string) => () => path;
 export const ROUTES: RouteDef[] = [
   { key: "home", path: at("") },
   { key: "reminders", path: at("reminders") },
-  { key: "library", path: at("library") },
+  // Dates are the seed's day: masked, so the screenshots hold on any later day.
+  { key: "library", path: at("library"), mask: ["tbody td:last-child"] },
   { key: "library-search", path: at("library/search?q=coverage") },
   { key: "library-review", path: (s) => s.reviewDocument && `library/${s.reviewDocument}` },
-  { key: "library-document", path: (s) => s.serviceDocument && `library/${s.serviceDocument}` },
-  { key: "library-versions", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/versions` },
-  { key: "library-citations", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/citations` },
-  { key: "library-ownership", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/ownership` },
+  { key: "library-document", path: (s) => s.serviceDocument && `library/${s.serviceDocument}`, mask: [".ds-provenance", ".lib-reconfirm__line", ".ds-facts dd:first-of-type"] },
+  { key: "library-versions", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/versions`, mask: [".ds-provenance", ".lib-reconfirm__line", "tbody td:nth-child(3)", "tbody th"] },
+  { key: "library-cited-by", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/cited-by`, mask: [".ds-provenance", ".lib-reconfirm__line"] },
+  // The old address, kept working until area 10 makes it a redirect.
+  { key: "library-citations", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/citations`, mask: [".ds-provenance", ".lib-reconfirm__line"] },
+  { key: "library-ownership", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/ownership`, mask: [".ds-provenance", ".lib-reconfirm__line", "tbody th"] },
   { key: "architecture", path: at("architecture") },
   { key: "architecture-system", path: (s) => s.system && `architecture/systems/${s.system}` },
   { key: "architecture-domains", path: at("architecture/domains") },
@@ -62,7 +65,18 @@ export const ROUTES: RouteDef[] = [
 ];
 
 /** Route keys rebuilt on the design system (Phase 8 adds to this, area by area). */
-export const REDESIGNED: string[] = ["home"];
+export const REDESIGNED: string[] = [
+  "home",
+  // Area 2: the library.
+  "library",
+  "library-search",
+  "library-review",
+  "library-document",
+  "library-versions",
+  "library-cited-by",
+  "library-citations",
+  "library-ownership",
+];
 
 type Named = { id: string; title?: string; name?: string | null; status?: string };
 

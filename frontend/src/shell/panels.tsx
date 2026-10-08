@@ -2,7 +2,7 @@ import "./shell.css";
 
 import { type RefObject, useEffect, useState } from "react";
 
-import type { Actor } from "../api/client";
+import type { Actor, LibraryDocument } from "../api/client";
 import { useAuth } from "../auth/authContext";
 import {
   ActionGroup,
@@ -15,7 +15,9 @@ import {
   Select,
   ShortcutHelp,
   Skeleton,
+  Status,
 } from "../design/components";
+import type { JobAction } from "../library/actions";
 import { helpFor, PAGE_KEYS } from "./help";
 import { ButtonLink, RouterLink } from "./links";
 import { type Density, usePreferences } from "./preferences";
@@ -23,11 +25,18 @@ import type { ShellJob } from "./useJobs";
 
 type PanelProps = { onClose: () => void; panelRef: RefObject<HTMLElement | null> };
 
-/** §6: background work, by need, each with its cause and its fix. */
-export function JobsPanel({ jobs, state, onRetry, onClose, panelRef }: PanelProps & { jobs: ShellJob[]; state: "loading" | "failed" | "ready"; onRetry: () => void }) {
+/** §6: background work, by need, each with its cause, its attempts, and its fix: Try again, Stop, or the specific fix. */
+export function JobsPanel({ jobs, state, onRetry, onAct, said, onClose, panelRef }: PanelProps & {
+  jobs: ShellJob[];
+  state: "loading" | "failed" | "ready";
+  onRetry: () => void;
+  onAct: (document: LibraryDocument, action: JobAction) => void;
+  said: { text: string; failed: boolean } | null;
+}) {
   return (
     <Drawer title="Jobs" onClose={onClose} panelRef={panelRef}>
-      <p className="shell-panel__lead">Documents being read, and reading that needs you.</p>
+      <p className="shell-panel__lead">Documents being read or indexed, what needs you, and what finished in the last 30 minutes.</p>
+      <p className="shell-panel__said" role="status">{said ? said.failed ? <Status tone="attention">{said.text}</Status> : said.text : null}</p>
       {state === "loading" ? (
         <Skeleton label="Reading the jobs" rows={3} />
       ) : state === "failed" ? (
@@ -35,10 +44,12 @@ export function JobsPanel({ jobs, state, onRetry, onClose, panelRef }: PanelProp
       ) : (
       <JobTray
         link={RouterLink}
-        empty="No jobs are running. Reading appears here while it runs, and stays when it needs you."
-        jobs={jobs.map(({ fixLabel, ...job }) => ({
+        empty="No jobs are running. Reading and indexing appear here while they run, and stay when they need you."
+        jobs={jobs.map(({ fixLabel, retry, stop, document, ...job }) => ({
           ...job,
           fix: fixLabel && job.subjectHref ? <ButtonLink to={job.subjectHref}>{fixLabel}<span className="ds-visually-hidden">: {job.subject}</span></ButtonLink> : undefined,
+          onRetry: retry && document ? () => onAct(document, retry) : undefined,
+          onCancel: stop && document ? () => onAct(document, "cancel") : undefined,
         }))}
       />
       )}

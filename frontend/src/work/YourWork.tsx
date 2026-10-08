@@ -4,7 +4,9 @@ import { AlertTriangle, Clock, ListTodo } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
-import { Button, type Column, DataTable, EmptyState, FilterStrip, PageHeader, Section, Skeleton, Status } from "../design/components";
+import { ActionGroup, Button, type Column, DataTable, EmptyState, FilterStrip, PageHeader, Section, Skeleton, Status } from "../design/components";
+import { type JobAction, useJobActions } from "../library/actions";
+import { FileButton } from "../library/FileButton";
 import { RouterLink } from "../shell/links";
 import { type Entry, type SectionKey, useWorkQueue } from "./queue";
 
@@ -42,7 +44,28 @@ function Name({ entry }: { entry: Entry }) {
   return <RouterLink href={entry.to}><bdi>{entry.subject}</bdi></RouterLink>;
 }
 
-function attentionColumns(now: number): Column<Entry>[] {
+type Act = (entry: Entry, action: JobAction, file?: File) => void;
+
+/** The row's own remedy (model §6): try again where retrying can help, else the specific fix. */
+function Remedy({ entry, act, busy }: { entry: Entry; act: Act; busy: boolean }) {
+  if ((entry.kind !== "unreadable" && entry.kind !== "unsearchable") || !entry.document.can_edit) return <span className="work__none">—</span>;
+  const named = <span className="ds-visually-hidden">: {entry.subject}</span>;
+  if (entry.kind === "unsearchable") {
+    return entry.document.is_owner ? <Button busy={busy} onClick={() => act(entry, "retry-indexing")}>Try indexing again{named}</Button> : <span className="work__none">—</span>;
+  }
+  return (
+    <ActionGroup>
+      {!entry.held && <Button busy={busy} onClick={() => act(entry, "retry")}>Try reading again{named}</Button>}
+      {entry.document.is_owner && (
+        <FileButton busy={busy} onFile={([file]) => file && act(entry, "upload", file)}>
+          {entry.held ? "Upload a clean copy" : "Upload a new version"}{named}
+        </FileButton>
+      )}
+    </ActionGroup>
+  );
+}
+
+function attentionColumns(now: number, act: Act, busyId: string | undefined): Column<Entry>[] {
   return [
     { id: "name", header: "Item", rowHeader: true, bidi: true, cell: (entry) => <Name entry={entry} /> },
     {
@@ -52,15 +75,16 @@ function attentionColumns(now: number): Column<Entry>[] {
         entry.kind === "unreadable" ? (
           <>
             <Status tone={entry.held ? "held" : "attention"}>{entry.held ? "Held by the malware scan" : "Couldn't read"}</Status>
-            <span className="work__detail">{entry.held ? "It won't be read. Upload a clean copy." : <>{entry.cause ?? `The ${entry.fileType} file couldn't be read.`} Upload a new version, or try reading it again.</>}</span>
+            <span className="work__detail">{entry.held ? "It won't be read. Upload a clean copy." : <>{entry.cause ?? `The ${entry.fileType} file couldn't be read.`}</>}</span>
           </>
         ) : entry.kind === "unsearchable" ? (
           <>
             <Status tone="attention">Couldn't make it searchable</Status>
-            <span className="work__detail">Requirement work can't cite it yet. Try again from the document.</span>
+            <span className="work__detail">Requirement work can't cite it yet.</span>
           </>
         ) : null,
     },
+    { id: "remedy", header: "Next step", width: "22rem", cell: (entry) => <Remedy entry={entry} act={act} busy={busyId === entry.id} /> },
     { id: "waiting", header: "Waiting", numeric: true, width: "7rem", cell: (entry) => ("sinceAt" in entry ? <Age at={entry.sinceAt} now={now} /> : "—") },
   ];
 }
@@ -174,7 +198,20 @@ export function YourWork() {
         ? anyFailed ? "Some of your work couldn't be read." : "Nothing needs the team today."
         : `${plural(needs, "thing needs", "things need")} ${team ? "the team" : "you"}, most urgent first.`;
 
-  const columns = (key: Ranked) => (key === "attention" ? attentionColumns(now) : key === "decisions" ? decisionColumns(now, team) : dueColumns);
+  // Acting from the queue (area 2): the row's remedy runs here; once its row has gone, focus goes to what was said.
+  const actions = useJobActions();
+  const said = useRef<HTMLParagraphElement>(null);
+  const busyId = actions.busy ? `doc-${actions.busy.document.id}` : undefined;
+  // Counts settled actions; each one moves focus to what was said (an effect, not a ref read in render).
+  const [settled, setSettled] = useState(0);
+  useEffect(() => {
+    if (settled > 0) said.current?.focus();
+  }, [settled]);
+  const act: Act = (entry, action, file) => {
+    if (entry.kind !== "unreadable" && entry.kind !== "unsearchable") return;
+    actions.act(entry.document, action, file, () => setSettled((n) => n + 1));
+  };
+  const columns = (key: Ranked) => (key === "attention" ? attentionColumns(now, act, busyId) : key === "decisions" ? decisionColumns(now, team) : dueColumns);
 
   let body: ReactNode;
   if (queue.loading) {
@@ -238,6 +275,9 @@ export function YourWork() {
           />
         }
       />
+      <p ref={said} tabIndex={-1} className="work__said" role="status">
+        {actions.said ? actions.said.failed ? <Status tone="attention">{actions.said.text}</Status> : actions.said.text : null}
+      </p>
       {body}
       {/* A standing backlog, not a decision waiting on you: one quiet line, outside the count. */}
       {queue.pending.gaps ? null : queue.failed.gaps ? (

@@ -167,6 +167,9 @@
 .ds-main {
   min-inline-size: 0;
   padding: var(--space-5) var(--gutter) var(--space-12);
+  /* Layouts inside the page follow the page's own width, not the viewport's: a side panel
+     (Jobs, Help, Account) narrows it (area 2 reviews). */
+  container: main / inline-size;
 }
 
 .ds-main:focus {
@@ -286,6 +289,12 @@
   cursor: pointer;
 }
 
+.ds-subnav__link:hover,
+.ds-tabs__tab:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.3em;
+}
+
 .ds-subnav__link[aria-current="page"],
 .ds-tabs__tab[aria-selected="true"] {
   color: var(--color-action);
@@ -315,17 +324,23 @@
   gap: var(--space-4);
 }
 
-@media (min-width: 1200px) {
+/* Beside the list once the page itself is wide enough (about a 1200 px window with the rail). */
+@container main (min-width: 60rem) {
   .ds-split {
     grid-template-columns: minmax(0, 1fr) var(--split-pane-width);
     gap: 0;
   }
 
+  /* Sticky, and never taller than the room between the sticky bars: what it holds scrolls in
+     it, so a field focused in the pane is never under the save bar (WCAG 2.4.11). */
   .ds-split__pane {
     position: sticky;
     inset-block-start: calc(var(--sticky-top) + var(--sticky-state));
     align-self: start;
     min-block-size: calc(100vh - var(--sticky-top) - var(--sticky-state) - var(--sticky-bottom));
+    max-block-size: calc(100vh - var(--sticky-top) - var(--sticky-state) - var(--sticky-bottom));
+    overflow-y: auto;
+    overscroll-behavior: contain;
     border-inline-start: var(--split-pane-rule);
   }
 }
@@ -465,4 +480,67 @@
   padding: var(--space-2) var(--space-3);
   background: var(--color-surface);
   border-block-start: var(--ledger-rule);
+}
+
+/*
+ * At 400% zoom (320 CSS px wide) or in a short window, nothing sticks: the bars would cover
+ * the whole view (WCAG 1.4.10, 2.4.11). useStickySize then publishes 0 for them.
+ */
+@media (max-width: 40rem), (max-height: 30rem) {
+  .ds-masthead,
+  .ds-stateline,
+  .ds-stickyfoot,
+  .ds-bulkbar {
+    position: static;
+  }
+}
+
+/* A record's facts (promoted from the prototype, area 2) */
+.ds-facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+}
+
+.ds-facts > div {
+  display: contents;
+}
+
+.ds-facts dt {
+  color: var(--color-ink-2);
+}
+
+.ds-facts dd {
+  margin: 0;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Narrow: each label above its value. */
+@container main (max-width: 30rem) {
+  .ds-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ds-facts dd + div dt,
+  .ds-facts > div + div > dt {
+    margin-block-start: var(--space-2);
+  }
+}
+
+/* Ledger lines: one item per line, hair rules between */
+.ds-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ds-lines > li {
+  padding-block: var(--space-2);
+  border-block-end: var(--hair-rule);
+}
+
+.ds-lines > li:last-child {
+  border-block-end: 0;
 }

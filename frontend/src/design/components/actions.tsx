@@ -21,7 +21,8 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 /** The one button: secondary by default; primary for the page's one main action. */
 export function Button({ variant = "secondary", icon, unavailableReason, busy, onClick, children, className, type = "button", ...rest }: ButtonProps) {
   const id = useId();
-  const [said, setSaid] = useState(false);
+  // Presses while unavailable: each one says the reason again, in a live region that was already there.
+  const [said, setSaid] = useState(0);
   const unavailable = Boolean(unavailableReason);
   const describedBy = [rest["aria-describedby"], unavailable ? `${id}-why` : null].filter(Boolean).join(" ") || undefined;
   return (
@@ -36,7 +37,7 @@ export function Button({ variant = "secondary", icon, unavailableReason, busy, o
         onClick={(event) => {
           if (busy) return;
           if (unavailable) {
-            setSaid(true);
+            setSaid((n) => n + 1);
             return;
           }
           onClick?.(event);
@@ -46,8 +47,14 @@ export function Button({ variant = "secondary", icon, unavailableReason, busy, o
         <span>{children}</span>
       </button>
       {unavailable && (
-        <span id={`${id}-why`} className="ds-button__why" role={said ? "status" : undefined}>
+        <span id={`${id}-why`} className="ds-button__why">
           {unavailableReason}
+        </span>
+      )}
+      {/* Mounted before it speaks, so a press is announced; a no-break space makes a repeat a change. */}
+      {unavailable && (
+        <span className="ds-visually-hidden" role="status">
+          {said > 0 ? `${unavailableReason}${said % 2 === 0 ? "\u00a0" : ""}` : ""}
         </span>
       )}
     </>

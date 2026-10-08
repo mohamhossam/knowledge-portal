@@ -104,15 +104,17 @@ export function AppShell({
       focusTitle(title);
       return;
     }
-    // The page is still loading (a skeleton, no h1 yet): focus its h1 when it arrives,
-    // unless the person has moved focus somewhere themselves in the meantime.
+    // The page is still loading (a skeleton, or its own code chunk): focus its h1 when it
+    // arrives, unless the person has moved focus somewhere themselves in the meantime. Focus
+    // still on what navigated here (the rail link pressed) hasn't been moved by them.
     if (!main) return;
+    const navigatedFrom = active;
     const observer = new MutationObserver(() => {
       const arrived = titleOf();
       if (!arrived) return;
       observer.disconnect();
       const now = document.activeElement;
-      if (!now || now === document.body || now === main) focusTitle(arrived);
+      if (!now || now === document.body || now === main || now === navigatedFrom) focusTitle(arrived);
     });
     observer.observe(main, { childList: true, subtree: true });
     const stop = setTimeout(() => observer.disconnect(), 10000);
@@ -399,6 +401,25 @@ export function Pagination({ page, pages, onPage, label = "Pages" }: { page: num
       </button>
     </nav>
   );
+}
+
+/** A record's facts: label and value pairs, labels in the secondary ink (promoted from the prototype). */
+export function Facts({ items }: { items: [string, ReactNode][] }) {
+  return (
+    <dl className="ds-facts">
+      {items.map(([term, value]) => (
+        <div key={term}>
+          <dt>{term}</dt>
+          <dd>{value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/** A plain ledger list: one item per line, hair rules between (promoted from the prototype). */
+export function Lines({ label, children }: { label?: string; children: ReactNode }) {
+  return <ul className="ds-lines" aria-label={label}>{children}</ul>;
 }
 
 /** Section with a ledger-ruled heading (direction A's signature carried to every view). */

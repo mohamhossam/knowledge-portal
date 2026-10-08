@@ -22,22 +22,51 @@ export function useFocusAfterRender() {
   }, []);
 }
 
+type StickyVariable = "--sticky-top" | "--sticky-state" | "--sticky-head" | "--sticky-bottom";
+
+/**
+ * The sticky regions measuring each variable right now (e.g. a selection bar inside a save
+ * bar). It mirrors a document-wide value, the root's CSS variables, so it is document-wide too.
+ */
+const stickies = new Map<StickyVariable, Set<HTMLElement>>();
+
+/** Sticky now, itself or (a table head's row) through its cells: at 400% zoom bars stop sticking. */
+function sticks(element: HTMLElement): boolean {
+  const cell = element.firstElementChild;
+  return getComputedStyle(element).position === "sticky" || (cell !== null && getComputedStyle(cell).position === "sticky");
+}
+
+/** Publishes the tallest region of a variable that sticks, or removes it when none does. */
+function publish(variable: StickyVariable) {
+  const root = document.documentElement;
+  const heights = [...(stickies.get(variable) ?? [])].filter(sticks).map((element) => element.getBoundingClientRect().height);
+  if (heights.length === 0) root.style.removeProperty(variable);
+  else root.style.setProperty(variable, `${Math.ceil(Math.max(...heights))}px`);
+}
+
 /**
  * §1.1: a sticky region publishes its measured block size, so scroll padding
- * keeps focus clear of it at any zoom. Never a fixed guess.
+ * keeps focus clear of it at any zoom. Never a fixed guess. Regions sharing a
+ * variable publish the tallest of them, one leaving doesn't reset the rest, and
+ * a region that stops sticking (narrow, or zoomed) counts as 0.
  */
-export function useStickySize(ref: RefObject<HTMLElement | null>, variable: "--sticky-top" | "--sticky-state" | "--sticky-bottom") {
+export function useStickySize(ref: RefObject<HTMLElement | null>, variable: StickyVariable) {
   useEffect(() => {
     const element = ref.current;
     if (!element || typeof ResizeObserver === "undefined") return;
-    const root = document.documentElement;
-    const set = () => root.style.setProperty(variable, `${Math.ceil(element.getBoundingClientRect().height)}px`);
-    set();
-    const observer = new ResizeObserver(set);
+    const registered = stickies.get(variable) ?? new Set<HTMLElement>();
+    stickies.set(variable, registered.add(element));
+    const update = () => publish(variable);
+    update();
+    const observer = new ResizeObserver(update);
     observer.observe(element);
+    // A zoom or a narrower window can switch a bar between sticky and static without resizing it.
+    window.addEventListener("resize", update);
     return () => {
       observer.disconnect();
-      root.style.removeProperty(variable);
+      window.removeEventListener("resize", update);
+      registered.delete(element);
+      update();
     };
   }, [ref, variable]);
 }

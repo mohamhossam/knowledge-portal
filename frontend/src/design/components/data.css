@@ -38,13 +38,14 @@
 
 /* The ledger table */
 /* clip, not auto: a scroll container would capture the sticky head and pin it
-   inside the wrapper, over the first rows. Narrow screens scroll sideways instead. */
+   inside the wrapper, over the first rows. A narrow page scrolls sideways instead
+   (the page's width, so an open side panel counts: area 2 reviews). */
 .ds-table-wrap {
   max-inline-size: 100%;
   overflow-x: clip;
 }
 
-@media (max-width: 1023px) {
+@container main (max-width: 48rem) {
   .ds-table-wrap {
     overflow-x: auto;
   }
@@ -100,6 +101,14 @@
   background: var(--table-row-hover);
 }
 
+.ds-filters__button:hover {
+  border-color: var(--color-action);
+}
+
+.ds-table__sort:hover {
+  text-decoration: underline;
+}
+
 .ds-table tbody tr.is-current {
   background: var(--table-row-current);
   box-shadow: inset 3px 0 0 var(--table-row-current-bar);
@@ -132,8 +141,9 @@
   cursor: pointer;
 }
 
+/* The "sortable" cue keeps 3:1 (1.4.11): secondary ink, not a faded one. */
 .ds-table__sort-idle {
-  opacity: 0.55;
+  color: var(--color-ink-2);
 }
 
 .ds-table__empty {
@@ -173,6 +183,10 @@
   padding: var(--space-2) var(--space-3);
   background: var(--color-surface);
   border-block-start: var(--ledger-rule);
+}
+
+.ds-bulkbar[hidden] {
+  display: none;
 }
 
 .ds-bulkbar__count {
@@ -237,4 +251,24 @@
 .ds-diff__origin {
   font-size: var(--text-meta);
   color: var(--color-ink-2);
+}
+
+/* A grid's keys, said once under it (§2.2) */
+.ds-keys {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  margin-block: var(--space-2);
+  font-size: var(--text-meta);
+  color: var(--color-ink-2);
+}
+
+.ds-keys__label {
+  font-weight: var(--weight-strong);
+  color: var(--color-ink);
+}
+
+.ds-keys__more {
+  color: var(--color-link);
 }

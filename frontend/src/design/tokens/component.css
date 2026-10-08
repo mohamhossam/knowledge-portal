@@ -68,7 +68,8 @@
   --table-head-fg: var(--color-ink-2);
   --table-head-rule: var(--ledger-rule);
   --table-row-rule: var(--hair-rule);
-  --table-row-hover: var(--color-surface-1);
+  /* Hover has to show: surface-1 on white is 1.04:1 (area 2 reviews). */
+  --table-row-hover: var(--color-surface-2);
   --table-row-current: var(--color-selected);
   --table-row-current-bar: var(--color-action);
   --table-numeral-stretch: var(--stretch-numeral);

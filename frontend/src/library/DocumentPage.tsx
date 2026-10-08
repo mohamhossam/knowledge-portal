@@ -1,538 +1,454 @@
-import { Download, RotateCw, Upload, X } from "lucide-react";
-import { type ChangeEvent, type ReactNode, useEffect, useId, useMemo, useState } from "react";
-import { Link, NavLink, Outlet, useParams } from "react-router-dom";
+import "./library.css";
+
+import { Download, RotateCw, Square } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Outlet, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { api, type LibraryDocument, type LibraryVersion } from "../api/client";
 import { ApiError, errorMessage } from "../api/errors";
-import { count, formatDay } from "../home/format";
-import {
-  IN_PROGRESS, approvalBlocker, comparisonBasis, counts, initialDrafts, isTheEdition, latestRevision, matches, newestVersion,
-  reviewBody, reviewRows, saveProblems, standing, unsaved, type Draft, type Filter,
-} from "./model";
+import { ActionGroup, Button, type Column, DataTable, Dialog, EmptyState, Facts, PageHeader, Skeleton, Status, SubNav } from "../design/components";
+import { useDisclosure, useFocusAfterRender } from "../design/hooks";
+import { routerPath } from "../auth/paths";
+import { useAuth } from "../auth/authContext";
+import { formatDay } from "../home/format";
 import { DocumentReview } from "../reviews/DocumentReview";
+import { RouterLink } from "../shell/links";
 import { ActAsAdmin, ActingBanner } from "./AdminGrant";
-import { type Focus, PassageTable } from "./PassageTable";
 import { type DocumentContext, type ReviewState, useDocumentContext } from "./documentContext";
+import { DOC_STATE_WORDS, DOC_TONE, docState } from "./docState";
+import { FileButton } from "./FileButton";
+import { awaitingReview, IN_PROGRESS, initialDrafts, latestRevision, livePublication, newestState, newestVersion, standing, unsaved } from "./model";
+import { Outcome } from "./parts";
+import { ReviewDesk } from "./ReviewDesk";
+import { returnBlocker } from "./citing";
+import { StandingPanel } from "./StandingPanel";
 import { useDocument } from "./useDocument";
+import { contentLang, humanWhere, plural } from "./where";
 
-const PAGE = 200;
+const reviewKey = (version: LibraryVersion | undefined) => (version ? `${version.id}:${latestRevision(version)?.id ?? "none"}` : "none");
+const freshReview = (version: LibraryVersion | undefined): ReviewState => ({ key: reviewKey(version), drafts: version ? initialDrafts(version) : {}, summary: "" });
 
+/** Reading the file, in words (§6). */
 const STAGE: Record<string, string> = {
   queued: "Waiting to be read",
   scanning: "Checking the file for malware",
   extracting: "Reading the passages",
-  failed: "Extraction failed",
-  quarantined: "Quarantined by the malware scanner",
-  cancelled: "Processing cancelled",
+  failed: "Couldn't read the file",
+  quarantined: "Held by the malware scan",
+  cancelled: "Reading stopped",
 };
 
-const reviewKey = (version: LibraryVersion | undefined) =>
-  version ? `${version.id}:${latestRevision(version)?.id ?? "none"}` : "none";
-const freshReview = (version: LibraryVersion | undefined): ReviewState => ({
-  key: reviewKey(version),
-  drafts: version ? initialDrafts(version) : {},
-  summary: "",
-});
-
-/** One library document: where it stands with requirement work, its review and its governance. */
+/**
+ * Record archetype (plan 02 §1): one library document, where it stands with
+ * requirement work, and its pages. The main page is the review desk while a
+ * version waits for review, else the overview. Withdraw and return to service
+ * open consequence panels in place (§5). The unsaved review lives here, so it
+ * survives moving between the document's pages.
+ */
 export function DocumentPage() {
   const { documentId = "" } = useParams();
   const document = useDocument(documentId);
   const data = document.query.data;
 
-  useEffect(() => {
-    window.document.title = `${data?.title ?? "Document"} · Library · Knowledge portal`;
-  }, [data?.title]);
-
   if (document.query.isPending) {
-    return <section className="docpage"><p className="docpage__quiet">Reading the document…</p></section>;
+    return (
+      <div className="lib">
+        <Skeleton label="Reading the document" rows={8} />
+      </div>
+    );
   }
   if (!data) {
     const missing = document.query.error instanceof ApiError && document.query.error.status === 404;
+    const refused = document.query.error instanceof ApiError && document.query.error.status === 403;
+    if (refused) return <NotAllowed />;
     return (
-      <section className="docpage" aria-labelledby="doc-missing">
-        <h1 id="doc-missing" className="docpage__title">{missing ? "This document is not in the library" : "The document could not be read"}</h1>
-        <p className="docpage__quiet">
-          {missing
-            ? "It may have been withdrawn, or it is someone's private draft."
-            : `The knowledge service did not answer: ${errorMessage(document.query.error)}`}
-        </p>
-        <p><Link to="/library">Back to the library</Link></p>
-      </section>
-    );
-  }
-  return data.can_edit ? <OwnerView document={data} hook={document} /> : <ReaderView document={data} />;
-}
-
-function EditionLine({ document }: { document: LibraryDocument }) {
-  const state = standing(document);
-  if (state.kind === "service") {
-    return (
-      <>
-        In service: version {state.versionNumber ?? "?"}, approved by {state.publication.approved_by.display_name}
-        {state.publication.on_behalf ? " as admin, on its owner’s behalf," : ""} on{" "}
-        {formatDay(state.publication.approved_at)}. Requirement work cites this edition.
-      </>
-    );
-  }
-  if (state.kind === "indexing") {
-    return state.stuck
-      ? <span className="status status--failed">Approved on {formatDay(state.publication.approved_at)}, but indexing stopped after three attempts.</span>
-      : <>Approved on {formatDay(state.publication.approved_at)}; being indexed for search.</>;
-  }
-  if (state.kind === "withdrawn") {
-    return <>Withdrawn on {formatDay(state.publication.withdrawn_at)}: {state.publication.withdrawal_reason}</>;
-  }
-  return <>Not yet in service. Requirement work cannot cite it until a review is approved.</>;
-}
-
-function Head({ document, version, actions, pages }: {
-  document: LibraryDocument;
-  version?: LibraryVersion;
-  actions?: ReactNode;
-  pages?: ReactNode;
-}) {
-  return (
-    <header className="docpage__head">
-      <p className="docpage__number" aria-hidden="true">1</p>
-      <div className="docpage__heading">
-        <h1 id="doc-title" className="docpage__title" dir="auto">{document.title}</h1>
-        <p className="docpage__edition"><EditionLine document={document} /></p>
-        <DocumentReview document={document} />
-        {version && (
-          <p className="docpage__version">
-            Working copy: version {version.number} · <span dir="auto">{version.filename}</span> · uploaded by{" "}
-            {version.uploaded_by.display_name} on {formatDay(version.uploaded_at)}. Owner: {document.owner.display_name}.
-          </p>
-        )}
-        {actions && <div className="docpage__actions">{actions}</div>}
-        {pages}
+      <div className="lib">
+        <PageHeader title={missing ? "This document isn't in the library" : "Couldn't open this document"} />
+        <EmptyState
+          title={missing ? "It may have been handed to another owner while private, or the address is wrong." : `The knowledge service didn't answer: ${errorMessage(document.query.error)}`}
+          action={
+            <ActionGroup>
+              {!missing && <Button onClick={() => void document.query.refetch()}>Try again</Button>}
+              <RouterLink href="/library">Back to the library</RouterLink>
+            </ActionGroup>
+          }
+        />
       </div>
-    </header>
-  );
-}
-
-/** Where the newest version stands, for an admin who sees only the document's outline. */
-const OUTLINE_STAGE: Record<string, string> = {
-  ...STAGE,
-  ready_for_review: "Read; awaiting its owner's review",
-};
-
-/** What any other admin sees: the passages in service, read-only, and where the newest stands. */
-function ReaderView({ document }: { document: LibraryDocument }) {
-  const version = document.versions[0];
-  const passages = version?.revisions[0]?.passages.filter((item) => item.included) ?? [];
-  const labels = new Map(version?.blocks.map((block) => [block.id, block.label]) ?? []);
-  const newest = document.newest;
-  const approved = newest && document.publications.some((item) => item.version_id === newest.id);
-  return (
-    <section className="docpage" aria-labelledby="doc-title">
-      <Head document={document} />
-      {newest && !approved && (
-        <p className="docpage__version">
-          Newest: version {newest.number}, uploaded by {newest.uploaded_by.display_name} on {formatDay(newest.uploaded_at)}.{" "}
-          <span className={newest.stage === "failed" || newest.stage === "quarantined" ? "status status--failed" : "status"}>
-            {OUTLINE_STAGE[newest.stage] ?? newest.stage}
-          </span>
-          {newest.error && <span className="docpage__why">{newest.error}</span>}
-        </p>
-      )}
-      <ActAsAdmin document={document} />
-      {passages.length === 0 ? (
-        <p className="docpage__quiet">Nothing of it is in service, so there are no passages to show.</p>
-      ) : (
-      <table className="passages passages--read">
-        <caption className="visually-hidden">Passages in service</caption>
-        <thead>
-          <tr>
-            <th scope="col" className="cell passages__where">Where</th>
-            <th scope="col" className="cell passages__working">In service</th>
-          </tr>
-        </thead>
-        <tbody>
-          {passages.map((passage) => (
-            <tr key={passage.block_id} className="passage">
-              <th scope="row" className="cell passages__where">{labels.get(passage.block_id) ?? "—"}</th>
-              <td className="cell passages__working" dir="auto">{passage.text}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      )}
-    </section>
-  );
+    );
+  }
+  return <Record document={data} hook={document} />;
 }
 
 type Hook = ReturnType<typeof useDocument>;
 
-function OwnerView({ document, hook }: { document: LibraryDocument; hook: Hook }) {
+function Record({ document, hook }: { document: LibraryDocument; hook: Hook }) {
+  const location = useLocation();
   const version = newestVersion(document);
-  const [withdrawing, setWithdrawing] = useState(false);
   const [stored, setReview] = useState<ReviewState>(() => freshReview(version));
-  // A new version or a newly saved revision (ours or a reload) resets the working copy to it.
+  // A new version or a newly saved revision (ours, or a reload) resets the working copy to it.
   const review = stored.key === reviewKey(version) ? stored : freshReview(version);
   if (stored.key !== review.key) setReview(review);
   const dirty = version?.stage === "ready_for_review" ? unsaved(version, review.drafts) : 0;
 
-  useEffect(() => {
-    if (dirty === 0) return;
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
-  const replaceId = useId();
-  const pending = hook.review.isPending || hook.approve.isPending || hook.replace.isPending;
-  const failure = [hook.retry, hook.cancel, hook.replace, hook.withdraw].find((mutation) => mutation.isError)?.error;
+  const [said, setSaid] = useState<{ text: string; failed?: boolean } | null>(null);
+  const outcome = useRef<HTMLParagraphElement>(null);
+  const focusLater = useFocusAfterRender();
+  const announce = useCallback((text: string, failed?: boolean) => {
+    setSaid({ text, failed });
+    focusLater(() => outcome.current);
+  }, [focusLater]);
+
+  const panel = useDisclosure(() => window.document.getElementById("record-standing"));
+  const leave = useLeaveGuard(document.id, dirty);
+  const [downloading, setDownloading] = useState(false);
+  const state = docState(document);
+  const stand = standing(document);
+  const owner = document.owner.display_name;
+  const base = `/library/${encodeURIComponent(document.id)}`;
+  const tab = location.pathname.endsWith("/versions") ? "versions"
+    : /\/(cited-by|citations)$/.test(location.pathname) ? "cited-by"
+      : location.pathname.endsWith("/ownership") ? "ownership" : "main";
+  const desk = awaitingReview(document);
+  const canWithdraw = document.can_edit && stand.kind === "service";
+  const canReturn = document.can_edit && stand.kind === "withdrawn" && !desk;
+
+  const provenance =
+    stand.kind === "service" ? (
+      <>
+        In service since {formatDay(stand.publication.activated_at ?? stand.publication.approved_at)} · version {stand.versionNumber ?? "?"} · approved by <bdi>{stand.publication.approved_by.display_name}</bdi>
+        {stand.publication.on_behalf ? <>, as admin on {owner}'s behalf</> : null}
+        {desk && <> · a newer review waits to be published</>}
+      </>
+    ) : stand.kind === "indexing" ? (
+      stand.stuck
+        ? <>Approved on {formatDay(stand.publication.approved_at)}, but indexing for search stopped after three attempts. Requirement work can't cite it yet.</>
+        : <>Approved on {formatDay(stand.publication.approved_at)}; being indexed for search. Requirement work can cite it once that finishes.</>
+    ) : stand.kind === "withdrawn" ? (
+      <>Withdrawn on {formatDay(stand.publication.withdrawn_at)} by <bdi>{stand.publication.withdrawn_by?.display_name ?? "—"}</bdi>{stand.publication.withdrawal_reason ? <>: <q dir="auto">{stand.publication.withdrawal_reason}</q></> : null}</>
+    ) : (
+      <>Not in service. Requirement work can't cite it until a review is published.</>
+    );
 
   const download = async () => {
     if (!version) return;
-    const blob = await api.original(document.id, version.id);
-    const url = URL.createObjectURL(blob);
-    const anchor = window.document.createElement("a");
-    anchor.href = url;
-    anchor.download = version.filename;
-    anchor.click();
-    URL.revokeObjectURL(url);
+    setDownloading(true);
+    try {
+      const blob = await api.original(document.id, version.id);
+      const url = URL.createObjectURL(blob);
+      const anchor = window.document.createElement("a");
+      anchor.href = url;
+      anchor.download = version.filename;
+      anchor.click();
+      // Revoked once the browser has the download, not before (Firefox and Safari cancel it).
+      window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+    } catch (error) {
+      announce(`Couldn't download the original: ${errorMessage(error)}`, true);
+    } finally {
+      setDownloading(false);
+    }
   };
 
-  const replace = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (file) hook.replace.mutate(file);
-  };
-
-  const live = document.publications.some((item) => !item.withdrawn_at);
-  const actions = (
-    <>
-      {document.is_owner && (
-        <label className="text-button file-button" htmlFor={replaceId}>
-          <Upload size={14} aria-hidden="true" />
-          Upload a new version
-          <input id={replaceId} type="file" className="visually-hidden" onChange={replace} disabled={pending || dirty > 0}
-            accept=".pdf,.docx,.xlsx,.pptx,.csv,.tsv,.txt,.md,.png,.jpg,.jpeg" />
-        </label>
-      )}
-      {version && (
-        <button type="button" className="text-button" onClick={() => void download()}>
-          <Download size={14} aria-hidden="true" />
-          Download the original
-        </button>
-      )}
-      {live && !withdrawing && (
-        <button type="button" className="text-button" onClick={() => setWithdrawing(true)}>Withdraw from requirement work…</button>
-      )}
-    </>
-  );
+  const context: DocumentContext = { document, hook, review, setReview, dirty, announce };
 
   return (
-    <section className="docpage" aria-labelledby="doc-title">
-      <ActingBanner document={document} />
-      <Head document={document} version={version} actions={actions} pages={<SubIndex dirty={dirty} />} />
-      {hook.replace.isPending && <p className="docpage__notice" role="status">Uploading the new version…</p>}
-      {failure ? <Failure error={failure} onReload={hook.reload} /> : null}
-      {withdrawing && <Withdraw document={document} hook={hook} onDone={() => setWithdrawing(false)} />}
-      {version && <Processing document={document} version={version} hook={hook} />}
-      <Outlet context={{ document, hook, review, setReview, dirty } satisfies DocumentContext} />
-    </section>
-  );
-}
-
-const PAGES = [
-  { to: "", label: "Review", end: true },
-  { to: "versions", label: "Search versions" },
-  { to: "citations", label: "Who cites it" },
-  { to: "ownership", label: "Ownership" },
-];
-
-/** The document's own pages, an index under its head. */
-function SubIndex({ dirty }: { dirty: number }) {
-  return (
-    <nav className="subindex" aria-label="This document">
-      <ul className="subindex__list">
-        {PAGES.map((page) => (
-          <li key={page.label}>
-            <NavLink to={page.to} end={page.end} className="subindex__link">
-              {page.label}
-              {page.label === "Review" && dirty > 0 && <span className="subindex__count"> · {dirty} unsaved</span>}
-            </NavLink>
-          </li>
-        ))}
-      </ul>
-    </nav>
-  );
-}
-
-/** The review page: the working copy's passages, when there is something to review. */
-export function ReviewPage() {
-  const { document, hook, review, setReview } = useDocumentContext();
-  const version = newestVersion(document);
-  if (version?.stage !== "ready_for_review") return null;
-  return <Review key={version.id} document={document} version={version} hook={hook} review={review} setReview={setReview} />;
-}
-
-export function Failure({ error, onReload }: { error: unknown; onReload: () => void }) {
-  const conflict = error instanceof ApiError && error.status === 409;
-  return (
-    <p className="docpage__failure" role="alert">
-      {conflict
-        ? "The document changed while you worked (someone else, or the service finishing a step). Reload it; your unsaved decisions on this version stay."
-        : errorMessage(error)}
-      {conflict && (
-        <button type="button" className="text-button" onClick={onReload}>
-          <RotateCw size={14} aria-hidden="true" />
-          Reload the document
-        </button>
+    <div className="lib lib-record">
+      <ActingBanner document={document} onDone={announce} />
+      <PageHeader
+        title={<span lang={contentLang(document.title)}>{document.title}</span>}
+        documentTitle={`${document.title} · Library`}
+        meta={
+          <>
+            <Status tone={DOC_TONE[state]}>{DOC_STATE_WORDS[state]}</Status>
+            <span>Owner {document.is_owner ? "you" : <bdi>{owner}</bdi>}</span>
+            {version && <span>Version {version.number} · <bdi>{version.filename}</bdi></span>}
+          </>
+        }
+        provenance={provenance}
+        actions={
+          document.can_edit ? (
+            <ActionGroup>
+              {document.is_owner && (
+                <FileButton
+                  busy={hook.replace.isPending}
+                  unavailableReason={dirty > 0 ? "Save your review first." : null}
+                  onFile={([file]) => file && hook.replace.mutate(file, {
+                    onSuccess: () => announce(`Uploaded version ${(version?.number ?? 0) + 1}. It is being read; Jobs shows the progress.`),
+                    onError: (error) => announce(`Couldn't upload it: ${errorMessage(error)}`, true),
+                  })}
+                >
+                  Upload a new version
+                </FileButton>
+              )}
+              {version && <Button variant="quiet" icon={<Download size={14} />} busy={downloading} onClick={() => void download()}>{downloading ? "Downloading…" : "Download the original"}</Button>}
+              {(canWithdraw || canReturn) && (
+                <Button
+                  id="record-standing"
+                  variant={canWithdraw ? "secondary" : "primary"}
+                  aria-expanded={panel.open}
+                  unavailableReason={canReturn ? returnBlocker(document, dirty) : null}
+                  onClick={(event) => {
+                    hook.withdraw.reset();
+                    hook.approve.reset();
+                    if (panel.open) panel.close();
+                    else panel.show(event);
+                  }}
+                >
+                  {canWithdraw ? "Withdraw…" : "Return to service…"}
+                </Button>
+              )}
+            </ActionGroup>
+          ) : undefined
+        }
+      >
+        <DocumentReview document={document} />
+        <SubNav
+          label="This document"
+          link={RouterLink}
+          items={[
+            { href: base, label: desk ? (dirty > 0 ? `Review (${plural(dirty, "unsaved change")})` : "Review") : "Overview", current: tab === "main" },
+            { href: `${base}/versions`, label: "Versions", current: tab === "versions" },
+            { href: `${base}/cited-by`, label: "Cited by", current: tab === "cited-by" },
+            { href: `${base}/ownership`, label: "Ownership", current: tab === "ownership" },
+          ]}
+        />
+      </PageHeader>
+      {panel.open && (
+        <StandingPanel
+          document={document}
+          hook={hook}
+          dirty={dirty}
+          panelRef={panel.panel}
+          onDone={(text) => {
+            panel.close();
+            announce(text);
+          }}
+          onKeep={panel.close}
+        />
       )}
-    </p>
-  );
-}
-
-function Processing({ document, version, hook }: { document: LibraryDocument; version: LibraryVersion; hook: Hook }) {
-  if (version.stage === "ready_for_review") return null;
-  const running = IN_PROGRESS.has(version.stage);
-  const failed = version.stage === "failed" || version.stage === "quarantined";
-  return (
-    <div className={failed ? "processing processing--failed" : "processing"} role={failed ? "alert" : "status"}>
-      <p>
-        <span className="status">{STAGE[version.stage] ?? version.stage}</span>
-        {" "}· version {version.number}
-        {version.error && <> — {version.error}</>}
-      </p>
-      {running && document.is_owner && (
-        <button type="button" className="text-button" onClick={() => hook.cancel.mutate(version.id)} disabled={hook.cancel.isPending}>
-          <X size={14} aria-hidden="true" />
-          Cancel processing
-        </button>
-      )}
-      {(version.stage === "failed" || version.stage === "cancelled") && document.is_owner && (
-        <button type="button" className="text-button" onClick={() => hook.retry.mutate(version.id)} disabled={hook.retry.isPending}>
-          <RotateCw size={14} aria-hidden="true" />
-          Read it again
-        </button>
-      )}
-      {version.stage === "quarantined" && <p>A quarantined file can never be published. Upload a new version instead.</p>}
-      {standing(document).kind === "service" && (
-        <p className="processing__aside">The version in service stays citable meanwhile.</p>
-      )}
+      <Outcome text={said?.text} failed={said?.failed} focusRef={outcome} />
+      <Outlet context={context} />
+      {leave.dialog}
     </div>
   );
 }
 
-function Withdraw({ document, hook, onDone }: { document: LibraryDocument; hook: Hook; onDone: () => void }) {
-  const [reason, setReason] = useState("");
-  const id = useId();
+/** The document's main page: the review desk while a version waits, else the overview. */
+export function MainPage() {
+  const { document } = useDocumentContext();
+  const [params] = useSearchParams();
+  const version = newestVersion(document);
+  if (!document.can_edit) return <ReaderView />;
+  // "?review=again": the owner changes what is in service, from the version's saved review.
+  if (version && (awaitingReview(document) || (params.get("review") === "again" && version.stage === "ready_for_review"))) {
+    return <ReviewDesk key={version.id} document={document} version={version} />;
+  }
+  return <Overview />;
+}
+
+/** What the newest version's reading is doing, with retry and stop beside it (§6.1). */
+function Processing() {
+  const { document, hook, announce } = useDocumentContext();
+  const newest = newestState(document);
+  const stand = standing(document);
+  if (!newest) return null;
+  const running = IN_PROGRESS.has(newest.stage);
+  const failed = newest.stage === "failed";
+  const held = newest.stage === "quarantined";
+  const stopped = newest.stage === "cancelled";
+  const stuck = stand.kind === "indexing" && stand.stuck;
+  if (!running && !failed && !held && !stopped && !stuck) return null;
+  const attempt = "attempt" in newest ? newest.attempt : 0;
+  const after = (text: string) => ({ onSuccess: () => announce(text), onError: (error: unknown) => announce(`Couldn't do that: ${errorMessage(error)}`, true) });
   return (
-    <form
-      className="withdraw"
-      aria-labelledby={`${id}-title`}
-      onSubmit={(event) => {
-        event.preventDefault();
-        hook.withdraw.mutate(reason.trim(), { onSuccess: onDone });
-      }}
-    >
-      <h2 id={`${id}-title`} className="withdraw__title">Withdraw from requirement work</h2>
+    <section className="lib-processing" aria-label="Reading the file">
       <p>
-        Every publication of this document leaves search at once. Requirements that cite it are told their source
-        changed, and their owners decide whether to keep or revise what they wrote.
+        {stuck ? (
+          <Status tone="attention">Indexing for search stopped after three attempts</Status>
+        ) : (
+          <Status tone={running ? "working" : failed ? "attention" : held ? "held" : "stopped"}>{STAGE[newest.stage] ?? newest.stage}</Status>
+        )}{" "}
+        <span className="lib-quiet">
+          Version {newest.number}{attempt > 1 ? ` · attempt ${attempt} of 3` : ""}
+          {running ? " · You can leave this page; reading carries on, and Jobs shows its progress." : ""}
+        </span>
       </p>
-      <label className="field" htmlFor={`${id}-reason`}>
-        <span className="field__label">Why is this source no longer safe to rely on?</span>
-        <textarea id={`${id}-reason`} className="field__input" rows={3} maxLength={2000} required
-          value={reason} onChange={(event) => setReason(event.target.value)} />
-      </label>
-      <p className="withdraw__actions">
-        <button type="submit" className="action-button" disabled={!reason.trim() || hook.withdraw.isPending}>
-          {hook.withdraw.isPending
-            ? "Withdrawing…"
-            : document.is_owner ? "Withdraw it" : `Withdraw it on ${document.owner.display_name}’s behalf`}
-        </button>
-        <button type="button" className="text-button" onClick={onDone}>Keep it in service</button>
-      </p>
-    </form>
+      {(newest.error || (stuck && stand.publication.indexing_error)) && <p>{stuck ? stand.publication.indexing_error : newest.error}</p>}
+      {held && <p>A held file is never published. Upload a clean copy as a new version.</p>}
+      {document.can_edit && (
+        <ActionGroup>
+          {running && <Button icon={<Square size={14} />} busy={hook.cancel.isPending} onClick={() => hook.cancel.mutate(newest.id, after("Reading stopped."))}>Stop reading</Button>}
+          {(failed || stopped) && <Button icon={<RotateCw size={14} />} busy={hook.retry.isPending} onClick={() => hook.retry.mutate(newest.id, after("Reading it again. Jobs shows the progress."))}>Try reading again</Button>}
+          {stuck && document.is_owner && <Button icon={<RotateCw size={14} />} busy={hook.retryIndexing.isPending} onClick={() => hook.retryIndexing.mutate(undefined, after("Indexing it again. Jobs shows the progress."))}>Try indexing again</Button>}
+        </ActionGroup>
+      )}
+      {(failed || held) && document.is_owner && <p className="lib-quiet">Or upload a new version with the fix, from the top of this page.</p>}
+      {stand.kind === "service" && (running || failed || held) && <p className="lib-quiet">The version in service stays citable meanwhile.</p>}
+    </section>
   );
 }
 
-const FILTERS: { key: Filter; label: string }[] = [
-  { key: "all", label: "All" },
-  { key: "changed", label: "Changed" },
-  { key: "flagged", label: "Flagged" },
-  { key: "excluded", label: "Excluded" },
-  { key: "removed", label: "Removed" },
-];
+type Passage = { id: string; where: string; text: string };
 
-function Review({ document, version, hook, review, setReview }: {
-  document: LibraryDocument;
-  version: LibraryVersion;
-  hook: Hook;
-  review: ReviewState;
-  setReview: DocumentContext["setReview"];
-}) {
-  const revision = latestRevision(version);
-  const drafts = review.drafts;
-  const summary = review.summary;
-  const setSummary = (value: string) => setReview((current) => ({ ...current, summary: value }));
-  const [filter, setFilter] = useState<Filter>("all");
-  const [find, setFind] = useState("");
-  const [shown, setShown] = useState(PAGE);
-  const [focus, setFocus] = useState<Focus | null>(null);
-  const summaryId = useId();
-
-  const basis = comparisonBasis(document);
-  const rows = useMemo(() => reviewRows(document, version, drafts), [document, version, drafts]);
-  const tally = counts(rows, basis.kind);
-  const visible = useMemo(() => rows.filter((row) => matches(row, filter, find)), [rows, filter, find]);
-  const dirty = unsaved(version, drafts);
-  const identical = isTheEdition(document, version, dirty);
-  const problems = saveProblems(version, drafts, summary);
-  const blocker = approvalBlocker(document, version, dirty);
-  const failure = [hook.review, hook.approve].find((mutation) => mutation.isError)?.error;
-  const fileWarnings = version.warning_details.filter((warning) => !warning.block_id);
-
-  const change = (blockId: string, patch: Partial<Draft>) =>
-    setReview((current) => {
-      const draft = current.drafts[blockId];
-      return draft ? { ...current, drafts: { ...current.drafts, [blockId]: { ...draft, ...patch } } } : current;
+/** The passages requirement work cites now, read-only; "#passage-…" focuses one (from search). */
+function InService({ caption }: { caption: string }) {
+  const { document } = useDocumentContext();
+  const location = useLocation();
+  const live = livePublication(document);
+  const source = live ? document.versions.find((item) => item.id === live.version_id) : undefined;
+  const revision = source?.revisions.find((item) => item.id === live?.revision_id);
+  const passages = useMemo<Passage[]>(() => {
+    if (!source || !revision) return [];
+    const blocks = new Map(source.blocks.map((block) => [block.id, block]));
+    return revision.passages.filter((item) => item.included).map((item) => {
+      const block = blocks.get(item.block_id);
+      const where = block ? [...block.section_path.filter((part) => !block.label.includes(part)), block.label].join(" › ") : "—";
+      return { id: item.block_id, where: humanWhere(where), text: item.text };
     });
+  }, [source, revision]);
+  const wanted = (() => {
+    const raw = location.hash.replace(/^#passage-/, "");
+    try {
+      return decodeURIComponent(raw);
+    } catch {
+      return raw;
+    }
+  })();
+  useEffect(() => {
+    if (!wanted) return;
+    const row = window.document.getElementById(`passage-${wanted}`);
+    if (!row) return;
+    row.scrollIntoView({ block: "center" });
+    row.focus({ preventScroll: true });
+  }, [wanted, passages.length]);
 
-  const basisLabel = basis.kind === "edition"
-    ? `In service · version ${basis.version.number}`
-    : "As extracted";
-  const workingLabel = basis.kind === "edition" ? `Working copy · version ${version.number}` : "Reviewed";
-
-  const save = () => hook.review.mutate(
-    { versionId: version.id, body: reviewBody(version, drafts, summary, document.version) },
-    { onSuccess: () => setSummary("") },
-  );
-
+  if (!live) return null;
+  if (!source || !revision) {
+    return <p className="lib-quiet">The passages in service are private to its owner. Requirement work cites them as approved.</p>;
+  }
+  const columns: Column<Passage>[] = [
+    { id: "where", header: "Where", rowHeader: true, width: "12rem", cell: (item) => <span id={`passage-${item.id}`} tabIndex={-1} className="lib-anchor">{item.where}</span> },
+    { id: "text", header: "Passage", bidi: true, cell: (item) => <span lang={contentLang(item.text)} className="lib-passage-cell">{item.text}</span> },
+  ];
   return (
-    <>
-      <section className="notice-table" aria-labelledby="changes-title">
-        <h2 id="changes-title" className="notice-table__title">
-          {identical
-            ? "The working copy is the edition in service. Nothing changed since it was approved; it holds:"
-            : basis.kind === "edition" ? "Changes from the edition in service" : "First edition: what the review holds"}
-        </h2>
-        <dl className="notice-table__grid">
-          {(identical
-            ? [["In service", tally.all - tally.excludedAll - tally.removed], ["Excluded", tally.excludedAll], ["Flagged", tally.flagged]]
-            : basis.kind === "edition"
-              ? [["Edited", tally.edited], ["Leaving the edition", tally.excluded], ["New", tally.new], ["Removed", tally.removed], ["Flagged", tally.flagged]]
-              : [["Edited", tally.edited], ["Excluded", tally.excludedAll], ["Flagged", tally.flagged]]
-          ).map(([label, value]) => (
-            <div key={label} className="notice-table__item">
-              <dt>{label}</dt>
-              <dd>{value}</dd>
-            </div>
-          ))}
-          <div className={tally.blocking > 0 ? "notice-table__item is-blocking" : "notice-table__item"}>
-            <dt>Blocking approval</dt>
-            <dd>{tally.blocking}</dd>
-          </div>
-        </dl>
-        <p className="notice-table__total">{count(tally.all, "passage")} in version {version.number}.</p>
-        {fileWarnings.length > 0 && (
-          <ul className="file-warnings" aria-label="About the whole file">
-            {fileWarnings.map((warning, index) => (
-              <li key={`${warning.code}-${index}`} className={warning.severity === "blocking" ? "is-blocking" : undefined}>
-                <span className="status">
-                  {warning.severity === "blocking" ? "Blocking, whole file" : warning.severity === "warning" ? "Warning, whole file" : "Note, whole file"}
-                </span>{" "}
-                {warning.message}
-                {warning.severity === "blocking" && " A warning about the whole file cannot be cleared by excluding passages; upload a new version."}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <div className="filters">
-        <div className="filters__set" role="group" aria-label="Show passages">
-          {FILTERS.filter((item) => item.key !== "removed" || basis.kind === "edition").map((item) => {
-            const n = item.key === "all" ? tally.all
-              : item.key === "changed" ? tally.edited + tally.new + tally.removed
-              : item.key === "flagged" ? tally.flagged
-              : item.key === "excluded" ? tally.excludedAll : tally.removed;
-            return (
-              <button
-                key={item.key}
-                type="button"
-                className="filter"
-                aria-pressed={filter === item.key}
-                onClick={() => { setFilter(item.key); setShown(PAGE); }}
-              >
-                {item.label} <span className="filter__count">{n}</span>
-              </button>
-            );
-          })}
-        </div>
-        <label className="field field--inline">
-          <span className="field__label">Find in passages</span>
-          <input type="search" className="field__input" value={find} onChange={(event) => { setFind(event.target.value); setShown(PAGE); }} />
-        </label>
+    <section className="ds-section lib-inservice" aria-labelledby="in-service-title">
+      <div className="ds-section__head">
+        <h2 id="in-service-title" className="ds-section__title">{caption} <span className="ds-section__count">{passages.length.toLocaleString("en")}</span></h2>
       </div>
-      <p className="keys">
-        Keys on a passage: <kbd>j</kbd>/<kbd>k</kbd> move, <kbd>Enter</kbd> open, <kbd>x</kbd> exclude,{" "}
-        <kbd>i</kbd> include, <kbd>e</kbd> edit, <kbd>o</kbd> original, <kbd>Esc</kbd> close.
-      </p>
+      <DataTable caption={caption} captionHidden columns={columns} rows={passages} rowId={(item) => item.id} emptyText="Every passage of it is excluded." />
+    </section>
+  );
+}
 
-      {visible.length > 0 ? (
-        <PassageTable
-          documentId={document.id}
-          versionId={version.id}
-          versionNumber={version.number}
-          rows={visible}
-          shown={shown}
-          onMore={() => setShown((current) => current + PAGE)}
-          basisLabel={basisLabel}
-          workingLabel={workingLabel}
-          focus={focus}
-          onFocus={setFocus}
-          onChange={change}
-        />
-      ) : (
-        <p className="timetable__quiet">No passage matches.</p>
-      )}
-
-      <form
-        className="savebar"
-        aria-label="Save and approve the review"
-        onSubmit={(event) => {
-          event.preventDefault();
-          save();
-        }}
-      >
-        <p className="savebar__state" aria-live="polite">
-          {dirty > 0 ? <strong>{dirty} unsaved {dirty === 1 ? "change" : "changes"}</strong> : revision ? "All changes saved" : "Not yet saved"}
-          {revision && <> · revision {version.revisions.length} saved {formatDay(revision.created_at)}</>}
+/** The record's main page when nothing waits for review: where it stands, its facts, what is in service. */
+function Overview() {
+  const { document } = useDocumentContext();
+  const version = newestVersion(document);
+  const stand = standing(document);
+  const live = livePublication(document);
+  const liveVersion = live ? document.versions.find((item) => item.id === live.version_id) : undefined;
+  // Changing what is in service without a new file: the version's saved review, reviewed again.
+  const again = document.can_edit && Boolean(live) && version?.stage === "ready_for_review" && Boolean(latestRevision(version));
+  return (
+    <div className="lib-overview">
+      <Processing />
+      <Facts
+        items={[
+          ["Newest version", version ? <>{version.number} · <bdi>{version.filename}</bdi>, uploaded {formatDay(version.uploaded_at)} by <bdi>{version.uploaded_by.display_name}</bdi></> : "—"],
+          ["In service", live ? <>Version {liveVersion?.number ?? "?"}{live.chunk_count ? `, ${plural(live.chunk_count, "indexed passage")}` : ""}</> : stand.kind === "withdrawn" ? <>Nothing: withdrawn on {formatDay(stand.publication.withdrawn_at)}</> : "Nothing yet"],
+          ["Owner", document.is_owner ? "You" : <bdi>{document.owner.display_name}</bdi>],
+        ]}
+      />
+      {again && (
+        <p className="lib-quiet">
+          To change what is in service without a new file, <RouterLink href="?review=again">review version {version!.number} again</RouterLink>; publishing it replaces the version in service.
         </p>
-        <label className="field field--inline savebar__summary" htmlFor={summaryId}>
-          <span className="field__label">Review summary</span>
-          <input id={summaryId} className="field__input" maxLength={2000} value={summary}
-            onChange={(event) => setSummary(event.target.value)} placeholder="What you checked, and what you changed" />
-        </label>
-        <button type="submit" className="action-button" disabled={problems.length > 0 || hook.review.isPending}
-          aria-describedby={problems.length ? `${summaryId}-problems` : undefined}>
-          {hook.review.isPending ? "Saving…" : "Save review"}
-        </button>
-        <button
-          type="button"
-          className="action-button action-button--secondary"
-          disabled={blocker !== null || hook.approve.isPending}
-          aria-describedby={blocker ? `${summaryId}-blocker` : undefined}
-          onClick={() => revision && hook.approve.mutate({ versionId: version.id, revisionId: revision.id })}
-        >
-          {hook.approve.isPending
-            ? "Approving…"
-            : document.is_owner ? "Approve and publish" : `Approve on ${document.owner.display_name}’s behalf`}
-        </button>
-        {((problems.length > 0 && (dirty > 0 || !revision)) || blocker) && (
-          <p className="savebar__why">
-            {problems.length > 0 && (dirty > 0 || !revision) && <span id={`${summaryId}-problems`}>{problems.join(" ")} </span>}
-            {blocker && <span id={`${summaryId}-blocker`}>{blocker}</span>}
-          </p>
-        )}
-        {failure ? <Failure error={failure} onReload={hook.reload} /> : null}
-      </form>
-    </>
+      )}
+      <InService caption="Passages in service" />
+    </div>
+  );
+}
+
+/** Another admin's view: the passages in service, where the newest version stands, and acting for the owner. */
+function ReaderView() {
+  const { document, announce } = useDocumentContext();
+  const newest = newestState(document);
+  const approved = newest && document.publications.some((item) => item.version_id === newest.id && !item.withdrawn_at);
+  return (
+    <div className="lib-overview">
+      <ActAsAdmin document={document} onDone={announce} />
+      {newest && !approved && (
+        <p>
+          Newest: version {newest.number}, uploaded {formatDay(newest.uploaded_at)} by <bdi>{newest.uploaded_by.display_name}</bdi>.{" "}
+          <Status tone={newest.stage === "failed" ? "attention" : newest.stage === "quarantined" ? "held" : IN_PROGRESS.has(newest.stage) ? "working" : "neutral"}>
+            {newest.stage === "ready_for_review" ? "Read; waiting for its owner's review" : STAGE[newest.stage] ?? newest.stage}
+          </Status>
+          {newest.error && <span className="lib-detail">{newest.error}</span>}
+        </p>
+      )}
+      <InService caption="Passages in service" />
+      {!livePublication(document) && <p className="lib-quiet">Nothing of it is in service, so there are no passages to show.</p>}
+    </div>
+  );
+}
+
+
+/**
+ * §4: unsaved review work asks before it is lost. Closing or reloading the tab uses the
+ * browser's own question; a link that leaves the document (the rail, Jobs, a search result)
+ * opens the one modal the model allows here. The app has no data router, so the guard listens
+ * for link clicks itself; the browser's Back button is not caught (backlog).
+ */
+function useLeaveGuard(documentId: string, dirty: number) {
+  const navigate = useNavigate();
+  const [to, setTo] = useState<string | null>(null);
+  useEffect(() => {
+    if (dirty === 0) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    const click = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a[href]") : null;
+      if (!link || link.target || link.hasAttribute("download") || link.origin !== window.location.origin) return;
+      const path = routerPath(link.pathname);
+      // The document's own pages keep the unsaved review: it lives above them.
+      if (path.startsWith(`/library/${encodeURIComponent(documentId)}`) || path.startsWith(`/library/${documentId}`)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setTo(`${path}${link.search}${link.hash}`);
+    };
+    window.addEventListener("beforeunload", warn);
+    window.document.addEventListener("click", click, true);
+    return () => {
+      window.removeEventListener("beforeunload", warn);
+      window.document.removeEventListener("click", click, true);
+    };
+  }, [documentId, dirty]);
+  const dialog = (
+    <Dialog
+      open={to !== null}
+      title="Leave without saving your review?"
+      onClose={() => setTo(null)}
+      actions={
+        <>
+          <Button variant="primary" data-autofocus onClick={() => setTo(null)}>Stay and save</Button>
+          <Button onClick={() => { const next = to; setTo(null); if (next) navigate(next); }}>Leave without saving</Button>
+        </>
+      }
+    >
+      <p>You have {plural(dirty, "unsaved change")} to this review. Leaving loses {dirty === 1 ? "it" : "them"}.</p>
+    </Dialog>
+  );
+  return { dialog };
+}
+
+/** A refusal (403) is a permission state (§7), not a service that didn't answer. */
+function NotAllowed() {
+  const auth = useAuth();
+  return (
+    <div className="lib">
+      <PageHeader title="You can't open this document" />
+      <EmptyState title="Opening library documents needs the Knowledge admin role." action={<RouterLink href="/library">Back to the library</RouterLink>}>
+        <p>You're signed in as <bdi>{auth?.actor?.display_name ?? "someone else"}</bdi>. Ask your platform administrator to add the role.</p>
+      </EmptyState>
+    </div>
   );
 }

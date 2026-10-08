@@ -138,3 +138,8 @@
 .ds-consequence__affects > p {
   margin: 0;
 }
+
+/* The failure line stays mounted (a live region), taking no room until it speaks. */
+.ds-consequence__failure:empty {
+  position: absolute;
+}

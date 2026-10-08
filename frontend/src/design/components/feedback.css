@@ -1,12 +1,13 @@
+/* A status can be a sentence (a failure and its cause): it wraps, its icon on the first line. */
 .ds-status {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--status-gap);
-  white-space: nowrap;
 }
 
 .ds-status__icon {
   flex: none;
+  margin-block-start: 0.2em;
 }
 
 .ds-status--neutral,

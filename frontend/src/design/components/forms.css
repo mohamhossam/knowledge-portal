@@ -60,7 +60,8 @@
   inline-size: var(--target-min);
   block-size: var(--target-min);
   margin: 0;
-  accent-color: var(--color-action-fill);
+  /* The action ink, not its fill: a checked box keeps 3:1 in dark mode too (fill: 1.9:1). */
+  accent-color: var(--color-action);
 }
 
 .ds-check__hint {

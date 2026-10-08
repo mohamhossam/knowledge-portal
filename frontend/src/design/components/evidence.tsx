@@ -26,21 +26,25 @@ export function ConsequencePanel({
   tone = "neutral",
   busy,
   failure,
+  busyLabel = "Working…",
   panelRef,
 }: {
-  title: string;
+  /** May hold a name (wrap it in <bdi> so a title in either language reads in order). */
+  title: ReactNode;
   happens: ReactNode;
   affects?: ReactNode;
   reversibility: ReactNode;
   /** When the API takes a reason: its label and who reads it. */
   reason?: { label: string; hint: string };
-  confirmLabel: string;
+  confirmLabel: ReactNode;
   keepLabel: string;
   onConfirm: (reason: string) => void;
   onKeep: () => void;
   tone?: "neutral" | "danger";
   busy?: boolean;
   failure?: ReactNode;
+  /** The verb in its -ing form while it runs ("Publishing…"). */
+  busyLabel?: string;
   panelRef?: RefObject<HTMLElement | null>;
 }) {
   const id = useId();
@@ -66,9 +70,10 @@ export function ConsequencePanel({
         {tone === "danger" && <AlertTriangle size={16} aria-hidden="true" />}
         {title}
       </h2>
-      <p className="ds-consequence__happens">{happens}</p>
-      {affects && <div className="ds-consequence__affects">{affects}</div>}
-      <p className="ds-consequence__reversibility">{reversibility}</p>
+      {/* Focus lands in the reason field: these are its description, so the consequence is heard first. */}
+      <p id={`${id}-happens`} className="ds-consequence__happens">{happens}</p>
+      {affects && <div id={`${id}-affects`} className="ds-consequence__affects">{affects}</div>}
+      <p id={`${id}-reversibility`} className="ds-consequence__reversibility">{reversibility}</p>
       {reason && (
         <div className="ds-field">
           <label htmlFor={`${id}-reason`} className="ds-field__label">{reason.label}</label>
@@ -81,13 +86,14 @@ export function ConsequencePanel({
             value={text}
             aria-required="true"
             aria-invalid={tried && missing ? true : undefined}
-            aria-describedby={`${id}-hint${tried && missing ? ` ${id}-error` : ""}`}
+            aria-describedby={`${id}-happens${affects ? ` ${id}-affects` : ""} ${id}-reversibility ${id}-hint${tried && missing ? ` ${id}-error` : ""}`}
             onChange={(event) => setText(event.target.value)}
           />
           {tried && missing && <p id={`${id}-error`} className="ds-field__error">Give a reason. {reason.hint}</p>}
         </div>
       )}
-      {failure && <p className="ds-consequence__failure" role="status"><Status tone="attention">{failure}</Status></p>}
+      {/* Mounted before it has anything to say, so a failure is announced. */}
+      <p className="ds-consequence__failure" role="status">{failure ? <Status tone="attention">{failure}</Status> : null}</p>
       <div className="ds-actions">
         <Button
           variant={tone === "danger" ? "danger" : "primary"}
@@ -95,10 +101,12 @@ export function ConsequencePanel({
           busy={busy}
           onClick={() => {
             setTried(true);
-            if (!missing) onConfirm(text.trim());
+            // A missing reason: back to its field, where the error is part of its description.
+            if (missing) document.getElementById(`${id}-reason`)?.focus();
+            else onConfirm(text.trim());
           }}
         >
-          {busy ? "Working…" : confirmLabel}
+          {busy ? busyLabel : confirmLabel}
         </Button>
         <Button onClick={onKeep}>{keepLabel}</Button>
       </div>

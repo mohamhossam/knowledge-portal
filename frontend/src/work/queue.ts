@@ -13,7 +13,7 @@ import { api, type LibraryDocument, type Organisation, type Release, type Remind
 import { suggestionState } from "../catalogue/suggestions";
 import { formatDay } from "../home/format";
 import { docState } from "../library/docState";
-import { newestVersion, standing } from "../library/model";
+import { newestState, newestVersion, standing } from "../library/model";
 import { REMINDERS_KEY } from "../reviews/review";
 import { gaps } from "../squads/gaps";
 
@@ -40,8 +40,9 @@ export type VersionFacts = {
 };
 
 export type Entry =
-  | { kind: "unreadable"; id: string; mine: boolean; subject: string; cause: string | null; held: boolean; sinceAt: string; fileType: string; to: string }
-  | { kind: "unsearchable"; id: string; mine: boolean; subject: string; sinceAt: string; to: string }
+  /** A read that failed or is held; `document` carries what the row's own retry and upload need. */
+  | { kind: "unreadable"; id: string; mine: boolean; subject: string; cause: string | null; held: boolean; sinceAt: string; fileType: string; to: string; document: LibraryDocument }
+  | { kind: "unsearchable"; id: string; mine: boolean; subject: string; sinceAt: string; to: string; document: LibraryDocument }
   | { kind: "review"; id: string; mine: boolean; subject: string; owner: string; since: string; sinceAt: string; facts: VersionFacts; to: string }
   | { kind: "suggestions"; id: string; mine: boolean; subject: string; count: number; to: string }
   | { kind: "due"; id: string; mine: boolean; subject: string; what: "document" | "system"; overdue: boolean; when: string; to: string }
@@ -92,11 +93,11 @@ export function workQueue(input: QueueInput): Sections {
   const attention: Entry[] = input.documents
     .filter((doc) => docState(doc) === "attention" || docState(doc) === "held")
     .map((doc): Entry => {
-      const base = { id: `doc-${doc.id}`, mine: doc.is_owner, subject: doc.title, sinceAt: newestVersion(doc)?.uploaded_at ?? "", to: WORK_ROUTES.document(doc.id) };
+      const base = { id: `doc-${doc.id}`, mine: doc.is_owner, subject: doc.title, sinceAt: newestState(doc)?.uploaded_at ?? "", to: WORK_ROUTES.document(doc.id), document: doc };
       // Approved, but indexing stopped after three tries: not citable until it is made searchable.
       if (standing(doc).kind === "indexing") return { kind: "unsearchable", ...base };
       // The service's reading errors are written to be read (unsupported file, timeout, a bad delimiter).
-      const cause = newestVersion(doc)?.error?.trim() || null;
+      const cause = newestState(doc)?.error?.trim() || null;
       return { kind: "unreadable", ...base, cause, held: docState(doc) === "held", fileType: fileType(newestVersion(doc)?.mime_type) };
     });
 

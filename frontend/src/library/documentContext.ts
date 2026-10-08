@@ -16,6 +16,11 @@ export type DocumentContext = {
   setReview: (update: (current: ReviewState) => ReviewState) => void;
   /** Unsaved review changes; other pages refuse changes that would lose them. */
   dirty: number;
+  /**
+   * Says an outcome on the record's own line (§15) and moves focus there: for
+   * a change that removes the control that made it (publishing closes the desk).
+   */
+  announce: (text: string, failed?: boolean) => void;
 };
 
 export function useDocumentContext() {
