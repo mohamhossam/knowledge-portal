@@ -55,19 +55,15 @@ together with it.
 
 ## Importing the existing knowledge
 
-The library, catalogues and their history move here from a requirements database (one at or
-past requirement-portal migration `202610021400`, such as a restored backup). Migrate this
-service's database first, then:
+`v0.2.0` is the last release with the `knowledge-portal import` command, which copied the
+library, catalogues and their history out of a requirements database. Requirement work no
+longer keeps those tables, and stops its upgrade if any is left (requirement-portal's
+`docs/operations/deployment.md`, "Knowledge tables left behind"). To move an earlier system,
+run that release's image with `PERSISTENCE_PROVIDER=postgres` and `DATABASE_URL`:
 
 ```bash
-uv run knowledge-portal import --source-database-url postgresql://…/requirements --verify
+knowledge-portal import --source-database-url postgresql://…/requirements --verify
 ```
-
-The import writes to `DATABASE_URL` in one transaction, keeps every id, and reads the source in
-one snapshot without writing to it. Running it again brings changed rows up to date and adds new
-ones. `--verify` compares each table's row count and content checksum and fails on any
-difference; `--verify-only` compares without copying. Admins are not imported: the portal
-remembers them as they sign in.
 
 ## Seeding from the Product Architecture Explorer
 
@@ -147,7 +143,7 @@ and its `REQUIREMENT_PORTAL_URL` where requirement work is, empty to leave out t
 CI (`.github/workflows/ci.yml`) runs the checks with PostgreSQL, the frontend checks, audits
 dependencies, and builds, scans and starts both images. Pushing a tag `vX.Y.Z` that matches
 `pyproject.toml` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` and
-`ghcr.io/mohamhossam/knowledge-web:vX.Y.Z` once CI passes; `deploy/compose.production.yaml`
+`ghcr.io/mohamhossam/knowledge-web:vX.Y.Z` once CI passes, and attaches both OpenAPI contracts to the GitHub release; `deploy/compose.production.yaml`
 pulls them by tag. CI needs the `KERNEL_READ_TOKEN` repository secret. `CHANGELOG.md` says what
 each release changes; add its entry in the pull request that bumps the version.
 

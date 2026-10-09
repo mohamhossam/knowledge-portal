@@ -1,10 +1,9 @@
 # syntax=docker/dockerfile:1
 #
-# One backend image, four processes chosen by command:
+# One backend image, three processes chosen by command:
 #   API      python -m knowledge_portal.interfaces.api.serve --host 0.0.0.0
 #   worker   python -m knowledge_portal.interfaces.worker
 #   migrate  python -m knowledge_portal.infrastructure.persistence.migrate
-#   import   knowledge-portal import --source-database-url URL --verify
 # Build from the repository root:
 #   docker build --secret id=kernel_read_token,env=KERNEL_READ_TOKEN -f deploy/api/Dockerfile .
 

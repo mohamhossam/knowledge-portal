@@ -122,3 +122,13 @@ forbidden_modules =
     smb_kernel.llm
     smb_kernel.persistence
 allow_indirect_imports = True
+
+[importlinter:contract:requirement_work_is_a_peer]
+# Each portal reaches the other only over HTTP, through its published internal
+# contract (requirement-portal ADR-0099, ADR-0104); neither imports the other's code.
+name = The knowledge portal never imports requirement work
+type = forbidden
+source_modules =
+    knowledge_portal
+forbidden_modules =
+    smb_requirement_agent
