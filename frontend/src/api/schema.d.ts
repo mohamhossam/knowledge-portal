@@ -1936,18 +1936,30 @@ export interface components {
             correlation_key?: string | null;
             /** From Activity */
             from_activity: string;
+            /** From System Id */
+            from_system_id?: string | null;
             /** Interaction */
             interaction?: string | null;
             /** Interface */
             interface?: string | null;
             /** Payload */
             payload?: string | null;
+            /** Purpose */
+            purpose?: string | null;
             /** Source */
             source?: string | null;
+            /** Style */
+            style?: string | null;
             /** Timing */
             timing?: string | null;
+            /** Tmf Equivalent */
+            tmf_equivalent?: string | null;
             /** To Activity */
             to_activity: string;
+            /** To System Id */
+            to_system_id?: string | null;
+            /** Via System Id */
+            via_system_id?: string | null;
         };
         /** ActivitySchema */
         ActivitySchema: {
@@ -1983,10 +1995,16 @@ export interface components {
             number: string;
             /** Output */
             output?: string | null;
+            /** Performer */
+            performer?: string | null;
             /** Performing System Id */
             performing_system_id?: string | null;
             /** Phase */
             phase?: string | null;
+            /** Point Of No Return */
+            point_of_no_return?: string | null;
+            /** Role */
+            role?: string | null;
             /** Source */
             source?: string | null;
             /**
@@ -2234,6 +2252,18 @@ export interface components {
             root_ids: number[];
             /** Stories */
             stories: number;
+        };
+        /** BusinessRuleSchema */
+        BusinessRuleSchema: {
+            confidence?: components["schemas"]["SourceConfidence"] | null;
+            /** Id */
+            id: string;
+            /** Kind */
+            kind?: string | null;
+            /** Source */
+            source?: string | null;
+            /** Statement */
+            statement: string;
         };
         /**
          * CandidateBasis
@@ -2914,6 +2944,8 @@ export interface components {
             journeys?: components["schemas"]["JourneySchema"][] | null;
             /** Landscape Domains */
             landscape_domains?: components["schemas"]["LandscapeDomainSchema"][] | null;
+            /** Portfolio */
+            portfolio?: components["schemas"]["PortfolioNodeSchema"][] | null;
             /** Products */
             products?: components["schemas"]["ProductOfferingSchema"][] | null;
             /** Relationships */
@@ -2949,6 +2981,8 @@ export interface components {
             landscape_domains?: components["schemas"]["LandscapeDomainSchema"][];
             /** Name */
             name?: string | null;
+            /** Portfolio */
+            portfolio?: components["schemas"]["PortfolioNodeSchema"][];
             /** Products */
             products?: components["schemas"]["ProductOfferingSchema"][];
             /** Published At */
@@ -3466,6 +3500,8 @@ export interface components {
             landscape_domains?: components["schemas"]["LandscapeDomainSchema"][];
             /** Name */
             name?: string | null;
+            /** Portfolio */
+            portfolio?: components["schemas"]["PortfolioNodeSchema"][];
             /** Products */
             products?: components["schemas"]["ProductOfferingSchema"][];
             /** Published At */
@@ -3967,6 +4003,24 @@ export interface components {
             statement?: string | null;
         };
         /**
+         * OfferingPlanSchema
+         * @description A plan as its sources describe it; its price is read live from the product catalog.
+         */
+        OfferingPlanSchema: {
+            /**
+             * Characteristics
+             * @default []
+             */
+            characteristics: components["schemas"]["PlanCharacteristicSchema"][];
+            confidence?: components["schemas"]["SourceConfidence"] | null;
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name: string;
+            /** Source */
+            source?: string | null;
+        };
+        /**
          * OfferingPointSchema
          * @description A customer value, or a kind of customer an offering is for.
          */
@@ -4182,6 +4236,13 @@ export interface components {
             /** Team */
             team?: string | null;
         };
+        /** PlanCharacteristicSchema */
+        PlanCharacteristicSchema: {
+            /** Name */
+            name: string;
+            /** Value */
+            value: string;
+        };
         /** PlanPriceResponse */
         PlanPriceResponse: {
             /** Amount */
@@ -4195,6 +4256,25 @@ export interface components {
             period?: string | null;
             /** Unit */
             unit?: string | null;
+        };
+        /**
+         * PortfolioNodeSchema
+         * @description A level of the product portfolio, such as Enterprise › Fixed › SMB; levels are data.
+         */
+        PortfolioNodeSchema: {
+            confidence?: components["schemas"]["SourceConfidence"] | null;
+            /** Description */
+            description?: string | null;
+            /** Id */
+            id: string;
+            /** Level */
+            level: string;
+            /** Name */
+            name: string;
+            /** Parent Id */
+            parent_id?: string | null;
+            /** Source */
+            source?: string | null;
         };
         /**
          * PossibleMatchResponse
@@ -4236,6 +4316,11 @@ export interface components {
              * @default []
              */
             boundaries: string[];
+            /**
+             * Business Rules
+             * @default []
+             */
+            business_rules: components["schemas"]["BusinessRuleSchema"][];
             /** Code */
             code?: string | null;
             /**
@@ -4277,6 +4362,13 @@ export interface components {
              * @default []
              */
             order_types: components["schemas"]["OrderTypeSchema"][];
+            /**
+             * Plans
+             * @default []
+             */
+            plans: components["schemas"]["OfferingPlanSchema"][];
+            /** Portfolio Node Id */
+            portfolio_node_id?: string | null;
             /** Primary Source */
             primary_source?: string | null;
             /** Proposition */
@@ -4973,6 +5065,7 @@ export interface components {
              * @default []
              */
             components: components["schemas"]["SystemComponentSchema"][];
+            confidence?: components["schemas"]["SourceConfidence"] | null;
             /**
              * Constraints
              * @default []
@@ -4980,6 +5073,11 @@ export interface components {
             constraints: string[];
             /** Description */
             description?: string | null;
+            /**
+             * External
+             * @default false
+             */
+            external: boolean;
             /** Id */
             id: string;
             /** Landscape Domain Id */
@@ -4988,6 +5086,16 @@ export interface components {
             name: string;
             /** Name Ar */
             name_ar?: string | null;
+            /** Owner */
+            owner?: string | null;
+            /** Placement From */
+            placement_from?: string | null;
+            /** Placement Reason */
+            placement_reason?: string | null;
+            /** Roadmap */
+            roadmap?: string | null;
+            /** Source */
+            source?: string | null;
         };
         /** SystemOwnershipResponse */
         SystemOwnershipResponse: {

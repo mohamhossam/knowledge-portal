@@ -251,6 +251,63 @@ class OfferingComponent:
 
 
 @dataclass(frozen=True)
+class PlanCharacteristic:
+    """One stated fact of a plan, such as "Download" › "200 Mbps" or "CPE" › "Fortinet 90G"."""
+
+    name: str
+    value: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "name", required(self.name, "Plan characteristic"))
+        object.__setattr__(self, "value", required(self.value, f"{self.name}'s value"))
+
+
+@dataclass(frozen=True)
+class OfferingPlan:
+    """A plan of the offering as its sources describe it.
+
+    Characteristics are named rather than fixed fields, so any product's plans
+    fit. What a plan costs is read live from the product catalog (requirement-portal
+    ADR-0101), never stored here.
+    """
+
+    name: str
+    characteristics: tuple[PlanCharacteristic, ...] = ()
+    description: str | None = None
+    confidence: SourceConfidence | None = None
+    source: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "name", required(self.name, "Plan name"))
+        object.__setattr__(self, "description", optional(self.description, "Description"))
+        names = [item.name.casefold() for item in self.characteristics]
+        if len(set(names)) != len(names):
+            raise InvalidKnowledgeError(f"{self.name}: each characteristic is stated once.")
+        check_source(self)
+
+
+@dataclass(frozen=True)
+class BusinessRule:
+    """A rule the offering is sold and fulfilled by, such as its mandatory components.
+
+    ``kind`` groups rules as the source does: composition, eligibility, dependency,
+    lifecycle, fulfilment, billing.
+    """
+
+    id: str
+    statement: str
+    kind: str | None = None
+    confidence: SourceConfidence | None = None
+    source: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "id", required(self.id, "Rule id"))
+        object.__setattr__(self, "statement", required(self.statement, "Rule"))
+        object.__setattr__(self, "kind", optional(self.kind, "Rule kind"))
+        check_source(self)
+
+
+@dataclass(frozen=True)
 class ProductOffering:
     id: str
     name: str
@@ -282,6 +339,11 @@ class ProductOffering:
     decisions: tuple[ArchitectureDecision, ...] = ()
     boundaries: tuple[str, ...] = ()
     not_used: tuple[str, ...] = ()
+    # Where it sits in the portfolio, such as SMB › Business internet bundles.
+    portfolio_node_id: str | None = None
+    # Its plans as the sources describe them, and the rules it is sold and fulfilled by.
+    plans: tuple[OfferingPlan, ...] = ()
+    business_rules: tuple[BusinessRule, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Offering id"))
@@ -292,6 +354,7 @@ class ProductOffering:
             ("version", "Version"),
             ("lifecycle", "Lifecycle"),
             ("proposition", "Proposition"),
+            ("portfolio_node_id", "Portfolio node"),
         ):
             object.__setattr__(self, field, optional(getattr(self, field), label))
         object.__setattr__(self, "rules", tuple(required(item, "Rule") for item in self.rules))
@@ -319,6 +382,12 @@ class ProductOffering:
         qualities = [item.quality.casefold() for item in self.nfrs]
         if len(set(qualities)) != len(qualities):
             raise InvalidKnowledgeError(f"{self.name}: each NFR quality is stated once.")
+        plans = [item.name.casefold() for item in self.plans]
+        if len(set(plans)) != len(plans):
+            raise InvalidKnowledgeError(f"{self.name}: plan names must be unique.")
+        rules = [item.id.casefold() for item in self.business_rules]
+        if len(set(rules)) != len(rules):
+            raise InvalidKnowledgeError(f"{self.name}: business rule ids must be unique.")
         known = set(codes)
         for question in self.questions:
             unknown = [item for item in question.order_types if item.casefold() not in known]
@@ -431,14 +500,17 @@ def merge_offerings(first: ProductOffering, second: ProductOffering) -> ProductO
     A document's product section can be read in more than one call, or by the
     table reader and a model, each seeing part of it. Order types merge by code,
     components by id, responsibilities by system and role, points by name, realisation
-    by layer and name, NFRs by quality, lifecycle notes, questions and decisions by id;
-    tracking is taken whole, the first reading's if it has one.
+    by layer and name, NFRs by quality, lifecycle notes, questions and decisions by id,
+    plans by name and business rules by id; tracking is taken whole, the first reading's
+    if it has one.
     """
     codes = {item.code.casefold() for item in first.order_types}
     asked = {item.id.casefold() for item in first.questions}
     decided = {item.id.casefold() for item in first.decisions}
     qualities = {item.quality.casefold() for item in first.nfrs}
     notes = {item.id for item in first.lifecycle_notes}
+    plans = {item.name.casefold() for item in first.plans}
+    rules = {item.id.casefold() for item in first.business_rules}
     parts = {item.id: item for item in first.components}
     for item in second.components:
         parts[item.id] = merge_components(parts[item.id], item) if item.id in parts else item
@@ -481,6 +553,15 @@ def merge_offerings(first: ProductOffering, second: ProductOffering) -> ProductO
         ),
         boundaries=tuple(dict.fromkeys((*first.boundaries, *second.boundaries))),
         not_used=tuple(dict.fromkeys((*first.not_used, *second.not_used))),
+        portfolio_node_id=first_known(first.portfolio_node_id, second.portfolio_node_id),
+        plans=(
+            *first.plans,
+            *(item for item in second.plans if item.name.casefold() not in plans),
+        ),
+        business_rules=(
+            *first.business_rules,
+            *(item for item in second.business_rules if item.id.casefold() not in rules),
+        ),
     )
 
 

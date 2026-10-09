@@ -39,6 +39,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     SystemRelationship,
     version_name,
 )
+from knowledge_portal.domain.architecture.portfolio import PortfolioNode
 from knowledge_portal.domain.architecture.products import ProductOffering
 
 
@@ -213,6 +214,7 @@ class ManageArchitectureKnowledge:
         channels: tuple[Channel, ...] | None = None,
         sources: tuple[KnowledgeSource, ...] | None = None,
         conflicts: tuple[SourceConflict, ...] | None = None,
+        portfolio: tuple[PortfolioNode, ...] | None = None,
     ) -> ArchitectureKnowledge:
         require_maintainer(actor)
         current = self.get(release_id)
@@ -228,6 +230,7 @@ class ManageArchitectureKnowledge:
             channels=channels,
             sources=sources,
             conflicts=conflicts,
+            portfolio=portfolio,
         )
         self._repository.save(updated, expected_revision, actor.id, "edit_draft")
         return updated
@@ -347,6 +350,7 @@ class ManageArchitectureKnowledge:
                 if imported.change_history is None
                 else imported.change_history
             ),
+            portfolio=imported.portfolio,
         )
 
     def preview_file_import(
@@ -380,6 +384,7 @@ class ManageArchitectureKnowledge:
             channels=imported.channels,
             sources=imported.sources,
             conflicts=imported.conflicts,
+            portfolio=imported.portfolio,
         )
 
     def export_file(self, release_id: str, file_format: CatalogueFileFormat, actor: Actor) -> bytes:

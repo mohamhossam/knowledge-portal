@@ -25,7 +25,9 @@ from knowledge_portal.domain.architecture.invariants import (
 )
 from knowledge_portal.domain.architecture.invariants import required
 from knowledge_portal.domain.architecture.journeys import Journey, check_journeys
+from knowledge_portal.domain.architecture.portfolio import PortfolioNode, check_portfolio
 from knowledge_portal.domain.architecture.products import ProductOffering, check_offerings
+from knowledge_portal.domain.architecture.sources import SourceConfidence, check_source
 
 
 class KnowledgeReleaseStatus(StrEnum):
@@ -224,6 +226,19 @@ class SystemDefinition:
     description: str | None = None
     # The landscape domain or sub-domain it sits in (ADR-0094); None while unplaced.
     landscape_domain_id: str | None = None
+    # The team that owns it as the architecture sources name it. Accountable ownership
+    # (squads, people) stays with the organisation catalogue.
+    owner: str | None = None
+    # Outside the operator: a government body, a vendor platform, a clearing house.
+    external: bool = False
+    # A planned change, such as "Replaced by Netcracker CSRD over time".
+    roadmap: str | None = None
+    # When it is placed in another landscape domain than a source puts it: where the
+    # source put it, and why it moved. An architect accepts or rejects the move.
+    placement_from: str | None = None
+    placement_reason: str | None = None
+    confidence: SourceConfidence | None = None
+    source: str | None = None
 
     def __post_init__(self) -> None:
         _required(self.id, "System id")
@@ -232,9 +247,18 @@ class SystemDefinition:
             (self.name_ar, "Arabic system name"),
             (self.description, "System description"),
             (self.landscape_domain_id, "System landscape domain"),
+            (self.owner, "System owner"),
+            (self.roadmap, "Roadmap"),
+            (self.placement_from, "Previous placement"),
+            (self.placement_reason, "Reason for the placement"),
         ):
             if value is not None:
                 _required(value, label)
+        if (self.placement_from is None) != (self.placement_reason is None):
+            raise InvalidKnowledgeError(
+                f"{self.name}: a moved placement names both where it was and why it moved."
+            )
+        check_source(self)
         if any(not value.strip() for value in (*self.aliases, *self.constraints)):
             raise InvalidKnowledgeError("System aliases and constraints must not be blank.")
         labels = (self.name, *((self.name_ar,) if self.name_ar else ()), *self.aliases)
@@ -375,6 +399,8 @@ class ArchitectureKnowledge:
     conflicts: tuple[SourceConflict, ...] = ()
     # The change requests applied to it, newest last (requirement-portal ADR-0101, step 7).
     change_history: tuple[ChangeRequestRecord, ...] = ()
+    # The product portfolio its offerings sit in, such as Enterprise › Fixed › SMB.
+    portfolio: tuple[PortfolioNode, ...] = ()
 
     def __post_init__(self) -> None:
         _required(self.id, "Knowledge id")
@@ -424,6 +450,13 @@ class ArchitectureKnowledge:
                     )
         channel_ids = check_channels(self.channels, system_ids)
         check_offerings(self.products, system_ids, channel_ids)
+        nodes = check_portfolio(self.portfolio)
+        for product in self.products:
+            if product.portfolio_node_id is not None and product.portfolio_node_id not in nodes:
+                raise InvalidKnowledgeError(
+                    f"{product.name} sits in portfolio node {product.portfolio_node_id!r}, "
+                    "which is not in the portfolio."
+                )
         check_journeys(self.journeys, system_ids, self.products, channel_ids)
         check_governance(
             self.sources,
@@ -468,6 +501,7 @@ class ArchitectureKnowledge:
         sources: tuple[KnowledgeSource, ...] | None = None,
         conflicts: tuple[SourceConflict, ...] | None = None,
         change_history: tuple[ChangeRequestRecord, ...] | None = None,
+        portfolio: tuple[PortfolioNode, ...] | None = None,
     ) -> ArchitectureKnowledge:
         if self.status is not KnowledgeReleaseStatus.DRAFT:
             raise KnowledgeConflictError("Published knowledge is immutable.")
@@ -493,6 +527,7 @@ class ArchitectureKnowledge:
             sources=self.sources if sources is None else sources,
             conflicts=self.conflicts if conflicts is None else conflicts,
             change_history=self.change_history if change_history is None else change_history,
+            portfolio=self.portfolio if portfolio is None else portfolio,
         )
 
     def domain_path(self, domain_id: str | None) -> tuple[CapabilityDomain, ...]:

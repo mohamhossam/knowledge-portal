@@ -18,6 +18,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     SystemDefinition,
     SystemRelationship,
 )
+from knowledge_portal.domain.architecture.portfolio import PortfolioNode
 from knowledge_portal.domain.architecture.products import ProductOffering
 
 
@@ -63,6 +64,8 @@ class CatalogueContent:
     # The change requests applied (requirement-portal ADR-0101, step 7). None when the file
     # has no change history, so importing it keeps the draft's own.
     change_history: tuple[ChangeRequestRecord, ...] | None = None
+    # The product portfolio its offerings sit in.
+    portfolio: tuple[PortfolioNode, ...] = ()
 
 
 class CatalogueFilePort(Protocol):

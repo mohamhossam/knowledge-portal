@@ -94,13 +94,17 @@ from knowledge_portal.domain.architecture.lifecycle import (
     NoteBlockKind,
 )
 from knowledge_portal.domain.architecture.plans import PriceKind
+from knowledge_portal.domain.architecture.portfolio import PortfolioNode
 from knowledge_portal.domain.architecture.products import (
+    BusinessRule,
     ComponentResponsibility,
     NfrCoverage,
     OfferingComponent,
     OfferingNfr,
+    OfferingPlan,
     OfferingPoint,
     OrderType,
+    PlanCharacteristic,
     ProductOffering,
     Realisation,
     RealisationLayer,
@@ -222,6 +226,41 @@ class LandscapeDomainSchema(BaseModel):
 
     def to_domain(self) -> LandscapeDomain:
         return LandscapeDomain(self.id, self.name, self.name_ar, self.parent_id, self.description)
+
+
+class PortfolioNodeSchema(BaseModel):
+    """A level of the product portfolio, such as Enterprise › Fixed › SMB; levels are data."""
+
+    id: Identifier
+    name: Name
+    level: Name
+    parent_id: Identifier | None = None
+    description: Text | None = None
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
+
+    @classmethod
+    def from_domain(cls, node: PortfolioNode) -> PortfolioNodeSchema:
+        return cls.model_construct(
+            id=node.id,
+            name=node.name,
+            level=node.level,
+            parent_id=node.parent_id,
+            description=node.description,
+            confidence=node.confidence,
+            source=node.source,
+        )
+
+    def to_domain(self) -> PortfolioNode:
+        return PortfolioNode(
+            id=self.id,
+            name=self.name,
+            level=self.level,
+            parent_id=self.parent_id,
+            description=self.description,
+            confidence=self.confidence,
+            source=self.source,
+        )
 
 
 class ChannelSchema(BaseModel):
@@ -991,6 +1030,78 @@ class OfferingComponentSchema(BaseModel):
         )
 
 
+class PlanCharacteristicSchema(BaseModel):
+    name: Name
+    value: Text
+
+    @classmethod
+    def from_domain(cls, item: PlanCharacteristic) -> PlanCharacteristicSchema:
+        return cls.model_construct(name=item.name, value=item.value)
+
+    def to_domain(self) -> PlanCharacteristic:
+        return PlanCharacteristic(self.name, self.value)
+
+
+class OfferingPlanSchema(BaseModel):
+    """A plan as its sources describe it; its price is read live from the product catalog."""
+
+    name: Name
+    characteristics: list[PlanCharacteristicSchema] = Field(
+        default=[], max_length=MAX_CATALOGUE_ITEMS
+    )
+    description: Text | None = None
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
+
+    @classmethod
+    def from_domain(cls, plan: OfferingPlan) -> OfferingPlanSchema:
+        return cls.model_construct(
+            name=plan.name,
+            characteristics=[
+                PlanCharacteristicSchema.from_domain(item) for item in plan.characteristics
+            ],
+            description=plan.description,
+            confidence=plan.confidence,
+            source=plan.source,
+        )
+
+    def to_domain(self) -> OfferingPlan:
+        return OfferingPlan(
+            name=self.name,
+            characteristics=tuple(item.to_domain() for item in self.characteristics),
+            description=self.description,
+            confidence=self.confidence,
+            source=self.source,
+        )
+
+
+class BusinessRuleSchema(BaseModel):
+    id: Identifier
+    statement: Text
+    kind: Name | None = None
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
+
+    @classmethod
+    def from_domain(cls, rule: BusinessRule) -> BusinessRuleSchema:
+        return cls.model_construct(
+            id=rule.id,
+            statement=rule.statement,
+            kind=rule.kind,
+            confidence=rule.confidence,
+            source=rule.source,
+        )
+
+    def to_domain(self) -> BusinessRule:
+        return BusinessRule(
+            id=self.id,
+            statement=self.statement,
+            kind=self.kind,
+            confidence=self.confidence,
+            source=self.source,
+        )
+
+
 class ProductOfferingSchema(BaseModel):
     """A commercial offering, its order types and components, and the systems behind them."""
 
@@ -1019,6 +1130,10 @@ class ProductOfferingSchema(BaseModel):
     decisions: list[ArchitectureDecisionSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     boundaries: list[Text] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     not_used: list[Name] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    # Where it sits in the portfolio, its plans as the sources describe them, and its rules.
+    portfolio_node_id: Identifier | None = None
+    plans: list[OfferingPlanSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    business_rules: list[BusinessRuleSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, offering: ProductOffering) -> ProductOfferingSchema:
@@ -1050,6 +1165,11 @@ class ProductOfferingSchema(BaseModel):
             decisions=[ArchitectureDecisionSchema.from_domain(item) for item in offering.decisions],
             boundaries=list(offering.boundaries),
             not_used=list(offering.not_used),
+            portfolio_node_id=offering.portfolio_node_id,
+            plans=[OfferingPlanSchema.from_domain(item) for item in offering.plans],
+            business_rules=[
+                BusinessRuleSchema.from_domain(item) for item in offering.business_rules
+            ],
         )
 
     def to_domain(self) -> ProductOffering:
@@ -1077,6 +1197,9 @@ class ProductOfferingSchema(BaseModel):
             decisions=tuple(item.to_domain() for item in self.decisions),
             boundaries=tuple(self.boundaries),
             not_used=tuple(self.not_used),
+            portfolio_node_id=self.portfolio_node_id,
+            plans=tuple(item.to_domain() for item in self.plans),
+            business_rules=tuple(item.to_domain() for item in self.business_rules),
         )
 
 
@@ -1101,6 +1224,11 @@ class ActivitySchema(BaseModel):
     channels: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     # Performed by the entry system of whichever channel the order came through.
     channel_entry: bool = False
+    # Who performs it when that is not a catalogued system: a team, or the customer.
+    performer: Name | None = None
+    point_of_no_return: Text | None = None
+    # What it does for the order, as one code, e.g. "ORCHESTRATE".
+    role: Name | None = None
 
     @classmethod
     def from_domain(cls, item: Activity) -> ActivitySchema:
@@ -1123,6 +1251,9 @@ class ActivitySchema(BaseModel):
             source=item.source,
             channels=list(item.channels),
             channel_entry=item.channel_entry,
+            performer=item.performer,
+            point_of_no_return=item.point_of_no_return,
+            role=item.role,
         )
 
     def to_domain(self) -> Activity:
@@ -1145,6 +1276,9 @@ class ActivitySchema(BaseModel):
             source=self.source,
             channels=tuple(self.channels),
             channel_entry=self.channel_entry,
+            performer=self.performer,
+            point_of_no_return=self.point_of_no_return,
+            role=self.role,
         )
 
 
@@ -1197,6 +1331,14 @@ class ActivityIntegrationSchema(BaseModel):
     correlation_key: Name | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # The calling and called systems, and the integration layer between them. A call to a
+    # system without a step of its own has to_activity equal to from_activity.
+    from_system_id: Identifier | None = None
+    to_system_id: Identifier | None = None
+    via_system_id: Identifier | None = None
+    purpose: Text | None = None
+    style: Name | None = None
+    tmf_equivalent: Name | None = None
 
     @classmethod
     def from_domain(cls, link: ActivityIntegration) -> ActivityIntegrationSchema:
@@ -1210,6 +1352,12 @@ class ActivityIntegrationSchema(BaseModel):
             correlation_key=link.correlation_key,
             confidence=link.confidence,
             source=link.source,
+            from_system_id=link.from_system_id,
+            to_system_id=link.to_system_id,
+            via_system_id=link.via_system_id,
+            purpose=link.purpose,
+            style=link.style,
+            tmf_equivalent=link.tmf_equivalent,
         )
 
     def to_domain(self) -> ActivityIntegration:
@@ -1223,6 +1371,12 @@ class ActivityIntegrationSchema(BaseModel):
             self.correlation_key,
             self.confidence,
             self.source,
+            from_system_id=self.from_system_id,
+            to_system_id=self.to_system_id,
+            via_system_id=self.via_system_id,
+            purpose=self.purpose,
+            style=self.style,
+            tmf_equivalent=self.tmf_equivalent,
         )
 
 
@@ -1305,6 +1459,14 @@ class SystemDefinitionSchema(BaseModel):
     components: list[SystemComponentSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     description: Text | None = None
     landscape_domain_id: Identifier | None = None
+    owner: Name | None = None
+    external: bool = False
+    roadmap: Text | None = None
+    # Where a source placed it, and why it moved, when it sits in another landscape domain.
+    placement_from: Name | None = None
+    placement_reason: Text | None = None
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
 
     @classmethod
     def from_domain(cls, system: SystemDefinition) -> SystemDefinitionSchema:
@@ -1318,6 +1480,13 @@ class SystemDefinitionSchema(BaseModel):
             components=[SystemComponentSchema.from_domain(c) for c in system.components],
             description=system.description,
             landscape_domain_id=system.landscape_domain_id,
+            owner=system.owner,
+            external=system.external,
+            roadmap=system.roadmap,
+            placement_from=system.placement_from,
+            placement_reason=system.placement_reason,
+            confidence=system.confidence,
+            source=system.source,
         )
 
     def to_domain(self) -> SystemDefinition:
@@ -1331,6 +1500,13 @@ class SystemDefinitionSchema(BaseModel):
             components=tuple(item.to_domain() for item in self.components),
             description=self.description,
             landscape_domain_id=self.landscape_domain_id,
+            owner=self.owner,
+            external=self.external,
+            roadmap=self.roadmap,
+            placement_from=self.placement_from,
+            placement_reason=self.placement_reason,
+            confidence=self.confidence,
+            source=self.source,
         )
 
 
@@ -1417,6 +1593,9 @@ class KnowledgeReleaseResponse(BaseModel):
     change_history: list[ChangeRequestRecordSchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
     )
+    portfolio: list[PortfolioNodeSchema] = Field(
+        default_factory=list, max_length=MAX_CATALOGUE_ITEMS
+    )
 
     @classmethod
     def from_domain(cls, release: ArchitectureKnowledge) -> KnowledgeReleaseResponse:
@@ -1453,6 +1632,7 @@ class KnowledgeReleaseResponse(BaseModel):
             change_history=[
                 ChangeRequestRecordSchema.from_domain(item) for item in release.change_history
             ],
+            portfolio=[PortfolioNodeSchema.from_domain(item) for item in release.portfolio],
         )
 
 
@@ -1483,6 +1663,9 @@ class ExplorerReleaseResponse(BaseModel):
     change_history: list[ChangeRequestRecordSchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
     )
+    portfolio: list[PortfolioNodeSchema] = Field(
+        default_factory=list, max_length=MAX_CATALOGUE_ITEMS
+    )
 
     @classmethod
     def from_domain(cls, release: ArchitectureKnowledge) -> ExplorerReleaseResponse:
@@ -1505,6 +1688,7 @@ class ExplorerReleaseResponse(BaseModel):
             change_history=[
                 ChangeRequestRecordSchema.from_domain(item) for item in release.change_history
             ],
+            portfolio=[PortfolioNodeSchema.from_domain(item) for item in release.portfolio],
         )
 
 
@@ -1646,6 +1830,10 @@ class DraftUpdateRequest(BaseModel):
         default=None, max_length=MAX_CATALOGUE_ITEMS
     )
     conflicts: list[SourceConflictSchema] | None = Field(
+        default=None, max_length=MAX_CATALOGUE_ITEMS
+    )
+    # Likewise for the product portfolio.
+    portfolio: list[PortfolioNodeSchema] | None = Field(
         default=None, max_length=MAX_CATALOGUE_ITEMS
     )
 

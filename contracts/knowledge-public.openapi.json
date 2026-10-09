@@ -61,6 +61,18 @@
             "title": "From Activity",
             "type": "string"
           },
+          "from_system_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From System Id"
+          },
           "interaction": {
             "anyOf": [
               {
@@ -97,6 +109,18 @@
             ],
             "title": "Payload"
           },
+          "purpose": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purpose"
+          },
           "source": {
             "anyOf": [
               {
@@ -108,6 +132,18 @@
               }
             ],
             "title": "Source"
+          },
+          "style": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Style"
           },
           "timing": {
             "anyOf": [
@@ -121,10 +157,46 @@
             ],
             "title": "Timing"
           },
+          "tmf_equivalent": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tmf Equivalent"
+          },
           "to_activity": {
             "maxLength": 200,
             "title": "To Activity",
             "type": "string"
+          },
+          "to_system_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To System Id"
+          },
+          "via_system_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Via System Id"
           }
         },
         "required": [
@@ -252,6 +324,18 @@
             ],
             "title": "Output"
           },
+          "performer": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Performer"
+          },
           "performing_system_id": {
             "anyOf": [
               {
@@ -275,6 +359,30 @@
               }
             ],
             "title": "Phase"
+          },
+          "point_of_no_return": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Point Of No Return"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
           },
           "source": {
             "anyOf": [
@@ -990,6 +1098,60 @@
           "lineage"
         ],
         "title": "BreakdownView",
+        "type": "object"
+      },
+      "BusinessRuleSchema": {
+        "properties": {
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "maxLength": 200,
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "statement": {
+            "maxLength": 10000,
+            "title": "Statement",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "statement"
+        ],
+        "title": "BusinessRuleSchema",
         "type": "object"
       },
       "CandidateBasis": {
@@ -3203,6 +3365,21 @@
             ],
             "title": "Landscape Domains"
           },
+          "portfolio": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PortfolioNodeSchema"
+                },
+                "maxItems": 5000,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Portfolio"
+          },
           "products": {
             "anyOf": [
               {
@@ -3328,6 +3505,14 @@
               }
             ],
             "title": "Name"
+          },
+          "portfolio": {
+            "items": {
+              "$ref": "#/components/schemas/PortfolioNodeSchema"
+            },
+            "maxItems": 5000,
+            "title": "Portfolio",
+            "type": "array"
           },
           "products": {
             "items": {
@@ -5003,6 +5188,14 @@
             ],
             "title": "Name"
           },
+          "portfolio": {
+            "items": {
+              "$ref": "#/components/schemas/PortfolioNodeSchema"
+            },
+            "maxItems": 5000,
+            "title": "Portfolio",
+            "type": "array"
+          },
           "products": {
             "items": {
               "$ref": "#/components/schemas/ProductOfferingSchema"
@@ -6547,6 +6740,64 @@
         "title": "OfferingNfrSchema",
         "type": "object"
       },
+      "OfferingPlanSchema": {
+        "description": "A plan as its sources describe it; its price is read live from the product catalog.",
+        "properties": {
+          "characteristics": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PlanCharacteristicSchema"
+            },
+            "maxItems": 5000,
+            "title": "Characteristics",
+            "type": "array"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "maxLength": 300,
+            "title": "Name",
+            "type": "string"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "OfferingPlanSchema",
+        "type": "object"
+      },
       "OfferingPointSchema": {
         "description": "A customer value, or a kind of customer an offering is for.",
         "properties": {
@@ -7167,6 +7418,26 @@
         "title": "PersonSchema",
         "type": "object"
       },
+      "PlanCharacteristicSchema": {
+        "properties": {
+          "name": {
+            "maxLength": 300,
+            "title": "Name",
+            "type": "string"
+          },
+          "value": {
+            "maxLength": 10000,
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "value"
+        ],
+        "title": "PlanCharacteristicSchema",
+        "type": "object"
+      },
       "PlanPriceResponse": {
         "properties": {
           "amount": {
@@ -7214,6 +7485,79 @@
           "currency"
         ],
         "title": "PlanPriceResponse",
+        "type": "object"
+      },
+      "PortfolioNodeSchema": {
+        "description": "A level of the product portfolio, such as Enterprise \u203a Fixed \u203a SMB; levels are data.",
+        "properties": {
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "id": {
+            "maxLength": 200,
+            "title": "Id",
+            "type": "string"
+          },
+          "level": {
+            "maxLength": 300,
+            "title": "Level",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 300,
+            "title": "Name",
+            "type": "string"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "level"
+        ],
+        "title": "PortfolioNodeSchema",
         "type": "object"
       },
       "PossibleMatchResponse": {
@@ -7292,6 +7636,15 @@
             },
             "maxItems": 5000,
             "title": "Boundaries",
+            "type": "array"
+          },
+          "business_rules": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/BusinessRuleSchema"
+            },
+            "maxItems": 5000,
+            "title": "Business Rules",
             "type": "array"
           },
           "code": {
@@ -7404,6 +7757,27 @@
             "maxItems": 5000,
             "title": "Order Types",
             "type": "array"
+          },
+          "plans": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/OfferingPlanSchema"
+            },
+            "maxItems": 5000,
+            "title": "Plans",
+            "type": "array"
+          },
+          "portfolio_node_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Portfolio Node Id"
           },
           "primary_source": {
             "anyOf": [
@@ -9288,6 +9662,16 @@
             "title": "Components",
             "type": "array"
           },
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "constraints": {
             "default": [],
             "items": {
@@ -9309,6 +9693,11 @@
               }
             ],
             "title": "Description"
+          },
+          "external": {
+            "default": false,
+            "title": "External",
+            "type": "boolean"
           },
           "id": {
             "maxLength": 200,
@@ -9343,6 +9732,66 @@
               }
             ],
             "title": "Name Ar"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner"
+          },
+          "placement_from": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Placement From"
+          },
+          "placement_reason": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Placement Reason"
+          },
+          "roadmap": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roadmap"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
           }
         },
         "required": [
