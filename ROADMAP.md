@@ -46,7 +46,7 @@
      needs `OVERRIDING SYSTEM VALUE` and a sequence reset; `knowledge_events` keeps its `seq`
      values, so requirement work's event cursor stays valid.
 4. **Import, image and CI (done).**
-   - `knowledge-portal import --source-database-url … [--verify | --verify-only]` copies the 18
+   - `knowledge-portal import --source-database-url … [--verify | --verify-only]` (until v0.2.0) copies the 18
      knowledge tables (not `actor_profiles`) in one target transaction from one source
      snapshot. It keeps ids, moves sequences past them, and converges on the source when run
      again. Verification compares row counts and content checksums per table. It was

@@ -11,6 +11,12 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   can pin the internal one it is built against.
 - Import-linter forbids importing requirement work's code (requirement-portal ADR-0104).
 
+### Removed
+
+- The `knowledge-portal import` command, which copied the knowledge tables out of a
+  requirements database. Requirement work no longer keeps them; `v0.2.0` is the last release
+  with it.
+
 ## 0.2.0 — 2026-10-09
 
 The portal deploys, signs in and starts on its own; requirement work is an optional link

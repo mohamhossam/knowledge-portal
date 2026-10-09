@@ -232,7 +232,6 @@ jobs:
 
       - name: Every command starts
         run: |
-          docker run --rm "$IMAGE" knowledge-portal import --help
           docker run --rm -e PERSISTENCE_PROVIDER=memory "$IMAGE" \
             python -m knowledge_portal.infrastructure.persistence.migrate
           docker run -d --name api -p 8000:8000 \
