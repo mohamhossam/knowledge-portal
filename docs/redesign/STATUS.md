@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Integration branch | **`feat/kb-redesign-architecture`** (since 2026-10-09; on `origin`). It contains everything on `feat/kb-redesign` (from `main` @ `b6114b9`), which is no longer merged into. |
-| Current phase | **8, re-scoped to the Catalogue only (2026-10-09).** Areas 1 and 2 approved and merged; the catalogue is rebuilt and wired to the API, and is now in a **visual-direction round** (calm rules relaxed for it) before its gate |
+| Current phase | **8, re-scoped to the Catalogue only (2026-10-09).** Areas 1 and 2 approved and merged; the catalogue is rebuilt and wired to the API, and has **mock-ups in the chosen direction** (Layered Architecture Poster, calm rules relaxed) awaiting the user's review |
 | Last updated | 2026-10-09 |
 
 ## Phase log
@@ -268,12 +268,15 @@ Branch: `feat/kb-redesign-architecture`.
 
 **User review (2026-10-09):** the base is right, but the UI looks like the old one: dropdowns, no visualisation, no innovation. See the decisions table for the cause and the response (calm rules relaxed, mock-ups first, the hero/product IA).
 
-**Visual-direction round (in progress):** Impeccable `shape` with a direction roll (seed `b430c650`, operate mode, code-led). Five first-viewport sketches of the Landscape hero, with real data and CWOM selected, are on the decision page. They live in `.impeccable/mocks/decision/`, outside the frontend build:
+**Visual-direction round:** Impeccable `shape` with a direction roll (seed `b430c650`, operate mode, code-led). Five first-viewport sketches of the Landscape hero (real data, CWOM selected) were put on the decision page; they live in `.impeccable/mocks/decision/`, outside the frontend build. The page closed unanswered, so the choice was asked in chat. **User: "no dark theme, choose what impeccable recommends"** → **Layered Architecture Poster** (impeccable's pick, the only fully light direction). Direction contract: `.impeccable/surfaces/frontend-src-architecture-landscapepage-tsx.md`.
 
-- **Concourse Wayfinding** (the roll): domains as concourses, systems as gate signs, a journey as a signed route.
-- **Layered Architecture Poster** (Impeccable's pick, familiar): notation-coloured layer bands with connector lines.
-- **Architecture Star Atlas** (competitive): dot size = integration weight, journeys as constellations, on a night chart.
-- **Graphite Integration Console** (competitive): dark persistent panels with the integration register.
-- **The category standard** (LeanIX/Ardoq style), played straight.
+**Mock-ups built (dev-only lab, `/knowledge/design-lab/catalogue`, real seeded Business Pro Plus data, writes nothing):**
 
-**Next exact action:** the user picks a direction on the decision page. Then build the four mock-ups in that world in the dev-only design lab, on real data: Landscape hero, Product page (hero, customer value, plans, components), Product › Architecture (the journey's systems highlighted), and Journey flow. After the user approves them: build into the catalogue, then the gate (critique, the serious findings fixed, the e2e routes in `REDESIGNED`), then Explorer read views, and the decision on replacing `smb_architecture.yaml`.
+1. **Landscape hero:** the TAM poster (layer bands, 46 component boxes, 33 system-to-system links drawn as orthogonal lines), view chips instead of dropdowns, an inspector (busiest systems ranked; a picked system's partners, journeys and evidence), the products built on it as a band below.
+2. **Product (Business Pro Plus):** a hero with the value proposition and the bundle drawn as what the customer gets (CPE device at the core, mandatory components, Backup 5G optional), 6 customer values with evidence, plans compared (prices shown as a gap), eligibility, purpose. Tabs: Overview · Plans · Business rules · Components · Journeys · **Architecture**.
+3. **Product › Architecture:** journey and channel chips; the same poster with only the journey's systems lit and numbered in the order the order reaches them; a Previous/Next step-through of every call (the current call in e& red with an arrow, its interface, style, TMF equivalent and evidence beside it).
+4. **Journey flow:** BPMN swimlanes tinted by each system's layer, numbered steps, zoom, a step panel with its calls; exports to BPMN 2.0, PlantUML, Mermaid and CSV.
+
+Files: `frontend/src/design-lab/catalogue/` (lab, poster model and component, four screens, `lab.css`, 4 tests incl. axe), one dev-only route in `App.tsx`, and a brand-lint exemption for the lab folder (its palette moves into the token layers when the direction is approved). Checks: lint, brand lint, `api:check`, build and budget green (entry chunk 662.50 kB; the lab is absent from `dist`); the lab's 4 tests pass.
+
+**Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.

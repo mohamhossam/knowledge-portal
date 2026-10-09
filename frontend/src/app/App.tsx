@@ -59,6 +59,8 @@ const DesignLab = import.meta.env.DEV ? lazy(() => import("../design-lab/wirefra
 const DesignGallery = import.meta.env.DEV ? lazy(() => import("../design-lab/gallery/Gallery")) : null;
 /** The hi-fi prototype for usability round 2 (Phase 6); development only, like the lab. */
 const DesignPrototype = import.meta.env.DEV ? lazy(() => import("../design-lab/prototype/PrototypeApp")) : null;
+/** The catalogue's direction mock-ups (2026-10-09); development only, like the lab. */
+const CatalogueLab = import.meta.env.DEV ? lazy(() => import("../design-lab/catalogue/CatalogueLab")) : null;
 
 export function App() {
   // The library is the area people open most: fetch its chunk once the first page has painted.
@@ -78,6 +80,12 @@ export function App() {
         <Route
           path="design-lab/prototype/*"
           element={<Suspense fallback={null}><DesignPrototype /></Suspense>}
+        />
+      )}
+      {CatalogueLab && (
+        <Route
+          path="design-lab/catalogue/*"
+          element={<Suspense fallback={null}><CatalogueLab /></Suspense>}
         />
       )}
       {DesignLab && (
