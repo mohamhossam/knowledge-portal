@@ -188,7 +188,7 @@ requirement-portal's database:
 
 ```bash
 docker run -d --name knowledge-postgres \
-  -e POSTGRES_DB=smb_knowledge -e POSTGRES_USER=smb -e POSTGRES_PASSWORD=smb_dev \
+  -e POSTGRES_DB=smb_knowledge -e POSTGRES_USER=knowledge -e POSTGRES_PASSWORD=knowledge_dev \
   -p 127.0.0.1:5433:5432 \
   -v knowledge_postgres_data:/var/lib/postgresql/data \
   pgvector/pgvector:pg17
@@ -201,7 +201,7 @@ Set in `.env`:
 
 ```dotenv
 PERSISTENCE_PROVIDER=postgres
-DATABASE_URL=postgresql://smb:smb_dev@127.0.0.1:5433/smb_knowledge
+DATABASE_URL=postgresql://knowledge:knowledge_dev@127.0.0.1:5433/smb_knowledge
 ```
 
 Apply the schema, then start the API as in section 3:
@@ -262,9 +262,8 @@ with durable storage and real malware scanning.
 | `web` | The browser app, nginx serving `/knowledge/` |
 | `edge` | nginx on `127.0.0.1:8090`: `/knowledge/` to `web`, `/knowledge-api/` to `api`, internal routes blocked |
 
-The edge stands in for requirement-portal's `web`, which serves both portals on one address in
-the platform. This stack is for one machine. A shared deployment is requirement-portal's
-`deploy/compose.production.yaml` (its `START_GUIDE.md`, sections 2–3).
+This stack is for one machine. A shared deployment is `deploy/compose.production.yaml`, which
+runs the released images on their own (`docs/operations/deployment.md`).
 
 ### Prerequisites
 
@@ -412,8 +411,8 @@ as unavailable where it needs it.
 With fake sign-in on both sides, Amina Owner and Ravi Reviewer are knowledge admins in both
 portals.
 
-To have both portals behind one address, as in production, use requirement-portal's Docker stack
-(its `START_GUIDE.md`, section 2). It pulls this portal's published images by release tag.
+To deploy the two side by side, each runs its own stack, and they meet on a private network
+(`docs/operations/deployment.md`, "Connect requirement work").
 
 ## 9. Use a real AI provider
 

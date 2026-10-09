@@ -135,7 +135,9 @@ docker build --secret id=kernel_read_token,env=KERNEL_READ_TOKEN -f deploy/api/D
 ```
 
 To run both images on one machine, with PostgreSQL, ClamAV and an edge proxy, use
-`deploy/compose.local.yaml` (`START_GUIDE.md`, section 7).
+`deploy/compose.local.yaml` (`START_GUIDE.md`, section 7). To deploy the portal, use
+`deploy/compose.production.yaml` (`docs/operations/deployment.md`); requirement work is optional
+(requirement-portal ADR-0104).
 
 The browser app ships as its own image, nginx serving `/knowledge/`
 (`docker build -f deploy/web/Dockerfile .`, with `CSP_IDENTITY_ORIGINS` set to the OIDC issuer's
@@ -144,8 +146,8 @@ origin for an OIDC deployment).
 CI (`.github/workflows/ci.yml`) runs the checks with PostgreSQL, the frontend checks, audits
 dependencies, and builds, scans and starts both images. Pushing a tag `vX.Y.Z` that matches
 `pyproject.toml` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` and
-`ghcr.io/mohamhossam/knowledge-web:vX.Y.Z` once CI passes; requirement-portal's deployment pulls
-them by tag. CI needs the `KERNEL_READ_TOKEN` repository secret.
+`ghcr.io/mohamhossam/knowledge-web:vX.Y.Z` once CI passes; `deploy/compose.production.yaml`
+pulls them by tag. CI needs the `KERNEL_READ_TOKEN` repository secret.
 
 ## Who uses it
 

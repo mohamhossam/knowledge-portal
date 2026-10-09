@@ -1,41 +1,47 @@
-# The knowledge portal on its own, every process in its own container, for
-# trying it on one machine. Built from this checkout; START_GUIDE.md, section 7.
+# Reference deployment of the knowledge portal on its own: one host, every
+# process in its own container, running the images a release published
+# (requirement-portal ADR-0104). docs/operations/deployment.md covers secrets,
+# scaling, connecting requirement work and moving data over.
 #
-#   cp .env.example deploy/local.env
-#   KERNEL_READ_TOKEN=... docker compose -f deploy/compose.local.yaml up -d --build
-#   open http://localhost:8090/knowledge/
+#   cp deploy/production.env.example deploy/production.env   # then fill it in
+#   export KNOWLEDGE_IMAGE_TAG=vX.Y.Z KNOWLEDGE_POSTGRES_PASSWORD=...
+#   docker compose -f deploy/compose.production.yaml up -d
 #
-# The browser reaches only `edge` (127.0.0.1:8090): /knowledge/ is the browser
-# app, /knowledge-api/ the API, and /internal never passes. Fake sign-in lets
-# anyone who reaches the port act as any persona, so the port is published on
-# loopback only. A shared deployment is deploy/compose.production.yaml, which
-# runs the released images (requirement-portal ADR-0104).
+# The browser reaches only `edge` (port 8090; put TLS in front of it): the app at
+# /knowledge/ and the API at /knowledge-api/. The API, worker, database,
+# scanner and metrics ports stay on the private network, and /internal never
+# passes the edge. Requirement work is optional: with REQUIREMENT_API_BASE_URL
+# unset in production.env, the portal runs alone; deploy/compose.peer.yaml
+# connects the two.
 
-name: knowledge-local
+name: knowledge-portal
 
 x-backend: &backend
-  image: ${KNOWLEDGE_API_IMAGE:-knowledge-portal/api:local}
-  build:
-    context: ..
-    dockerfile: deploy/api/Dockerfile
-    # platform-kernel is a private git dependency (ADR-0100): a read token for
-    # it, as a BuildKit secret that never reaches an image layer.
-    secrets:
-      - kernel_read_token
-  # Everything else, such as the model provider and its key, comes from here.
+  image: ghcr.io/mohamhossam/knowledge-api:${KNOWLEDGE_IMAGE_TAG:?set KNOWLEDGE_IMAGE_TAG to a knowledge-portal release}
   env_file:
-    - path: local.env
+    - path: production.env
       required: true
   environment: &backend-environment
     PERSISTENCE_PROVIDER: postgres
-    DATABASE_URL: postgresql://knowledge:${KNOWLEDGE_POSTGRES_PASSWORD:-knowledge_dev}@postgres:5432/smb_knowledge
+    DATABASE_URL: postgresql://knowledge:${KNOWLEDGE_POSTGRES_PASSWORD:?set KNOWLEDGE_POSTGRES_PASSWORD}@postgres:5432/smb_knowledge
     LIBRARY_SCAN_MODE: clamav
     LIBRARY_SCANNER_HOST: clamav
     LIBRARY_SCANNER_PORT: "3310"
+    LOG_FORMAT: json
+    METRICS_HOST: 0.0.0.0
+    METRICS_PORT: "9464"
   restart: unless-stopped
   read_only: true
   tmpfs:
     - /tmp
+  # Model profiles: LLM_CONFIG_PATH=/app/config/llm.yaml in production.env.
+  volumes:
+    - type: bind
+      source: ${KNOWLEDGE_LLM_CONFIG_DIR:-../config}
+      target: /app/config
+      read_only: true
+      bind:
+        create_host_path: false
   security_opt:
     - no-new-privileges:true
 
@@ -45,16 +51,18 @@ services:
     environment:
       POSTGRES_DB: smb_knowledge
       POSTGRES_USER: knowledge
-      POSTGRES_PASSWORD: ${KNOWLEDGE_POSTGRES_PASSWORD:-knowledge_dev}
+      POSTGRES_PASSWORD: ${KNOWLEDGE_POSTGRES_PASSWORD:?set KNOWLEDGE_POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U knowledge -d smb_knowledge"]
-      interval: 2s
+      interval: 5s
       timeout: 3s
-      retries: 30
+      retries: 20
     restart: unless-stopped
 
+  # Library uploads are scanned before extraction. Loading signatures takes a
+  # few minutes on first start; ingestion waits, the rest of the portal does not.
   clamav:
     image: clamav/clamav:1.5@sha256:ebec5bc138401b36ae987caa1a3fa3c3b2a21ed3d51f0bfa5852825e663e67b0
     volumes:
@@ -89,15 +97,16 @@ services:
         - python
         - -c
         - "import urllib.request as u; u.urlopen('http://127.0.0.1:8000/ready', timeout=3)"
-      interval: 5s
+      interval: 10s
       timeout: 5s
-      retries: 12
+      retries: 6
       start_period: 20s
     depends_on:
       migrate:
         condition: service_completed_successfully
 
-  # Library ingestion and catalogue jobs, leased in PostgreSQL.
+  # Library ingestion and catalogue jobs. Leased in PostgreSQL, so it scales
+  # with `--scale worker=N`.
   worker:
     <<: *backend
     command: ["python", "-m", "knowledge_portal.interfaces.worker"]
@@ -106,14 +115,12 @@ services:
       migrate:
         condition: service_completed_successfully
 
-  # The browser app: nginx serving /knowledge/ (deploy/web/Dockerfile).
+  # The browser app: nginx serving /knowledge/, from the same release as the API.
+  # The issuer origins reach its page's Content-Security-Policy when it starts.
   web:
-    image: ${KNOWLEDGE_WEB_IMAGE:-knowledge-portal/web:local}
-    build:
-      context: ..
-      dockerfile: deploy/web/Dockerfile
+    image: ghcr.io/mohamhossam/knowledge-web:${KNOWLEDGE_IMAGE_TAG:?set KNOWLEDGE_IMAGE_TAG to a knowledge-portal release}
     environment:
-      CSP_IDENTITY_ORIGINS: ""
+      CSP_IDENTITY_ORIGINS: ${CSP_IDENTITY_ORIGINS:-}
     restart: unless-stopped
     read_only: true
     tmpfs:
@@ -123,14 +130,16 @@ services:
       - no-new-privileges:true
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
-      interval: 5s
+      interval: 10s
       timeout: 3s
-      retries: 12
+      retries: 6
 
+  # The only published port: one origin for the app and its API.
   edge:
     image: nginxinc/nginx-unprivileged:1.31-alpine@sha256:26b0bf6fbf07297983cb341998d79c831508787de26627dd2a112321b9c3a4af
+    # KNOWLEDGE_PORT moves it off 8090.
     ports:
-      - "127.0.0.1:${KNOWLEDGE_PORT:-8090}:8080"
+      - "${KNOWLEDGE_PORT:-8090}:8080"
     volumes:
       - type: bind
         source: ./edge/default.conf
@@ -148,18 +157,14 @@ services:
       - no-new-privileges:true
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
-      interval: 5s
+      interval: 10s
       timeout: 3s
-      retries: 12
+      retries: 6
     depends_on:
       api:
         condition: service_healthy
       web:
         condition: service_healthy
-
-secrets:
-  kernel_read_token:
-    environment: KERNEL_READ_TOKEN
 
 volumes:
   postgres_data:

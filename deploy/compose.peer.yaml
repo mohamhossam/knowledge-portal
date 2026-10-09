@@ -1,0 +1,30 @@
+# Optional: connects this portal to requirement work on a private network
+# (requirement-portal ADR-0099, ADR-0104). Each portal's edge refuses /internal,
+# so the two services call each other on this network, never through an edge.
+# Layer it over compose.production.yaml when both run on one Docker host:
+#
+#   docker network create platform-internal          # once per host
+#   docker compose -f deploy/compose.production.yaml -f deploy/compose.peer.yaml up -d
+#
+# Requirement work joins the same network and is reached there as
+# `requirement-api`, so set REQUIREMENT_API_BASE_URL=http://requirement-api:8000;
+# it reaches this portal as http://knowledge-api:8000. On separate hosts, skip
+# this file and point REQUIREMENT_API_BASE_URL at a private address instead.
+
+services:
+  api:
+    networks:
+      default:
+      peer:
+        aliases:
+          - knowledge-api
+
+  worker:
+    networks:
+      default:
+      peer:
+
+networks:
+  peer:
+    name: ${PEER_NETWORK:-platform-internal}
+    external: true
