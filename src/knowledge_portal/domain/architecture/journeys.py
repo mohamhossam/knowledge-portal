@@ -314,9 +314,7 @@ def journey_edges(journey: Journey) -> tuple[JourneyEdge, ...]:
     tracks: dict[str, list[Activity]] = {}
     for item in journey.ordered:
         tracks.setdefault((item.track or MAIN_TRACK).casefold(), []).append(item)
-    last_on_track = {
-        item.number: steps[-1].number for steps in tracks.values() for item in steps
-    }
+    last_on_track = {item.number: steps[-1].number for steps in tracks.values() for item in steps}
     for steps in tracks.values():
         for current, following in zip(steps, steps[1:], strict=False):
             if current.number not in leaving:
