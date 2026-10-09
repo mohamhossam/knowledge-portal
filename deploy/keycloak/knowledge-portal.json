@@ -51,6 +51,33 @@
           }
         }
       ]
+    },
+    {
+      "clientId": "knowledge-service",
+      "name": "Knowledge portal service",
+      "description": "The knowledge portal's own credential for requirement work's internal API (requirement-portal ADR-0104). Keycloak generates its secret; set it as KNOWLEDGE_SERVICE_CLIENT_SECRET.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": false,
+      "protocolMappers": [
+        {
+          "name": "requirement-internal-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "requirement-internal",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
     }
   ],
   "roles": {
