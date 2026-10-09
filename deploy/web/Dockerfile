@@ -14,8 +14,13 @@ RUN npm ci
 COPY frontend/ ./
 COPY contracts/ ../contracts/
 ARG VITE_API_BASE=/knowledge-api
+# Where requirement work is (requirement-portal ADR-0104): the platform's root by
+# default, an absolute URL when it has its own host, or empty to leave out every
+# link to it.
+ARG VITE_REQUIREMENT_PORTAL_URL=/
 ARG CSP_IDENTITY_ORIGINS=runtime
 ENV VITE_API_BASE=$VITE_API_BASE \
+    VITE_REQUIREMENT_PORTAL_URL=$VITE_REQUIREMENT_PORTAL_URL \
     CSP_IDENTITY_ORIGINS=$CSP_IDENTITY_ORIGINS
 RUN npm run build
 

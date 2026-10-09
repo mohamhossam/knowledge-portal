@@ -34,8 +34,12 @@ function Notice({ title, busy = false, children }: { title: string; busy?: boole
   return (
     <main id="main" className="notice" aria-busy={busy || undefined}>
       <p className="notice__portal">
-        <a href={REQUIREMENT_APP_URL}>Requirement AI</a>
-        <span aria-hidden="true" className="masthead__dot">·</span>
+        {REQUIREMENT_APP_URL !== null && (
+          <>
+            <a href={REQUIREMENT_APP_URL}>Requirement AI</a>
+            <span aria-hidden="true" className="masthead__dot">·</span>
+          </>
+        )}
         Knowledge portal
       </p>
       <h1 className="notice__title">{title}</h1>
@@ -59,7 +63,9 @@ export function NoAccess() {
       </p>
       <p>To curate, ask your platform administrator to add you to the knowledge-admins group.</p>
       <p className="notice__actions">
-        <a className="notice__primary" href={REQUIREMENT_APP_URL}>Go to Requirement AI</a>
+        {REQUIREMENT_APP_URL !== null && (
+          <a className="notice__primary" href={REQUIREMENT_APP_URL}>Go to Requirement AI</a>
+        )}
         {auth?.config?.mode === "oidc" && (
           <button type="button" className="text-button" onClick={() => void auth.signOut()}>
             <LogOut size={14} aria-hidden="true" />

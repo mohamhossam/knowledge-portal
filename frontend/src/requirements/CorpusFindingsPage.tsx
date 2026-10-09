@@ -7,8 +7,9 @@ import { api, type CorpusFinding, type FindingAge, type FindingFilters, type Fin
 import { errorMessage } from "../api/errors";
 import { useAuth } from "../auth/authContext";
 import { count, formatDay } from "../home/format";
-import { FINDINGS_PATH, LEAVES, knowledgeStepHref, useCorpusSummary } from "./knowledge";
+import { FINDINGS_PATH, knowledgeStepHref, useCorpusSummary } from "./knowledge";
 import { KnowledgePage } from "./knowledgeHead";
+import { RequirementLink } from "./RequirementLink";
 
 const DAY = 24 * 60 * 60 * 1000;
 const FINDINGS_KEY = ["knowledge-center", "requirement-corpus", "findings"] as const;
@@ -356,10 +357,9 @@ function BatchAsk({ overdue, me, onDone }: { overdue: CorpusFinding[]; me: strin
 function Side({ side }: { side: CorpusFinding["subject"] }) {
   return (
     <span className="knowledge__side">
-      <a href={knowledgeStepHref(side.requirement_id)} className="knowledge__title" dir="auto">
+      <RequirementLink href={knowledgeStepHref(side.requirement_id)} className="knowledge__title">
         {side.title}
-        <span className="visually-hidden">{LEAVES}</span>
-      </a>
+      </RequirementLink>
       <span className="secondary govtable__by knowledge__owned">
         {side.owner ? (
           <Link
@@ -427,10 +427,9 @@ function FindingRow({ item, now, me, meName, said, sending, onAsk }: {
         )}
         <span className="knowledge__nudge">
           {mine ? (
-            <a href={knowledgeStepHref(mySide.requirement_id)} className="knowledge__decide">
+            <RequirementLink href={knowledgeStepHref(mySide.requirement_id)} className="knowledge__decide">
               Decide it yourself
-              <span className="visually-hidden">{LEAVES}</span>
-            </a>
+            </RequirementLink>
           ) : (
             <button
               type="button"

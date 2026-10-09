@@ -249,8 +249,3 @@ def validate_settings(settings: Settings) -> None:
         raise ConfigurationError(
             "DEBUG_TRACE_PATH must not be blank when DEBUG_TRACE_ENABLED=true."
         )
-    # Checked last: an earlier production rule names the more basic mistake.
-    if settings.app_environment == "production" and settings.requirement_api_base_url is None:
-        raise ConfigurationError(
-            "APP_ENV=production requires REQUIREMENT_API_BASE_URL and KNOWLEDGE_SERVICE_TOKEN."
-        )

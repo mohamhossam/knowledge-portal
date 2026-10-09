@@ -1,13 +1,20 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { useEffect, useId, useState } from "react";
+import { type ReactNode, useEffect, useId, useState } from "react";
 
 import { api, type Dependency, type Impact } from "../api/client";
 import { errorMessage } from "../api/errors";
 import { formatDay } from "../home/format";
+import { requirementWorkHref } from "../auth/paths";
 import { useDocumentContext } from "./documentContext";
 
-/** Requirement work lives at the platform's root; its pages open there. */
-const requirementHref = (requirementId: string) => `/requirements/${encodeURIComponent(requirementId)}`;
+/** A requirement's title: a link when requirement work is connected, its words alone otherwise. */
+function RequirementTitle({ href, children }: { href: string | null; children: ReactNode }) {
+  return href === null ? <span dir="auto">{children}</span> : <a href={href} dir="auto">{children}</a>;
+}
+
+/** A requirement's page in requirement work, or null when it is not connected. */
+const requirementHref = (requirementId: string) =>
+  requirementWorkHref(`requirements/${encodeURIComponent(requirementId)}`);
 
 const PROPOSAL_STATUS: Record<string, string> = {
   pending: "Awaiting the owner",
@@ -106,7 +113,7 @@ function ProposalRow({ item }: { item: Dependency }) {
   return (
     <tr className={`row ${reconcile ? "row--due" : item.current_analysis ? "" : "row--past"}`}>
       <th scope="row">
-        <a href={requirementHref(item.requirement_id)} dir="auto">{item.requirement_title}</a>
+        <RequirementTitle href={requirementHref(item.requirement_id)}>{item.requirement_title}</RequirementTitle>
         <span className="secondary govtable__by">
           {item.current_analysis ? "Current analysis" : "Earlier analysis"}
           {item.round_number ? `, round ${item.round_number}` : ""}
@@ -207,7 +214,7 @@ function ImpactRow({ item }: { item: Impact }) {
   return (
     <tr className={`row ${item.needs_review ? "row--due" : dependency.active ? "" : "row--past"}`}>
       <th scope="row">
-        <a href={requirementHref(dependency.requirement_id)} dir="auto">{dependency.requirement_title}</a>
+        <RequirementTitle href={requirementHref(dependency.requirement_id)}>{dependency.requirement_title}</RequirementTitle>
         <span className="secondary govtable__by">{TARGET[dependency.target_kind] ?? dependency.target_kind}</span>
       </th>
       <td className="cell--p2" dir="auto">

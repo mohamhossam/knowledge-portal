@@ -31,8 +31,12 @@ function ReaderShell() {
       <a className="skip-link" href="#main">Skip to the explorer</a>
       <header className="masthead">
         <p className="masthead__title">
-          <a href={REQUIREMENT_APP_URL}>Requirement AI</a>
-          <span aria-hidden="true" className="masthead__dot">·</span>
+          {REQUIREMENT_APP_URL !== null && (
+            <>
+              <a href={REQUIREMENT_APP_URL}>Requirement AI</a>
+              <span aria-hidden="true" className="masthead__dot">·</span>
+            </>
+          )}
           <span className="masthead__portal">Knowledge portal</span>
         </p>
         <p className="masthead__valid">Reading only: curating is for knowledge admins.</p>

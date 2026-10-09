@@ -8,8 +8,9 @@ import { errorMessage } from "../api/errors";
 import { count, formatDay } from "../home/format";
 import { BulkReindex } from "./BulkReindex";
 import { CorpusActionForm, type CorpusActionKind } from "./CorpusActionForm";
-import { LEAVES, REQUIREMENTS_PATH, knowledgeStepHref, useCorpusSummary } from "./knowledge";
+import { REQUIREMENTS_PATH, knowledgeStepHref, useCorpusSummary } from "./knowledge";
 import { KnowledgePage } from "./knowledgeHead";
+import { RequirementLink } from "./RequirementLink";
 import { useAuth } from "../auth/authContext";
 
 /** How long since a screen before a requirement counts as not screened lately. */
@@ -304,10 +305,9 @@ function RequirementRow({ item, lit, open, trigger, onAct }: {
   return (
     <tr className={`row ${rank(item)}${open ? " is-acting" : ""}${lit ? " is-lit" : ""}`}>
       <th scope="row" aria-label={item.title}>
-        <a href={knowledgeStepHref(item.requirement_id)} className="knowledge__title" dir="auto">
+        <RequirementLink href={knowledgeStepHref(item.requirement_id)} className="knowledge__title">
           {item.title}
-          <span className="visually-hidden">{LEAVES}</span>
-        </a>
+        </RequirementLink>
         <span className="secondary govtable__by knowledge__owned">
           {item.owner ? (
             <>
