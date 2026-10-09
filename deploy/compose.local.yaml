@@ -106,14 +106,19 @@ services:
       migrate:
         condition: service_completed_successfully
 
-  # The browser app: nginx serving /knowledge/ (deploy/web/Dockerfile).
+  # The browser app: nginx serving /knowledge/, or KNOWLEDGE_BASE_PATH
+  # (deploy/web/Dockerfile).
   web:
     image: ${KNOWLEDGE_WEB_IMAGE:-knowledge-portal/web:local}
     build:
       context: ..
       dockerfile: deploy/web/Dockerfile
+      args:
+        KNOWLEDGE_BASE_PATH: ${KNOWLEDGE_BASE_PATH:-/knowledge/}
     environment:
       CSP_IDENTITY_ORIGINS: ""
+      # Empty: no links to requirement work.
+      REQUIREMENT_PORTAL_URL: ${REQUIREMENT_PORTAL_URL:-}
     restart: unless-stopped
     read_only: true
     tmpfs:

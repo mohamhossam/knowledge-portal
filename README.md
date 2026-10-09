@@ -140,8 +140,9 @@ To run both images on one machine, with PostgreSQL, ClamAV and an edge proxy, us
 (requirement-portal ADR-0104).
 
 The browser app ships as its own image, nginx serving `/knowledge/`
-(`docker build -f deploy/web/Dockerfile .`, with `CSP_IDENTITY_ORIGINS` set to the OIDC issuer's
-origin for an OIDC deployment).
+(`docker build -f deploy/web/Dockerfile .`; `--build-arg KNOWLEDGE_BASE_PATH=/` serves it at the
+root of its own hostname). The container's `CSP_IDENTITY_ORIGINS` names the OIDC issuer's origin,
+and its `REQUIREMENT_PORTAL_URL` where requirement work is, empty to leave out the links.
 
 CI (`.github/workflows/ci.yml`) runs the checks with PostgreSQL, the frontend checks, audits
 dependencies, and builds, scans and starts both images. Pushing a tag `vX.Y.Z` that matches

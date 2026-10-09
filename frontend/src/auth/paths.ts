@@ -1,9 +1,9 @@
 /**
- * Where the portal lives on the platform's origin.
+ * Where the portal lives on its origin.
  *
- * The app is served under `/knowledge/` (vite `base`), beside requirement work
- * at `/`. Router paths are relative to that base; sign-in callbacks and links
- * back to requirement work are absolute.
+ * The app is served under its build's base path (vite `base`, `/knowledge/` unless
+ * `KNOWLEDGE_BASE_PATH` says otherwise). Router paths are relative to that base; sign-in
+ * callbacks and links back to requirement work are absolute.
  */
 export const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 export const CALLBACK_PATH = "/auth/callback";
@@ -20,7 +20,22 @@ export function requirementPortalUrl(configured: string | undefined): string | n
   return url.endsWith("/") ? url : `${url}/`;
 }
 
-export const REQUIREMENT_APP_URL = requirementPortalUrl(import.meta.env.VITE_REQUIREMENT_PORTAL_URL);
+/** Replaced by the web image's nginx at start-up with the container's `REQUIREMENT_PORTAL_URL`. */
+export const RUNTIME_REQUIREMENT_PORTAL_URL = "__REQUIREMENT_PORTAL_URL__";
+
+/**
+ * Requirement work's address as the page that loaded the app gives it, or undefined when the
+ * page does not say (development, or a server that does not fill it in). The published image
+ * cannot know where requirement work is, so it takes the address when the container starts.
+ */
+export function pageRequirementPortalUrl(doc: Pick<Document, "querySelector">): string | undefined {
+  const value = doc.querySelector('meta[name="requirement-portal-url"]')?.getAttribute("content");
+  return value === null || value === undefined || value === RUNTIME_REQUIREMENT_PORTAL_URL ? undefined : value;
+}
+
+export const REQUIREMENT_APP_URL = requirementPortalUrl(
+  pageRequirementPortalUrl(document) ?? import.meta.env.VITE_REQUIREMENT_PORTAL_URL,
+);
 
 /** A page of requirement work, such as `requirements/R-1`, or null without it. */
 export function requirementWorkHref(path: string, base = REQUIREMENT_APP_URL): string | null {

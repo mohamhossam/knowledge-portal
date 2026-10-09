@@ -14,8 +14,8 @@ when both are deployed.
 | `migrate` | Applies the migrations, then exits; the API and worker wait for it |
 | `api` | The knowledge API, HTTP only |
 | `worker` | Library ingestion and catalogue jobs; scale with `--scale worker=N` |
-| `web` | The browser app, nginx serving `/knowledge/` |
-| `edge` | The only published port (`KNOWLEDGE_PORT`, default `8090`): `/knowledge/` to `web`, `/knowledge-api/` to `api`, `/knowledge-api/internal` refused |
+| `web` | The browser app, nginx serving its base path (`/knowledge/` in released images) |
+| `edge` | The only published port (`KNOWLEDGE_PORT`, default `8090`): `/knowledge-api/` to `api`, `/knowledge-api/internal` refused, every other path to `web` |
 
 Put TLS in front of `edge`. The API, worker, database, scanner and metrics ports
 (`9464` on `api` and `worker`) stay on the private network.
@@ -112,10 +112,28 @@ docker compose -f deploy/compose.production.yaml -f deploy/compose.peer.yaml up 
 Each side keeps working while the other is stopped, and reports it as unavailable where it
 needs it.
 
-The released web image links to requirement work at `/` on its own host. Until it takes that
-address at start-up, build `web` yourself with
-`--build-arg VITE_REQUIREMENT_PORTAL_URL=https://<requirement host>/`, or with an empty value to
-leave the links out, and run it in place of the released one.
+The portal's links to requirement work, such as "Requirement AI", go where `REQUIREMENT_PORTAL_URL`
+says (for example `https://requirements.example.com/`); `web` fills it into each page when it
+starts. Unset in this manifest, the links are left out.
+
+## Its own hostname
+
+Give the portal its own hostname, such as `knowledge.example.com`, by pointing it at `edge`
+(through TLS). Released images serve the app under `/knowledge/`, and `web` sends `/` there, so
+people open `https://knowledge.example.com/knowledge/`.
+
+To serve it at the root instead, build the web image for it and name that image:
+
+```bash
+docker build -f deploy/web/Dockerfile --build-arg KNOWLEDGE_BASE_PATH=/ -t knowledge-web:root .
+export KNOWLEDGE_WEB_IMAGE=knowledge-web:root
+docker compose -f deploy/compose.production.yaml up -d web
+```
+
+The API stays at `/knowledge-api/` either way. Keep sign-in in step: run
+`deploy/keycloak/apply.py --overwrite` with `KNOWLEDGE_APP_PATH=` (empty for the root) so the
+client's redirect URIs match, and point requirement work's `VITE_KNOWLEDGE_PORTAL_URL` at the new
+address.
 
 ## Moving over from requirement-portal's deployment
 

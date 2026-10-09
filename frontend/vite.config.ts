@@ -1,5 +1,6 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv } from "vite";
+import { basePath } from "./basePath.ts";
 import { contentSecurityPolicy } from "./contentSecurityPolicy.ts";
 
 // The knowledge API in development: `uv run python -m knowledge_portal.interfaces.api.serve --port 8100`.
@@ -14,13 +15,14 @@ const apiProxy = {
 };
 
 /**
- * Served under /knowledge/ on the platform's origin, beside requirement work
- * at / (requirement-portal ADR-0099). Its API is /knowledge-api/.
+ * Served under KNOWLEDGE_BASE_PATH: /knowledge/ unless set, as on the platform's
+ * origin beside requirement work, or / on the portal's own hostname
+ * (requirement-portal ADR-0104). Its API is /knowledge-api/.
  */
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   return {
-    base: "/knowledge/",
+    base: basePath(env.KNOWLEDGE_BASE_PATH),
     plugins: [
       react(),
       contentSecurityPolicy({

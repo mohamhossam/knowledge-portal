@@ -260,7 +260,7 @@ with durable storage and real malware scanning.
 | `api` | The knowledge API (HTTP only) |
 | `worker` | Library ingestion and catalogue jobs |
 | `web` | The browser app, nginx serving `/knowledge/` |
-| `edge` | nginx on `127.0.0.1:8090`: `/knowledge/` to `web`, `/knowledge-api/` to `api`, internal routes blocked |
+| `edge` | nginx on `127.0.0.1:8090`: `/knowledge-api/` to `api`, internal routes blocked, everything else to `web` |
 
 This stack is for one machine. A shared deployment is `deploy/compose.production.yaml`, which
 runs the released images on their own (`docs/operations/deployment.md`).

@@ -126,6 +126,9 @@ jobs:
           # The deployment's issuer reaches the policy; the placeholder never ships.
           curl -fsS http://127.0.0.1:8080/knowledge/ | grep -q 'connect-src .self. https://login.example.test'
           ! curl -fsS http://127.0.0.1:8080/knowledge/library | grep -q '__CSP_IDENTITY_ORIGINS__'
+          # Requirement work's address is filled in too: the platform's root unless set.
+          curl -fsS http://127.0.0.1:8080/knowledge/ | grep -q 'name="requirement-portal-url" content="/"'
+          test "$(curl -s -o /dev/null -w '%{redirect_url}' http://127.0.0.1:8080/)" = "http://127.0.0.1:8080/knowledge/"
           curl -fsSI http://127.0.0.1:8080/knowledge/ | grep -i "frame-ancestors 'none'"
           asset=$(curl -fsS http://127.0.0.1:8080/knowledge/ | grep -o '/knowledge/assets/[^"]*\.js' | head -1)
           curl -fsSI "http://127.0.0.1:8080$asset" | grep -i "immutable"
@@ -151,8 +154,32 @@ jobs:
             nginxinc/nginx-unprivileged:1.31-alpine@sha256:26b0bf6fbf07297983cb341998d79c831508787de26627dd2a112321b9c3a4af
           for attempt in $(seq 1 20); do curl -fsS http://127.0.0.1:8090/health && break; sleep 1; done
           curl -fsS http://127.0.0.1:8090/knowledge/ | grep -q '<title>Knowledge portal</title>'
+          test "$(curl -s -o /dev/null -w '%{redirect_url}' http://127.0.0.1:8090/)" = "http://127.0.0.1:8090/knowledge/"
           test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8090/knowledge-api/internal/events)" = 404
           curl -sI http://127.0.0.1:8090/knowledge-api/internal/events | grep -i "x-content-type-options: nosniff"
+
+  web-image-root:
+    # The same image built for the root of the portal's own hostname (ADR-0104).
+    runs-on: ubuntu-latest
+    env:
+      IMAGE: knowledge-portal/web:root
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build the image for the root path
+        run: DOCKER_BUILDKIT=1 docker build -f deploy/web/Dockerfile --build-arg KNOWLEDGE_BASE_PATH=/ -t "$IMAGE" .
+
+      - name: Serves the app at / with requirement work's address from the container
+        run: |
+          docker run -d --name web --read-only -p 8080:8080 \
+            --tmpfs /tmp:uid=101,gid=101 --tmpfs /etc/nginx/conf.d:uid=101,gid=101 \
+            -e REQUIREMENT_PORTAL_URL=https://requirements.example.test/ "$IMAGE"
+          for attempt in $(seq 1 20); do curl -fsS http://127.0.0.1:8080/health && break; sleep 1; done
+          curl -fsS http://127.0.0.1:8080/ | grep -q '<title>Knowledge portal</title>'
+          curl -fsS http://127.0.0.1:8080/library | grep -q 'content="https://requirements.example.test/"'
+          asset=$(curl -fsS http://127.0.0.1:8080/ | grep -o '"/assets/[^"]*\.js' | head -1 | tr -d '"')
+          test -n "$asset"
+          curl -fsSI "http://127.0.0.1:8080$asset" | grep -i "immutable"
 
   supply-chain:
     # Known-vulnerable dependencies fail the build. The audit covers what the
