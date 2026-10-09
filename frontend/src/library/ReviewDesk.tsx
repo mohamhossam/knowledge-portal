@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Image as ImageIcon, RotateCcw } from "lucide-react";
+import { Check, Image as ImageIcon, RotateCcw } from "lucide-react";
 import { type KeyboardEvent, memo, type ReactNode, useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 
@@ -23,7 +23,7 @@ import {
   TextField,
 } from "../design/components";
 import { useDisclosure, useFocusAfterRender } from "../design/hooks";
-import { RouterLink } from "../shell/links";
+import { openShortcuts } from "../shell/shortcuts";
 import { densityFor, usePreferences } from "../shell/preferences";
 import { useDocumentContext } from "./documentContext";
 import {
@@ -48,6 +48,9 @@ import { newestVersion } from "./model";
 const PAGE = 200;
 
 type Filter = "all" | "unseen" | "flagged" | "changed" | "excluded" | "removed";
+
+/** How long a passage holds focus before it counts as seen (decided at GATE 8.2): passing through isn't looking. */
+const SEEN_AFTER_MS = 600;
 
 /** "Seen" is per reviewer and for this session only (BG2): kept in the tab, never sent. */
 function useSeen(versionId: string) {
@@ -146,6 +149,7 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
   const [summaryTried, setSummaryTried] = useState(false);
   const [said, setSaid] = useState<{ text: string; failed?: boolean; conflict?: boolean } | null>(null);
   const [group, setGroup] = useState("");
+  const [picking, setPicking] = useState(false);
   const desk = useRef<HTMLDivElement>(null);
   const bulk = useDisclosure(() => desk.current?.querySelector<HTMLElement>("tr.is-current [data-cell-focus]") ?? null);
   const approve = useDisclosure(() => window.document.getElementById("desk-approve"));
@@ -172,13 +176,23 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [arrival]);
 
+  // A passage is seen once it has been the current one for a moment (GATE 8.2): a run of j
+  // through forty rows doesn't count as looking at forty passages.
+  useEffect(() => {
+    if (!currentId || seen.has(currentId)) return;
+    const timer = window.setTimeout(() => markSeen(currentId), SEEN_AFTER_MS);
+    return () => window.clearTimeout(timer);
+  }, [currentId, seen, markSeen]);
+
   const move = (key: string) => {
+    // Rows already shown stay shown: the list only grows to reach the row moved to (area 2 critique).
+    const index = shown.findIndex((row) => row.key === key);
+    if (index + 1 > limit) setLimit(Math.ceil((index + 1) / PAGE) * PAGE);
     if (key !== currentId) {
       setCurrentId(key);
       setEditing(false);
       setOriginal(null);
     }
-    markSeen(key);
   };
   const change = (key: string, patch: Partial<Draft>) =>
     setReview((state) => {
@@ -271,7 +285,20 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
       event.preventDefault();
       event.stopPropagation();
       save();
+      return;
     }
+    // In the grid, j / ↓ past the last row shown and End go on into the rows not shown yet:
+    // the 200-row page is for rendering, not a wall for the keyboard.
+    const inGrid = event.target instanceof HTMLElement && event.target.closest("[data-cell-focus]");
+    if (!inGrid || event.ctrlKey || event.altKey || event.metaKey || event.shiftKey || shown.length <= visible.length) return;
+    const target = event.key === "End"
+      ? shown.at(-1)
+      : (event.key === "j" || event.key === "ArrowDown") && current?.key === visible.at(-1)?.key ? shown[visible.length] : undefined;
+    if (!target) return;
+    event.preventDefault();
+    event.stopPropagation();
+    move(target.key);
+    focusRow(target.key);
   };
 
   const groups = useMemo(() => {
@@ -462,6 +489,8 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
 
   return (
     <div ref={desk} className="lib-desk" data-density={densityFor(density, "desk")} onKeyDownCapture={onDeskKey}>
+      {/* Progress and the notes about the whole file on one row: the grid starts higher (GATE 8.2). */}
+      <div className="lib-deskhead">
       <section className="lib-progress" aria-label="Review progress">
         <p>
           Seen <strong className="ds-num">{seen.size.toLocaleString("en")}</strong> of {rows.length.toLocaleString("en")}
@@ -474,6 +503,18 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
         </p>
         <progress max={Math.max(rows.length, 1)} value={seen.size} aria-label="Passages seen" />
       </section>
+        {fileWarnings.some((warning) => warning.severity !== "blocking") && (
+          <details className="lib-filenotes">
+            <summary>
+              <Status tone="held">Flagged, whole file</Status>{" "}
+              {plural(fileWarnings.filter((warning) => warning.severity !== "blocking").length, "note")} about reading it
+            </summary>
+            <Lines>
+              {fileWarnings.filter((warning) => warning.severity !== "blocking").map((warning, index) => <li key={`${warning.code}-${index}`}>{warning.message}</li>)}
+            </Lines>
+          </details>
+        )}
+      </div>
 
       {fileWarnings.filter((warning) => warning.severity === "blocking").length > 0 && (
         <Lines label="Blocks approval, about the whole file">
@@ -483,17 +524,6 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
             </li>
           ))}
         </Lines>
-      )}
-      {fileWarnings.some((warning) => warning.severity !== "blocking") && (
-        <details className="lib-filenotes">
-          <summary>
-            <Status tone="held">Flagged, whole file</Status>{" "}
-            {plural(fileWarnings.filter((warning) => warning.severity !== "blocking").length, "note")} about reading it
-          </summary>
-          <Lines>
-            {fileWarnings.filter((warning) => warning.severity !== "blocking").map((warning, index) => <li key={`${warning.code}-${index}`}>{warning.message}</li>)}
-          </Lines>
-        </details>
       )}
 
       <div className="lib-toolbar">
@@ -515,7 +545,10 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
           find={{ label: "Find in passages", value: find, onChange: (value) => { setView(filter, value); setLimit(PAGE); }, placeholder: "Words or a sheet…" }}
           onClear={filter !== "all" || find ? () => setView("all", "") : undefined}
         />
-        {offerGroups && chosenGroup && (
+        {offerGroups && chosenGroup && !picking && (
+          <Button variant="link" aria-expanded={false} onClick={() => setPicking(true)}>Select a location…</Button>
+        )}
+        {offerGroups && chosenGroup && picking && (
           <div className="lib-select-group" role="group" aria-label="Select a whole location">
             <Select label="Select a location" value={chosenGroup[0]} onChange={(event) => setGroup(event.target.value)}>
               {groups.map(([name, keys]) => <option key={name} value={name}>{name} · {plural(keys.length, "passage")}</option>)}
@@ -526,19 +559,19 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
             }}>
               Select {plural(chosenGroup[1].length, "passage")}
             </Button>
+            <Button variant="link" onClick={() => setPicking(false)}>Done</Button>
           </div>
         )}
       </div>
       <KeysHint
-        link={RouterLink}
-        moreHref={`?${withHelp(params)}`}
+        onMore={openShortcuts}
         keys={[
           { keys: ["↑", "↓", "j", "k"], does: "move" },
-          { keys: ["n", "Shift+n"], does: "next or previous flagged, then not seen" },
+          { keys: ["n"], does: "next to check" },
           { keys: ["x", "i"], does: "exclude, include" },
           { keys: ["e"], does: "edit" },
           { keys: ["o"], does: "original" },
-          { keys: ["Space", "Shift+↑↓"], does: "select" },
+          { keys: ["Space"], does: "select" },
           { keys: ["Ctrl+Enter"], does: "save" },
         ]}
       />
@@ -655,13 +688,6 @@ function OriginalPreview({ documentId, versionId, blockId, where }: { documentId
 
 const clock = (at: Date) => at.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 
-/** The current address with Help's shortcuts opened, keeping what the desk shows (?review, ?show, ?find). */
-function withHelp(params: URLSearchParams): string {
-  const next = new URLSearchParams(params);
-  next.set("help", "shortcuts");
-  return next.toString();
-}
-
 /** A passage's text: a worksheet row as labelled cells (backlog O-3), else as it reads. */
 function PassageText({ row, headings }: { row: Row; headings: Map<string, Map<string, string>> }) {
   const value = row.draft?.text ?? row.basis ?? "";
@@ -685,8 +711,14 @@ function passageColumns(seen: ReadonlySet<string>, headings: Map<string, Map<str
       id: "where",
       header: "Where",
       rowHeader: true,
-      width: "10rem",
-      cell: (row) => <>{humanWhere(row.where)}{!seen.has(row.key) && <span className="ds-visually-hidden">, not seen</span>}</>,
+      width: "8.5rem",
+      cell: (row) => (
+        <>
+          {humanWhere(row.where)}
+          {/* Seen is shown on the row too (a mark, never colour alone), so the reviewer sees their trail. */}
+          {seen.has(row.key) ? <Check size={12} aria-hidden="true" className="lib-seen" /> : <span className="ds-visually-hidden">, not seen</span>}
+        </>
+      ),
     },
     {
       id: "text",
@@ -702,7 +734,7 @@ function passageColumns(seen: ReadonlySet<string>, headings: Map<string, Map<str
     {
       id: "state",
       header: "State",
-      width: "11.5rem",
+      width: "10rem",
       cell: (row) => (
         <span className="lib-state">
           {row.blocking ? <Status tone="attention">Blocks approval</Status> : row.warnings.length ? <Status tone="held">Flagged</Status> : null}

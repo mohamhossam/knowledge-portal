@@ -54,13 +54,14 @@ function Remedy({ entry, act, busy }: { entry: Entry; act: Act; busy: boolean })
     return entry.document.is_owner ? <Button busy={busy} onClick={() => act(entry, "retry-indexing")}>Try indexing again{named}</Button> : <span className="work__none">—</span>;
   }
   return (
+    // The fix first, the retry second: the same words and order as the document and Jobs (§6).
     <ActionGroup>
-      {!entry.held && <Button busy={busy} onClick={() => act(entry, "retry")}>Try reading again{named}</Button>}
       {entry.document.is_owner && (
         <FileButton busy={busy} onFile={([file]) => file && act(entry, "upload", file)}>
           {entry.held ? "Upload a clean copy" : "Upload a new version"}{named}
         </FileButton>
       )}
+      {!entry.held && <Button busy={busy} onClick={() => act(entry, "retry")}>Try reading again{named}</Button>}
     </ActionGroup>
   );
 }
@@ -239,7 +240,7 @@ export function YourWork() {
                   <Button variant="link" busy={queue.retrying} onClick={() => { retried.current = section.key; queue.retry(); }}>Try again</Button>
                 </p>
               ) : (
-                <DataTable<Entry> caption={section.title} captionHidden columns={columns(section.key)} rows={section.rows} rowId={(entry) => entry.id} />
+                <DataTable<Entry> caption={team && section.teamTitle ? section.teamTitle : section.title} captionHidden columns={columns(section.key)} rows={section.rows} rowId={(entry) => entry.id} />
               )}
             </Section>
           </div>

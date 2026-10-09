@@ -28,7 +28,7 @@ for (const route of redesigned) {
         await page.goto(path!);
         await settled(page);
         await expect(page).toHaveScreenshot(`${route.key}-${width}-${theme}.png`, {
-          fullPage: true,
+          fullPage: !route.viewOnly,
           mask: (route.mask ?? []).map((selector) => page.locator(selector)),
         });
       });

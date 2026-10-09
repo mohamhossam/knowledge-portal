@@ -83,7 +83,8 @@ function facts(doc: LibraryDocument): VersionFacts {
     replaces: current.kind === "service" && current.versionNumber !== version?.number ? current.versionNumber ?? null : null,
     fileType: fileType(version?.mime_type),
     passages: version?.blocks?.length ?? 0,
-    flagged: version?.warnings?.length ?? 0,
+    // Passages flagged, as the review desk counts them (notes about the whole file are apart).
+    flagged: version?.warning_details?.filter((warning) => warning.block_id).length ?? 0,
     blocking: version?.blocking_warnings?.length ?? 0,
   };
 }

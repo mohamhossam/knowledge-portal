@@ -272,16 +272,28 @@ function Processing() {
           {running ? " · You can leave this page; reading carries on, and Jobs shows its progress." : ""}
         </span>
       </p>
-      {(newest.error || (stuck && stand.publication.indexing_error)) && <p>{stuck ? stand.publication.indexing_error : newest.error}</p>}
+      {(newest.error || (stuck && stand.publication.indexing_error)) && (
+        <p>What the {stuck ? "index" : "reader"} reported: <q dir="auto">{stuck ? stand.publication.indexing_error : newest.error}</q></p>
+      )}
       {held && <p>A held file is never published. Upload a clean copy as a new version.</p>}
       {document.can_edit && (
         <ActionGroup>
           {running && <Button icon={<Square size={14} />} busy={hook.cancel.isPending} onClick={() => hook.cancel.mutate(newest.id, after("Reading stopped."))}>Stop reading</Button>}
+          {/* The fix first (§6): a file the reader can't read fails the same way again; a retry helps only a passing fault. */}
+          {(failed || held) && document.is_owner && (
+            <FileButton
+              variant="primary"
+              busy={hook.replace.isPending}
+              onFile={([file]) => file && hook.replace.mutate(file, after("Uploaded a new version. It is being read; Jobs shows the progress."))}
+            >
+              {held ? "Upload a clean copy" : "Upload a new version"}
+            </FileButton>
+          )}
           {(failed || stopped) && <Button icon={<RotateCw size={14} />} busy={hook.retry.isPending} onClick={() => hook.retry.mutate(newest.id, after("Reading it again. Jobs shows the progress."))}>Try reading again</Button>}
           {stuck && document.is_owner && <Button icon={<RotateCw size={14} />} busy={hook.retryIndexing.isPending} onClick={() => hook.retryIndexing.mutate(undefined, after("Indexing it again. Jobs shows the progress."))}>Try indexing again</Button>}
         </ActionGroup>
       )}
-      {(failed || held) && document.is_owner && <p className="lib-quiet">Or upload a new version with the fix, from the top of this page.</p>}
+      {failed && <p className="lib-quiet">Try reading again only helps if the failure was passing (a timeout, a busy service). If the file itself is the problem, it fails the same way.</p>}
       {stand.kind === "service" && (running || failed || held) && <p className="lib-quiet">The version in service stays citable meanwhile.</p>}
     </section>
   );

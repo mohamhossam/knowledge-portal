@@ -38,6 +38,7 @@ function documentWithBuild(extra: Partial<LibraryDocument> = {}): LibraryDocumen
 
 function renderVersions(document: LibraryDocument) {
   const activate = vi.fn();
+  vi.spyOn(api, "dependencies").mockResolvedValue({ items: [{ proposal_id: "p1", requirement_id: "req-1", requirement_title: "Fibre bundle ordering" }], next_offset: null } as never);
   const mutation = { mutate: vi.fn(), isPending: false, isError: false, error: null };
   const context = {
     document,
@@ -45,6 +46,7 @@ function renderVersions(document: LibraryDocument) {
     review: { key: "k", drafts: {}, summary: "" },
     setReview: vi.fn(),
     dirty: 0,
+    announce: vi.fn(),
   } as unknown as DocumentContext;
   render(
     <QueryClientProvider client={new QueryClient()}>
@@ -68,21 +70,24 @@ describe("VersionsPage", () => {
     expect(screen.getByText("Built; waiting to be activated")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Activate it…" }));
     const panel = screen.getByRole("region", { name: "Activate the search index for tables" });
-    // The consequence comes before the verb (§5): who is told, then the button.
-    expect(within(panel).getByText(/Requirements that cite the current version are told their source changed/)).toBeInTheDocument();
+    // The consequence comes before the verb (§5): who cites it now (only those you can see), then the button.
+    expect(await within(panel).findByText(/requirement you can see cites the version in service/)).toHaveTextContent("Their owners are told the source changed");
     expect(activate).not.toHaveBeenCalled();
     await userEvent.click(within(panel).getByRole("button", { name: "Activate it" }));
     expect(activate).toHaveBeenCalledWith({ buildId: "build", manifest: "m".repeat(64) }, expect.anything());
   });
 
-  it("offers only to discard a build whose source moved on", () => {
+  it("offers only to discard a build whose source moved on, and asks before discarding", async () => {
     const stale = documentWithBuild({
       versions: [{ ...documentWithBuild().versions[0]!, revisions: [{ id: "r1" }, { id: "r2" }] }] as never,
     });
     renderVersions(stale);
     expect(screen.getByText(/The review was saved again since this build\. Discard it and build again\./)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Activate it…" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Discard it" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Discard it…" }));
+    const panel = screen.getByRole("region", { name: "Discard the search index for tables" });
+    expect(panel).toHaveTextContent("It can't be brought back");
+    expect(within(panel).getByRole("button", { name: "Discard it" })).toBeInTheDocument();
   });
 });
 
@@ -152,7 +157,8 @@ describe("CitationsPage", () => {
       </QueryClientProvider>,
     );
     expect(await screen.findByText("Cites a replaced version; its owner should reconcile it.")).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: "Fibre bundle ordering" })[0]).toHaveAttribute("href", "/requirements/req-1");
+    // A link into Requirement AI says it leaves the portal.
+    expect(screen.getAllByRole("link", { name: "Fibre bundle ordering (opens Requirement AI)" })[0]).toHaveAttribute("href", "/requirements/req-1");
     expect(await screen.findByText("Source changed; awaiting its owner")).toBeInTheDocument();
     expect(screen.getByText("Feature: Ordering").closest("span")).toHaveTextContent("Through Feature: Ordering · version 1, Line 2");
     expect(screen.getByText("Earlier rollout.").closest("td")).toHaveTextContent(/^Kept by Amina Owner, 2 Oct 2026/);

@@ -3,8 +3,8 @@
 | | |
 |---|---|
 | Integration branch | `feat/kb-redesign`, from `main` @ `b6114b9` |
-| Current phase | **8: Build by area.** Area 1 (Shell + Your work) approved and merged; next is area 2 (Library) |
-| Last updated | 2026-10-08 |
+| Current phase | **8: Build by area.** Areas 1 and 2 approved and merged; next is area 3 (catalogue curation) |
+| Last updated | 2026-10-09 |
 
 ## Phase log
 
@@ -18,7 +18,7 @@
 | 5: Design system | **Approved 2026-10-08** | `frontend/src/design/` (tokens, 28 components, hooks; 159 tests), the dev-only gallery `/knowledge/design-system`, `docs/design-system.md`, new `DESIGN.md` + `.impeccable/design.json` (old sidecar archived) |
 | 6: Hi-fi + round 2 | **Approved 2026-10-08** (GATE 6 = assumption mode; round 2 and the manual a11y kit not run) | `frontend/src/design-lab/prototype/` (dev-only `/knowledge/design-lab/prototype`), `docs/ux/testing/a11y-manual.md` + `a11y-results.csv`, `docs/ux/testing/round-2/` (kit, data sheet, 33 captures) |
 | 7: Layer 2/3 install | **Done 2026-10-08** | `docs/redesign/plans/` (README + 10 area plans), `.claude/skills/redesign-area/SKILL.md`, vitest-axe in the component tests (`src/test/axe.ts`), `frontend/e2e/` (Playwright + axe ratchet, visual spec), `scripts/brand-lint.mjs`, `scripts/bundle-budget.mjs`, CI `e2e` job |
-| 8: Build by area | Area 1 **approved 2026-10-08** (GATE 8.1); areas 2–10 to come | `docs/redesign/areas/01-shell-home/` (before/after captures) |
+| 8: Build by area | Area 1 **approved 2026-10-08** (GATE 8.1); area 2 **approved 2026-10-09** (GATE 8.2); areas 3–10 to come | `docs/redesign/areas/01-shell-home/`, `docs/redesign/areas/02-library/` (before/after captures, report) |
 | 9: Validate and close | Not started | |
 
 ## Decisions
@@ -70,6 +70,7 @@
 | 2026-10-08 | **Area 1, the legacy island.** An unmigrated page renders inside the new shell in `.ds-legacy`. The design system's base element rules skip it (`:where(:not(.ds-legacy *))`, specificity unchanged). The island restores the Timetable Book's body typography and its own scroll padding for pinned bars. On a legacy route the whole frame is light (`data-theme="light"`); dark mode applies on rebuilt routes only until Phase 9. Two reviewers judged a dark frame around a light page worse. | Area 1 reviews |
 | 2026-10-08 | **Area 1 IA choices.** "Re-confirmations" sits in the rail's secondary group (plan 06: always reachable). The Gaps backlog is listed with its true number but kept out of the "need you" count, so the count can reach zero (critique P1). Your work's actions are plain tab stops, not a roving list, per the accessibility reviewers (a roving `<ul>` hides most actions from Tab). | Area 1 reviews and critique |
 | 2026-10-08 | **Route-change focus for legacy pages.** `AppShell` focuses the design-system h1, or else a legacy page's first h1 (it waits for it to load). Focus a legacy page placed itself, or a `#target`, is kept. | Area 1 |
+| 2026-10-09 | **GATE 8.2 approved.** Library rebuilt (area 2). Decisions: Return to service re-approves the last published review (no API endpoint, no reason recorded; said in the panel); K2 `lang` is a script heuristic (HYPOTHESIS); `#passage-…` focuses the passage (no path form); **"seen" means a passage stayed current for about 0.6 s** (passing through doesn't count); the desk was made denser before the merge (one-line keys, progress and file note on one row, the location select behind a button). Critique: Library 28 → 30/40, Your work 27/28 → 31/40. | User |
 | 2026-10-08 | **GATE 8.1 approved.** Chrome share is measured by height (6%). The critique stands at 27–28/40, with acting from the queue deferred to area 2 and a re-critique after it. Queues use one tab stop per item (interaction model §2.2 amended). | User |
 
 ## Brand source
@@ -200,61 +201,34 @@ separate sessions.
 | D4 visual | `home` 1280/1920 light/dark baselines (win32) |
 | D5 critique ≥ 30/40 | **28 → 27 → 27/40** over three independent runs (baseline 23); the ledger queue is built. The user chose a bounded last batch without another re-score; the remaining gap is in the backlog (acting from the queue, area 2) |
 
+## Area 2: approved at GATE 8.2 (Library + Your work remedies + Jobs Retry/Stop)
+
+Built on `feat/kb-redesign-library` (a WIP commit `f06c721` was pushed to `origin` at the user's request
+on 2026-10-08 for a cloud handoff) and merged into `feat/kb-redesign` with `--no-ff` after the gate.
+Report: `docs/redesign/areas/02-library/README.md`.
+
+| Criterion | Result |
+|---|---|
+| A1 axe on routes | 34/34 routes pass; the 8 library routes (incl. new `/cited-by`) are in `REDESIGNED` with no allowance; `a11y-baseline.json` is now `{}` |
+| A2 component axe | Every new/changed design-system test and the library/desk tests run axe (`checkAxeAfterEach`) |
+| A3 focus to h1 | e2e: document tabs; rail links (incl. lazily loaded pages: `AppShell` now focuses the arriving h1 while focus is still on the link pressed) |
+| A4 focus return | Consequence panels, Help "All shortcuts", re-confirm, act as admin, leave dialog (unit + e2e 2.3) |
+| A5 focus never hidden | Pane scrolls inside its sticky box; table head measured (`--sticky-head`); nothing sticks at 400% zoom; desk drawer overlays (2.4.11 AA holds; see backlog LOW) |
+| 2.1 rows / chrome | **15 rows** at 1440×900, 13 at 1280×800 (scrolled); chrome by height **13.3%** (1440×900) and **14.9%** (1280×800); save bar on one line (e2e). On arrival the grid starts at 361 px (was ~430): 10 rows at 1440×900, 8 at 1280×800 |
+| 2.2 keyboard-only T2 | Pass (e2e, Playwright project "journeys", on its own uploaded copy) |
+| 2.3 withdraw order | Pass (e2e: who cites it, or "unknown, not zero", before the verb) |
+| 2.4 search → passage | Pass (e2e: focus on the passage; desk or "Passages in service") |
+| 2.5 save then approve | Pass (unit: Approve available after save; unsaved counted against the last save) |
+| 2.6 forced colours | Captured: `after-forced-1440-review-desk.jpg` (current row frame, selected rows dashed + checked, pressed filter underlined) |
+| B1 brand lint | Pass |
+| D1 gates | lint, typecheck, api:check, build green; unit 494 pass, 2 known unrelated (Explorer timezone; tracking load flake, passes alone) |
+| D2 budget | **893.45 kB** (−0.81% vs baseline; the library is lazy-loaded) |
+| D4 visual | Baselines (win32) for `home` and 8 library routes × 1280/1920 × light/dark; the desk is view-only (200 rows) |
+| D5 critique | Library **28 → 30/40**; Your work **27/28 → 31/40** (H7 = 3, H10 = 3 on both); detector 0 findings |
+
 ## Next exact action
 
-**Phase 8, area 2: Library: IN PROGRESS (handoff to a cloud session, 2026-10-08).**
-
-- **Branch:** `feat/kb-redesign-library`, pushed to `origin`. Its parent commit is `feat/kb-redesign` @ `5727806`: area 1 merged; that branch is local only, so recreate it with `git branch feat/kb-redesign 5727806` if it is needed. The top commit is a **WIP** commit of the whole of area 2 and has **not** passed GATE 8.2. The user asked for it to be committed and pushed so work can continue in the cloud.
-- **Done:**
-  - Pipeline steps 1–5: craft, harden, clarify, adapt, quieter.
-  - The four reviewers ran (step 6).
-  - Most CRITICAL/HIGH findings are fixed in this commit:
-    - the sticky pane scrolls;
-    - nothing sticks at 400% zoom;
-    - the sticky table head is measured;
-    - live regions stay mounted;
-    - the in-app leave guard;
-    - the honest Return-to-service copy;
-    - no false "Cited by: unknown" fact;
-    - Discard through a consequence panel;
-    - indexing jobs come from publications;
-    - the desk is memoized;
-    - the filter and find are in the URL;
-    - the current row is always rendered;
-    - the Shift+↑/↓ lost update;
-    - `<bdi>` names in panels.
-- **Resume here:**
-  1. **5 unit tests fail after the review fixes**: `cd frontend && npx vitest run src/library`. They are copy and label changes to adapt in the tests:
-     - "Discard it…" is now a consequence panel;
-     - "Exclude 2 passages…";
-     - "requirements you can see cite it now";
-     - the activation panel uses CitingNow;
-     - requirement links now carry "↗ (opens Requirement AI)".
-  2. **Log the MEDIUM/LOW review findings** that aren't fixed in `docs/redesign/backlog.md` (Area 2 rows). Among them:
-     - Jobs polls the whole list (needs a lighter endpoint, BG1);
-     - upload runs files one at a time;
-     - the Back button isn't guarded (no data router);
-     - "Flagged" uses the held (shield) icon;
-     - the 1280 table is squeezed with Jobs open (now scrolls via container queries; re-check);
-     - the reading line has no elapsed time on the record;
-     - `DocumentContext` is drilled through `Outlet` rather than a provider;
-     - YourWork effect dependencies (area 1).
-  3. **Verify:**
-     - `npm run lint && npm run typecheck && npm test && npm run api:check && npm run build && npm run budget && npm run lint:brand`
-     - then `E2E_CHANNEL=msedge npm run e2e` (drop the channel on Linux).
-     - The seeder can time out under load; seed the API on 8130 first, then rerun.
-     - Update the visual baselines for the library routes and `home` (its Your work table gained "Next step"): `npx playwright test visual --update-snapshots`.
-     - Re-measure 2.1 (it was 14.4% at 1280×800 before the review fixes).
-  4. **Re-capture:** `docs/redesign/areas/02-library/after-*.jpg` with `docs/redesign/tools/area-02/after.mjs` (copy it under `frontend/node_modules/.cache/` to run; `KP_API` is the seeded API).
-  5. **Critique:** dual `/impeccable:impeccable critique` of the Library on the live seeded stack, and a re-critique of Your work (target ≥ 30/40; it was 27–28).
-  6. **Report** in AGENTS.md §20 format, then stop at **GATE 8.2**. After "approved", per the brief: merge into `feat/kb-redesign` with `--no-ff`, remove unused `styles/library.css` selectors, and update STATUS.
-- **Measured so far:**
-  - Main chunk 888.79 kB (the library is lazy-loaded);
-  - a11y 34/34 routes with an empty baseline;
-  - 2.2 (T2, keyboard only) passes in e2e;
-  - forced colours captured (`after-forced-1440-review-desk.jpg`).
-- **Decisions (record them at the gate):**
-  - Return to service re-approves the last approved review: the API has no return endpoint and records no reason.
-  - K2 `lang` is a script heuristic (HYPOTHESIS), because documents have no language field.
-  - `#passage-…` focuses the passage on the desk, or in "Passages in service" on the Overview.
-  - The T2 e2e runs last on its own uploaded copy (Playwright project "journeys").
+**Phase 8, area 3: Catalogue curation** (plan `docs/redesign/plans/03-catalogue-curation.md`):
+- **Branch:** `feat/kb-redesign-catalogue-curation` (the plan's name), created from `feat/kb-redesign`.
+- **Carry over from area 2:** the Area 2 rows in `docs/redesign/backlog.md` (focus details, terms, resume signal on Your work, the `error_category` dependency for retry, drafts kept safe).
+- **Then:** GATE 8.3.

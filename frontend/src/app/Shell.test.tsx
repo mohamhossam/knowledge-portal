@@ -161,7 +161,7 @@ describe("the shell", () => {
     expect(jobs).toHaveTextContent("Attempt 2 of 3");
     await userEvent.click(within(jobs).getByRole("button", { name: "Stop: Reading Fault escalation matrix" }));
     expect(cancel).toHaveBeenCalledWith("r", "r-v1", 1);
-    await userEvent.click(within(jobs).getByRole("button", { name: "Try again: Reading Site survey checklist" }));
+    await userEvent.click(within(jobs).getByRole("button", { name: "Try reading again: Reading Site survey checklist" }));
     expect(retry).toHaveBeenCalledWith("f", "f-v1", 1);
     expect(await screen.findByText("Reading 'Site survey checklist' again. Jobs shows its progress.")).toBeInTheDocument();
   });

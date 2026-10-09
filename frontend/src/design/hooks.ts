@@ -84,7 +84,10 @@ export function useDisclosure(fallback?: () => HTMLElement | null) {
   useEffect(() => {
     if (!open || !panel.current) return;
     const first = panel.current.querySelector<HTMLElement>("input:not([type=hidden]),textarea,select,[data-autofocus]");
-    (first ?? panel.current.querySelector<HTMLElement>("h2,h3,[tabindex='-1']"))?.focus();
+    // A side panel sticks (or is fixed): focusing into it must not scroll the page to where it
+    // would sit unstuck, which is the top of a long page (area 2 critique).
+    const position = getComputedStyle(panel.current).position;
+    (first ?? panel.current.querySelector<HTMLElement>("h2,h3,[tabindex='-1']"))?.focus({ preventScroll: position === "sticky" || position === "fixed" });
   }, [open]);
 
   const show = useCallback((event?: { currentTarget: EventTarget | null }) => {

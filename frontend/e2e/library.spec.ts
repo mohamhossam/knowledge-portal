@@ -10,13 +10,14 @@ import { seeded } from "./routes";
 async function chrome(page: import("@playwright/test").Page) {
   return page.evaluate(() => {
     const height = (selector: string) => document.querySelector(selector)?.getBoundingClientRect().height ?? 0;
-    const head = document.querySelector(".lib-desk .ds-table thead")?.getBoundingClientRect();
+    // A header cell, not the <thead>: the cells stick; the head's own box scrolls away.
+    const head = document.querySelector(".lib-desk .ds-table thead th")?.getBoundingClientRect();
     const foot = document.querySelector(".lib-desk .ds-stickyfoot")?.getBoundingClientRect();
     const rows = [...document.querySelectorAll(".lib-desk .ds-table tbody tr")].filter((row) => {
       const box = row.getBoundingClientRect();
       return head && foot && box.top >= head.bottom - 1 && box.bottom <= foot.top + 1;
     }).length;
-    const share = (height(".ds-masthead") + height(".lib-desk .ds-table thead") + height(".lib-desk .ds-stickyfoot")) / window.innerHeight;
+    const share = (height(".ds-masthead") + height(".lib-desk .ds-table thead th") + height(".lib-desk .ds-stickyfoot")) / window.innerHeight;
     return { rows, share, saveBarLines: Math.round(height(".lib-desk .lib-savebar__row") / height(".lib-desk #desk-approve")) };
   });
 }

@@ -33,7 +33,7 @@ const shots = [
     await p.locator(".lib-desk [data-cell-focus]").nth(2).click();
     await p.keyboard.press(" ");
     await p.keyboard.press("Shift+ArrowDown");
-    await p.getByRole("button", { name: "Exclude 2…" }).click();
+    await p.getByRole("button", { name: "Exclude 2 passages…" }).click();
   } },
   { name: "document-in-service", path: `/library/${X}`, full: true },
   { name: "withdraw-consequence", path: `/library/${X}`, act: async (p) => { await p.getByRole("button", { name: "Withdraw…" }).click(); await p.waitForTimeout(600); } },

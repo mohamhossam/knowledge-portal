@@ -92,9 +92,11 @@ describe("the review desk", { timeout: 20_000 }, () => {
     await screen.findByRole("grid", { name: /Passages of version 1/ });
     await userEvent.click(cell("Sheet 1, row 1"));
     expect(cell("Sheet 1, row 1")).toHaveFocus();
+    await waitFor(() => expect(progress()).toHaveTextContent("Seen 1 of 4"), { timeout: 3000 });
     await userEvent.keyboard("j");
     await waitFor(() => expect(cell("Sheet 1, row 2")).toHaveFocus());
-    expect(progress()).toHaveTextContent("Seen 2 of 4");
+    // Seen once a passage stays current for a moment (GATE 8.2), not on the way through.
+    await waitFor(() => expect(progress()).toHaveTextContent("Seen 2 of 4"), { timeout: 3000 });
     // The row as labelled cells, under its sheet's headings (backlog O-3).
     expect(screen.getByRole("complementary", { name: "Passage 2" })).toHaveTextContent("Product Bundle 1Segment SMB");
     await userEvent.keyboard("k");
@@ -104,15 +106,32 @@ describe("the review desk", { timeout: 20_000 }, () => {
   it("goes with n to the next flagged passage not seen yet, before the next not seen (backlog O-1)", async () => {
     openDocument(matrix());
     await screen.findByRole("grid", { name: /Passages of version 1/ });
+    // Each stop is looked at (held for a moment), as a reviewer does, before moving on.
+    const held = (count: number) => waitFor(() => expect(progress()).toHaveTextContent(`Seen ${count} of 4`), { timeout: 3000 });
     await userEvent.click(cell("Sheet 1, row 1"));
+    await held(1);
     await userEvent.keyboard("n");
     await waitFor(() => expect(cell("Sheet 1, row 3")).toHaveFocus());
+    await held(2);
     await userEvent.keyboard("n");
     await waitFor(() => expect(cell("Sheet 2 \\(hidden\\), row 1")).toHaveFocus());
+    await held(3);
     await userEvent.keyboard("n");
     await waitFor(() => expect(cell("Sheet 1, row 2")).toHaveFocus());
+    await held(4);
     await userEvent.keyboard("n");
     expect(await screen.findByText("Every flagged passage and every other passage has been seen.")).toBeInTheDocument();
+  });
+
+  it("counts a passage as seen only once it stays current for a moment (GATE 8.2)", async () => {
+    openDocument(matrix());
+    await screen.findByRole("grid", { name: /Passages of version 1/ });
+    await userEvent.click(cell("Sheet 1, row 1"));
+    await userEvent.keyboard("jjj");
+    await waitFor(() => expect(cell("Sheet 2 \\(hidden\\), row 1")).toHaveFocus());
+    // Passing through rows 1 to 3 didn't count; the row it stopped on does, after a moment.
+    await waitFor(() => expect(progress()).toHaveTextContent("Seen 1 of 4"), { timeout: 3000 });
+    expect(cell("Sheet 1, row 2")).toHaveTextContent("not seen");
   });
 
   it("excludes with x, takes the reason, and goes back to the row with Enter", async () => {
@@ -138,7 +157,7 @@ describe("the review desk", { timeout: 20_000 }, () => {
     await userEvent.keyboard("{Shift>}{ArrowDown}{/Shift}");
     const bar = await screen.findByRole("region", { name: "Selection" });
     expect(bar).toHaveTextContent("2 passages selected");
-    await userEvent.click(within(bar).getByRole("button", { name: "Exclude 2…" }));
+    await userEvent.click(within(bar).getByRole("button", { name: "Exclude 2 passages…" }));
     const panel = screen.getByRole("region", { name: "Exclude 2 passages" });
     expect(within(panel).getByRole("list", { name: "Passages to exclude" })).toHaveTextContent("Sheet 1, row 1");
     await userEvent.type(within(panel).getByRole("textbox", { name: /Why exclude them\?/ }), "Not policy");
@@ -150,6 +169,7 @@ describe("the review desk", { timeout: 20_000 }, () => {
   it("selects a whole sheet at once (backlog O-2)", async () => {
     openDocument(matrix());
     await screen.findByRole("grid", { name: /Passages of version 1/ });
+    await userEvent.click(screen.getByRole("button", { name: "Select a location…" }));
     await userEvent.selectOptions(screen.getByLabelText("Select a location"), "Sheet 1");
     await userEvent.click(screen.getByRole("button", { name: "Select 3 passages" }));
     expect(screen.getByRole("region", { name: "Selection" })).toHaveTextContent("3 passages selected");
@@ -217,6 +237,33 @@ describe("the review desk", { timeout: 20_000 }, () => {
     await waitFor(() => expect(said).toHaveFocus());
   });
 
+  it("marks the passages seen on their rows, and goes past the 200 rows shown with j and End (area 2 critique)", async () => {
+    const many = Array.from({ length: 205 }, (_, index) => block(`m${index + 1}`, index + 1, `Line ${index + 1}`, `Passage text ${index + 1}`, ""));
+    const document = matrix();
+    document.versions[0]!.blocks = many as never;
+    document.versions[0]!.warning_details = [];
+    openDocument(document);
+    await screen.findByRole("grid", { name: /Passages of version 1/ });
+    expect(within(grid()).getAllByRole("row")).toHaveLength(201);
+    await userEvent.click(within(grid()).getByRole("rowheader", { name: /^Line 1(,|$)/ }));
+    // Seen is said on the row: the hidden "not seen" goes once the passage has been looked at.
+    await waitFor(() => expect(within(grid()).getByRole("rowheader", { name: /^Line 1(,|$)/ })).not.toHaveTextContent("not seen"), { timeout: 3000 });
+    expect(within(grid()).getByRole("rowheader", { name: /^Line 2(,|$)/ })).toHaveTextContent("not seen");
+    await userEvent.keyboard("{End}");
+    await waitFor(() => expect(within(grid()).getByRole("rowheader", { name: /^Line 205(,|$)/ })).toHaveFocus());
+    expect(within(grid()).getAllByRole("row")).toHaveLength(206);
+  });
+
+  it("opens every shortcut in Help without leaving the desk", async () => {
+    const opened = vi.fn();
+    window.addEventListener("knowledge-portal:shortcuts", opened);
+    openDocument(matrix());
+    await screen.findByRole("grid", { name: /Passages of version 1/ });
+    await userEvent.click(screen.getByRole("button", { name: "All shortcuts" }));
+    expect(opened).toHaveBeenCalledTimes(1);
+    window.removeEventListener("knowledge-portal:shortcuts", opened);
+  });
+
   it("opens at the passage a search result names, focused (2.4)", async () => {
     openDocument(matrix(), "/library/d#passage-b3");
     await screen.findByRole("grid", { name: /Passages of version 1/ });
@@ -239,7 +286,7 @@ describe("withdraw and return to service", { timeout: 20_000 }, () => {
     const withdraw = vi.spyOn(api, "withdraw").mockResolvedValue(inService());
     await userEvent.click(await screen.findByRole("button", { name: "Withdraw…" }));
     const panel = screen.getByRole("region", { name: "Withdraw 'Product matrix'" });
-    const cites = await within(panel).findByText(/requirement cites it now/);
+    const cites = await within(panel).findByText(/requirement you can see cites it now/);
     const button = within(panel).getByRole("button", { name: "Withdraw 'Product matrix'" });
     expect(cites.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     await userEvent.click(button);

@@ -68,7 +68,8 @@ export function ConsequencePanel({
     >
       <h2 id={`${id}-title`} tabIndex={-1} className="ds-consequence__title">
         {tone === "danger" && <AlertTriangle size={16} aria-hidden="true" />}
-        {title}
+        {/* One flex item: a name in <bdi> inside it doesn't pick up the gap. */}
+        <span>{title}</span>
       </h2>
       {/* Focus lands in the reason field: these are its description, so the consequence is heard first. */}
       <p id={`${id}-happens`} className="ds-consequence__happens">{happens}</p>

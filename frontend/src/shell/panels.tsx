@@ -49,6 +49,7 @@ export function JobsPanel({ jobs, state, onRetry, onAct, said, onClose, panelRef
           ...job,
           fix: fixLabel && job.subjectHref ? <ButtonLink to={job.subjectHref}>{fixLabel}<span className="ds-visually-hidden">: {job.subject}</span></ButtonLink> : undefined,
           onRetry: retry && document ? () => onAct(document, retry) : undefined,
+          retryLabel: retry === "retry" ? "Try reading again" : retry === "retry-indexing" ? "Try indexing again" : undefined,
           onCancel: stop && document ? () => onAct(document, "cancel") : undefined,
         }))}
       />
@@ -66,7 +67,10 @@ export function HelpPanel({ path, section, onClose, panelRef }: PanelProps & { p
     if (section !== "shortcuts") return;
     const heading = document.getElementById("ds-help-keys");
     heading?.setAttribute("tabindex", "-1");
-    heading?.focus();
+    // Inside the sticky drawer: scroll the drawer to it, never the page (the reviewer keeps their place).
+    heading?.focus({ preventScroll: true });
+    const drawer = heading?.closest<HTMLElement>(".ds-drawer");
+    if (drawer && heading) drawer.scrollTop = heading.offsetTop - drawer.offsetTop;
   }, [section]);
   return (
     <Drawer title="Help" onClose={onClose} panelRef={panelRef}>

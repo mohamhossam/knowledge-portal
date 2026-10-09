@@ -13,7 +13,7 @@ conflicts this resolves are in `../ia/navigation.md` §5.
 | **In service** | The published version requirement work cites now; also the catalogue version requirement work maps against now | In force, active (in UI), edition in force |
 | **Passage** | One reviewed unit of a document's text that can be cited | Chunk, block, field |
 | **Review** | Deciding passages (keep, edit, exclude) or deciding suggestions | Galley |
-| **Seen** | A passage or suggestion you have opened or moved through in this review | — |
+| **Seen** | A passage or suggestion that stayed the current one for a moment (about 0.6 s) in this review; passing through doesn't count (GATE 8.2) | — |
 | **Flagged** | Has a warning from reading | — |
 | **Blocks approval** | A warning that must be resolved (exclude the passage, or upload a new version) | Blocking warning |
 | **Approve and publish** | Make a reviewed version citable | — |

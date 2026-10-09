@@ -143,3 +143,8 @@
 .ds-consequence__failure:empty {
   position: absolute;
 }
+
+/* Its parts shrink to the panel (a long line clamps or wraps), so it fits a narrow pane. */
+.ds-consequence > * {
+  min-inline-size: 0;
+}

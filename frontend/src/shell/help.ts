@@ -41,7 +41,7 @@ const PAGES: { match: (path: string) => boolean; entry: HelpEntry }[] = [
       ],
       terms: [
         ["Passage", "One reviewed unit of a document's text that can be cited."],
-        ["Seen", "A passage you have opened or moved through in this review, in this browser tab."],
+        ["Seen", "A passage that stayed the current one for a moment in this review, in this browser tab. Passing through doesn't count."],
         ["Flagged", "Has a warning from reading."],
         ["Blocks approval", "A warning that must be resolved: exclude the passage, or upload a new version."],
         ["In service", "The published version requirement work cites now."],

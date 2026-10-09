@@ -21,6 +21,8 @@ export type RouteDef = {
   path: (seeded: Seeded) => string | undefined;
   /** CSS selectors whose content changes between seeds (dates, ids), masked in screenshots. */
   mask?: string[];
+  /** The view only, not the whole page: a review desk renders 200 rows (about 10,000 px). */
+  viewOnly?: boolean;
 };
 
 const at = (path: string) => () => path;
@@ -30,8 +32,9 @@ export const ROUTES: RouteDef[] = [
   { key: "reminders", path: at("reminders") },
   // Dates are the seed's day: masked, so the screenshots hold on any later day.
   { key: "library", path: at("library"), mask: ["tbody td:last-child"] },
-  { key: "library-search", path: at("library/search?q=coverage") },
-  { key: "library-review", path: (s) => s.reviewDocument && `library/${s.reviewDocument}` },
+  // The offline search orders tied results differently from seed to seed: the list is masked.
+  { key: "library-search", path: at("library/search?q=coverage"), mask: [".lib-results"] },
+  { key: "library-review", path: (s) => s.reviewDocument && `library/${s.reviewDocument}`, viewOnly: true },
   { key: "library-document", path: (s) => s.serviceDocument && `library/${s.serviceDocument}`, mask: [".ds-provenance", ".lib-reconfirm__line", ".ds-facts dd:first-of-type"] },
   { key: "library-versions", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/versions`, mask: [".ds-provenance", ".lib-reconfirm__line", "tbody td:nth-child(3)", "tbody th"] },
   { key: "library-cited-by", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/cited-by`, mask: [".ds-provenance", ".lib-reconfirm__line"] },

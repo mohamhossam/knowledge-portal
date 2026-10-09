@@ -289,7 +289,13 @@ export function DecisionButtons({
  * §2.2: a grid's keys, said once under it, with the way to every shortcut
  * (WCAG 3.2.6). Each key is its own <kbd>, so "↑ ↓ j k" reads as four keys.
  */
-export function KeysHint({ keys, moreHref, link: Link }: { keys: { keys: string[]; does: string }[]; moreHref?: string; link?: LinkLike }) {
+export function KeysHint({ keys, moreHref, link: Link, onMore }: {
+  keys: { keys: string[]; does: string }[];
+  moreHref?: string;
+  link?: LinkLike;
+  /** Opens every shortcut in place (a Help panel beside the page) instead of following a link. */
+  onMore?: (opener: HTMLElement) => void;
+}) {
   return (
     <p className="ds-keys">
       <span className="ds-keys__label">Keys</span>
@@ -301,7 +307,9 @@ export function KeysHint({ keys, moreHref, link: Link }: { keys: { keys: string[
           {item.does}
         </span>
       ))}
-      {moreHref && (Link ? <Link href={moreHref} className="ds-keys__more">All shortcuts</Link> : <a href={moreHref} className="ds-keys__more">All shortcuts</a>)}
+      {onMore ? (
+        <button type="button" className="ds-button ds-button--link ds-keys__more" onClick={(event) => onMore(event.currentTarget)}>All shortcuts</button>
+      ) : moreHref && (Link ? <Link href={moreHref} className="ds-keys__more">All shortcuts</Link> : <a href={moreHref} className="ds-keys__more">All shortcuts</a>)}
     </p>
   );
 }

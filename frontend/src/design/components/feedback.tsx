@@ -122,6 +122,8 @@ export type Job = {
   /** The specific fix when retrying can't help ("Upload a new version"). */
   fix?: ReactNode;
   onRetry?: () => void;
+  /** The retry's words when "Try again" is too vague ("Try reading again"), the same as at the object. */
+  retryLabel?: string;
   onCancel?: () => void;
   subjectHref?: string;
 };
@@ -148,7 +150,7 @@ export function JobTray({ jobs, empty = "No jobs are running. Reading, indexing 
           {(job.onRetry || job.onCancel || job.fix) && (
             <div className="ds-actions">
               {job.fix}
-              {job.onRetry && <Button onClick={job.onRetry}>Try again<span className="ds-visually-hidden">: {job.kind} {job.subject}</span></Button>}
+              {job.onRetry && <Button onClick={job.onRetry}>{job.retryLabel ?? "Try again"}<span className="ds-visually-hidden">: {job.kind} {job.subject}</span></Button>}
               {job.onCancel && <Button variant="quiet" onClick={job.onCancel}>Stop<span className="ds-visually-hidden">: {job.kind} {job.subject}</span></Button>}
             </div>
           )}

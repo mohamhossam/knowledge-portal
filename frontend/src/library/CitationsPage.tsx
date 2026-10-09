@@ -29,7 +29,7 @@ const TARGET: Record<string, string> = {
 
 /** A link that opens Requirement AI says so (microcopy §1). */
 function Leaves() {
-  return <><span aria-hidden="true"> ↗</span><span className="ds-visually-hidden"> (opens Requirement AI)</span></>;
+  return <>{" "}<span aria-hidden="true">↗</span>{" "}<span className="ds-visually-hidden">(opens Requirement AI)</span></>;
 }
 
 /** Requirement AI didn't answer: the count is unknown, never zero (§11). */

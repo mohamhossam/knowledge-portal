@@ -7,6 +7,7 @@ import { REQUIREMENT_APP_URL } from "../auth/paths";
 import { AppShell, LiveMessage, MastheadButton, type NavItem } from "../design/components";
 import { useDisclosure, useFocusAfterRender } from "../design/hooks";
 import { RouterLink } from "../shell/links";
+import { SHORTCUTS_EVENT } from "../shell/shortcuts";
 import { AccountPanel, HelpPanel, JobsPanel } from "../shell/panels";
 import { densityFor, usePreferences } from "../shell/preferences";
 import { useGlobalShortcuts } from "../shell/useGlobalShortcuts";
@@ -75,6 +76,17 @@ export function Shell() {
   // "?" opens Help at its shortcuts (§2.2); "g j" opens Jobs.
   const handlers = useMemo(() => ({ help: openShortcuts, jobs: () => show("jobs") }), [show, openShortcuts]);
   useGlobalShortcuts(handlers);
+  // A grid's "All shortcuts" link opens Help at its keys in place: no navigation, and Esc or Close
+  // hands focus back to the link, so the reviewer keeps their place (area 2 critique).
+  useEffect(() => {
+    const open = (event: Event) => {
+      const opener = (event as CustomEvent<HTMLElement | null>).detail;
+      openShortcuts();
+      show("help", { currentTarget: opener });
+    };
+    window.addEventListener(SHORTCUTS_EVENT, open);
+    return () => window.removeEventListener(SHORTCUTS_EVENT, open);
+  }, [openShortcuts, show]);
 
   const helpParam = params.get("help");
   const isOpen = (panel: Panel) => (side.open && which === panel) || (panel === "help" && helpParam !== null && !(side.open && which !== "help"));

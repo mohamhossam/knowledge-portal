@@ -513,3 +513,84 @@
   white-space: nowrap;
   vertical-align: bottom;
 }
+
+/* Panels opened in the passage pane fit it: their lines wrap or clamp, never widen it. */
+.lib-desk .ds-split__pane > * {
+  min-inline-size: 0;
+}
+
+.lib-desk .ds-split__pane .lib-oneline {
+  display: block;
+}
+
+/*
+ * A narrow page (a side panel open, or zoom): the documents table keeps a readable title
+ * column and scrolls sideways inside its own frame (A7), rather than crushing the titles.
+ */
+@container main (max-width: 48rem) {
+  .lib > .ds-table-wrap > .ds-table {
+    min-inline-size: 58rem;
+  }
+}
+
+.lib-desk .ds-split__pane .ds-lines,
+.lib-desk .ds-split__pane .ds-lines > li {
+  min-inline-size: 0;
+  overflow: hidden;
+}
+
+/* A passage already seen: a quiet check after its location. */
+.lib-seen {
+  margin-inline-start: var(--space-1);
+  color: var(--color-ink-3);
+  vertical-align: -1px;
+}
+
+/*
+ * The passage pane stays clear of the masthead at the end of the list: the page ends at the
+ * save bar (no extra padding under it), and the pane is one gap shorter than the room.
+ */
+.ds-main:has(> .lib .lib-desk) {
+  padding-block-end: 0;
+}
+
+@container main (min-width: 60rem) {
+  .lib-desk .ds-split__pane {
+    min-block-size: calc(100vh - var(--sticky-top) - var(--sticky-state) - var(--sticky-bottom) - var(--space-2));
+    max-block-size: calc(100vh - var(--sticky-top) - var(--sticky-state) - var(--sticky-bottom) - var(--space-2));
+  }
+}
+
+/*
+ * On the review desk a side panel (Help, Jobs, Account) overlays the passage pane instead of
+ * narrowing the page: otherwise the split stacks and the pane drops below every row, exactly
+ * while someone keeps Help open to learn the keys (area 2 re-critique). The list stays in view.
+ */
+.ds-shell--panel:has(.lib-desk) .ds-shell__body {
+  grid-template-columns: var(--rail-width) minmax(0, 1fr);
+}
+
+@media (min-width: 1024px) {
+  .ds-shell--panel:has(.lib-desk) .ds-drawer {
+    position: fixed;
+    inset-block: var(--sticky-top) 0;
+    inset-inline-end: 0;
+    max-block-size: none;
+  }
+}
+
+/* The desk's head row: progress, then the notes about the whole file beside it (GATE 8.2). */
+.lib-deskhead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-4);
+}
+
+.lib-deskhead > .lib-progress {
+  flex: 1 1 36rem;
+}
+
+.lib-deskhead > .lib-filenotes {
+  flex: 0 1 auto;
+}
