@@ -59,7 +59,7 @@ export function LandscapeHero() {
         <div>
           <h1>SMB architecture</h1>
           <p className="cl-lede">
-            <strong>{data.systems.length} systems</strong> in {domains} TM Forum domains, joined by the integration layer. <strong>{recorded} integrations</strong> across {data.journeys.length} modelled journeys. {data.status === "draft" ? "A draft" : "Published"}, built only from {data.sources.map((source) => source.short).join(" and ")}.
+            <strong>{data.systems.length} systems</strong> in {domains} TM Forum domains, joined by the integration layer. <strong>{recorded} calls</strong> between <strong>{linkCounts.size} pairs of systems</strong>, across {data.journeys.length} modelled journeys. {data.status === "draft" ? "A draft" : "Published"}, built only from {data.sources.map((source) => source.short).join(" and ")}.
           </p>
         </div>
         <div className="cl-head-actions">
@@ -89,7 +89,7 @@ export function LandscapeHero() {
       <div className="cl-toolbar">
         <div className="cl-chips" role="group" aria-label="Show on the map">
           <button type="button" className="cl-chip" aria-pressed={showLines} onClick={() => setShowLines((value) => !value)}>
-            Integrations <small>{linkCounts.size} links</small>
+            Show links <small>{linkCounts.size} system pairs</small>
           </button>
           {selected && (
             <button type="button" className="cl-chip" onClick={() => select(null)}>

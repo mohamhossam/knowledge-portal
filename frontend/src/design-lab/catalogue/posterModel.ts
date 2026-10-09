@@ -7,8 +7,8 @@
 import { type CatalogueData, journeyView } from "../../architecture/adapter";
 import type { Integration, JourneyView, System } from "../../architecture/model";
 
-const BOX = { w: 128, h: 42, gapX: 10, gapY: 8 };
-const BAND = { padTop: 30, padSide: 12, padBottom: 12, gap: 10 };
+const BOX = { w: 128, h: 50, gapX: 10, gapY: 8 };
+const BAND = { padTop: 34, padSide: 12, padBottom: 12, gap: 10 };
 const MAIN_W = 860;
 const SIDE_W = 180;
 export const POSTER_W = MAIN_W + BAND.gap + SIDE_W;
@@ -135,15 +135,46 @@ export function centre(box: Box): [number, number] {
   return [box.x + box.w / 2, box.y + box.h / 2];
 }
 
-/** An orthogonal connector between two boxes: out of the source, across the gutter, into the target. */
-export function elbow(from: Box, to: Box): string {
-  const [x1, y1] = centre(from);
-  const [x2, y2] = centre(to);
-  if (Math.abs(y1 - y2) < 2) return `M${x1} ${y1}H${x2}`;
-  const down = y2 > y1;
+/**
+ * An orthogonal connector that keeps to the gutters: out of the source into the
+ * gap beside its row, along the column gap beside the target, into the target.
+ * A call to or from the integration layer runs along the spine, like a bus.
+ * Points run from `from` to `to`, so an arrow at the end lands on the called system.
+ */
+export function route(from: Box, to: Box, spine?: Band): [number, number][] {
+  const gx = BOX.gapX / 2;
+  const gy = BOX.gapY / 2;
+  const [x1] = centre(from);
+  const [x2] = centre(to);
+  const onSpine = (box: Box) => spine !== undefined && box.y >= spine.y && box.y + box.h <= spine.y + spine.h;
+  if (spine && onSpine(from) !== onSpine(to)) {
+    const [other, hub] = onSpine(to) ? [from, to] : [to, from];
+    const [ox] = centre(other);
+    const below = other.y > spine.y;
+    const busY = below ? spine.y + spine.h - 3 : spine.y + 3;
+    const side = ox < hub.x ? other.x - gx : other.x + other.w + gx;
+    const points: [number, number][] = [
+      [ox, below ? other.y : other.y + other.h],
+      [ox, below ? other.y - gy : other.y + other.h + gy],
+      [side, below ? other.y - gy : other.y + other.h + gy],
+      [side, busY],
+      [ox < hub.x ? hub.x : hub.x + hub.w, busY],
+    ];
+    return onSpine(to) ? points : points.reverse();
+  }
+  if (Math.abs(from.y - to.y) < 2) {
+    const y = from.y + from.h + gy;
+    return [[x1, from.y + from.h], [x1, y], [x2, y], [x2, to.y + to.h]];
+  }
+  const down = to.y > from.y;
   const sy = down ? from.y + from.h : from.y;
   const ty = down ? to.y : to.y + to.h;
-  const mid = Math.round((sy + ty) / 2);
-  return `M${x1} ${sy}V${mid}H${x2}V${ty}`;
+  const rowGutter = down ? sy + gy : sy - gy;
+  const targetGutter = down ? ty - gy : ty + gy;
+  const column = x1 <= x2 ? to.x - gx : to.x + to.w + gx;
+  return [[x1, sy], [x1, rowGutter], [column, rowGutter], [column, targetGutter], [x2, targetGutter], [x2, ty]];
 }
 
+export function toPath(points: [number, number][]): string {
+  return points.map(([x, y], index) => `${index ? "L" : "M"}${x} ${y}`).join("");
+}

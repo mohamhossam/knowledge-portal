@@ -79,7 +79,7 @@ export function JourneyFlow() {
     }
   };
   // Lanes drawn tighter than the export's geometry, so more of the flow fits the viewport.
-  const LANE = 66;
+  const LANE = 76;
   const laneY = (y: number) => Math.floor(y / GEOMETRY.laneHeight) * LANE + LANE / 2;
   const W = layout.width;
   const H = layout.lanes.length * LANE;
@@ -203,7 +203,7 @@ export function JourneyFlow() {
               );
             })}
             {[...layout.placed.values()].map(({ step: item, x, y: rawY, width, height: rawHeight }) => {
-              const height = item.kind === "task" ? 52 : rawHeight;
+              const height = item.kind === "task" ? 64 : rawHeight;
               const y = laneY(rawY + rawHeight / 2) - height / 2;
               if (item.kind === "task") {
                 const calls = view.integrations.filter((call) => call.step === item.id).length;
@@ -223,8 +223,8 @@ export function JourneyFlow() {
                     <text className="num" x={x + 8} y={y + 15}>
                       {number.get(item.id)}
                     </text>
-                    {wrap(item.name, 21, 2).map((line, row) => (
-                      <text key={row} x={x + 8} y={y + 31 + row * 14}>
+                    {wrap(item.name, 21, 3).map((line, row) => (
+                      <text key={row} x={x + 8} y={y + 30 + row * 14}>
                         {line}
                       </text>
                     ))}
@@ -258,12 +258,9 @@ export function JourneyFlow() {
         <aside className="cl-insp" aria-live="polite">
           {step ? (
             <>
-              <p className="cl-sub">
-                Step {number.get(step.id)} of {tasks.length}
-              </p>
               <h2>{step.name}</h2>
               <p className="cl-sub">
-                {laneTitle(step.lane)}
+                Step {number.get(step.id)} of {tasks.length} · {laneTitle(step.lane)}
                 {step.role ? ` · ${ROLE_WORDS[step.role]}` : ""}
               </p>
               {step.detail && <p>{step.detail}</p>}

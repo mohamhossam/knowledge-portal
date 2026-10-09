@@ -16,11 +16,12 @@ function open(path: string) {
   );
 }
 
-describe("the catalogue direction mock-ups, on the seeded Business Pro Plus catalogue", () => {
+// Each test renders the whole poster and runs axe on it: slow on a busy machine.
+describe("the catalogue direction mock-ups, on the seeded Business Pro Plus catalogue", { timeout: 30_000 }, () => {
   it("draws the whole landscape as a poster and shows what a picked system talks to", async () => {
     const { container } = open("");
     expect(screen.getByRole("heading", { level: 1, name: "SMB architecture" })).toBeInTheDocument();
-    expect(screen.getByText(/57 integrations/)).toBeInTheDocument();
+    expect(screen.getByText("57 calls")).toBeInTheDocument();
     const map = screen.getByRole("region", { name: /SMB architecture map/ });
     expect(within(map).getAllByRole("button")).toHaveLength(46);
 

@@ -77,36 +77,103 @@ function ProductTabs({ offering, current }: { offering: Offering; current: "over
   );
 }
 
-/** The bundle drawn as what the customer gets: the device at its core, what is always in it, what can be added. */
+/**
+ * The bundle drawn in the poster's notation: the device at the hub, each
+ * component on a branch of one bus, the systems that deliver it beside it.
+ * Optional components hang on dashed branches. Offer codes sit in a disclosure.
+ */
 function Bundle({ offering }: { offering: Offering }) {
   const data = useLabData();
   const hub = offering.components.find((item) => /device|router/i.test(item.name)) ?? offering.components.find((item) => /cpe/i.test(item.name)) ?? offering.components[0];
-  const core = offering.components.filter((item) => item !== hub && item.mandatory !== false);
-  const optional = offering.components.filter((item) => item !== hub && item.mandatory === false);
+  const rest = offering.components.filter((item) => item !== hub).sort((a, b) => Number(a.mandatory === false) - Number(b.mandatory === false));
   const systems = (component: Component) =>
     component.systems
       .map((item) => data.systems.find((system) => system.id === item.systemId)?.name ?? item.systemId)
       .slice(0, 3)
       .join(" · ");
-  const tile = (component: Component, kind: string) => (
-    <div key={component.id} className={`cl-comp ${kind}`}>
-      <strong>{component.name}</strong>
-      <span>{[component.offerCode, systems(component)].filter(Boolean).join(" · ") || "No code or system stated"}</span>
-    </div>
-  );
+  const W = 600;
+  const ROW = 40;
+  const GAP = 8;
+  const top = 34;
+  const H = top + rest.length * (ROW + GAP) + 4;
+  const trunk = 214;
+  const boxX = 238;
+  const centreY = (index: number) => top + index * (ROW + GAP) + ROW / 2;
+  const hubY = (centreY(0) + centreY(rest.length - 1)) / 2;
+  const hubName = hub ? hub.name.replace(/\s*\(.*\)\s*$/, "") : "";
+  const hubModel = hub ? (/\((.*)\)/.exec(hub.name)?.[1] ?? "") : "";
   return (
     <section className="cl-bundle" aria-labelledby="cl-bundle-h">
       <h2 id="cl-bundle-h">
         What's in the bundle<small>{offering.components.length} components</small>
       </h2>
-      {hub && <div className="cl-bundle-core">{tile(hub, "hub")}</div>}
-      <div className="cl-bundle-core">{core.map((component) => tile(component, ""))}</div>
-      {optional.length > 0 && (
-        <div className="cl-bundle-opt">
-          <span>Optional</span>
-          {optional.map((component) => tile(component, "optional"))}
-        </div>
-      )}
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        role="img"
+        aria-label={`${hub?.name ?? "The bundle"}, with ${rest.filter((item) => item.mandatory !== false).map((item) => item.name).join(", ")}${rest.some((item) => item.mandatory === false) ? `; optional: ${rest.filter((item) => item.mandatory === false).map((item) => item.name).join(", ")}` : ""}`}
+      >
+        <text className="tag" x={boxX} y={18}>
+          Always included, then optional
+        </text>
+        {rest.length > 0 && <path className="branch" d={`M${trunk} ${centreY(0)}V${centreY(rest.filter((item) => item.mandatory !== false).length - 1 >= 0 ? rest.filter((item) => item.mandatory !== false).length - 1 : 0)}`} />}
+        {hub && (
+          <g className="hub">
+            <path className="branch" d={`M190 ${hubY}H${trunk}`} />
+            <rect x={8} y={hubY - 40} width={182} height={80} rx={4} />
+            <text className="name" x={22} y={hubY - 12}>
+              {hubName}
+            </text>
+            {hubModel && (
+              <text className="sys" x={22} y={hubY + 8}>
+                {hubModel}
+              </text>
+            )}
+            <text className="sys" x={22} y={hubY + 28}>
+              {systems(hub)}
+            </text>
+          </g>
+        )}
+        {rest.map((component, index) => {
+          const y = centreY(index);
+          const optional = component.mandatory === false;
+          return (
+            <g key={component.id} className={`comp${optional ? " optional" : ""}`}>
+              <path className={`branch${optional ? " optional" : ""}`} d={optional ? `M${trunk} ${centreY(index - 1)}V${y}H${boxX}` : `M${trunk} ${y}H${boxX}`} />
+              <rect x={boxX} y={y - ROW / 2} width={W - boxX - 8} height={ROW} rx={3} />
+              <text className="name" x={boxX + 12} y={y + 5}>
+                {component.name}
+                {optional ? " · optional" : ""}
+              </text>
+              <text className="sys" x={W - 20} y={y + 5} textAnchor="end">
+                {systems(component)}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+      <ul className="cl-bundle-list">
+        {[hub, ...rest].filter((item): item is Component => Boolean(item)).map((component) => (
+          <li key={component.id} className={component === hub ? "hub" : component.mandatory === false ? "optional" : ""}>
+            <strong>
+              {component.name}
+              {component.mandatory === false ? " · optional" : ""}
+            </strong>
+            <span>{systems(component)}</span>
+          </li>
+        ))}
+      </ul>
+      <details>
+        <summary>Offer and service codes</summary>
+        <ul className="cl-points">
+          {offering.components.map((component) => (
+            <li key={component.id}>
+              <span>
+                <strong>{component.name}.</strong> {[component.offerCode, component.specCode].filter(Boolean).join(" · ") || "No code stated"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </details>
     </section>
   );
 }
@@ -124,10 +191,8 @@ function Section({ title, note, children }: { title: string; note?: string; chil
 }
 
 export function ProductOverview() {
-  const data = useLabData();
   const offering = useOffering();
   if (!offering) return <p>No such product in this catalogue version.</p>;
-  const journeys = data.journeys.filter((journey) => journey.offeringId === offering.id);
   const characteristics = [...new Set(offering.plans.flatMap((plan) => plan.characteristics.map((item) => item.name)))];
   const priced = offering.plans.some((plan) => plan.characteristics.some((item) => /price|fee|aed/i.test(item.name)));
   return (
@@ -139,24 +204,6 @@ export function ProductOverview() {
           <p className="cl-prop">{offering.summary}</p>
           <div style={{ marginTop: 10 }}>
             <EvidenceTag evidence={offering.evidence} />
-          </div>
-          <div className="cl-facts">
-            <div>
-              <span>Plans</span>
-              <b>{offering.plans.length}</b>
-            </div>
-            <div>
-              <span>Components</span>
-              <b>{offering.components.length}</b>
-            </div>
-            <div>
-              <span>Order types</span>
-              <b>{offering.orderTypes.length}</b>
-            </div>
-            <div>
-              <span>Journeys modelled</span>
-              <b>{journeys.length}</b>
-            </div>
           </div>
           <div className="cl-hero-actions">
             <Link className="cl-btn primary" to={`${LAB}/products/${offering.id}/architecture`}>
@@ -349,14 +396,13 @@ export function ProductArchitecture() {
         <aside className="cl-insp">
           {call && (
             <>
-              <p className="cl-sub">
-                Call {current + 1}
-                {step ? ` · during “${step.name}”` : ""}
-              </p>
               <h2>
                 {name(call.from)} → {name(call.to)}
               </h2>
-              {call.via && <p className="cl-sub">through {name(call.via)}</p>}
+              <p className="cl-sub">
+                {call.via ? `Through ${name(call.via)}. ` : ""}
+                {step ? `During “${step.name}”.` : ""}
+              </p>
               <p style={{ marginTop: 6 }}>{call.purpose}</p>
               <div className="cl-kv">
                 <span>Interface</span>

@@ -5,7 +5,7 @@
 import { type CSSProperties, useMemo } from "react";
 
 import type { Integration } from "../../architecture/model";
-import { elbow, partnersOf, type PosterLayout } from "./posterModel";
+import { partnersOf, type PosterLayout, route, toPath } from "./posterModel";
 
 type Lit = { order: number; channelEntry?: boolean };
 
@@ -35,8 +35,9 @@ export function Poster({
   const partners = useMemo(() => new Map(selected ? partnersOf(selected, linkCounts).map((item) => [item.id, item.count]) : []), [selected, linkCounts]);
   const journeyMode = Boolean(lit);
   const box = (id?: string) => (id ? layout.boxes.get(id) : undefined);
+  const spine = layout.bands.find((band) => band.id === "integration");
 
-  const lines: { d: string; key: string; className: string; width: number }[] = [];
+  const lines: { d: string; key: string; className: string; width: number; ends: [number, number][] }[] = [];
   if (journeyMode && calls) {
     calls.forEach((call, index) => {
       const hops: [string | undefined, string | undefined][] = call.via ? [[call.from, call.via], [call.via, call.to]] : [[call.from, call.to]];
@@ -45,7 +46,8 @@ export function Poster({
         const to = box(b);
         if (!from || !to || from === to) continue;
         const now = index === current;
-        lines.push({ d: elbow(from, to), key: `${call.id}-${a}-${b}`, className: now ? "now" : "call", width: now ? 3.5 : 1.6 });
+        const points = route(from, to, spine);
+        lines.push({ d: toPath(points), key: `${call.id}-${a}-${b}${now ? `-${current}` : ""}`, className: now ? "now" : "call", width: now ? 3.5 : 1.6, ends: [] });
       }
     });
   } else {
@@ -55,7 +57,9 @@ export function Poster({
       const to = box(b);
       if (!from || !to) continue;
       const mine = selected !== null && (a === selected || b === selected);
-      lines.push({ d: elbow(from, to), key, className: mine ? "mine" : selected ? "other" : "all", width: mine ? 1.5 + Math.min(count, 4) * 0.6 : 1 + Math.min(count, 4) * 0.25 });
+      const points = route(from, to, spine);
+      const ends = mine ? [points[0], points[points.length - 1]].filter((point): point is [number, number] => point !== undefined) : [];
+      lines.push({ d: toPath(points), key, className: mine ? "mine" : selected ? "other" : "all", width: mine ? 1.5 + Math.min(count, 4) * 0.6 : 1 + Math.min(count, 4) * 0.25, ends });
     }
     lines.sort((x, y) => (x.className === "mine" ? 1 : 0) - (y.className === "mine" ? 1 : 0));
   }
