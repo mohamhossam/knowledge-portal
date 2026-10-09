@@ -22,9 +22,9 @@ Put TLS in front of `edge`. The API, worker, database, scanner and metrics ports
 
 ## First deployment
 
-1. Pick a release. `KNOWLEDGE_IMAGE_TAG` names it, for both images. A release must include
-   ADR-0104 to run without requirement work; `v0.1.0` predates it and refuses
-   `APP_ENV=production` unless `REQUIREMENT_API_BASE_URL` is set.
+1. Pick a release, `v0.2.0` or later (`CHANGELOG.md`). `KNOWLEDGE_IMAGE_TAG` names it, for both
+   images. `v0.1.0` predates ADR-0104 and refuses `APP_ENV=production` unless
+   `REQUIREMENT_API_BASE_URL` is set.
 2. Create the settings file and fill in every blank:
 
    ```bash
