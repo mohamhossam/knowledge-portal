@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Layered Architecture Poster · SMB architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<style>
+:root{--maroon:#4b0f1e;--red:#e00800;--ink:#1f1b1a;--ink2:#4a4542;--biz:#fff1b8;--app:#cfe6f5;--svc:#e2eff8;--tech:#d7eecb;--ext:#ece6f3;--ent:#ebe9e3;--spine:#2b5a6e;--rule:#d9d6cc}
+*{box-sizing:border-box;margin:0}body{width:1440px;height:900px;overflow:hidden;font-family:Archivo,system-ui,sans-serif;color:var(--ink);background:#fff;font-size:15px}
+.mast{height:48px;background:var(--maroon);color:#fff;display:flex;align-items:center;gap:12px;padding:0 20px}
+.logo{width:28px;height:28px;background:var(--red);border-radius:3px;display:grid;place-items:center;font-weight:800}
+.mast b{font-stretch:88%;font-size:16px}.mast nav{margin-left:28px;display:flex;gap:22px;font-size:14px;opacity:.85}.mast .me{margin-left:auto;font-size:14px;opacity:.85}
+.mast nav .on{opacity:1;box-shadow:inset 0 -3px 0 #fff;padding-bottom:13px;margin-bottom:-14px}
+.page{padding:18px 28px 0}
+h1{font-size:30px;font-weight:720;font-stretch:88%}
+.lede{color:var(--ink2);margin-top:4px}
+.tabs{display:flex;gap:26px;margin-top:12px;border-bottom:1px solid var(--rule);font-size:14px;font-weight:600;color:var(--ink2)}
+.tabs span{padding:10px 0}.tabs .on{color:var(--maroon);box-shadow:inset 0 -3px 0 var(--maroon)}
+.bar{display:flex;gap:8px;align-items:center;margin:12px 0}
+.chip{height:30px;padding:0 12px;border:1px solid #8a8579;border-radius:15px;display:inline-flex;align-items:center;font-size:14px;gap:6px}
+.chip.on{background:var(--maroon);color:#fff;border-color:var(--maroon)}
+.legend{margin-left:auto;display:flex;gap:14px;font-size:13px;color:var(--ink2)}.legend i{display:inline-block;width:14px;height:14px;border-radius:2px;margin-right:5px;vertical-align:-2px;border:1px solid rgba(0,0,0,.15)}
+.wrap{display:flex;gap:14px}
+.poster{position:relative;width:1070px;height:556px}
+.band{position:absolute;border-radius:4px;padding:8px 10px}
+.band h2{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-stretch:85%;color:var(--ink2)}
+.c{position:absolute;width:124px;height:34px;background:#fff;border:1px solid rgba(31,27,26,.28);border-radius:3px;font-size:14px;font-weight:600;font-stretch:70%;display:flex;align-items:center;padding:0 8px 0 24px;white-space:nowrap;overflow:hidden}
+.c::before{content:"";position:absolute;left:7px;top:11px;width:11px;height:12px;border:1.5px solid #5b6b7a;border-radius:1px}
+.c::after{content:"";position:absolute;left:4px;top:14px;width:6px;height:2px;border:1.5px solid #5b6b7a;border-width:1.5px 0;height:5px;background:#fff}
+.c.on{background:var(--maroon);color:#fff;border-color:var(--maroon)}.c.on::before,.c.on::after{border-color:#fff;background:var(--maroon)}
+.c.p{border:2px solid var(--maroon)}
+.c b{position:absolute;right:4px;top:8px;font:600 12.5px Archivo;background:var(--maroon);color:#fff;border-radius:8px;padding:0 5px;line-height:16px}
+svg.lines{position:absolute;inset:0;pointer-events:none}
+.insp{width:300px;border:1px solid var(--rule);border-radius:4px;padding:16px}
+.insp h3{font-size:24px;font-weight:740;font-stretch:84%}.insp .sub{color:var(--ink2);font-size:14px;margin:2px 0 10px}
+.insp p{font-size:14px;line-height:1.45;color:var(--ink2)}
+.kv{display:flex;justify-content:space-between;border-top:1px solid var(--rule);height:32px;align-items:center;font-size:14px}
+.kv b{font-weight:600;font-stretch:80%}
+.insp h4{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);margin:14px 0 4px}
+</style></head><body>
+<header class="mast"><span class="logo">e&amp;</span><b>Knowledge portal</b><nav><span>Your work</span><span>Library</span><span class="on">Catalogue</span><span>Ownership</span><span>Requirements</span><span>Explorer</span></nav><span class="me">Amina Owner</span></header>
+<main class="page">
+<h1>SMB architecture</h1><p class="lede">46 systems on the TM Forum application map · 57 integrations across 3 journeys · draft from SDD v2.3 and SMB reference v1.0</p>
+<div class="tabs"><span class="on">Landscape</span><span>Products</span><span>Journeys</span><span>Systems</span><span>Governance 23</span><span>Versions</span></div>
+<div class="bar"><span class="chip on">All integrations</span><span class="chip">Business Pro Plus</span><span class="chip">Show gaps</span>
+<div class="legend"><span><i style="background:var(--biz)"></i>Market &amp; product</span><span><i style="background:var(--app)"></i>Customer</span><span><i style="background:var(--svc)"></i>Service</span><span><i style="background:var(--tech)"></i>Resource</span><span><i style="background:var(--spine)"></i>Integration</span></div></div>
+<div class="wrap"><div class="poster">
+<div class="band" style="left:0;top:0;width:290px;height:118px;background:var(--biz)"><h2>Market &amp; Sales</h2></div>
+<div class="band" style="left:298px;top:0;width:572px;height:118px;background:var(--biz)"><h2>Product</h2></div>
+<div class="band" style="left:0;top:126px;width:870px;height:160px;background:var(--app)"><h2>Customer</h2></div>
+<div class="band" style="left:0;top:294px;width:870px;height:46px;background:var(--spine)"><h2 style="color:#fff;padding-top:7px">Integration layer</h2></div>
+<div class="band" style="left:0;top:348px;width:870px;height:76px;background:var(--svc)"><h2>Service</h2></div>
+<div class="band" style="left:0;top:432px;width:870px;height:118px;background:var(--tech)"><h2>Resource</h2></div>
+<div class="band" style="left:878px;top:0;width:192px;height:270px;background:var(--ext)"><h2>Engaged party</h2></div>
+<div class="band" style="left:878px;top:278px;width:192px;height:272px;background:var(--ent)"><h2>Enterprise</h2></div>
+<svg class="lines" viewBox="0 0 1070 556"><g fill="none" stroke="#4b0f1e" stroke-width="2">
+<path d="M72 382V236H142"/><path d="M72 382V254"/><path d="M134 399H142"/><path d="M266 399H274"/><path d="M72 416V466"/><path d="M134 416V450H204V466"/><path d="M134 416V450H230V508"/><path d="M72 382V340H262V334"/><path d="M134 382V360H634V85"/><path d="M134 382V364H732V194"/><path d="M134 399V440H870V329H888"/><path d="M134 399V444H874V413H888"/></g></svg>
+<div class="c" style="left:10px;top:34px">BCRM</div><div class="c" style="left:142px;top:34px">Netcracker CSRD</div><div class="c" style="left:10px;top:76px">PEGA</div><div class="c" style="left:142px;top:76px">SONIC</div>
+<div class="c" style="left:308px;top:34px">Digital Catalog (BCC)</div><div class="c" style="left:440px;top:34px">PSM</div><div class="c p" style="left:572px;top:34px">ECM<b>2</b></div><div class="c" style="left:704px;top:34px">RTF Catalog</div><div class="c" style="left:308px;top:76px">Catalog Automation</div>
+<div class="c" style="left:10px;top:160px">B2B Web</div><div class="c" style="left:142px;top:160px">SMB App</div><div class="c" style="left:274px;top:160px">SaS Portal</div><div class="c" style="left:406px;top:160px">CIM</div><div class="c" style="left:538px;top:160px">DCRM</div><div class="c p" style="left:670px;top:160px">CBCM<b>1</b></div>
+<div class="c" style="left:10px;top:202px">NC CRM (Digital)</div><div class="c p" style="left:142px;top:202px">RTF<b>3</b></div><div class="c" style="left:274px;top:202px">IBM BPM</div><div class="c" style="left:406px;top:202px">Felix</div><div class="c" style="left:538px;top:202px">EHS</div><div class="c" style="left:670px;top:202px">Netcracker CPM</div>
+<div class="c p" style="left:10px;top:244px">BSCS<b>1</b></div>
+<div class="c p" style="left:200px;top:300px">TIBCO<b>2</b></div><div class="c" style="left:600px;top:300px">B2B BFF</div>
+<div class="c on" style="left:10px;top:382px">CWOM</div><div class="c p" style="left:142px;top:382px">E2ESO<b>3</b></div><div class="c p" style="left:274px;top:382px">XaaS<b>2</b></div><div class="c" style="left:406px;top:382px">SLA Management</div>
+<div class="c p" style="left:10px;top:466px">vEDA<b>3</b></div><div class="c p" style="left:142px;top:466px">IN<b>2</b></div><div class="c" style="left:274px;top:466px">Alepo</div><div class="c" style="left:406px;top:466px">NRM</div><div class="c" style="left:538px;top:466px">6D Inventory</div><div class="c" style="left:670px;top:466px">NPS</div>
+<div class="c" style="left:10px;top:508px">GIS</div><div class="c p" style="left:142px;top:508px">WFMS<b>2</b></div><div class="c" style="left:274px;top:508px">Remedy</div>
+<div class="c" style="left:888px;top:34px">Government Sys.</div><div class="c" style="left:888px;top:76px">EIDA</div><div class="c" style="left:888px;top:118px">OCR</div><div class="c" style="left:888px;top:160px">Fortinet</div><div class="c" style="left:888px;top:202px">NPC</div>
+<div class="c p" style="left:888px;top:312px">CNS<b>1</b></div><div class="c" style="left:888px;top:354px">EDMS</div><div class="c p" style="left:888px;top:396px">ServiceNow<b>3</b></div><div class="c" style="left:888px;top:438px">ADFS</div>
+</div>
+<aside class="insp"><h3>CWOM</h3><div class="sub">Service · Service order management</div>
+<p>Order management for fixed products: validates against ECM, splits the order into sub-orders and orchestrates activation, field work, billing and notification.</p>
+<h4>Integrations</h4><div class="kv"><span>Calls and is called by</span><b>12 systems</b></div><div class="kv"><span>Integrations</span><b>26</b></div><div class="kv"><span>Journeys</span><b>3 of 3</b></div><div class="kv"><span>Owner</span><b>Ericsson</b></div>
+<h4>Busiest links</h4><div class="kv"><span>RTF</span><b>3</b></div><div class="kv"><span>E2ESO</span><b>3</b></div><div class="kv"><span>vEDA</span><b>3</b></div><div class="kv"><span>ServiceNow / HPSM</span><b>3</b></div>
+</aside></div></main></body></html>

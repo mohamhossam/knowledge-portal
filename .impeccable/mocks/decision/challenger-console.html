@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Graphite Integration Console · SMB architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<style>
+:root{--g0:#16181c;--g1:#1d2025;--g2:#252930;--seam:#33373f;--ink:#e6e1d8;--ink2:#a7a297;--mint:#7cc4a8;--orange:#e8a65c;--blue:#8fb3f0;--violet:#c3a6f0;--rose:#e89aa8;--sand:#d9c58a;--teal:#6fc2d0;--maroon:#4b0f1e;--red:#e00800}
+*{box-sizing:border-box;margin:0}body{width:1440px;height:900px;overflow:hidden;font-family:Archivo,system-ui,sans-serif;background:var(--g0);color:var(--ink);font-size:14px}
+.mast{height:44px;background:var(--maroon);color:#fff;display:flex;align-items:center;gap:12px;padding:0 16px}
+.logo{width:26px;height:26px;background:var(--red);border-radius:3px;display:grid;place-items:center;font-weight:800}
+.mast b{font-stretch:88%;font-size:15px}.mast nav{margin-left:24px;display:flex;gap:20px;opacity:.85}.mast .me{margin-left:auto;opacity:.85}
+.mast nav .on{opacity:1;box-shadow:inset 0 -3px 0 #fff;padding-bottom:11px;margin-bottom:-12px}
+.sub{height:44px;display:flex;align-items:center;gap:18px;padding:0 16px;border-bottom:1px solid var(--seam)}
+.sub h1{font-size:18px;font-weight:700;font-stretch:85%}.sub span{color:var(--ink2)}.sub .on{color:var(--ink);box-shadow:inset 0 -2px 0 var(--mint);padding:13px 0}
+.sub .f{margin-left:auto;height:30px;width:280px;border:1px solid var(--seam);border-radius:3px;background:var(--g1);display:flex;align-items:center;padding:0 10px;color:var(--ink2)}
+.grid{display:grid;grid-template-columns:600px 1fr;grid-template-rows:1fr 300px;height:812px}
+.pn{border-right:1px solid var(--seam);border-bottom:1px solid var(--seam);overflow:hidden;display:flex;flex-direction:column}
+.ph{height:34px;display:flex;align-items:center;gap:10px;padding:0 12px;border-bottom:1px solid var(--seam);background:var(--g1);font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.ph em{margin-left:auto;font-style:normal;text-transform:none;letter-spacing:0;font-weight:500}
+.tam{padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+.dm h2{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;margin-bottom:4px}
+.dm h2 i{width:10px;height:10px;border-radius:2px;display:block}.dm h2 small{margin-left:auto;color:var(--ink2);font-weight:500;font-variant-numeric:tabular-nums}
+.s{display:flex;align-items:center;height:26px;padding:0 8px;border-radius:2px;font-size:14px;gap:8px}
+.s b{margin-left:auto;font-weight:500;font-stretch:78%;color:var(--ink2);font-variant-numeric:tabular-nums}
+.s.on{background:var(--g2);box-shadow:inset 2px 0 0 var(--mint)}.s.on b{color:var(--mint)}.s.p b{color:var(--ink)}
+.s.gap{color:var(--ink2)}.s.gap b{color:var(--orange)}
+.span2{grid-column:span 2}
+.det{padding:14px 16px}
+.det h2{font-size:26px;font-weight:760;font-stretch:80%}.det p{color:var(--ink2);margin-top:4px;max-width:70ch;line-height:1.45}
+.facts{display:flex;gap:28px;margin:12px 0}.facts div{display:flex;flex-direction:column;gap:2px}.facts span{color:var(--ink2);font-size:12.5px;text-transform:uppercase;letter-spacing:.06em}.facts b{font-size:20px;font-weight:600;font-stretch:78%}
+.map{position:relative;height:340px;border:1px solid var(--seam);border-radius:3px;background:var(--g1)}
+.n{position:absolute;height:28px;padding:0 10px;border:1px solid var(--seam);background:var(--g2);border-radius:3px;display:flex;align-items:center;font-size:13.5px;gap:6px}
+.n i{width:8px;height:8px;border-radius:2px}
+.n.c{left:300px;top:150px;height:36px;font-size:16px;font-weight:700;border-color:var(--mint);box-shadow:0 0 0 1px var(--mint)}
+svg{position:absolute;inset:0}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-weight:600;color:var(--ink2);font-size:12.5px;text-transform:uppercase;letter-spacing:.05em;height:30px;padding:0 12px;border-bottom:1px solid var(--seam)}
+td{height:31px;padding:0 12px;border-bottom:1px solid #23262c;white-space:nowrap}
+td.m{font-variant-numeric:tabular-nums;color:var(--ink2)}td .tag{border:1px solid var(--seam);border-radius:2px;padding:1px 6px;color:var(--ink2)}
+</style></head><body>
+<header class="mast"><span class="logo">e&amp;</span><b>Knowledge portal</b><nav><span>Your work</span><span>Library</span><span class="on">Catalogue</span><span>Ownership</span><span>Requirements</span><span>Explorer</span></nav><span class="me">Amina Owner</span></header>
+<div class="sub"><h1>SMB architecture</h1><span class="on">Landscape</span><span>Products</span><span>Journeys</span><span>Systems</span><span>Governance 23</span><span>Versions</span><div class="f">Find a system or interface…</div></div>
+<div class="grid">
+<section class="pn" style="grid-row:span 2"><div class="ph">TAM landscape<em>46 systems · 57 integrations</em></div>
+<div class="tam">
+<div class="dm"><h2><i style="background:var(--sand)"></i>Market &amp; Sales<small>4</small></h2><div class="s">BCRM<b>0</b></div><div class="s">Netcracker CSRD<b>0</b></div><div class="s">PEGA<b>0</b></div><div class="s">SONIC<b>0</b></div></div>
+<div class="dm"><h2><i style="background:var(--violet)"></i>Product<small>5</small></h2><div class="s">Digital Catalog (BCC)<b>3</b></div><div class="s">PSM<b>1</b></div><div class="s p">ECM<b>5</b></div><div class="s">RTF Catalog<b>0</b></div><div class="s">Catalog Automation<b>0</b></div></div>
+<div class="dm span2"><h2><i style="background:var(--blue)"></i>Customer<small>13</small></h2><div style="display:grid;grid-template-columns:1fr 1fr;column-gap:14px"><div class="s">B2B Web<b>0</b></div><div class="s p">RTF<b>16</b></div><div class="s">SMB App<b>0</b></div><div class="s">IBM BPM<b>5</b></div><div class="s">SaS Self-Service Portal<b>0</b></div><div class="s gap">Felix · overlaps IBM BPM<b>2</b></div><div class="s">CIM · DCRM<b>0</b></div><div class="s">EHS<b>0</b></div><div class="s p">CBCM<b>8</b></div><div class="s">Netcracker CPM<b>0</b></div><div class="s">Netcracker CRM (NC Digital)<b>1</b></div><div class="s p">BSCS<b>1</b></div></div></div>
+<div class="dm"><h2><i style="background:var(--mint)"></i>Service<small>4</small></h2><div class="s on">CWOM<b>26</b></div><div class="s p">E2ESO<b>4</b></div><div class="s p">XaaS<b>2</b></div><div class="s">SLA Management<b>0</b></div></div>
+<div class="dm"><h2><i style="background:var(--orange)"></i>Resource<small>9</small></h2><div class="s p">vEDA<b>5</b></div><div class="s p">IN<b>3</b></div><div class="s">Alepo<b>1</b></div><div class="s p">WFMS<b>2</b></div><div class="s">NRM · 6D · NPS · GIS · Remedy<b>0</b></div></div>
+<div class="dm"><h2><i style="background:var(--rose)"></i>Engaged party<small>5</small></h2><div class="s">Government Systems<b>0</b></div><div class="s">EIDA · OCR · NPC<b>0</b></div><div class="s">Fortinet<b>1</b></div></div>
+<div class="dm"><h2><i style="background:var(--teal)"></i>Enterprise · Integration<small>6</small></h2><div class="s p">CNS<b>3</b></div><div class="s p">ServiceNow / HPSM<b>4</b></div><div class="s p">TIBCO<b>13</b></div><div class="s">EDMS · ADFS · B2B BFF<b>0</b></div></div>
+</div></section>
+<section class="pn"><div class="ph">Selected system<em>Service · Service order management</em></div>
+<div class="det"><h2>CWOM</h2><p>Order management for fixed products: validates against ECM, splits the order into sub-orders and orchestrates activation, field work, billing and notification.</p>
+<div class="facts"><div><span>Owner</span><b>Ericsson</b></div><div><span>Integrations</span><b>26</b></div><div><span>Linked systems</span><b>12</b></div><div><span>Journeys</span><b>3 of 3</b></div><div><span>Evidence</span><b>Confirmed</b></div></div>
+<div class="map"><svg viewBox="0 0 776 340"><g stroke="#4a5a52" stroke-width="1.5" fill="none"><path d="M360 168L120 50M360 168L120 120M360 168L120 200M360 168L120 280M360 168L620 40M360 168L640 100M360 168L640 160M360 168L640 220M360 168L620 290M360 168L360 40M360 168L360 300M360 168L520 300"/></g></svg>
+<div class="n c"><i style="background:var(--mint)"></i>CWOM</div>
+<div class="n" style="left:40px;top:36px"><i style="background:var(--blue)"></i>RTF · 3</div><div class="n" style="left:40px;top:106px"><i style="background:var(--violet)"></i>ECM · 2</div><div class="n" style="left:40px;top:186px"><i style="background:var(--blue)"></i>CBCM · 1</div><div class="n" style="left:40px;top:266px"><i style="background:var(--blue)"></i>BSCS · 1</div>
+<div class="n" style="left:316px;top:20px"><i style="background:var(--teal)"></i>TIBCO · 2</div><div class="n" style="left:300px;top:290px"><i style="background:var(--teal)"></i>CNS · 1</div><div class="n" style="left:470px;top:290px"><i style="background:var(--mint)"></i>XaaS · 2</div>
+<div class="n" style="left:600px;top:26px"><i style="background:var(--mint)"></i>E2ESO · 3</div><div class="n" style="left:610px;top:86px"><i style="background:var(--orange)"></i>vEDA · 3</div><div class="n" style="left:610px;top:146px"><i style="background:var(--orange)"></i>IN · 2</div><div class="n" style="left:610px;top:206px"><i style="background:var(--orange)"></i>WFMS · 2</div><div class="n" style="left:560px;top:276px"><i style="background:var(--teal)"></i>ServiceNow · 3</div>
+</div></div></section>
+<section class="pn"><div class="ph">Integration register · CWOM<em>New activation · 12 of 26 shown</em></div>
+<table><thead><tr><th>From</th><th>To</th><th>Interface</th><th>Style</th><th>Standard</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>RTF</td><td>CWOM</td><td>createShoppingCart</td><td><span class="tag">API</span></td><td class="m">TMF622</td><td>Hand the summary order to CWOM</td></tr>
+<tr><td>CWOM</td><td>ECM</td><td>CPE Model Inquiry</td><td><span class="tag">API · sync</span></td><td class="m">—</td><td>Return Model, SIC and List_of_Models</td></tr>
+<tr><td>CWOM</td><td>E2ESO</td><td>Service order</td><td><span class="tag">API</span></td><td class="m">TMF641</td><td>Provision the Fortinet HE CPE</td></tr>
+<tr><td>CWOM</td><td>WFMS</td><td>Work order</td><td><span class="tag">async</span></td><td class="m">—</td><td>Dispatch the installation</td></tr>
+<tr><td>CWOM</td><td>vEDA</td><td>HSS activation</td><td><span class="tag">not stated</span></td><td class="m">—</td><td>Activate the Backup 5G profile</td></tr>
+<tr><td>CWOM</td><td>IN</td><td>updateOffer</td><td><span class="tag">API</span></td><td class="m">—</td><td>Apply the Backup 5G speed offer (862–874)</td></tr>
+<tr><td>XaaS</td><td>CWOM</td><td>Activation callback</td><td><span class="tag">callback</span></td><td class="m">—</td><td>Confirms activation; point of no return</td></tr>
+</tbody></table></section>
+</div></body></html>

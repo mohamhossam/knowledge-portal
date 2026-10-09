@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Concourse Wayfinding · SMB architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<style>
+:root{--maroon:#4b0f1e;--sign:#22252a;--sign2:#2e3238;--yellow:#ffc72c;--ground:#f4f3ef;--ink:#1f1b1a;--ink2:#4a4542;--red:#e00800;--rule:#d9d6cc}
+*{box-sizing:border-box;margin:0}body{width:1440px;height:900px;overflow:hidden;font-family:Archivo,system-ui,sans-serif;background:var(--ground);color:var(--ink);font-size:15px}
+.mast{height:48px;background:var(--maroon);color:#fff;display:flex;align-items:center;gap:12px;padding:0 20px}
+.logo{width:28px;height:28px;background:var(--red);border-radius:3px;display:grid;place-items:center;font-weight:800;font-size:15px}
+.mast b{font-stretch:88%;font-size:16px}.mast nav{margin-left:28px;display:flex;gap:22px;font-size:14px;opacity:.85}.mast nav .on{opacity:1;box-shadow:inset 0 -3px 0 var(--yellow);padding-bottom:13px;margin-bottom:-14px}
+.mast .me{margin-left:auto;font-size:14px;opacity:.85}
+.page{padding:20px 28px 0}
+.head{display:flex;align-items:flex-end;gap:24px}
+h1{font-size:34px;font-weight:760;font-stretch:84%;letter-spacing:-.01em;line-height:1.05}
+.lede{color:var(--ink2);margin-top:6px;max-width:72ch}
+.lede strong{color:var(--ink)}
+.find{margin-left:auto;display:flex;gap:8px}
+.find input{width:260px;height:36px;border:1px solid #8a8579;border-radius:3px;padding:0 12px;font:inherit;background:#fff}
+.btn{height:36px;padding:0 14px;border-radius:3px;border:1px solid var(--maroon);background:var(--maroon);color:#fff;font:600 14px Archivo;display:inline-flex;align-items:center}
+.tabs{display:flex;gap:26px;margin-top:16px;border-bottom:1px solid var(--rule);font-size:14px;font-weight:600;color:var(--ink2)}
+.tabs span{padding:10px 0}.tabs .on{color:var(--maroon);box-shadow:inset 0 -3px 0 var(--maroon)}
+.board{display:grid;grid-template-columns:1fr 330px;gap:18px;margin-top:16px}
+.map{display:grid;grid-template-columns:1fr 1.45fr 1fr 1fr;grid-template-rows:auto auto;gap:10px}
+.cc{background:var(--sign);border-radius:6px;padding:10px;color:#fff}
+.cc h2{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;font-stretch:80%;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
+.cc h2 i{font-style:normal;background:var(--yellow);color:var(--sign);width:26px;height:26px;border-radius:3px;display:grid;place-items:center;font-size:17px;font-weight:800}
+.cc h2 small{margin-left:auto;font-size:13px;opacity:.7;letter-spacing:0;text-transform:none}
+.cc h3{font-size:12.5px;font-weight:600;color:#c9c5bb;margin:8px 2px 5px;font-stretch:88%}
+.g{display:flex;align-items:center;gap:8px;background:#fff;color:var(--ink);border-radius:3px;height:30px;padding:0 8px 0 0;margin-bottom:5px;font-size:14px;font-weight:600;font-stretch:90%}
+.g code{font:700 12.5px Archivo;font-stretch:75%;background:var(--sign2);color:var(--yellow);height:100%;width:34px;display:grid;place-items:center;border-radius:3px 0 0 3px}
+.g.on{background:var(--yellow);outline:3px solid #fff;outline-offset:-1px}.g.on code{background:var(--sign);color:var(--yellow)}
+.g.p{box-shadow:inset 0 0 0 2px var(--yellow)}.g.p em{margin-left:auto;font-style:normal;font-size:12.5px;background:var(--sign);color:var(--yellow);padding:1px 6px;border-radius:9px}
+.g.gap{background:repeating-linear-gradient(135deg,#fff 0 6px,#f0eee8 6px 12px)}.g.gap s{margin-left:auto;text-decoration:none;font-size:12px;border:1px solid #8a8579;padding:0 5px;border-radius:2px;color:var(--ink2)}
+.span2{grid-row:span 2}
+.transit{grid-column:1/-1;background:var(--sign);border-radius:6px;padding:9px 10px;display:flex;align-items:center;gap:12px;color:#fff}
+.transit h2{font-size:15px;font-weight:700;font-stretch:80%;text-transform:uppercase;letter-spacing:.04em;display:flex;gap:8px;align-items:center}
+.transit h2 i{font-style:normal;background:#fff;color:var(--sign);width:26px;height:26px;border-radius:3px;display:grid;place-items:center;font-weight:800}
+.transit .g{margin:0;width:190px}.transit .line{flex:1;height:6px;background:repeating-linear-gradient(90deg,var(--yellow) 0 18px,transparent 18px 26px);border-radius:3px}
+.side{display:flex;flex-direction:column;gap:12px}
+.sign{background:var(--sign);color:#fff;border-radius:6px;padding:14px}
+.sign .t{display:flex;align-items:center;gap:10px}.sign .t code{background:var(--yellow);color:var(--sign);font:800 20px Archivo;font-stretch:75%;padding:4px 8px;border-radius:3px}
+.sign .t b{font-size:26px;font-weight:780;font-stretch:80%}
+.sign p{color:#d8d4ca;font-size:14px;margin-top:6px;line-height:1.4}
+.row{display:flex;align-items:center;gap:10px;height:32px;border-top:1px solid #3a3f46;font-size:14px}
+.row svg{width:16px;height:16px;flex:none}.row span{flex:1}.row b{font:600 14px Archivo;font-stretch:75%;color:var(--yellow)}
+.k{font-size:12.5px;color:#c9c5bb;text-transform:uppercase;letter-spacing:.06em;margin:12px 0 2px;font-stretch:85%}
+.routes{background:#fff;border:1px solid var(--rule);border-radius:6px;padding:12px 14px}
+.routes h4{font-size:14px;font-weight:700;margin-bottom:8px}
+.route{display:flex;align-items:center;gap:8px;font-size:14px;height:30px}
+.route i{font-style:normal;background:var(--maroon);color:#fff;font:700 12.5px Archivo;padding:2px 6px;border-radius:3px}
+.route span{color:var(--ink2);margin-left:auto;font-size:13px}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute"><symbol id="arr" viewBox="0 0 16 16"><path d="M2 8h10M8 3.5 12.5 8 8 12.5" fill="none" stroke="#ffc72c" stroke-width="2.2" stroke-linecap="square"/></symbol></svg>
+<header class="mast"><span class="logo">e&amp;</span><b>Knowledge portal</b>
+<nav><span>Your work</span><span>Library</span><span class="on">Catalogue</span><span>Ownership</span><span>Requirements</span><span>Explorer</span></nav><span class="me">Amina Owner</span></header>
+<main class="page">
+<div class="head"><div><h1>SMB architecture</h1>
+<p class="lede"><strong>46 systems</strong> in seven TM Forum domains, joined by the integration layer. <strong>57 integrations</strong> across 3 modelled journeys. Draft built only from SDD v2.3 and SMB reference v1.0.</p></div>
+<div class="find"><input value="" placeholder="Find a system, e.g. CWOM" aria-label="Find a system"><span class="btn">Export map</span></div></div>
+<div class="tabs"><span class="on">Landscape</span><span>Products</span><span>Journeys</span><span>Systems</span><span>Governance 23</span><span>Versions</span></div>
+<div class="board">
+<div class="map">
+ <section class="cc"><h2><i>A</i>Market &amp; Sales<small>4</small></h2><h3>Sales management</h3><div class="g"><code>A1</code>BCRM</div><div class="g"><code>A2</code>Netcracker CSRD</div><h3>Recommendation</h3><div class="g"><code>A3</code>PEGA</div><div class="g"><code>A4</code>SONIC</div></section>
+ <section class="cc span2"><h2><i>C</i>Customer<small>13</small></h2><h3>Self-service channels</h3><div class="g"><code>C1</code>B2B Web</div><div class="g"><code>C2</code>SMB App</div><div class="g"><code>C3</code>SaS Self-Service Portal</div><h3>Assisted channels</h3><div class="g"><code>C4</code>CIM</div><div class="g"><code>C5</code>DCRM</div><h3>Customer information</h3><div class="g p"><code>C6</code>CBCM<em>1</em></div><div class="g"><code>C7</code>Netcracker CRM (NC Digital)</div><h3>Customer order management</h3><div class="g p"><code>C8</code>RTF<em>3</em></div><div class="g"><code>C9</code>IBM BPM</div><div class="g gap"><code>C10</code>Felix<s>Overlap with IBM BPM</s></div><div class="g"><code>C11</code>EHS</div><h3>Problems · Billing</h3><div class="g"><code>C12</code>Netcracker CPM</div><div class="g p"><code>C13</code>BSCS<em>1</em></div></section>
+ <section class="cc"><h2><i>D</i>Service<small>4</small></h2><h3>Service order management</h3><div class="g on"><code>D1</code>CWOM</div><div class="g p"><code>D2</code>E2ESO<em>3</em></div><h3>Activation · Quality</h3><div class="g p"><code>D3</code>XaaS<em>2</em></div><div class="g"><code>D4</code>SLA Management</div></section>
+ <section class="cc"><h2><i>F</i>Engaged party<small>5</small></h2><h3>Government &amp; identity</h3><div class="g"><code>F1</code>Government Systems</div><div class="g"><code>F2</code>EIDA</div><div class="g"><code>F3</code>OCR</div><h3>Partners</h3><div class="g"><code>F4</code>Fortinet</div><div class="g"><code>F5</code>NPC</div></section>
+ <section class="cc"><h2><i>B</i>Product<small>5</small></h2><h3>Catalogues</h3><div class="g"><code>B1</code>Digital Catalog (BCC)</div><div class="g"><code>B2</code>PSM</div><div class="g p"><code>B3</code>ECM<em>2</em></div><div class="g"><code>B4</code>RTF Catalog</div><div class="g"><code>B5</code>Catalog Automation Framework</div></section>
+ <section class="cc"><h2><i>E</i>Resource<small>9</small></h2><div class="g p"><code>E1</code>vEDA<em>3</em></div><div class="g p"><code>E2</code>IN<em>2</em></div><div class="g"><code>E3</code>Alepo</div><div class="g"><code>E5</code>NRM</div><div class="g p"><code>E8</code>WFMS<em>2</em></div><div class="g"><code>E4</code>6D Inventory · NPS · GIS · Remedy</div></section>
+ <section class="cc"><h2><i>G</i>Enterprise<small>4</small></h2><div class="g p"><code>G1</code>CNS<em>1</em></div><div class="g"><code>G2</code>EDMS</div><div class="g p"><code>G3</code>ServiceNow / HPSM<em>3</em></div><div class="g"><code>G4</code>ADFS</div></section>
+ <div class="transit"><h2><i>T</i>Integration layer</h2><div class="g p"><code>T1</code>TIBCO<em>2</em></div><div class="line"></div><div class="g"><code>T2</code>B2B BFF</div></div>
+</div>
+<aside class="side">
+ <div class="sign"><div class="t"><code>D1</code><b>CWOM</b></div><p>Service order management · owned by Ericsson. Validates against ECM, splits the order into sub-orders and orchestrates activation, field work, billing and notification.</p>
+ <div class="k">26 integrations · 12 systems</div>
+ <div class="row"><svg><use href="#arr"/></svg><span>RTF</span><b>C8 · 3</b></div>
+ <div class="row"><svg><use href="#arr"/></svg><span>E2ESO</span><b>D2 · 3</b></div>
+ <div class="row"><svg><use href="#arr"/></svg><span>vEDA</span><b>E1 · 3</b></div>
+ <div class="row"><svg><use href="#arr"/></svg><span>ServiceNow / HPSM</span><b>G3 · 3</b></div>
+ <div class="row"><svg><use href="#arr"/></svg><span>ECM · IN · WFMS · XaaS · TIBCO</span><b>2 each</b></div>
+ <div class="row"><svg><use href="#arr"/></svg><span>BSCS · CNS · CBCM</span><b>1 each</b></div></div>
+ <div class="routes"><h4>Products routed through this map</h4>
+ <div class="route"><i>BPP</i>Business Pro Plus<span>3 journeys · 19 systems</span></div>
+ <div class="route"><i>+</i>Next product<span>not modelled yet</span></div></div>
+</aside>
+</div></main></body></html>
