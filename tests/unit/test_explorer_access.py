@@ -54,6 +54,8 @@ def test_the_explorer_never_shows_documents_index_or_who_curated(client: TestCli
         # The change requests applied to it, for the Solution Architecture document (step 7):
         # what was asked and who approved it in Requirement AI, never who accepted it here.
         "change_history",
+        # Where its offerings sit in the product portfolio.
+        "portfolio",
     }
 
 
