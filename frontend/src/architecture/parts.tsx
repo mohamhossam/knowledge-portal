@@ -2,23 +2,23 @@ import { CircleCheck, CircleDashed, Lightbulb } from "lucide-react";
 import { type ReactNode, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 
-import { Drawer, PageHeader, StateLine, SubNav } from "../design/components";
-import { useFocusAfterRender } from "../design/hooks";
+import { errorMessage } from "../api/errors";
+import { Button, Drawer, EmptyState, PageHeader, Skeleton, StateLine, SubNav } from "../design/components";
 import { RouterLink } from "../shell/links";
-import { CHANNELS, OFFERINGS, ORDER_TYPES, offeringById } from "./data/portfolio";
-import { SOURCES, systemById } from "./data/landscape";
-import { FINDINGS } from "./data/journeys";
-import { SYSTEMS } from "./data/landscape";
+import type { Release } from "../api/client";
+import type { CatalogueData } from "./adapter";
+import { CatalogueProvider, useCatalogue, useCatalogueQuery } from "./catalogueData";
 import { EVIDENCE_WORDS, type Evidence } from "./model";
-import { scopeQuery, useScope } from "./scope";
+import { useScope, withScope } from "./scope";
 
 export const BASE = "/architecture";
 
 /** A fact's evidence, in words and an icon: never colour alone. */
 export function EvidenceMark({ evidence, compact = false }: { evidence: Evidence; compact?: boolean }) {
-  const source = SOURCES.find((item) => item.id === evidence.source);
+  const data = useCatalogue();
+  const source = data.sources.find((item) => item.id === evidence.source);
   const Icon = evidence.status === "confirmed" ? CircleCheck : evidence.status === "inferred" ? Lightbulb : CircleDashed;
-  const where = [source ? (source.id === "sdd" ? "SDD" : "SMB reference") : null, evidence.where].filter(Boolean).join(" ");
+  const where = [source?.short, evidence.where].filter(Boolean).join(" ");
   return (
     <span className={`arch-evidence arch-evidence--${evidence.status}`}>
       <Icon size={14} aria-hidden="true" />
@@ -26,6 +26,19 @@ export function EvidenceMark({ evidence, compact = false }: { evidence: Evidence
       {!compact && where && <span className="arch-evidence__where">{where}</span>}
       {!compact && evidence.note && <span className="arch-evidence__note">{evidence.note}</span>}
     </span>
+  );
+}
+
+/** A system's name, linking to its record on the landscape (the lens kept). */
+export function SystemLink({ id, label }: { id: string; label?: string }) {
+  const data = useCatalogue();
+  const [scope] = useScope();
+  const system = data.systems.find((item) => item.id === id);
+  if (!system) return <span>{label ?? (id.startsWith("team:") ? id.slice(5) : id === "channel" ? "Ordering channel" : id)}</span>;
+  return (
+    <Link className="arch-system-link" to={withScope(BASE, scope, { system: system.id })}>
+      {label ?? system.name}
+    </Link>
   );
 }
 
@@ -38,11 +51,10 @@ export function EvidenceMark({ evidence, compact = false }: { evidence: Evidence
 export function RecordDrawer({ title, openKey, onClose, children }: { title: string; openKey: string; onClose: () => void; children: ReactNode }) {
   const panel = useRef<HTMLElement | null>(null);
   const opener = useRef<HTMLElement | null>(null);
-  const focusLater = useFocusAfterRender();
   useEffect(() => {
     if (!panel.current?.contains(document.activeElement)) opener.current = document.activeElement as HTMLElement | null;
-    focusLater(() => panel.current?.querySelector<HTMLElement>("h2"));
-  }, [openKey, focusLater]);
+    panel.current?.querySelector<HTMLElement>("h2")?.focus();
+  }, [openKey]);
   const close = () => {
     const back = opener.current;
     onClose();
@@ -60,19 +72,6 @@ export function RecordDrawer({ title, openKey, onClose, children }: { title: str
   );
 }
 
-/** A system's name, linking to its record on the landscape (the lens kept). */
-export function SystemLink({ id, label }: { id: string; label?: string }) {
-  const [scope] = useScope();
-  const system = systemById(id);
-  if (!system) return <span>{label ?? id}</span>;
-  const query = scopeQuery(scope);
-  return (
-    <Link className="arch-system-link" to={`${BASE}${query}${query ? "&" : "?"}system=${system.id}`}>
-      {label ?? system.name}
-    </Link>
-  );
-}
-
 /** A label around a control, or a plain group when there is no control yet. */
 function ContextField({ label, control, children }: { label: string; control: boolean; children: ReactNode }) {
   const Tag = control ? "label" : "div";
@@ -84,25 +83,30 @@ function ContextField({ label, control, children }: { label: string; control: bo
   );
 }
 
-function ContextBar() {
-  const [scope, setScope] = useScope();
-  const offering = offeringById(scope.product);
-  const orderTypes = offering ? ORDER_TYPES.filter((type) => offering.orderTypes.some((item) => item.code === type.code)) : [];
+function ContextBar({ data, releases }: { data: CatalogueData; releases: Release[] }) {
+  const [scope, setScope] = useScope(data);
+  const offering = data.offerings.find((item) => item.id === scope.product);
   const supported = offering?.orderTypes.find((item) => item.code === scope.order);
   const channels = offering
-    ? CHANNELS.filter((channel) => (supported ? supported.channels : offering.orderTypes.flatMap((item) => item.channels)).includes(channel.id))
+    ? data.channels.filter((channel) => (supported ? supported.channels : offering.orderTypes.flatMap((item) => item.channels)).includes(channel.id))
     : [];
   return (
     <div className="arch-context" role="group" aria-label="View the catalogue for">
-      <div className="arch-context__version">
+      <label className="arch-context__field">
         <span className="arch-context__label">Version</span>
-        <span className="arch-context__value">Working draft</span>
-      </div>
+        <select className="ds-input ds-input--select" value={data.releaseId} onChange={(event) => setScope({ version: event.target.value })}>
+          {releases.map((release) => (
+            <option key={release.id} value={release.id}>
+              {release.name ?? release.id} · {release.status === "draft" ? "draft" : "published"}
+            </option>
+          ))}
+        </select>
+      </label>
       <label className="arch-context__field">
         <span className="arch-context__label">Product</span>
         <select className="ds-input ds-input--select" value={scope.product ?? ""} onChange={(event) => setScope({ product: event.target.value || null })}>
           <option value="">All products</option>
-          {OFFERINGS.map((item) => (
+          {data.offerings.map((item) => (
             <option key={item.id} value={item.id}>{item.name}</option>
           ))}
         </select>
@@ -111,7 +115,7 @@ function ContextBar() {
         {offering ? (
           <select className="ds-input ds-input--select" value={scope.order ?? ""} onChange={(event) => setScope({ order: event.target.value || null })}>
             <option value="">Any order type</option>
-            {orderTypes.map((type) => (
+            {offering.orderTypes.map((type) => (
               <option key={type.code} value={type.code}>{type.name} ({type.code})</option>
             ))}
           </select>
@@ -144,30 +148,75 @@ const SECTIONS = [
   { path: "/versions", label: "Versions" },
 ];
 
-/**
- * Every catalogue page: its h1, the context bar (version · product · order
- * type · channel) and the catalogue's sections. The lens follows every link.
- */
-export function ArchitectureFrame({ title, documentTitle, lead, actions, children }: { title: string; documentTitle?: string; lead?: ReactNode; actions?: ReactNode; children: ReactNode }) {
+function Head({ data, releases, title, documentTitle, lead, actions }: { data: CatalogueData | null; releases: Release[]; title: string; documentTitle?: string; lead?: ReactNode; actions?: ReactNode }) {
   const { pathname } = useLocation();
-  const [scope] = useScope();
-  const query = scopeQuery(scope);
-  const open = FINDINGS.length + SYSTEMS.filter((system) => system.proposedMove).length;
+  const [scope] = useScope(data ?? undefined);
+  const open = data ? data.findings.length + data.systems.filter((system) => system.proposedMove).length : undefined;
   const items = SECTIONS.map((section) => {
     const href = `${BASE}${section.path}`;
     const current = section.path === "" ? pathname === BASE || pathname === `${BASE}/` : pathname.startsWith(href) || (section.path === "/portfolio" && pathname.startsWith(`${BASE}/offerings`));
-    return { href: `${href}${query}`, label: section.label, current, ...(section.path === "/governance" ? { count: open, countLabel: "open findings" } : {}) };
+    return { href: withScope(href, scope), label: section.label, current, ...(section.path === "/governance" && open !== undefined ? { count: open, countLabel: "open findings" } : {}) };
   });
   return (
+    <PageHeader title={title} documentTitle={documentTitle ?? `${title} · Catalogue`} lead={lead} actions={actions}>
+      {data && <ContextBar data={data} releases={releases} />}
+      <SubNav label="Catalogue" items={items} link={RouterLink} />
+    </PageHeader>
+  );
+}
+
+/** What the version in view is, in one line: never mistaken for the version in service. */
+function VersionLine({ data }: { data: CatalogueData }) {
+  const sources = data.sources.map((source) => source.short).join(" and ");
+  return (
+    <StateLine tone={data.status === "draft" ? "plain" : "proof"}>
+      {data.status === "draft"
+        ? `${data.name}: a draft, not published, so requirement mapping doesn't read it.`
+        : `${data.name}: published.`}{" "}
+      {sources ? `Built only from ${sources}; anything they don't state is shown as a gap.` : "This version names no sources."}
+    </StateLine>
+  );
+}
+
+/**
+ * Every catalogue page: its h1, the context bar (version · product · order
+ * type · channel) and the catalogue's sections, then the page once its version
+ * has loaded. The lens follows every link.
+ */
+export function ArchitectureFrame({
+  title,
+  documentTitle,
+  lead,
+  actions,
+  children,
+}: {
+  title: string | ((data: CatalogueData) => string);
+  documentTitle?: string | ((data: CatalogueData) => string);
+  lead?: ReactNode | ((data: CatalogueData) => ReactNode);
+  actions?: (data: CatalogueData) => ReactNode;
+  children: (data: CatalogueData) => ReactNode;
+}) {
+  const query = useCatalogueQuery();
+  const data = query.data;
+  const resolve = <T,>(value: T | ((data: CatalogueData) => T)) => (typeof value === "function" ? (data ? (value as (data: CatalogueData) => T)(data) : undefined) : value);
+  const heading = resolve(title) ?? "Catalogue";
+  return (
     <div className="arch">
-      <PageHeader title={title} documentTitle={documentTitle ?? `${title} · Catalogue`} lead={lead} actions={actions}>
-        <ContextBar />
-        <SubNav label="Catalogue" items={items} link={RouterLink} />
-      </PageHeader>
-      <StateLine>
-        Working draft, not published. Built only from the Business Pro Plus SDD v{SOURCES[0]?.version} and the SMB architecture reference v{SOURCES[1]?.version}; anything they don't state is shown as a gap.
-      </StateLine>
-      {children}
+      <Head data={data} releases={query.releases} title={heading} documentTitle={resolve(documentTitle)} lead={resolve(lead)} actions={data && actions ? actions(data) : undefined} />
+      {query.pending ? (
+        <Skeleton label="Reading the catalogue" rows={6} />
+      ) : query.error ? (
+        <EmptyState title="The catalogue couldn't be read" action={<Button onClick={query.retry}>Try again</Button>}>
+          {errorMessage(query.error)}
+        </EmptyState>
+      ) : query.empty || !data ? (
+        <EmptyState title="There is no catalogue version yet">Create a draft from a catalogue file to start.</EmptyState>
+      ) : (
+        <CatalogueProvider value={{ data, releases: query.releases }}>
+          <VersionLine data={data} />
+          {children(data)}
+        </CatalogueProvider>
+      )}
     </div>
   );
 }

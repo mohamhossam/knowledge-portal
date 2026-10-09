@@ -1,21 +1,24 @@
 import { useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 
-import { channelById, offeringById, orderTypeByCode } from "./data/portfolio";
+import type { Catalogue } from "./model";
 
 /**
- * The context bar's selection: product, order type and channel, kept in the
- * address so every view (and a shared link) shows the same lens.
+ * The context bar's selection: version, product, order type and channel, kept
+ * in the address so every view (and a shared link) shows the same lens.
  */
-export type Scope = { product: string | null; order: string | null; channel: string | null };
+export type Scope = { version: string | null; product: string | null; order: string | null; channel: string | null };
 
-const KEYS = ["product", "order", "channel"] as const;
+const KEYS = ["version", "product", "order", "channel"] as const;
 
-export function useScope(): [Scope, (next: Partial<Scope>) => void] {
+/** The lens as the address says it, keeping only what the catalogue in view knows. */
+export function useScope(data?: Catalogue): [Scope, (next: Partial<Scope>) => void] {
   const [params, setParams] = useSearchParams();
-  const product = offeringById(params.get("product")) ? params.get("product") : null;
-  const order = product && orderTypeByCode(params.get("order")) ? params.get("order") : null;
-  const channel = product && channelById(params.get("channel")) ? params.get("channel") : null;
+  const offering = data?.offerings.find((item) => item.id === params.get("product"));
+  const known = !data || Boolean(offering);
+  const product = known ? params.get("product") : null;
+  const order = product && (!offering || offering.orderTypes.some((type) => type.code === params.get("order"))) ? params.get("order") : null;
+  const channel = product && (!data || data.channels.some((item) => item.id === params.get("channel"))) ? params.get("channel") : null;
   const set = useCallback(
     (next: Partial<Scope>) =>
       setParams(
@@ -38,7 +41,7 @@ export function useScope(): [Scope, (next: Partial<Scope>) => void] {
       ),
     [setParams],
   );
-  return [{ product, order, channel }, set];
+  return [{ version: params.get("version"), product, order, channel }, set];
 }
 
 /** A page about one product (or one of its journeys) puts it in the lens when the lens is empty. */
@@ -58,4 +61,12 @@ export function scopeQuery(scope: Scope): string {
   for (const key of KEYS) if (scope[key]) params.set(key, scope[key] as string);
   const text = params.toString();
   return text ? `?${text}` : "";
+}
+
+/** A link's address with the lens kept and extra parameters added. */
+export function withScope(path: string, scope: Scope, extra: Record<string, string | null | undefined> = {}): string {
+  const params = new URLSearchParams(scopeQuery(scope).slice(1));
+  for (const [key, value] of Object.entries(extra)) if (value) params.set(key, value);
+  const text = params.toString();
+  return text ? `${path}?${text}` : path;
 }

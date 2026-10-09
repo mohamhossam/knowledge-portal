@@ -1,48 +1,37 @@
 /**
- * The architecture catalogue's model, generic for any telecom product
- * (docs/redesign/plans/03-architecture-catalogue.md). Every view is a lens on
- * this one model: the TAM landscape, the portfolio, each offering, its
- * journeys, their integrations and the order-tracking flow. Impact is computed
- * from journeys, never drawn by hand.
+ * The architecture catalogue's view model, generic for any telecom product
+ * (docs/redesign/plans/03-architecture-catalogue.md). The adapter builds it
+ * from a catalogue version read from the API; every view is a lens on it: the
+ * TAM landscape, the portfolio, each offering, its journeys per channel, their
+ * integrations and the order-tracking flow. Impact is computed from journeys,
+ * never drawn by hand.
  *
  * Every fact carries its evidence: confirmed by a named source and section,
  * inferred from one, or a gap. A gap is shown as a gap, never filled in.
  */
 
-/** The two sources this catalogue is built from (the user's brief, 2026-10-09). */
-export type SourceId = "sdd" | "ref";
-
 export type Evidence = {
   status: "confirmed" | "inferred" | "gap";
-  source?: SourceId;
+  /** A registered source's id, when the evidence names one. */
+  source?: string;
   /** Section or table in the source, e.g. "§3.1 step 4". */
   where?: string;
   note?: string;
 };
 
 export type Source = {
-  id: SourceId;
+  id: string;
   title: string;
-  version: string;
-  date?: string;
+  short: string;
+  version?: string;
+  level: string;
   owner?: string;
-  kind: string;
-  file: string;
+  file?: string;
+  scope?: string;
 };
 
-/** TM Forum TAM domains, in the order the TAM poster lays them out. */
-export type TamDomainId =
-  | "market-sales"
-  | "product"
-  | "customer"
-  | "service"
-  | "resource"
-  | "engaged-party"
-  | "enterprise"
-  | "integration";
-
 export type TamDomain = {
-  id: TamDomainId;
+  id: string;
   name: string;
   /** What belongs here, in TAM's terms. */
   scope: string;
@@ -56,16 +45,14 @@ export type System = {
   id: string;
   name: string;
   aliases: string[];
-  domain: TamDomainId;
+  domain: string;
   group: string;
   owner?: string;
   function: string;
-  /** Outside the operator: a government body, a vendor platform, a clearing house. */
   external?: boolean;
-  /** A planned change, e.g. "Replaces BCRM over time". */
   roadmap?: string;
   evidence: Evidence;
-  /** Where the SMB reference placed it, when this catalogue proposes another domain. */
+  /** Where a source placed it, when this catalogue proposes another domain. */
   proposedMove?: { from: string; reason: string };
 };
 
@@ -78,61 +65,45 @@ export type PortfolioNode = {
   description?: string;
 };
 
-export type ChannelKind = "self-service" | "assisted" | "system";
-
 export type Channel = {
   id: string;
   name: string;
   systemId: string;
-  kind: ChannelKind;
+  kind: string;
 };
 
-export type OrderTypeFamily = "acquire" | "change" | "move" | "cease" | "care" | "billing";
-
-export type OrderType = {
-  code: string;
-  name: string;
-  family: OrderTypeFamily;
-  description: string;
-};
+export type OrderType = { code: string; name: string; description: string };
 
 export type Point = { title: string; detail: string; evidence: Evidence };
 
+/** A plan as its sources describe it: named characteristics, so any product's plans fit. */
 export type Plan = {
   name: string;
-  download: string;
-  upload: string;
-  cpe: string;
-  accessPoint: string;
-  backupOffer: string;
-  price?: string;
+  characteristics: { name: string; value: string }[];
   evidence: Evidence;
 };
 
-export type Rule = {
-  id: string;
-  kind: "composition" | "eligibility" | "dependency" | "lifecycle" | "fulfilment" | "billing";
-  statement: string;
-  evidence: Evidence;
-};
+export type Rule = { id: string; kind?: string; statement: string; evidence: Evidence };
 
 export type Component = {
   id: string;
   name: string;
-  /** Commercial offer code (PO / RP), as the SDD names it. */
+  /** Commercial offer code (PO / RP), as the source names it. */
   offerCode?: string;
   /** Customer-facing service specification (CFSS / PRS). */
   specCode?: string;
-  mandatory: boolean;
+  mandatory: boolean | null;
   description: string;
   systems: { systemId: string; responsibility: string }[];
   evidence: Evidence;
 };
 
-/** One order type an offering supports, through which channels, in which delivery drop. */
+/** One order type an offering supports, and through which channels. */
 export type OfferingOrderType = {
   code: string;
+  name: string;
   channels: string[];
+  /** The delivery drop it comes in, when its source says (e.g. "P2 / P3"). */
   priority?: string;
   note?: string;
   evidence: Evidence;
@@ -140,9 +111,9 @@ export type OfferingOrderType = {
 
 export type Offering = {
   id: string;
-  nodeId: string;
+  nodeId: string | null;
   name: string;
-  shortName: string;
+  shortName?: string;
   summary: string;
   purpose: string;
   values: Point[];
@@ -151,6 +122,7 @@ export type Offering = {
   rules: Rule[];
   components: Component[];
   orderTypes: OfferingOrderType[];
+  tracking: TrackingFacts | null;
   evidence: Evidence;
 };
 
@@ -171,11 +143,12 @@ export type StepRole =
 
 export type StepKind = "start" | "end" | "task" | "exclusive" | "parallel" | "error-end";
 
+/** A node of a journey's BPMN view, derived from its activities and flow rules. */
 export type Step = {
   id: string;
   kind: StepKind;
   name: string;
-  /** The lane: the system (or team) that performs the step. */
+  /** The lane: a system id, "team:<name>" for a team or party, or "channel" for the ordering channel. */
   lane: string;
   role?: StepRole;
   /** eTOM process this step belongs to (process area · process). */
@@ -187,20 +160,21 @@ export type Step = {
   evidence: Evidence;
 };
 
-export type IntegrationStyle = "API" | "XML request" | "Event / message" | "Callback" | "SAML 2.0 SSO" | "Database" | "Ticket" | "Not stated";
 export type IntegrationMode = "sync" | "async" | "not stated";
 
 export type Integration = {
   id: string;
   /** The step that makes the call. */
   step: string;
+  /** Lanes: a system id, "team:<name>" or "channel". */
   from: string;
   to: string;
   /** Through the integration layer, when the call goes via it (e.g. TIBCO). */
   via?: string;
   operation: string;
   purpose: string;
-  style: IntegrationStyle;
+  /** How it is made, as the source says; "Not stated" when it doesn't. */
+  style: string;
   mode: IntegrationMode;
   payload?: string;
   /** TM Forum Open API that does the same job. A hypothesis until the integration team confirms. */
@@ -208,33 +182,31 @@ export type Integration = {
   evidence: Evidence;
 };
 
-/** A lane that is a team, not a system (e.g. MSS). Teams appear in flows, never on the landscape. */
-export type Team = { id: string; name: string; detail: string; evidence: Evidence };
-
-export type Journey = {
+/** A journey as the catalogue holds it: one per offering and order type, for all its channels. */
+export type JourneyDef = {
   id: string;
-  offeringId: string;
-  orderType: string;
-  channels: string[];
+  offeringId: string | null;
+  orderType: string | null;
   name: string;
   summary: string;
-  steps: Step[];
-  integrations: Integration[];
-  /** Notes that hold for the whole journey (amendment, cancellation, known gaps). */
-  notes: Point[];
-  trackingId?: string;
-  /** A lane's label when one lane stands for several channels (e.g. "B2B Web / SMB App"). */
-  laneLabels?: Record<string, string>;
+  /** The channels it can be viewed for: its order type's channels, or none for a shared flow. */
+  channels: string[];
 };
 
-export type Milestone = { name: string; producer: string; detail: string; evidence: Evidence };
+/** One journey seen through one channel: its BPMN steps and its calls, in order. */
+export type JourneyView = JourneyDef & {
+  channel: string | null;
+  steps: Step[];
+  integrations: Integration[];
+  /** Lane labels where a lane stands for the channel's entry system. */
+  laneLabels: Record<string, string>;
+};
 
-export type TrackingFlow = {
-  id: string;
-  name: string;
+export type Milestone = { name: string; producer: string | null; detail: string; evidence: Evidence };
+
+/** An offering's order tracking: milestones, how each channel's order is matched and read, known failures. */
+export type TrackingFacts = {
   summary: string;
-  participants: string[];
-  messages: Integration[];
   milestones: Milestone[];
   correlation: Point[];
   knownIssues: Point[];
@@ -246,6 +218,23 @@ export type Finding = {
   title: string;
   detail: string;
   sources: Evidence[];
+};
+
+/** A catalogue version as the views read it. */
+export type Catalogue = {
+  releaseId: string;
+  revision: number;
+  status: "draft" | "published";
+  name: string;
+  sources: Source[];
+  domains: TamDomain[];
+  systems: System[];
+  portfolio: PortfolioNode[];
+  channels: Channel[];
+  orderTypes: OrderType[];
+  offerings: Offering[];
+  journeys: JourneyDef[];
+  findings: Finding[];
 };
 
 export const EVIDENCE_WORDS: Record<Evidence["status"], string> = {

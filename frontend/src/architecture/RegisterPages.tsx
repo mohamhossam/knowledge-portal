@@ -1,20 +1,17 @@
+import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 
-import { type Column, DataTable, Facts, FilterStrip, Section } from "../design/components";
-import { DOMAINS, SOURCES, SYSTEMS } from "./data/landscape";
-import { FINDINGS, JOURNEYS } from "./data/journeys";
-import { OFFERINGS } from "./data/portfolio";
+import { api, type Release } from "../api/client";
+import { type Column, DataTable, Facts, FilterStrip, Section, Status } from "../design/components";
+import { type CatalogueData, journeyViews } from "./adapter";
+import { useCatalogueReleases } from "./catalogueData";
 import type { Finding, System } from "./model";
 import { ArchitectureFrame, BASE, EvidenceMark, SystemLink } from "./parts";
-import { scopeQuery, useScope } from "./scope";
-
-function journeyCount(id: string) {
-  return JOURNEYS.filter((journey) => journey.steps.some((step) => step.lane === id) || journey.integrations.some((call) => [call.from, call.to, call.via].includes(id))).length;
-}
+import { useScope, withScope } from "./scope";
 
 /** Every system in one dense table: domain, owner, aliases, evidence, and where it is used. */
-export function SystemsPage() {
-  const [scope] = useScope();
+function SystemRegister({ data }: { data: CatalogueData }) {
+  const [scope] = useScope(data);
   const [params, setParams] = useSearchParams();
   const find = params.get("q") ?? "";
   const domain = params.get("domain") ?? "all";
@@ -25,50 +22,58 @@ export function SystemsPage() {
       else merged.delete(key);
       return merged;
     }, { replace: true });
-  const setFind = (value: string) => setParam("q", value);
-  const setDomain = (value: string) => setParam("domain", value);
+  const views = data.offerings.flatMap((offering) => journeyViews(data, offering.id));
+  const journeyCount = (id: string) =>
+    new Set(views.filter((view) => view.steps.some((step) => step.lane === id) || view.integrations.some((call) => [call.from, call.to, call.via].includes(id))).map((view) => view.id)).size;
   const needle = find.trim().toLowerCase();
-  const rows = SYSTEMS.filter(
+  const rows = data.systems.filter(
     (system) =>
       (domain === "all" || system.domain === domain) &&
       (!needle || [system.name, ...system.aliases, system.function, system.owner ?? ""].some((text) => text.toLowerCase().includes(needle))),
   );
-  const query = scopeQuery(scope);
   const columns: Column<System>[] = [
     { id: "name", header: "System", rowHeader: true, bidi: true, cell: (system) => (
       <>
-        <Link to={`${BASE}${query}${query ? "&" : "?"}system=${system.id}`}>{system.name}</Link>
+        <Link to={withScope(BASE, scope, { system: system.id })}>{system.name}</Link>
         {system.aliases.length > 0 && <span className="arch-detail">{system.aliases.join(", ")}</span>}
       </>
     ) },
     { id: "domain", header: "TAM domain", cell: (system) => (
       <>
-        {DOMAINS.find((item) => item.id === system.domain)?.name}
+        {data.domains.find((item) => item.id === system.domain)?.name ?? "Not placed"}
         {system.proposedMove && <span className="arch-detail">Proposed; was {system.proposedMove.from}</span>}
       </>
     ) },
-    { id: "function", header: "What it does", cell: (system) => system.function },
+    { id: "function", header: "What it does", cell: (system) => system.function || <span className="arch-quiet">Not described</span> },
     { id: "owner", header: "Owner", cell: (system) => system.owner ?? <span className="arch-quiet">Not stated</span> },
     { id: "journeys", header: "Journeys", numeric: true, cell: (system) => journeyCount(system.id) },
     { id: "evidence", header: "Evidence", cell: (system) => <EvidenceMark evidence={system.evidence} /> },
   ];
   return (
-    <ArchitectureFrame title="Systems" lead="The system register behind the landscape: every system, its TAM domain, owner and source.">
+    <>
       <FilterStrip
         label="Filter systems"
-        filters={[{ id: "all", label: "All", count: SYSTEMS.length }, ...DOMAINS.map((item) => ({ id: item.id, label: item.name, count: SYSTEMS.filter((system) => system.domain === item.id).length }))]}
+        filters={[{ id: "all", label: "All", count: data.systems.length }, ...data.domains.map((item) => ({ id: item.id, label: item.name, count: data.systems.filter((system) => system.domain === item.id).length }))]}
         active={domain}
-        onChange={setDomain}
-        find={{ label: "Find a system", value: find, onChange: setFind, placeholder: "Name, alias, owner or function" }}
+        onChange={(value) => setParam("domain", value)}
+        find={{ label: "Find a system", value: find, onChange: (value) => setParam("q", value), placeholder: "Name, alias, owner or function" }}
       />
       <DataTable caption={`Systems: ${rows.length}`} columns={columns} rows={rows} rowId={(system) => system.id} emptyText="No system matches. Clear the filters to see them all." />
+    </>
+  );
+}
+
+export function SystemsPage() {
+  return (
+    <ArchitectureFrame title="Systems" lead="The system register behind the landscape: every system, its TAM domain, owner and source.">
+      {(data) => <SystemRegister data={data} />}
     </ArchitectureFrame>
   );
 }
 
 const KIND_WORDS: Record<Finding["kind"], string> = {
   conflict: "Sources disagree",
-  gap: "Not in the sources",
+  gap: "Open in the sources",
   placement: "Placement",
   undefined: "Named, not defined",
 };
@@ -78,14 +83,14 @@ const KIND_WORDS: Record<Finding["kind"], string> = {
  * placements waiting for an architect, and every conflict and gap found while
  * reading the sources. Each fact's own evidence sits beside it on its page.
  */
-export function GovernancePage() {
-  const moves = SYSTEMS.filter((system) => system.proposedMove);
+function Governance({ data }: { data: CatalogueData }) {
+  const moves = data.systems.filter((system) => system.proposedMove);
   const findingColumns: Column<Finding>[] = [
     { id: "id", header: "#", width: "3.5rem", cell: (finding) => finding.id },
     { id: "title", header: "Finding", rowHeader: true, cell: (finding) => (
       <>
         <span className="arch-strong">{finding.title}</span>
-        <span className="arch-detail">{finding.detail}</span>
+        {finding.detail && <span className="arch-detail">{finding.detail}</span>}
       </>
     ) },
     { id: "kind", header: "Kind", cell: (finding) => KIND_WORDS[finding.kind] },
@@ -98,62 +103,82 @@ export function GovernancePage() {
   ];
   const moveColumns: Column<System>[] = [
     { id: "name", header: "System", rowHeader: true, cell: (system) => <SystemLink id={system.id} /> },
-    { id: "from", header: "SMB reference", cell: (system) => system.proposedMove?.from },
-    { id: "to", header: "Proposed", cell: (system) => DOMAINS.find((domain) => domain.id === system.domain)?.name },
+    { id: "from", header: "Placed by the source in", cell: (system) => system.proposedMove?.from },
+    { id: "to", header: "Proposed", cell: (system) => data.domains.find((domain) => domain.id === system.domain)?.name },
     { id: "why", header: "Why", cell: (system) => system.proposedMove?.reason },
     { id: "state", header: "Decision", cell: () => <span className="arch-quiet">Waiting for an architect</span> },
   ];
   return (
-    <ArchitectureFrame title="Governance" lead="What this catalogue is built from, what waits for a decision, and what the sources leave open.">
-      <Section title="Sources" count={SOURCES.length}>
+    <>
+      <Section title="Sources" count={data.sources.length}>
         <div className="arch-sources">
-          {SOURCES.map((source) => (
+          {data.sources.map((source) => (
             <div key={source.id} className="arch-source">
               <h3>{source.title}</h3>
               <Facts
                 items={[
-                  ["Version", `${source.version}${source.date ? ` · ${source.date}` : ""}`],
-                  ["Kind", source.kind],
+                  ["Level", source.level === "L1" ? "L1 · the canonical landscape" : source.level === "L2" ? "L2 · primary for its scope" : `${source.level} · carried forward`],
+                  ["Version", source.version ?? "Not stated"],
                   ["Owner", source.owner ?? "Not stated"],
-                  ["File", source.file],
-                  ["Reviewed", "Read in full on 9 October 2026; findings below"],
+                  ["File", source.file ?? "Not stated"],
+                  ["Covers", source.scope ?? "Not stated"],
                 ]}
               />
             </div>
           ))}
         </div>
-        <p className="arch-quiet">Nothing else feeds this catalogue: not the previous catalogue, not other documents.</p>
       </Section>
       <Section title="TAM placements to decide" count={moves.length}>
-        <DataTable caption="Systems this catalogue places in another TAM domain than the SMB reference" captionHidden columns={moveColumns} rows={moves} rowId={(system) => system.id} />
+        <DataTable caption="Systems placed in another TAM domain than a source puts them" captionHidden columns={moveColumns} rows={moves} rowId={(system) => system.id} emptyText="No placement waits for a decision." />
       </Section>
-      <Section title="Conflicts and gaps in the sources" count={FINDINGS.length}>
-        <DataTable caption="Findings from reading the sources" captionHidden columns={findingColumns} rows={FINDINGS} rowId={(finding) => finding.id} />
+      <Section title="Conflicts and gaps in the sources" count={data.findings.length}>
+        <DataTable caption="Findings from reading the sources" captionHidden columns={findingColumns} rows={data.findings} rowId={(finding) => finding.id} emptyText="No conflict or gap is recorded." />
       </Section>
+    </>
+  );
+}
+
+export function GovernancePage() {
+  return (
+    <ArchitectureFrame title="Governance" lead="What this catalogue is built from, what waits for a decision, and what the sources leave open.">
+      {(data) => <Governance data={data} />}
     </ArchitectureFrame>
   );
 }
 
-/** Versions: the working draft until the catalogue service publishes it. */
+/** Every version: the drafts being prepared, and the published ones, with the one requirement mapping reads. */
+function Versions({ data }: { data: CatalogueData }) {
+  const [scope] = useScope(data);
+  const releases = useCatalogueReleases();
+  const active = useQuery({ queryKey: ["architecture", "active"], queryFn: api.activeRelease });
+  const columns: Column<Release>[] = [
+    { id: "name", header: "Version", rowHeader: true, cell: (release) => (
+      <>
+        <Link to={withScope(BASE, { ...scope, version: release.id })}>{release.name ?? release.id}</Link>
+        {release.id === data.releaseId && <span className="arch-detail">In view now</span>}
+      </>
+    ) },
+    { id: "state", header: "State", cell: (release) =>
+      release.id === active.data?.id ? <Status tone="done">In service: requirement mapping reads it</Status>
+      : release.status === "draft" ? <Status tone="working">Draft, not published</Status>
+      : <Status tone="neutral">Published, replaced</Status> },
+    { id: "content", header: "Holds", cell: (release) => `${release.systems.length} systems · ${(release.products ?? []).length} products · ${(release.journeys ?? []).length} journeys` },
+    { id: "published", header: "Published", cell: (release) => (release.published_at ? new Date(release.published_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "—") },
+  ];
+  return (
+    <>
+      <DataTable caption={`Versions: ${releases.length}`} columns={columns} rows={releases} rowId={(release) => release.id} />
+      <p className="arch-note">
+        Requirement mapping keeps reading the version in service until a draft is published and put in service. Comparing two versions and putting one back in service come with the next step of this area.
+      </p>
+    </>
+  );
+}
+
 export function CatalogueVersionsPage() {
-  const offerings = OFFERINGS.length;
-  const steps = JOURNEYS.reduce((sum, journey) => sum + journey.steps.filter((step) => step.kind === "task").length, 0);
-  const calls = JOURNEYS.reduce((sum, journey) => sum + journey.integrations.length, 0);
   return (
     <ArchitectureFrame title="Versions" lead="A version is what Requirement AI and the Explorer read. Every change is made in a draft and reaches them only when the draft is published.">
-      <Section title="Working draft" headingLevel={2}>
-        <Facts
-          items={[
-            ["State", "Draft, not published"],
-            ["Built from", SOURCES.map((source) => `${source.id === "sdd" ? "SDD" : "SMB reference"} v${source.version}`).join(" and ")],
-            ["Holds", `${SYSTEMS.length} systems · ${offerings} product · ${JOURNEYS.length} journeys · ${steps} steps · ${calls} integrations`],
-            ["Open findings", `${FINDINGS.length} conflicts and gaps · ${SYSTEMS.filter((system) => system.proposedMove).length} placements to decide`],
-          ]}
-        />
-        <p className="arch-note">
-          Publishing, comparing two versions and putting one back in service come with the catalogue service (next build step). Until then this draft is what you see here, and the version in service for requirement mapping is unchanged.
-        </p>
-      </Section>
+      {(data) => <Versions data={data} />}
     </ArchitectureFrame>
   );
 }

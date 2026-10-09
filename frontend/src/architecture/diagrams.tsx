@@ -1,8 +1,8 @@
 import { type KeyboardEvent, useMemo } from "react";
 
-import { laneName } from "./data/landscape";
+import { laneName } from "./adapter";
 import { GEOMETRY, layoutFlow } from "./flowLayout";
-import type { Integration, Journey, Step } from "./model";
+import type { Catalogue, Integration, JourneyView, Step } from "./model";
 
 /** Splits a label into lines of at most `width` characters, at most `lines` lines. */
 function wrap(text: string, width: number, lines: number): string[] {
@@ -26,9 +26,9 @@ function wrap(text: string, width: number, lines: number): string[] {
   return out;
 }
 
-function stepLabel(step: Step, calls: number): string {
+function stepLabel(data: Catalogue, step: Step, calls: number): string {
   const kind = { start: "Start", end: "End", "error-end": "Error end", exclusive: "Decision", parallel: "Parallel gateway", task: "Step" }[step.kind];
-  return `${kind}: ${step.name}. ${laneName(step.lane)}.${calls ? ` ${calls} ${calls === 1 ? "integration" : "integrations"}.` : ""}${step.ponr ? " Point of no return." : ""}`;
+  return `${kind}: ${step.name}. ${laneName(data, step.lane)}.${calls ? ` ${calls} ${calls === 1 ? "integration" : "integrations"}.` : ""}${step.ponr ? " Point of no return." : ""}`;
 }
 
 /**
@@ -37,7 +37,7 @@ function stepLabel(step: Step, calls: number): string {
  * element is a keyboard stop; Enter or Space selects it. The steps table is
  * the same content for screen readers and high zoom.
  */
-export function FlowDiagram({ journey, selectedId, onSelect }: { journey: Journey; selectedId: string | null; onSelect: (id: string) => void }) {
+export function FlowDiagram({ data, journey, selectedId, onSelect }: { data: Catalogue; journey: JourneyView; selectedId: string | null; onSelect: (id: string) => void }) {
   const layout = useMemo(() => layoutFlow(journey), [journey]);
   const calls = (id: string) => journey.integrations.filter((integration) => integration.step === id).length;
   const keyDown = (id: string) => (event: KeyboardEvent<SVGGElement>) => {
@@ -56,7 +56,7 @@ export function FlowDiagram({ journey, selectedId, onSelect }: { journey: Journe
       {layout.lanes.map((lane, index) => (
         <g key={lane} aria-hidden="true">
           <rect className={`arch-flow__lane${index % 2 ? " arch-flow__lane--alt" : ""}`} x={0} y={index * GEOMETRY.laneHeight} width={layout.width} height={GEOMETRY.laneHeight} />
-          {wrap(journey.laneLabels?.[lane] ?? laneName(lane), 20, 3).map((line, row, lines) => (
+          {wrap(journey.laneLabels[lane] ?? laneName(data, lane), 20, 3).map((line, row, lines) => (
             <text key={row} className="arch-flow__lane-name" x={16} y={index * GEOMETRY.laneHeight + GEOMETRY.laneHeight / 2 + (row - (lines.length - 1) / 2) * 16 + 5}>
               {line}
             </text>
@@ -65,12 +65,15 @@ export function FlowDiagram({ journey, selectedId, onSelect }: { journey: Journe
       ))}
       <line className="arch-flow__lane-rule" x1={GEOMETRY.laneHeader} x2={GEOMETRY.laneHeader} y1={0} y2={layout.height} aria-hidden="true" />
       {layout.edges.map((edge) => {
-        const [sx, sy] = edge.points[0] ?? [0, 0];
+        // The label sits where the edge turns into its target's row, left of the turn, so
+        // labels from one gateway never stack and never touch the target.
+        const [lx, ly] = edge.points[edge.points.length - 2] ?? edge.points[0] ?? [0, 0];
+        const turns = edge.points.length > 2;
         return (
           <g key={`${edge.from}-${edge.to}`} aria-hidden="true">
             <polyline className="arch-flow__edge" points={edge.points.map((point) => point.join(",")).join(" ")} markerEnd="url(#arch-arrow)" />
             {edge.label && (
-              <text className="arch-flow__edge-label" x={sx + 6} y={sy - 6}>{edge.label}</text>
+              <text className="arch-flow__edge-label" x={turns ? lx - 4 : lx + 6} y={ly - 6} textAnchor={turns ? "end" : "start"}>{edge.label}</text>
             )}
           </g>
         );
@@ -88,7 +91,7 @@ export function FlowDiagram({ journey, selectedId, onSelect }: { journey: Journe
             tabIndex={0}
             role="button"
             aria-pressed={selected}
-            aria-label={stepLabel(step, count)}
+            aria-label={stepLabel(data, step, count)}
             onClick={() => onSelect(step.id)}
             onKeyDown={keyDown(step.id)}
           >
@@ -111,7 +114,7 @@ export function FlowDiagram({ journey, selectedId, onSelect }: { journey: Journe
                   <path className="arch-flow__glyph" d={`M ${cx} ${cy - 10} L ${cx} ${cy + 10} M ${cx - 10} ${cy} L ${cx + 10} ${cy}`} />
                 )}
                 {wrap(step.name, 24, 2).map((line, row) => (
-                  <text key={row} className="arch-flow__small" x={cx} y={y - 8 - (wrap(step.name, 24, 2).length - 1 - row) * 13} textAnchor="middle">{line}</text>
+                  <text key={row} className="arch-flow__small" x={cx} y={y + height + 13 + row * 13} textAnchor="middle">{line}</text>
                 ))}
               </>
             )}
@@ -139,7 +142,7 @@ const SEQ = { column: 168, head: 52, row: 46, pad: 20, numberGutter: 36 };
  * stated; open head: asynchronous; dashed: callback. The register table is the
  * same content for screen readers.
  */
-export function SequenceDiagram({ name, messages, selectedId, onSelect }: { name: string; messages: Integration[]; selectedId?: string | null; onSelect?: (id: string) => void }) {
+export function SequenceDiagram({ data, name, messages, selectedId, onSelect }: { data: Catalogue; name: string; messages: Integration[]; selectedId?: string | null; onSelect?: (id: string) => void }) {
   const lanes: string[] = [];
   for (const message of messages) for (const lane of [message.from, message.to]) if (!lanes.includes(lane)) lanes.push(lane);
   const width = SEQ.numberGutter + lanes.length * SEQ.column + SEQ.pad;
@@ -158,7 +161,7 @@ export function SequenceDiagram({ name, messages, selectedId, onSelect }: { name
       {lanes.map((lane) => (
         <g key={lane} aria-hidden="true">
           <rect className="arch-seq__head" x={x(lane) - SEQ.column / 2 + 8} y={4} width={SEQ.column - 16} height={SEQ.head - 16} rx={4} />
-          {wrap(laneName(lane), 20, 2).map((line, row, lines) => (
+          {wrap(laneName(data, lane), 20, 2).map((line, row, lines) => (
             <text key={row} className="arch-seq__name" x={x(lane)} y={4 + (SEQ.head - 16) / 2 + (row - (lines.length - 1) / 2) * 14 + 4} textAnchor="middle">{line}</text>
           ))}
           <line className="arch-seq__lifeline" x1={x(lane)} x2={x(lane)} y1={SEQ.head - 12} y2={height - SEQ.pad / 2} />
@@ -170,7 +173,7 @@ export function SequenceDiagram({ name, messages, selectedId, onSelect }: { name
         const x2 = x(message.to);
         const callback = message.style === "Callback";
         const marker = callback || message.mode === "async" ? "url(#arch-seq-open)" : "url(#arch-seq-filled)";
-        const label = `${message.operation}${message.via ? ` · via ${laneName(message.via)}` : ""}`;
+        const label = `${message.operation}${message.via ? ` · via ${laneName(data, message.via)}` : ""}`;
         const selected = selectedId === message.id;
         const interactive = Boolean(onSelect);
         return (
@@ -180,7 +183,7 @@ export function SequenceDiagram({ name, messages, selectedId, onSelect }: { name
             tabIndex={interactive ? 0 : undefined}
             role={interactive ? "button" : undefined}
             aria-pressed={interactive ? selected : undefined}
-            aria-label={interactive ? `${index + 1}. ${laneName(message.from)} to ${laneName(message.to)}: ${label}. ${message.style}, ${message.mode}.` : undefined}
+            aria-label={interactive ? `${index + 1}. ${laneName(data, message.from)} to ${laneName(data, message.to)}: ${label}. ${message.style}, ${message.mode}.` : undefined}
             aria-hidden={interactive ? undefined : true}
             onClick={onSelect ? () => onSelect(message.id) : undefined}
             onKeyDown={onSelect ? (event) => {

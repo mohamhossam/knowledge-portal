@@ -3,14 +3,12 @@ import { useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { Button, type Column, DataTable, Facts, Section, Tabs } from "../design/components";
-import { DOMAINS, SYSTEMS, systemById } from "./data/landscape";
-import { JOURNEYS } from "./data/journeys";
-import { channelById, offeringById, orderTypeByCode } from "./data/portfolio";
+import { type CatalogueData, journeyViews } from "./adapter";
 import { download, evidenceText } from "./exports";
 import { type Impacted, impactOf } from "./impact";
 import { ROLE_WORDS, type System, type TamDomain } from "./model";
 import { ArchitectureFrame, BASE, EvidenceMark, RecordDrawer, SystemLink } from "./parts";
-import { scopeQuery, useScope } from "./scope";
+import { useScope, withScope } from "./scope";
 
 type View = "map" | "list";
 
@@ -40,23 +38,24 @@ function Tile({ system, impacted, lens, selected, href }: { system: System; impa
   );
 }
 
-function DomainBlock({ domain, impacted, lens, selectedId, hrefFor }: { domain: TamDomain; impacted: Map<string, Impacted>; lens: boolean; selectedId: string | null; hrefFor: (id: string) => string }) {
-  const systems = SYSTEMS.filter((system) => system.domain === domain.id);
+function DomainBlock({ data, domain, impacted, lens, selectedId, hrefFor }: { data: CatalogueData; domain: TamDomain; impacted: Map<string, Impacted>; lens: boolean; selectedId: string | null; hrefFor: (id: string) => string }) {
+  const systems = data.systems.filter((system) => system.domain === domain.id);
   const touched = systems.filter((system) => impacted.has(system.id)).length;
+  const groups = domain.groups.length ? domain.groups : [{ id: "", name: domain.name }];
   return (
     <section className={`arch-domain arch-domain--${domain.id}${domain.band ? " arch-domain--band" : ""}`} aria-labelledby={`domain-${domain.id}`}>
       <header className="arch-domain__head">
         <h2 id={`domain-${domain.id}`}>{domain.name}</h2>
         <span className="arch-domain__count">{lens ? `${touched} of ${systems.length}` : systems.length}<span className="ds-visually-hidden"> systems{lens ? " in this scope" : ""}</span></span>
       </header>
-      <p className="arch-domain__scope">{domain.scope}</p>
-      {domain.groups.map((group) => {
+      {domain.scope && <p className="arch-domain__scope">{domain.scope}</p>}
+      {groups.map((group) => {
         const members = systems.filter((system) => system.group === group.id);
         if (!members.length) return null;
         return (
-          <div key={group.id} className="arch-group">
-            {domain.groups.length > 1 && <h3 className="arch-group__name">{group.name}</h3>}
-            <ul className="arch-tiles" aria-label={domain.groups.length > 1 ? group.name : domain.name}>
+          <div key={group.id || domain.id} className="arch-group">
+            {groups.length > 1 && <h3 className="arch-group__name">{group.name}</h3>}
+            <ul className="arch-tiles" aria-label={groups.length > 1 ? group.name : domain.name}>
               {members.map((system) => (
                 <Tile key={system.id} system={system} impacted={impacted.get(system.id)} lens={lens} selected={selectedId === system.id} href={hrefFor(system.id)} />
               ))}
@@ -68,35 +67,35 @@ function DomainBlock({ domain, impacted, lens, selectedId, hrefFor }: { domain: 
   );
 }
 
-/** Every call a system makes or receives, across all journeys, once per operation and counterpart. */
-function connections(systemId: string) {
-  const seen = new Map<string, { direction: "out" | "in"; other: string; operation: string; journeys: string[] }>();
-  for (const journey of JOURNEYS) {
-    for (const integration of journey.integrations) {
-      const out = integration.from === systemId;
-      if (!out && integration.to !== systemId && integration.via !== systemId) continue;
-      const other = out ? integration.to : integration.from;
-      const key = `${out ? "out" : "in"}:${other}:${integration.operation}`;
-      const item = seen.get(key) ?? { direction: out ? "out" : "in", other, operation: integration.operation, journeys: [] };
-      if (!item.journeys.includes(journey.name)) item.journeys.push(journey.name);
-      seen.set(key, item);
+function SystemRecord({ data, system, impacted }: { data: CatalogueData; system: System; impacted?: Impacted }) {
+  const [scope] = useScope(data);
+  const domain = data.domains.find((item) => item.id === system.domain);
+  const group = domain?.groups.find((item) => item.id === system.group);
+  // Every call it makes or receives, and every step it performs, across all journeys and channels.
+  const views = useMemo(() => data.offerings.flatMap((offering) => journeyViews(data, offering.id)), [data]);
+  const calls = new Map<string, { direction: "out" | "in"; other: string; operation: string }>();
+  for (const view of views) {
+    for (const call of view.integrations) {
+      const out = call.from === system.id;
+      if (!out && call.to !== system.id && call.via !== system.id) continue;
+      const other = out ? call.to : call.from;
+      calls.set(`${out}:${other}:${call.operation}`, { direction: out ? "out" : "in", other, operation: call.operation });
     }
   }
-  return [...seen.values()];
-}
-
-function SystemRecord({ system, impacted }: { system: System; impacted?: Impacted }) {
-  const domain = DOMAINS.find((item) => item.id === system.domain);
-  const group = domain?.groups.find((item) => item.id === system.group);
-  const calls = connections(system.id);
-  const steps = JOURNEYS.flatMap((journey) => journey.steps.filter((step) => step.lane === system.id && step.kind === "task").map((step) => ({ journey, step })));
+  const steps = new Map<string, { journey: string; journeyName: string; channel: string | null; step: string; name: string }>();
+  for (const view of views) {
+    for (const step of view.steps) {
+      if (step.kind === "task" && step.lane === system.id) steps.set(`${view.id}:${step.id}`, { journey: view.id, journeyName: view.name, channel: view.channel, step: step.id, name: step.name });
+    }
+  }
+  const stepLink = (journey: string, channel: string | null, step: string) => withScope(`${BASE}/journeys/${journey}`, scope, { channel, step });
   return (
     <div className="arch-record">
       {system.aliases.length > 0 && <p className="arch-quiet">Also called {system.aliases.join(", ")}</p>}
-      <p>{system.function}</p>
+      <p>{system.function || "What it does isn't described yet."}</p>
       <Facts
         items={[
-          ["TAM domain", `${domain?.name ?? system.domain}${group ? ` · ${group.name}` : ""}`],
+          ["TAM domain", `${domain?.name ?? "Not placed"}${group ? ` · ${group.name}` : ""}`],
           ["Owner", system.owner ?? "Not stated"],
           ["Evidence", <EvidenceMark key="e" evidence={system.evidence} />],
           ...(system.external ? ([["Party", "External to the operator"]] as [string, string][]) : []),
@@ -107,15 +106,15 @@ function SystemRecord({ system, impacted }: { system: System; impacted?: Impacte
         <div className="arch-callout">
           <p className="arch-strong">Placement proposed: {domain?.name} instead of {system.proposedMove.from}</p>
           <p>{system.proposedMove.reason}</p>
-          <p className="arch-quiet">Waiting for an architect in <Link to={`${BASE}/governance`}>Governance</Link>.</p>
+          <p className="arch-quiet">Waiting for an architect in <Link to={withScope(`${BASE}/governance`, scope)}>Governance</Link>.</p>
         </div>
       )}
       {impacted && (
         <Section title="In this scope" headingLevel={3}>
           <ul className="arch-list">
-            {impacted.steps.filter(({ step }) => step.kind === "task").map(({ journey, step }) => (
-              <li key={`${journey.id}-${step.id}`}>
-                <Link to={`${BASE}/journeys/${journey.id}?step=${step.id}`}>{step.name}</Link>
+            {impacted.steps.map(({ journey, step }) => (
+              <li key={`${journey.id}-${journey.channel}-${step.id}`}>
+                <Link to={stepLink(journey.id, journey.channel, step.id)}>{step.name}</Link>
                 <span className="arch-quiet"> · {journey.name}</span>
               </li>
             ))}
@@ -123,10 +122,10 @@ function SystemRecord({ system, impacted }: { system: System; impacted?: Impacte
           </ul>
         </Section>
       )}
-      <Section title="Integrations" count={calls.length} headingLevel={3}>
-        {calls.length ? (
+      <Section title="Integrations" count={calls.size} headingLevel={3}>
+        {calls.size ? (
           <ul className="arch-list">
-            {calls.map((call) => (
+            {[...calls.values()].map((call) => (
               <li key={`${call.direction}-${call.other}-${call.operation}`}>
                 {call.direction === "out" ? "Calls " : "Called by "}
                 <SystemLink id={call.other} />: {call.operation}
@@ -137,13 +136,13 @@ function SystemRecord({ system, impacted }: { system: System; impacted?: Impacte
           <p className="arch-quiet">No integration is modelled for this system yet.</p>
         )}
       </Section>
-      {!impacted && steps.length > 0 && (
-        <Section title="Journey steps" count={steps.length} headingLevel={3}>
+      {!impacted && steps.size > 0 && (
+        <Section title="Journey steps" count={steps.size} headingLevel={3}>
           <ul className="arch-list">
-            {steps.map(({ journey, step }) => (
-              <li key={`${journey.id}-${step.id}`}>
-                <Link to={`${BASE}/journeys/${journey.id}?step=${step.id}`}>{step.name}</Link>
-                <span className="arch-quiet"> · {journey.name}</span>
+            {[...steps.values()].map((item) => (
+              <li key={`${item.journey}-${item.channel}-${item.step}`}>
+                <Link to={stepLink(item.journey, item.channel, item.step)}>{item.name}</Link>
+                <span className="arch-quiet"> · {item.journeyName}</span>
               </li>
             ))}
           </ul>
@@ -153,32 +152,26 @@ function SystemRecord({ system, impacted }: { system: System; impacted?: Impacte
   );
 }
 
-/**
- * The TAM landscape: every SMB system in its TM Forum TAM domain, with the
- * integration layer and enterprise services as bands beneath. With a product
- * chosen, it becomes the impact lens: the systems that product's journeys
- * touch, with their role; the rest recede.
- */
-export function LandscapePage() {
-  const [scope] = useScope();
+function Landscape({ data }: { data: CatalogueData }) {
+  const [scope] = useScope(data);
   const [params, setParams] = useSearchParams();
   const view: View = params.get("view") === "list" ? "list" : "map";
-  const selected = systemById(params.get("system") ?? "");
+  const selected = data.systems.find((system) => system.id === params.get("system"));
   const lens = Boolean(scope.product);
-  const impact = useMemo(() => (scope.product ? impactOf({ offeringId: scope.product, orderType: scope.order, channel: scope.channel }) : null), [scope.product, scope.order, scope.channel]);
+  const impact = useMemo(() => (scope.product ? impactOf(data, { offeringId: scope.product, orderType: scope.order, channel: scope.channel }) : null), [data, scope.product, scope.order, scope.channel]);
   const impacted = impact?.systems ?? new Map<string, Impacted>();
-  const query = scopeQuery(scope);
-  const hrefFor = (id: string) => `${BASE}${query}${query ? "&" : "?"}${view === "list" ? "view=list&" : ""}system=${id}`;
+  const hrefFor = (id: string) => withScope(BASE, scope, { view: view === "list" ? "list" : null, system: id });
 
-  const offering = offeringById(scope.product);
-  const words = [offering?.name, orderTypeByCode(scope.order)?.name, channelById(scope.channel)?.name].filter(Boolean).join(" · ");
-  const domainsTouched = new Set([...impacted.keys()].map((id) => systemById(id)?.domain)).size;
+  const offering = data.offerings.find((item) => item.id === scope.product);
+  const words = [offering?.name, offering?.orderTypes.find((item) => item.code === scope.order)?.name, data.channels.find((item) => item.id === scope.channel)?.name].filter(Boolean).join(" · ");
+  const domainsTouched = new Set([...impacted.keys()].map((id) => data.systems.find((system) => system.id === id)?.domain)).size;
 
-  const rows = SYSTEMS.filter((system) => !lens || impacted.has(system.id));
+  const rows = data.systems.filter((system) => !lens || impacted.has(system.id));
+  const domainName = (id: string) => data.domains.find((domain) => domain.id === id)?.name ?? "Not placed";
   const columns: Column<System>[] = [
     { id: "name", header: "System", rowHeader: true, bidi: true, cell: (system) => <Link to={hrefFor(system.id)}>{system.name}</Link> },
-    { id: "domain", header: "TAM domain", cell: (system) => DOMAINS.find((domain) => domain.id === system.domain)?.name },
-    { id: "group", header: "Group", cell: (system) => DOMAINS.find((domain) => domain.id === system.domain)?.groups.find((group) => group.id === system.group)?.name },
+    { id: "domain", header: "TAM domain", cell: (system) => domainName(system.domain) },
+    { id: "group", header: "Group", cell: (system) => data.domains.find((domain) => domain.id === system.domain)?.groups.find((group) => group.id === system.group)?.name ?? "—" },
     lens
       ? { id: "role", header: "Role in this scope", cell: (system) => roleWords(impacted.get(system.id)) }
       : { id: "owner", header: "Owner", cell: (system) => system.owner ?? "Not stated" },
@@ -188,22 +181,20 @@ export function LandscapePage() {
   const exportImpact = () => {
     const header = "System,TAM domain,Role,Steps,Integrations,Evidence";
     const lines = [...impacted.values()].map((item) => {
-      const system = systemById(item.systemId);
-      return [system?.name, DOMAINS.find((domain) => domain.id === system?.domain)?.name, roleWords(item), item.steps.filter(({ step }) => step.kind === "task").length, item.integrations.length, system ? evidenceText(system.evidence) : ""]
+      const system = data.systems.find((entry) => entry.id === item.systemId);
+      return [system?.name, system ? domainName(system.domain) : "", roleWords(item), item.steps.length, item.integrations.length, system ? evidenceText(data, system.evidence) : ""]
         .map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`)
         .join(",");
     });
     download(`impact-${[scope.product, scope.order, scope.channel].filter(Boolean).join("-")}.csv`, "\uFEFF" + [header, ...lines].join("\r\n"), "text/csv;charset=utf-8");
   };
 
-  const columnsOf = DOMAINS.filter((domain) => !domain.band);
-  const bands = DOMAINS.filter((domain) => domain.band);
+  const columnsOf = data.domains.filter((domain) => !domain.band);
+  const bands = data.domains.filter((domain) => domain.band);
+  const unplaced = data.systems.filter((system) => !data.domains.some((domain) => domain.id === system.domain));
 
   return (
-    <ArchitectureFrame
-      title="Architecture landscape"
-      lead="Every SMB system in its TM Forum TAM domain. Choose a product, an order type and a channel to see which systems they touch, and how."
-    >
+    <>
       <div className="arch-lens" role="status">
         {lens ? (
           <>
@@ -235,12 +226,15 @@ export function LandscapePage() {
             <div className="arch-map">
               <div className="arch-map__columns">
                 {columnsOf.map((domain) => (
-                  <DomainBlock key={domain.id} domain={domain} impacted={impacted} lens={lens} selectedId={selected?.id ?? null} hrefFor={hrefFor} />
+                  <DomainBlock key={domain.id} data={data} domain={domain} impacted={impacted} lens={lens} selectedId={selected?.id ?? null} hrefFor={hrefFor} />
                 ))}
               </div>
               {bands.map((domain) => (
-                <DomainBlock key={domain.id} domain={domain} impacted={impacted} lens={lens} selectedId={selected?.id ?? null} hrefFor={hrefFor} />
+                <DomainBlock key={domain.id} data={data} domain={domain} impacted={impacted} lens={lens} selectedId={selected?.id ?? null} hrefFor={hrefFor} />
               ))}
+              {unplaced.length > 0 && (
+                <p className="arch-callout">Not placed in a TAM domain yet: {unplaced.map((system) => system.name).join(", ")}.</p>
+              )}
               <p className="arch-legend">
                 <span><Globe size={14} aria-hidden="true" /> External</span>
                 <span><ArrowRightLeft size={14} aria-hidden="true" /> Placement proposed</span>
@@ -256,11 +250,28 @@ export function LandscapePage() {
               merged.delete("system");
               return merged;
             }, { replace: true })}>
-              <SystemRecord system={selected} impacted={impacted.get(selected.id)} />
+              <SystemRecord data={data} system={selected} impacted={impacted.get(selected.id)} />
             </RecordDrawer>
           )}
         </div>
       </Tabs>
+    </>
+  );
+}
+
+/**
+ * The TAM landscape: every system in its TM Forum TAM domain, with the
+ * integration layer and enterprise services as bands beneath. With a product
+ * chosen, it becomes the impact lens: the systems that product's journeys
+ * touch, with their role; the rest recede.
+ */
+export function LandscapePage() {
+  return (
+    <ArchitectureFrame
+      title="Architecture landscape"
+      lead="Every system in its TM Forum TAM domain. Choose a product, an order type and a channel to see which systems they touch, and how."
+    >
+      {(data) => <Landscape data={data} />}
     </ArchitectureFrame>
   );
 }

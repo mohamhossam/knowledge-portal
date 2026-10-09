@@ -5,7 +5,7 @@
  * lane. The same geometry draws the diagram and feeds the BPMN 2.0 export's
  * diagram interchange, so the exported file opens laid out as it is shown.
  */
-import type { Journey, Step } from "./model";
+import type { JourneyView, Step } from "./model";
 
 export const GEOMETRY = {
   laneHeader: 168,
@@ -34,7 +34,7 @@ function size(step: Step): { width: number; height: number } {
   return { width: GEOMETRY.event, height: GEOMETRY.event };
 }
 
-export function layoutFlow(journey: Journey): FlowLayout {
+export function layoutFlow(journey: JourneyView): FlowLayout {
   const byId = new Map(journey.steps.map((step) => [step.id, step]));
   const incoming = new Map<string, string[]>();
   for (const step of journey.steps) for (const next of step.next) incoming.set(next.to, [...(incoming.get(next.to) ?? []), step.id]);
