@@ -18,20 +18,32 @@
   --cl-hairline: #e4e2da;
   --cl-rule: #cfccc1;
   --cl-rule-strong: #8a8579;
-  --cl-market: #fff1b8;
-  --cl-market-ink: #6b5200;
-  --cl-customer: #cfe6f5;
-  --cl-customer-ink: #1d4e6e;
-  --cl-service: #e2eff8;
-  --cl-service-ink: #2b5a6e;
-  --cl-resource: #d7eecb;
-  --cl-resource-ink: #2d5a1e;
-  --cl-party: #ece6f3;
-  --cl-party-ink: #4d3a6b;
-  --cl-enterprise: #ebe9e3;
-  --cl-enterprise-ink: #4a4542;
-  --cl-spine: #2b5a6e;
+  /*
+   * Layer tints, e& in calm mode: soft tones of the brand's own family
+   * (beige, red, maroon, grey, warm black), never saturated. Each layer has
+   * its tint, its ink and a deeper edge; the integration spine is e& maroon.
+   */
+  --cl-market: #f1efe7;
+  --cl-market-ink: #5e4b36;
+  --cl-market-edge: #c9c2ae;
+  --cl-customer: #f8ebe9;
+  --cl-customer-ink: #7a1f24;
+  --cl-customer-edge: #e2b8b3;
+  --cl-service: #eee8e3;
+  --cl-service-ink: #4e3f38;
+  --cl-service-edge: #cdbfb4;
+  --cl-resource: #f5eee0;
+  --cl-resource-ink: #5c4a2a;
+  --cl-resource-edge: #d9caa9;
+  --cl-party: #f3e8eb;
+  --cl-party-ink: #4b0f1e;
+  --cl-party-edge: #d6b8c0;
+  --cl-enterprise: #eeeeec;
+  --cl-enterprise-ink: #454545;
+  --cl-enterprise-edge: #c8c8c4;
+  --cl-spine: #4b0f1e;
   --cl-spine-ink: #ffffff;
+  --cl-spine-edge: #2e0912;
   --cl-ochre: #7a5a00;
   --cl-ochre-wash: #f6efd9;
   --cl-sage: #2d6640;
@@ -115,13 +127,13 @@
 .cl-band { position: absolute; border-radius: 4px; }
 .cl-band > span { position: absolute; left: 12px; top: 7px; font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; font-stretch: 85%; }
 .cl-band > span small { margin-left: 6px; font-weight: 600; letter-spacing: 0; opacity: 0.75; }
-.cl-band.market-sales, .cl-band.product { background: var(--cl-market); color: var(--cl-market-ink); }
-.cl-band.customer { background: var(--cl-customer); color: var(--cl-customer-ink); }
-.cl-band.service { background: var(--cl-service); color: var(--cl-service-ink); }
-.cl-band.resource { background: var(--cl-resource); color: var(--cl-resource-ink); }
-.cl-band.engaged-party { background: var(--cl-party); color: var(--cl-party-ink); }
-.cl-band.enterprise { background: var(--cl-enterprise); color: var(--cl-enterprise-ink); }
-.cl-band.integration { background: var(--cl-spine); color: var(--cl-spine-ink); }
+.cl-band.market-sales, .cl-band.product { background: var(--cl-market); color: var(--cl-market-ink); box-shadow: inset 0 2px 0 var(--cl-market-edge); }
+.cl-band.customer { background: var(--cl-customer); color: var(--cl-customer-ink); box-shadow: inset 0 2px 0 var(--cl-customer-edge); }
+.cl-band.service { background: var(--cl-service); color: var(--cl-service-ink); box-shadow: inset 0 2px 0 var(--cl-service-edge); }
+.cl-band.resource { background: var(--cl-resource); color: var(--cl-resource-ink); box-shadow: inset 0 2px 0 var(--cl-resource-edge); }
+.cl-band.engaged-party { background: var(--cl-party); color: var(--cl-party-ink); box-shadow: inset 0 2px 0 var(--cl-party-edge); }
+.cl-band.enterprise { background: var(--cl-enterprise); color: var(--cl-enterprise-ink); box-shadow: inset 0 2px 0 var(--cl-enterprise-edge); }
+.cl-band.integration { background: var(--cl-spine); color: var(--cl-spine-ink); box-shadow: inset 0 2px 0 var(--cl-spine-edge); }
 .cl-band.integration > span { top: 50%; transform: translateY(-50%); }
 .cl-lines { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
 .cl-sys { position: absolute; display: flex; align-items: center; gap: 6px; padding: 0 8px 0 26px; border: 1px solid rgb(31 27 26 / 0.3); border-radius: 3px; background: var(--cl-page); font-size: 0.875rem; font-weight: 600; font-stretch: 70%; text-align: left; white-space: nowrap; overflow: hidden; cursor: pointer; transition: background-color 160ms ease-out, border-color 160ms ease-out; }

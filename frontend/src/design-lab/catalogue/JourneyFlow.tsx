@@ -174,7 +174,7 @@ export function JourneyFlow() {
               const y = index * LANE;
               return (
                 <g key={lane} aria-hidden="true">
-                  <rect x={0} y={y} width={W} height={LANE} fill={tint(lane)} opacity={0.32} />
+                  <rect x={0} y={y} width={W} height={LANE} fill={tint(lane)} opacity={0.55} />
                   <rect x={0} y={y} width={GEOMETRY.laneHeader} height={LANE} fill={tint(lane)} />
                   <line x1={0} x2={W} y1={y + LANE} y2={y + LANE} stroke="var(--cl-page)" strokeWidth={2} />
                   {wrap(laneTitle(lane), 19, 2).slice(0, 2).map((line, row) => (

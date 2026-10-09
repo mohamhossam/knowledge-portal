@@ -24,12 +24,14 @@ THESIS: The catalogue is the architect's layered wall poster, made live: notatio
 bands, systems as components, integrations drawn as lines, so "what talks to what" is seen, not
 read. It refuses the category default of card grids with chip lists under a dropdown filter bar.
 
-OWN-WORLD: White page under the maroon e& shell. Layer bands in soft notation tints (market and
-product sand-yellow, customer blue, service pale blue, resource green, engaged party lilac,
-enterprise warm grey) with the integration layer as a deep slate-teal spine. Systems are white
-component boxes with a 1px ink frame and the component glyph; external systems dashed. Connectors
-are orthogonal ink lines, maroon when selected. Archivo condensed labels, tabular counts. e& red
-only on the logo and one focal accent (the current journey step).
+OWN-WORLD: White page under the maroon e& shell. Layer bands in e& calm tones, soft tints of the
+brand's own family only (beige, red blush, warm stone, sand, maroon mist, light grey), each with a
+2px top edge in a deeper tone of its own; the integration layer is an e& maroon spine. Systems are
+white component boxes with a 1px ink frame and the component glyph; external systems dashed.
+Connectors are orthogonal ink lines in the gutters, maroon when selected. Archivo condensed
+labels, tabular counts. e& red only on the logo and one focal accent (the current journey step).
+(Palette changed 2026-10-09 at the user's request: e& branding colours in calm mode, replacing
+the notation tints.)
 
 STORY: The architect understands the whole estate in one poster, picks a system or a product
 journey, and sees exactly which systems light up and how they connect; the evidence behind each
