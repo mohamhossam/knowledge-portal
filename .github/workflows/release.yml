@@ -53,4 +53,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" \
-            --notes "Images: ghcr.io/${GITHUB_REPOSITORY_OWNER}/knowledge-api:${GITHUB_REF_NAME} and ghcr.io/${GITHUB_REPOSITORY_OWNER}/knowledge-web:${GITHUB_REF_NAME}"
+            --notes "Images: ghcr.io/${GITHUB_REPOSITORY_OWNER}/knowledge-api:${GITHUB_REF_NAME} and ghcr.io/${GITHUB_REPOSITORY_OWNER}/knowledge-web:${GITHUB_REF_NAME}. Changes: CHANGELOG.md."
