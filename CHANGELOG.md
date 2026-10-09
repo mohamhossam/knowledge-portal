@@ -3,6 +3,14 @@
 Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` and
 `ghcr.io/mohamhossam/knowledge-web:vX.Y.Z` (`README.md`, "Images and releases").
 
+## Unreleased
+
+### Added
+
+- Each GitHub release carries the internal and public OpenAPI contracts, so requirement work
+  can pin the internal one it is built against.
+- Import-linter forbids importing requirement work's code (requirement-portal ADR-0104).
+
 ## 0.2.0 — 2026-10-09
 
 The portal deploys, signs in and starts on its own; requirement work is an optional link

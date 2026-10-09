@@ -52,5 +52,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # The internal contract requirement work's adapters pin (requirement-portal ADR-0099).
           gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" \
-            --notes "Images: ghcr.io/${GITHUB_REPOSITORY_OWNER}/knowledge-api:${GITHUB_REF_NAME} and ghcr.io/${GITHUB_REPOSITORY_OWNER}/knowledge-web:${GITHUB_REF_NAME}. Changes: CHANGELOG.md."
+            --notes "Images: ghcr.io/${GITHUB_REPOSITORY_OWNER}/knowledge-api:${GITHUB_REF_NAME} and ghcr.io/${GITHUB_REPOSITORY_OWNER}/knowledge-web:${GITHUB_REF_NAME}. Changes: CHANGELOG.md." \
+            contracts/knowledge-internal.openapi.json contracts/knowledge-public.openapi.json

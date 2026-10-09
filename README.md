@@ -147,7 +147,7 @@ and its `REQUIREMENT_PORTAL_URL` where requirement work is, empty to leave out t
 CI (`.github/workflows/ci.yml`) runs the checks with PostgreSQL, the frontend checks, audits
 dependencies, and builds, scans and starts both images. Pushing a tag `vX.Y.Z` that matches
 `pyproject.toml` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` and
-`ghcr.io/mohamhossam/knowledge-web:vX.Y.Z` once CI passes; `deploy/compose.production.yaml`
+`ghcr.io/mohamhossam/knowledge-web:vX.Y.Z` once CI passes, and attaches both OpenAPI contracts to the GitHub release; `deploy/compose.production.yaml`
 pulls them by tag. CI needs the `KERNEL_READ_TOKEN` repository secret. `CHANGELOG.md` says what
 each release changes; add its entry in the pull request that bumps the version.
 
