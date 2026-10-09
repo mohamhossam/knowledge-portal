@@ -24,6 +24,8 @@ const REDESIGNED: ((path: string) => boolean)[] = [
   (path) => path === "/",
   // Area 2: the library, its search and every document's pages.
   (path) => path === "/library" || path.startsWith("/library/"),
+  // The architecture catalogue, rebuilt from scratch (plan 03-architecture-catalogue).
+  (path) => path === "/architecture" || path.startsWith("/architecture/"),
 ];
 
 function useOnline() {

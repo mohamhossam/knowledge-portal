@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Integration branch | `feat/kb-redesign`, from `main` @ `b6114b9` |
-| Current phase | **8: Build by area.** Areas 1 and 2 approved and merged; next is area 3 (catalogue curation) |
+| Current phase | **8, re-scoped to the Catalogue only (2026-10-09).** Areas 1 and 2 approved and merged; the architecture catalogue is being rebuilt from scratch on `feat/kb-redesign-architecture` |
 | Last updated | 2026-10-09 |
 
 ## Phase log
@@ -71,6 +71,8 @@
 | 2026-10-08 | **Area 1 IA choices.** "Re-confirmations" sits in the rail's secondary group (plan 06: always reachable). The Gaps backlog is listed with its true number but kept out of the "need you" count, so the count can reach zero (critique P1). Your work's actions are plain tab stops, not a roving list, per the accessibility reviewers (a roving `<ul>` hides most actions from Tab). | Area 1 reviews and critique |
 | 2026-10-08 | **Route-change focus for legacy pages.** `AppShell` focuses the design-system h1, or else a legacy page's first h1 (it waits for it to load). Focus a legacy page placed itself, or a `#target`, is kept. | Area 1 |
 | 2026-10-09 | **GATE 8.2 approved.** Library rebuilt (area 2). Decisions: Return to service re-approves the last published review (no API endpoint, no reason recorded; said in the panel); K2 `lang` is a script heuristic (HYPOTHESIS); `#passage-…` focuses the passage (no path form); **"seen" means a passage stayed current for about 0.6 s** (passing through doesn't count); the desk was made denser before the merge (one-line keys, progress and file note on one row, the location select behind a button). Critique: Library 28 → 30/40, Your work 27/28 → 31/40. | User |
+| 2026-10-09 | **Re-scope (user):** Catalogue only; everything else on hold. The catalogue is rebuilt **from scratch**, using only the Business Pro Plus SDD (v2.3) and the SMB architecture reference (v1.0). The old catalogue content, pages and the HTML explorer are not sources. Business Pro Plus first; the model is generic for any telecom product. Curators edit; every signed-in user reads (Explorer, later). Additive backend/API changes approved. | User |
+| 2026-10-09 | **Cleanup:** `scripts/seed_demo.py` no longer seeds catalogue content (no sample versions, draft or sample requirements). The backend's built-in "Initial catalogue" (`smb_architecture.yaml`, Requirement AI's matching knowledge) is left until the user decides how to replace it. | User |
 | 2026-10-08 | **GATE 8.1 approved.** Chrome share is measured by height (6%). The critique stands at 27–28/40, with acting from the queue deferred to area 2 and a re-critique after it. Queues use one tab stop per item (interaction model §2.2 amended). | User |
 
 ## Brand source
@@ -226,9 +228,27 @@ Report: `docs/redesign/areas/02-library/README.md`.
 | D4 visual | Baselines (win32) for `home` and 8 library routes × 1280/1920 × light/dark; the desk is view-only (200 rows) |
 | D5 critique | Library **28 → 30/40**; Your work **27/28 → 31/40** (H7 = 3, H10 = 3 on both); detector 0 findings |
 
-## Next exact action
+## Architecture catalogue (re-scope, 2026-10-09)
 
-**Phase 8, area 3: Catalogue curation** (plan `docs/redesign/plans/03-catalogue-curation.md`):
-- **Branch:** `feat/kb-redesign-catalogue-curation` (the plan's name), created from `feat/kb-redesign`.
-- **Carry over from area 2:** the Area 2 rows in `docs/redesign/backlog.md` (focus details, terms, resume signal on Your work, the `error_category` dependency for retry, drafts kept safe).
-- **Then:** GATE 8.3.
+Plan: `docs/redesign/plans/03-architecture-catalogue.md` (replaces plans 03 and 04).
+Branch: `feat/kb-redesign-architecture`.
+
+**Built (frontend, data from the two sources in `frontend/src/architecture/data/`):**
+
+- **Landscape:** a TM Forum TAM map (7 domains + integration layer). The impact lens (product + order type + channel → impacted systems, with their role) is computed from the journeys. A record drawer per system. 8 TAM placements are proposed against the reference, each with its reason.
+- **Portfolio:** an editable Enterprise › Fixed › SMB › family › offering tree. Levels are data. Edits stay in the session until the backend stores them.
+- **Offering (Business Pro Plus):** purpose, customer value and eligibility; plans (prices are a gap); 11 rules; 9 components with PO/CFSS codes and responsible systems; an order type × channel journeys matrix (19 order types); impact by domain.
+- **Journeys:**
+  - New activation (digital) and New activation (BCRM), 23 steps each.
+  - Up/downgrade.
+  - Each journey has a BPMN swimlane flow, a sequence diagram with an integration register, order tracking and a steps table.
+  - Exports: BPMN 2.0 XML with DI, PlantUML, Mermaid, CSV.
+- **Systems** register; **Governance** (sources, placements to decide, 15 findings); **Versions** (working draft).
+- **Checks:** build, eslint, brand lint and budget green (entry chunk 662.48 kB, −26% vs baseline). Unit 497 tests: the new architecture suite (9) passes; the known Explorer timezone failure remains. The e2e route list points at the new routes; they are not yet in `REDESIGNED` (visual baselines come at the gate).
+
+**Next exact action:** the user reviews the running catalogue (http://localhost:5194/knowledge/architecture). Then:
+
+1. Backend: store the model (portfolio, offerings, journeys, integrations, tracking) with additive API changes, seeded from these data files.
+2. Decide how `smb_architecture.yaml` (Requirement AI's matching knowledge) is replaced.
+3. Explorer read views and exports for all signed-in users.
+4. Gate: one critique, the serious findings fixed, the e2e routes added to `REDESIGNED`.

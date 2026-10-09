@@ -1,0 +1,837 @@
+/*
+ * The architecture catalogue, rebuilt from scratch: the TAM landscape and its
+ * impact lens, the portfolio hierarchy, offerings, BPMN journeys, sequence
+ * diagrams and the registers, on the Calm Ledger. Semantic and component
+ * tokens only; logical properties only. TAM domains are told apart by their
+ * labels and their place, never by colour.
+ */
+
+.arch {
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+  min-inline-size: 0;
+  max-inline-size: var(--page-max);
+}
+
+.arch > .ds-pagehead {
+  margin-block-end: 0;
+}
+
+.arch-stack {
+  display: grid;
+  gap: var(--space-5);
+  min-inline-size: 0;
+}
+
+.arch-quiet {
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.arch-strong {
+  font-weight: var(--weight-strong);
+}
+
+.arch-detail {
+  display: block;
+  margin-block-start: var(--space-1);
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.arch-reading {
+  max-inline-size: 70ch;
+  margin: 0;
+  font-size: var(--text-reading);
+  line-height: var(--leading-reading);
+}
+
+.arch-note {
+  margin: 0;
+  max-inline-size: 80ch;
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.arch-hint {
+  margin: 0;
+  padding-block: var(--space-3);
+}
+
+.arch-callout {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  border-block-start: var(--hair-rule);
+  background: var(--color-surface-2);
+}
+
+.arch-callout p {
+  margin: 0;
+}
+
+.arch-gap {
+  display: inline-flex;
+  gap: var(--space-1);
+  align-items: center;
+  color: var(--color-warning);
+}
+
+.arch-system-link {
+  white-space: nowrap;
+}
+
+.arch-cell-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-link);
+  font: inherit;
+  text-align: start;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+  min-block-size: var(--target-min);
+}
+
+.arch-list,
+.arch-points,
+.arch-inline-list,
+.arch-impact-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.arch-list {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.arch-points {
+  display: grid;
+  gap: var(--space-3);
+  max-inline-size: 90ch;
+}
+
+.arch-points > li {
+  padding-block-end: var(--space-3);
+  border-block-end: var(--hair-rule);
+}
+
+.arch-inline-list {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.arch-impact-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: var(--space-3) var(--space-5);
+}
+
+/* The evidence mark: an icon and words, never colour alone. */
+.arch-evidence {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-1);
+  align-items: baseline;
+  font-size: var(--text-meta);
+  vertical-align: baseline;
+}
+
+.arch-evidence > svg {
+  flex: none;
+  align-self: center;
+}
+
+.arch-evidence--confirmed {
+  color: var(--color-success);
+}
+
+.arch-evidence--inferred {
+  color: var(--color-info);
+}
+
+.arch-evidence--gap {
+  color: var(--color-warning);
+}
+
+.arch-evidence__where,
+.arch-evidence__note {
+  color: var(--color-ink-2);
+}
+
+.arch-evidence__note {
+  flex-basis: 100%;
+}
+
+/* The context bar: version, then the lens. */
+.arch-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-5);
+  align-items: end;
+  padding-block: var(--space-3);
+  border-block: var(--hair-rule);
+}
+
+.arch-context__field,
+.arch-context__version {
+  display: grid;
+  gap: var(--space-1);
+  min-inline-size: 13rem;
+}
+
+.arch-context__version {
+  min-inline-size: 9rem;
+}
+
+.arch-context__label {
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-emphasis);
+}
+
+.arch-context__value {
+  display: flex;
+  align-items: center;
+  min-block-size: var(--field-height);
+  font-weight: var(--weight-strong);
+}
+
+.arch-context__hint {
+  display: flex;
+  align-items: center;
+  min-block-size: var(--field-height);
+  color: var(--color-ink-2);
+}
+
+/* The lens summary above the landscape. */
+.arch-lens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-5);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.arch-lens p {
+  margin: 0;
+}
+
+.arch-landscape,
+.arch-portfolio {
+  display: grid;
+  gap: var(--space-5);
+  min-inline-size: 0;
+}
+
+.arch-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/*
+ * The selected item's record: a non-modal drawer at the side of the view, over
+ * the page's edge, so maps and diagrams keep their full width. The one overlay
+ * elevation.
+ */
+.arch-drawer {
+  position: fixed;
+  inset-block: var(--sticky-top, 0px) 0;
+  inset-inline-end: 0;
+  z-index: var(--z-drawer);
+  display: flex;
+  inline-size: min(26rem, 100vw);
+  box-shadow: var(--overlay-shadow);
+}
+
+.arch-drawer .ds-drawer {
+  position: static;
+  inline-size: 100%;
+  max-block-size: none;
+  block-size: 100%;
+  border-inline-start: var(--panel-border);
+}
+
+.arch-map {
+  display: grid;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+
+.arch-map__columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
+  gap: var(--space-3);
+  align-items: start;
+}
+
+/*
+ * The TAM poster's order in one row: Market & Sales, Product, Customer (twice
+ * as wide: it holds the most systems), Service, Resource, Engaged Party.
+ */
+@media (min-width: 1100px) {
+  .arch-map__columns {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+
+  .arch-domain--customer {
+    grid-column: span 2;
+  }
+
+  .arch-domain--customer .arch-group {
+    align-content: start;
+  }
+
+  .arch-domain--customer {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--space-3);
+  }
+
+  .arch-domain--customer > .arch-domain__head,
+  .arch-domain--customer > .arch-domain__scope {
+    grid-column: 1 / -1;
+  }
+}
+
+.arch-domain {
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+  padding: var(--space-3);
+  border: var(--panel-border);
+  border-block-start: var(--ledger-rule);
+  background: var(--color-surface);
+}
+
+.arch-domain__head {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.arch-domain__head h3 {
+  margin: 0;
+  font-size: var(--text-h3);
+  font-weight: var(--weight-heading);
+}
+
+.arch-domain__count {
+  flex: none;
+  white-space: nowrap;
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+  font-stretch: var(--stretch-numeral);
+  font-variant-numeric: tabular-nums;
+}
+
+.arch-domain__scope {
+  margin: 0;
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.arch-group {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.arch-group__name {
+  margin: var(--space-2) 0 0;
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-emphasis);
+}
+
+.arch-tiles {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.arch-domain--band .arch-tiles {
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+}
+
+.arch-domain--band .arch-group {
+  gap: var(--space-2);
+}
+
+.arch-tile {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0 var(--space-2);
+  align-items: center;
+  min-block-size: var(--target-min);
+  padding: var(--space-2) var(--space-3);
+  border: var(--rule-hair) solid var(--color-rule);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-1);
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+.arch-tile:hover {
+  border-color: var(--color-rule-strong);
+}
+
+.arch-tile__name {
+  grid-column: 1;
+  font-weight: var(--weight-emphasis);
+  overflow-wrap: anywhere;
+}
+
+.arch-tile__role {
+  grid-column: 1;
+  color: var(--color-on-selected);
+  font-size: var(--text-meta);
+}
+
+.arch-tile__marks {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  display: inline-flex;
+  gap: var(--space-1);
+  color: var(--color-ink-2);
+}
+
+/* In the lens: what the scope touches stands out; the rest recedes but stays legible. */
+.arch-tile--impacted {
+  border-color: var(--color-action);
+  background: var(--color-selected);
+}
+
+.arch-tile--quiet {
+  border-style: dashed;
+  border-color: var(--color-rule-soft);
+  background: var(--color-surface);
+  color: var(--color-ink-2);
+}
+
+.arch-tile--quiet .arch-tile__name {
+  font-weight: var(--weight-body);
+}
+
+.arch-tile[aria-current="true"] {
+  outline: var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.arch-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  margin: 0;
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.arch-legend span {
+  display: inline-flex;
+  gap: var(--space-1);
+  align-items: center;
+}
+
+/* The record panel beside a map, a tree or a flow. */
+.arch-record {
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+  min-inline-size: 0;
+}
+
+.arch-record p {
+  margin: 0;
+}
+
+/* Portfolio: a left-to-right hierarchy drawn with plain connectors. */
+.arch-tree-scroll {
+  overflow-x: auto;
+  padding-block: var(--space-3);
+}
+
+.arch-tree,
+.arch-tree__children {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.arch-tree__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.arch-tree__children {
+  position: relative;
+  display: grid;
+  gap: var(--space-3);
+  margin-inline-start: var(--space-8);
+}
+
+.arch-tree__children {
+  align-content: center;
+}
+
+/* Each child's elbow back to its parent's spine. */
+.arch-tree__children > .arch-tree__item::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: calc(var(--space-8) / -2);
+  inline-size: calc(var(--space-8) / 2);
+  inset-block-start: 50%;
+  border-block-start: var(--rule-hair) solid var(--color-rule-strong);
+}
+
+.arch-tree__children > .arch-tree__item::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: calc(var(--space-8) / -2);
+  inset-block: 0;
+  border-inline-start: var(--rule-hair) solid var(--color-rule-strong);
+}
+
+.arch-tree__children > .arch-tree__item:first-child::after {
+  inset-block-start: 50%;
+}
+
+.arch-tree__children > .arch-tree__item:last-child::after {
+  inset-block-end: 50%;
+}
+
+.arch-tree__children > .arch-tree__item:only-child::after {
+  display: none;
+}
+
+/* The parent's stub out to the spine. */
+.arch-tree__item > .arch-tree__children::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: calc(var(--space-8) * -1);
+  inline-size: calc(var(--space-8) / 2);
+  inset-block-start: 50%;
+  border-block-start: var(--rule-hair) solid var(--color-rule-strong);
+}
+
+.arch-node {
+  display: grid;
+  gap: var(--space-1);
+  flex: none;
+  inline-size: 11.5rem;
+  min-block-size: var(--target-min);
+  padding: var(--space-2) var(--space-3);
+  border: var(--rule-hair) solid var(--color-rule-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.arch-node:hover {
+  border-color: var(--color-action);
+}
+
+.arch-node[aria-pressed="true"] {
+  border-color: var(--color-action);
+  background: var(--color-selected);
+}
+
+.arch-node__level {
+  display: inline-flex;
+  gap: var(--space-1);
+  align-items: center;
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.arch-node__name {
+  font-weight: var(--weight-strong);
+}
+
+.arch-node__meta {
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.arch-node--offering {
+  border-block-start: var(--ledger-rule);
+  background: var(--color-surface-1);
+}
+
+/* Diagrams: a scrolling canvas; the diagram keeps its size. */
+.arch-canvas {
+  overflow: auto;
+  max-block-size: 75vh;
+  border: var(--panel-border);
+  background: var(--color-surface);
+}
+
+.arch-flow,
+.arch-seq {
+  display: block;
+  font-family: var(--font-ui);
+}
+
+.arch-flow__lane {
+  fill: var(--color-surface);
+}
+
+.arch-flow__lane--alt {
+  fill: var(--color-surface-1);
+}
+
+.arch-flow__lane-rule {
+  stroke: var(--color-rule);
+}
+
+.arch-flow__lane-name {
+  fill: var(--color-ink-2);
+  font-size: 13px;
+  font-weight: var(--weight-emphasis);
+}
+
+.arch-flow__edge {
+  fill: none;
+  stroke: var(--color-rule-strong);
+  stroke-width: 1.25;
+}
+
+.arch-flow__arrowhead {
+  fill: var(--color-rule-strong);
+}
+
+.arch-flow__edge-label {
+  fill: var(--color-ink-2);
+  font-size: 12px;
+}
+
+.arch-flow__node {
+  cursor: pointer;
+  outline: none;
+}
+
+.arch-flow__shape {
+  fill: var(--color-surface);
+  stroke: var(--color-rule-strong);
+  stroke-width: 1.25;
+}
+
+.arch-flow__node--exclusive .arch-flow__shape,
+.arch-flow__node--parallel .arch-flow__shape {
+  fill: var(--color-surface-2);
+}
+
+.arch-flow__event--end,
+.arch-flow__event--error-end {
+  stroke-width: 3;
+}
+
+.arch-flow__glyph {
+  fill: none;
+  stroke: var(--color-ink);
+  stroke-width: 2;
+}
+
+.arch-flow__text {
+  fill: var(--color-ink);
+  font-size: 13px;
+}
+
+.arch-flow__small {
+  fill: var(--color-ink-2);
+  font-size: 12px;
+}
+
+.arch-flow__calls {
+  fill: var(--color-ink-2);
+  font-size: 11px;
+}
+
+.arch-flow__ponr {
+  fill: var(--color-warning);
+  font-size: 11px;
+  font-weight: var(--weight-strong);
+}
+
+.arch-flow__node:hover .arch-flow__shape {
+  stroke: var(--color-action);
+}
+
+.arch-flow__node.is-selected .arch-flow__shape {
+  fill: var(--color-selected);
+  stroke: var(--color-action);
+  stroke-width: 2;
+}
+
+.arch-flow__node:focus-visible .arch-flow__shape,
+.arch-seq__message:focus-visible .arch-seq__hit {
+  stroke: var(--color-focus);
+  stroke-width: 3;
+}
+
+.arch-seq__head {
+  fill: var(--color-surface-2);
+  stroke: var(--color-rule-strong);
+}
+
+.arch-seq__name {
+  fill: var(--color-ink);
+  font-size: 13px;
+  font-weight: var(--weight-emphasis);
+}
+
+.arch-seq__lifeline {
+  stroke: var(--color-rule);
+  stroke-dasharray: 4 4;
+}
+
+.arch-seq__arrow {
+  stroke: var(--color-ink-2);
+  stroke-width: 1.25;
+}
+
+.arch-seq__arrow--callback {
+  stroke-dasharray: 6 4;
+}
+
+.arch-seq__open-head {
+  fill: none;
+  stroke: var(--color-ink-2);
+  stroke-width: 1.25;
+}
+
+.arch-seq__label {
+  fill: var(--color-ink);
+  font-size: 12px;
+}
+
+.arch-seq__number {
+  fill: var(--color-ink-2);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.arch-seq__hit {
+  fill: transparent;
+  stroke: none;
+}
+
+.arch-seq__message {
+  outline: none;
+}
+
+.arch-seq__message[role="button"] {
+  cursor: pointer;
+}
+
+.arch-seq__message.is-selected .arch-seq__hit {
+  fill: var(--color-selected);
+}
+
+.arch-seq__message.is-selected .arch-seq__arrow {
+  stroke: var(--color-action);
+  stroke-width: 2;
+}
+
+/* Journeys by order type and channel. */
+.arch-matrix-scroll {
+  overflow-x: auto;
+}
+
+.arch-matrix {
+  border-collapse: collapse;
+  min-inline-size: 100%;
+  font-size: var(--density-text);
+}
+
+.arch-matrix th,
+.arch-matrix td {
+  padding: var(--density-cell-block) var(--density-cell-inline);
+  border-block-end: var(--hair-rule);
+  text-align: start;
+  vertical-align: top;
+}
+
+.arch-matrix thead th {
+  border-block-end: var(--ledger-rule);
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-emphasis);
+  white-space: nowrap;
+}
+
+.arch-matrix tbody th {
+  font-weight: var(--weight-body);
+  min-inline-size: 15rem;
+}
+
+.arch-matrix code {
+  color: var(--color-ink-2);
+  font-family: var(--font-code);
+  font-size: var(--text-meta);
+}
+
+.arch-matrix a {
+  display: inline-flex;
+  white-space: nowrap;
+  gap: var(--space-1);
+  align-items: center;
+  min-block-size: var(--target-min);
+}
+
+.arch-gap--cell {
+  white-space: nowrap;
+}
+
+.arch-matrix__modelled {
+  background: var(--color-selected);
+}
+
+/* Governance: the two sources side by side. */
+.arch-sources {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
+  gap: var(--space-4);
+}
+
+.arch-source {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--panel-pad);
+  border: var(--panel-border);
+  border-block-start: var(--ledger-rule);
+}
+
+.arch-source h3 {
+  margin: 0;
+  font-size: var(--text-h3);
+  font-weight: var(--weight-heading);
+}
+
+.arch code {
+  font-family: var(--font-code);
+  font-size: var(--text-meta);
+  overflow-wrap: anywhere;
+}
+
+@media (forced-colors: active) {
+  .arch-tile--impacted,
+  .arch-node[aria-pressed="true"] {
+    border-width: 3px;
+  }
+
+  .arch-flow__node.is-selected .arch-flow__shape {
+    stroke: Highlight;
+  }
+}
