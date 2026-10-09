@@ -4,9 +4,10 @@ import { Outlet, useLocation, useSearchParams } from "react-router-dom";
 
 import { useAuth } from "../auth/authContext";
 import { REQUIREMENT_APP_URL } from "../auth/paths";
-import { AppShell, MastheadButton, type NavItem } from "../design/components";
+import { AppShell, LiveMessage, MastheadButton, type NavItem } from "../design/components";
 import { useDisclosure, useFocusAfterRender } from "../design/hooks";
 import { RouterLink } from "../shell/links";
+import { SHORTCUTS_EVENT } from "../shell/shortcuts";
 import { AccountPanel, HelpPanel, JobsPanel } from "../shell/panels";
 import { densityFor, usePreferences } from "../shell/preferences";
 import { useGlobalShortcuts } from "../shell/useGlobalShortcuts";
@@ -19,7 +20,11 @@ type Panel = "jobs" | "help" | "account";
  * Routes rebuilt on the design system (redesign Phase 8). Any other route
  * renders in the legacy island, looking as it did, until its area is built.
  */
-const REDESIGNED: ((path: string) => boolean)[] = [(path) => path === "/"];
+const REDESIGNED: ((path: string) => boolean)[] = [
+  (path) => path === "/",
+  // Area 2: the library, its search and every document's pages.
+  (path) => path === "/library" || path.startsWith("/library/"),
+];
 
 function useOnline() {
   const [online, setOnline] = useState(() => navigator.onLine);
@@ -71,6 +76,17 @@ export function Shell() {
   // "?" opens Help at its shortcuts (§2.2); "g j" opens Jobs.
   const handlers = useMemo(() => ({ help: openShortcuts, jobs: () => show("jobs") }), [show, openShortcuts]);
   useGlobalShortcuts(handlers);
+  // A grid's "All shortcuts" link opens Help at its keys in place: no navigation, and Esc or Close
+  // hands focus back to the link, so the reviewer keeps their place (area 2 critique).
+  useEffect(() => {
+    const open = (event: Event) => {
+      const opener = (event as CustomEvent<HTMLElement | null>).detail;
+      openShortcuts();
+      show("help", { currentTarget: opener });
+    };
+    window.addEventListener(SHORTCUTS_EVENT, open);
+    return () => window.removeEventListener(SHORTCUTS_EVENT, open);
+  }, [openShortcuts, show]);
 
   const helpParam = params.get("help");
   const isOpen = (panel: Panel) => (side.open && which === panel) || (panel === "help" && helpParam !== null && !(side.open && which !== "help"));
@@ -102,7 +118,7 @@ export function Shell() {
 
   const actor = auth?.actor ?? null;
   const panel = isOpen("jobs") ? (
-    <JobsPanel jobs={jobs.jobs} state={jobs.state} onRetry={jobs.retry} onClose={close} panelRef={sidePanel} />
+    <JobsPanel jobs={jobs.jobs} state={jobs.state} onRetry={jobs.retry} onAct={jobs.act} said={jobs.said} onClose={close} panelRef={sidePanel} />
   ) : isOpen("help") ? (
     <HelpPanel path={path} section={helpParam} onClose={close} panelRef={sidePanel} />
   ) : isOpen("account") && actor ? (
@@ -132,6 +148,7 @@ export function Shell() {
         }
         panel={panel}
       >
+        <LiveMessage message={jobs.announcement} />
         {redesigned ? (
           <Outlet />
         ) : (

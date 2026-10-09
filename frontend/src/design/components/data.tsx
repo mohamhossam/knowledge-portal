@@ -4,6 +4,7 @@ import { ArrowDown, ArrowUp, ArrowUpDown, Minus, Plus, RefreshCw } from "lucide-
 import { type KeyboardEvent, type ReactNode, type RefObject, useEffect, useId, useRef, useState } from "react";
 
 import { useFocusAfterRender, useStickySize } from "../hooks";
+import type { LinkLike } from "./layout";
 
 export type Filter = { id: string; label: string; count?: number };
 
@@ -38,7 +39,7 @@ export function FilterStrip({
       {find && (
         <label className="ds-filters__find">
           <span className="ds-visually-hidden">{find.label}</span>
-          <input className="ds-input" data-find dir="auto" value={find.value} placeholder={find.placeholder ?? "Find"} onChange={(event) => find.onChange(event.target.value)} />
+          <input className="ds-input" data-find type="search" dir="auto" autoComplete="off" spellCheck={false} value={find.value} placeholder={find.placeholder ?? "Find…"} onChange={(event) => find.onChange(event.target.value)} />
         </label>
       )}
       {onClear && <button type="button" className="ds-button ds-button--link" onClick={onClear}>Clear filters</button>}
@@ -105,6 +106,7 @@ export function DataTable<T>({
   onCurrentChange,
   rowLabel,
   onRowKey,
+  totalRows,
   emptyText = "Nothing to show.",
 }: {
   caption: string;
@@ -122,10 +124,15 @@ export function DataTable<T>({
   /** Names a row for its checkbox and for announcements ("passage 14"). */
   rowLabel?: (row: T) => string;
   onRowKey?: (row: T, key: string) => boolean;
+  /** All the rows when only some are rendered ("Show the next 200"): the grid's row count. */
+  totalRows?: number;
   emptyText?: string;
 }) {
   const grid = Boolean(onActivate);
   const body = useRef<HTMLTableSectionElement>(null);
+  const headRow = useRef<HTMLTableRowElement>(null);
+  // The sticky head keeps focus clear of it too (§1.1): scroll padding adds its height.
+  useStickySize(headRow, "--sticky-head");
   const frame = useRef<HTMLDivElement>(null);
   const overflowing = useOverflowing(frame);
   const focusLater = useFocusAfterRender();
@@ -144,6 +151,11 @@ export function DataTable<T>({
     else next.delete(id);
     onSelectedChange(next);
   };
+  /** Shift+↑/↓: the row moved from and the row moved to, in one change. */
+  const extend = (ids: (string | undefined)[]) => {
+    if (!selected || !onSelectedChange) return;
+    onSelectedChange(new Set([...selected, ...ids.filter((id): id is string => Boolean(id))]));
+  };
 
   const keyDown = (event: KeyboardEvent<HTMLTableSectionElement>) => {
     if (!grid || (event.target as HTMLElement).closest("input,textarea,select,button,a")) return;
@@ -152,8 +164,7 @@ export function DataTable<T>({
     const key = event.key;
     if (event.shiftKey && (key === "ArrowDown" || key === "ArrowUp")) {
       const target = step(key === "ArrowDown" ? 1 : -1);
-      if (current) toggle(current, true);
-      if (target) toggle(target, true);
+      extend([current, target]);
       focusRow(target);
     } else if (key === "ArrowDown" || key === "j") focusRow(step(1));
     else if (key === "ArrowUp" || key === "k") focusRow(step(-1));
@@ -192,10 +203,10 @@ export function DataTable<T>({
       className="ds-table-wrap"
       {...(overflowing ? { tabIndex: 0, role: "region", "aria-label": `${caption} (scrolls sideways)` } : {})}
     >
-      <table className="ds-table" role={grid ? "grid" : undefined} aria-rowcount={grid ? rows.length + 1 : undefined}>
+      <table className="ds-table" role={grid ? "grid" : undefined} aria-rowcount={grid ? (totalRows ?? rows.length) + 1 : undefined}>
         <caption className={captionHidden ? "ds-visually-hidden" : "ds-table__caption"}>{caption}</caption>
         <thead>
-          <tr>
+          <tr ref={headRow}>
             {selected && <th scope="col" className="ds-table__select"><span className="ds-visually-hidden">Select</span></th>}
             {columns.map(header)}
           </tr>
@@ -275,19 +286,52 @@ export function DecisionButtons({
 }
 
 /**
+ * §2.2: a grid's keys, said once under it, with the way to every shortcut
+ * (WCAG 3.2.6). Each key is its own <kbd>, so "↑ ↓ j k" reads as four keys.
+ */
+export function KeysHint({ keys, moreHref, link: Link, onMore }: {
+  keys: { keys: string[]; does: string }[];
+  moreHref?: string;
+  link?: LinkLike;
+  /** Opens every shortcut in place (a Help panel beside the page) instead of following a link. */
+  onMore?: (opener: HTMLElement) => void;
+}) {
+  return (
+    <p className="ds-keys">
+      <span className="ds-keys__label">Keys</span>
+      {keys.map((item) => (
+        <span key={item.does} className="ds-keys__item">
+          {item.keys.map((key, index) => (
+            <span key={key}>{index > 0 && " "}<kbd>{key}</kbd></span>
+          ))}{" "}
+          {item.does}
+        </span>
+      ))}
+      {onMore ? (
+        <button type="button" className="ds-button ds-button--link ds-keys__more" onClick={(event) => onMore(event.currentTarget)}>All shortcuts</button>
+      ) : moreHref && (Link ? <Link href={moreHref} className="ds-keys__more">All shortcuts</Link> : <a href={moreHref} className="ds-keys__more">All shortcuts</a>)}
+    </p>
+  );
+}
+
+/**
  * §3: appears in place when rows are selected, sticky at the bottom of the
  * region and measured, so it never hides the focused row.
  */
 export function BulkActionBar({ count, noun, children, onClear }: { count: number; noun: [string, string]; children: ReactNode; onClear: () => void }) {
   const bar = useRef<HTMLDivElement>(null);
+  // Always mounted, so it is measured from the start and its count is announced when it changes;
+  // hidden (and measured as 0) while nothing is selected.
   useStickySize(bar, "--sticky-bottom");
-  if (count === 0) return null;
   return (
-    <div ref={bar} className="ds-bulkbar" role="region" aria-label="Selection">
-      <p className="ds-bulkbar__count" role="status">{count.toLocaleString("en")} {count === 1 ? noun[0] : noun[1]} selected</p>
-      <div className="ds-actions">{children}</div>
-      <button type="button" className="ds-button ds-button--link" onClick={onClear}>Clear selection</button>
-    </div>
+    <>
+      <p className="ds-visually-hidden" role="status">{count > 0 ? `${count.toLocaleString("en")} ${count === 1 ? noun[0] : noun[1]} selected` : ""}</p>
+      <div ref={bar} className="ds-bulkbar" role="region" aria-label="Selection" hidden={count === 0}>
+        <p className="ds-bulkbar__count">{count.toLocaleString("en")} {count === 1 ? noun[0] : noun[1]} selected</p>
+        <div className="ds-actions">{children}</div>
+        <button type="button" className="ds-button ds-button--link" onClick={onClear}>Clear selection</button>
+      </div>
+    </>
   );
 }
 

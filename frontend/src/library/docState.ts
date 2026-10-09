@@ -1,11 +1,11 @@
 /**
  * One display state per document (docs/ux/ia/object-model.md, Document ›
  * States), in the redesign's job vocabulary (interaction model §6). Shared by
- * Your work and, from area 2 on, the library.
+ * Your work, Jobs and the library (area 2).
  */
 import type { LibraryDocument } from "../api/client";
 import type { StatusTone } from "../design/components";
-import { newestVersion, standing } from "./model";
+import { newestState, standing } from "./model";
 
 export type DocState = "reading" | "review" | "indexing" | "service" | "withdrawn" | "attention" | "held" | "stopped" | "none";
 
@@ -35,7 +35,8 @@ export const DOC_TONE: Record<DocState, StatusTone> = {
 };
 
 export function docState(doc: LibraryDocument): DocState {
-  const newest = newestVersion(doc);
+  // Another owner's document comes as an outline: its newest version's state, not its content.
+  const newest = newestState(doc);
   const stage = newest?.stage;
   if (stage === "failed") return "attention";
   if (stage === "quarantined") return "held";

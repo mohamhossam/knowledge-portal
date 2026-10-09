@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from "react";
+import { type ComponentType, lazy, type ReactNode, Suspense, useEffect } from "react";
 import { Link, Navigate, Route, Routes } from "react-router-dom";
 
 import { CALLBACK_PATH, SILENT_CALLBACK_PATH } from "../auth/paths";
@@ -16,12 +16,6 @@ import { OfferingPage, OfferingsPage } from "../catalogue/OfferingsPage";
 import { SuggestionsPage } from "../catalogue/SuggestionsPage";
 import { SystemsPage } from "../catalogue/SystemsPage";
 import { VersionsPage as CatalogueVersionsPage } from "../catalogue/VersionsPage";
-import { CitationsPage } from "../library/CitationsPage";
-import { DocumentPage, ReviewPage } from "../library/DocumentPage";
-import { LibraryPage } from "../library/LibraryPage";
-import { OwnershipPage } from "../library/OwnershipPage";
-import { SearchPage } from "../library/SearchPage";
-import { VersionsPage } from "../library/VersionsPage";
 import { HistoryPage } from "../squads/HistoryPage";
 import { PeoplePage } from "../squads/PeoplePage";
 import { ProductsPage } from "../squads/ProductsPage";
@@ -34,8 +28,26 @@ import { RequirementKnowledgePage } from "../requirements/RequirementKnowledgePa
 import { RemindersPage } from "../reviews/RemindersPage";
 import { HistoricListPage } from "../historic/HistoricListPage";
 import { HistoricRecordPage } from "../historic/HistoricRecordPage";
+import { Skeleton } from "../design/components";
 import { HomePage } from "./HomePage";
 import { Shell } from "./Shell";
+
+/** The library's pages load as one chunk, on the first library route opened. */
+const library = () => import("../library/pages");
+const fromLibrary = <K extends keyof Awaited<ReturnType<typeof library>>>(name: K) =>
+  lazy(() => library().then((pages) => ({ default: pages[name] as ComponentType })));
+const LibraryPage = fromLibrary("LibraryPage");
+const SearchPage = fromLibrary("SearchPage");
+const DocumentPage = fromLibrary("DocumentPage");
+const MainPage = fromLibrary("MainPage");
+const VersionsPage = fromLibrary("VersionsPage");
+const CitationsPage = fromLibrary("CitationsPage");
+const OwnershipPage = fromLibrary("OwnershipPage");
+
+/** While a page's chunk loads: the skeleton, never a blank page (§8). */
+function Loading({ children }: { children: ReactNode }) {
+  return <Suspense fallback={<Skeleton label="Opening the page" rows={6} />}>{children}</Suspense>;
+}
 
 /** A catalogue version's pages, the same for the version in service and any other. */
 const catalogueRoutes = (
@@ -70,6 +82,11 @@ const DesignGallery = import.meta.env.DEV ? lazy(() => import("../design-lab/gal
 const DesignPrototype = import.meta.env.DEV ? lazy(() => import("../design-lab/prototype/PrototypeApp")) : null;
 
 export function App() {
+  // The library is the area people open most: fetch its chunk once the first page has painted.
+  useEffect(() => {
+    const later = window.setTimeout(() => void library(), 1500);
+    return () => window.clearTimeout(later);
+  }, []);
   return (
     <Routes>
       {DesignGallery && (
@@ -92,19 +109,21 @@ export function App() {
       )}
       <Route element={<Shell />}>
         <Route index element={<HomePage />} />
-        <Route path="library" element={<LibraryPage />} />
+        <Route path="library" element={<Loading><LibraryPage /></Loading>} />
         <Route path="reminders" element={<RemindersPage />} />
         <Route path="requirement-knowledge" element={<RequirementKnowledgePage />} />
         <Route path="requirement-knowledge/requirements" element={<CorpusRequirementsPage />} />
         <Route path="requirement-knowledge/findings" element={<CorpusFindingsPage />} />
         <Route path="requirement-knowledge/historic" element={<HistoricListPage />} />
         <Route path="requirement-knowledge/historic/:historicId" element={<HistoricRecordPage />} />
-        <Route path="library/search" element={<SearchPage />} />
-        <Route path="library/:documentId" element={<DocumentPage />}>
-          <Route index element={<ReviewPage />} />
-          <Route path="versions" element={<VersionsPage />} />
-          <Route path="citations" element={<CitationsPage />} />
-          <Route path="ownership" element={<OwnershipPage />} />
+        <Route path="library/search" element={<Loading><SearchPage /></Loading>} />
+        <Route path="library/:documentId" element={<Loading><DocumentPage /></Loading>}>
+          <Route index element={<Loading><MainPage /></Loading>} />
+          <Route path="versions" element={<Loading><VersionsPage /></Loading>} />
+          <Route path="cited-by" element={<Loading><CitationsPage /></Loading>} />
+          {/* The old address keeps working until area 10 turns it into a redirect. */}
+          <Route path="citations" element={<Loading><CitationsPage /></Loading>} />
+          <Route path="ownership" element={<Loading><OwnershipPage /></Loading>} />
         </Route>
         <Route path="architecture" element={<CataloguePage />}>
           {catalogueRoutes}

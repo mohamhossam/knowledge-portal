@@ -55,7 +55,7 @@ function open(path: string) {
           <Routes>
             <Route element={<Shell />}>
               <Route index element={<HomePage />} />
-              <Route path="library" element={<h1>Table 1: Library</h1>} />
+              <Route path="architecture" element={<h1>Table 2: Architecture catalogue</h1>} />
             </Route>
           </Routes>
         </MemoryRouter>
@@ -66,7 +66,7 @@ function open(path: string) {
 
 describe("the shell", () => {
   it("offers the same utilities, skip links and areas on a rebuilt page and on a legacy one", async () => {
-    for (const [path, title] of [["/", "Your work"], ["/library", "Table 1: Library"]] as const) {
+    for (const [path, title] of [["/", "Your work"], ["/architecture", "Table 2: Architecture catalogue"]] as const) {
       open(path);
       await screen.findByRole("heading", { level: 1, name: title });
       const banner = screen.getByRole("banner");
@@ -82,8 +82,8 @@ describe("the shell", () => {
   });
 
   it("keeps a page that isn't rebuilt yet in the legacy island, and a rebuilt one out of it", async () => {
-    open("/library");
-    const legacy = await screen.findByRole("heading", { level: 1, name: "Table 1: Library" });
+    open("/architecture");
+    const legacy = await screen.findByRole("heading", { level: 1, name: "Table 2: Architecture catalogue" });
     expect(legacy.closest(".ds-legacy")).not.toBeNull();
     document.body.innerHTML = "";
     open("/");
@@ -97,6 +97,17 @@ describe("the shell", () => {
     expect(attention).toHaveTextContent("Row 2 is short.");
     const row = within(attention).getByRole("rowheader", { name: "Site survey checklist" });
     expect(within(row).getByRole("link", { name: "Site survey checklist" })).toHaveAttribute("href", "/library/f");
+  });
+
+  it("acts on the failed read from its row: tries reading again, says so, and moves focus to what it said (area 2)", async () => {
+    const retry = vi.spyOn(api, "retry").mockResolvedValue({ ...failed, versions: [{ ...failed.versions[0]!, stage: "queued", error: null }] } as LibraryDocument);
+    open("/");
+    const attention = await screen.findByRole("region", { name: /Needs attention/ });
+    expect(within(attention).getByRole("button", { name: "Upload a new version: Site survey checklist" })).toBeInTheDocument();
+    await userEvent.click(within(attention).getByRole("button", { name: "Try reading again: Site survey checklist" }));
+    expect(retry).toHaveBeenCalledWith("f", "f-v1", 1);
+    const said = await screen.findByText("Reading 'Site survey checklist' again. Jobs shows its progress.");
+    await waitFor(() => expect(said).toHaveFocus());
   });
 
   it("says a part of Your work couldn't be read, instead of saying nothing is due, and retries it", async () => {
@@ -133,6 +144,26 @@ describe("the shell", () => {
     expect(jobs).toHaveTextContent("Needs attention");
     expect(jobs).toHaveTextContent("Row 2 is short.");
     expect(within(jobs).getByRole("link", { name: "Upload a new version: Site survey checklist" })).toHaveAttribute("href", "/library/f");
+  });
+
+  it("offers Try again on a failed read and Stop on a running one in Jobs, with the attempt (area 2)", async () => {
+    const running = {
+      ...failed, id: "r", title: "Fault escalation matrix",
+      versions: [{ id: "r-v1", number: 1, stage: "extracting", attempt: 2, uploaded_at: new Date().toISOString(), uploaded_by: amina, error: null }],
+    } as unknown as LibraryDocument;
+    vi.spyOn(api, "libraryDocuments").mockResolvedValue([failed, running]);
+    const retry = vi.spyOn(api, "retry").mockResolvedValue(failed);
+    const cancel = vi.spyOn(api, "cancel").mockResolvedValue(running);
+    open("/");
+    await screen.findByRole("heading", { level: 1, name: "Your work" });
+    await userEvent.click(screen.getByRole("button", { name: /Jobs/ }));
+    const jobs = screen.getByRole("list", { name: "Jobs" });
+    expect(jobs).toHaveTextContent("Attempt 2 of 3");
+    await userEvent.click(within(jobs).getByRole("button", { name: "Stop: Reading Fault escalation matrix" }));
+    expect(cancel).toHaveBeenCalledWith("r", "r-v1", 1);
+    await userEvent.click(within(jobs).getByRole("button", { name: "Try reading again: Reading Site survey checklist" }));
+    expect(retry).toHaveBeenCalledWith("f", "f-v1", 1);
+    expect(await screen.findByText("Reading 'Site survey checklist' again. Jobs shows its progress.")).toBeInTheDocument();
   });
 
   it("keeps page-wide shortcuts off until the person turns them on in Account (WCAG 2.1.4)", async () => {

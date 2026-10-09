@@ -244,6 +244,7 @@
   /* Measured sticky regions publish here (interaction model §1.1) */
   --sticky-top: 0px;
   --sticky-state: 0px;
+  --sticky-head: 0px;
   --sticky-bottom: 0px;
 
   /* Density: comfortable by default */

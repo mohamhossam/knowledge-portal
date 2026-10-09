@@ -32,3 +32,17 @@
 .work__backlog {
   font-size: var(--text-meta);
 }
+
+/* What acting from the queue did; empty until it has something to say. */
+.work__said {
+  margin: 0 0 var(--space-3);
+}
+
+.work__said:empty {
+  position: absolute;
+}
+
+.work__said:focus {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}

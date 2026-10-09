@@ -53,6 +53,17 @@ describe("AppShell", () => {
     scroll.mockRestore();
   });
 
+  it("focuses the arriving h1 when focus is still on the rail link that opened the page (a lazy page)", async () => {
+    const scroll = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+    const { rerender } = render(<AppShell homeHref="/" navigation={NAV} locationKey="/a"><PageHeader title="A">a</PageHeader></AppShell>);
+    screen.getByRole("link", { name: "Library" }).focus();
+    rerender(<AppShell homeHref="/" navigation={NAV} locationKey="/b"><p>Opening the page…</p></AppShell>);
+    expect(screen.getByRole("link", { name: "Library" })).toHaveFocus();
+    rerender(<AppShell homeHref="/" navigation={NAV} locationKey="/b"><PageHeader title="B">b</PageHeader></AppShell>);
+    await waitFor(() => expect(screen.getByRole("heading", { level: 1, name: "B" })).toHaveFocus());
+    scroll.mockRestore();
+  });
+
   it("drops the rail for readers", () => {
     render(<AppShell homeHref="/" reader navigation={NAV}><p>Explorer</p></AppShell>);
     expect(screen.queryByRole("navigation", { name: "Areas" })).not.toBeInTheDocument();

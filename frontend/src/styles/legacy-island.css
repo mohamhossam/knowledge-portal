@@ -40,7 +40,6 @@ html:has(.ds-legacy .galley) {
   scroll-padding-bottom: var(--s6);
 }
 
-html:has(.ds-legacy .savebar),
 html:has(.ds-legacy .edit-panel__foot),
 html:has(.ds-legacy .suggestion-editor > .suggestion-editor__actions) {
   scroll-padding-bottom: 9rem;

@@ -94,7 +94,7 @@
 /* §1.1: sticky regions publish their measured sizes; scrolling keeps focus clear of them. */
 html:has(.ds-root) {
   scroll-padding-block:
-    calc(var(--sticky-top) + var(--sticky-state) + var(--space-2))
+    calc(var(--sticky-top) + var(--sticky-state) + var(--sticky-head, 0px) + var(--space-2))
     calc(var(--sticky-bottom) + var(--space-2));
 }
 
@@ -130,6 +130,11 @@ html:has(.ds-root) {
   .ds-subnav__link[aria-current="page"],
   .ds-tabs__tab[aria-selected="true"] {
     border-block-end: var(--rule-heavy) solid Highlight;
+  }
+
+  .ds-table tbody tr[aria-selected="true"] {
+    outline: 1px dashed Highlight;
+    outline-offset: -1px;
   }
 
   .ds-table tbody tr.is-current {
