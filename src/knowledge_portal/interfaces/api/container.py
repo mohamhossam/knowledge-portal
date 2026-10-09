@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import multiprocessing
 from collections.abc import Callable, Mapping
-from contextlib import ExitStack
+from contextlib import ExitStack, closing
 from dataclasses import dataclass, field, replace
 from datetime import timedelta
 from typing import Protocol
@@ -25,6 +25,7 @@ from smb_kernel.documents.ports import DocumentStoragePort
 from smb_kernel.documents.process_resources import child_process_resource_limiter
 from smb_kernel.documents.scanner import ClamAvDocumentScanner, OfflineDocumentScanner
 from smb_kernel.http.client import InternalHttpClient
+from smb_kernel.http.client_credentials import ClientCredentialsTokenSource
 from smb_kernel.identity.ports import IdentityProviderPort
 from smb_kernel.observability.metrics import MeteredTransport, Metrics
 from smb_kernel.time.clock import ClockPort
@@ -453,7 +454,8 @@ def _requirement_work(
     settings: Settings, resources: ExitStack, metrics: Metrics
 ) -> RequirementWork:
     """Requirement work's internal API when configured; otherwise deterministic fakes."""
-    if settings.requirement_api_base_url is None or settings.knowledge_service_token is None:
+    url = settings.requirement_service_url
+    if url is None:
         return RequirementWork(
             FakeRequirementDependents(), FakeArchitectureMappingStats(), FakeRequirementImpact()
         )
@@ -461,8 +463,8 @@ def _requirement_work(
         httpx.Client(transport=MeteredTransport(metrics, "requirements", httpx.HTTPTransport()))
     )
     client = InternalHttpClient(
-        settings.requirement_api_base_url,
-        settings.knowledge_service_token,
+        url,
+        _service_token(settings, resources, settings.knowledge_service_token or ""),
         service="requirements",
         http=http,
     )
@@ -474,6 +476,31 @@ def _requirement_work(
         HttpRequirementCitationCounts(client),
         HttpRequirementHistoricCitations(client),
     )
+
+
+def _service_token(
+    settings: Settings, resources: ExitStack, shared: str
+) -> str | Callable[[], str]:
+    """How this service proves itself to requirement work (requirement-portal ADR-0104).
+
+    With its own client at the OIDC issuer, the issuer grants it short-lived
+    tokens and this service holds no secret of requirement work's; otherwise it
+    presents the shared token, `shared`.
+    """
+    client_id = settings.knowledge_service_client_id
+    secret = settings.knowledge_service_client_secret
+    if client_id is not None and secret is not None:
+        return resources.enter_context(
+            closing(
+                ClientCredentialsTokenSource(
+                    settings.oidc_issuer_url,
+                    client_id,
+                    secret,
+                    client=httpx.Client(timeout=10),
+                )
+            )
+        )
+    return shared
 
 
 def _library_extractor(settings: Settings) -> BoundedSubprocessDocumentExtractor:

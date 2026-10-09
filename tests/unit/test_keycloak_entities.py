@@ -31,7 +31,10 @@ def _rendered(**environ: str) -> Any:
 def test_the_portal_defines_its_own_client_roles_and_groups() -> None:
     entities = _rendered(KNOWLEDGE_APP_ORIGIN="https://knowledge.example.test")
 
-    assert [client["clientId"] for client in entities["clients"]] == ["knowledge-spa"]
+    assert [client["clientId"] for client in entities["clients"]] == [
+        "knowledge-spa",
+        "knowledge-service",
+    ]
     assert [role["name"] for role in entities["roles"]["realm"]] == [
         "knowledge_admin",
         "knowledge_reader",
@@ -80,3 +83,23 @@ def test_nothing_of_requirement_work_is_defined_here() -> None:
 
     assert "requirement-spa" not in text
     assert "requirement-api" not in text
+
+
+def test_the_service_client_is_granted_tokens_for_requirement_work_s_internal_api_only() -> None:
+    """The portal's own credential (requirement-portal ADR-0104): no browser flows, no secret."""
+    entities = _rendered(KNOWLEDGE_APP_ORIGIN="https://knowledge.example.test")
+    client = next(item for item in entities["clients"] if item["clientId"] == "knowledge-service")
+
+    assert client["publicClient"] is False
+    assert client["serviceAccountsEnabled"] is True
+    assert client["standardFlowEnabled"] is False
+    assert client["directAccessGrantsEnabled"] is False
+    assert client["implicitFlowEnabled"] is False
+    assert client["fullScopeAllowed"] is False
+    assert "secret" not in client
+    audiences = [
+        mapper["config"]["included.custom.audience"]
+        for mapper in client["protocolMappers"]
+        if mapper["protocolMapper"] == "oidc-audience-mapper"
+    ]
+    assert audiences == ["requirement-internal"]

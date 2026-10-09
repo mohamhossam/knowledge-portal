@@ -59,6 +59,8 @@ uses, so people keep one account. Its own entities live in this repository
 
 - the public browser client `knowledge-spa`, with PKCE, which puts the audience `knowledge-api`
   and the realm roles (claim `roles`) into its tokens;
+- the confidential client `knowledge-service`, the portal's own credential for requirement
+  work's internal API (see "Service credentials");
 - the roles `knowledge_admin` (opens the portal and curates it), `knowledge_reader` and
   `knowledge_maintainer` (the architecture and squad catalogues);
 - the groups `knowledge-admins`, `knowledge-readers` and `knowledge-maintainers`, which grant them.
@@ -84,7 +86,7 @@ A separate realm works the same way: create it, and run the script with its name
 ## Connect requirement work
 
 The two services call each other's `/internal` routes with two tokens (requirement-portal
-ADR-0099). Each portal's edge refuses `/internal`, so the calls travel on a private network,
+ADR-0099), or each with its own client (see "Service credentials"). Each portal's edge refuses `/internal`, so the calls travel on a private network,
 never through an edge.
 
 | Setting in `production.env` | Value |
@@ -115,6 +117,29 @@ needs it.
 The portal's links to requirement work, such as "Requirement AI", go where `REQUIREMENT_PORTAL_URL`
 says (for example `https://requirements.example.com/`); `web` fills it into each page when it
 starts. Unset in this manifest, the links are left out.
+
+## Service credentials
+
+With the shared tokens, each portal holds the other's secret too. Per-direction credentials
+(requirement-portal ADR-0104) give each portal only its own: a confidential client at the OIDC
+issuer, which grants it short-lived tokens through the client-credentials grant. The receiving
+portal checks them against the issuer's signing keys and holds no secret at all.
+
+| Direction | Keycloak client | Settings in `production.env` |
+|---|---|---|
+| This portal calls requirement work | `knowledge-service`, audience `requirement-internal` (`deploy/keycloak/knowledge-portal.json`) | `KNOWLEDGE_SERVICE_CLIENT_ID=knowledge-service` and `KNOWLEDGE_SERVICE_CLIENT_SECRET` |
+| Requirement work calls this portal | `requirement-service`, audience `knowledge-internal` (requirement-portal's realm file) | `REQUIREMENT_SERVICE_CLIENT_ID=requirement-service` |
+
+1. Run `deploy/keycloak/apply.py` (see "Sign-in") to add `knowledge-service`, and copy the secret
+   Keycloak generated for it (Clients, `knowledge-service`, Credentials). The file stores none.
+2. Set the settings above, with `OIDC_ISSUER_URL` set to the realm. Requirement work sets its own
+   client's ID and secret, and `KNOWLEDGE_SERVICE_CLIENT_ID`.
+3. With client credentials, they are used in place of `KNOWLEDGE_SERVICE_TOKEN`. `/internal`
+   admits either `REQUIREMENT_SERVICE_TOKEN` or a granted token while both are set, so the two
+   portals can move over one at a time. Remove the shared tokens once both use their clients.
+
+Tokens are renewed before they expire. If the issuer cannot be reached, calls to requirement
+work report it as unavailable, and `/internal` answers 503 to a granted token it cannot check.
 
 ## Its own hostname
 
