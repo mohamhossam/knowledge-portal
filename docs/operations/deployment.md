@@ -51,6 +51,36 @@ Put TLS in front of `edge`. The API, worker, database, scanner and metrics ports
 To upgrade, change `KNOWLEDGE_IMAGE_TAG` and run `up -d` again; `migrate` runs before the new
 API and worker start.
 
+## Sign-in
+
+The portal signs people in through an OIDC issuer, normally the Keycloak realm requirement work
+uses, so people keep one account. Its own entities live in this repository
+(`deploy/keycloak/knowledge-portal.json`, requirement-portal ADR-0104):
+
+- the public browser client `knowledge-spa`, with PKCE, which puts the audience `knowledge-api`
+  and the realm roles (claim `roles`) into its tokens;
+- the roles `knowledge_admin` (opens the portal and curates it), `knowledge_reader` and
+  `knowledge_maintainer` (the architecture and squad catalogues);
+- the groups `knowledge-admins`, `knowledge-readers` and `knowledge-maintainers`, which grant them.
+
+Add them to the realm once, with a Keycloak administrator's account:
+
+```bash
+export KEYCLOAK_URL=https://login.example.com KEYCLOAK_REALM=requirement-ai
+export KEYCLOAK_ADMIN=... KEYCLOAK_ADMIN_PASSWORD=...
+export KNOWLEDGE_APP_ORIGIN=https://knowledge.example.com    # where people open the portal
+python deploy/keycloak/apply.py --dry-run                     # shows what it would add
+python deploy/keycloak/apply.py
+```
+
+Entities that already exist, such as those an earlier requirement-portal realm import created,
+are kept; `--overwrite` replaces them, for example after the portal moves to another origin.
+Then set `OIDC_ISSUER_URL` to the realm (`https://login.example.com/realms/requirement-ai`) in
+`production.env`, and `CSP_IDENTITY_ORIGINS` to the issuer's origin. Put people in
+`knowledge-admins` to let them in.
+
+A separate realm works the same way: create it, and run the script with its name.
+
 ## Connect requirement work
 
 The two services call each other's `/internal` routes with two tokens (requirement-portal
