@@ -48,8 +48,12 @@ export function Shell() {
       <a className="skip-link" href="#main">Skip to the tables</a>
       <header className="masthead">
         <p className="masthead__title">
-          <a href={REQUIREMENT_APP_URL}>Requirement AI</a>
-          <span aria-hidden="true" className="masthead__dot">·</span>
+          {REQUIREMENT_APP_URL !== null && (
+            <>
+              <a href={REQUIREMENT_APP_URL}>Requirement AI</a>
+              <span aria-hidden="true" className="masthead__dot">·</span>
+            </>
+          )}
           <Link to="/" className="masthead__portal">Knowledge portal</Link>
         </p>
         <p className="masthead__valid" aria-live="polite">

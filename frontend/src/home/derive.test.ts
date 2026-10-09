@@ -286,6 +286,12 @@ describe("requirementOverview", () => {
     expect(overview.next).toMatchObject({ href: "/", label: "Rebuild the requirement index in requirement work" });
     expect(overview.edition.text).toBe("0 requirements · the index must be rebuilt");
   });
+
+  it("names the rebuild without a link when requirement work is not connected", () => {
+    const overview = requirementOverview(corpus({ rebuild_required: true, current: 0, requirements: 0 }), null);
+
+    expect(overview.next).toEqual({ label: "Rebuild the requirement index in requirement work" });
+  });
 });
 
 describe("note order", () => {

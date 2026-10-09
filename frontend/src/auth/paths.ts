@@ -8,8 +8,24 @@
 export const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 export const CALLBACK_PATH = "/auth/callback";
 export const SILENT_CALLBACK_PATH = "/auth/silent-callback";
-/** Requirement work, the platform's other portal. */
-export const REQUIREMENT_APP_URL = "/";
+/**
+ * Requirement work, the other portal, or null when this deployment runs without it
+ * (requirement-portal ADR-0104). `VITE_REQUIREMENT_PORTAL_URL` names it; unset, it is the
+ * platform's root `/`, and set empty, every link to it is left out.
+ */
+export function requirementPortalUrl(configured: string | undefined): string | null {
+  if (configured === undefined) return "/";
+  const url = configured.trim();
+  if (url === "") return null;
+  return url.endsWith("/") ? url : `${url}/`;
+}
+
+export const REQUIREMENT_APP_URL = requirementPortalUrl(import.meta.env.VITE_REQUIREMENT_PORTAL_URL);
+
+/** A page of requirement work, such as `requirements/R-1`, or null without it. */
+export function requirementWorkHref(path: string, base = REQUIREMENT_APP_URL): string | null {
+  return base === null ? null : `${base}${path.replace(/^\/+/, "")}`;
+}
 
 export const absolute = (path: string) => `${window.location.origin}${BASE}${path}`;
 
