@@ -1740,7 +1740,7 @@ journeys:
     interface: Service onboarding ticket
     timing: Async
     from_system: cwom
-    purpose: Pass the SD-WAN service to MSS for Day-N configuration. (to the MSS team)
+    purpose: Pass the SD-WAN service to MSS for Day-N configuration.
     style: Ticket
     confidence: gap
     source: SDD v2.3 · §P1 New Activation · The ticketing system isn't named.
@@ -2254,7 +2254,7 @@ journeys:
     confidence: inferred
     source: SDD v2.3 · §BPM General Note · Read path inferred from the SP's name.
   - from: '120'
-    to: '120'
+    to: '100'
     interface: Order status per basket item
     timing: Sync
     from_system: tibco

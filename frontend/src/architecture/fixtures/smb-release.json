@@ -3351,7 +3351,7 @@
      "from_system_id": "cwom",
      "to_system_id": null,
      "via_system_id": null,
-     "purpose": "Pass the SD-WAN service to MSS for Day-N configuration. (to the MSS team)",
+     "purpose": "Pass the SD-WAN service to MSS for Day-N configuration.",
      "style": "Ticket",
      "tmf_equivalent": null
     },
@@ -4828,7 +4828,7 @@
     },
     {
      "from_activity": "120",
-     "to_activity": "120",
+     "to_activity": "100",
      "interaction": null,
      "interface": "Order status per basket item",
      "payload": null,
