@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import { type Column, DataTable, Facts, FilterStrip, Section } from "../design/components";
 import { DOMAINS, SOURCES, SYSTEMS } from "./data/landscape";
@@ -16,8 +15,18 @@ function journeyCount(id: string) {
 /** Every system in one dense table: domain, owner, aliases, evidence, and where it is used. */
 export function SystemsPage() {
   const [scope] = useScope();
-  const [find, setFind] = useState("");
-  const [domain, setDomain] = useState<string>("all");
+  const [params, setParams] = useSearchParams();
+  const find = params.get("q") ?? "";
+  const domain = params.get("domain") ?? "all";
+  const setParam = (key: string, value: string) =>
+    setParams((previous) => {
+      const merged = new URLSearchParams(previous);
+      if (value && value !== "all") merged.set(key, value);
+      else merged.delete(key);
+      return merged;
+    }, { replace: true });
+  const setFind = (value: string) => setParam("q", value);
+  const setDomain = (value: string) => setParam("domain", value);
   const needle = find.trim().toLowerCase();
   const rows = SYSTEMS.filter(
     (system) =>

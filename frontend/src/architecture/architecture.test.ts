@@ -99,7 +99,7 @@ describe("the BPMN layout and exports", () => {
     expect(plantuml).toContain("rtf -> cwom : createShoppingCart");
     expect(plantuml).toContain(`participant "CWOM" as cwom`);
     expect(toMermaid(journey.name, journey.integrations).startsWith("sequenceDiagram")).toBe(true);
-    const csv = toCsv(journey.integrations).replace(/^﻿/, "").split("\r\n");
+    const csv = toCsv(journey.integrations).replace(/^\uFEFF/, "").split("\r\n");
     expect(csv).toHaveLength(journey.integrations.length + 1);
     expect(csv[0]).toContain("TMF equivalent (hypothesis)");
   });

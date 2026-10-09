@@ -46,7 +46,7 @@ function DomainBlock({ domain, impacted, lens, selectedId, hrefFor }: { domain: 
   return (
     <section className={`arch-domain arch-domain--${domain.id}${domain.band ? " arch-domain--band" : ""}`} aria-labelledby={`domain-${domain.id}`}>
       <header className="arch-domain__head">
-        <h3 id={`domain-${domain.id}`}>{domain.name}</h3>
+        <h2 id={`domain-${domain.id}`}>{domain.name}</h2>
         <span className="arch-domain__count">{lens ? `${touched} of ${systems.length}` : systems.length}<span className="ds-visually-hidden"> systems{lens ? " in this scope" : ""}</span></span>
       </header>
       <p className="arch-domain__scope">{domain.scope}</p>
@@ -55,7 +55,7 @@ function DomainBlock({ domain, impacted, lens, selectedId, hrefFor }: { domain: 
         if (!members.length) return null;
         return (
           <div key={group.id} className="arch-group">
-            {domain.groups.length > 1 && <h4 className="arch-group__name">{group.name}</h4>}
+            {domain.groups.length > 1 && <h3 className="arch-group__name">{group.name}</h3>}
             <ul className="arch-tiles" aria-label={domain.groups.length > 1 ? group.name : domain.name}>
               {members.map((system) => (
                 <Tile key={system.id} system={system} impacted={impacted.get(system.id)} lens={lens} selected={selectedId === system.id} href={hrefFor(system.id)} />
@@ -193,7 +193,7 @@ export function LandscapePage() {
         .map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`)
         .join(",");
     });
-    download(`impact-${[scope.product, scope.order, scope.channel].filter(Boolean).join("-")}.csv`, "﻿" + [header, ...lines].join("\r\n"), "text/csv;charset=utf-8");
+    download(`impact-${[scope.product, scope.order, scope.channel].filter(Boolean).join("-")}.csv`, "\uFEFF" + [header, ...lines].join("\r\n"), "text/csv;charset=utf-8");
   };
 
   const columnsOf = DOMAINS.filter((domain) => !domain.band);

@@ -85,8 +85,8 @@ export function OfferingPage() {
     { id: "codes", header: "Offer · specification", cell: (component) => (
       component.offerCode || component.specCode ? (
         <>
-          <code>{component.offerCode ?? "—"}</code>
-          <span className="arch-detail"><code>{component.specCode ?? "—"}</code></span>
+          <code translate="no">{component.offerCode ?? "—"}</code>
+          <span className="arch-detail"><code translate="no">{component.specCode ?? "—"}</code></span>
         </>
       ) : <span className="arch-quiet">Codes not stated</span>
     ) },
@@ -179,7 +179,7 @@ export function OfferingPage() {
                     return (
                       <tr key={type.code}>
                         <th scope="row">
-                          {type.name} <code>{type.code}</code>
+                          {type.name} <code translate="no">{type.code}</code>
                           {support?.note && <span className="arch-detail">{support.note}</span>}
                         </th>
                         {channels.map((channel) => {
@@ -214,7 +214,7 @@ export function OfferingPage() {
               <Link to={`${BASE}${scopeQuery({ product: offering.id, order: scope.product === offering.id ? scope.order : null, channel: scope.product === offering.id ? scope.channel : null })}`}>See them on the landscape</Link>
             </p>
             {byDomain.map(({ domain, items }) => (
-              <Section key={domain.id} title={domain.name} count={items.length} headingLevel={3}>
+              <Section key={domain.id} title={domain.name} count={items.length}>
                 <ul className="arch-impact-list">
                   {items.map((item) => (
                     <li key={item.systemId}>

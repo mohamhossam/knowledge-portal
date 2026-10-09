@@ -10,6 +10,7 @@ import type { PortfolioNode } from "./model";
  */
 let nodes: PortfolioNode[] = PORTFOLIO;
 let edited = false;
+let removed: PortfolioNode | null = null;
 const listeners = new Set<() => void>();
 
 function emit(next: PortfolioNode[]) {
@@ -23,9 +24,9 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
-export function usePortfolio(): { nodes: PortfolioNode[]; edited: boolean } {
+export function usePortfolio(): { nodes: PortfolioNode[]; edited: boolean; removed: PortfolioNode | null } {
   const current = useSyncExternalStore(subscribe, () => nodes);
-  return { nodes: current, edited };
+  return { nodes: current, edited, removed };
 }
 
 export function childrenOf(all: PortfolioNode[], parentId: string | null): PortfolioNode[] {
@@ -66,11 +67,20 @@ export const portfolio = {
     return id;
   },
   remove(id: string) {
+    removed = nodes.find((node) => node.id === id) ?? null;
     emit(nodes.filter((node) => node.id !== id));
+  },
+  /** Puts back the level removed last. */
+  restore() {
+    if (!removed) return;
+    const back = removed;
+    removed = null;
+    emit([...nodes, back]);
   },
   reset() {
     nodes = PORTFOLIO;
     edited = false;
+    removed = null;
     for (const listener of listeners) listener();
   },
 };

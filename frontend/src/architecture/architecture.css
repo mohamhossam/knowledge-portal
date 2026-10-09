@@ -7,6 +7,7 @@
  */
 
 .arch {
+  --arch-drawer: min(24rem, 100vw);
   display: grid;
   gap: var(--space-4);
   align-content: start;
@@ -245,8 +246,18 @@
   inset-inline-end: 0;
   z-index: var(--z-drawer);
   display: flex;
-  inline-size: min(26rem, 100vw);
+  inline-size: var(--arch-drawer);
   box-shadow: var(--overlay-shadow);
+}
+
+/*
+ * Focus is never hidden behind the drawer (WCAG 2.4.11): while it is open, the
+ * page keeps its width clear, and the map and diagrams lay out in what is left.
+ */
+@media (min-width: 1100px) {
+  .arch:has(.arch-drawer) {
+    padding-inline-end: calc(var(--arch-drawer) + var(--space-4));
+  }
 }
 
 .arch-drawer .ds-drawer {
@@ -258,6 +269,7 @@
 }
 
 .arch-map {
+  container-type: inline-size;
   display: grid;
   gap: var(--space-4);
   min-inline-size: 0;
@@ -270,38 +282,11 @@
   align-items: start;
 }
 
-/*
- * The TAM poster's order in one row: Market & Sales, Product, Customer (twice
- * as wide: it holds the most systems), Service, Resource, Engaged Party.
- */
-@media (min-width: 1100px) {
-  .arch-map__columns {
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-  }
-
-  .arch-domain--customer {
-    grid-column: span 2;
-  }
-
-  .arch-domain--customer .arch-group {
-    align-content: start;
-  }
-
-  .arch-domain--customer {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: var(--space-3);
-  }
-
-  .arch-domain--customer > .arch-domain__head,
-  .arch-domain--customer > .arch-domain__scope {
-    grid-column: 1 / -1;
-  }
-}
-
 .arch-domain {
   display: grid;
   gap: var(--space-2);
   align-content: start;
+  min-inline-size: 0;
   padding: var(--space-3);
   border: var(--panel-border);
   border-block-start: var(--ledger-rule);
@@ -310,12 +295,13 @@
 
 .arch-domain__head {
   display: flex;
-  gap: var(--space-2);
+  flex-wrap: wrap;
+  gap: 0 var(--space-2);
   align-items: baseline;
   justify-content: space-between;
 }
 
-.arch-domain__head h3 {
+.arch-domain__head h2 {
   margin: 0;
   font-size: var(--text-h3);
   font-weight: var(--weight-heading);
@@ -334,6 +320,63 @@
   margin: 0;
   color: var(--color-ink-2);
   font-size: var(--text-meta);
+}
+
+/*
+ * The TAM poster's order in one row: Market & Sales, Product, Customer (twice
+ * as wide: it holds the most systems), Service, Resource, Engaged Party.
+ */
+@container (min-width: 44rem) {
+  .arch-map__columns {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: var(--space-2);
+  }
+
+  .arch-domain--customer {
+    grid-column: span 2;
+  }
+}
+
+/* Room for Customer's groups side by side. */
+@container (min-width: 68rem) {
+  .arch-map__columns {
+    gap: var(--space-3);
+  }
+
+  .arch-domain--customer {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--space-3);
+  }
+
+  .arch-domain--customer > .arch-domain__head,
+  .arch-domain--customer > .arch-domain__scope {
+    grid-column: 1 / -1;
+  }
+}
+
+/* In a narrow map (the drawer open), the domain's description gives way to its systems. */
+@container (max-width: 68rem) {
+  .arch-map .arch-domain__scope {
+    display: none;
+  }
+
+  .arch-map .arch-tile {
+    grid-template-columns: minmax(0, 1fr);
+    padding-inline: var(--space-2);
+  }
+
+  .arch-map .arch-tile__marks {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .arch-map .arch-tile__marks:empty {
+    display: none;
+  }
+
+  .arch-map .arch-domain {
+    padding: var(--space-2);
+  }
 }
 
 .arch-group {
@@ -385,7 +428,8 @@
 .arch-tile__name {
   grid-column: 1;
   font-weight: var(--weight-emphasis);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 .arch-tile__role {

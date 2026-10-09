@@ -1,5 +1,5 @@
 import { Building2, Layers, Package, Plus, RotateCcw, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { ActionGroup, Button, Section, Select, TextArea, TextField } from "../design/components";
@@ -60,8 +60,8 @@ function Editor({ node, all, onSelect }: { node: PortfolioNode; all: PortfolioNo
   return (
     <div className="arch-record">
       <p className="arch-quiet">{pathTo(all, node.id).map((item) => item.name).join(" › ")}</p>
-      <TextField label="Name" value={node.name} onChange={(event) => portfolio.update(node.id, { name: event.target.value })} />
-      <TextField label="Level" hint="Levels are data: rename them to fit any portfolio." value={node.level} onChange={(event) => portfolio.update(node.id, { level: event.target.value })} />
+      <TextField label="Name" autoComplete="off" value={node.name} onChange={(event) => portfolio.update(node.id, { name: event.target.value })} />
+      <TextField label="Level" autoComplete="off" hint="Levels are data: rename them to fit any portfolio." value={node.level} onChange={(event) => portfolio.update(node.id, { level: event.target.value })} />
       <TextArea label="Description" value={node.description ?? ""} onChange={(event) => portfolio.update(node.id, { description: event.target.value })} />
       <Select label="Sits under" value={node.parentId ?? ""} onChange={(event) => portfolio.update(node.id, { parentId: event.target.value || null })}>
         <option value="">Nothing (top level)</option>
@@ -95,7 +95,14 @@ function Editor({ node, all, onSelect }: { node: PortfolioNode; all: PortfolioNo
 export function PortfolioPage() {
   const [scope] = useScope();
   const [params, setParams] = useSearchParams();
-  const { nodes, edited } = usePortfolio();
+  const { nodes, edited, removed } = usePortfolio();
+  // The service doesn't store the portfolio yet: leaving or reloading with changes asks first.
+  useEffect(() => {
+    if (!edited) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [edited]);
   const selectedId = params.get("node");
   const selected = nodes.find((node) => node.id === selectedId) ?? null;
   const [notice, setNotice] = useState<string | null>(null);
@@ -129,6 +136,12 @@ export function PortfolioPage() {
         Changes here are kept in this browser session only: the catalogue service stores the portfolio in the next build step.
         {notice && <span role="status"> {notice}</span>}
       </p>
+      {removed && (
+        <p className="arch-callout" role="status">
+          <span>Removed {removed.level.toLowerCase()} “{removed.name}”.</span>
+          <span className="arch-actions"><Button variant="link" onClick={() => portfolio.restore()}>Put it back</Button></span>
+        </p>
+      )}
       <div className="arch-portfolio">
         <Section title="Hierarchy">
           <div className="arch-tree-scroll">

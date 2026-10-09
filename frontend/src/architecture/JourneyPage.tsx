@@ -92,7 +92,7 @@ function CallPanel({ call }: { call: Integration }) {
   if (call.via) facts.push(["Via", <SystemLink key="v" id={call.via} />]);
   facts.push(["Style", call.style]);
   facts.push(["Timing", call.mode === "not stated" ? "Not stated" : call.mode === "sync" ? "Synchronous" : "Asynchronous"]);
-  if (call.payload) facts.push(["Payload", <code key="p">{call.payload}</code>]);
+  if (call.payload) facts.push(["Payload", <code key="p" translate="no">{call.payload}</code>]);
   facts.push(["TMF equivalent", call.tmf ? `${call.tmf} (hypothesis)` : "—"]);
   facts.push(["Evidence", <EvidenceMark key="e" evidence={call.evidence} />]);
   return (

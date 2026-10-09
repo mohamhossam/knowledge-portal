@@ -142,7 +142,7 @@ export function toCsv(messages: Integration[]): string {
     evidenceText(message.evidence),
   ]);
   // A byte-order mark so Excel reads the file as UTF-8.
-  return "﻿" + [header, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n");
+  return "\uFEFF" + [header, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n");
 }
 
 export function download(fileName: string, content: string, type: string) {
