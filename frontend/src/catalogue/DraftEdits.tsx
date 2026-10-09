@@ -361,7 +361,7 @@ export function OfferingEdit({ onDone }: { onDone: (saved?: string) => void }) {
   const [value, setValue] = useState<Offering>(
     () => ({
       id: "", name: "", rules: [], order_types: [], components: [], values: [], audiences: [], nfrs: [], lifecycle_notes: [],
-      sources: [], questions: [], decisions: [], boundaries: [], not_used: [],
+      sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [],
     }),
   );
   const products = release.products ?? [];
