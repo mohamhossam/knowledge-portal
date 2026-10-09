@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Category standard · SMB architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1f2937;--ink2:#4b5563;--line:#e5e7eb;--bg:#f5f7fa;--blue:#2563eb;--blue2:#dbeafe;--maroon:#4b0f1e;--red:#e00800}
+*{box-sizing:border-box;margin:0}body{width:1440px;height:900px;overflow:hidden;font-family:Archivo,system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+.mast{height:48px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 20px}
+.logo{width:28px;height:28px;background:var(--red);color:#fff;border-radius:6px;display:grid;place-items:center;font-weight:800}
+.mast b{font-size:16px}.mast nav{margin-left:28px;display:flex;gap:22px;color:var(--ink2)}.mast nav .on{color:var(--blue);font-weight:600}.mast .me{margin-left:auto;color:var(--ink2)}
+.wrap{display:grid;grid-template-columns:240px 1fr 340px;height:852px}
+.filters{background:#fff;border-right:1px solid var(--line);padding:18px 16px}
+.filters h3{font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);margin:16px 0 8px}
+.cb{display:flex;align-items:center;gap:8px;height:28px}.cb i{width:16px;height:16px;border:1.5px solid #9ca3af;border-radius:4px}.cb i.on{background:var(--blue);border-color:var(--blue)}.cb small{margin-left:auto;color:var(--ink2)}
+.main{padding:20px 24px;overflow:hidden}
+.top{display:flex;align-items:center;gap:12px}h1{font-size:26px;font-weight:700}
+.search{margin-left:auto;width:300px;height:36px;border:1px solid var(--line);border-radius:8px;background:#fff;display:flex;align-items:center;padding:0 12px;color:var(--ink2)}
+.btn{height:36px;padding:0 14px;border-radius:8px;background:var(--blue);color:#fff;font-weight:600;display:flex;align-items:center}
+.tabs{display:flex;gap:24px;margin-top:14px;border-bottom:1px solid var(--line);color:var(--ink2);font-weight:600}.tabs span{padding:10px 0}.tabs .on{color:var(--blue);box-shadow:inset 0 -2px 0 var(--blue)}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px}
+.card h2{font-size:15px;font-weight:700;display:flex}.card h2 small{margin-left:auto;color:var(--ink2);font-weight:500}
+.card p{color:var(--ink2);font-size:13px;margin:2px 0 10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chip{height:26px;padding:0 10px;border-radius:13px;background:var(--bg);border:1px solid var(--line);display:flex;align-items:center;font-size:13px}
+.chip.on{background:var(--blue);color:#fff;border-color:var(--blue)}.chip.p{background:var(--blue2);border-color:#93c5fd}
+.side{background:#fff;border-left:1px solid var(--line);padding:18px}
+.side h2{font-size:20px;font-weight:700}.side .sub{color:var(--ink2);margin:2px 0 12px}
+.kv{display:flex;justify-content:space-between;height:32px;align-items:center;border-top:1px solid var(--line)}.kv b{font-weight:600}
+svg{display:block;margin:12px 0}
+</style></head><body>
+<header class="mast"><span class="logo">e&amp;</span><b>Knowledge portal</b><nav><span>Your work</span><span>Library</span><span class="on">Catalogue</span><span>Ownership</span><span>Requirements</span><span>Explorer</span></nav><span class="me">Amina Owner</span></header>
+<div class="wrap">
+<aside class="filters"><h3>Domains</h3>
+<div class="cb"><i class="on"></i>Market &amp; Sales<small>4</small></div><div class="cb"><i class="on"></i>Product<small>5</small></div><div class="cb"><i class="on"></i>Customer<small>13</small></div><div class="cb"><i class="on"></i>Service<small>4</small></div><div class="cb"><i class="on"></i>Resource<small>9</small></div><div class="cb"><i class="on"></i>Engaged party<small>5</small></div><div class="cb"><i class="on"></i>Enterprise<small>4</small></div><div class="cb"><i class="on"></i>Integration<small>2</small></div>
+<h3>Evidence</h3><div class="cb"><i class="on"></i>Confirmed</div><div class="cb"><i class="on"></i>Inferred</div><div class="cb"><i></i>Gaps only</div>
+<h3>Product</h3><div class="cb"><i></i>Business Pro Plus</div></aside>
+<main class="main"><div class="top"><h1>SMB architecture</h1><div class="search">Search systems…</div><span class="btn">Export</span></div>
+<div class="tabs"><span class="on">Landscape</span><span>Products</span><span>Journeys</span><span>Systems</span><span>Governance 23</span><span>Versions</span></div>
+<div class="cards">
+<div class="card"><h2>Market &amp; Sales<small>4</small></h2><p>Sales management · Recommendation</p><div class="chips"><span class="chip">BCRM</span><span class="chip">Netcracker CSRD</span><span class="chip">PEGA</span><span class="chip">SONIC</span></div></div>
+<div class="card"><h2>Product<small>5</small></h2><p>Catalogues · Offer design</p><div class="chips"><span class="chip">Digital Catalog (BCC)</span><span class="chip">PSM</span><span class="chip p">ECM</span><span class="chip">RTF Catalog</span><span class="chip">Catalog Automation</span></div></div>
+<div class="card"><h2>Service<small>4</small></h2><p>Order management · Activation · Quality</p><div class="chips"><span class="chip on">CWOM</span><span class="chip p">E2ESO</span><span class="chip p">XaaS</span><span class="chip">SLA Management</span></div></div>
+<div class="card" style="grid-column:span 2"><h2>Customer<small>13</small></h2><p>Channels · Customer information · Orders · Problems · Billing</p><div class="chips"><span class="chip">B2B Web</span><span class="chip">SMB App</span><span class="chip">SaS Portal</span><span class="chip">CIM</span><span class="chip">DCRM</span><span class="chip p">CBCM</span><span class="chip">NC CRM (Digital)</span><span class="chip p">RTF</span><span class="chip">IBM BPM</span><span class="chip">Felix</span><span class="chip">EHS</span><span class="chip">Netcracker CPM</span><span class="chip p">BSCS</span></div></div>
+<div class="card"><h2>Engaged party<small>5</small></h2><p>Government · Partners</p><div class="chips"><span class="chip">Government Systems</span><span class="chip">EIDA</span><span class="chip">OCR</span><span class="chip">Fortinet</span><span class="chip">NPC</span></div></div>
+<div class="card" style="grid-column:span 2"><h2>Resource<small>9</small></h2><p>Activation · Inventory &amp; numbers · Workforce</p><div class="chips"><span class="chip p">vEDA</span><span class="chip p">IN</span><span class="chip">Alepo</span><span class="chip">NRM</span><span class="chip">6D Inventory</span><span class="chip">NPS</span><span class="chip">GIS</span><span class="chip p">WFMS</span><span class="chip">Remedy</span></div></div>
+<div class="card"><h2>Enterprise &amp; integration<small>6</small></h2><p>Common services · Bus</p><div class="chips"><span class="chip p">CNS</span><span class="chip">EDMS</span><span class="chip p">ServiceNow / HPSM</span><span class="chip">ADFS</span><span class="chip p">TIBCO</span><span class="chip">B2B BFF</span></div></div>
+</div></main>
+<aside class="side"><h2>CWOM</h2><p class="sub">Service order management · Ericsson</p>
+<svg width="300" height="220" viewBox="0 0 300 220"><g stroke="#93c5fd" stroke-width="1.5"><path d="M150 110L40 30M150 110L30 110M150 110L40 190M150 110L150 20M150 110L260 30M150 110L270 110M150 110L260 190M150 110L150 200"/></g><g fill="#fff" stroke="#2563eb" stroke-width="1.5"><circle cx="40" cy="30" r="9"/><circle cx="30" cy="110" r="9"/><circle cx="40" cy="190" r="9"/><circle cx="150" cy="20" r="9"/><circle cx="260" cy="30" r="9"/><circle cx="270" cy="110" r="9"/><circle cx="260" cy="190" r="9"/><circle cx="150" cy="200" r="9"/></g><circle cx="150" cy="110" r="16" fill="#2563eb"/></svg>
+<div class="kv"><span>Integrations</span><b>26</b></div><div class="kv"><span>Linked systems</span><b>12</b></div><div class="kv"><span>Journeys</span><b>3 of 3</b></div><div class="kv"><span>Evidence</span><b>Confirmed</b></div></aside>
+</div></body></html>

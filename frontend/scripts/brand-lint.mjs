@@ -35,8 +35,12 @@ const TOKEN_FILES = new Set([
  * in round 1 (its direction overlay redefines the e& primitives on purpose),
  * and removed in Phase 9 with the rest of /design-lab. The hi-fi prototype and
  * the gallery are not exempt.
+ *
+ * Also exempt: the catalogue direction mock-ups (2026-10-09). Dev-only, with
+ * the user-relaxed calm rules; their palette moves into the token layers when
+ * the direction is approved, and the lab is removed with /design-lab.
  */
-const EXEMPT_DIRS = ["src/design-lab/wireframes/"];
+const EXEMPT_DIRS = ["src/design-lab/wireframes/", "src/design-lab/catalogue/"];
 const PRIMITIVE_LAYER = "src/design/tokens/primitive.css";
 const SEMANTIC_LAYER = "src/design/tokens/semantic.css";
 

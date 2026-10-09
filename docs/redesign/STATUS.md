@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| Integration branch | `feat/kb-redesign`, from `main` @ `b6114b9` |
-| Current phase | **8, re-scoped to the Catalogue only (2026-10-09).** Areas 1 and 2 approved and merged; the architecture catalogue is being rebuilt from scratch on `feat/kb-redesign-architecture` |
+| Integration branch | **`feat/kb-redesign-architecture`** (since 2026-10-09; on `origin`). It contains everything on `feat/kb-redesign` (from `main` @ `b6114b9`), which is no longer merged into. |
+| Current phase | **8, re-scoped to the Catalogue only (2026-10-09).** Areas 1 and 2 approved and merged; the catalogue is rebuilt and wired to the API, and has **mock-ups in the chosen direction** (Layered Architecture Poster, calm rules relaxed) awaiting the user's review |
 | Last updated | 2026-10-09 |
 
 ## Phase log
@@ -73,6 +73,11 @@
 | 2026-10-09 | **GATE 8.2 approved.** Library rebuilt (area 2). Decisions: Return to service re-approves the last published review (no API endpoint, no reason recorded; said in the panel); K2 `lang` is a script heuristic (HYPOTHESIS); `#passage-…` focuses the passage (no path form); **"seen" means a passage stayed current for about 0.6 s** (passing through doesn't count); the desk was made denser before the merge (one-line keys, progress and file note on one row, the location select behind a button). Critique: Library 28 → 30/40, Your work 27/28 → 31/40. | User |
 | 2026-10-09 | **Re-scope (user):** Catalogue only; everything else on hold. The catalogue is rebuilt **from scratch**, using only the Business Pro Plus SDD (v2.3) and the SMB architecture reference (v1.0). The old catalogue content, pages and the HTML explorer are not sources. Business Pro Plus first; the model is generic for any telecom product. Curators edit; every signed-in user reads (Explorer, later). Additive backend/API changes approved. | User |
 | 2026-10-09 | **Cleanup:** `scripts/seed_demo.py` no longer seeds catalogue content (no sample versions, draft or sample requirements). The backend's built-in "Initial catalogue" (`smb_architecture.yaml`, Requirement AI's matching knowledge) is left until the user decides how to replace it. | User |
+| 2026-10-09 | **Integration branch is `feat/kb-redesign-architecture`.** Every finished piece of work merges into it (not `main`, not `feat/kb-redesign`). Pushed to `origin`; `feat/kb-redesign` merged into it (no file changes). | User |
+| 2026-10-09 | **The catalogue's first build is judged not good enough visually:** plain dropdowns, diagrams below the fold, tables and boxes instead of visualisation. Cause: the catalogue skipped Phases 3–6 (no wireframes, directions or prototype of its own), the three design plugins were used only as review checklists, and the effort went into the data model and API. | User feedback |
+| 2026-10-09 | **The e& calm rules are relaxed for the catalogue** (more colour, richer diagrams, motion allowed), and **mock-ups come before more building**. Conflict order: this is user evidence and outranks the calm rules. If adopted at the gate, DESIGN.md is rewritten from the built world. | User |
+| 2026-10-09 | **Catalogue IA:** the Landscape becomes a TAM **hero page** with no product bar (the architecture itself, attractive and visual); each **product page** gets an **Architecture tab** with the same map, its journey's systems highlighted; **Products** becomes a main section (the offering page, customer value included, existed but had no navigation to it). Mock-ups cover four screens: Landscape hero, Product, Product › Architecture, Journey flow. | User |
+| 2026-10-09 | **Catalogue palette: e& branding colours in calm mode.** The poster's notation tints (yellow, blue, green, lilac) are replaced by soft tones of the e& family only (beige, red blush, stone, sand, maroon mist, light grey) with a deeper 2px top edge per layer, and an e& maroon integration spine; red stays the one focal accent. No official e& palette was found publicly, so the values derive from the brief's primitives (unverified). | User |
 | 2026-10-08 | **GATE 8.1 approved.** Chrome share is measured by height (6%). The critique stands at 27–28/40, with acting from the queue deferred to area 2 and a re-critique after it. Queues use one tab stop per item (interaction model §2.2 amended). | User |
 
 ## Brand source
@@ -233,22 +238,48 @@ Report: `docs/redesign/areas/02-library/README.md`.
 Plan: `docs/redesign/plans/03-architecture-catalogue.md` (replaces plans 03 and 04).
 Branch: `feat/kb-redesign-architecture`.
 
-**Built (frontend, data from the two sources in `frontend/src/architecture/data/`):**
+**What was done on 2026-10-09** (all on `feat/kb-redesign-architecture`, pushed):
 
-- **Landscape:** a TM Forum TAM map (7 domains + integration layer). The impact lens (product + order type + channel → impacted systems, with their role) is computed from the journeys. A record drawer per system. 8 TAM placements are proposed against the reference, each with its reason.
-- **Portfolio:** an editable Enterprise › Fixed › SMB › family › offering tree. Levels are data. Edits stay in the session until the backend stores them.
-- **Offering (Business Pro Plus):** purpose, customer value and eligibility; plans (prices are a gap); 11 rules; 9 components with PO/CFSS codes and responsible systems; an order type × channel journeys matrix (19 order types); impact by domain.
-- **Journeys:**
-  - New activation (digital) and New activation (BCRM), 23 steps each.
-  - Up/downgrade.
-  - Each journey has a BPMN swimlane flow, a sequence diagram with an integration register, order tracking and a steps table.
-  - Exports: BPMN 2.0 XML with DI, PlantUML, Mermaid, CSV.
-- **Systems** register; **Governance** (sources, placements to decide, 15 findings); **Versions** (working draft).
-- **Checks:** build, eslint, brand lint and budget green (entry chunk 662.48 kB, −26% vs baseline). Unit 497 tests: the new architecture suite (9) passes; the known Explorer timezone failure remains. The e2e route list points at the new routes; they are not yet in `REDESIGNED` (visual baselines come at the gate).
+| Commit | What |
+|---|---|
+| `b67ed65` | The catalogue rebuilt from scratch in the frontend, from the two sources only (WIP, before its gate) |
+| `ccbabd6` | Review fixes from vercel-ui-guidelines and ui-ux-pro-max: focus never hidden by the drawer (2.4.11), heading order, filters in the address, undoable portfolio removal, unsaved-changes warning, `translate="no"` on codes |
+| `8f18c41` | Backend and API (additive): portfolio with levels as data, plans as named characteristics, business rules, step performers (team or customer), point of no return, integrations with calling, called and intermediate systems, purpose, style and TMF equivalent; system owner, external flag, roadmap, evidence, moved placements. `catalogues/smb-architecture.yaml` is seeded into a draft that is never activated, so requirement mapping keeps the built-in knowledge |
+| `86c3c58` | Legacy catalogue code builds the new required fields |
+| `8ddf97f` | The screens read the version chosen in the context bar from the API and save portfolio edits to the draft against its revision (a stale save is refused) |
+| `5ae12ca` | Calls to a team or back to the channel reach that party's step; catalogue file and fixture regenerated |
+| `325b5b0` | The approval day is formatted portably (`%-d` failed on Windows) |
+| `789a2bb` | `ruff format` on `journeys.py` |
 
-**Next exact action:** the user reviews the running catalogue (http://localhost:5194/knowledge/architecture). Then:
+`scripts/seed_demo.py` now loads `catalogues/smb-architecture.yaml` into the draft "SMB architecture: Business Pro Plus" (this amends the morning's cleanup note).
 
-1. Backend: store the model (portfolio, offerings, journeys, integrations, tracking) with additive API changes, seeded from these data files.
-2. Decide how `smb_architecture.yaml` (Requirement AI's matching knowledge) is replaced.
-3. Explorer read views and exports for all signed-in users.
-4. Gate: one critique, the serious findings fixed, the e2e routes added to `REDESIGNED`.
+**What exists (Business Pro Plus):**
+
+- **Landscape:** the TAM map (7 domains + integration layer, 46 systems), an impact lens (product + order type + channel), a record drawer per system, 8 proposed placements with reasons.
+- **Portfolio:** an editable Enterprise › Fixed › SMB › family › offering tree, saved to the draft.
+- **Offering** (`/architecture/offerings/business-pro-plus`, reachable only from Portfolio or a journey): purpose, 6 customer values and 6 eligibility points with evidence; plans (prices are a gap); 11 rules; 9 components; an order type × channel matrix (19 order types); impact.
+- **Journeys:** New activation (BCRM, B2B Web, SMB App), Up/downgrade, Order tracking (57 integrations in all). Each has a BPMN flow, an integration register, order tracking and a steps table; exports to BPMN 2.0 XML with DI, PlantUML, Mermaid and CSV.
+- **Systems**, **Governance** (23 items) and **Versions**.
+
+**Checks (2026-10-09, on `04fd310`):**
+
+- Backend: `pytest`, `ruff check`, `ruff format --check`, `mypy src tests` and `lint-imports` pass on Windows.
+- Frontend: lint, brand lint, `api:check`, build and budget pass (entry chunk 662.48 kB, −26% vs baseline).
+- Frontend unit tests: **502 pass, 7 fail.** Six are in `src/library/ReviewDesk.test.tsx` and fail alone too (axe violations, a duplicated "Passages of version 1" grid, a hook timeout); the catalogue commits touch no Library or design-system code, so they come from elsewhere and are not yet diagnosed. One is `ExplorerPage.test.tsx` ("reads the offering's plans and prices…"), also not yet diagnosed. Not fixed in this round.
+
+**User review (2026-10-09):** the base is right, but the UI looks like the old one: dropdowns, no visualisation, no innovation. See the decisions table for the cause and the response (calm rules relaxed, mock-ups first, the hero/product IA).
+
+**Visual-direction round:** Impeccable `shape` with a direction roll (seed `b430c650`, operate mode, code-led). Five first-viewport sketches of the Landscape hero (real data, CWOM selected) were put on the decision page; they live in `.impeccable/mocks/decision/`, outside the frontend build. The page closed unanswered, so the choice was asked in chat. **User: "no dark theme, choose what impeccable recommends"** → **Layered Architecture Poster** (impeccable's pick, the only fully light direction). Direction contract: `.impeccable/surfaces/frontend-src-architecture-landscapepage-tsx.md`.
+
+**Mock-ups built (dev-only lab, `/knowledge/design-lab/catalogue`, real seeded Business Pro Plus data, writes nothing):**
+
+1. **Landscape hero:** the TAM poster (layer bands, 46 component boxes, 33 system-to-system links drawn as orthogonal lines), view chips instead of dropdowns, an inspector (busiest systems ranked; a picked system's partners, journeys and evidence), the products built on it as a band below.
+2. **Product (Business Pro Plus):** a hero with the value proposition and the bundle drawn as what the customer gets (CPE device at the core, mandatory components, Backup 5G optional), 6 customer values with evidence, plans compared (prices shown as a gap), eligibility, purpose. Tabs: Overview · Plans · Business rules · Components · Journeys · **Architecture**.
+3. **Product › Architecture:** journey and channel chips; the same poster with only the journey's systems lit and numbered in the order the order reaches them; a Previous/Next step-through of every call (the current call in e& red with an arrow, its interface, style, TMF equivalent and evidence beside it).
+4. **Journey flow:** BPMN swimlanes tinted by each system's layer, numbered steps, zoom, a step panel with its calls; exports to BPMN 2.0, PlantUML, Mermaid and CSV.
+
+Files: `frontend/src/design-lab/catalogue/` (lab, poster model and component, four screens, `lab.css`, 4 tests incl. axe), one dev-only route in `App.tsx`, and a brand-lint exemption for the lab folder (its palette moves into the token layers when the direction is approved). Checks: lint, brand lint, `api:check`, build and budget green (entry chunk 662.50 kB; the lab is absent from `dist`); the lab's 4 tests pass.
+
+**Finish review (impeccable finish reviewer, 2 rounds):** round 1 → *fix* (8 material fixes: bundle as a drawing, no opacity dimming, whole names, no kickers, one red accent, no hero-metric strip, gutter/spine connector routing with reconciled wording, disabled and narrow-screen states). Round 2 verdict: 5 resolved, 3 partial, 2 regressions → *fix*. After round 2, fixed without another review: the covered "PRODUCT" band label, the Fortinet name overflowing its lit box, the phone bundle (a stacked list below 760 px), the phone masthead scrollbar. **Still open:** a selected system's links share the 10 px gutters, so its partners are found by their outline, not by following one line each (needs edge bundling or wider gutters); DESIGN.md not yet rewritten (by design, until the direction is approved).
+
+**Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.
