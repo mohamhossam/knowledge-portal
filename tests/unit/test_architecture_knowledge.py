@@ -135,7 +135,7 @@ def test_stale_build_cannot_replace_newly_published_evidence() -> None:
         builder.execute(draft.id, draft.revision, actor.id, fence=lambda: None)
     assert replacement is not None and replacement.index_id is not None
     evidence = index.retrieve(replacement.index_id, "Newest evidence", 8)
-    assert any(item.text == "Newest evidence" for item in evidence)
+    assert any(item.text.endswith("\nNewest evidence") for item in evidence)
     assert all(index.get(replacement.index_id, item.id) == item for item in evidence)
 
 
@@ -198,7 +198,7 @@ def test_draft_is_version_checked_and_published_release_is_immutable() -> None:
     built = use_case.mark_built(
         changed.id,
         changed.revision,
-        "fake-architecture-embedding-v2:offline-word-v1:section-v2",
+        "fake-architecture-embedding-v2:offline-word-v1:section-v3",
         "hash",
         actor.id,
         "index-fixture",

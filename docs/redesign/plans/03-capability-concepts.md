@@ -46,6 +46,7 @@ and the API refuses a second concept that uses it.
 | **Decide** (step 2 of a draft) | Concept and component-link suggestions in the same grid as every other suggestion, with a filter chip for each kind. | Accept, reject, or accept with edits. |
 | **Offering › Components** | Each component's concepts as chips, or its "none fits" reason. | Edit the links in the draft. "Suggest links" starts the AI suggestions for the offering's unlinked components. |
 | **Systems › record panel** | Each capability's concept, or "not linked". | Link to a concept, or mark it as having none. |
+| **Check** (step 4 of a draft) | After a build, one line on how far the evidence links reach: "33 of 80 passages name no concept · 18 concepts appear in no passage", with the concepts listed (ontology plan Phase 2). | Open a concept from the list. "Not linked" when the index predates links. |
 | **Concepts › empty state** | "No capability concepts yet." The primary action is "Propose concepts from this catalogue". | Starts the backfill. |
 
 ## 4. Example data (the committed SMB catalogue)
@@ -109,6 +110,7 @@ A component-link suggestion in Decide:
 | `PUT /architecture-knowledge/releases/{id}` | `business_capabilities` (left as is when omitted) |
 | `POST …/releases/{id}/concept-proposals` | The backfill. Its run has `reading: "concept_backfill"` |
 | `POST …/releases/{id}/component-link-suggestions` | The AI link suggestions. Its run has `reading: "component_links"` |
+| `GET …/releases/{id}/index-coverage` | After a build: chunks without a concept, and concepts no chunk speaks of (Phase 2) |
 | `GET …/suggestions`, `POST …/suggestions/{id}/decision`, `POST …/suggestions/acceptance` | The kinds `concept` and `component_link` |
 
 ## 8. Acceptance criteria (area-specific)

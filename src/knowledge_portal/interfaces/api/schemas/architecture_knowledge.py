@@ -17,6 +17,7 @@ from knowledge_portal.application.ports.architecture_jobs import (
     ArchitectureJobKind,
     ArchitectureJobStatus,
 )
+from knowledge_portal.application.ports.architecture_rag import IndexCoverage
 from knowledge_portal.application.ports.catalogue_candidates import (
     CatalogueReading,
     ExtractionRun,
@@ -2362,4 +2363,41 @@ class BatchUploadResponse(BaseModel):
         return cls(
             release=KnowledgeReleaseResponse.from_domain(value.release),
             results=list(value.results),
+        )
+
+
+class UnlinkedConceptSchema(BaseModel):
+    id: str
+    pref_label: str
+
+
+class IndexCoverageResponse(BaseModel):
+    """How far a release's evidence index links reach (ontology plan Phase 2).
+
+    `linked` is false when the release has no index yet, or its index was built before
+    links existed; rebuilding the draft links it.
+    """
+
+    linked: bool
+    chunks: int = 0
+    chunks_without_concept: int = 0
+    concepts: int = 0
+    concepts_without_chunk: list[UnlinkedConceptSchema] = Field(default_factory=list)
+
+    @classmethod
+    def from_domain(
+        cls, coverage: IndexCoverage | None, release: ArchitectureKnowledge
+    ) -> IndexCoverageResponse:
+        if coverage is None:
+            return cls(linked=False)
+        labels = {item.id: item.pref_label for item in release.business_capabilities}
+        return cls(
+            linked=True,
+            chunks=coverage.chunks,
+            chunks_without_concept=coverage.chunks_without_concept,
+            concepts=coverage.concepts,
+            concepts_without_chunk=[
+                UnlinkedConceptSchema(id=item, pref_label=labels.get(item, item))
+                for item in coverage.concepts_without_chunk
+            ],
         )

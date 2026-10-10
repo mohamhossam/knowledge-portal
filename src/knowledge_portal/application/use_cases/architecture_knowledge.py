@@ -12,6 +12,7 @@ from knowledge_portal.application.ports.architecture_knowledge_repository import
 from knowledge_portal.application.ports.architecture_rag import (
     ArchitectureEvidenceIndexPort,
     EvidenceChunk,
+    IndexCoverage,
 )
 from knowledge_portal.application.ports.catalogue_file import (
     CatalogueFileFormat,
@@ -78,6 +79,15 @@ class ManageArchitectureKnowledge:
             require_maintainer(actor)
         return release
 
+    def index_coverage(self, release_id: str, actor: Actor) -> IndexCoverage | None:
+        """How much of the release's evidence index its links reach; None when the release
+        has no index yet, or its index predates links."""
+        require_maintainer(actor)
+        release = self.get(release_id)
+        if release.built_revision is None or not release.index_id:
+            return None
+        return self._index.coverage(release.index_id)
+
     def get(self, release_id: str) -> ArchitectureKnowledge:
         release = self._repository.get(release_id)
         if release is None:
@@ -111,9 +121,8 @@ class ManageArchitectureKnowledge:
     def preview(self, release_id: str, query: str, actor: Actor) -> tuple[EvidenceChunk, ...]:
         require_maintainer(actor)
         release = self.get(release_id)
-        if (
-            release.built_revision != release.revision
-            or release.index_profile != self._index.profile
+        if release.built_revision != release.revision or not self._index.reads(
+            release.index_profile
         ):
             raise KnowledgeConflictError("Build this release with the current embedding profile.")
         if not query.strip():
@@ -320,7 +329,7 @@ class ManageArchitectureKnowledge:
         if not rationale.strip():
             raise InvalidKnowledgeError("Reactivation rationale is required.")
         release = self.get(release_id)
-        if release.id != "smb-source-reference-v1" and release.index_profile != self._index.profile:
+        if release.id != "smb-source-reference-v1" and not self._index.reads(release.index_profile):
             raise KnowledgeConflictError(
                 "This historical index uses a different embedding profile; create a new draft."
             )

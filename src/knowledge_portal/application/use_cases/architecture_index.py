@@ -12,6 +12,7 @@ from smb_kernel.documents.ports import DocumentStoragePort
 from knowledge_portal.application.ports.architecture_rag import (
     ArchitectureEvidenceIndexPort,
     EvidenceChunk,
+    LinkedEntity,
 )
 from knowledge_portal.application.ports.architecture_tokenizer import ArchitectureTokenizerPort
 from knowledge_portal.application.ports.located_document_extractor import (
@@ -20,6 +21,12 @@ from knowledge_portal.application.ports.located_document_extractor import (
 )
 from knowledge_portal.application.use_cases.architecture_knowledge import (
     ManageArchitectureKnowledge,
+)
+from knowledge_portal.application.use_cases.index_links import (
+    IndexedRecord,
+    build_links,
+    record_concepts,
+    texts_to_embed,
 )
 from knowledge_portal.domain.architecture.journeys import Journey
 from knowledge_portal.domain.architecture.knowledge import (
@@ -237,6 +244,23 @@ def _journey_text(
     return "\n".join(line for line in lines if line)
 
 
+# How a catalogue record's chunks are located: "system rtf", "product bpp", "journey bpp-new".
+_LOCATION = {
+    LinkedEntity.SYSTEM: "system",
+    LinkedEntity.OFFERING: "product",
+    LinkedEntity.JOURNEY: "journey",
+}
+
+
+def _header(release: ArchitectureKnowledge, entity: LinkedEntity, entity_id: str, name: str) -> str:
+    """The line every window of a catalogue record starts with, so a window cut from the
+    middle of a long record still says whose it is and which capabilities it realises."""
+    labels = {item.id: item.pref_label for item in release.business_capabilities}
+    concepts = "; ".join(labels[item] for item in record_concepts(release, entity, entity_id))
+    header = f"Catalogue {entity.value}: {name}"
+    return header + (f" · capabilities: {concepts}" if concepts else "")
+
+
 def _kind(item: SystemRelationship) -> str:
     words = _KIND_WORDS.get(item.kind)
     return f" ({words})" if words else ""
@@ -348,7 +372,17 @@ class BuildArchitectureIndex:
             or release.revision != expected_revision
         ):
             raise KnowledgeConflictError("The build no longer matches this draft.")
-        chunks: list[EvidenceChunk] = []
+        records: list[IndexedRecord] = []
+
+        def record(
+            entity: LinkedEntity, entity_id: str, source: str, name: str, content: str
+        ) -> None:
+            header = _header(release, entity, entity_id, name)
+            for location, part in self._windows(content, f"{_LOCATION[entity]} {entity_id}"):
+                text = f"{header}\n{part}"
+                chunk = EvidenceChunk(self._chunk_id(source, location, text), name, location, text)
+                records.append(IndexedRecord(chunk, entity, entity_id))
+
         names = {system.id: system.name for system in release.systems}
         for system in release.systems:
             content = "\n".join(
@@ -379,53 +413,51 @@ class BuildArchitectureIndex:
                 )
                 if line
             )
-            for location, text in self._windows(content, f"system {system.id}"):
-                chunks.append(
-                    EvidenceChunk(
-                        self._chunk_id(system.id, location, text), system.name, location, text
-                    )
-                )
+            record(LinkedEntity.SYSTEM, system.id, system.id, system.name, content)
         for offering in release.products:
-            content = _offering_text(offering, names)
-            for location, text in self._windows(content, f"product {offering.id}"):
-                chunks.append(
-                    EvidenceChunk(
-                        self._chunk_id(f"product:{offering.id}", location, text),
-                        offering.name,
-                        location,
-                        text,
-                    )
-                )
+            record(
+                LinkedEntity.OFFERING,
+                offering.id,
+                f"product:{offering.id}",
+                offering.name,
+                _offering_text(offering, names),
+            )
         offerings = {item.id: item for item in release.products}
         for journey in release.journeys:
-            content = _journey_text(journey, names, offerings)
-            for location, text in self._windows(content, f"journey {journey.id}"):
-                chunks.append(
-                    EvidenceChunk(
-                        self._chunk_id(f"journey:{journey.id}", location, text),
-                        journey.name,
-                        location,
-                        text,
-                    )
-                )
+            record(
+                LinkedEntity.JOURNEY,
+                journey.id,
+                f"journey:{journey.id}",
+                journey.name,
+                _journey_text(journey, names, offerings),
+            )
         for document in release.documents:
             document_bytes = self._storage.get(DocumentVersionId(document.storage_key))
             segments = self._extractor.extract(document.mime_type, document_bytes)
             for header, location, body in self._sections(document.title, segments):
                 for part_location, part in self._windows(body, location):
                     text = f"{header}\n{part}"
-                    chunks.append(
-                        EvidenceChunk(
-                            self._chunk_id(document.id, part_location, text),
-                            document.title,
-                            part_location,
-                            text,
-                            document.id,
+                    records.append(
+                        IndexedRecord(
+                            EvidenceChunk(
+                                self._chunk_id(document.id, part_location, text),
+                                document.title,
+                                part_location,
+                                text,
+                                document.id,
+                            )
                         )
                     )
+        chunks = [item.chunk for item in records]
+        # Embedded before storing, through the index's cache, so nothing is embedded twice.
+        texts = texts_to_embed(release, tuple(records))
+        vectors = dict(zip(texts, self._index.vectors(texts), strict=True))
+        links = build_links(release, tuple(records), vectors)
         index_id = uuid4().hex
         fence()
         self._index.store(release.id, index_id, tuple(chunks))
+        fence()
+        self._index.link(index_id, links)
         content_hash = hashlib.sha256(
             "".join(f"{chunk.id}:{chunk.text}\n" for chunk in chunks).encode("utf-8")
         ).hexdigest()

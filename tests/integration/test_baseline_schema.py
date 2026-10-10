@@ -55,6 +55,10 @@ KNOWLEDGE_TABLES = {
     # Historic Requirements and their own import queue (Knowledge Center E).
     "historic_requirements",
     "historic_import_jobs",
+    # The concept-aware evidence index (ontology plan Phase 2).
+    "architecture_chunk_entities",
+    "architecture_chunk_concepts",
+    "architecture_concepts",
 }
 
 
