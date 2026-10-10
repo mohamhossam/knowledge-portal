@@ -1,0 +1,5638 @@
+# The SMB architecture catalogue, rebuilt from scratch (2026-10-09) from two sources only:
+#   - SDD: Business Pro Plus - Non-MVP, Solution Design Document v2.3 (ADO 109131)
+#   - SMB reference: SMB Value Stream Architecture Reference v1.0
+# Every fact carries its confidence (confirmed, inferred, gap) and its source section.
+# Loaded into a draft version by scripts/seed_demo.py; never activated, so requirement
+# mapping keeps the built-in knowledge (docs/redesign/STATUS.md).
+version: smb-architecture-business-pro-plus
+systems:
+- id: bcrm
+  name: BCRM
+  aliases: []
+  description: 'MS Dynamics sales CRM: leads, opportunities, quotes and discount approvals. Captures assisted
+    SMB orders.'
+  landscape_domain: market-sales.sales
+  capabilities: []
+  owner: Sales
+  roadmap: Replaced by Netcracker CSRD over time
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: nc-csrd
+  name: Netcracker CSRD
+  aliases:
+  - CSRD
+  description: New sales and CRM screens replacing BCRM, including AI Studio.
+  landscape_domain: market-sales.sales
+  capabilities: []
+  owner: Netcracker
+  roadmap: Replaces BCRM
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: pega
+  name: PEGA
+  aliases: []
+  description: Recommendation engine; can trigger opportunities.
+  landscape_domain: market-sales.recommendation
+  capabilities: []
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: sonic
+  name: SONIC
+  aliases: []
+  description: In-house AI model for B2B discount recommendations.
+  landscape_domain: market-sales.recommendation
+  capabilities: []
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: bcc
+  name: Digital Catalog (BCC)
+  aliases:
+  - Oracle ATG/BCC
+  - BCC
+  description: Digital product catalogue; offers uploaded by the business from Excel. Configured to accept
+    the new Business Pro Plus POs.
+  landscape_domain: product.catalogue
+  capabilities: []
+  owner: Digital
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: psm
+  name: PSM
+  aliases:
+  - Product & Service Management
+  description: 'Enterprise catalogue module: eligibility rules, pricing, GL mapping. The master reference
+    for package codes.'
+  landscape_domain: product.catalogue
+  capabilities: []
+  owner: CBCM team
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: ecm
+  name: ECM
+  aliases:
+  - Ericsson Catalog Manager
+  description: 'CWOM''s catalogue: CFS, allowances and prices for fixed products and bundles. Answers
+    the CPE and access-point model inquiry by bandwidth.'
+  landscape_domain: product.catalogue
+  capabilities: []
+  owner: Ericsson / CWOM
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory; §6 ECM = system
+- id: rtf-catalog
+  name: RTF Catalog
+  aliases: []
+  description: RTF's own catalogue of customer-facing services, for mobile fulfilment.
+  landscape_domain: product.catalogue
+  capabilities: []
+  owner: RTF team
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: caf
+  name: Catalog Automation Framework
+  aliases:
+  - BFM
+  - Bundle Framework
+  - Bespoke
+  - Automation Portal
+  description: Designs, approves and configures new products across IN, BCRM, BSCS, ECM, PSM, BCC and
+    CPP. Its Automation Portal holds the bundle building blocks (SD-WAN/FortiPortal, Firewall, Static
+    IP, Proactive Monitoring).
+  landscape_domain: product.design
+  capabilities: []
+  owner: Enterprise Catalog (ECM) team
+  confidence: inferred
+  source: 'SDD v2.3 · §P1 Bundle Definition · The SDD''s “Automation Portal for BFM” is read as this framework''s
+    portal (Ref §6: BFM is its SMB name).'
+- id: b2b-web
+  name: B2B Web
+  aliases:
+  - B2B
+  - B2B Portal
+  description: Angular web channel for SMB sales and customer management; catalogue from BCC. Opens FortiPortal
+    by SAML single sign-on.
+  landscape_domain: customer.self-service
+  capabilities: []
+  owner: Digital
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: smb-app
+  name: SMB App
+  aliases: []
+  description: iOS and Android equivalent of B2B Web.
+  landscape_domain: customer.self-service
+  capabilities: []
+  owner: Digital
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: sas-portal
+  name: SaS Self-Service Portal
+  aliases: []
+  description: 'Retail kiosk: biometric capture, document verification, bill payment, Customer 360.'
+  landscape_domain: customer.self-service
+  capabilities: []
+  owner: Digital / Retail
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: cim
+  name: CIM
+  aliases: []
+  description: Agent screen for IVR, email and chat; complaint management APIs.
+  landscape_domain: customer.assisted
+  capabilities: []
+  owner: Care
+  roadmap: Replaced by Netcracker CPM over time
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: dcrm
+  name: DCRM
+  aliases: []
+  description: Back-office order capture; the front end to CRMGW.
+  landscape_domain: customer.assisted
+  capabilities: []
+  owner: CBCM team
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: cbcm
+  name: CBCM
+  aliases:
+  - CRMGW
+  - CRM GW
+  description: Central customer, billing account, product inventory and order store; the registry RTF
+    loads summary-order baskets from.
+  landscape_domain: customer.customer-data
+  capabilities: []
+  owner: Enterprise Data
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory; §6 CBCM = CRMGW
+- id: nc-crm
+  name: Netcracker CRM (NC Digital)
+  aliases:
+  - NC CRM
+  description: Customer, organisation, individual, contact and site data for customers migrated to NC
+    Digital, read through TIBCO TMF APIs.
+  landscape_domain: customer.customer-data
+  capabilities: []
+  owner: Netcracker
+  confidence: confirmed
+  source: SMB reference v1.0 · §3.1 step 4 branch
+- id: rtf
+  name: RTF
+  aliases:
+  - Real-Time Fulfillment
+  description: Receives channel orders, validates business rules, builds the value order and hands fixed
+    orders to CWOM; loads summary-order baskets from CRMGW.
+  landscape_domain: customer.order
+  capabilities: []
+  owner: RTF team
+  placement_from: Service
+  placement_reason: 'RTF captures, validates and routes the customer''s order: TAM''s Customer Order Management.
+    CWOM keeps the service-order role.'
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: ibm-bpm
+  name: IBM BPM
+  aliases:
+  - BPM
+  description: Hosts orders and milestones for the order-tracking journey (isBFMOrder, mergeOrderItems).
+  landscape_domain: customer.order
+  capabilities: []
+  owner: Middleware
+  placement_from: Service
+  placement_reason: 'Order tracking shows the customer''s order status: Customer Order Management in TAM.'
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: felix
+  name: Felix
+  aliases: []
+  description: Stores order milestones for RTF and CWOM; read through getRealTimeOrderDetails.
+  landscape_domain: customer.order
+  capabilities: []
+  owner: RTF / CWOM
+  placement_from: Service
+  placement_reason: Holds customer-order milestones for tracking (Customer Order Management).
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: ehs
+  name: EHS
+  aliases: []
+  description: Raises contract events that start the renewal up/downgrade to a non-commitment package.
+  landscape_domain: customer.order
+  capabilities: []
+  confidence: inferred
+  source: SDD v2.3 · §EHS ADO 420619 · Not in the SMB reference; its full name and owner are not stated.
+- id: nc-cpm
+  name: Netcracker CPM
+  aliases:
+  - CPM
+  description: Complaint case management, replacing CIM and UCMS.
+  landscape_domain: customer.problem
+  capabilities: []
+  owner: Netcracker
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: bscs
+  name: BSCS
+  aliases: []
+  description: Billing system; billing starts when the order is fulfilled.
+  landscape_domain: customer.bill
+  capabilities: []
+  owner: Ericsson
+  placement_from: Resource
+  placement_reason: Billing is Customer Bill Management in TAM's Customer domain, not a resource.
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: cwom
+  name: CWOM
+  aliases:
+  - Ericsson Order Care
+  description: 'Order management for fixed products: validates against ECM, splits the order into sub-orders
+    and orchestrates activation, field work, billing and notification.'
+  landscape_domain: service.order
+  capabilities: []
+  owner: Ericsson
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: e2eso
+  name: E2ESO
+  aliases: []
+  description: 'Service order management: provisions Fortinet HE CPEs in the dedicated ADOM cluster, SD-WAN
+    and FortiPortal organisations.'
+  landscape_domain: service.order
+  capabilities: []
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: xaas
+  name: XaaS
+  aliases: []
+  description: SaaS activation layer (Microsoft, AWS and others); answers by callback.
+  landscape_domain: service.activation
+  capabilities: []
+  placement_from: Resource
+  placement_reason: 'It activates customer-facing SaaS services: Service Configuration & Activation.'
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: sla
+  name: SLA Management
+  aliases: []
+  description: SLA provisioning and activation.
+  landscape_domain: service.quality
+  capabilities: []
+  placement_from: Resource
+  placement_reason: 'SLAs are managed on the service: TAM''s Service Quality Management.'
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: veda
+  name: vEDA
+  aliases:
+  - eVEDA
+  - Ericsson Activation
+  description: Mobile network activation (HLR, HSS); activates and removes the Backup 5G profile and commands
+    IN and Alepo.
+  landscape_domain: resource.activation
+  capabilities: []
+  owner: Ericsson
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: in
+  name: IN
+  aliases:
+  - Intelligent Network
+  description: Activates mobile SIM and data profiles; applies the Backup 5G speed offers (862–874) and
+    the dunning throttle (854).
+  landscape_domain: resource.activation
+  capabilities: []
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: alepo
+  name: Alepo
+  aliases: []
+  description: Receives vEDA's commands for Backup 5G, as for DI/DPI.
+  landscape_domain: resource.activation
+  capabilities: []
+  confidence: inferred
+  source: SDD v2.3 · §vEDA Cessation · Named once in the SDD; not in the SMB reference.
+- id: nrm
+  name: NRM
+  aliases: []
+  description: Port and network resource allocation.
+  landscape_domain: resource.inventory
+  capabilities: []
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: inv-6d
+  name: 6D Inventory
+  aliases:
+  - SIM / Device / Number inventory
+  description: Reserves, deducts and releases SIMs, devices and numbers.
+  landscape_domain: resource.inventory
+  capabilities: []
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: nps
+  name: NPS
+  aliases: []
+  description: 'Number portability: takes port-in and port-out requests and submits them to RTF with the
+    summary-order flags.'
+  landscape_domain: resource.inventory
+  capabilities: []
+  confidence: inferred
+  source: SDD v2.3 · §NPS Port In & Port Out · Not in the SMB reference; placed with numbers.
+- id: gis
+  name: GIS
+  aliases: []
+  description: Network feasibility and availability check.
+  landscape_domain: resource.inventory
+  capabilities: []
+  placement_from: Engaged Party
+  placement_reason: 'Network feasibility reads the operator''s own network inventory: Resource domain.'
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: wfms
+  name: WFMS
+  aliases:
+  - WFM
+  description: 'Manual work orders: the technician installs the CPE and FortiAP, captures SIC codes and
+    serials and updates CWOM.'
+  landscape_domain: resource.field
+  capabilities: []
+  owner: Engineering
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory (WFM / Remedy)
+- id: remedy
+  name: Remedy
+  aliases: []
+  description: Engineering ticketing and assurance.
+  landscape_domain: resource.field
+  capabilities: []
+  owner: Engineering
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory (WFM / Remedy)
+- id: gov
+  name: Government Systems
+  aliases: []
+  description: Trade licence and decree validation.
+  landscape_domain: engaged-party.government
+  capabilities: []
+  owner: External
+  external: true
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: eida
+  name: EIDA
+  aliases: []
+  description: National ID reader device.
+  landscape_domain: engaged-party.government
+  capabilities: []
+  owner: External
+  external: true
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: ocr
+  name: OCR
+  aliases: []
+  description: Reads trade licences, Emirates IDs and establishment cards.
+  landscape_domain: engaged-party.government
+  capabilities: []
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: fortinet
+  name: Fortinet (FortiManager / FortiPortal)
+  aliases:
+  - FortiPortal
+  - ADOM FM cluster
+  description: 'Vendor platform: the dedicated ADOM FortiManager cluster for Business Pro Plus CPEs, and
+    FortiPortal for customer self-management.'
+  landscape_domain: engaged-party.partner
+  capabilities: []
+  external: true
+  confidence: confirmed
+  source: SDD v2.3 · §P1 New Activation; §P3 ADO 194831
+- id: npc
+  name: NPC
+  aliases: []
+  description: Sends port-out requests to NPS.
+  landscape_domain: engaged-party.partner
+  capabilities: []
+  external: true
+  confidence: inferred
+  source: SDD v2.3 · §NPS Portout · Expanded nowhere in the sources.
+- id: cns
+  name: CNS
+  aliases:
+  - Central Notification Service
+  description: SMS and email with OTP; template-driven, English and Arabic.
+  landscape_domain: enterprise.common
+  capabilities: []
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: edms
+  name: EDMS
+  aliases: []
+  description: Customer documents, technical templates and test results.
+  landscape_domain: enterprise.common
+  capabilities: []
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: itsm
+  name: ServiceNow / HPSM
+  aliases:
+  - HPSM
+  - ServiceNow
+  description: IT ticketing; device-delivery shipment orders and confirmations (HPSM moving to ServiceNow).
+  landscape_domain: enterprise.common
+  capabilities: []
+  owner: IT
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: adfs
+  name: ADFS
+  aliases: []
+  description: Single sign-on for CSRD and GIS screens.
+  landscape_domain: enterprise.common
+  capabilities: []
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: tibco
+  name: TIBCO
+  aliases: []
+  description: 'Integration bus: digital channels to government, vendors and NC CRM (TMF APIs); carries
+    order-creation notices, milestones and order-tracking reads.'
+  landscape_domain: integration.bus
+  capabilities: []
+  owner: Middleware
+  placement_from: Enterprise Management
+  placement_reason: An integration bus is infrastructure every domain uses; it is drawn as the integration
+    layer, not a business domain.
+  confidence: confirmed
+  source: SMB reference v1.0 · §1 System Directory
+- id: bff
+  name: B2B BFF
+  aliases:
+  - BFF
+  description: Backend for frontend of the digital channels.
+  landscape_domain: integration.bus
+  capabilities: []
+  confidence: inferred
+  source: SMB reference v1.0 · §1 B2B Web integrations; §7 Glossary · Named as an integration, not described
+    as a system.
+dependencies: []
+landscape_domains:
+- id: market-sales
+  name: Market & Sales
+  description: Leads, opportunities, quotes, discounts and sales recommendations.
+- id: market-sales.sales
+  name: Sales management
+  parent_id: market-sales
+- id: market-sales.recommendation
+  name: Recommendation
+  parent_id: market-sales
+- id: product
+  name: Product
+  description: Product catalogues, offer design and catalogue automation.
+- id: product.catalogue
+  name: Product catalogues
+  parent_id: product
+- id: product.design
+  name: Offer design & automation
+  parent_id: product
+- id: customer
+  name: Customer
+  description: Engagement channels, customer data, customer orders, order tracking, problems and bills.
+- id: customer.self-service
+  name: Self-service channels
+  parent_id: customer
+- id: customer.assisted
+  name: Assisted channels
+  parent_id: customer
+- id: customer.customer-data
+  name: Customer information
+  parent_id: customer
+- id: customer.order
+  name: Customer order management
+  parent_id: customer
+- id: customer.problem
+  name: Customer problems
+  parent_id: customer
+- id: customer.bill
+  name: Billing
+  parent_id: customer
+- id: service
+  name: Service
+  description: Service order management, service activation and service quality.
+- id: service.order
+  name: Service order management
+  parent_id: service
+- id: service.activation
+  name: Service activation
+  parent_id: service
+- id: service.quality
+  name: Service quality & SLA
+  parent_id: service
+- id: resource
+  name: Resource
+  description: Network activation, inventory, numbers, feasibility and field work.
+- id: resource.activation
+  name: Resource activation
+  parent_id: resource
+- id: resource.inventory
+  name: Inventory & numbers
+  parent_id: resource
+- id: resource.field
+  name: Workforce & trouble
+  parent_id: resource
+- id: engaged-party
+  name: Engaged Party
+  description: Government bodies, identity and document services, partners and vendors.
+- id: engaged-party.government
+  name: Government & identity
+  parent_id: engaged-party
+- id: engaged-party.partner
+  name: Partners & vendors
+  parent_id: engaged-party
+- id: enterprise
+  name: Enterprise
+  description: 'Cross-cutting: notification, documents, IT service management, single sign-on.'
+- id: enterprise.common
+  name: Common services
+  parent_id: enterprise
+- id: integration
+  name: Integration layer
+  description: The bus and gateways every domain talks through.
+- id: integration.bus
+  name: Integration
+  parent_id: integration
+products:
+- id: business-pro-plus
+  name: Business Pro Plus
+  code: B. Pro+
+  family: Business internet bundles
+  proposition: 'The premium flavour of Business Pro: fibre (GPON) internet on Fortinet 90G/120G CPEs,
+    with SD-WAN and FortiPortal, firewall, static IP, proactive monitoring, a managed FortiAP and optional
+    Backup 5G.
+
+
+    Gives a small or medium business a secure, managed business connection it can run itself: one premium
+    bundle instead of separate internet, security and Wi-Fi products, delivered through the Summary Order
+    Fulfillment of the SMB Framework (Order to Delivery).'
+  confidence: confirmed
+  source: SDD v2.3 · §Solution Overview P1
+  order_types:
+  - code: NEW
+    name: New activation
+    enabled: true
+    description: A new Business Pro Plus subscription on a new or existing account. Delivered in drop
+      P1.
+    channels:
+    - bcrm
+    - b2b-web
+    - smb-app
+    confidence: confirmed
+    source: SDD v2.3 · Scope; §P1
+  - code: MIGRATE
+    name: Migration to Business Pro Plus
+    enabled: true
+    description: From a legacy product (DEL, PBX, BQS…) or from Business Edge (BFV2). Legacy through BCRM
+      (P1); Business Edge through BCRM and the SMB App (P3). Delivered in drop P1 / P3.
+    channels:
+    - bcrm
+    - smb-app
+    confidence: confirmed
+    source: SDD v2.3 · Scope; §P1 Legacy Migration; §P3 ADO 202824
+  - code: PORTIN
+    name: Port in
+    enabled: true
+    description: A new activation that brings the customer's number from another operator. Delivered in
+      drop P3.
+    channels:
+    - bcrm
+    - b2b-web
+    - smb-app
+    - nps
+    confidence: confirmed
+    source: SDD v2.3 · §NPS Port In & Port Out
+  - code: UPDOWNGRD
+    name: Upgrade / downgrade
+    enabled: true
+    description: Change of plan between Business Pro Plus, Office Presence, Business ON and Business Pro,
+      with or without a device change. 28 from/to paths across Business Pro Plus, Office Presence, Business
+      ON and Business Pro; P3 adds device change. Delivered in drop P2 / P3.
+    channels:
+    - bcrm
+    - smb-app
+    confidence: confirmed
+    source: SDD v2.3 · Scope; §P2 ADO 81197; §P3 ADO 81961
+  - code: ADDDELETE
+    name: Add / delete add-on
+    enabled: true
+    description: Static IP, Speed Booster, VSaaS, voice, SaaS, managed-device and other add-ons. VSaaS
+      and static IP (P2); Speed Booster and add-ons while on 5G backup (P4). Delivered in drop P2 / P4.
+    channels:
+    - bcrm
+    - b2b-web
+    - smb-app
+    confidence: confirmed
+    source: SDD v2.3 · Scope
+  - code: MODSUBS
+    name: Modify subscription
+    enabled: true
+    description: SaaS service activation from the digital channel. Delivered in drop P4.
+    channels:
+    - b2b-web
+    - smb-app
+    confidence: confirmed
+    source: SDD v2.3 · Scope, P4 SaaS activation (MODSUBS)
+  - code: CHINTUSRN
+    name: Change internet username
+    enabled: true
+    description: Delivered in drop P2 / P4.
+    channels:
+    - bcrm
+    - b2b-web
+    - smb-app
+    confidence: confirmed
+    source: SDD v2.3 · Scope
+  - code: CHGPSWD
+    name: Change password
+    enabled: true
+    description: Delivered in drop P2 / P4.
+    channels:
+    - bcrm
+    - b2b-web
+    - smb-app
+    confidence: confirmed
+    source: SDD v2.3 · Scope
+  - code: CHGDOMN
+    name: Change domain
+    enabled: true
+    description: Delivered in drop P4.
+    channels:
+    - bcrm
+    - b2b-web
+    - smb-app
+    confidence: confirmed
+    source: SDD v2.3 · Scope
+  - code: CHGSUBDOMN
+    name: Change sub-domain
+    enabled: true
+    description: Delivered in drop P4.
+    channels:
+    - bcrm
+    - b2b-web
+    - smb-app
+    confidence: confirmed
+    source: SDD v2.3 · Scope
+  - code: CHNUMBER
+    name: Change number
+    enabled: true
+    description: Delivered in drop P4.
+    channels:
+    - bcrm
+    - b2b-web
+    - smb-app
+    confidence: confirmed
+    source: SDD v2.3 · Scope
+  - code: FLEXIMINMOV
+    name: Flexi minute movement
+    enabled: true
+    description: Delivered in drop P4.
+    channels:
+    - bcrm
+    - b2b-web
+    - smb-app
+    confidence: confirmed
+    source: SDD v2.3 · Scope
+  - code: TECHVISIT
+    name: Technician visit
+    enabled: true
+    description: Delivered in drop P4.
+    channels:
+    - bcrm
+    - b2b-web
+    - smb-app
+    confidence: confirmed
+    source: SDD v2.3 · Scope
+  - code: DVCREP
+    name: Faulty device replacement
+    enabled: true
+    description: Raised as a complaint; CPE or FortiAP replaced, with exit charges when out of warranty.
+      Delivered in drop P3 / P4.
+    channels:
+    - cim
+    confidence: confirmed
+    source: SDD v2.3 · §P4 ADO 289225
+  - code: EXTSHIFTSITE
+    name: External shift of site
+    enabled: true
+    description: Moves the service to another site within the Etisalat area. Delivered in drop P3.
+    channels:
+    - bcrm
+    - b2b-web
+    - smb-app
+    confidence: confirmed
+    source: SDD v2.3 · §P3 ADO 202826
+  - code: RENEWAL
+    name: Renewal
+    enabled: true
+    description: Contract renewal; EHS can trigger a move to the non-commitment package. Delivered in
+      drop P4.
+    channels:
+    - ehs
+    confidence: confirmed
+    source: SDD v2.3 · §EHS ADO 420619
+  - code: CESSREQ
+    name: Cessation
+    enabled: true
+    description: Direct, with retention, within the trial period, or bulk. Delivered in drop P2.
+    channels:
+    - bcrm
+    - b2b-web
+    - smb-app
+    confidence: confirmed
+    source: SDD v2.3 · §P2 ADO 259161
+  - code: PORTOUT
+    name: Port out
+    enabled: true
+    description: A cessation started by a port-out request from NPC. Delivered in drop P3.
+    channels:
+    - nps
+    confidence: confirmed
+    source: SDD v2.3 · §NPS Portout
+  - code: DUNNING
+    name: Dunning (TOSS, reconnect, non-payment cessation)
+    enabled: true
+    description: Throttle or suspend for non-payment, reconnect, or cease (CESSNP). The source that starts
+      dunning isn't named in the SDD. Delivered in drop P3.
+    confidence: confirmed
+    source: SDD v2.3 · §P3 ADO 259162
+  components:
+  - id: gpon
+    name: Fibre internet (GPON) on the CPE
+    code: PO_VCPE_ONPREM_GPON_HE
+    mandatory: true
+    description: The broadband access, at the plan's speed profile.
+    technical_spec: CFSS_INTERNET_CPE_ONPREM_HE
+    confidence: confirmed
+    source: SDD v2.3 · §P1 Catalog Modelling
+    responsibilities:
+    - system: cwom
+      role: ORCHESTRATES
+      description: Orchestrates the GPON sub-order
+    - system: e2eso
+      role: PROVISIONS
+      description: Provisions the CPE service
+    - system: wfms
+      role: INSTALLATION
+      description: Installation work order
+  - id: cpe
+    name: CPE device (Fortinet 90G / 120G)
+    code: PO_ADDON_BFM_ONPREM_CPE
+    mandatory: true
+    description: Generic CPE offer with CPE_PLATFORM_TYPE “Fortinet HE”, SIC_CODE, MODEL and LIST_OF_MODELS;
+      a new generic CPE rate plan for B. Pro+ (ADO 438907).
+    technical_spec: RPCUSTONPREMEQPT
+    confidence: confirmed
+    source: SDD v2.3 · §P1 Catalog Modelling; §ADO 438907
+    responsibilities:
+    - system: ecm
+      role: SUGGESTS
+      description: Suggests the model by bandwidth
+    - system: wfms
+      role: CAPTURES
+      description: Captures SIC code and serial
+    - system: e2eso
+      role: PROVISIONS
+      description: Provisions in the ADOM cluster
+  - id: firewall
+    name: Firewall
+    code: PO_ADDON_BFM_ONPREM_FIREWALL_HE
+    mandatory: true
+    description: Default or non-default configuration from the bundle; UTP licence per the existing SMB
+      FW implementation.
+    technical_spec: CFSS_ONPREM_FIREWALL_HE
+    confidence: confirmed
+    source: SDD v2.3 · §P1 Firewall; §P1.1
+    responsibilities:
+    - system: cwom
+      role: PROVISIONS
+      description: Provisions by default/non-default
+    - system: e2eso
+      role: APPLIES
+      description: Applies on the CPE
+  - id: selfservice
+    name: Self-service portal (FortiPortal)
+    code: PO_SELFSERVICE_PORTAL_ACCESS
+    mandatory: true
+    description: FortiPortal access; shown in B2B as “Security & Services Portal” (rate plan RP_SELFSERVICE_PORTAL_ACCESS,
+      component type SSPRTL).
+    technical_spec: CFSS_SELFSERVICE_PORTAL_ACCESS
+    confidence: confirmed
+    source: SDD v2.3 · §P1 Bundle Definition; §P3 ADO 194831
+    responsibilities:
+    - system: e2eso
+      role: CREATES
+      description: Creates the FortiPortal organisation
+    - system: cbcm
+      role: RETURNS
+      description: Returns the SSPRTL benefit
+    - system: b2b-web
+      role: SAML
+      description: SAML single sign-on
+  - id: sdwan
+    name: SD-WAN
+    code: PO_SDWAN_NEW
+    mandatory: true
+    description: 'SD-WAN service; its configuration is Day-N by MSS. MSS team: Day-N configuration.'
+    technical_spec: CFSS_SDWAN_NEW
+    confidence: confirmed
+    source: SDD v2.3 · §P1 Bundle Definition; General Highlights
+    responsibilities:
+    - system: cwom
+      role: PASSES
+      description: Passes SD-WAN in the onboarding ticket
+  - id: ap
+    name: Access point (FortiAP)
+    code: PO_ACCESS_POINT
+    mandatory: true
+    description: Generic AP offer with SIC_CODE, MODEL, DEVICE_RECOVERY, LIST_OF_MODELS and CAPTURE_REQUIRED.
+    technical_spec: PRS_ACCESS_POINT
+    confidence: confirmed
+    source: SDD v2.3 · §P1.1 Generic FortiAP Offer
+    responsibilities:
+    - system: ecm
+      role: SUGGESTS
+      description: Suggests the AP model
+    - system: wfms
+      role: CAPTURES
+      description: Captures serial and SIC code
+    - system: cwom
+      role: PROVISIONS
+      description: Provisions like the generic CPE
+  - id: static-ip
+    name: Static IP
+    mandatory: true
+    description: Mandatory in Business Pro Plus bundles.
+    confidence: confirmed
+    source: SDD v2.3 · §P1.1 Mandating Bundling Components
+    responsibilities:
+    - system: cwom
+      role: PROVISIONS
+      description: Provisions
+  - id: monitoring
+    name: Proactive monitoring
+    mandatory: true
+    description: Proactive monitoring for the Fortinet 90G/120G CPEs.
+    confidence: confirmed
+    source: SDD v2.3 · §P1.1; Solution Assumptions
+    responsibilities:
+    - system: e2eso
+      role: ENABLES
+      description: Enables on the CPE
+  - id: backup-5g
+    name: Backup 5G
+    mandatory: false
+    description: Failover over a Forti Extender or GSM SIM, with HSS profile 5GNSA_BPRO5GBKP; the SIM
+      is geo-locked to cell IDs and the dongle's IMEI.
+    confidence: confirmed
+    source: SDD v2.3 · §P2 IN; §vEDA; Solution Assumptions
+    responsibilities:
+    - system: veda
+      role: ACTIVATES
+      description: Activates and removes the profile
+    - system: in
+      role: APPLIES
+      description: Applies the speed offer
+  values:
+  - name: Secure by default
+    description: Firewall, static IP, SD-WAN/FortiPortal and proactive monitoring are mandatory in every
+      Business Pro Plus bundle, on Fortinet 90G or 120G CPEs.
+    confidence: confirmed
+    source: SDD v2.3 · §P1.1 Mandating Bundling Components; General Highlights
+  - name: Multi-branch networking
+    description: SD-WAN with IPSec tunnels between branches and hub/spoke set-up, managed from FortiPortal.
+      Overlay and routing configuration is a Day-N service by the MSS team.
+    confidence: confirmed
+    source: SDD v2.3 · Feasibility matrix, User Story 57539; General Highlights
+  - name: Business continuity
+    description: 'Optional Backup 5G: traffic fails over to the 5G network when the fibre link goes down,
+      and back when it returns.'
+    confidence: confirmed
+    source: SDD v2.3 · Feasibility matrix, User Story 80255 (existing implementation)
+  - name: Self-management
+    description: The customer opens FortiPortal from B2B Web or the SMB App by single sign-on, with a
+      role that follows their B2B role.
+    confidence: confirmed
+    source: SDD v2.3 · §P3 ADO 194831
+  - name: Managed Wi-Fi
+    description: A managed FortiAP access point, boxed and serialised, delivered with the CPE.
+    confidence: confirmed
+    source: SDD v2.3 · Feasibility matrix, User Story 81960
+  - name: Network visibility
+    description: Bandwidth, latency and tunnel dashboards and reports in FortiPortal. Subject to Fortinet
+      feasibility (TBD in the SDD).
+    confidence: inferred
+    source: SDD v2.3 · Feasibility matrix, User Story 81220 · Feasibility is TBD in the SDD.
+  audiences:
+  - name: Segment
+    description: SMB customers (Enterprise › Fixed › SMB).
+    confidence: inferred
+    source: SMB reference v1.0 · Title and scope · The SDD doesn't state a customer-type rule.
+  - name: New activation
+    description: Sold through BCRM, B2B Web and the SMB App.
+    confidence: confirmed
+    source: SDD v2.3 · §P1 Applicable Channels
+  - name: Migration
+    description: Existing customers on legacy products (DEL, PBX, BQS…) migrate through BCRM; Business
+      Edge (BFV2) customers through BCRM or the SMB App.
+    confidence: confirmed
+    source: SDD v2.3 · Scope; §P3 ADO 202824
+  - name: Location
+    description: External shift only within the Etisalat area. Bitstream is out of scope.
+    confidence: confirmed
+    source: SDD v2.3 · Scope; Feasibility matrix
+  - name: Commitment
+    description: No contract, 1 year or 2 years; the CPE rate plan follows the contract period chosen.
+    confidence: confirmed
+    source: SDD v2.3 · §ADO 438907, US 438909
+  - name: FortiPortal
+    description: Provisioned only for Business Pro Plus accounts (self-service CFSS). The organisation
+      is created with the first site and removed with the last branch's cessation.
+    confidence: confirmed
+    source: SDD v2.3 · §P1 FortiPortal Access
+  tracking:
+    scope_note: 'What happens inside when an order is created and when the customer or the back office
+      opens its tracker: RTF announces it, CWOM publishes milestones per sub-order through TIBCO to BPM,
+      and channels read them back.'
+    channels:
+    - channel: b2b-web
+      correlation_key: Digital Order ID ↔ CWOM Order ID, per basket item
+      read_system: tibco
+      read_interface: getRealTimeOrderDetails
+      confidence: confirmed
+      source: SMB reference v1.0 · §3.1 step 10
+    - channel: smb-app
+      correlation_key: Digital Order ID ↔ CWOM Order ID, per basket item
+      read_system: tibco
+      read_interface: getRealTimeOrderDetails
+      confidence: confirmed
+      source: SMB reference v1.0 · §3.1 step 10
+    - channel: bcrm
+      correlation_key: BCRM Order ID ↔ CWOM Order ID
+      confidence: confirmed
+      source: SMB reference v1.0 · §3.1 step 10
+    milestones:
+    - label: Order created
+      detail: RTF's NotifyOrderCreationRequest opens the tracker.
+      system: rtf
+      confidence: confirmed
+      source: SDD v2.3 · §BPM
+    - label: Sub-order milestones
+      detail: The AS-IS New Activation milestones, per sub-order (GPON, GSM, SaaS, vSaaS); also posted
+        for lifecycle orders.
+      system: cwom
+      confidence: confirmed
+      source: SDD v2.3 · §BPM; §TIBCO
+    - label: Device delivered
+      detail: HPSM's shipment confirmation.
+      system: itsm
+      confidence: confirmed
+      source: SDD v2.3 · §TIBCO
+    fallout:
+    - trigger: Stale or incomplete status
+      handling: Tracking can show a stale status if CWOM fails to send a milestone or it isn't captured.
+      confidence: confirmed
+      source: SMB reference v1.0 · §5 Known Issues
+    - trigger: Deleted items aren't tracked
+      handling: BPM doesn't track order items with type DELETE on MIGRATE or UPDOWNGRD orders.
+      confidence: confirmed
+      source: SDD v2.3 · §BPM General Note
+  sources:
+  - sdd
+  - ref
+  primary_source: sdd
+  questions:
+  - id: F3
+    text: 'RTF → CWOM call for new activation: The reference says only “CWOM format”. The SDD names createShoppingCart
+      and refreshShoppingCart for migration and up/downgrade.'
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 7
+  - id: F4
+    text: 'Workflows and points of no return: The SDD''s workflow annex (WF-1 to WF-7) and PONR definitions
+      are “yet to be provided”.'
+    confidence: confirmed
+    source: 'SDD v2.3 · Annexure: Workflows'
+  - id: F5
+    text: 'E2ESO technical proposal and interface agreement: Both annexes are empty, so the CWOM ↔ E2ESO
+      calls are known by purpose only.'
+    confidence: confirmed
+    source: 'SDD v2.3 · Annexure: E2ESO TP, IAD'
+  - id: F6
+    text: 'Integration style and timing: Most calls don''t say whether they are REST, SOAP or messages,
+      or whether they are synchronous.'
+    confidence: confirmed
+    source: SDD v2.3 · Throughout
+  - id: F7
+    text: 'Plan prices: Neither source states the plans'' prices. The only amount is the 90G/120G CPE
+      exit charge, AED 650, to be confirmed.'
+    confidence: confirmed
+    source: SDD v2.3 · §ADO 438907
+  - id: F8
+    text: 'Device codes: SIC codes and some models of the 90G, 120G and FortiAP are TBD.'
+    confidence: confirmed
+    source: SDD v2.3 · §P1 Catalog Modelling
+  - id: F9
+    text: 'Milestone names: No milestone dictionary in either source.'
+    confidence: confirmed
+    source: SDD v2.3 · §BPM
+  - id: F10
+    text: 'MSS ticketing system: The system that carries the SD-WAN onboarding ticket isn''t named.'
+    confidence: confirmed
+    source: SDD v2.3 · §P1 New Activation
+  - id: F11
+    text: 'Names used but not defined: CPP, ODS (DWH), Bid Mgmt, PM tool and “Billing” are named as integrations
+      but not described as systems.'
+    confidence: confirmed
+    source: SMB reference v1.0 · §1; §5
+  - id: F12
+    text: 'Who starts dunning: The SDD details the fulfilment of TOSS, reconnect and CESSNP but not the
+      system that raises them.'
+    confidence: confirmed
+    source: SDD v2.3 · §P3 ADO 259162
+  - id: F14
+    text: 'Section references: The reference''s rules point to Section 4 for process flows; they are in
+      Section 3.'
+    confidence: confirmed
+    source: SMB reference v1.0 · §0 Rules
+  - id: F15
+    text: 'SDD version: The cover says version 2.2; the revision history goes to 2.3 (11/09/2026), and
+      2.2''s date is incomplete.'
+    confidence: confirmed
+    source: SDD v2.3 · Cover; Revision History
+  portfolio: business-internet
+  plans:
+  - name: Business Pro Plus 200 Mbps
+    characteristics:
+      Download: 200 Mbps
+      Upload: 100 Mbps
+      CPE: Fortinet 90G
+      Access point: FAP-23JF-E
+      Backup 5G: IN offer 862 (200 Mbps)
+    confidence: confirmed
+    source: SDD v2.3 · §IN Backup 5G table; §P1.1 CPE/AP inquiry · Upload speeds are derived from the
+      1:2 ratio (R2); the SDD lists download tiers only.
+  - name: Business Pro Plus 300 Mbps
+    characteristics:
+      Download: 300 Mbps
+      Upload: 150 Mbps
+      CPE: Fortinet 90G
+      Access point: FAP-23JF-E
+      Backup 5G: IN offer 864 (300 Mbps)
+    confidence: confirmed
+    source: SDD v2.3 · §IN Backup 5G table; §P1.1 CPE/AP inquiry · Upload speeds are derived from the
+      1:2 ratio (R2); the SDD lists download tiers only.
+  - name: Business Pro Plus 400 Mbps
+    characteristics:
+      Download: 400 Mbps
+      Upload: 200 Mbps
+      CPE: Fortinet 90G
+      Access point: FAP-23JF-E
+      Backup 5G: IN offer 866 (400 Mbps)
+    confidence: confirmed
+    source: SDD v2.3 · §IN Backup 5G table; §P1.1 CPE/AP inquiry · Upload speeds are derived from the
+      1:2 ratio (R2); the SDD lists download tiers only.
+  - name: Business Pro Plus 600 Mbps
+    characteristics:
+      Download: 600 Mbps
+      Upload: 300 Mbps
+      CPE: Fortinet 90G
+      Access point: FAP-23JF-E
+      Backup 5G: IN offer 869 (600 Mbps)
+    confidence: confirmed
+    source: SDD v2.3 · §IN Backup 5G table; §P1.1 CPE/AP inquiry · Upload speeds are derived from the
+      1:2 ratio (R2); the SDD lists download tiers only.
+  - name: Business Pro Plus 800 Mbps
+    characteristics:
+      Download: 800 Mbps
+      Upload: 400 Mbps
+      CPE: Fortinet 90G
+      Access point: FAP-23JF-E
+      Backup 5G: IN offer 872 (800 Mbps)
+    confidence: confirmed
+    source: SDD v2.3 · §IN Backup 5G table; §P1.1 CPE/AP inquiry · Upload speeds are derived from the
+      1:2 ratio (R2); the SDD lists download tiers only.
+  - name: Business Pro Plus 1 Gbps
+    characteristics:
+      Download: 1024 Mbps
+      Upload: 512 Mbps
+      CPE: Fortinet 120G
+      Access point: FAP-431F-E
+      Backup 5G: IN offer 874 (1 Gbps)
+    confidence: confirmed
+    source: SDD v2.3 · §IN Backup 5G table; §P1.1 CPE/AP inquiry · Upload speeds are derived from the
+      1:2 ratio (R2); the SDD lists download tiers only.
+  business_rules:
+  - id: R1
+    statement: 'SD-WAN/FortiPortal, Firewall, Static IP and Proactive Monitoring are mandatory: checked
+      by default and locked in the Automation Portal for Business Pro Plus bundles.'
+    kind: composition
+    confidence: confirmed
+    source: SDD v2.3 · §P1.1 Mandating Bundling Components
+  - id: R2
+    statement: Speed profiles with an upload:download ratio of 1:2 are only for Business Pro Plus; the
+      1:10 profiles stay with Business Pro.
+    kind: composition
+    confidence: confirmed
+    source: SDD v2.3 · §P1 Bundle Definition
+  - id: R3
+    statement: ECM suggests the Fortinet 90G below 1 Gbps and the 120G at 1 Gbps; FAP-23JF-E below 1 Gbps
+      and FAP-431F-E from 1 Gbps.
+    kind: fulfilment
+    confidence: confirmed
+    source: SDD v2.3 · §P1.1 Generic FortiAP Offer
+  - id: R4
+    statement: Business Pro Plus CPEs are provisioned in the dedicated ADOM FortiManager cluster (platform
+      type “Fortinet HE”).
+    kind: fulfilment
+    confidence: confirmed
+    source: SDD v2.3 · §P1 New Activation
+  - id: R5
+    statement: SD-WAN configuration (overlay, routing, templates, security policies) is a Day-N service
+      by the MSS team, not part of activation.
+    kind: fulfilment
+    confidence: confirmed
+    source: SDD v2.3 · General Highlights
+  - id: R6
+    statement: A lifecycle request is accepted only when the sub-orders it depends on are complete (pending-order
+      validation matrix in CRMGW). An up/downgrade needs the master order closed.
+    kind: dependency
+    confidence: confirmed
+    source: SDD v2.3 · §P4 Pending Order Validation
+  - id: R7
+    statement: 'An add-on can be added only when its service type''s sub-order is closed: voice needs
+      GSM; static IP and Speed Booster need GSM and GPON; SaaS needs GSM and SaaS; vSaaS needs GSM and
+      vSaaS.'
+    kind: dependency
+    confidence: confirmed
+    source: SDD v2.3 · §P4 Pending Order Validation, add-on matrix
+  - id: R8
+    statement: Amendment and cancellation are allowed until the point of no return agreed in the workflows.
+      There is no amendment from the SMB App.
+    kind: lifecycle
+    confidence: confirmed
+    source: SDD v2.3 · §P1 Amendment/Cancellation; §P2 UpDowngrade
+  - id: R9
+    statement: Dunning throttles Backup 5G to 5 Mbps with IN offer 854 at TOSS, and removes it at reconnect.
+    kind: billing
+    confidence: confirmed
+    source: SDD v2.3 · §P3 ADO 259162
+  - id: R10
+    statement: 'The new generic CPE rate plan for 90G/120G carries an exit charge of AED 650 (to be confirmed
+      by the business), per contract period: no contract, 1 year, 2 years.'
+    kind: billing
+    confidence: confirmed
+    source: SDD v2.3 · §ADO 438907, US 438909
+  - id: R11
+    statement: The 900/450 speed profile is not offered on the Fortinet 90G until it passes the lab test.
+    kind: composition
+    confidence: confirmed
+    source: SDD v2.3 · General Highlights, Speed Booster
+  - id: R12
+    statement: 'Backup 5G changes IN only when the bundle has it. New activation and migration: UpdateOffer
+      for the base offer (6980) and the bandwidth offer. Cessation: DeleteOffer for both. Up/downgrade:
+      added as in activation, removed as in cessation, kept by swapping the bandwidth offer, absent nothing.
+      External shift: runPAM resets the geo-lock. Dunning: offer 854 at TOSS, removed at reconnect.'
+    kind: fulfilment
+    confidence: confirmed
+    source: SDD v2.3 · §P4 Enhancement 1873844
+  - id: R13
+    statement: For an up/downgrade ECM suggests the Fortinet 90G or 120G (FAP-23JF-E or FAP-431F-E) below
+      1 Gbps, so the CPE changes only when the target plan needs another model; at 1 Gbps only the 120G
+      and FAP-431F-E.
+    kind: fulfilment
+    confidence: confirmed
+    source: SDD v2.3 · §P4 Enhancement 1871663
+  - id: R14
+    statement: 'A device added during faulty device replacement carries its charge add-on PO: Fortinet 90G
+      AED 13,200 and Fortinet 120G AED 18,000, one-time.'
+    kind: billing
+    confidence: confirmed
+    source: SDD v2.3 · §ADO 438907, US 438912
+  - id: R15
+    statement: The CPE exit charge applies to cessation and to up/downgrade when the removed CPE's rate
+      plan is still within its 1- or 2-year commitment.
+    kind: billing
+    confidence: inferred
+    source: SDD v2.3 · §ADO 438907, US 438909 · The applicable SRs are stated; the commitment test follows
+      the existing exit-charge rules.
+  - id: R16
+    statement: At the end of the contract, EHS moves the account to the non-commitment package of the same
+      family (ccat_after_contract_migrate_plan) as an up/downgrade; from an old-model bundle, RTF copies
+      the dynamic attributes to the new-model target.
+    kind: lifecycle
+    confidence: confirmed
+    source: SDD v2.3 · §P4 ADO 420619
+  - id: R17
+    statement: A migration from a legacy product keeps the existing contract-reset and exit-charge rules
+      on the removed devices.
+    kind: billing
+    confidence: confirmed
+    source: SDD v2.3 · Feasibility US 202815, 202817
+  - id: R18
+    statement: 'Cessation is blocked while the activation is in progress: the customer cancels it first,
+      each sub-order up to its point of no return, and the cessation then ceases what was fulfilled.'
+    kind: lifecycle
+    confidence: confirmed
+    source: SDD v2.3 · §P4 ADO 288752
+  - id: R19
+    statement: Port-out is fulfilled as a cessation without Churn & Exit retention; port-in raises the port
+      request at master-order level, before the split.
+    kind: lifecycle
+    confidence: confirmed
+    source: SDD v2.3 · §P3 ADO 202826; §ADO 470510
+  - id: R20
+    statement: The FortiPortal organisation is created with the customer's first site and removed only with
+      the last one.
+    kind: lifecycle
+    confidence: confirmed
+    source: SDD v2.3 · §P1 FortiPortal Access; §P2 ADO 259161
+journeys:
+- id: bpp-new-activation
+  name: New activation
+  product: business-pro-plus
+  order_type: NEW
+  description: 'From the order in any channel to a closed order: the channel captures it, RTF evaluates
+    it, CWOM splits it into sub-orders and fulfils them in parallel.'
+  confidence: confirmed
+  source: SMB reference v1.0 · §3.1; SDD v2.3 · §P1
+  activities:
+  - number: '10'
+    name: Browse and configure the bundle
+    description: Offers come from the local BCC catalogue, configured for the new Business Pro Plus POs.
+    etom: Fulfillment · Selling
+    channels:
+    - b2b-web
+    - smb-app
+    channel_entry: true
+    role: CAPTURE
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 1
+  - number: '20'
+    name: Map the offer to PSM package codes and the ECM structure
+    system: bcc
+    etom: Fulfillment · Selling
+    channels:
+    - b2b-web
+    - smb-app
+    role: CATALOG
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 2
+  - number: '30'
+    name: Add the bundle to the cart
+    output: Customer migrated to NC Digital?
+    etom: Fulfillment · Selling
+    channels:
+    - b2b-web
+    - smb-app
+    channel_entry: true
+    role: CAPTURE
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 3
+  - number: '40'
+    name: Return customer, account and product data
+    system: cbcm
+    etom: Fulfillment · Order Handling
+    channels:
+    - b2b-web
+    - smb-app
+    role: CUSTOMER_DATA
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 4
+  - number: '50'
+    name: Return customer, organisation, contact and site data
+    track: BRANCH-NCCRM
+    system: nc-crm
+    description: Other entities still come from CRMGW.
+    etom: Fulfillment · Order Handling
+    channels:
+    - b2b-web
+    - smb-app
+    role: CUSTOMER_DATA
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 4 branch
+  - number: '200'
+    name: Capture the order from the bundle definition
+    description: The new PO-modelling flag in the bundle definition decides the summary-order flags.
+    etom: Fulfillment · Selling
+    channels:
+    - bcrm
+    channel_entry: true
+    role: CAPTURE
+    confidence: confirmed
+    source: 'SDD v2.3 · §P1 Legacy Migration (as for SMB FW: Order to Delivery)'
+  - number: '210'
+    name: Return customer and account data
+    system: cbcm
+    etom: Fulfillment · Order Handling
+    channels:
+    - bcrm
+    role: CUSTOMER_DATA
+    confidence: confirmed
+    source: SMB reference v1.0 · §1 BCRM integrations
+  - number: '300'
+    name: Submit the order with the summary-order flags
+    etom: Fulfillment · Order Handling
+    channel_entry: true
+    role: CAPTURE
+    confidence: confirmed
+    source: SDD v2.3 · §P1 New Activation (channels pass the Summary Order Flag)
+  - number: '310'
+    name: Announce the new order for tracking
+    system: rtf
+    description: RTF sends NotifyOrderCreationRequest through TIBCO to BPM, which opens the order tracker.
+    etom: Fulfillment · Order Handling
+    role: TRACK
+    confidence: confirmed
+    source: SDD v2.3 · §BPM; §TIBCO (Order Tracking)
+  - number: '320'
+    name: Build the value order and evaluate it
+    system: rtf
+    description: RTF translates the order to an RTF value order with PSM codes and evaluates it with CRMGW
+      and ECM.
+    output: Business rules passed?
+    etom: Fulfillment · Order Handling
+    role: VALIDATE
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 6
+  - number: '330'
+    name: Order returned for correction
+    track: CORRECTION
+    channel_entry: true
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 7
+  - number: '340'
+    name: Hand the order to CWOM
+    system: rtf
+    description: In Ericsson Order Care format, as a summary order (SUMMARY_ORDER / DETAILED_ORDER flags).
+    etom: Fulfillment · Order Handling
+    role: ORCHESTRATE
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 7
+  - number: '350'
+    name: Validate against ECM and accept the order
+    system: cwom
+    description: CWOM accepts the new platform type “Fortinet HE” and the new POs.
+    etom: Fulfillment · Order Handling
+    role: ORCHESTRATE
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 8
+  - number: '360'
+    name: Suggest the CPE and access-point models
+    system: ecm
+    description: 'Below 1 Gbps: Fortinet 90G and FAP-23JF-E. At 1 Gbps: Fortinet 120G and FAP-431F-E.'
+    etom: Fulfillment · Service Configuration & Activation
+    role: CATALOG
+    confidence: confirmed
+    source: SDD v2.3 · §P1.1 Generic FortiAP Offer
+  - number: '370'
+    name: Split into sub-orders
+    system: cwom
+    description: GPON; GSM (Backup 5G, UCaaS, synchronous SaaS); SaaS (asynchronous); vSaaS; and the master
+      order.
+    etom: Fulfillment · Service Configuration & Activation
+    role: ORCHESTRATE
+    confidence: inferred
+    source: SDD v2.3 · §P4 Pending Order Validation · The sub-orders are named in the validation matrix;
+      the split as a step is this catalogue's reading.
+  - number: '380'
+    name: Provision the CPE in the ADOM cluster; create the FortiPortal organisation
+    track: PARALLEL-CPE
+    system: e2eso
+    description: The organisation is created once, with the customer's first site. CWOM passes the site
+      name and organisation name.
+    etom: Fulfillment · Service Configuration & Activation
+    role: ACTIVATE
+    confidence: confirmed
+    source: SDD v2.3 · §P1 New Activation; §P2 New Activation
+  - number: '390'
+    name: Register the CPE and the organisation
+    track: PARALLEL-CPE
+    system: fortinet
+    etom: Fulfillment · Supplier/Partner Requisition Management
+    role: ACTIVATE
+    confidence: confirmed
+    source: SDD v2.3 · §P1 FortiPortal Access
+  - number: '400'
+    name: Install the CPE and FortiAP; capture SIC codes and serials
+    track: PARALLEL-INSTALL
+    system: wfms
+    description: The technician sees the SIC code; WFMS updates CWOM with the AP's SIC code and serial.
+      A faulty FortiAP can be replaced on site.
+    etom: Fulfillment · Resource Provisioning
+    role: FIELD
+    confidence: confirmed
+    source: SDD v2.3 · §P1 New Activation; §P1.1 Generic FortiAP Offer
+  - number: '405'
+    name: Check the bundle for Backup 5G
+    track: PARALLEL-BACKUP
+    system: cwom
+    description: Backup 5G is a GSM sub-order component; without it the GSM sub-order carries only UCaaS
+      and synchronous SaaS.
+    output: Backup 5G in the bundle?
+    etom: Fulfillment · Service Configuration & Activation
+    role: ORCHESTRATE
+    confidence: inferred
+    source: SDD v2.3 · §P4 Enhancement 1873844 · The IN offers apply only when the bundle has Backup 5G;
+      the check as a step is this catalogue's reading.
+  - number: '410'
+    name: Activate Backup 5G
+    track: PARALLEL-BACKUP
+    system: veda
+    description: HSS profile 5GNSA_BPRO5GBKP; vEDA commands IN and Alepo. The SIM is geo-locked to cell
+      IDs and the dongle's IMEI. A faulty 5G SIM can be replaced during installation (WFMS "Replace",
+      CWOM to vEDA).
+    etom: Fulfillment · Resource Provisioning
+    role: ACTIVATE
+    confidence: inferred
+    source: SDD v2.3 · §P2 IN; §vEDA · The SDD details Backup 5G for up/downgrade and cessation and says
+      activation is “the same as the new activation fulfillment”.
+  - number: '420'
+    name: Set the Backup 5G base and bandwidth offers
+    track: PARALLEL-BACKUP
+    system: in
+    description: 'UpdateOffer twice: the base offer (PO_GSM_BACKUP_5G_UNL, IN offer 6980, SERVICE_TYPE
+      BASE) and the bandwidth offer for the GPON speed (Business Pro+: 862, 864, 866, 869, 872, 874).'
+    etom: Fulfillment · Resource Provisioning
+    role: ACTIVATE
+    confidence: confirmed
+    source: SDD v2.3 · §P4 Enhancement 1873844 (New Activation/Migration)
+  - number: '430'
+    name: Activate SaaS services
+    track: PARALLEL-SAAS
+    system: xaas
+    etom: Fulfillment · Service Configuration & Activation
+    point_of_no_return: The XaaS callback is the point of no return for the asynchronous SaaS order.
+    role: ACTIVATE
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 11
+  - number: '440'
+    name: Ship managed devices
+    track: PARALLEL-SHIP
+    system: itsm
+    description: Shipment order from CWOM; the shipment confirmation comes back through TIBCO to a CWOM
+      callback.
+    etom: Fulfillment · Supplier/Partner Requisition Management
+    point_of_no_return: For managed devices, the MDVC callback from HPSM is the point of no return.
+    role: LOGISTICS
+    confidence: confirmed
+    source: SDD v2.3 · §TIBCO; §P4 Cancel Order Changes
+  - number: '450'
+    name: Receive the SD-WAN onboarding ticket
+    track: PARALLEL-ONBOARD
+    description: SD-WAN configuration is Day-N; activation doesn't wait for it.
+    etom: Fulfillment · Service Configuration & Activation
+    performer: MSS team
+    role: FIELD
+    confidence: confirmed
+    source: SDD v2.3 · §P1 New Activation; General Highlights
+  - number: '460'
+    name: Start billing
+    track: PARALLEL-BILL
+    system: bscs
+    description: The CPE rate plan follows the contract period chosen at capture (no contract, 1 year, 2
+      years); a commitment carries an exit charge of AED 650.
+    etom: Billing · Billing & Revenue Management
+    role: BILL
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 12; SDD v2.3 · §ADO 438907 US 438909
+  - number: '470'
+    name: Send the order-completed SMS and email
+    track: PARALLEL-BILL
+    system: cns
+    description: Template-driven, in English or Arabic. RTF also triggers the order-submitted and order-completed
+      emails.
+    etom: CRM · Customer Interface Management
+    role: NOTIFY
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 14
+  - number: '480'
+    name: Close the order and update the product inventory
+    track: PARALLEL-BILL
+    system: cbcm
+    description: With PSM catalogue codes.
+    etom: Fulfillment · Order Handling
+    role: RECORD
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 15
+  flow_rules:
+  - kind: decision
+    from: '30'
+    to: '40'
+    condition: 'No'
+  - kind: decision
+    from: '30'
+    to: '50'
+    condition: 'Yes'
+  - kind: decision
+    from: '320'
+    to: '330'
+    condition: 'No'
+  - kind: decision
+    from: '320'
+    to: '340'
+    condition: 'Yes'
+  - kind: parallel
+    from: '370'
+    to: '380'
+    parallel_group: sub-orders
+    rejoin_at: '460'
+  - kind: parallel
+    from: '370'
+    to: '400'
+    parallel_group: sub-orders
+    rejoin_at: '460'
+  - kind: parallel
+    from: '370'
+    to: '405'
+    parallel_group: sub-orders
+    rejoin_at: '460'
+  - kind: decision
+    from: '405'
+    to: '410'
+    condition: With Backup 5G
+  - kind: decision
+    from: '405'
+    to: '460'
+    condition: Without Backup 5G
+  - kind: parallel
+    from: '370'
+    to: '430'
+    parallel_group: sub-orders
+    rejoin_at: '460'
+  - kind: parallel
+    from: '370'
+    to: '440'
+    parallel_group: sub-orders
+    rejoin_at: '460'
+  - kind: parallel
+    from: '370'
+    to: '450'
+    parallel_group: sub-orders
+    rejoin_at: '460'
+  - kind: decision
+    from: '50'
+    to: '300'
+    branch: rejoin
+  integrations:
+  - from: '10'
+    to: '10'
+    interface: Offer catalogue
+    to_system: bcc
+    purpose: Read the Business Pro Plus offers and components.
+    confidence: confirmed
+    source: SMB reference v1.0 · §1 B2B Web; §3.1 step 1
+  - from: '20'
+    to: '20'
+    interface: Package codes
+    from_system: bcc
+    to_system: psm
+    purpose: Map the offer to PSM package codes.
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 2
+  - from: '20'
+    to: '20'
+    interface: Product structure
+    from_system: bcc
+    to_system: ecm
+    purpose: Show bundle and component detail.
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 2
+  - from: '40'
+    to: '40'
+    interaction: Sync
+    interface: CRM GW API
+    timing: Sync
+    to_system: cbcm
+    purpose: Load customer, account and product data.
+    style: API
+    tmf_equivalent: TMF629 Customer · TMF637 Product Inventory
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 4
+  - from: '50'
+    to: '50'
+    interaction: Sync
+    interface: TMF APIs (Customer, Organisation, Individual, Contact, Site)
+    timing: Sync
+    to_system: nc-crm
+    via: tibco
+    purpose: Load party data of a customer migrated to NC Digital.
+    style: API
+    tmf_equivalent: TMF632 Party Management · TMF629 Customer
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 4 branch
+  - from: '300'
+    to: '300'
+    interface: RTF order request
+    to_system: rtf
+    purpose: Submit the order with the summary-order flags.
+    style: XML request
+    tmf_equivalent: TMF622 Product Ordering
+    confidence: inferred
+    source: SDD v2.3 · §P1 New Activation · The XML shape is read from the SDD's request samples.
+  - from: '310'
+    to: '310'
+    interface: NotifyOrderCreationRequest
+    from_system: rtf
+    to_system: ibm-bpm
+    via: tibco
+    purpose: Open the order tracker. For BFM orders it carries No_Change items too.
+    tmf_equivalent: TMF622 Product Ordering (notification)
+    confidence: confirmed
+    source: SDD v2.3 · §BPM; §TIBCO
+  - from: '320'
+    to: '320'
+    interface: evaluateOrder
+    from_system: rtf
+    to_system: cbcm
+    purpose: Translate to the value order with PSM codes; check business rules.
+    style: API
+    tmf_equivalent: TMF679 Product Offering Qualification
+    confidence: confirmed
+    source: SDD v2.3 · §P2 UpDowngrade (evaluteOrder with CRMGW & ECM)
+  - from: '320'
+    to: '320'
+    interface: evaluateOrder
+    from_system: rtf
+    to_system: ecm
+    purpose: Check the order against the ECM product structure.
+    style: API
+    confidence: confirmed
+    source: SDD v2.3 · §P2 UpDowngrade
+  - from: '340'
+    to: '340'
+    interface: createShoppingCart / refreshShoppingCart
+    from_system: rtf
+    to_system: cwom
+    purpose: Hand the summary order to CWOM; refresh carries forward devices and overrides amounts.
+    style: API
+    tmf_equivalent: TMF622 Product Ordering
+    confidence: inferred
+    source: SDD v2.3 · §P1 Legacy Migration; §P2 UpDowngrade · Named for migration and up/downgrade; the
+      reference only says “CWOM format” for activation.
+  - from: '350'
+    to: '350'
+    interface: Catalogue validation
+    from_system: cwom
+    to_system: ecm
+    purpose: Validate the order against the ECM catalogue.
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 8
+  - from: '360'
+    to: '360'
+    interaction: Sync
+    interface: CPE Model Inquiry
+    payload: Platform, bandwidth
+    timing: Sync
+    from_system: cwom
+    to_system: ecm
+    purpose: Return Model, SIC and List_of_Models for the CPE and, separately, for the FortiAP.
+    style: API
+    confidence: confirmed
+    source: SDD v2.3 · §P1.1 Generic FortiAP Offer
+  - from: '380'
+    to: '380'
+    interface: Service order
+    from_system: cwom
+    to_system: e2eso
+    purpose: Provision the Fortinet HE CPE; site name and organisation name passed.
+    style: API
+    tmf_equivalent: TMF641 Service Ordering
+    confidence: confirmed
+    source: SDD v2.3 · §P2 New Activation; IAD (annex not provided)
+  - from: '380'
+    to: '380'
+    interface: PATCH (CPE and FEX serials)
+    from_system: cwom
+    to_system: e2eso
+    purpose: Send the CPE serial and Forti Extender serial in one request.
+    style: API
+    confidence: confirmed
+    source: SDD v2.3 · §P1.1 Revised Fortinet APIs (V5)
+  - from: '390'
+    to: '390'
+    interface: Provision in ADOM; create organisation
+    from_system: e2eso
+    to_system: fortinet
+    purpose: Register the CPE in the dedicated ADOM FortiManager cluster and the FortiPortal organisation.
+    confidence: confirmed
+    source: SDD v2.3 · §P1 New Activation
+  - from: '400'
+    to: '400'
+    interaction: Async
+    interface: Work order
+    timing: Async
+    from_system: cwom
+    to_system: wfms
+    purpose: Dispatch the installation.
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 12
+  - from: '400'
+    to: '400'
+    interface: Update transaction
+    from_system: wfms
+    to_system: cwom
+    purpose: Return the CPE and AP SIC codes and serials.
+    confidence: confirmed
+    source: SDD v2.3 · §P1.1 Generic FortiAP Offer
+  - from: '410'
+    to: '410'
+    interface: HSS activation
+    from_system: cwom
+    to_system: veda
+    purpose: Activate the Backup 5G profile (epsProfileId 5GNSA_BPRO5GBKP).
+    confidence: inferred
+    source: SDD v2.3 · §vEDA · The SDD gives the profile in the cessation commands.
+  - from: '410'
+    to: '410'
+    interface: IN commands
+    from_system: veda
+    to_system: in
+    purpose: Set up the Backup 5G subscriber in IN.
+    confidence: confirmed
+    source: SDD v2.3 · §vEDA
+  - from: '410'
+    to: '410'
+    interface: Alepo commands
+    from_system: veda
+    to_system: alepo
+    purpose: As for DI/DPI.
+    confidence: confirmed
+    source: SDD v2.3 · §vEDA
+  - from: '420'
+    to: '420'
+    interface: UpdateOffer (base, bandwidth)
+    from_system: cwom
+    to_system: in
+    purpose: Set the Backup 5G base offer (6980) and the bandwidth offer for the GPON speed.
+    style: API
+    confidence: confirmed
+    source: SDD v2.3 · §P4 Enhancement 1873844
+  - from: '430'
+    to: '430'
+    interaction: Async
+    interface: Activate SaaS
+    timing: Async
+    from_system: cwom
+    to_system: xaas
+    purpose: Activate the SaaS services in the bundle.
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 11
+  - from: '430'
+    to: '430'
+    interaction: Async
+    interface: Activation callback
+    timing: Async
+    from_system: xaas
+    to_system: cwom
+    purpose: Confirms activation; the point of no return for the SaaS order.
+    style: Callback
+    confidence: confirmed
+    source: SDD v2.3 · §P4 Cancel Order Changes
+  - from: '440'
+    to: '440'
+    interface: ShipmentOrder
+    from_system: cwom
+    to_system: itsm
+    purpose: Order the delivery of managed devices.
+    style: API
+    confidence: confirmed
+    source: SDD v2.3 · §CWOM; §TIBCO
+  - from: '440'
+    to: '440'
+    interaction: Async
+    interface: ShipmentConfirmation → CWOM callback
+    timing: Async
+    from_system: itsm
+    to_system: cwom
+    via: tibco
+    purpose: Device delivered.
+    style: Callback
+    confidence: confirmed
+    source: SDD v2.3 · §TIBCO
+  - from: '450'
+    to: '450'
+    interaction: Async
+    interface: Service onboarding ticket
+    timing: Async
+    from_system: cwom
+    purpose: Pass the SD-WAN service to MSS for Day-N configuration.
+    style: Ticket
+    confidence: gap
+    source: SDD v2.3 · §P1 New Activation · The ticketing system isn't named.
+  - from: '460'
+    to: '460'
+    interface: Billing
+    from_system: cwom
+    to_system: bscs
+    purpose: Start billing for the fulfilled services.
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 12
+  - from: '470'
+    to: '470'
+    interface: CNS notification API
+    from_system: cwom
+    to_system: cns
+    purpose: SMS or email from a template ID, language (EN/AR) and parameters.
+    style: API
+    tmf_equivalent: TMF681 Communication
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 14
+  - from: '470'
+    to: '470'
+    interface: Order submitted / completed emails
+    from_system: rtf
+    to_system: cns
+    purpose: Customer emails at submission and completion.
+    confidence: inferred
+    source: SDD v2.3 · §P2 UpDowngrade · RTF triggers them; the sending system isn't named.
+  - from: '480'
+    to: '480'
+    interface: Order closure
+    from_system: cwom
+    to_system: cbcm
+    purpose: Update the product inventory with PSM codes.
+    tmf_equivalent: TMF637 Product Inventory
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 15
+  - from: '210'
+    to: '210'
+    interface: Customer and account
+    to_system: cbcm
+    purpose: Load the customer's account.
+    confidence: confirmed
+    source: SMB reference v1.0 · §1 BCRM integrations
+- id: bpp-updowngrd
+  name: Upgrade / downgrade
+  product: business-pro-plus
+  order_type: UPDOWNGRD
+  description: 'A plan change as a summary order: accepted only when the activation is complete, RTF
+    loads the basket from CRMGW, CWOM fulfils it per workflow. Backup 5G follows four branches (in both,
+    added, removed, neither), the CPE changes only when the target plan needs another model, and a removed
+    CPE still under commitment carries its exit charge.'
+  confidence: confirmed
+  source: SDD v2.3 · §P2 ADO 81197; §P3 ADO 81961; §P4 Pending Order Validation; §P4 Enhancements 1871663,
+    1873844; §ADO 438907
+  activities:
+  - number: '10'
+    name: Retrieve the account and check the bundle model
+    description: If NEW_BUNDLE_MODEL is true, the summary-order attributes are added.
+    etom: Fulfillment · Order Handling
+    channel_entry: true
+    role: CAPTURE
+    confidence: confirmed
+    source: SDD v2.3 · §P2 ADO 81197
+  - number: '20'
+    name: Work out the items to add and remove
+    description: The SMB App calls CRMGW's OrderEvaluate for toBeAddedItems and toBeDeletedItems; BCRM
+      uses its existing logic.
+    etom: Fulfillment · Order Handling
+    channel_entry: true
+    role: CAPTURE
+    confidence: confirmed
+    source: SDD v2.3 · §P2 ADO 81197
+  - number: '30'
+    name: Submit UPDOWNGRD
+    description: 'processCode PRSU0001: target bundle ADD, source bundle REMOVE, changed components and
+      add-ons, ACTION_CHARGE_CODE AC_UPDOWNGRD_F. The CPE PO matches the contract period chosen (no contract,
+      1 year, 2 years). With site-access consent, SITE_ACCESS_REQUIRED = TRUE.'
+    etom: Fulfillment · Order Handling
+    channel_entry: true
+    role: CAPTURE
+    confidence: confirmed
+    source: SDD v2.3 · §P2 ADO 81197, request mapping
+  - number: '35'
+    name: Check the pending activation (pending order validation)
+    system: cbcm
+    description: While the new activation's master order is open, CRMGW accepts the up/downgrade only when
+      every sub-order (GSM, asynchronous SaaS, vSaaS, GPON) and the master order are closed; otherwise
+      RTF rejects it.
+    output: Accepted?
+    etom: Fulfillment · Order Handling
+    role: VALIDATE
+    confidence: confirmed
+    source: SDD v2.3 · §P4 Pending Order Validation
+  - number: '38'
+    name: 'Order rejected: the activation isn''t complete'
+    track: REJECTED
+    description: The channel tells the customer the change can be placed once the activation is closed.
+    channel_entry: true
+    role: CAPTURE
+    confidence: inferred
+    source: SDD v2.3 · §P4 Pending Order Validation · RTF rejects the request; how the channel shows it
+      isn't stated.
+  - number: '40'
+    name: Announce the order for tracking
+    system: rtf
+    description: No_Change items included for BFM orders; BPM doesn't track DELETE items for UPDOWNGRD.
+    etom: Fulfillment · Order Handling
+    role: TRACK
+    confidence: confirmed
+    source: SDD v2.3 · §BPM; §TIBCO ADO 81961
+  - number: '50'
+    name: Load the basket from the CRMGW registry
+    system: rtf
+    etom: Fulfillment · Order Handling
+    role: ORCHESTRATE
+    confidence: confirmed
+    source: SDD v2.3 · §P2 ADO 81197
+  - number: '60'
+    name: Evaluate the order
+    system: rtf
+    etom: Fulfillment · Order Handling
+    role: VALIDATE
+    confidence: confirmed
+    source: SDD v2.3 · §P2 ADO 81197
+  - number: '70'
+    name: Create and refresh the CWOM cart
+    system: rtf
+    description: Carry forward devices and override amounts in refreshShoppingCart.
+    etom: Fulfillment · Order Handling
+    role: ORCHESTRATE
+    confidence: confirmed
+    source: SDD v2.3 · §P2 ADO 81197
+  - number: '80'
+    name: Fulfil as a summary order, per workflow
+    system: cwom
+    description: 'Workflows by from/to bundle: WF-1 for Business Pro Plus to Business Pro Plus, each with
+      or without Backup 5G; WF-8A and WF-8B for Business Pro (Fortinet, old or new cluster) to Business
+      Pro Plus.'
+    output: Backup 5G in the source and target?
+    etom: Fulfillment · Service Configuration & Activation
+    role: ORCHESTRATE
+    confidence: confirmed
+    source: SDD v2.3 · §P2 ADO 81197
+  - number: '90'
+    name: Swap the Backup 5G bandwidth offer
+    track: BRANCH-SPEED
+    system: in
+    description: DeleteOffer for the source bandwidth offer, UpdateOffer for the target one (862–874 by
+      speed); the base offer stays.
+    etom: Fulfillment · Resource Provisioning
+    role: ACTIVATE
+    confidence: confirmed
+    source: SDD v2.3 · §P2 IN; §P4 Enhancement 1873844 (w/ 5G to w/ 5G)
+  - number: '100'
+    name: Activate Backup 5G
+    track: BRANCH-ACTIVATE
+    system: veda
+    description: As in new activation (HSS profile 5GNSA_BPRO5GBKP).
+    etom: Fulfillment · Resource Provisioning
+    role: ACTIVATE
+    confidence: confirmed
+    source: SDD v2.3 · §P2 IN
+  - number: '105'
+    name: Set the Backup 5G base and bandwidth offers
+    track: BRANCH-ACTIVATE
+    system: in
+    description: UpdateOffer for the base offer (6980) and for the target bandwidth offer, as in new activation.
+    etom: Fulfillment · Resource Provisioning
+    role: ACTIVATE
+    confidence: confirmed
+    source: SDD v2.3 · §P4 Enhancement 1873844 (w/o 5G to w/ 5G)
+  - number: '110'
+    name: Remove the Backup 5G accounts
+    track: BRANCH-REMOVE
+    system: veda
+    description: As for DI/DPI.
+    etom: Fulfillment · Resource Provisioning
+    role: ACTIVATE
+    confidence: confirmed
+    source: SDD v2.3 · §P2 IN
+  - number: '115'
+    name: Remove the Backup 5G base and bandwidth offers
+    track: BRANCH-REMOVE
+    system: in
+    description: DeleteOffer for both, as in cessation.
+    etom: Fulfillment · Resource Provisioning
+    role: ACTIVATE
+    confidence: confirmed
+    source: SDD v2.3 · §P4 Enhancement 1873844 (w/ 5G to w/o 5G)
+  - number: '120'
+    name: Suggest the CPE and access-point models for the target plan
+    system: ecm
+    description: 'CWOM passes orderSubType UPDOWNGRD. Below 1 Gbps: Fortinet 90G or 120G, FAP-23JF-E or
+      FAP-431F-E, so a 120G can stay. At 1 Gbps: Fortinet 120G and FAP-431F-E.'
+    output: Device change?
+    etom: Fulfillment · Service Configuration & Activation
+    role: CATALOG
+    confidence: confirmed
+    source: SDD v2.3 · §P4 Enhancement 1871663
+  - number: '130'
+    name: Replace the CPE and FortiAP
+    track: BRANCH-DEVICE
+    system: wfms
+    description: The technician swaps the devices with site access, per workflow, and returns the new SIC
+      codes and serials.
+    etom: Fulfillment · Resource Provisioning
+    role: FIELD
+    confidence: inferred
+    source: SDD v2.3 · §P3 ADO 81961 · WFMS fulfils per the agreed workflow (“w/ Device Change”), which
+      isn't in the SDD text.
+  - number: '140'
+    name: Post the exit charge on the removed CPE (AED 650)
+    track: BRANCH-DEVICE
+    system: bscs
+    description: Only when the removed CPE's rate plan is still within its commitment (1 or 2 years); the
+      amount is to be confirmed by Business.
+    etom: Billing · Billing & Revenue Management
+    role: BILL
+    confidence: inferred
+    source: SDD v2.3 · §ADO 438907 US 438909 · The exit charge applies to up/downgrade; the commitment
+      test follows the existing exit-charge rules.
+  - number: '150'
+    name: Change the CPE service and devices, per workflow
+    system: e2eso
+    description: With a device change from P3 (ADO 81961).
+    etom: Fulfillment · Service Configuration & Activation
+    role: ACTIVATE
+    confidence: confirmed
+    source: SDD v2.3 · §P3 ADO 81961
+  - number: '160'
+    name: Send the order submitted and completed emails
+    system: cns
+    etom: CRM · Customer Interface Management
+    role: NOTIFY
+    confidence: inferred
+    source: SDD v2.3 · §P2 ADO 81197 · RTF triggers them; the sending system isn't named.
+  flow_rules:
+  - kind: decision
+    from: '80'
+    to: '90'
+    condition: In both
+  - kind: decision
+    from: '80'
+    to: '100'
+    condition: Target only
+  - kind: decision
+    from: '80'
+    to: '110'
+    condition: Source only
+  - kind: decision
+    from: '80'
+    to: '120'
+    condition: Neither
+  - kind: decision
+    from: '90'
+    to: '120'
+    branch: rejoin
+  - kind: decision
+    from: '105'
+    to: '120'
+    branch: rejoin
+  - kind: decision
+    from: '115'
+    to: '120'
+    branch: rejoin
+  - kind: decision
+    from: '120'
+    to: '130'
+    condition: 'Yes'
+  - kind: decision
+    from: '120'
+    to: '150'
+    condition: No, the current model stays eligible
+  - kind: decision
+    from: '140'
+    to: '150'
+    branch: rejoin
+  - kind: decision
+    from: '35'
+    to: '38'
+    condition: 'No'
+  - kind: decision
+    from: '35'
+    to: '40'
+    condition: 'Yes'
+  integrations:
+  - from: '10'
+    to: '10'
+    interaction: Sync
+    interface: retrieveAccount
+    timing: Sync
+    to_system: cbcm
+    purpose: Read the subscription and its NEW_BUNDLE_MODEL attribute.
+    style: API
+    tmf_equivalent: TMF637 Product Inventory
+    confidence: confirmed
+    source: SDD v2.3 · §P2 ADO 81197
+  - from: '20'
+    to: '20'
+    interaction: Sync
+    interface: OrderEvaluate
+    payload: order.orderItems[].type.code = UPDOWNGRD
+    timing: Sync
+    to_system: cbcm
+    purpose: toBeAddedItems (ADDSRVICE) and toBeDeletedItems (DELETESRV), with ECM_SUBSCRIPTION_ID.
+    style: API
+    confidence: confirmed
+    source: SDD v2.3 · §P2 ADO 81197 (SMB App)
+  - from: '30'
+    to: '30'
+    interface: RTF order request (UPDOWNGRD)
+    payload: /request/processCode PRSU0001, /request/operation UPDOWNGRD
+    to_system: rtf
+    purpose: Submit the change with the summary-order attributes.
+    style: XML request
+    tmf_equivalent: TMF622 Product Ordering
+    confidence: confirmed
+    source: SDD v2.3 · §P2 ADO 81197, request mapping
+  - from: '35'
+    to: '35'
+    interface: evaluateOrder
+    timing: Sync
+    from_system: rtf
+    to_system: cbcm
+    purpose: Validate the order against the pending-order matrix (UPDOWNGRD needs every sub-order and the
+      master order closed).
+    style: API
+    tmf_equivalent: TMF679 Product Offering Qualification
+    confidence: confirmed
+    source: SDD v2.3 · §P4 Pending Order Validation
+  - from: '40'
+    to: '40'
+    interface: NotifyOrderCreationRequest
+    from_system: rtf
+    to_system: ibm-bpm
+    via: tibco
+    purpose: Track the order; No_Change items included.
+    confidence: confirmed
+    source: SDD v2.3 · §TIBCO ADO 81961
+  - from: '50'
+    to: '50'
+    interface: Load registry basket
+    from_system: rtf
+    to_system: cbcm
+    purpose: Load the customer's basket from the CRMGW registry.
+    confidence: confirmed
+    source: SDD v2.3 · §P2 ADO 81197
+  - from: '60'
+    to: '60'
+    interface: evaluateOrder
+    from_system: rtf
+    to_system: cbcm
+    purpose: Evaluate with CRMGW.
+    style: API
+    confidence: confirmed
+    source: SDD v2.3 · §P2 ADO 81197
+  - from: '60'
+    to: '60'
+    interface: evaluateOrder
+    from_system: rtf
+    to_system: ecm
+    purpose: Evaluate with ECM.
+    style: API
+    confidence: confirmed
+    source: SDD v2.3 · §P2 ADO 81197
+  - from: '70'
+    to: '70'
+    interface: createShoppingCart
+    from_system: rtf
+    to_system: cwom
+    purpose: Pass the whole loaded basket.
+    style: API
+    tmf_equivalent: TMF622 Product Ordering
+    confidence: confirmed
+    source: SDD v2.3 · §P2 ADO 81197
+  - from: '70'
+    to: '70'
+    interface: refreshShoppingCart
+    from_system: rtf
+    to_system: cwom
+    purpose: Carry forward devices; override amounts (CWOM enriches the charges).
+    style: API
+    confidence: confirmed
+    source: SDD v2.3 · §P2 ADO 81197
+  - from: '90'
+    to: '90'
+    interface: DeleteOffer / UpdateOffer (bandwidth)
+    from_system: cwom
+    to_system: in
+    purpose: Remove the source bandwidth offer and set the target one (862–874).
+    style: API
+    confidence: confirmed
+    source: SDD v2.3 · §P2 IN; §P4 Enhancement 1873844
+  - from: '100'
+    to: '100'
+    interface: HSS activation
+    from_system: cwom
+    to_system: veda
+    purpose: Activate Backup 5G, as in activation.
+    confidence: confirmed
+    source: SDD v2.3 · §P2 IN
+  - from: '105'
+    to: '105'
+    interface: UpdateOffer (base, bandwidth)
+    from_system: cwom
+    to_system: in
+    purpose: Set the base offer and the target bandwidth offer.
+    style: API
+    confidence: confirmed
+    source: SDD v2.3 · §P4 Enhancement 1873844
+  - from: '110'
+    to: '110'
+    interface: Delete Backup 5G accounts
+    from_system: cwom
+    to_system: veda
+    purpose: As for DI/DPI.
+    confidence: confirmed
+    source: SDD v2.3 · §P2 IN
+  - from: '115'
+    to: '115'
+    interface: DeleteOffer (base, bandwidth)
+    from_system: cwom
+    to_system: in
+    purpose: Remove both Backup 5G offers.
+    style: API
+    confidence: confirmed
+    source: SDD v2.3 · §P4 Enhancement 1873844
+  - from: '120'
+    to: '120'
+    interface: CPE Model Inquiry
+    payload: orderSubType = UPDOWNGRD
+    timing: Sync
+    from_system: cwom
+    to_system: ecm
+    purpose: Eligible CPE and FortiAP models for the target bandwidth.
+    style: API
+    confidence: confirmed
+    source: SDD v2.3 · §P4 Enhancement 1871663
+  - from: '130'
+    to: '130'
+    interface: Work order / update transaction
+    timing: Async
+    from_system: cwom
+    to_system: wfms
+    purpose: Swap the devices; return SIC codes and serials.
+    confidence: inferred
+    source: SDD v2.3 · §P3 ADO 81961 · Read from the new-activation installation.
+  - from: '150'
+    to: '150'
+    interface: Service order
+    from_system: cwom
+    to_system: e2eso
+    purpose: Change the CPE service per workflow and technical proposal.
+    tmf_equivalent: TMF641 Service Ordering
+    confidence: confirmed
+    source: SDD v2.3 · §P2; §P3 ADO 81961
+  - from: '150'
+    to: '150'
+    interface: Service order (UPDOWNGRD bandwidth)
+    payload: category UPDOWNGRD, serviceSpecification CFSS_INTERNET_CPE_HE, action Modify, UPSTREAM/DOWNSTREAM
+    from_system: cwom
+    to_system: e2eso
+    purpose: Set the CPE bandwidth after any speed booster (platform FORTINET).
+    tmf_equivalent: TMF641 Service Ordering
+    confidence: confirmed
+    source: SDD v2.3 · §P4 ADO 198968
+  - from: '160'
+    to: '160'
+    interface: Order submitted / completed emails
+    from_system: rtf
+    to_system: cns
+    purpose: As for new activation.
+    confidence: inferred
+    source: SDD v2.3 · §P2 ADO 81197 · The sending system isn't named.
+- id: bpp-order-tracking
+  name: Order tracking
+  product: business-pro-plus
+  description: 'What happens inside when an order is created and when the customer or the back office
+    opens its tracker: RTF announces it, CWOM publishes milestones per sub-order through TIBCO to BPM,
+    and channels read them back.'
+  confidence: confirmed
+  source: SDD v2.3 · §BPM; §TIBCO
+  activities:
+  - number: '10'
+    name: Submit order (SR)
+    description: The channel submits the order.
+    channel_entry: true
+    role: TRACK
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 5
+  - number: '20'
+    name: NotifyOrderCreationRequest
+    system: rtf
+    description: Order and its items; BFM orders include No_Change items.
+    role: TRACK
+    confidence: confirmed
+    source: SDD v2.3 · §TIBCO; §BPM
+  - number: '30'
+    name: Create the tracker
+    system: tibco
+    description: isBFMOrder, mergeOrderItems (GSM and GPON items of a BFM primary package).
+    role: TRACK
+    confidence: confirmed
+    source: SDD v2.3 · §BPM
+  - number: '40'
+    name: Milestone (per sub-order)
+    system: cwom
+    description: CWOM publishes the AS-IS milestones of each sub-order.
+    role: TRACK
+    confidence: confirmed
+    source: SDD v2.3 · §TIBCO (TIBCO follows the M/S approach)
+  - number: '50'
+    name: Update milestones
+    system: tibco
+    description: BPM records the milestone against the order item.
+    role: TRACK
+    confidence: confirmed
+    source: SDD v2.3 · §BPM
+  - number: '60'
+    name: Store (felix / getRealTimeOrderDetails SP)
+    system: ibm-bpm
+    description: Milestones kept for the real-time read.
+    role: TRACK
+    confidence: inferred
+    source: SDD v2.3 · §BPM General Note · The SDD names “the felix / getRealTimeOrderDetails SP”.
+  - number: '70'
+    name: ShipmentOrder
+    system: cwom
+    description: Device delivery.
+    role: TRACK
+    confidence: confirmed
+    source: SDD v2.3 · §TIBCO
+  - number: '80'
+    name: ShipmentConfirmation
+    system: itsm
+    description: HPSM confirms the delivery.
+    role: TRACK
+    confidence: confirmed
+    source: SDD v2.3 · §TIBCO
+  - number: '90'
+    name: CWOM callback
+    system: tibco
+    description: Device delivered.
+    role: TRACK
+    confidence: confirmed
+    source: SDD v2.3 · §TIBCO
+  - number: '100'
+    name: getRealTimeOrderDetails
+    description: The customer (B2B, SMB App) or the back office opens the tracker.
+    channel_entry: true
+    role: TRACK
+    confidence: confirmed
+    source: SDD v2.3 · §TIBCO; US 2367, 44387, 2380
+  - number: '110'
+    name: Read order and milestones
+    system: tibco
+    description: Through the getRealTimeOrderDetails SP.
+    role: TRACK
+    confidence: inferred
+    source: SDD v2.3 · §BPM General Note · Read path inferred from the SP's name.
+  - number: '120'
+    name: Order status per basket item
+    system: tibco
+    description: Milestones shown on the tracking page.
+    role: TRACK
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 10
+  integrations:
+  - from: '10'
+    to: '10'
+    interface: Submit order (SR)
+    to_system: rtf
+    purpose: The channel submits the order.
+    style: XML request
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 5
+  - from: '20'
+    to: '20'
+    interface: NotifyOrderCreationRequest
+    from_system: rtf
+    to_system: tibco
+    purpose: Order and its items; BFM orders include No_Change items.
+    confidence: confirmed
+    source: SDD v2.3 · §TIBCO; §BPM
+  - from: '30'
+    to: '30'
+    interface: Create the tracker
+    from_system: tibco
+    to_system: ibm-bpm
+    purpose: isBFMOrder, mergeOrderItems (GSM and GPON items of a BFM primary package).
+    confidence: confirmed
+    source: SDD v2.3 · §BPM
+  - from: '40'
+    to: '40'
+    interface: Milestone (per sub-order)
+    timing: Async
+    from_system: cwom
+    to_system: tibco
+    purpose: CWOM publishes the AS-IS milestones of each sub-order.
+    style: Event / message
+    confidence: confirmed
+    source: SDD v2.3 · §TIBCO (TIBCO follows the M/S approach)
+  - from: '50'
+    to: '50'
+    interface: Update milestones
+    timing: Async
+    from_system: tibco
+    to_system: ibm-bpm
+    purpose: BPM records the milestone against the order item.
+    confidence: confirmed
+    source: SDD v2.3 · §BPM
+  - from: '60'
+    to: '60'
+    interface: Store (felix / getRealTimeOrderDetails SP)
+    from_system: ibm-bpm
+    to_system: felix
+    purpose: Milestones kept for the real-time read.
+    style: Database
+    confidence: inferred
+    source: SDD v2.3 · §BPM General Note · The SDD names “the felix / getRealTimeOrderDetails SP”.
+  - from: '70'
+    to: '70'
+    interface: ShipmentOrder
+    from_system: cwom
+    to_system: itsm
+    purpose: Device delivery.
+    style: API
+    confidence: confirmed
+    source: SDD v2.3 · §TIBCO
+  - from: '80'
+    to: '80'
+    interface: ShipmentConfirmation
+    timing: Async
+    from_system: itsm
+    to_system: tibco
+    purpose: HPSM confirms the delivery.
+    style: Callback
+    confidence: confirmed
+    source: SDD v2.3 · §TIBCO
+  - from: '90'
+    to: '90'
+    interface: CWOM callback
+    timing: Async
+    from_system: tibco
+    to_system: cwom
+    purpose: Device delivered.
+    style: Callback
+    confidence: confirmed
+    source: SDD v2.3 · §TIBCO
+  - from: '100'
+    to: '100'
+    interface: getRealTimeOrderDetails
+    timing: Sync
+    to_system: tibco
+    purpose: The customer (B2B, SMB App) or the back office opens the tracker.
+    style: API
+    tmf_equivalent: TMF622 Product Ordering (GET)
+    confidence: confirmed
+    source: SDD v2.3 · §TIBCO; US 2367, 44387, 2380
+  - from: '110'
+    to: '110'
+    interface: Read order and milestones
+    timing: Sync
+    from_system: tibco
+    to_system: felix
+    purpose: Through the getRealTimeOrderDetails SP.
+    style: Database
+    confidence: inferred
+    source: SDD v2.3 · §BPM General Note · Read path inferred from the SP's name.
+  - from: '120'
+    to: '100'
+    interface: Order status per basket item
+    timing: Sync
+    from_system: tibco
+    purpose: Milestones shown on the tracking page.
+    style: API
+    confidence: confirmed
+    source: SMB reference v1.0 · §3.1 step 10
+- id: bpp-migrate
+  name: Migration to Business Pro Plus
+  product: business-pro-plus
+  order_type: MIGRATE
+  description: 'From a legacy product (DEL, PBX, BQS…) through BCRM, or from Business Edge (BFV2) through
+    BCRM or the SMB App: the source bundle is removed and Business Pro Plus added in one summary order;
+    legacy CPEs are ceased and Pro+ CPEs provided; Backup 5G only when the target bundle has it.'
+  confidence: confirmed
+  source: SDD v2.3 · §P1 Legacy Migration; §P3 ADO 202824; Feasibility US 202815, 202817
+  activities:
+  - number: '10'
+    name: Identify the account and its source product
+    description: 'The SMB App tells migration from upgrade by CRMGW''s productGroup: BFV2 is a migration,
+      %BFM% an upgrade. Legacy migration (new or existing account) is BCRM only.'
+    output: Source product?
+    etom: Fulfillment · Selling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P1 Legacy Migration; §P3 ADO 202824
+    confidence: confirmed
+  - number: '20'
+    name: Check the account's bundle model
+    system: cbcm
+    description: NEW_BUNDLE_MODEL = true on the primary subscription decides the summary-order attributes.
+    etom: Fulfillment · Order Handling
+    role: CUSTOMER_DATA
+    source: SDD v2.3 · §P3 ADO 202824
+    confidence: confirmed
+  - number: '30'
+    name: Build the MIGRATE order from the source and target bundles
+    description: Target main bundle ADD; source PO REMOVE with ACTION_CHARGE_CODE AC_UPDOWNGRD_F; added
+      and removed components; common components are carried forward and not sent. CRMGW's OrderEvaluate
+      isn't used for migration. With site-access consent, SITE_ACCESS_REQUIRED = TRUE.
+    etom: Fulfillment · Selling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P3 ADO 202824, request mapping
+    confidence: confirmed
+  - number: '40'
+    name: Submit the migration with the summary-order flags
+    etom: Fulfillment · Order Handling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P1 Legacy Migration; §P3 ADO 202824
+    confidence: confirmed
+  - number: '50'
+    name: Check the pending activation (pending order validation)
+    system: cbcm
+    description: While the new activation's master order is open, CRMGW accepts this order only when the
+      GSM and GPON sub-orders and the master order (migration on an existing account) are closed; otherwise
+      RTF rejects it.
+    output: Accepted?
+    etom: Fulfillment · Order Handling
+    role: VALIDATE
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - number: '55'
+    name: 'Order rejected: the activation isn''t far enough'
+    track: REJECTED
+    description: The channel tells the customer the order can be placed once the named sub-orders are
+      closed.
+    channel_entry: true
+    role: CAPTURE
+    confidence: inferred
+    source: SDD v2.3 · §P4 Pending Order Validation · RTF rejects the request; how the channel shows it
+      isn't stated.
+  - number: '60'
+    name: Announce the order for tracking
+    system: rtf
+    description: BFM orders include No_Change items; BPM doesn't track DELETE items for MIGRATE.
+    etom: Fulfillment · Order Handling
+    role: TRACK
+    source: SDD v2.3 · §BPM; §TIBCO ADO 202824
+    confidence: confirmed
+  - number: '70'
+    name: Load the basket from the CRMGW registry
+    system: rtf
+    description: RTF also fills the installation address and contacts when the channel doesn't pass them.
+    etom: Fulfillment · Order Handling
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P1 Legacy Migration; §P3 ADO 202824
+    confidence: confirmed
+  - number: '80'
+    name: Evaluate the order
+    system: rtf
+    etom: Fulfillment · Order Handling
+    role: VALIDATE
+    source: SDD v2.3 · §P1 Legacy Migration
+    confidence: confirmed
+  - number: '90'
+    name: Create and refresh the CWOM cart
+    system: rtf
+    description: Carry forward devices; override amounts (CWOM enriches the charges).
+    etom: Fulfillment · Order Handling
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P1 Legacy Migration
+    confidence: confirmed
+  - number: '100'
+    name: Fulfil as a summary order, per workflow
+    system: cwom
+    description: Cease the legacy CPE and provide the Business Pro+ CPE; FortiAP provisioned; new bandwidth
+      profile per the target package.
+    output: Backup 5G in the target bundle?
+    etom: Fulfillment · Service Configuration & Activation
+    role: ORCHESTRATE
+    source: SDD v2.3 · Feasibility US 202815, 202817; §P3 ADO 202824
+    confidence: confirmed
+  - number: '110'
+    name: Activate Backup 5G
+    track: BRANCH-BACKUP
+    system: veda
+    description: 'As for a new activation: HSS profile 5GNSA_BPRO5GBKP.'
+    etom: Fulfillment · Resource Provisioning
+    role: ACTIVATE
+    source: SDD v2.3 · §P2 UpDowngrade (as new activation); §P4 Enhancement 1873844
+    confidence: confirmed
+  - number: '120'
+    name: Set the Backup 5G base and bandwidth offers
+    track: BRANCH-BACKUP
+    system: in
+    description: UpdateOffer for the base offer and for the bandwidth offer (IN offers 860–878, by GPON
+      speed).
+    etom: Fulfillment · Resource Provisioning
+    role: ACTIVATE
+    source: SDD v2.3 · §P4 Enhancement 1873844 (New Activation/Migration)
+    confidence: confirmed
+  - number: '130'
+    name: Suggest the CPE and access-point models
+    system: ecm
+    description: 'Below 1 Gbps: Fortinet 90G and FAP-23JF-E. At 1 Gbps: Fortinet 120G and FAP-431F-E.'
+    etom: Fulfillment · Service Configuration & Activation
+    role: CATALOG
+    source: SDD v2.3 · §P1.1 Generic FortiAP Offer
+    confidence: confirmed
+  - number: '140'
+    name: Provision the Pro+ CPE; give or carry forward FortiPortal
+    system: e2eso
+    description: New dedicated ADOM cluster; static IP enabled or carried forward; domain, SaaS and building
+      blocks carried forward, incompatible ones ceased.
+    etom: Fulfillment · Service Configuration & Activation
+    role: ACTIVATE
+    source: SDD v2.3 · Feasibility US 202815; §P1 New Activation/Legacy Migration
+    confidence: confirmed
+  - number: '150'
+    name: Register the CPE and the organisation
+    system: fortinet
+    etom: Fulfillment · Supplier/Partner Requisition Management
+    role: ACTIVATE
+    source: SDD v2.3 · §P1 FortiPortal Access
+    confidence: confirmed
+  - number: '160'
+    name: Replace the CPE and install the FortiAP
+    system: wfms
+    description: The technician installs the Pro+ CPE and FortiAP and captures SIC codes and serials;
+      a faulty 5G SIM can be replaced during installation.
+    etom: Fulfillment · Resource Provisioning
+    role: FIELD
+    source: SDD v2.3 · Feasibility US 202817; §ADO 443271
+    confidence: confirmed
+  - number: '170'
+    name: Ship managed devices
+    system: itsm
+    description: ShipmentOrder and the shipment-confirmation callback are supported for MIGRATE.
+    etom: Fulfillment · Supplier/Partner Requisition Management
+    role: LOGISTICS
+    source: SDD v2.3 · §CWOM ADO 202824; §TIBCO ADO 202824
+    confidence: confirmed
+  - number: '180'
+    name: Apply the legacy contract and exit-charge rules
+    system: bscs
+    description: Contract reset and exit charges on the removed devices follow the existing rules.
+    output: Legacy devices still under commitment?
+    etom: Billing · Billing & Revenue Management
+    role: BILL
+    source: SDD v2.3 · Feasibility US 202815, 202817
+    confidence: confirmed
+  - number: '185'
+    name: Post the exit charges on the removed devices
+    track: BRANCH-EXIT
+    system: bscs
+    etom: Billing · Billing & Revenue Management
+    role: BILL
+    confidence: inferred
+    source: SDD v2.3 · Feasibility US 202817 · “Existing exit-charge rules posting on devices to follow”;
+      the commitment test is the existing rule's.
+  - number: '190'
+    name: Start billing the Business Pro Plus plan
+    system: bscs
+    description: 'The CPE rate plan follows the contract period chosen: no contract, 1 year or 2 years
+      (exit charge AED 650).'
+    etom: Billing · Billing & Revenue Management
+    role: BILL
+    confidence: inferred
+    source: SDD v2.3 · §ADO 438907 US 438909 · Billing start is read from the new-activation journey.
+  - number: '200'
+    name: Send the order submitted and completed emails
+    system: cns
+    etom: CRM · Customer Interface Management
+    role: NOTIFY
+    confidence: inferred
+    source: SDD v2.3 · §P3 ADO 202824 · RTF triggers them; the sending system isn't named.
+  - number: '210'
+    name: Close the order and update the registry
+    system: cbcm
+    etom: Fulfillment · Order Handling
+    role: RECORD
+    confidence: inferred
+    source: SDD v2.3 · §P2 One-Time Data Migration · CRMGW holds the registry; closing is read from the
+      other journeys.
+  flow_rules:
+  - kind: decision
+    from: '50'
+    to: '55'
+    condition: 'No'
+  - kind: decision
+    from: '50'
+    to: '60'
+    condition: 'Yes'
+  - kind: decision
+    from: '100'
+    to: '110'
+    condition: With Backup 5G
+  - kind: decision
+    from: '100'
+    to: '130'
+    condition: Without Backup 5G
+  - kind: decision
+    from: '120'
+    to: '130'
+    branch: rejoin
+  - kind: decision
+    from: '180'
+    to: '185'
+    condition: 'Yes'
+  - kind: decision
+    from: '180'
+    to: '190'
+    condition: 'No'
+  - kind: decision
+    from: '185'
+    to: '190'
+    branch: rejoin
+  integrations:
+  - from: '20'
+    to: '20'
+    interface: retrieveAccount
+    timing: Sync
+    to_system: cbcm
+    purpose: Read NEW_BUNDLE_MODEL and productGroup (BFV2 = migration).
+    style: API
+    tmf_equivalent: TMF637 Product Inventory
+    source: SDD v2.3 · §P3 ADO 202824
+    confidence: confirmed
+  - from: '40'
+    to: '40'
+    interface: RTF order request (MIGRATE)
+    payload: /request/processCode PRSU0001, /request/operation MIGRATE, ACTION_CHARGE_CODE AC_UPDOWNGRD_F
+    to_system: rtf
+    purpose: Submit the migration with the summary-order attributes.
+    style: XML request
+    tmf_equivalent: TMF622 Product Ordering
+    source: SDD v2.3 · §P3 ADO 202824, request mapping
+    confidence: confirmed
+  - from: '50'
+    to: '50'
+    interface: evaluateOrder
+    timing: Sync
+    from_system: rtf
+    to_system: cbcm
+    purpose: 'Validate the order against the pending-order matrix (MIGRATE: the GSM and GPON sub-orders
+      and the master order (migration on an existing account)).'
+    style: API
+    tmf_equivalent: TMF679 Product Offering Qualification
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - from: '60'
+    to: '60'
+    interface: NotifyOrderCreationRequest
+    from_system: rtf
+    to_system: ibm-bpm
+    via: tibco
+    purpose: Open the tracker (OrderInstanceType MIGRATE); No_Change items included.
+    tmf_equivalent: TMF622 Product Ordering (notification)
+    source: SDD v2.3 · §BPM, §TIBCO ADO 202824
+    confidence: confirmed
+  - from: '70'
+    to: '70'
+    interface: Load registry basket
+    from_system: rtf
+    to_system: cbcm
+    purpose: Load the customer's basket from the CRMGW registry.
+    source: SDD v2.3 · §P1 Legacy Migration
+    confidence: confirmed
+  - from: '80'
+    to: '80'
+    interface: evaluateOrder
+    from_system: rtf
+    to_system: cbcm
+    purpose: Evaluate with CRMGW.
+    style: API
+    source: SDD v2.3 · §P1 Legacy Migration
+    confidence: confirmed
+  - from: '80'
+    to: '80'
+    interface: evaluateOrder
+    from_system: rtf
+    to_system: ecm
+    purpose: Evaluate with ECM.
+    style: API
+    source: SDD v2.3 · §P1 Legacy Migration
+    confidence: confirmed
+  - from: '90'
+    to: '90'
+    interface: createShoppingCart / refreshShoppingCart
+    from_system: rtf
+    to_system: cwom
+    purpose: Pass the whole loaded basket; carry forward devices; override amounts.
+    style: API
+    tmf_equivalent: TMF622 Product Ordering
+    source: SDD v2.3 · §P1 Legacy Migration
+    confidence: confirmed
+  - from: '110'
+    to: '110'
+    interface: HSS activation
+    from_system: cwom
+    to_system: veda
+    purpose: Activate Backup 5G (epsProfileId 5GNSA_BPRO5GBKP).
+    source: SDD v2.3 · §P2 UpDowngrade (as new activation)
+    confidence: confirmed
+  - from: '120'
+    to: '120'
+    interface: UpdateOffer (base, bandwidth)
+    from_system: cwom
+    to_system: in
+    purpose: Set the base offer and the bandwidth offer.
+    style: API
+    source: SDD v2.3 · §P4 Enhancement 1873844
+    confidence: confirmed
+  - from: '130'
+    to: '130'
+    interface: CPE Model Inquiry
+    timing: Sync
+    from_system: cwom
+    to_system: ecm
+    purpose: Return Model, SIC and List_of_Models for the CPE and the FortiAP.
+    style: API
+    source: SDD v2.3 · §P1.1 Generic FortiAP Offer
+    confidence: confirmed
+  - from: '140'
+    to: '140'
+    interface: Service order
+    from_system: cwom
+    to_system: e2eso
+    purpose: Provision the Pro+ CPE and FortiPortal per the technical proposal.
+    tmf_equivalent: TMF641 Service Ordering
+    source: SDD v2.3 · §P1; §P3 ADO 202824
+    confidence: confirmed
+  - from: '150'
+    to: '150'
+    interface: Fortinet API
+    from_system: e2eso
+    to_system: fortinet
+    purpose: Register the CPE; create or reuse the FortiPortal organisation.
+    style: API
+    source: SDD v2.3 · §P1 FortiPortal Access
+    confidence: confirmed
+  - from: '160'
+    to: '160'
+    interface: Work order / update transaction
+    timing: Async
+    from_system: cwom
+    to_system: wfms
+    purpose: Install the devices; return SIC codes and serials.
+    source: SDD v2.3 · §P1.1 Generic FortiAP Offer
+    confidence: confirmed
+  - from: '170'
+    to: '170'
+    interface: ShipmentOrder
+    from_system: cwom
+    to_system: itsm
+    purpose: Deliver managed devices; HPSM confirms through TIBCO.
+    style: API
+    source: SDD v2.3 · §TIBCO ADO 202824
+    confidence: confirmed
+  - from: '200'
+    to: '200'
+    interface: Order submitted / completed emails
+    from_system: rtf
+    to_system: cns
+    purpose: As for new activation.
+    confidence: inferred
+    source: SDD v2.3 · §P3 ADO 202824 · The sending system isn't named.
+- id: bpp-cessation
+  name: Cessation
+  product: business-pro-plus
+  order_type: CESSREQ
+  description: 'Ceasing the account as a summary order: blocked while the activation is still in progress
+    (cancel it first), then every service is ceased; Backup 5G accounts and offers are removed only when
+    the bundle has Backup 5G; exit charges follow the CPE rate plan''s contract.'
+  confidence: confirmed
+  source: SDD v2.3 · §P2 ADO 259161; §P4 ADO 288752; §ADO 438907
+  activities:
+  - number: '10'
+    name: Capture the cessation
+    description: 'Churn & Exit types: direct cessation, cease with retention, cease within the trial period,
+      bulk cessation (each account checked).'
+    etom: Fulfillment · Selling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P2 ADO 259161
+    confidence: confirmed
+  - number: '20'
+    name: Check the account's bundle model
+    system: cbcm
+    description: NEW_BUNDLE_MODEL = true adds the summary-order attributes.
+    etom: Fulfillment · Order Handling
+    role: CUSTOMER_DATA
+    source: SDD v2.3 · §P2 ADO 259161
+    confidence: confirmed
+  - number: '30'
+    name: Check the pending activation (pending order validation)
+    system: cbcm
+    description: While the new activation's master order is open, CRMGW accepts this order only when every
+      sub-order (GSM, asynchronous SaaS, vSaaS, GPON) and the master order are closed; otherwise RTF rejects
+      it.
+    output: Accepted?
+    etom: Fulfillment · Order Handling
+    role: VALIDATE
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - number: '40'
+    name: Cancel the in-progress activation first
+    track: CANCEL-FIRST
+    description: Cessation is blocked while the new activation is in progress; the customer cancels it,
+      then ceases.
+    etom: Fulfillment · Selling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P4 ADO 288752
+    confidence: confirmed
+  - number: '45'
+    name: Cancel every sub-order not past its point of no return
+    track: CANCEL-FIRST
+    system: cwom
+    description: 'GSM: device capture. GPON: E2E test confirmation. Asynchronous SaaS: XaaS callback (ceaseService).
+      Managed devices: the MDVC callback (HPSM ticket cancelled).'
+    etom: Fulfillment · Order Handling
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P4 ADO 323163, 288752
+    confidence: confirmed
+  - number: '48'
+    name: Close the cancel with the partial bundle in the registry
+    track: CANCEL-FIRST
+    system: cbcm
+    etom: Fulfillment · Order Handling
+    role: RECORD
+    source: SDD v2.3 · §P4 ADO 288752
+    confidence: confirmed
+  - number: '50'
+    name: Submit the cessation with the summary-order flags
+    etom: Fulfillment · Order Handling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P2 ADO 259161
+    confidence: confirmed
+  - number: '60'
+    name: Announce the order for tracking
+    system: rtf
+    etom: Fulfillment · Order Handling
+    role: TRACK
+    confidence: inferred
+    source: SDD v2.3 · §P3 Order Tracking · Stated for BFM lifecycle orders generally.
+  - number: '70'
+    name: Load the basket from the CRMGW registry
+    system: rtf
+    description: Only the completed components when the activation was partly fulfilled.
+    etom: Fulfillment · Order Handling
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P2 ADO 259161; §P4 ADO 288752
+    confidence: confirmed
+  - number: '80'
+    name: Hand the basket to CWOM with the summary-order flags
+    system: rtf
+    etom: Fulfillment · Order Handling
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P2 ADO 259161
+    confidence: confirmed
+  - number: '90'
+    name: Cease every bundled and add-on service, per workflow
+    system: cwom
+    output: Backup 5G in the bundle?
+    etom: Fulfillment · Service Configuration & Activation
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P2 ADO 259161
+    confidence: confirmed
+  - number: '100'
+    name: Deactivate Backup 5G
+    track: BRANCH-BACKUP
+    system: veda
+    description: HSS commands as for DI/DPI with epsProfileId 5GNSA_BPRO5GBKP; vEDA's commands towards
+      IN and Alepo unchanged.
+    etom: Fulfillment · Resource Provisioning
+    role: ACTIVATE
+    source: SDD v2.3 · §P2 ADO 259161
+    confidence: confirmed
+  - number: '110'
+    name: Remove the Backup 5G base and bandwidth offers
+    track: BRANCH-BACKUP
+    system: in
+    description: DeleteOffer for both offers.
+    etom: Fulfillment · Resource Provisioning
+    role: ACTIVATE
+    source: SDD v2.3 · §P4 Enhancement 1873844 (Cease)
+    confidence: confirmed
+  - number: '120'
+    name: Cease the CPE service; remove FortiPortal with the last branch
+    system: e2eso
+    description: The FortiPortal organisation is removed only when the customer's last branch is ceased.
+    etom: Fulfillment · Service Configuration & Activation
+    role: ACTIVATE
+    source: SDD v2.3 · §P1 FortiPortal Access; §P2 ADO 259161
+    confidence: confirmed
+  - number: '130'
+    name: Complete the field work, per workflow
+    system: wfms
+    etom: Fulfillment · Resource Provisioning
+    role: FIELD
+    confidence: inferred
+    source: SDD v2.3 · §P2 ADO 259161 · WFMS fulfils per the agreed workflow, which isn't in the SDD text.
+  - number: '140'
+    name: Check the CPE rate plan's commitment
+    system: bscs
+    description: The Business Pro+ CPE rate plan is defined per contract period (no contract, 1 year,
+      2 years) with an exit charge of AED 650.
+    output: Still within the commitment period?
+    etom: Billing · Billing & Revenue Management
+    role: BILL
+    source: SDD v2.3 · §ADO 438907 US 438909
+    confidence: confirmed
+  - number: '150'
+    name: Post the CPE exit charge (AED 650)
+    track: BRANCH-EXIT
+    system: bscs
+    etom: Billing · Billing & Revenue Management
+    role: BILL
+    confidence: inferred
+    source: SDD v2.3 · §ADO 438907 US 438909 · The exit charge applies to cessation; the commitment test
+      follows the existing exit-charge rules.
+  - number: '160'
+    name: Stop billing and close the account
+    system: bscs
+    etom: Billing · Billing & Revenue Management
+    role: BILL
+    confidence: inferred
+    source: SDD v2.3 · §P2 ADO 259161 · Ceasing all services implies the final bill; the SDD doesn't detail
+      it.
+  - number: '170'
+    name: Close the order and update the registry
+    system: cbcm
+    description: With partial components when the activation was partly fulfilled.
+    etom: Fulfillment · Order Handling
+    role: RECORD
+    source: SDD v2.3 · §P4 ADO 288752
+    confidence: confirmed
+  flow_rules:
+  - kind: decision
+    from: '30'
+    to: '40'
+    condition: Activation in progress
+  - kind: decision
+    from: '30'
+    to: '50'
+    condition: Nothing pending
+  - kind: decision
+    from: '48'
+    to: '50'
+    branch: rejoin
+  - kind: decision
+    from: '90'
+    to: '100'
+    condition: With Backup 5G
+  - kind: decision
+    from: '90'
+    to: '120'
+    condition: Without Backup 5G
+  - kind: decision
+    from: '110'
+    to: '120'
+    branch: rejoin
+  - kind: decision
+    from: '140'
+    to: '150'
+    condition: 'Yes'
+  - kind: decision
+    from: '140'
+    to: '160'
+    condition: 'No'
+  - kind: decision
+    from: '150'
+    to: '160'
+    branch: rejoin
+  integrations:
+  - from: '20'
+    to: '20'
+    interface: retrieveAccount
+    timing: Sync
+    to_system: cbcm
+    purpose: Read NEW_BUNDLE_MODEL.
+    style: API
+    tmf_equivalent: TMF637 Product Inventory
+    source: SDD v2.3 · §P2 ADO 259161
+    confidence: confirmed
+  - from: '30'
+    to: '30'
+    interface: evaluateOrder
+    timing: Sync
+    from_system: rtf
+    to_system: cbcm
+    purpose: 'Validate the order against the pending-order matrix (CESSREQ: every sub-order (GSM, asynchronous
+      SaaS, vSaaS, GPON) and the master order).'
+    style: API
+    tmf_equivalent: TMF679 Product Offering Qualification
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - from: '45'
+    to: '45'
+    interface: ceaseService
+    from_system: cwom
+    to_system: xaas
+    purpose: Cancel a pending SaaS request before the XaaS callback.
+    style: API
+    source: SDD v2.3 · §P4 ADO 323163
+    confidence: confirmed
+  - from: '45'
+    to: '45'
+    interface: Ticket cancel
+    from_system: cwom
+    to_system: itsm
+    purpose: Cancel the managed-device ticket before the MDVC callback.
+    source: SDD v2.3 · §P4 ADO 323163
+    confidence: confirmed
+  - from: '50'
+    to: '50'
+    interface: RTF order request (CEASE)
+    to_system: rtf
+    purpose: Submit the cessation in the existing structure with the summary-order attributes.
+    style: XML request
+    tmf_equivalent: TMF622 Product Ordering
+    source: SDD v2.3 · §P2 ADO 259161
+    confidence: confirmed
+  - from: '60'
+    to: '60'
+    interface: NotifyOrderCreationRequest
+    from_system: rtf
+    to_system: ibm-bpm
+    via: tibco
+    purpose: Open the tracker; No_Change items included.
+    confidence: inferred
+    source: SDD v2.3 · §P3 Order Tracking
+  - from: '70'
+    to: '70'
+    interface: Load registry basket
+    from_system: rtf
+    to_system: cbcm
+    purpose: Load the basket and add the summary-order flags.
+    source: SDD v2.3 · §P2 ADO 259161
+    confidence: confirmed
+  - from: '80'
+    to: '80'
+    interface: Cessation order (summary)
+    from_system: rtf
+    to_system: cwom
+    purpose: Submit the loaded basket.
+    style: API
+    tmf_equivalent: TMF622 Product Ordering
+    source: SDD v2.3 · §P2 ADO 259161
+    confidence: confirmed
+  - from: '100'
+    to: '100'
+    interface: HSS deactivation (DI/DPI)
+    payload: <epsProfileId>5GNSA_BPRO5GBKP</epsProfileId>
+    from_system: cwom
+    to_system: veda
+    purpose: Deactivate Backup 5G and delete its network accounts.
+    source: SDD v2.3 · §P2 ADO 259161
+    confidence: confirmed
+  - from: '100'
+    to: '100'
+    interface: vEDA commands
+    from_system: veda
+    to_system: alepo
+    purpose: As for DI/DPI, unchanged.
+    source: SDD v2.3 · §P2 ADO 259161
+    confidence: confirmed
+  - from: '110'
+    to: '110'
+    interface: DeleteOffer (base, bandwidth)
+    from_system: cwom
+    to_system: in
+    purpose: Remove both Backup 5G offers.
+    style: API
+    source: SDD v2.3 · §P4 Enhancement 1873844
+    confidence: confirmed
+  - from: '120'
+    to: '120'
+    interface: Service order (cease)
+    from_system: cwom
+    to_system: e2eso
+    purpose: Cease the CPE service per the technical proposal and interface agreement.
+    tmf_equivalent: TMF641 Service Ordering
+    source: SDD v2.3 · §P2 ADO 259161
+    confidence: confirmed
+  - from: '120'
+    to: '120'
+    interface: Fortinet API
+    from_system: e2eso
+    to_system: fortinet
+    purpose: Remove the organisation with the last branch.
+    style: API
+    confidence: inferred
+    source: SDD v2.3 · §P1 FortiPortal Access · The API isn't named.
+- id: bpp-extshift
+  name: External shift of site
+  product: business-pro-plus
+  order_type: EXTSHIFTSITE
+  description: 'Moving the service to a new address in the Etisalat area: one work order when the site
+    is Home Ready without a waiter, two when it is Home Pass or Home Ready with a waiter; the Backup 5G
+    geo-lock is reset only when the bundle has Backup 5G; Fortinet gets the new site name.'
+  confidence: confirmed
+  source: SDD v2.3 · §P3 ADO 202826 (External Shift of Site); §P4 Enhancement 1873844
+  activities:
+  - number: '10'
+    name: Capture the new address and site-access consent
+    description: With consent, SITE_ACCESS_REQUIRED = TRUE.
+    etom: Fulfillment · Selling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P3 ADO 202826
+    confidence: confirmed
+  - number: '20'
+    name: Submit EXTSHIFTSITE with the summary-order flags
+    description: processCode PRSU0001, operation EXTSHIFTSITE, ACTION_CHARGE_CODE AC_EXTSHIFTSITE_1; the
+      new address in the party block.
+    etom: Fulfillment · Order Handling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P3 ADO 202826, request mapping
+    confidence: confirmed
+  - number: '30'
+    name: Check the pending activation (pending order validation)
+    system: cbcm
+    description: While the new activation's master order is open, CRMGW accepts this order only when the
+      GSM and GPON sub-orders and the master order are closed; otherwise RTF rejects it.
+    output: Accepted?
+    etom: Fulfillment · Order Handling
+    role: VALIDATE
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - number: '35'
+    name: 'Order rejected: the activation isn''t far enough'
+    track: REJECTED
+    description: The channel tells the customer the order can be placed once the named sub-orders are
+      closed.
+    channel_entry: true
+    role: CAPTURE
+    confidence: inferred
+    source: SDD v2.3 · §P4 Pending Order Validation · RTF rejects the request; how the channel shows it
+      isn't stated.
+  - number: '40'
+    name: Announce the order for tracking
+    system: rtf
+    description: Items posted as No_Change; OrderInstanceType EXTSHIFT.
+    etom: Fulfillment · Order Handling
+    role: TRACK
+    source: SDD v2.3 · §P3 ADO 202826; §BPM, §TIBCO
+    confidence: confirmed
+  - number: '50'
+    name: Load the basket from CRMGW and hand it to CWOM
+    system: rtf
+    etom: Fulfillment · Order Handling
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P3 ADO 202826
+    confidence: confirmed
+  - number: '60'
+    name: Mark the impacted services Modify and split by EID status
+    system: cwom
+    description: Service-design change (SDC) as today; the master order splits into sub-orders by the
+      site's EID status.
+    output: Site status?
+    etom: Fulfillment · Service Configuration & Activation
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P3 ADO 202826
+    confidence: confirmed
+  - number: '70'
+    name: 'One work order: reset the geo-lock and provision GPON'
+    track: BRANCH-READY
+    system: wfms
+    description: As in new activation.
+    etom: Fulfillment · Resource Provisioning
+    role: FIELD
+    source: SDD v2.3 · §P3 ADO 202826
+    confidence: confirmed
+  - number: '80'
+    name: 'First work order: install the FEX, reset the geo-lock, test Backup 5G'
+    track: BRANCH-PASS
+    system: wfms
+    etom: Fulfillment · Resource Provisioning
+    role: FIELD
+    source: SDD v2.3 · §P3 ADO 202826
+    confidence: confirmed
+  - number: '90'
+    name: 'Second work order: install GPON after the waiter clears; E2E test'
+    track: BRANCH-PASS
+    system: wfms
+    etom: Fulfillment · Resource Provisioning
+    role: FIELD
+    source: SDD v2.3 · §P3 ADO 202826
+    confidence: confirmed
+  - number: '100'
+    name: Check the bundle for Backup 5G
+    system: cwom
+    output: Backup 5G in the bundle?
+    etom: Fulfillment · Service Configuration & Activation
+    role: ORCHESTRATE
+    confidence: inferred
+    source: SDD v2.3 · §P4 Enhancement 1873844 · The geo-lock reset applies only to Backup 5G; the check
+      as a step is this catalogue's reading.
+  - number: '110'
+    name: Reset the Backup 5G geo-lock (runPAM)
+    track: BRANCH-BACKUP
+    system: in
+    description: No change to the base or bandwidth offers.
+    etom: Fulfillment · Resource Provisioning
+    role: ACTIVATE
+    source: SDD v2.3 · §P4 Enhancement 1873844 (External Shift)
+    confidence: confirmed
+  - number: '120'
+    name: Update the site name at Fortinet
+    system: e2eso
+    description: CWOM passes the new site name; E2ESO updates it at Fortinet through the agreed new API.
+    etom: Fulfillment · Service Configuration & Activation
+    role: ACTIVATE
+    source: SDD v2.3 · §P3 ADO 202826
+    confidence: confirmed
+  - number: '130'
+    name: Publish milestones per sub-order
+    system: cwom
+    description: Order tracking for EXTSHIFTSITE; TIBCO follows the master/sub approach.
+    etom: Fulfillment · Order Handling
+    role: TRACK
+    source: SDD v2.3 · §CWOM, §TIBCO ADO 202826
+    confidence: confirmed
+  - number: '140'
+    name: Send the order submitted and completed emails
+    system: cns
+    etom: CRM · Customer Interface Management
+    role: NOTIFY
+    confidence: inferred
+    source: SDD v2.3 · §P3 ADO 202826 · RTF triggers them; the sending system isn't named.
+  - number: '150'
+    name: Close the order and update the registry
+    system: cbcm
+    etom: Fulfillment · Order Handling
+    role: RECORD
+    confidence: inferred
+    source: SDD v2.3 · §P3 ADO 202826 · Closing is read from the other journeys.
+  flow_rules:
+  - kind: decision
+    from: '30'
+    to: '35'
+    condition: 'No'
+  - kind: decision
+    from: '30'
+    to: '40'
+    condition: 'Yes'
+  - kind: decision
+    from: '60'
+    to: '70'
+    condition: Home Ready, no waiter
+  - kind: decision
+    from: '60'
+    to: '80'
+    condition: Home Pass or Home Ready with waiter
+  - kind: decision
+    from: '70'
+    to: '100'
+    branch: rejoin
+  - kind: decision
+    from: '90'
+    to: '100'
+    branch: rejoin
+  - kind: decision
+    from: '100'
+    to: '110'
+    condition: With Backup 5G
+  - kind: decision
+    from: '100'
+    to: '120'
+    condition: Without Backup 5G
+  - kind: decision
+    from: '110'
+    to: '120'
+    branch: rejoin
+  integrations:
+  - from: '20'
+    to: '20'
+    interface: RTF order request (EXTSHIFTSITE)
+    payload: /request/processCode PRSU0001, /request/operation EXTSHIFTSITE, ACTION_CHARGE_CODE AC_EXTSHIFTSITE_1
+    to_system: rtf
+    purpose: Submit the shift with the new address and the summary-order attributes.
+    style: XML request
+    tmf_equivalent: TMF622 Product Ordering
+    source: SDD v2.3 · §P3 ADO 202826
+    confidence: confirmed
+  - from: '30'
+    to: '30'
+    interface: evaluateOrder
+    timing: Sync
+    from_system: rtf
+    to_system: cbcm
+    purpose: 'Validate the order against the pending-order matrix (EXTSHIFTSITE: the GSM and GPON sub-orders
+      and the master order).'
+    style: API
+    tmf_equivalent: TMF679 Product Offering Qualification
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - from: '40'
+    to: '40'
+    interface: NotifyOrderCreationRequest
+    from_system: rtf
+    to_system: ibm-bpm
+    via: tibco
+    purpose: Open the tracker; items as No_Change.
+    tmf_equivalent: TMF622 Product Ordering (notification)
+    source: SDD v2.3 · §P3 ADO 202826
+    confidence: confirmed
+  - from: '50'
+    to: '50'
+    interface: Load registry basket
+    from_system: rtf
+    to_system: cbcm
+    purpose: Load the complete basket from CRMGW.
+    source: SDD v2.3 · §P3 ADO 202826
+    confidence: confirmed
+  - from: '50'
+    to: '50'
+    interface: Order (summary)
+    from_system: rtf
+    to_system: cwom
+    purpose: Pass the complete basket.
+    style: API
+    tmf_equivalent: TMF622 Product Ordering
+    source: SDD v2.3 · §P3 ADO 202826
+    confidence: confirmed
+  - from: '70'
+    to: '70'
+    interface: Work order
+    timing: Async
+    from_system: cwom
+    to_system: wfms
+    purpose: One work order (Home Ready, no waiter).
+    source: SDD v2.3 · §P3 ADO 202826
+    confidence: confirmed
+  - from: '80'
+    to: '80'
+    interface: Work order 1
+    timing: Async
+    from_system: cwom
+    to_system: wfms
+    purpose: FEX, geo-lock reset, Backup 5G test.
+    source: SDD v2.3 · §P3 ADO 202826
+    confidence: confirmed
+  - from: '90'
+    to: '90'
+    interface: Work order 2
+    timing: Async
+    from_system: cwom
+    to_system: wfms
+    purpose: GPON after waiter clearance.
+    source: SDD v2.3 · §P3 ADO 202826
+    confidence: confirmed
+  - from: '110'
+    to: '110'
+    interface: runPAM
+    from_system: cwom
+    to_system: in
+    purpose: Reset the Backup 5G geo-lock.
+    style: API
+    source: SDD v2.3 · §P4 Enhancement 1873844
+    confidence: confirmed
+  - from: '120'
+    to: '120'
+    interface: Service order (site name)
+    from_system: cwom
+    to_system: e2eso
+    purpose: Pass the new site name in the agreed path.
+    tmf_equivalent: TMF641 Service Ordering
+    source: SDD v2.3 · §P3 ADO 202826
+    confidence: confirmed
+  - from: '120'
+    to: '120'
+    interface: Fortinet site-name API (new)
+    from_system: e2eso
+    to_system: fortinet
+    purpose: Update the site name.
+    style: API
+    source: SDD v2.3 · §P3 ADO 202826
+    confidence: confirmed
+  - from: '130'
+    to: '130'
+    interface: Milestone (per sub-order)
+    timing: Async
+    from_system: cwom
+    to_system: ibm-bpm
+    via: tibco
+    purpose: As-is new-activation milestones for EXTSHIFTSITE.
+    style: Event / message
+    source: SDD v2.3 · §CWOM, §TIBCO ADO 202826
+    confidence: confirmed
+  - from: '140'
+    to: '140'
+    interface: Order submitted / completed emails
+    from_system: rtf
+    to_system: cns
+    purpose: As for other SRs.
+    confidence: inferred
+    source: SDD v2.3 · §P3 ADO 202826 · The sending system isn't named.
+- id: bpp-dunning
+  name: Dunning (TOSS, reconnect, non-payment cessation)
+  product: business-pro-plus
+  order_type: DUNNING
+  description: 'Non-payment actions on a Business Pro Plus account: TOSS throttles GPON (and Backup 5G
+    to 5 Mbps with IN offer 854), reconnect removes the throttling, non-payment cessation ceases every
+    service; the Backup 5G steps happen only when the bundle has Backup 5G.'
+  confidence: confirmed
+  source: SDD v2.3 · §P3 ADO 259162; §P4 Enhancement 1873844; General Highlights (Dunning)
+  activities:
+  - number: '10'
+    name: Raise the dunning action
+    description: Actions BAR_OG, NPTOSS (TOSS), RECONNP (reconnect), CESSNP (non-payment cessation).
+    etom: Billing · Billing & Revenue Management
+    performer: Dunning process
+    role: BILL
+    confidence: gap
+    source: SDD v2.3 · §P3 ADO 259162 · The SDD doesn't name the system that raises the action (finding F12).
+  - number: '20'
+    name: Check the account's bundle model; add the summary-order flags
+    system: rtf
+    description: sRTF (RTF Common) checks NEW_BUNDLE_MODEL through CRMGW; the solution overview names
+      NPS for the same logic.
+    etom: Fulfillment · Order Handling
+    role: VALIDATE
+    confidence: inferred
+    source: SDD v2.3 · §P3 ADO 259162; §RTF ADO 259162 [RTF Common] · See finding F16.
+  - number: '30'
+    name: Hand the action to CWOM
+    system: rtf
+    description: 'CWOM relies on its existing registry: loading the basket from CRMGW waits until the
+      CWOM registry is retired.'
+    output: Which action?
+    etom: Fulfillment · Order Handling
+    role: ORCHESTRATE
+    confidence: inferred
+    source: SDD v2.3 · General Highlights (Dunning); §P3 ADO 259162 · See finding F16.
+  - number: '40'
+    name: Throttle the GPON service (TOSS)
+    track: BRANCH-TOSS
+    system: cwom
+    output: Backup 5G in the bundle?
+    etom: Fulfillment · Service Configuration & Activation
+    role: ACTIVATE
+    source: SDD v2.3 · §P3 ADO 259162
+    confidence: confirmed
+  - number: '45'
+    name: Throttle Backup 5G to 5 Mbps
+    track: BRANCH-TOSS
+    system: in
+    description: UpdateOffer, offer 854, as for DI.
+    etom: Fulfillment · Resource Provisioning
+    role: ACTIVATE
+    source: SDD v2.3 · §P3 ADO 259162; §P4 Enhancement 1873844
+    confidence: confirmed
+  - number: '50'
+    name: Remove the GPON throttling (reconnect)
+    track: BRANCH-RECONNECT
+    system: cwom
+    description: With the speed booster, CWOM also asks E2ESO to set the CPE bandwidth (RECONNP).
+    output: Backup 5G in the bundle?
+    etom: Fulfillment · Service Configuration & Activation
+    role: ACTIVATE
+    source: SDD v2.3 · §P3 ADO 259162; §P4 ADO 198968
+    confidence: confirmed
+  - number: '55'
+    name: Remove the Backup 5G throttling
+    track: BRANCH-RECONNECT
+    system: in
+    description: DeleteOffer, offer 854, as for DI.
+    etom: Fulfillment · Resource Provisioning
+    role: ACTIVATE
+    source: SDD v2.3 · §P3 ADO 259162; §P4 Enhancement 1873844
+    confidence: confirmed
+  - number: '60'
+    name: Cease every service (non-payment cessation)
+    track: BRANCH-CESSNP
+    system: cwom
+    description: As-is CESSNP request structure.
+    output: Backup 5G in the bundle?
+    etom: Fulfillment · Service Configuration & Activation
+    role: ACTIVATE
+    source: SDD v2.3 · §P3 ADO 259162
+    confidence: confirmed
+  - number: '65'
+    name: Delete the Backup 5G accounts
+    track: BRANCH-CESSNP
+    system: veda
+    description: As for DI/DPI.
+    etom: Fulfillment · Resource Provisioning
+    role: ACTIVATE
+    source: SDD v2.3 · §P3 ADO 259162
+    confidence: confirmed
+  - number: '70'
+    name: Close the dunning order
+    system: cwom
+    etom: Fulfillment · Order Handling
+    role: RECORD
+    confidence: inferred
+    source: SDD v2.3 · §P3 ADO 259162 · Closing isn't detailed.
+  flow_rules:
+  - kind: decision
+    from: '30'
+    to: '40'
+    condition: TOSS
+  - kind: decision
+    from: '30'
+    to: '50'
+    condition: Reconnect
+  - kind: decision
+    from: '30'
+    to: '60'
+    condition: Non-payment cessation
+  - kind: decision
+    from: '40'
+    to: '45'
+    condition: With Backup 5G
+  - kind: decision
+    from: '40'
+    to: '70'
+    condition: Without Backup 5G
+  - kind: decision
+    from: '45'
+    to: '70'
+    branch: rejoin
+  - kind: decision
+    from: '50'
+    to: '55'
+    condition: With Backup 5G
+  - kind: decision
+    from: '50'
+    to: '70'
+    condition: Without Backup 5G
+  - kind: decision
+    from: '55'
+    to: '70'
+    branch: rejoin
+  - kind: decision
+    from: '60'
+    to: '65'
+    condition: With Backup 5G
+  - kind: decision
+    from: '60'
+    to: '70'
+    condition: Without Backup 5G
+  - kind: decision
+    from: '65'
+    to: '70'
+    branch: rejoin
+  integrations:
+  - from: '20'
+    to: '20'
+    interface: retrieveAccount
+    timing: Sync
+    from_system: rtf
+    to_system: cbcm
+    purpose: Read NEW_BUNDLE_MODEL.
+    style: API
+    tmf_equivalent: TMF637 Product Inventory
+    source: SDD v2.3 · §P3 ADO 259162
+    confidence: confirmed
+  - from: '30'
+    to: '30'
+    interface: Dunning order
+    from_system: rtf
+    to_system: cwom
+    purpose: Submit BAR_OG, NPTOSS, RECONNP or CESSNP.
+    style: API
+    source: SDD v2.3 · §P3 ADO 259162
+    confidence: confirmed
+  - from: '45'
+    to: '45'
+    interface: UpdateOffer (854)
+    from_system: cwom
+    to_system: in
+    purpose: Throttle Backup 5G to 5 Mbps.
+    style: API
+    source: SDD v2.3 · §P3 ADO 259162
+    confidence: confirmed
+  - from: '50'
+    to: '50'
+    interface: Service order (RECONNP)
+    payload: category RECONNP, serviceSpecification CFSS_INTERNET_CPE_HE, action Modify, UPSTREAM/DOWNSTREAM
+    from_system: cwom
+    to_system: e2eso
+    purpose: Restore the CPE bandwidth with the speed booster.
+    tmf_equivalent: TMF641 Service Ordering
+    source: SDD v2.3 · §P4 ADO 198968
+    confidence: confirmed
+  - from: '55'
+    to: '55'
+    interface: DeleteOffer (854)
+    from_system: cwom
+    to_system: in
+    purpose: Remove the Backup 5G throttling.
+    style: API
+    source: SDD v2.3 · §P3 ADO 259162
+    confidence: confirmed
+  - from: '65'
+    to: '65'
+    interface: Delete Backup 5G accounts (DI/DPI)
+    from_system: cwom
+    to_system: veda
+    purpose: Delete the network accounts.
+    source: SDD v2.3 · §P3 ADO 259162
+    confidence: confirmed
+- id: bpp-portin
+  name: Port in
+  product: business-pro-plus
+  order_type: PORTIN
+  description: 'A new activation that brings the customer''s number: NPS passes the summary-order flags,
+    CWOM raises the port request at master-order level before the split, and sends an intermediate NP
+    RFS once UCaaS is provisioned; the rest is fulfilled as a new activation.'
+  confidence: confirmed
+  source: SDD v2.3 · §P3 ADO 202826 (Port In & Port Out); §ADO 470510
+  activities:
+  - number: '10'
+    name: Capture the port-in order
+    description: The channels pass the existing summary-order flag.
+    etom: Fulfillment · Selling
+    channels:
+    - bcrm
+    - b2b-web
+    - smb-app
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P3 ADO 202826
+    confidence: confirmed
+  - number: '20'
+    name: Pass the order to RTF with the summary-order flags
+    system: nps
+    description: SUMMARY_ORDER = true, DETAILED_ORDER = true.
+    etom: Fulfillment · Order Handling
+    role: ORCHESTRATE
+    source: SDD v2.3 · §NPS ADO 202826
+    confidence: confirmed
+  - number: '30'
+    name: Load the basket from the CRMGW registry
+    system: rtf
+    etom: Fulfillment · Order Handling
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P3 ADO 202826
+    confidence: confirmed
+  - number: '40'
+    name: Create the master order and raise the port request
+    system: cwom
+    description: 'The port request is brought up front: right after the CRMGW order is created and before
+      the split. Interactions with RTF and NPS are unchanged.'
+    etom: Fulfillment · Order Handling
+    role: ORCHESTRATE
+    source: SDD v2.3 · §ADO 470510
+    confidence: confirmed
+  - number: '50'
+    name: Split and fulfil the sub-orders as a new activation
+    system: cwom
+    description: Header amendments are supported; EID/flat amendments and upselling come later, at the
+      WFMS stage.
+    output: Where is UCaaS provisioned?
+    etom: Fulfillment · Service Configuration & Activation
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P3 ADO 202826; §ADO 470510
+    confidence: confirmed
+  - number: '60'
+    name: UCaaS in the GSM sub-order (Home Pass, or Home Ready with waiter)
+    track: BRANCH-GSM
+    system: cwom
+    etom: Fulfillment · Service Configuration & Activation
+    role: ACTIVATE
+    source: SDD v2.3 · §ADO 470510
+    confidence: confirmed
+  - number: '65'
+    name: UCaaS in the GPON sub-order (Home Ready, no waiter)
+    track: BRANCH-GPON
+    system: cwom
+    etom: Fulfillment · Service Configuration & Activation
+    role: ACTIVATE
+    source: SDD v2.3 · §ADO 470510
+    confidence: confirmed
+  - number: '70'
+    name: Signal the master order; send NP RFS
+    system: cwom
+    description: 'On the sub-order''s closure: a new intermediate NP RFS notification to RTF, which updates
+      NPS.'
+    etom: Fulfillment · Order Handling
+    role: TRACK
+    source: SDD v2.3 · §ADO 470510
+    confidence: confirmed
+  - number: '80'
+    name: Close the order
+    system: cwom
+    description: The existing order-closure notification to RTF stays as is.
+    etom: Fulfillment · Order Handling
+    role: RECORD
+    source: SDD v2.3 · §ADO 470510
+    confidence: confirmed
+  flow_rules:
+  - kind: decision
+    from: '50'
+    to: '60'
+    condition: GSM sub-order
+  - kind: decision
+    from: '50'
+    to: '65'
+    condition: GPON sub-order
+  - kind: decision
+    from: '60'
+    to: '70'
+    branch: rejoin
+  - kind: decision
+    from: '65'
+    to: '70'
+    branch: rejoin
+  integrations:
+  - from: '10'
+    to: '10'
+    interface: Port-in order
+    to_system: nps
+    purpose: Pass the order with the summary-order flag.
+    confidence: inferred
+    source: SDD v2.3 · §P3 ADO 202826 · The channels pass the flag to fulfilment; NPS forwards it.
+  - from: '20'
+    to: '20'
+    interface: RTF order request (PORTIN)
+    payload: SUMMARY_ORDER = true, DETAILED_ORDER = true
+    from_system: nps
+    to_system: rtf
+    purpose: Pass the summary-order flags.
+    style: XML request
+    tmf_equivalent: TMF622 Product Ordering
+    source: SDD v2.3 · §NPS ADO 202826
+    confidence: confirmed
+  - from: '30'
+    to: '30'
+    interface: Load registry basket
+    from_system: rtf
+    to_system: cbcm
+    purpose: Load the basket before submitting to CWOM.
+    source: SDD v2.3 · §P3 ADO 202826
+    confidence: confirmed
+  - from: '30'
+    to: '30'
+    interface: Order (summary)
+    from_system: rtf
+    to_system: cwom
+    purpose: Submit the loaded basket.
+    style: API
+    tmf_equivalent: TMF622 Product Ordering
+    source: SDD v2.3 · §P3 ADO 202826
+    confidence: confirmed
+  - from: '40'
+    to: '40'
+    interface: Port request
+    from_system: cwom
+    to_system: nps
+    via: rtf
+    purpose: Raise the port request at master-order level.
+    confidence: inferred
+    source: SDD v2.3 · §ADO 470510 · “Existing interactions between CWOM and RTF/NPS remain same”.
+  - from: '70'
+    to: '70'
+    interface: NP RFS (new)
+    from_system: cwom
+    to_system: rtf
+    purpose: Intermediate notification once UCaaS is provisioned.
+    style: API
+    source: SDD v2.3 · §ADO 470510
+    confidence: confirmed
+  - from: '70'
+    to: '70'
+    interface: NP RFS update
+    from_system: rtf
+    to_system: nps
+    purpose: Update NPS as today.
+    source: SDD v2.3 · §ADO 470510
+    confidence: confirmed
+  - from: '80'
+    to: '80'
+    interface: Order closure notification
+    from_system: cwom
+    to_system: rtf
+    purpose: As is.
+    style: API
+    source: SDD v2.3 · §ADO 470510
+    confidence: confirmed
+- id: bpp-portout
+  name: Port out
+  product: business-pro-plus
+  order_type: PORTOUT
+  description: 'A cessation started by the number-portability clearing house: NPS adds the summary-order
+    flags for new-model accounts, RTF loads the basket, CWOM ceases as today; no retention.'
+  confidence: confirmed
+  source: SDD v2.3 · §P3 ADO 202826 (Port In & Port Out); §ADO 470510
+  activities:
+  - number: '10'
+    name: Request the port-out
+    system: npc
+    etom: Fulfillment · Selling
+    role: CAPTURE
+    source: SDD v2.3 · §P3 ADO 202826
+    confidence: confirmed
+  - number: '20'
+    name: Check the account's bundle model; add the summary-order flags
+    description: 'For new-model accounts: LOAD_SR = false, SUMMARY_ORDER = true, DETAILED_ORDER = true.
+      Churn & Exit retention doesn''t apply.'
+    etom: Fulfillment · Order Handling
+    channel_entry: true
+    role: VALIDATE
+    source: SDD v2.3 · §P3 ADO 202826; §ADO 470510
+    confidence: confirmed
+  - number: '30'
+    name: Load the basket from the CRMGW registry
+    system: rtf
+    etom: Fulfillment · Order Handling
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P3 ADO 202826
+    confidence: confirmed
+  - number: '40'
+    name: Cease as a port-out, as today
+    system: cwom
+    output: Backup 5G in the bundle?
+    etom: Fulfillment · Service Configuration & Activation
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P3 ADO 202826; §ADO 470510
+    confidence: confirmed
+  - number: '50'
+    name: Deactivate Backup 5G and remove its offers
+    track: BRANCH-BACKUP
+    system: veda
+    description: As in cessation.
+    etom: Fulfillment · Resource Provisioning
+    role: ACTIVATE
+    confidence: inferred
+    source: SDD v2.3 · §P2 ADO 259161; §P4 Enhancement 1873844 · Port-out is fulfilled as a cessation.
+  - number: '60'
+    name: Cease the CPE service
+    system: e2eso
+    etom: Fulfillment · Service Configuration & Activation
+    role: ACTIVATE
+    confidence: inferred
+    source: SDD v2.3 · §P2 ADO 259161 · Port-out is fulfilled as a cessation.
+  - number: '70'
+    name: Close the order and update the registry
+    system: cbcm
+    etom: Fulfillment · Order Handling
+    role: RECORD
+    confidence: inferred
+    source: SDD v2.3 · §P3 ADO 202826 · Closing is read from cessation.
+  flow_rules:
+  - kind: decision
+    from: '40'
+    to: '50'
+    condition: With Backup 5G
+  - kind: decision
+    from: '40'
+    to: '60'
+    condition: Without Backup 5G
+  - kind: decision
+    from: '50'
+    to: '60'
+    branch: rejoin
+  integrations:
+  - from: '10'
+    to: '10'
+    interface: Port-out request
+    from_system: npc
+    to_system: nps
+    purpose: Start the port-out.
+    source: SDD v2.3 · §P3 ADO 202826
+    confidence: confirmed
+  - from: '20'
+    to: '20'
+    interface: retrieveAccount
+    timing: Sync
+    from_system: nps
+    to_system: cbcm
+    purpose: Read NEW_BUNDLE_MODEL.
+    style: API
+    tmf_equivalent: TMF637 Product Inventory
+    source: SDD v2.3 · §P3 ADO 202826
+    confidence: confirmed
+  - from: '20'
+    to: '20'
+    interface: RTF order request (PORTOUT)
+    payload: LOAD_SR = false, SUMMARY_ORDER = true, DETAILED_ORDER = true
+    from_system: nps
+    to_system: rtf
+    purpose: Submit with the summary-order attributes.
+    style: XML request
+    tmf_equivalent: TMF622 Product Ordering
+    source: SDD v2.3 · §P3 ADO 202826
+    confidence: confirmed
+  - from: '30'
+    to: '30'
+    interface: Load registry basket
+    from_system: rtf
+    to_system: cbcm
+    purpose: Load the basket.
+    source: SDD v2.3 · §P3 ADO 202826
+    confidence: confirmed
+  - from: '30'
+    to: '30'
+    interface: Cessation order (summary)
+    from_system: rtf
+    to_system: cwom
+    purpose: Submit the loaded basket.
+    style: API
+    tmf_equivalent: TMF622 Product Ordering
+    source: SDD v2.3 · §P3 ADO 202826
+    confidence: confirmed
+  - from: '50'
+    to: '50'
+    interface: HSS deactivation (DI/DPI)
+    from_system: cwom
+    to_system: veda
+    purpose: As in cessation.
+    confidence: inferred
+    source: SDD v2.3 · §P2 ADO 259161
+  - from: '50'
+    to: '50'
+    interface: DeleteOffer (base, bandwidth)
+    from_system: cwom
+    to_system: in
+    purpose: As in cessation.
+    style: API
+    confidence: inferred
+    source: SDD v2.3 · §P4 Enhancement 1873844
+- id: bpp-dvcrep
+  name: Faulty device replacement
+  product: business-pro-plus
+  order_type: DVCREP
+  description: 'A complaint for a faulty CPE or FortiAP: WFMS asks ECM for the eligible models, the technician
+    replaces like for like, swaps the model when the current plan needs another, or adds a chargeable
+    device; WFMS submits DEVICEREPLACEMENT to RTF.'
+  confidence: confirmed
+  source: SDD v2.3 · §P4 ADO 289225; §ADO 438907 US 438912; §P4 Enhancement 1871663
+  activities:
+  - number: '10'
+    name: Raise the complaint
+    description: CIM/UCMS passes CPE_PLATFORM_TYPE, BANDWIDTH and PRODUCT_FLAVOUR; without CPE_PLATFORM_TYPE
+      the existing behaviour stays.
+    etom: Assurance · Problem Handling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P4 ADO 289225
+    confidence: confirmed
+  - number: '20'
+    name: Create the complaint work order
+    system: wfms
+    etom: Assurance · Problem Handling
+    role: FIELD
+    source: SDD v2.3 · §P4 ADO 289225
+    confidence: confirmed
+  - number: '30'
+    name: Get the eligible CPE and FortiAP models
+    system: ecm
+    description: CPE models at index 0, FortiAP models at index 1; WFMS doesn't pass orderSubType here.
+    etom: Assurance · Problem Handling
+    role: CATALOG
+    source: SDD v2.3 · §P4 ADO 289225; Enhancement 1871663
+    confidence: confirmed
+  - number: '40'
+    name: Replace the faulty device
+    system: wfms
+    description: 'Same model unless the current plan needs another (e.g. 1 Gbps down to 300 Mbps: 120G
+      to 90G, FAP-431F-E to FAP-23JF-E). Device recovery stays manual.'
+    output: Which case?
+    etom: Assurance · Problem Handling
+    role: FIELD
+    source: SDD v2.3 · §P4 ADO 289225
+    confidence: confirmed
+  - number: '50'
+    name: 'Replace: same model, new serial'
+    track: BRANCH-REPLACE
+    system: wfms
+    description: Generic CPE/FortiAP PO, action UPDATE, existing SIC, new serial.
+    etom: Assurance · Problem Handling
+    role: FIELD
+    source: SDD v2.3 · §P4 ADO 289225
+    confidence: confirmed
+  - number: '60'
+    name: 'Add/Delete: new model and serial'
+    track: BRANCH-SWAP
+    system: wfms
+    description: Generic CPE/FortiAP PO, action UPDATE, new SIC, new serial.
+    etom: Assurance · Problem Handling
+    role: FIELD
+    source: SDD v2.3 · §P4 ADO 289225
+    confidence: confirmed
+  - number: '70'
+    name: 'Add: new device with its charge PO'
+    track: BRANCH-ADD
+    system: wfms
+    description: 'Generic PO UPDATE (new SIC and serial) plus the charge PO ADD: Fortinet 90G 13,200,
+      Fortinet 120G 18,000 (one-time).'
+    etom: Assurance · Problem Handling
+    role: FIELD
+    source: SDD v2.3 · §P4 ADO 289225; §ADO 438907 US 438912
+    confidence: confirmed
+  - number: '80'
+    name: Submit DEVICEREPLACEMENT
+    system: wfms
+    etom: Fulfillment · Order Handling
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P4 ADO 289225
+    confidence: confirmed
+  - number: '90'
+    name: Check the pending activation (pending order validation)
+    system: cbcm
+    description: While the new activation's master order is open, CRMGW accepts this order only when the
+      GSM sub-order is closed; otherwise RTF rejects it.
+    output: Accepted?
+    etom: Fulfillment · Order Handling
+    role: VALIDATE
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - number: '95'
+    name: 'Order rejected: the activation isn''t far enough'
+    track: REJECTED
+    system: wfms
+    description: RTF rejects; the work order waits.
+    etom: Fulfillment · Order Handling
+    role: FIELD
+    confidence: inferred
+    source: SDD v2.3 · §P4 Pending Order Validation · What WFMS does with a rejection isn't stated.
+  - number: '100'
+    name: Fulfil the replacement, as today
+    system: cwom
+    etom: Fulfillment · Service Configuration & Activation
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P4 ADO 289225
+    confidence: confirmed
+  - number: '110'
+    name: Charge the added device
+    system: bscs
+    description: Only in the Add case; the new rate plans hold one-time charges and no exit charge.
+    etom: Billing · Billing & Revenue Management
+    role: BILL
+    confidence: inferred
+    source: SDD v2.3 · §P4 ADO 289225; §ADO 438907 US 438912 · Billing the OTC is read from the charge
+      PO.
+  - number: '120'
+    name: Close the complaint and update the registry
+    system: cbcm
+    etom: Fulfillment · Order Handling
+    role: RECORD
+    confidence: inferred
+    source: SDD v2.3 · §P4 ADO 289225 · Closing is read from the other journeys.
+  flow_rules:
+  - kind: decision
+    from: '40'
+    to: '50'
+    condition: Same model
+  - kind: decision
+    from: '40'
+    to: '60'
+    condition: Model change
+  - kind: decision
+    from: '40'
+    to: '70'
+    condition: Added device
+  - kind: decision
+    from: '50'
+    to: '80'
+    branch: rejoin
+  - kind: decision
+    from: '60'
+    to: '80'
+    branch: rejoin
+  - kind: decision
+    from: '70'
+    to: '80'
+    branch: rejoin
+  - kind: decision
+    from: '90'
+    to: '95'
+    condition: 'No'
+  - kind: decision
+    from: '90'
+    to: '100'
+    condition: 'Yes'
+  integrations:
+  - from: '10'
+    to: '20'
+    interface: CreateComplaintWO
+    payload: 'DataArea/AdditionalInfo: CPE_PLATFORM_TYPE, BANDWIDTH, PRODUCT_FLAVOUR'
+    to_system: wfms
+    via: tibco
+    purpose: Open the complaint work order with the device context.
+    style: API
+    tmf_equivalent: TMF621 Trouble Ticket
+    source: SDD v2.3 · §P4 ADO 289225
+    confidence: confirmed
+  - from: '30'
+    to: '30'
+    interface: CPE Model Inquiry
+    timing: Sync
+    from_system: wfms
+    to_system: ecm
+    purpose: Eligible SICs for the platform, bandwidth and product flavour.
+    style: API
+    source: SDD v2.3 · §P4 ADO 289225
+    confidence: confirmed
+  - from: '80'
+    to: '80'
+    interface: RTF order request (DEVICEREPLACEMENT)
+    payload: Order operation DEVICEREPLACEMENT; generic CPE/FortiAP PO action UPDATE; charge PO action
+      ADD (Add case)
+    from_system: wfms
+    to_system: rtf
+    purpose: Submit the replacement.
+    style: XML request
+    tmf_equivalent: TMF622 Product Ordering
+    source: SDD v2.3 · §P4 ADO 289225
+    confidence: confirmed
+  - from: '90'
+    to: '90'
+    interface: evaluateOrder
+    timing: Sync
+    from_system: rtf
+    to_system: cbcm
+    purpose: 'Validate the order against the pending-order matrix (DVCREP: the GSM sub-order).'
+    style: API
+    tmf_equivalent: TMF679 Product Offering Qualification
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - from: '100'
+    to: '100'
+    interface: Order
+    from_system: rtf
+    to_system: cwom
+    purpose: Fulfil as today; accepted while the activation is in progress per the matrix.
+    style: API
+    source: SDD v2.3 · §P4 ADO 289225
+    confidence: confirmed
+- id: bpp-renewal
+  name: Renewal
+  product: business-pro-plus
+  order_type: RENEWAL
+  description: 'When the contract ends, EHS moves the account to the non-commitment package: an up/downgrade
+    in the renewal flow. From an old-model bundle, RTF copies the dynamic attributes to the new-model
+    target.'
+  confidence: confirmed
+  source: SDD v2.3 · §P4 ADO 420619; §P4 ADO 198968
+  activities:
+  - number: '10'
+    name: Raise the contract-end event
+    description: ccat_after_contract_action on the commitment bundle.
+    etom: Billing · Billing & Revenue Management
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P4 ADO 420619
+    confidence: confirmed
+  - number: '20'
+    name: Find the non-commitment bundle
+    system: ecm
+    description: ccat_after_contract_migrate_plan points each old commitment PO to its new-model non-commitment
+      PO.
+    etom: Fulfillment · Selling
+    role: CATALOG
+    source: SDD v2.3 · §P4 ADO 420619
+    confidence: confirmed
+  - number: '30'
+    name: Submit the up/downgrade (renewal flow)
+    etom: Fulfillment · Order Handling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P4 ADO 420619
+    confidence: confirmed
+  - number: '40'
+    name: Check the pending activation (pending order validation)
+    system: cbcm
+    description: While the new activation's master order is open, CRMGW accepts this order only when every
+      sub-order and the master order are closed; otherwise RTF rejects it.
+    output: Accepted?
+    etom: Fulfillment · Order Handling
+    role: VALIDATE
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - number: '45'
+    name: 'Renewal held: the activation isn''t complete'
+    track: REJECTED
+    etom: Fulfillment · Order Handling
+    channel_entry: true
+    role: CAPTURE
+    confidence: inferred
+    source: SDD v2.3 · §P4 Pending Order Validation · What EHS does with a rejection isn't stated.
+  - number: '50'
+    name: Check the source bundle's model
+    system: rtf
+    description: IS_MAIN_PO = true with action Delete.
+    output: Old model to new model?
+    etom: Fulfillment · Order Handling
+    role: VALIDATE
+    source: SDD v2.3 · §P4 ADO 420619
+    confidence: confirmed
+  - number: '55'
+    name: Copy the dynamic attributes to the target
+    track: BRANCH-MAP
+    system: rtf
+    description: 'For every target PO (BUNDLE_REFERENCE_ID of the target, action ADD): a same-named source
+      attribute fills an empty target one. Excluded: ccat_after_contract_action, ccat_product_flavour,
+      DOWNSTREAM, EVENT_CODE, IS_MAIN_PO, LINE_TYPE, PASSWORD, PREFIX_LICENSE_QUANTITY, PRODUCT_GROUP,
+      TRIAL_PERIOD_DAYS, UPSTREAM.'
+    etom: Fulfillment · Order Handling
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P4 ADO 420619
+    confidence: confirmed
+  - number: '60'
+    name: Hand the basket to CWOM
+    system: rtf
+    etom: Fulfillment · Order Handling
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P4 ADO 420619
+    confidence: confirmed
+  - number: '70'
+    name: Fulfil the change to the non-commitment package
+    system: cwom
+    description: CRMGW doesn't fail the request because of the copied values.
+    etom: Fulfillment · Service Configuration & Activation
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P4 ADO 420619
+    confidence: confirmed
+  - number: '80'
+    name: Set the CPE bandwidth (speed booster)
+    system: e2eso
+    description: 'Platform FORTINET: category RENEWAL, CFSS_INTERNET_CPE_HE, action Modify, UPSTREAM/DOWNSTREAM.'
+    etom: Fulfillment · Service Configuration & Activation
+    role: ACTIVATE
+    source: SDD v2.3 · §P4 ADO 198968
+    confidence: confirmed
+  - number: '90'
+    name: Bill the non-commitment package
+    system: bscs
+    etom: Billing · Billing & Revenue Management
+    role: BILL
+    confidence: inferred
+    source: SDD v2.3 · §P4 ADO 420619 · The billing step isn't detailed.
+  - number: '100'
+    name: Close the order and update the registry
+    system: cbcm
+    etom: Fulfillment · Order Handling
+    role: RECORD
+    confidence: inferred
+    source: SDD v2.3 · §P4 ADO 420619 · Closing is read from the other journeys.
+  flow_rules:
+  - kind: decision
+    from: '40'
+    to: '45'
+    condition: 'No'
+  - kind: decision
+    from: '40'
+    to: '50'
+    condition: 'Yes'
+  - kind: decision
+    from: '50'
+    to: '55'
+    condition: 'Yes'
+  - kind: decision
+    from: '50'
+    to: '60'
+    condition: No (old to old, new to new)
+  - kind: decision
+    from: '55'
+    to: '60'
+    branch: rejoin
+  integrations:
+  - from: '20'
+    to: '20'
+    interface: Product offering (ccat_after_contract_migrate_plan)
+    to_system: ecm
+    purpose: Fetch the new-model non-commitment bundle PO.
+    style: API
+    tmf_equivalent: TMF620 Product Catalog
+    confidence: inferred
+    source: SDD v2.3 · §P4 ADO 420619 · The caller isn't named; read as EHS.
+  - from: '30'
+    to: '30'
+    interface: RTF order request (UPDOWNGRD, renewal)
+    to_system: rtf
+    purpose: Submit the move to the non-commitment package.
+    style: XML request
+    tmf_equivalent: TMF622 Product Ordering
+    source: SDD v2.3 · §P4 ADO 420619
+    confidence: confirmed
+  - from: '40'
+    to: '40'
+    interface: evaluateOrder
+    timing: Sync
+    from_system: rtf
+    to_system: cbcm
+    purpose: 'Validate the order against the pending-order matrix (RENEWAL: every sub-order and the master
+      order).'
+    style: API
+    tmf_equivalent: TMF679 Product Offering Qualification
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - from: '60'
+    to: '60'
+    interface: Order (summary)
+    from_system: rtf
+    to_system: cwom
+    purpose: Submit the basket with the copied values.
+    style: API
+    tmf_equivalent: TMF622 Product Ordering
+    source: SDD v2.3 · §P4 ADO 420619
+    confidence: confirmed
+  - from: '80'
+    to: '80'
+    interface: Service order (RENEWAL)
+    payload: category RENEWAL, serviceSpecification CFSS_INTERNET_CPE_HE, action Modify
+    from_system: cwom
+    to_system: e2eso
+    purpose: Update UPSTREAM/DOWNSTREAM on the CPE.
+    tmf_equivalent: TMF641 Service Ordering
+    source: SDD v2.3 · §P4 ADO 198968
+    confidence: confirmed
+- id: bpp-adddelete
+  name: Add / delete add-on
+  product: business-pro-plus
+  order_type: ADDDELETE
+  description: 'Adding or removing an add-on: while the activation is in progress, accepted only when
+    the add-on''s service type''s sub-orders are closed; a speed booster also changes the CPE bandwidth
+    through E2ESO.'
+  confidence: confirmed
+  source: SDD v2.3 · §P4 Pending Order Validation; §P4 ADO 324570; §P4 ADO 198968
+  activities:
+  - number: '10'
+    name: Choose the add-on to add or delete
+    description: Static IP, speed booster (100/200/300 MB per the bundle's speed), SaaS, vSaaS, voice,
+      managed devices, discounts, OTT, accessories.
+    etom: Fulfillment · Selling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P4 Pending Order Validation; ADO 198968
+    confidence: confirmed
+  - number: '20'
+    name: Submit ADDDELETE
+    etom: Fulfillment · Order Handling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P4 ADO 324570
+    confidence: confirmed
+  - number: '30'
+    name: Check the pending activation for the add-on's service type
+    system: cbcm
+    description: 'Voice and others: the GSM sub-order closed. Internet (static IP, speed booster): GSM
+      and GPON. SaaS: GSM and asynchronous SaaS. vSaaS: GSM and vSaaS. The add-on must already be provisioned
+      in the activation.'
+    output: Accepted?
+    etom: Fulfillment · Order Handling
+    role: VALIDATE
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - number: '35'
+    name: 'Order rejected: the activation isn''t far enough'
+    track: REJECTED
+    description: The channel tells the customer the order can be placed once the named sub-orders are
+      closed.
+    channel_entry: true
+    role: CAPTURE
+    confidence: inferred
+    source: SDD v2.3 · §P4 Pending Order Validation · RTF rejects the request; how the channel shows it
+      isn't stated.
+  - number: '40'
+    name: Fulfil the add-on change, as today
+    system: cwom
+    description: Without the summary-order flags or a basket load.
+    output: Speed booster?
+    etom: Fulfillment · Service Configuration & Activation
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P4 ADO 324570
+    confidence: confirmed
+  - number: '50'
+    name: Set the CPE bandwidth
+    track: BRANCH-BOOSTER
+    system: e2eso
+    description: 'Platform FORTINET: category ADDDELETE, CFSS_INTERNET_CPE_HE, action Modify, UPSTREAM/DOWNSTREAM.'
+    etom: Fulfillment · Service Configuration & Activation
+    role: ACTIVATE
+    source: SDD v2.3 · §P4 ADO 198968
+    confidence: confirmed
+  - number: '55'
+    name: Apply the boosted GPON speed profile
+    track: BRANCH-BOOSTER
+    system: veda
+    description: New profiles 500/250, 700/350, 900/450 (900/450 not on the 90G until lab-tested).
+    etom: Fulfillment · Resource Provisioning
+    role: ACTIVATE
+    confidence: inferred
+    source: SDD v2.3 · §P4 ADO 198968 · vEDA holds the new profiles; provisioning follows the existing
+      booster solution (Epic 45678).
+  - number: '60'
+    name: Update billing for the add-on
+    system: bscs
+    etom: Billing · Billing & Revenue Management
+    role: BILL
+    confidence: inferred
+    source: SDD v2.3 · §P4 ADO 198968 · Add-ons are configured in BSCS; the billing step isn't detailed.
+  - number: '70'
+    name: Close the order
+    system: cwom
+    description: Even when the activation is still in progress.
+    etom: Fulfillment · Order Handling
+    role: RECORD
+    source: SDD v2.3 · §P4 ADO 324570
+    confidence: confirmed
+  flow_rules:
+  - kind: decision
+    from: '30'
+    to: '35'
+    condition: 'No'
+  - kind: decision
+    from: '30'
+    to: '40'
+    condition: 'Yes'
+  - kind: decision
+    from: '40'
+    to: '50'
+    condition: 'Yes'
+  - kind: decision
+    from: '40'
+    to: '60'
+    condition: 'No'
+  - kind: decision
+    from: '55'
+    to: '60'
+    branch: rejoin
+  integrations:
+  - from: '20'
+    to: '20'
+    interface: RTF order request (ADDDELETE)
+    to_system: rtf
+    purpose: Submit the add-on change in the existing structure.
+    style: XML request
+    tmf_equivalent: TMF622 Product Ordering
+    source: SDD v2.3 · §P4 ADO 324570
+    confidence: confirmed
+  - from: '30'
+    to: '30'
+    interface: evaluateOrder
+    timing: Sync
+    from_system: rtf
+    to_system: cbcm
+    purpose: Validate against the ADDDELETE matrix by add-on service type.
+    style: API
+    tmf_equivalent: TMF679 Product Offering Qualification
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - from: '40'
+    to: '40'
+    interface: Order
+    from_system: rtf
+    to_system: cwom
+    purpose: Submit as today (no summary-order flags).
+    style: API
+    source: SDD v2.3 · §P4 ADO 324570
+    confidence: confirmed
+  - from: '50'
+    to: '50'
+    interface: Service order (ADDDELETE)
+    payload: category ADDDELETE, serviceSpecification CFSS_INTERNET_CPE_HE, action Modify
+    from_system: cwom
+    to_system: e2eso
+    purpose: Update UPSTREAM/DOWNSTREAM after the speed booster.
+    tmf_equivalent: TMF641 Service Ordering
+    source: SDD v2.3 · §P4 ADO 198968
+    confidence: confirmed
+- id: bpp-chintusrn
+  name: Change internet username
+  product: business-pro-plus
+  order_type: CHINTUSRN
+  description: A change internet username request on a Business Pro Plus account. While the activation
+    is in progress it is accepted only when the GSM and GPON sub-orders are closed; otherwise it follows
+    the existing implementation.
+  confidence: confirmed
+  source: SDD v2.3 · §P4 ADO 288756; §P4 Pending Order Validation
+  activities:
+  - number: '10'
+    name: Capture the change internet username request
+    description: Channels place it as today; no impact on BCRM, B2B or the SMB App.
+    etom: Fulfillment · Selling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P4 ADO 288756
+    confidence: confirmed
+  - number: '20'
+    name: Submit it to RTF
+    description: Existing structure, without the summary-order flags.
+    etom: Fulfillment · Order Handling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P4 ADO 288756
+    confidence: confirmed
+  - number: '30'
+    name: Check the pending activation (pending order validation)
+    system: cbcm
+    description: While the new activation's master order is open, CRMGW accepts this order only when the
+      GSM and GPON sub-orders are closed; otherwise RTF rejects it.
+    output: Accepted?
+    etom: Fulfillment · Order Handling
+    role: VALIDATE
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - number: '35'
+    name: 'Order rejected: the activation isn''t far enough'
+    track: REJECTED
+    description: The channel tells the customer the order can be placed once the named sub-orders are
+      closed.
+    channel_entry: true
+    role: CAPTURE
+    confidence: inferred
+    source: SDD v2.3 · §P4 Pending Order Validation · RTF rejects the request; how the channel shows it
+      isn't stated.
+  - number: '40'
+    name: Hand it to CWOM
+    system: rtf
+    description: CWOM accepts it without the summary-order flags or a basket load from RTF/CRMGW.
+    etom: Fulfillment · Order Handling
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P4 ADO 288756
+    confidence: confirmed
+  - number: '50'
+    name: Carry out the network actions, as today
+    system: cwom
+    description: The SDD keeps the existing implementation and doesn't name the network systems.
+    etom: Fulfillment · Service Configuration & Activation
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P4 ADO 288756
+    confidence: confirmed
+  - number: '60'
+    name: Close the request
+    system: cbcm
+    description: CWOM and CRMGW close it even while the original activation is still in progress.
+    etom: Fulfillment · Order Handling
+    role: RECORD
+    source: SDD v2.3 · §P4 ADO 288756
+    confidence: confirmed
+  flow_rules:
+  - kind: decision
+    from: '30'
+    to: '35'
+    condition: 'No'
+  - kind: decision
+    from: '30'
+    to: '40'
+    condition: 'Yes'
+  integrations:
+  - from: '20'
+    to: '20'
+    interface: RTF order request (CHINTUSRN)
+    to_system: rtf
+    purpose: Submit in the existing structure.
+    style: XML request
+    tmf_equivalent: TMF622 Product Ordering
+    source: SDD v2.3 · §P4 ADO 288756
+    confidence: confirmed
+  - from: '30'
+    to: '30'
+    interface: evaluateOrder
+    timing: Sync
+    from_system: rtf
+    to_system: cbcm
+    purpose: 'Validate the order against the pending-order matrix (CHINTUSRN: the GSM and GPON sub-orders).'
+    style: API
+    tmf_equivalent: TMF679 Product Offering Qualification
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - from: '40'
+    to: '40'
+    interface: Order
+    from_system: rtf
+    to_system: cwom
+    purpose: Submit as today.
+    style: API
+    source: SDD v2.3 · §P4 ADO 288756
+    confidence: confirmed
+- id: bpp-chgpswd
+  name: Change password
+  product: business-pro-plus
+  order_type: CHGPSWD
+  description: A change password request on a Business Pro Plus account. While the activation is in progress
+    it is accepted only when the GSM and GPON sub-orders are closed; otherwise it follows the existing
+    implementation.
+  confidence: confirmed
+  source: SDD v2.3 · §P4 ADO 288754; §P4 Pending Order Validation
+  activities:
+  - number: '10'
+    name: Capture the change password request
+    description: Channels place it as today; no impact on BCRM, B2B or the SMB App.
+    etom: Fulfillment · Selling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P4 ADO 288754
+    confidence: confirmed
+  - number: '20'
+    name: Submit it to RTF
+    description: Existing structure, without the summary-order flags.
+    etom: Fulfillment · Order Handling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P4 ADO 288754
+    confidence: confirmed
+  - number: '30'
+    name: Check the pending activation (pending order validation)
+    system: cbcm
+    description: While the new activation's master order is open, CRMGW accepts this order only when the
+      GSM and GPON sub-orders are closed; otherwise RTF rejects it.
+    output: Accepted?
+    etom: Fulfillment · Order Handling
+    role: VALIDATE
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - number: '35'
+    name: 'Order rejected: the activation isn''t far enough'
+    track: REJECTED
+    description: The channel tells the customer the order can be placed once the named sub-orders are
+      closed.
+    channel_entry: true
+    role: CAPTURE
+    confidence: inferred
+    source: SDD v2.3 · §P4 Pending Order Validation · RTF rejects the request; how the channel shows it
+      isn't stated.
+  - number: '40'
+    name: Hand it to CWOM
+    system: rtf
+    description: CWOM accepts it without the summary-order flags or a basket load from RTF/CRMGW.
+    etom: Fulfillment · Order Handling
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P4 ADO 288754
+    confidence: confirmed
+  - number: '50'
+    name: Carry out the network actions, as today
+    system: cwom
+    description: The SDD keeps the existing implementation and doesn't name the network systems.
+    etom: Fulfillment · Service Configuration & Activation
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P4 ADO 288754
+    confidence: confirmed
+  - number: '60'
+    name: Close the request
+    system: cbcm
+    description: CWOM and CRMGW close it even while the original activation is still in progress.
+    etom: Fulfillment · Order Handling
+    role: RECORD
+    source: SDD v2.3 · §P4 ADO 288754
+    confidence: confirmed
+  flow_rules:
+  - kind: decision
+    from: '30'
+    to: '35'
+    condition: 'No'
+  - kind: decision
+    from: '30'
+    to: '40'
+    condition: 'Yes'
+  integrations:
+  - from: '20'
+    to: '20'
+    interface: RTF order request (CHGPSWD)
+    to_system: rtf
+    purpose: Submit in the existing structure.
+    style: XML request
+    tmf_equivalent: TMF622 Product Ordering
+    source: SDD v2.3 · §P4 ADO 288754
+    confidence: confirmed
+  - from: '30'
+    to: '30'
+    interface: evaluateOrder
+    timing: Sync
+    from_system: rtf
+    to_system: cbcm
+    purpose: 'Validate the order against the pending-order matrix (CHGPSWD: the GSM and GPON sub-orders).'
+    style: API
+    tmf_equivalent: TMF679 Product Offering Qualification
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - from: '40'
+    to: '40'
+    interface: Order
+    from_system: rtf
+    to_system: cwom
+    purpose: Submit as today.
+    style: API
+    source: SDD v2.3 · §P4 ADO 288754
+    confidence: confirmed
+- id: bpp-chgdomn
+  name: Change domain
+  product: business-pro-plus
+  order_type: CHGDOMN
+  description: A change domain request on a Business Pro Plus account. While the activation is in progress
+    it is accepted only when the GSM sub-order is closed; otherwise it follows the existing implementation.
+  confidence: confirmed
+  source: SDD v2.3 · §P4 ADO 288753; §P4 Pending Order Validation
+  activities:
+  - number: '10'
+    name: Capture the change domain request
+    description: Channels place it as today; no impact on BCRM, B2B or the SMB App.
+    etom: Fulfillment · Selling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P4 ADO 288753
+    confidence: confirmed
+  - number: '20'
+    name: Submit it to RTF
+    description: Existing structure, without the summary-order flags.
+    etom: Fulfillment · Order Handling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P4 ADO 288753
+    confidence: confirmed
+  - number: '30'
+    name: Check the pending activation (pending order validation)
+    system: cbcm
+    description: While the new activation's master order is open, CRMGW accepts this order only when the
+      GSM sub-order is closed; otherwise RTF rejects it.
+    output: Accepted?
+    etom: Fulfillment · Order Handling
+    role: VALIDATE
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - number: '35'
+    name: 'Order rejected: the activation isn''t far enough'
+    track: REJECTED
+    description: The channel tells the customer the order can be placed once the named sub-orders are
+      closed.
+    channel_entry: true
+    role: CAPTURE
+    confidence: inferred
+    source: SDD v2.3 · §P4 Pending Order Validation · RTF rejects the request; how the channel shows it
+      isn't stated.
+  - number: '40'
+    name: Hand it to CWOM
+    system: rtf
+    description: CWOM accepts it without the summary-order flags or a basket load from RTF/CRMGW.
+    etom: Fulfillment · Order Handling
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P4 ADO 288753
+    confidence: confirmed
+  - number: '50'
+    name: Carry out the network actions, as today
+    system: cwom
+    description: The SDD keeps the existing implementation and doesn't name the network systems.
+    etom: Fulfillment · Service Configuration & Activation
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P4 ADO 288753
+    confidence: confirmed
+  - number: '60'
+    name: Close the request
+    system: cbcm
+    description: CWOM and CRMGW close it even while the original activation is still in progress.
+    etom: Fulfillment · Order Handling
+    role: RECORD
+    source: SDD v2.3 · §P4 ADO 288753
+    confidence: confirmed
+  flow_rules:
+  - kind: decision
+    from: '30'
+    to: '35'
+    condition: 'No'
+  - kind: decision
+    from: '30'
+    to: '40'
+    condition: 'Yes'
+  integrations:
+  - from: '20'
+    to: '20'
+    interface: RTF order request (CHGDOMN)
+    to_system: rtf
+    purpose: Submit in the existing structure.
+    style: XML request
+    tmf_equivalent: TMF622 Product Ordering
+    source: SDD v2.3 · §P4 ADO 288753
+    confidence: confirmed
+  - from: '30'
+    to: '30'
+    interface: evaluateOrder
+    timing: Sync
+    from_system: rtf
+    to_system: cbcm
+    purpose: 'Validate the order against the pending-order matrix (CHGDOMN: the GSM sub-order).'
+    style: API
+    tmf_equivalent: TMF679 Product Offering Qualification
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - from: '40'
+    to: '40'
+    interface: Order
+    from_system: rtf
+    to_system: cwom
+    purpose: Submit as today.
+    style: API
+    source: SDD v2.3 · §P4 ADO 288753
+    confidence: confirmed
+- id: bpp-chgsubdomn
+  name: Change sub-domain
+  product: business-pro-plus
+  order_type: CHGSUBDOMN
+  description: A change sub-domain request on a Business Pro Plus account. While the activation is in
+    progress it is accepted only when the GSM sub-order is closed; otherwise it follows the existing implementation.
+  confidence: confirmed
+  source: SDD v2.3 · §P4 ADO 290747; §P4 Pending Order Validation
+  activities:
+  - number: '10'
+    name: Capture the change sub-domain request
+    description: Channels place it as today; no impact on BCRM, B2B or the SMB App.
+    etom: Fulfillment · Selling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P4 ADO 290747
+    confidence: confirmed
+  - number: '20'
+    name: Submit it to RTF
+    description: Existing structure, without the summary-order flags.
+    etom: Fulfillment · Order Handling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P4 ADO 290747
+    confidence: confirmed
+  - number: '30'
+    name: Check the pending activation (pending order validation)
+    system: cbcm
+    description: While the new activation's master order is open, CRMGW accepts this order only when the
+      GSM sub-order is closed; otherwise RTF rejects it.
+    output: Accepted?
+    etom: Fulfillment · Order Handling
+    role: VALIDATE
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - number: '35'
+    name: 'Order rejected: the activation isn''t far enough'
+    track: REJECTED
+    description: The channel tells the customer the order can be placed once the named sub-orders are
+      closed.
+    channel_entry: true
+    role: CAPTURE
+    confidence: inferred
+    source: SDD v2.3 · §P4 Pending Order Validation · RTF rejects the request; how the channel shows it
+      isn't stated.
+  - number: '40'
+    name: Hand it to CWOM
+    system: rtf
+    description: CWOM accepts it without the summary-order flags or a basket load from RTF/CRMGW.
+    etom: Fulfillment · Order Handling
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P4 ADO 290747
+    confidence: confirmed
+  - number: '50'
+    name: Carry out the network actions, as today
+    system: cwom
+    description: The SDD keeps the existing implementation and doesn't name the network systems.
+    etom: Fulfillment · Service Configuration & Activation
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P4 ADO 290747
+    confidence: confirmed
+  - number: '60'
+    name: Close the request
+    system: cbcm
+    description: CWOM and CRMGW close it even while the original activation is still in progress.
+    etom: Fulfillment · Order Handling
+    role: RECORD
+    source: SDD v2.3 · §P4 ADO 290747
+    confidence: confirmed
+  flow_rules:
+  - kind: decision
+    from: '30'
+    to: '35'
+    condition: 'No'
+  - kind: decision
+    from: '30'
+    to: '40'
+    condition: 'Yes'
+  integrations:
+  - from: '20'
+    to: '20'
+    interface: RTF order request (CHGSUBDOMN)
+    to_system: rtf
+    purpose: Submit in the existing structure.
+    style: XML request
+    tmf_equivalent: TMF622 Product Ordering
+    source: SDD v2.3 · §P4 ADO 290747
+    confidence: confirmed
+  - from: '30'
+    to: '30'
+    interface: evaluateOrder
+    timing: Sync
+    from_system: rtf
+    to_system: cbcm
+    purpose: 'Validate the order against the pending-order matrix (CHGSUBDOMN: the GSM sub-order).'
+    style: API
+    tmf_equivalent: TMF679 Product Offering Qualification
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - from: '40'
+    to: '40'
+    interface: Order
+    from_system: rtf
+    to_system: cwom
+    purpose: Submit as today.
+    style: API
+    source: SDD v2.3 · §P4 ADO 290747
+    confidence: confirmed
+- id: bpp-chnumber
+  name: Change number
+  product: business-pro-plus
+  order_type: CHNUMBER
+  description: A change number request on a Business Pro Plus account. While the activation is in progress
+    it is accepted only when the GSM and GPON sub-orders are closed; otherwise it follows the existing
+    implementation.
+  confidence: confirmed
+  source: SDD v2.3 · §P4 ADO 288755; §P4 Pending Order Validation
+  activities:
+  - number: '10'
+    name: Capture the change number request
+    description: Channels place it as today; no impact on BCRM, B2B or the SMB App.
+    etom: Fulfillment · Selling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P4 ADO 288755
+    confidence: confirmed
+  - number: '20'
+    name: Submit it to RTF
+    description: Existing structure, without the summary-order flags.
+    etom: Fulfillment · Order Handling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P4 ADO 288755
+    confidence: confirmed
+  - number: '30'
+    name: Check the pending activation (pending order validation)
+    system: cbcm
+    description: While the new activation's master order is open, CRMGW accepts this order only when the
+      GSM and GPON sub-orders are closed; otherwise RTF rejects it.
+    output: Accepted?
+    etom: Fulfillment · Order Handling
+    role: VALIDATE
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - number: '35'
+    name: 'Order rejected: the activation isn''t far enough'
+    track: REJECTED
+    description: The channel tells the customer the order can be placed once the named sub-orders are
+      closed.
+    channel_entry: true
+    role: CAPTURE
+    confidence: inferred
+    source: SDD v2.3 · §P4 Pending Order Validation · RTF rejects the request; how the channel shows it
+      isn't stated.
+  - number: '40'
+    name: Hand it to CWOM
+    system: rtf
+    description: CWOM accepts it without the summary-order flags or a basket load from RTF/CRMGW.
+    etom: Fulfillment · Order Handling
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P4 ADO 288755
+    confidence: confirmed
+  - number: '50'
+    name: Carry out the network actions, as today
+    system: cwom
+    description: The SDD keeps the existing implementation and doesn't name the network systems.
+    etom: Fulfillment · Service Configuration & Activation
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P4 ADO 288755
+    confidence: confirmed
+  - number: '60'
+    name: Close the request
+    system: cbcm
+    description: CWOM and CRMGW close it even while the original activation is still in progress.
+    etom: Fulfillment · Order Handling
+    role: RECORD
+    source: SDD v2.3 · §P4 ADO 288755
+    confidence: confirmed
+  flow_rules:
+  - kind: decision
+    from: '30'
+    to: '35'
+    condition: 'No'
+  - kind: decision
+    from: '30'
+    to: '40'
+    condition: 'Yes'
+  integrations:
+  - from: '20'
+    to: '20'
+    interface: RTF order request (CHNUMBER)
+    to_system: rtf
+    purpose: Submit in the existing structure.
+    style: XML request
+    tmf_equivalent: TMF622 Product Ordering
+    source: SDD v2.3 · §P4 ADO 288755
+    confidence: confirmed
+  - from: '30'
+    to: '30'
+    interface: evaluateOrder
+    timing: Sync
+    from_system: rtf
+    to_system: cbcm
+    purpose: 'Validate the order against the pending-order matrix (CHNUMBER: the GSM and GPON sub-orders).'
+    style: API
+    tmf_equivalent: TMF679 Product Offering Qualification
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - from: '40'
+    to: '40'
+    interface: Order
+    from_system: rtf
+    to_system: cwom
+    purpose: Submit as today.
+    style: API
+    source: SDD v2.3 · §P4 ADO 288755
+    confidence: confirmed
+- id: bpp-fleximinmov
+  name: Flexi minute movement
+  product: business-pro-plus
+  order_type: FLEXIMINMOV
+  description: A flexi minute movement request on a Business Pro Plus account. While the activation is
+    in progress it is accepted only when the GSM sub-order is closed; otherwise it follows the existing
+    implementation.
+  confidence: confirmed
+  source: SDD v2.3 · §P4 ADO 324564; §P4 Pending Order Validation
+  activities:
+  - number: '10'
+    name: Capture the flexi minute movement request
+    description: Channels place it as today; no impact on BCRM, B2B or the SMB App.
+    etom: Fulfillment · Selling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P4 ADO 324564
+    confidence: confirmed
+  - number: '20'
+    name: Submit it to RTF
+    description: Existing structure, without the summary-order flags.
+    etom: Fulfillment · Order Handling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P4 ADO 324564
+    confidence: confirmed
+  - number: '30'
+    name: Check the pending activation (pending order validation)
+    system: cbcm
+    description: While the new activation's master order is open, CRMGW accepts this order only when the
+      GSM sub-order is closed; otherwise RTF rejects it.
+    output: Accepted?
+    etom: Fulfillment · Order Handling
+    role: VALIDATE
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - number: '35'
+    name: 'Order rejected: the activation isn''t far enough'
+    track: REJECTED
+    description: The channel tells the customer the order can be placed once the named sub-orders are
+      closed.
+    channel_entry: true
+    role: CAPTURE
+    confidence: inferred
+    source: SDD v2.3 · §P4 Pending Order Validation · RTF rejects the request; how the channel shows it
+      isn't stated.
+  - number: '40'
+    name: Hand it to CWOM
+    system: rtf
+    description: CWOM accepts it without the summary-order flags or a basket load from RTF/CRMGW.
+    etom: Fulfillment · Order Handling
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P4 ADO 324564
+    confidence: confirmed
+  - number: '50'
+    name: Carry out the network actions, as today
+    system: cwom
+    description: The SDD keeps the existing implementation and doesn't name the network systems.
+    etom: Fulfillment · Service Configuration & Activation
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P4 ADO 324564
+    confidence: confirmed
+  - number: '60'
+    name: Close the request
+    system: cbcm
+    description: CWOM and CRMGW close it even while the original activation is still in progress.
+    etom: Fulfillment · Order Handling
+    role: RECORD
+    source: SDD v2.3 · §P4 ADO 324564
+    confidence: confirmed
+  flow_rules:
+  - kind: decision
+    from: '30'
+    to: '35'
+    condition: 'No'
+  - kind: decision
+    from: '30'
+    to: '40'
+    condition: 'Yes'
+  integrations:
+  - from: '20'
+    to: '20'
+    interface: RTF order request (FLEXIMINMOV)
+    to_system: rtf
+    purpose: Submit in the existing structure.
+    style: XML request
+    tmf_equivalent: TMF622 Product Ordering
+    source: SDD v2.3 · §P4 ADO 324564
+    confidence: confirmed
+  - from: '30'
+    to: '30'
+    interface: evaluateOrder
+    timing: Sync
+    from_system: rtf
+    to_system: cbcm
+    purpose: 'Validate the order against the pending-order matrix (FLEXIMINMOV: the GSM sub-order).'
+    style: API
+    tmf_equivalent: TMF679 Product Offering Qualification
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - from: '40'
+    to: '40'
+    interface: Order
+    from_system: rtf
+    to_system: cwom
+    purpose: Submit as today.
+    style: API
+    source: SDD v2.3 · §P4 ADO 324564
+    confidence: confirmed
+- id: bpp-techvisit
+  name: Technician visit
+  product: business-pro-plus
+  order_type: TECHVISIT
+  description: A technician visit request on a Business Pro Plus account. While the activation is in progress
+    it is accepted only when the GSM sub-order is closed; otherwise it follows the existing implementation.
+  confidence: confirmed
+  source: SDD v2.3 · §P4 ADO 290746; §P4 Pending Order Validation
+  activities:
+  - number: '10'
+    name: Capture the technician visit request
+    description: Channels place it as today; no impact on BCRM, B2B or the SMB App.
+    etom: Fulfillment · Selling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P4 ADO 290746
+    confidence: confirmed
+  - number: '20'
+    name: Submit it to RTF
+    description: Existing structure, without the summary-order flags.
+    etom: Fulfillment · Order Handling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P4 ADO 290746
+    confidence: confirmed
+  - number: '30'
+    name: Check the pending activation (pending order validation)
+    system: cbcm
+    description: While the new activation's master order is open, CRMGW accepts this order only when the
+      GSM sub-order is closed; otherwise RTF rejects it.
+    output: Accepted?
+    etom: Fulfillment · Order Handling
+    role: VALIDATE
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - number: '35'
+    name: 'Order rejected: the activation isn''t far enough'
+    track: REJECTED
+    description: The channel tells the customer the order can be placed once the named sub-orders are
+      closed.
+    channel_entry: true
+    role: CAPTURE
+    confidence: inferred
+    source: SDD v2.3 · §P4 Pending Order Validation · RTF rejects the request; how the channel shows it
+      isn't stated.
+  - number: '40'
+    name: Hand it to CWOM
+    system: rtf
+    description: CWOM accepts it without the summary-order flags or a basket load from RTF/CRMGW.
+    etom: Fulfillment · Order Handling
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P4 ADO 290746
+    confidence: confirmed
+  - number: '50'
+    name: Carry out the network actions, as today
+    system: cwom
+    description: The SDD keeps the existing implementation and doesn't name the network systems.
+    etom: Fulfillment · Service Configuration & Activation
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P4 ADO 290746
+    confidence: confirmed
+  - number: '60'
+    name: Close the request
+    system: cbcm
+    description: CWOM and CRMGW close it even while the original activation is still in progress.
+    etom: Fulfillment · Order Handling
+    role: RECORD
+    source: SDD v2.3 · §P4 ADO 290746
+    confidence: confirmed
+  flow_rules:
+  - kind: decision
+    from: '30'
+    to: '35'
+    condition: 'No'
+  - kind: decision
+    from: '30'
+    to: '40'
+    condition: 'Yes'
+  integrations:
+  - from: '20'
+    to: '20'
+    interface: RTF order request (TECHVISIT)
+    to_system: rtf
+    purpose: Submit in the existing structure.
+    style: XML request
+    tmf_equivalent: TMF622 Product Ordering
+    source: SDD v2.3 · §P4 ADO 290746
+    confidence: confirmed
+  - from: '30'
+    to: '30'
+    interface: evaluateOrder
+    timing: Sync
+    from_system: rtf
+    to_system: cbcm
+    purpose: 'Validate the order against the pending-order matrix (TECHVISIT: the GSM sub-order).'
+    style: API
+    tmf_equivalent: TMF679 Product Offering Qualification
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - from: '40'
+    to: '40'
+    interface: Order
+    from_system: rtf
+    to_system: cwom
+    purpose: Submit as today.
+    style: API
+    source: SDD v2.3 · §P4 ADO 290746
+    confidence: confirmed
+- id: bpp-modsubs
+  name: Modify subscription
+  product: business-pro-plus
+  order_type: MODSUBS
+  description: A modify subscription request on a Business Pro Plus account. While the activation is in
+    progress it is accepted only when the GSM sub-order is closed; otherwise it follows the existing implementation.
+  confidence: confirmed
+  source: SDD v2.3 · §P4 ADO 324568; §P4 Pending Order Validation
+  activities:
+  - number: '10'
+    name: Capture the modify subscription request
+    description: Channels place it as today; no impact on BCRM, B2B or the SMB App.
+    etom: Fulfillment · Selling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P4 ADO 324568
+    confidence: confirmed
+  - number: '20'
+    name: Submit it to RTF
+    description: Existing structure, without the summary-order flags.
+    etom: Fulfillment · Order Handling
+    channel_entry: true
+    role: CAPTURE
+    source: SDD v2.3 · §P4 ADO 324568
+    confidence: confirmed
+  - number: '30'
+    name: Check the pending activation (pending order validation)
+    system: cbcm
+    description: While the new activation's master order is open, CRMGW accepts this order only when the
+      GSM sub-order is closed; otherwise RTF rejects it.
+    output: Accepted?
+    etom: Fulfillment · Order Handling
+    role: VALIDATE
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - number: '35'
+    name: 'Order rejected: the activation isn''t far enough'
+    track: REJECTED
+    description: The channel tells the customer the order can be placed once the named sub-orders are
+      closed.
+    channel_entry: true
+    role: CAPTURE
+    confidence: inferred
+    source: SDD v2.3 · §P4 Pending Order Validation · RTF rejects the request; how the channel shows it
+      isn't stated.
+  - number: '40'
+    name: Hand it to CWOM
+    system: rtf
+    description: CWOM accepts it without the summary-order flags or a basket load from RTF/CRMGW.
+    etom: Fulfillment · Order Handling
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P4 ADO 324568
+    confidence: confirmed
+  - number: '50'
+    name: Carry out the network actions, as today
+    system: cwom
+    description: The SDD keeps the existing implementation and doesn't name the network systems.
+    etom: Fulfillment · Service Configuration & Activation
+    role: ORCHESTRATE
+    source: SDD v2.3 · §P4 ADO 324568
+    confidence: confirmed
+  - number: '55'
+    name: Activate the SaaS service
+    system: xaas
+    etom: Fulfillment · Service Configuration & Activation
+    point_of_no_return: The XaaS callback is the point of no return for the asynchronous SaaS order.
+    role: ACTIVATE
+    confidence: inferred
+    source: SDD v2.3 · §P4 ADO 324568 · The SR is titled “SaaS Service activation”; the XaaS call follows
+      the activation journey.
+  - number: '60'
+    name: Close the request
+    system: cbcm
+    description: CWOM and CRMGW close it even while the original activation is still in progress.
+    etom: Fulfillment · Order Handling
+    role: RECORD
+    source: SDD v2.3 · §P4 ADO 324568
+    confidence: confirmed
+  flow_rules:
+  - kind: decision
+    from: '30'
+    to: '35'
+    condition: 'No'
+  - kind: decision
+    from: '30'
+    to: '40'
+    condition: 'Yes'
+  integrations:
+  - from: '20'
+    to: '20'
+    interface: RTF order request (MODSUBS)
+    to_system: rtf
+    purpose: Submit in the existing structure.
+    style: XML request
+    tmf_equivalent: TMF622 Product Ordering
+    source: SDD v2.3 · §P4 ADO 324568
+    confidence: confirmed
+  - from: '30'
+    to: '30'
+    interface: evaluateOrder
+    timing: Sync
+    from_system: rtf
+    to_system: cbcm
+    purpose: 'Validate the order against the pending-order matrix (MODSUBS: the GSM sub-order).'
+    style: API
+    tmf_equivalent: TMF679 Product Offering Qualification
+    source: SDD v2.3 · §P4 Pending Order Validation
+    confidence: confirmed
+  - from: '40'
+    to: '40'
+    interface: Order
+    from_system: rtf
+    to_system: cwom
+    purpose: Submit as today.
+    style: API
+    source: SDD v2.3 · §P4 ADO 324568
+    confidence: confirmed
+  - from: '55'
+    to: '55'
+    interface: Activate SaaS
+    timing: Async
+    from_system: cwom
+    to_system: xaas
+    purpose: Activate the subscribed SaaS service.
+    confidence: inferred
+    source: SDD v2.3 · §P4 ADO 324568 · Read from the activation journey.
+channels:
+- id: bcrm
+  name: BCRM
+  kind: assisted
+  entry_system: bcrm
+- id: b2b-web
+  name: B2B Web
+  kind: self-service
+  entry_system: b2b-web
+- id: smb-app
+  name: SMB App
+  kind: self-service
+  entry_system: smb-app
+- id: cim
+  name: CIM / UCMS
+  kind: assisted
+  entry_system: cim
+- id: nps
+  name: NPS (portability)
+  kind: system
+  entry_system: nps
+- id: ehs
+  name: EHS (contract events)
+  kind: system
+  entry_system: ehs
+sources:
+- id: sdd
+  title: Business Pro Plus - Non-MVP, Solution Design Document (ADO 109131)
+  level: L2
+  short: SDD v2.3
+  version: '2.3'
+  file: SDD_Epic109131_Business Pro Plus - Non-MVP_V2.3.docx
+  authority: CIT/E2E Solution Architecture
+  scope: 'Business Pro Plus: catalogue modelling, order types, fulfilment and tracking by drop (P1 to
+    P4).'
+- id: ref
+  title: SMB Value Stream — Architecture Reference (AI Context Document)
+  level: L1
+  short: SMB reference v1.0
+  version: '1.0'
+  file: SMB_Architecture_AI_Reference2.md
+  authority: Technical Value Stream Lead, SMB
+  scope: The SMB system landscape, its TAM domains and the default order flow.
+conflicts:
+- id: F1
+  title: How milestones reach tracking
+  a:
+    source: ref
+    reference: §3.1 step 9
+    statement: The reference says CWOM writes a milestone table and a database trigger feeds Felix. The
+      SDD says CWOM publishes milestones per sub-order through TIBCO to BPM, after RTF's NotifyOrderCreationRequest.
+      This catalogue follows the SDD.
+  b:
+    source: sdd
+    reference: §BPM; §TIBCO
+    statement: The reference says CWOM writes a milestone table and a database trigger feeds Felix. The
+      SDD says CWOM publishes milestones per sub-order through TIBCO to BPM, after RTF's NotifyOrderCreationRequest.
+      This catalogue follows the SDD.
+  scope:
+  - product: business-pro-plus
+  difference: The reference says CWOM writes a milestone table and a database trigger feeds Felix. The
+    SDD says CWOM publishes milestones per sub-order through TIBCO to BPM, after RTF's NotifyOrderCreationRequest.
+    This catalogue follows the SDD.
+- id: F2
+  title: IBM BPM and Felix overlap
+  a:
+    source: ref
+    reference: §1 IBM BPM, Felix
+    statement: Both are described as holding order milestones for tracking. The SDD reads them as BPM
+      using a Felix stored procedure.
+  b:
+    source: sdd
+    reference: §BPM General Note
+    statement: Both are described as holding order milestones for tracking. The SDD reads them as BPM
+      using a Felix stored procedure.
+  scope:
+  - product: business-pro-plus
+  difference: Both are described as holding order milestones for tracking. The SDD reads them as BPM using
+    a Felix stored procedure.
+- id: F13
+  title: Names that differ between sources
+  a:
+    source: ref
+    reference: §1; §6
+    statement: eVEDA / vEDA, WFM / WFMS, B2B Web / B2B, CBCM / CRMGW. Treated as aliases of one system.
+  b:
+    source: sdd
+    reference: Stakeholders
+    statement: eVEDA / vEDA, WFM / WFMS, B2B Web / B2B, CBCM / CRMGW. Treated as aliases of one system.
+  scope:
+  - product: business-pro-plus
+  difference: eVEDA / vEDA, WFM / WFMS, B2B Web / B2B, CBCM / CRMGW. Treated as aliases of one system.
+- id: F16
+  title: Who loads the basket for dunning
+  a:
+    source: sdd
+    reference: §P3 ADO 259162, solution overview and CWOM section
+    statement: For BAR_OG, NPTOSS, RECONNP and CESSNP, NPS (overview) or RTF (CWOM section) checks NEW_BUNDLE_MODEL,
+      loads the basket from the CRMGW registry and adds the summary-order flags before CWOM.
+  b:
+    source: sdd
+    reference: General Highlights; §P3 ADO 259162 note
+    statement: 'RTF won''t load the basket for dunning: CWOM uses its existing registry until it is retired.'
+  scope:
+  - product: business-pro-plus
+    order_types:
+    - DUNNING
+  difference: Whether dunning orders reach CWOM with a basket loaded from CRMGW, and by NPS or RTF. The
+    journey follows the General Highlights and marks those steps inferred.
+- id: F17
+  title: What CRMGW returns as FPC_SITE for FortiPortal SSO
+  a:
+    source: sdd
+    reference: Solution overview; General Highlights (ADO 194831)
+    statement: FPC_SITE is sent empty in the SSO assertion.
+  b:
+    source: sdd
+    reference: §CRMGW ADO 194831
+    statement: FPC_SITE carries every site name with an active Self Service Portal subscription, comma-separated,
+      for the organisation's party IDs.
+  scope:
+  - product: business-pro-plus
+  difference: Whether the B2B portal's SSO to FortiPortal scopes the user to sites. CRMGW and B2B are
+    to agree the attributes.
+portfolio:
+- id: enterprise
+  name: Enterprise
+  level: Business unit
+  description: The business unit that owns the business portfolios.
+  confidence: inferred
+  source: SMB reference v1.0 · title and scope; user, 2026-10-06
+- id: fixed
+  name: Fixed
+  level: Line of business
+  parent: enterprise
+  description: 'Fixed-line products: fibre broadband, voice and the services bundled with them.'
+  confidence: inferred
+  source: SMB reference v1.0 · title and scope; user, 2026-10-06
+- id: smb
+  name: SMB
+  level: Segment
+  parent: fixed
+  description: Small and medium businesses.
+  confidence: inferred
+  source: SMB reference v1.0 · title and scope; user, 2026-10-06
+- id: business-internet
+  name: Business internet bundles
+  level: Product family
+  parent: smb
+  description: 'Bundles built on the Bundle Framework (BFM): broadband with business services.'
+  confidence: inferred
+  source: SMB reference v1.0 · title and scope; user, 2026-10-06

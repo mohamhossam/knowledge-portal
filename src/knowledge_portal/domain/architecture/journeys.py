@@ -25,6 +25,7 @@ from knowledge_portal.domain.architecture.products import (
     SourceConfidence,
     check_source,
     first_known,
+    role_code,
 )
 
 MAIN_TRACK = "MAIN"
@@ -65,6 +66,15 @@ class Activity:
     channels: tuple[str, ...] = ()
     # Performed by the entry system of whichever channel the order came through.
     channel_entry: bool = False
+    # Who performs it when that is not a catalogued system: a team ("MSS team") or the
+    # customer.
+    performer: str | None = None
+    # When it is the point of no return, what makes it so: past it, the order can no
+    # longer be cancelled.
+    point_of_no_return: str | None = None
+    # What it does for the order, as one code ("ORCHESTRATE", "ACTIVATE", "BILL"), so the
+    # systems a journey touches can be named by their role.
+    role: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "number", required(self.number, "Activity number"))
@@ -79,8 +89,12 @@ class Activity:
             ("input", "Input"),
             ("output", "Output"),
             ("etom", "eTOM"),
+            ("performer", "Performer"),
+            ("point_of_no_return", "Point of no return"),
         ):
             object.__setattr__(self, field, optional(getattr(self, field), label))
+        if self.role is not None:
+            object.__setattr__(self, "role", role_code(self.role))
         object.__setattr__(
             self, "supporting_system_ids", _codes(self.supporting_system_ids, "Supporting system")
         )
@@ -90,6 +104,13 @@ class Activity:
             raise InvalidKnowledgeError(
                 f"{self.number}. {self.name} is performed either by a named system or by the "
                 "channel's entry system, not both."
+            )
+        if self.performer is not None and (
+            self.performing_system_id is not None or self.channel_entry
+        ):
+            raise InvalidKnowledgeError(
+                f"{self.number}. {self.name} is performed either by a team or party "
+                f"({self.performer}) or by a system, not both."
             )
         check_source(self)
 
@@ -151,7 +172,13 @@ class FlowRule:
 
 @dataclass(frozen=True)
 class ActivityIntegration:
-    """How one activity hands over to another: the interaction, interface and payload."""
+    """How one activity hands over to another, or calls a system: the interaction,
+    interface and payload.
+
+    The calling and called systems are named when the source names them. A call to a
+    system that has no step of its own in the journey happens within the activity:
+    ``to_activity`` is the activity itself and ``to_system_id`` names the system.
+    """
 
     from_activity: str
     to_activity: str
@@ -163,6 +190,16 @@ class ActivityIntegration:
     correlation_key: str | None = None
     confidence: SourceConfidence | None = None
     source: str | None = None
+    from_system_id: str | None = None
+    to_system_id: str | None = None
+    # The integration layer the call goes through, such as TIBCO.
+    via_system_id: str | None = None
+    # What the call is for, in a sentence.
+    purpose: str | None = None
+    # How it is made, as the source says: "API", "XML request", "Event", "Callback".
+    style: str | None = None
+    # The TM Forum Open API that does the same job, such as "TMF622 Product Ordering".
+    tmf_equivalent: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "from_activity", required(self.from_activity, "From activity"))
@@ -173,9 +210,23 @@ class ActivityIntegration:
             ("payload", "Payload"),
             ("timing", "Timing"),
             ("correlation_key", "Correlation key"),
+            ("from_system_id", "Calling system"),
+            ("to_system_id", "Called system"),
+            ("via_system_id", "Integration layer"),
+            ("purpose", "Purpose"),
+            ("style", "Style"),
+            ("tmf_equivalent", "TMF equivalent"),
         ):
             object.__setattr__(self, field, optional(getattr(self, field), label))
         check_source(self)
+
+    @property
+    def systems(self) -> tuple[str, ...]:
+        return tuple(
+            item
+            for item in (self.from_system_id, self.to_system_id, self.via_system_id)
+            if item is not None
+        )
 
 
 @dataclass(frozen=True)
@@ -244,8 +295,13 @@ class Journey:
 
 
 def journey_edges(journey: Journey) -> tuple[JourneyEdge, ...]:
-    """The flow: each main-track activity to the next, unless a rule leaves it, plus every
-    rule, and each parallel track back to where it rejoins. Each arrow once."""
+    """The flow: each activity to the next on its own track, unless a rule leaves it, plus
+    every rule, and each parallel track back to where it rejoins, from its last activity.
+    Each arrow once.
+
+    A side track with several activities (a parallel track such as "E2ESO provisions the
+    CPE, then Fortinet registers it") runs in number order like the main track.
+    """
     edges: list[JourneyEdge] = []
     seen: set[tuple[str, str]] = set()
 
@@ -255,10 +311,14 @@ def journey_edges(journey: Journey) -> tuple[JourneyEdge, ...]:
             edges.append(edge)
 
     leaving = {rule.from_activity for rule in journey.flow_rules}
-    main = [item for item in journey.ordered if item.main]
-    for current, following in zip(main, main[1:], strict=False):
-        if current.number not in leaving:
-            add(JourneyEdge(current.number, following.number, "sequence"))
+    tracks: dict[str, list[Activity]] = {}
+    for item in journey.ordered:
+        tracks.setdefault((item.track or MAIN_TRACK).casefold(), []).append(item)
+    last_on_track = {item.number: steps[-1].number for steps in tracks.values() for item in steps}
+    for steps in tracks.values():
+        for current, following in zip(steps, steps[1:], strict=False):
+            if current.number not in leaving:
+                add(JourneyEdge(current.number, following.number, "sequence"))
     for rule in journey.flow_rules:
         add(
             JourneyEdge(
@@ -266,8 +326,18 @@ def journey_edges(journey: Journey) -> tuple[JourneyEdge, ...]:
             )
         )
         if rule.kind is FlowRuleKind.PARALLEL and rule.rejoin_at:
-            add(JourneyEdge(rule.to_activity, rule.rejoin_at, "rejoin", "rejoin"))
+            target = by_number(journey, rule.to_activity)
+            last = (
+                last_on_track.get(rule.to_activity, rule.to_activity)
+                if target is not None and not target.main
+                else rule.to_activity
+            )
+            add(JourneyEdge(last, rule.rejoin_at, "rejoin", "rejoin"))
     return tuple(edges)
+
+
+def by_number(journey: Journey, number: str) -> Activity | None:
+    return next((item for item in journey.activities if item.number == number), None)
 
 
 def check_journeys(
@@ -320,15 +390,34 @@ def check_journeys(
                     f"{journey.name} › {activity.number}. {activity.name} names channel "
                     f"{unknown[0]!r}, which is not in the catalogue."
                 )
+        for link in journey.integrations:
+            for system in link.systems:
+                if system not in system_ids:
+                    raise InvalidKnowledgeError(
+                        f"{journey.name}: the call {link.interface or link.interaction or ''} "
+                        f"from activity {link.from_activity} names system {system!r}, which is "
+                        "not in the catalogue."
+                    )
+
+
+def _performs(activity: Activity) -> bool:
+    return (
+        activity.performing_system_id is not None
+        or activity.channel_entry
+        or activity.performer is not None
+    )
 
 
 def _merged_activity(first: Activity, second: Activity) -> Activity:
+    # Who performs it comes whole from the first reading that says, so one step never
+    # ends up with two performers.
+    performs = first if _performs(first) else second
     return Activity(
         number=first.number,
         name=first.name,
         phase=first_known(first.phase, second.phase),
         track=first_known(first.track, second.track),
-        performing_system_id=first_known(first.performing_system_id, second.performing_system_id),
+        performing_system_id=performs.performing_system_id,
         supporting_system_ids=tuple(
             dict.fromkeys((*first.supporting_system_ids, *second.supporting_system_ids))
         ),
@@ -343,9 +432,19 @@ def _merged_activity(first: Activity, second: Activity) -> Activity:
         confidence=first_known(first.confidence, second.confidence),
         source=first_known(first.source, second.source),
         channels=first.channels or second.channels,
-        channel_entry=first.channel_entry
-        or (second.channel_entry and first.performing_system_id is None),
+        channel_entry=performs.channel_entry,
+        performer=performs.performer,
+        point_of_no_return=first_known(first.point_of_no_return, second.point_of_no_return),
+        role=first_known(first.role, second.role),
     )
+
+
+def _link_key(link: ActivityIntegration) -> tuple[str, str, str | None, str | None]:
+    """An integration is one hand-over between two activities, or one call to a system
+    within an activity, by its interface."""
+    if link.to_system_id is None:
+        return (link.from_activity, link.to_activity, None, None)
+    return (link.from_activity, link.to_activity, link.to_system_id, link.interface)
 
 
 def merge_journeys(first: Journey, second: Journey) -> Journey:
@@ -354,7 +453,8 @@ def merge_journeys(first: Journey, second: Journey) -> Journey:
     A journey section is read in parts: its activities table, the details under
     each activity, its rules and its integrations, by the table reader or a
     model. Activities merge by number, rules by kind and activities,
-    integrations by their two activities.
+    integrations by their two activities (and, for a call to a system, by that
+    system and interface).
     """
     steps = {item.number: item for item in first.activities}
     for item in second.activities:
@@ -364,9 +464,9 @@ def merge_journeys(first: Journey, second: Journey) -> Journey:
     rules = {(item.kind, item.from_activity, item.to_activity): item for item in first.flow_rules}
     for rule in second.flow_rules:
         rules.setdefault((rule.kind, rule.from_activity, rule.to_activity), rule)
-    links = {(item.from_activity, item.to_activity): item for item in first.integrations}
+    links = {_link_key(item): item for item in first.integrations}
     for link in second.integrations:
-        links.setdefault((link.from_activity, link.to_activity), link)
+        links.setdefault(_link_key(link), link)
     # The offering and its order type travel together: one reading's pair, gaps filled
     # only from a reading of the same offering.
     product = first.product_id or second.product_id

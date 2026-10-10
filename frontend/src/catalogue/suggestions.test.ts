@@ -139,7 +139,7 @@ describe("channel suggestions", () => {
       kind: "product", system_id: "office", name: "Office Connect",
       product: {
         id: "office", name: "Office Connect", rules: [], components: [], values: [], audiences: [], nfrs: [], lifecycle_notes: [],
-        sources: [], questions: [], decisions: [], boundaries: [], not_used: [],
+        sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [],
         order_types: [{ code: "NEW", name: "New", enabled: true, channels: ["business-web", "Partner Feed"] }],
       },
     },
@@ -186,7 +186,7 @@ describe("offering detail suggestions", () => {
         kind: "product", system_id: "office", name: "Office Connect",
         product: {
           id: "office", name: "Office Connect", rules: [], values: [], audiences: [],
-          sources: [], questions: [], decisions: [], boundaries: [], not_used: [],
+          sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [],
           order_types: [{ code: "NEW", name: "New", enabled: true, channels: [] }],
           components: [{ id: "fibre", name: "Fibre", responsibilities: [], realisation: [{ layer: "cfs", name: "Fibre CFS" }] }],
           nfrs: [{ quality: "Availability", coverage: "defined" }, { quality: "Security", coverage: "missing" }],

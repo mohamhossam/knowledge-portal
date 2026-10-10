@@ -95,7 +95,10 @@ class RequirementTrace:
             f"Requirement AI requirement {self.requirement_id}, revision {self.breakdown_revision}"
         ]
         if self.approved_by or self.approved_at:
-            when = f" on {self.approved_at:%-d %B %Y}" if self.approved_at else ""
+            when = ""
+            if self.approved_at:
+                # The day goes in by hand: "%-d" is glibc-only and fails on Windows.
+                when = f" on {self.approved_at.day} {self.approved_at:%B %Y}"
             who = f" by {self.approved_by}" if self.approved_by else ""
             parts.append(f"approved{who}{when}")
         return ", ".join(parts)

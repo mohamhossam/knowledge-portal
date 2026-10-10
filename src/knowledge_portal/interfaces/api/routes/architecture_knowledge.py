@@ -236,6 +236,11 @@ def update_draft(
                 if body.conflicts is None
                 else tuple(item.to_domain() for item in body.conflicts)
             ),
+            portfolio=(
+                None
+                if body.portfolio is None
+                else tuple(item.to_domain() for item in body.portfolio)
+            ),
         )
     )
 
