@@ -1515,7 +1515,6 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 .cp-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0; padding: 0; list-style: none; }
 .cp-card { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 16px; border: 1px solid var(--cl-hairline); border-radius: 12px; background: var(--cl-paper); }
 .cp-card.is-optional { border-style: dashed; border-color: var(--cl-rule-strong); }
-.cp-card header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
 .cp-card h3 { font-size: 1.0625rem; line-height: 1.3; font-weight: 700; font-stretch: 87.5%; }
 .cp-always { flex: none; padding: 1px 8px; border-radius: 999px; background: var(--cl-sand); font-size: 0.6875rem; font-weight: 600; color: var(--cl-ink-2); white-space: nowrap; }
 .cp-desc { font-size: 0.875rem; line-height: 1.5; color: var(--cl-ink-2); }
@@ -1523,11 +1522,6 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 .cp-codes div { display: grid; grid-template-columns: 88px minmax(0, 1fr); align-items: center; gap: 8px; }
 .cp-codes dt { font-size: 0.75rem; color: var(--cl-ink-3); }
 .cp-codes dd { margin: 0; padding: 3px 8px; border-radius: 6px; background: var(--cl-page); box-shadow: inset 0 0 0 1px var(--cl-hairline); font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 0.75rem; overflow-wrap: anywhere; }
-.cp-card h4 { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cl-ink-3); }
-.cp-delivers { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
-.cp-delivers li { display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 8px; font-size: 0.8125rem; }
-.cp-delivers b { font-weight: 700; }
-.cp-delivers li > span:last-child:not(.am-mono) { color: var(--cl-ink-2); }
 .cp-card footer { margin-top: auto; padding-top: 4px; font-size: 0.75rem; }
 .cp-kind { display: flex; align-items: center; gap: 8px; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cl-ink-3); }
 .cp-kind .cl-cap-icon { width: 24px; height: 24px; }
@@ -1633,3 +1627,33 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 .cl-matrix tbody th button[aria-pressed="true"] .ix-deg > i { background: color-mix(in srgb, var(--cl-page) 25%, transparent); }
 .cl-matrix tbody th button[aria-pressed="true"] .ix-deg > i > i { background: var(--cl-page); }
 .cl-matrix tbody th button[aria-pressed="true"] .ix-deg b { color: var(--cl-page); }
+/* Components first: a toolbar to narrow them by group or by the system that delivers them, then tidy cards that end level. */
+.cp-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; }
+.cp-chip { display: inline-flex; align-items: center; gap: 6px; }
+.cp-filter { display: inline-flex; align-items: center; gap: 8px; font-size: 0.8125rem; color: var(--cl-ink-2); }
+.cp-filter .cl-field { width: auto; height: 34px; }
+.cp-card { gap: 8px; }
+.cp-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cp-desc { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.cp-codes div { grid-template-columns: 56px minmax(0, 1fr); }
+.cp-by { display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid var(--cl-hairline); }
+.cp-by h4 { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cl-ink-3); }
+.cp-by ul { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.cp-by li { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; padding: 4px 6px; border-radius: 8px; }
+.cp-by li > span:last-child { display: flex; flex-direction: column; min-width: 0; }
+.cp-by b { font-size: 0.8125rem; font-weight: 700; }
+.cp-by small { font-size: 0.75rem; line-height: 1.35; color: var(--cl-ink-2); }
+.cp-by li.is-on { background: var(--cl-teal-soft); }
+.cp-card footer { padding-top: 8px; border-top: 1px solid var(--cl-hairline); }
+.cl-empty-line { padding: 16px; border: 1px dashed var(--cl-rule); border-radius: 12px; color: var(--cl-ink-2); }
+.cl-linkbtn { padding: 0; border: 0; background: none; color: var(--cl-maroon); font: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+
+/* Who delivers what, below the cards: a system's column lights up under the pointer; its heading is a button that narrows the cards. */
+.cp-colbtn { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; padding: 4px 2px 6px; border: 0; border-radius: 8px; background: none; color: inherit; font: inherit; cursor: pointer; }
+.cp-colbtn:hover { background: var(--cl-sand); }
+.cp-colbtn[aria-pressed="true"] { background: var(--cl-maroon-mist); color: var(--cl-maroon); }
+.cp-colbtn .cl-systile { margin: 0; }
+.cp-matrix .is-col { background: var(--cl-paper); }
+.cp-matrix tr.is-quiet th[scope="row"] { color: var(--cl-ink-3); font-weight: 500; }
+.cp-matrix tr.is-quiet .cp-mark { background: var(--cl-teal-mid); }
+.cp-matrix tr.is-quiet.is-optional .cp-mark { background: var(--cl-page); box-shadow: inset 0 0 0 2px var(--cl-teal-mid); }
