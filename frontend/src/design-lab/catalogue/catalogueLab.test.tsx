@@ -67,12 +67,23 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
     expect(await axe(container)).toHaveNoViolations();
   });
 
-  it("shows journey coverage by order type and product", async () => {
+  it("lays journeys out by the customer's stage, scoped by the portfolio hierarchy, with a preview", async () => {
     const { container } = open("/journeys");
     expect(screen.getByRole("heading", { level: 1, name: "Journeys" })).toBeInTheDocument();
-    const matrix = screen.getByRole("table");
-    expect(within(matrix).getByRole("columnheader", { name: "Business Pro Plus" })).toBeInTheDocument();
-    expect(within(matrix).getByRole("link", { name: /New activation for Business Pro Plus/ })).toBeInTheDocument();
+    // Every order type sits under its stage; the first is picked and previewed.
+    const board = screen.getByRole("region", { name: "Order types by the customer's stage" });
+    expect(within(board).getByRole("list", { name: "Leave" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "New activation" })).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: /^Route: / })).toBeInTheDocument();
+    // Picking another order type previews its journey.
+    await userEvent.click(within(board).getByRole("button", { name: /^Cessation:/ }));
+    expect(screen.getByRole("heading", { level: 2, name: "Cessation" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open the journey flow" })).toHaveAttribute("href", expect.stringContaining("/journeys/bpp-cessation"));
+    // The scope narrows level by level through the hierarchy.
+    const scope = screen.getByRole("navigation", { name: "Scope" });
+    await userEvent.click(within(scope).getByLabelText(/^Business unit: Any business unit/));
+    await userEvent.click(within(scope).getByRole("button", { name: "Enterprise" }));
+    expect(within(scope).getByLabelText(/^Line of business: Any line of business/)).toBeInTheDocument();
     expect(await axe(container)).toHaveNoViolations();
   });
 

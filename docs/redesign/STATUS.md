@@ -447,4 +447,17 @@ Evidence and per-product figures stay on each product's own pages. Checks: tests
 
 **No counts on tabs (2026-10-10, user).** Counts are removed from every tab: the catalogue bar (Products, Journeys, Systems, Governance), the product's tabs (Plans, Business rules, Components, Journeys) and the journey's Integrations tab. Counts belong to the pages, not the navigation.
 
+**Journey catalogue, revamped (2026-10-10, user: complete revamp for many products and families).** The coverage-matrix page is replaced by `JourneysIndex.tsx`, designed around four questions: which journeys exist in my part of the portfolio, where each sits in the customer lifecycle, what a journey involves before I open it, and how products compare on the same order type.
+- **Scope bar:** follows the portfolio hierarchy. Each level (business unit, line of business, segment, product family), then the product, is a small menu with "Any …", so the page narrows from the whole catalogue to one product. It scales to any number of families and products. A coverage summary sits beside it.
+- **Lifecycle board:** Join → Change → Support → Leave as a chevron ribbon, and every order type in scope as a tile in its stage (Change takes two inner columns).
+  - **Markers:** a tile carries one marker per product in scope: filled for a modelled journey, dashed ochre for offered with no journey yet, hairline for not offered. With a single product it shows the step count instead. Many products become a row of markers, not more columns.
+  - **Shared journeys:** journeys that follow any order (order tracking) sit in an "Across the lifecycle" strip.
+- **Preview panel:** for the picked order type, product variants appear as tabs when several products offer it.
+  - **Journey details:** the journey's summary; steps, decisions, systems and calls; the **route through the systems** (monogram tiles in the order the order reaches them); the channels it arrives through (assisted or self-service); and the **decisions on the way** (gateway diamonds, such as "Backup 5G in the bundle?").
+  - **Comparison and actions:** a comparison table when several products have the journey, then "Open the journey flow" and "Integrations". If there's no journey, it says so.
+- **Fit:** the page fits 1440 × 900 without scrolling for every journey checked. On a phone each stage heads its own tiles, and there's no sideways scroll.
+- **Code changes:** stage definitions come from `stages.ts`. The old journeys matrix and its styles were removed. The page's bottom padding went from 48 to 24px.
+
+Checks: tests 28/28 with axe (new: stages, preview, picking, scope narrowing); lint, typecheck and build green.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.

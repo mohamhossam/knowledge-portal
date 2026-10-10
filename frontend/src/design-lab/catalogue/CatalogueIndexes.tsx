@@ -1,24 +1,19 @@
 /**
- * The catalogue's two indexes, built for any number of products.
- *
- * Products: every offering grouped under its place in the portfolio (business
- * unit › line of business › segment › family), each a card answering how it
- * is sold, who can buy it and what is in it, with its size and its pages.
- *
- * Journeys: a coverage matrix, order types down (grouped by the customer's
- * stage) and products across; a cell is a modelled journey, an order type the
- * product offers but nobody has modelled yet, or one it doesn't offer.
+ * The product catalogue, built for any number of products: every offering
+ * grouped under its place in the portfolio (business unit › line of business
+ * › segment › family), each a card answering how it is sold, who can buy it,
+ * its commercial terms and what is in it. The journey catalogue is
+ * JourneysIndex.tsx.
  */
-import { type ReactNode, useMemo, useState } from "react";
+import { type ReactNode, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { journeyView } from "../../architecture/adapter";
 import type { Offering, PortfolioNode } from "../../architecture/model";
 import { AreaTabs } from "./CatalogueLab";
 import { journeyHref, LAB, useLabData } from "./labData";
 import { firstSentence, monogram, plural, useTitle } from "./labUtil";
 import { capabilityOf, DEVICE_ICON, shortComponentName } from "./capabilities";
-import { STAGES, stageOfCode } from "./stages";
+import { stageOfCode } from "./stages";
 
 function Icon({ children }: { children: ReactNode }) {
   return (
@@ -326,163 +321,6 @@ export function ProductsIndex() {
           </ul>
         </section>
       ))}
-    </>
-  );
-}
-
-export function JourneysIndex() {
-  const data = useLabData();
-  useTitle("Journeys");
-  const offerings = data.offerings;
-  const names = new Map<string, string>();
-  for (const offering of offerings) for (const type of offering.orderTypes) if (!names.has(type.code)) names.set(type.code, type.name);
-  const stages = STAGES.map((stage) => ({ ...stage, codes: [...names.keys()].filter((code) => stageOfCode(code) === stage.id) })).filter((stage) => stage.codes.length);
-  const shared = data.journeys.filter((journey) => journey.offeringId && !journey.orderType);
-  const steps = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const journey of data.journeys) counts.set(journey.id, journeyView(data, journey.id, journey.channels[0] ?? null)?.steps.filter((step) => step.kind === "task").length ?? 0);
-    return counts;
-  }, [data]);
-  const modelled = data.journeys.filter((journey) => journey.offeringId).length;
-  const offered = offerings.reduce((sum, offering) => sum + offering.orderTypes.length, 0);
-  const covered = offerings.reduce((sum, offering) => sum + offering.orderTypes.filter((type) => data.journeys.some((journey) => journey.offeringId === offering.id && journey.orderType === type.code)).length, 0);
-
-  const cell = (offering: Offering, code: string) => {
-    const journey = data.journeys.find((item) => item.offeringId === offering.id && item.orderType === code);
-    const offers = offering.orderTypes.some((type) => type.code === code);
-    if (journey)
-      return (
-        <Link className="cl-jcell" to={journeyHref(journey.id, journey.channels[0])}>
-          <i aria-hidden="true" />
-          <span>{plural(steps.get(journey.id) ?? 0, "step")}</span>
-          <span className="ds-visually-hidden">: {journey.name} for {offering.name}</span>
-        </Link>
-      );
-    if (offers)
-      return (
-        <span className="cl-jcell is-gap">
-          <i aria-hidden="true" />
-          Not modelled
-        </span>
-      );
-    return (
-      <span className="cl-jcell is-none">
-        <span aria-hidden="true">—</span>
-        <span className="ds-visually-hidden">Not offered</span>
-      </span>
-    );
-  };
-
-  return (
-    <>
-      <AreaTabs current="journeys" />
-      <section className="cl-hero cl-hero--compact" aria-labelledby="cl-journeys-h">
-        <div className="cl-hero-text">
-          <p className="cl-eyebrow">Journey catalogue</p>
-          <h1 id="cl-journeys-h">Journeys</h1>
-          <p className="cl-hero-lede">Every modelled journey, by the customer&apos;s stage and by product: which order types are drawn end to end, and which are still to model.</p>
-        </div>
-        <div className="cl-hero-visual">
-          <p className="cl-estate-head">
-            <strong>
-              {covered}/{offered}
-            </strong>
-            <span>order types modelled as journeys, across {plural(offerings.length, "product")}</span>
-          </p>
-          <div className="cl-cover-bar" role="img" aria-label={`${covered} of ${offered} order types modelled`}>
-            {covered > 0 && <span style={{ flexGrow: covered }} />}
-            {offered > covered && <span className="rest" style={{ flexGrow: offered - covered }} />}
-          </div>
-          <dl className="cl-hero-stats" style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(0, 1fr))` }}>
-            {stages.map((stage) => (
-              <div key={stage.id}>
-                <dt>{stage.name}</dt>
-                <dd>{stage.codes.length}</dd>
-              </div>
-            ))}
-          </dl>
-          <p className="cl-sub">{plural(modelled, "journey")} in all, including shared ones such as order tracking.</p>
-        </div>
-      </section>
-      <div className="cl-legend cl-legend--left" role="group" aria-label="Legend">
-        <small className="cl-legend-label">Key</small>
-        <span>
-          <i className="jk on" />
-          Modelled journey
-        </span>
-        <span>
-          <i className="jk gap" />
-          Offered, not modelled
-        </span>
-        <span>
-          <i className="jk none" />
-          Not offered
-        </span>
-      </div>
-      <div className="cl-tablewrap cl-jmatrix" role="region" aria-label="Journeys by order type and product (scrolls sideways when narrow)" tabIndex={0}>
-        <table className="cl-jtable">
-          <thead>
-            <tr>
-              <th scope="col">Order type</th>
-              {offerings.map((offering) => (
-                <th key={offering.id} scope="col">
-                  <Link to={`${LAB}/products/${offering.id}`}>{offering.name}</Link>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          {stages.map((stage) => (
-            <tbody key={stage.id}>
-              <tr className="cl-route-stage">
-                <th scope="rowgroup" colSpan={offerings.length + 1}>
-                  {stage.name} <small>{stage.blurb}</small>
-                </th>
-              </tr>
-              {stage.codes.map((code) => (
-                <tr key={code}>
-                  <th scope="row">{names.get(code)}</th>
-                  {offerings.map((offering) => (
-                    <td key={offering.id}>{cell(offering, code)}</td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          ))}
-          {shared.length > 0 && (
-            <tbody>
-              <tr className="cl-route-stage">
-                <th scope="rowgroup" colSpan={offerings.length + 1}>
-                  Across order types <small>Journeys that follow any order</small>
-                </th>
-              </tr>
-              {[...new Set(shared.map((journey) => journey.name))].map((name) => (
-                <tr key={name}>
-                  <th scope="row">{name}</th>
-                  {offerings.map((offering) => {
-                    const journey = shared.find((item) => item.name === name && item.offeringId === offering.id);
-                    return (
-                      <td key={offering.id}>
-                        {journey ? (
-                          <Link className="cl-jcell" to={journeyHref(journey.id, journey.channels[0])}>
-                            <i aria-hidden="true" />
-                            <span>{plural(steps.get(journey.id) ?? 0, "step")}</span>
-                            <span className="ds-visually-hidden">: {journey.name} for {offering.name}</span>
-                          </Link>
-                        ) : (
-                          <span className="cl-jcell is-none">
-                            <span aria-hidden="true">—</span>
-                            <span className="ds-visually-hidden">Not modelled</span>
-                          </span>
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          )}
-        </table>
-      </div>
     </>
   );
 }

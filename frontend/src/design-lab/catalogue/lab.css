@@ -120,7 +120,7 @@
 .cl-mast nav a:focus-visible { outline-color: #fff; outline-offset: -6px; box-shadow: none; }
 .cl-me { margin-left: auto; display: inline-flex; align-items: center; gap: 10px; color: #f1dfe3; white-space: nowrap; }
 .cl-avatar { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: var(--cl-maroon-hover); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.3); color: #fff; font-size: 0.75rem; font-weight: 700; }
-.cl-page { max-width: 1440px; margin: 0 auto; padding: 16px 32px 48px; }
+.cl-page { max-width: 1440px; margin: 0 auto; padding: 16px 32px 24px; }
 .cl-page:focus { outline: none; }
 
 /* ---------- Section tabs, crumbs, page head ---------- */
@@ -1001,32 +1001,6 @@
 .cl-prodcard-head p { margin-top: 4px; font-size: 0.875rem; line-height: 1.5; color: var(--cl-ink-2); }
 .cl-prodcard-links { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: auto; padding-top: 4px; }
 .cl-prodcard-links a { display: inline-flex; align-items: center; min-height: 28px; font-size: 0.875rem; font-weight: 600; }
-/* Journeys: coverage bar and the order type × product matrix. */
-.cl-cover-bar { display: flex; gap: 3px; height: 14px; }
-.cl-cover-bar span { flex-basis: 0; border-radius: 7px 0 0 7px; background: var(--cl-ink-2); }
-.cl-cover-bar span.rest { border-radius: 0 7px 7px 0; background: var(--cl-sand); box-shadow: inset 0 0 0 1px var(--cl-hairline); }
-.cl-cover-bar span:only-child { border-radius: 7px; }
-.cl-legend--left { margin: 20px 0 10px; }
-.cl-legend .jk { width: 14px; height: 14px; border-radius: 50%; }
-.cl-legend .jk.on { background: var(--cl-ink-2); }
-.cl-legend .jk.gap { background: var(--cl-page); border: 1.5px dashed var(--cl-ochre); }
-.cl-legend .jk.none { width: 12px; height: 2px; border-radius: 1px; background: var(--cl-rule-strong); }
-.cl-jmatrix { border: 1px solid var(--cl-hairline); border-radius: 10px; background: var(--cl-page); }
-.cl-jtable { width: 100%; border-collapse: collapse; }
-.cl-jtable th, .cl-jtable td { padding: 8px 12px; border-bottom: 1px solid var(--cl-hairline); text-align: left; }
-.cl-jtable thead th { position: sticky; top: 0; background: var(--cl-paper); font-size: 0.8125rem; font-weight: 700; border-bottom: 1px solid var(--cl-rule); }
-.cl-jtable thead th a { color: var(--cl-ink); }
-.cl-jtable thead th:first-child { width: 34%; }
-.cl-jtable tbody th[scope="row"] { font-weight: 600; }
-.cl-jtable tbody tr:not(.cl-route-stage):hover { background: var(--cl-paper); }
-.cl-jcell { display: inline-flex; align-items: center; gap: 8px; min-height: 28px; font-size: 0.8125rem; color: var(--cl-ink); text-decoration: none; }
-.cl-jcell i { width: 12px; height: 12px; border-radius: 50%; background: var(--cl-ink-2); flex: none; }
-a.cl-jcell { padding: 0 10px 0 6px; border: 1px solid var(--cl-hairline); border-radius: 999px; background: var(--cl-page); font-weight: 600; }
-:where(.cl) a.cl-jcell { color: var(--cl-ink); }
-a.cl-jcell:hover { border-color: var(--cl-maroon); color: var(--cl-maroon); }
-.cl-jcell.is-gap { color: var(--cl-ink-2); }
-.cl-jcell.is-gap i { background: var(--cl-page); border: 1.5px dashed var(--cl-ochre); }
-.cl-jcell.is-none { color: var(--cl-ink-3); }
 /* Landscape side panel: the products that use the picked system. */
 .cl-uses { display: grid; gap: 6px; }
 .cl-uses li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; align-items: center; padding: 8px 10px; border: 1px solid var(--cl-hairline); border-radius: 6px; }
@@ -1038,7 +1012,6 @@ a.cl-jcell:hover { border-color: var(--cl-maroon); color: var(--cl-maroon); }
   .cl-prodcard { transition: none; }
 }
 .cl-prodcard-head p { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.cl-cover-bar span.rest:only-child { border-radius: 7px; }
 a.cl-pill { display: inline-flex; align-items: center; text-decoration: none; }
 :where(.cl) a.cl-pill { color: var(--cl-ink); }
 a.cl-pill:hover { color: var(--cl-maroon); }
@@ -1125,3 +1098,128 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 }
 .cl-prodcard-links { flex-wrap: nowrap; gap: 6px; }
 .cl-prodcard-links .cl-btn { padding: 0 10px; gap: 6px; }
+
+/* ---------- Journey catalogue: scope by hierarchy, lifecycle board, journey preview ---------- */
+.jx-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 6px 32px; margin-top: 16px; }
+.jx-head h1 { font-size: 1.75rem; line-height: 1.15; font-weight: 700; font-stretch: 87.5%; letter-spacing: -0.01em; }
+.jx-lede { max-width: 64ch; font-size: 0.9375rem; line-height: 1.5; color: var(--cl-ink-2); }
+/* Scope: one menu per level of the portfolio hierarchy, then the product. */
+.jx-scope { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 24px; margin-top: 12px; padding: 10px 14px; border: 1px solid var(--cl-hairline); border-radius: 12px; background: var(--cl-paper); }
+.jx-scope ol { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px 0; }
+.jx-scope-level { position: relative; display: flex; flex-direction: column; gap: 3px; padding-right: 12px; }
+.jx-scope-level + .jx-scope-level { padding-left: 18px; }
+.jx-scope-level + .jx-scope-level::before { content: ""; position: absolute; left: 2px; bottom: 13px; width: 6px; height: 6px; border-top: 1.5px solid var(--cl-rule-strong); border-right: 1.5px solid var(--cl-rule-strong); transform: rotate(45deg); }
+.jx-scope-level > small { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cl-ink-3); white-space: nowrap; }
+.jx-scope-menu { position: relative; }
+.jx-scope-menu summary { list-style: none; display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 10px 0 12px; border: 1px solid var(--cl-rule); border-radius: 8px; background: var(--cl-page); font-weight: 600; white-space: nowrap; cursor: pointer; }
+.jx-scope-menu summary::-webkit-details-marker { display: none; }
+.jx-scope-menu summary::after { content: ""; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-2px) rotate(45deg); }
+.jx-scope-menu summary:hover { border-color: var(--cl-maroon); }
+.jx-scope-menu summary .is-any { font-weight: 500; color: var(--cl-ink-2); }
+.jx-scope-menu ul { position: absolute; left: 0; top: calc(100% + 4px); z-index: 30; min-width: 220px; padding: 4px; border: 1px solid var(--cl-rule); border-radius: 8px; background: var(--cl-page); box-shadow: 0 6px 24px rgb(31 27 26 / 0.12); }
+.jx-scope-menu ul button { width: 100%; min-height: 32px; padding: 4px 10px; border: 0; border-radius: 6px; background: none; text-align: left; cursor: pointer; }
+.jx-scope-menu ul button:hover { background: var(--cl-sand); }
+.jx-scope-menu ul button[aria-current="true"] { background: var(--cl-maroon-mist); color: var(--cl-maroon); font-weight: 600; }
+.jx-scope-sum { display: flex; align-items: center; gap: 10px; font-size: 0.8125rem; color: var(--cl-ink-2); }
+.jx-scope-sum b { font-weight: 700; color: var(--cl-ink); }
+.jx-cover { width: 120px; height: 6px; border-radius: 3px; background: var(--cl-sand); overflow: hidden; }
+.jx-cover i { display: block; height: 100%; border-radius: 3px; background: var(--cl-ink-2); }
+/* Board and preview side by side. */
+.jx { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; align-items: start; margin-top: 12px; }
+.jx-board { min-width: 0; padding: 14px; border: 1px solid var(--cl-hairline); border-radius: 12px; background: var(--cl-page); }
+/* The lifecycle ribbon: one chevron per stage, read left to right. */
+.jx-ribbon { display: grid; gap: 4px; margin-bottom: 10px; }
+.jx-stage { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 6px 26px 6px 26px; background: var(--cl-sand); clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%, 14px 50%); transition: background-color 150ms ease-out; }
+.jx-stage:first-child { padding-left: 14px; clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%); border-radius: 8px 0 0 8px; }
+.jx-stage:last-child { padding-right: 14px; clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 14px 50%); border-radius: 0 8px 8px 0; }
+.jx-stage.is-on { background: var(--cl-maroon-mist); }
+.jx-stage-icon { flex: none; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 7px; background: var(--cl-page); color: var(--cl-ink); }
+.jx-stage.is-on .jx-stage-icon { color: var(--cl-maroon); }
+.jx-stage-text { display: flex; flex-direction: column; min-width: 0; }
+.jx-stage-text strong { font-size: 0.9375rem; font-weight: 700; white-space: nowrap; }
+.jx-stage.is-on .jx-stage-text strong { color: var(--cl-maroon); }
+.jx-stage-no { font-size: 0.6875rem; font-weight: 700; color: var(--cl-ink-3); }
+.jx-stage-text small { font-size: 0.75rem; color: var(--cl-ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Order-type tiles under their stage. */
+.jx-columns { display: grid; gap: 4px; }
+.jx-col { display: grid; gap: 6px; align-content: start; padding: 0 2px; }
+.jx-tile { width: 100%; min-height: 40px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px 8px 12px; border: 1px solid var(--cl-hairline); border-radius: 8px; background: var(--cl-page); box-shadow: inset 3px 0 0 transparent; text-align: left; cursor: pointer; transition: border-color 150ms ease-out, background-color 150ms ease-out, box-shadow 150ms ease-out; }
+.jx-tile:hover { border-color: var(--cl-rule-strong); }
+.jx-tile[aria-pressed="true"] { border-color: var(--cl-maroon); background: var(--cl-maroon-mist); box-shadow: inset 3px 0 0 var(--cl-maroon); }
+.jx-tile-name { min-width: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 0.8125rem; font-weight: 600; line-height: 1.3; }
+.jx-tile[aria-pressed="true"] .jx-tile-name { color: var(--cl-maroon); }
+.jx-tile-meta { flex: none; display: inline-flex; align-items: center; }
+.jx-tile-steps { font-size: 0.75rem; color: var(--cl-ink-2); white-space: nowrap; }
+.jx-marks { display: inline-flex; align-items: center; gap: 3px; }
+.jx-marks i, .jx-key i, .jx-variants i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; }
+.jx-marks b { margin-left: 2px; font-size: 0.6875rem; color: var(--cl-ink-2); }
+.jx-marks i.is-on, .jx-key i.is-on, .jx-variants i.is-on { background: var(--cl-ink-2); }
+.jx-marks i.is-gap, .jx-key i.is-gap, .jx-variants i.is-gap { background: var(--cl-page); box-shadow: inset 0 0 0 1.5px var(--cl-ochre); }
+.jx-marks i.is-none, .jx-key i.is-none { background: var(--cl-page); box-shadow: inset 0 0 0 1px var(--cl-hairline); }
+/* Journeys that follow any order. */
+.jx-across { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--cl-rule); }
+.jx-across-label { display: inline-flex; align-items: center; gap: 8px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--cl-ink-2); }
+.jx-across ul { display: flex; flex-wrap: wrap; gap: 6px; }
+.jx-across li { width: 240px; }
+.jx-key { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; font-size: 0.75rem; color: var(--cl-ink-2); }
+.jx-key i { margin-left: 10px; }
+.jx-key i:first-child { margin-left: 0; }
+/* The preview panel. */
+.jx-panel { position: sticky; top: calc(var(--cl-mast) + var(--cl-area) + 12px); max-height: calc(100dvh - var(--cl-mast) - var(--cl-area) - 24px); overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 18px; border: 1px solid var(--cl-hairline); border-radius: 12px; background: var(--cl-page); }
+.jx-panel-stage { display: inline-flex; align-items: center; gap: 6px; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cl-ink-3); }
+.jx-panel h2 { font-size: 1.25rem; line-height: 1.25; font-weight: 700; font-stretch: 90%; }
+.jx-panel h3 { margin-top: 4px; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cl-ink-3); }
+.jx-panel-product a { font-weight: 600; }
+.jx-panel-summary { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-size: 0.875rem; line-height: 1.5; color: var(--cl-ink-2); }
+.jx-variants { display: flex; flex-wrap: wrap; gap: 6px; }
+.jx-variants button { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 12px; border: 1px solid var(--cl-rule); border-radius: 999px; background: var(--cl-page); font-size: 0.8125rem; font-weight: 600; cursor: pointer; }
+.jx-variants button[aria-pressed="true"] { border-color: var(--cl-maroon); background: var(--cl-maroon-mist); color: var(--cl-maroon); }
+.jx-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.jx-facts div { display: flex; flex-direction: column; gap: 1px; padding: 8px 10px; border-radius: 8px; background: var(--cl-paper); }
+.jx-facts dt { font-size: 0.6875rem; color: var(--cl-ink-2); }
+.jx-facts dd { font-size: 1.25rem; font-weight: 700; font-stretch: 85%; line-height: 1.1; }
+/* The route: the systems in the order the order reaches them. */
+.jx-route { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 2px; }
+.jx-route li { display: inline-flex; align-items: center; }
+.jx-route li + li::before { content: ""; width: 5px; height: 5px; margin: 0 4px 0 2px; border-top: 1.5px solid var(--cl-rule-strong); border-right: 1.5px solid var(--cl-rule-strong); transform: rotate(45deg); }
+.jx-route .cl-systile { width: 30px; height: 30px; border-radius: 8px; font-size: 0.625rem; }
+.jx-route .cl-systile.is-party { background: var(--cl-sand); color: var(--cl-ink-2); box-shadow: inset 0 0 0 1px var(--cl-rule); }
+.jx-route-more { font-size: 0.75rem; font-weight: 600; color: var(--cl-ink-2); }
+.jx-channels { display: flex; flex-wrap: wrap; gap: 6px; }
+.jx-channels .cl-chanchip small { font-size: 0.6875rem; font-weight: 500; color: var(--cl-ink-2); }
+/* Decisions: a small gateway diamond each, as in the flow. */
+.jx-decisions { display: grid; gap: 4px; }
+.jx-decisions li { display: flex; align-items: center; gap: 10px; font-size: 0.8125rem; line-height: 1.35; }
+.jx-decisions i { flex: none; width: 9px; height: 9px; margin-left: 2px; border: 1.5px solid var(--cl-ink-2); transform: rotate(45deg); }
+.jx-decisions .jx-more { padding-left: 21px; color: var(--cl-ink-2); }
+.jx-compare { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+.jx-compare th, .jx-compare td { padding: 5px 6px; border-bottom: 1px solid var(--cl-hairline); text-align: left; }
+.jx-compare thead th { font-weight: 600; color: var(--cl-ink-2); }
+.jx-compare tr[aria-current="true"] th { color: var(--cl-maroon); }
+.jx-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.jx-empty { padding: 14px; border: 1px dashed var(--cl-rule); border-radius: 8px; font-size: 0.875rem; color: var(--cl-ink-2); }
+@media (max-width: 1100px) {
+  .jx { grid-template-columns: minmax(0, 1fr); }
+  .jx-panel { position: static; max-height: none; }
+}
+.jx-col-head { display: none; }
+@media (max-width: 760px) {
+  .jx-ribbon { display: none; }
+  .jx-columns { grid-template-columns: minmax(0, 1fr) !important; gap: 14px; }
+  .jx-col { grid-template-columns: minmax(0, 1fr) !important; }
+  .jx-col-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-bottom: 6px; padding: 6px 10px; border-radius: 8px; background: var(--cl-sand); font-weight: 700; }
+  .jx-col-head small { font-weight: 400; font-size: 0.75rem; color: var(--cl-ink-2); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .jx-stage, .jx-tile { transition: none; }
+}
+.jx-tile-steps { font-size: 0.6875rem; }
+.jx-tile { min-height: 44px; }
+/* A tighter preview, so the longest journey still fits one screen. */
+.jx-panel { gap: 8px; padding: 16px; }
+.jx-panel h2 { font-size: 1.125rem; }
+.jx-facts div { padding: 6px 8px; }
+.jx-facts dd { font-size: 1.125rem; }
+.jx-route .cl-systile { width: 28px; height: 28px; }
+.jx-decisions { gap: 2px; }
+.jx-head { margin-top: 12px; }
