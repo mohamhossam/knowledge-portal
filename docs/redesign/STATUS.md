@@ -580,4 +580,11 @@ Checks: tests 28/28 with axe; lint, brand lint, build and budget green.
 - **Fit:** no page scroll on Systems from 1280×720 up.
 - **Tests:** updated for the grid, the sequence and the table filter.
 
+**Components tab: components first (2026-10-10, user request).**
+- **Order:** the cards come first, then "Who delivers what" below.
+- **Filters:** a toolbar narrows the cards by group (chips with counts) or by delivering system (a menu). The heading says "N of 9 shown", and "Show them all" clears an empty result.
+- **Cards:** each shows its group and its status, a three-line description, compact codes, "Delivered by" rows (tile, name, part; the filtered system highlighted in teal), and the source footer. Cards in a row end level.
+- **Grid:** a system's column lights up under the pointer. Its heading is a button that narrows the cards and brings them into view, with motion only when reduced motion isn't requested. Rows outside the filter go quiet.
+- **Tests:** the test covers both filters.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.

@@ -169,6 +169,12 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
     expect(within(grid).getByRole("rowheader", { name: /Backup 5G/ })).toBeInTheDocument();
     expect(within(grid).getAllByRole("img", { name: /^CWOM:/ }).length).toBeGreaterThan(3);
     expect(screen.getByRole("heading", { level: 3, name: "Backup 5G" })).toBeInTheDocument();
+    // The cards narrow by group, and by the system a column heading names.
+    await userEvent.click(screen.getByRole("button", { name: /^Security/ }));
+    expect(screen.getAllByRole("heading", { level: 3 }).map((item) => item.textContent)).toEqual(["Firewall", "SD-WAN"]);
+    await userEvent.click(screen.getByRole("button", { name: /^All/ }));
+    await userEvent.click(within(grid).getByRole("button", { name: /^vEDA:/ }));
+    expect(screen.getAllByRole("heading", { level: 3 }).map((item) => item.textContent)).toEqual(["Backup 5G"]);
     expect(await axe(container)).toHaveNoViolations();
   });
 
