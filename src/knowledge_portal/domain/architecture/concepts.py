@@ -27,9 +27,14 @@ MAX_CONCEPT_DEPTH = 3
 CONCEPT_ID_PREFIX = "cap-"
 
 
+def label_words(label: str) -> tuple[str, ...]:
+    """A label's words, ignoring case and punctuation."""
+    return tuple(re.findall(r"[^\W_]+", label.casefold()))
+
+
 def label_key(label: str) -> str:
-    """How two labels are compared: their words, ignoring case and punctuation."""
-    return " ".join(re.findall(r"\w+", label.casefold()))
+    """How two labels are compared: their letters and digits alone, so "Wi-Fi" is "WiFi"."""
+    return "".join(label_words(label))
 
 
 @dataclass(frozen=True)
@@ -153,7 +158,8 @@ def check_link(concept_ids: Iterable[str], unlinked_reason: str | None, where: s
 def concept_id_for(label: str, taken: Iterable[str]) -> str:
     """A new concept id from its label, such as ``cap-wifi-access-points``, never one taken."""
     used = set(taken)
-    base = CONCEPT_ID_PREFIX + "-".join(label_key(label).split()) if label_key(label) else "cap"
+    words = label_words(label)
+    base = CONCEPT_ID_PREFIX + "-".join(words) if words else "cap"
     candidate, number = base, 2
     while candidate in used:
         candidate, number = f"{base}-{number}", number + 1

@@ -23,7 +23,7 @@ from knowledge_portal.application.ports.capability_link_suggester import (
     LinkResult,
     LinkSuggestion,
 )
-from knowledge_portal.domain.architecture.concepts import label_key
+from knowledge_portal.domain.architecture.concepts import label_words
 from knowledge_portal.infrastructure.llm.prompts.capability_links_prompt import (
     PROMPT_VERSION,
     SYSTEM_PROMPT,
@@ -142,12 +142,12 @@ class FakeCapabilityLinkSuggester:
     ) -> LinkResult:
         suggestions = []
         for component in components:
-            words = set(label_key(f"{component.name} {component.description or ''}").split())
+            words = set(label_words(f"{component.name} {component.description or ''}"))
             found = [
                 (concept.id, label)
                 for concept in concepts
                 for label in (concept.label, *concept.other_labels)
-                if label_key(label) and set(label_key(label).split()) <= words
+                if label_words(label) and set(label_words(label)) <= words
             ]
             ids = tuple(dict.fromkeys(concept_id for concept_id, _ in found))[:_MAX_LINKS]
             if ids:

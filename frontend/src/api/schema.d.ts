@@ -340,6 +340,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/architecture-knowledge/releases/{release_id}/component-link-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Suggest Component Capabilities
+         * @description Ask the configured model which concepts each unlinked offering component delivers.
+         *
+         *     The suggestions replace the undecided ones of the previous request (ADR-0114).
+         */
+        post: operations["suggest_component_capabilities_architecture_knowledge_releases__release_id__component_link_suggestions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/architecture-knowledge/releases/{release_id}/concept-proposals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Propose Capability Concepts
+         * @description Suggest one concept per distinct capability name the draft lists (ADR-0114).
+         *
+         *     The suggestions replace the undecided ones of the previous backfill.
+         */
+        post: operations["propose_capability_concepts_architecture_knowledge_releases__release_id__concept_proposals_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/architecture-knowledge/releases/{release_id}/documents": {
         parameters: {
             query?: never;
@@ -2270,6 +2314,32 @@ export interface components {
             /** Stories */
             stories: number;
         };
+        /**
+         * BusinessCapabilitySchema
+         * @description A business capability concept; a top concept names its capability domain (ADR-0114).
+         */
+        BusinessCapabilitySchema: {
+            /**
+             * Alt Labels
+             * @default []
+             */
+            alt_labels: string[];
+            /** Broader Id */
+            broader_id?: string | null;
+            confidence?: components["schemas"]["SourceConfidence"] | null;
+            /** Definition */
+            definition?: string | null;
+            /** Domain Id */
+            domain_id?: string | null;
+            /** Exact Match */
+            exact_match?: string | null;
+            /** Id */
+            id: string;
+            /** Pref Label */
+            pref_label: string;
+            /** Source */
+            source?: string | null;
+        };
         /** BusinessRuleSchema */
         BusinessRuleSchema: {
             confidence?: components["schemas"]["SourceConfidence"] | null;
@@ -2304,9 +2374,20 @@ export interface components {
             aliases: string[];
             /** Capability Id */
             capability_id?: string | null;
+            /**
+             * Capability Refs
+             * @default []
+             */
+            capability_refs: components["schemas"]["CapabilityRefSchema"][];
             channel?: components["schemas"]["ChannelSchema"] | null;
             /** Component Id */
             component_id?: string | null;
+            concept?: components["schemas"]["BusinessCapabilitySchema"] | null;
+            /**
+             * Concept Ids
+             * @default []
+             */
+            concept_ids: string[];
             /** Description */
             description?: string | null;
             journey?: components["schemas"]["JourneySchema"] | null;
@@ -2346,13 +2427,13 @@ export interface components {
          * CandidateKind
          * @enum {string}
          */
-        CandidateKind: "system" | "component" | "capability" | "constraint" | "relationship" | "landscape_domain" | "placement" | "product" | "journey" | "channel" | "question";
+        CandidateKind: "system" | "component" | "capability" | "constraint" | "relationship" | "landscape_domain" | "placement" | "product" | "journey" | "channel" | "question" | "concept" | "component_link";
         /**
          * CandidateMatch
          * @description How a candidate relates to the draft as it stands now.
          * @enum {string}
          */
-        CandidateMatch: "new" | "updates_existing" | "already_present" | "needs_system" | "needs_component" | "needs_domain" | "needs_offering" | "needs_channel";
+        CandidateMatch: "new" | "updates_existing" | "already_present" | "needs_system" | "needs_component" | "needs_domain" | "needs_offering" | "needs_channel" | "needs_concept";
         /**
          * CandidateStatus
          * @enum {string}
@@ -2370,6 +2451,13 @@ export interface components {
             name_ar?: string | null;
             /** Parent Id */
             parent_id?: string | null;
+        };
+        /** CapabilityRefSchema */
+        CapabilityRefSchema: {
+            /** Capability Id */
+            capability_id: string;
+            /** System Id */
+            system_id: string;
         };
         /** CatalogPlanResponse */
         CatalogPlanResponse: {
@@ -2443,6 +2531,15 @@ export interface components {
          * @enum {string}
          */
         CatalogueFileFormat: "xlsx" | "yaml" | "json";
+        /**
+         * CatalogueReading
+         * @description A reading of the draft's own catalogue rather than of a document (ADR-0114).
+         *
+         *     Its value stands in for the document version id, so a new reading replaces the
+         *     undecided suggestions of the previous one.
+         * @enum {string}
+         */
+        CatalogueReading: "concept_backfill" | "component_links";
         /** CatalogueSuggestionResponse */
         CatalogueSuggestionResponse: {
             basis: components["schemas"]["CandidateBasis"];
@@ -2616,7 +2713,7 @@ export interface components {
          * ChangedItem
          * @enum {string}
          */
-        ChangedItem: "system" | "capability" | "relationship" | "document" | "domain" | "component" | "landscape_domain" | "product" | "journey" | "channel" | "source" | "conflict" | "change_request";
+        ChangedItem: "system" | "capability" | "relationship" | "document" | "domain" | "component" | "landscape_domain" | "product" | "journey" | "channel" | "source" | "conflict" | "change_request" | "concept";
         /**
          * ChannelSchema
          * @description Where orders are placed, and the system each is entered through (ADR-0101, step 3).
@@ -2949,6 +3046,8 @@ export interface components {
         };
         /** DraftUpdateRequest */
         DraftUpdateRequest: {
+            /** Business Capabilities */
+            business_capabilities?: components["schemas"]["BusinessCapabilitySchema"][] | null;
             /** Capability Domains */
             capability_domains?: components["schemas"]["CapabilityDomainSchema"][] | null;
             /** Channels */
@@ -3050,6 +3149,7 @@ export interface components {
             model: string;
             /** Prompt Version */
             prompt_version: string;
+            reading?: components["schemas"]["CatalogueReading"] | null;
             /** Warnings */
             warnings: string[];
         };
@@ -3451,6 +3551,8 @@ export interface components {
         KnowledgeCapabilitySchema: {
             /** Component Id */
             component_id?: string | null;
+            /** Concept Id */
+            concept_id?: string | null;
             /** Domain Id */
             domain_id?: string | null;
             /** Id */
@@ -3459,6 +3561,8 @@ export interface components {
             name: string;
             /** Triggers */
             triggers: string[];
+            /** Unlinked Reason */
+            unlinked_reason?: string | null;
         };
         /** KnowledgeDocumentVersionResponse */
         KnowledgeDocumentVersionResponse: {
@@ -3488,6 +3592,8 @@ export interface components {
         KnowledgeReleaseResponse: {
             /** Built Revision */
             built_revision?: number | null;
+            /** Business Capabilities */
+            business_capabilities?: components["schemas"]["BusinessCapabilitySchema"][];
             /** Capability Domains */
             capability_domains?: components["schemas"]["CapabilityDomainSchema"][];
             /** Change History */
@@ -3971,6 +4077,11 @@ export interface components {
         };
         /** OfferingComponentSchema */
         OfferingComponentSchema: {
+            /**
+             * Capability Ids
+             * @default []
+             */
+            capability_ids: string[];
             /** Code */
             code?: string | null;
             /** Commercial Spec */
@@ -4004,6 +4115,8 @@ export interface components {
             technical_details?: string | null;
             /** Technical Spec */
             technical_spec?: string | null;
+            /** Unlinked Reason */
+            unlinked_reason?: string | null;
         };
         /**
          * OfferingNfrSchema
@@ -6164,6 +6277,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImpactComparisonResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    suggest_component_capabilities_architecture_knowledge_releases__release_id__component_link_suggestions_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtractionRunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    propose_capability_concepts_architecture_knowledge_releases__release_id__concept_proposals_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtractionRunResponse"];
                 };
             };
             /** @description Validation Error */

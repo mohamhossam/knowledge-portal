@@ -773,6 +773,8 @@ products:
     technical_spec: CFSS_INTERNET_CPE_ONPREM_HE
     confidence: confirmed
     source: SDD v2.3 · §P1 Catalog Modelling
+    capabilities:
+    - cap-fibre-access
     responsibilities:
     - system: cwom
       role: ORCHESTRATES
@@ -792,6 +794,8 @@ products:
     technical_spec: RPCUSTONPREMEQPT
     confidence: confirmed
     source: SDD v2.3 · §P1 Catalog Modelling; §ADO 438907
+    capabilities:
+    - cap-cpe-provisioning
     responsibilities:
     - system: ecm
       role: SUGGESTS
@@ -811,6 +815,8 @@ products:
     technical_spec: CFSS_ONPREM_FIREWALL_HE
     confidence: confirmed
     source: SDD v2.3 · §P1 Firewall; §P1.1
+    capabilities:
+    - cap-firewall
     responsibilities:
     - system: cwom
       role: PROVISIONS
@@ -827,6 +833,8 @@ products:
     technical_spec: CFSS_SELFSERVICE_PORTAL_ACCESS
     confidence: confirmed
     source: SDD v2.3 · §P1 Bundle Definition; §P3 ADO 194831
+    capabilities:
+    - cap-customer-self-management
     responsibilities:
     - system: e2eso
       role: CREATES
@@ -845,6 +853,8 @@ products:
     technical_spec: CFSS_SDWAN_NEW
     confidence: confirmed
     source: SDD v2.3 · §P1 Bundle Definition; General Highlights
+    capabilities:
+    - cap-sdwan
     responsibilities:
     - system: cwom
       role: PASSES
@@ -857,6 +867,8 @@ products:
     technical_spec: PRS_ACCESS_POINT
     confidence: confirmed
     source: SDD v2.3 · §P1.1 Generic FortiAP Offer
+    capabilities:
+    - cap-wifi-access
     responsibilities:
     - system: ecm
       role: SUGGESTS
@@ -873,6 +885,8 @@ products:
     description: Mandatory in Business Pro Plus bundles.
     confidence: confirmed
     source: SDD v2.3 · §P1.1 Mandating Bundling Components
+    capabilities:
+    - cap-static-ip
     responsibilities:
     - system: cwom
       role: PROVISIONS
@@ -883,6 +897,8 @@ products:
     description: Proactive monitoring for the Fortinet 90G/120G CPEs.
     confidence: confirmed
     source: SDD v2.3 · §P1.1; Solution Assumptions
+    capabilities:
+    - cap-proactive-monitoring
     responsibilities:
     - system: e2eso
       role: ENABLES
@@ -894,6 +910,8 @@ products:
       is geo-locked to cell IDs and the dongle's IMEI.
     confidence: confirmed
     source: SDD v2.3 · §P2 IN; §vEDA; Solution Assumptions
+    capabilities:
+    - cap-mobile-backup-access
     responsibilities:
     - system: veda
       role: ACTIVATES
@@ -5636,3 +5654,402 @@ portfolio:
   description: 'Bundles built on the Bundle Framework (BFM): broadband with business services.'
   confidence: inferred
   source: SMB reference v1.0 · title and scope; user, 2026-10-06
+capability_domains:
+- id: market-sales
+  name: Market and sales
+  description: 'Selling to business customers: opportunities, quotes, offers and discounts.'
+- id: product
+  name: Product
+  description: Designing offerings and keeping the product catalogue, its eligibility and prices.
+- id: customer
+  name: Customer
+  description: Taking, tracking and caring for customers' orders, accounts, documents, bills and problems.
+- id: service
+  name: Service
+  description: The services an offering delivers, their fulfilment, activation and assurance.
+- id: resource
+  name: Resource
+  description: The network, devices, numbers and field work the services run on.
+business_capabilities:
+- id: cap-assisted-order-capture
+  pref_label: Assisted order capture
+  alt_labels:
+  - assisted ordering
+  - sales agent order
+  - back-office order capture
+  definition: Taking a customer's order through a sales agent, a shop or the back office.
+  domain: customer
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-self-service-order-capture
+  pref_label: Self-service order capture
+  alt_labels:
+  - self-service ordering
+  - online ordering
+  - web ordering
+  definition: Customers placing and changing orders themselves in a digital channel.
+  domain: customer
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-sales-quoting
+  pref_label: Sales opportunities, quotes and discount approval
+  alt_labels:
+  - sales quote
+  - opportunity management
+  - discount approval
+  definition: Managing sales opportunities, preparing quotes and approving discounts before an order.
+  domain: market-sales
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-offer-recommendation
+  pref_label: Offer and discount recommendation
+  alt_labels:
+  - next best offer
+  - offer recommendation engine
+  - upsell recommendation
+  definition: Recommending the offer, add-ons or discount that fit a customer.
+  domain: market-sales
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-product-design
+  pref_label: Product design and bundle configuration
+  alt_labels:
+  - bundle configuration
+  - offer design
+  - bundle framework
+  definition: Defining an offering's components, bundles and rules so it can be sold and fulfilled.
+  domain: product
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-product-catalogue
+  pref_label: Product catalogue, eligibility and pricing
+  alt_labels:
+  - product catalogue
+  - eligibility rules
+  - price plan
+  - rate plan
+  definition: Keeping the sellable products, who may buy them and what they cost.
+  domain: product
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-order-orchestration
+  pref_label: Customer order orchestration and validation
+  alt_labels:
+  - order orchestration
+  - order validation
+  - order decomposition
+  definition: Validating a customer order and splitting it into the service orders that fulfil it.
+  domain: customer
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-fixed-order-management
+  pref_label: Fixed service order management
+  alt_labels:
+  - fixed fulfilment
+  - fixed service order
+  - service order management
+  definition: Running the service orders that deliver a fixed-line service end to end.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-cpe-provisioning
+  pref_label: Managed CPE and security service provisioning
+  alt_labels:
+  - CPE provisioning
+  - managed router
+  - customer premises equipment
+  definition: Configuring and activating the managed customer device and the security services on it.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-sdwan
+  pref_label: SD-WAN service
+  alt_labels:
+  - SD-WAN
+  - software-defined WAN
+  definition: Connecting a customer's sites over a managed software-defined WAN.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-firewall
+  pref_label: Managed firewall
+  alt_labels:
+  - firewall
+  - UTM licence
+  - network security policy
+  definition: Protecting the customer's network with a firewall the operator configures and runs.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-wifi-access
+  pref_label: Managed Wi-Fi access points
+  alt_labels:
+  - Wi-Fi
+  - access point
+  - wireless LAN
+  definition: Wireless access in the customer's premises through access points the operator manages.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-static-ip
+  pref_label: Static IP addressing
+  alt_labels:
+  - static IP
+  - fixed IP address
+  - public IP
+  definition: Giving the customer fixed public IP addresses with their connection.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-proactive-monitoring
+  pref_label: Proactive service monitoring
+  alt_labels:
+  - proactive monitoring
+  - service monitoring
+  - device monitoring
+  definition: Watching the customer's service and devices so faults are found before the customer reports them.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-customer-self-management
+  pref_label: Customer self-management portal
+  alt_labels:
+  - self-service portal
+  - customer portal
+  - FortiPortal
+  definition: Customers viewing and managing their services and settings themselves.
+  domain: customer
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-mobile-backup-access
+  pref_label: Mobile backup access
+  alt_labels:
+  - backup 5G
+  - 4G backup
+  - failover connectivity
+  - mobile failover
+  definition: Keeping the customer connected over the mobile network when the fixed line fails.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-mobile-network-activation
+  pref_label: Mobile network and SIM activation
+  alt_labels:
+  - SIM activation
+  - HSS profile
+  - mobile provisioning
+  definition: Activating SIMs and their network profiles on the mobile network.
+  domain: resource
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-field-installation
+  pref_label: Field installation and technician work
+  alt_labels:
+  - field installation
+  - technician visit
+  - work order
+  - site survey
+  definition: Sending technicians to install, change or recover equipment at the customer's site.
+  domain: resource
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-network-feasibility
+  pref_label: Network feasibility and availability
+  alt_labels:
+  - feasibility check
+  - coverage check
+  - service availability
+  definition: Checking whether the network can serve a customer's address before an order.
+  domain: resource
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-number-portability
+  pref_label: Number portability
+  alt_labels:
+  - number porting
+  - port-in
+  - port-out
+  definition: Moving a customer's numbers between operators.
+  domain: resource
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-identity-verification
+  pref_label: Customer identity and trade-licence verification
+  alt_labels:
+  - identity verification
+  - trade licence check
+  - KYC
+  definition: Checking who the customer is and that their business licence is valid.
+  domain: customer
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-customer-notification
+  pref_label: Customer notification
+  alt_labels:
+  - SMS notification
+  - email notification
+  - customer communication
+  definition: Telling customers about their orders, services and bills by SMS, email or app.
+  domain: customer
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-order-tracking
+  pref_label: Order tracking and milestones
+  alt_labels:
+  - order tracking
+  - order status
+  - order milestones
+  definition: Recording an order's progress and showing it to customers and agents.
+  domain: customer
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-complaint-management
+  pref_label: Complaint management
+  alt_labels:
+  - complaint
+  - customer complaint
+  definition: Recording and resolving customers' complaints.
+  domain: customer
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-trouble-ticketing
+  pref_label: Trouble ticketing and assurance
+  alt_labels:
+  - trouble ticket
+  - fault management
+  - service assurance
+  definition: Recording service faults and restoring the service.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-billing
+  pref_label: Billing and charging
+  alt_labels:
+  - billing
+  - charging
+  - invoice
+  definition: Charging customers for their services and producing their bills.
+  domain: customer
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-collections
+  pref_label: Dunning and collections
+  alt_labels:
+  - dunning
+  - collections
+  - non-payment suspension
+  definition: Chasing unpaid bills and restricting or ceasing services for non-payment.
+  domain: customer
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-saas-activation
+  pref_label: SaaS licence activation
+  alt_labels:
+  - SaaS licence
+  - software licence activation
+  - Microsoft 365 licence
+  definition: Activating and managing the software-as-a-service licences sold with an offering.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-device-logistics
+  pref_label: Device and SIM inventory and logistics
+  alt_labels:
+  - device inventory
+  - SIM stock
+  - device delivery
+  - logistics
+  definition: Keeping, reserving and delivering devices and SIMs.
+  domain: resource
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-customer-data
+  pref_label: Customer, account and product inventory data
+  alt_labels:
+  - customer account
+  - installed base
+  - product inventory
+  definition: Keeping customers, their accounts and the products they hold.
+  domain: customer
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-contract-lifecycle
+  pref_label: Contract renewal and lifecycle events
+  alt_labels:
+  - contract renewal
+  - contract term
+  - early termination
+  definition: Renewing, changing and ending customers' contracts.
+  domain: customer
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-document-management
+  pref_label: Customer document management
+  alt_labels:
+  - customer documents
+  - document upload
+  - contract documents
+  definition: Storing and retrieving the documents a customer provides or signs.
+  domain: customer
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-iot-connectivity-management
+  pref_label: IoT device and connectivity management
+  alt_labels:
+  - IoT
+  - M2M connectivity
+  - IoT platform
+  definition: Connecting and managing customers' IoT devices and their SIMs.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-vehicle-telematics
+  pref_label: Vehicle tracking and telematics
+  alt_labels:
+  - fleet tracking
+  - telematics
+  - vehicle tracking
+  definition: Tracking customers' vehicles and reporting their telemetry.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-video-surveillance
+  pref_label: Cloud video surveillance
+  alt_labels:
+  - CCTV
+  - video surveillance
+  - security cameras
+  definition: Recording and viewing customers' security cameras in the cloud.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-payment-acceptance
+  pref_label: Card payment acceptance
+  alt_labels:
+  - point of sale
+  - POS terminal
+  - card payments
+  definition: Letting customers' businesses take card payments.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-learning-content
+  pref_label: Training content delivery
+  alt_labels:
+  - e-learning
+  - training courses
+  - learning platform
+  definition: Delivering training content to customers' staff.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-fibre-access
+  pref_label: Fibre broadband access
+  alt_labels:
+  - GPON
+  - fibre internet
+  - broadband access
+  definition: Connecting the customer's premises to the internet over fibre at the plan's speed.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list

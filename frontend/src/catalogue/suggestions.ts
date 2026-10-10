@@ -192,6 +192,14 @@ export function changeSentence(suggestion: Suggestion, words: Lexicon): string {
         ? `Adds what the document says about the channel ${content.name}${through}`
         : `Adds the channel ${content.name}${through}`;
     }
+    case "concept": {
+      const label = content.concept?.pref_label ?? content.system_id;
+      const covered = content.capability_refs.length;
+      const linking = covered ? `, linking ${covered === 1 ? "1 capability" : `${covered} capabilities`}` : "";
+      return replaces ? `Adds to the capability concept ${label}${linking}` : `Adds the capability concept ${label}${linking}`;
+    }
+    case "component_link":
+      return `Links ${words.offering(content.system_id)} › ${content.component_id ?? ""} to ${listed(content.concept_ids)}`;
   }
 }
 
