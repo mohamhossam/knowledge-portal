@@ -18,28 +18,20 @@ function open(path: string) {
 
 // Each test renders the whole poster and runs axe on it: slow on a busy machine.
 describe("the catalogue direction mock-ups, on the seeded Business Pro Plus catalogue", { timeout: 30_000 }, () => {
-  it("draws the whole landscape as a TAM wheel and shows what a picked system talks to", async () => {
-    const { container } = open("?view=wheel");
+  it("draws the landscape as TAM layers, one picture with no other views, and shows what a picked system talks to", async () => {
+    const { container } = open("");
     expect(screen.getByRole("heading", { level: 1, name: "SMB architecture" })).toBeInTheDocument();
     expect(document.title).toMatch(/^SMB architecture · Catalogue/);
-    const map = screen.getByRole("group", { name: /SMB architecture map/ });
-    const systems = within(map).getAllByRole("button");
-    expect(systems).toHaveLength(46);
-    // One tab stop for the whole poster.
-    expect(systems.filter((button) => button.tabIndex === 0)).toHaveLength(1);
-
-    await userEvent.click(within(map).getByRole("button", { name: /^CWOM:/ }));
-    expect(screen.getByRole("heading", { level: 2, name: "CWOM" })).toBeInTheDocument();
-    expect(within(map).getByRole("button", { name: /^CWOM:/ })).toHaveAttribute("aria-pressed", "true");
-    expect(await axe(container)).toHaveNoViolations();
-  });
-
-  it("opens on the TAM layers, with each layer's groups and systems", async () => {
-    const { container } = open("");
+    // One picture: no view switch on the landscape.
+    expect(screen.queryByRole("group", { name: "View" })).not.toBeInTheDocument();
     const layers = screen.getByRole("group", { name: /SMB architecture layers/ });
-    expect(within(layers).getAllByRole("button")).toHaveLength(46);
+    const systems = within(layers).getAllByRole("button");
+    expect(systems).toHaveLength(46);
+    // One tab stop for the whole map.
+    expect(systems.filter((button) => button.tabIndex === 0)).toHaveLength(1);
     await userEvent.click(within(layers).getByRole("button", { name: /^CWOM:/ }));
     expect(screen.getByRole("heading", { level: 2, name: "CWOM" })).toBeInTheDocument();
+    expect(within(layers).getByRole("button", { name: /^CWOM:/ })).toHaveAttribute("aria-pressed", "true");
     expect(await axe(container)).toHaveNoViolations();
   });
 
@@ -93,8 +85,10 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
     expect(screen.getByRole("link", { name: "Business Pro Plus" })).toHaveAttribute("href", expect.stringContaining("/products/business-pro-plus/architecture?system=cwom"));
   });
 
-  it("shows the same links as a matrix, read by row and column", async () => {
-    const { container } = open("?view=matrix");
+  it("lists every integration on the Systems page, read by row and column, with the same details drawer", async () => {
+    const { container } = open("/systems");
+    expect(screen.getByRole("heading", { level: 1, name: "Systems" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Systems" })).toHaveAttribute("aria-current", "page");
     const matrix = screen.getByRole("table");
     await userEvent.click(within(matrix).getByRole("button", { name: /^CWOM/ }));
     expect(screen.getByRole("heading", { level: 2, name: "CWOM" })).toBeInTheDocument();

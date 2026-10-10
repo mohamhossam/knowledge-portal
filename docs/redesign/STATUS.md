@@ -500,4 +500,12 @@ Checks: tests 28/28 with axe; lint, brand lint, build and budget green.
 - **Fixes:** the link layer is pinned to the map's own size, so a stale measurement no longer stretches the page. The map also re-measures when its tiles reflow.
 - **Fit:** no page scroll at 1280×720, 1366×768, 1536×730, 1440×900, 1920×950 and 1920×1080, in Layers, Wheel and Matrix, with and without the drawer. Below 1100px wide the page scrolls as before.
 
+**Landscape is Layers only; the Matrix moves to a Systems page (2026-10-10, user chose option 1).**
+- **Rationale (design judgement, HYPOTHESIS, not user-tested):** the Wheel repeated Layers with harder-to-read labels, and "Show every link" plus the drawer already cover its overview. The Matrix is the only view of every integration at once, but it is an analysis tool rather than a picture of the landscape.
+- **Landscape:** the view switch is gone. The header holds the title, lede, search and Key, and "Show every link" is always in the Key.
+- **Systems tab:** now live at `/systems`. It shows the integration matrix filling the height under the header, with its own scroll, plus the same search and details drawer.
+- **Removed:** `TamWheel.tsx` and its styles.
+- **Code:** the search and drawer are shared in `SystemTools.tsx`, and the picked-system and link hooks in `systemHooks.ts`.
+- **Fit:** no page scroll at 1280×720, 1366×768, 1536×730 and 1920×950, on either page, with and without the drawer.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.

@@ -24,6 +24,7 @@ import { LandscapeHero } from "./LandscapeHero";
 import { ProductArchitecture } from "./ProductArchitecture";
 import { ProductOverview } from "./ProductPage";
 import { ProductComponents, ProductHierarchy, ProductPlans, ProductRules } from "./ProductTabs";
+import { SystemsPage } from "./SystemsPage";
 
 /** "Confirmed · SDD v2.3 §P1.1": how sure, and from where, in one line. */
 export function EvidenceTag({ evidence }: { evidence: Evidence }) {
@@ -89,12 +90,12 @@ const ICONS: Record<string, ReactNode> = {
  * pages, not the navigation). The sections not in these mock-ups are shown,
  * but say so.
  */
-export function AreaTabs({ current }: { current: "landscape" | "products" | "journeys" }) {
+export function AreaTabs({ current }: { current: "landscape" | "products" | "journeys" | "systems" }) {
   const items: { id: string; label: string; to?: string }[] = [
     { id: "landscape", label: "Landscape", to: LAB },
     { id: "products", label: "Products", to: `${LAB}/products` },
     { id: "journeys", label: "Journeys", to: `${LAB}/journeys` },
-    { id: "systems", label: "Systems" },
+    { id: "systems", label: "Systems", to: `${LAB}/systems` },
     { id: "governance", label: "Governance" },
     { id: "versions", label: "Versions" },
   ];
@@ -221,6 +222,7 @@ export default function CatalogueLab() {
           <Route index element={<LandscapeHero />} />
           <Route path="products" element={<ProductsIndex />} />
           <Route path="journeys" element={<JourneysIndex />} />
+          <Route path="systems" element={<SystemsPage />} />
           <Route path="products/:offeringId" element={<ProductOverview />} />
           <Route path="products/:offeringId/hierarchy" element={<ProductHierarchy />} />
           <Route path="products/:offeringId/plans" element={<ProductPlans />} />
