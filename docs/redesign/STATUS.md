@@ -527,4 +527,14 @@ Checks: tests 28/28 with axe; lint, brand lint, build and budget green.
 - **Alignment:** the name, statement and figures hang from the name's left edge; the rail, mark and tabs from the page's left edge. The compact header (Journeys and Architecture tabs) keeps the rail, the name and the tabs.
 - **Fix:** the overview's route table no longer pushes the page sideways on a phone (its hidden labels now stay inside its scroll frame).
 
+**Product overview aligned; footprint in its own colour (2026-10-10).**
+- **Overview, one layout system:** every section is a heading over a rule, its content sits on one kind of panel (paper, hairline border, 12px corners), and panels side by side end level.
+- **Overview, rows:**
+  1. What's in the bundle (7 columns) next to Customer value (5), whose reasons spread down the panel.
+  2. Who can buy it, as four equal condition cards side by side.
+  3. How each order type is placed: the channel table at full width.
+  4. Plans at a glance.
+- **Product Architecture:** the footprint uses a deep teal that no layer, state or brand colour uses. Core systems are solid teal; used is a teal outline; carries calls only is a dashed teal outline; not used is quiet. The meters, legend, core-systems list and the landscape drawer's "Core" chip follow it. Maroon stays for the picked system only.
+- **One journey at a time:** systems in the journey use a teal tint.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.

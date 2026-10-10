@@ -207,88 +207,90 @@ function Bundle({ offering }: { offering: Offering }) {
   const optional = offering.components.length - always;
 
   return (
-    <section className="cl-card cl-bundle" aria-labelledby="cl-bundle-h">
+    <section className="cl-card cl-span-7 pv-sec" aria-labelledby="cl-bundle-h">
       <h2 id="cl-bundle-h">
         What's in the bundle{" "}
         <small>
           {plural(offering.components.length, "component")} · {always} always included{optional ? ` · ${optional} optional` : ""}
         </small>
       </h2>
-      {hub && (
-        <div className="cl-device">
-          <span className="cl-device-icon">
-            <Glyph size={22}>{DEVICE_ICON}</Glyph>
-          </span>
-          <div className="cl-device-text">
-            <small>At the heart of the bundle</small>
-            <strong>{hubName}</strong>
-            {models.length > 0 && (
-              <ul className="cl-models" aria-label="Models">
-                {models.map((model) => (
-                  <li key={model} translate="no">
-                    {model}
-                  </li>
-                ))}
-              </ul>
-            )}
-            {modelRule && <p className="cl-device-rule">{modelRule.statement}</p>}
+      <div className="pv-panel cl-bundle">
+        {hub && (
+          <div className="cl-device">
+            <span className="cl-device-icon">
+              <Glyph size={22}>{DEVICE_ICON}</Glyph>
+            </span>
+            <div className="cl-device-text">
+              <small>At the heart of the bundle</small>
+              <strong>{hubName}</strong>
+              {models.length > 0 && (
+                <ul className="cl-models" aria-label="Models">
+                  {models.map((model) => (
+                    <li key={model} translate="no">
+                      {model}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {modelRule && <p className="cl-device-rule">{modelRule.statement}</p>}
+            </div>
+            <SystemTiles component={hub} />
           </div>
-          <SystemTiles component={hub} />
+        )}
+        <div className="cl-caps">
+          {groups.map((group) => {
+            const optionalOnly = group.items.every((item) => item.mandatory === false);
+            return (
+              <section key={group.id} className={`cl-cap${group.id === "resilience" ? " cl-cap--wide" : ""}${optionalOnly ? " is-optional" : ""}`} aria-labelledby={`cl-cap-${group.id}`}>
+                <header>
+                  <span className="cl-cap-icon">
+                    <Glyph>{group.icon}</Glyph>
+                  </span>
+                  <span>
+                    <h3 id={`cl-cap-${group.id}`}>{group.name}</h3>
+                    <small>{group.blurb}</small>
+                  </span>
+                  {optionalOnly && <span className="cl-tag-optional">Optional</span>}
+                </header>
+                <ul>
+                  {group.items.map((component) => (
+                    <li key={component.id} className={component.mandatory === false ? "is-optional" : undefined}>
+                      <span className="cl-part" title={component.description}>
+                        {component.name}
+                      </span>
+                      <SystemTiles component={component} />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            );
+          })}
         </div>
-      )}
-      <div className="cl-caps">
-        {groups.map((group) => {
-          const optionalOnly = group.items.every((item) => item.mandatory === false);
-          return (
-            <section key={group.id} className={`cl-cap${group.id === "resilience" ? " cl-cap--wide" : ""}${optionalOnly ? " is-optional" : ""}`} aria-labelledby={`cl-cap-${group.id}`}>
-              <header>
-                <span className="cl-cap-icon">
-                  <Glyph>{group.icon}</Glyph>
-                </span>
-                <span>
-                  <h3 id={`cl-cap-${group.id}`}>{group.name}</h3>
-                  <small>{group.blurb}</small>
-                </span>
-                {optionalOnly && <span className="cl-tag-optional">Optional</span>}
-              </header>
-              <ul>
-                {group.items.map((component) => (
-                  <li key={component.id} className={component.mandatory === false ? "is-optional" : undefined}>
-                    <span className="cl-part" title={component.description}>
-                      {component.name}
-                    </span>
-                    <SystemTiles component={component} />
-                  </li>
-                ))}
-              </ul>
-            </section>
-          );
-        })}
-      </div>
-      <p className="cl-sub">Grouped by what each part does for the customer: this catalogue's reading. The tiles are the systems that deliver each part.</p>
-      <details className="cl-codes">
-        <summary>
-          Offer and service codes <small>{offering.components.length}</small>
-        </summary>
-        <table className="cl-codes-table" aria-label="Offer and service codes">
-          <thead>
-            <tr>
-              <th scope="col">Component</th>
-              <th scope="col">Offer code</th>
-              <th scope="col">Service code</th>
-            </tr>
-          </thead>
-          <tbody>
-            {offering.components.map((component) => (
-              <tr key={component.id}>
-                <th scope="row">{component.name}</th>
-                <td translate="no">{component.offerCode || "Not stated"}</td>
-                <td translate="no">{component.specCode || "Not stated"}</td>
+        <p className="cl-sub">Grouped by what each part does for the customer: this catalogue's reading. The tiles are the systems that deliver each part.</p>
+        <details className="cl-codes">
+          <summary>
+            Offer and service codes <small>{offering.components.length}</small>
+          </summary>
+          <table className="cl-codes-table" aria-label="Offer and service codes">
+            <thead>
+              <tr>
+                <th scope="col">Component</th>
+                <th scope="col">Offer code</th>
+                <th scope="col">Service code</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </details>
+            </thead>
+            <tbody>
+              {offering.components.map((component) => (
+                <tr key={component.id}>
+                  <th scope="row">{component.name}</th>
+                  <td translate="no">{component.offerCode || "Not stated"}</td>
+                  <td translate="no">{component.specCode || "Not stated"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </details>
+      </div>
     </section>
   );
 }
@@ -423,11 +425,11 @@ const ELIGIBILITY_GROUPS: { id: string; label: string; question: string; match: 
 const CHANNEL_KINDS: Record<string, string> = { assisted: "Assisted", "self-service": "Self-service", system: "Systems" };
 
 /**
- * Who can buy the offering and how its orders arrive. On the left, the
- * conditions answer four questions, each a card with its own icon; every
- * condition sits on a checklist line whose node shows how sure the catalogue is
- * (filled: confirmed, ring: inferred, dashed: a gap). On the right, every order
- * type against every ordering channel: rows grouped by the customer's stage
+ * Who can buy the offering and how its orders arrive, as two full-width
+ * sections. First the conditions, four cards side by side, one per question,
+ * each with its own icon; every condition sits on a checklist line whose node
+ * shows how sure the catalogue is (filled: confirmed, ring: inferred, dashed: a
+ * gap). Then every order type against every ordering channel: rows grouped by the customer's stage
  * (join, change, support, leave), channels grouped by kind, each channel with
  * its monogram tile and how many order types it takes.
  */
@@ -451,32 +453,29 @@ function WhoCanBuy({ offering }: { offering: Offering }) {
   const journeyFor = (code: string) => data.journeys.find((journey) => journey.offeringId === offering.id && journey.orderType === code);
 
   return (
-    <section className="cl-card cl-span-12" aria-labelledby="cl-who-h">
-      <h2 id="cl-who-h">
-        Who can buy it, and how{" "}
-        <small>
-          {plural(offering.eligibility.length, "condition")} · {plural(offering.orderTypes.length, "order type")} · {plural(channels.length, "channel")}
-        </small>
-        <span className="cl-sure">
-          <span className="cl-sure-item confirmed">
-            <i aria-hidden="true" />
-            {sure.confirmed} confirmed
+    <>
+      <section className="cl-card cl-span-12 pv-sec" aria-labelledby="cl-who-h">
+        <h2 id="cl-who-h">
+          Who can buy it <small>{plural(offering.eligibility.length, "condition")}, by the question each answers</small>
+          <span className="cl-sure">
+            <span className="cl-sure-item confirmed">
+              <i aria-hidden="true" />
+              {sure.confirmed} confirmed
+            </span>
+            {sure.inferred > 0 && (
+              <span className="cl-sure-item inferred">
+                <i aria-hidden="true" />
+                {sure.inferred} inferred
+              </span>
+            )}
+            {sure.gap > 0 && (
+              <span className="cl-sure-item gap">
+                <i aria-hidden="true" />
+                {sure.gap} {sure.gap === 1 ? "gap" : "gaps"}
+              </span>
+            )}
           </span>
-          {sure.inferred > 0 && (
-            <span className="cl-sure-item inferred">
-              <i aria-hidden="true" />
-              {sure.inferred} inferred
-            </span>
-          )}
-          {sure.gap > 0 && (
-            <span className="cl-sure-item gap">
-              <i aria-hidden="true" />
-              {sure.gap} {sure.gap === 1 ? "gap" : "gaps"}
-            </span>
-          )}
-        </span>
-      </h2>
-      <div className="cl-who">
+        </h2>
         <div className="cl-elig">
           {groups.map((group) => (
             <section key={group.id} className="cl-elig-card" aria-labelledby={`cl-who-${group.id}`}>
@@ -502,10 +501,15 @@ function WhoCanBuy({ offering }: { offering: Offering }) {
             </section>
           ))}
         </div>
-        <div className="cl-route">
-          <h3>
-            Ordering channels for each order type <small>grouped by the customer's stage</small>
-          </h3>
+      </section>
+      <section className="cl-card cl-span-12 pv-sec" aria-labelledby="cl-route-h">
+        <h2 id="cl-route-h">
+          How each order type is placed{" "}
+          <small>
+            {plural(offering.orderTypes.length, "order type")} · {plural(channels.length, "ordering channel")} · grouped by the customer's stage
+          </small>
+        </h2>
+        <div className="pv-panel cl-route">
           <div className="cl-tablewrap" role="region" aria-label="Channels by order type (scrolls sideways when narrow)" tabIndex={0}>
             <table className="cl-route-table">
               <thead>
@@ -568,8 +572,8 @@ function WhoCanBuy({ offering }: { offering: Offering }) {
             </table>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
 }
 
@@ -578,7 +582,7 @@ function PlansAtAGlance({ offering }: { offering: Offering }) {
   const speed = (plan: Offering["plans"][number], name: RegExp) => plan.characteristics.find((item) => name.test(item.name))?.value;
   const max = Math.max(1, ...offering.plans.map((plan) => leadingNumber(speed(plan, /download/i) ?? "") ?? 0));
   return (
-    <section className="cl-card cl-span-12" aria-labelledby="cl-glance-h">
+    <section className="cl-card cl-span-12 pv-sec" aria-labelledby="cl-glance-h">
       <h2 id="cl-glance-h">
         Plans at a glance <small>Prices are a gap: the SDD states none</small>
         <Link className="cl-h2-link" to={`${LAB}/products/${offering.id}/plans`}>
@@ -630,20 +634,22 @@ export function ProductOverview() {
       />
       <div className="cl-grid">
         <Bundle offering={offering} />
-        <section className="cl-card cl-span-7" aria-labelledby="cl-values-h">
+        <section className="cl-card cl-span-5 pv-sec" aria-labelledby="cl-values-h">
           <h2 id="cl-values-h">
             Customer value <small>{plural(offering.values.length, "reason")} a business buys it</small>
           </h2>
-          <ul className="cl-phrases">
-            {offering.values.map((value) => (
-              <li key={value.title}>
-                <p>
-                  <strong>{value.title}:</strong> {value.detail}
-                </p>
-                <EvidenceTag evidence={value.evidence} />
-              </li>
-            ))}
-          </ul>
+          <div className="pv-panel">
+            <ul className="cl-phrases">
+              {offering.values.map((value) => (
+                <li key={value.title}>
+                  <p>
+                    <strong>{value.title}:</strong> {value.detail}
+                  </p>
+                  <EvidenceTag evidence={value.evidence} />
+                </li>
+              ))}
+            </ul>
+          </div>
         </section>
         <WhoCanBuy offering={offering} />
         <PlansAtAGlance offering={offering} />

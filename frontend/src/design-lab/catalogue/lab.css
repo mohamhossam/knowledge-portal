@@ -68,6 +68,11 @@
   --cl-spine-ink: #4b0f1e;
   --cl-spine-edge: #4b0f1e;
   --cl-spine-lane: #f4eaec;
+  /* A product's footprint: a deep teal that no layer, state or brand colour uses. */
+  --cl-teal: #17615d;
+  --cl-teal-ink: #0f4744;
+  --cl-teal-mid: #8fc3bc;
+  --cl-teal-soft: #e3f1ef;
   /* One maroon ramp for amounts, light to dark. */
   --cl-m1: #f4eaec;
   --cl-m2: #e2b8c1;
@@ -1426,3 +1431,53 @@ a.cl-pill:hover { color: var(--cl-maroon); }
   .pd-facts { margin-left: 0; }
   .pd-source { margin-left: 0; }
 }
+/* Product overview: one layout system. Every section is a heading over a rule; its content sits on one kind of panel (paper, hairline, 12px corners); panels side by side end level. */
+.cl-grid:has(> .pv-sec) { align-items: stretch; row-gap: 32px; }
+.cl-span-5 { grid-column: span 5; }
+.pv-panel { flex: 1 1 auto; min-width: 0; padding: 16px; border: 1px solid var(--cl-hairline); border-radius: 12px; background: var(--cl-paper); }
+.pv-panel.cl-bundle { grid-column: auto; }
+.pv-sec .cl-phrases li:first-child { padding-top: 0; }
+.pv-sec .cl-phrases li:last-child { padding-bottom: 0; border-bottom: 0; }
+.pv-sec .cl-phrases li { padding: 12px 0; }
+.pv-sec .cl-elig { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.pv-sec .cl-elig-card { border-radius: 12px; }
+.pv-sec .cl-elig-card header { padding: 12px 14px; }
+.pv-sec .cl-route { padding: 8px 16px 4px; background: var(--cl-page); }
+.pv-sec .cl-route-table thead tr:last-child th:first-child { width: 34%; }
+.pv-sec .cl-glance { gap: 16px; }
+.pv-sec .cl-glance li { padding: 14px 16px; border-radius: 12px; background: var(--cl-paper); }
+@media (max-width: 1180px) {
+  .cl-span-5 { grid-column: span 12; }
+  .pv-sec .cl-elig { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .pv-sec .cl-elig { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* A product's footprint on the map has its own colour, a deep teal used nowhere else, so "this product uses it" can't be read as a layer tint or as a selection (maroon). Core: solid teal. Used: a teal outline. Carries calls only: a dashed teal outline. Not used: quiet. */
+.am-card.is-core { background: var(--cl-teal); border-color: var(--cl-teal); box-shadow: none; color: var(--cl-page); }
+.am-card.is-core .am-card-name, .am-card.is-core .am-card-fn { color: var(--cl-page); }
+.am-card.is-core .am-mono { background: var(--cl-page); color: var(--cl-teal-ink); box-shadow: none; }
+.am-card.is-core:hover { background: var(--cl-teal-ink); border-color: var(--cl-teal-ink); }
+.am-card.is-used { background: var(--cl-page); border-color: var(--cl-teal); box-shadow: 0 0 0 1px var(--cl-teal); }
+.am-card.is-used .am-card-fn, .am-card.is-carries .am-card-fn { color: var(--cl-teal-ink); font-weight: 600; }
+.am-card.is-used .am-mono { background: var(--cl-teal-soft); color: var(--cl-teal-ink); box-shadow: none; }
+.am-card.is-carries { background: var(--cl-page); border: 1px dashed var(--cl-teal); box-shadow: none; }
+.am-card.is-carries .am-mono { background: var(--cl-page); color: var(--cl-teal-ink); box-shadow: inset 0 0 0 1px var(--cl-teal-mid); }
+.am-card.is-lit { background: var(--cl-teal-soft); border-color: var(--cl-teal); box-shadow: 0 0 0 1px var(--cl-teal); }
+.am-card.is-lit .am-mono { background: var(--cl-teal); color: var(--cl-page); box-shadow: none; }
+.am-card.is-lit .am-card-fn { color: var(--cl-teal-ink); }
+.am-card[aria-pressed="true"].is-core, .am-card[aria-pressed="true"].is-used, .am-card[aria-pressed="true"].is-carries, .am-card[aria-pressed="true"].is-lit { background: var(--cl-maroon); border-color: var(--cl-maroon); box-shadow: 0 0 0 2px var(--cl-page), 0 0 0 4px var(--cl-maroon); color: var(--cl-page); }
+.am-card[aria-pressed="true"] .am-card-name, .am-card[aria-pressed="true"] .am-card-fn { color: var(--cl-page); }
+.am-meter i.on { background: var(--cl-teal); }
+.cl-legend .tier.core { background: var(--cl-teal); border-color: var(--cl-teal); }
+.cl-legend .tier.used { background: var(--cl-page); border-color: var(--cl-teal); box-shadow: inset 0 0 0 1px var(--cl-teal); }
+.cl-legend .tier.carries { background: var(--cl-page); border: 1px dashed var(--cl-teal); }
+.cl-core button { border-color: var(--cl-teal-mid); background: var(--cl-teal-soft); }
+.cl-core button:hover { background: var(--cl-page); outline: 1px solid var(--cl-teal); }
+.cl-core small { color: var(--cl-teal-ink); }
+.cl-core span { color: var(--cl-teal-ink); }
+.cl-use-tier.is-core { background: var(--cl-teal-soft); color: var(--cl-teal-ink); }
+.pv-panel.cl-bundle > .cl-sub { margin-top: 12px; }
+/* Customer value shares its row with the bundle: its reasons spread down the panel instead of leaving a strip at the bottom. */
+.pv-panel > .cl-phrases { display: flex; flex-direction: column; justify-content: space-between; height: 100%; }
