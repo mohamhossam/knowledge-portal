@@ -43,6 +43,7 @@ from knowledge_portal.domain.architecture.knowledge import (
 )
 from knowledge_portal.domain.architecture.portfolio import PortfolioNode
 from knowledge_portal.domain.architecture.products import ProductOffering
+from knowledge_portal.domain.architecture.vocabularies import VocabularyTerm
 
 
 class KnowledgeNotFoundError(Exception):
@@ -226,6 +227,7 @@ class ManageArchitectureKnowledge:
         conflicts: tuple[SourceConflict, ...] | None = None,
         portfolio: tuple[PortfolioNode, ...] | None = None,
         business_capabilities: tuple[BusinessCapability, ...] | None = None,
+        vocabulary: tuple[VocabularyTerm, ...] | None = None,
     ) -> ArchitectureKnowledge:
         require_maintainer(actor)
         current = self.get(release_id)
@@ -243,6 +245,7 @@ class ManageArchitectureKnowledge:
             conflicts=conflicts,
             portfolio=portfolio,
             business_capabilities=business_capabilities,
+            vocabulary=vocabulary,
         )
         self._repository.save(updated, expected_revision, actor.id, "edit_draft")
         return updated
@@ -364,6 +367,7 @@ class ManageArchitectureKnowledge:
             ),
             portfolio=imported.portfolio,
             business_capabilities=imported.business_capabilities,
+            vocabulary=imported.vocabulary,
         )
 
     def preview_file_import(
@@ -399,6 +403,7 @@ class ManageArchitectureKnowledge:
             conflicts=imported.conflicts,
             portfolio=imported.portfolio,
             business_capabilities=imported.business_capabilities,
+            vocabulary=imported.vocabulary,
         )
 
     def export_file(self, release_id: str, file_format: CatalogueFileFormat, actor: Actor) -> bytes:

@@ -19,6 +19,7 @@ class CatalogueReading(StrEnum):
 
     CONCEPT_BACKFILL = "concept_backfill"
     COMPONENT_LINKS = "component_links"
+    VOCABULARY_CLEANUP = "vocabulary_cleanup"
 
 
 @dataclass(frozen=True)

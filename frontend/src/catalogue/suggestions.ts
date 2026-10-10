@@ -42,7 +42,9 @@ export function needsOneByOne(suggestion: Suggestion): boolean {
   const kind = suggestion.content.kind;
   return suggestion.basis === "inferred"
     || suggestion.possible_matches.length > 0
-    || ((kind === "placement" || kind === "product" || kind === "journey") && suggestion.match === "updates_existing");
+    || ((kind === "placement" || kind === "product" || kind === "journey") && suggestion.match === "updates_existing")
+    // A value no term names is flagged as a new term, decided alone.
+    || (kind === "vocabulary_term" && suggestion.match === "new");
 }
 
 export function suggestionState(suggestion: Suggestion): SuggestionState {
@@ -200,8 +202,26 @@ export function changeSentence(suggestion: Suggestion, words: Lexicon): string {
     }
     case "component_link":
       return `Links ${words.offering(content.system_id)} › ${content.component_id ?? ""} to ${listed(content.concept_ids)}`;
+    case "vocabulary_term": {
+      const term = content.term;
+      const scheme = term ? SCHEME[term.scheme] : "term";
+      const label = term ? `${term.pref_label}${term.notation ? ` (${term.notation})` : ""}` : content.system_id;
+      const covered = content.value_refs.length;
+      const values = covered === 1 ? "1 value" : `${covered} values`;
+      if (replaces) return `Links ${values} to the ${scheme} ${label}`;
+      return `Adds the ${scheme} ${label}${covered ? `, linking ${values}` : ""}`;
+    }
   }
 }
+
+/** What each controlled vocabulary is called in a sentence. */
+const SCHEME: Record<NonNullable<Suggestion["content"]["term"]>["scheme"], string> = {
+  etom_process: "eTOM process",
+  channel_kind: "channel kind",
+  component_kind: "component kind",
+  responsibility_role: "role",
+  open_api: "Open API",
+};
 
 export function targetName(suggestion: Suggestion, words: Lexicon): string {
   return suggestion.target_system_name ?? words.system(suggestion.content.target_system_id ?? "");
@@ -333,6 +353,7 @@ const SECTION = {
   offerings: "Offerings",
   questions: "Questions for offerings",
   journeys: "Journeys",
+  vocabulary: "Vocabulary terms",
 } as const;
 
 /** The galley's groups: new systems first, then the systems the draft has, then domains, offerings and journeys. */
@@ -358,6 +379,9 @@ export function suggestionGroups(release: Release, suggestions: Suggestion[], wo
     } else if (content.kind === "journey") {
       key = "section:journeys";
       group = { key, isNew: false, label: SECTION.journeys };
+    } else if (content.kind === "vocabulary_term") {
+      key = "section:vocabulary";
+      group = { key, isNew: false, label: SECTION.vocabulary };
     } else {
       // Keyed by the system's name, so a new system keeps its group once accepted into the draft.
       const label = suggestion.system_name ?? words.system(content.system_id);

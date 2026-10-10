@@ -123,6 +123,8 @@ from knowledge_portal.domain.architecture.tracking import (
     TrackingEvent,
     TrackingFlow,
 )
+from knowledge_portal.domain.architecture.vocabularies import VocabularyScheme, VocabularyTerm
+from knowledge_portal.domain.architecture.vocabulary_links import VocabularyField, VocabularyRef
 from knowledge_portal.interfaces.api.schemas.bounds import (
     MAX_CATALOGUE_ITEMS,
     Identifier,
@@ -214,6 +216,74 @@ class BusinessCapabilitySchema(BaseModel):
 class CapabilityRefSchema(BaseModel):
     system_id: Identifier
     capability_id: Identifier
+
+
+class VocabularyTermSchema(BaseModel):
+    """A term of a controlled vocabulary: an eTOM process, a channel or component kind, a
+    role or an Open API."""
+
+    id: Identifier
+    scheme: VocabularyScheme
+    pref_label: Name
+    alt_labels: list[Name] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    notation: Name | None = None
+    definition: Text | None = None
+    broader_id: Identifier | None = None
+    exact_match: Name | None = None
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
+
+    @classmethod
+    def from_domain(cls, term: VocabularyTerm) -> VocabularyTermSchema:
+        return cls.model_construct(
+            id=term.id,
+            scheme=term.scheme,
+            pref_label=term.pref_label,
+            alt_labels=list(term.alt_labels),
+            notation=term.notation,
+            definition=term.definition,
+            broader_id=term.broader_id,
+            exact_match=term.exact_match,
+            confidence=term.confidence,
+            source=term.source,
+        )
+
+    def to_domain(self) -> VocabularyTerm:
+        return VocabularyTerm(
+            self.id,
+            self.scheme,
+            self.pref_label,
+            tuple(self.alt_labels),
+            self.notation,
+            self.definition,
+            self.broader_id,
+            self.exact_match,
+            self.confidence,
+            self.source,
+        )
+
+
+class VocabularyRefSchema(BaseModel):
+    """One place a vocabulary value is written, and the value as it was read there."""
+
+    field: VocabularyField
+    owner_id: Identifier
+    value: Name
+    item: Identifier | None = None
+    part: Identifier | None = None
+
+    @classmethod
+    def from_domain(cls, ref: VocabularyRef) -> VocabularyRefSchema:
+        return cls.model_construct(
+            field=ref.field,
+            owner_id=ref.owner_id,
+            value=ref.value,
+            item=ref.item,
+            part=ref.part,
+        )
+
+    def to_domain(self) -> VocabularyRef:
+        return VocabularyRef(self.field, self.owner_id, self.value, self.item, self.part)
 
 
 class SystemComponentSchema(BaseModel):
@@ -335,6 +405,8 @@ class ChannelSchema(BaseModel):
     description: Text | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # The channel kind term the kind means.
+    kind_id: Identifier | None = None
 
     @classmethod
     def from_domain(cls, channel: Channel) -> ChannelSchema:
@@ -342,6 +414,7 @@ class ChannelSchema(BaseModel):
             id=channel.id,
             name=channel.name,
             kind=channel.kind,
+            kind_id=channel.kind_id,
             entry_system_id=channel.entry_system_id,
             description=channel.description,
             confidence=channel.confidence,
@@ -353,6 +426,7 @@ class ChannelSchema(BaseModel):
             id=self.id,
             name=self.name,
             kind=self.kind,
+            kind_id=self.kind_id,
             entry_system_id=self.entry_system_id,
             description=self.description,
             confidence=self.confidence,
@@ -1010,12 +1084,15 @@ class ComponentResponsibilitySchema(BaseModel):
     order_types: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # The role term the role means.
+    role_id: Identifier | None = None
 
     @classmethod
     def from_domain(cls, item: ComponentResponsibility) -> ComponentResponsibilitySchema:
         return cls.model_construct(
             system_id=item.system_id,
             role=item.role,
+            role_id=item.role_id,
             description=item.description,
             order_types=list(item.order_types),
             confidence=item.confidence,
@@ -1030,6 +1107,7 @@ class ComponentResponsibilitySchema(BaseModel):
             tuple(self.order_types),
             self.confidence,
             self.source,
+            self.role_id,
         )
 
 
@@ -1053,6 +1131,8 @@ class OfferingComponentSchema(BaseModel):
     # The business capability concepts it delivers (ADR-0114), or why none fits.
     capability_ids: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     unlinked_reason: Sentence | None = None
+    # The component kind term the kind means.
+    kind_id: Identifier | None = None
 
     @classmethod
     def from_domain(cls, component: OfferingComponent) -> OfferingComponentSchema:
@@ -1076,6 +1156,7 @@ class OfferingComponentSchema(BaseModel):
             realisation=[RealisationSchema.from_domain(item) for item in component.realisation],
             capability_ids=list(component.capability_ids),
             unlinked_reason=component.unlinked_reason,
+            kind_id=component.kind_id,
         )
 
     def to_domain(self) -> OfferingComponent:
@@ -1096,6 +1177,7 @@ class OfferingComponentSchema(BaseModel):
             realisation=tuple(item.to_domain() for item in self.realisation),
             capability_ids=tuple(self.capability_ids),
             unlinked_reason=self.unlinked_reason,
+            kind_id=self.kind_id,
         )
 
 
@@ -1298,6 +1380,9 @@ class ActivitySchema(BaseModel):
     point_of_no_return: Text | None = None
     # What it does for the order, as one code, e.g. "ORCHESTRATE".
     role: Name | None = None
+    # The eTOM process and role terms ``etom`` and ``role`` mean.
+    etom_id: Identifier | None = None
+    role_id: Identifier | None = None
 
     @classmethod
     def from_domain(cls, item: Activity) -> ActivitySchema:
@@ -1323,6 +1408,8 @@ class ActivitySchema(BaseModel):
             performer=item.performer,
             point_of_no_return=item.point_of_no_return,
             role=item.role,
+            etom_id=item.etom_id,
+            role_id=item.role_id,
         )
 
     def to_domain(self) -> Activity:
@@ -1348,6 +1435,8 @@ class ActivitySchema(BaseModel):
             performer=self.performer,
             point_of_no_return=self.point_of_no_return,
             role=self.role,
+            etom_id=self.etom_id,
+            role_id=self.role_id,
         )
 
 
@@ -1408,6 +1497,8 @@ class ActivityIntegrationSchema(BaseModel):
     purpose: Text | None = None
     style: Name | None = None
     tmf_equivalent: Name | None = None
+    # The Open API terms ``tmf_equivalent`` names.
+    open_api_ids: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, link: ActivityIntegration) -> ActivityIntegrationSchema:
@@ -1427,6 +1518,7 @@ class ActivityIntegrationSchema(BaseModel):
             purpose=link.purpose,
             style=link.style,
             tmf_equivalent=link.tmf_equivalent,
+            open_api_ids=list(link.open_api_ids),
         )
 
     def to_domain(self) -> ActivityIntegration:
@@ -1446,6 +1538,7 @@ class ActivityIntegrationSchema(BaseModel):
             purpose=self.purpose,
             style=self.style,
             tmf_equivalent=self.tmf_equivalent,
+            open_api_ids=tuple(self.open_api_ids),
         )
 
 
@@ -1669,6 +1762,10 @@ class KnowledgeReleaseResponse(BaseModel):
     business_capabilities: list[BusinessCapabilitySchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
     )
+    # The controlled vocabularies.
+    vocabulary: list[VocabularyTermSchema] = Field(
+        default_factory=list, max_length=MAX_CATALOGUE_ITEMS
+    )
 
     @classmethod
     def from_domain(cls, release: ArchitectureKnowledge) -> KnowledgeReleaseResponse:
@@ -1709,6 +1806,7 @@ class KnowledgeReleaseResponse(BaseModel):
             business_capabilities=[
                 BusinessCapabilitySchema.from_domain(item) for item in release.business_capabilities
             ],
+            vocabulary=[VocabularyTermSchema.from_domain(item) for item in release.vocabulary],
         )
 
 
@@ -1916,6 +2014,10 @@ class DraftUpdateRequest(BaseModel):
     business_capabilities: list[BusinessCapabilitySchema] | None = Field(
         default=None, max_length=MAX_CATALOGUE_ITEMS
     )
+    # Likewise for the controlled vocabularies.
+    vocabulary: list[VocabularyTermSchema] | None = Field(
+        default=None, max_length=MAX_CATALOGUE_ITEMS
+    )
 
 
 class SystemUpdateRequest(BaseModel):
@@ -2007,6 +2109,9 @@ class CandidateContentSchema(BaseModel):
     capability_refs: list[CapabilityRefSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     # The concepts a component delivers, for a component link (ADR-0114).
     concept_ids: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    # A vocabulary term and the places it covers, for a vocabulary suggestion.
+    term: VocabularyTermSchema | None = None
+    value_refs: list[VocabularyRefSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, content: CandidateContent) -> CandidateContentSchema:
@@ -2044,6 +2149,8 @@ class CandidateContentSchema(BaseModel):
                 for item in content.capability_refs
             ],
             concept_ids=list(content.concept_ids),
+            term=VocabularyTermSchema.from_domain(content.term) if content.term else None,
+            value_refs=[VocabularyRefSchema.from_domain(item) for item in content.value_refs],
         )
 
     def to_domain(self) -> CandidateContent:
@@ -2072,6 +2179,8 @@ class CandidateContentSchema(BaseModel):
                 CapabilityRef(item.system_id, item.capability_id) for item in self.capability_refs
             ),
             tuple(self.concept_ids),
+            self.term.to_domain() if self.term else None,
+            tuple(item.to_domain() for item in self.value_refs),
         )
 
 

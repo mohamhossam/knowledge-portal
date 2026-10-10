@@ -118,6 +118,7 @@ from knowledge_portal.application.use_cases.requirement_corpus import (
     ReadRequirementCorpus,
 )
 from knowledge_portal.application.use_cases.source_impact import DocumentSourceImpact
+from knowledge_portal.application.use_cases.vocabulary_cleanup import CleanUpVocabulary
 from knowledge_portal.domain.identity.entities import ActorProfile
 from knowledge_portal.infrastructure.config.options import (
     DEFAULT_PRODUCT_CATALOG_TIMEOUT_SECONDS,
@@ -221,6 +222,7 @@ class Container:
     read_knowledge_document: ReadKnowledgeDocument
     decide_catalogue_candidates: DecideCatalogueCandidate
     propose_capability_concepts: ProposeCapabilityConcepts
+    clean_up_vocabulary: CleanUpVocabulary
     suggest_component_capabilities: SuggestComponentCapabilities
     # Change requests from Requirement AI (requirement-portal ADR-0101, step 7).
     receive_change_request: ReceiveChangeRequest
@@ -419,6 +421,7 @@ def _build_container(
         read_knowledge_document=architecture.read_document,
         decide_catalogue_candidates=architecture.decide_candidates,
         propose_capability_concepts=architecture.propose_concepts,
+        clean_up_vocabulary=architecture.clean_up_vocabulary,
         suggest_component_capabilities=architecture.suggest_component_links,
         receive_change_request=architecture.receive_change_request,
         list_change_requests=architecture.list_change_requests,

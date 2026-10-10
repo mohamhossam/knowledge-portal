@@ -242,3 +242,40 @@ describe("offering detail suggestions", () => {
     expect(bulkAcceptable(release, [store, portal, ...channels, offering]).lifted).toEqual([offering]);
   });
 });
+
+describe("vocabulary suggestions", () => {
+  const ref = { field: "activity_etom", owner_id: "bpp-new", value: "Fulfillment · Order Handling", item: "10" } as const;
+  const orders = suggestion(
+    {
+      kind: "vocabulary_term", system_id: "etom-order-handling",
+      term: { id: "etom-order-handling", scheme: "etom_process", pref_label: "Order Handling", alt_labels: [] },
+      value_refs: [ref, { ...ref, item: "20" }],
+    },
+    { match: "updates_existing" },
+  );
+  const saml = suggestion(
+    {
+      kind: "vocabulary_term", system_id: "role-saml",
+      term: { id: "role-saml", scheme: "responsibility_role", pref_label: "SAML", alt_labels: [] },
+      value_refs: [{ field: "responsibility_role", owner_id: "bpp", value: "SAML", item: "selfservice", part: "b2b-web" }],
+    },
+  );
+  const api = suggestion({
+    kind: "vocabulary_term", system_id: "api-tmf681",
+    term: { id: "api-tmf681", scheme: "open_api", pref_label: "Communication", notation: "TMF681", alt_labels: [] },
+    value_refs: [],
+  });
+  const termWords = lexicon(release, [orders, saml, api]);
+
+  it("says which term it adds or links, and how many values", () => {
+    expect(changeSentence(orders, termWords)).toBe("Links 2 values to the eTOM process Order Handling");
+    expect(changeSentence(saml, termWords)).toBe("Adds the role SAML, linking 1 value");
+    expect(changeSentence(api, termWords)).toBe("Adds the Open API Communication (TMF681)");
+  });
+
+  it("leaves a new term, a flagged value, for a person to decide alone", () => {
+    expect(suggestionState(orders)).toBe("ready");
+    expect(suggestionState(saml)).toBe("decide");
+    expect(suggestionGroups(release, [orders, saml], termWords).map((group) => group.label)).toEqual(["Vocabulary terms"]);
+  });
+});

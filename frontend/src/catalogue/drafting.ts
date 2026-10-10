@@ -132,6 +132,7 @@ export const DIFF_ORDER: { item: Item; one: string; many: string }[] = [
   { item: "product", one: "Offering", many: "Offerings" },
   { item: "journey", one: "Journey", many: "Journeys" },
   { item: "concept", one: "Capability concept", many: "Capability concepts" },
+  { item: "vocabulary_term", one: "Vocabulary term", many: "Vocabulary terms" },
   { item: "document", one: "Document", many: "Documents" },
 ];
 
@@ -161,6 +162,9 @@ const FIELD: Record<string, string> = {
   realisation: "how its parts are realised",
   concept: "capability concept",
   capability_links: "capability concepts of its parts",
+  vocabulary_links: "vocabulary terms",
+  scheme: "vocabulary",
+  notation: "code",
   pref_label: "label",
   alt_labels: "other labels",
   definition: "definition",

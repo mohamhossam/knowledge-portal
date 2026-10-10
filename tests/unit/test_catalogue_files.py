@@ -181,6 +181,7 @@ def test_template_has_instructions_and_every_sheet() -> None:
         "PlanCharacteristics",
         "BusinessRules",
         "Concepts",
+        "Vocabulary",
     ]
     assert ADAPTER.read(CatalogueFileFormat.XLSX, ADAPTER.template()).systems == ()
 

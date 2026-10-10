@@ -162,7 +162,7 @@ export function JourneyEditor({ value, onChange, systems, offerings, channels = 
         one="hand-over"
         items={value.integrations}
         onChange={(integrations) => set({ integrations })}
-        blank={() => ({ from_activity: firstStep, to_activity: firstStep })}
+        blank={() => ({ from_activity: firstStep, to_activity: firstStep, open_api_ids: [] })}
         itemLabel={(link, index) => `hand-over ${index + 1}`}
         render={(link, update) => (
           <>

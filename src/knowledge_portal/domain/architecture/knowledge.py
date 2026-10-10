@@ -33,6 +33,8 @@ from knowledge_portal.domain.architecture.journeys import Journey, check_journey
 from knowledge_portal.domain.architecture.portfolio import PortfolioNode, check_portfolio
 from knowledge_portal.domain.architecture.products import ProductOffering, check_offerings
 from knowledge_portal.domain.architecture.sources import SourceConfidence, check_source
+from knowledge_portal.domain.architecture.vocabularies import VocabularyTerm, check_vocabulary
+from knowledge_portal.domain.architecture.vocabulary_links import check_vocabulary_links
 
 
 class KnowledgeReleaseStatus(StrEnum):
@@ -418,6 +420,9 @@ class ArchitectureKnowledge:
     # The business capability concepts systems and offering components are linked to
     # (ADR-0114); the capability domains are the scheme's top levels.
     business_capabilities: tuple[BusinessCapability, ...] = ()
+    # The controlled vocabularies behind eTOM process, channel kind, component kind,
+    # role and Open API values, each beside the text it covers (ADR-0114).
+    vocabulary: tuple[VocabularyTerm, ...] = ()
 
     def __post_init__(self) -> None:
         _required(self.id, "Knowledge id")
@@ -491,6 +496,9 @@ class ArchitectureKnowledge:
                     "which is not in the portfolio."
                 )
         check_journeys(self.journeys, system_ids, self.products, channel_ids)
+        check_vocabulary_links(
+            check_vocabulary(self.vocabulary), self.products, self.journeys, self.channels
+        )
         check_governance(
             self.sources,
             self.conflicts,
@@ -536,6 +544,7 @@ class ArchitectureKnowledge:
         change_history: tuple[ChangeRequestRecord, ...] | None = None,
         portfolio: tuple[PortfolioNode, ...] | None = None,
         business_capabilities: tuple[BusinessCapability, ...] | None = None,
+        vocabulary: tuple[VocabularyTerm, ...] | None = None,
     ) -> ArchitectureKnowledge:
         if self.status is not KnowledgeReleaseStatus.DRAFT:
             raise KnowledgeConflictError("Published knowledge is immutable.")
@@ -567,6 +576,7 @@ class ArchitectureKnowledge:
                 if business_capabilities is None
                 else business_capabilities
             ),
+            vocabulary=self.vocabulary if vocabulary is None else vocabulary,
         )
 
     def domain_path(self, domain_id: str | None) -> tuple[CapabilityDomain, ...]:

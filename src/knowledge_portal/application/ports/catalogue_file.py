@@ -21,6 +21,7 @@ from knowledge_portal.domain.architecture.knowledge import (
 )
 from knowledge_portal.domain.architecture.portfolio import PortfolioNode
 from knowledge_portal.domain.architecture.products import ProductOffering
+from knowledge_portal.domain.architecture.vocabularies import VocabularyTerm
 
 
 class CatalogueFileFormat(StrEnum):
@@ -69,6 +70,8 @@ class CatalogueContent:
     portfolio: tuple[PortfolioNode, ...] = ()
     # The business capability concepts capabilities and components are linked to (ADR-0114).
     business_capabilities: tuple[BusinessCapability, ...] = ()
+    # The controlled vocabularies written values are linked to.
+    vocabulary: tuple[VocabularyTerm, ...] = ()
 
 
 class CatalogueFilePort(Protocol):
