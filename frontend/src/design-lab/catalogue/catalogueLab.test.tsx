@@ -61,7 +61,10 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
     const { container } = open("/products/business-pro-plus");
     expect(screen.getByRole("heading", { level: 1, name: "Business Pro Plus" })).toBeInTheDocument();
     expect(screen.getByText(/Secure by default:/)).toBeInTheDocument();
-    const route = screen.getByRole("table");
+    // The bundle: the device at its heart, the parts grouped by what they do, Backup 5G optional.
+    expect(screen.getByText("At the heart of the bundle")).toBeInTheDocument();
+    for (const capability of ["Connectivity", "Security", "In the office", "Run and manage", "Resilience"]) expect(screen.getByRole("heading", { level: 3, name: capability })).toBeInTheDocument();
+    const route = screen.getAllByRole("table").find((table) => within(table).queryByRole("rowheader", { name: /New activation/ })) as HTMLElement;
     expect(within(route).getByRole("rowheader", { name: /New activation/ })).toBeInTheDocument();
     expect(within(route).getAllByRole("img", { name: "Through BCRM" }).length).toBeGreaterThan(5);
     expect(await axe(container)).toHaveNoViolations();

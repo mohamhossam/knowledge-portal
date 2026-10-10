@@ -17,7 +17,7 @@ import { type CSSProperties, type KeyboardEvent, type ReactNode, memo, useCallba
 
 import type { CatalogueData } from "../../architecture/adapter";
 import type { Integration, StepRole, System, TamDomain } from "../../architecture/model";
-import { plural, shortFunction } from "./labUtil";
+import { monogram, plural, shortFunction } from "./labUtil";
 
 /** Which layers share a row, top to bottom; the integration layer runs between them as a bus. */
 const ROWS: string[][] = [["market-sales", "product"], ["customer"], ["integration"], ["service", "resource"], ["engaged-party", "enterprise"]];
@@ -80,17 +80,6 @@ const LAYER_ICON: Record<string, ReactNode> = {
     </>
   ),
 };
-
-/** A system's monogram: its acronym in brackets, the start of an all-capitals name, or the initials of its first two words. */
-function monogram(name: string): string {
-  const bracket = /(([A-Z0-9]{2,4}))/.exec(name)?.[1];
-  if (bracket) return bracket;
-  const words = name.replace(/(.*)/, "").split(/[s/]+/).filter(Boolean);
-  const first = words[0] ?? name;
-  if (/^[A-Z0-9]{2,}$/.test(first)) return first.length <= 4 ? first : first.slice(0, 3);
-  if (words.length > 1) return (first[0] ?? "") + (words[1]?.[0] ?? "");
-  return first.slice(0, 2);
-}
 
 function LayerIcon({ id }: { id: string }) {
   return (

@@ -361,4 +361,14 @@ Maroon now means one thing only: selection and focus, the product's core and use
 - Links underline on hover only.
 - On a phone the rail scrolls inside itself and opens at its end, so the current page shows first.
 
+**The bundle as an anatomy (2026-10-10, user agreed).** "What's in the bundle" no longer has the solid maroon device block or the beige Market & Sales card.
+- **Device:** a white card at the heart of the bundle, with a device icon, its models as chips (Fortinet 90G, Fortinet 120G), the ECM model-by-speed rule beneath, and its delivering systems.
+- **Components:** grouped by what they do, as capability tiles: Connectivity, Security, In the office, Run and manage, and Resilience. Resilience is optional, dashed and full-width. One correctly drawn spine runs from the device down the gap, with a short rib into each tile.
+- **Delivering systems:** shown as the architecture map's monogram tiles in their layer colours, with visually hidden "Delivered by …" text.
+- **Grouping:** keyword-based and generic, labelled as this catalogue's reading; anything it can't place goes under "More".
+- **Codes:** "Offer and service codes" is a real disclosure with a chevron, a count and a table.
+- **Colours:** the card is neutral paper with an ink heading; maroon stays for the primary action.
+
+Also fixed `monogram()`: its backslashes had been lost, so it split names on the letter "s". It now prefers a name's acronym (CSRD, HPSM, BFF) and falls back to up to three initials (CAF, SSP). Checks: tests 25/25 with axe, with new bundle assertions; lint, typecheck and build green.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.
