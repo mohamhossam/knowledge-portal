@@ -445,4 +445,6 @@ At 1440 × 900 the page height equals the viewport: no scroll. Checks: tests 28/
 
 Evidence and per-product figures stay on each product's own pages. Checks: tests 28/28 with axe; the page still fits 1440 × 900 without scrolling.
 
+**No counts on tabs (2026-10-10, user).** Counts are removed from every tab: the catalogue bar (Products, Journeys, Systems, Governance), the product's tabs (Plans, Business rules, Components, Journeys) and the journey's Integrations tab. Counts belong to the pages, not the navigation.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.

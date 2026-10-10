@@ -312,7 +312,7 @@ export function JourneyFlow() {
           Flow (BPMN)
         </Link>
         <Link to={query({ view: "integrations" })} aria-current={tab === "integrations" ? "page" : undefined}>
-          Integrations <span className="cl-count">{view.integrations.length}</span>
+          Integrations
         </Link>
         <span className="cl-tabs-end">
           <ExportMenu file={file} view={view} />

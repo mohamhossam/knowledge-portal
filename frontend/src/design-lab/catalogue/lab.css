@@ -130,7 +130,6 @@
 .cl-tabs a[aria-current="page"] { color: var(--cl-maroon); border-bottom-color: var(--cl-maroon); }
 .cl-tabs a:focus-visible { outline-offset: -2px; box-shadow: none; }
 .cl-tabs--sub { margin-top: 16px; }
-.cl-count { margin-left: 6px; padding: 0 7px; border-radius: 999px; background: var(--cl-sand); font-size: 0.8125rem; font-weight: 600; color: var(--cl-ink-2); }
 .cl-head { display: flex; align-items: flex-end; gap: 24px 32px; flex-wrap: wrap; margin-top: 16px; }
 .cl-head-text { flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
 .cl-head h1 { font-size: 1.75rem; line-height: 1.2; font-weight: 700; font-stretch: 87.5%; letter-spacing: -0.01em; }
@@ -732,10 +731,7 @@
 .cl-area-nav a[aria-current="page"] .cl-area-icon { color: var(--cl-maroon); }
 .cl-area-nav a[aria-current="page"]::after { background: var(--cl-maroon); }
 .cl-area-nav a:focus-visible { outline-offset: -4px; box-shadow: none; }
-.cl-area-count { min-width: 22px; padding: 1px 7px; border-radius: 999px; background: var(--cl-sand); font-size: 0.75rem; font-weight: 600; text-align: center; color: var(--cl-ink-2); }
-.cl-area-nav a[aria-current="page"] .cl-area-count { background: var(--cl-maroon-mist); color: var(--cl-maroon); }
 .cl-area-off { color: var(--cl-ink-3); font-weight: 500; cursor: not-allowed; }
-.cl-area-off .cl-area-count { background: transparent; box-shadow: inset 0 0 0 1px var(--cl-hairline); color: var(--cl-ink-3); }
 /* The portfolio path: a rail with a node per level, aligned to the page's left edge. */
 .cl-path { margin-top: 18px; overflow-x: auto; scrollbar-width: none; }
 .cl-path ol { display: flex; align-items: flex-start; }
