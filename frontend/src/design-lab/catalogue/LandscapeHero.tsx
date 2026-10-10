@@ -1,25 +1,29 @@
 /**
- * Mock-up 1, the Landscape hero: the SMB architecture as a TAM layer map (or,
- * on request, as an integration matrix). The side panel is a layer navigator
+ * Mock-up 1, the Landscape hero: the SMB architecture in three views of the
+ * same estate. The TAM wheel puts the domains round the integration layer with
+ * the calls bundled through it; Layers draws each TAM layer as a block with its
+ * groups and system cards; Matrix reads the links by row and column. The side panel is a domain navigator
  * at rest and the picked system's card when one is chosen. No product bar: a
  * product's footprint lives on its own Architecture tab.
  */
 import { type FormEvent, useCallback, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
-import { ArchitectureMap } from "./ArchitectureMap";
 import { AreaTabs, EvidenceTag } from "./CatalogueLab";
+import { ArchitectureMap } from "./ArchitectureMap";
 import { IntegrationMatrix } from "./IntegrationMatrix";
 import { journeyHref, LAB, useLabData } from "./labData";
 import { firstSentence, listOf, plural, useTitle } from "./labUtil";
 import { allIntegrations, allViews, degrees as degreesOf, links, partnersOf } from "./posterModel";
+import { TamWheel } from "./TamWheel";
 
 export function LandscapeHero() {
   const data = useLabData();
   useTitle("SMB architecture");
   const [params, setParams] = useSearchParams();
   const selected = params.get("system");
-  const view = params.get("view") === "matrix" ? "matrix" : "map";
+  const wanted = params.get("view");
+  const view = wanted === "matrix" || wanted === "layers" ? wanted : "wheel";
   const [showLinks, setShowLinks] = useState(false);
   const [focusLayer, setFocusLayer] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -79,7 +83,7 @@ export function LandscapeHero() {
         <div className="cl-head-text">
           <h1>SMB architecture</h1>
           <p className="cl-lede">
-            The SMB estate on the TM Forum application map: each layer, its functional groups and the systems in them. {data.status === "draft" ? "A draft" : "Published"}, built only from {listOf(data.sources.map((source) => source.short))}.
+            Every SMB system on the TM Forum application map: the domains round the rim, their functional groups and systems on the ring, the integration layer at the hub, and the calls between systems bundled through it. {data.status === "draft" ? "A draft" : "Published"}, built only from {listOf(data.sources.map((source) => source.short))}.
           </p>
         </div>
         <dl className="cl-meta">
@@ -88,7 +92,7 @@ export function LandscapeHero() {
             <dd>{data.systems.length}</dd>
           </div>
           <div>
-            <dt>Layers</dt>
+            <dt>Domains</dt>
             <dd>{layers.length}</dd>
           </div>
           <div>
@@ -108,14 +112,17 @@ export function LandscapeHero() {
 
       <div className="cl-toolbar">
         <div className="cl-seg" role="group" aria-label="View">
-          <button type="button" aria-pressed={view === "map"} onClick={() => setParam("view", null)}>
-            Map
+          <button type="button" aria-pressed={view === "wheel"} onClick={() => setParam("view", null)}>
+            Wheel
+          </button>
+          <button type="button" aria-pressed={view === "layers"} onClick={() => setParam("view", "layers")}>
+            Layers
           </button>
           <button type="button" aria-pressed={view === "matrix"} onClick={() => setParam("view", "matrix")}>
             Matrix
           </button>
         </div>
-        {view === "map" && (
+        {view === "layers" && (
           <button type="button" className="cl-chip" aria-pressed={showLinks} onClick={() => setShowLinks((value) => !value)}>
             Show every link
           </button>
@@ -175,8 +182,10 @@ export function LandscapeHero() {
 
       <div className="cl-board">
         <div className="cl-board-main">
-          {view === "map" ? (
-            <ArchitectureMap data={data} label="SMB architecture map" linkCounts={linkCounts} selected={selected} onSelect={select} showLinks={showLinks} focusLayer={focusLayer} />
+          {view === "wheel" ? (
+            <TamWheel data={data} label="SMB architecture map" linkCounts={linkCounts} selected={selected} onSelect={select} focusDomain={focusLayer} onFocusDomain={setFocusLayer} />
+          ) : view === "layers" ? (
+            <ArchitectureMap data={data} label="SMB architecture layers" linkCounts={linkCounts} selected={selected} onSelect={select} showLinks={showLinks} focusLayer={focusLayer} />
           ) : (
             <IntegrationMatrix data={data} degrees={degrees} linkCounts={linkCounts} selected={selected} onSelect={select} />
           )}
@@ -260,8 +269,8 @@ export function LandscapeHero() {
             </>
           ) : (
             <>
-              <h2 id="cl-insp-h">Layers</h2>
-              <p className="cl-body">Pick a layer to bring it forward, or a system to see what it talks to.</p>
+              <h2 id="cl-insp-h">Domains</h2>
+              <p className="cl-body">Point at a system to see its calls; pick it to keep them. Pick a domain to bring it forward.</p>
               <ul className="cl-layers">
                 {layers.map(({ domain: layer, systems }) => (
                   <li key={layer.id}>
@@ -271,6 +280,15 @@ export function LandscapeHero() {
                       <b>{systems.length}</b>
                       <span>{layer.groups.filter((item) => systems.some((s) => s.group === item.id)).map((item) => item.name).join(" · ")}</span>
                     </button>
+                    {focusLayer === layer.id && (
+                      <div className={`cl-domain-systems cl-linked--${layer.id}`}>
+                        {systems.map((item) => (
+                          <button key={item.id} type="button" className="cl-pill" onClick={() => select(item.id)} translate="no">
+                            {item.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
