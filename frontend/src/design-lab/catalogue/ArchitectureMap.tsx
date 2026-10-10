@@ -203,9 +203,14 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
     measure();
     const host = box.current;
     const observer = typeof ResizeObserver === "undefined" || !host ? null : new ResizeObserver(measure);
+    // A map that fills the screen keeps its own size while its tiles reflow (fonts, wrapping), so the tiles are watched too.
     if (host) observer?.observe(host);
+    for (const element of cards.current.values()) observer?.observe(element);
+    let live = true;
+    void document.fonts?.ready.then(() => live && measure());
     window.addEventListener("resize", measure);
     return () => {
+      live = false;
       observer?.disconnect();
       window.removeEventListener("resize", measure);
     };
@@ -365,8 +370,12 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
     const loose = systems.filter((system) => !domain?.groups.some((group) => group.id === system.group));
     if (loose.length) groups.push({ id: `${id}-other`, name: "Other", systems: loose });
     const dim = focusLayer !== null && focusLayer !== id;
+    // Columns a group needs to hold its systems in at most two rows, and the width it asks for: its columns, or its name if that is longer. A split row shares its width by these.
+    const cols = (group: { systems: System[] }) => Math.ceil(group.systems.length / 2);
+    const share = (group: { name: string; systems: System[] }) => Math.max(cols(group) * 18, group.name.length);
+    const span = groups.reduce((sum, group) => sum + share(group), 0);
     return (
-      <div key={id} className={`am-layer am-layer--${id}${half ? " am-layer--half" : ""}${dim ? " is-dim" : ""}`}>
+      <div key={id} className={`am-layer am-layer--${id}${half ? " am-layer--half" : ""}${dim ? " is-dim" : ""}`} style={{ "--am-span": span } as CSSProperties}>
         <div className="am-layer-head">
           <LayerIcon id={id} />
           <span className="am-layer-no" aria-hidden="true">
@@ -378,7 +387,7 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
         </div>
         <div className="am-groups">
           {groups.map((group) => (
-            <div key={group.id} className="am-group" style={{ "--am-weight": group.systems.length } as CSSProperties}>
+            <div key={group.id} className="am-group" style={{ "--am-weight": group.systems.length, "--am-cols": cols(group), "--am-share": share(group) } as CSSProperties}>
               <span className="am-group-name">
                 {group.name}
                 <small>{group.systems.length}</small>

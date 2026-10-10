@@ -656,7 +656,7 @@
 .am-bus-line .am-card.is-quiet { background: var(--cl-spine); }
 .am-bus.is-dim .am-bus-line .am-card.is-quiet { background: var(--cl-paper); }
 /* Links: soft curves under the cards, drawn on request. */
-.am-links { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: visible; }
+.am-links { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
 .am-line path { fill: none; stroke-linecap: round; }
 .am-line .halo { stroke: var(--cl-page); stroke-width: 5; opacity: 0.7; }
 .am-line .ink { stroke-dasharray: 1; }
@@ -1358,3 +1358,59 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 
 .cl-footlayers li > span:first-child::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: var(--cl-layer-edge, var(--cl-rule)); }/* Labels stay readable where a link passes behind them. */
 .am--compact .am-group-name, .am--compact .am-layer-name { text-shadow: 0 0 2px var(--am-tint), 0 0 5px var(--am-tint), 0 0 8px var(--am-tint); }
+/* Landscape, fitted to the screen: the page takes the width, a group holds its systems in at most two rows, and a split row shares its width by the columns each layer needs. */
+.cl-page:has(.lx-head) { max-width: 1760px; padding: 10px 24px 16px; }
+.lx-head { flex-wrap: nowrap; align-items: center; margin-top: 14px; }
+.lx-title { flex: 1 1 320px; gap: 2px; }
+.lx-title h1 { font-size: 1.625rem; }
+.lx-tools { flex: none; }
+.lx-find .cl-field { width: 220px; }
+.lx-board { margin-top: 12px; }
+.am--compact, .am-stack, .am-side { gap: clamp(8px, 1.4vh, 14px); }
+.am-poster { grid-template-columns: minmax(0, 1fr) 280px; gap: clamp(8px, 1.4vh, 14px); }
+.am--compact .am-layer { padding: clamp(8px, 1.3vh, 12px) 14px clamp(10px, 1.6vh, 14px); }
+.am--compact .am-layer-head { margin-bottom: 6px; }
+.am--compact .am-group { gap: 4px; }
+.am--compact .am-cards { gap: 5px; }
+.am--compact .am-card { min-height: clamp(28px, 3.9vh, 34px); padding: 5px 9px; }
+.am--compact .am-card-name { display: block; -webkit-line-clamp: unset; overflow: visible; hyphens: manual; }
+.am--compact .am-bus { padding: 8px 14px; }
+.am-side .am-groups { flex-direction: column; flex-wrap: nowrap; gap: 8px; }
+.am-side .am-group { flex: none; }
+.am-side .am-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 1101px) {
+  .am--compact .am-row--split { display: flex; }
+  .am--compact .am-row--split > .am-layer { flex: var(--am-span, 1) 1 0; }
+  .am-stack .am-groups { flex-wrap: nowrap; gap: 8px 16px; }
+  .am-stack .am-group { flex: var(--am-share, 1) 1 0; min-width: 0; }
+  .am-stack .am-cards { grid-template-columns: repeat(var(--am-cols, 1), minmax(0, 1fr)); }
+}
+@media (max-width: 1100px) {
+  .lx-head { flex-wrap: wrap; }
+}
+/* The landscape fills the screen: the board takes the height left under the header, and the bands and their tiles share it, so no empty strip is left below the map. */
+@media (min-width: 1101px) and (min-height: 600px) {
+  .cl-page:has(.lx-head) { display: flex; flex-direction: column; min-height: calc(100dvh - 56px); }
+  .lx-board { flex: 1 1 auto; display: flex; flex-direction: column; }
+  .lx-board > .am--compact, .am--compact .am-poster { flex: 1 1 auto; }
+  .am-stack > .am-row { flex: 1 1 auto; }
+  .am--compact .am-layer { display: flex; flex-direction: column; }
+  .am--compact .am-groups { flex: 1 1 auto; }
+  /* A tile grows with the height the screen has to spare beyond the map's fixed parts, and still grows with a long name. */
+  .am--compact { --am-tile: clamp(28px, calc((100dvh - 600px) / 7), 48px); }
+  .am--compact .am-cards { flex: 1 1 auto; align-content: start; grid-auto-rows: minmax(var(--am-tile), auto); }
+  .am-stack .am-cards { grid-template-rows: repeat(2, minmax(var(--am-tile), auto)); }
+  .am--compact .am-card { min-height: var(--am-tile); }
+  .am--compact .am-card-name { font-size: clamp(0.78125rem, 1.4vh, 0.875rem); }
+}
+/* On a large screen the map's type grows a step, so the extra room reads as a bigger map rather than empty tiles. */
+@media (min-width: 1600px) and (min-height: 900px) {
+  .am--compact .am-layer-name { font-size: 0.9375rem; }
+  .am--compact .am-group-name { font-size: 0.78125rem; }
+  .am--compact .am-icon svg { width: 16px; height: 16px; }
+}
+.am--compact .am-bus .am-bus-head > span:not(.am-icon) { background: none; }
+@media (max-height: 740px) {
+  .lx-head { margin-top: 8px; }
+  .lx-board { margin-top: 8px; }
+}
