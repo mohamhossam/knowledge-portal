@@ -41,7 +41,7 @@
   --focus-halo: 0 0 0 var(--focus-ring-halo) var(--color-surface);
 
   /* Masthead and rail (app shell) */
-  --masthead-height: 3rem;
+  --masthead-height: 3.5rem;
   --masthead-bg: var(--color-masthead);
   --masthead-fg: var(--color-on-masthead);
   --masthead-control-border: var(--color-masthead-rule);

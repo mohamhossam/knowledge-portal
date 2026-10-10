@@ -32,7 +32,7 @@ describe("AppShell", () => {
     expect(screen.getByRole("link", { name: "Library" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Your work 6 need you" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Requirement AI (leaves the knowledge portal)" })).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "e&" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Etisalat" })).toBeInTheDocument();
   });
 
   it("moves focus to the new page's h1 when the location changes (§1)", () => {

@@ -14,16 +14,21 @@
 }
 
 /* The maroon masthead: the binding */
-.ds-masthead {
+/* The two tiers, pinned together; their height is measured as one (--sticky-top). */
+.ds-topbar {
   position: sticky;
   inset-block-start: 0;
   z-index: var(--z-masthead);
+}
+
+/* Tier one, the maroon masthead: the Etisalat lockup, then the way out and the utilities. */
+.ds-masthead {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-4);
+  gap: var(--space-4) var(--space-6);
   min-block-size: var(--masthead-height);
-  padding-inline: var(--space-4);
+  padding-inline: var(--gutter);
   background: var(--masthead-bg);
   color: var(--masthead-fg);
 }
@@ -41,44 +46,73 @@
   gap: var(--space-3);
 }
 
+/* The Etisalat lockup: the white logo, a hairline, the portal's name. */
+.ds-masthead__logo {
+  display: block;
+  block-size: 24px;
+  inline-size: auto;
+  flex: none;
+  transform: translateY(-1px);
+}
+
+.ds-masthead__divider {
+  inline-size: 1px;
+  block-size: 24px;
+  flex: none;
+  background: var(--masthead-control-border);
+}
+
+.ds-masthead__end {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-inline-start: auto;
+}
+
 .ds-masthead__home {
+  gap: var(--space-4);
+  align-self: stretch;
   color: inherit;
   text-decoration: none;
+  white-space: nowrap;
+}
+
+.ds-masthead__brand {
+  flex: none;
+  align-self: stretch;
 }
 
 .ds-masthead__product {
-  font-weight: var(--weight-heading);
-  font-stretch: var(--stretch-title);
+  font-size: var(--size-17);
+  font-weight: var(--weight-600);
+  letter-spacing: -0.005em;
+  white-space: nowrap;
 }
 
 .ds-masthead__out {
   color: inherit;
   font-size: var(--text-meta);
+  white-space: nowrap;
 }
 
-.ds-logo {
-  display: inline-grid;
-  place-items: center;
-  inline-size: 2rem;
-  block-size: 2rem;
-  border-radius: var(--radius-overlay);
-  background: var(--logo-bg);
-  color: var(--logo-fg);
-  font-weight: var(--weight-heading);
-  font-size: var(--text-meta);
-}
+/* The utilities sit quietly on the bar: text, an icon, a hairline that firms on hover. */
 
 .ds-masthead__button {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  min-block-size: 2rem;
+  min-block-size: 2.125rem;
   padding-inline: var(--space-3);
   border: var(--rule-hair) solid var(--masthead-control-border);
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-pill);
   background: transparent;
   color: inherit;
   cursor: pointer;
+}
+
+.ds-masthead__button:hover,
+.ds-masthead__button[aria-expanded="true"] {
+  border-color: var(--masthead-fg);
 }
 
 .ds-masthead__button .ds-badge {
@@ -100,9 +134,10 @@
 }
 
 /* Shell body: the rail beside the page */
+/* Shell body: the page, full width under the masthead (the areas live on the bar). */
 .ds-shell__body {
   display: grid;
-  grid-template-columns: var(--rail-width) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
 }
 
@@ -112,27 +147,30 @@
 
 /* A side panel (Jobs, Help, Account) takes the third column; below 1024px it overlays (overlays.css). */
 .ds-shell--panel .ds-shell__body {
-  grid-template-columns: var(--rail-width) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .ds-shell--panel.ds-shell--reader .ds-shell__body {
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
+/* The areas, along the masthead: each a quiet link, the current one bold with a white bar beneath. */
+/* Tier two, the white areas bar: each area an icon and a label, the current one underlined in maroon. */
 .ds-rail {
-  position: sticky;
-  inset-block-start: var(--sticky-top);
-  display: grid;
-  align-content: start;
-  gap: var(--space-4);
-  min-block-size: calc(100vh - var(--sticky-top));
-  padding: var(--space-4) var(--space-2);
-  background: var(--rail-bg);
-  border-inline-end: var(--hair-rule);
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-2);
+  min-block-size: 3.25rem;
+  padding-inline: var(--gutter);
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: var(--color-surface);
+  border-block-end: var(--rule-hair) solid var(--color-rule);
 }
 
 .ds-rail ul {
-  display: grid;
+  display: flex;
+  align-items: stretch;
   gap: var(--space-1);
   margin: 0;
   padding: 0;
@@ -140,28 +178,72 @@
 }
 
 .ds-rail__secondary {
-  padding-block-start: var(--space-3) !important;
-  border-block-start: var(--hair-rule);
+  position: relative;
+  padding-inline-start: var(--space-3) !important;
+}
+
+.ds-rail__secondary::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block: 30%;
+  inline-size: 1px;
+  background: var(--color-rule);
 }
 
 .ds-rail__link {
-  display: flex;
+  position: relative;
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-2);
-  min-block-size: 2.25rem;
+  block-size: 100%;
   padding-inline: var(--space-3);
-  border-radius: var(--radius-control);
-  color: var(--rail-fg);
+  color: var(--color-ink-2);
+  font-weight: var(--weight-600);
   text-decoration: none;
+  white-space: nowrap;
+}
+
+.ds-rail__icon {
+  display: inline-flex;
+  color: var(--color-ink-2);
+}
+
+.ds-rail__icon svg {
+  inline-size: 16px;
+  block-size: 16px;
+}
+
+.ds-rail__link::after {
+  content: "";
+  position: absolute;
+  inset-inline: var(--space-3);
+  inset-block-end: 0;
+  block-size: 3px;
+  border-radius: 3px 3px 0 0;
+  background: transparent;
+}
+
+.ds-rail__link:hover {
+  color: var(--color-ink);
+}
+
+.ds-rail__link:hover::after {
+  background: var(--color-rule);
+}
+
+.ds-rail__link:focus-visible {
+  outline-offset: -4px;
 }
 
 /* The red active marker: the only brand red in the chrome besides the logo. */
-.ds-rail__link[aria-current="page"] {
-  background: var(--rail-current-bg);
-  color: var(--rail-current-fg);
-  font-weight: var(--weight-strong);
-  box-shadow: inset var(--rail-marker-width) 0 0 var(--rail-marker);
+.ds-rail__link[aria-current="page"],
+.ds-rail__link[aria-current="page"] .ds-rail__icon {
+  color: var(--color-action);
+}
+
+.ds-rail__link[aria-current="page"]::after {
+  background: var(--color-action);
 }
 
 .ds-main {
@@ -177,11 +259,28 @@
 }
 
 /* Page head */
+/* Page head: the catalogue's soft band, as wide as the page, the tabs along its lower edge. */
 .ds-pagehead {
   display: grid;
   gap: var(--space-3);
-  margin-block-end: var(--space-5);
+  margin-block: calc(-1 * var(--space-5)) var(--space-5);
+  /* As wide as the main area (a container: 100cqi), even when the page sits in a narrower column. */
+  margin-inline: calc(-1 * var(--gutter)) 0;
+  inline-size: 100cqi;
+  box-sizing: border-box;
+  padding: var(--space-4) var(--gutter);
+  background: linear-gradient(100deg, var(--color-surface-2) 0%, var(--color-surface-1) 55%, var(--color-surface) 100%);
+  border-block-end: var(--rule-hair) solid var(--color-rule-soft);
+}
+
+.ds-pagehead > * {
   max-inline-size: var(--page-max);
+}
+
+.ds-pagehead .ds-subnav ul,
+.ds-pagehead .ds-tabs__list {
+  margin-block-end: calc(-1 * var(--space-4));
+  border-block-end: 0;
 }
 
 .ds-pagehead__top {
@@ -200,6 +299,8 @@
 
 .ds-pagehead h1 {
   font-size: var(--text-h1);
+  font-stretch: var(--stretch-87);
+  letter-spacing: -0.01em;
 }
 
 .ds-pagehead__lead {
@@ -440,15 +541,7 @@
   }
 
   .ds-rail {
-    position: static;
-    min-block-size: 0;
-    border-inline-end: 0;
-    border-block-end: var(--hair-rule);
-  }
-
-  .ds-rail ul {
-    display: flex;
-    flex-wrap: wrap;
+    min-block-size: 2.75rem;
   }
 }
 
@@ -487,7 +580,7 @@
  * the whole view (WCAG 1.4.10, 2.4.11). useStickySize then publishes 0 for them.
  */
 @media (max-width: 40rem), (max-height: 30rem) {
-  .ds-masthead,
+  .ds-topbar,
   .ds-stateline,
   .ds-stickyfoot,
   .ds-bulkbar {
@@ -543,4 +636,50 @@
 
 .ds-lines > li:last-child {
   border-block-end: 0;
+}
+
+/* A phone: the lockup keeps the logo; the utilities keep their icons and their names for screen readers; the areas bar scrolls sideways. */
+@media (max-width: 640px) {
+  .ds-masthead {
+    gap: var(--space-2);
+    padding-inline: var(--space-4);
+  }
+
+  .ds-masthead__divider,
+  .ds-masthead__product {
+    display: none;
+  }
+
+  .ds-masthead__end,
+  .ds-masthead__utilities {
+    gap: var(--space-2);
+  }
+
+  .ds-masthead__out {
+    font-size: var(--size-14);
+  }
+
+  .ds-masthead__button {
+    padding-inline: var(--space-2);
+  }
+
+  .ds-masthead__label {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .ds-rail {
+    padding-inline: var(--space-2);
+  }
+}
+
+/* A short window keeps the areas bar slim, so pages that fit the screen still do. */
+@media (max-height: 760px) {
+  .ds-rail {
+    min-block-size: 2.625rem;
+  }
 }

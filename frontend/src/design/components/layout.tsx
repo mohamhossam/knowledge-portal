@@ -11,6 +11,7 @@ import {
   useSyncExternalStore,
 } from "react";
 
+import etisalatLogo from "../assets/etisalat-logo-white.svg";
 import { rovingKeyDown, useFocusAfterRender, useStickySize } from "../hooks";
 import { Badge } from "./feedback";
 
@@ -31,16 +32,17 @@ export type LinkLike = ComponentType<{ href: string; className?: string; "aria-c
 
 const Anchor: LinkLike = ({ href, children, ...rest }) => <a href={href} {...rest}>{children}</a>;
 
-export type NavItem = { href: string; label: string; current?: boolean; count?: number; countLabel?: string };
+export type NavItem = { href: string; label: string; current?: boolean; count?: number; countLabel?: string; /** A 16px icon drawn before the label in the areas bar. */ icon?: ReactNode };
 
 /**
- * IA §2: skip links, the maroon masthead (logo slot, product, utilities in a
- * fixed order on every page), the five-area rail with the red active marker,
- * then the page. On a location change, focus moves to the page h1 and the view
+ * IA §2, in the catalogue's two tiers: skip links; the maroon masthead (the
+ * Etisalat lockup, then the way out and the utilities in a fixed order on every
+ * page); under it the white areas bar (each area an icon and a label, the
+ * current one underlined in maroon), both pinned together; then the page. On a location change, focus moves to the page h1 and the view
  * starts at the top (§1). `reader` drops the rail (Explorer readers).
  */
 export function AppShell({
-  product = "Knowledge portal",
+  product = "Knowledge Portal",
   homeHref,
   logo,
   outbound,
@@ -56,7 +58,7 @@ export function AppShell({
 }: {
   product?: string;
   homeHref: string;
-  /** The e& logo slot; defaults to a labelled placeholder until brand files exist. */
+  /** The logo slot; defaults to the white Etisalat lockup the catalogue uses. */
   logo?: ReactNode;
   /** The way back to requirement-portal, e.g. { href, label: "Requirement AI" }. */
   outbound?: { href: string; label: string };
@@ -74,7 +76,7 @@ export function AppShell({
   panel?: ReactNode;
   children: ReactNode;
 }) {
-  const masthead = useRef<HTMLElement>(null);
+  const masthead = useRef<HTMLDivElement>(null);
   useStickySize(masthead, "--sticky-top");
   // Below 1024px a side panel overlays the page: the page goes inert, so focus can't
   // move under the panel (WCAG 2.4.11). Esc or Close hands focus back.
@@ -128,6 +130,7 @@ export function AppShell({
     items.map((item) => (
       <li key={`${item.href}|${item.label}`}>
         <Link href={item.href} className="ds-rail__link" aria-current={item.current ? "page" : undefined}>
+          {item.icon && <span className="ds-rail__icon" aria-hidden="true">{item.icon}</span>}
           <span>{item.label}</span>
           {item.count !== undefined && item.count > 0 && <Badge count={item.count} label={item.countLabel} />}
         </Link>
@@ -138,30 +141,36 @@ export function AppShell({
     <div className={`ds-root ds-shell${reader ? " ds-shell--reader" : ""}${panel ? " ds-shell--panel" : ""}`}>
       <a className="ds-skip" href="#ds-main">Skip to content</a>
       {!reader && <a className="ds-skip" href="#ds-rail">Skip to navigation</a>}
-      <header className="ds-masthead" ref={masthead}>
-        <div className="ds-masthead__brand">
-          <Link href={homeHref} className="ds-masthead__home">
-            {logo ?? <span className="ds-logo" role="img" aria-label="e&">e&</span>}
-            <span className="ds-masthead__product">{product}</span>
-          </Link>
-          {outbound && (
-            <a className="ds-masthead__out" href={outbound.href}>
-              {outbound.label}{" "}
-              <span className="ds-visually-hidden">(leaves the knowledge portal)</span>
-            </a>
-          )}
-        </div>
-        {utilities && <div className="ds-masthead__utilities">{utilities}</div>}
-      </header>
-      {/* Always present, so a banner that appears later is announced (a live region must exist first). */}
-      <div className={banner ? "ds-banner" : "ds-visually-hidden"} role="status">{banner}</div>
-      <div className="ds-shell__body">
+      {/* The catalogue's two tiers, pinned together and measured as one: the maroon masthead, then the white areas bar. */}
+      <div className="ds-topbar" ref={masthead}>
+        <header className="ds-masthead">
+          <div className="ds-masthead__brand">
+            <Link href={homeHref} className="ds-masthead__home">
+              {logo ?? <img className="ds-masthead__logo" src={etisalatLogo} alt="Etisalat" width={115} height={24} />}
+              <span className="ds-masthead__divider" aria-hidden="true" />
+              <span className="ds-masthead__product">{product}</span>
+            </Link>
+          </div>
+          <div className="ds-masthead__end">
+            {outbound && (
+              <a className="ds-masthead__out" href={outbound.href}>
+                {outbound.label}{" "}
+                <span className="ds-visually-hidden">(leaves the knowledge portal)</span>
+              </a>
+            )}
+            {utilities && <div className="ds-masthead__utilities">{utilities}</div>}
+          </div>
+        </header>
         {!reader && (
           <nav id="ds-rail" className="ds-rail" aria-label="Areas" tabIndex={-1} inert={covered || undefined}>
             <ul>{nav(navigation)}</ul>
             {secondaryNavigation.length > 0 && <ul className="ds-rail__secondary">{nav(secondaryNavigation)}</ul>}
           </nav>
         )}
+      </div>
+      {/* Always present, so a banner that appears later is announced (a live region must exist first). */}
+      <div className={banner ? "ds-banner" : "ds-visually-hidden"} role="status">{banner}</div>
+      <div className="ds-shell__body">
         <main id="ds-main" className="ds-main" tabIndex={-1} inert={covered || undefined}>
           {children}
         </main>
