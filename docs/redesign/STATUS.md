@@ -379,4 +379,10 @@ Also fixed `monogram()`: its backslashes had been lost, so it split names on the
 
 Checks: tests 25/25 with axe; lint, typecheck and build green.
 
+**Masthead: the Etisalat logo (2026-10-10, user chose option A).** The red e& tile is replaced by Etisalat's official white logo, then a thin divider and "Knowledge portal", aligned with the navigation.
+- **Source:** `https://www.eand.ae/content/dam/etisalat/logo/etisalat-logo-ver-white-en-1912x536.svg`, downloaded with the user's approval (7.6 KB). It was checked to contain only an `<svg>` and 9 `<path>` shapes.
+- **Where it lives:** `frontend/src/design-lab/catalogue/assets/etisalat-logo-white.svg`, shown 24px tall (115 × 24). It is dev-only, so it isn't in `dist`.
+- **Brand rule:** when the direction moves into production, the logo belongs in the primitive brand layer, and the brand team should confirm the asset and its clear space.
+- **Also:** the landscape intro now describes all three views, since Layers comes first.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.

@@ -84,7 +84,7 @@ export function LandscapeHero() {
         <div className="cl-head-text">
           <h1>SMB architecture</h1>
           <p className="cl-lede">
-            Every SMB system on the TM Forum application map: the domains round the rim, their functional groups and systems on the ring, the integration layer at the hub, and the calls between systems bundled through it. {data.status === "draft" ? "A draft" : "Published"}, built only from {listOf(data.sources.map((source) => source.short))}.
+            Every SMB system on the TM Forum application map, by layer and functional group, joined by the integration layer. The wheel shows the calls bundled through the hub; the matrix reads them pair by pair. {data.status === "draft" ? "A draft" : "Published"}, built only from {listOf(data.sources.map((source) => source.short))}.
           </p>
         </div>
         <dl className="cl-meta">
