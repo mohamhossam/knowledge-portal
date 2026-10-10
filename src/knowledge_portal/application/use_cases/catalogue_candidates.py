@@ -117,6 +117,10 @@ _ORDER = (
     CandidateKind.QUESTION,
     # and a journey names systems and the offering it fulfils.
     CandidateKind.JOURNEY,
+    # A concept covers capabilities the draft must hold first,
+    CandidateKind.CONCEPT,
+    # and a component is linked to concepts and belongs to an offering.
+    CandidateKind.COMPONENT_LINK,
 )
 
 CommitFence = Callable[[], None]
@@ -134,8 +138,14 @@ class CandidateView:
 
 
 def _view(candidate: CatalogueCandidate, release: ArchitectureKnowledge) -> CandidateView:
-    # A channel's subject is the channel, not a system that may share its id.
-    channel = candidate.content.kind in {CandidateKind.CHANNEL, CandidateKind.QUESTION}
+    # A channel's subject is the channel, not a system that may share its id; likewise a
+    # concept's, and a component link's offering.
+    channel = candidate.content.kind in {
+        CandidateKind.CHANNEL,
+        CandidateKind.QUESTION,
+        CandidateKind.CONCEPT,
+        CandidateKind.COMPONENT_LINK,
+    }
     source = None if channel else find_system(release, candidate.content.system_id)
     target = None if channel else find_system(release, candidate.content.target_system_id or "")
     return CandidateView(
@@ -512,6 +522,7 @@ def _accepted(
         channels=merged.channels,
         sources=merged.sources,
         change_history=merged.change_history,
+        business_capabilities=merged.business_capabilities,
     )
 
 

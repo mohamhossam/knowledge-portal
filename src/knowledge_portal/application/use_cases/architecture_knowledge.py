@@ -23,6 +23,7 @@ from knowledge_portal.application.ports.identity import (
     require_reader,
 )
 from knowledge_portal.domain.architecture.channels import Channel
+from knowledge_portal.domain.architecture.concepts import BusinessCapability
 from knowledge_portal.domain.architecture.diff import CatalogueDiff, diff_releases
 from knowledge_portal.domain.architecture.governance import KnowledgeSource, SourceConflict
 from knowledge_portal.domain.architecture.journeys import Journey
@@ -215,6 +216,7 @@ class ManageArchitectureKnowledge:
         sources: tuple[KnowledgeSource, ...] | None = None,
         conflicts: tuple[SourceConflict, ...] | None = None,
         portfolio: tuple[PortfolioNode, ...] | None = None,
+        business_capabilities: tuple[BusinessCapability, ...] | None = None,
     ) -> ArchitectureKnowledge:
         require_maintainer(actor)
         current = self.get(release_id)
@@ -231,6 +233,7 @@ class ManageArchitectureKnowledge:
             sources=sources,
             conflicts=conflicts,
             portfolio=portfolio,
+            business_capabilities=business_capabilities,
         )
         self._repository.save(updated, expected_revision, actor.id, "edit_draft")
         return updated
@@ -351,6 +354,7 @@ class ManageArchitectureKnowledge:
                 else imported.change_history
             ),
             portfolio=imported.portfolio,
+            business_capabilities=imported.business_capabilities,
         )
 
     def preview_file_import(
@@ -385,6 +389,7 @@ class ManageArchitectureKnowledge:
             sources=imported.sources,
             conflicts=imported.conflicts,
             portfolio=imported.portfolio,
+            business_capabilities=imported.business_capabilities,
         )
 
     def export_file(self, release_id: str, file_format: CatalogueFileFormat, actor: Actor) -> bytes:

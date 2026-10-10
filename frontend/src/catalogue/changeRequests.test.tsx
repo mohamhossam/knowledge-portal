@@ -144,7 +144,7 @@ describe("a question suggested by a change request", () => {
     citations: [{ location: "Feature FT-1", quote: "Offer Microsoft 365" }], match, status: "proposed", edited: false,
     model: "requirement-ai-export", prompt_version: "export-1", created_at: "", decided_by: null, decided_at: null,
     basis: "stated", rationale: null, possible_matches: [], system_name: null, target_system_name: null,
-    content: { kind: "question", system_id, name: "", aliases: [], triggers: [], text: "", question: { id: "REQ-1/FT-1", text: "Offer Microsoft 365", order_types } },
+    content: { kind: "question", system_id, name: "", aliases: [], triggers: [], text: "", capability_refs: [], concept_ids: [], question: { id: "REQ-1/FT-1", text: "Offer Microsoft 365", order_types } },
   }) as Suggestion;
 
   it("says what it asks of which offering and order type, and what it waits for", () => {

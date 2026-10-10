@@ -17,7 +17,10 @@ from knowledge_portal.application.ports.architecture_jobs import (
     ArchitectureJobKind,
     ArchitectureJobStatus,
 )
-from knowledge_portal.application.ports.catalogue_candidates import ExtractionRun
+from knowledge_portal.application.ports.catalogue_candidates import (
+    CatalogueReading,
+    ExtractionRun,
+)
 from knowledge_portal.application.ports.located_document_extractor import LocatedText
 from knowledge_portal.application.use_cases.architecture_comparison import (
     ComparedImpact,
@@ -52,6 +55,7 @@ from knowledge_portal.domain.architecture.change_requests import (
     TracedFeature,
 )
 from knowledge_portal.domain.architecture.channels import Channel
+from knowledge_portal.domain.architecture.concepts import BusinessCapability, CapabilityRef
 from knowledge_portal.domain.architecture.diff import (
     CatalogueDiff,
     ChangedItem,
@@ -137,6 +141,9 @@ class KnowledgeCapabilitySchema(BaseModel):
     triggers: list[Sentence] = Field(max_length=MAX_CATALOGUE_ITEMS)
     domain_id: Identifier | None = None
     component_id: Identifier | None = None
+    # The business capability concept it delivers (ADR-0114), or why none fits.
+    concept_id: Identifier | None = None
+    unlinked_reason: Sentence | None = None
 
     @classmethod
     def from_domain(cls, capability: KnowledgeCapability) -> KnowledgeCapabilitySchema:
@@ -146,12 +153,66 @@ class KnowledgeCapabilitySchema(BaseModel):
             triggers=list(capability.triggers),
             domain_id=capability.domain_id,
             component_id=capability.component_id,
+            concept_id=capability.concept_id,
+            unlinked_reason=capability.unlinked_reason,
         )
 
     def to_domain(self) -> KnowledgeCapability:
         return KnowledgeCapability(
-            self.id, self.name, tuple(self.triggers), self.domain_id, self.component_id
+            self.id,
+            self.name,
+            tuple(self.triggers),
+            self.domain_id,
+            self.component_id,
+            self.concept_id,
+            self.unlinked_reason,
         )
+
+
+class BusinessCapabilitySchema(BaseModel):
+    """A business capability concept; a top concept names its capability domain (ADR-0114)."""
+
+    id: Identifier
+    pref_label: Name
+    alt_labels: list[Name] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    definition: Text | None = None
+    broader_id: Identifier | None = None
+    domain_id: Identifier | None = None
+    exact_match: Name | None = None
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
+
+    @classmethod
+    def from_domain(cls, concept: BusinessCapability) -> BusinessCapabilitySchema:
+        return cls.model_construct(
+            id=concept.id,
+            pref_label=concept.pref_label,
+            alt_labels=list(concept.alt_labels),
+            definition=concept.definition,
+            broader_id=concept.broader_id,
+            domain_id=concept.domain_id,
+            exact_match=concept.exact_match,
+            confidence=concept.confidence,
+            source=concept.source,
+        )
+
+    def to_domain(self) -> BusinessCapability:
+        return BusinessCapability(
+            self.id,
+            self.pref_label,
+            tuple(self.alt_labels),
+            self.definition,
+            self.broader_id,
+            self.domain_id,
+            self.exact_match,
+            self.confidence,
+            self.source,
+        )
+
+
+class CapabilityRefSchema(BaseModel):
+    system_id: Identifier
+    capability_id: Identifier
 
 
 class SystemComponentSchema(BaseModel):
@@ -988,6 +1049,9 @@ class OfferingComponentSchema(BaseModel):
     confidence: SourceConfidence | None = None
     source: Text | None = None
     realisation: list[RealisationSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    # The business capability concepts it delivers (ADR-0114), or why none fits.
+    capability_ids: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    unlinked_reason: Sentence | None = None
 
     @classmethod
     def from_domain(cls, component: OfferingComponent) -> OfferingComponentSchema:
@@ -1009,6 +1073,8 @@ class OfferingComponentSchema(BaseModel):
             confidence=component.confidence,
             source=component.source,
             realisation=[RealisationSchema.from_domain(item) for item in component.realisation],
+            capability_ids=list(component.capability_ids),
+            unlinked_reason=component.unlinked_reason,
         )
 
     def to_domain(self) -> OfferingComponent:
@@ -1027,6 +1093,8 @@ class OfferingComponentSchema(BaseModel):
             confidence=self.confidence,
             source=self.source,
             realisation=tuple(item.to_domain() for item in self.realisation),
+            capability_ids=tuple(self.capability_ids),
+            unlinked_reason=self.unlinked_reason,
         )
 
 
@@ -1596,6 +1664,10 @@ class KnowledgeReleaseResponse(BaseModel):
     portfolio: list[PortfolioNodeSchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
     )
+    # The business capability concepts (ADR-0114).
+    business_capabilities: list[BusinessCapabilitySchema] = Field(
+        default_factory=list, max_length=MAX_CATALOGUE_ITEMS
+    )
 
     @classmethod
     def from_domain(cls, release: ArchitectureKnowledge) -> KnowledgeReleaseResponse:
@@ -1633,6 +1705,9 @@ class KnowledgeReleaseResponse(BaseModel):
                 ChangeRequestRecordSchema.from_domain(item) for item in release.change_history
             ],
             portfolio=[PortfolioNodeSchema.from_domain(item) for item in release.portfolio],
+            business_capabilities=[
+                BusinessCapabilitySchema.from_domain(item) for item in release.business_capabilities
+            ],
         )
 
 
@@ -1836,6 +1911,10 @@ class DraftUpdateRequest(BaseModel):
     portfolio: list[PortfolioNodeSchema] | None = Field(
         default=None, max_length=MAX_CATALOGUE_ITEMS
     )
+    # Likewise for the business capability concepts (ADR-0114).
+    business_capabilities: list[BusinessCapabilitySchema] | None = Field(
+        default=None, max_length=MAX_CATALOGUE_ITEMS
+    )
 
 
 class SystemUpdateRequest(BaseModel):
@@ -1922,6 +2001,11 @@ class CandidateContentSchema(BaseModel):
     channel: ChannelSchema | None = None
     # An open question for the offering ``system_id`` names (step 7).
     question: OpenQuestionSchema | None = None
+    # A concept and the capabilities it covers, for a concept suggestion (ADR-0114).
+    concept: BusinessCapabilitySchema | None = None
+    capability_refs: list[CapabilityRefSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    # The concepts a component delivers, for a component link (ADR-0114).
+    concept_ids: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, content: CandidateContent) -> CandidateContentSchema:
@@ -1949,6 +2033,16 @@ class CandidateContentSchema(BaseModel):
             question=(
                 OpenQuestionSchema.from_domain(content.question) if content.question else None
             ),
+            concept=(
+                BusinessCapabilitySchema.from_domain(content.concept) if content.concept else None
+            ),
+            capability_refs=[
+                CapabilityRefSchema.model_construct(
+                    system_id=item.system_id, capability_id=item.capability_id
+                )
+                for item in content.capability_refs
+            ],
+            concept_ids=list(content.concept_ids),
         )
 
     def to_domain(self) -> CandidateContent:
@@ -1972,6 +2066,11 @@ class CandidateContentSchema(BaseModel):
             self.journey.to_domain() if self.journey else None,
             self.channel.to_domain() if self.channel else None,
             self.question.to_domain() if self.question else None,
+            self.concept.to_domain() if self.concept else None,
+            tuple(
+                CapabilityRef(item.system_id, item.capability_id) for item in self.capability_refs
+            ),
+            tuple(self.concept_ids),
         )
 
 
@@ -2081,6 +2180,8 @@ class ExtractionRunResponse(BaseModel):
     match_prompt_version: str | None
     # Set when the run read a change request rather than a document (step 7).
     change_request_id: str | None = None
+    # Set when the run read the draft's own catalogue for concepts or links (ADR-0114).
+    reading: CatalogueReading | None = None
 
     @classmethod
     def from_domain(cls, run: ExtractionRun) -> ExtractionRunResponse:
@@ -2095,6 +2196,7 @@ class ExtractionRunResponse(BaseModel):
             match_model=run.match_model,
             match_prompt_version=run.match_prompt_version,
             change_request_id=run.change_request_id,
+            reading=run.reading,
         )
 
 

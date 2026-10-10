@@ -101,15 +101,35 @@ _JOURNEY_FIELDS = (
 )
 
 
+# A concept's attributes, as reported (ADR-0114).
+_CONCEPT_FIELDS = (
+    "pref_label",
+    "alt_labels",
+    "definition",
+    "broader_id",
+    "domain_id",
+    "exact_match",
+    "confidence",
+    "source",
+)
+
+
 def _bare(offering: ProductOffering) -> tuple[object, ...]:
-    """An offering's components without their responsibilities and realisation."""
-    return tuple(replace(item, responsibilities=(), realisation=()) for item in offering.components)
+    """An offering's components without their responsibilities, realisation and concepts."""
+    return tuple(
+        replace(item, responsibilities=(), realisation=(), capability_ids=(), unlinked_reason=None)
+        for item in offering.components
+    )
+
+
+def _links(offering: ProductOffering) -> list[tuple[frozenset[str], str | None]]:
+    return [(frozenset(item.capability_ids), item.unlinked_reason) for item in offering.components]
 
 
 def _offering_fields(before: ProductOffering, after: ProductOffering) -> tuple[str, ...]:
     """Which parts of an offering changed; a component's responsibilities count as
-    "responsibilities" and its realisation as "realisation", apart from the rest of
-    the component."""
+    "responsibilities", its realisation as "realisation" and its concepts as
+    "capability_links", apart from the rest of the component."""
     fields = [
         field
         for field in _OFFERING_FIELDS
@@ -125,6 +145,8 @@ def _offering_fields(before: ProductOffering, after: ProductOffering) -> tuple[s
         item.realisation for item in after.components
     ]:
         fields.append("realisation")
+    if _links(before) != _links(after):
+        fields.append("capability_links")
     return tuple(fields)
 
 
@@ -149,6 +171,8 @@ class ChangedItem(StrEnum):
     CONFLICT = "conflict"
     # A change request applied to the version (requirement-portal ADR-0101, step 7).
     CHANGE_REQUEST = "change_request"
+    # A business capability concept (ADR-0114).
+    CONCEPT = "concept"
 
 
 @dataclass(frozen=True)
@@ -268,6 +292,8 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
                     capability.name,
                     capability.domain_id or "",
                     capability.component_id or "",
+                    capability.concept_id or "",
+                    capability.unlinked_reason or "",
                     *sorted(capability.triggers),
                 ),
             )
@@ -288,7 +314,9 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
             changed.append("domain")
         if previous_capability[1][2] != value[2]:
             changed.append("component")
-        if previous_capability[1][3:] != value[3:]:
+        if previous_capability[1][3:5] != value[3:5]:
+            changed.append("concept")
+        if previous_capability[1][5:] != value[5:]:
             changed.append("triggers")
         changes.append(
             CatalogueChange(ChangedItem.CAPABILITY, ChangeKind.CHANGED, key, label, tuple(changed))
@@ -468,6 +496,14 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
             _CONFLICT_FIELDS,
             {item.id: (item.title, item) for item in base.conflicts},
             {item.id: (item.title, item) for item in draft.conflicts},
+        )
+    )
+    changes.extend(
+        _register_changes(
+            ChangedItem.CONCEPT,
+            _CONCEPT_FIELDS,
+            {item.id: (item.pref_label, item) for item in base.business_capabilities},
+            {item.id: (item.pref_label, item) for item in draft.business_capabilities},
         )
     )
     changes.extend(

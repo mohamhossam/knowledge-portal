@@ -106,6 +106,10 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
       case "question":
         if (!content.system_id.trim()) return "Choose the offering it asks.";
         return content.question?.text.trim() ? null : "Say what it asks.";
+      case "concept":
+        return content.concept?.pref_label.trim() ? null : "Give the concept a label.";
+      case "component_link":
+        return content.concept_ids.length ? null : "Choose at least one concept.";
     }
   })();
 

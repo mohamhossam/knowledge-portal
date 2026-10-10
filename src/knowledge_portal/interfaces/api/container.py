@@ -68,6 +68,10 @@ from knowledge_portal.application.use_cases.architecture_mapping_impact import (
 from knowledge_portal.application.use_cases.architecture_preview import (
     PreviewArchitectureImpact,
 )
+from knowledge_portal.application.use_cases.capability_concepts import (
+    ProposeCapabilityConcepts,
+    SuggestComponentCapabilities,
+)
 from knowledge_portal.application.use_cases.catalog_plans import ReadCatalogPlans
 from knowledge_portal.application.use_cases.catalogue_candidates import (
     DecideCatalogueCandidate,
@@ -216,6 +220,8 @@ class Container:
     upload_architecture_documents: UploadArchitectureDocuments
     read_knowledge_document: ReadKnowledgeDocument
     decide_catalogue_candidates: DecideCatalogueCandidate
+    propose_capability_concepts: ProposeCapabilityConcepts
+    suggest_component_capabilities: SuggestComponentCapabilities
     # Change requests from Requirement AI (requirement-portal ADR-0101, step 7).
     receive_change_request: ReceiveChangeRequest
     list_change_requests: ListChangeRequests
@@ -412,6 +418,8 @@ def _build_container(
         upload_architecture_documents=architecture.upload_documents,
         read_knowledge_document=architecture.read_document,
         decide_catalogue_candidates=architecture.decide_candidates,
+        propose_capability_concepts=architecture.propose_concepts,
+        suggest_component_capabilities=architecture.suggest_component_links,
         receive_change_request=architecture.receive_change_request,
         list_change_requests=architecture.list_change_requests,
         read_change_request=architecture.read_change_request,

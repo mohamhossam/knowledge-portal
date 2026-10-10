@@ -30,6 +30,10 @@ from knowledge_portal.application.use_cases.architecture_knowledge import (
 from knowledge_portal.application.use_cases.architecture_preview import (
     PreviewArchitectureImpact,
 )
+from knowledge_portal.application.use_cases.capability_concepts import (
+    ProposeCapabilityConcepts,
+    SuggestComponentCapabilities,
+)
 from knowledge_portal.application.use_cases.catalogue_candidates import (
     DecideCatalogueCandidate,
     ProposeCatalogueChanges,
@@ -82,6 +86,9 @@ class ArchitectureWiring:
     upload_documents: UploadArchitectureDocuments
     read_document: ReadKnowledgeDocument
     decide_candidates: DecideCatalogueCandidate
+    # The capability concept scheme and its links, as suggestions (ADR-0114).
+    propose_concepts: ProposeCapabilityConcepts
+    suggest_component_links: SuggestComponentCapabilities
     # Change requests from Requirement AI (requirement-portal ADR-0101, step 7).
     receive_change_request: ReceiveChangeRequest
     list_change_requests: ListChangeRequests
@@ -178,6 +185,10 @@ def build_architecture(
             persistence.architecture_repository,
             persistence.catalogue_candidates,
             persistence.change_requests,
+        ),
+        propose_concepts=ProposeCapabilityConcepts(manage, persistence.catalogue_candidates, clock),
+        suggest_component_links=SuggestComponentCapabilities(
+            manage, persistence.catalogue_candidates, llm.capability_linker, clock
         ),
         receive_change_request=ReceiveChangeRequest(persistence.change_requests, clock),
         list_change_requests=ListChangeRequests(persistence.change_requests),

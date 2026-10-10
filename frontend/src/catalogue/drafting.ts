@@ -131,6 +131,7 @@ export const DIFF_ORDER: { item: Item; one: string; many: string }[] = [
   { item: "change_request", one: "Change request", many: "Change requests" },
   { item: "product", one: "Offering", many: "Offerings" },
   { item: "journey", one: "Journey", many: "Journeys" },
+  { item: "concept", one: "Capability concept", many: "Capability concepts" },
   { item: "document", one: "Document", many: "Documents" },
 ];
 
@@ -158,6 +159,13 @@ const FIELD: Record<string, string> = {
   channel_kind: "kind of channel",
   entry_system_id: "entry system",
   realisation: "how its parts are realised",
+  concept: "capability concept",
+  capability_links: "capability concepts of its parts",
+  pref_label: "label",
+  alt_labels: "other labels",
+  definition: "definition",
+  broader_id: "broader concept",
+  exact_match: "outside match",
   nfrs: "non-functional requirements",
   tracking: "order tracking",
   lifecycle_notes: "lifecycle notes",

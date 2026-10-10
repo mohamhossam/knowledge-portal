@@ -125,7 +125,7 @@ export function OfferingParts({ value, onChange, systems, names }: SectionProps)
       one="part"
       items={value.components}
       onChange={(components) => onChange({ ...value, components })}
-      blank={() => ({ id: "", name: "", responsibilities: [], realisation: [] })}
+      blank={() => ({ id: "", name: "", responsibilities: [], realisation: [], capability_ids: [] })}
       itemLabel={(part, index) => `part ${part.name || index + 1}`}
       render={(part, update) => (
         <>

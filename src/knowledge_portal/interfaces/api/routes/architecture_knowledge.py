@@ -68,6 +68,7 @@ from knowledge_portal.interfaces.api.schemas.architecture_knowledge import (
     DocumentPassageResponse,
     DocumentSelectionRequest,
     DraftUpdateRequest,
+    ExtractionRunResponse,
     ImpactComparisonResponse,
     KnowledgeAuditEventResponse,
     KnowledgeDocumentVersionResponse,
@@ -240,6 +241,11 @@ def update_draft(
                 None
                 if body.portfolio is None
                 else tuple(item.to_domain() for item in body.portfolio)
+            ),
+            business_capabilities=(
+                None
+                if body.business_capabilities is None
+                else tuple(item.to_domain() for item in body.business_capabilities)
             ),
         )
     )
@@ -684,6 +690,41 @@ def accept_all_suggestions(
     )
     return AcceptAllResponse(
         release=KnowledgeReleaseResponse.from_domain(release), remaining=remaining
+    )
+
+
+@router.post(
+    "/releases/{release_id}/concept-proposals",
+    response_model=ExtractionRunResponse,
+    status_code=201,
+)
+def propose_capability_concepts(
+    release_id: str, container: ContainerDep, actor: KnowledgeActorDep
+) -> ExtractionRunResponse:
+    """Suggest one concept per distinct capability name the draft lists (ADR-0114).
+
+    The suggestions replace the undecided ones of the previous backfill.
+    """
+    return ExtractionRunResponse.from_domain(
+        container.propose_capability_concepts.execute(release_id, actor)
+    )
+
+
+@router.post(
+    "/releases/{release_id}/component-link-suggestions",
+    response_model=ExtractionRunResponse,
+    status_code=201,
+    dependencies=[Depends(limit_provider_calls)],
+)
+def suggest_component_capabilities(
+    release_id: str, container: ContainerDep, actor: KnowledgeActorDep
+) -> ExtractionRunResponse:
+    """Ask the configured model which concepts each unlinked offering component delivers.
+
+    The suggestions replace the undecided ones of the previous request (ADR-0114).
+    """
+    return ExtractionRunResponse.from_domain(
+        container.suggest_component_capabilities.execute(release_id, actor)
     )
 
 

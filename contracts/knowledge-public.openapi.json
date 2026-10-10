@@ -1100,6 +1100,107 @@
         "title": "BreakdownView",
         "type": "object"
       },
+      "BusinessCapabilitySchema": {
+        "description": "A business capability concept; a top concept names its capability domain (ADR-0114).",
+        "properties": {
+          "alt_labels": {
+            "default": [],
+            "items": {
+              "maxLength": 300,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Alt Labels",
+            "type": "array"
+          },
+          "broader_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Broader Id"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "definition": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition"
+          },
+          "domain_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain Id"
+          },
+          "exact_match": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exact Match"
+          },
+          "id": {
+            "maxLength": 200,
+            "title": "Id",
+            "type": "string"
+          },
+          "pref_label": {
+            "maxLength": 300,
+            "title": "Pref Label",
+            "type": "string"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          }
+        },
+        "required": [
+          "id",
+          "pref_label"
+        ],
+        "title": "BusinessCapabilitySchema",
+        "type": "object"
+      },
       "BusinessRuleSchema": {
         "properties": {
           "confidence": {
@@ -1205,6 +1306,15 @@
             ],
             "title": "Capability Id"
           },
+          "capability_refs": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CapabilityRefSchema"
+            },
+            "maxItems": 5000,
+            "title": "Capability Refs",
+            "type": "array"
+          },
           "channel": {
             "anyOf": [
               {
@@ -1226,6 +1336,26 @@
               }
             ],
             "title": "Component Id"
+          },
+          "concept": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BusinessCapabilitySchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "concept_ids": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Concept Ids",
+            "type": "array"
           },
           "description": {
             "anyOf": [
@@ -1389,7 +1519,9 @@
           "product",
           "journey",
           "channel",
-          "question"
+          "question",
+          "concept",
+          "component_link"
         ],
         "title": "CandidateKind",
         "type": "string"
@@ -1404,7 +1536,8 @@
           "needs_component",
           "needs_domain",
           "needs_offering",
-          "needs_channel"
+          "needs_channel",
+          "needs_concept"
         ],
         "title": "CandidateMatch",
         "type": "string"
@@ -1472,6 +1605,26 @@
           "name"
         ],
         "title": "CapabilityDomainSchema",
+        "type": "object"
+      },
+      "CapabilityRefSchema": {
+        "properties": {
+          "capability_id": {
+            "maxLength": 200,
+            "title": "Capability Id",
+            "type": "string"
+          },
+          "system_id": {
+            "maxLength": 200,
+            "title": "System Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "system_id",
+          "capability_id"
+        ],
+        "title": "CapabilityRefSchema",
         "type": "object"
       },
       "CatalogPlanResponse": {
@@ -1692,6 +1845,15 @@
           "json"
         ],
         "title": "CatalogueFileFormat",
+        "type": "string"
+      },
+      "CatalogueReading": {
+        "description": "A reading of the draft's own catalogue rather than of a document (ADR-0114).\n\nIts value stands in for the document version id, so a new reading replaces the\nundecided suggestions of the previous one.",
+        "enum": [
+          "concept_backfill",
+          "component_links"
+        ],
+        "title": "CatalogueReading",
         "type": "string"
       },
       "CatalogueSuggestionResponse": {
@@ -2283,7 +2445,8 @@
           "channel",
           "source",
           "conflict",
-          "change_request"
+          "change_request",
+          "concept"
         ],
         "title": "ChangedItem",
         "type": "string"
@@ -3286,6 +3449,21 @@
       },
       "DraftUpdateRequest": {
         "properties": {
+          "business_capabilities": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/BusinessCapabilitySchema"
+                },
+                "maxItems": 5000,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Business Capabilities"
+          },
           "capability_domains": {
             "anyOf": [
               {
@@ -3672,6 +3850,16 @@
           "prompt_version": {
             "title": "Prompt Version",
             "type": "string"
+          },
+          "reading": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CatalogueReading"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "warnings": {
             "items": {
@@ -4966,6 +5154,18 @@
             ],
             "title": "Component Id"
           },
+          "concept_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Concept Id"
+          },
           "domain_id": {
             "anyOf": [
               {
@@ -4996,6 +5196,18 @@
             "maxItems": 5000,
             "title": "Triggers",
             "type": "array"
+          },
+          "unlinked_reason": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unlinked Reason"
           }
         },
         "required": [
@@ -5072,6 +5284,14 @@
               }
             ],
             "title": "Built Revision"
+          },
+          "business_capabilities": {
+            "items": {
+              "$ref": "#/components/schemas/BusinessCapabilitySchema"
+            },
+            "maxItems": 5000,
+            "title": "Business Capabilities",
+            "type": "array"
           },
           "capability_domains": {
             "items": {
@@ -6535,6 +6755,16 @@
       },
       "OfferingComponentSchema": {
         "properties": {
+          "capability_ids": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Capability Ids",
+            "type": "array"
+          },
           "code": {
             "anyOf": [
               {
@@ -6678,6 +6908,18 @@
               }
             ],
             "title": "Technical Spec"
+          },
+          "unlinked_reason": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unlinked Reason"
           }
         },
         "required": [
@@ -12173,6 +12415,134 @@
           }
         ],
         "summary": "Compare Impact",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
+    "/architecture-knowledge/releases/{release_id}/component-link-suggestions": {
+      "post": {
+        "description": "Ask the configured model which concepts each unlinked offering component delivers.\n\nThe suggestions replace the undecided ones of the previous request (ADR-0114).",
+        "operationId": "suggest_component_capabilities_architecture_knowledge_releases__release_id__component_link_suggestions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtractionRunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Suggest Component Capabilities",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
+    "/architecture-knowledge/releases/{release_id}/concept-proposals": {
+      "post": {
+        "description": "Suggest one concept per distinct capability name the draft lists (ADR-0114).\n\nThe suggestions replace the undecided ones of the previous backfill.",
+        "operationId": "propose_capability_concepts_architecture_knowledge_releases__release_id__concept_proposals_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtractionRunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Propose Capability Concepts",
         "tags": [
           "architecture knowledge"
         ]
