@@ -25,7 +25,7 @@ test("every route has Jobs, Help and Account in the masthead, in that order, and
 test("a rail link moves focus to the new page's h1, rebuilt or not", async ({ page }) => {
   await page.goto("");
   await settled(page);
-  for (const [label, title] of [["Library", "Library"], ["Your work", "Your work"], ["Catalogue", "Architecture catalogue"]] as const) {
+  for (const [label, title] of [["Library", "Library"], ["Your work", "Your work"], ["Catalogue", "Architecture landscape"]] as const) {
     await page.getByRole("navigation", { name: "Areas" }).getByRole("link", { name: new RegExp(`^${label}`) }).click();
     await settled(page);
     await expect(page.locator(":focus")).toHaveRole("heading");

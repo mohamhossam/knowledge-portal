@@ -47,12 +47,18 @@ export function SystemLink({ id, label }: { id: string; label?: string }) {
  * so maps and diagrams keep their full width. Focus moves to its title when it
  * opens or shows another item, Esc or Close shuts it, and focus goes back to
  * what was focused before it opened.
+ *
+ * Opened by the address alone (a page arriving with an item chosen, nothing
+ * focused yet), it leaves focus where the page puts it, so the skip link stays
+ * first and the shell's focus on arrival holds.
  */
 export function RecordDrawer({ title, openKey, onClose, children }: { title: string; openKey: string; onClose: () => void; children: ReactNode }) {
   const panel = useRef<HTMLElement | null>(null);
   const opener = useRef<HTMLElement | null>(null);
   useEffect(() => {
-    if (!panel.current?.contains(document.activeElement)) opener.current = document.activeElement as HTMLElement | null;
+    const before = document.activeElement;
+    if (before === null || before === document.body) return;
+    if (!panel.current?.contains(before)) opener.current = before as HTMLElement;
     panel.current?.querySelector<HTMLElement>("h2")?.focus();
   }, [openKey]);
   const close = () => {
