@@ -158,3 +158,8 @@ html:has(.ds-root) {
     outline-color: Highlight;
   }
 }
+
+/* The page's ground is the design system's surface on every page, so a short page has no band of another tone beneath it. */
+html:has(.ds-root) {
+  background: var(--color-surface);
+}

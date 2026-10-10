@@ -8,18 +8,17 @@
 import "../../design";
 import "./lab.css";
 
-import { type ReactNode, useLayoutEffect, useMemo, useRef } from "react";
+import { type ReactNode, useContext, useLayoutEffect, useMemo, useRef } from "react";
 import { Link, Route, Routes } from "react-router-dom";
 
 import type { Release } from "../../api/client";
 import { fromRelease } from "../../architecture/adapter";
 import release from "../../architecture/fixtures/smb-release.json";
 import { EVIDENCE_WORDS, type Evidence } from "../../architecture/model";
-import brandLogo from "./assets/etisalat-logo-white.svg";
 import { ProductsIndex } from "./CatalogueIndexes";
 import { JourneyFlow } from "./JourneyFlow";
 import { JourneysIndex } from "./JourneysIndex";
-import { LAB, LabData, useLabData } from "./labData";
+import { InShell, LAB, LabData, useLabData } from "./labData";
 import { LandscapeHero } from "./LandscapeHero";
 import { ProductArchitecture } from "./ProductArchitecture";
 import { ProductOverview } from "./ProductPage";
@@ -169,54 +168,20 @@ export function PathBar({ label, items }: { label: string; items: { level: strin
 }
 
 /**
- * The portal shell. Tier one is the masthead: the "Etisalat | Knowledge Portal"
- * lockup (one link home: the portal is a product named Knowledge Portal, owned
- * by Etisalat), the portal's areas, and the signed-in person. Its content sits
- * on the same 1440px column as the page, so the logo lines up with everything
- * below it. Tier two is each screen's catalogue bar.
+ * The catalogue's frame inside the portal's shell: the portal draws the
+ * masthead and the areas bar; the catalogue adds its section bar and pages.
  */
 function LabShell({ children }: { children: ReactNode }) {
-  return (
-    <div className="cl">
-      <a className="cl-skip" href="#main">
-        Skip to content
-      </a>
-      <header className="cl-mast">
-        <div className="cl-mast-inner">
-          <Link className="cl-lockup" to={LAB}>
-            <img className="cl-brand" src={brandLogo} alt="Etisalat" width={115} height={24} />
-            <span className="cl-mast-divider" aria-hidden="true" />
-            <span className="cl-product">Knowledge Portal</span>
-          </Link>
-          {/* The portal's real areas: the redesigned catalogue sits among them, so the whole platform is one click away. */}
-          <nav aria-label="Areas">
-            <Link to="/">Your work</Link>
-            <Link to="/library">Library</Link>
-            <Link to={LAB} aria-current="page">
-              Catalogue
-            </Link>
-            <Link to="/squads">Ownership</Link>
-            <Link to="/requirement-knowledge">Requirements</Link>
-            <Link to="/explorer">Explorer</Link>
-          </nav>
-          <span className="cl-me">
-            <span className="cl-avatar" aria-hidden="true">
-              AO
-            </span>
-            Amina Owner
-          </span>
-        </div>
-      </header>
-      <main id="main" className="cl-page" tabIndex={-1}>
-        {children}
-      </main>
-    </div>
-  );
+  // Inside the portal shell, the shell's <main> holds the page. Rendered alone (a test, a preview), the lab brings its own.
+  const inShell = useContext(InShell);
+  return <div className="cl cl--embedded">{inShell ? <div className="cl-page">{children}</div> : <main className="cl-page">{children}</main>}</div>;
 }
 
-export default function CatalogueLab() {
+/** The lab; `inShell` when the portal's shell already provides the page's <main>. */
+export default function CatalogueLab({ inShell = false }: { inShell?: boolean }) {
   const data = useMemo(() => fromRelease(release as unknown as Release), []);
   return (
+    <InShell.Provider value={inShell}>
     <LabData.Provider value={data}>
       <LabShell>
         <Routes>
@@ -234,5 +199,6 @@ export default function CatalogueLab() {
         </Routes>
       </LabShell>
     </LabData.Provider>
+    </InShell.Provider>
   );
 }

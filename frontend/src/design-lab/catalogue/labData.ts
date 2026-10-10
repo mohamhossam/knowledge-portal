@@ -33,3 +33,6 @@ export function useOffering(): Offering | null {
   const { offeringId } = useParams();
   return data.offerings.find((item) => item.id === offeringId) ?? null;
 }
+
+/** True when the lab renders inside the portal's shell, which already provides the page's <main>. */
+export const InShell = createContext(false);

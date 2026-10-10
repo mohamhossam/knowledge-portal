@@ -610,4 +610,19 @@ Checks: tests 28/28 with axe; lint, brand lint, build and budget green.
   - Frontend, run on their own: one failure, a time-zone assumption in `ExplorerPage.test.tsx` (expects 09:30, gets 13:30 on a UTC+4 machine). Under full-suite load, 10–13 tests in library, explorer, historic and the old catalogue editor time out.
   - Backend: `test_knowledge_reviews` fails only in some run orders.
 
+**The whole platform in the catalogue's theme (2026-10-10, user: "all pages the same theme, headers, logo; keep functionality; don't ask").** Theme only; no route, data or behaviour changed.
+- **Shell (`AppShell`, `layout.css`), the catalogue's two tiers, pinned together and measured as one (`.ds-topbar` → `--sticky-top`):**
+  - The maroon masthead holds the white Etisalat lockup (now in `src/design/assets`), a hairline, "Knowledge Portal", then Requirement AI and pill-shaped Jobs, Help and Account.
+  - The white areas bar replaces the left rail: each area has a lucide icon and its label, and the current area is underlined in maroon.
+  - The page takes the full width.
+  - Phone: the product name goes, the utilities keep icons with screen-reader names, and the areas bar scrolls.
+  - Short screens: a slimmer areas bar.
+- **Page head (`PageHeader`):** the catalogue's soft band, as wide as the main area.
+- **Older pages (`legacy-island.css`):** the old page tokens map onto the design system's (maroon replaces the reference blue; danger replaces the old red), so every older page takes the e& palette. Their headers become the soft band, the large table numbers go, and pages align to the same gutter and width as the redesigned ones.
+- **Catalogue redesign:** now renders inside the portal shell (its own masthead removed; it brings its own `<main>` only when rendered alone), its section bar sits under the areas bar, and its fit-to-screen sizes use the shell's measured height. Light only, so its view stays light.
+- **Checks:**
+  - Shell and design-system tests 218/218 (logo test updated); catalogue 17/17. The full suite's remaining failures are the time-zone test and timeouts under load, as before.
+  - No page scroll on the catalogue's fitted pages from 1280×720.
+  - No sideways scroll on phones, except Library and Your work, whose wide tables already scrolled sideways before this change.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.

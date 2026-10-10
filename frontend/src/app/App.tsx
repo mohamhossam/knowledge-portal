@@ -82,12 +82,6 @@ export function App() {
           element={<Suspense fallback={null}><DesignPrototype /></Suspense>}
         />
       )}
-      {CatalogueLab && (
-        <Route
-          path="design-lab/catalogue/*"
-          element={<Suspense fallback={null}><CatalogueLab /></Suspense>}
-        />
-      )}
       {DesignLab && (
         <Route
           path="design-lab/wireframes/*"
@@ -96,6 +90,8 @@ export function App() {
       )}
       <Route element={<Shell />}>
         <Route index element={<HomePage />} />
+        {/* The redesigned catalogue (development only) inside the portal's own shell, like every other area. */}
+        {CatalogueLab && <Route path="design-lab/catalogue/*" element={<Suspense fallback={null}><CatalogueLab inShell /></Suspense>} />}
         <Route path="library" element={<Loading><LibraryPage /></Loading>} />
         <Route path="reminders" element={<RemindersPage />} />
         <Route path="requirement-knowledge" element={<RequirementKnowledgePage />} />

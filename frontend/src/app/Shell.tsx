@@ -1,4 +1,4 @@
-import { CircleHelp, ListChecks, UserRound, WifiOff } from "lucide-react";
+import { BellRing, BookOpen, CircleHelp, Compass, FileText, Layers, LayoutDashboard, ListChecks, UserRound, UsersRound, WifiOff } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Outlet, useLocation, useSearchParams } from "react-router-dom";
 
@@ -26,6 +26,8 @@ const REDESIGNED: ((path: string) => boolean)[] = [
   (path) => path === "/library" || path.startsWith("/library/"),
   // The architecture catalogue, rebuilt from scratch (plan 03-architecture-catalogue).
   (path) => path === "/architecture" || path.startsWith("/architecture/"),
+  // The catalogue redesign draws its own pages on the design system's tokens.
+  (path) => path.startsWith("/design-lab/catalogue"),
 ];
 
 function useOnline() {
@@ -107,16 +109,16 @@ export function Shell() {
   const path = location.pathname;
   const under = (prefix: string) => path === prefix || path.startsWith(`${prefix}/`);
   const navigation: NavItem[] = [
-    { href: "/", label: "Your work", current: path === "/", count: needsYou, countLabel: "need you" },
-    { href: "/library", label: "Library", current: under("/library") },
+    { href: "/", label: "Your work", current: path === "/", count: needsYou, countLabel: "need you", icon: <LayoutDashboard /> },
+    { href: "/library", label: "Library", current: under("/library"), icon: <BookOpen /> },
     // In development the catalogue opens on its redesign (a development-only lab, like its route); production keeps /architecture.
-    { href: import.meta.env.DEV ? "/design-lab/catalogue" : "/architecture", label: "Catalogue", current: under("/architecture") },
-    { href: "/squads", label: "Ownership", current: under("/squads") },
-    { href: "/requirement-knowledge", label: "Requirements", current: under("/requirement-knowledge") },
+    { href: import.meta.env.DEV ? "/design-lab/catalogue" : "/architecture", label: "Catalogue", current: under("/architecture") || under("/design-lab/catalogue"), icon: <Layers /> },
+    { href: "/squads", label: "Ownership", current: under("/squads"), icon: <UsersRound /> },
+    { href: "/requirement-knowledge", label: "Requirements", current: under("/requirement-knowledge"), icon: <FileText /> },
   ];
   const secondary: NavItem[] = [
-    { href: "/explorer", label: "Explorer", current: under("/explorer") },
-    { href: "/reminders", label: "Re-confirmations", current: under("/reminders") },
+    { href: "/explorer", label: "Explorer", current: under("/explorer"), icon: <Compass /> },
+    { href: "/reminders", label: "Re-confirmations", current: under("/reminders"), icon: <BellRing /> },
   ];
 
   const actor = auth?.actor ?? null;
@@ -132,10 +134,11 @@ export function Shell() {
   const busy = activeJobs(jobs.jobs);
 
   return (
-    // A page not rebuilt yet has no dark mode: its whole view stays light, so one view is one theme.
-    <div data-density={densityFor(density, "page")} data-theme={redesigned ? undefined : "light"}>
+    // A page without a dark mode (not rebuilt yet, or the light-only catalogue redesign) keeps its whole view light, so one view is one theme.
+    <div data-density={densityFor(density, "page")} data-theme={redesigned && !path.startsWith("/design-lab/") ? undefined : "light"}>
       <AppShell
         homeHref="/"
+        product="Knowledge Portal"
         link={RouterLink}
         outbound={{ href: REQUIREMENT_APP_URL, label: "Requirement AI" }}
         locationKey={location.pathname}
