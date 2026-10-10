@@ -413,4 +413,11 @@ Checks: tests 25/25 with axe; lint, brand lint, build and budget green; no sidew
 
 The fixture has one product; no others were invented. Checks: tests 28/28 with axe (3 new); lint, brand lint, build and budget green.
 
+**Product card, second pass (2026-10-10, user: the multicolour strip had no meaning).**
+- **Reach strip replaced:** the 46-cell strip in layer colours is gone. In its place is a **reach ring**: one maroon arc showing the share of the map reached (59%), with "27 of 46 systems" and the number of core systems beside it. The facts sit in a 2 × 2 grid next to the ring.
+- **Footprint by layer:** dot meters in maroon, one row per layer in map order with used/total, the same language as the product's Architecture tab. Maroon means the product's footprint, as it does there.
+- **Card details:** the purpose is cut to two lines, and the pages are buttons with icons (Overview, Architecture, Journeys).
+
+Checks: tests 28/28 with axe; lint, typecheck and build green.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.

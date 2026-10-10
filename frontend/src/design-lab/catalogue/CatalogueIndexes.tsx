@@ -2,9 +2,9 @@
  * The catalogue's two indexes, built for any number of products.
  *
  * Products: every offering grouped under its place in the portfolio (business
- * unit › line of business › segment › family), each a card with its size and a
- * reach strip: one cell per system on the map, filled where the product's
- * journeys reach, so products compare at a glance.
+ * unit › line of business › segment › family), each a card with its size, a
+ * reach ring (systems reached out of the map) and its footprint by layer as
+ * dot meters, the same language as the product's Architecture tab.
  *
  * Journeys: a coverage matrix, order types down (grouped by the customer's
  * stage) and products across; a cell is a modelled journey, an order type the
@@ -18,7 +18,7 @@ import type { Offering, PortfolioNode } from "../../architecture/model";
 import { AreaTabs } from "./CatalogueLab";
 import { journeyHref, LAB, useLabData } from "./labData";
 import { firstSentence, plural, useTitle } from "./labUtil";
-import { reachOf, systemsInMapOrder } from "./posterModel";
+import { domainRank, reachOf } from "./posterModel";
 import { STAGES, stageOfCode } from "./stages";
 
 function Icon({ children }: { children: ReactNode }) {
@@ -43,12 +43,52 @@ function pathTo(nodes: PortfolioNode[], nodeId: string | null): PortfolioNode[] 
   return path;
 }
 
+/** A ring for "reached out of total", one maroon arc on a sand track: maroon means this product's footprint, as on its Architecture tab. */
+function ReachRing({ reached, total }: { reached: number; total: number }) {
+  const r = 34;
+  const length = 2 * Math.PI * r;
+  const share = total ? reached / total : 0;
+  return (
+    <svg className="cl-ring" viewBox="0 0 84 84" width="84" height="84" aria-hidden="true">
+      <circle className="track" cx="42" cy="42" r={r} />
+      <circle className="arc" cx="42" cy="42" r={r} strokeDasharray={`${(share * length).toFixed(1)} ${length.toFixed(1)}`} transform="rotate(-90 42 42)" />
+      <text x="42" y="40" textAnchor="middle" className="num">
+        {Math.round(share * 100)}%
+      </text>
+      <text x="42" y="55" textAnchor="middle" className="cap">
+        of the map
+      </text>
+    </svg>
+  );
+}
+
+const CARD_LINK_ICONS = {
+  overview: <path d="M3 3.5h10M3 8h10M3 12.5h6" />,
+  architecture: <path d="M8 2 14 5 8 8 2 5zM2 8l6 3 6-3M2 11l6 3 6-3" />,
+  journeys: (
+    <>
+      <circle cx="3.5" cy="12.5" r="1.5" />
+      <circle cx="12.5" cy="3.5" r="1.5" />
+      <path d="M5 12.5h4.5a2 2 0 0 0 0-4h-3a2 2 0 0 1 0-4H11" />
+    </>
+  ),
+};
+
 function ProductCard({ offering }: { offering: Offering }) {
   const data = useLabData();
-  const systems = useMemo(() => systemsInMapOrder(data), [data]);
   const reach = useMemo(() => reachOf(data, offering.id), [data, offering.id]);
   const journeys = data.journeys.filter((journey) => journey.offeringId === offering.id);
   const base = `${LAB}/products/${offering.id}`;
+  const coreAt = Math.max(2, Math.ceil(journeys.length / 2));
+  const core = [...reach.values()].filter((set) => set.size >= coreAt).length;
+  // Footprint by layer, in the map's order: how many of each layer's systems the product reaches.
+  const layers = data.domains
+    .map((domain) => {
+      const all = data.systems.filter((system) => system.domain === domain.id);
+      return { domain, all, used: all.filter((system) => reach.has(system.id)).length };
+    })
+    .filter((row) => row.all.length)
+    .sort((a, b) => domainRank(a.domain.id) - domainRank(b.domain.id));
   const facts = [
     { label: "Plans", value: offering.plans.length },
     { label: "Components", value: offering.components.length },
@@ -68,28 +108,57 @@ function ProductCard({ offering }: { offering: Offering }) {
           <p>{firstSentence(offering.purpose || offering.summary)}</p>
         </div>
       </div>
-      <dl className="cl-prodcard-facts">
-        {facts.map((fact) => (
-          <div key={fact.label}>
-            <dt>{fact.label}</dt>
-            <dd>{fact.value}</dd>
-          </div>
-        ))}
-      </dl>
-      <div className="cl-prodcard-reach">
-        <p>
-          Reaches <b>{reach.size}</b> of {systems.length} systems
-        </p>
-        <div className="cl-dna" role="img" aria-label={`${offering.name} reaches ${reach.size} of ${systems.length} systems on the map`}>
-          {systems.map((system) => (
-            <i key={system.id} className={reach.has(system.id) ? `on bar--${system.domain}` : undefined} title={system.name} />
-          ))}
+      <div className="cl-prodcard-body">
+        <div className="cl-prodcard-reach">
+          <ReachRing reached={reach.size} total={data.systems.length} />
+          <p>
+            <b>{reach.size}</b> of {data.systems.length} systems
+            <span>{core} core to most journeys</span>
+          </p>
         </div>
+        <dl className="cl-prodcard-facts">
+          {facts.map((fact) => (
+            <div key={fact.label}>
+              <dt>{fact.label}</dt>
+              <dd>{fact.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+      <div className="cl-prodcard-layers">
+        <h4>Footprint by layer</h4>
+        <ul>
+          {layers.map((row) => (
+            <li key={row.domain.id}>
+              <span className="cl-reach-name">{row.domain.name}</span>
+              <span className="cl-reach-dots" aria-hidden="true">
+                {row.all.map((system) => (
+                  <i key={system.id} className={reach.has(system.id) ? "on" : undefined} title={system.name} />
+                ))}
+              </span>
+              <span className="cl-reach-count">
+                {row.used}/{row.all.length}
+                <span className="ds-visually-hidden"> systems reached</span>
+              </span>
+            </li>
+          ))}
+        </ul>
       </div>
       <nav className="cl-prodcard-links" aria-label={`${offering.name} pages`}>
-        <Link to={base}>Overview</Link>
-        <Link to={`${base}/architecture`}>Architecture</Link>
-        {journeys[0] && <Link to={journeyHref(journeys[0].id, journeys[0].channels[0])}>Journeys</Link>}
+        <Link className="cl-btn" to={base}>
+          <Icon>{CARD_LINK_ICONS.overview}</Icon>
+          Overview
+        </Link>
+        <Link className="cl-btn" to={`${base}/architecture`}>
+          <Icon>{CARD_LINK_ICONS.architecture}</Icon>
+          Architecture
+        </Link>
+        {journeys[0] && (
+          <Link className="cl-btn" to={journeyHref(journeys[0].id, journeys[0].channels[0])}>
+            <Icon>{CARD_LINK_ICONS.journeys}</Icon>
+            Journeys
+          </Link>
+        )}
       </nav>
     </li>
   );
