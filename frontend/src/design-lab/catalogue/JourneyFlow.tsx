@@ -12,6 +12,7 @@ import { download, toBpmn, toCsv, toMermaid, toPlantUml } from "../../architectu
 import { GEOMETRY, layoutFlow } from "../../architecture/flowLayout";
 import { type JourneyView, ROLE_WORDS, type Step } from "../../architecture/model";
 import { AreaTabs, EvidenceTag } from "./CatalogueLab";
+import { JourneyPicker } from "./JourneyPicker";
 import { journeyHref, LAB, useLabData } from "./labData";
 import { plural, useTitle } from "./labUtil";
 import { ProductHeader } from "./ProductPage";
@@ -312,18 +313,7 @@ export function JourneyFlow() {
     <>
       {top}
       <div className="cl-toolbar">
-        <div className="cl-chips" role="group" aria-label="Journey">
-          <span className="cl-chiplabel" aria-hidden="true">
-            Journey
-          </span>
-          {data.journeys
-            .filter((journey) => journey.offeringId === def.offeringId)
-            .map((journey) => (
-              <button key={journey.id} type="button" className="cl-chip" aria-pressed={journey.id === def.id} onClick={() => navigate(journeyHref(journey.id, journey.channels[0]))}>
-                {journey.name}
-              </button>
-            ))}
-        </div>
+        <JourneyPicker journeys={data.journeys.filter((journey) => journey.offeringId === def.offeringId)} current={def} onPick={(journey) => navigate(journeyHref(journey.id, journey.channels[0]))} />
         {def.channels.length > 0 && (
           <div className="cl-chips" role="group" aria-label="Channel">
             <span className="cl-chiplabel" aria-hidden="true">

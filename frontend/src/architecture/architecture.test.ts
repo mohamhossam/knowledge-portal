@@ -81,7 +81,7 @@ describe("a journey seen through one channel", () => {
   it("offers one view per channel its order type is sold through", () => {
     expect(journeyViews(data, "business-pro-plus", "NEW").map((view) => view.channel)).toEqual(["bcrm", "b2b-web", "smb-app"]);
     expect(journeyViews(data, "business-pro-plus", "UPDOWNGRD", "b2b-web")).toEqual([]);
-    expect(journeyViews(data, "business-pro-plus", "CESSREQ")).toEqual([]);
+    expect(journeyViews(data, "business-pro-plus", "CESSREQ").map((view) => view.channel)).toEqual(["bcrm", "b2b-web", "smb-app"]);
   });
 });
 
@@ -97,7 +97,7 @@ describe("the impact lens", () => {
   });
 
   it("is empty, not zero-filled, for a combination without a journey", () => {
-    const { journeys, systems } = impactOf(data, { offeringId: "business-pro-plus", orderType: "CESSREQ", channel: "bcrm" });
+    const { journeys, systems } = impactOf(data, { offeringId: "business-pro-plus", orderType: "UPDOWNGRD", channel: "b2b-web" });
     expect(journeys).toHaveLength(0);
     expect(systems.size).toBe(0);
   });

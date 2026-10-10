@@ -207,9 +207,10 @@ def test_the_committed_smb_catalogue_reads_as_a_valid_release() -> None:
     )
 
     assert [node.name for node in release.portfolio][:3] == ["Enterprise", "Fixed", "SMB"]
+    # Every Business Pro Plus order type has its journey, plus order tracking, which has none.
+    offering = next(item for item in release.products if item.id == "business-pro-plus")
     assert {journey.order_type_code for journey in release.journeys} == {
-        "NEW",
-        "UPDOWNGRD",
+        *(item.code for item in offering.order_types),
         None,
     }
     # Nothing priced: the sources state no plan prices.

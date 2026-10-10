@@ -27,6 +27,7 @@ export function ProductHierarchy() {
   const offeringsUnder = (id: string) => data.offerings.filter((item) => item.nodeId === id).length;
   const childrenOf = (id: string) => data.portfolio.filter((item) => item.parentId === id).length;
   const journeys = data.journeys.filter((journey) => journey.offeringId === offering.id);
+  const unmodelled = offering.orderTypes.filter((type) => !journeys.some((journey) => journey.orderType === type.code)).length;
   const short = (name: string) => name.replace(offering.name, "").trim() || name;
   return (
     <>
@@ -98,9 +99,7 @@ export function ProductHierarchy() {
                 </li>
               ))}
             </ul>
-            <p className="cl-sub">
-              {offering.orderTypes.length - journeys.filter((journey) => journey.orderType).length} more order types are listed but not modelled as journeys yet.
-            </p>
+            {unmodelled > 0 && <p className="cl-sub">{plural(unmodelled, "more order type")} listed but not modelled as journeys yet.</p>}
           </section>
         </div>
       </section>

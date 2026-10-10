@@ -11,6 +11,7 @@ import { journeyView } from "../../architecture/adapter";
 import { impactOf } from "../../architecture/impact";
 import { type Component, type Offering, ROLE_WORDS } from "../../architecture/model";
 import { AreaTabs, EvidenceTag } from "./CatalogueLab";
+import { JourneyPicker } from "./JourneyPicker";
 import { firstJourneyHref, journeyHref, LAB, useLabData, useOffering } from "./labData";
 import { leadingNumber, plural, useTitle } from "./labUtil";
 import { Poster } from "./poster";
@@ -498,16 +499,7 @@ export function ProductArchitecture() {
         }
       />
       <div className="cl-toolbar">
-        <div className="cl-chips" role="group" aria-label="Journey">
-          <span className="cl-chiplabel" aria-hidden="true">
-            Journey
-          </span>
-          {journeys.map((journey) => (
-            <button key={journey.id} type="button" className="cl-chip" aria-pressed={journey.id === def.id} onClick={() => setScope(journey.id, journey.channels[0] ?? null)}>
-              {journey.name}
-            </button>
-          ))}
-        </div>
+        <JourneyPicker journeys={journeys} current={def} onPick={(journey) => setScope(journey.id, journey.channels[0] ?? null)} />
         {def.channels.length > 0 && (
           <div className="cl-chips" role="group" aria-label="Channel">
             <span className="cl-chiplabel" aria-hidden="true">
