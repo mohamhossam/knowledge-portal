@@ -5,8 +5,34 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ## Unreleased
 
+## 0.3.0 — 2026-10-10
+
+The ontology and impact plan's knowledge side: capability concepts, a concept-aware index and
+a whole-requirement assessment that requirement work can call (requirement-portal ADR-0114 to
+ADR-0116).
+
 ### Added
 
+- The catalogue model on `main`: the product portfolio, plans and prices, eligibility rules and
+  journey roles.
+- An evaluation golden set on `catalogues/smb-architecture.yaml` and the evaluation command
+  (`python -m knowledge_portal.interfaces.evaluate`), which scores system precision and recall,
+  verdict and offering accuracy, concept recall and citation faithfulness (ontology plan,
+  Phase 0).
+- Capability concepts (ontology plan, Phase 1): a curated scheme of business capabilities in each
+  catalogue release, components and system capabilities linked to them, and AI link suggestions
+  for curators to accept or reject.
+- A concept-aware evidence index (Phase 2): each chunk carries a context header and its links to
+  catalogue entities and capability concepts, and a build reports what its links leave out.
+- Controlled vocabularies (Phase 6) for eTOM process, channel kind, component kind,
+  responsibility role and Open API, with a term id beside each free-text value and a clean-up
+  run that maps existing values as suggestions.
+- `POST /internal/architecture/assess` (Phase 3): a requirement's facets, the capability
+  concepts it needs and which offering covers them, the product verdict, each impacted system
+  with its role, change type and path, gaps, owners and staffing gaps, and catalogue-built
+  questions when the requirement is too vague. `/internal/architecture/match` answers gain the
+  optional `role`, `change_type` and `paths` on each system. Both changes are additive.
+- The SMB catalogue's systems list their capabilities, each linked to a concept.
 - Each GitHub release carries the internal and public OpenAPI contracts, so requirement work
   can pin the internal one it is built against.
 - Import-linter forbids importing requirement work's code (requirement-portal ADR-0104).
@@ -27,6 +53,8 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 ### Changed
 
 - The organisation API's squad `systems` (one contact per system) is replaced by `resources`.
+- The evidence index profile is `section-v3`. Indexes built as `section-v2` are still read, so
+  mapping keeps working after the upgrade, but publishing a release builds a `section-v3` index.
 
 ### Removed
 

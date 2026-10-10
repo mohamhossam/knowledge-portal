@@ -346,8 +346,8 @@ To run the images a release published to ghcr.io instead of building, name them 
 build. The images are public:
 
 ```bash
-export KNOWLEDGE_API_IMAGE=ghcr.io/mohamhossam/knowledge-api:v0.2.0
-export KNOWLEDGE_WEB_IMAGE=ghcr.io/mohamhossam/knowledge-web:v0.2.0
+export KNOWLEDGE_API_IMAGE=ghcr.io/mohamhossam/knowledge-api:v0.3.0
+export KNOWLEDGE_WEB_IMAGE=ghcr.io/mohamhossam/knowledge-web:v0.3.0
 docker compose -f deploy/compose.local.yaml pull api web
 docker compose -f deploy/compose.local.yaml up -d --no-build
 ```
