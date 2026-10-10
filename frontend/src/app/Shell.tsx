@@ -109,15 +109,14 @@ export function Shell() {
   const navigation: NavItem[] = [
     { href: "/", label: "Your work", current: path === "/", count: needsYou, countLabel: "need you" },
     { href: "/library", label: "Library", current: under("/library") },
-    { href: "/architecture", label: "Catalogue", current: under("/architecture") },
+    // In development the catalogue opens on its redesign (a development-only lab, like its route); production keeps /architecture.
+    { href: import.meta.env.DEV ? "/design-lab/catalogue" : "/architecture", label: "Catalogue", current: under("/architecture") },
     { href: "/squads", label: "Ownership", current: under("/squads") },
     { href: "/requirement-knowledge", label: "Requirements", current: under("/requirement-knowledge") },
   ];
   const secondary: NavItem[] = [
     { href: "/explorer", label: "Explorer", current: under("/explorer") },
     { href: "/reminders", label: "Re-confirmations", current: under("/reminders") },
-    // The redesigned catalogue (a development-only lab, like its route) is one click from every area.
-    ...(import.meta.env.DEV ? [{ href: "/design-lab/catalogue", label: "Catalogue redesign", current: false }] : []),
   ];
 
   const actor = auth?.actor ?? null;
