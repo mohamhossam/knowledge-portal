@@ -488,4 +488,16 @@ The product Architecture tab keeps the full card style. Checks: tests 28/28 with
 
 Checks: tests 28/28 with axe; lint, brand lint, build and budget green.
 
+**Landscape fitted to the screen (2026-10-10).**
+- **Width:** the page widens to 1760px with 24px gutters. The eyebrow becomes part of the one-line lede, so the title, lede and tools sit on one row.
+- **Layout:**
+  - Each group holds its systems in at most two rows.
+  - Groups share a band's width by the columns they need, or by their name if that is longer, so no label is cut.
+  - The two halves of a split band share the width the same way.
+  - System names show in full.
+  - Engaged Party and Enterprise use two columns.
+- **Height:** the map fills the height left under the header. Tiles grow with the spare height, from 28px to 48px, and the type grows a step on large screens, so a big screen no longer leaves an empty strip below the map.
+- **Fixes:** the link layer is pinned to the map's own size, so a stale measurement no longer stretches the page. The map also re-measures when its tiles reflow.
+- **Fit:** no page scroll at 1280×720, 1366×768, 1536×730, 1440×900, 1920×950 and 1920×1080, in Layers, Wheel and Matrix, with and without the drawer. Below 1100px wide the page scrolls as before.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.

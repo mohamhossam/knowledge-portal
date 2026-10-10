@@ -128,9 +128,8 @@ export function LandscapeHero() {
       <AreaTabs current="landscape" />
       <header className="lx-head">
         <div className="lx-title">
-          <p className="cl-eyebrow">TM Forum application map · SMB</p>
           <h1 id="cl-hero-h">SMB architecture</h1>
-          <p className="lx-lede">Every SMB system by layer and functional group, joined by the integration layer that carries their calls.</p>
+          <p className="lx-lede">A TM Forum application map: every SMB system by layer and group, joined by the integration layer.</p>
         </div>
         <div className="lx-tools">
           <div className="cl-seg" role="group" aria-label="View">
