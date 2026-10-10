@@ -546,4 +546,6 @@ Checks: tests 28/28 with axe; lint, brand lint, build and budget green.
 - **Header:** the catalogue's soft band, shared with the Landscape and product pages. It holds the title, a one-line subtitle and how much of the product is modelled, then the scope as one row of chips, each naming its level and its choice.
 - **Layout:** the board and preview are paper panels that end level.
 
+**Journeys scope opens with a choice at every level (2026-10-10).** After Fixed › SMB, the default continues through the first child that holds a product (today: Business internet bundles › Business Pro Plus). Every level stays selectable.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.
