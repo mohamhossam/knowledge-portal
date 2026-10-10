@@ -64,9 +64,10 @@ def test_service_settings_are_checked_at_startup(changes: dict[str, str], messag
         replace(FAKE_PROVIDER_SETTINGS, **changes)  # type: ignore[arg-type]
 
 
-def test_production_reaches_requirement_work_over_http() -> None:
-    with pytest.raises(ConfigurationError, match="REQUIREMENT_API_BASE_URL"):
-        replace(PRODUCTION, app_environment="production", knowledge_evaluation_approved=True)
+def test_production_runs_with_or_without_requirement_work() -> None:
+    # requirement-portal ADR-0104: requirement work is an optional link, in production too.
+    alone = replace(PRODUCTION, app_environment="production", knowledge_evaluation_approved=True)
+    assert alone.requirement_api_base_url is None
     connected = replace(
         PRODUCTION,
         app_environment="production",

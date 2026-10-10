@@ -55,19 +55,15 @@ together with it.
 
 ## Importing the existing knowledge
 
-The library, catalogues and their history move here from a requirements database (one at or
-past requirement-portal migration `202610021400`, such as a restored backup). Migrate this
-service's database first, then:
+`v0.2.0` is the last release with the `knowledge-portal import` command, which copied the
+library, catalogues and their history out of a requirements database. Requirement work no
+longer keeps those tables, and stops its upgrade if any is left (requirement-portal's
+`docs/operations/deployment.md`, "Knowledge tables left behind"). To move an earlier system,
+run that release's image with `PERSISTENCE_PROVIDER=postgres` and `DATABASE_URL`:
 
 ```bash
-uv run knowledge-portal import --source-database-url postgresql://…/requirements --verify
+knowledge-portal import --source-database-url postgresql://…/requirements --verify
 ```
-
-The import writes to `DATABASE_URL` in one transaction, keeps every id, and reads the source in
-one snapshot without writing to it. Running it again brings changed rows up to date and adds new
-ones. `--verify` compares each table's row count and content checksum and fails on any
-difference; `--verify-only` compares without copying. Admins are not imported: the portal
-remembers them as they sign in.
 
 ## Seeding from the Product Architecture Explorer
 
@@ -127,25 +123,28 @@ each screen shows every state it must handle. Checks: `npm run lint`, `npm run t
 
 ## Images and releases
 
-One backend image runs every process, chosen by command; see `deploy/api/Dockerfile`. Building
-it needs read access to platform-kernel as a BuildKit secret:
+One backend image runs every process, chosen by command; see `deploy/api/Dockerfile`:
 
 ```bash
-docker build --secret id=kernel_read_token,env=KERNEL_READ_TOKEN -f deploy/api/Dockerfile .
+docker build -f deploy/api/Dockerfile .
 ```
 
 To run both images on one machine, with PostgreSQL, ClamAV and an edge proxy, use
-`deploy/compose.local.yaml` (`START_GUIDE.md`, section 7).
+`deploy/compose.local.yaml` (`START_GUIDE.md`, section 7). To deploy the portal, use
+`deploy/compose.production.yaml` (`docs/operations/deployment.md`); requirement work is optional
+(requirement-portal ADR-0104).
 
 The browser app ships as its own image, nginx serving `/knowledge/`
-(`docker build -f deploy/web/Dockerfile .`, with `CSP_IDENTITY_ORIGINS` set to the OIDC issuer's
-origin for an OIDC deployment).
+(`docker build -f deploy/web/Dockerfile .`; `--build-arg KNOWLEDGE_BASE_PATH=/` serves it at the
+root of its own hostname). The container's `CSP_IDENTITY_ORIGINS` names the OIDC issuer's origin,
+and its `REQUIREMENT_PORTAL_URL` where requirement work is, empty to leave out the links.
 
 CI (`.github/workflows/ci.yml`) runs the checks with PostgreSQL, the frontend checks, audits
 dependencies, and builds, scans and starts both images. Pushing a tag `vX.Y.Z` that matches
 `pyproject.toml` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` and
-`ghcr.io/mohamhossam/knowledge-web:vX.Y.Z` once CI passes; requirement-portal's deployment pulls
-them by tag. CI needs the `KERNEL_READ_TOKEN` repository secret.
+`ghcr.io/mohamhossam/knowledge-web:vX.Y.Z` once CI passes, and attaches both OpenAPI contracts to the GitHub release; `deploy/compose.production.yaml`
+pulls them by tag. `CHANGELOG.md` says what
+each release changes; add its entry in the pull request that bumps the version.
 
 ## Who uses it
 

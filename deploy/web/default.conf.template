@@ -1,12 +1,19 @@
-# The knowledge portal's browser app, served under /knowledge/.
+# The knowledge portal's browser app, served under its base path: /knowledge/
+# unless the image was built with another KNOWLEDGE_BASE_PATH, such as / on the
+# portal's own hostname (requirement-portal ADR-0104). The Dockerfile writes the
+# path in place of __BASE__ and drops the lines marked "not at the root" when
+# it is /.
 #
-# requirement-portal's edge proxy forwards /knowledge/ here unchanged and serves
-# /knowledge-api/ itself, so this server holds static files only.
+# An edge in front (this repository's, or requirement-portal's) forwards the
+# app's paths here unchanged and serves /knowledge-api/ itself, so this server
+# holds static files only.
 #
-# The page's Content-Security-Policy names the OIDC issuer, which only the
-# deployment knows. The image is built with a placeholder; the container's
-# CSP_IDENTITY_ORIGINS (space-separated origins, or empty offline) replaces it
-# in every HTML response. The image renders this template at start-up.
+# The page's Content-Security-Policy names the OIDC issuer, and the page names
+# where requirement work is; only the deployment knows either. The image is
+# built with placeholders that the container's CSP_IDENTITY_ORIGINS
+# (space-separated origins, or empty offline) and REQUIREMENT_PORTAL_URL (an
+# address, or empty to leave out every link to it) replace in every HTML
+# response. The image renders this template at start-up.
 server {
     listen 8080;
     server_tokens off;
@@ -24,34 +31,40 @@ server {
         return 200 "ok\n";
     }
 
-    location = /knowledge {
-        return 301 /knowledge/;
-    }
+    location = / {                 # not at the root
+        return 302 __BASE__;       # not at the root
+    }                              # not at the root
+
+    location = __BASE_BARE__ {     # not at the root
+        return 301 __BASE__;       # not at the root
+    }                              # not at the root
 
     # Hashed build assets never change, so they cache for a year.
-    location /knowledge/assets/ {
+    location __BASE__assets/ {
         include /etc/nginx/snippets/security-headers.conf;
         alias /usr/share/nginx/html/assets/;
         add_header Cache-Control "public, max-age=31536000, immutable" always;
         try_files $uri =404;
     }
 
-    # Client-side routes: every other path under /knowledge/ is the app shell,
+    # Client-side routes: every other path under the base is the app shell,
     # never cached, so a deploy reaches browsers on their next navigation.
-    location /knowledge/ {
+    location __BASE__ {
         include /etc/nginx/snippets/security-headers.conf;
         alias /usr/share/nginx/html/;
         add_header Cache-Control "no-cache" always;
         sub_filter "__CSP_IDENTITY_ORIGINS__" "${CSP_IDENTITY_ORIGINS}";
+        sub_filter "__REQUIREMENT_PORTAL_URL__" "${REQUIREMENT_PORTAL_URL}";
         sub_filter_once off;
-        try_files $uri /knowledge/index.html;
+        try_files $uri __BASE__index.html;
     }
 
-    location = /knowledge/index.html {
+    location = __BASE__index.html {
         include /etc/nginx/snippets/security-headers.conf;
         alias /usr/share/nginx/html/index.html;
         add_header Cache-Control "no-cache" always;
         sub_filter "__CSP_IDENTITY_ORIGINS__" "${CSP_IDENTITY_ORIGINS}";
+        sub_filter "__REQUIREMENT_PORTAL_URL__" "${REQUIREMENT_PORTAL_URL}";
         sub_filter_once off;
     }
 }

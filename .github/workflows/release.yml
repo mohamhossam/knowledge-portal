@@ -21,8 +21,6 @@ jobs:
     permissions:
       contents: write
       packages: write
-    env:
-      KERNEL_READ_TOKEN: ${{ secrets.KERNEL_READ_TOKEN }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -38,8 +36,7 @@ jobs:
         run: |
           image="ghcr.io/${GITHUB_REPOSITORY_OWNER}/knowledge-api:${GITHUB_REF_NAME}"
           echo "$REGISTRY_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-          DOCKER_BUILDKIT=1 docker build --secret id=kernel_read_token,env=KERNEL_READ_TOKEN \
-            -f deploy/api/Dockerfile -t "$image" .
+          DOCKER_BUILDKIT=1 docker build -f deploy/api/Dockerfile -t "$image" .
           docker push "$image"
 
       - name: Build and push the web image
@@ -52,5 +49,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # The internal contract requirement work's adapters pin (requirement-portal ADR-0099).
           gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" \
-            --notes "Images: ghcr.io/${GITHUB_REPOSITORY_OWNER}/knowledge-api:${GITHUB_REF_NAME} and ghcr.io/${GITHUB_REPOSITORY_OWNER}/knowledge-web:${GITHUB_REF_NAME}"
+            --notes "Images: ghcr.io/${GITHUB_REPOSITORY_OWNER}/knowledge-api:${GITHUB_REF_NAME} and ghcr.io/${GITHUB_REPOSITORY_OWNER}/knowledge-web:${GITHUB_REF_NAME}. Changes: CHANGELOG.md." \
+            contracts/knowledge-internal.openapi.json contracts/knowledge-public.openapi.json

@@ -140,7 +140,7 @@ export function Shell() {
         homeHref="/"
         product="Knowledge Portal"
         link={RouterLink}
-        outbound={{ href: REQUIREMENT_APP_URL, label: "Requirement AI" }}
+        outbound={REQUIREMENT_APP_URL === null ? undefined : { href: REQUIREMENT_APP_URL, label: "Requirement AI" }}
         locationKey={location.pathname}
         navigation={navigation}
         secondaryNavigation={secondary}

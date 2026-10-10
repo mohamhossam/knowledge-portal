@@ -14,7 +14,7 @@ export function SystemState({ kind }: { kind: "no-access" | "not-found" | "sessi
         <PageHeader title="This portal is for knowledge admins" lead={<>You're signed in as <strong>Omar Observer</strong>. Curating the library and the catalogue needs the Knowledge admin role.</>} />
         <ActionGroup>
           <ButtonLink to={proto("/explorer?as=reader")} variant="primary">Read the product architecture explorer</ButtonLink>
-          <a className="ds-button ds-button--secondary" href={REQUIREMENT_APP_URL}><span>Go to Requirement AI</span></a>
+          <a className="ds-button ds-button--secondary" href={REQUIREMENT_APP_URL ?? undefined}><span>Go to Requirement AI</span></a>
         </ActionGroup>
         <p className="proto-quiet">To curate, ask your platform administrator to add you to the knowledge admins.</p>
       </>
@@ -74,7 +74,7 @@ export function RequirementsEmpty({ what }: { what: "overview" | "requirements" 
       </PageHeader>
       <EmptyState
         title={copy.empty}
-        action={what === "historic" ? <Button variant="primary">Import BRDs…</Button> : <a className="ds-button ds-button--secondary" href={REQUIREMENT_APP_URL}><span>Open Requirement AI</span></a>}
+        action={what === "historic" ? <Button variant="primary">Import BRDs…</Button> : <a className="ds-button ds-button--secondary" href={REQUIREMENT_APP_URL ?? undefined}><span>Open Requirement AI</span></a>}
       >
         <p>{copy.why}</p>
       </EmptyState>

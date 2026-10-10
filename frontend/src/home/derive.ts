@@ -540,7 +540,8 @@ export type HistoricTally = { draft: number; published: number; withdrawn: numbe
  */
 export function requirementOverview(
   corpus: RequirementCorpus,
-  requirementWork: string,
+  /** Requirement work's address, or null when this deployment runs without it. */
+  requirementWork: string | null,
   /** Historic Requirements, kept here in the knowledge portal; none until read. */
   historic: HistoricTally | null = null,
 ): Overview {
@@ -600,7 +601,8 @@ export function requirementOverview(
     corpus.failed > 0 ? `${corpus.failed} stopped indexing` : null,
     ages.over_30_days > 0 ? `${ages.over_30_days} overdue` : null,
   ]);
-  const leave = (label: string): Next => ({ href: requirementWork, leaves: REQUIREMENT_WORK_LEAVES, label });
+  const leave = (label: string): Next =>
+    requirementWork === null ? { label } : { href: requirementWork, leaves: REQUIREMENT_WORK_LEAVES, label };
 
   return {
     lines,

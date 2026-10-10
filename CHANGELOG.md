@@ -1,0 +1,68 @@
+# Changelog
+
+Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` and
+`ghcr.io/mohamhossam/knowledge-web:vX.Y.Z` (`README.md`, "Images and releases").
+
+## Unreleased
+
+### Added
+
+- Each GitHub release carries the internal and public OpenAPI contracts, so requirement work
+  can pin the internal one it is built against.
+- Import-linter forbids importing requirement work's code (requirement-portal ADR-0104).
+
+### Removed
+
+- The `knowledge-portal import` command, which copied the knowledge tables out of a
+  requirements database. Requirement work no longer keeps them; `v0.2.0` is the last release
+  with it.
+
+## 0.2.0 — 2026-10-09
+
+The portal deploys, signs in and starts on its own; requirement work is an optional link
+(requirement-portal ADR-0104).
+
+### Added
+
+- Runs in production without requirement work: `REQUIREMENT_API_BASE_URL` may be empty, and the
+  existing stand-ins answer in its place. An empty `REQUIREMENT_PORTAL_URL` leaves out every link
+  to it ([#49]).
+- Its own deployment: `deploy/compose.production.yaml` with `api`, `worker`, `web` and an `edge`
+  that is the only published port, documented in `docs/operations/deployment.md` ([#50]).
+- Its own sign-in entities in `deploy/keycloak/knowledge-portal.json`: the `knowledge-spa`
+  client, the `knowledge-api` audience, and the `knowledge_*` roles and groups, added to the
+  shared realm with `deploy/keycloak/apply.py` ([#51]).
+- Its own hostname: the browser app's base path is a build setting (`KNOWLEDGE_BASE_PATH`,
+  `/knowledge/` in released images), the edge no longer depends on it, and the web image takes
+  `REQUIREMENT_PORTAL_URL` and `CSP_IDENTITY_ORIGINS` at start-up ([#52]).
+- Per-service credentials: this portal can call requirement work with its own `knowledge-service`
+  client (`KNOWLEDGE_SERVICE_CLIENT_ID`/`_SECRET`), and `/internal` admits requirement work's
+  `requirement-service` client (`REQUIREMENT_SERVICE_CLIENT_ID`), alongside the shared tokens
+  ([#53]).
+- Also since 0.1.0: the Product Architecture Explorer (requirement-portal ADR-0101, steps 1 to 7),
+  historic requirements (requirement-portal ADR-0102), and where requirement work cites each one
+  ([#48]).
+
+### Changed
+
+- platform-kernel 1.1.0.
+
+### Upgrading
+
+- Images before 0.2.0 refuse `APP_ENV=production` unless `REQUIREMENT_API_BASE_URL` is set.
+- To move from requirement-portal's deployment, follow "Moving over from requirement-portal's
+  deployment" in `docs/operations/deployment.md`.
+- Service credentials are optional; to adopt them, follow "Service credentials" there. The shared
+  tokens keep working while both portals move over.
+
+## 0.1.0 — 2026-10-03
+
+The first release: the library, the architecture catalogue and the squad catalogue, with their
+curation screens, served beside requirement work.
+
+[#48]: https://github.com/mohamhossam/knowledge-portal/pull/48
+[#49]: https://github.com/mohamhossam/knowledge-portal/pull/49
+[#50]: https://github.com/mohamhossam/knowledge-portal/pull/50
+[#51]: https://github.com/mohamhossam/knowledge-portal/pull/51
+[#52]: https://github.com/mohamhossam/knowledge-portal/pull/52
+[#53]: https://github.com/mohamhossam/knowledge-portal/pull/53

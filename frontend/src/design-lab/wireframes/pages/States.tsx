@@ -13,7 +13,7 @@ export function SystemState({ kind }: { kind: "no-access" | "not-found" | "sessi
         <p>You're signed in as <strong>Omar Observer</strong>. Curating the library and the catalogue needs the Knowledge admin role.</p>
         <div className="wf-actions">
           <Link to={wf("/explorer?as=reader")} className="wf-button wf-button--primary">Read the product architecture explorer</Link>
-          <a href={REQUIREMENT_APP_URL} className="wf-button">Requirement AI</a>
+          <a href={REQUIREMENT_APP_URL ?? undefined} className="wf-button">Requirement AI</a>
         </div>
         <p className="wf-quiet">To curate, ask your platform administrator to add you to the knowledge admins.</p>
       </Page>
@@ -69,7 +69,7 @@ export function RequirementsEmpty({ what }: { what: "overview" | "requirements" 
       <Empty
         title={copy.empty}
         why={copy.why}
-        action={what === "historic" ? <button type="button" className="wf-button wf-button--primary">Import BRDs…</button> : <a className="wf-button" href={REQUIREMENT_APP_URL}>Open Requirement AI</a>}
+        action={what === "historic" ? <button type="button" className="wf-button wf-button--primary">Import BRDs…</button> : <a className="wf-button" href={REQUIREMENT_APP_URL ?? undefined}>Open Requirement AI</a>}
       />
       <Note>Health claims ("all indexed") appear only when the count is above 0. Filter strips hide at zero.</Note>
     </Page>

@@ -12,7 +12,10 @@ Paper. Do not copy requirement-portal's tokens, primitives or shell.
   screen. Read them before editing UI.
 - **Built for curation work.** That means dense tables, review queues, release comparison, and
   clear provenance for AI-suggested content.
-- **Stack.** React + Vite (TypeScript), served under `base: "/knowledge/"`.
+- **Stack.** React + Vite (TypeScript), served under the build's base path: `/knowledge/` unless
+  `KNOWLEDGE_BASE_PATH` says otherwise, such as `/` on the portal's own hostname
+  (`frontend/basePath.ts`). Never hard-code `/knowledge/` in the app; use `BASE` from
+  `src/auth/paths.ts`.
 - **Accessibility.** Meet WCAG 2.2 AA:
   - contrast ratios;
   - keyboard reachability and visible focus;

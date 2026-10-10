@@ -188,7 +188,7 @@ requirement-portal's database:
 
 ```bash
 docker run -d --name knowledge-postgres \
-  -e POSTGRES_DB=smb_knowledge -e POSTGRES_USER=smb -e POSTGRES_PASSWORD=smb_dev \
+  -e POSTGRES_DB=smb_knowledge -e POSTGRES_USER=knowledge -e POSTGRES_PASSWORD=knowledge_dev \
   -p 127.0.0.1:5433:5432 \
   -v knowledge_postgres_data:/var/lib/postgresql/data \
   pgvector/pgvector:pg17
@@ -201,7 +201,7 @@ Set in `.env`:
 
 ```dotenv
 PERSISTENCE_PROVIDER=postgres
-DATABASE_URL=postgresql://smb:smb_dev@127.0.0.1:5433/smb_knowledge
+DATABASE_URL=postgresql://knowledge:knowledge_dev@127.0.0.1:5433/smb_knowledge
 ```
 
 Apply the schema, then start the API as in section 3:
@@ -260,11 +260,10 @@ with durable storage and real malware scanning.
 | `api` | The knowledge API (HTTP only) |
 | `worker` | Library ingestion and catalogue jobs |
 | `web` | The browser app, nginx serving `/knowledge/` |
-| `edge` | nginx on `127.0.0.1:8090`: `/knowledge/` to `web`, `/knowledge-api/` to `api`, internal routes blocked |
+| `edge` | nginx on `127.0.0.1:8090`: `/knowledge-api/` to `api`, internal routes blocked, everything else to `web` |
 
-The edge stands in for requirement-portal's `web`, which serves both portals on one address in
-the platform. This stack is for one machine. A shared deployment is requirement-portal's
-`deploy/compose.production.yaml` (its `START_GUIDE.md`, sections 2–3).
+This stack is for one machine. A shared deployment is `deploy/compose.production.yaml`, which
+runs the released images on their own (`docs/operations/deployment.md`).
 
 ### Prerequisites
 
@@ -272,11 +271,8 @@ the platform. This stack is for one machine. A shared deployment is requirement-
   Confirm with `docker compose version`.
 - About 3 GB of memory for Docker, most of it for ClamAV, and about 4 GB of disk space.
 - Port `8090` free.
-- A GitHub token that can read
-  [platform-kernel](https://github.com/mohamhossam/platform-kernel), for the API image build.
-  It is a private dependency, so the build fetches it with this token. A fine-grained personal
-  access token with **Contents: read** on that repository works. If you use the GitHub CLI with
-  access to it, `gh auth token` prints one.
+- Internet access to `github.com`: the API image build fetches
+  [platform-kernel](https://github.com/mohamhossam/platform-kernel), a public dependency.
 
 ### Step 1: create the settings file
 
@@ -297,18 +293,10 @@ effect. Set anything else there, such as a real model provider (section 9).
 ### Step 2: build and start
 
 ```bash
-export KERNEL_READ_TOKEN=your-token        # or: export KERNEL_READ_TOKEN=$(gh auth token)
 docker compose -f deploy/compose.local.yaml up -d --build
 ```
 
-```powershell
-# Windows PowerShell
-$env:KERNEL_READ_TOKEN = "your-token"
-docker compose -f deploy/compose.local.yaml up -d --build
-```
-
-The first build takes several minutes. The token reaches only the build step, as a BuildKit
-secret, and is never stored in an image. `up` starts PostgreSQL and ClamAV, applies the
+The first build takes several minutes. `up` starts PostgreSQL and ClamAV, applies the
 migrations, then starts the API, the worker, the browser app and the edge. It returns once the
 edge is up.
 
@@ -346,7 +334,7 @@ docker compose -f deploy/compose.local.yaml down            # remove the contain
 docker compose -f deploy/compose.local.yaml down -v         # remove the containers and delete all data
 ```
 
-After a `git pull`, rebuild and restart with `up -d --build` (with `KERNEL_READ_TOKEN` set).
+After a `git pull`, rebuild and restart with `up -d --build`.
 `migrate` runs again first and applies any new migrations. Data is kept.
 
 After editing `deploy/local.env`, run `up -d` again: the containers are recreated with the new
@@ -355,11 +343,11 @@ values.
 ### Run a released version instead
 
 To run the images a release published to ghcr.io instead of building, name them and skip the
-build. No token is needed, because the images are public:
+build. The images are public:
 
 ```bash
-export KNOWLEDGE_API_IMAGE=ghcr.io/mohamhossam/knowledge-api:v0.1.0
-export KNOWLEDGE_WEB_IMAGE=ghcr.io/mohamhossam/knowledge-web:v0.1.0
+export KNOWLEDGE_API_IMAGE=ghcr.io/mohamhossam/knowledge-api:v0.2.0
+export KNOWLEDGE_WEB_IMAGE=ghcr.io/mohamhossam/knowledge-web:v0.2.0
 docker compose -f deploy/compose.local.yaml pull api web
 docker compose -f deploy/compose.local.yaml up -d --no-build
 ```
@@ -412,8 +400,8 @@ as unavailable where it needs it.
 With fake sign-in on both sides, Amina Owner and Ravi Reviewer are knowledge admins in both
 portals.
 
-To have both portals behind one address, as in production, use requirement-portal's Docker stack
-(its `START_GUIDE.md`, section 2). It pulls this portal's published images by release tag.
+To deploy the two side by side, each runs its own stack, and they meet on a private network
+(`docs/operations/deployment.md`, "Connect requirement work").
 
 ## 9. Use a real AI provider
 
@@ -533,9 +521,8 @@ is not read by the Docker stack.
 
 #### The API image build fails at the `uv sync` step
 
-The build could not read platform-kernel. Set `KERNEL_READ_TOKEN` in the same terminal, to a
-token that can read the repository, and run `up -d --build` again. The token must be set for
-every build, not only the first.
+The build could not fetch platform-kernel from GitHub. Check that the machine can reach
+`github.com`, and run `up -d --build` again.
 
 #### `up` stops with "dependency failed to start" or `api` stays unhealthy
 

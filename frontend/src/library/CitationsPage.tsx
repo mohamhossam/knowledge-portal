@@ -4,13 +4,22 @@ import { useEffect, useState } from "react";
 import { api, type Dependency, type Impact } from "../api/client";
 import { errorMessage } from "../api/errors";
 import { Button, Checkbox, type Column, DataTable, EmptyState, Section, Skeleton, Status, TextField } from "../design/components";
+import { requirementWorkHref } from "../auth/paths";
 import { formatDay } from "../home/format";
 import { useDocumentContext } from "./documentContext";
 
 import { contentLang, humanWhere, plural } from "./where";
 
-/** Requirement work lives at the platform's root; its pages open there. */
-const requirementHref = (requirementId: string) => `/requirements/${encodeURIComponent(requirementId)}`;
+/** A requirement's page in requirement work, or null when it is not connected. */
+const requirementHref = (requirementId: string) =>
+  requirementWorkHref(`requirements/${encodeURIComponent(requirementId)}`);
+
+/** A requirement's title: a link into Requirement AI when it is connected, its words alone otherwise. */
+function RequirementTitle({ id, title }: { id: string; title: string }) {
+  const href = requirementHref(id);
+  const words = <bdi lang={contentLang(title)}>{title}</bdi>;
+  return href === null ? words : <a href={href}>{words}<Leaves /></a>;
+}
 
 const PROPOSAL_STATUS: Record<string, string> = {
   pending: "Waiting for its owner",
@@ -80,7 +89,7 @@ function Proposals() {
       rowHeader: true,
       cell: (item) => (
         <>
-          <a href={requirementHref(item.requirement_id)}><bdi lang={contentLang(item.requirement_title)}>{item.requirement_title}</bdi><Leaves /></a>
+          <RequirementTitle id={item.requirement_id} title={item.requirement_title} />
           <span className="lib-detail lib-detail--plain">{item.current_analysis ? "Current analysis" : "Earlier analysis"}{item.round_number ? `, round ${item.round_number}` : ""}</span>
         </>
       ),
@@ -151,7 +160,7 @@ function SourceImpact() {
       rowHeader: true,
       cell: (item) => (
         <>
-          <a href={requirementHref(item.dependency.requirement_id)}><bdi lang={contentLang(item.dependency.requirement_title)}>{item.dependency.requirement_title}</bdi><Leaves /></a>
+          <RequirementTitle id={item.dependency.requirement_id} title={item.dependency.requirement_title} />
           <span className="lib-detail lib-detail--plain">{TARGET[item.dependency.target_kind] ?? item.dependency.target_kind}</span>
         </>
       ),

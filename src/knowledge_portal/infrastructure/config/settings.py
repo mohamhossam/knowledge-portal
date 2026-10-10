@@ -184,13 +184,19 @@ class Settings:
     metrics_host: str = "127.0.0.1"
     request_max_body_bytes: int = DEFAULT_REQUEST_MAX_BODY_BYTES
     # Each service token is named after the service that presents it (ADR-0099).
-    # The token requirement work presents on this service's /internal routes.
-    # Unset, the internal API is not served at all.
+    # How requirement work proves itself on this service's /internal routes: the
+    # token it presents, and/or its client at the OIDC issuer, whose granted
+    # tokens for the audience knowledge-internal are admitted (requirement-portal
+    # ADR-0104). With neither, the internal API is not served at all.
     requirement_service_token: str | None = field(default=None, repr=False)
-    # Where requirement work's internal API is, and the token this service
-    # presents there. Unset, offline fakes stand in for requirement work.
+    requirement_service_client_id: str | None = None
+    # Where requirement work's internal API is, and how this service proves itself
+    # there: a shared token, or this service's own client at the OIDC issuer,
+    # which then grants it tokens. Unset, offline fakes stand in for requirement work.
     requirement_api_base_url: str | None = None
     knowledge_service_token: str | None = field(default=None, repr=False)
+    knowledge_service_client_id: str | None = None
+    knowledge_service_client_secret: str | None = field(default=None, repr=False)
     # The product catalog plans and prices are read from, live (requirement-portal
     # ADR-0101): none, the offline sample, or a TMF620 Product Catalog Management API.
     product_catalog_provider: ProductCatalogProvider = ProductCatalogProvider.NONE
@@ -207,6 +213,25 @@ class Settings:
 
     def __post_init__(self) -> None:
         validate_settings(self)
+
+    @property
+    def uses_service_client(self) -> bool:
+        """Whether this service asks the OIDC issuer for its tokens to requirement work."""
+        return (
+            self.knowledge_service_client_id is not None
+            and self.knowledge_service_client_secret is not None
+        )
+
+    @property
+    def requirement_service_url(self) -> str | None:
+        """Requirement work's internal API, or None when offline fakes stand in.
+
+        It is called only with both its address and a way to prove this service
+        there: a shared token or this service's client credentials.
+        """
+        if self.knowledge_service_token is None and not self.uses_service_client:
+            return None
+        return self.requirement_api_base_url
 
     @classmethod
     def from_env(cls, *, config_path: str | None = None) -> Settings:
@@ -531,6 +556,15 @@ def _operability_from_env() -> dict[str, Any]:
         "requirement_service_token": os.getenv("REQUIREMENT_SERVICE_TOKEN", "").strip() or None,
         "requirement_api_base_url": os.getenv("REQUIREMENT_API_BASE_URL", "").strip() or None,
         "knowledge_service_token": os.getenv("KNOWLEDGE_SERVICE_TOKEN", "").strip() or None,
+        "requirement_service_client_id": (
+            os.getenv("REQUIREMENT_SERVICE_CLIENT_ID", "").strip() or None
+        ),
+        "knowledge_service_client_id": (
+            os.getenv("KNOWLEDGE_SERVICE_CLIENT_ID", "").strip() or None
+        ),
+        "knowledge_service_client_secret": (
+            os.getenv("KNOWLEDGE_SERVICE_CLIENT_SECRET", "").strip() or None
+        ),
         **_product_catalog_from_env(),
         "knowledge_review_cycle_days": _review_cycle_from_env(),
         **_ado_from_env(),

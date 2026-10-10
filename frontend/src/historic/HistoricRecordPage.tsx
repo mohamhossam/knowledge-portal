@@ -13,8 +13,9 @@ import {
 } from "../api/client";
 import { ApiError, errorMessage } from "../api/errors";
 import { count, formatDay, formatMoment } from "../home/format";
-import { knowledgeStepHref, LEAVES } from "../requirements/knowledge";
+import { knowledgeStepHref } from "../requirements/knowledge";
 import { KnowledgePage } from "../requirements/knowledgeHead";
+import { RequirementLink } from "../requirements/RequirementLink";
 import { AdoLink, BreakdownTable, ChangeTable, ItemErrors, SharedRootNote } from "./Breakdown";
 import {
   HISTORIC_LIST_KEY,
@@ -222,10 +223,9 @@ function CitedBy({ record }: { record: HistoricDetail }) {
               return (
                 <tr key={item.requirement_id} className={`row ${state.rank}`}>
                   <th scope="row" aria-label={item.title}>
-                    <a href={knowledgeStepHref(item.requirement_id)} className="knowledge__title" dir="auto">
+                    <RequirementLink href={knowledgeStepHref(item.requirement_id)} className="knowledge__title">
                       {item.title}
-                      <span className="visually-hidden">{LEAVES}</span>
-                    </a>
+                    </RequirementLink>
                     <span className="secondary govtable__by">
                       {item.owner ? `Owned by ${item.owner}` : "No owner"}
                       <span className="historic__narrow-inline"> · checked {formatDay(item.checked_at)}</span>

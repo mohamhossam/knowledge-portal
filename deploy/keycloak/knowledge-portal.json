@@ -1,0 +1,123 @@
+{
+  "clients": [
+    {
+      "clientId": "knowledge-spa",
+      "name": "Knowledge portal browser",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "frontchannelLogout": true,
+      "rootUrl": "${KNOWLEDGE_APP_ORIGIN}",
+      "baseUrl": "${KNOWLEDGE_APP_ORIGIN}${KNOWLEDGE_APP_PATH}/",
+      "redirectUris": [
+        "${KNOWLEDGE_APP_ORIGIN}${KNOWLEDGE_APP_PATH}/auth/callback",
+        "${KNOWLEDGE_APP_ORIGIN}${KNOWLEDGE_APP_PATH}/auth/silent-callback"
+      ],
+      "webOrigins": [
+        "${KNOWLEDGE_APP_ORIGIN}"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "${KNOWLEDGE_APP_ORIGIN}${KNOWLEDGE_APP_PATH}/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "knowledge-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "knowledge-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "roles",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "userinfo.token.claim": "false"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "knowledge-service",
+      "name": "Knowledge portal service",
+      "description": "The knowledge portal's own credential for requirement work's internal API (requirement-portal ADR-0104). Keycloak generates its secret; set it as KNOWLEDGE_SERVICE_CLIENT_SECRET.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": false,
+      "protocolMappers": [
+        {
+          "name": "requirement-internal-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "requirement-internal",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "roles": {
+    "realm": [
+      {
+        "name": "knowledge_admin",
+        "description": "Opens the knowledge portal and curates the shared library and the architecture and squad catalogues."
+      },
+      {
+        "name": "knowledge_reader",
+        "description": "Reads the architecture and squad catalogues in the knowledge portal."
+      },
+      {
+        "name": "knowledge_maintainer",
+        "description": "Also edits the architecture and squad catalogues in the knowledge portal."
+      }
+    ]
+  },
+  "groups": [
+    {
+      "name": "knowledge-admins",
+      "path": "/knowledge-admins",
+      "realmRoles": [
+        "knowledge_admin"
+      ]
+    },
+    {
+      "name": "knowledge-readers",
+      "path": "/knowledge-readers",
+      "realmRoles": [
+        "knowledge_reader"
+      ]
+    },
+    {
+      "name": "knowledge-maintainers",
+      "path": "/knowledge-maintainers",
+      "realmRoles": [
+        "knowledge_reader",
+        "knowledge_maintainer"
+      ]
+    }
+  ]
+}

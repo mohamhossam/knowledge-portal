@@ -104,7 +104,7 @@ export function ProtoShell({ children }: { children: ReactNode }) {
       <AppShell
         homeHref={proto()}
         link={RouterLink}
-        outbound={{ href: REQUIREMENT_APP_URL, label: "Requirement AI" }}
+        outbound={REQUIREMENT_APP_URL === null ? undefined : { href: REQUIREMENT_APP_URL, label: "Requirement AI" }}
         reader={reader}
         locationKey={location.pathname}
         navigation={navigation}

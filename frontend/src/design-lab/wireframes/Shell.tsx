@@ -66,7 +66,7 @@ export function WfShell({ children }: { children: ReactNode }) {
         <div className="wf-brand">
           <span className="wf-logo" aria-label="e& logo placeholder" role="img">e&</span>
           <Link to={wf()} className="wf-product">Knowledge portal</Link>
-          <a className="wf-out" href={REQUIREMENT_APP_URL}>Requirement AI <ExternalLink size={12} aria-hidden="true" /><span className="visually-hidden"> (opens Requirement AI)</span></a>
+          <a className="wf-out" href={REQUIREMENT_APP_URL ?? undefined}>Requirement AI <ExternalLink size={12} aria-hidden="true" /><span className="visually-hidden"> (opens Requirement AI)</span></a>
         </div>
         <div className="wf-utilities">
           {!reader && (
