@@ -1037,16 +1037,12 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 .cl-prodcard-links .cl-btn { padding: 0 10px; gap: 6px; }
 
 /* ---------- Journey catalogue: scope by hierarchy, lifecycle board, journey preview ---------- */
-.jx-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 6px 32px; margin-top: 16px; }
-.jx-head h1 { font-size: 1.75rem; line-height: 1.15; font-weight: 700; font-stretch: 87.5%; letter-spacing: -0.01em; }
-.jx-lede { max-width: 64ch; font-size: 0.9375rem; line-height: 1.5; color: var(--cl-ink-2); }
 /* Scope: one menu per level of the portfolio hierarchy, then the product. */
 .jx-scope { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 24px; margin-top: 12px; padding: 10px 14px; border: 1px solid var(--cl-hairline); border-radius: 12px; background: var(--cl-paper); }
 .jx-scope ol { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px 0; }
 .jx-scope-level { position: relative; display: flex; flex-direction: column; gap: 3px; padding-right: 12px; }
 .jx-scope-level + .jx-scope-level { padding-left: 18px; }
 .jx-scope-level + .jx-scope-level::before { content: ""; position: absolute; left: 2px; bottom: 13px; width: 6px; height: 6px; border-top: 1.5px solid var(--cl-rule-strong); border-right: 1.5px solid var(--cl-rule-strong); transform: rotate(45deg); }
-.jx-scope-level > small { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cl-ink-3); white-space: nowrap; }
 .jx-scope-menu { position: relative; }
 .jx-scope-menu summary { list-style: none; display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 10px 0 12px; border: 1px solid var(--cl-rule); border-radius: 8px; background: var(--cl-page); font-weight: 600; white-space: nowrap; cursor: pointer; }
 .jx-scope-menu summary::-webkit-details-marker { display: none; }
@@ -1087,20 +1083,11 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 .jx-tile[aria-pressed="true"] { border-color: var(--cl-m3); background: var(--cl-maroon-mist); }
 .jx-tile-meta { flex: none; display: inline-flex; align-items: center; }
 .jx-tile-steps { font-size: 0.75rem; color: var(--cl-ink-2); white-space: nowrap; }
-.jx-marks { display: inline-flex; align-items: center; gap: 3px; }
-.jx-marks i, .jx-key i, .jx-variants i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; }
-.jx-marks b { margin-left: 2px; font-size: 0.6875rem; color: var(--cl-ink-2); }
-.jx-marks i.is-on, .jx-key i.is-on, .jx-variants i.is-on { background: var(--cl-ink-2); }
-.jx-marks i.is-gap, .jx-key i.is-gap, .jx-variants i.is-gap { background: var(--cl-page); box-shadow: inset 0 0 0 1.5px var(--cl-ochre); }
-.jx-marks i.is-none, .jx-key i.is-none { background: var(--cl-page); box-shadow: inset 0 0 0 1px var(--cl-hairline); }
 /* Journeys that follow any order. */
 .jx-across { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--cl-rule); }
 .jx-across-label { display: inline-flex; align-items: center; gap: 8px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--cl-ink-2); }
 .jx-across ul { display: flex; flex-wrap: wrap; gap: 6px; }
 .jx-across li { width: 240px; }
-.jx-key { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; font-size: 0.75rem; color: var(--cl-ink-2); }
-.jx-key i { margin-left: 10px; }
-.jx-key i:first-child { margin-left: 0; }
 /* The preview panel. */
 .jx-panel { position: sticky; top: calc(var(--cl-mast) + var(--cl-area) + 12px); max-height: calc(100dvh - var(--cl-mast) - var(--cl-area) - 24px); overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 18px; border: 1px solid var(--cl-hairline); border-radius: 12px; background: var(--cl-page); }
 .jx-panel-stage { display: inline-flex; align-items: center; gap: 6px; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cl-ink-3); }
@@ -1108,9 +1095,6 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 .jx-panel h3 { margin-top: 4px; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cl-ink-3); }
 .jx-panel-product a { font-weight: 600; }
 .jx-panel-summary { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-size: 0.875rem; line-height: 1.5; color: var(--cl-ink-2); }
-.jx-variants { display: flex; flex-wrap: wrap; gap: 6px; }
-.jx-variants button { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 12px; border: 1px solid var(--cl-rule); border-radius: 999px; background: var(--cl-page); font-size: 0.8125rem; font-weight: 600; cursor: pointer; }
-.jx-variants button[aria-pressed="true"] { border-color: var(--cl-maroon); background: var(--cl-maroon-mist); color: var(--cl-maroon); }
 .jx-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 .jx-facts div { display: flex; flex-direction: column; gap: 1px; padding: 8px 10px; border-radius: 8px; background: var(--cl-paper); }
 .jx-facts dt { font-size: 0.6875rem; color: var(--cl-ink-2); }
@@ -1129,10 +1113,6 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 .jx-decisions li { display: flex; align-items: center; gap: 10px; font-size: 0.8125rem; line-height: 1.35; }
 .jx-decisions i { flex: none; width: 9px; height: 9px; margin-left: 2px; border: 1.5px solid var(--cl-ink-2); transform: rotate(45deg); }
 .jx-decisions .jx-more { padding-left: 21px; color: var(--cl-ink-2); }
-.jx-compare { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
-.jx-compare th, .jx-compare td { padding: 5px 6px; border-bottom: 1px solid var(--cl-hairline); text-align: left; }
-.jx-compare thead th { font-weight: 600; color: var(--cl-ink-2); }
-.jx-compare tr[aria-current="true"] th { color: var(--cl-maroon); }
 .jx-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
 .jx-empty { padding: 14px; border: 1px dashed var(--cl-rule); border-radius: 8px; font-size: 0.875rem; color: var(--cl-ink-2); }
 @media (max-width: 1100px) {
@@ -1159,7 +1139,6 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 .jx-facts dd { font-size: 1.125rem; }
 .jx-route .cl-systile { width: 28px; height: 28px; }
 .jx-decisions { gap: 2px; }
-.jx-head { margin-top: 12px; }
 
 /* ---------- Landscape for presentation: one screen, soft brand gradients, no dark fills ---------- */
 .cl-hero--landscape { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 12px 32px; margin-top: 12px; padding: 16px 22px; border-color: #efe6e1; background: linear-gradient(115deg, #fdfbf7 0%, #faf4ef 50%, #f8eeec 100%); }
@@ -1363,7 +1342,7 @@ a.cl-pill:hover { color: var(--cl-maroon); }
   .lx-board > .cl-matrix-wrap > .cl-matrix-scroll { flex: 1 1 0; min-height: 240px; max-height: none; }
 }
 /* The landscape header: a soft band under the tab bar, as wide as it. First the title, a one-line subtitle and the tools; then the layers, each in its own colour, which show one layer at a time and double as the legend. */
-.lx-head.lx-band { display: grid; justify-content: stretch; gap: 5px; margin: 0 calc(50% - 50vw); padding: 7px calc(50vw - 50%) 8px; background: linear-gradient(100deg, color-mix(in srgb, var(--cl-sand) 85%, var(--cl-page)) 0%, var(--cl-paper) 55%, var(--cl-page) 100%); border-bottom: 1px solid var(--cl-hairline); }
+.lx-head.lx-band, .jx-band { display: grid; justify-content: stretch; gap: 5px; margin: 0 calc(50% - 50vw); padding: 7px calc(50vw - 50%) 8px; background: linear-gradient(100deg, color-mix(in srgb, var(--cl-sand) 85%, var(--cl-page)) 0%, var(--cl-paper) 55%, var(--cl-page) 100%); border-bottom: 1px solid var(--cl-hairline); }
 .lx-band-row { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .lx-mark { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; background: var(--cl-maroon-mist); color: var(--cl-maroon); }
 .lx-mark svg { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
@@ -1481,3 +1460,20 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 .pv-panel.cl-bundle > .cl-sub { margin-top: 12px; }
 /* Customer value shares its row with the bundle: its reasons spread down the panel instead of leaving a strip at the bottom. */
 .pv-panel > .cl-phrases { display: flex; flex-direction: column; justify-content: space-between; height: 100%; }
+/* The Journeys header: the catalogue's soft band. The title and how much of the product is modelled, then the scope, its menus hanging from the title's left edge. The board and the preview below are the overview's panels and end level. */
+.jx-band .jx-scope-sum { flex: none; margin-left: auto; }
+.jx-band .jx-scope { margin: 0; padding: 0 0 2px 46px; border: 0; border-radius: 0; background: none; justify-content: flex-start; }
+.jx-band .jx-scope-menu summary { min-height: 30px; background: var(--cl-page); }
+.jx { align-items: stretch; margin-top: 16px; }
+.jx-board, .jx-panel { border-color: var(--cl-hairline); border-radius: 12px; background: var(--cl-paper); }
+.jx-tile-steps.is-gap { font-style: italic; color: var(--cl-ink-3); }
+.jx-board > .jx-empty { margin: 0; }
+@media (max-width: 760px) {
+  .jx-band .jx-scope { padding-left: 0; }
+}
+/* The scope as one row of chips: each names its level, then the choice; a chevron between levels. */
+.jx-band .jx-scope ol { align-items: center; gap: 6px 0; }
+.jx-band .jx-scope-level { flex-direction: row; align-items: center; padding: 0; }
+.jx-band .jx-scope-level + .jx-scope-level { padding-left: 22px; }
+.jx-band .jx-scope-level + .jx-scope-level::before { left: 7px; top: 50%; bottom: auto; transform: translateY(-50%) rotate(45deg); }
+.jx-scope-menu summary small { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--cl-ink-3); white-space: nowrap; }
