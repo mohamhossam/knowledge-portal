@@ -1,8 +1,9 @@
 /**
  * Mock-up 1, the Landscape hero: the SMB architecture in three views of the
- * same estate. The TAM wheel puts the domains round the integration layer with
- * the calls bundled through it; Layers draws each TAM layer as a block with its
- * groups and system cards; Matrix reads the links by row and column. The side panel is a domain navigator
+ * same estate. Layers (the default) draws each TAM layer as a block with its
+ * groups and system cards, hung from the integration bus; the TAM wheel puts
+ * the domains round the integration layer with the calls bundled through it;
+ * Matrix reads the links by row and column. The side panel is a domain navigator
  * at rest and the picked system's card when one is chosen. No product bar: a
  * product's footprint lives on its own Architecture tab.
  */
@@ -23,7 +24,7 @@ export function LandscapeHero() {
   const [params, setParams] = useSearchParams();
   const selected = params.get("system");
   const wanted = params.get("view");
-  const view = wanted === "matrix" || wanted === "layers" ? wanted : "wheel";
+  const view = wanted === "matrix" || wanted === "wheel" ? wanted : "layers";
   const [showLinks, setShowLinks] = useState(false);
   const [focusLayer, setFocusLayer] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -112,11 +113,11 @@ export function LandscapeHero() {
 
       <div className="cl-toolbar">
         <div className="cl-seg" role="group" aria-label="View">
-          <button type="button" aria-pressed={view === "wheel"} onClick={() => setParam("view", null)}>
-            Wheel
-          </button>
-          <button type="button" aria-pressed={view === "layers"} onClick={() => setParam("view", "layers")}>
+          <button type="button" aria-pressed={view === "layers"} onClick={() => setParam("view", null)}>
             Layers
+          </button>
+          <button type="button" aria-pressed={view === "wheel"} onClick={() => setParam("view", "wheel")}>
+            Wheel
           </button>
           <button type="button" aria-pressed={view === "matrix"} onClick={() => setParam("view", "matrix")}>
             Matrix

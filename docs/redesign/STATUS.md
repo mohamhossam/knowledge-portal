@@ -334,4 +334,16 @@ The old `poster.tsx` and its layout and router were removed. Checks: lint, brand
 
 eTOM lifecycle columns were considered and rejected, because most systems have no lifecycle-attributed steps. `ArchitectureMap` serves the Layers view and the product's footprint. Checks: tests 25/25 with axe; lint, brand lint, build and budget green.
 
+**Layers first, brand palette, richer layer view (2026-10-10).** The view switch is now **Layers | Wheel | Matrix**, and Layers is the default.
+
+The palette is one calm tonal ramp drawn from the e& palette down the TAM stack: beige (Market & Sales), then rose-beige (Product, now a tone of its own), red blush (Customer), rose-mauve (Service) and maroon mist (Resource). The side layers take warm stone (Engaged Party) and e& grey (Enterprise). The integration layer is the one solid maroon band. The tokens are shared, so the wheel, the journey lanes and the product pages follow the same palette.
+
+The Layers view gains:
+- an integration spine down the left joining every layer to the bus;
+- a line icon and a number badge per layer, a pill with the system count, and counts on the group headings;
+- a monogram tile on each system card, which hides itself in narrow groups so the name stays readable;
+- a gentle hover lift.
+
+Headings sit above the link curves on their own tint, so lines never cross words. Footprint tiers carry into the monograms: maroon for core systems and for those a journey lights, mist for used, outlined for carries-only. Fixed a lint error where the tab stop read a ref during render. Checks: tests 25/25 with axe; lint, typecheck and build green.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.

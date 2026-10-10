@@ -27,35 +27,41 @@
   --cl-sage: #2d6640;
 
   /*
-   * Layer tints, e& in calm mode: soft tones of the brand's own family
-   * (beige, red blush, stone, sand, maroon mist, grey). Each layer has a tint,
-   * an ink, a deeper top edge and a lane tint for the flow. The integration
-   * layer is maroon mist bound by maroon rules, so maroon lines stay visible.
+   * Layer tints: e& ingredients in calm mode, as one tonal ramp down the TAM
+   * stack. Beige (market) warms to rose-beige (product), red blush (customer),
+   * rose-mauve (service) and maroon mist (resource); the side layers take warm
+   * stone (engaged party) and e& grey (enterprise). Each layer has a tint, an
+   * ink, a deeper edge and a lane tint for the flow. The integration layer is
+   * the one solid maroon band.
    */
-  --cl-market: #f1efe7;
-  --cl-market-ink: #5e4b36;
-  --cl-market-edge: #bfb59c;
-  --cl-market-lane: #f1efe7;
-  --cl-customer: #f8ebe9;
-  --cl-customer-ink: #7a1f24;
-  --cl-customer-edge: #dba7a1;
-  --cl-customer-lane: #f8ebe9;
-  --cl-service: #eee8e3;
-  --cl-service-ink: #4e3f38;
-  --cl-service-edge: #c4b3a6;
-  --cl-service-lane: #eee8e3;
-  --cl-resource: #f5eee0;
-  --cl-resource-ink: #5c4a2a;
-  --cl-resource-edge: #d2bf98;
-  --cl-resource-lane: #f5eee0;
-  --cl-party: #f3e8eb;
-  --cl-party-ink: #4b0f1e;
-  --cl-party-edge: #cfa9b3;
-  --cl-party-lane: #f3e8eb;
-  --cl-enterprise: #eeeeec;
-  --cl-enterprise-ink: #454545;
-  --cl-enterprise-edge: #bdbdb8;
-  --cl-enterprise-lane: #eeeeec;
+  --cl-market: #f7f2e8;
+  --cl-market-ink: #5e4a26;
+  --cl-market-edge: #cdb98e;
+  --cl-market-lane: #f7f2e8;
+  --cl-product: #f8efea;
+  --cl-product-ink: #6e3b2c;
+  --cl-product-edge: #d6ae9c;
+  --cl-product-lane: #f8efea;
+  --cl-customer: #fbedeb;
+  --cl-customer-ink: #8c1d18;
+  --cl-customer-edge: #e6a39c;
+  --cl-customer-lane: #fbedeb;
+  --cl-service: #f6e9ee;
+  --cl-service-ink: #6a1f36;
+  --cl-service-edge: #cf98aa;
+  --cl-service-lane: #f6e9ee;
+  --cl-resource: #f1e4e9;
+  --cl-resource-ink: #4b0f1e;
+  --cl-resource-edge: #b07a8c;
+  --cl-resource-lane: #f1e4e9;
+  --cl-party: #f3f0eb;
+  --cl-party-ink: #4f4741;
+  --cl-party-edge: #b8ae9f;
+  --cl-party-lane: #f3f0eb;
+  --cl-enterprise: #efefee;
+  --cl-enterprise-ink: #464547;
+  --cl-enterprise-edge: #a9a8ab;
+  --cl-enterprise-lane: #efefee;
   --cl-spine: #f4eaec;
   --cl-spine-ink: #4b0f1e;
   --cl-spine-edge: #4b0f1e;
@@ -531,7 +537,8 @@
 .am-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
 .am-row--split { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .am-layer { --am-tint: var(--cl-sand); --am-ink: var(--cl-ink-2); --am-edge: var(--cl-rule); min-width: 0; padding: 12px 14px 14px; border-radius: 6px; background: var(--am-tint); box-shadow: inset 0 3px 0 var(--am-edge); transition: background-color 150ms ease-out; }
-.am-layer--market-sales, .am-layer--product { --am-tint: var(--cl-market); --am-ink: var(--cl-market-ink); --am-edge: var(--cl-market-edge); }
+.am-layer--market-sales { --am-tint: var(--cl-market); --am-ink: var(--cl-market-ink); --am-edge: var(--cl-market-edge); }
+.am-layer--product { --am-tint: var(--cl-product); --am-ink: var(--cl-product-ink); --am-edge: var(--cl-product-edge); }
 .am-layer--customer { --am-tint: var(--cl-customer); --am-ink: var(--cl-customer-ink); --am-edge: var(--cl-customer-edge); }
 .am-layer--service { --am-tint: var(--cl-service); --am-ink: var(--cl-service-ink); --am-edge: var(--cl-service-edge); }
 .am-layer--resource { --am-tint: var(--cl-resource); --am-ink: var(--cl-resource-ink); --am-edge: var(--cl-resource-edge); }
@@ -623,7 +630,8 @@
 .cl-layer:hover { background: var(--cl-layer-tint, var(--cl-sand)); }
 .cl-layer[aria-pressed="true"] { background: var(--cl-layer-tint, var(--cl-sand)); border-color: var(--cl-layer-edge, var(--cl-rule)); }
 .cl-layer[aria-pressed="true"] > i { width: 6px; }
-.cl-layer--market-sales, .cl-layer--product, .cl-linked--market-sales, .cl-linked--product { --cl-layer-tint: var(--cl-market); --cl-layer-edge: var(--cl-market-edge); }
+.cl-layer--market-sales, .cl-linked--market-sales { --cl-layer-tint: var(--cl-market); --cl-layer-edge: var(--cl-market-edge); }
+.cl-layer--product, .cl-linked--product { --cl-layer-tint: var(--cl-product); --cl-layer-edge: var(--cl-product-edge); }
 .cl-layer--customer, .cl-linked--customer { --cl-layer-tint: var(--cl-customer); --cl-layer-edge: var(--cl-customer-edge); }
 .cl-layer--service, .cl-linked--service { --cl-layer-tint: var(--cl-service); --cl-layer-edge: var(--cl-service-edge); }
 .cl-layer--resource, .cl-linked--resource { --cl-layer-tint: var(--cl-resource); --cl-layer-edge: var(--cl-resource-edge); }
@@ -709,6 +717,7 @@
 .tw { position: relative; width: 100%; max-width: 960px; margin: 0 auto; }
 .tw-svg { display: block; width: 100%; height: auto; overflow: visible; font-family: inherit; user-select: none; }
 .tw-domain--market, .tw-group--market { --tw-tint: var(--cl-market); --tw-edge: var(--cl-market-edge); --tw-ink: var(--cl-market-ink); }
+.tw-domain--product, .tw-group--product { --tw-tint: var(--cl-product); --tw-edge: var(--cl-product-edge); --tw-ink: var(--cl-product-ink); }
 .tw-domain--customer, .tw-group--customer { --tw-tint: var(--cl-customer); --tw-edge: var(--cl-customer-edge); --tw-ink: var(--cl-customer-ink); }
 .tw-domain--service, .tw-group--service { --tw-tint: var(--cl-service); --tw-edge: var(--cl-service-edge); --tw-ink: var(--cl-service-ink); }
 .tw-domain--resource, .tw-group--resource { --tw-tint: var(--cl-resource); --tw-edge: var(--cl-resource-edge); --tw-ink: var(--cl-resource-ink); }
@@ -763,3 +772,80 @@
 /* On a phone the wheel keeps a readable size and scrolls sideways inside its own frame. */
 .tw-scroll { overflow-x: auto; }
 @media (max-width: 700px) { .tw { min-width: 640px; } }
+
+/* ---------- Layers view, second pass: spine, layer badges, monograms, a maroon bus ---------- */
+/* The integration spine: one rule down the left joins every layer to the bus. */
+.am { padding-left: 30px; }
+.am::before { content: ""; position: absolute; left: 11px; top: 26px; bottom: 26px; width: 2px; border-radius: 1px; background: var(--cl-m2); }
+.am-layer, .am-bus { position: relative; }
+.am > .am-row > .am-layer:first-child::before, .am-bus::before { content: ""; position: absolute; left: -25px; top: 20px; width: 10px; height: 10px; border-radius: 50%; background: var(--cl-page); box-shadow: inset 0 0 0 2px var(--am-ink, var(--cl-maroon)); }
+.am > .am-row > .am-layer:first-child::after, .am-bus::after { content: ""; position: absolute; left: -15px; top: 24px; width: 15px; height: 2px; background: var(--cl-m2); }
+.am-bus::before { top: calc(50% - 6px); width: 12px; height: 12px; left: -26px; background: var(--cl-maroon); box-shadow: 0 0 0 3px var(--cl-page); }
+.am-bus::after { top: calc(50% - 1px); }
+
+/* Layer blocks: the tint, a soft frame in the layer's own edge, a badge with its icon. */
+.am-layer { border: 1px solid color-mix(in srgb, var(--am-edge) 45%, transparent); border-radius: 8px; padding: 14px 16px 16px; box-shadow: inset 0 3px 0 var(--am-edge); }
+.am-layer.is-dim { border-color: var(--cl-hairline); }
+.am-layer-head { gap: 4px 10px; align-items: center; margin-bottom: 12px; }
+.am-icon { flex: none; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; background: var(--cl-page); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--am-edge) 70%, transparent); color: var(--am-ink); }
+.am-icon svg { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.am-layer.is-dim .am-icon { color: var(--cl-ink-3); box-shadow: inset 0 0 0 1px var(--cl-hairline); }
+.am-layer-no { padding: 1px 6px; border-radius: 4px; background: color-mix(in srgb, var(--am-edge) 35%, transparent); font-size: 0.6875rem; }
+.am-layer-name { font-size: 1rem; }
+.am-layer-scope { padding-left: 40px; }
+.am-layer-count { padding: 2px 10px; border-radius: 999px; background: var(--cl-page); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--am-edge) 60%, transparent); font-size: 0.75rem; }
+.am-group-name { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; border-bottom-color: color-mix(in srgb, var(--am-edge) 70%, transparent); }
+.am-group-name small { font-size: 0.6875rem; font-weight: 700; color: var(--am-ink); padding: 0 6px; border-radius: 999px; background: color-mix(in srgb, var(--am-edge) 30%, transparent); }
+
+/* Cards: a monogram tile in the layer's colours beside the name and purpose. */
+.am-card { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; padding: 7px 10px 7px 8px; border-radius: 6px; box-shadow: none; transition: background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out, box-shadow 150ms ease-out, transform 150ms ease-out; }
+.am-card:hover { transform: translateY(-1px); }
+.am-card-text { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.am-mono { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 8px; background: var(--am-tint, var(--cl-sand)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--am-edge, var(--cl-rule)) 80%, transparent); color: var(--am-ink, var(--cl-ink)); font-size: 0.6875rem; font-weight: 800; font-stretch: 80%; letter-spacing: 0.02em; }
+.am-card.is-external .am-mono { background: var(--cl-page); box-shadow: inset 0 0 0 1px var(--cl-rule-strong); }
+.am-card[aria-pressed="true"] .am-mono { background: var(--cl-maroon-hover); box-shadow: none; color: #fff; }
+.am-card.is-partner .am-mono { background: var(--cl-maroon-mist); color: var(--cl-maroon); box-shadow: inset 0 0 0 1px var(--cl-m2); }
+.am-card.is-quiet .am-mono { background: transparent; box-shadow: inset 0 0 0 1px var(--cl-hairline); color: var(--cl-ink-3); }
+/* Footprint and journey tiers carry into the monogram. */
+.am-card.is-core .am-mono, .am-card.is-lit .am-mono { background: var(--cl-maroon); box-shadow: none; color: #fff; }
+.am-card.is-used .am-mono { background: var(--cl-maroon-mist); color: var(--cl-maroon); box-shadow: inset 0 0 0 1px var(--cl-m2); }
+.am-card.is-carries .am-mono { background: var(--cl-page); color: var(--cl-maroon); box-shadow: inset 0 0 0 1px var(--cl-m3); }
+
+/* The integration layer: the one solid maroon band, the bus every layer hangs from. */
+.am-bus { --am-ink: var(--cl-maroon); padding: 12px 16px; border-radius: 8px; }
+.am-bus:not(.is-dim) { background: var(--cl-maroon); }
+.am-bus:not(.is-dim) .am-layer-name { color: #fff; }
+.am-bus:not(.is-dim) .am-layer-scope { color: #f1dfe3; }
+.am-bus-head { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 2px 10px; }
+.am-bus-head .am-layer-scope { grid-column: 1 / -1; padding-left: 0; }
+.am-bus:not(.is-dim) .am-icon { background: var(--cl-maroon-hover); box-shadow: none; color: #fff; }
+.am-bus:not(.is-dim) .am-bus-line::before { background: #c58a99; }
+.am-bus .am-card { box-shadow: none; }
+.am-bus .am-mono { --am-tint: var(--cl-maroon-mist); --am-ink: var(--cl-maroon); --am-edge: var(--cl-m2); }
+.am-bus:not(.is-dim) .am-card.is-quiet { background: var(--cl-maroon-hover); border-color: #7d2a3e; color: #f3e3e7; }
+.am-bus:not(.is-dim) .am-card.is-quiet .am-card-fn { color: #e6cdd3; }
+.am-bus:not(.is-dim) .am-card.is-quiet .am-mono { color: #f3e3e7; box-shadow: inset 0 0 0 1px #9b4c60; }
+.am-bus.is-dim .am-card.is-quiet { background: var(--cl-paper); }
+
+@media (max-width: 960px) {
+  .am { padding-left: 0; }
+  .am::before, .am > .am-row > .am-layer:first-child::before, .am > .am-row > .am-layer:first-child::after, .am-bus::before, .am-bus::after { display: none; }
+  .am-layer-scope { padding-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .am-card:hover { transform: none; }
+}
+.am-mono--4 { font-size: 0.625rem; letter-spacing: 0; }
+.am-mono--2 { font-size: 0.75rem; }
+/* Headings sit above the link curves, on their own tint, so a line never runs through words. */
+.am-layer-head > span, .am-group-name { position: relative; z-index: 2; }
+.am-layer-name, .am-layer-scope, .am-group-name { background: var(--am-tint); }
+.am-layer-name { padding-right: 4px; }
+.am-layer.is-dim .am-layer-name, .am-layer.is-dim .am-layer-scope, .am-layer.is-dim .am-group-name { background: var(--cl-paper); }
+.am-bus-head > span { position: relative; z-index: 2; }
+/* In a narrow group the monogram gives way to the name. */
+.am-cards { container-type: inline-size; }
+@container (max-width: 196px) { .am-card { grid-template-columns: minmax(0, 1fr); padding-left: 10px; } .am-mono { display: none; } }
+.am-card-name { overflow-wrap: break-word; hyphens: auto; }
+.am-bus:not(.is-dim) .am-bus-head > span:not(.am-icon) { background: var(--cl-maroon); }
+.am-bus.is-dim .am-bus-head > span:not(.am-icon) { background: var(--cl-paper); }

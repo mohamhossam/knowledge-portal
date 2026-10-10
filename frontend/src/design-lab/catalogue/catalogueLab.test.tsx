@@ -18,8 +18,8 @@ function open(path: string) {
 
 // Each test renders the whole poster and runs axe on it: slow on a busy machine.
 describe("the catalogue direction mock-ups, on the seeded Business Pro Plus catalogue", { timeout: 30_000 }, () => {
-  it("draws the whole landscape as a poster and shows what a picked system talks to", async () => {
-    const { container } = open("");
+  it("draws the whole landscape as a TAM wheel and shows what a picked system talks to", async () => {
+    const { container } = open("?view=wheel");
     expect(screen.getByRole("heading", { level: 1, name: "SMB architecture" })).toBeInTheDocument();
     expect(document.title).toMatch(/^SMB architecture · Catalogue/);
     const map = screen.getByRole("group", { name: /SMB architecture map/ });
@@ -34,8 +34,8 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
     expect(await axe(container)).toHaveNoViolations();
   });
 
-  it("draws the same estate as TAM layers, with each layer's groups and systems", async () => {
-    const { container } = open("?view=layers");
+  it("opens on the TAM layers, with each layer's groups and systems", async () => {
+    const { container } = open("");
     const layers = screen.getByRole("group", { name: /SMB architecture layers/ });
     expect(within(layers).getAllByRole("button")).toHaveLength(46);
     await userEvent.click(within(layers).getByRole("button", { name: /^CWOM:/ }));
