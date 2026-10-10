@@ -460,4 +460,16 @@ Evidence and per-product figures stay on each product's own pages. Checks: tests
 
 Checks: tests 28/28 with axe (new: stages, preview, picking, scope narrowing); lint, typecheck and build green.
 
+**Landscape for presentation, on one screen (2026-10-10, user).** At 1440 × 900, the Layers, Wheel and Matrix views and a selected system all fit without page scroll.
+- **Hero:** slim, with a soft warm gradient (ivory → blush mist). The estate bar has a four-column key, and the figures were dropped.
+- **`ArchitectureMap compact`:**
+  - **Layout:** four bands, with Engaged Party and Enterprise moved into a side column.
+  - **Cards:** one-line system cards with a light layer-coloured edge; names wrap to two lines only when needed, and purposes show on hover and in the panel. Scopes are hidden.
+  - **Fit:** tighter layer and group spacing, with group names on one line.
+- **Colours:** layer bands use soft tonal gradients in each layer's tint. There are no dark fills: a selected system is pale mist with a soft maroon edge, links and the integration bus line use the light maroon tints, and the bus band is pale. The key's swatches match.
+- **Side panel:** takes the map's height and scrolls inside itself. The wheel and matrix are capped to the free height.
+- **Fix:** the matrix's scroll box is now `position: relative`, so its absolutely positioned screen-reader labels no longer stretch the page.
+
+The product Architecture tab keeps the full card style. Checks: tests 28/28 with axe; lint, brand lint, build and budget green.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.

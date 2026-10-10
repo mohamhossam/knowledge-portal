@@ -20,6 +20,7 @@ import type { Integration, StepRole, System, TamDomain } from "../../architectur
 import { monogram, plural, shortFunction } from "./labUtil";
 
 /** Which layers share a row, top to bottom; the integration layer runs between them as a bus. */
+const SIDE_LAYERS = ["engaged-party", "enterprise"];
 const ROWS: string[][] = [["market-sales", "product"], ["customer"], ["integration"], ["service", "resource"], ["engaged-party", "enterprise"]];
 
 /** Short role names for a card; the inspector uses the long ones. */
@@ -158,11 +159,13 @@ type Props = {
   focusLayer?: string | null;
   /** Product mode: the product's footprint, by system. */
   footprint?: Map<string, Foot>;
+  /** Presentation density: one-line cards, the side layers in their own column, so the map fits one screen. */
+  compact?: boolean;
   /** Journey mode: the systems the journey reaches, its calls in order, the current one. */
   journey?: { lit: Set<string>; entry?: string; calls: Integration[]; current: number };
 };
 
-export const ArchitectureMap = memo(function ArchitectureMap({ data, label, linkCounts, selected, onSelect, showLinks = false, focusLayer = null, footprint, journey }: Props) {
+export const ArchitectureMap = memo(function ArchitectureMap({ data, label, linkCounts, selected, onSelect, showLinks = false, focusLayer = null, compact = false, footprint, journey }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const cards = useRef(new Map<string, HTMLButtonElement>());
   const marker = useId().replace(/:/g, "");
@@ -403,16 +406,29 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
     );
   };
 
+  // Compact (presentation) layout: the side layers leave the stack for a column of their own, so the map is four bands, not five.
+  const sideIds = compact ? SIDE_LAYERS.filter((id) => bySystem.has(id)) : [];
+  const stackRows = rows.map((row) => row.filter((id) => !sideIds.includes(id))).filter((row) => row.length);
+  const renderRows = (list: string[][]) =>
+    list.map((row) =>
+      row.length === 1 && row[0] === "integration" ? (
+        bus("integration")
+      ) : (
+        <div key={row.join("+")} className={`am-row${row.length > 1 ? " am-row--split" : ""}`}>
+          {row.map((id) => layer(id, row.length > 1))}
+        </div>
+      ),
+    );
+
   return (
-    <div ref={box} className={`am${quietMode ? " is-focused" : ""}`} role="group" aria-label={`${label}: ${plural(data.systems.length, "system")} in ${plural(rows.flat().length, "layer")}. Arrow keys move between them.`}>
-      {rows.map((row) =>
-        row.length === 1 && row[0] === "integration" ? (
-          bus("integration")
-        ) : (
-          <div key={row.join("+")} className={`am-row${row.length > 1 ? " am-row--split" : ""}`}>
-            {row.map((id) => layer(id, row.length > 1))}
-          </div>
-        ),
+    <div ref={box} className={`am${quietMode ? " is-focused" : ""}${compact ? " am--compact" : ""}`} role="group" aria-label={`${label}: ${plural(data.systems.length, "system")} in ${plural(rows.flat().length, "layer")}. Arrow keys move between them.`}>
+      {compact ? (
+        <div className="am-poster">
+          <div className="am-stack">{renderRows(stackRows)}</div>
+          <div className="am-side">{sideIds.map((id) => layer(id, false))}</div>
+        </div>
+      ) : (
+        renderRows(rows)
       )}
       <svg className="am-links" width={size.w} height={size.h} aria-hidden="true">
         <defs>
