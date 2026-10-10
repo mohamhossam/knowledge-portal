@@ -123,7 +123,7 @@ export function LandscapeHero() {
   return (
     <>
       <AreaTabs current="landscape" />
-      <section className="cl-hero" aria-labelledby="cl-hero-h">
+      <section className="cl-hero cl-hero--landscape" aria-labelledby="cl-hero-h">
         <div className="cl-hero-text">
           <p className="cl-eyebrow">TM Forum application map · SMB</p>
           <h1 id="cl-hero-h">SMB architecture</h1>
@@ -150,20 +150,6 @@ export function LandscapeHero() {
               </li>
             ))}
           </ul>
-          <dl className="cl-hero-stats">
-            <div>
-              <dt>External</dt>
-              <dd>{data.systems.filter((item) => item.external).length}</dd>
-            </div>
-            <div>
-              <dt>Integration layer</dt>
-              <dd>{data.systems.filter((item) => item.domain === "integration").length}</dd>
-            </div>
-            <div>
-              <dt>Placements proposed</dt>
-              <dd>{data.systems.filter((item) => item.proposedMove).length}</dd>
-            </div>
-          </dl>
         </div>
       </section>
 
@@ -242,12 +228,12 @@ export function LandscapeHero() {
         </div>
       </div>
 
-      <div className="cl-board">
+      <div className="cl-board cl-board--landscape">
         <div className="cl-board-main">
           {view === "wheel" ? (
             <TamWheel data={data} label="SMB architecture map" linkCounts={linkCounts} selected={selected} onSelect={select} focusDomain={focusLayer} onFocusDomain={setFocusLayer} />
           ) : view === "layers" ? (
-            <ArchitectureMap data={data} label="SMB architecture layers" linkCounts={linkCounts} selected={selected} onSelect={select} showLinks={showLinks} focusLayer={focusLayer} />
+            <ArchitectureMap data={data} label="SMB architecture layers" linkCounts={linkCounts} selected={selected} onSelect={select} showLinks={showLinks} focusLayer={focusLayer} compact />
           ) : (
             <IntegrationMatrix data={data} degrees={degrees} linkCounts={linkCounts} selected={selected} onSelect={select} />
           )}

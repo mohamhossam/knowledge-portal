@@ -209,7 +209,7 @@
 /* Out of focus: a sand box with secondary ink, never a faded one, so its name still reads at AA. */
 
 /* ---------- The matrix ---------- */
-.cl-matrix-scroll { overflow: auto; max-height: 76dvh; border: 1px solid var(--cl-hairline); border-radius: 4px; }
+.cl-matrix-scroll { position: relative; overflow: auto; max-height: 76dvh; border: 1px solid var(--cl-hairline); border-radius: 4px; }
 .cl-matrix { border-collapse: separate; border-spacing: 0; font-size: 0.8125rem; }
 .cl-matrix thead th { position: sticky; top: 0; z-index: 2; background: var(--cl-page); height: 132px; vertical-align: bottom; padding: 0 0 6px; font-weight: 600; color: var(--cl-ink-2); }
 .cl-matrix thead th span { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; display: inline-block; max-height: 124px; overflow: hidden; text-overflow: ellipsis; }
@@ -1223,3 +1223,81 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 .jx-route .cl-systile { width: 28px; height: 28px; }
 .jx-decisions { gap: 2px; }
 .jx-head { margin-top: 12px; }
+
+/* ---------- Landscape for presentation: one screen, soft brand gradients, no dark fills ---------- */
+.cl-hero--landscape { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 12px 32px; margin-top: 12px; padding: 16px 22px; border-color: #efe6e1; background: linear-gradient(115deg, #fdfbf7 0%, #faf4ef 50%, #f8eeec 100%); }
+.cl-hero--landscape .cl-hero-text { gap: 6px; }
+.cl-hero--landscape h1 { font-size: 1.75rem; }
+.cl-hero--landscape .cl-hero-lede { font-size: 0.9375rem; }
+.cl-hero--landscape .cl-hero-visual { gap: 8px; padding: 12px 16px; border-color: #f0e8e4; }
+.cl-hero--landscape .cl-estate-head strong { font-size: 1.75rem; }
+.cl-hero--landscape .cl-estate-bar { height: 10px; }
+.cl-hero--landscape .cl-estate-key { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px 12px; }
+.cl-hero--landscape .cl-estate-key li { font-size: 0.75rem; }
+.cl-hero--landscape + .cl-toolbar { margin: 10px 0; }
+/* The board: the side panel takes the map's height and scrolls inside itself, never the page. */
+.cl-board--landscape { align-items: stretch; }
+.cl-board--landscape .cl-insp { position: static; height: 0; min-height: 100%; max-height: none; border-color: var(--cl-hairline); border-radius: 12px; }
+.cl-board--landscape .tw { max-width: min(960px, calc(100dvh - 370px)); }
+.cl-board--landscape .cl-matrix-scroll { max-height: calc(100dvh - 385px); overflow: auto; }
+/* Compact map: four bands with the side layers in a column, one-line cards. */
+.am--compact { padding-left: 0; gap: 8px; }
+.am--compact::before, .am--compact .am-layer::before, .am--compact .am-layer::after, .am--compact .am-bus::before, .am--compact .am-bus::after { display: none; }
+.am-poster { display: grid; grid-template-columns: minmax(0, 1fr) 208px; gap: 8px; }
+.am-stack { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.am-side { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.am-side .am-layer { flex: 1 1 auto; }
+.am-side .am-cards { grid-template-columns: minmax(0, 1fr); }
+.am--compact .am-layer { padding: 8px 10px 10px; border-radius: 10px; border-color: color-mix(in srgb, var(--am-edge) 35%, transparent); background: linear-gradient(100deg, var(--am-tint) 0%, color-mix(in srgb, var(--am-tint) 40%, #fff) 100%); box-shadow: inset 0 2px 0 color-mix(in srgb, var(--am-edge) 60%, transparent); }
+.am--compact .am-layer.is-dim { background: var(--cl-paper); }
+.am--compact .am-layer-head { gap: 2px 8px; min-height: 0; margin-bottom: 6px; }
+.am--compact .am-layer-scope { display: none; }
+.am--compact .am-icon { width: 24px; height: 24px; border-radius: 6px; }
+.am--compact .am-icon svg { width: 14px; height: 14px; }
+.am--compact .am-layer-name { font-size: 0.875rem; background: none; }
+.am--compact .am-layer-no { font-size: 0.625rem; }
+.am--compact .am-layer-count { padding: 0 8px; font-size: 0.6875rem; }
+.am--compact .am-groups { gap: 6px 12px; }
+.am--compact .am-group { gap: 4px; min-width: 118px; }
+.am--compact .am-group-name { padding-bottom: 3px; font-size: 0.6875rem; background: none; }
+.am--compact .am-group-name small { font-size: 0.625rem; }
+.am--compact .am-cards { grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 4px; }
+.am--compact .am-card { grid-template-columns: minmax(0, 1fr); min-height: 30px; padding: 4px 8px 4px 10px; border-radius: 6px; border-color: color-mix(in srgb, var(--am-edge) 45%, transparent); box-shadow: inset 3px 0 0 color-mix(in srgb, var(--am-edge) 75%, transparent); }
+.am--compact .am-card:hover { transform: none; border-color: var(--cl-m3); }
+.am--compact .am-mono, .am--compact .am-card-fn { display: none; }
+.am--compact .am-card-name { font-size: 0.75rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.am--compact .am-flag { border-top-width: 8px; border-left-width: 8px; }
+/* Calm selection: pale mist and a soft maroon edge, never a dark fill. */
+.am--compact .am-card[aria-pressed="true"] { background: var(--cl-maroon-mist); border-color: var(--cl-m3); box-shadow: inset 3px 0 0 var(--cl-m3); color: var(--cl-maroon); }
+.am--compact .am-card[aria-pressed="true"] .am-card-name { color: var(--cl-maroon); }
+.am--compact .am-card.is-partner { background: var(--cl-page); border-color: var(--cl-m2); box-shadow: inset 3px 0 0 var(--cl-m2), 0 0 0 1px var(--cl-m2); }
+.am--compact .am-card.is-quiet { background: rgb(255 255 255 / 0.55); box-shadow: none; }
+.am--compact .am-line--mine .ink { stroke: var(--cl-m3); stroke-width: 1.5; }
+/* The integration layer: a pale band with a soft line. */
+.am--compact .am-bus { grid-template-columns: 196px minmax(0, 1fr); padding: 6px 12px; border-radius: 10px; border-color: #efe3e6; box-shadow: none; }
+.am--compact .am-bus:not(.is-dim) { background: linear-gradient(100deg, var(--cl-spine) 0%, #fbf6f7 100%); }
+.am--compact .am-bus-head .am-layer-scope { display: none; }
+.am--compact .am-bus-line::before { background: var(--cl-m2); height: 1.5px; }
+.am--compact .am-bus-line .am-card { width: min(200px, 40%); }
+@media (max-width: 1100px) {
+  .am-poster { grid-template-columns: minmax(0, 1fr); }
+  .cl-board--landscape .cl-insp { height: auto; min-height: 0; }
+}
+/* Landscape, fitted: a shorter hero and tighter cards so the whole map sits in one screen. */
+.cl-hero--landscape { padding: 12px 18px; gap: 8px 28px; }
+.cl-hero--landscape .cl-hero-visual { padding: 10px 14px; gap: 6px; }
+.cl-hero--landscape + .cl-toolbar { margin: 8px 0; }
+.am--compact, .am-stack, .am-side, .am-poster { gap: 6px; }
+.am--compact .am-layer { padding: 6px 8px 8px; }
+.am--compact .am-layer-head { margin-bottom: 4px; }
+.am--compact .am-groups { gap: 4px 10px; }
+.am--compact .am-group { min-width: 96px; gap: 3px; }
+.am--compact .am-group-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; }
+.am--compact .am-group-name > :first-child { overflow: hidden; text-overflow: ellipsis; }
+.am--compact .am-cards { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 3px; }
+.am--compact .am-card { min-height: 26px; padding: 3px 6px 3px 9px; }
+.am--compact .am-card-name { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; white-space: normal; font-size: 0.71875rem; line-height: 1.25; }
+.am--compact .am-bus { padding: 4px 10px; }
+/* The key matches the calm selection. */
+.cl-legend .sel { background: var(--cl-maroon-mist); box-shadow: inset 0 0 0 1.5px var(--cl-m3); }
+.cl-legend .lnk { border: 0; box-shadow: inset 0 0 0 1.5px var(--cl-m2); }
