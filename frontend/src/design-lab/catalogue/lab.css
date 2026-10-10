@@ -938,3 +938,61 @@
   .cl-area { position: static; margin-top: -12px; flex-wrap: wrap; }
   .cl-area-id { align-self: auto; min-height: 48px; }
 }
+
+/* ---------- Landscape hero: what this is, on the left; the estate's shape, on the right ---------- */
+.cl-hero { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 24px 48px; align-items: center; margin-top: 24px; padding: 28px 32px; border: 1px solid var(--cl-hairline); border-radius: 12px; background: var(--cl-paper); }
+.cl-hero-text { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.cl-eyebrow { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cl-maroon); }
+.cl-hero h1 { font-size: 2.25rem; line-height: 1.1; font-weight: 700; font-stretch: 87.5%; letter-spacing: -0.015em; color: var(--cl-ink); }
+.cl-hero-lede { max-width: 56ch; font-size: 1.0625rem; line-height: 1.55; color: var(--cl-ink-2); }
+.cl-hero-facts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.cl-hero-facts li { display: inline-flex; align-items: center; gap: 8px; min-height: 28px; padding: 0 12px; border: 1px solid var(--cl-hairline); border-radius: 999px; background: var(--cl-page); font-size: 0.8125rem; color: var(--cl-ink-2); }
+.cl-status { font-weight: 600; color: var(--cl-ink) !important; }
+.cl-status i { width: 8px; height: 8px; border-radius: 50%; background: var(--cl-ochre); }
+.cl-status--published i { background: var(--cl-sage); }
+.cl-hero-visual { display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 20px; border: 1px solid var(--cl-hairline); border-radius: 10px; background: var(--cl-page); }
+.cl-estate-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.cl-estate-head strong { font-size: 2.5rem; line-height: 1; font-weight: 700; font-stretch: 85%; color: var(--cl-ink); }
+.cl-estate-head span { font-size: 0.875rem; color: var(--cl-ink-2); }
+/* The estate as one bar: a segment per domain, in its layer colour, as wide as its systems. */
+.cl-estate-bar { display: flex; gap: 3px; height: 14px; }
+.cl-estate-seg { flex-basis: 0; min-width: 6px; background: var(--bar); }
+.cl-estate-seg:first-child { border-radius: 7px 0 0 7px; }
+.cl-estate-seg:last-child { border-radius: 0 7px 7px 0; }
+.cl-estate-key { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 16px; }
+.cl-estate-key li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; align-items: center; gap: 8px; font-size: 0.8125rem; color: var(--cl-ink-2); }
+.cl-estate-key i { width: 10px; height: 10px; border-radius: 3px; background: var(--bar); }
+.cl-estate-key span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cl-estate-key b { font-weight: 600; color: var(--cl-ink); }
+.bar--market-sales { --bar: var(--cl-market-edge); }
+.bar--product { --bar: var(--cl-product-edge); }
+.bar--customer { --bar: var(--cl-customer-edge); }
+.bar--integration { --bar: var(--cl-m2); }
+.bar--service { --bar: var(--cl-service-edge); }
+.bar--resource { --bar: var(--cl-resource-edge); }
+.bar--engaged-party { --bar: var(--cl-party-edge); }
+.bar--enterprise { --bar: var(--cl-enterprise-edge); }
+.cl-hero-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--cl-hairline); }
+.cl-hero-stats div { display: flex; flex-direction: column; gap: 2px; }
+.cl-hero-stats div + div { padding-left: 12px; border-left: 1px solid var(--cl-hairline); }
+.cl-hero-stats dt { font-size: 0.75rem; color: var(--cl-ink-2); }
+.cl-hero-stats dd { font-size: 1.25rem; font-weight: 700; font-stretch: 85%; line-height: 1.1; color: var(--cl-ink); }
+/* The view toolbar under the hero: icon switch, search with a magnifier, a quiet key. */
+.cl-hero + .cl-toolbar { margin-top: 20px; }
+.cl-view-icon { flex: none; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.cl-seg button { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 14px; }
+.cl-find { position: relative; }
+.cl-find > .cl-view-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--cl-ink-3); pointer-events: none; }
+.cl-find .cl-field { height: 36px; width: 280px; padding-left: 32px; border-radius: 6px; }
+.cl-find .cl-btn { min-height: 36px; border-radius: 6px; }
+.cl-legend-label { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cl-ink-3); }
+@media (max-width: 960px) {
+  .cl-hero { grid-template-columns: minmax(0, 1fr); padding: 20px; }
+}
+@media (max-width: 560px) {
+  .cl-hero h1 { font-size: 1.75rem; }
+  .cl-hero-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 0; }
+  .cl-hero-stats div:nth-child(3) { padding-left: 0; border-left: 0; }
+  .cl-find .cl-field { width: 100%; }
+  .cl-find { flex: 1; }
+}

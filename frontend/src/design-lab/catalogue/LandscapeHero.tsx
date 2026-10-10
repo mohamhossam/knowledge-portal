@@ -7,16 +7,42 @@
  * at rest and the picked system's card when one is chosen. No product bar: a
  * product's footprint lives on its own Architecture tab.
  */
-import { type FormEvent, useCallback, useMemo, useState } from "react";
+import { type FormEvent, type ReactNode, useCallback, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { AreaTabs, EvidenceTag } from "./CatalogueLab";
 import { ArchitectureMap } from "./ArchitectureMap";
 import { IntegrationMatrix } from "./IntegrationMatrix";
 import { journeyHref, LAB, useLabData } from "./labData";
-import { firstSentence, listOf, plural, useTitle } from "./labUtil";
+import { firstSentence, plural, useTitle } from "./labUtil";
 import { allIntegrations, allViews, degrees as degreesOf, links, partnersOf } from "./posterModel";
 import { TamWheel } from "./TamWheel";
+
+const VIEW_ICONS = {
+  layers: <path d="M8 2 14 5 8 8 2 5zM2 8l6 3 6-3M2 11l6 3 6-3" />,
+  wheel: (
+    <>
+      <circle cx="8" cy="8" r="6" />
+      <circle cx="8" cy="8" r="1.8" />
+      <path d="M8 2v4.2M8 9.8V14M2 8h4.2M9.8 8H14" />
+    </>
+  ),
+  matrix: <path d="M2.5 2.5h11v11h-11zM2.5 6.2h11M2.5 9.8h11M6.2 2.5v11M9.8 2.5v11" />,
+  search: (
+    <>
+      <circle cx="7" cy="7" r="4.5" />
+      <path d="m10.5 10.5 3.5 3.5" />
+    </>
+  ),
+};
+
+function ViewIcon({ children }: { children: ReactNode }) {
+  return (
+    <svg className="cl-view-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+      {children}
+    </svg>
+  );
+}
 
 export function LandscapeHero() {
   const data = useLabData();
@@ -36,6 +62,10 @@ export function LandscapeHero() {
   const views = useMemo(() => allViews(data), [data]);
   const systemById = useMemo(() => new Map(data.systems.map((system) => [system.id, system])), [data]);
   const layers = useMemo(() => data.domains.map((domain) => ({ domain, systems: data.systems.filter((system) => system.domain === domain.id) })).filter((item) => item.systems.length), [data]);
+  const ORDER = ["market-sales", "product", "customer", "integration", "service", "resource", "engaged-party", "enterprise"];
+  // The domains in the map's reading order; any other domain comes last.
+  const rank = (id: string) => (ORDER.includes(id) ? ORDER.indexOf(id) : ORDER.length);
+  const composition = [...layers].sort((a, b) => rank(a.domain.id) - rank(b.domain.id));
   const groups = new Set(data.systems.map((system) => `${system.domain}/${system.group}`)).size;
 
   const setParam = useCallback(
@@ -80,46 +110,77 @@ export function LandscapeHero() {
   return (
     <>
       <AreaTabs current="landscape" />
-      <header className="cl-head">
-        <div className="cl-head-text">
-          <h1>SMB architecture</h1>
-          <p className="cl-lede">
-            Every SMB system on the TM Forum application map, by layer and functional group, joined by the integration layer. The wheel shows the calls bundled through the hub; the matrix reads them pair by pair. {data.status === "draft" ? "A draft" : "Published"}, built only from {listOf(data.sources.map((source) => source.short))}.
-          </p>
+      <section className="cl-hero" aria-labelledby="cl-hero-h">
+        <div className="cl-hero-text">
+          <p className="cl-eyebrow">TM Forum application map · SMB</p>
+          <h1 id="cl-hero-h">SMB architecture</h1>
+          <p className="cl-hero-lede">Every SMB system by layer and functional group, joined by the integration layer that carries their calls.</p>
+          <ul className="cl-hero-facts" aria-label="About this catalogue">
+            <li className={`cl-status cl-status--${data.status}`}>
+              <i aria-hidden="true" />
+              {data.status === "draft" ? "Draft" : "Published"} · revision {data.revision}
+            </li>
+            {data.sources.map((source) => (
+              <li key={source.id} className="cl-source" title={source.title}>
+                {source.short}
+              </li>
+            ))}
+          </ul>
         </div>
-        <dl className="cl-meta">
-          <div>
-            <dt>Systems</dt>
-            <dd>{data.systems.length}</dd>
+        <div className="cl-hero-visual">
+          <p className="cl-estate-head">
+            <strong>{data.systems.length}</strong>
+            <span>
+              systems across {layers.length} domains, {groups} functional groups
+            </span>
+          </p>
+          <div className="cl-estate-bar" role="img" aria-label={`Systems by domain: ${composition.map((item) => `${item.domain.name} ${item.systems.length}`).join(", ")}`}>
+            {composition.map((item) => (
+              <span key={item.domain.id} className={`cl-estate-seg bar--${item.domain.id}`} style={{ flexGrow: item.systems.length }} title={`${item.domain.name}: ${plural(item.systems.length, "system")}`} />
+            ))}
           </div>
-          <div>
-            <dt>Domains</dt>
-            <dd>{layers.length}</dd>
-          </div>
-          <div>
-            <dt>Groups</dt>
-            <dd>{groups}</dd>
-          </div>
-          <div>
-            <dt>External</dt>
-            <dd>{data.systems.filter((item) => item.external).length}</dd>
-          </div>
-          <div>
-            <dt>Journeys</dt>
-            <dd>{data.journeys.length}</dd>
-          </div>
-        </dl>
-      </header>
+          <ul className="cl-estate-key" aria-hidden="true">
+            {composition.map((item) => (
+              <li key={item.domain.id} className={`bar--${item.domain.id}`}>
+                <i />
+                <span>{item.domain.name}</span>
+                <b>{item.systems.length}</b>
+              </li>
+            ))}
+          </ul>
+          <dl className="cl-hero-stats">
+            <div>
+              <dt>External</dt>
+              <dd>{data.systems.filter((item) => item.external).length}</dd>
+            </div>
+            <div>
+              <dt>Journeys</dt>
+              <dd>{data.journeys.length}</dd>
+            </div>
+            <div>
+              <dt>Products</dt>
+              <dd>{data.offerings.length}</dd>
+            </div>
+            <div>
+              <dt>Findings open</dt>
+              <dd>{data.findings.length}</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
 
       <div className="cl-toolbar">
         <div className="cl-seg" role="group" aria-label="View">
           <button type="button" aria-pressed={view === "layers"} onClick={() => setParam("view", null)}>
+            <ViewIcon>{VIEW_ICONS.layers}</ViewIcon>
             Layers
           </button>
           <button type="button" aria-pressed={view === "wheel"} onClick={() => setParam("view", "wheel")}>
+            <ViewIcon>{VIEW_ICONS.wheel}</ViewIcon>
             Wheel
           </button>
           <button type="button" aria-pressed={view === "matrix"} onClick={() => setParam("view", "matrix")}>
+            <ViewIcon>{VIEW_ICONS.matrix}</ViewIcon>
             Matrix
           </button>
         </div>
@@ -129,6 +190,7 @@ export function LandscapeHero() {
           </button>
         )}
         <form className="cl-find" role="search" onSubmit={find}>
+          <ViewIcon>{VIEW_ICONS.search}</ViewIcon>
           <label className="ds-visually-hidden" htmlFor="cl-find">
             Find a system
           </label>
@@ -162,6 +224,7 @@ export function LandscapeHero() {
           {notFound ? `No system called “${notFound}”.` : ""}
         </p>
         <div className="cl-legend" role="group" aria-label="Legend">
+          <small className="cl-legend-label">Key</small>
           <span>
             <i className="ext" />
             External

@@ -392,4 +392,11 @@ Checks: tests 25/25 with axe; lint, typecheck and build green.
 
 Checks: tests 25/25 with axe; lint, brand lint, build and budget green; no sideways scroll at 375px or 1440px.
 
+**Landscape hero (2026-10-10).** The title block becomes a hero card on paper.
+- **Left:** a maroon eyebrow ("TM Forum application map · SMB"), a 36px title, a one-sentence intro, and chips for the draft status (revision 2) and each source.
+- **Right:** the estate's shape. "46 systems across 8 domains, 20 functional groups" sits above one bar split into a segment per domain in its layer colour, sized by its systems. Under the bar: a two-column key, then figures for external systems, journeys, products and open findings.
+- **Toolbar:** sits under the hero. The Layers / Wheel / Matrix switch has icons, the search field has a magnifier (36px controls), and the legend has a "Key" label.
+
+Checks: tests 25/25 with axe; lint, brand lint, build and budget green; no sideways scroll at 375px.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.
