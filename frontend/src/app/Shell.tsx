@@ -116,6 +116,8 @@ export function Shell() {
   const secondary: NavItem[] = [
     { href: "/explorer", label: "Explorer", current: under("/explorer") },
     { href: "/reminders", label: "Re-confirmations", current: under("/reminders") },
+    // The redesigned catalogue (a development-only lab, like its route) is one click from every area.
+    ...(import.meta.env.DEV ? [{ href: "/design-lab/catalogue", label: "Catalogue redesign", current: false }] : []),
   ];
 
   const actor = auth?.actor ?? null;

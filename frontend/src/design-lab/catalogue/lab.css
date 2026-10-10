@@ -140,18 +140,9 @@
 .cl-tabs a[aria-current="page"] { color: var(--cl-maroon); border-bottom-color: var(--cl-maroon); }
 .cl-tabs a:focus-visible { outline-offset: -2px; box-shadow: none; }
 .cl-tabs--sub { margin-top: 16px; }
-.cl-head { display: flex; align-items: flex-end; gap: 24px 32px; flex-wrap: wrap; margin-top: 16px; }
-.cl-head-text { flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
-.cl-head h1 { font-size: 1.75rem; line-height: 1.2; font-weight: 700; font-stretch: 87.5%; letter-spacing: -0.01em; }
 .cl-h1-sub { color: var(--cl-ink-2); font-weight: 600; }
 .cl-lede { font-size: 1rem; line-height: 1.55; color: var(--cl-ink-2); max-width: 68ch; }
 .cl-meta-line { font-size: 0.8125rem; color: var(--cl-ink-2); }
-.cl-head-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.cl-meta { display: flex; gap: 0; border: 1px solid var(--cl-hairline); border-radius: 4px; background: var(--cl-paper); }
-.cl-meta div { padding: 8px 16px; display: flex; flex-direction: column; gap: 2px; }
-.cl-meta div + div { border-left: 1px solid var(--cl-hairline); }
-.cl-meta dt { font-size: 0.8125rem; color: var(--cl-ink-2); }
-.cl-meta dd { font-size: 1.25rem; font-weight: 650; font-stretch: 80%; line-height: 1.1; }
 
 /* ---------- Controls ---------- */
 .cl-btn { min-height: 32px; padding: 0 12px; border-radius: 3px; border: 1px solid var(--cl-rule-strong); background: var(--cl-page); font-weight: 600; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; text-decoration: none; color: var(--cl-ink); white-space: nowrap; }
@@ -283,14 +274,11 @@
 
 /* ---------- Product page ---------- */
 .cl-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--cl-gap); margin-top: var(--cl-gap); align-items: start; }
-.cl-span-4 { grid-column: span 4; }
 .cl-span-7 { grid-column: span 7; }
-.cl-span-8 { grid-column: span 8; }
 .cl-span-12 { grid-column: span 12; }
 .cl-card { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .cl-card > h2 { font-size: 1.25rem; font-weight: 700; font-stretch: 87.5%; padding-bottom: 8px; border-bottom: 1px solid var(--cl-rule); display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .cl-card > h2 small { font-size: 0.8125rem; font-weight: 500; color: var(--cl-ink-2); }
-.cl-reading { font-size: 1rem; line-height: 1.6; max-width: 72ch; color: var(--cl-ink); }
 /* ---------- The bundle's anatomy: device at the heart, capabilities on one spine ---------- */
 .cl-bundle { grid-column: span 5; padding: 16px; border: 1px solid var(--cl-hairline); border-radius: 8px; background: var(--cl-paper); }
 .cl-glyph { flex: none; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
@@ -359,10 +347,6 @@
 @media (prefers-reduced-motion: reduce) {
   .cl-codes summary::before { transition: none; }
 }
-.cl-values { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 24px; }
-.cl-value { display: grid; grid-template-rows: auto 1fr auto; gap: 6px; padding: 12px 0 16px; border-bottom: 1px solid var(--cl-hairline); }
-.cl-value h3 { font-size: 1rem; font-weight: 700; font-stretch: 90%; color: var(--cl-maroon); }
-.cl-value p { color: var(--cl-ink-2); line-height: 1.5; }
 .cl-tablewrap { position: relative; overflow-x: auto; }
 .cl-table { width: 100%; border-collapse: collapse; }
 .cl-table th, .cl-table td { padding: 8px 10px; border-bottom: 1px solid var(--cl-hairline); text-align: left; vertical-align: top; }
@@ -405,7 +389,6 @@
 .cl-phrases p { line-height: 1.55; color: var(--cl-ink-2); max-width: 78ch; }
 .cl-phrases strong { color: var(--cl-maroon); font-weight: 700; }
 /* ---------- Who can buy it: question cards with an evidence checklist, and the order-type matrix ---------- */
-.cl-who { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: var(--cl-gap); align-items: start; }
 .cl-sure { display: inline-flex; gap: 6px; margin-left: auto; }
 .cl-sure-item { display: inline-flex; align-items: center; gap: 6px; padding: 1px 10px; border: 1px solid var(--cl-hairline); border-radius: 999px; background: var(--cl-page); font-size: 0.75rem; font-weight: 600; color: var(--cl-ink-2); }
 .cl-sure-item i, .cl-elig-node { width: 9px; height: 9px; border-radius: 50%; background: var(--cl-sage); }
@@ -496,8 +479,6 @@
 .cl-plan-speed span { color: var(--cl-ink-2); }
 .cl-pairs dd.gap { color: var(--cl-ink-2); font-style: italic; font-weight: 500; }
 .cl-section { margin-top: 32px; }
-.cl-section-h { font-size: 1.25rem; font-weight: 700; font-stretch: 87.5%; padding-bottom: 8px; border-bottom: 1px solid var(--cl-rule); margin-bottom: 12px; display: flex; align-items: baseline; gap: 8px; }
-.cl-section-h small { font-size: 0.8125rem; font-weight: 500; color: var(--cl-ink-2); }
 .cl-rules { display: flex; flex-direction: column; }
 .cl-rules > li { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--cl-hairline); }
 .cl-rules > li > div { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
@@ -551,7 +532,6 @@
   .cl-page { padding: 12px 16px 40px; }
   .cl-mast-inner { padding: 0 16px; gap: 16px; }
   .cl-mast-divider, .cl-product, .cl-me { display: none; }
-  .cl-meta { flex-wrap: wrap; }
   .cl-values, .cl-elig, .cl-plancards, .cl-tree-branches, .cl-glance { grid-template-columns: 1fr; }
   .cl-tree-row { grid-template-columns: 1fr; }
   .cl-tree-level { justify-self: center; margin: 0 0 6px; }
@@ -681,10 +661,6 @@
 .cl-layer--engaged-party, .cl-linked--engaged-party { --cl-layer-tint: var(--cl-party); --cl-layer-edge: var(--cl-party-edge); }
 .cl-layer--enterprise, .cl-linked--enterprise { --cl-layer-tint: var(--cl-enterprise); --cl-layer-edge: var(--cl-enterprise-edge); }
 .cl-layer--integration, .cl-linked--integration { --cl-layer-tint: var(--cl-spine); --cl-layer-edge: var(--cl-maroon); }
-.cl-linked { display: grid; gap: 10px; }
-.cl-linked li { display: grid; gap: 4px; }
-.cl-linked li > span { font-size: 0.75rem; font-weight: 600; color: var(--cl-ink-2); }
-.cl-linked li > div { display: flex; flex-wrap: wrap; gap: 4px; }
 .cl-pill { min-height: 28px; padding: 0 10px; border: 1px solid var(--cl-rule); border-radius: 999px; background: var(--cl-page); font-size: 0.8125rem; font-weight: 600; cursor: pointer; }
 .cl-pill:hover { border-color: var(--cl-maroon); }
 
@@ -841,64 +817,20 @@
 }
 
 /* ---------- Landscape hero: what this is, on the left; the estate's shape, on the right ---------- */
-.cl-hero { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 24px 48px; align-items: center; margin-top: 24px; padding: 28px 32px; border: 1px solid var(--cl-hairline); border-radius: 12px; background: var(--cl-paper); }
-.cl-hero-text { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-.cl-eyebrow { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cl-maroon); }
-.cl-hero h1 { font-size: 2.25rem; line-height: 1.1; font-weight: 700; font-stretch: 87.5%; letter-spacing: -0.015em; color: var(--cl-ink); }
-.cl-hero-lede { max-width: 56ch; font-size: 1.0625rem; line-height: 1.55; color: var(--cl-ink-2); }
-.cl-hero-visual { display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 20px; border: 1px solid var(--cl-hairline); border-radius: 10px; background: var(--cl-page); }
-.cl-estate-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.cl-estate-head strong { font-size: 2.5rem; line-height: 1; font-weight: 700; font-stretch: 85%; color: var(--cl-ink); }
-.cl-estate-head span { font-size: 0.875rem; color: var(--cl-ink-2); }
 /* The estate as one bar: a segment per domain, in its layer colour, as wide as its systems. */
-.cl-estate-bar { display: flex; gap: 3px; height: 14px; }
-.cl-estate-seg { flex-basis: 0; min-width: 6px; background: var(--bar); }
-.cl-estate-seg:first-child { border-radius: 7px 0 0 7px; }
-.cl-estate-seg:last-child { border-radius: 0 7px 7px 0; }
-.cl-estate-key { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 16px; }
-.cl-estate-key li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; align-items: center; gap: 8px; font-size: 0.8125rem; color: var(--cl-ink-2); }
-.cl-estate-key i { width: 10px; height: 10px; border-radius: 3px; background: var(--bar); }
-.cl-estate-key span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cl-estate-key b { font-weight: 600; color: var(--cl-ink); }
-.bar--market-sales { --bar: var(--cl-market-edge); }
-.bar--product { --bar: var(--cl-product-edge); }
-.bar--customer { --bar: var(--cl-customer-edge); }
-.bar--integration { --bar: var(--cl-m2); }
-.bar--service { --bar: var(--cl-service-edge); }
-.bar--resource { --bar: var(--cl-resource-edge); }
-.bar--engaged-party { --bar: var(--cl-party-edge); }
-.bar--enterprise { --bar: var(--cl-enterprise-edge); }
-.cl-hero-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--cl-hairline); }
-.cl-hero-stats div { display: flex; flex-direction: column; gap: 2px; }
-.cl-hero-stats div + div { padding-left: 12px; border-left: 1px solid var(--cl-hairline); }
-.cl-hero-stats dt { font-size: 0.75rem; color: var(--cl-ink-2); }
-.cl-hero-stats dd { font-size: 1.25rem; font-weight: 700; font-stretch: 85%; line-height: 1.1; color: var(--cl-ink); }
 /* The view toolbar under the hero: icon switch, search with a magnifier, a quiet key. */
-.cl-hero + .cl-toolbar { margin-top: 20px; }
 .cl-view-icon { flex: none; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 .cl-seg button { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 14px; }
 .cl-find { position: relative; }
 .cl-find > .cl-view-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--cl-ink-3); pointer-events: none; }
 .cl-find .cl-field { height: 36px; width: 280px; padding-left: 32px; border-radius: 6px; }
 .cl-find .cl-btn { min-height: 36px; border-radius: 6px; }
-.cl-legend-label { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cl-ink-3); }
-@media (max-width: 960px) {
-  .cl-hero { grid-template-columns: minmax(0, 1fr); padding: 20px; }
-}
 @media (max-width: 560px) {
-  .cl-hero h1 { font-size: 1.75rem; }
-  .cl-hero-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 0; }
-  .cl-hero-stats div:nth-child(3) { padding-left: 0; border-left: 0; }
   .cl-find .cl-field { width: 100%; }
   .cl-find { flex: 1; }
 }
 
 /* ---------- Catalogue indexes: products by portfolio, journeys by stage and product ---------- */
-.cl-hero--compact { padding: 24px 28px; }
-.cl-hero--compact h1 { font-size: 2rem; }
-.cl-hero-stats--panel { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; padding: 16px 20px; border: 1px solid var(--cl-hairline); border-radius: 10px; background: var(--cl-page); }
-.cl-hero-stats--panel div:nth-child(odd) { padding-left: 0; border-left: 0; }
-.cl-hero-stats--panel dd { font-size: 1.75rem; }
 .cl-empty-note { padding: 24px; border: 1px dashed var(--cl-rule); border-radius: 8px; color: var(--cl-ink-2); text-align: center; }
 /* A portfolio family: its path above its name, its products as cards. */
 .cl-family { margin-top: 28px; }
@@ -968,18 +900,6 @@ a.cl-pill:hover { color: var(--cl-maroon); }
   .cl-sold-group + .cl-sold-group { padding-left: 0; border-left: 0; }
 }
 /* ---------- Products page, fitted to one screen: slim hero, framed families, horizontal cards ---------- */
-.cl-hero--slim { grid-template-columns: minmax(0, 1fr) auto; gap: 16px 40px; margin-top: 16px; padding: 18px 24px; }
-.cl-hero--slim .cl-hero-text { gap: 6px; }
-.cl-hero--slim h1 { font-size: 1.75rem; }
-.cl-hero--slim .cl-hero-lede { font-size: 0.9375rem; }
-.cl-hero-side { display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
-.cl-hero-tiles { display: grid; grid-template-columns: repeat(3, minmax(96px, auto)); gap: 8px; }
-.cl-hero-tiles div { display: flex; flex-direction: column; gap: 1px; padding: 8px 12px; border: 1px solid var(--cl-hairline); border-radius: 8px; background: var(--cl-page); }
-.cl-hero-tiles dt { font-size: 0.75rem; color: var(--cl-ink-2); }
-.cl-hero-tiles dd { font-size: 1.25rem; font-weight: 700; font-stretch: 85%; line-height: 1.15; }
-.cl-hero-side .cl-find .cl-field { width: 100%; }
-.cl-hero-side .cl-find { width: 100%; }
-.cl-hero-side .cl-status:empty { display: none; }
 /* A product family: one framed group, its header on a single line. */
 .cl-family { margin-top: 16px; padding: 14px 16px 16px; border: 1px solid var(--cl-hairline); border-radius: 12px; background: var(--cl-paper); }
 .cl-family > header { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 12px; padding: 0; border: 0; text-align: left; }
@@ -1005,14 +925,10 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 .cl-term-track > span + span { border-left: 1px solid var(--cl-hairline); }
 .cl-fact-chip b { font-weight: 700; }
 @media (max-width: 960px) {
-  .cl-hero--slim { grid-template-columns: minmax(0, 1fr); }
   .cl-prodcard { grid-template-columns: minmax(0, 1fr); gap: 16px; }
   .cl-prodcard .cl-glance-rows { border-left: 0; padding-left: 0; border-top: 1px solid var(--cl-hairline); }
   .cl-prodcard .cl-glance-rows > div:first-child { padding-top: 9px; }
   .cl-family > header .cl-family-path { margin-left: 0; flex-basis: 100%; }
-}
-@media (max-width: 560px) {
-  .cl-hero-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 .cl-prodcard-links { flex-wrap: nowrap; gap: 6px; }
 .cl-prodcard-links .cl-btn { padding: 0 10px; gap: 6px; }
@@ -1122,20 +1038,7 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 .jx-decisions { gap: 2px; }
 
 /* ---------- Landscape for presentation: one screen, soft brand gradients, no dark fills ---------- */
-.cl-hero--landscape { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 12px 32px; margin-top: 12px; padding: 16px 22px; border-color: #efe6e1; background: linear-gradient(115deg, #fdfbf7 0%, #faf4ef 50%, #f8eeec 100%); }
-.cl-hero--landscape .cl-hero-text { gap: 6px; }
-.cl-hero--landscape h1 { font-size: 1.75rem; }
-.cl-hero--landscape .cl-hero-lede { font-size: 0.9375rem; }
-.cl-hero--landscape .cl-hero-visual { gap: 8px; padding: 12px 16px; border-color: #f0e8e4; }
-.cl-hero--landscape .cl-estate-head strong { font-size: 1.75rem; }
-.cl-hero--landscape .cl-estate-bar { height: 10px; }
-.cl-hero--landscape .cl-estate-key { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px 12px; }
-.cl-hero--landscape .cl-estate-key li { font-size: 0.75rem; }
-.cl-hero--landscape + .cl-toolbar { margin: 10px 0; }
 /* The board: the side panel takes the map's height and scrolls inside itself, never the page. */
-.cl-board--landscape { align-items: stretch; }
-.cl-board--landscape .cl-insp { position: static; height: 0; min-height: 100%; max-height: none; border-color: var(--cl-hairline); border-radius: 12px; }
-.cl-board--landscape .cl-matrix-scroll { max-height: calc(100dvh - 385px); overflow: auto; }
 /* Compact map: four bands with the side layers in a column, one-line cards. */
 .am--compact { padding-left: 0; gap: 8px; }
 .am--compact::before, .am--compact .am-layer::before, .am--compact .am-layer::after, .am--compact .am-bus::before, .am--compact .am-bus::after { display: none; }
@@ -1174,12 +1077,8 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 .am--compact .am-bus-line .am-card { width: min(200px, 40%); }
 @media (max-width: 1100px) {
   .am-poster { grid-template-columns: minmax(0, 1fr); }
-  .cl-board--landscape .cl-insp { height: auto; min-height: 0; }
 }
 /* Landscape, fitted: a shorter hero and tighter cards so the whole map sits in one screen. */
-.cl-hero--landscape { padding: 12px 18px; gap: 8px 28px; }
-.cl-hero--landscape .cl-hero-visual { padding: 10px 14px; gap: 6px; }
-.cl-hero--landscape + .cl-toolbar { margin: 8px 0; }
 .am--compact, .am-stack, .am-side, .am-poster { gap: 6px; }
 .am--compact .am-layer { padding: 6px 8px 8px; }
 .am--compact .am-layer-head { margin-bottom: 4px; }
@@ -1323,7 +1222,7 @@ a.cl-pill:hover { color: var(--cl-maroon); }
   .lx-board > .cl-matrix-wrap > .cl-matrix-scroll { flex: 1 1 0; min-height: 240px; max-height: none; }
 }
 /* The landscape header: a soft band under the tab bar, as wide as it. First the title, a one-line subtitle and the tools; then the layers, each in its own colour, which show one layer at a time and double as the legend. */
-.lx-head.lx-band, .jx-band { display: grid; justify-content: stretch; gap: 5px; margin: 0 calc(50% - 50vw); padding: 7px calc(50vw - 50%) 8px; background: linear-gradient(100deg, color-mix(in srgb, var(--cl-sand) 85%, var(--cl-page)) 0%, var(--cl-paper) 55%, var(--cl-page) 100%); border-bottom: 1px solid var(--cl-hairline); }
+.lx-head.lx-band, .jx-band, .cx-band { display: grid; justify-content: stretch; gap: 5px; margin: 0 calc(50% - 50vw); padding: 7px calc(50vw - 50%) 8px; background: linear-gradient(100deg, color-mix(in srgb, var(--cl-sand) 85%, var(--cl-page)) 0%, var(--cl-paper) 55%, var(--cl-page) 100%); border-bottom: 1px solid var(--cl-hairline); }
 .lx-band-row { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .lx-mark { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; background: var(--cl-maroon-mist); color: var(--cl-maroon); }
 .lx-mark svg { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
@@ -1684,3 +1583,5 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 @media (min-width: 1101px) and (min-height: 600px) {
   .lx-board > .cm-panel { flex: 0 1 auto; min-height: 0; overflow-y: auto; }
 }
+/* The Products index wears the same header band; its families follow with the page's rhythm. */
+.cx-band + * { margin-top: 20px; }

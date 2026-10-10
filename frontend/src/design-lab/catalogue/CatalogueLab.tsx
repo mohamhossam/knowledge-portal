@@ -188,15 +188,16 @@ function LabShell({ children }: { children: ReactNode }) {
             <span className="cl-mast-divider" aria-hidden="true" />
             <span className="cl-product">Knowledge Portal</span>
           </Link>
+          {/* The portal's real areas: the redesigned catalogue sits among them, so the whole platform is one click away. */}
           <nav aria-label="Areas">
-            <a href="#main">Your work</a>
-            <a href="#main">Library</a>
-            <a href="#main" aria-current="page">
+            <Link to="/">Your work</Link>
+            <Link to="/library">Library</Link>
+            <Link to={LAB} aria-current="page">
               Catalogue
-            </a>
-            <a href="#main">Ownership</a>
-            <a href="#main">Requirements</a>
-            <a href="#main">Explorer</a>
+            </Link>
+            <Link to="/squads">Ownership</Link>
+            <Link to="/requirement-knowledge">Requirements</Link>
+            <Link to="/explorer">Explorer</Link>
           </nav>
           <span className="cl-me">
             <span className="cl-avatar" aria-hidden="true">
