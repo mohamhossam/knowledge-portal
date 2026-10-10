@@ -669,16 +669,23 @@
 .cl-area-nav a[aria-current="page"] .cl-area-count { background: var(--cl-maroon-mist); color: var(--cl-maroon); }
 .cl-area-off { color: var(--cl-ink-3); font-weight: 500; cursor: not-allowed; }
 .cl-area-off .cl-area-count { background: transparent; box-shadow: inset 0 0 0 1px var(--cl-hairline); color: var(--cl-ink-3); }
-.cl-path { margin-top: 14px; }
-.cl-path ol { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px 0; }
-.cl-path li { position: relative; display: flex; flex-direction: column; gap: 1px; padding-right: 14px; }
-.cl-path li + li { padding-left: 18px; }
-.cl-path li + li::before { content: ""; position: absolute; left: 2px; bottom: 9px; width: 6px; height: 6px; border-top: 1.5px solid var(--cl-rule-strong); border-right: 1.5px solid var(--cl-rule-strong); transform: rotate(45deg); }
-.cl-path small { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--cl-ink-3); white-space: nowrap; }
-.cl-path a, .cl-path span { display: inline-flex; align-items: center; min-height: 24px; font-size: 0.875rem; white-space: nowrap; }
-.cl-path a { color: var(--cl-ink-2); text-decoration: none; border-bottom: 1px solid var(--cl-rule); align-self: flex-start; min-height: 22px; }
-.cl-path a:hover { color: var(--cl-maroon); border-bottom-color: var(--cl-maroon); }
-.cl-path li[aria-current="page"] span { font-weight: 700; color: var(--cl-ink); }
+/* The portfolio path: a rail with a node per level, aligned to the page's left edge. */
+.cl-path { margin-top: 18px; overflow-x: auto; scrollbar-width: none; }
+.cl-path ol { display: flex; align-items: flex-start; }
+.cl-path li { position: relative; flex: none; min-width: 148px; display: flex; flex-direction: column; gap: 2px; padding: 22px 32px 2px 0; }
+.cl-path li:last-child { padding-right: 0; }
+/* The rail runs from each node to the next. */
+.cl-path li::after { content: ""; position: absolute; left: 12px; right: 4px; top: 5px; height: 2px; border-radius: 1px; background: var(--cl-m2); }
+.cl-path li:last-child::after { display: none; }
+.cl-path-node { position: absolute; left: 0; top: 0; width: 12px; height: 12px; border-radius: 50%; background: var(--cl-page); box-shadow: inset 0 0 0 2px var(--cl-m3); }
+.cl-path li:hover .cl-path-node { box-shadow: inset 0 0 0 2px var(--cl-maroon); }
+.cl-path li[aria-current="page"] .cl-path-node { background: var(--cl-maroon); box-shadow: 0 0 0 3px var(--cl-maroon-mist); }
+.cl-path small { font-size: 0.6875rem; font-weight: 600; line-height: 1.3; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cl-ink-3); white-space: nowrap; }
+.cl-path a, .cl-path strong { display: inline-flex; align-items: center; min-height: 24px; font-size: 0.875rem; line-height: 1.3; white-space: nowrap; }
+.cl-path a { color: var(--cl-ink-2); font-weight: 500; text-decoration: none; }
+.cl-path a:hover { color: var(--cl-maroon); text-decoration: underline; text-decoration-color: var(--cl-m3); text-underline-offset: 4px; }
+.cl-path li[aria-current="page"] small { color: var(--cl-maroon); }
+.cl-path strong { font-weight: 700; color: var(--cl-ink); }
 @media (max-width: 760px) {
   .cl-area-id { border-right: 0; padding-right: 0; }
 }

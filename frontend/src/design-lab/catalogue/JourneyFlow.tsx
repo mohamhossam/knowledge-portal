@@ -266,7 +266,7 @@ export function JourneyFlow() {
   ) : (
     <>
       <AreaTabs current="journeys" />
-      <PathBar label="Where this journey belongs" items={[{ name: "Catalogue", to: LAB }, { level: "Journey", name: def.name }]} />
+      <PathBar label="Where this journey belongs" items={[{ level: "Catalogue", name: "SMB architecture", to: LAB }, { level: "Journey", name: def.name }]} />
     </>
   );
   const Heading = offering ? "h2" : "h1";
