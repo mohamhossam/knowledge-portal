@@ -346,4 +346,13 @@ The Layers view gains:
 
 Headings sit above the link curves on their own tint, so lines never cross words. Footprint tiers carry into the monograms: maroon for core systems and for those a journey lights, mist for used, outlined for carries-only. Fixed a lint error where the tab stop read a ref during render. Checks: tests 25/25 with axe; lint, typecheck and build green.
 
+**Maroon kept for meaning (2026-10-10, user agreed).** The layer tints no longer use maroon. Service is now warm taupe and Resource is sand, alongside beige (Market & Sales), rose-beige (Product), blush (Customer), warm stone (Engaged Party) and e& grey (Enterprise).
+
+The integration layer is a light maroon-mist band with one thin maroon bus line and a ringed spine dot; it is no longer a solid maroon fill. Its cards are white.
+
+Maroon now means one thing only: selection and focus, the product's core and used systems, and a journey's lit systems. Reasons:
+- A selected card and its links no longer compete with a maroon band.
+- There is no saturated filled area.
+- Maroon stays inside the calm budget.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.

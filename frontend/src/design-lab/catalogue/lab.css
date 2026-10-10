@@ -27,12 +27,13 @@
   --cl-sage: #2d6640;
 
   /*
-   * Layer tints: e& ingredients in calm mode, as one tonal ramp down the TAM
-   * stack. Beige (market) warms to rose-beige (product), red blush (customer),
-   * rose-mauve (service) and maroon mist (resource); the side layers take warm
-   * stone (engaged party) and e& grey (enterprise). Each layer has a tint, an
-   * ink, a deeper edge and a lane tint for the flow. The integration layer is
-   * the one solid maroon band.
+   * Layer tints: e& ingredients in calm mode, kept free of maroon so maroon
+   * only ever means something (selection, focus, a product's footprint, a
+   * journey). Beige (market), rose-beige (product), soft blush (customer), warm
+   * taupe (service) and sand (resource); the side layers take warm stone
+   * (engaged party) and e& grey (enterprise). Each layer has a tint, an ink, a
+   * deeper edge and a lane tint for the flow. The integration layer is a light
+   * maroon-mist band with one thin maroon bus line.
    */
   --cl-market: #f7f2e8;
   --cl-market-ink: #5e4a26;
@@ -46,14 +47,14 @@
   --cl-customer-ink: #8c1d18;
   --cl-customer-edge: #e6a39c;
   --cl-customer-lane: #fbedeb;
-  --cl-service: #f6e9ee;
-  --cl-service-ink: #6a1f36;
-  --cl-service-edge: #cf98aa;
-  --cl-service-lane: #f6e9ee;
-  --cl-resource: #f1e4e9;
-  --cl-resource-ink: #4b0f1e;
-  --cl-resource-edge: #b07a8c;
-  --cl-resource-lane: #f1e4e9;
+  --cl-service: #efeae5;
+  --cl-service-ink: #4c3f37;
+  --cl-service-edge: #bbaa9b;
+  --cl-service-lane: #efeae5;
+  --cl-resource: #f4efe2;
+  --cl-resource-ink: #57482a;
+  --cl-resource-edge: #c9b98f;
+  --cl-resource-lane: #f4efe2;
   --cl-party: #f3f0eb;
   --cl-party-ink: #4f4741;
   --cl-party-edge: #b8ae9f;
@@ -586,7 +587,7 @@
 .am-bus-head .am-layer-scope { white-space: normal; }
 .am-bus-line { position: relative; display: flex; justify-content: space-evenly; gap: 16px; padding: 4px 0; }
 .am-bus-line::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; z-index: 1; height: 2px; border-radius: 1px; background: var(--cl-maroon); }
-.am-bus-line .am-card { width: min(220px, 40%); box-shadow: inset 3px 0 0 var(--cl-maroon); }
+.am-bus-line .am-card { width: min(220px, 40%); }
 .am-bus-line .am-card.is-quiet { background: var(--cl-spine); }
 .am-bus.is-dim .am-bus-line .am-card.is-quiet { background: var(--cl-paper); }
 /* Links: soft curves under the cards, drawn on request. */
@@ -780,7 +781,7 @@
 .am-layer, .am-bus { position: relative; }
 .am > .am-row > .am-layer:first-child::before, .am-bus::before { content: ""; position: absolute; left: -25px; top: 20px; width: 10px; height: 10px; border-radius: 50%; background: var(--cl-page); box-shadow: inset 0 0 0 2px var(--am-ink, var(--cl-maroon)); }
 .am > .am-row > .am-layer:first-child::after, .am-bus::after { content: ""; position: absolute; left: -15px; top: 24px; width: 15px; height: 2px; background: var(--cl-m2); }
-.am-bus::before { top: calc(50% - 6px); width: 12px; height: 12px; left: -26px; background: var(--cl-maroon); box-shadow: 0 0 0 3px var(--cl-page); }
+.am-bus::before { top: calc(50% - 6px); width: 12px; height: 12px; left: -26px; background: var(--cl-spine); box-shadow: inset 0 0 0 2px var(--cl-maroon), 0 0 0 3px var(--cl-page); }
 .am-bus::after { top: calc(50% - 1px); }
 
 /* Layer blocks: the tint, a soft frame in the layer's own edge, a badge with its icon. */
@@ -812,19 +813,14 @@
 .am-card.is-carries .am-mono { background: var(--cl-page); color: var(--cl-maroon); box-shadow: inset 0 0 0 1px var(--cl-m3); }
 
 /* The integration layer: the one solid maroon band, the bus every layer hangs from. */
-.am-bus { --am-ink: var(--cl-maroon); padding: 12px 16px; border-radius: 8px; }
-.am-bus:not(.is-dim) { background: var(--cl-maroon); }
-.am-bus:not(.is-dim) .am-layer-name { color: #fff; }
-.am-bus:not(.is-dim) .am-layer-scope { color: #f1dfe3; }
+.am-bus { --am-ink: var(--cl-maroon); --am-tint: var(--cl-spine); --am-edge: var(--cl-m2); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--cl-m1); box-shadow: inset 0 3px 0 var(--cl-m2); }
+.am-bus:not(.is-dim) { background: var(--cl-spine); }
+.am-bus .am-icon { color: var(--cl-maroon); box-shadow: inset 0 0 0 1px var(--cl-m2); }
+.am-bus:not(.is-dim) .am-card.is-quiet { background: var(--cl-spine); }
 .am-bus-head { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 2px 10px; }
 .am-bus-head .am-layer-scope { grid-column: 1 / -1; padding-left: 0; }
-.am-bus:not(.is-dim) .am-icon { background: var(--cl-maroon-hover); box-shadow: none; color: #fff; }
-.am-bus:not(.is-dim) .am-bus-line::before { background: #c58a99; }
 .am-bus .am-card { box-shadow: none; }
-.am-bus .am-mono { --am-tint: var(--cl-maroon-mist); --am-ink: var(--cl-maroon); --am-edge: var(--cl-m2); }
-.am-bus:not(.is-dim) .am-card.is-quiet { background: var(--cl-maroon-hover); border-color: #7d2a3e; color: #f3e3e7; }
-.am-bus:not(.is-dim) .am-card.is-quiet .am-card-fn { color: #e6cdd3; }
-.am-bus:not(.is-dim) .am-card.is-quiet .am-mono { color: #f3e3e7; box-shadow: inset 0 0 0 1px #9b4c60; }
+.am-bus .am-mono { --am-tint: var(--cl-page); --am-ink: var(--cl-maroon); --am-edge: var(--cl-m2); }
 .am-bus.is-dim .am-card.is-quiet { background: var(--cl-paper); }
 
 @media (max-width: 960px) {
@@ -847,5 +843,5 @@
 .am-cards { container-type: inline-size; }
 @container (max-width: 196px) { .am-card { grid-template-columns: minmax(0, 1fr); padding-left: 10px; } .am-mono { display: none; } }
 .am-card-name { overflow-wrap: break-word; hyphens: auto; }
-.am-bus:not(.is-dim) .am-bus-head > span:not(.am-icon) { background: var(--cl-maroon); }
+.am-bus:not(.is-dim) .am-bus-head > span:not(.am-icon) { background: var(--cl-spine); }
 .am-bus.is-dim .am-bus-head > span:not(.am-icon) { background: var(--cl-paper); }
