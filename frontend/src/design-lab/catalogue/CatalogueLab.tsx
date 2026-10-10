@@ -83,18 +83,18 @@ const ICONS: Record<string, ReactNode> = {
 };
 
 /**
- * The catalogue's own bar, the same on every screen: which catalogue and
- * version this is, then its sections with an icon and a count each. The
- * sections not in these mock-ups are shown, but say so.
+ * The catalogue's own bar, the same on every screen: which catalogue this is,
+ * then its sections, each with an icon and no count (counts belong to the
+ * pages, not the navigation). The sections not in these mock-ups are shown,
+ * but say so.
  */
 export function AreaTabs({ current }: { current: "landscape" | "products" | "journeys" }) {
-  const data = useLabData();
-  const items: { id: string; label: string; to?: string; count?: number }[] = [
+  const items: { id: string; label: string; to?: string }[] = [
     { id: "landscape", label: "Landscape", to: LAB },
-    { id: "products", label: "Products", to: `${LAB}/products`, count: data.offerings.length },
-    { id: "journeys", label: "Journeys", to: `${LAB}/journeys`, count: data.journeys.length },
-    { id: "systems", label: "Systems", count: data.systems.length },
-    { id: "governance", label: "Governance", count: data.findings.length },
+    { id: "products", label: "Products", to: `${LAB}/products` },
+    { id: "journeys", label: "Journeys", to: `${LAB}/journeys` },
+    { id: "systems", label: "Systems" },
+    { id: "governance", label: "Governance" },
     { id: "versions", label: "Versions" },
   ];
   const icon = (id: string) => (
@@ -121,13 +121,11 @@ export function AreaTabs({ current }: { current: "landscape" | "products" | "jou
             <Link key={item.id} to={item.to} aria-current={item.id === current ? "page" : undefined}>
               {icon(item.id)}
               {item.label}
-              {item.count !== undefined && <span className="cl-area-count">{item.count}</span>}
             </Link>
           ) : (
             <span key={item.id} className="cl-area-off" title="Not in these mock-ups">
               {icon(item.id)}
               {item.label}
-              {item.count !== undefined && <span className="cl-area-count">{item.count}</span>}
               <span className="ds-visually-hidden"> (not in these mock-ups)</span>
             </span>
           ),

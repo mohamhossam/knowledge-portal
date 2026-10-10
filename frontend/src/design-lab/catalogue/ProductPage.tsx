@@ -48,10 +48,10 @@ export function ProductHeader({ offering, current, actions, compact = false }: {
   const tabs: { id: ProductSection; label: string; to: string }[] = [
     { id: "overview", label: "Overview", to: base },
     { id: "hierarchy", label: "Hierarchy", to: `${base}/hierarchy` },
-    { id: "plans", label: `Plans · ${offering.plans.length}`, to: `${base}/plans` },
-    { id: "rules", label: `Business rules · ${offering.rules.length}`, to: `${base}/rules` },
-    { id: "components", label: `Components · ${offering.components.length}`, to: `${base}/components` },
-    { id: "journeys", label: `Journeys · ${journeys.length}`, to: firstJourneyHref(data, offering.id) },
+    { id: "plans", label: "Plans", to: `${base}/plans` },
+    { id: "rules", label: "Business rules", to: `${base}/rules` },
+    { id: "components", label: "Components", to: `${base}/components` },
+    { id: "journeys", label: "Journeys", to: firstJourneyHref(data, offering.id) },
     { id: "architecture", label: "Architecture", to: `${base}/architecture` },
   ];
   // One statement of what the product is for; the bundle drawing carries what is in it.
