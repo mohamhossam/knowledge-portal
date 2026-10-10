@@ -19,6 +19,7 @@ import { JourneyFlow } from "./JourneyFlow";
 import { firstJourneyHref, LAB, LabData, useLabData } from "./labData";
 import { LandscapeHero } from "./LandscapeHero";
 import { ProductArchitecture, ProductOverview } from "./ProductPage";
+import { ProductComponents, ProductHierarchy, ProductPlans, ProductRules } from "./ProductTabs";
 
 /** "Confirmed · SDD v2.3 §P1.1": how sure, and from where, in one line. */
 export function EvidenceTag({ evidence }: { evidence: Evidence }) {
@@ -123,6 +124,10 @@ export default function CatalogueLab() {
         <Routes>
           <Route index element={<LandscapeHero />} />
           <Route path="products/:offeringId" element={<ProductOverview />} />
+          <Route path="products/:offeringId/hierarchy" element={<ProductHierarchy />} />
+          <Route path="products/:offeringId/plans" element={<ProductPlans />} />
+          <Route path="products/:offeringId/rules" element={<ProductRules />} />
+          <Route path="products/:offeringId/components" element={<ProductComponents />} />
           <Route path="products/:offeringId/architecture" element={<ProductArchitecture />} />
           <Route path="journeys/:journeyId" element={<JourneyFlow />} />
         </Routes>

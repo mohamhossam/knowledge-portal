@@ -5,24 +5,18 @@
  * one header, so the product's tabs stay in the same place.
  */
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import { journeyView } from "../../architecture/adapter";
 import { impactOf } from "../../architecture/impact";
 import { type Component, type Offering, ROLE_WORDS } from "../../architecture/model";
 import { AreaTabs, EvidenceTag } from "./CatalogueLab";
-import { firstJourneyHref, journeyHref, LAB, useLabData } from "./labData";
+import { firstJourneyHref, journeyHref, LAB, useLabData, useOffering } from "./labData";
 import { leadingNumber, plural, useTitle } from "./labUtil";
 import { Poster } from "./poster";
 import { allIntegrations, allViews, degrees as degreesOf, links } from "./posterModel";
 
-function useOffering(): Offering | null {
-  const data = useLabData();
-  const { offeringId } = useParams();
-  return data.offerings.find((item) => item.id === offeringId) ?? null;
-}
-
-function Missing({ what }: { what: string }) {
+export function Missing({ what }: { what: string }) {
   return (
     <div className="cl-empty">
       <h1>{what}</h1>
@@ -33,8 +27,10 @@ function Missing({ what }: { what: string }) {
   );
 }
 
-/** The product's header: where it sits, what it is, and its tabs. */
-function ProductHeader({ offering, current, actions }: { offering: Offering; current: "overview" | "architecture"; actions?: ReactNode }) {
+export type ProductSection = "overview" | "hierarchy" | "plans" | "rules" | "components" | "journeys" | "architecture";
+
+/** The product's header: where it sits, what it is for (one statement), and its tabs. */
+export function ProductHeader({ offering, current, actions, compact = false }: { offering: Offering; current: ProductSection; actions?: ReactNode; compact?: boolean }) {
   const data = useLabData();
   const path: { id: string; name: string }[] = [];
   let node = data.portfolio.find((item) => item.id === offering.nodeId);
@@ -44,16 +40,24 @@ function ProductHeader({ offering, current, actions }: { offering: Offering; cur
     node = parent ? data.portfolio.find((item) => item.id === parent) : undefined;
   }
   const views = useMemo(() => allViews(data).filter((view) => view.offeringId === offering.id), [data, offering]);
-  const systems = new Set(views.flatMap((view) => [...view.steps.map((step) => step.lane), ...view.integrations.flatMap((call) => [call.from, call.to, call.via])]).filter((id): id is string => typeof id === "string" && data.systems.some((system) => system.id === id)));
+  const systems = new Set(
+    views
+      .flatMap((view) => [...view.steps.map((step) => step.lane), ...view.integrations.flatMap((call) => [call.from, call.to, call.via])])
+      .filter((id): id is string => typeof id === "string" && data.systems.some((system) => system.id === id)),
+  );
   const journeys = data.journeys.filter((journey) => journey.offeringId === offering.id);
-  const tabs: { id: string; label: string; to?: string }[] = [
-    { id: "overview", label: "Overview", to: `${LAB}/products/${offering.id}` },
-    { id: "plans", label: `Plans · ${offering.plans.length}` },
-    { id: "rules", label: `Business rules · ${offering.rules.length}` },
-    { id: "components", label: `Components · ${offering.components.length}` },
+  const base = `${LAB}/products/${offering.id}`;
+  const tabs: { id: ProductSection; label: string; to: string }[] = [
+    { id: "overview", label: "Overview", to: base },
+    { id: "hierarchy", label: "Hierarchy", to: `${base}/hierarchy` },
+    { id: "plans", label: `Plans · ${offering.plans.length}`, to: `${base}/plans` },
+    { id: "rules", label: `Business rules · ${offering.rules.length}`, to: `${base}/rules` },
+    { id: "components", label: `Components · ${offering.components.length}`, to: `${base}/components` },
     { id: "journeys", label: `Journeys · ${journeys.length}`, to: firstJourneyHref(data, offering.id) },
-    { id: "architecture", label: "Architecture", to: `${LAB}/products/${offering.id}/architecture` },
+    { id: "architecture", label: "Architecture", to: `${base}/architecture` },
   ];
+  // One statement of what the product is for; the bundle drawing carries what is in it.
+  const statement = offering.purpose || offering.summary;
   return (
     <>
       <AreaTabs current="products" />
@@ -63,7 +67,9 @@ function ProductHeader({ offering, current, actions }: { offering: Offering; cur
             <Link to={LAB}>Catalogue</Link>
           </li>
           {path.map((item) => (
-            <li key={item.id}>{item.name}</li>
+            <li key={item.id}>
+              <Link to={`${base}/hierarchy`}>{item.name}</Link>
+            </li>
           ))}
           <li aria-current="page">{offering.name}</li>
         </ol>
@@ -71,27 +77,21 @@ function ProductHeader({ offering, current, actions }: { offering: Offering; cur
       <header className="cl-head">
         <div className="cl-head-text">
           <h1>{offering.name}</h1>
-          <p className="cl-lede">{offering.summary}</p>
-          <p className="cl-meta-line">
-            {plural(offering.plans.length, "plan")} · {plural(offering.components.length, "component")} · {plural(offering.orderTypes.length, "order type")} · {plural(journeys.length, "journey")} modelled · {plural(systems.size, "system")} touched
-          </p>
-          <EvidenceTag evidence={offering.evidence} />
+          {!compact && <p className="cl-lede">{statement}</p>}
+          {!compact && <p className="cl-meta-line">
+            {plural(offering.plans.length, "plan")} · {plural(offering.components.length, "component")} · {plural(offering.orderTypes.length, "order type")} · {plural(journeys.length, "journey")} modelled ·{" "}
+            {plural(systems.size, "system")} touched
+          </p>}
+          {!compact && <EvidenceTag evidence={offering.evidence} />}
         </div>
         {actions && <div className="cl-head-actions">{actions}</div>}
       </header>
       <nav className="cl-tabs cl-tabs--sub" aria-label={`${offering.name} sections`}>
-        {tabs.map((tab) =>
-          tab.to ? (
-            <Link key={tab.id} to={tab.to} aria-current={tab.id === current ? "page" : undefined}>
-              {tab.label}
-            </Link>
-          ) : (
-            <span key={tab.id} className="cl-tab-off">
-              {tab.label}
-              <span className="ds-visually-hidden"> (on the Overview in these mock-ups)</span>
-            </span>
-          ),
-        )}
+        {tabs.map((tab) => (
+          <Link key={tab.id} to={tab.to} aria-current={tab.id === current ? "page" : undefined}>
+            {tab.label}
+          </Link>
+        ))}
       </nav>
     </>
   );
@@ -153,7 +153,7 @@ function Bundle({ offering }: { offering: Offering }) {
 }
 
 /** Plans side by side, differences first; what every plan shares is said once. */
-function Plans({ offering }: { offering: Offering }) {
+export function Plans({ offering }: { offering: Offering }) {
   const names = [...new Set(offering.plans.flatMap((plan) => plan.characteristics.map((item) => item.name)))];
   const value = (plan: Offering["plans"][number], name: string) => plan.characteristics.find((item) => item.name === name)?.value;
   const rows = names.map((name) => {
@@ -231,6 +231,133 @@ function Plans({ offering }: { offering: Offering }) {
   );
 }
 
+/** Eligibility grouped by what it answers: who, where, on what terms, through which route. */
+const ELIGIBILITY_GROUPS: { id: string; label: string; match: RegExp }[] = [
+  { id: "who", label: "Who", match: /segment|customer|audience|business/i },
+  { id: "where", label: "Where", match: /location|area|site|coverage/i },
+  { id: "terms", label: "On what terms", match: /commitment|contract|term|portal|account/i },
+  { id: "how", label: "Through which route", match: /activation|migration|port|channel|order/i },
+];
+
+function WhoCanBuy({ offering }: { offering: Offering }) {
+  const data = useLabData();
+  const grouped = new Map<string, Offering["eligibility"]>();
+  for (const point of offering.eligibility) {
+    const group = ELIGIBILITY_GROUPS.find((item) => item.match.test(point.title))?.id ?? "other";
+    grouped.set(group, [...(grouped.get(group) ?? []), point]);
+  }
+  const groups = [...ELIGIBILITY_GROUPS, { id: "other", label: "Also", match: /./ }].filter((group) => grouped.has(group.id));
+  const channels = data.channels.filter((channel) => offering.orderTypes.some((type) => type.channels.includes(channel.id)));
+  const journeyFor = (code: string) => data.journeys.find((journey) => journey.offeringId === offering.id && journey.orderType === code);
+  return (
+    <section className="cl-card cl-span-12" aria-labelledby="cl-who-h">
+      <h2 id="cl-who-h">
+        Who can buy it, and how{" "}
+        <small>
+          {plural(offering.eligibility.length, "condition")} · {plural(offering.orderTypes.length, "order type")}
+        </small>
+      </h2>
+      <div className="cl-who">
+        <div className="cl-who-groups">
+          {groups.map((group) => (
+            <section key={group.id} className="cl-who-group" aria-labelledby={`cl-who-${group.id}`}>
+              <h3 id={`cl-who-${group.id}`}>{group.label}</h3>
+              <ul>
+                {(grouped.get(group.id) ?? []).map((point) => (
+                  <li key={point.title}>
+                    <strong>{point.title}</strong>
+                    <span>{point.detail}</span>
+                    <EvidenceTag evidence={point.evidence} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+        <div className="cl-route">
+          <h3>Ordering channels for each order type</h3>
+          <div className="cl-tablewrap" role="region" aria-label="Channels by order type (scrolls sideways when narrow)" tabIndex={0}>
+            <table className="cl-route-table">
+              <thead>
+                <tr>
+                  <th scope="col">Order type</th>
+                  {channels.map((channel) => (
+                    <th key={channel.id} scope="col">
+                      {channel.name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {offering.orderTypes.map((type) => {
+                  const journey = journeyFor(type.code);
+                  return (
+                    <tr key={type.code}>
+                      <th scope="row">
+                        <span>{type.name}</span>
+                        {journey && (
+                          <Link className="cl-tag" to={journeyHref(journey.id, journey.channels[0])}>
+                            Journey
+                          </Link>
+                        )}
+                      </th>
+                      {type.channels.length === 0 ? (
+                        <td className="cl-route-none" colSpan={channels.length}>
+                          No ordering channel stated
+                        </td>
+                      ) : (
+                        channels.map((channel) => (
+                          <td key={channel.id}>
+                            {type.channels.includes(channel.id) ? <span className="cl-dot" role="img" aria-label={`Through ${channel.name}`} /> : <span className="ds-visually-hidden">Not through {channel.name}</span>}
+                          </td>
+                        ))
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** Each plan's speeds, at a glance; the full comparison is on the Plans tab. */
+function PlansAtAGlance({ offering }: { offering: Offering }) {
+  const speed = (plan: Offering["plans"][number], name: RegExp) => plan.characteristics.find((item) => name.test(item.name))?.value;
+  const max = Math.max(1, ...offering.plans.map((plan) => leadingNumber(speed(plan, /download/i) ?? "") ?? 0));
+  return (
+    <section className="cl-card cl-span-12" aria-labelledby="cl-glance-h">
+      <h2 id="cl-glance-h">
+        Plans at a glance <small>Prices are a gap: the SDD states none</small>
+        <Link className="cl-h2-link" to={`${LAB}/products/${offering.id}/plans`}>
+          Compare every characteristic
+        </Link>
+      </h2>
+      <ul className="cl-glance">
+        {offering.plans.map((plan) => {
+          const down = speed(plan, /download/i);
+          const up = speed(plan, /upload/i);
+          const n = leadingNumber(down ?? "") ?? 0;
+          return (
+            <li key={plan.name}>
+              <span className="cl-glance-name">{plan.name.replace(offering.name, "").trim() || plan.name}</span>
+              <span className="cl-glance-speed">
+                <b>{down ?? "Not stated"}</b> down{up ? ` · ${up} up` : ""}
+              </span>
+              <i className="cl-spark wide" aria-hidden="true">
+                <i style={{ width: `${(n / max) * 100}%` }} />
+              </i>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 export function ProductOverview() {
   const data = useLabData();
   const offering = useOffering();
@@ -258,38 +385,19 @@ export function ProductOverview() {
           <h2 id="cl-values-h">
             Customer value <small>{plural(offering.values.length, "reason")} a business buys it</small>
           </h2>
-          <div className="cl-values">
+          <ul className="cl-phrases">
             {offering.values.map((value) => (
-              <article key={value.title} className="cl-value">
-                <h3>{value.title}</h3>
-                <p>{value.detail}</p>
+              <li key={value.title}>
+                <p>
+                  <strong>{value.title}:</strong> {value.detail}
+                </p>
                 <EvidenceTag evidence={value.evidence} />
-              </article>
-            ))}
-          </div>
-        </section>
-        <div className="cl-span-8">
-          <Plans offering={offering} />
-        </div>
-        <section className="cl-card cl-span-4" aria-labelledby="cl-elig-h">
-          <h2 id="cl-elig-h">
-            Who it can be sold to <small>{plural(offering.eligibility.length, "condition")}</small>
-          </h2>
-          <ul className="cl-points">
-            {offering.eligibility.map((point) => (
-              <li key={point.title}>
-                <span>
-                  <strong>{point.title}.</strong> {point.detail}
-                </span>
-                <EvidenceTag evidence={point.evidence} />
               </li>
             ))}
           </ul>
         </section>
-        <section className="cl-card cl-span-12" aria-labelledby="cl-purpose-h">
-          <h2 id="cl-purpose-h">What it's for</h2>
-          <p className="cl-reading">{offering.purpose}</p>
-        </section>
+        <WhoCanBuy offering={offering} />
+        <PlansAtAGlance offering={offering} />
       </div>
     </>
   );
