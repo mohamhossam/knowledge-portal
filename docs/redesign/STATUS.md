@@ -472,4 +472,20 @@ Checks: tests 28/28 with axe (new: stages, preview, picking, scope narrowing); l
 
 The product Architecture tab keeps the full card style. Checks: tests 28/28 with axe; lint, brand lint, build and budget green.
 
+**Landscape decluttered (2026-10-10, user approved the mockup).** Mockup images were captured with headless Chrome from a standalone page built on the real fixture, before any code change.
+- **Header:** one line, with the title and one sentence on the left. On the right: the view switch (Wheel, Layers, Matrix), a search with a magnifier, and a **Key** menu holding the legend and "Show every link". The estate bar and the always-on legend are gone.
+- **Map:** full width. The Domains navigator is removed; a system's details open in a **drawer** over the map's right side only while one is picked. The drawer closes with Close or Escape and holds the system's figures, linked systems as pills, product use and journeys.
+- **Chrome stripped:**
+  - **Layers:** icon and name only.
+  - **Groups:** quiet labels.
+  - **Systems:** plain white tiles with no border or edge. Hover shows a soft outline, selection is pale mist with a soft maroon outline, and partners get a light outline.
+- **Spacing:** names are larger (12.5px) and there is more space between bands.
+- **Fit:** 1440 × 900 without page scroll in every view, with or without the drawer.
+- **Design-checker "side-tab" findings, triaged:**
+  - Fixed: list and tile edge bars replaced by outlines, fills or a layer dot (footprint rows, core systems, linked groups, journey tiles, journey switcher, map-card tiers); superseded compact-card rules and dead navigator styles removed.
+  - False positives: the tree connectors now draw as 2px fills.
+  - Remaining match: the matrix column divider, a table separator.
+
+Checks: tests 28/28 with axe; lint, brand lint, build and budget green.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.

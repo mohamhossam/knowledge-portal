@@ -1,17 +1,17 @@
 /**
- * Mock-up 1, the Landscape hero: the SMB architecture in three views of the
- * same estate. Layers (the default) draws each TAM layer as a block with its
- * groups and system cards, hung from the integration bus; the TAM wheel puts
- * the domains round the integration layer with the calls bundled through it;
- * Matrix reads the links by row and column. The side panel is a domain navigator
- * at rest and the picked system's card when one is chosen. The page is about
- * the architecture only, so it holds for any product and any version: products,
- * their journeys and versions live on their own pages.
+ * Mock-up 1, the Landscape: the SMB architecture in three views of the same
+ * estate. Layers (the default) draws each TAM layer as a calm band of its
+ * groups and systems, hung from the integration bus; the TAM wheel puts the
+ * domains round the integration layer with the calls bundled through it;
+ * Matrix reads the links by row and column. The page is about the
+ * architecture only, so it holds for any product and version. It fits one
+ * screen: a one-line header with the controls and a Key, the map at full
+ * width, and a drawer over its right side only while a system is picked.
  */
-import { type FormEvent, type ReactNode, useCallback, useMemo, useState } from "react";
+import { type FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
-import { AreaTabs, EvidenceTag } from "./CatalogueLab";
+import { AreaTabs } from "./CatalogueLab";
 import { ArchitectureMap } from "./ArchitectureMap";
 import { IntegrationMatrix } from "./IntegrationMatrix";
 import { journeyHref, LAB, useLabData } from "./labData";
@@ -64,11 +64,15 @@ export function LandscapeHero() {
   const reach = useMemo(() => new Map(data.offerings.map((offering) => [offering.id, reachOf(data, offering.id)])), [data]);
   const systemById = useMemo(() => new Map(data.systems.map((system) => [system.id, system])), [data]);
   const layers = useMemo(() => data.domains.map((domain) => ({ domain, systems: data.systems.filter((system) => system.domain === domain.id) })).filter((item) => item.systems.length), [data]);
-  const ORDER = ["market-sales", "product", "customer", "integration", "service", "resource", "engaged-party", "enterprise"];
-  // The domains in the map's reading order; any other domain comes last.
-  const rank = (id: string) => (ORDER.includes(id) ? ORDER.indexOf(id) : ORDER.length);
-  const composition = [...layers].sort((a, b) => rank(a.domain.id) - rank(b.domain.id));
-  const groups = new Set(data.systems.map((system) => `${system.domain}/${system.group}`)).size;
+  // The Key opens as a small menu and closes on a click anywhere else.
+  const keyMenu = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const outside = (event: PointerEvent) => {
+      if (keyMenu.current?.open && !keyMenu.current.contains(event.target as Node)) keyMenu.current.open = false;
+    };
+    document.addEventListener("pointerdown", outside);
+    return () => document.removeEventListener("pointerdown", outside);
+  }, []);
 
   const setParam = useCallback(
     (key: string, value: string | null) => {
@@ -111,7 +115,6 @@ export function LandscapeHero() {
         })
         .filter((item) => item.count > 0)
     : [];
-  const sharedThrough = journeysThrough.filter((journey) => !journey.offeringId);
   const steps = system ? new Set(views.flatMap((item) => item.steps.filter((step) => step.kind === "task" && step.lane === system.id).map((step) => `${item.id}:${step.id}`))).size : 0;
   const domain = system ? data.domains.find((item) => item.id === system.domain) : null;
   const group = domain?.groups.find((item) => item.id === system?.group);
@@ -123,273 +126,190 @@ export function LandscapeHero() {
   return (
     <>
       <AreaTabs current="landscape" />
-      <section className="cl-hero cl-hero--landscape" aria-labelledby="cl-hero-h">
-        <div className="cl-hero-text">
+      <header className="lx-head">
+        <div className="lx-title">
           <p className="cl-eyebrow">TM Forum application map · SMB</p>
           <h1 id="cl-hero-h">SMB architecture</h1>
-          <p className="cl-hero-lede">Every SMB system by layer and functional group, joined by the integration layer that carries their calls.</p>
+          <p className="lx-lede">Every SMB system by layer and functional group, joined by the integration layer that carries their calls.</p>
         </div>
-        <div className="cl-hero-visual">
-          <p className="cl-estate-head">
-            <strong>{data.systems.length}</strong>
-            <span>
-              systems across {layers.length} domains, {groups} functional groups
-            </span>
-          </p>
-          <div className="cl-estate-bar" role="img" aria-label={`Systems by domain: ${composition.map((item) => `${item.domain.name} ${item.systems.length}`).join(", ")}`}>
-            {composition.map((item) => (
-              <span key={item.domain.id} className={`cl-estate-seg bar--${item.domain.id}`} style={{ flexGrow: item.systems.length }} title={`${item.domain.name}: ${plural(item.systems.length, "system")}`} />
-            ))}
+        <div className="lx-tools">
+          <div className="cl-seg" role="group" aria-label="View">
+            <button type="button" aria-pressed={view === "layers"} onClick={() => setParam("view", null)}>
+              <ViewIcon>{VIEW_ICONS.layers}</ViewIcon>
+              Layers
+            </button>
+            <button type="button" aria-pressed={view === "wheel"} onClick={() => setParam("view", "wheel")}>
+              <ViewIcon>{VIEW_ICONS.wheel}</ViewIcon>
+              Wheel
+            </button>
+            <button type="button" aria-pressed={view === "matrix"} onClick={() => setParam("view", "matrix")}>
+              <ViewIcon>{VIEW_ICONS.matrix}</ViewIcon>
+              Matrix
+            </button>
           </div>
-          <ul className="cl-estate-key" aria-hidden="true">
-            {composition.map((item) => (
-              <li key={item.domain.id} className={`bar--${item.domain.id}`}>
-                <i />
-                <span>{item.domain.name}</span>
-                <b>{item.systems.length}</b>
-              </li>
-            ))}
-          </ul>
+          <form className="cl-find lx-find" role="search" onSubmit={find}>
+            <ViewIcon>{VIEW_ICONS.search}</ViewIcon>
+            <label className="ds-visually-hidden" htmlFor="cl-find">
+              Find a system
+            </label>
+            <input
+              id="cl-find"
+              name="system"
+              type="search"
+              className="cl-field"
+              list="cl-systems"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="Find a system…"
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setNotFound(null);
+                const exact = data.systems.find((item) => item.name.toLowerCase() === event.target.value.trim().toLowerCase());
+                if (exact) select(exact.id);
+              }}
+            />
+            <datalist id="cl-systems">
+              {data.systems.map((item) => (
+                <option key={item.id} value={item.name} />
+              ))}
+            </datalist>
+            <button type="submit" className="ds-visually-hidden">
+              Find
+            </button>
+          </form>
+          <details ref={keyMenu} className="lx-key">
+            <summary className="cl-btn">Key</summary>
+            <div className="lx-key-panel" role="group" aria-label="Key">
+              <p>
+                <i className="ext" aria-hidden="true" />
+                External system
+              </p>
+              <p>
+                <i className="flag" aria-hidden="true" />
+                Placement proposed
+              </p>
+              <p>
+                <i className="sel" aria-hidden="true" />
+                Selected
+              </p>
+              <p>
+                <i className="lnk" aria-hidden="true" />
+                Linked to the selected system
+              </p>
+              {view === "layers" && (
+                <button type="button" className="cl-chip" aria-pressed={showLinks} onClick={() => setShowLinks((value) => !value)}>
+                  Show every link
+                </button>
+              )}
+            </div>
+          </details>
         </div>
-      </section>
-
-      <div className="cl-toolbar">
-        <div className="cl-seg" role="group" aria-label="View">
-          <button type="button" aria-pressed={view === "layers"} onClick={() => setParam("view", null)}>
-            <ViewIcon>{VIEW_ICONS.layers}</ViewIcon>
-            Layers
-          </button>
-          <button type="button" aria-pressed={view === "wheel"} onClick={() => setParam("view", "wheel")}>
-            <ViewIcon>{VIEW_ICONS.wheel}</ViewIcon>
-            Wheel
-          </button>
-          <button type="button" aria-pressed={view === "matrix"} onClick={() => setParam("view", "matrix")}>
-            <ViewIcon>{VIEW_ICONS.matrix}</ViewIcon>
-            Matrix
-          </button>
-        </div>
-        {view === "layers" && (
-          <button type="button" className="cl-chip" aria-pressed={showLinks} onClick={() => setShowLinks((value) => !value)}>
-            Show every link
-          </button>
-        )}
-        <form className="cl-find" role="search" onSubmit={find}>
-          <ViewIcon>{VIEW_ICONS.search}</ViewIcon>
-          <label className="ds-visually-hidden" htmlFor="cl-find">
-            Find a system
-          </label>
-          <input
-            id="cl-find"
-            name="system"
-            type="search"
-            className="cl-field"
-            list="cl-systems"
-            autoComplete="off"
-            spellCheck={false}
-            placeholder="Find a system, e.g. CWOM…"
-            value={query}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              setNotFound(null);
-              const exact = data.systems.find((item) => item.name.toLowerCase() === event.target.value.trim().toLowerCase());
-              if (exact) select(exact.id);
-            }}
-          />
-          <datalist id="cl-systems">
-            {data.systems.map((item) => (
-              <option key={item.id} value={item.name} />
-            ))}
-          </datalist>
-          <button type="submit" className="cl-btn">
-            Find
-          </button>
-        </form>
-        <p className="cl-status" role="status">
+        <p className="cl-status lx-status" role="status">
           {notFound ? `No system called “${notFound}”.` : ""}
         </p>
-        <div className="cl-legend" role="group" aria-label="Legend">
-          <small className="cl-legend-label">Key</small>
-          <span>
-            <i className="ext" />
-            External
-          </span>
-          <span>
-            <i className="flag" />
-            Placement proposed
-          </span>
-          <span>
-            <i className="sel" />
-            Selected
-          </span>
-          <span>
-            <i className="lnk" />
-            Linked
-          </span>
-        </div>
-      </div>
+      </header>
 
-      <div className="cl-board cl-board--landscape">
-        <div className="cl-board-main">
-          {view === "wheel" ? (
-            <TamWheel data={data} label="SMB architecture map" linkCounts={linkCounts} selected={selected} onSelect={select} focusDomain={focusLayer} onFocusDomain={setFocusLayer} />
-          ) : view === "layers" ? (
-            <ArchitectureMap data={data} label="SMB architecture layers" linkCounts={linkCounts} selected={selected} onSelect={select} showLinks={showLinks} focusLayer={focusLayer} compact />
-          ) : (
-            <IntegrationMatrix data={data} degrees={degrees} linkCounts={linkCounts} selected={selected} onSelect={select} />
-          )}
-        </div>
-        <aside className="cl-insp" aria-labelledby="cl-insp-h">
-          <p className="ds-visually-hidden" aria-live="polite">
-            {system ? `${system.name} selected: ${plural(partners.length, "linked system")}.` : ""}
-          </p>
-          {system ? (
-            <>
-              <div className="cl-insp-head">
-                <h2 id="cl-insp-h" translate="no">
-                  {system.name}
-                </h2>
-                <button type="button" className="cl-close" onClick={() => select(null)} aria-label={`Clear the selection of ${system.name}`}>
-                  Clear
-                </button>
+      <div className="lx-board">
+        <p className="ds-visually-hidden" aria-live="polite">
+          {system ? `${system.name} selected: ${plural(partners.length, "linked system")}.` : ""}
+        </p>
+        {view === "wheel" ? (
+          <TamWheel data={data} label="SMB architecture map" linkCounts={linkCounts} selected={selected} onSelect={select} focusDomain={focusLayer} onFocusDomain={setFocusLayer} />
+        ) : view === "layers" ? (
+          <ArchitectureMap data={data} label="SMB architecture layers" linkCounts={linkCounts} selected={selected} onSelect={select} showLinks={showLinks} focusLayer={focusLayer} compact />
+        ) : (
+          <IntegrationMatrix data={data} degrees={degrees} linkCounts={linkCounts} selected={selected} onSelect={select} />
+        )}
+        {system && (
+          <aside
+            className="lx-drawer"
+            aria-labelledby="cl-insp-h"
+            onKeyDown={(event) => {
+              if (event.key === "Escape") select(null);
+            }}
+          >
+            <div className="cl-insp-head">
+              <h2 id="cl-insp-h" translate="no">
+                {system.name}
+              </h2>
+              <button type="button" className="cl-close" onClick={() => select(null)} aria-label={`Close the details of ${system.name}`}>
+                Close
+              </button>
+            </div>
+            <p className="cl-sub">{[domain?.name, group?.name, system.owner, system.external ? "External" : ""].filter(Boolean).join(" · ")}</p>
+            <p className="cl-body">{system.function || "Its sources don't describe what it does."}</p>
+            {system.proposedMove && (
+              <p className="cl-note">
+                <strong>Placement proposed.</strong> Its source places it in {system.proposedMove.from}. {system.proposedMove.reason}
+              </p>
+            )}
+            <dl className="cl-stats cl-stats--3">
+              <div>
+                <dt>Linked</dt>
+                <dd>{partners.length}</dd>
               </div>
-              <p className="cl-sub">{[domain?.name, group?.name, system.owner, system.external ? "External" : ""].filter(Boolean).join(" · ")}</p>
-              <p className="cl-body">{system.function || "Its sources don't describe what it does."}</p>
-              <EvidenceTag evidence={system.evidence} />
-              {system.proposedMove && (
-                <p className="cl-note">
-                  <strong>Placement proposed.</strong> Its source places it in {system.proposedMove.from}. {system.proposedMove.reason}
+              <div>
+                <dt>Journeys</dt>
+                <dd>{journeysThrough.length}</dd>
+              </div>
+              <div>
+                <dt>Steps</dt>
+                <dd>{steps}</dd>
+              </div>
+            </dl>
+            {partnerLayers.length > 0 && (
+              <>
+                <h3>Linked systems</h3>
+                <p className="lx-pills">
+                  {partnerLayers.flatMap(({ items }) =>
+                    items.map((item) =>
+                      item ? (
+                        <button key={item.id} type="button" className="cl-pill" onClick={() => select(item.id)} translate="no">
+                          {item.name}
+                        </button>
+                      ) : null,
+                    ),
+                  )}
                 </p>
-              )}
-              <dl className="cl-stats cl-stats--3">
-                <div>
-                  <dt>Linked</dt>
-                  <dd>{partners.length}</dd>
-                </div>
-                <div>
-                  <dt>Journeys</dt>
-                  <dd>{journeysThrough.length}</dd>
-                </div>
-                <div>
-                  <dt>Steps</dt>
-                  <dd>{steps}</dd>
-                </div>
-              </dl>
-              {partnerLayers.length > 0 && (
-                <>
-                  <h3>Linked systems</h3>
-                  <ul className="cl-linked">
-                    {partnerLayers.map(({ layer, items }) => (
-                      <li key={layer.id} className={`cl-linked--${layer.id}`}>
-                        <span>{layer.name}</span>
-                        <div>
-                          {items.map((item) =>
-                            item ? (
-                              <button key={item.id} type="button" className="cl-pill" onClick={() => select(item.id)} translate="no">
-                                {item.name}
-                              </button>
-                            ) : null,
-                          )}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              )}
-              {productUse.length > 0 && (
-                <>
-                  <h3>Used by products</h3>
-                  <ul className="cl-uses">
-                    {productUse.map((item) => (
-                      <li key={item.offering.id}>
-                        <Link to={`${LAB}/products/${item.offering.id}/architecture?system=${system.id}`}>{item.offering.name}</Link>
-                        <span className={`cl-use-tier${item.core ? " is-core" : ""}`}>{item.core ? "Core" : "Used"}</span>
-                        <small>
-                          in {item.count} of {plural(item.total, "journey")}
-                        </small>
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              )}
-              {journeysThrough.length > 0 && (
-                <>
-                  <h3>Journeys through it</h3>
-                  <ul className="cl-linked">
-                    {productUse
-                      .filter((item) => item.journeys.length)
-                      .map((item) => (
-                        <li key={item.offering.id}>
-                          <span>{item.offering.name}</span>
-                          <div>
-                            {item.journeys.map((journey) => (
-                              <Link key={journey.id} className="cl-pill" to={journeyHref(journey.id, journey.channels[0])}>
-                                {journey.name}
-                              </Link>
-                            ))}
-                          </div>
-                        </li>
-                      ))}
-                    {sharedThrough.length > 0 && (
-                      <li>
-                        <span>Shared</span>
-                        <div>
-                          {sharedThrough.map((journey) => (
-                            <Link key={journey.id} className="cl-pill" to={journeyHref(journey.id, journey.channels[0])}>
-                              {journey.name}
-                            </Link>
-                          ))}
-                        </div>
-                      </li>
-                    )}
-                  </ul>
-                </>
-              )}
-              {system.roadmap && (
-                <>
-                  <h3>Roadmap</h3>
-                  <p className="cl-body">{system.roadmap}</p>
-                </>
-              )}
-            </>
-          ) : (
-            <>
-              <h2 id="cl-insp-h">Domains</h2>
-              <p className="cl-body">Point at a system to see its calls; pick it to keep them. Pick a domain to bring it forward.</p>
-              <ul className="cl-layers">
-                {layers.map(({ domain: layer, systems }) => (
-                  <li key={layer.id}>
-                    <button type="button" className={`cl-layer cl-layer--${layer.id}`} aria-pressed={focusLayer === layer.id} onClick={() => setFocusLayer((value) => (value === layer.id ? null : layer.id))}>
-                      <i aria-hidden="true" />
-                      <strong>{layer.name}</strong>
-                      <b>{systems.length}</b>
-                      <span>{layer.groups.filter((item) => systems.some((s) => s.group === item.id)).map((item) => item.name).join(" · ")}</span>
-                    </button>
-                    {focusLayer === layer.id && (
-                      <div className={`cl-domain-systems cl-linked--${layer.id}`}>
-                        {systems.map((item) => (
-                          <button key={item.id} type="button" className="cl-pill" onClick={() => select(item.id)} translate="no">
-                            {item.name}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-              <h3>Still open</h3>
-              <dl className="cl-pairs">
-                <div>
-                  <dt>Placements proposed</dt>
-                  <dd>{data.systems.filter((item) => item.proposedMove).length}</dd>
-                </div>
-                <div>
-                  <dt>Findings to decide</dt>
-                  <dd>{data.findings.length}</dd>
-                </div>
-              </dl>
-            </>
-          )}
-        </aside>
+              </>
+            )}
+            {productUse.length > 0 && (
+              <>
+                <h3>Used by products</h3>
+                <ul className="cl-uses">
+                  {productUse.map((item) => (
+                    <li key={item.offering.id}>
+                      <Link to={`${LAB}/products/${item.offering.id}/architecture?system=${system.id}`}>{item.offering.name}</Link>
+                      <span className={`cl-use-tier${item.core ? " is-core" : ""}`}>{item.core ? "Core" : "Used"}</span>
+                      <small>
+                        in {item.count} of {plural(item.total, "journey")}
+                      </small>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            {journeysThrough.length > 0 && (
+              <>
+                <h3>Journeys through it</h3>
+                <p className="lx-pills">
+                  {journeysThrough.map((journey) => (
+                    <Link key={journey.id} className="cl-pill" to={journeyHref(journey.id, journey.channels[0])}>
+                      {journey.name}
+                    </Link>
+                  ))}
+                </p>
+              </>
+            )}
+            {system.roadmap && (
+              <>
+                <h3>Roadmap</h3>
+                <p className="cl-body">{system.roadmap}</p>
+              </>
+            )}
+          </aside>
+        )}
       </div>
 
     </>
