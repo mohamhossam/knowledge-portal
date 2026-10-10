@@ -399,4 +399,9 @@ Checks: tests 25/25 with axe; lint, brand lint, build and budget green; no sidew
 
 Checks: tests 25/25 with axe; lint, brand lint, build and budget green; no sideways scroll at 375px.
 
+**Landscape kept generic (2026-10-10, user).** The landscape shows the architecture only, so it holds for any product and any version.
+- **Hero:** the draft and revision chip and the source chips are removed. The figures are now architecture-only: external systems, integration-layer systems and placements proposed.
+- **Catalogue bar:** the identity line under "SMB architecture" reads "Architecture catalogue" instead of "Draft · revision 2".
+- **Products section:** "Products on this architecture" is removed from the bottom of the landscape. Products are reached from the catalogue bar's Products tab, and versions belong on the Versions section and product pages.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.

@@ -111,7 +111,7 @@ export function AreaTabs({ current }: { current: "landscape" | "products" | "jou
         <span>
           <strong>SMB architecture</strong>
           <small>
-            {data.status === "draft" ? "Draft" : "Published"} · revision {data.revision}
+            Architecture catalogue
           </small>
         </span>
       </div>

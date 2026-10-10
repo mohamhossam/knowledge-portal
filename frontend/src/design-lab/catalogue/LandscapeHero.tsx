@@ -4,8 +4,9 @@
  * groups and system cards, hung from the integration bus; the TAM wheel puts
  * the domains round the integration layer with the calls bundled through it;
  * Matrix reads the links by row and column. The side panel is a domain navigator
- * at rest and the picked system's card when one is chosen. No product bar: a
- * product's footprint lives on its own Architecture tab.
+ * at rest and the picked system's card when one is chosen. The page is about
+ * the architecture only, so it holds for any product and any version: products,
+ * their journeys and versions live on their own pages.
  */
 import { type FormEvent, type ReactNode, useCallback, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -13,8 +14,8 @@ import { Link, useSearchParams } from "react-router-dom";
 import { AreaTabs, EvidenceTag } from "./CatalogueLab";
 import { ArchitectureMap } from "./ArchitectureMap";
 import { IntegrationMatrix } from "./IntegrationMatrix";
-import { journeyHref, LAB, useLabData } from "./labData";
-import { firstSentence, plural, useTitle } from "./labUtil";
+import { journeyHref, useLabData } from "./labData";
+import { plural, useTitle } from "./labUtil";
 import { allIntegrations, allViews, degrees as degreesOf, links, partnersOf } from "./posterModel";
 import { TamWheel } from "./TamWheel";
 
@@ -115,17 +116,6 @@ export function LandscapeHero() {
           <p className="cl-eyebrow">TM Forum application map · SMB</p>
           <h1 id="cl-hero-h">SMB architecture</h1>
           <p className="cl-hero-lede">Every SMB system by layer and functional group, joined by the integration layer that carries their calls.</p>
-          <ul className="cl-hero-facts" aria-label="About this catalogue">
-            <li className={`cl-status cl-status--${data.status}`}>
-              <i aria-hidden="true" />
-              {data.status === "draft" ? "Draft" : "Published"} · revision {data.revision}
-            </li>
-            {data.sources.map((source) => (
-              <li key={source.id} className="cl-source" title={source.title}>
-                {source.short}
-              </li>
-            ))}
-          </ul>
         </div>
         <div className="cl-hero-visual">
           <p className="cl-estate-head">
@@ -154,16 +144,12 @@ export function LandscapeHero() {
               <dd>{data.systems.filter((item) => item.external).length}</dd>
             </div>
             <div>
-              <dt>Journeys</dt>
-              <dd>{data.journeys.length}</dd>
+              <dt>Integration layer</dt>
+              <dd>{data.systems.filter((item) => item.domain === "integration").length}</dd>
             </div>
             <div>
-              <dt>Products</dt>
-              <dd>{data.offerings.length}</dd>
-            </div>
-            <div>
-              <dt>Findings open</dt>
-              <dd>{data.findings.length}</dd>
+              <dt>Placements proposed</dt>
+              <dd>{data.systems.filter((item) => item.proposedMove).length}</dd>
             </div>
           </dl>
         </div>
@@ -372,36 +358,6 @@ export function LandscapeHero() {
         </aside>
       </div>
 
-      <section className="cl-products" aria-labelledby="cl-products-h">
-        <h2 id="cl-products-h">Products on this architecture</h2>
-        <ul>
-          {data.offerings.map((offering) => {
-            const touched = new Set(
-              views
-                .filter((item) => item.offeringId === offering.id)
-                .flatMap((item) => [...item.steps.map((step) => step.lane), ...item.integrations.flatMap((call) => [call.from, call.to, call.via])])
-                .filter((id): id is string => typeof id === "string" && systemById.has(id)),
-            );
-            return (
-              <li key={offering.id}>
-                <Link className="cl-prod" to={`${LAB}/products/${offering.id}/architecture`}>
-                  <strong>{offering.name}</strong>
-                  <span>{firstSentence(offering.summary)}</span>
-                  <small>
-                    Reaches {touched.size} of {data.systems.length} systems · {plural(data.journeys.filter((journey) => journey.offeringId === offering.id).length, "journey")} · see its footprint
-                  </small>
-                </Link>
-              </li>
-            );
-          })}
-          <li>
-            <div className="cl-prod empty">
-              <strong>Next product</strong>
-              <span>Not modelled yet. The model is generic: any product's offering, plans and journeys fit.</span>
-            </div>
-          </li>
-        </ul>
-      </section>
     </>
   );
 }
