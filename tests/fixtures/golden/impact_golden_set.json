@@ -1,0 +1,1075 @@
+{
+  "version": 1,
+  "catalogue": "catalogues/smb-architecture.yaml",
+  "catalogue_version": "smb-architecture-business-pro-plus",
+  "labelled_on": "2026-10-10",
+  "provenance": "Seed set written from the SMB catalogue (SDD v2.3 and SMB reference v1.0), not yet from historic requirements. Each case names the systems a reviewer would expect to change, not every system its journey passes through.",
+  "verdicts": [
+    "change_existing_offering",
+    "new_plan",
+    "new_offering_in_family",
+    "new_product_line"
+  ],
+  "concepts": [
+    {
+      "id": "cap-assisted-order-capture",
+      "label": "Assisted order capture"
+    },
+    {
+      "id": "cap-self-service-order-capture",
+      "label": "Self-service order capture"
+    },
+    {
+      "id": "cap-sales-quoting",
+      "label": "Sales opportunities, quotes and discount approval"
+    },
+    {
+      "id": "cap-offer-recommendation",
+      "label": "Offer and discount recommendation"
+    },
+    {
+      "id": "cap-product-design",
+      "label": "Product design and bundle configuration"
+    },
+    {
+      "id": "cap-product-catalogue",
+      "label": "Product catalogue, eligibility and pricing"
+    },
+    {
+      "id": "cap-order-orchestration",
+      "label": "Customer order orchestration and validation"
+    },
+    {
+      "id": "cap-fixed-order-management",
+      "label": "Fixed service order management"
+    },
+    {
+      "id": "cap-cpe-provisioning",
+      "label": "Managed CPE and security service provisioning"
+    },
+    {
+      "id": "cap-sdwan",
+      "label": "SD-WAN service"
+    },
+    {
+      "id": "cap-firewall",
+      "label": "Managed firewall"
+    },
+    {
+      "id": "cap-wifi-access",
+      "label": "Managed Wi-Fi access points"
+    },
+    {
+      "id": "cap-static-ip",
+      "label": "Static IP addressing"
+    },
+    {
+      "id": "cap-proactive-monitoring",
+      "label": "Proactive service monitoring"
+    },
+    {
+      "id": "cap-customer-self-management",
+      "label": "Customer self-management portal"
+    },
+    {
+      "id": "cap-mobile-backup-access",
+      "label": "Mobile backup access"
+    },
+    {
+      "id": "cap-mobile-network-activation",
+      "label": "Mobile network and SIM activation"
+    },
+    {
+      "id": "cap-field-installation",
+      "label": "Field installation and technician work"
+    },
+    {
+      "id": "cap-network-feasibility",
+      "label": "Network feasibility and availability"
+    },
+    {
+      "id": "cap-number-portability",
+      "label": "Number portability"
+    },
+    {
+      "id": "cap-identity-verification",
+      "label": "Customer identity and trade-licence verification"
+    },
+    {
+      "id": "cap-customer-notification",
+      "label": "Customer notification"
+    },
+    {
+      "id": "cap-order-tracking",
+      "label": "Order tracking and milestones"
+    },
+    {
+      "id": "cap-complaint-management",
+      "label": "Complaint management"
+    },
+    {
+      "id": "cap-trouble-ticketing",
+      "label": "Trouble ticketing and assurance"
+    },
+    {
+      "id": "cap-billing",
+      "label": "Billing and charging"
+    },
+    {
+      "id": "cap-collections",
+      "label": "Dunning and collections"
+    },
+    {
+      "id": "cap-saas-activation",
+      "label": "SaaS licence activation"
+    },
+    {
+      "id": "cap-device-logistics",
+      "label": "Device and SIM inventory and logistics"
+    },
+    {
+      "id": "cap-customer-data",
+      "label": "Customer, account and product inventory data"
+    },
+    {
+      "id": "cap-contract-lifecycle",
+      "label": "Contract renewal and lifecycle events"
+    },
+    {
+      "id": "cap-document-management",
+      "label": "Customer document management"
+    },
+    {
+      "id": "cap-iot-connectivity-management",
+      "label": "IoT device and connectivity management"
+    },
+    {
+      "id": "cap-vehicle-telematics",
+      "label": "Vehicle tracking and telematics"
+    },
+    {
+      "id": "cap-video-surveillance",
+      "label": "Cloud video surveillance"
+    },
+    {
+      "id": "cap-payment-acceptance",
+      "label": "Card payment acceptance"
+    },
+    {
+      "id": "cap-learning-content",
+      "label": "Training content delivery"
+    }
+  ],
+  "cases": [
+    {
+      "id": "G001",
+      "text": "Let Business Pro Plus customers add a second FortiAP as an add-on from B2B Web, so larger offices get Wi-Fi coverage in every room.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "b2b-web",
+        "rtf",
+        "cwom",
+        "ecm",
+        "wfms"
+      ],
+      "concepts": [
+        "cap-self-service-order-capture",
+        "cap-wifi-access",
+        "cap-field-installation"
+      ],
+      "missing_facets": [],
+      "note": "Add / delete add-on on the existing access-point component."
+    },
+    {
+      "id": "G002",
+      "text": "Existing Business Pro Plus customers should be able to add Backup 5G to their line from the SMB App without calling the contact centre.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "smb-app",
+        "rtf",
+        "cwom",
+        "veda",
+        "in"
+      ],
+      "concepts": [
+        "cap-self-service-order-capture",
+        "cap-mobile-backup-access",
+        "cap-mobile-network-activation"
+      ],
+      "missing_facets": [],
+      "note": "Backup 5G is an optional component already."
+    },
+    {
+      "id": "G003",
+      "text": "When a Business Pro Plus account is suspended for non-payment, throttle Backup 5G to 2 Mbps instead of 5 Mbps.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "in",
+        "veda",
+        "cwom"
+      ],
+      "concepts": [
+        "cap-collections",
+        "cap-mobile-backup-access"
+      ],
+      "missing_facets": [],
+      "note": "Changes business rule R9."
+    },
+    {
+      "id": "G004",
+      "text": "Customers who ordered Business Pro Plus online want to follow every order milestone, including the technician visit, inside the SMB App.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "smb-app",
+        "ibm-bpm",
+        "tibco",
+        "felix"
+      ],
+      "concepts": [
+        "cap-order-tracking"
+      ],
+      "missing_facets": []
+    },
+    {
+      "id": "G005",
+      "text": "Allow customers to amend a pending Business Pro Plus order from the SMB App before the point of no return.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "smb-app",
+        "rtf",
+        "cwom",
+        "cbcm"
+      ],
+      "concepts": [
+        "cap-self-service-order-capture",
+        "cap-order-orchestration"
+      ],
+      "missing_facets": [],
+      "note": "Changes business rule R8."
+    },
+    {
+      "id": "G006",
+      "text": "Send the customer an SMS and an email the day before the technician comes to install the router and the access point.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "cns",
+        "wfms",
+        "cwom"
+      ],
+      "concepts": [
+        "cap-customer-notification",
+        "cap-field-installation"
+      ],
+      "missing_facets": [],
+      "note": "Router and access point are Business Pro Plus components; offering named only by its parts."
+    },
+    {
+      "id": "G007",
+      "text": "Customers must be able to reset their FortiPortal password themselves from the B2B portal.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "b2b-web",
+        "fortinet",
+        "e2eso"
+      ],
+      "concepts": [
+        "cap-customer-self-management"
+      ],
+      "missing_facets": []
+    },
+    {
+      "id": "G008",
+      "text": "Waive the one-time device charge when a faulty Fortinet 90G or 120G is replaced within the first 30 days.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "bscs",
+        "cwom",
+        "ecm"
+      ],
+      "concepts": [
+        "cap-billing"
+      ],
+      "missing_facets": [],
+      "note": "Changes business rule R14."
+    },
+    {
+      "id": "G009",
+      "text": "Offer external shift of site for Business Pro Plus to addresses outside the Etisalat fibre area using bitstream access.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "gis",
+        "rtf",
+        "cwom",
+        "wfms"
+      ],
+      "concepts": [
+        "cap-network-feasibility",
+        "cap-fixed-order-management",
+        "cap-field-installation"
+      ],
+      "missing_facets": [],
+      "note": "Out of scope in SDD v2.3; extends the existing offering."
+    },
+    {
+      "id": "G010",
+      "text": "Accept an upgrade request while an add-on sub-order is still open, instead of rejecting it at pending-order validation.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "cbcm",
+        "rtf"
+      ],
+      "concepts": [
+        "cap-order-orchestration"
+      ],
+      "missing_facets": [],
+      "note": "Changes business rule R6."
+    },
+    {
+      "id": "G011",
+      "text": "For the 800 Mbps tier, the catalogue should suggest the Fortinet 120G instead of the 90G.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "ecm",
+        "cwom"
+      ],
+      "concepts": [
+        "cap-product-catalogue",
+        "cap-cpe-provisioning"
+      ],
+      "missing_facets": [],
+      "note": "Changes business rule R3."
+    },
+    {
+      "id": "G012",
+      "text": "Sales agents in BCRM must be able to port the customer's existing fixed numbers in during a Business Pro Plus new activation.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "bcrm",
+        "nps",
+        "rtf",
+        "cwom"
+      ],
+      "concepts": [
+        "cap-assisted-order-capture",
+        "cap-number-portability"
+      ],
+      "missing_facets": []
+    },
+    {
+      "id": "G013",
+      "text": "Let customers change their internet username from B2B Web instead of raising a request with an agent.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "b2b-web",
+        "rtf",
+        "cwom",
+        "cbcm"
+      ],
+      "concepts": [
+        "cap-self-service-order-capture",
+        "cap-customer-data"
+      ],
+      "missing_facets": [],
+      "note": "Existing CHINTUSRN order type."
+    },
+    {
+      "id": "G014",
+      "text": "At the end of the contract, recommend a renewal discount to the sales agent instead of moving the account straight to the non-commitment package.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "ehs",
+        "sonic",
+        "bcrm"
+      ],
+      "concepts": [
+        "cap-contract-lifecycle",
+        "cap-offer-recommendation"
+      ],
+      "missing_facets": [],
+      "note": "Changes business rule R16."
+    },
+    {
+      "id": "G015",
+      "text": "Email the customer when proactive monitoring detects that their Business Pro Plus CPE has gone offline.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "e2eso",
+        "fortinet",
+        "cns"
+      ],
+      "concepts": [
+        "cap-proactive-monitoring",
+        "cap-customer-notification"
+      ],
+      "missing_facets": []
+    },
+    {
+      "id": "G016",
+      "text": "Allow a block of eight static IP addresses as a paid add-on on Business Pro Plus.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "rtf",
+        "cwom",
+        "cbcm",
+        "bscs"
+      ],
+      "concepts": [
+        "cap-static-ip",
+        "cap-billing"
+      ],
+      "missing_facets": []
+    },
+    {
+      "id": "G017",
+      "text": "Business Edge customers should be able to migrate to Business Pro Plus from B2B Web as well.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "b2b-web",
+        "rtf",
+        "cwom",
+        "cbcm"
+      ],
+      "concepts": [
+        "cap-self-service-order-capture",
+        "cap-order-orchestration"
+      ],
+      "missing_facets": [],
+      "note": "Migration today runs through BCRM or the SMB App."
+    },
+    {
+      "id": "G018",
+      "text": "When the last Business Pro Plus site is ceased, keep a copy of the customer's FortiPortal configuration in the document store for a year.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "e2eso",
+        "fortinet",
+        "edms",
+        "cwom"
+      ],
+      "concepts": [
+        "cap-customer-self-management",
+        "cap-document-management"
+      ],
+      "missing_facets": []
+    },
+    {
+      "id": "G019",
+      "text": "Small businesses buying Business Pro Plus online can add Microsoft 365 licences in the same order.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "b2b-web",
+        "rtf",
+        "cwom",
+        "xaas",
+        "bscs"
+      ],
+      "concepts": [
+        "cap-self-service-order-capture",
+        "cap-saas-activation",
+        "cap-billing"
+      ],
+      "missing_facets": [],
+      "note": "From tests/fixtures/requirement_ai_backlog_export.json (REQ-2026-0412)."
+    },
+    {
+      "id": "G020",
+      "text": "The technician should scan the CPE and access point serial numbers with the phone camera instead of typing them during installation.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "wfms",
+        "cwom"
+      ],
+      "concepts": [
+        "cap-field-installation"
+      ],
+      "missing_facets": []
+    },
+    {
+      "id": "G021",
+      "text": "After the customer pays an overdue Business Pro Plus bill, restore full Backup 5G speed within five minutes.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "in",
+        "veda",
+        "cwom"
+      ],
+      "concepts": [
+        "cap-collections",
+        "cap-mobile-backup-access"
+      ],
+      "missing_facets": []
+    },
+    {
+      "id": "G022",
+      "text": "Contact-centre agents need to see where a Business Pro Plus order is stuck when the customer calls.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "cim",
+        "ibm-bpm",
+        "tibco"
+      ],
+      "concepts": [
+        "cap-order-tracking",
+        "cap-assisted-order-capture"
+      ],
+      "missing_facets": []
+    },
+    {
+      "id": "G023",
+      "text": "Check fibre availability for the customer's address on B2B Web before they can choose a Business Pro Plus speed.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "gis",
+        "b2b-web",
+        "bff",
+        "tibco"
+      ],
+      "concepts": [
+        "cap-network-feasibility",
+        "cap-self-service-order-capture"
+      ],
+      "missing_facets": []
+    },
+    {
+      "id": "G024",
+      "text": "Read and validate the trade licence automatically when a business buys Business Pro Plus online.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "gov",
+        "ocr",
+        "tibco",
+        "b2b-web"
+      ],
+      "concepts": [
+        "cap-identity-verification"
+      ],
+      "missing_facets": []
+    },
+    {
+      "id": "G025",
+      "text": "A complaint about a Business Pro Plus router raised in Netcracker CPM should open an engineering ticket automatically.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "nc-cpm",
+        "remedy"
+      ],
+      "concepts": [
+        "cap-complaint-management",
+        "cap-trouble-ticketing"
+      ],
+      "missing_facets": []
+    },
+    {
+      "id": "G026",
+      "text": "Discounts above 20 percent on Business Pro Plus quotes need a second approver in the new CSRD screens.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "nc-csrd",
+        "bcrm"
+      ],
+      "concepts": [
+        "cap-sales-quoting"
+      ],
+      "missing_facets": []
+    },
+    {
+      "id": "G027",
+      "text": "Customers should be able to book a technician visit for their Business Pro Plus line from the SMB App.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "smb-app",
+        "rtf",
+        "cwom",
+        "wfms"
+      ],
+      "concepts": [
+        "cap-self-service-order-capture",
+        "cap-field-installation"
+      ],
+      "missing_facets": [],
+      "note": "Existing TECHVISIT order type."
+    },
+    {
+      "id": "G028",
+      "text": "Ship the replacement CPE to the customer by courier when a faulty device is replaced, and track the shipment.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "itsm",
+        "cwom",
+        "inv-6d"
+      ],
+      "concepts": [
+        "cap-device-logistics"
+      ],
+      "missing_facets": [],
+      "note": "Faulty device replacement on Business Pro Plus, named by its order type only."
+    },
+    {
+      "id": "G029",
+      "text": "Launch a 2 Gbps Business Pro Plus speed tier for offices with heavy cloud use.",
+      "verdict": "new_plan",
+      "offering": "business-pro-plus",
+      "systems": [
+        "caf",
+        "ecm",
+        "psm",
+        "bcc",
+        "in",
+        "bscs"
+      ],
+      "concepts": [
+        "cap-product-design",
+        "cap-product-catalogue",
+        "cap-mobile-backup-access"
+      ],
+      "missing_facets": [],
+      "note": "A new characteristic value; may need a new CPE model."
+    },
+    {
+      "id": "G030",
+      "text": "Introduce an entry Business Pro Plus plan at 100 Mbps for very small shops.",
+      "verdict": "new_plan",
+      "offering": "business-pro-plus",
+      "systems": [
+        "caf",
+        "ecm",
+        "psm",
+        "bcc",
+        "in"
+      ],
+      "concepts": [
+        "cap-product-design",
+        "cap-product-catalogue"
+      ],
+      "missing_facets": []
+    },
+    {
+      "id": "G031",
+      "text": "Offer a three-year commitment on the Business Pro Plus CPE rate plan with a lower monthly fee.",
+      "verdict": "new_plan",
+      "offering": "business-pro-plus",
+      "systems": [
+        "caf",
+        "psm",
+        "bscs",
+        "bcc"
+      ],
+      "concepts": [
+        "cap-product-design",
+        "cap-billing"
+      ],
+      "missing_facets": [],
+      "note": "Commitment today: none, 1 year or 2 years."
+    },
+    {
+      "id": "G032",
+      "text": "Add a 500 Mbps Business Pro Plus plan with symmetric upload and download.",
+      "verdict": "new_plan",
+      "offering": "business-pro-plus",
+      "systems": [
+        "caf",
+        "ecm",
+        "psm",
+        "bcc",
+        "in"
+      ],
+      "concepts": [
+        "cap-product-design",
+        "cap-product-catalogue"
+      ],
+      "missing_facets": [],
+      "note": "Conflicts with business rule R2 (1:2 ratio)."
+    },
+    {
+      "id": "G033",
+      "text": "Create a discounted price tier of the 300 Mbps Business Pro Plus plan for free-zone companies.",
+      "verdict": "new_plan",
+      "offering": "business-pro-plus",
+      "systems": [
+        "psm",
+        "bcc",
+        "caf",
+        "bscs"
+      ],
+      "concepts": [
+        "cap-product-catalogue",
+        "cap-billing"
+      ],
+      "missing_facets": []
+    },
+    {
+      "id": "G034",
+      "text": "Offer the 900/450 Speed Booster profile on the Fortinet 90G now that the lab test has passed.",
+      "verdict": "new_plan",
+      "offering": "business-pro-plus",
+      "systems": [
+        "ecm",
+        "caf",
+        "psm"
+      ],
+      "concepts": [
+        "cap-product-design",
+        "cap-product-catalogue"
+      ],
+      "missing_facets": [],
+      "note": "Lifts business rule R11."
+    },
+    {
+      "id": "G035",
+      "text": "A Business Pro Plus variant that includes Backup 5G free for the first year.",
+      "verdict": "new_plan",
+      "offering": "business-pro-plus",
+      "systems": [
+        "caf",
+        "psm",
+        "in",
+        "bscs"
+      ],
+      "concepts": [
+        "cap-product-design",
+        "cap-mobile-backup-access",
+        "cap-billing"
+      ],
+      "missing_facets": []
+    },
+    {
+      "id": "G036",
+      "text": "Create a lighter business internet bundle for micro businesses: fibre and a managed access point, without SD-WAN or the firewall.",
+      "verdict": "new_offering_in_family",
+      "offering": null,
+      "systems": [
+        "caf",
+        "ecm",
+        "psm",
+        "bcc",
+        "cwom",
+        "e2eso"
+      ],
+      "concepts": [
+        "cap-product-design",
+        "cap-wifi-access",
+        "cap-fixed-order-management"
+      ],
+      "missing_facets": [],
+      "note": "Business Pro Plus makes SD-WAN and the firewall mandatory (R1), so this is a sibling offering."
+    },
+    {
+      "id": "G037",
+      "text": "Sell a business internet bundle with firewall and FortiPortal to home-based businesses registered at a residential address.",
+      "verdict": "new_offering_in_family",
+      "offering": null,
+      "systems": [
+        "caf",
+        "psm",
+        "bcc",
+        "ecm",
+        "cwom",
+        "gis"
+      ],
+      "concepts": [
+        "cap-product-design",
+        "cap-firewall",
+        "cap-customer-self-management"
+      ],
+      "missing_facets": [],
+      "note": "The segment differs from SMB."
+    },
+    {
+      "id": "G038",
+      "text": "A managed Wi-Fi bundle: several FortiAPs installed and monitored on the customer's existing internet line.",
+      "verdict": "new_offering_in_family",
+      "offering": null,
+      "systems": [
+        "caf",
+        "ecm",
+        "cwom",
+        "wfms",
+        "e2eso"
+      ],
+      "concepts": [
+        "cap-wifi-access",
+        "cap-proactive-monitoring",
+        "cap-field-installation"
+      ],
+      "missing_facets": [],
+      "note": "Capabilities exist; no offering composes them without internet."
+    },
+    {
+      "id": "G039",
+      "text": "One business internet order for a head office and its branches, with a shared SD-WAN overlay across all sites.",
+      "verdict": "new_offering_in_family",
+      "offering": null,
+      "systems": [
+        "caf",
+        "bcrm",
+        "rtf",
+        "cwom",
+        "e2eso",
+        "fortinet"
+      ],
+      "concepts": [
+        "cap-product-design",
+        "cap-sdwan",
+        "cap-assisted-order-capture"
+      ],
+      "missing_facets": []
+    },
+    {
+      "id": "G040",
+      "text": "Business internet over 5G fixed wireless for sites where fibre is not available, with the same managed router and firewall.",
+      "verdict": "new_offering_in_family",
+      "offering": null,
+      "systems": [
+        "gis",
+        "caf",
+        "veda",
+        "in",
+        "inv-6d",
+        "cwom"
+      ],
+      "concepts": [
+        "cap-network-feasibility",
+        "cap-mobile-network-activation",
+        "cap-cpe-provisioning"
+      ],
+      "missing_facets": []
+    },
+    {
+      "id": "G041",
+      "text": "A security-only bundle: a managed firewall and FortiPortal on top of the customer's existing internet from any provider.",
+      "verdict": "new_offering_in_family",
+      "offering": null,
+      "systems": [
+        "caf",
+        "e2eso",
+        "fortinet",
+        "cwom",
+        "ecm"
+      ],
+      "concepts": [
+        "cap-firewall",
+        "cap-customer-self-management",
+        "cap-cpe-provisioning"
+      ],
+      "missing_facets": []
+    },
+    {
+      "id": "G042",
+      "text": "A business internet bundle that includes Microsoft 365 Business Standard by default, for new companies.",
+      "verdict": "new_offering_in_family",
+      "offering": null,
+      "systems": [
+        "caf",
+        "xaas",
+        "psm",
+        "bcc",
+        "cwom"
+      ],
+      "concepts": [
+        "cap-product-design",
+        "cap-saas-activation"
+      ],
+      "missing_facets": []
+    },
+    {
+      "id": "G043",
+      "text": "Offer SMB delivery companies GPS tracking for their vans with a web dashboard and monthly reports.",
+      "verdict": "new_product_line",
+      "offering": null,
+      "systems": [
+        "caf",
+        "inv-6d",
+        "veda",
+        "bscs"
+      ],
+      "concepts": [
+        "cap-iot-connectivity-management",
+        "cap-vehicle-telematics",
+        "cap-mobile-network-activation"
+      ],
+      "missing_facets": [],
+      "note": "Telematics is not realised by any system."
+    },
+    {
+      "id": "G044",
+      "text": "Cloud video surveillance for shops: cameras installed on site and recordings stored in the cloud for 30 days.",
+      "verdict": "new_product_line",
+      "offering": null,
+      "systems": [
+        "caf",
+        "xaas",
+        "wfms",
+        "bscs"
+      ],
+      "concepts": [
+        "cap-video-surveillance",
+        "cap-field-installation"
+      ],
+      "missing_facets": []
+    },
+    {
+      "id": "G045",
+      "text": "Lease card payment terminals to SMB retailers with a monthly fee and next-day settlement.",
+      "verdict": "new_product_line",
+      "offering": null,
+      "systems": [
+        "caf",
+        "inv-6d",
+        "wfms",
+        "bscs"
+      ],
+      "concepts": [
+        "cap-payment-acceptance",
+        "cap-device-logistics"
+      ],
+      "missing_facets": []
+    },
+    {
+      "id": "G046",
+      "text": "A cyber-security awareness training subscription for employees of small businesses.",
+      "verdict": "new_product_line",
+      "offering": null,
+      "systems": [
+        "caf",
+        "xaas",
+        "bscs"
+      ],
+      "concepts": [
+        "cap-learning-content",
+        "cap-saas-activation"
+      ],
+      "missing_facets": [],
+      "note": "A new family; no business internet bundle involved."
+    },
+    {
+      "id": "G047",
+      "text": "Postpaid mobile lines for SMB employees with a shared data pool managed by the business owner.",
+      "verdict": "new_product_line",
+      "offering": null,
+      "systems": [
+        "rtf",
+        "rtf-catalog",
+        "veda",
+        "in",
+        "inv-6d",
+        "bscs"
+      ],
+      "concepts": [
+        "cap-mobile-network-activation",
+        "cap-device-logistics",
+        "cap-billing"
+      ],
+      "missing_facets": [],
+      "note": "Mobile, not the Fixed line of business."
+    },
+    {
+      "id": "G048",
+      "text": "Add a new device.",
+      "verdict": null,
+      "offering": null,
+      "systems": [],
+      "concepts": [],
+      "missing_facets": [
+        "offering",
+        "device",
+        "order type"
+      ],
+      "note": "Too vague to decide; expects questions, not a verdict."
+    },
+    {
+      "id": "G049",
+      "text": "Customers want faster internet.",
+      "verdict": null,
+      "offering": null,
+      "systems": [],
+      "concepts": [],
+      "missing_facets": [
+        "offering",
+        "plan"
+      ],
+      "note": "Too vague to decide; expects questions, not a verdict."
+    },
+    {
+      "id": "G050",
+      "text": "Improve the onboarding experience for business customers.",
+      "verdict": null,
+      "offering": null,
+      "systems": [],
+      "concepts": [],
+      "missing_facets": [
+        "offering",
+        "channel",
+        "journey step"
+      ],
+      "note": "Too vague to decide; expects questions, not a verdict."
+    },
+    {
+      "id": "G051",
+      "text": "Support a new add-on for SMB customers.",
+      "verdict": null,
+      "offering": null,
+      "systems": [],
+      "concepts": [],
+      "missing_facets": [
+        "offering",
+        "add-on"
+      ],
+      "note": "Too vague to decide; expects questions, not a verdict."
+    },
+    {
+      "id": "G052",
+      "text": "Change the price.",
+      "verdict": null,
+      "offering": null,
+      "systems": [],
+      "concepts": [],
+      "missing_facets": [
+        "offering",
+        "plan",
+        "price"
+      ],
+      "note": "Too vague to decide; expects questions, not a verdict."
+    },
+    {
+      "id": "G053",
+      "text": "Integrate with the new partner platform.",
+      "verdict": null,
+      "offering": null,
+      "systems": [],
+      "concepts": [],
+      "missing_facets": [
+        "partner",
+        "capability"
+      ],
+      "note": "Too vague to decide; expects questions, not a verdict."
+    }
+  ]
+}
