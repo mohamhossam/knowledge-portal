@@ -32,6 +32,11 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
     await userEvent.click(within(layers).getByRole("button", { name: /^CWOM:/ }));
     expect(screen.getByRole("heading", { level: 2, name: "CWOM" })).toBeInTheDocument();
     expect(within(layers).getByRole("button", { name: /^CWOM:/ })).toHaveAttribute("aria-pressed", "true");
+    // The header's layer strip shows one layer at a time.
+    const strip = screen.getByRole("group", { name: "Layers" });
+    await userEvent.click(within(strip).getByRole("button", { name: "Customer" }));
+    expect(within(strip).getByRole("button", { name: "Customer" })).toHaveAttribute("aria-pressed", "true");
+    expect(within(strip).getByRole("button", { name: "All layers" })).toHaveAttribute("aria-pressed", "false");
     expect(await axe(container)).toHaveNoViolations();
   });
 

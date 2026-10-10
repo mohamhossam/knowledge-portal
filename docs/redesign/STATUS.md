@@ -508,4 +508,14 @@ Checks: tests 28/28 with axe; lint, brand lint, build and budget green.
 - **Code:** the search and drawer are shared in `SystemTools.tsx`, and the picked-system and link hooks in `systemHooks.ts`.
 - **Fit:** no page scroll at 1280×720, 1366×768, 1536×730 and 1920×950, on either page, with and without the drawer.
 
+**Landscape header band with a layer strip (2026-10-10).** The user approved mockup A, then asked for two changes, listed under Map changes.
+- **Header:**
+  - The header is now a soft beige band, as wide as the tab bar above it.
+  - The first line holds the layers mark, the title, a one-line subtitle, the search and the Key.
+  - The second line is a strip of the layers in their own colours. Clicking a layer shows only that layer (`?layer=`); the others go quiet, with names kept at AA contrast. The strip also serves as the colour legend.
+- **Map changes:**
+  - The integration layer no longer has a line drawn through its platforms.
+  - Engaged Party is now a soft sage (`#edf1e9`) and Enterprise a soft mist blue (`#eaeff3`), in place of the two greys.
+- **Fit:** on short screens the smallest tile height drops from 28px to 26px. No page scroll at 1280×720, 1366×768, 1536×730, 1440×900, 1920×950 and 1920×1080, at rest, with a system picked and with one layer shown.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.

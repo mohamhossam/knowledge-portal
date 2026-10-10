@@ -56,14 +56,14 @@
   --cl-resource-ink: #57482a;
   --cl-resource-edge: #c9b98f;
   --cl-resource-lane: #f4efe2;
-  --cl-party: #f3f0eb;
-  --cl-party-ink: #4f4741;
-  --cl-party-edge: #b8ae9f;
-  --cl-party-lane: #f3f0eb;
-  --cl-enterprise: #efefee;
-  --cl-enterprise-ink: #464547;
-  --cl-enterprise-edge: #a9a8ab;
-  --cl-enterprise-lane: #efefee;
+  --cl-party: #edf1e9;
+  --cl-party-ink: #3d4a37;
+  --cl-party-edge: #a6b59c;
+  --cl-party-lane: #edf1e9;
+  --cl-enterprise: #eaeff3;
+  --cl-enterprise-ink: #34434f;
+  --cl-enterprise-edge: #9fb0bf;
+  --cl-enterprise-lane: #eaeff3;
   --cl-spine: #f4eaec;
   --cl-spine-ink: #4b0f1e;
   --cl-spine-edge: #4b0f1e;
@@ -1356,4 +1356,42 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 @media (min-width: 1101px) and (min-height: 600px) {
   .lx-board > .cl-matrix-wrap { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
   .lx-board > .cl-matrix-wrap > .cl-matrix-scroll { flex: 1 1 0; min-height: 240px; max-height: none; }
+}
+/* The landscape header: a soft band under the tab bar, as wide as it. First the title, a one-line subtitle and the tools; then the layers, each in its own colour, which show one layer at a time and double as the legend. */
+.lx-head.lx-band { display: grid; justify-content: stretch; gap: 5px; margin: 0 calc(50% - 50vw); padding: 7px calc(50vw - 50%) 8px; background: linear-gradient(100deg, color-mix(in srgb, var(--cl-sand) 85%, var(--cl-page)) 0%, var(--cl-paper) 55%, var(--cl-page) 100%); border-bottom: 1px solid var(--cl-hairline); }
+.lx-band-row { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.lx-mark { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; background: var(--cl-maroon-mist); color: var(--cl-maroon); }
+.lx-mark svg { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.lx-band .lx-title { flex: 1 1 auto; flex-direction: row; align-items: baseline; gap: 10px; min-width: 0; }
+.lx-band .lx-title h1 { font-size: 1.5rem; white-space: nowrap; }
+.lx-band .lx-lede { font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lx-band .lx-lede::before { content: ""; display: inline-block; width: 4px; height: 4px; margin: 0 10px 3px 0; border-radius: 50%; background: var(--cl-rule-strong); }
+.lx-band .lx-tools { flex: none; margin-left: auto; }
+.lx-band .lx-find .cl-field { height: 34px; }
+.lx-band .lx-key summary { min-height: 34px; }
+.lx-layers { display: flex; align-items: center; gap: 6px; padding-left: 46px; overflow-x: auto; scrollbar-width: none; }
+.lx-layers-label { margin-right: 4px; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cl-ink-3); }
+.lx-layers button { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 24px; padding: 0 11px 0 9px; border: 0; border-radius: 999px; background: var(--am-tint, var(--cl-page)); color: var(--am-ink, var(--cl-ink)); font: inherit; font-size: 0.78125rem; font-weight: 600; white-space: nowrap; cursor: pointer; transition: box-shadow 150ms ease-out; }
+.lx-layers button:hover { box-shadow: inset 0 0 0 1px var(--am-edge, var(--cl-rule-strong)); }
+.lx-layers .lx-layer-all { padding-left: 11px; background: var(--cl-page); color: var(--cl-ink-2); box-shadow: inset 0 0 0 1px var(--cl-hairline); }
+.lx-layers .tone--integration { color: var(--cl-maroon); }
+.lx-layers button[aria-pressed="true"] { background: var(--cl-page); color: var(--cl-maroon); box-shadow: inset 0 0 0 1.5px var(--cl-maroon); }
+.lx-layers .am-icon { width: auto; height: auto; background: none; box-shadow: none; color: inherit; }
+.lx-layers .am-icon svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.lx-band + .lx-board { margin-top: 10px; }
+@media (prefers-reduced-motion: reduce) {
+  .lx-layers button { transition: none; }
+}
+@media (max-width: 760px) {
+  .lx-band-row { flex-wrap: wrap; }
+  .lx-band .lx-lede { white-space: normal; }
+  .lx-layers { padding-left: 0; }
+}
+/* One layer shown: the others go quiet (their tiles already turn pale with grey names, which keep AA contrast), so the room sees only that layer. */
+.am--compact .am-layer.is-dim .am-layer-name, .am--compact .am-layer.is-dim .am-group-name { color: var(--cl-ink-3); text-shadow: none; }
+/* The integration layer: its two platforms on the band, with no line drawn through them. */
+.am--compact .am-bus-line::before { display: none; }
+/* A short screen gives the tiles two pixels less, so the header band fits without a page scroll. */
+@media (min-width: 1101px) and (min-height: 600px) {
+  .am--compact { --am-tile: clamp(26px, calc((100dvh - 600px) / 7), 48px); }
 }
