@@ -38,3 +38,10 @@ export function leadingNumber(value: string): number | null {
   const n = Number(match[1]);
   return match[2]?.toLowerCase() === "gbps" ? n * 1000 : n;
 }
+
+/** A system's purpose in a few words: the text before the first colon or full stop, cut at a word. */
+export function shortFunction(text: string): string {
+  const head = (text.split(/[:.;]|\s[—–]\s/)[0] ?? "").trim();
+  if (head.length <= 46) return head;
+  return `${head.slice(0, 44).replace(/\s+\S*$/, "")}…`;
+}

@@ -307,4 +307,20 @@ Checks: lab tests 11/11 (axe), lint, brand lint, typecheck, build, budget green.
 
 Lab: a **journey switcher** replaces the 20-chip row on screens 3 and 4. One button names the journey and its stage, and opens the journeys grouped as Join, Change, Support and Leave. The hierarchy tab no longer reports unmodelled order types. The fixture was regenerated from the seeded draft. Checks: full `pytest` and the catalogue test (it now asserts that every order type has a journey), ruff and mypy on the changed test; lint, brand lint, build and budget green; architecture and lab tests 23/23, including the BPMN layout checks on every journey view.
 
+**Architecture map and catalogue bar (2026-10-10, user's four points).**
+1. **Journey flow:** the minimap strip is gone; zoom and Fit height sit on the right above the flow.
+2. **Catalogue bar:** the section tabs become one bar. It shows the catalogue's identity (a layers mark, "SMB architecture", draft and revision), then the sections, each with a line icon and a count. The current section is in maroon with an underline; sections that aren't in the mock-ups are muted and say so. The crumbs become a **portfolio path**: each level's kind (business unit, line of business, segment, product family, offering) sits above its name.
+3. **Landscape:** the integration weight is removed: no weight bars on the boxes, no ranking panel, and no call or pair counts in the header. The poster is replaced by **`ArchitectureMap`**:
+   - Each TAM layer is a numbered block in its calm brand tint, with its scope sentence and its functional groups as columns of system cards (name plus a short purpose).
+   - The integration layer is drawn as a bus between Customer and Service.
+   - Links are soft curves measured from the cards and drawn under them, only for the selected system or on "Show every link".
+   - The side panel is a **layer navigator** at rest; picking a layer brings it forward and the others go quiet. A picked system shows its linked systems grouped by layer. The header counts systems, layers, groups, external systems and journeys.
+4. **Product › Architecture** opens on the **whole-product footprint**:
+   - Systems are shown in three calm maroon tiers: core (in half the journeys or more), used by some, and carries calls only. Systems the product doesn't use stay quiet but readable.
+   - Each card names the system's role for the product. Every layer and the side panel carry a dot meter, one dot per system.
+   - A summary row shows 27 of 46 systems reached, 6 core, 8 of 8 layers and 20 journeys. A list of core systems sits in the side panel, and a picked system shows its roles and the journeys behind it.
+   - "One journey at a time" keeps the call step-through, now on the new map.
+
+The old `poster.tsx` and its layout and router were removed. Checks: lint, brand lint, typecheck, build and budget are green; architecture and lab tests pass 24/24, with axe, including a new footprint test. There is no horizontal overflow at 375 px or 1440 px.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.
