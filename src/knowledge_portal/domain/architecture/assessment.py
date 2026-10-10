@@ -38,6 +38,12 @@ class SystemRole(StrEnum):
     NAMED = "named"
     # Chosen from the evidence alone, with a quote, as mapping does today.
     SUPPORTING = "supporting"
+    # It is the system of record for data the requirement changes, or exposes an interface
+    # it names (ontology plan Phase 8).
+    OWNER = "owner"
+    # It consumes an interface that carries what changes, or reads the data: the ripple of
+    # a data or contract change, possibly several interfaces away.
+    CONSUMER = "consumer"
 
 
 class FacetKind(StrEnum):
@@ -58,6 +64,8 @@ class FacetKind(StrEnum):
     # An information entity the requirement reads or changes.
     DATA = "data"
     CHANGE_TYPE = "change_type"
+    # An interface the requirement changes or calls, such as an API (ontology plan Phase 8).
+    INTERFACE = "interface"
 
 
 # The facets whose value is a release id (or a change type), never free text alone.
@@ -69,6 +77,8 @@ REFERENCED_FACETS = frozenset(
         FacetKind.CHANNEL,
         FacetKind.ORDER_TYPE,
         FacetKind.CHANGE_TYPE,
+        FacetKind.DATA,
+        FacetKind.INTERFACE,
     }
 )
 
@@ -103,6 +113,9 @@ class PathKind(StrEnum):
     COMPONENT = "component"
     CHANNEL = "channel"
     SYSTEM = "system"
+    # An information entity and an interface (ontology plan Phase 8).
+    ENTITY = "entity"
+    INTERFACE = "interface"
 
 
 @dataclass(frozen=True)

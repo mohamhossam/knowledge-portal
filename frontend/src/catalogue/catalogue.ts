@@ -319,6 +319,7 @@ const ITEM: Record<CatalogueDiff["changes"][number]["item"], [string, string]> =
   concept: ["capability concept", "capability concepts"],
   vocabulary_term: ["vocabulary term", "vocabulary terms"],
   document: ["document", "documents"],
+  interface: ["interface", "interfaces"],
 };
 
 /** What this version would change if it were in service, counted. */

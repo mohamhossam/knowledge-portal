@@ -2782,7 +2782,7 @@ export interface components {
          * ChangedItem
          * @enum {string}
          */
-        ChangedItem: "system" | "capability" | "relationship" | "document" | "domain" | "component" | "landscape_domain" | "product" | "journey" | "channel" | "source" | "conflict" | "change_request" | "concept" | "vocabulary_term";
+        ChangedItem: "system" | "capability" | "relationship" | "document" | "domain" | "component" | "landscape_domain" | "product" | "journey" | "channel" | "source" | "conflict" | "change_request" | "concept" | "vocabulary_term" | "interface";
         /**
          * ChannelSchema
          * @description Where orders are placed, and the system each is entered through (ADR-0101, step 3).
@@ -3129,6 +3129,8 @@ export interface components {
             conflicts?: components["schemas"]["SourceConflictSchema"][] | null;
             /** Expected Revision */
             expected_revision: number;
+            /** Interfaces */
+            interfaces?: components["schemas"]["SystemInterfaceSchema"][] | null;
             /** Journeys */
             journeys?: components["schemas"]["JourneySchema"][] | null;
             /** Landscape Domains */
@@ -3559,6 +3561,12 @@ export interface components {
          * @enum {string}
          */
         IngestionStage: "queued" | "scanning" | "extracting" | "ready_for_review" | "failed" | "quarantined" | "cancelled";
+        /**
+         * InterfaceStyle
+         * @description How an interface is called, when its sources say.
+         * @enum {string}
+         */
+        InterfaceStyle: "api" | "event" | "file" | "unspecified";
         /** ItemChangeView */
         ItemChangeView: {
             /** Fields */
@@ -3720,6 +3728,8 @@ export interface components {
             index_id?: string | null;
             /** Index Profile */
             index_profile?: string | null;
+            /** Interfaces */
+            interfaces?: components["schemas"]["SystemInterfaceSchema"][];
             /** Journeys */
             journeys?: components["schemas"]["JourneySchema"][];
             /** Landscape Domains */
@@ -5373,6 +5383,11 @@ export interface components {
             id: string;
             /** Landscape Domain Id */
             landscape_domain_id?: string | null;
+            /**
+             * Masters
+             * @default []
+             */
+            masters: string[];
             /** Name */
             name: string;
             /** Name Ar */
@@ -5383,10 +5398,54 @@ export interface components {
             placement_from?: string | null;
             /** Placement Reason */
             placement_reason?: string | null;
+            /**
+             * Reads
+             * @default []
+             */
+            reads: string[];
             /** Roadmap */
             roadmap?: string | null;
             /** Source */
             source?: string | null;
+        };
+        /**
+         * SystemInterfaceSchema
+         * @description An API, event or file contract one system exposes, and the systems that consume it.
+         */
+        SystemInterfaceSchema: {
+            confidence?: components["schemas"]["SourceConfidence"] | null;
+            /**
+             * Consumer Ids
+             * @default []
+             */
+            consumer_ids: string[];
+            /** Description */
+            description?: string | null;
+            /**
+             * Entity Ids
+             * @default []
+             */
+            entity_ids: string[];
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Open Api Ids
+             * @default []
+             */
+            open_api_ids: string[];
+            /**
+             * Relays
+             * @default []
+             */
+            relays: string[];
+            /** Source */
+            source?: string | null;
+            /** @default unspecified */
+            style: components["schemas"]["InterfaceStyle"];
+            /** System Id */
+            system_id: string;
         };
         /**
          * SystemOwnershipResponse
@@ -5606,11 +5665,11 @@ export interface components {
          * VocabularyScheme
          * @enum {string}
          */
-        VocabularyScheme: "etom_process" | "channel_kind" | "component_kind" | "responsibility_role" | "open_api";
+        VocabularyScheme: "etom_process" | "channel_kind" | "component_kind" | "responsibility_role" | "open_api" | "information_entity";
         /**
          * VocabularyTermSchema
          * @description A term of a controlled vocabulary: an eTOM process, a channel or component kind, a
-         *     role or an Open API.
+         *     role, an Open API or an information entity.
          */
         VocabularyTermSchema: {
             /**

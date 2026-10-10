@@ -221,6 +221,7 @@ const SCHEME: Record<NonNullable<Suggestion["content"]["term"]>["scheme"], strin
   component_kind: "component kind",
   responsibility_role: "role",
   open_api: "Open API",
+  information_entity: "information entity",
 };
 
 export function targetName(suggestion: Suggestion, words: Lexicon): string {

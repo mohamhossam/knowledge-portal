@@ -130,6 +130,21 @@ _TERM_FIELDS = (
 )
 
 
+# An interface's attributes, as reported (ontology plan Phase 8).
+_INTERFACE_FIELDS = (
+    "name",
+    "system_id",
+    "style",
+    "consumer_ids",
+    "open_api_ids",
+    "entity_ids",
+    "relays",
+    "description",
+    "confidence",
+    "source",
+)
+
+
 def _bare(offering: ProductOffering) -> tuple[object, ...]:
     """An offering's components without their responsibilities, realisation, concepts and
     vocabulary terms."""
@@ -260,6 +275,8 @@ class ChangedItem(StrEnum):
     # A controlled vocabulary term: an eTOM process, a channel or component kind, a role or
     # an Open API.
     VOCABULARY_TERM = "vocabulary_term"
+    # A contract a system exposes, with its consumers (ontology plan Phase 8).
+    INTERFACE = "interface"
 
 
 @dataclass(frozen=True)
@@ -296,6 +313,10 @@ def _system_fields(before: SystemDefinition, after: SystemDefinition) -> tuple[s
         fields.append("description")
     if before.landscape_domain_id != after.landscape_domain_id:
         fields.append("landscape_domain")
+    if sorted(before.masters) != sorted(after.masters):
+        fields.append("masters")
+    if sorted(before.reads) != sorted(after.reads):
+        fields.append("reads")
     return tuple(fields)
 
 
@@ -595,6 +616,14 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
             _TERM_FIELDS,
             {item.id: (item.pref_label, item) for item in base.vocabulary},
             {item.id: (item.pref_label, item) for item in draft.vocabulary},
+        )
+    )
+    changes.extend(
+        _register_changes(
+            ChangedItem.INTERFACE,
+            _INTERFACE_FIELDS,
+            {item.id: (item.name, item) for item in base.interfaces},
+            {item.id: (item.name, item) for item in draft.interfaces},
         )
     )
     changes.extend(

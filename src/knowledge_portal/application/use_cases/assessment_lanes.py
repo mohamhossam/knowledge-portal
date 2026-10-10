@@ -7,7 +7,7 @@ checked before it reaches here; what leaves here carries release ids alone.
 from __future__ import annotations
 
 import re
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 
 from knowledge_portal.application.ports.architecture_rag import (
@@ -46,7 +46,15 @@ from knowledge_portal.domain.architecture.impact_graph import (
 )
 from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge
 from knowledge_portal.domain.architecture.products import OfferingComponent, ProductOffering
+from knowledge_portal.domain.architecture.ripple import (
+    data_owners,
+    data_readers,
+    entity_family,
+    interface_owner,
+    ripple,
+)
 from knowledge_portal.domain.architecture.verdicts import OfferingFit, ProductVerdict
+from knowledge_portal.domain.architecture.vocabularies import VocabularyScheme
 
 SHORTLIST_LIMIT = 10
 PASSAGES_PER_FACET = 3
@@ -72,7 +80,10 @@ def order_type_id(offering: ProductOffering, code: str) -> str:
 
 
 def catalogue_terms(release: ArchitectureKnowledge) -> CatalogueTerms:
-    """The release's offerings, segments, families, channels and order types, by id."""
+    """The release's offerings, segments, families, channels, order types, information
+    entities and interfaces, by id. An interface also goes by its system's name before its
+    own, such as "CBCM retrieveAccount"."""
+    names = {item.id: item.name for item in release.systems}
     return CatalogueTerms(
         offerings=tuple(
             CatalogueTerm(item.id, tuple(label for label in (item.name, item.code) if label))
@@ -93,6 +104,15 @@ def catalogue_terms(release: ArchitectureKnowledge) -> CatalogueTerms:
             CatalogueTerm(order_type_id(offering, order.code), (order.name, order.code))
             for offering in release.products
             for order in offering.order_types
+        ),
+        entities=tuple(
+            CatalogueTerm(item.id, item.labels)
+            for item in release.vocabulary
+            if item.scheme is VocabularyScheme.INFORMATION_ENTITY
+        ),
+        interfaces=tuple(
+            CatalogueTerm(item.id, (item.name, f"{names[item.system_id]} {item.name}"))
+            for item in release.interfaces
         ),
     )
 
@@ -276,7 +296,13 @@ class _Candidate:
     paths: list[tuple[PathStep, ...]] = field(default_factory=list)
 
 
-_ROLE_RANK = {SystemRole.PRIMARY: 0, SystemRole.CHANNEL: 1, SystemRole.NAMED: 2}
+_ROLE_RANK = {
+    SystemRole.PRIMARY: 0,
+    SystemRole.OWNER: 1,
+    SystemRole.CHANNEL: 2,
+    SystemRole.NAMED: 3,
+    SystemRole.CONSUMER: 4,
+}
 
 
 def facet_step(position: int, facet: LinkedFacet) -> PathStep:
@@ -296,6 +322,12 @@ def graph_lane(
     in question already uses when some do, and dropping the entry systems of channels the
     requirement does not name when it names one. Then each named channel's entry system,
     then the systems the text or the caller names.
+
+    Data and interfaces (ontology plan Phase 8): each information entity the requirement
+    changes reaches its systems of record (owners) and readers (consumers); each interface
+    it names reaches the system exposing it (owner). The change then ripples to the
+    consumers of the interfaces that carry it, and on through the layers that relay them
+    (``ripple``).
     """
     names = {item.id: item.name for item in release.systems}
     channels = {item.id: item for item in release.channels}
@@ -349,6 +381,7 @@ def graph_lane(
                         ),
                     ),
                 )
+    _data_lane(release, facets, add)
     for system in named_systems(release, text):
         add(system.id, SystemRole.NAMED)
     for raw in declared:
@@ -372,6 +405,39 @@ def graph_lane(
         SystemCandidate(system_id, item.name, item.role, tuple(item.paths))
         for system_id, item in found.items()
     )
+
+
+def _data_lane(
+    release: ArchitectureKnowledge,
+    facets: tuple[LinkedFacet, ...],
+    add: Callable[[str, SystemRole, tuple[PathStep, ...]], None],
+) -> None:
+    """Owners, readers and consumers of the data and interfaces the requirement names."""
+    entities = frozenset(
+        entity
+        for facet in facets
+        if facet.kind is FacetKind.DATA and facet.ref_id
+        for entity in entity_family(release, facet.ref_id)
+    )
+    interfaces = {item.id for item in release.interfaces}
+    for position, facet in enumerate(facets, start=1):
+        step = facet_step(position, facet)
+        if facet.kind is FacetKind.DATA and facet.ref_id in entities:
+            owners = data_owners(release, facet.ref_id)
+            for reach in owners:
+                add(reach.system_id, SystemRole.OWNER, (step, *reach.steps))
+            for reach in data_readers(release, facet.ref_id):
+                add(reach.system_id, SystemRole.CONSUMER, (step, *reach.steps))
+            family = entity_family(release, facet.ref_id)
+            for reach in ripple(release, owners, family):
+                add(reach.system_id, SystemRole.CONSUMER, (step, *reach.steps))
+        elif facet.kind is FacetKind.INTERFACE and facet.ref_id in interfaces:
+            owner = interface_owner(release, facet.ref_id)
+            if owner is None:
+                continue
+            add(owner.system_id, SystemRole.OWNER, (step, *owner.steps))
+            for reach in ripple(release, (owner,), None, facet.ref_id):
+                add(reach.system_id, SystemRole.CONSUMER, (step, *reach.steps))
 
 
 def passage_lane(

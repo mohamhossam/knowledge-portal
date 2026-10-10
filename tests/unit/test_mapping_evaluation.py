@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -61,6 +62,20 @@ PHASE_3 = {
     "citation_faithfulness": 1.0,
 }
 PHASE_3_FALSE_CHANGES = 5
+# The cases Phase 3 was scored on; version 2 of the golden set adds data and interface cases.
+PHASE_3_CASES = 53
+# The assessment with the fake models on the whole set, recorded in
+# docs/slices/ontology-phase-8-data-and-interfaces.md.
+PHASE_8 = {
+    "system_precision": 0.73,
+    "system_recall": 0.33,
+    "verdict_accuracy": 0.71,
+    "offering_accuracy": 0.87,
+    "concept_recall": 0.20,
+    "citation_faithfulness": 1.0,
+    # Exit: data and API requirements reach their owners and consumers.
+    "owner_consumer_reach": 1.0,
+}
 
 
 def _report(mapper: str = "assess") -> EvaluationReport:
@@ -103,13 +118,19 @@ def test_today_s_mapper_never_falls_below_the_baseline() -> None:
 
 def test_the_assessment_beats_the_baseline_and_never_falls_below_phase_3() -> None:
     report = _report()
+    phase_3 = replace(report, results=report.results[:PHASE_3_CASES])
 
-    measured = evaluate.scores(report)
+    assert [item.case.id for item in phase_3.results][-1] == "G053"
     assert report.mapper == "assess"
     assert report.failures == 0
-    for name, floor in (*BASELINE.items(), *PHASE_3.items()):
-        value = measured[name]
-        assert value is not None and value >= floor, name
+    for scored, floors in (
+        (phase_3, (*BASELINE.items(), *PHASE_3.items())),
+        (report, PHASE_8.items()),
+    ):
+        measured = evaluate.scores(scored)
+        for name, floor in floors:
+            value = measured[name]
+            assert value is not None and value >= floor, name
     assert report.false_changes <= PHASE_3_FALSE_CHANGES
     # Every requirement too vague to place gets questions, not a verdict.
     vague = [item for item in report.results if item.case.verdict is None]
@@ -174,6 +195,11 @@ def test_a_well_labelled_file_reads() -> None:
         ),
         ({"verdict": None, "offering": None, "missing_facets": ["plan"]}, "labels nothing else"),
         ({"surprise": 1}, "malformed"),
+        ({"owners": ["cbcm"]}, "owners or consumers outside its systems"),
+        (
+            {"systems": ["cwom", "cbcm"], "owners": ["cwom"], "consumers": ["cwom"]},
+            "as both owner and consumer",
+        ),
     ],
 )
 def test_a_mislabelled_file_is_refused(case: dict[str, Any], message: str) -> None:

@@ -71,6 +71,7 @@ from knowledge_portal.domain.architecture.governance import (
     SourceConflict,
     SourceLevel,
 )
+from knowledge_portal.domain.architecture.interfaces import InterfaceStyle, SystemInterface
 from knowledge_portal.domain.architecture.journeys import (
     Activity,
     ActivityIntegration,
@@ -220,7 +221,7 @@ class CapabilityRefSchema(BaseModel):
 
 class VocabularyTermSchema(BaseModel):
     """A term of a controlled vocabulary: an eTOM process, a channel or component kind, a
-    role or an Open API."""
+    role, an Open API or an information entity."""
 
     id: Identifier
     scheme: VocabularyScheme
@@ -260,6 +261,54 @@ class VocabularyTermSchema(BaseModel):
             self.exact_match,
             self.confidence,
             self.source,
+        )
+
+
+class SystemInterfaceSchema(BaseModel):
+    """An API, event or file contract one system exposes, and the systems that consume it."""
+
+    id: Identifier
+    name: Name
+    system_id: Identifier
+    style: InterfaceStyle = InterfaceStyle.UNSPECIFIED
+    consumer_ids: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    open_api_ids: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    entity_ids: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    description: Text | None = None
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
+    # The interfaces it passes on, each one its system consumes.
+    relays: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+
+    @classmethod
+    def from_domain(cls, interface: SystemInterface) -> SystemInterfaceSchema:
+        return cls.model_construct(
+            id=interface.id,
+            name=interface.name,
+            system_id=interface.system_id,
+            style=interface.style,
+            consumer_ids=list(interface.consumer_ids),
+            open_api_ids=list(interface.open_api_ids),
+            entity_ids=list(interface.entity_ids),
+            description=interface.description,
+            confidence=interface.confidence,
+            source=interface.source,
+            relays=list(interface.relays),
+        )
+
+    def to_domain(self) -> SystemInterface:
+        return SystemInterface(
+            self.id,
+            self.name,
+            self.system_id,
+            self.style,
+            tuple(self.consumer_ids),
+            tuple(self.open_api_ids),
+            tuple(self.entity_ids),
+            self.description,
+            self.confidence,
+            self.source,
+            tuple(self.relays),
         )
 
 
@@ -1629,6 +1678,9 @@ class SystemDefinitionSchema(BaseModel):
     placement_reason: Text | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # The information entity terms it is the system of record for, and those it reads.
+    masters: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    reads: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, system: SystemDefinition) -> SystemDefinitionSchema:
@@ -1649,6 +1701,8 @@ class SystemDefinitionSchema(BaseModel):
             placement_reason=system.placement_reason,
             confidence=system.confidence,
             source=system.source,
+            masters=list(system.masters),
+            reads=list(system.reads),
         )
 
     def to_domain(self) -> SystemDefinition:
@@ -1669,6 +1723,8 @@ class SystemDefinitionSchema(BaseModel):
             placement_reason=self.placement_reason,
             confidence=self.confidence,
             source=self.source,
+            masters=tuple(self.masters),
+            reads=tuple(self.reads),
         )
 
 
@@ -1766,6 +1822,10 @@ class KnowledgeReleaseResponse(BaseModel):
     vocabulary: list[VocabularyTermSchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
     )
+    # The contracts systems expose and consume (ontology plan Phase 8).
+    interfaces: list[SystemInterfaceSchema] = Field(
+        default_factory=list, max_length=MAX_CATALOGUE_ITEMS
+    )
 
     @classmethod
     def from_domain(cls, release: ArchitectureKnowledge) -> KnowledgeReleaseResponse:
@@ -1807,6 +1867,7 @@ class KnowledgeReleaseResponse(BaseModel):
                 BusinessCapabilitySchema.from_domain(item) for item in release.business_capabilities
             ],
             vocabulary=[VocabularyTermSchema.from_domain(item) for item in release.vocabulary],
+            interfaces=[SystemInterfaceSchema.from_domain(item) for item in release.interfaces],
         )
 
 
@@ -2016,6 +2077,10 @@ class DraftUpdateRequest(BaseModel):
     )
     # Likewise for the controlled vocabularies.
     vocabulary: list[VocabularyTermSchema] | None = Field(
+        default=None, max_length=MAX_CATALOGUE_ITEMS
+    )
+    # Likewise for interfaces (ontology plan Phase 8).
+    interfaces: list[SystemInterfaceSchema] | None = Field(
         default=None, max_length=MAX_CATALOGUE_ITEMS
     )
 

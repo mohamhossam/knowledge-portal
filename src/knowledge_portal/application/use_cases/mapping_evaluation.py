@@ -13,7 +13,9 @@ What is scored:
   existing offering;
 - offering accuracy, over the cases labelled with an offering;
 - concept-linking recall, once the mapper returns concepts (not measured before then);
-- citation faithfulness: each cited quote must be found in the passage it cites.
+- citation faithfulness: each cited quote must be found in the passage it cites;
+- owner and consumer reach (Phase 8): of the owners and consumers the data and interface
+  cases label, the share the mapper names.
 
 The catalogue the golden set was labelled against is published into a throwaway release first,
 so the scores never depend on what a live portal holds.
@@ -64,6 +66,9 @@ class GoldenCase:
     system_ids: frozenset[str]
     concept_ids: frozenset[str]
     missing_facets: tuple[str, ...] = ()
+    # The owners and consumers a data or interface change must reach, among its systems.
+    owner_ids: frozenset[str] = frozenset()
+    consumer_ids: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True)
@@ -205,6 +210,11 @@ class CaseResult:
         return predicted == self.case.offering_id
 
     @property
+    def reached(self) -> int:
+        """The labelled owners and consumers the mapper named."""
+        return len(self.predicted_systems & (self.case.owner_ids | self.case.consumer_ids))
+
+    @property
     def concepts_found(self) -> int | None:
         if self.prediction is None or self.prediction.concept_ids is None:
             return None
@@ -261,6 +271,14 @@ class EvaluationReport:
         return _ratio(
             sum(value or 0 for value in found),
             sum(len(item.case.concept_ids) for item in answered),
+        )
+
+    @property
+    def reach(self) -> float | None:
+        """Owner and consumer reach; None when no case labels owners or consumers."""
+        return _ratio(
+            sum(item.reached for item in self.results),
+            sum(len(item.case.owner_ids | item.case.consumer_ids) for item in self.results),
         )
 
     @property

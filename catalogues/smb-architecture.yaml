@@ -32,6 +32,8 @@ systems:
   roadmap: Replaced by Netcracker CSRD over time
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  reads:
+  - entity-customer
 - id: nc-csrd
   name: Netcracker CSRD
   aliases:
@@ -97,6 +99,8 @@ systems:
   owner: Digital
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  reads:
+  - entity-product-offering
 - id: psm
   name: PSM
   aliases:
@@ -116,6 +120,8 @@ systems:
   owner: CBCM team
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  masters:
+  - entity-product-offering
 - id: ecm
   name: ECM
   aliases:
@@ -135,6 +141,8 @@ systems:
   owner: Ericsson / CWOM
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory; §6 ECM = system
+  reads:
+  - entity-product-offering
 - id: rtf-catalog
   name: RTF Catalog
   aliases: []
@@ -237,6 +245,8 @@ systems:
   owner: Digital / Retail
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  reads:
+  - entity-customer
 - id: cim
   name: CIM
   aliases: []
@@ -253,6 +263,8 @@ systems:
   roadmap: Replaced by Netcracker CPM over time
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  reads:
+  - entity-trouble-ticket
 - id: dcrm
   name: DCRM
   aliases: []
@@ -288,6 +300,10 @@ systems:
   owner: Enterprise Data
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory; §6 CBCM = CRMGW
+  masters:
+  - entity-customer
+  - entity-billing-account
+  - entity-product
 - id: nc-crm
   name: Netcracker CRM (NC Digital)
   aliases:
@@ -307,6 +323,9 @@ systems:
   owner: Netcracker
   confidence: confirmed
   source: SMB reference v1.0 · §3.1 step 4 branch
+  masters:
+  - entity-party
+  - entity-customer
 - id: rtf
   name: RTF
   aliases:
@@ -329,6 +348,11 @@ systems:
     CWOM keeps the service-order role.'
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  masters:
+  - entity-product-order
+  reads:
+  - entity-customer
+  - entity-product
 - id: ibm-bpm
   name: IBM BPM
   aliases:
@@ -348,6 +372,8 @@ systems:
   placement_reason: 'Order tracking shows the customer''s order status: Customer Order Management in TAM.'
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  reads:
+  - entity-order-milestone
 - id: felix
   name: Felix
   aliases: []
@@ -366,6 +392,8 @@ systems:
   placement_reason: Holds customer-order milestones for tracking (Customer Order Management).
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  masters:
+  - entity-order-milestone
 - id: ehs
   name: EHS
   aliases: []
@@ -397,6 +425,8 @@ systems:
   owner: Netcracker
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  masters:
+  - entity-trouble-ticket
 - id: bscs
   name: BSCS
   aliases: []
@@ -414,6 +444,11 @@ systems:
   placement_reason: Billing is Customer Bill Management in TAM's Customer domain, not a resource.
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  masters:
+  - entity-bill
+  reads:
+  - entity-billing-account
+  - entity-product
 - id: cwom
   name: CWOM
   aliases:
@@ -448,6 +483,8 @@ systems:
     concept: cap-cpe-provisioning
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  masters:
+  - entity-service-order
 - id: xaas
   name: XaaS
   aliases: []
@@ -580,6 +617,9 @@ systems:
     concept: cap-device-logistics
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  masters:
+  - entity-resource
+  - entity-telephone-number
 - id: nps
   name: NPS
   aliases: []
@@ -596,6 +636,8 @@ systems:
     concept: cap-number-portability
   confidence: inferred
   source: SDD v2.3 · §NPS Port In & Port Out · Not in the SMB reference; placed with numbers.
+  reads:
+  - entity-telephone-number
 - id: gis
   name: GIS
   aliases: []
@@ -631,6 +673,8 @@ systems:
   owner: Engineering
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory (WFM / Remedy)
+  masters:
+  - entity-work-order
 - id: remedy
   name: Remedy
   aliases: []
@@ -696,6 +740,8 @@ systems:
     concept: cap-identity-verification
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  reads:
+  - entity-customer-document
 - id: fortinet
   name: Fortinet (FortiManager / FortiPortal)
   aliases:
@@ -767,6 +813,8 @@ systems:
     concept: cap-document-management
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  masters:
+  - entity-customer-document
 - id: itsm
   name: ServiceNow / HPSM
   aliases:
@@ -6653,3 +6701,656 @@ vocabulary:
   notation: TMF681
   confidence: inferred
   source: Ontology plan Phase 6 · the catalogue's own TMF equivalents
+- id: entity-party
+  scheme: information_entity
+  pref_label: Party
+  alt_labels:
+  - Organisation
+  - Individual
+  - Contact
+  definition: A person or organisation the operator deals with, and how to reach them (SID Party).
+  exact_match: SID Party ABE
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+- id: entity-customer
+  scheme: information_entity
+  pref_label: Customer
+  alt_labels:
+  - Customer profile
+  definition: A party the operator sells to, with its segment and status (SID Customer).
+  exact_match: SID Customer ABE
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+- id: entity-billing-account
+  scheme: information_entity
+  pref_label: Billing account
+  alt_labels:
+  - Customer account
+  - Account
+  definition: The account a customer's products are billed to (SID Customer Account).
+  exact_match: SID Customer Bill ABE
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+- id: entity-bill
+  scheme: information_entity
+  pref_label: Bill
+  alt_labels:
+  - Invoice
+  definition: What a billing account is charged for a period (SID Customer Bill).
+  exact_match: SID Customer Bill ABE
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+- id: entity-product-offering
+  scheme: information_entity
+  pref_label: Product offering
+  alt_labels:
+  - Offer
+  - Package code
+  definition: 'What is sold: an offering with its prices, eligibility rules and package codes (SID Product
+    Offering).'
+  exact_match: SID Product Offering ABE
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+- id: entity-product
+  scheme: information_entity
+  pref_label: Product
+  alt_labels:
+  - Installed product
+  - Product inventory
+  - Subscription
+  definition: 'An offering as a customer has it: an instance in the product inventory (SID Product).'
+  exact_match: SID Product ABE
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+- id: entity-product-order
+  scheme: information_entity
+  pref_label: Product order
+  alt_labels:
+  - Customer order
+  - Order
+  definition: A customer's request to add, change or remove products (SID Customer Order).
+  exact_match: SID Customer Order ABE
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+- id: entity-order-milestone
+  scheme: information_entity
+  pref_label: Order milestone
+  alt_labels:
+  - Order status
+  - Milestone
+  definition: A step an order has reached, as tracked and shown to the customer.
+  broader: entity-product-order
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+- id: entity-service-order
+  scheme: information_entity
+  pref_label: Service order
+  definition: The order that provisions the services behind a product order (SID Service Order).
+  exact_match: SID Service Order ABE
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+- id: entity-resource
+  scheme: information_entity
+  pref_label: Resource
+  alt_labels:
+  - Device
+  - CPE
+  - SIM
+  definition: 'A physical or logical resource a service runs on: a CPE, a SIM, a number (SID Resource).'
+  exact_match: SID Resource ABE
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+- id: entity-telephone-number
+  scheme: information_entity
+  pref_label: Telephone number
+  alt_labels:
+  - Phone number
+  - MSISDN
+  definition: A number assigned to a customer, ported in or out.
+  broader: entity-resource
+  exact_match: SID Logical Resource ABE
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+- id: entity-work-order
+  scheme: information_entity
+  pref_label: Work order
+  alt_labels:
+  - Field work order
+  definition: 'Work a technician does on site: installing a CPE or an access point.'
+  exact_match: SID Work Order ABE
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+- id: entity-trouble-ticket
+  scheme: information_entity
+  pref_label: Trouble ticket
+  alt_labels:
+  - Complaint
+  - Ticket
+  definition: A customer's reported problem and its handling (SID Customer Problem).
+  exact_match: SID Customer Problem ABE
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+- id: entity-customer-document
+  scheme: information_entity
+  pref_label: Customer document
+  alt_labels:
+  - Trade licence
+  - Emirates ID
+  - Establishment card
+  definition: 'A document a customer gives as proof: a trade licence, an ID, an establishment card.'
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+interfaces:
+- id: if-cbcm-crm-gw-api
+  name: CRM GW API
+  system: cbcm
+  style: api
+  consumers:
+  - b2b-web
+  - smb-app
+  - dcrm
+  - rtf
+  open_apis:
+  - api-tmf629
+  - api-tmf637
+  entities:
+  - entity-customer
+  - entity-billing-account
+  - entity-product
+  description: Customer, account and product data for the channels and RTF.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-cbcm-retrieve-account
+  name: retrieveAccount
+  system: cbcm
+  style: api
+  consumers:
+  - rtf
+  - nps
+  open_apis:
+  - api-tmf637
+  entities:
+  - entity-billing-account
+  - entity-product
+  description: An account and its installed products.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-cbcm-evaluate-order
+  name: evaluateOrder
+  system: cbcm
+  style: api
+  consumers:
+  - rtf
+  open_apis:
+  - api-tmf679
+  entities:
+  - entity-product-order
+  - entity-product-offering
+  description: Translates an order to the value order with PSM codes and checks business rules.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-cbcm-load-registry-basket
+  name: Load registry basket
+  system: cbcm
+  consumers:
+  - rtf
+  entities:
+  - entity-product-order
+  description: The summary-order basket RTF loads.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-cbcm-order-closure
+  name: Order closure
+  system: cbcm
+  consumers:
+  - cwom
+  open_apis:
+  - api-tmf637
+  entities:
+  - entity-product-order
+  - entity-product
+  description: Closes the order and updates the product inventory.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-bscs-billing
+  name: Billing
+  system: bscs
+  consumers:
+  - cwom
+  entities:
+  - entity-billing-account
+  - entity-product
+  description: Starts billing once the order is fulfilled.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-bcc-offer-catalogue
+  name: Offer catalogue
+  system: bcc
+  consumers:
+  - b2b-web
+  - smb-app
+  entities:
+  - entity-product-offering
+  description: The offers and components the digital channels show.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-psm-package-codes
+  name: Package codes
+  system: psm
+  consumers:
+  - bcc
+  entities:
+  - entity-product-offering
+  description: Maps an offer to PSM package codes.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-ecm-product-structure
+  name: Product structure
+  system: ecm
+  consumers:
+  - bcc
+  entities:
+  - entity-product-offering
+  description: Bundle and component detail.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-ecm-evaluate-order
+  name: evaluateOrder
+  system: ecm
+  style: api
+  consumers:
+  - rtf
+  entities:
+  - entity-product-order
+  description: Checks an order against the ECM product structure.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-ecm-catalogue-validation
+  name: Catalogue validation
+  system: ecm
+  consumers:
+  - cwom
+  entities:
+  - entity-product-order
+  - entity-product-offering
+  description: Validates an order against the ECM catalogue.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-ecm-cpe-model-inquiry
+  name: CPE Model Inquiry
+  system: ecm
+  style: api
+  consumers:
+  - cwom
+  - wfms
+  entities:
+  - entity-resource
+  description: The CPE and access-point model for a bandwidth.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-rtf-order-request
+  name: RTF order request
+  system: rtf
+  style: api
+  consumers:
+  - b2b-web
+  - smb-app
+  - bcrm
+  - nps
+  - wfms
+  open_apis:
+  - api-tmf622
+  entities:
+  - entity-product-order
+  description: Submits a channel order, with the summary-order flags, as XML.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-rtf-order-closure-notification
+  name: Order closure notification
+  system: rtf
+  style: api
+  consumers:
+  - cwom
+  entities:
+  - entity-product-order
+  description: Tells RTF the fixed order is closed.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-cwom-order
+  name: Order
+  system: cwom
+  style: api
+  consumers:
+  - rtf
+  open_apis:
+  - api-tmf622
+  entities:
+  - entity-product-order
+  description: The summary, cessation and dunning orders RTF hands to CWOM.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-cwom-create-shopping-cart
+  name: createShoppingCart
+  system: cwom
+  style: api
+  consumers:
+  - rtf
+  open_apis:
+  - api-tmf622
+  entities:
+  - entity-product-order
+  description: Hands a migration or up/downgrade order to CWOM.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-cwom-refresh-shopping-cart
+  name: refreshShoppingCart
+  system: cwom
+  style: api
+  consumers:
+  - rtf
+  open_apis:
+  - api-tmf622
+  entities:
+  - entity-product-order
+  description: Carries devices forward and overrides amounts on a changed order.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-cwom-callback
+  name: CWOM callback
+  system: cwom
+  style: api
+  consumers:
+  - xaas
+  - tibco
+  entities:
+  - entity-service-order
+  description: Activation and shipment results returned to CWOM.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-cwom-update-transaction
+  name: Update transaction
+  system: cwom
+  consumers:
+  - wfms
+  entities:
+  - entity-work-order
+  description: 'The technician''s results: SIC codes and serials.'
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-e2eso-service-order
+  name: Service order
+  system: e2eso
+  style: api
+  consumers:
+  - cwom
+  open_apis:
+  - api-tmf641
+  entities:
+  - entity-service-order
+  description: Provisions the Fortinet CPE, SD-WAN and FortiPortal services.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-e2eso-serials
+  name: PATCH (CPE and FEX serials)
+  system: e2eso
+  style: api
+  consumers:
+  - cwom
+  entities:
+  - entity-resource
+  description: Passes the installed CPE and FEX serials on.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-fortinet-api
+  name: Fortinet API
+  system: fortinet
+  style: api
+  consumers:
+  - e2eso
+  entities:
+  - entity-resource
+  description: Provisions the CPE in the ADOM and creates the FortiPortal organisation.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-in-update-offer
+  name: UpdateOffer
+  system: in
+  style: api
+  consumers:
+  - cwom
+  entities:
+  - entity-product
+  description: Applies a Backup 5G speed or the dunning offer.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-in-delete-offer
+  name: DeleteOffer
+  system: in
+  style: api
+  consumers:
+  - cwom
+  entities:
+  - entity-product
+  description: Removes a Backup 5G speed or the dunning offer.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-veda-hss-activation
+  name: HSS activation
+  system: veda
+  consumers:
+  - cwom
+  entities:
+  - entity-resource
+  description: Activates or removes the Backup 5G profile.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-alepo-commands
+  name: Alepo commands
+  system: alepo
+  consumers:
+  - veda
+  description: vEDA's Backup 5G commands.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-xaas-activate-saas
+  name: Activate SaaS
+  system: xaas
+  consumers:
+  - cwom
+  entities:
+  - entity-product
+  description: Activates a SaaS add-on.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-wfms-work-order
+  name: Work order
+  system: wfms
+  consumers:
+  - cwom
+  entities:
+  - entity-work-order
+  description: A manual work order for the technician.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-wfms-create-complaint-wo
+  name: CreateComplaintWO
+  system: wfms
+  style: api
+  consumers:
+  - tibco
+  open_apis:
+  - api-tmf621
+  entities:
+  - entity-trouble-ticket
+  - entity-work-order
+  description: A work order raised for a complaint.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-itsm-shipment-order
+  name: ShipmentOrder
+  system: itsm
+  style: api
+  consumers:
+  - cwom
+  entities:
+  - entity-resource
+  description: A device-delivery shipment order.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-cns-notification-api
+  name: CNS notification API
+  system: cns
+  style: api
+  consumers:
+  - cwom
+  - rtf
+  open_apis:
+  - api-tmf681
+  description: 'SMS and email to the customer: order submitted, completed, OTP.'
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-nc-crm-party-apis
+  name: TMF party APIs
+  system: nc-crm
+  style: api
+  consumers:
+  - tibco
+  open_apis:
+  - api-tmf632
+  - api-tmf629
+  entities:
+  - entity-party
+  - entity-customer
+  description: Customer, organisation, individual, contact and site data.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-tibco-party-apis
+  name: NC CRM party APIs
+  system: tibco
+  style: api
+  consumers:
+  - b2b-web
+  - smb-app
+  open_apis:
+  - api-tmf632
+  - api-tmf629
+  entities:
+  - entity-party
+  - entity-customer
+  description: NC CRM's party data, for the digital channels.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+  relays:
+  - if-nc-crm-party-apis
+- id: if-ibm-bpm-notify-order-creation
+  name: NotifyOrderCreationRequest
+  system: ibm-bpm
+  consumers:
+  - tibco
+  open_apis:
+  - api-tmf622
+  entities:
+  - entity-product-order
+  description: Opens the order tracker.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-tibco-notify-order-creation
+  name: NotifyOrderCreationRequest
+  system: tibco
+  consumers:
+  - rtf
+  open_apis:
+  - api-tmf622
+  entities:
+  - entity-product-order
+  description: RTF's order-creation notice, passed on to IBM BPM.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+  relays:
+  - if-ibm-bpm-notify-order-creation
+- id: if-ibm-bpm-update-milestones
+  name: Update milestones
+  system: ibm-bpm
+  style: event
+  consumers:
+  - tibco
+  entities:
+  - entity-order-milestone
+  description: Milestones per sub-order.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-tibco-milestones
+  name: Milestone (per sub-order)
+  system: tibco
+  style: event
+  consumers:
+  - cwom
+  entities:
+  - entity-order-milestone
+  description: CWOM's sub-order milestones, passed on to IBM BPM.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+  relays:
+  - if-ibm-bpm-update-milestones
+- id: if-felix-order-details
+  name: getRealTimeOrderDetails
+  system: felix
+  consumers:
+  - ibm-bpm
+  - tibco
+  entities:
+  - entity-order-milestone
+  - entity-product-order
+  description: Stored procedure reading an order and its milestones.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-tibco-order-details
+  name: getRealTimeOrderDetails
+  system: tibco
+  style: api
+  consumers:
+  - b2b-web
+  - smb-app
+  open_apis:
+  - api-tmf622
+  entities:
+  - entity-order-milestone
+  - entity-product-order
+  description: Order tracking for the digital channels.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+  relays:
+  - if-felix-order-details
+- id: if-nps-port-out-request
+  name: Port-out request
+  system: nps
+  consumers:
+  - npc
+  entities:
+  - entity-telephone-number
+  description: A number leaving for another operator.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-ocr-read-document
+  name: Document reading
+  system: ocr
+  style: api
+  consumers:
+  - b2b-web
+  - sas-portal
+  entities:
+  - entity-customer-document
+  description: Reads a trade licence, Emirates ID or establishment card.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-gov-licence-validation
+  name: Trade licence validation
+  system: gov
+  style: api
+  consumers:
+  - tibco
+  entities:
+  - entity-customer-document
+  description: Validates a trade licence or decree.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations

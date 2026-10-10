@@ -28,12 +28,14 @@ from knowledge_portal.application.use_cases.index_links import (
     record_concepts,
     texts_to_embed,
 )
+from knowledge_portal.domain.architecture.interfaces import SystemInterface
 from knowledge_portal.domain.architecture.journeys import Journey
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
     KnowledgeConflictError,
     KnowledgeReleaseStatus,
     RelationshipKind,
+    SystemDefinition,
     SystemRelationship,
 )
 from knowledge_portal.domain.architecture.products import ProductOffering, RealisationLayer
@@ -261,6 +263,47 @@ def _header(release: ArchitectureKnowledge, entity: LinkedEntity, entity_id: str
     return header + (f" · capabilities: {concepts}" if concepts else "")
 
 
+def _data_lines(
+    release: ArchitectureKnowledge, system: SystemDefinition, names: dict[str, str]
+) -> tuple[str, ...]:
+    """What a system masters and reads, and the interfaces it exposes and consumes
+    (ontology plan Phase 8); none for a system that records none, so its text stays."""
+    labels = {item.id: item.pref_label for item in release.vocabulary}
+    by_id = {item.id: item for item in release.interfaces}
+
+    def carried(interface: SystemInterface) -> str:
+        said = [labels[item] for item in (*interface.open_api_ids, *interface.entity_ids)]
+        return f" ({', '.join(said)})" if said else ""
+
+    return (
+        *(
+            (f"Masters: {', '.join(labels[item] for item in system.masters)}",)
+            if system.masters
+            else ()
+        ),
+        *((f"Reads: {', '.join(labels[item] for item in system.reads)}",) if system.reads else ()),
+        *(
+            f"Exposes: {item.name}{carried(item)}"
+            + (
+                f" to {', '.join(names[other] for other in item.consumer_ids)}"
+                if item.consumer_ids
+                else ""
+            )
+            + "".join(
+                f", relaying {by_id[other].name} from {names[by_id[other].system_id]}"
+                for other in item.relays
+            )
+            for item in release.interfaces
+            if item.system_id == system.id
+        ),
+        *(
+            f"Consumes: {item.name}{carried(item)} from {names[item.system_id]}"
+            for item in release.interfaces
+            if system.id in item.consumer_ids
+        ),
+    )
+
+
 def _kind(item: SystemRelationship) -> str:
     words = _KIND_WORDS.get(item.kind)
     return f" ({words})" if words else ""
@@ -410,6 +453,7 @@ class BuildArchitectureIndex:
                         for item in release.relationships
                         if item.target_system_id == system.id
                     ),
+                    *_data_lines(release, system, names),
                 )
                 if line
             )

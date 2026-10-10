@@ -23,6 +23,12 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   whole-system seats, and leaves out the system's other capabilities. `GET
   /organisation/references` also flags seats on a capability the system no longer links to,
   and the squad screens show and edit each seat's capability.
+- Data and interfaces (ontology plan, Phase 8): information entities as a sixth vocabulary,
+  the entities each system masters or reads, and the interfaces systems expose, consume and
+  relay, in the catalogue, the draft API and every file format. A requirement assessment names
+  a data or interface change's owners and consumers, with the path to each; the internal
+  contract gains the `owner` and `consumer` roles, the `entity` and `interface` path kinds and
+  the `interface` facet.
 
 ### Changed
 

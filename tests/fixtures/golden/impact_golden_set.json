@@ -1,9 +1,9 @@
 {
-  "version": 1,
+  "version": 2,
   "catalogue": "catalogues/smb-architecture.yaml",
   "catalogue_version": "smb-architecture-business-pro-plus",
   "labelled_on": "2026-10-10",
-  "provenance": "Seed set written from the SMB catalogue (SDD v2.3 and SMB reference v1.0), not yet from historic requirements. Each case names the systems a reviewer would expect to change, not every system its journey passes through.",
+  "provenance": "Seed set written from the SMB catalogue (SDD v2.3 and SMB reference v1.0), not yet from historic requirements. Each case names the systems a reviewer would expect to change, not every system its journey passes through. Version 2 (ontology plan Phase 8) adds G054 to G059: requirements that change data or an interface. Their systems include the consumers a reviewer must check, which may only consume (consume_only), and they label the owners and consumers the assessment must reach.",
   "verdicts": [
     "change_existing_offering",
     "new_plan",
@@ -1070,6 +1070,159 @@
         "capability"
       ],
       "note": "Too vague to decide; expects questions, not a verdict."
+    },
+    {
+      "id": "G054",
+      "text": "For Business Pro Plus customers, keep the VAT registration number in the customer record and show it in B2B Web.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "cbcm",
+        "nc-crm",
+        "b2b-web",
+        "smb-app",
+        "tibco",
+        "dcrm",
+        "rtf",
+        "bcrm",
+        "sas-portal"
+      ],
+      "concepts": [
+        "cap-customer-data"
+      ],
+      "missing_facets": [],
+      "owners": [
+        "cbcm",
+        "nc-crm"
+      ],
+      "consumers": [
+        "b2b-web",
+        "smb-app",
+        "tibco",
+        "dcrm",
+        "rtf",
+        "bcrm",
+        "sas-portal"
+      ],
+      "note": "Data change: both systems of record for customers, every system that reads customer data, and the consumers of the interfaces that carry it, directly or through TIBCO."
+    },
+    {
+      "id": "G055",
+      "text": "Add the site contact to the CRM GW API response so B2B Web and the SMB App can show it on Business Pro Plus accounts.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "cbcm",
+        "b2b-web",
+        "smb-app",
+        "dcrm",
+        "rtf"
+      ],
+      "concepts": [
+        "cap-customer-data"
+      ],
+      "missing_facets": [],
+      "owners": [
+        "cbcm"
+      ],
+      "consumers": [
+        "b2b-web",
+        "smb-app",
+        "dcrm",
+        "rtf"
+      ],
+      "note": "Interface change: every consumer of CRM GW API must be checked, though only the two channels use the new field."
+    },
+    {
+      "id": "G056",
+      "text": "Add the sub-order number to the NotifyOrderCreationRequest message for Business Pro Plus orders so the tracker shows each sub-order.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "ibm-bpm",
+        "tibco",
+        "rtf"
+      ],
+      "concepts": [
+        "cap-order-tracking"
+      ],
+      "missing_facets": [],
+      "owners": [
+        "ibm-bpm"
+      ],
+      "consumers": [
+        "tibco",
+        "rtf"
+      ],
+      "note": "Multi-hop: RTF sends the notice to TIBCO, which passes it on to IBM BPM."
+    },
+    {
+      "id": "G057",
+      "text": "Add the CPE serial number to the Service order API that CWOM calls on E2ESO for Business Pro Plus.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "e2eso",
+        "cwom"
+      ],
+      "concepts": [
+        "cap-cpe-provisioning"
+      ],
+      "missing_facets": [],
+      "owners": [
+        "e2eso"
+      ],
+      "consumers": [
+        "cwom"
+      ],
+      "note": "Interface change on the service order."
+    },
+    {
+      "id": "G058",
+      "text": "Keep the ported-in telephone number record in 6D Inventory when a Business Pro Plus port-in order completes.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "inv-6d",
+        "nps"
+      ],
+      "concepts": [
+        "cap-number-portability",
+        "cap-device-logistics"
+      ],
+      "missing_facets": [],
+      "owners": [
+        "inv-6d"
+      ],
+      "consumers": [
+        "nps"
+      ],
+      "note": "Data change on a narrower entity: a telephone number is a resource."
+    },
+    {
+      "id": "G059",
+      "text": "Add the customer's preferred language to the party data of Business Pro Plus customers on NC Digital, so B2B Web can greet them in it.",
+      "verdict": "change_existing_offering",
+      "offering": "business-pro-plus",
+      "systems": [
+        "nc-crm",
+        "tibco",
+        "b2b-web",
+        "smb-app"
+      ],
+      "concepts": [
+        "cap-customer-data"
+      ],
+      "missing_facets": [],
+      "owners": [
+        "nc-crm"
+      ],
+      "consumers": [
+        "tibco",
+        "b2b-web",
+        "smb-app"
+      ],
+      "note": "Multi-hop: NC CRM's party APIs reach the channels only through TIBCO."
     }
   ]
 }

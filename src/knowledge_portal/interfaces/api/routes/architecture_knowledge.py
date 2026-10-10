@@ -263,6 +263,11 @@ def update_draft(
                 if body.vocabulary is None
                 else tuple(item.to_domain() for item in body.vocabulary)
             ),
+            interfaces=(
+                None
+                if body.interfaces is None
+                else tuple(item.to_domain() for item in body.interfaces)
+            ),
         )
     )
 
