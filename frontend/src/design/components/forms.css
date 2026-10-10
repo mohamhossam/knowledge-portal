@@ -1,0 +1,156 @@
+.ds-field {
+  display: grid;
+  gap: var(--space-1);
+  max-inline-size: 40rem;
+}
+
+.ds-field__label {
+  font-weight: var(--field-label-weight);
+}
+
+.ds-field__required {
+  font-weight: var(--weight-body);
+  color: var(--color-ink-2);
+}
+
+.ds-field__hint {
+  font-size: var(--text-meta);
+  color: var(--color-ink-2);
+}
+
+.ds-field__error {
+  font-size: var(--text-meta);
+  font-weight: var(--weight-strong);
+  color: var(--field-error);
+}
+
+.ds-input {
+  inline-size: 100%;
+  min-block-size: var(--field-height);
+  padding: var(--space-1) var(--space-2);
+  border: var(--rule-hair) solid var(--field-border);
+  border-radius: var(--radius-control);
+  background: var(--field-bg);
+  color: var(--field-fg);
+}
+
+.ds-input::placeholder {
+  color: var(--field-placeholder);
+}
+
+.ds-input[aria-invalid="true"] {
+  border-color: var(--field-error);
+  border-width: var(--rule-heavy);
+}
+
+.ds-input--area {
+  resize: vertical;
+  line-height: var(--leading-reading);
+}
+
+.ds-check {
+  display: grid;
+  grid-template-columns: var(--target-min) 1fr;
+  align-items: center;
+  column-gap: var(--space-2);
+  min-block-size: var(--target-min);
+}
+
+.ds-check__box {
+  inline-size: var(--target-min);
+  block-size: var(--target-min);
+  margin: 0;
+  /* The action ink, not its fill: a checked box keeps 3:1 in dark mode too (fill: 1.9:1). */
+  accent-color: var(--color-action);
+}
+
+.ds-check__hint {
+  grid-column: 2;
+}
+
+.ds-radios {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.ds-combobox {
+  position: relative;
+}
+
+.ds-combobox__list {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: calc(100% + var(--space-1));
+  z-index: var(--z-drawer);
+  max-block-size: 18rem;
+  overflow: auto;
+  margin: 0;
+  padding: var(--space-1) 0;
+  list-style: none;
+  background: var(--overlay-bg);
+  border: var(--rule-hair) solid var(--color-rule-strong);
+  border-radius: var(--overlay-radius);
+  box-shadow: var(--overlay-shadow);
+}
+
+.ds-combobox__option,
+.ds-combobox__empty {
+  min-block-size: var(--target-min);
+  padding: var(--space-1) var(--space-3);
+}
+
+.ds-combobox__option {
+  cursor: pointer;
+}
+
+.ds-combobox__option[aria-selected="true"] {
+  background: var(--color-selected);
+  color: var(--color-on-selected);
+  box-shadow: inset 3px 0 0 var(--color-action);
+}
+
+.ds-combobox__hint {
+  color: var(--color-ink-2);
+}
+
+.ds-upload {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.ds-upload__drop {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  border: var(--rule-hair) dashed var(--color-rule-strong);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.ds-upload__drop:focus-within {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.ds-upload__input {
+  font-size: var(--text-meta);
+}
+
+.ds-upload__list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.ds-upload__item {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-block: var(--space-1);
+  border-block-end: var(--hair-rule);
+}

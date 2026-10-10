@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
-import { Account } from "../app/Shell";
+import { Account } from "../app/legacyMasthead";
 import { useAuth } from "../auth/authContext";
 import { NoAccess } from "../auth/Gate";
 import { CALLBACK_PATH, REQUIREMENT_APP_URL, SILENT_CALLBACK_PATH } from "../auth/paths";

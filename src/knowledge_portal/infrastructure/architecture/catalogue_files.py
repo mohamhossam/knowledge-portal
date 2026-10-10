@@ -72,12 +72,16 @@ from knowledge_portal.domain.architecture.lifecycle import (
     NoteBlock,
     NoteBlockKind,
 )
+from knowledge_portal.domain.architecture.portfolio import PortfolioNode
 from knowledge_portal.domain.architecture.products import (
+    BusinessRule,
     ComponentResponsibility,
     OfferingComponent,
     OfferingNfr,
+    OfferingPlan,
     OfferingPoint,
     OrderType,
+    PlanCharacteristic,
     ProductOffering,
     Realisation,
     SourceConfidence,
@@ -123,11 +127,29 @@ DECISIONS = "Decisions"
 BOUNDARIES = "Boundaries"
 CHANGE_HISTORY = "ChangeHistory"
 CHANGE_ITEMS = "ChangeItems"
+PORTFOLIO = "Portfolio"
+PLANS = "Plans"
+PLAN_CHARACTERISTICS = "PlanCharacteristics"
+BUSINESS_RULES = "BusinessRules"
 _CELLS = tuple(f"cell_{number}" for number in range(1, MAX_TABLE_COLUMNS + 1))
 INSTRUCTIONS = "Instructions"
 _DOMAIN_HEADERS = ("domain_id", "name", "name_ar", "parent_id", "description")
 _HEADERS: dict[str, tuple[str, ...]] = {
-    SYSTEMS: ("system_id", "name", "name_ar", "aliases", "description", "landscape_domain_id"),
+    SYSTEMS: (
+        "system_id",
+        "name",
+        "name_ar",
+        "aliases",
+        "description",
+        "landscape_domain_id",
+        "owner",
+        "external",
+        "roadmap",
+        "placement_from",
+        "placement_reason",
+        "confidence",
+        "source",
+    ),
     COMPONENTS: (
         "system_id",
         "component_id",
@@ -162,6 +184,7 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "source",
         "sources",
         "primary_source",
+        "portfolio",
     ),
     ORDER_TYPES: (
         "product_id",
@@ -228,6 +251,9 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "source",
         "channels",
         "channel_entry",
+        "performer",
+        "point_of_no_return",
+        "role",
     ),
     FLOW_RULES: (
         "journey_id",
@@ -252,6 +278,12 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "correlation_key",
         "confidence",
         "source",
+        "from_system",
+        "to_system",
+        "via",
+        "purpose",
+        "style",
+        "tmf_equivalent",
     ),
     CHANNELS: (
         "channel_id",
@@ -387,6 +419,10 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "knowledge_version",
     ),
     CHANGE_ITEMS: ("change_request_id", "kind", "summary", "status", "feature_id"),
+    PORTFOLIO: ("node_id", "name", "level", "parent_id", "description", "confidence", "source"),
+    PLANS: ("product_id", "plan", "description", "confidence", "source"),
+    PLAN_CHARACTERISTICS: ("product_id", "plan", "characteristic", "value"),
+    BUSINESS_RULES: ("product_id", "rule_id", "statement", "kind", "confidence", "source"),
 }
 # Headers a sheet cannot do without. Columns added later stay optional, so
 # workbooks filled from an older template still import.
@@ -431,6 +467,10 @@ _REQUIRED_HEADERS: dict[str, tuple[str, ...]] = {
     BOUNDARIES: ("product_id", "kind", "text"),
     CHANGE_HISTORY: ("change_request_id", "title"),
     CHANGE_ITEMS: ("change_request_id", "kind", "summary"),
+    PORTFOLIO: ("node_id", "name", "level"),
+    PLANS: ("product_id", "plan"),
+    PLAN_CHARACTERISTICS: ("product_id", "plan", "characteristic", "value"),
+    BUSINESS_RULES: ("product_id", "rule_id", "statement"),
 }
 _KINDS = ", ".join(kind.value for kind in RelationshipKind)
 _REQUIRED_SHEETS = (SYSTEMS,)
@@ -533,6 +573,27 @@ _INSTRUCTIONS = (
         "ChangeHistory (optional): the change requests applied to this version, one row each, "
         "with the approved requirement they come from; features as id: name by ;, gaps by ;. "
         "ChangeItems: what each asked for. Leave both out to keep the version's own history.",
+    ),
+    (
+        "Portfolio (optional): where offerings sit, such as Enterprise > Fixed > SMB; level "
+        "is the operator's own word for it, parent_id nests one node under another. Products "
+        "portfolio: the node_id an offering sits in.",
+    ),
+    (
+        "Plans (optional): an offering's plans as its sources describe them; "
+        "PlanCharacteristics: one row per stated fact of a plan, such as Download 200 Mbps. "
+        "Prices are read live from the product catalog, never kept here.",
+    ),
+    ("BusinessRules (optional): the rules an offering is sold and fulfilled by, with a kind.",),
+    (
+        "Systems owner, external (yes or no), roadmap, and placement_from with "
+        "placement_reason when a system sits elsewhere than a source put it.",
+    ),
+    (
+        "Activities performer (a team or the customer, when no system performs it), "
+        "point_of_no_return and role. ActivityIntegrations from_system, to_system, via, "
+        "purpose, style and tmf_equivalent; a call to a system with no step of its own has "
+        "to_activity equal to from_activity.",
     ),
     ("Row 1 of each sheet holds the headers; keep them as they are.",),
 )
@@ -683,6 +744,17 @@ def content_from_mapping(raw: object) -> CatalogueContent:
                     landscape_domain_id=_optional_text(
                         item.get("landscape_domain"), where, "landscape_domain"
                     ),
+                    owner=_optional_text(item.get("owner"), where, "owner"),
+                    external=bool(_flag(item.get("external"), where, "external", False)),
+                    roadmap=_optional_text(item.get("roadmap"), where, "roadmap"),
+                    placement_from=_optional_text(
+                        item.get("placement_from"), where, "placement_from"
+                    ),
+                    placement_reason=_optional_text(
+                        item.get("placement_reason"), where, "placement_reason"
+                    ),
+                    confidence=_trust(item.get("confidence"), where),
+                    source=_optional_text(item.get("source"), where, "source"),
                 )
             )
         except InvalidKnowledgeError as exc:
@@ -712,6 +784,7 @@ def content_from_mapping(raw: object) -> CatalogueContent:
         _sources(_entries(raw, "sources")),
         _conflicts(_entries(raw, "conflicts")),
         _history(_entries(raw, "change_history")) if "change_history" in raw else None,
+        _portfolio(_entries(raw, "portfolio")),
     )
 
 
@@ -748,6 +821,11 @@ def _activity(step: dict[str, Any], place: str) -> Activity:
         source=_optional_text(step.get("source"), place, "source"),
         channels=_text_list(step.get("channels"), place, "channels"),
         channel_entry=bool(_flag(step.get("channel_entry"), place, "channel_entry", False)),
+        performer=_optional_text(step.get("performer"), place, "performer"),
+        point_of_no_return=_optional_text(
+            step.get("point_of_no_return"), place, "point_of_no_return"
+        ),
+        role=_optional_text(step.get("role"), place, "role"),
     )
 
 
@@ -776,6 +854,12 @@ def _link(link: dict[str, Any], place: str) -> ActivityIntegration:
         correlation_key=_optional_text(link.get("correlation_key"), place, "correlation_key"),
         confidence=_trust(link.get("confidence"), place),
         source=_optional_text(link.get("source"), place, "source"),
+        from_system_id=_optional_text(link.get("from_system"), place, "from_system"),
+        to_system_id=_optional_text(link.get("to_system"), place, "to_system"),
+        via_system_id=_optional_text(link.get("via"), place, "via"),
+        purpose=_optional_text(link.get("purpose"), place, "purpose"),
+        style=_optional_text(link.get("style"), place, "style"),
+        tmf_equivalent=_optional_text(link.get("tmf_equivalent"), place, "tmf_equivalent"),
     )
 
 
@@ -852,6 +936,9 @@ def _journey_mapping(journey: Journey) -> dict[str, Any]:
                         etom=step.etom,
                         channels=list(step.channels),
                         channel_entry=step.channel_entry or None,
+                        performer=step.performer,
+                        point_of_no_return=step.point_of_no_return,
+                        role=step.role,
                     ),
                     **_sourced(step),
                 }
@@ -882,6 +969,12 @@ def _journey_mapping(journey: Journey) -> dict[str, Any]:
                         payload=link.payload,
                         timing=link.timing,
                         correlation_key=link.correlation_key,
+                        from_system=link.from_system_id,
+                        to_system=link.to_system_id,
+                        via=link.via_system_id,
+                        purpose=link.purpose,
+                        style=link.style,
+                        tmf_equivalent=link.tmf_equivalent,
                     ),
                     **_sourced(link),
                 }
@@ -1064,11 +1157,80 @@ def _offerings(entries: list[dict[str, Any]]) -> list[ProductOffering]:
                     ),
                     boundaries=_text_list(item.get("boundaries"), where, "boundaries"),
                     not_used=_text_list(item.get("not_used"), where, "not_used"),
+                    portfolio_node_id=_optional_text(item.get("portfolio"), where, "portfolio"),
+                    plans=tuple(
+                        _part(spot, partial(_plan, raw, spot))
+                        for index, raw in enumerate(_sub_entries(item, "plans", where), 1)
+                        for spot in [_where(raw, f"{where}, plan {index}")]
+                    ),
+                    business_rules=tuple(
+                        _part(spot, partial(_business_rule, raw, spot))
+                        for index, raw in enumerate(_sub_entries(item, "business_rules", where), 1)
+                        for spot in [_where(raw, f"{where}, business rule {index}")]
+                    ),
                 )
             )
         except InvalidKnowledgeError as exc:
             raise _located(where, exc) from exc
     return offerings
+
+
+def _plan(raw: dict[str, Any], where: str) -> OfferingPlan:
+    """A plan: its name and characteristics, given as a mapping of name to value."""
+    characteristics = raw.get("characteristics") or {}
+    if not isinstance(characteristics, dict):
+        raise InvalidKnowledgeError(f"{where}: characteristics must map each name to its value.")
+    return OfferingPlan(
+        name=_text(raw.get("name"), where, "name"),
+        characteristics=tuple(
+            PlanCharacteristic(_text(name, where, "characteristic"), _text(value, where, str(name)))
+            for name, value in characteristics.items()
+        ),
+        description=_optional_text(raw.get("description"), where, "description"),
+        confidence=_trust(raw.get("confidence"), where),
+        source=_optional_text(raw.get("source"), where, "source"),
+    )
+
+
+def _business_rule(raw: dict[str, Any], where: str) -> BusinessRule:
+    return BusinessRule(
+        id=_text(raw.get("id"), where, "id"),
+        statement=_text(raw.get("statement"), where, "statement"),
+        kind=_optional_text(raw.get("kind"), where, "kind"),
+        confidence=_trust(raw.get("confidence"), where),
+        source=_optional_text(raw.get("source"), where, "source"),
+    )
+
+
+def _portfolio(entries: list[dict[str, Any]]) -> list[PortfolioNode]:
+    nodes = []
+    for number, item in enumerate(entries, start=1):
+        where = _where(item, f"portfolio entry {number}")
+        try:
+            nodes.append(
+                PortfolioNode(
+                    id=_text(item.get("id"), where, "id"),
+                    name=_text(item.get("name"), where, "name"),
+                    level=_text(item.get("level"), where, "level"),
+                    parent_id=_optional_text(item.get("parent"), where, "parent"),
+                    description=_optional_text(item.get("description"), where, "description"),
+                    confidence=_trust(item.get("confidence"), where),
+                    source=_optional_text(item.get("source"), where, "source"),
+                )
+            )
+        except InvalidKnowledgeError as exc:
+            raise _located(where, exc) from exc
+    return nodes
+
+
+def _portfolio_mapping(node: PortfolioNode) -> dict[str, Any]:
+    return {
+        "id": node.id,
+        "name": node.name,
+        "level": node.level,
+        **_present(parent=node.parent_id, description=node.description),
+        **_sourced(node),
+    }
 
 
 def _question(raw: dict[str, Any], where: str) -> OpenQuestion:
@@ -1332,6 +1494,27 @@ def _offering_mapping(offering: ProductOffering) -> dict[str, Any]:
             ],
             boundaries=list(offering.boundaries),
             not_used=list(offering.not_used),
+            portfolio=offering.portfolio_node_id,
+            plans=[
+                {
+                    "name": plan.name,
+                    **_present(
+                        characteristics={item.name: item.value for item in plan.characteristics},
+                        description=plan.description,
+                    ),
+                    **_sourced(plan),
+                }
+                for plan in offering.plans
+            ],
+            business_rules=[
+                {
+                    "id": rule.id,
+                    "statement": rule.statement,
+                    **_present(kind=rule.kind),
+                    **_sourced(rule),
+                }
+                for rule in offering.business_rules
+            ],
         ),
     }
 
@@ -1455,6 +1638,7 @@ def _content(
     sources: list[KnowledgeSource] | None = None,
     conflicts: list[SourceConflict] | None = None,
     history: list[ChangeRequestRecord] | None = None,
+    portfolio: list[PortfolioNode] | None = None,
 ) -> CatalogueContent:
     """The file's content, refusing a placement in a domain the file does not list."""
     known = {item.id for item in domains}
@@ -1482,6 +1666,7 @@ def _content(
         tuple(sources or ()),
         tuple(conflicts or ()),
         None if history is None else tuple(history),
+        tuple(portfolio or ()),
     )
 
 
@@ -1678,6 +1863,14 @@ def release_to_mapping(release: ArchitectureKnowledge) -> dict[str, Any]:
                     else {}
                 ),
                 **({"constraints": list(item.constraints)} if item.constraints else {}),
+                **_present(
+                    owner=item.owner,
+                    external=item.external or None,
+                    roadmap=item.roadmap,
+                    placement_from=item.placement_from,
+                    placement_reason=item.placement_reason,
+                ),
+                **_sourced(item),
             }
             for item in release.systems
         ],
@@ -1723,6 +1916,7 @@ def release_to_mapping(release: ArchitectureKnowledge) -> dict[str, Any]:
             sources=[_source_mapping(item) for item in release.sources],
             conflicts=[_conflict_mapping(item) for item in release.conflicts],
             change_history=[_history_mapping(item) for item in release.change_history],
+            portfolio=[_portfolio_mapping(item) for item in release.portfolio],
         ),
     }
 
@@ -1792,6 +1986,17 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                 "landscape_domain_id": _optional_text(
                     cells.get("landscape_domain_id"), where, "landscape_domain_id"
                 ),
+                "owner": _optional_text(cells.get("owner"), where, "owner"),
+                "external": bool(_flag(cells.get("external"), where, "external", False)),
+                "roadmap": _optional_text(cells.get("roadmap"), where, "roadmap"),
+                "placement_from": _optional_text(
+                    cells.get("placement_from"), where, "placement_from"
+                ),
+                "placement_reason": _optional_text(
+                    cells.get("placement_reason"), where, "placement_reason"
+                ),
+                "confidence": _trust(cells.get("confidence"), where),
+                "source": _optional_text(cells.get("source"), where, "source"),
                 "capabilities": [],
                 "constraints": [],
                 "components": [],
@@ -1878,6 +2083,17 @@ def _read_workbook(content: bytes) -> CatalogueContent:
         history = (
             _history(_sheet_history(workbook)) if CHANGE_HISTORY in workbook.sheetnames else None
         )
+        portfolio = _portfolio(
+            [
+                {
+                    **cells,
+                    "_where": f"{PORTFOLIO} row {number}",
+                    "id": cells.get("node_id"),
+                    "parent": cells.get("parent_id"),
+                }
+                for number, cells in _rows(workbook, PORTFOLIO)
+            ]
+        )
     finally:
         workbook.close()
     definitions = []
@@ -1894,6 +2110,13 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                     components=tuple(data["components"]),
                     description=data["description"],
                     landscape_domain_id=data["landscape_domain_id"],
+                    owner=data["owner"],
+                    external=data["external"],
+                    roadmap=data["roadmap"],
+                    placement_from=data["placement_from"],
+                    placement_reason=data["placement_reason"],
+                    confidence=data["confidence"],
+                    source=data["source"],
                 )
             )
         except InvalidKnowledgeError as exc:
@@ -1909,6 +2132,7 @@ def _read_workbook(content: bytes) -> CatalogueContent:
         sources,
         conflicts,
         history,
+        portfolio,
     )
 
 
@@ -2007,6 +2231,8 @@ def _sheet_offerings(workbook: Any) -> list[dict[str, Any]]:
             "audiences": [],
             "nfrs": [],
             "lifecycle_notes": [],
+            "plans": [],
+            "business_rules": [],
         }
 
     def offering(cells: dict[str, object], where: str) -> dict[str, Any]:
@@ -2071,6 +2297,27 @@ def _sheet_offerings(workbook: Any) -> list[dict[str, Any]]:
     for number, cells in _rows(workbook, NFRS):
         where = f"{NFRS} row {number}"
         offering(cells, where)["nfrs"].append({**cells, "_where": where})
+    plans: dict[tuple[str, str], dict[str, Any]] = {}
+    for number, cells in _rows(workbook, PLANS):
+        where = f"{PLANS} row {number}"
+        owner = offering(cells, where)
+        plan = {**cells, "_where": where, "name": cells.get("plan"), "characteristics": {}}
+        plans[(owner["id"], _text(cells.get("plan"), where, "plan"))] = plan
+        owner["plans"].append(plan)
+    for number, cells in _rows(workbook, PLAN_CHARACTERISTICS):
+        where = f"{PLAN_CHARACTERISTICS} row {number}"
+        key = (offering(cells, where)["id"], _text(cells.get("plan"), where, "plan"))
+        if key not in plans:
+            raise InvalidKnowledgeError(f"{where}: plan {key[1]!r} is not listed on {PLANS}.")
+        name = _text(cells.get("characteristic"), where, "characteristic")
+        if name in plans[key]["characteristics"]:
+            raise InvalidKnowledgeError(f"{where}: {name!r} is given twice for {key[1]!r}.")
+        plans[key]["characteristics"][name] = cells.get("value")
+    for number, cells in _rows(workbook, BUSINESS_RULES):
+        where = f"{BUSINESS_RULES} row {number}"
+        offering(cells, where)["business_rules"].append(
+            {**cells, "_where": where, "id": cells.get("rule_id")}
+        )
 
     def tracking(cells: dict[str, object], where: str) -> dict[str, Any]:
         owner = offering(cells, where)
@@ -2301,8 +2548,21 @@ def _write_offering(sheets: dict[str, Any], product: ProductOffering) -> None:
             product.source,
             f"{_LIST_SEPARATOR} ".join(product.sources),
             product.primary_source,
+            product.portfolio_node_id,
         ),
     )
+    for plan in product.plans:
+        _append(
+            sheets[PLANS],
+            (product.id, plan.name, plan.description, _confidence(plan), plan.source),
+        )
+        for fact in plan.characteristics:
+            _append(sheets[PLAN_CHARACTERISTICS], (product.id, plan.name, fact.name, fact.value))
+    for rule in product.business_rules:
+        _append(
+            sheets[BUSINESS_RULES],
+            (product.id, rule.id, rule.statement, rule.kind, _confidence(rule), rule.source),
+        )
     for question in product.questions:
         _append(
             sheets[QUESTIONS],
@@ -2567,6 +2827,9 @@ def _write_journey(sheets: dict[str, Any], journey: Journey) -> None:
                 step.source,
                 joined(step.channels),
                 _yes(step.channel_entry) if step.channel_entry else None,
+                step.performer,
+                step.point_of_no_return,
+                step.role,
             ),
         )
     for rule in journey.flow_rules:
@@ -2599,6 +2862,12 @@ def _write_journey(sheets: dict[str, Any], journey: Journey) -> None:
                 link.correlation_key,
                 _confidence(link),
                 link.source,
+                link.from_system_id,
+                link.to_system_id,
+                link.via_system_id,
+                link.purpose,
+                link.style,
+                link.tmf_equivalent,
             ),
         )
 
@@ -2628,6 +2897,13 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 f"{_LIST_SEPARATOR} ".join(system.aliases),
                 system.description,
                 system.landscape_domain_id,
+                system.owner,
+                _yes(system.external) if system.external else None,
+                system.roadmap,
+                system.placement_from,
+                system.placement_reason,
+                _confidence(system),
+                system.source,
             ),
         )
         for capability in system.capabilities:
@@ -2676,6 +2952,19 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 sheets[sheet],
                 (domain.id, domain.name, domain.name_ar, domain.parent_id, domain.description),
             )
+    for node in release.portfolio if release is not None else ():
+        _append(
+            sheets[PORTFOLIO],
+            (
+                node.id,
+                node.name,
+                node.level,
+                node.parent_id,
+                node.description,
+                _confidence(node),
+                node.source,
+            ),
+        )
     for product in release.products if release is not None else ():
         _write_offering(sheets, product)
     for journey in release.journeys if release is not None else ():

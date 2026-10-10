@@ -44,7 +44,7 @@
 
 .sysindex__place {
   padding-bottom: var(--s1);
-  border-bottom: 2px solid var(--rule-heavy);
+  border-bottom: 2px solid var(--tt-rule-heavy);
   color: var(--ink-2);
   font-size: var(--t-meta);
   font-stretch: var(--width-condensed);
@@ -199,7 +199,7 @@
 }
 
 .sheet__facts > div:first-child {
-  border-top: 2px solid var(--rule-heavy);
+  border-top: 2px solid var(--tt-rule-heavy);
 }
 
 .sheet__facts dt {
@@ -298,7 +298,7 @@
 
 .govtable .versions__detail td {
   padding: var(--s2) var(--s4) var(--s4);
-  border-bottom: 2px solid var(--rule-heavy);
+  border-bottom: 2px solid var(--tt-rule-heavy);
   background: var(--stock-band);
 }
 
@@ -413,7 +413,7 @@
 
 .govtable .galley__head th {
   padding: var(--s5) 0 var(--s2);
-  border-bottom: 2px solid var(--rule-heavy);
+  border-bottom: 2px solid var(--tt-rule-heavy);
   font-weight: var(--w-regular);
 }
 
@@ -487,7 +487,7 @@
 }
 
 .suggestion:has(.suggestion__toggle:focus-visible) {
-  outline: var(--focus-ring);
+  outline: var(--tt-focus-ring);
   outline-offset: -2px;
 }
 
@@ -506,7 +506,7 @@ html:has(.galley) {
 
 .govtable .suggestion-detail td {
   padding: var(--s2) var(--s4) var(--s4) 0;
-  border-bottom: 2px solid var(--rule-heavy);
+  border-bottom: 2px solid var(--tt-rule-heavy);
 }
 
 .suggestion-detail__body {
@@ -638,7 +638,7 @@ html:has(.galley) {
   bottom: 0;
   z-index: 1;
   padding: var(--s3) 0;
-  border-top: 2px solid var(--rule-heavy);
+  border-top: 2px solid var(--tt-rule-heavy);
   background: var(--stock-band);
 }
 
@@ -711,7 +711,7 @@ html:has(.galley) {
 .form__legend {
   padding: 0 0 var(--s1);
   width: 100%;
-  border-bottom: 2px solid var(--rule-heavy);
+  border-bottom: 2px solid var(--tt-rule-heavy);
   font-weight: var(--w-bold);
 }
 
@@ -823,7 +823,7 @@ html:has(.galley) {
   gap: var(--s3);
   margin-top: var(--s3);
   padding: var(--s3) var(--s4) var(--s4);
-  border-bottom: 2px solid var(--rule-heavy);
+  border-bottom: 2px solid var(--tt-rule-heavy);
   background: var(--stock-band);
 }
 
@@ -852,7 +852,7 @@ html:has(.galley) {
   display: grid;
   gap: var(--s2);
   padding-block: var(--s3);
-  border-top: 2px solid var(--rule-heavy);
+  border-top: 2px solid var(--tt-rule-heavy);
   background: var(--stock-band);
 }
 
@@ -921,7 +921,7 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
 
 .govtable .samples__detail td {
   padding: var(--s2) var(--s4) var(--s4);
-  border-bottom: 2px solid var(--rule-heavy);
+  border-bottom: 2px solid var(--tt-rule-heavy);
 }
 
 .evidence-list {
@@ -1259,7 +1259,7 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
   width: 100%;
   margin-bottom: var(--s2);
   padding: var(--s1) 0;
-  border-bottom: 2px solid var(--rule-heavy);
+  border-bottom: 2px solid var(--tt-rule-heavy);
   font-weight: var(--w-bold);
 }
 
@@ -1375,7 +1375,7 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
   max-width: 72ch;
   margin: var(--s4) 0 0;
   padding: var(--s2) 0;
-  border-top: 2px solid var(--rule-heavy);
+  border-top: 2px solid var(--tt-rule-heavy);
   border-bottom: 1px solid var(--rule);
 }
 
@@ -1588,7 +1588,7 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
 }
 
 .uploads__summary:focus-visible {
-  outline: var(--focus-ring);
+  outline: var(--tt-focus-ring);
   outline-offset: 2px;
 }
 

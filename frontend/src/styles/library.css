@@ -123,7 +123,7 @@
 }
 
 .file-button:focus-within {
-  outline: var(--focus-ring);
+  outline: var(--tt-focus-ring);
   outline-offset: 2px;
 }
 
@@ -152,11 +152,6 @@
 .add__lead {
   max-width: 62ch;
   color: var(--ink-2);
-}
-
-.add__form {
-  display: grid;
-  gap: var(--s4);
 }
 
 /* One document's page. */
@@ -250,7 +245,7 @@
   align-items: center;
   gap: var(--s2) var(--s4);
   padding-block: var(--s3);
-  border-block: 2px solid var(--rule-heavy);
+  border-block: 2px solid var(--tt-rule-heavy);
   color: var(--ink-2);
 }
 
@@ -263,18 +258,13 @@
   color: var(--disruption);
 }
 
-.processing__aside {
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-}
-
 /* Withdrawing: an inline, deliberate step under the head. */
 .withdraw {
   display: grid;
   gap: var(--s3);
   max-width: 62ch;
   padding-block: var(--s4);
-  border-block: 2px solid var(--rule-heavy);
+  border-block: 2px solid var(--tt-rule-heavy);
 }
 
 .withdraw__title {
@@ -292,7 +282,7 @@
 /* The change notice: counts first, like a timetable's list of changes. */
 .notice-table__title {
   padding-bottom: var(--s1);
-  border-bottom: 2px solid var(--rule-heavy);
+  border-bottom: 2px solid var(--tt-rule-heavy);
   color: var(--ink-2);
   font-size: var(--t-meta);
   font-stretch: var(--width-condensed);
@@ -323,30 +313,6 @@
   margin: 0;
   font-weight: var(--w-bold);
   text-align: end;
-}
-
-.notice-table__item.is-blocking dt,
-.notice-table__item.is-blocking dd {
-  color: var(--disruption);
-  font-weight: var(--w-bold);
-}
-
-.file-warnings {
-  display: grid;
-  max-width: 72ch;
-  gap: var(--s1);
-  margin-top: var(--s2);
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-}
-
-.file-warnings .status {
-  color: var(--ink);
-  font-weight: var(--w-bold);
-}
-
-.file-warnings .is-blocking .status {
-  color: var(--disruption);
 }
 
 .notice-table__total {
@@ -418,7 +384,7 @@ kbd {
 
 .passages thead th {
   padding: 0 var(--s4) var(--s2) 0;
-  border-bottom: 2px solid var(--rule-heavy);
+  border-bottom: 2px solid var(--tt-rule-heavy);
   color: var(--ink-2);
   font-size: var(--t-meta);
   font-stretch: var(--width-condensed);
@@ -440,22 +406,10 @@ kbd {
   text-align: end;
 }
 
-.passages__number {
-  width: 3.5rem;
-}
-
 .passages__where {
   width: 13rem;
   color: var(--ink-2);
   font-size: var(--t-meta);
-}
-
-.passages__status {
-  width: 10rem;
-}
-
-.passages__basis {
-  color: var(--ink-2);
 }
 
 .passages--read .passages__where {
@@ -472,7 +426,7 @@ kbd {
 }
 
 .passage:focus-visible {
-  outline: var(--focus-ring);
+  outline: var(--tt-focus-ring);
   outline-offset: -2px;
 }
 
@@ -508,43 +462,11 @@ kbd {
   color: var(--ink-3);
 }
 
-.mark-wrap--button {
-  line-height: 1;
-}
-
 /* A mark that opens something: a real target, at least 24px tall. */
-.mark--button {
-  display: inline-grid;
-  place-items: center;
-  min-width: 1.5rem;
-  min-height: 1.5rem;
-  border: 0;
-  background: none;
-  vertical-align: top;
-  cursor: pointer;
-}
-
-.passages__reason {
-  display: block;
-  margin-top: var(--s1);
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-}
-
-.passages__flag {
-  display: block;
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-}
-
-.passages__flag--blocking {
-  color: var(--disruption);
-  font-weight: var(--w-bold);
-}
 
 .passage-detail td {
   padding: var(--s2) var(--s4) var(--s4) calc(3.5rem);
-  border-bottom: 2px solid var(--rule-heavy);
+  border-bottom: 2px solid var(--tt-rule-heavy);
 }
 
 .detail {
@@ -553,123 +475,16 @@ kbd {
   gap: var(--s5);
 }
 
-.detail__source,
-.detail__decision {
-  display: grid;
-  gap: var(--s3);
-  align-content: start;
-}
-
-.detail__label {
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-  font-stretch: var(--width-condensed);
-  font-weight: var(--w-medium);
-}
-
-.detail__extracted p:last-child {
-  color: var(--ink-2);
-}
-
-.detail__warnings {
-  display: grid;
-  gap: var(--s1);
-  font-size: var(--t-meta);
-}
-
-.detail__warnings .status {
-  font-weight: var(--w-bold);
-}
-
-.detail__warnings .is-blocking .status {
-  color: var(--disruption);
-}
-
-.detail__note {
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-}
-
-.detail__note--failed {
-  color: var(--disruption);
-}
-
-.detail__original {
-  display: grid;
-  gap: var(--s2);
-  margin: 0;
-}
-
-.detail__original img {
-  max-width: 100%;
-  max-height: 28rem;
-  border: 1px solid var(--rule);
-  object-fit: contain;
-  background: var(--stock);
-}
-
-.detail__original figcaption {
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-}
-
-.detail__removed {
-  max-width: 72ch;
-  color: var(--ink-2);
-}
-
 /* The save bar: the review's foot, kept in view. */
-.savebar {
-  position: sticky;
-  bottom: 0;
-  z-index: 4;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  gap: var(--s2) var(--s4);
-  padding-block: var(--s3);
-  border-top: 2px solid var(--rule-heavy);
-  background: var(--stock);
-}
-
-.savebar__state {
-  flex-basis: 100%;
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-}
-
-.savebar__state strong {
-  color: var(--ink);
-}
-
-.savebar__summary {
-  flex: 1 1 30rem;
-  grid-template-columns: auto minmax(0, 1fr);
-}
-
-.savebar__summary .field__input {
-  width: 100%;
-}
-
-.savebar__why {
-  flex-basis: 100%;
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-}
 
 /* A focused passage is never hidden under the save bar or the masthead. */
-html:has(.savebar) {
-  scroll-padding-bottom: 9rem;
-}
 
 @media (max-width: 60rem) {
   .detail {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .passages__status {
-    width: 7rem;
-  }
+  
 }
 
 @media (max-width: 45rem) {
@@ -712,9 +527,7 @@ html:has(.savebar) {
     padding-left: 0;
   }
 
-  .savebar {
-    position: static;
-  }
+  
 }
 
 /* The document's own pages: an index under its head, current page with the ink bar. */
@@ -748,10 +561,6 @@ html:has(.savebar) {
   box-shadow: inset 0 -3px 0 var(--ink);
 }
 
-.subindex__count {
-  font-weight: var(--w-regular);
-}
-
 @media (max-width: 45rem) {
   .subindex__list {
     gap: 0 var(--s3);
@@ -771,7 +580,7 @@ html:has(.savebar) {
 
 .govsection__title {
   padding-bottom: var(--s1);
-  border-bottom: 2px solid var(--rule-heavy);
+  border-bottom: 2px solid var(--tt-rule-heavy);
   font-size: var(--t-lead);
   font-weight: var(--w-bold);
 }
@@ -785,16 +594,11 @@ html:has(.savebar) {
   color: var(--ink);
 }
 
-.govsection__actions,
-.govsection__action {
+.govsection__actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--s3) var(--s4);
-}
-
-.govsection__form {
-  max-width: 44rem;
 }
 
 .govtable {
@@ -804,7 +608,7 @@ html:has(.savebar) {
 
 .govtable thead th {
   padding: 0 var(--s4) var(--s2) 0;
-  border-bottom: 2px solid var(--rule-heavy);
+  border-bottom: 2px solid var(--tt-rule-heavy);
   color: var(--ink-2);
   font-size: var(--t-meta);
   font-stretch: var(--width-condensed);
@@ -835,12 +639,6 @@ html:has(.savebar) {
 
 .govtable__by {
   display: block;
-  font-size: var(--t-meta);
-}
-
-.govtable__where {
-  width: 14rem;
-  color: var(--ink-2);
   font-size: var(--t-meta);
 }
 
@@ -876,14 +674,6 @@ html:has(.savebar) {
   font-weight: var(--w-medium);
 }
 
-.toolbar__link {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s1);
-  min-height: 2rem;
-  font-weight: var(--w-medium);
-}
-
 /* Search: one field, then exact passages. */
 .searchbar {
   display: flex;
@@ -902,33 +692,9 @@ html:has(.savebar) {
   min-height: 2.25rem;
 }
 
-.searchresults {
-  margin-top: var(--s3);
-}
-
 .searchbar + .govsection__lead,
 .searchbar + .docpage__failure {
   margin-top: var(--s4);
-}
-
-.searchresults__passage {
-  max-width: 64ch;
-}
-
-.searchresults__toggle {
-  display: block;
-  margin-top: var(--s1);
-}
-
-.searchresults__from {
-  display: none;
-}
-
-@media (max-width: 45rem) {
-  .searchresults__from {
-    display: block;
-    margin-top: var(--s1);
-  }
 }
 
 .searchresults__context {
@@ -963,55 +729,15 @@ html:has(.savebar) {
 }
 
 /* Knowledge Center C: an admin acting on a document they don't own. */
-.admingrant {
-  margin-block: var(--s3) 0;
-}
-
-.admingrant__line {
-  max-width: 72ch;
-  color: var(--ink-2);
-}
 
 /* While the grant lasts, a band above the head between heavy rules, as a confirmation is:
    whose document, until when, why. */
-.admingrant--live {
-  margin-block: 0 var(--s4);
-  padding: var(--s2) 0;
-  border-block: 2px solid var(--rule-heavy);
-  background: var(--stock-band);
-}
-
-.admingrant--live .admingrant__line {
-  max-width: none;
-  padding-inline: var(--s3);
-  color: var(--ink);
-}
 
 /* The reason, asked in place under the owner line: on the stock band, closed by a heavy rule. */
-.admingrant__form {
-  max-width: 72ch;
-  margin-top: var(--s3);
-  padding: var(--s3);
-  border-top: 2px solid var(--rule-heavy);
-  background: var(--stock-band);
-}
 
 /* Why the newest version could not be read, under its status. */
-.docpage__why {
-  display: block;
-  color: var(--ink-2);
-}
 
 /* Owner and Cited by, kept with the title once their columns leave the grid. */
-.library__aside {
-  display: none;
-}
-
-@media (max-width: 60rem) {
-  .library__aside {
-    display: block;
-  }
-}
 
 /* The library's bulk line runs the toolbar's full width, so opening it moves nothing else. */
 .timetable__toolbar > .knowledge__batch {

@@ -19,7 +19,10 @@ function useChange<Input>(
     },
     onSuccess: (document) => {
       queryClient.setQueryData(documentKey(documentId), document);
-      void queryClient.invalidateQueries({ queryKey: ["library", "documents"] });
+      // The answer is the whole document: the library list takes it in place, without reading
+      // every document again (it is polled while anything is read or indexed anyway).
+      queryClient.setQueryData<LibraryDocument[]>(["library", "documents"], (list) =>
+        list?.some((item) => item.id === document.id) ? list.map((item) => (item.id === document.id ? document : item)) : list);
     },
   });
 }

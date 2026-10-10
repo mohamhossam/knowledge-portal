@@ -1,0 +1,12 @@
+round,participant_id,role,date,screen_size,persona,task_id,task_order,success,time_s,errors,critical_errors,hints,hint_notes,seq_1to7,bidi_incidents,keyboard_share,observer_notes,sus_score_0to100,fatigue_1to5,most_frustrating,worked_well,labels_your_work,labels_decide,labels_reconfirmation,labels_ownership,labels_cited_by,labels_jobs,labels_suggested,labels_seen,labels_in_service
+round-1,P01,architect,YYYY-MM-DD,1280x800,fake-owner,T1,1,,,,,,,,,,,,,,,,,,,,,,,
+round-1,P01,architect,YYYY-MM-DD,1280x800,fake-owner,T2,2,,,,,,,,,,,,,,,,,,,,,,,
+round-1,P01,architect,YYYY-MM-DD,1280x800,fake-owner,T3,3,,,,,,,,,,,,,,,,,,,,,,,
+round-1,P01,architect,YYYY-MM-DD,1280x800,fake-owner,T4,4,,,,,,,,,,,,,,,,,,,,,,,
+round-1,P01,architect,YYYY-MM-DD,1280x800,fake-owner,T5,5,,,,,,,,,,,,,,,,,,,,,,,
+round-1,P01,architect,YYYY-MM-DD,1280x800,fake-owner,T6,6,,,,,,,,,,,,,,,,,,,,,,,
+round-1,P01,architect,YYYY-MM-DD,1280x800,fake-owner,T7,7,,,,,,,,,,,,,,,,,,,,,,,
+round-1,P01,architect,YYYY-MM-DD,1280x800,fake-owner,T8,8,,,,,,,,,,,,,,,,,,,,,,,
+round-1,P01,architect,YYYY-MM-DD,1280x800,fake-owner,T10,9,,,,,,,,,,,,,,,,,,,,,,,
+round-1,P01,architect,YYYY-MM-DD,1280x800,fake-owner,T11,10,,,,,,,,,,,,,,,,,,,,,,,
+round-1,P01,architect,YYYY-MM-DD,1280x800,fake-owner,SESSION,,,,,,,,,,,,,,,,,,,,,,,,

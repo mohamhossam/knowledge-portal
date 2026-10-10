@@ -1,0 +1,596 @@
+/*
+ * The library (redesign area 2): Documents, Search passages, the document
+ * record and its review desk, on the Calm Ledger. Semantic and component
+ * tokens only; logical properties only.
+ */
+
+.lib {
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+  min-inline-size: 0;
+  /* One measure for the head and what is under it, at any width. */
+  max-inline-size: var(--page-max);
+}
+
+.lib > .ds-pagehead {
+  margin-block-end: 0;
+}
+
+.lib-stack {
+  display: grid;
+  gap: var(--space-6);
+  min-inline-size: 0;
+}
+
+.lib-quiet {
+  margin: 0;
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.lib-strong {
+  font-weight: var(--weight-strong);
+}
+
+/* A second, quieter line inside a cell: the cause, the reason, the who. */
+.lib-detail {
+  display: block;
+  margin-block-start: var(--space-1);
+  font-size: var(--text-meta);
+  color: var(--color-ink-2);
+  overflow-wrap: anywhere;
+}
+
+.lib-detail--plain {
+  margin-block-start: 0;
+}
+
+.lib-none {
+  color: var(--color-ink-2);
+}
+
+.lib-inline-icon {
+  vertical-align: -2px;
+}
+
+/* An outcome line: empty until it has something to say. */
+.lib-outcome {
+  margin: 0;
+}
+
+/* Empty, it stays in the page (a live region must exist before it speaks) but takes no room. */
+.lib-outcome:empty {
+  position: absolute;
+}
+
+.lib-outcome:focus {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.lib-clamp,
+.lib-cell-text > span:first-child {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.lib-more {
+  margin-block: var(--space-3);
+}
+
+/* Toolbars: filters with their find, and the owner beside them. */
+.lib-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-2) var(--space-4);
+}
+
+.lib-toolbar > .ds-filters {
+  flex: 1 1 32rem;
+}
+
+.lib-toolbar__owner > .ds-field,
+.lib-toolbar__find > .ds-field {
+  margin: 0;
+}
+
+.lib-toolbar__find {
+  flex: 0 1 18rem;
+}
+
+/* Retrying stopped work across owners */
+.lib-retry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding-block: var(--space-2);
+  border-block-end: var(--hair-rule);
+}
+
+.lib-retry__line {
+  margin: 0;
+}
+
+.lib-retry > .ds-consequence {
+  flex: 1 1 100%;
+}
+
+/* A flow opened in place (upload): framed by the ledger rule */
+.lib-flow {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-surface-1);
+  border-block-start: var(--ledger-rule);
+}
+
+.lib-flow__title {
+  margin: 0;
+  font-size: var(--text-h2);
+  font-weight: var(--weight-heading);
+}
+
+.lib-flow__titles {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.lib-flow__note {
+  margin: 0;
+}
+
+/* Search */
+.lib-searchbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-3);
+}
+
+.lib-searchbar > .ds-field {
+  flex: 1 1 24rem;
+  margin: 0;
+}
+
+.lib-results {
+  display: grid;
+  gap: var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-inline-size: 60rem;
+}
+
+.lib-context {
+  margin-block-start: var(--space-1);
+  padding-inline-start: var(--space-3);
+}
+
+.lib-context__places {
+  margin-block-start: var(--space-2);
+  font-size: var(--text-meta);
+}
+
+.lib-context__cited {
+  font-weight: var(--weight-strong);
+}
+
+/* The record */
+.lib-reconfirm {
+  display: grid;
+  gap: var(--space-2);
+  margin-block-end: var(--space-2);
+}
+
+.lib-reconfirm__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-2);
+  margin: 0;
+  font-size: var(--text-meta);
+  color: var(--color-ink-2);
+}
+
+.lib-admin {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.lib-admin__line {
+  margin: 0;
+}
+
+.lib-acting {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  /* Its own surface: the proof tint means "not in service" elsewhere. */
+  background: var(--color-surface-2);
+  border-block-end: var(--hair-rule);
+}
+
+.lib-acting__icon {
+  flex: none;
+  color: var(--color-ink-2);
+}
+
+.lib-acting__line {
+  flex: 1 1 24rem;
+  margin: 0;
+}
+
+.lib-overview {
+  display: grid;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+
+.lib-overview > .ds-facts {
+  max-inline-size: 60rem;
+}
+
+.lib-processing {
+  display: grid;
+  gap: var(--space-2);
+  padding-block: var(--space-2) var(--space-3);
+  border-block-end: var(--hair-rule);
+}
+
+.lib-processing p {
+  margin: 0;
+}
+
+.lib-anchor:focus {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.lib-passage-cell {
+  white-space: pre-wrap;
+}
+
+.lib-transfer {
+  display: grid;
+  gap: var(--space-3);
+  max-inline-size: 40rem;
+}
+
+/* The review desk */
+.lib-desk {
+  display: grid;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+
+.lib-progress {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.lib-progress p {
+  margin: 0;
+}
+
+.lib-progress progress {
+  inline-size: 100%;
+  block-size: var(--space-2);
+  accent-color: var(--color-action);
+}
+
+.lib-select-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-2);
+}
+
+.lib-select-group > .ds-field {
+  margin: 0;
+}
+
+.lib-desk .ds-keys {
+  margin-block: 0;
+}
+
+.lib-state {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-2);
+}
+
+.lib-excluded > span:first-child {
+  color: var(--color-ink-2);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+/* A worksheet row as labelled cells (backlog O-3) */
+.lib-cells__cell + .lib-cells__cell::before {
+  content: " · ";
+  color: var(--color-ink-3);
+}
+
+.lib-cells__label {
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.lib-passage {
+  margin: 0;
+  font-size: var(--text-reading);
+  line-height: var(--leading-reading);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.lib-passage .lib-cells {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.lib-passage .lib-cells__cell + .lib-cells__cell::before {
+  content: none;
+}
+
+.lib-passage .lib-cells__label {
+  display: block;
+}
+
+.lib-passage--muted {
+  color: var(--color-ink-2);
+}
+
+.lib-basis {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.lib-warning {
+  margin: 0;
+}
+
+.lib-original {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+}
+
+.lib-original img {
+  max-inline-size: 100%;
+  border: var(--hair-rule);
+}
+
+/* The save bar: one line from 1200 px (backlog K1), the label beside its field. */
+.lib-savebar {
+  display: grid;
+  gap: var(--space-1);
+  inline-size: 100%;
+}
+
+.lib-savebar__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.lib-savebar__row > .ds-field {
+  flex: 1 1 20rem;
+  display: grid;
+  grid-template-columns: max-content minmax(12rem, 1fr);
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  margin: 0;
+}
+
+.lib-savebar__row > .ds-field > .ds-field__error {
+  grid-column: 2;
+  margin: 0;
+}
+
+.lib-savebar__row > .ds-actions {
+  flex-wrap: nowrap;
+}
+
+.lib-savebar__said {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.lib-savebar__said:not(:has(.lib-outcome:not(:empty))) {
+  block-size: 0;
+  overflow: hidden;
+}
+
+@media (max-width: 1199px) {
+  .lib-savebar__row > .ds-actions {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 1023px) {
+  .lib-savebar__row > .ds-field {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lib-savebar__row > .ds-field > .ds-field__error {
+    grid-column: 1;
+  }
+}
+
+@media (forced-colors: active) {
+  .lib-excluded > span:first-child {
+    color: GrayText;
+  }
+}
+
+/* Notes about the whole file: one line until opened */
+/* Keeps its native disclosure marker, so it reads as something that opens. */
+.lib-filenotes > summary {
+  min-block-size: var(--target-min);
+  font-size: var(--text-meta);
+  color: var(--color-ink-2);
+  cursor: pointer;
+}
+
+.lib-filenotes > summary:hover {
+  color: var(--color-ink);
+  text-decoration: underline;
+}
+
+.lib-filenotes > .ds-lines {
+  font-size: var(--text-meta);
+  max-inline-size: 72ch;
+}
+
+.lib-select-group > .ds-field {
+  display: grid;
+  grid-template-columns: max-content minmax(10rem, auto);
+  align-items: center;
+  gap: var(--space-2);
+}
+
+@container main (max-width: 40rem) {
+  .lib-select-group > .ds-field {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* The selection bar inside the save bar's region: one sticky block, one measurement. */
+.lib-desk .ds-stickyfoot {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.lib-desk .ds-stickyfoot > .ds-bulkbar {
+  position: static;
+  padding: 0 0 var(--space-2);
+  border-block-start: 0;
+  border-block-end: var(--hair-rule);
+}
+
+/*
+ * Chrome at most 15% of the height at 1280×800 (plan 02 §2.1, measured by height at GATE 8.1):
+ * masthead 48 + the grid's head + the save bar ≤ 120 px. Controls stay 32 px (≥ 24 px targets).
+ */
+.lib-desk .ds-stickyfoot {
+  padding-block: var(--space-1);
+}
+
+.lib-desk .ds-table thead th {
+  block-size: auto;
+  padding-block: calc(var(--space-1) / 2);
+}
+
+/* A search result's main action meets the 24 px target (§1). */
+.lib-results .ds-quote__source a {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-min);
+}
+
+/* One line of a passage in a list: clamped with an ellipsis, never cut mid-word in the code. */
+.lib-oneline {
+  display: inline-block;
+  max-inline-size: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
+/* Panels opened in the passage pane fit it: their lines wrap or clamp, never widen it. */
+.lib-desk .ds-split__pane > * {
+  min-inline-size: 0;
+}
+
+.lib-desk .ds-split__pane .lib-oneline {
+  display: block;
+}
+
+/*
+ * A narrow page (a side panel open, or zoom): the documents table keeps a readable title
+ * column and scrolls sideways inside its own frame (A7), rather than crushing the titles.
+ */
+@container main (max-width: 48rem) {
+  .lib > .ds-table-wrap > .ds-table {
+    min-inline-size: 58rem;
+  }
+}
+
+.lib-desk .ds-split__pane .ds-lines,
+.lib-desk .ds-split__pane .ds-lines > li {
+  min-inline-size: 0;
+  overflow: hidden;
+}
+
+/* A passage already seen: a quiet check after its location. */
+.lib-seen {
+  margin-inline-start: var(--space-1);
+  color: var(--color-ink-3);
+  vertical-align: -1px;
+}
+
+/*
+ * The passage pane stays clear of the masthead at the end of the list: the page ends at the
+ * save bar (no extra padding under it), and the pane is one gap shorter than the room.
+ */
+.ds-main:has(> .lib .lib-desk) {
+  padding-block-end: 0;
+}
+
+@container main (min-width: 60rem) {
+  .lib-desk .ds-split__pane {
+    min-block-size: calc(100vh - var(--sticky-top) - var(--sticky-state) - var(--sticky-bottom) - var(--space-2));
+    max-block-size: calc(100vh - var(--sticky-top) - var(--sticky-state) - var(--sticky-bottom) - var(--space-2));
+  }
+}
+
+/*
+ * On the review desk a side panel (Help, Jobs, Account) overlays the passage pane instead of
+ * narrowing the page: otherwise the split stacks and the pane drops below every row, exactly
+ * while someone keeps Help open to learn the keys (area 2 re-critique). The list stays in view.
+ */
+.ds-shell--panel:has(.lib-desk) .ds-shell__body {
+  grid-template-columns: var(--rail-width) minmax(0, 1fr);
+}
+
+@media (min-width: 1024px) {
+  .ds-shell--panel:has(.lib-desk) .ds-drawer {
+    position: fixed;
+    inset-block: var(--sticky-top) 0;
+    inset-inline-end: 0;
+    max-block-size: none;
+  }
+}
+
+/* The desk's head row: progress, then the notes about the whole file beside it (GATE 8.2). */
+.lib-deskhead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-4);
+}
+
+.lib-deskhead > .lib-progress {
+  flex: 1 1 36rem;
+}
+
+.lib-deskhead > .lib-filenotes {
+  flex: 0 1 auto;
+}

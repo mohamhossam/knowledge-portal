@@ -1,0 +1,17 @@
+import { chromium } from "@playwright/test";
+const [base, out, id] = process.argv.slice(2);
+const b = await chromium.launch({ channel: "msedge" });
+const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, forcedColors: "active", reducedMotion: "reduce" });
+await ctx.addInitScript(() => sessionStorage.setItem("knowledge-portal.fake-actor", "fake-owner"));
+const p = await ctx.newPage();
+await p.goto(`${base}/library/${id}`); await p.waitForLoadState("networkidle"); await p.waitForTimeout(800);
+await p.getByRole("button", { name: /^Flagged/ }).first().click();
+await p.getByRole("button", { name: /^All/ }).first().click();
+await p.locator(".lib-desk [data-cell-focus]").nth(3).click();
+await p.keyboard.press(" "); await p.keyboard.press("Shift+ArrowDown");
+await p.keyboard.press("j"); await p.keyboard.press("j");
+await p.locator(".lib-desk tr.is-current [data-cell-focus]").focus();
+await p.waitForTimeout(300);
+await p.screenshot({ path: out, type: "jpeg", quality: 80 });
+console.log(out);
+await b.close();

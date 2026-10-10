@@ -1,0 +1,150 @@
+/* Consequence panel: calm surface, the ledger rule on top, a 1px frame; no thick side border. */
+.ds-consequence {
+  display: grid;
+  gap: var(--space-3);
+  max-inline-size: 48rem;
+  padding: var(--panel-pad);
+  background: var(--panel-bg);
+  border: var(--panel-border);
+  border-block-start: var(--panel-top);
+}
+
+.ds-consequence--danger {
+  border-color: var(--panel-danger-border);
+}
+
+.ds-consequence__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-h3);
+}
+
+.ds-consequence--danger .ds-consequence__title {
+  color: var(--color-danger);
+}
+
+.ds-consequence__title:focus {
+  outline: none;
+}
+
+.ds-consequence__reversibility {
+  color: var(--color-ink-2);
+}
+
+.ds-impact {
+  display: grid;
+  gap: var(--space-2);
+  padding-block-start: var(--space-2);
+  border-block-start: var(--ledger-rule);
+}
+
+.ds-impact__title {
+  font-size: var(--text-h3);
+}
+
+.ds-impact__state,
+.ds-impact__caveat {
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.ds-impact__counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+  margin: 0;
+}
+
+.ds-impact__counts dt {
+  font-size: var(--text-meta);
+  color: var(--color-ink-2);
+}
+
+.ds-impact__counts dd {
+  margin: 0;
+  font-size: var(--text-h2);
+  font-weight: var(--weight-strong);
+  font-stretch: var(--stretch-numeral);
+}
+
+.ds-impact__items {
+  margin: 0;
+  padding-inline-start: var(--space-5);
+}
+
+.ds-trail ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-meta);
+}
+
+.ds-trail__hop {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.ds-trail__label {
+  color: var(--color-ink-2);
+}
+
+.ds-trail__sep {
+  color: var(--color-ink-3);
+}
+
+.ds-trail a {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-min);
+}
+
+.ds-quote {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+}
+
+.ds-quote__text {
+  margin: 0;
+  padding-inline-start: var(--space-3);
+  border-inline-start: var(--quote-rule);
+  line-height: var(--leading-reading);
+  white-space: pre-wrap;
+  max-inline-size: 70ch;
+}
+
+.ds-quote__text mark {
+  background: var(--quote-highlight);
+  color: inherit;
+}
+
+.ds-quote__source {
+  font-size: var(--text-meta);
+  color: var(--color-ink-2);
+}
+
+/* Who and what it affects: counts, named items and an impact panel stack with even spacing. */
+.ds-consequence__affects {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.ds-consequence__affects > p {
+  margin: 0;
+}
+
+/* The failure line stays mounted (a live region), taking no room until it speaks. */
+.ds-consequence__failure:empty {
+  position: absolute;
+}
+
+/* Its parts shrink to the panel (a long line clamps or wraps), so it fits a narrow pane. */
+.ds-consequence > * {
+  min-inline-size: 0;
+}

@@ -1,0 +1,277 @@
+/*
+ * Layer 2 · Semantic tokens: what a value is FOR. Components read only these
+ * (and component.css). The only layer allowed to read --eand-* primitives.
+ *
+ * Theme: light by default; dark follows the OS unless data-theme="light", or
+ * is forced with data-theme="dark" on <html> or any container.
+ * Density: data-density="compact" | "comfortable" on any container.
+ */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* Surfaces: white page, beige-derived steps */
+  --color-surface: var(--eand-white);
+  --color-surface-1: var(--neutral-paper);
+  --color-surface-2: var(--neutral-sand);
+  --color-surface-3: var(--eand-beige);
+
+  /* Ink: warm near-black; e& grey only for tertiary text on white or ≥ surface-2 */
+  --color-ink: var(--neutral-ink);
+  --color-ink-2: var(--neutral-ink-2);
+  --color-ink-3: var(--eand-grey);
+
+  /* Rules */
+  --color-rule-soft: var(--neutral-rule-soft);
+  --color-rule: var(--neutral-rule);
+  --color-rule-strong: var(--neutral-rule-strong);
+  --color-rule-heavy: var(--neutral-ink);
+
+  /* Action (maroon): text, links, borders · fill for primary buttons */
+  --color-action: var(--eand-maroon);
+  --color-action-hover: var(--maroon-700);
+  --color-action-fill: var(--eand-maroon);
+  --color-action-fill-hover: var(--maroon-700);
+  --color-on-action-fill: var(--eand-white);
+  --color-link: var(--maroon-700);
+  --color-selected: var(--maroon-tint);
+  --color-on-selected: var(--eand-maroon);
+  --color-focus: var(--eand-maroon);
+
+  /* Brand accent (red): logo + active-nav marker + ≤ 1 focal accent per view. Never status. */
+  --color-brand-accent: var(--eand-red);
+  --color-on-brand-accent: var(--eand-white);
+
+  /* The masthead: the maroon binding */
+  --color-masthead: var(--eand-maroon);
+  --color-on-masthead: var(--eand-white);
+  --color-masthead-rule: var(--white-45);
+
+  /* Semantic states: own low-saturation tokens, always with an icon and words */
+  --color-danger: var(--rust-600);
+  --color-danger-bg: var(--rust-50);
+  --color-on-danger: var(--eand-white);
+  --color-warning: var(--ochre-700);
+  --color-warning-bg: var(--ochre-50);
+  --color-success: var(--green-700);
+  --color-success-bg: var(--green-50);
+  --color-info: var(--teal-700);
+  --color-info-bg: var(--teal-50);
+
+
+  /* Evidence highlight and the "not in service" proof tint */
+  --color-highlight: var(--eand-beige);
+  --color-proof: var(--eand-beige);
+
+  /* Charts */
+  --color-chart-1: var(--chart-teal);
+  --color-chart-2: var(--chart-olive);
+  --color-chart-3: var(--chart-ochre);
+  --color-chart-4: var(--chart-plum);
+  --color-chart-5: var(--chart-umber);
+  --color-chart-6: var(--chart-stone);
+  --color-seq-1: var(--seq-1);
+  --color-seq-2: var(--seq-2);
+  --color-seq-3: var(--seq-3);
+  --color-seq-4: var(--seq-4);
+  --color-seq-5: var(--seq-5);
+
+  --elevation-overlay: 0 6px 24px var(--shadow-ink);
+  --color-scrim: var(--black-32);
+}
+
+/* Dark: warm charcoal. Repeated under two selectors: OS preference, and forced. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-surface: var(--charcoal-0);
+    --color-surface-1: var(--charcoal-1);
+    --color-surface-2: var(--charcoal-2);
+    --color-surface-3: var(--charcoal-3);
+    --color-ink: var(--charcoal-ink);
+    --color-ink-2: var(--charcoal-ink-2);
+    --color-ink-3: var(--charcoal-ink-3);
+    --color-rule-soft: var(--charcoal-rule-soft);
+    --color-rule: var(--charcoal-rule);
+    --color-rule-strong: var(--charcoal-rule-strong);
+    --color-rule-heavy: var(--charcoal-ink-2);
+    --color-action: var(--maroon-pink);
+    --color-action-hover: var(--maroon-pink-2);
+    --color-action-fill: var(--maroon-deep);
+    --color-action-fill-hover: var(--maroon-deep-hover);
+    --color-on-action-fill: var(--maroon-on-deep);
+    --color-link: var(--maroon-link-dark);
+    --color-selected: var(--maroon-night);
+    --color-on-selected: var(--maroon-mist);
+    --color-focus: var(--maroon-pink);
+    --color-brand-accent: var(--red-on-dark);
+    --color-on-brand-accent: var(--eand-white);
+    --color-masthead: var(--maroon-masthead-dark);
+    --color-on-masthead: var(--maroon-on-deep);
+    --color-danger: var(--rust-300);
+    --color-danger-bg: var(--rust-900);
+    --color-on-danger: var(--charcoal-0);
+    --color-warning: var(--ochre-300);
+    --color-warning-bg: var(--ochre-900);
+    --color-success: var(--green-300);
+    --color-success-bg: var(--green-900);
+    --color-info: var(--teal-300);
+    --color-info-bg: var(--teal-900);
+    --color-highlight: var(--charcoal-rule);
+    --color-proof: var(--charcoal-3);
+    --color-chart-1: var(--chart-teal-dark);
+    --color-chart-2: var(--chart-olive-dark);
+    --color-chart-3: var(--chart-ochre-dark);
+    --color-chart-4: var(--chart-plum-dark);
+    --color-chart-5: var(--chart-umber-dark);
+    --color-chart-6: var(--chart-stone-dark);
+    --elevation-overlay: 0 6px 24px var(--shadow-night);
+  }
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --color-surface: var(--charcoal-0);
+  --color-surface-1: var(--charcoal-1);
+  --color-surface-2: var(--charcoal-2);
+  --color-surface-3: var(--charcoal-3);
+  --color-ink: var(--charcoal-ink);
+  --color-ink-2: var(--charcoal-ink-2);
+  --color-ink-3: var(--charcoal-ink-3);
+  --color-rule-soft: var(--charcoal-rule-soft);
+  --color-rule: var(--charcoal-rule);
+  --color-rule-strong: var(--charcoal-rule-strong);
+  --color-rule-heavy: var(--charcoal-ink-2);
+  --color-action: var(--maroon-pink);
+  --color-action-hover: var(--maroon-pink-2);
+  --color-action-fill: var(--maroon-deep);
+  --color-action-fill-hover: var(--maroon-deep-hover);
+  --color-on-action-fill: var(--maroon-on-deep);
+  --color-link: var(--maroon-link-dark);
+  --color-selected: var(--maroon-night);
+  --color-on-selected: var(--maroon-mist);
+  --color-focus: var(--maroon-pink);
+  --color-brand-accent: var(--red-on-dark);
+  --color-on-brand-accent: var(--eand-white);
+  --color-masthead: var(--maroon-masthead-dark);
+  --color-on-masthead: var(--maroon-on-deep);
+  --color-danger: var(--rust-300);
+  --color-danger-bg: var(--rust-900);
+  --color-on-danger: var(--charcoal-0);
+  --color-warning: var(--ochre-300);
+  --color-warning-bg: var(--ochre-900);
+  --color-success: var(--green-300);
+  --color-success-bg: var(--green-900);
+  --color-info: var(--teal-300);
+  --color-info-bg: var(--teal-900);
+  --color-highlight: var(--charcoal-rule);
+  --color-proof: var(--charcoal-3);
+  --color-chart-1: var(--chart-teal-dark);
+  --color-chart-2: var(--chart-olive-dark);
+  --color-chart-3: var(--chart-ochre-dark);
+  --color-chart-4: var(--chart-plum-dark);
+  --color-chart-5: var(--chart-umber-dark);
+  --color-chart-6: var(--chart-stone-dark);
+  --elevation-overlay: 0 6px 24px var(--shadow-night);
+}
+
+/* Tokens derived from other semantic tokens: resolved again in every theme scope. */
+:root,
+[data-theme] {
+  /* AI-suggested marking reads the info tone (the one cool hue) */
+  --color-suggested: var(--color-info);
+  --color-suggested-bg: var(--color-info-bg);
+}
+
+/* Typography, space, motion, layers: theme-independent meanings */
+:root {
+  --font-ui: var(--family-sans);
+  --font-arabic: var(--family-arabic);
+  --font-code: var(--family-mono);
+
+  --text-meta: var(--size-14);
+  --text-body: var(--size-15);
+  --text-reading: var(--size-16);
+  --text-lead: var(--size-17);
+  --text-h3: var(--size-16);
+  --text-h2: var(--size-20);
+  --text-h1: var(--size-26);
+  --text-display: var(--size-32);
+
+  --weight-body: var(--weight-400);
+  --weight-emphasis: var(--weight-500);
+  --weight-strong: var(--weight-600);
+  --weight-heading: var(--weight-680);
+
+  --stretch-text: var(--stretch-100);
+  --stretch-title: var(--stretch-92);
+  --stretch-label: var(--stretch-87);
+  --stretch-numeral: var(--stretch-80);
+
+  --leading-tight: var(--leading-125);
+  --leading-ui: var(--leading-145);
+  --leading-reading: var(--leading-165);
+  --leading-arabic: var(--leading-175);
+
+  --gap-inline: var(--space-2);
+  --gap-stack: var(--space-3);
+  --gap-section: var(--space-6);
+  --gutter: clamp(var(--space-4), 0.5rem + 2vw, var(--space-10));
+
+  --target-min: var(--size-target);
+
+  --rule-hair: 1px;
+  --rule-heavy: 2px;
+
+  --radius-control: var(--radius-2);
+  --radius-overlay: var(--radius-4);
+
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  --focus-ring-halo: 4px;
+
+  --motion-fast: var(--duration-120);
+  --motion-base: var(--duration-180);
+  --motion-ease: var(--ease-out-expo);
+
+  --z-sticky: var(--layer-sticky);
+  --z-masthead: var(--layer-masthead);
+  --z-drawer: var(--layer-drawer);
+  --z-dialog: var(--layer-dialog);
+  --z-toast: var(--layer-toast);
+  --z-skip: var(--layer-skip);
+
+  /* Measured sticky regions publish here (interaction model §1.1) */
+  --sticky-top: 0px;
+  --sticky-state: 0px;
+  --sticky-head: 0px;
+  --sticky-bottom: 0px;
+
+  /* Density: comfortable by default */
+  --density-row: var(--size-row-comfortable);
+  --density-cell-block: var(--space-2);
+  --density-cell-inline: var(--space-3);
+  --density-text: var(--text-body);
+}
+
+[data-density="compact"] {
+  --density-row: var(--size-row-compact);
+  --density-cell-block: var(--space-1);
+  --density-cell-inline: var(--space-2);
+  --density-text: var(--text-meta);
+}
+
+[data-density="comfortable"] {
+  --density-row: var(--size-row-comfortable);
+  --density-cell-block: var(--space-2);
+  --density-cell-inline: var(--space-3);
+  --density-text: var(--text-body);
+}
+
+/* Reduced motion: everything instant */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: var(--duration-0);
+    --motion-base: var(--duration-0);
+  }
+}

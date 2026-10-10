@@ -1,0 +1,165 @@
+/*
+ * Layer 1 · Primitive tokens. Raw values only; nothing outside the token files
+ * may use a raw colour, and only semantic.css may read --eand-* (brand lint).
+ *
+ * e& primitives: the redesign brief's values, unverified against official
+ * guidelines (none were available, GATE 0, 2026-10-08).
+ * Contrast for every pair is in docs/design-system.md (all pass WCAG AA).
+ */
+:root {
+  /* e& brand primitives */
+  --eand-red: #e00800;
+  --eand-maroon: #4b0f1e;
+  --eand-grey: #636363;
+  --eand-beige: #e6e6dc;
+  --eand-white: #ffffff;
+
+  /* Calm neutrals, derived from beige (light) */
+  --neutral-paper: #fbfaf7;
+  --neutral-sand: #f3f2ec;
+  --neutral-ink: #1f1b1a;
+  --neutral-ink-2: #4a4542;
+  --neutral-rule-soft: #e4e2da;
+  --neutral-rule: #cfccc1;
+  --neutral-rule-strong: #8a8579;
+
+  /* Warm charcoal (dark) */
+  --charcoal-0: #1c1917;
+  --charcoal-1: #221e1c;
+  --charcoal-2: #2a2623;
+  --charcoal-3: #35302c;
+  --charcoal-ink: #ede8e1;
+  --charcoal-ink-2: #c8c1b7;
+  --charcoal-ink-3: #a29b91;
+  --charcoal-rule-soft: #36312d;
+  --charcoal-rule: #4a443f;
+  --charcoal-rule-strong: #857d74;
+
+  /* Maroon family */
+  --maroon-700: #6a1a2d;
+  --maroon-tint: #f4eaec;
+  --maroon-deep: #7a2e3f;
+  --maroon-deep-hover: #8c4152;
+  --maroon-on-deep: #f7eef0;
+  --maroon-pink: #e3b3bd;
+  --maroon-pink-2: #efc9d0;
+  --maroon-link-dark: #e9bec7;
+  --maroon-night: #3a2329;
+  --maroon-mist: #f2d3d9;
+  --maroon-ink-dark: #2a0a12;
+  --maroon-masthead-dark: #4a1b26;
+
+  /* Brand red, lifted for charcoal */
+  --red-on-dark: #ff4a3d;
+
+  /* Low-saturation semantic hues, distinct from brand red and maroon */
+  --rust-600: #8c3a1f;
+  --rust-50: #f7eae3;
+  --rust-300: #e8a58c;
+  --rust-900: #3a2620;
+  --ochre-700: #7a5a00;
+  --ochre-50: #f6efd9;
+  --ochre-300: #e2c27a;
+  --ochre-900: #33291a;
+  --green-700: #2d6640;
+  --green-50: #e6f0e8;
+  --green-300: #9ccba9;
+  --green-900: #1f2e24;
+  --teal-700: #2b5a6e;
+  --teal-50: #e4eef1;
+  --teal-300: #9cc4d4;
+  --teal-900: #1d2b31;
+
+  /* Chart: muted categorical (light / dark) and maroon→beige sequential. Red never encodes data. */
+  --chart-teal: #2b5a6e;
+  --chart-olive: #5e6b2e;
+  --chart-ochre: #8a6a1f;
+  --chart-plum: #6b5566;
+  --chart-umber: #7a4a2a;
+  --chart-stone: #6e6a60;
+  --chart-teal-dark: #8fb8c9;
+  --chart-olive-dark: #b3bf86;
+  --chart-ochre-dark: #d9bc79;
+  --chart-plum-dark: #c3adbe;
+  --chart-umber-dark: #d6a588;
+  --chart-stone-dark: #b8b3a8;
+  --seq-1: #4b0f1e;
+  --seq-2: #7a3f4c;
+  --seq-3: #a6747c;
+  --seq-4: #cba9ab;
+  --seq-5: #e6e6dc;
+
+  /* Shadow colour bases (overlays only) */
+  --shadow-ink: rgb(31 27 26 / 0.12);
+  --shadow-night: rgb(0 0 0 / 0.45);
+  --white-45: rgb(255 255 255 / 0.45);
+  --black-32: rgb(0 0 0 / 0.32);
+
+  /* Type families: self-hosted @fontsource (OFL), Arabic coverage via Noto. */
+  --family-sans: "Archivo Variable", "Noto Sans Arabic Variable", system-ui, sans-serif;
+  --family-arabic: "Noto Sans Arabic Variable", "Archivo Variable", system-ui, sans-serif;
+  --family-mono: ui-monospace, "Cascadia Mono", "Consolas", monospace;
+
+  /* Type scale (14px floor) */
+  --size-14: 0.875rem;
+  --size-15: 0.9375rem;
+  --size-16: 1rem;
+  --size-17: 1.0625rem;
+  --size-20: 1.25rem;
+  --size-26: 1.625rem;
+  --size-32: 2rem;
+
+  --weight-400: 400;
+  --weight-500: 500;
+  --weight-600: 600;
+  --weight-680: 680;
+
+  --stretch-100: 100%;
+  --stretch-92: 92%;
+  --stretch-87: 87%;
+  --stretch-80: 80%;
+
+  --leading-110: 1.1;
+  --leading-125: 1.25;
+  --leading-145: 1.45;
+  --leading-165: 1.65;
+  --leading-175: 1.75;
+
+  /* Space: 4px base */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* Sizes */
+  --size-target: 1.5rem; /* 24px: the floor for every target, by its own size */
+  --size-row-compact: 2rem;
+  --size-row-comfortable: 2.75rem;
+
+  /* Radius: almost square (ledger) */
+  --radius-0: 0;
+  --radius-2: 2px;
+  --radius-4: 4px;
+  --radius-pill: 999px;
+
+  /* Motion: ≤ 200 ms, opacity/transform only */
+  --duration-0: 0ms;
+  --duration-120: 120ms;
+  --duration-180: 180ms;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Layers */
+  --layer-sticky: 10;
+  --layer-masthead: 20;
+  --layer-drawer: 40;
+  --layer-dialog: 50;
+  --layer-toast: 60;
+  --layer-skip: 70;
+}

@@ -1,0 +1,12 @@
+round,participant_id,role,date,screen_size,persona,task_id,task_order,success,time_s,errors,critical_errors,hints,hint_notes,seq_1to7,bidi_incidents,keyboard_share,observer_notes,sus_score_0to100,fatigue_1to5,most_frustrating,worked_well
+baseline,P01,architect,YYYY-MM-DD,1280x800,fake-owner,T1,1,,,,,,,,,,,,,,
+baseline,P01,architect,YYYY-MM-DD,1280x800,fake-owner,T2,2,,,,,,,,,,,,,,
+baseline,P01,architect,YYYY-MM-DD,1280x800,fake-owner,T3,3,,,,,,,,,,,,,,
+baseline,P01,architect,YYYY-MM-DD,1280x800,fake-owner,T4,4,,,,,,,,,,,,,,
+baseline,P01,architect,YYYY-MM-DD,1280x800,fake-owner,T5,5,,,,,,,,,,,,,,
+baseline,P01,architect,YYYY-MM-DD,1280x800,fake-owner,T6,6,,,,,,,,,,,,,,
+baseline,P01,architect,YYYY-MM-DD,1280x800,fake-owner,T7,7,,,,,,,,,,,,,,
+baseline,P01,architect,YYYY-MM-DD,1280x800,fake-owner,T8,8,,,,,,,,,,,,,,
+baseline,P01,architect,YYYY-MM-DD,1280x800,fake-owner,SESSION,,,,,,,,,,,,,,,
+baseline,R01,reader,YYYY-MM-DD,390x844,fake-observer,T9,1,,,,,,,,,,,,,,
+baseline,R01,reader,YYYY-MM-DD,390x844,fake-observer,SESSION,,,,,,,,,,,,,,,

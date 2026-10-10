@@ -1,0 +1,121 @@
+/*
+ * Layer 3 · Component tokens. Each reads semantic tokens only; a component's
+ * stylesheet reads its own tokens. Change a component here, not in its CSS.
+ *
+ * Declared again on every theme and density scope: a custom property's var()
+ * resolves where it is declared, so tokens declared only on :root would carry
+ * the root theme into a [data-theme="dark"] or [data-density] subtree.
+ */
+:root,
+[data-theme],
+[data-density] {
+  /* Button */
+  --button-height: 2rem;
+  --button-pad-inline: var(--space-3);
+  --button-radius: var(--radius-control);
+  --button-font-weight: var(--weight-emphasis);
+  --button-bg: var(--color-surface);
+  --button-fg: var(--color-ink);
+  --button-border: var(--color-rule-strong);
+  --button-hover-border: var(--color-action);
+  --button-primary-bg: var(--color-action-fill);
+  --button-primary-hover-bg: var(--color-action-fill-hover);
+  --button-primary-fg: var(--color-on-action-fill);
+  --button-primary-border: var(--color-action);
+  --button-danger-bg: var(--color-danger);
+  --button-danger-fg: var(--color-on-danger);
+  --button-unavailable-fg: var(--color-ink-2);
+  --button-unavailable-border: var(--color-rule-strong);
+
+  /* Form fields */
+  --field-height: 2rem;
+  --field-bg: var(--color-surface);
+  --field-fg: var(--color-ink);
+  --field-border: var(--color-rule-strong);
+  --field-placeholder: var(--color-ink-3);
+  --field-label-weight: var(--weight-strong);
+  --field-error: var(--color-danger);
+
+  /* Focus ring */
+  --focus-ring: var(--focus-ring-width) solid var(--color-focus);
+  --focus-halo: 0 0 0 var(--focus-ring-halo) var(--color-surface);
+
+  /* Masthead and rail (app shell) */
+  --masthead-height: 3.5rem;
+  --masthead-bg: var(--color-masthead);
+  --masthead-fg: var(--color-on-masthead);
+  --masthead-control-border: var(--color-masthead-rule);
+  --rail-width: 13rem;
+  --rail-bg: var(--color-surface);
+  --rail-fg: var(--color-ink);
+  --rail-current-bg: var(--color-selected);
+  --rail-current-fg: var(--color-on-selected);
+  --rail-marker: var(--color-brand-accent);
+  --rail-marker-width: 3px;
+  --logo-bg: var(--color-brand-accent);
+  --logo-fg: var(--color-on-brand-accent);
+
+  /* Page and ledger rules */
+  --page-max: 90rem;
+  --ledger-rule: var(--rule-heavy) solid var(--color-rule-heavy);
+  --hair-rule: var(--rule-hair) solid var(--color-rule-soft);
+
+  /* Data table */
+  --table-row: var(--density-row);
+  --table-cell-block: var(--density-cell-block);
+  --table-cell-inline: var(--density-cell-inline);
+  --table-text: var(--density-text);
+  --table-head-fg: var(--color-ink-2);
+  --table-head-rule: var(--ledger-rule);
+  --table-row-rule: var(--hair-rule);
+  /* Hover has to show: surface-1 on white is 1.04:1 (area 2 reviews). */
+  --table-row-hover: var(--color-surface-2);
+  --table-row-current: var(--color-selected);
+  --table-row-current-bar: var(--color-action);
+  --table-numeral-stretch: var(--stretch-numeral);
+
+  /* Status and badges */
+  --badge-radius: var(--radius-pill);
+  --badge-border: var(--color-rule-strong);
+  --status-gap: var(--space-1);
+
+  /* Suggested (AI) marker */
+  --suggested-fg: var(--color-suggested);
+  --suggested-bg: var(--color-suggested-bg);
+  --suggested-border: var(--color-suggested);
+
+  /* Panels: consequence, impact, flow */
+  --panel-bg: var(--color-surface-1);
+  --panel-border: var(--rule-hair) solid var(--color-rule);
+  --panel-top: var(--ledger-rule);
+  --panel-pad: var(--space-4);
+  --panel-danger-border: var(--color-danger);
+
+  /* State line (mode and status, sticky) */
+  --stateline-bg: var(--color-surface-2);
+  --stateline-proof-bg: var(--color-proof);
+  --stateline-border: var(--color-rule);
+
+  /* Split pane (from direction C) */
+  --split-pane-width: clamp(22rem, 28vw, 34rem);
+  --split-pane-bg: var(--color-surface-1);
+  --split-pane-rule: var(--rule-hair) solid var(--color-rule-strong);
+
+  /* Overlays */
+  --drawer-width: min(26rem, 92vw);
+  --overlay-bg: var(--color-surface);
+  --overlay-shadow: var(--elevation-overlay);
+  --overlay-radius: var(--radius-overlay);
+  --scrim: var(--color-scrim);
+
+  /* Toast (undo only) */
+  --toast-bg: var(--color-ink);
+  --toast-fg: var(--color-surface);
+
+  /* Skeleton: tint only, no shimmer */
+  --skeleton-bg: var(--color-surface-2);
+
+  /* Evidence quote */
+  --quote-rule: var(--rule-hair) solid var(--color-rule-strong);
+  --quote-highlight: var(--color-highlight);
+}
