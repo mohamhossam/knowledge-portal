@@ -1,9 +1,9 @@
-/** The picked system and the links between systems, shared by the Landscape and Systems pages. */
+/** The picked system and the interfaces between systems, shared by the Landscape and Systems pages. */
 import { useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import type { CatalogueData } from "../../architecture/adapter";
-import { allIntegrations, links } from "./posterModel";
+import { allIntegrations, distinctInterfaces, links } from "./posterModel";
 
 /** The picked system, from `?system=`, and a setter that keeps the rest of the URL. */
 export function useSystemParam(): [string | null, (id: string | null) => void] {
@@ -20,9 +20,9 @@ export function useSystemParam(): [string | null, (id: string | null) => void] {
   return [params.get("system"), select];
 }
 
-/** The links between systems, counted by pair, for the boards and the drawer. */
+/** The links between systems, for the boards and the drawer: distinct interfaces by pair, so they hold for any product. */
 export function useLinkCounts(data: CatalogueData) {
-  const integrations = useMemo(() => allIntegrations(data), [data]);
-  const linkCounts = useMemo(() => links(data, integrations), [data, integrations]);
-  return { integrations, linkCounts };
+  const interfaces = useMemo(() => distinctInterfaces(allIntegrations(data)), [data]);
+  const linkCounts = useMemo(() => links(data, interfaces), [data, interfaces]);
+  return { interfaces, linkCounts };
 }
