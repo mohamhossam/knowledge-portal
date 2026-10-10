@@ -153,7 +153,7 @@ class ResolveArchitectureKnowledge(ArchitectureKnowledgePort):
             return release, self._initial.match(query)
         if release.built_revision != release.revision:
             raise KnowledgeConflictError("The published release has no complete evidence index.")
-        if release.index_profile != self._index.profile:
+        if not self._index.reads(release.index_profile):
             raise KnowledgeConflictError(
                 "The architecture embedding profile changed; rebuild a draft."
             )

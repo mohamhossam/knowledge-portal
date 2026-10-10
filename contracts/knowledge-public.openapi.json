@@ -4874,6 +4874,42 @@
         "title": "IncomingSystemResponse",
         "type": "object"
       },
+      "IndexCoverageResponse": {
+        "description": "How far a release's evidence index links reach (ontology plan Phase 2).\n\n`linked` is false when the release has no index yet, or its index was built before\nlinks existed; rebuilding the draft links it.",
+        "properties": {
+          "chunks": {
+            "default": 0,
+            "title": "Chunks",
+            "type": "integer"
+          },
+          "chunks_without_concept": {
+            "default": 0,
+            "title": "Chunks Without Concept",
+            "type": "integer"
+          },
+          "concepts": {
+            "default": 0,
+            "title": "Concepts",
+            "type": "integer"
+          },
+          "concepts_without_chunk": {
+            "items": {
+              "$ref": "#/components/schemas/UnlinkedConceptSchema"
+            },
+            "title": "Concepts Without Chunk",
+            "type": "array"
+          },
+          "linked": {
+            "title": "Linked",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "linked"
+        ],
+        "title": "IndexCoverageResponse",
+        "type": "object"
+      },
       "IndexState": {
         "enum": [
           "current",
@@ -10676,6 +10712,24 @@
         "title": "TypeCount",
         "type": "object"
       },
+      "UnlinkedConceptSchema": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "pref_label": {
+            "title": "Pref Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "pref_label"
+        ],
+        "title": "UnlinkedConceptSchema",
+        "type": "object"
+      },
       "UploadOutcome": {
         "enum": [
           "added",
@@ -13134,6 +13188,70 @@
           }
         ],
         "summary": "List Extractions",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
+    "/architecture-knowledge/releases/{release_id}/index-coverage": {
+      "get": {
+        "description": "How many evidence chunks link to no concept, and which concepts no chunk speaks of\n(ontology plan Phase 2). The counts are of the release's last build.",
+        "operationId": "index_coverage_architecture_knowledge_releases__release_id__index_coverage_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexCoverageResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Index Coverage",
         "tags": [
           "architecture knowledge"
         ]

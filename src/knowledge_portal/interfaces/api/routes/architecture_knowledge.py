@@ -70,6 +70,7 @@ from knowledge_portal.interfaces.api.schemas.architecture_knowledge import (
     DraftUpdateRequest,
     ExtractionRunResponse,
     ImpactComparisonResponse,
+    IndexCoverageResponse,
     KnowledgeAuditEventResponse,
     KnowledgeDocumentVersionResponse,
     KnowledgeReleaseResponse,
@@ -162,6 +163,16 @@ def get_release(
     release_id: str, knowledge: KnowledgeDep, actor: KnowledgeActorDep
 ) -> KnowledgeReleaseResponse:
     return KnowledgeReleaseResponse.from_domain(knowledge.view(release_id, actor))
+
+
+@router.get("/releases/{release_id}/index-coverage", response_model=IndexCoverageResponse)
+def index_coverage(
+    release_id: str, knowledge: KnowledgeDep, actor: KnowledgeActorDep
+) -> IndexCoverageResponse:
+    """How many evidence chunks link to no concept, and which concepts no chunk speaks of
+    (ontology plan Phase 2). The counts are of the release's last build."""
+    coverage = knowledge.index_coverage(release_id, actor)
+    return IndexCoverageResponse.from_domain(coverage, knowledge.get(release_id))
 
 
 @router.get("/releases/{release_id}/audit", response_model=list[KnowledgeAuditEventResponse])

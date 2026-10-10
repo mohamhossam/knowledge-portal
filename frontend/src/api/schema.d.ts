@@ -493,6 +493,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/architecture-knowledge/releases/{release_id}/index-coverage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Index Coverage
+         * @description How many evidence chunks link to no concept, and which concepts no chunk speaks of
+         *     (ontology plan Phase 2). The counts are of the release's last build.
+         */
+        get: operations["index_coverage_architecture_knowledge_releases__release_id__index_coverage_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/architecture-knowledge/releases/{release_id}/name": {
         parameters: {
             query?: never;
@@ -3457,6 +3478,34 @@ export interface components {
             name: string;
         };
         /**
+         * IndexCoverageResponse
+         * @description How far a release's evidence index links reach (ontology plan Phase 2).
+         *
+         *     `linked` is false when the release has no index yet, or its index was built before
+         *     links existed; rebuilding the draft links it.
+         */
+        IndexCoverageResponse: {
+            /**
+             * Chunks
+             * @default 0
+             */
+            chunks: number;
+            /**
+             * Chunks Without Concept
+             * @default 0
+             */
+            chunks_without_concept: number;
+            /**
+             * Concepts
+             * @default 0
+             */
+            concepts: number;
+            /** Concepts Without Chunk */
+            concepts_without_chunk?: components["schemas"]["UnlinkedConceptSchema"][];
+            /** Linked */
+            linked: boolean;
+        };
+        /**
          * IndexState
          * @enum {string}
          */
@@ -5416,6 +5465,13 @@ export interface components {
             /** Type */
             type: string;
         };
+        /** UnlinkedConceptSchema */
+        UnlinkedConceptSchema: {
+            /** Id */
+            id: string;
+            /** Pref Label */
+            pref_label: string;
+        };
         /**
          * UploadOutcome
          * @enum {string}
@@ -6622,6 +6678,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DocumentExtractionResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    index_coverage_architecture_knowledge_releases__release_id__index_coverage_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndexCoverageResponse"];
                 };
             };
             /** @description Validation Error */

@@ -249,6 +249,7 @@ def test_evidence_names_the_systems_behind_each_component() -> None:
     (chunk,) = [item for item in index.chunks if item.location == "product office-connect"]
     assert chunk.source_label == "Office Connect" and chunk.document_version_id is None
     assert chunk.text.startswith(
+        "Catalogue offering: Office Connect\n"
         "Product offering: Office Connect (OFFICE_CONNECT), Connect family"
     )
     assert "Order types: New Activation; Upgrade (not offered)" in chunk.text

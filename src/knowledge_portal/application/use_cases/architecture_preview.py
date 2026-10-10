@@ -51,8 +51,8 @@ class PreviewArchitectureImpact:
         if not query.strip():
             raise InvalidKnowledgeError("Retrieval query must not be blank.")
         release = self._knowledge.get(release_id)
-        if release.built_revision != release.revision or (
-            release.index_profile != self._index.profile
+        if release.built_revision != release.revision or not self._index.reads(
+            release.index_profile
         ):
             raise KnowledgeConflictError("Build this release with the current embedding profile.")
         evidence = gather_evidence(self._index, release, release.index_id or release.id, query)

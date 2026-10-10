@@ -164,3 +164,28 @@ def concept_id_for(label: str, taken: Iterable[str]) -> str:
     while candidate in used:
         candidate, number = f"{base}-{number}", number + 1
     return candidate
+
+
+def _contains(words: tuple[str, ...], key: str) -> bool:
+    """Whether consecutive words, run together, spell the label key exactly."""
+    for start in range(len(words)):
+        joined = ""
+        for word in words[start:]:
+            joined += word
+            if joined == key:
+                return True
+            if len(joined) >= len(key) or not key.startswith(joined):
+                break
+    return False
+
+
+def labels_in(text: str, concepts: Iterable[BusinessCapability]) -> tuple[str, ...]:
+    """The ids of the concepts one of whose labels the text contains as whole words, in
+    order. Labels compare as `label_key` does, so "WiFi" finds "Wi-Fi"; "billings" does
+    not find "billing"."""
+    words = label_words(text)
+    return tuple(
+        concept.id
+        for concept in concepts
+        if any(_contains(words, label_key(label)) for label in concept.labels)
+    )

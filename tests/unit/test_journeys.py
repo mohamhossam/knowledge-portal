@@ -258,7 +258,10 @@ def test_evidence_walks_the_journey_with_the_system_at_each_step() -> None:
     ).execute(draft.id, draft.revision, "amina", fence=lambda: None)
 
     text = "\n".join(item.text for item in index.chunks if item.location.startswith("journey "))
-    assert text.startswith("Journey: New Activation (Office Connect › New Activation)")
+    assert text.startswith(
+        "Catalogue journey: New Activation\n"
+        "Journey: New Activation (Office Connect › New Activation)"
+    )
     assert "10. Activity 10 — B2B Web (with CIM): Offer UI / basket" in text
     assert "10 → 20: INTERNAL_APP, Digital Catalog, Selected offer" in text
 
