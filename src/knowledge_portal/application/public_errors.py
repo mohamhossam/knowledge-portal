@@ -31,6 +31,7 @@ from knowledge_portal.application.ports.ado_work_items import (
     AdoUnavailableError,
 )
 from knowledge_portal.application.ports.architecture_rag import ArchitectureEvidenceError
+from knowledge_portal.application.ports.capability_link_suggester import CapabilityLinkingError
 from knowledge_portal.application.ports.catalogue_extractor import (
     CatalogueAnswerUnusableError,
     CatalogueCitationError,
@@ -203,6 +204,7 @@ ERROR_CATALOGUE: tuple[tuple[type[Exception], str, FailureCategory], ...] = (
     (CatalogueCitationError, "catalogue_extraction_uncited", FailureCategory.PROVIDER),
     (CatalogueExtractionError, "catalogue_extraction", FailureCategory.PROVIDER),
     (SystemMatchingError, "catalogue_matching", FailureCategory.PROVIDER),
+    (CapabilityLinkingError, "capability_linking", FailureCategory.PROVIDER),
     (
         CatalogueExtractionUnsupportedError,
         "catalogue_extraction_unsupported",

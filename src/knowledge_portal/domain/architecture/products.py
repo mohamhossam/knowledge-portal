@@ -23,6 +23,7 @@ from collections.abc import Callable, Collection
 from dataclasses import dataclass
 from enum import StrEnum
 
+from knowledge_portal.domain.architecture.concepts import check_link
 from knowledge_portal.domain.architecture.governance import (
     ArchitectureDecision,
     OpenQuestion,
@@ -224,10 +225,23 @@ class OfferingComponent:
     source: str | None = None
     # How it is realised, layer by layer: its CFS, the RFSs behind it, its resources.
     realisation: tuple[Realisation, ...] = ()
+    # The business capability concepts it delivers (ADR-0114), by id.
+    capability_ids: tuple[str, ...] = ()
+    # Why no concept fits, when a maintainer has said so; None while undecided.
+    unlinked_reason: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Component id"))
         object.__setattr__(self, "name", required(self.name, "Component name"))
+        object.__setattr__(
+            self,
+            "capability_ids",
+            tuple(required(item, "Capability concept") for item in self.capability_ids),
+        )
+        object.__setattr__(
+            self, "unlinked_reason", optional(self.unlinked_reason, "Why no concept fits")
+        )
+        check_link(self.capability_ids, self.unlinked_reason, self.name)
         for field, label in (
             ("code", "Component code"),
             ("kind", "Component type"),
@@ -491,6 +505,10 @@ def merge_components(first: OfferingComponent, second: OfferingComponent) -> Off
         confidence=first_known(first.confidence, second.confidence),
         source=first_known(first.source, second.source),
         realisation=tuple(layers.values()),
+        capability_ids=first.capability_ids or second.capability_ids,
+        unlinked_reason=None
+        if first.capability_ids or second.capability_ids
+        else first_known(first.unlinked_reason, second.unlinked_reason),
     )
 
 

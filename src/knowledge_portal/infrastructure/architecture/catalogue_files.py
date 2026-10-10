@@ -40,6 +40,7 @@ from knowledge_portal.domain.architecture.change_requests import (
     TracedFeature,
 )
 from knowledge_portal.domain.architecture.channels import Channel
+from knowledge_portal.domain.architecture.concepts import BusinessCapability
 from knowledge_portal.domain.architecture.governance import (
     ArchitectureDecision,
     ConflictScope,
@@ -131,6 +132,7 @@ PORTFOLIO = "Portfolio"
 PLANS = "Plans"
 PLAN_CHARACTERISTICS = "PlanCharacteristics"
 BUSINESS_RULES = "BusinessRules"
+CONCEPTS = "Concepts"
 _CELLS = tuple(f"cell_{number}" for number in range(1, MAX_TABLE_COLUMNS + 1))
 INSTRUCTIONS = "Instructions"
 _DOMAIN_HEADERS = ("domain_id", "name", "name_ar", "parent_id", "description")
@@ -166,6 +168,8 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "triggers",
         "domain_id",
         "component_id",
+        "concept_id",
+        "unlinked_reason",
     ),
     CONSTRAINTS: ("system_id", "constraint"),
     RELATIONSHIPS: ("source_system_id", "target_system_id", "description", "kind"),
@@ -210,6 +214,8 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "technical_details",
         "confidence",
         "source",
+        "capability_ids",
+        "unlinked_reason",
     ),
     RESPONSIBILITIES: (
         "product_id",
@@ -423,6 +429,17 @@ _HEADERS: dict[str, tuple[str, ...]] = {
     PLANS: ("product_id", "plan", "description", "confidence", "source"),
     PLAN_CHARACTERISTICS: ("product_id", "plan", "characteristic", "value"),
     BUSINESS_RULES: ("product_id", "rule_id", "statement", "kind", "confidence", "source"),
+    CONCEPTS: (
+        "concept_id",
+        "pref_label",
+        "alt_labels",
+        "definition",
+        "broader_id",
+        "domain_id",
+        "exact_match",
+        "confidence",
+        "source",
+    ),
 }
 # Headers a sheet cannot do without. Columns added later stay optional, so
 # workbooks filled from an older template still import.
@@ -471,6 +488,7 @@ _REQUIRED_HEADERS: dict[str, tuple[str, ...]] = {
     PLANS: ("product_id", "plan"),
     PLAN_CHARACTERISTICS: ("product_id", "plan", "characteristic", "value"),
     BUSINESS_RULES: ("product_id", "rule_id", "statement"),
+    CONCEPTS: ("concept_id", "pref_label"),
 }
 _KINDS = ", ".join(kind.value for kind in RelationshipKind)
 _REQUIRED_SHEETS = (SYSTEMS,)
@@ -585,6 +603,14 @@ _INSTRUCTIONS = (
         "Prices are read live from the product catalog, never kept here.",
     ),
     ("BusinessRules (optional): the rules an offering is sold and fulfilled by, with a kind.",),
+    (
+        "Concepts (optional): business capability concepts such as Managed Wi-Fi; alt_labels "
+        "by ;. A top concept names its domain_id; a narrower one names its broader_id instead.",
+    ),
+    (
+        "Capabilities concept_id and OfferingComponents capability_ids (by ;) link them to "
+        "concepts; unlinked_reason says why none fits.",
+    ),
     (
         "Systems owner, external (yes or no), roadmap, and placement_from with "
         "placement_reason when a system sits elsewhere than a source put it.",
@@ -704,6 +730,8 @@ def content_from_mapping(raw: object) -> CatalogueContent:
                         _text_list(capability.get("triggers"), place, "triggers"),
                         _optional_text(capability.get("domain"), place, "domain"),
                         _optional_text(capability.get("component"), place, "component"),
+                        _optional_text(capability.get("concept"), place, "concept"),
+                        _optional_text(capability.get("unlinked_reason"), place, "unlinked_reason"),
                     )
                 )
             except InvalidKnowledgeError as exc:
@@ -785,7 +813,47 @@ def content_from_mapping(raw: object) -> CatalogueContent:
         _conflicts(_entries(raw, "conflicts")),
         _history(_entries(raw, "change_history")) if "change_history" in raw else None,
         _portfolio(_entries(raw, "portfolio")),
+        _concepts(_entries(raw, "business_capabilities")),
     )
+
+
+def _concepts(entries: list[dict[str, Any]]) -> list[BusinessCapability]:
+    """Business capability concepts (ADR-0114); a top concept names its domain."""
+    concepts = []
+    for number, item in enumerate(entries, start=1):
+        where = _where(item, f"business_capabilities entry {number}")
+        try:
+            concepts.append(
+                BusinessCapability(
+                    _text(item.get("id"), where, "id"),
+                    _text(item.get("pref_label"), where, "pref_label"),
+                    _text_list(item.get("alt_labels"), where, "alt_labels"),
+                    _optional_text(item.get("definition"), where, "definition"),
+                    _optional_text(item.get("broader"), where, "broader"),
+                    _optional_text(item.get("domain"), where, "domain"),
+                    _optional_text(item.get("exact_match"), where, "exact_match"),
+                    _trust(item.get("confidence"), where),
+                    _optional_text(item.get("source"), where, "source"),
+                )
+            )
+        except InvalidKnowledgeError as exc:
+            raise _located(where, exc) from exc
+    return concepts
+
+
+def _concept_mapping(concept: BusinessCapability) -> dict[str, Any]:
+    return {
+        "id": concept.id,
+        "pref_label": concept.pref_label,
+        **_present(
+            alt_labels=list(concept.alt_labels),
+            definition=concept.definition,
+            broader=concept.broader_id,
+            domain=concept.domain_id,
+            exact_match=concept.exact_match,
+        ),
+        **_sourced(concept),
+    }
 
 
 class _LocatedError(InvalidKnowledgeError):
@@ -1111,6 +1179,10 @@ def _offerings(entries: list[dict[str, Any]]) -> list[ProductOffering]:
                         confidence=_trust(part.get("confidence"), place),
                         source=_optional_text(part.get("source"), place, "source"),
                         realisation=tuple(realisation),
+                        capability_ids=_text_list(part.get("capabilities"), place, "capabilities"),
+                        unlinked_reason=_optional_text(
+                            part.get("unlinked_reason"), place, "unlinked_reason"
+                        ),
                     )
                 )
             offerings.append(
@@ -1452,6 +1524,8 @@ def _offering_mapping(offering: ProductOffering) -> dict[str, Any]:
                             {"layer": item.layer.value, "name": item.name, **_sourced(item)}
                             for item in part.realisation
                         ],
+                        capabilities=list(part.capability_ids),
+                        unlinked_reason=part.unlinked_reason,
                     ),
                 }
                 for part in offering.components
@@ -1639,16 +1713,24 @@ def _content(
     conflicts: list[SourceConflict] | None = None,
     history: list[ChangeRequestRecord] | None = None,
     portfolio: list[PortfolioNode] | None = None,
+    concepts: list[BusinessCapability] | None = None,
 ) -> CatalogueContent:
-    """The file's content, refusing a placement in a domain the file does not list."""
+    """The file's content, refusing a placement in a domain the file does not list, or a
+    link to a concept it does not list."""
     known = {item.id for item in domains}
     places = {item.id for item in landscape}
+    listed = {item.id for item in concepts or ()}
     for system in systems:
         for capability in system.capabilities:
             if capability.domain_id is not None and capability.domain_id not in known:
                 raise InvalidKnowledgeError(
                     f"{system.id}, capability {capability.id}: domain {capability.domain_id!r} "
                     "is not listed among the capability domains."
+                )
+            if capability.concept_id is not None and capability.concept_id not in listed:
+                raise InvalidKnowledgeError(
+                    f"{system.id}, capability {capability.id}: concept "
+                    f"{capability.concept_id!r} is not listed among the business capabilities."
                 )
         if system.landscape_domain_id is not None and system.landscape_domain_id not in places:
             raise InvalidKnowledgeError(
@@ -1667,6 +1749,7 @@ def _content(
         tuple(conflicts or ()),
         None if history is None else tuple(history),
         tuple(portfolio or ()),
+        tuple(concepts or ()),
     )
 
 
@@ -1854,6 +1937,7 @@ def release_to_mapping(release: ArchitectureKnowledge) -> dict[str, Any]:
                         "triggers": list(cap.triggers),
                         **({"domain": cap.domain_id} if cap.domain_id else {}),
                         **({"component": cap.component_id} if cap.component_id else {}),
+                        **_present(concept=cap.concept_id, unlinked_reason=cap.unlinked_reason),
                     }
                     for cap in item.capabilities
                 ],
@@ -1917,6 +2001,9 @@ def release_to_mapping(release: ArchitectureKnowledge) -> dict[str, Any]:
             conflicts=[_conflict_mapping(item) for item in release.conflicts],
             change_history=[_history_mapping(item) for item in release.change_history],
             portfolio=[_portfolio_mapping(item) for item in release.portfolio],
+            business_capabilities=[
+                _concept_mapping(item) for item in release.business_capabilities
+            ],
         ),
     }
 
@@ -2020,6 +2107,8 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                         _split(cells.get("triggers"), where, "triggers"),
                         _optional_text(cells.get("domain_id"), where, "domain_id"),
                         _optional_text(cells.get("component_id"), where, "component_id"),
+                        _optional_text(cells.get("concept_id"), where, "concept_id"),
+                        _optional_text(cells.get("unlinked_reason"), where, "unlinked_reason"),
                     )
                 )
             except InvalidKnowledgeError as exc:
@@ -2094,6 +2183,21 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                 for number, cells in _rows(workbook, PORTFOLIO)
             ]
         )
+        concepts = _concepts(
+            [
+                {
+                    **cells,
+                    "_where": f"{CONCEPTS} row {number}",
+                    "id": cells.get("concept_id"),
+                    "alt_labels": list(
+                        _split(cells.get("alt_labels"), f"{CONCEPTS} row {number}", "alt_labels")
+                    ),
+                    "broader": cells.get("broader_id"),
+                    "domain": cells.get("domain_id"),
+                }
+                for number, cells in _rows(workbook, CONCEPTS)
+            ]
+        )
     finally:
         workbook.close()
     definitions = []
@@ -2133,6 +2237,7 @@ def _read_workbook(content: bytes) -> CatalogueContent:
         conflicts,
         history,
         portfolio,
+        concepts,
     )
 
 
@@ -2260,6 +2365,7 @@ def _sheet_offerings(workbook: Any) -> list[dict[str, Any]]:
             **cells,
             "_where": where,
             "id": cells.get("component_id"),
+            "capabilities": list(_split(cells.get("capability_ids"), where, "capability_ids")),
             "responsibilities": [],
             "realisation": [],
         }
@@ -2622,6 +2728,8 @@ def _write_offering(sheets: dict[str, Any], product: ProductOffering) -> None:
                 part.technical_details,
                 _confidence(part),
                 part.source,
+                f"{_LIST_SEPARATOR} ".join(part.capability_ids),
+                part.unlinked_reason,
             ),
         )
         for duty in part.responsibilities:
@@ -2916,6 +3024,8 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                     f"{_LIST_SEPARATOR} ".join(capability.triggers),
                     capability.domain_id,
                     capability.component_id,
+                    capability.concept_id,
+                    capability.unlinked_reason,
                 ),
             )
         for component in system.components:
@@ -2952,6 +3062,21 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 sheets[sheet],
                 (domain.id, domain.name, domain.name_ar, domain.parent_id, domain.description),
             )
+    for concept in release.business_capabilities if release is not None else ():
+        _append(
+            sheets[CONCEPTS],
+            (
+                concept.id,
+                concept.pref_label,
+                f"{_LIST_SEPARATOR} ".join(concept.alt_labels),
+                concept.definition,
+                concept.broader_id,
+                concept.domain_id,
+                concept.exact_match,
+                _confidence(concept),
+                concept.source,
+            ),
+        )
     for node in release.portfolio if release is not None else ():
         _append(
             sheets[PORTFOLIO],

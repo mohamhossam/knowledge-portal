@@ -20,6 +20,9 @@ from smb_kernel.llm.structured_output import StructuredOutputClient
 from smb_kernel.observability.metrics import MeteredTransport, MeteredTransport2, Metrics
 
 from knowledge_portal.application.ports.architecture_rag import ArchitectureReasonerPort
+from knowledge_portal.application.ports.capability_link_suggester import (
+    CapabilityLinkSuggesterPort,
+)
 from knowledge_portal.application.ports.catalogue_extractor import CatalogueExtractorPort
 from knowledge_portal.application.ports.embedding import KnowledgeEmbeddingPort
 from knowledge_portal.application.ports.system_matcher import SystemMatcherPort
@@ -30,6 +33,10 @@ from knowledge_portal.infrastructure.architecture.reasoning import (
 )
 from knowledge_portal.infrastructure.config.options import ConfigurationError, LLMProvider
 from knowledge_portal.infrastructure.config.settings import Settings
+from knowledge_portal.infrastructure.llm.capability_links import (
+    FakeCapabilityLinkSuggester,
+    StructuredCapabilityLinkSuggester,
+)
 from knowledge_portal.infrastructure.llm.catalogue_extraction import (
     FakeCatalogueExtractor,
     StructuredCatalogueExtractor,
@@ -58,6 +65,7 @@ class LLMAdapters:
     catalogue_extractor: CatalogueExtractorPort
     system_matcher: SystemMatcherPort
     architecture_reasoner: ArchitectureReasonerPort
+    capability_linker: CapabilityLinkSuggesterPort
     debug_trace: DebugTrace
     # Owns the HTTP clients the adapters share; closed with the container.
     resources: ExitStack
@@ -111,6 +119,7 @@ def _build_llm_adapters(settings: Settings, resources: ExitStack, metrics: Metri
             catalogue_extractor=FakeCatalogueExtractor(),
             system_matcher=FakeSystemMatcher(),
             architecture_reasoner=FakeArchitectureReasoner(),
+            capability_linker=FakeCapabilityLinkSuggester(),
             debug_trace=debug_trace,
             resources=resources,
         )
@@ -134,6 +143,9 @@ def _build_llm_adapters(settings: Settings, resources: ExitStack, metrics: Metri
         ),
         architecture_reasoner=StructuredArchitectureReasoner(
             models.knowledge, max_input_tokens=models.knowledge_input_tokens
+        ),
+        capability_linker=StructuredCapabilityLinkSuggester(
+            models.catalogue, max_input_tokens=models.catalogue_input_tokens
         ),
         debug_trace=debug_trace,
         resources=resources,

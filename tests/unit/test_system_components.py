@@ -310,7 +310,7 @@ def test_component_suggestions_add_or_fill_in_without_moving_capabilities() -> N
 
 
 def test_candidate_content_keeps_component_fields_to_their_kinds() -> None:
-    with pytest.raises(InvalidKnowledgeError, match="Only a component or a capability"):
+    with pytest.raises(InvalidKnowledgeError, match="Only a component, a capability or a component link"):
         CandidateContent(CandidateKind.CONSTRAINT, "crm", text="x", component_id="qe")
     with pytest.raises(InvalidKnowledgeError, match="Only a component has"):
         CandidateContent(CandidateKind.SYSTEM, "crm", name="CRM", technology="SaaS")

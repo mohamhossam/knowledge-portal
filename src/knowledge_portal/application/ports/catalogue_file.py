@@ -8,6 +8,7 @@ from typing import Protocol
 
 from knowledge_portal.domain.architecture.change_requests import ChangeRequestRecord
 from knowledge_portal.domain.architecture.channels import Channel
+from knowledge_portal.domain.architecture.concepts import BusinessCapability
 from knowledge_portal.domain.architecture.governance import KnowledgeSource, SourceConflict
 from knowledge_portal.domain.architecture.journeys import Journey
 from knowledge_portal.domain.architecture.knowledge import (
@@ -66,6 +67,8 @@ class CatalogueContent:
     change_history: tuple[ChangeRequestRecord, ...] | None = None
     # The product portfolio its offerings sit in.
     portfolio: tuple[PortfolioNode, ...] = ()
+    # The business capability concepts capabilities and components are linked to (ADR-0114).
+    business_capabilities: tuple[BusinessCapability, ...] = ()
 
 
 class CatalogueFilePort(Protocol):
