@@ -72,9 +72,9 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
 
   it("filters business rules by what they govern", async () => {
     const { container } = open("/products/business-pro-plus/rules");
-    expect(screen.getAllByRole("listitem").filter((item) => /^R\d+/.test(item.textContent ?? "")).length).toBe(11);
+    expect(screen.getAllByRole("listitem").filter((item) => /^R\d+/.test(item.textContent ?? "")).length).toBe(20);
     await userEvent.click(screen.getByRole("button", { name: /^Billing/ }));
-    expect(screen.getAllByRole("listitem").filter((item) => /^R\d+/.test(item.textContent ?? "")).length).toBe(2);
+    expect(screen.getAllByRole("listitem").filter((item) => /^R\d+/.test(item.textContent ?? "")).length).toBe(5);
     expect(await axe(container)).toHaveNoViolations();
   });
 

@@ -567,3 +567,25 @@
   .cl-legend { margin-left: 0; }
   .cl-stepper { margin-left: 0; }
 }
+
+/* ---------- Journey switcher: the offering's journeys by life stage ---------- */
+.cl-jpick { position: relative; }
+.cl-jpick summary { list-style: none; min-height: 36px; gap: 10px; }
+.cl-jpick summary::-webkit-details-marker { display: none; }
+.cl-jpick summary::after { content: ""; width: 7px; height: 7px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-2px) rotate(45deg); margin-left: 2px; }
+.cl-jpick summary small { font-weight: 400; color: var(--cl-ink-2); font-size: 0.8125rem; }
+.cl-jpick-stage { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--cl-maroon); padding-right: 10px; border-right: 1px solid var(--cl-rule); }
+.cl-jpick-panel { position: absolute; left: 0; top: calc(100% + 6px); z-index: 30; width: min(960px, calc(100vw - 64px)); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px 24px; padding: 20px 20px 16px; background: var(--cl-page); border: 1px solid var(--cl-rule); border-radius: 4px; box-shadow: 0 6px 24px rgb(31 27 26 / 0.12); }
+.cl-jpick-panel h3 { margin: 0 0 8px; padding-bottom: 8px; border-bottom: 1px solid var(--cl-rule); font-size: 0.875rem; font-weight: 700; display: flex; flex-direction: column; gap: 2px; }
+.cl-jpick-panel h3 small { font-weight: 400; font-size: 0.8125rem; color: var(--cl-ink-2); }
+.cl-jpick-panel ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.cl-jpick-panel button { width: 100%; min-height: 32px; padding: 4px 10px; text-align: left; border: 0; border-left: 2px solid transparent; border-radius: 0 3px 3px 0; background: none; cursor: pointer; color: var(--cl-ink); line-height: 1.3; }
+.cl-jpick-panel button:hover { background: var(--cl-sand); }
+.cl-jpick-panel button[aria-current="true"] { border-left-color: var(--cl-maroon); color: var(--cl-maroon); font-weight: 600; background: var(--cl-sand); }
+@media (max-width: 900px) {
+  .cl-jpick-panel { grid-template-columns: repeat(2, minmax(0, 1fr)); width: calc(100vw - 32px); }
+}
+@media (max-width: 560px) {
+  .cl-jpick summary small { display: none; }
+  .cl-jpick-panel { grid-template-columns: minmax(0, 1fr); max-height: 70vh; overflow: auto; }
+}
