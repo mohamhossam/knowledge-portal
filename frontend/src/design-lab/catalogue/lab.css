@@ -1050,7 +1050,7 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 .cl-prodcard { gap: 14px; padding: 20px; }
 .cl-prodcard-head p { -webkit-line-clamp: 2; }
 .cl-glance-rows { display: grid; gap: 0; border-top: 1px solid var(--cl-hairline); }
-.cl-glance-rows > div { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 12px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--cl-hairline); }
+.cl-glance-rows > div { display: grid; grid-template-columns: 168px minmax(0, 1fr); gap: 12px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--cl-hairline); }
 .cl-glance-rows dt { display: inline-flex; align-items: center; gap: 8px; min-height: 28px; white-space: nowrap; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--cl-ink-3); }
 .cl-glance-rows dt .cl-view-icon { color: var(--cl-ink-2); }
 .cl-glance-rows dd { min-width: 0; }
@@ -1076,12 +1076,60 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 .cl-part-chip.is-hub .cl-view-icon { color: #fff; }
 .cl-part-chip.is-optional { background: transparent; border: 1px dashed var(--cl-rule-strong); }
 .cl-part-chip small { font-size: 0.6875rem; color: var(--cl-ink-2); }
-/* Foot: the size in one quiet line, then the pages. */
-.cl-prodcard-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin-top: auto; }
 .cl-prodcard-stats { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.8125rem; color: var(--cl-ink-2); }
 .cl-prodcard-stats b { font-weight: 700; color: var(--cl-ink); }
-.cl-prodcard-foot .cl-prodcard-links { margin: 0; }
 @media (max-width: 560px) {
   .cl-glance-rows > div { grid-template-columns: minmax(0, 1fr); gap: 6px; }
   .cl-sold-group + .cl-sold-group { padding-left: 0; border-left: 0; }
 }
+/* ---------- Products page, fitted to one screen: slim hero, framed families, horizontal cards ---------- */
+.cl-hero--slim { grid-template-columns: minmax(0, 1fr) auto; gap: 16px 40px; margin-top: 16px; padding: 18px 24px; }
+.cl-hero--slim .cl-hero-text { gap: 6px; }
+.cl-hero--slim h1 { font-size: 1.75rem; }
+.cl-hero--slim .cl-hero-lede { font-size: 0.9375rem; }
+.cl-hero-side { display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
+.cl-hero-tiles { display: grid; grid-template-columns: repeat(4, minmax(84px, auto)); gap: 8px; }
+.cl-hero-tiles div { display: flex; flex-direction: column; gap: 1px; padding: 8px 12px; border: 1px solid var(--cl-hairline); border-radius: 8px; background: var(--cl-page); }
+.cl-hero-tiles dt { font-size: 0.75rem; color: var(--cl-ink-2); }
+.cl-hero-tiles dd { font-size: 1.25rem; font-weight: 700; font-stretch: 85%; line-height: 1.15; }
+.cl-hero-side .cl-find .cl-field { width: 100%; }
+.cl-hero-side .cl-find { width: 100%; }
+.cl-hero-side .cl-status:empty { display: none; }
+/* A product family: one framed group, its header on a single line. */
+.cl-family { margin-top: 16px; padding: 14px 16px 16px; border: 1px solid var(--cl-hairline); border-radius: 12px; background: var(--cl-paper); }
+.cl-family > header { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 12px; padding: 0; border: 0; text-align: left; }
+.cl-family-title { display: flex; flex-direction: column; gap: 0; }
+.cl-family-title small { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cl-ink-3); }
+.cl-family-title h2 { font-size: 1.125rem; font-weight: 700; font-stretch: 90%; line-height: 1.2; }
+.cl-family-count { padding: 1px 10px; border-radius: 999px; background: var(--cl-sand); font-size: 0.75rem; font-weight: 600; color: var(--cl-ink-2); }
+.cl-family > header .cl-family-path { margin-left: auto; }
+/* The card: identity, size and pages on the left; the four answers on the right. */
+.cl-prodcards { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.cl-prodcard { display: grid; grid-template-columns: minmax(300px, 360px) minmax(0, 1fr); gap: 0 24px; padding: 18px 20px; }
+.cl-prodcard-id { display: flex; flex-direction: column; justify-content: space-between; gap: 14px; min-width: 0; }
+.cl-prodcard-head p { -webkit-line-clamp: 3; }
+.cl-prodcard .cl-glance-rows { border-top: 0; border-left: 1px solid var(--cl-hairline); padding-left: 24px; }
+.cl-prodcard .cl-glance-rows > div { padding: 9px 0; }
+.cl-prodcard .cl-glance-rows > div:first-child { padding-top: 0; }
+.cl-prodcard .cl-glance-rows > div:last-child { padding-bottom: 0; border-bottom: 0; }
+.cl-prodcard-links { margin-top: 0; }
+/* Commercial terms: the contract periods as one joined track, then the charges and plans. */
+.cl-terms { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.cl-term-track { display: inline-flex; border: 1px solid var(--cl-rule); border-radius: 999px; background: var(--cl-page); overflow: hidden; }
+.cl-term-track > span { display: inline-flex; align-items: center; min-height: 26px; padding: 0 12px; font-size: 0.8125rem; font-weight: 600; }
+.cl-term-track > span + span { border-left: 1px solid var(--cl-hairline); }
+.cl-fact-chip b { font-weight: 700; }
+.cl-fact-note { padding: 0 6px; border-radius: 999px; background: #f6efd9; font-size: 0.6875rem; font-weight: 600; color: var(--cl-ochre); }
+.cl-fact-chip.is-gapchip { border-style: dashed; border-color: var(--cl-rule-strong); color: var(--cl-ink-2); }
+@media (max-width: 960px) {
+  .cl-hero--slim { grid-template-columns: minmax(0, 1fr); }
+  .cl-prodcard { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .cl-prodcard .cl-glance-rows { border-left: 0; padding-left: 0; border-top: 1px solid var(--cl-hairline); }
+  .cl-prodcard .cl-glance-rows > div:first-child { padding-top: 9px; }
+  .cl-family > header .cl-family-path { margin-left: 0; flex-basis: 100%; }
+}
+@media (max-width: 560px) {
+  .cl-hero-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.cl-prodcard-links { flex-wrap: nowrap; gap: 6px; }
+.cl-prodcard-links .cl-btn { padding: 0 10px; gap: 6px; }

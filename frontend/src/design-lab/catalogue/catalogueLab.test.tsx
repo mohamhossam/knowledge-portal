@@ -43,7 +43,7 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
     expect(await axe(container)).toHaveNoViolations();
   });
 
-  it("lists every product under its place in the portfolio: how it is sold, who can buy it, what is in it", async () => {
+  it("lists every product under its place in the portfolio: how it is sold, who can buy it, its terms, what is in it", async () => {
     const { container } = open("/products");
     expect(screen.getByRole("heading", { level: 1, name: "Products" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: /Business internet bundles/ })).toBeInTheDocument();
@@ -52,10 +52,13 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
     expect(screen.getByText("Assisted")).toBeInTheDocument();
     expect(screen.getByText("Self-service")).toBeInTheDocument();
     expect(screen.queryByText(/^NPS/)).not.toBeInTheDocument();
-    // Who can buy: the customer type, flagged as inferred, and the contract terms one chip each.
+    // Who can buy: the customer type, flagged as inferred.
     expect(screen.getByText("SMB customers")).toBeInTheDocument();
-    expect(screen.getByText("(inferred)")).toBeInTheDocument();
-    expect(screen.getByText("2 years")).toBeInTheDocument();
+    expect(screen.getByText("inferred")).toBeInTheDocument();
+    // Commercial terms: the contract periods as one track, the exit charge from the rules, and the price as a gap.
+    expect(within(screen.getByRole("list", { name: "Contract periods" })).getAllByRole("listitem").map((item) => item.textContent)).toEqual(["No contract", "1 year", "2 years"]);
+    expect(screen.getByText("AED 650")).toBeInTheDocument();
+    expect(screen.getByText("Price not stated")).toBeInTheDocument();
     // In the bundle: short names, optional parts marked.
     expect(screen.getByText("Fibre internet")).toBeInTheDocument();
     expect(screen.getByText("optional")).toBeInTheDocument();

@@ -430,4 +430,13 @@ Checks: tests 28/28 with axe; lint, typecheck and build green.
 
 Checks: tests 28/28 with axe; lint, brand lint, build and budget green.
 
+**Products page on one screen (2026-10-10, user).**
+- **Commercial terms (new row on the card):** contract periods are not an eligibility rule, so they moved here. The periods show as one joined track (No contract · 1 year · 2 years), then the exit charge read from the business rules (AED 650, marked "to confirm" because the rule says so), the number of plans, and "Price not stated" as a dashed gap, since no plan states a price.
+- **Who can buy:** keeps only the customer type, with its evidence note.
+- **Card layout:** horizontal. Identity, size line and page buttons sit on the left; the four rows (Sold through, Who can buy, Commercial terms, In the bundle) on the right, behind a hairline. The card is 241px tall, and several products stack as a list.
+- **Family group:** a framed paper group like the hero. Its header is one row: family icon, level label and name, product count, and the portfolio path to the right.
+- **Hero:** slim, with four compact tiles and the filter beside the title.
+
+At 1440 × 900 the page height equals the viewport: no scroll. Checks: tests 28/28 with axe (the terms track, exit charge and price gap are asserted); lint, brand lint, build and budget green.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.
