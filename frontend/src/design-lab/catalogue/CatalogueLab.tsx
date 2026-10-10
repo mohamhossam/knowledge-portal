@@ -9,7 +9,7 @@ import "../../design";
 import "./lab.css";
 
 import { type ReactNode, useLayoutEffect, useMemo, useRef } from "react";
-import { Link, Route, Routes, useLocation } from "react-router-dom";
+import { Link, Route, Routes } from "react-router-dom";
 
 import type { Release } from "../../api/client";
 import { fromRelease } from "../../architecture/adapter";
@@ -168,47 +168,44 @@ export function PathBar({ label, items }: { label: string; items: { level: strin
   );
 }
 
+/**
+ * The portal shell. Tier one is the masthead: the "Etisalat | Knowledge Portal"
+ * lockup (one link home: the portal is a product named Knowledge Portal, owned
+ * by Etisalat), the portal's areas, and the signed-in person. Its content sits
+ * on the same 1440px column as the page, so the logo lines up with everything
+ * below it. Tier two is each screen's catalogue bar.
+ */
 function LabShell({ children }: { children: ReactNode }) {
-  const data = useLabData();
-  const product = data.offerings[0];
-  const { pathname } = useLocation();
-  const screens = [
-    { to: LAB, label: "Landscape" },
-    { to: `${LAB}/products/${product?.id}`, label: "Product" },
-    { to: `${LAB}/products/${product?.id}/architecture`, label: "Product › Architecture" },
-    { to: firstJourneyHref(data).split("?")[0] ?? LAB, label: "Journey flow" },
-  ];
-  const active = (to: string) => pathname.replace(/\/$/, "") === to || (to.includes("/journeys/") && pathname.includes("/journeys/"));
   return (
     <div className="cl">
       <a className="cl-skip" href="#main">
         Skip to content
       </a>
       <header className="cl-mast">
-        <img className="cl-brand" src={brandLogo} alt="Etisalat" width={115} height={24} />
-        <span className="cl-mast-divider" aria-hidden="true" />
-        <b>Knowledge portal</b>
-        <nav aria-label="Areas">
-          <a href="#main">Your work</a>
-          <a href="#main">Library</a>
-          <a href="#main" aria-current="page">
-            Catalogue
-          </a>
-          <a href="#main">Ownership</a>
-          <a href="#main">Requirements</a>
-          <a href="#main">Explorer</a>
-        </nav>
-        <span className="cl-me">Amina Owner</span>
-      </header>
-      <nav className="cl-labbar" aria-label="Mock-up screens">
-        <strong>Mock-up</strong>
-        {screens.map((screen, index) => (
-          <Link key={screen.label} to={screen.to} aria-current={active(screen.to) ? "page" : undefined}>
-            <span aria-hidden="true">{index + 1}</span>
-            {screen.label}
+        <div className="cl-mast-inner">
+          <Link className="cl-lockup" to={LAB}>
+            <img className="cl-brand" src={brandLogo} alt="Etisalat" width={115} height={24} />
+            <span className="cl-mast-divider" aria-hidden="true" />
+            <span className="cl-product">Knowledge Portal</span>
           </Link>
-        ))}
-      </nav>
+          <nav aria-label="Areas">
+            <a href="#main">Your work</a>
+            <a href="#main">Library</a>
+            <a href="#main" aria-current="page">
+              Catalogue
+            </a>
+            <a href="#main">Ownership</a>
+            <a href="#main">Requirements</a>
+            <a href="#main">Explorer</a>
+          </nav>
+          <span className="cl-me">
+            <span className="cl-avatar" aria-hidden="true">
+              AO
+            </span>
+            Amina Owner
+          </span>
+        </div>
+      </header>
       <main id="main" className="cl-page" tabIndex={-1}>
         {children}
       </main>

@@ -8,6 +8,7 @@
  * 28 page title · 40 product title.
  */
 .cl {
+  overflow-x: clip;
   color-scheme: light;
 
   --cl-maroon: #4b0f1e;
@@ -75,7 +76,8 @@
 
   --cl-aside: clamp(272px, 22vw, 320px);
   --cl-gap: 24px;
-  --cl-mast: 48px;
+  --cl-mast: 56px;
+  --cl-area: 57px;
 
   min-height: 100dvh;
   background: var(--cl-page);
@@ -98,24 +100,26 @@
 /* ---------- Shell ---------- */
 .cl-skip { position: absolute; left: 16px; top: -48px; z-index: 40; padding: 8px 12px; background: var(--cl-ink); color: #fff; border-radius: 3px; }
 .cl-skip:focus { top: 8px; color: #fff; }
-.cl-mast { position: sticky; top: 0; z-index: 20; height: var(--cl-mast); display: flex; align-items: center; gap: 12px; padding: 0 24px; background: var(--cl-maroon); color: #fff; }
-/* The official white Etisalat logo, 24px tall, then a thin divider before the product name. */
-.cl-brand { display: block; height: 24px; width: auto; flex: none; }
-.cl-mast-divider { width: 1px; height: 22px; margin: 0 4px; background: rgb(255 255 255 / 0.35); flex: none; }
-.cl-mast b { font-stretch: 88%; font-size: 1rem; white-space: nowrap; }
-.cl-mast nav { margin-left: 24px; display: flex; gap: 4px; min-width: 0; }
-.cl-mast nav a { color: #fff; opacity: 0.86; text-decoration: none; padding: 14px 8px 11px; border-bottom: 3px solid transparent; white-space: nowrap; }
-.cl-mast nav a:hover { opacity: 1; color: #fff; }
-.cl-mast nav a[aria-current="page"] { opacity: 1; border-bottom-color: #fff; }
-.cl-mast nav a:focus-visible { outline-color: #fff; outline-offset: -4px; box-shadow: none; }
-.cl-mast .cl-me { margin-left: auto; opacity: 0.86; white-space: nowrap; }
-.cl-labbar { display: flex; align-items: center; gap: 4px; padding: 6px 24px; background: var(--cl-sand); border-bottom: 1px solid var(--cl-hairline); color: var(--cl-ink-2); overflow-x: auto; }
-.cl-labbar strong { color: var(--cl-ink); margin-right: 8px; font-weight: 600; }
-.cl-labbar a { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 12px; border-radius: 999px; text-decoration: none; color: var(--cl-ink-2); white-space: nowrap; }
-.cl-labbar a span { font-weight: 700; font-stretch: 80%; }
-.cl-labbar a:hover { background: var(--cl-page); color: var(--cl-ink); }
-.cl-labbar a[aria-current="page"] { background: var(--cl-maroon); color: #fff; }
-.cl-labbar a:focus-visible { outline-offset: -2px; box-shadow: none; }
+/* Tier one, the masthead: its content shares the page's 1440px column, so the logo lines up with the page. */
+.cl-mast { position: sticky; top: 0; z-index: 20; height: var(--cl-mast); background: var(--cl-maroon); color: #fff; }
+.cl-mast-inner { max-width: 1440px; height: 100%; margin: 0 auto; padding: 0 32px; display: flex; align-items: center; gap: 40px; }
+/* The lockup: Etisalat's logo, a divider, the product name; one link home, optically centred. */
+.cl-lockup { display: inline-flex; align-items: center; gap: 16px; height: 100%; flex: none; color: #fff; text-decoration: none; }
+:where(.cl) a.cl-lockup, :where(.cl) a.cl-lockup:hover { color: #fff; }
+.cl-lockup:focus-visible { outline-color: #fff; outline-offset: -6px; box-shadow: none; }
+.cl-brand { display: block; height: 24px; width: auto; flex: none; transform: translateY(-1px); }
+.cl-mast-divider { width: 1px; height: 24px; background: rgb(255 255 255 / 0.4); flex: none; }
+.cl-product { font-size: 1.0625rem; font-weight: 600; letter-spacing: -0.005em; white-space: nowrap; }
+.cl-mast nav { display: flex; align-self: stretch; gap: 4px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.cl-mast nav a { position: relative; display: inline-flex; align-items: center; padding: 0 12px; color: #f1dfe3; text-decoration: none; white-space: nowrap; }
+.cl-mast nav a::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 0; height: 3px; border-radius: 3px 3px 0 0; background: transparent; }
+.cl-mast nav a:hover { color: #fff; }
+.cl-mast nav a:hover::after { background: rgb(255 255 255 / 0.35); }
+.cl-mast nav a[aria-current="page"] { color: #fff; font-weight: 600; }
+.cl-mast nav a[aria-current="page"]::after { background: #fff; }
+.cl-mast nav a:focus-visible { outline-color: #fff; outline-offset: -6px; box-shadow: none; }
+.cl-me { margin-left: auto; display: inline-flex; align-items: center; gap: 10px; color: #f1dfe3; white-space: nowrap; }
+.cl-avatar { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: var(--cl-maroon-hover); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.3); color: #fff; font-size: 0.75rem; font-weight: 700; }
 .cl-page { max-width: 1440px; margin: 0 auto; padding: 16px 32px 48px; }
 .cl-page:focus { outline: none; }
 
@@ -236,7 +240,7 @@
 .cl-matrix-key strong { margin-left: auto; color: var(--cl-ink); }
 
 /* ---------- The aside (inspector) ---------- */
-.cl-insp { position: sticky; top: calc(var(--cl-mast) + 16px); max-height: calc(100dvh - var(--cl-mast) - 32px); overflow-y: auto; border: 1px solid var(--cl-rule); border-radius: 4px; background: var(--cl-page); padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.cl-insp { position: sticky; top: calc(var(--cl-mast) + var(--cl-area) + 16px); max-height: calc(100dvh - var(--cl-mast) - var(--cl-area) - 32px); overflow-y: auto; border: 1px solid var(--cl-rule); border-radius: 4px; background: var(--cl-page); padding: 16px; display: flex; flex-direction: column; gap: 8px; }
 .cl-insp-head { display: flex; align-items: flex-start; gap: 8px; }
 .cl-insp h2 { font-size: 1.25rem; line-height: 1.25; font-weight: 700; font-stretch: 87.5%; overflow-wrap: anywhere; flex: 1; }
 .cl-insp h3 { font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--cl-ink-2); margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--cl-hairline); }
@@ -572,11 +576,8 @@
 }
 @media (max-width: 760px) {
   .cl-page { padding: 12px 16px 40px; }
-  .cl-mast { padding: 0 12px; }
-  .cl-mast b, .cl-mast .cl-me { display: none; }
-  .cl-mast nav { margin-left: 8px; overflow-x: auto; scrollbar-width: none; }
-  .cl-labbar { padding: 6px 12px; scrollbar-width: none; }
-  .cl-labbar strong { display: none; }
+  .cl-mast-inner { padding: 0 16px; gap: 16px; }
+  .cl-mast-divider, .cl-product, .cl-me { display: none; }
   .cl-meta { flex-wrap: wrap; }
   .cl-values, .cl-elig, .cl-compcards, .cl-plancards, .cl-tree-branches, .cl-glance { grid-template-columns: 1fr; }
   .cl-tree-row { grid-template-columns: 1fr; }
@@ -725,8 +726,9 @@
 .cl-pill:hover { border-color: var(--cl-maroon); }
 
 /* ---------- Catalogue bar: identity, sections with icons, and the portfolio path ---------- */
-.cl-area { display: flex; align-items: center; gap: 8px 24px; flex-wrap: wrap; border-bottom: 1px solid var(--cl-rule); }
-.cl-area-id { display: flex; align-items: center; gap: 10px; padding: 6px 24px 6px 0; border-right: 1px solid var(--cl-hairline); }
+/* Tier two, the catalogue bar: full width under the masthead, sticky, its content on the page column. */
+.cl-area { position: sticky; top: var(--cl-mast); z-index: 15; min-height: var(--cl-area); display: flex; align-items: center; gap: 0 24px; margin: -16px calc(50% - 50vw) 0; padding-inline: calc(50vw - 50%); border-bottom: 1px solid var(--cl-rule); background: var(--cl-page); }
+.cl-area-id { display: flex; align-items: center; gap: 10px; align-self: stretch; padding: 0 24px 0 0; border-right: 1px solid var(--cl-hairline); }
 .cl-area-mark { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 6px; background: var(--cl-maroon-mist); color: var(--cl-maroon); }
 .cl-area-mark .cl-area-icon { width: 18px; height: 18px; }
 .cl-area-id > span:last-child { display: flex; flex-direction: column; line-height: 1.2; }
@@ -734,7 +736,7 @@
 .cl-area-id small { font-size: 0.75rem; color: var(--cl-ink-2); white-space: nowrap; }
 .cl-area-icon { flex: none; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 .cl-area-nav { display: flex; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
-.cl-area-nav a, .cl-area-off { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 12px; color: var(--cl-ink-2); font-weight: 600; text-decoration: none; white-space: nowrap; }
+.cl-area-nav a, .cl-area-off { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 56px; padding: 0 12px; color: var(--cl-ink-2); font-weight: 600; text-decoration: none; white-space: nowrap; }
 .cl-area-nav a .cl-area-icon, .cl-area-off .cl-area-icon { color: var(--cl-ink-3); }
 .cl-area-nav a::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 2px; border-radius: 2px 2px 0 0; background: transparent; transition: background-color 150ms ease-out; }
 .cl-area-nav a:hover { color: var(--cl-ink); }
@@ -931,3 +933,8 @@
 .am-bus:not(.is-dim) .am-bus-head > span:not(.am-icon) { background: var(--cl-spine); }
 .am-bus.is-dim .am-bus-head > span:not(.am-icon) { background: var(--cl-paper); }
 .cl-route-table thead tr:last-child th:first-child { width: 40%; }
+@media (max-width: 760px) {
+  /* On a phone only the masthead stays pinned; two sticky tiers would cover too much of the screen. */
+  .cl-area { position: static; margin-top: -12px; flex-wrap: wrap; }
+  .cl-area-id { align-self: auto; min-height: 48px; }
+}
