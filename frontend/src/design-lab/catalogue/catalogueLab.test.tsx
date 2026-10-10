@@ -48,11 +48,39 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
     expect(screen.getByRole("heading", { level: 2, name: "TIBCO" })).toBeInTheDocument();
   });
 
-  it("opens a product with its customer value and its plans compared, prices left as a gap", async () => {
+  it("opens a product with one statement, its customer value and who can buy it, through which channels", async () => {
     const { container } = open("/products/business-pro-plus");
     expect(screen.getByRole("heading", { level: 1, name: "Business Pro Plus" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 3, name: "Secure by default" })).toBeInTheDocument();
+    expect(screen.getByText(/Secure by default:/)).toBeInTheDocument();
+    const route = screen.getByRole("table");
+    expect(within(route).getByRole("rowheader", { name: /New activation/ })).toBeInTheDocument();
+    expect(within(route).getAllByRole("img", { name: "Through BCRM" }).length).toBeGreaterThan(5);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("draws where the product sits in the portfolio, down to its plans and components", async () => {
+    const { container } = open("/products/business-pro-plus/hierarchy");
+    for (const level of ["Enterprise", "Fixed", "SMB", "Business internet bundles"]) expect(screen.getAllByText(level).length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { level: 2, name: /Plans/ })).toBeInTheDocument();
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("lists the plans with prices left as a gap, and filters business rules by kind", async () => {
+    open("/products/business-pro-plus/plans");
     expect(screen.getByRole("rowheader", { name: "Monthly price" })).toBeInTheDocument();
+  });
+
+  it("filters business rules by what they govern", async () => {
+    const { container } = open("/products/business-pro-plus/rules");
+    expect(screen.getAllByRole("listitem").filter((item) => /^R\d+/.test(item.textContent ?? "")).length).toBe(11);
+    await userEvent.click(screen.getByRole("button", { name: /^Billing/ }));
+    expect(screen.getAllByRole("listitem").filter((item) => /^R\d+/.test(item.textContent ?? "")).length).toBe(2);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("shows each component with the systems that deliver it", async () => {
+    const { container } = open("/products/business-pro-plus/components");
+    expect(screen.getByRole("heading", { level: 3, name: "Backup 5G" })).toBeInTheDocument();
     expect(await axe(container)).toHaveNoViolations();
   });
 
@@ -70,11 +98,21 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
 
   it("lays out a journey's flow in lanes and shows a picked step's calls", async () => {
     const { container } = open("/journeys/bpp-new-activation?channel=bcrm");
-    expect(screen.getByRole("heading", { level: 1, name: /New activation · BCRM/ })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Business Pro Plus" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: /New activation · BCRM/ })).toBeInTheDocument();
     const steps = screen.getAllByRole("button", { name: /^Step \d+:/ });
     expect(steps.length).toBeGreaterThan(10);
     await userEvent.click(steps[1] as HTMLElement);
     expect(screen.getByText(/Step 2 of/)).toBeInTheDocument();
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("lists a journey's integrations, filterable by system", async () => {
+    const { container } = open("/journeys/bpp-new-activation?channel=bcrm&view=integrations");
+    const register = screen.getByRole("region", { name: "Integration register" });
+    const all = within(register).getAllByRole("row").length;
+    await userEvent.click(screen.getByRole("button", { name: /^CWOM/ }));
+    expect(within(register).getAllByRole("row").length).toBeLessThan(all);
     expect(await axe(container)).toHaveNoViolations();
   });
 });

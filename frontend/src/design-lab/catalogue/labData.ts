@@ -1,7 +1,9 @@
 /** The lab's catalogue: one version, read once, shared by the four mock-ups. */
 import { createContext, useContext } from "react";
+import { useParams } from "react-router-dom";
 
 import type { CatalogueData } from "../../architecture/adapter";
+import type { Offering } from "../../architecture/model";
 
 export const LAB = "/design-lab/catalogue";
 
@@ -23,4 +25,11 @@ export function journeyHref(journeyId: string, channel?: string | null): string 
 export function firstJourneyHref(data: CatalogueData, offeringId?: string): string {
   const journey = data.journeys.find((item) => !offeringId || item.offeringId === offeringId) ?? data.journeys[0];
   return journey ? journeyHref(journey.id, journey.channels[0]) : LAB;
+}
+
+/** The product the address names, if this catalogue version has it. */
+export function useOffering(): Offering | null {
+  const data = useLabData();
+  const { offeringId } = useParams();
+  return data.offerings.find((item) => item.id === offeringId) ?? null;
 }

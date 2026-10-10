@@ -291,4 +291,12 @@ Files: `frontend/src/design-lab/catalogue/` (lab, poster model and component, fo
 - Shell and a11y: section tabs on every screen, skip link, page titles, AA text everywhere (no faded counts), disabled states, focus rings never clipped, `:where()` base rules.
 Checks: lab tests 6/6 (axe), lint, brand lint, typecheck, build, budget green; no horizontal overflow at 1280 or 1440. A fresh critique has not been re-run.
 
+**Product and journey enhancements (2026-10-10, user's five points).**
+1. **Hierarchy tab** in the product: the portfolio drawn as a tree, Enterprise (business unit) › Fixed (line of business) › SMB (segment) › Business internet bundles (product family) › Business Pro Plus (offering), branching into its 6 plans, 9 components and 3 journeys; crumbs link to it.
+2. **Journey page inside the product** (Journeys tab, compact product header): the BPMN takes the full width and up to 820px of height; the step detail and a wrapping grid of all steps sit underneath (no side scroll); the export menu sits on the tab row.
+3. **Plans, Business rules and Components are real tabs:** plan cards (speeds, CPE, access point, Backup 5G, price as a gap) plus the comparison; 11 rules filterable by kind (composition, fulfilment, dependency, lifecycle, billing); components grouped always-included / optional with codes and the systems that deliver them.
+4. **Integrations tab per journey:** the call register (from → to, via, interface, style and mode, TM Forum equivalent, purpose, step, evidence), calls by style, and a filter by system.
+5. **Overview:** one statement (what the product is for) replaces the description and the separate What it's for; customer value as single phrases; Who can buy it grouped into Who / Where / On what terms / Through which route beside a channel × order-type matrix (19 order types, 6 channels, modelled journeys tagged); plans at a glance.
+Checks: lab tests 11/11 (axe), lint, brand lint, typecheck, build, budget green.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.
