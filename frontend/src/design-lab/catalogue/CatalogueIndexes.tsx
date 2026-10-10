@@ -11,7 +11,7 @@ import { Link } from "react-router-dom";
 import type { Offering, PortfolioNode } from "../../architecture/model";
 import { AreaTabs } from "./CatalogueLab";
 import { journeyHref, LAB, useLabData } from "./labData";
-import { firstSentence, monogram, plural, useTitle } from "./labUtil";
+import { firstSentence, listOf, monogram, plural, useTitle } from "./labUtil";
 import { capabilityOf, DEVICE_ICON, shortComponentName } from "./capabilities";
 import { stageOfCode } from "./stages";
 
@@ -94,6 +94,13 @@ function ProductCard({ offering }: { offering: Offering }) {
     .map((kind) => ({ kind, channels: selling.filter((channel) => channel.kind === kind) }))
     .filter((item) => item.channels.length);
   const tone = (systemId: string) => data.systems.find((system) => system.id === systemId)?.domain ?? "customer";
+  // Not every channel takes every way to join: the ones a channel takes, when it isn't all of them.
+  const ways = joining.length ? joining : offering.orderTypes;
+  const onlyFor = (channelId: string) => {
+    const served = ways.filter((type) => type.channels.includes(channelId));
+    return served.length < ways.length ? served.map((type) => type.name) : null;
+  };
+  const partial = selling.some((channel) => onlyFor(channel.id));
 
   // Who can buy: the customer type, cut to its headline.
   const who = offering.eligibility.filter((point) => /segment|customer|audience/i.test(point.title));
@@ -148,19 +155,25 @@ function ProductCard({ offering }: { offering: Offering }) {
               kinds.map((item) => (
                 <span key={item.kind} className="cl-sold-group">
                   <small>{CHANNEL_KIND_WORDS[item.kind]}</small>
-                  {item.channels.map((channel) => (
-                    <span key={channel.id} className="cl-chanchip">
-                      <span className={`am-mono cl-systile tone--${tone(channel.systemId)} am-mono--${monogram(channel.name).length}`} aria-hidden="true" translate="no">
-                        {monogram(channel.name)}
+                  {item.channels.map((channel) => {
+                    const only = onlyFor(channel.id);
+                    const label = only ? `For ${listOf(only)} only` : undefined;
+                    return (
+                      <span key={channel.id} className={`cl-chanchip${only ? " is-partial" : ""}`} title={label}>
+                        <span className={`am-mono cl-systile tone--${tone(channel.systemId)} am-mono--${monogram(channel.name).length}`} aria-hidden="true" translate="no">
+                          {monogram(channel.name)}
+                        </span>
+                        {channel.name.replace(/\s*\(.*\)\s*$/, "")}
+                        {label && <span className="ds-visually-hidden">: {label.toLowerCase()}</span>}
                       </span>
-                      {channel.name.replace(/\s*\(.*\)\s*$/, "")}
-                    </span>
-                  ))}
+                    );
+                  })}
                 </span>
               ))
             ) : (
               <span className="cl-none">No selling channel stated</span>
             )}
+            {partial && <small className="cl-sold-note">Dashed: not for every way to join</small>}
           </dd>
         </div>
         <div>

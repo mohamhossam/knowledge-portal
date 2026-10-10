@@ -1498,3 +1498,19 @@ a.cl-pill:hover { color: var(--cl-maroon); }
   .jx { grid-template-columns: minmax(0, 1fr) clamp(320px, 26vw, 380px); }
   .jx-stage-text small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; white-space: normal; line-height: 1.2; }
 }
+/* Not every channel takes every order type. On the Journeys board, the order types a chosen channel can't take go quiet and say so; in the preview, the channels an order type can't be ordered through are listed, muted and dashed. */
+.jx-lens { flex: none; margin: 0 0 0 auto; padding: 0; list-style: none; }
+.jx-lens + .jx-scope-sum { margin-left: 16px; }
+.jx-lens .jx-scope-menu ul { right: 0; left: auto; }
+.jx-tile.is-off { border-style: dashed; background: transparent; }
+.jx-tile.is-off .jx-tile-name { color: var(--cl-ink-3); font-weight: 500; }
+.jx-tile.is-off[aria-pressed="true"] { background: var(--cl-maroon-mist); }
+.cl-chanchip.is-off { border-style: dashed; background: transparent; color: var(--cl-ink-3); }
+.cl-chanchip.is-off .am-mono { background: transparent; box-shadow: inset 0 0 0 1px var(--cl-hairline); color: var(--cl-ink-3); }
+.jx-none { font-size: 0.8125rem; color: var(--cl-ink-2); }
+/* On a product card, a channel that doesn't take every way to join is dashed; its tooltip and its accessible name say which it takes. */
+.cl-chanchip.is-partial { border-style: dashed; }
+.cl-sold-note { flex-basis: 100%; font-size: 0.6875rem; color: var(--cl-ink-3); }
+.jx-tile-off { display: inline-flex; color: var(--cl-ink-3); }
+.jx-lens-sum { padding-right: 10px; border-right: 1px solid var(--cl-hairline); }
+.cl-chanchip.is-partial { border-color: var(--cl-rule-strong); }

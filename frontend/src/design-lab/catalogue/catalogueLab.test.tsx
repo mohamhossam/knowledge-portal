@@ -91,6 +91,23 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  it("respects that not every channel takes every order type", async () => {
+    const { container } = open("/journeys?channel=b2b-web");
+    const board = screen.getByRole("region", { name: "Order types by the customer's stage" });
+    // Seen through B2B Web, the order types it can't take go quiet and say so.
+    expect(within(board).getByRole("button", { name: /^Renewal: .*not through B2B Web$/ })).toBeInTheDocument();
+    expect(within(board).getByRole("button", { name: /^New activation: \d+ steps$/ })).toBeInTheDocument();
+    // The preview names the channels the order type is, and isn't, ordered through.
+    expect(screen.getByRole("heading", { level: 3, name: "Ordered through" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 3, name: "Not through" })).toBeInTheDocument();
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("marks a product's selling channel that doesn't take every way to join", () => {
+    open("/products");
+    expect(screen.getByText(/for new activation and port in only/)).toBeInTheDocument();
+  });
+
   it("says which products use a picked system, and groups its journeys by product", async () => {
     open("?system=cwom");
     expect(screen.getByRole("heading", { level: 3, name: "Used by products" })).toBeInTheDocument();
