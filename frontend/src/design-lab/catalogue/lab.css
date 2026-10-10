@@ -99,7 +99,9 @@
 .cl-skip { position: absolute; left: 16px; top: -48px; z-index: 40; padding: 8px 12px; background: var(--cl-ink); color: #fff; border-radius: 3px; }
 .cl-skip:focus { top: 8px; color: #fff; }
 .cl-mast { position: sticky; top: 0; z-index: 20; height: var(--cl-mast); display: flex; align-items: center; gap: 12px; padding: 0 24px; background: var(--cl-maroon); color: #fff; }
-.cl-logo { width: 28px; height: 28px; border-radius: 3px; background: var(--cl-red); display: grid; place-items: center; font-weight: 800; color: #fff; }
+/* The official white Etisalat logo, 24px tall, then a thin divider before the product name. */
+.cl-brand { display: block; height: 24px; width: auto; flex: none; }
+.cl-mast-divider { width: 1px; height: 22px; margin: 0 4px; background: rgb(255 255 255 / 0.35); flex: none; }
 .cl-mast b { font-stretch: 88%; font-size: 1rem; white-space: nowrap; }
 .cl-mast nav { margin-left: 24px; display: flex; gap: 4px; min-width: 0; }
 .cl-mast nav a { color: #fff; opacity: 0.86; text-decoration: none; padding: 14px 8px 11px; border-bottom: 3px solid transparent; white-space: nowrap; }

@@ -15,6 +15,7 @@ import type { Release } from "../../api/client";
 import { fromRelease } from "../../architecture/adapter";
 import release from "../../architecture/fixtures/smb-release.json";
 import { EVIDENCE_WORDS, type Evidence } from "../../architecture/model";
+import brandLogo from "./assets/etisalat-logo-white.svg";
 import { JourneyFlow } from "./JourneyFlow";
 import { firstJourneyHref, LAB, LabData, useLabData } from "./labData";
 import { LandscapeHero } from "./LandscapeHero";
@@ -184,9 +185,8 @@ function LabShell({ children }: { children: ReactNode }) {
         Skip to content
       </a>
       <header className="cl-mast">
-        <span className="cl-logo" aria-hidden="true">
-          e&amp;
-        </span>
+        <img className="cl-brand" src={brandLogo} alt="Etisalat" width={115} height={24} />
+        <span className="cl-mast-divider" aria-hidden="true" />
         <b>Knowledge portal</b>
         <nav aria-label="Areas">
           <a href="#main">Your work</a>
