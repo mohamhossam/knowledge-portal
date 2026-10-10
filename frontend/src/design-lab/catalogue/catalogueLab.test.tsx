@@ -43,6 +43,32 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  it("lists every product under its place in the portfolio, with how much of the map it reaches", async () => {
+    const { container } = open("/products");
+    expect(screen.getByRole("heading", { level: 1, name: "Products" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: /Business internet bundles/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Business Pro Plus" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /Business Pro Plus reaches \d+ of 46 systems/ })).toBeInTheDocument();
+    await userEvent.type(screen.getByRole("searchbox", { name: "Filter products" }), "zzz");
+    expect(screen.getByText(/No product matches/)).toBeInTheDocument();
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("shows journey coverage by order type and product", async () => {
+    const { container } = open("/journeys");
+    expect(screen.getByRole("heading", { level: 1, name: "Journeys" })).toBeInTheDocument();
+    const matrix = screen.getByRole("table");
+    expect(within(matrix).getByRole("columnheader", { name: "Business Pro Plus" })).toBeInTheDocument();
+    expect(within(matrix).getByRole("link", { name: /New activation for Business Pro Plus/ })).toBeInTheDocument();
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("says which products use a picked system, and groups its journeys by product", async () => {
+    open("?system=cwom");
+    expect(screen.getByRole("heading", { level: 3, name: "Used by products" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Business Pro Plus" })).toHaveAttribute("href", expect.stringContaining("/products/business-pro-plus/architecture?system=cwom"));
+  });
+
   it("shows the same links as a matrix, read by row and column", async () => {
     const { container } = open("?view=matrix");
     const matrix = screen.getByRole("table");
