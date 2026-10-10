@@ -1,30 +1,33 @@
 /**
- * The journey catalogue, built for many products across many families.
+ * The journey catalogue: every journey of one product, by the customer's stage.
  *
- * Scope: a path through the portfolio hierarchy (business unit › line of
- * business › segment › product family › product), each level a small menu
- * with "Any …", so the page narrows from the whole catalogue to one product.
+ * Order types belong to a product, so the page always shows one product's.
+ * The header is the catalogue's soft band: the title, how much of the product
+ * is modelled, then the scope, a path through the portfolio (business unit ›
+ * line of business › segment › product family) ending in the product. It opens
+ * on Fixed › SMB and that scope's first product; each level above the product
+ * has "Any …", the product level always names one.
  *
  * Lifecycle board: the customer's stages (join, change, support, leave) as a
- * chevron ribbon, every order type in scope as a tile in its stage. A tile
- * carries one marker per product in scope: filled where that product has a
- * modelled journey, dashed where it offers the order type with no journey
- * yet. Many products read as a row of markers, not as more columns.
+ * chevron ribbon, every order type of the product as a tile in its stage, with
+ * its journey's size, or "No journey yet".
  *
- * Preview: the picked order type, per product when several offer it: the
- * journey's route through the systems in the order the order travels, its
- * channels, its size, the decisions it contains, a comparison across
- * products, and the way into the flow.
+ * Preview: the picked order type's journey: its route through the systems in
+ * the order the order travels, its channels, its size, the decisions it
+ * contains, and the way into the flow.
  */
 import { type KeyboardEvent, type ReactNode, useEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { type CatalogueData, journeyView } from "../../architecture/adapter";
-import type { JourneyDef, JourneyView, Offering, PortfolioNode } from "../../architecture/model";
+import type { JourneyView, PortfolioNode } from "../../architecture/model";
 import { AreaTabs } from "./CatalogueLab";
 import { journeyHref, LAB, useLabData } from "./labData";
 import { monogram, plural, useTitle } from "./labUtil";
 import { STAGES, stageOfCode } from "./stages";
+
+/** The portfolio path the page opens on, by name from the top: Fixed, then SMB. */
+const DEFAULT_SCOPE = ["Fixed", "SMB"];
 
 function Icon({ children, size = 16 }: { children: ReactNode; size?: number }) {
   return (
@@ -62,8 +65,19 @@ function pathTo(nodes: PortfolioNode[], nodeId: string | null): PortfolioNode[] 
   return path;
 }
 
-/** One level's menu in the scope bar: its kind above, the choice in a chip, "Any …" first. */
-function ScopeMenu({ level, value, options, onPick }: { level: string; value: string | null; options: { id: string; name: string }[]; onPick: (id: string | null) => void }) {
+/** The node at the end of DEFAULT_SCOPE: the first name anywhere, each next name among the previous one's children. */
+function defaultScope(nodes: PortfolioNode[]): string | null {
+  let node: PortfolioNode | undefined;
+  for (const name of DEFAULT_SCOPE) {
+    const found: PortfolioNode | undefined = nodes.find((item) => item.name === name && (!node || item.parentId === node.id));
+    if (!found) break;
+    node = found;
+  }
+  return node?.id ?? null;
+}
+
+/** One level's menu in the scope bar: a chip naming its kind and the choice, "Any …" first unless the level must name one. */
+function ScopeMenu({ level, value, options, onPick, allowAny = true }: { level: string; value: string | null; options: { id: string; name: string }[]; onPick: (id: string | null) => void; allowAny?: boolean }) {
   const menu = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
     const outside = (event: PointerEvent) => {
@@ -87,17 +101,19 @@ function ScopeMenu({ level, value, options, onPick }: { level: string; value: st
   const any = `Any ${level.toLowerCase()}`;
   return (
     <li className="jx-scope-level">
-      <small>{level}</small>
       <details ref={menu} className="jx-scope-menu" onKeyDown={onKeyDown}>
         <summary aria-label={`${level}: ${chosen?.name ?? any}. Change`}>
+          <small aria-hidden="true">{level}</small>
           <span className={chosen ? undefined : "is-any"}>{chosen?.name ?? any}</span>
         </summary>
         <ul>
-          <li>
-            <button type="button" aria-current={value === null ? "true" : undefined} onClick={() => pick(null)}>
-              {any}
-            </button>
-          </li>
+          {allowAny && (
+            <li>
+              <button type="button" aria-current={value === null ? "true" : undefined} onClick={() => pick(null)}>
+                {any}
+              </button>
+            </li>
+          )}
           {options.map((option) => (
             <li key={option.id}>
               <button type="button" aria-current={option.id === value ? "true" : undefined} onClick={() => pick(option.id)}>
@@ -116,9 +132,7 @@ function withView(href: string): string {
   return `${href}${href.includes("?") ? "&" : "?"}view=integrations`;
 }
 
-type Variant ={ offering: Offering; journey: JourneyDef | undefined; view: JourneyView | null };
-
-/** A journey's shape, for the preview and the comparison. */
+/** A journey's shape, for the preview. */
 function shapeOf(data: CatalogueData, view: JourneyView | null) {
   if (!view) return null;
   const known = new Set(data.systems.map((system) => system.id));
@@ -144,13 +158,12 @@ export function JourneysIndex() {
     setParams(next, { replace: true });
   };
 
-  // Scope: the deepest portfolio node chosen, and optionally one product.
-  const scopeNode = data.portfolio.some((node) => node.id === params.get("scope")) ? params.get("scope") : null;
+  // Scope: the deepest portfolio node chosen ("all" for the whole portfolio; none in the URL opens on Fixed › SMB), then one product in it.
+  const wantedScope = params.get("scope");
+  const scopeNode = wantedScope === "all" ? null : data.portfolio.some((node) => node.id === wantedScope) ? wantedScope : defaultScope(data.portfolio);
   const scopePath = pathTo(data.portfolio, scopeNode);
-  const inScope = (offering: Offering) => !scopeNode || pathTo(data.portfolio, offering.nodeId).some((node) => node.id === scopeNode);
-  const scoped = data.offerings.filter(inScope);
-  const productId = scoped.some((offering) => offering.id === params.get("product")) ? params.get("product") : null;
-  const products = productId ? scoped.filter((offering) => offering.id === productId) : scoped;
+  const scoped = data.offerings.filter((offering) => !scopeNode || pathTo(data.portfolio, offering.nodeId).some((node) => node.id === scopeNode));
+  const product = scoped.find((offering) => offering.id === params.get("product")) ?? scoped[0] ?? null;
 
   // The scope bar's levels: each chosen level, then the next one to choose, then the product.
   const levels: { level: string; value: string | null; options: { id: string; name: string }[]; parent: string | null }[] = [];
@@ -164,183 +177,144 @@ export function JourneysIndex() {
     parent = chosen.id;
   }
 
-  // Order types in scope, by stage; for each, every product's variant.
-  const names = new Map<string, string>();
-  for (const offering of products) for (const type of offering.orderTypes) if (!names.has(type.code)) names.set(type.code, type.name);
-  const variantsOf = (code: string): Variant[] =>
-    products
-      .filter((offering) => offering.orderTypes.some((type) => type.code === code) || data.journeys.some((journey) => journey.offeringId === offering.id && journey.orderType === code))
-      .map((offering) => {
-        const journey = data.journeys.find((item) => item.offeringId === offering.id && item.orderType === code);
-        return { offering, journey, view: journey ? journeyView(data, journey.id, journey.channels[0] ?? null) : null };
-      });
+  // The product's order types, by stage, and its journeys that follow any order type.
+  const journeyOf = (code: string) => (product ? data.journeys.find((journey) => journey.offeringId === product.id && journey.orderType === code) : undefined);
+  const stepsOf = (journeyId: string, channel: string | null) => journeyView(data, journeyId, channel)?.steps.filter((step) => step.kind === "task").length ?? 0;
+  const names = new Map((product?.orderTypes ?? []).map((type) => [type.code, type.name]));
   const stages = STAGES.map((stage) => ({ ...stage, codes: [...names.keys()].filter((code) => stageOfCode(code) === stage.id) })).filter((stage) => stage.codes.length);
-  const shared = data.journeys.filter((journey) => !journey.orderType && products.some((offering) => offering.id === journey.offeringId));
+  const shared = product ? data.journeys.filter((journey) => !journey.orderType && journey.offeringId === product.id) : [];
 
-  // The picked tile: an order type code, or a shared journey's id; the picked product among its variants.
-  const pickedKey = params.get("type") && (names.has(params.get("type") ?? "") || shared.some((journey) => journey.id === params.get("type"))) ? (params.get("type") as string) : (stages[0]?.codes[0] ?? shared[0]?.id ?? null);
+  // The picked tile: an order type code, or a shared journey's id.
+  const typeParam = params.get("type") ?? "";
+  const pickedKey = names.has(typeParam) || shared.some((journey) => journey.id === typeParam) ? typeParam : (stages[0]?.codes[0] ?? shared[0]?.id ?? null);
   const sharedPick = shared.find((journey) => journey.id === pickedKey);
-  const sharedOffering = sharedPick ? data.offerings.find((item) => item.id === sharedPick.offeringId) : undefined;
-  const sharedVariant: Variant[] = sharedPick && sharedOffering ? [{ offering: sharedOffering, journey: sharedPick, view: journeyView(data, sharedPick.id, sharedPick.channels[0] ?? null) }] : [];
-  const variants: Variant[] = !pickedKey ? [] : sharedPick ? sharedVariant : variantsOf(pickedKey);
-  const variant = variants.find((item) => item.offering.id === params.get("variant")) ?? variants.find((item) => item.journey) ?? variants[0];
-  const shape = shapeOf(data, variant?.view ?? null);
+  const journey = sharedPick ?? (pickedKey ? journeyOf(pickedKey) : undefined);
+  const shape = shapeOf(data, journey ? journeyView(data, journey.id, journey.channels[0] ?? null) : null);
   const pickedName = sharedPick?.name ?? (pickedKey ? names.get(pickedKey) : undefined);
   const pickedStage = sharedPick ? "across" : pickedKey ? stageOfCode(pickedKey) : null;
 
-  const offered = products.reduce((sum, offering) => sum + offering.orderTypes.length, 0);
-  const modelled = products.reduce((sum, offering) => sum + offering.orderTypes.filter((type) => data.journeys.some((journey) => journey.offeringId === offering.id && journey.orderType === type.code)).length, 0);
+  const offered = product?.orderTypes.length ?? 0;
+  const modelled = (product?.orderTypes ?? []).filter((type) => journeyOf(type.code)).length;
   const systemName = (id: string) => data.systems.find((system) => system.id === id)?.name ?? (id.startsWith("team:") ? id.slice(5) : id === "channel" ? "Ordering channel" : id);
   const systemTone = (id: string) => data.systems.find((system) => system.id === id)?.domain;
 
-  const markers = (code: string) =>
-    products.map((offering) => {
-      const has = data.journeys.some((journey) => journey.offeringId === offering.id && journey.orderType === code);
-      const offers = offering.orderTypes.some((type) => type.code === code);
-      return { offering, state: has ? "on" : offers ? "gap" : "none" };
-    });
-
-  const tile = (key: string, name: string, journeyCount: { has: number; offers: number }, markerList: { offering: Offering; state: string }[], steps?: number) => (
+  const tile = (key: string, name: string, steps: number | undefined) => (
     <li key={key}>
-      <button
-        type="button"
-        className="jx-tile"
-        aria-pressed={key === pickedKey}
-        aria-label={`${name}: ${journeyCount.has} of ${plural(journeyCount.offers, "product")} with a journey`}
-        onClick={() => setParam({ type: key, variant: null })}
-      >
+      <button type="button" className="jx-tile" aria-pressed={key === pickedKey} aria-label={`${name}: ${steps === undefined ? "no journey yet" : plural(steps, "step")}`} onClick={() => setParam({ type: key })}>
         <span className="jx-tile-name" title={name}>
           {name.replace(/\s*\(.*\)\s*$/, "") || name}
         </span>
         <span className="jx-tile-meta" aria-hidden="true">
-          {products.length === 1 && steps !== undefined ? (
-            <span className="jx-tile-steps">{plural(steps, "step")}</span>
-          ) : (
-            <span className="jx-marks">
-              {markerList.slice(0, 6).map((marker) => (
-                <i key={marker.offering.id} className={`is-${marker.state}`} title={`${marker.offering.name}: ${marker.state === "on" ? "journey modelled" : marker.state === "gap" ? "offered, no journey yet" : "not offered"}`} />
-              ))}
-              {markerList.length > 6 && <b>+{markerList.length - 6}</b>}
-            </span>
-          )}
+          <span className={`jx-tile-steps${steps === undefined ? " is-gap" : ""}`}>{steps === undefined ? "No journey yet" : plural(steps, "step")}</span>
         </span>
       </button>
     </li>
   );
+  const columns = stages.map((stage) => `${Math.min(2, Math.ceil(stage.codes.length / 6))}fr`).join(" ");
 
   return (
     <>
       <AreaTabs current="journeys" />
-      <header className="jx-head">
-        <div>
-          <p className="cl-eyebrow">Journey catalogue</p>
-          <h1>Journeys</h1>
+      <header className="lx-band jx-band">
+        <div className="lx-band-row">
+          <span className="lx-mark" aria-hidden="true">
+            <svg viewBox="0 0 16 16" width="18" height="18">
+              <circle cx="3.5" cy="12.5" r="1.5" />
+              <circle cx="12.5" cy="3.5" r="1.5" />
+              <path d="M5 12.5h3.5a2 2 0 0 0 0-4h-1a2 2 0 0 1 0-4H11" />
+            </svg>
+          </span>
+          <div className="lx-title">
+            <h1>Journeys</h1>
+            <p className="lx-lede">Every order type of one product, by the customer&apos;s stage</p>
+          </div>
+          {product && (
+            <p className="jx-scope-sum" aria-live="polite">
+              <span>
+                <b>{modelled}</b> of {plural(offered, "order type")} modelled
+              </span>
+              <span className="jx-cover" aria-hidden="true">
+                <i style={{ width: `${offered ? (modelled / offered) * 100 : 0}%` }} />
+              </span>
+            </p>
+          )}
         </div>
-        <p className="jx-lede">Every journey across the portfolio, by the customer&apos;s stage. Narrow it down by business unit, family or product, then pick an order type to preview its journey.</p>
+        <nav className="jx-scope" aria-label="Scope">
+          <ol>
+            {levels.map((item, index) => (
+              <ScopeMenu key={`${item.level}-${index}`} level={item.level} value={item.value} options={item.options} onPick={(id) => setParam({ scope: id ?? item.parent ?? "all", product: null, type: null })} />
+            ))}
+            <ScopeMenu level="Product" value={product?.id ?? null} options={scoped.map((offering) => ({ id: offering.id, name: offering.name }))} onPick={(id) => setParam({ product: id, type: null })} allowAny={false} />
+          </ol>
+        </nav>
       </header>
-
-      <nav className="jx-scope" aria-label="Scope">
-        <ol>
-          {levels.map((item, index) => (
-            <ScopeMenu key={`${item.level}-${index}`} level={item.level} value={item.value} options={item.options} onPick={(id) => setParam({ scope: id ?? item.parent, product: null, type: null, variant: null })} />
-          ))}
-          <ScopeMenu level="Product" value={productId} options={scoped.map((offering) => ({ id: offering.id, name: offering.name }))} onPick={(id) => setParam({ product: id, variant: null })} />
-        </ol>
-        <p className="jx-scope-sum" aria-live="polite">
-          <b>{plural(products.length, "product")}</b>
-          <span>
-            {modelled} of {plural(offered, "order type")} modelled
-          </span>
-          <span className="jx-cover" aria-hidden="true">
-            <i style={{ width: `${offered ? (modelled / offered) * 100 : 0}%` }} />
-          </span>
-        </p>
-      </nav>
 
       <div className="jx">
         <section className="jx-board" aria-label="Order types by the customer's stage">
-          <ol className="jx-ribbon" style={{ gridTemplateColumns: stages.map((stage) => `${Math.min(2, Math.ceil(stage.codes.length / 6))}fr`).join(" ") }}>
-            {stages.map((stage, index) => (
-              <li key={stage.id} className={`jx-stage${pickedStage === stage.id ? " is-on" : ""}`}>
-                <span className="jx-stage-icon">
-                  <Icon>{STAGE_ICONS[stage.id]}</Icon>
-                </span>
-                <span className="jx-stage-text">
-                  <strong>
-                    <span className="jx-stage-no">{String(index + 1).padStart(2, "0")}</span> {stage.name}
-                  </strong>
-                  <small>{stage.blurb}</small>
-                </span>
-              </li>
-            ))}
-          </ol>
-          <div className="jx-columns" style={{ gridTemplateColumns: stages.map((stage) => `${Math.min(2, Math.ceil(stage.codes.length / 6))}fr`).join(" ") }}>
-            {stages.map((stage) => (
-              <div key={stage.id} className="jx-colwrap">
-                {/* On a narrow screen the ribbon is hidden and each stage names itself above its tiles. */}
-                <p className="jx-col-head" aria-hidden="true">
-                  <Icon>{STAGE_ICONS[stage.id]}</Icon>
-                  {stage.name}
-                  <small>{stage.blurb}</small>
-                </p>
-                <ul className="jx-col" aria-label={stage.name} style={{ gridTemplateColumns: `repeat(${Math.min(2, Math.ceil(stage.codes.length / 6))}, minmax(0, 1fr))` }}>
-                  {stage.codes.map((code) => {
-                    const list = markers(code);
-                    const single = products.length === 1 ? data.journeys.find((journey) => journey.offeringId === products[0]?.id && journey.orderType === code) : undefined;
-                    const steps = single ? (journeyView(data, single.id, single.channels[0] ?? null)?.steps.filter((step) => step.kind === "task").length ?? 0) : undefined;
-                    return tile(code, names.get(code) ?? code, { has: list.filter((marker) => marker.state === "on").length, offers: list.filter((marker) => marker.state !== "none").length }, list, steps);
-                  })}
-                </ul>
+          {product ? (
+            <>
+              <ol className="jx-ribbon" style={{ gridTemplateColumns: columns }}>
+                {stages.map((stage, index) => (
+                  <li key={stage.id} className={`jx-stage${pickedStage === stage.id ? " is-on" : ""}`}>
+                    <span className="jx-stage-icon">
+                      <Icon>{STAGE_ICONS[stage.id]}</Icon>
+                    </span>
+                    <span className="jx-stage-text">
+                      <strong>
+                        <span className="jx-stage-no">{String(index + 1).padStart(2, "0")}</span> {stage.name}
+                      </strong>
+                      <small>{stage.blurb}</small>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+              <div className="jx-columns" style={{ gridTemplateColumns: columns }}>
+                {stages.map((stage) => (
+                  <div key={stage.id} className="jx-colwrap">
+                    {/* On a narrow screen the ribbon is hidden and each stage names itself above its tiles. */}
+                    <p className="jx-col-head" aria-hidden="true">
+                      <Icon>{STAGE_ICONS[stage.id]}</Icon>
+                      {stage.name}
+                      <small>{stage.blurb}</small>
+                    </p>
+                    <ul className="jx-col" aria-label={stage.name} style={{ gridTemplateColumns: `repeat(${Math.min(2, Math.ceil(stage.codes.length / 6))}, minmax(0, 1fr))` }}>
+                      {stage.codes.map((code) => {
+                        const found = journeyOf(code);
+                        return tile(code, names.get(code) ?? code, found ? stepsOf(found.id, found.channels[0] ?? null) : undefined);
+                      })}
+                    </ul>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          {shared.length > 0 && (
-            <div className="jx-across">
-              <span className="jx-across-label">
-                <Icon>{STAGE_ICONS.across}</Icon>
-                Across the lifecycle
-              </span>
-              <ul>
-                {[...new Map(shared.map((journey) => [journey.name, journey])).values()].map((journey) => {
-                  const list = products.map((offering) => ({ offering, state: shared.some((item) => item.name === journey.name && item.offeringId === offering.id) ? "on" : "none" }));
-                  const steps = journeyView(data, journey.id, journey.channels[0] ?? null)?.steps.filter((step) => step.kind === "task").length;
-                  return tile(journey.id, journey.name, { has: list.filter((marker) => marker.state === "on").length, offers: list.length }, list, steps);
-                })}
-              </ul>
-            </div>
-          )}
-          {products.length > 1 && (
-            <p className="jx-key" aria-hidden="true">
-              <i className="is-on" /> Journey modelled <i className="is-gap" /> Offered, no journey yet <i className="is-none" /> Not offered
-            </p>
+              {shared.length > 0 && (
+                <div className="jx-across">
+                  <span className="jx-across-label">
+                    <Icon>{STAGE_ICONS.across}</Icon>
+                    Across the lifecycle
+                  </span>
+                  <ul>{shared.map((item) => tile(item.id, item.name, stepsOf(item.id, item.channels[0] ?? null)))}</ul>
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="jx-empty">No product sits in this part of the portfolio yet. Widen the scope above.</p>
           )}
         </section>
 
         <aside className="jx-panel" aria-labelledby="jx-panel-h">
-          {pickedName && variant ? (
+          {product && pickedName ? (
             <>
               <p className="jx-panel-stage">
                 <Icon>{STAGE_ICONS[pickedStage ?? "across"]}</Icon>
                 {pickedStage === "across" ? "Across the lifecycle" : STAGES.find((stage) => stage.id === pickedStage)?.name}
               </p>
               <h2 id="jx-panel-h">{pickedName}</h2>
-              {variants.length > 1 ? (
-                <div className="jx-variants" role="group" aria-label="Product">
-                  {variants.map((item) => (
-                    <button key={item.offering.id} type="button" aria-pressed={item === variant} onClick={() => setParam({ variant: item.offering.id })}>
-                      <i className={item.journey ? "is-on" : "is-gap"} aria-hidden="true" />
-                      {item.offering.name}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="jx-panel-product">
-                  <Link to={`${LAB}/products/${variant.offering.id}`}>{variant.offering.name}</Link>
-                </p>
-              )}
-              {variant.journey && shape ? (
+              <p className="jx-panel-product">
+                <Link to={`${LAB}/products/${product.id}`}>{product.name}</Link>
+              </p>
+              {journey && shape ? (
                 <>
-                  <p className="jx-panel-summary">{variant.journey.summary}</p>
+                  <p className="jx-panel-summary">{journey.summary}</p>
                   <dl className="jx-facts">
                     <div>
                       <dt>Steps</dt>
@@ -370,11 +344,11 @@ export function JourneysIndex() {
                     ))}
                     {shape.route.length > 12 && <li className="jx-route-more">+{shape.route.length - 12}</li>}
                   </ol>
-                  {variant.journey.channels.length > 0 && (
+                  {journey.channels.length > 0 && (
                     <>
                       <h3>Arrives through</h3>
                       <p className="jx-channels">
-                        {variant.journey.channels.map((id) => {
+                        {journey.channels.map((id) => {
                           const channel = data.channels.find((item) => item.id === id);
                           return channel ? (
                             <span key={id} className="cl-chanchip">
@@ -403,41 +377,11 @@ export function JourneysIndex() {
                       </ul>
                     </>
                   )}
-                  {variants.filter((item) => item.journey).length > 1 && (
-                    <>
-                      <h3>Across products</h3>
-                      <table className="jx-compare">
-                        <thead>
-                          <tr>
-                            <th scope="col">Product</th>
-                            <th scope="col">Steps</th>
-                            <th scope="col">Decisions</th>
-                            <th scope="col">Systems</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {variants
-                            .filter((item) => item.journey)
-                            .map((item) => {
-                              const other = shapeOf(data, item.view);
-                              return (
-                                <tr key={item.offering.id} aria-current={item === variant ? "true" : undefined}>
-                                  <th scope="row">{item.offering.name}</th>
-                                  <td>{other?.steps}</td>
-                                  <td>{other?.decisions.length}</td>
-                                  <td>{other?.systems.size}</td>
-                                </tr>
-                              );
-                            })}
-                        </tbody>
-                      </table>
-                    </>
-                  )}
                   <div className="jx-actions">
-                    <Link className="cl-btn primary" to={journeyHref(variant.journey.id, variant.journey.channels[0])}>
+                    <Link className="cl-btn primary" to={journeyHref(journey.id, journey.channels[0])}>
                       Open the journey flow
                     </Link>
-                    <Link className="cl-btn" to={withView(journeyHref(variant.journey.id, variant.journey.channels[0]))}>
+                    <Link className="cl-btn" to={withView(journeyHref(journey.id, journey.channels[0]))}>
                       Integrations
                     </Link>
                   </div>
@@ -445,13 +389,13 @@ export function JourneysIndex() {
               ) : (
                 <div className="jx-empty">
                   <p>
-                    <strong>No journey yet.</strong> {variant.offering.name} offers this order type, but its journey isn&apos;t modelled.
+                    <strong>No journey yet.</strong> {product.name} offers this order type, but its journey isn&apos;t modelled.
                   </p>
                 </div>
               )}
             </>
           ) : (
-            <h2 id="jx-panel-h">No order type in this scope</h2>
+            <h2 id="jx-panel-h">{product ? "No order type for this product" : "No product in this scope"}</h2>
           )}
         </aside>
       </div>

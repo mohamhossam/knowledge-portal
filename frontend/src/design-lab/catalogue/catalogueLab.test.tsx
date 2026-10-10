@@ -76,11 +76,17 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
     await userEvent.click(within(board).getByRole("button", { name: /^Cessation:/ }));
     expect(screen.getByRole("heading", { level: 2, name: "Cessation" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open the journey flow" })).toHaveAttribute("href", expect.stringContaining("/journeys/bpp-cessation"));
-    // The scope narrows level by level through the hierarchy.
+    // The scope opens on Fixed › SMB and names one product: order types belong to a product.
     const scope = screen.getByRole("navigation", { name: "Scope" });
-    await userEvent.click(within(scope).getByLabelText(/^Business unit: Any business unit/));
-    await userEvent.click(within(scope).getByRole("button", { name: "Enterprise" }));
-    expect(within(scope).getByLabelText(/^Line of business: Any line of business/)).toBeInTheDocument();
+    expect(within(scope).getByLabelText(/^Line of business: Fixed/)).toBeInTheDocument();
+    expect(within(scope).getByLabelText(/^Segment: SMB/)).toBeInTheDocument();
+    expect(within(scope).getByLabelText(/^Product: Business Pro Plus/)).toBeInTheDocument();
+    // Widening the scope keeps a product named.
+    await userEvent.click(within(scope).getByLabelText(/^Business unit: Enterprise/));
+    await userEvent.click(within(scope).getByRole("button", { name: "Any business unit" }));
+    expect(within(scope).getByLabelText(/^Business unit: Any business unit/)).toBeInTheDocument();
+    expect(within(scope).getByLabelText(/^Product: Business Pro Plus/)).toBeInTheDocument();
+    expect(within(board).getByRole("list", { name: "Leave" })).toBeInTheDocument();
     expect(await axe(container)).toHaveNoViolations();
   });
 

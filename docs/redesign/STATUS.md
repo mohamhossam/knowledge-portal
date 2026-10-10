@@ -537,4 +537,13 @@ Checks: tests 28/28 with axe; lint, brand lint, build and budget green.
 - **Product Architecture:** the footprint uses a deep teal that no layer, state or brand colour uses. Core systems are solid teal; used is a teal outline; carries calls only is a dashed teal outline; not used is quiet. The meters, legend, core-systems list and the landscape drawer's "Core" chip follow it. Maroon stays for the picked system only.
 - **One journey at a time:** systems in the journey use a teal tint.
 
+**Journeys page: one product at a time, opening on Fixed › SMB (2026-10-10).** The user set the rule: order types belong to a product.
+- **Scope:**
+  - The page opens on Enterprise › Fixed › SMB (`DEFAULT_SCOPE`, matched by name) and that scope's first product.
+  - The product level never offers "Any product", so the board always shows every order type of one product with its journey's size, or "No journey yet".
+  - "Any …" above the product widens the scope (`scope=all` for the whole portfolio) and keeps a product named.
+  - The multi-product markers, the product switcher and the cross-product comparison are gone.
+- **Header:** the catalogue's soft band, shared with the Landscape and product pages. It holds the title, a one-line subtitle and how much of the product is modelled, then the scope as one row of chips, each naming its level and its choice.
+- **Layout:** the board and preview are paper panels that end level.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.
