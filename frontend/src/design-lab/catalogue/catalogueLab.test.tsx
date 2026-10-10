@@ -163,8 +163,11 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
     expect(await axe(container)).toHaveNoViolations();
   });
 
-  it("shows each component with the systems that deliver it", async () => {
+  it("shows who delivers what, then each component with the systems that deliver it", async () => {
     const { container } = open("/products/business-pro-plus/components");
+    const grid = screen.getByRole("table");
+    expect(within(grid).getByRole("rowheader", { name: /Backup 5G/ })).toBeInTheDocument();
+    expect(within(grid).getAllByRole("img", { name: /^CWOM:/ }).length).toBeGreaterThan(3);
     expect(screen.getByRole("heading", { level: 3, name: "Backup 5G" })).toBeInTheDocument();
     expect(await axe(container)).toHaveNoViolations();
   });
@@ -204,11 +207,16 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
     expect(await axe(container)).toHaveNoViolations();
   });
 
-  it("lists a journey's integrations, filterable by system", async () => {
+  it("draws a journey's calls as a sequence with the picked call's details, and as a table filterable by system", async () => {
     const { container } = open("/journeys/bpp-new-activation?channel=bcrm&view=integrations");
     const register = screen.getByRole("region", { name: "Integration register" });
+    const calls = within(within(register).getByRole("list", { name: /^Calls in order/ })).getAllByRole("button");
+    expect(calls.length).toBeGreaterThan(10);
+    await userEvent.click(calls[1] as HTMLElement);
+    expect(within(register).getByText(/^Call 2 of/)).toBeInTheDocument();
+    await userEvent.click(within(register).getByRole("button", { name: "Table" }));
     const all = within(register).getAllByRole("row").length;
-    await userEvent.click(screen.getByRole("button", { name: /^CWOM/ }));
+    await userEvent.selectOptions(within(register).getByRole("combobox", { name: "System" }), "cwom");
     expect(within(register).getAllByRole("row").length).toBeLessThan(all);
     expect(await axe(container)).toHaveNoViolations();
   });

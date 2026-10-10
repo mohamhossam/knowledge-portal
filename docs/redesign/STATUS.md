@@ -565,4 +565,19 @@ Checks: tests 28/28 with axe; lint, brand lint, build and budget green.
 - **Product cards:** a selling channel that doesn't take every way to join is dashed, its tooltip and accessible name say which ways it takes ("For New activation and Port in only"), and one note explains the dash.
 - **Tests:** two new ones.
 
+**Components tab, Integrations tab and Systems page redesigned (2026-10-10).**
+- **Components tab:**
+  - "Who delivers what" grid: every component against every system that plays a part, grouped as the overview's bundle (the device at the heart, then the capabilities). Teal marks, hollow for optional parts, and the system's part in the tooltip and accessible name.
+  - "Every component": one three-column grid of cards, each labelled with its group, with codes in monospace and the delivering systems as layer-coloured tiles with their part.
+- **Integrations tab:**
+  - The maroon style bar becomes a slim stacked bar with a legend, on a new calm slate ramp (`--cl-slate-1…4`); "Not stated" is hatched.
+  - Sequence view (default): lifelines in the order the journey first reaches each system, every call an arrow in order (a ring where it passes through the integration layer), and the picked call's details beside it with Previous and Next.
+  - Table view: the register.
+  - A "System" menu replaces the 22 chips. It brings a system's calls forward in the sequence and filters the table.
+- **Systems page:**
+  - The catalogue's soft header band, with figures: systems linked, linked pairs, calls, the busiest pair and the busiest system.
+  - Matrix on the slate ramp (maroon stays for the picked system), columns and layer rows in layer tints, a bar of each system's calls in the row header, and plain diagonal cells. It takes the full width with a fixed 240px name column.
+- **Fit:** no page scroll on Systems from 1280×720 up.
+- **Tests:** updated for the grid, the sequence and the table filter.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.
