@@ -48,7 +48,8 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
     expect(screen.getByRole("heading", { level: 1, name: "Products" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: /Business internet bundles/ })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Business Pro Plus" })).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: /Business Pro Plus reaches \d+ of 46 systems/ })).toBeInTheDocument();
+    expect(screen.getByText(/of 46 systems/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 4, name: "Footprint by layer" })).toBeInTheDocument();
     await userEvent.type(screen.getByRole("searchbox", { name: "Filter products" }), "zzz");
     expect(screen.getByText(/No product matches/)).toBeInTheDocument();
     expect(await axe(container)).toHaveNoViolations();
