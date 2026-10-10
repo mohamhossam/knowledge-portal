@@ -9,7 +9,7 @@ import { Link } from "react-router-dom";
 import { type Component, type Offering } from "../../architecture/model";
 import { AreaTabs, EvidenceTag, PathBar } from "./CatalogueLab";
 import { firstJourneyHref, journeyHref, LAB, useLabData, useOffering } from "./labData";
-import { leadingNumber, plural, useTitle } from "./labUtil";
+import { leadingNumber, listOf, monogram, plural, useTitle } from "./labUtil";
 import { allViews } from "./posterModel";
 
 export function Missing({ what }: { what: string }) {
@@ -85,55 +85,210 @@ export function ProductHeader({ offering, current, actions, compact = false }: {
 }
 
 /**
- * The bundle drawn in the poster's notation: the device at the hub, every
- * component on a branch of one bus, the systems that deliver it beside it.
- * Optional components hang on dashed branches; codes sit in a disclosure.
+ * What the customer gets, drawn as the bundle's anatomy: the device at the
+ * heart (its models as chips), then the components grouped by what they do
+ * for the customer, joined to the device by one spine. Each component names
+ * the systems that deliver it as the same monogram tiles the architecture map
+ * uses, so the bundle reads straight into the architecture. Optional parts are
+ * dashed. The grouping is this catalogue's reading, by keyword, so it works
+ * for any product; anything it can't place falls under "More".
  */
-function Bundle({ offering }: { offering: Offering }) {
+const CAPABILITIES: { id: string; name: string; blurb: string; test: RegExp; icon: ReactNode }[] = [
+  {
+    id: "connect",
+    name: "Connectivity",
+    blurb: "Getting the site online",
+    test: /gpon|fibre|fiber|broadband|internet|static ip|\bip\b/i,
+    icon: <path d="M2 6.5a9 9 0 0 1 12 0M4.2 9a5.6 5.6 0 0 1 7.6 0M6.4 11.4a2.3 2.3 0 0 1 3.2 0M8 13.6h.01" />,
+  },
+  {
+    id: "secure",
+    name: "Security",
+    blurb: "Protecting the network",
+    test: /firewall|sd-?wan|secur|utm/i,
+    icon: (
+      <>
+        <path d="M8 1.5 13.5 3.5v4c0 3.2-2.3 5.6-5.5 7-3.2-1.4-5.5-3.8-5.5-7v-4z" />
+        <path d="m5.5 8 1.8 1.8L10.8 6.3" />
+      </>
+    ),
+  },
+  {
+    id: "office",
+    name: "In the office",
+    blurb: "Wi-Fi where people work",
+    test: /access point|fortiap|wi-?fi|\bap\b/i,
+    icon: (
+      <>
+        <rect x="3" y="10" width="10" height="3.5" rx="1" />
+        <path d="M4.5 7.5a5 5 0 0 1 7 0M2.5 5.2a8 8 0 0 1 11 0" />
+      </>
+    ),
+  },
+  {
+    id: "manage",
+    name: "Run and manage",
+    blurb: "Seeing and running the service",
+    test: /portal|monitor|self-?service|report|manage/i,
+    icon: (
+      <>
+        <rect x="2" y="2.5" width="12" height="8.5" rx="1.2" />
+        <path d="M6 14h4M8 11v3M4.5 8l2-2 2 1.5 3-3" />
+      </>
+    ),
+  },
+  {
+    id: "resilience",
+    name: "Resilience",
+    blurb: "Staying online when the fibre is down",
+    test: /backup|failover|redundan|resilien/i,
+    icon: <path d="M13 6.2A5 5 0 0 0 4 4.6M3 9.8a5 5 0 0 0 9 1.6M4 1.8v3h3M12 14.2v-3H9" />,
+  },
+];
+
+const DEVICE_ICON = (
+  <>
+    <rect x="1.5" y="8" width="13" height="5" rx="1.2" />
+    <path d="M4 8V4.5M12 8V4.5M4.5 10.5h.01M7 10.5h.01M9.5 10.5h3" />
+  </>
+);
+
+function Glyph({ children, size = 16 }: { children: ReactNode; size?: number }) {
+  return (
+    <svg className="cl-glyph" viewBox="0 0 16 16" width={size} height={size} aria-hidden="true">
+      {children}
+    </svg>
+  );
+}
+
+/** The systems that deliver a component, as the map's monogram tiles in their layer colours. */
+function SystemTiles({ component, max = 3 }: { component: Component; max?: number }) {
   const data = useLabData();
+  const systems = component.systems.map((item) => data.systems.find((system) => system.id === item.systemId)).filter((system) => system !== undefined);
+  if (!systems.length) return <span className="cl-nosys">No system stated</span>;
+  const shown = systems.slice(0, max);
+  return (
+    <span className="cl-systiles">
+      <span className="ds-visually-hidden">Delivered by {listOf(systems.map((system) => system.name))}</span>
+      {shown.map((system) => (
+        <span key={system.id} className={`am-mono cl-systile tone--${system.domain} am-mono--${monogram(system.name).length}`} title={system.name} aria-hidden="true" translate="no">
+          {monogram(system.name)}
+        </span>
+      ))}
+      {systems.length > max && (
+        <span className="cl-systile-more" aria-hidden="true">
+          +{systems.length - max}
+        </span>
+      )}
+    </span>
+  );
+}
+
+function Bundle({ offering }: { offering: Offering }) {
   const hub = offering.components.find((item) => /device|router/i.test(item.name)) ?? offering.components.find((item) => /cpe/i.test(item.name)) ?? offering.components[0];
-  const rest = offering.components.filter((item) => item !== hub).sort((a, b) => Number(a.mandatory === false) - Number(b.mandatory === false));
-  const systems = (component: Component) => component.systems.map((item) => data.systems.find((system) => system.id === item.systemId)?.name ?? item.systemId);
+  const rest = offering.components.filter((item) => item !== hub);
   const hubName = hub ? hub.name.replace(/\s*\(.*\)\s*$/, "") : "";
-  const hubModel = hub ? (/\((.*)\)/.exec(hub.name)?.[1] ?? "") : "";
+  const hubModels = hub ? (/\((.*)\)/.exec(hub.name)?.[1] ?? "").split(/\s*\/\s*/).filter(Boolean) : [];
+  // "Fortinet 90G / 120G": the second model takes the first one's maker.
+  const maker = hubModels[0]?.split(/\s+/).slice(0, -1).join(" ") ?? "";
+  const models = hubModels.map((model, index) => (index && maker && !model.includes(" ") ? `${maker} ${model}` : model));
+  // The rule that says which model goes with which speed, when the offering has one.
+  const modelRule = hub ? offering.rules.find((rule) => models.length > 1 && models.every((model) => rule.statement.includes(model.split(" ").at(-1) ?? model))) : undefined;
+  const groups = [
+    ...CAPABILITIES.map((capability) => ({
+      ...capability,
+      items: rest.filter((component) => {
+        const first = CAPABILITIES.find((item) => item.test.test(component.name));
+        return first?.id === capability.id;
+      }),
+    })),
+    { id: "more", name: "More", blurb: "Other parts of the bundle", test: /$^/, icon: <path d="M3 8h.01M8 8h.01M13 8h.01" />, items: rest.filter((component) => !CAPABILITIES.some((item) => item.test.test(component.name))) },
+  ].filter((group) => group.items.length);
+  const always = offering.components.filter((item) => item.mandatory !== false).length;
+  const optional = offering.components.length - always;
+
   return (
     <section className="cl-card cl-bundle" aria-labelledby="cl-bundle-h">
       <h2 id="cl-bundle-h">
-        What's in the bundle <small>{plural(offering.components.length, "component")}</small>
+        What's in the bundle{" "}
+        <small>
+          {plural(offering.components.length, "component")} · {always} always included{optional ? ` · ${optional} optional` : ""}
+        </small>
       </h2>
       {hub && (
-        <div className="cl-hub">
-          <strong>{hubName}</strong>
-          {hubModel && <span>{hubModel}</span>}
-          <span className="cl-sysline" translate="no">
-            {systems(hub).join(" · ")}
+        <div className="cl-device">
+          <span className="cl-device-icon">
+            <Glyph size={22}>{DEVICE_ICON}</Glyph>
           </span>
+          <div className="cl-device-text">
+            <small>At the heart of the bundle</small>
+            <strong>{hubName}</strong>
+            {models.length > 0 && (
+              <ul className="cl-models" aria-label="Models">
+                {models.map((model) => (
+                  <li key={model} translate="no">
+                    {model}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {modelRule && <p className="cl-device-rule">{modelRule.statement}</p>}
+          </div>
+          <SystemTiles component={hub} />
         </div>
       )}
-      <ul className="cl-branches">
-        {rest.map((component) => (
-          <li key={component.id} className={component.mandatory === false ? "optional" : undefined}>
-            <strong>
-              {component.name}
-              {component.mandatory === false && <em> · optional</em>}
-            </strong>
-            <span className="cl-sysline" translate="no">
-              {systems(component).slice(0, 3).join(" · ") || "No system stated"}
-            </span>
-          </li>
-        ))}
-      </ul>
-      <details className="cl-details">
-        <summary>Offer and service codes</summary>
-        <ul className="cl-points">
-          {offering.components.map((component) => (
-            <li key={component.id}>
-              <span>
-                <strong>{component.name}.</strong> <span translate="no">{[component.offerCode, component.specCode].filter(Boolean).join(" · ") || "No code stated"}</span>
-              </span>
-            </li>
-          ))}
-        </ul>
+      <div className="cl-caps">
+        {groups.map((group) => {
+          const optionalOnly = group.items.every((item) => item.mandatory === false);
+          return (
+            <section key={group.id} className={`cl-cap${group.id === "resilience" ? " cl-cap--wide" : ""}${optionalOnly ? " is-optional" : ""}`} aria-labelledby={`cl-cap-${group.id}`}>
+              <header>
+                <span className="cl-cap-icon">
+                  <Glyph>{group.icon}</Glyph>
+                </span>
+                <span>
+                  <h3 id={`cl-cap-${group.id}`}>{group.name}</h3>
+                  <small>{group.blurb}</small>
+                </span>
+                {optionalOnly && <span className="cl-tag-optional">Optional</span>}
+              </header>
+              <ul>
+                {group.items.map((component) => (
+                  <li key={component.id} className={component.mandatory === false ? "is-optional" : undefined}>
+                    <span className="cl-part" title={component.description}>
+                      {component.name}
+                    </span>
+                    <SystemTiles component={component} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          );
+        })}
+      </div>
+      <p className="cl-sub">Grouped by what each part does for the customer: this catalogue's reading. The tiles are the systems that deliver each part.</p>
+      <details className="cl-codes">
+        <summary>
+          Offer and service codes <small>{offering.components.length}</small>
+        </summary>
+        <table className="cl-codes-table" aria-label="Offer and service codes">
+          <thead>
+            <tr>
+              <th scope="col">Component</th>
+              <th scope="col">Offer code</th>
+              <th scope="col">Service code</th>
+            </tr>
+          </thead>
+          <tbody>
+            {offering.components.map((component) => (
+              <tr key={component.id}>
+                <th scope="row">{component.name}</th>
+                <td translate="no">{component.offerCode || "Not stated"}</td>
+                <td translate="no">{component.specCode || "Not stated"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </details>
     </section>
   );
