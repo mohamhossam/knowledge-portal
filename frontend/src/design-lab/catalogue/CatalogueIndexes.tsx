@@ -2,9 +2,8 @@
  * The catalogue's two indexes, built for any number of products.
  *
  * Products: every offering grouped under its place in the portfolio (business
- * unit › line of business › segment › family), each a card with its size, a
- * reach ring (systems reached out of the map) and its footprint by layer as
- * dot meters, the same language as the product's Architecture tab.
+ * unit › line of business › segment › family), each a card answering how it
+ * is sold, who can buy it and what is in it, with its size and its pages.
  *
  * Journeys: a coverage matrix, order types down (grouped by the customer's
  * stage) and products across; a cell is a modelled journey, an order type the
@@ -17,8 +16,9 @@ import { journeyView } from "../../architecture/adapter";
 import type { Offering, PortfolioNode } from "../../architecture/model";
 import { AreaTabs } from "./CatalogueLab";
 import { journeyHref, LAB, useLabData } from "./labData";
-import { firstSentence, plural, useTitle } from "./labUtil";
-import { domainRank, reachOf } from "./posterModel";
+import { firstSentence, monogram, plural, useTitle } from "./labUtil";
+import { capabilityOf, DEVICE_ICON, shortComponentName } from "./capabilities";
+import { reachOf } from "./posterModel";
 import { STAGES, stageOfCode } from "./stages";
 
 function Icon({ children }: { children: ReactNode }) {
@@ -43,25 +43,6 @@ function pathTo(nodes: PortfolioNode[], nodeId: string | null): PortfolioNode[] 
   return path;
 }
 
-/** A ring for "reached out of total", one maroon arc on a sand track: maroon means this product's footprint, as on its Architecture tab. */
-function ReachRing({ reached, total }: { reached: number; total: number }) {
-  const r = 34;
-  const length = 2 * Math.PI * r;
-  const share = total ? reached / total : 0;
-  return (
-    <svg className="cl-ring" viewBox="0 0 84 84" width="84" height="84" aria-hidden="true">
-      <circle className="track" cx="42" cy="42" r={r} />
-      <circle className="arc" cx="42" cy="42" r={r} strokeDasharray={`${(share * length).toFixed(1)} ${length.toFixed(1)}`} transform="rotate(-90 42 42)" />
-      <text x="42" y="40" textAnchor="middle" className="num">
-        {Math.round(share * 100)}%
-      </text>
-      <text x="42" y="55" textAnchor="middle" className="cap">
-        of the map
-      </text>
-    </svg>
-  );
-}
-
 const CARD_LINK_ICONS = {
   overview: <path d="M3 3.5h10M3 8h10M3 12.5h6" />,
   architecture: <path d="M8 2 14 5 8 8 2 5zM2 8l6 3 6-3M2 11l6 3 6-3" />,
@@ -74,27 +55,64 @@ const CARD_LINK_ICONS = {
   ),
 };
 
+const ROW_ICONS = {
+  sold: (
+    <>
+      <path d="M2.5 6.5 3.5 2.5h9l1 4" />
+      <path d="M2.5 6.5a1.9 1.9 0 0 0 3.7 0 1.9 1.9 0 0 0 3.6 0 1.9 1.9 0 0 0 3.7 0" />
+      <path d="M3.5 8.5v5h9v-5M6.5 13.5v-3h3v3" />
+    </>
+  ),
+  who: (
+    <>
+      <circle cx="8" cy="5.5" r="2.5" />
+      <path d="M3 14c0-2.8 2.2-4.8 5-4.8s5 2 5 4.8" />
+    </>
+  ),
+  bundle: PRODUCT_ICON,
+};
+
+const CHANNEL_KIND_WORDS: Record<string, string> = { assisted: "Assisted", "self-service": "Self-service" };
+
+/** The part of a condition worth a chip: the text before its first bracket, semicolon or full stop. */
+function headline(text: string): string {
+  return (text.split(/\s*[(;.]/)[0] ?? text).trim();
+}
+
+/**
+ * A product at a glance, as the questions a reader brings: how it is sold
+ * (assisted and self-service channels), who can buy it (customer type and
+ * terms), and what is in it (the device first, optional parts dashed), then
+ * its size and its pages. Everything is read from the catalogue, so any
+ * product fills the same card.
+ */
 function ProductCard({ offering }: { offering: Offering }) {
   const data = useLabData();
   const reach = useMemo(() => reachOf(data, offering.id), [data, offering.id]);
   const journeys = data.journeys.filter((journey) => journey.offeringId === offering.id);
   const base = `${LAB}/products/${offering.id}`;
-  const coreAt = Math.max(2, Math.ceil(journeys.length / 2));
-  const core = [...reach.values()].filter((set) => set.size >= coreAt).length;
-  // Footprint by layer, in the map's order: how many of each layer's systems the product reaches.
-  const layers = data.domains
-    .map((domain) => {
-      const all = data.systems.filter((system) => system.domain === domain.id);
-      return { domain, all, used: all.filter((system) => reach.has(system.id)).length };
-    })
-    .filter((row) => row.all.length)
-    .sort((a, b) => domainRank(a.domain.id) - domainRank(b.domain.id));
-  const facts = [
-    { label: "Plans", value: offering.plans.length },
-    { label: "Components", value: offering.components.length },
-    { label: "Order types", value: offering.orderTypes.length },
-    { label: "Journeys", value: journeys.length },
-  ];
+
+  // Sold through: the channels its joining order types (new sale, migration, port in) arrive by, people-facing ones only.
+  const joining = offering.orderTypes.filter((type) => stageOfCode(type.code) === "join");
+  const sellingIds = new Set((joining.length ? joining : offering.orderTypes).flatMap((type) => type.channels));
+  const selling = data.channels.filter((channel) => sellingIds.has(channel.id) && channel.kind in CHANNEL_KIND_WORDS);
+  const kinds = Object.keys(CHANNEL_KIND_WORDS)
+    .map((kind) => ({ kind, channels: selling.filter((channel) => channel.kind === kind) }))
+    .filter((item) => item.channels.length);
+  const tone = (systemId: string) => data.systems.find((system) => system.id === systemId)?.domain ?? "customer";
+
+  // Who can buy: the customer type, then the terms, each cut to its headline; terms listed as alternatives become one chip each.
+  const who = offering.eligibility.filter((point) => /segment|customer|audience/i.test(point.title));
+  const terms = offering.eligibility.filter((point) => /commitment|contract|term/i.test(point.title));
+  const termChips = terms.flatMap((point) => {
+    const parts = headline(point.detail).split(/\s*,\s*|\s+or\s+/).filter(Boolean);
+    return (parts.every((part) => part.length <= 24) ? parts : [headline(point.detail)]).map((label) => ({ label, evidence: point.evidence }));
+  });
+
+  // In the bundle: the device first, then the rest, optional parts last.
+  const hub = offering.components.find((item) => /device|router/i.test(item.name)) ?? offering.components.find((item) => /\bcpe\b/i.test(item.name));
+  const parts = [...(hub ? [hub] : []), ...offering.components.filter((item) => item !== hub).sort((a, b) => Number(a.mandatory === false) - Number(b.mandatory === false))];
+
   return (
     <li className="cl-prodcard">
       <div className="cl-prodcard-head">
@@ -108,58 +126,106 @@ function ProductCard({ offering }: { offering: Offering }) {
           <p>{firstSentence(offering.purpose || offering.summary)}</p>
         </div>
       </div>
-      <div className="cl-prodcard-body">
-        <div className="cl-prodcard-reach">
-          <ReachRing reached={reach.size} total={data.systems.length} />
-          <p>
-            <b>{reach.size}</b> of {data.systems.length} systems
-            <span>{core} core to most journeys</span>
-          </p>
+      <dl className="cl-glance-rows">
+        <div>
+          <dt>
+            <Icon>{ROW_ICONS.sold}</Icon>
+            Sold through
+          </dt>
+          <dd className="cl-sold">
+            {kinds.length ? (
+              kinds.map((item) => (
+                <span key={item.kind} className="cl-sold-group">
+                  <small>{CHANNEL_KIND_WORDS[item.kind]}</small>
+                  {item.channels.map((channel) => (
+                    <span key={channel.id} className="cl-chanchip">
+                      <span className={`am-mono cl-systile tone--${tone(channel.systemId)} am-mono--${monogram(channel.name).length}`} aria-hidden="true" translate="no">
+                        {monogram(channel.name)}
+                      </span>
+                      {channel.name.replace(/\s*\(.*\)\s*$/, "")}
+                    </span>
+                  ))}
+                </span>
+              ))
+            ) : (
+              <span className="cl-none">No selling channel stated</span>
+            )}
+          </dd>
         </div>
-        <dl className="cl-prodcard-facts">
-          {facts.map((fact) => (
-            <div key={fact.label}>
-              <dt>{fact.label}</dt>
-              <dd>{fact.value}</dd>
-            </div>
-          ))}
-        </dl>
-      </div>
-      <div className="cl-prodcard-layers">
-        <h4>Footprint by layer</h4>
-        <ul>
-          {layers.map((row) => (
-            <li key={row.domain.id}>
-              <span className="cl-reach-name">{row.domain.name}</span>
-              <span className="cl-reach-dots" aria-hidden="true">
-                {row.all.map((system) => (
-                  <i key={system.id} className={reach.has(system.id) ? "on" : undefined} title={system.name} />
-                ))}
+        <div>
+          <dt>
+            <Icon>{ROW_ICONS.who}</Icon>
+            Who can buy
+          </dt>
+          <dd className="cl-chips-wrap">
+            {who.map((point) => (
+              <span key={point.title} className={`cl-fact-chip is-strong is-${point.evidence.status}`} title={`${point.title}: ${point.detail}`}>
+                <i aria-hidden="true" />
+                {headline(point.detail)}
+                {point.evidence.status !== "confirmed" && <span className="ds-visually-hidden"> ({point.evidence.status})</span>}
               </span>
-              <span className="cl-reach-count">
-                {row.used}/{row.all.length}
-                <span className="ds-visually-hidden"> systems reached</span>
+            ))}
+            {termChips.map((chip) => (
+              <span key={chip.label} className={`cl-fact-chip is-${chip.evidence.status}`}>
+                <i aria-hidden="true" />
+                {chip.label}
               </span>
-            </li>
-          ))}
-        </ul>
-      </div>
-      <nav className="cl-prodcard-links" aria-label={`${offering.name} pages`}>
-        <Link className="cl-btn" to={base}>
-          <Icon>{CARD_LINK_ICONS.overview}</Icon>
-          Overview
-        </Link>
-        <Link className="cl-btn" to={`${base}/architecture`}>
-          <Icon>{CARD_LINK_ICONS.architecture}</Icon>
-          Architecture
-        </Link>
-        {journeys[0] && (
-          <Link className="cl-btn" to={journeyHref(journeys[0].id, journeys[0].channels[0])}>
-            <Icon>{CARD_LINK_ICONS.journeys}</Icon>
-            Journeys
+            ))}
+            {who.length + termChips.length === 0 && <span className="cl-none">No condition stated</span>}
+          </dd>
+        </div>
+        <div>
+          <dt>
+            <Icon>{ROW_ICONS.bundle}</Icon>
+            In the bundle
+          </dt>
+          <dd className="cl-chips-wrap">
+            {parts.map((component) => {
+              const capability = capabilityOf(component.name);
+              const isHub = component === hub;
+              return (
+                <span key={component.id} className={`cl-part-chip${isHub ? " is-hub" : ""}${component.mandatory === false ? " is-optional" : ""}`} title={component.name}>
+                  <Icon>{isHub ? DEVICE_ICON : (capability?.icon ?? <path d="M4 8h8" />)}</Icon>
+                  {shortComponentName(component.name)}
+                  {component.mandatory === false && <small>optional</small>}
+                </span>
+              );
+            })}
+          </dd>
+        </div>
+      </dl>
+      <div className="cl-prodcard-foot">
+        <p className="cl-prodcard-stats">
+          <span>
+            <b>{offering.plans.length}</b> plans
+          </span>
+          <span>
+            <b>{offering.orderTypes.length}</b> order types
+          </span>
+          <span>
+            <b>{journeys.length}</b> journeys
+          </span>
+          <span>
+            <b>{reach.size}</b>/{data.systems.length} systems
+          </span>
+        </p>
+        <nav className="cl-prodcard-links" aria-label={`${offering.name} pages`}>
+          <Link className="cl-btn" to={base}>
+            <Icon>{CARD_LINK_ICONS.overview}</Icon>
+            Overview
           </Link>
-        )}
-      </nav>
+          <Link className="cl-btn" to={`${base}/architecture`}>
+            <Icon>{CARD_LINK_ICONS.architecture}</Icon>
+            Architecture
+          </Link>
+          {journeys[0] && (
+            <Link className="cl-btn" to={journeyHref(journeys[0].id, journeys[0].channels[0])}>
+              <Icon>{CARD_LINK_ICONS.journeys}</Icon>
+              Journeys
+            </Link>
+          )}
+        </nav>
+      </div>
     </li>
   );
 }
