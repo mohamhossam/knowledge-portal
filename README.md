@@ -13,10 +13,12 @@ It is one of three repositories:
 - [`platform-kernel`](https://github.com/mohamhossam/platform-kernel), which holds the shared
   mechanisms.
 
-> **Status: backend complete (Stage 3); the UI has begun.** The API, worker, schema, data
-> import, images and CI are in place. The browser app has its design system ("the Timetable
-> Book", `DESIGN.md`), sign-in, the no-access page and the front page; the curation screens
-> follow. See `ROADMAP.md`.
+> **Status: the service is complete (Stage 3), released as `v0.2.0`.** The API, worker, schema,
+> images and CI are in place, and the browser app ("the Timetable Book", `DESIGN.md`) has the
+> curation screens for the library, the architecture catalogue and the squads, and the Product
+> Architecture Explorer for anyone signed in. The portal deploys and runs on its own;
+> requirement work is an optional link. Knowledge Center work and the cutover with
+> requirement-portal remain. See `ROADMAP.md`.
 
 ## Run it offline
 
