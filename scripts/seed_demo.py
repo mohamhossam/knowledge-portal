@@ -4,10 +4,7 @@ Every record is synthetic and says so ("sample"). It gives the portal's screens
 each state they must render: documents in service, awaiting review (yours and
 another admin's), failed and withdrawn; a published catalogue version placed in a
 landscape, with an offering and its journey; a draft catalogue release with proposed
-suggestions; squads that own some systems and leave others without an owner. The
-SMB architecture catalogue is also loaded into a second draft from
-catalogues/smb-architecture.yaml, built only from the Business Pro Plus SDD and the
-SMB reference; that draft is never activated.
+suggestions; squads that own some systems and leave others without an owner.
 
     uv run python -m knowledge_portal.interfaces.api.serve --port 8100   # fake, in memory
     uv run python scripts/seed_demo.py --api http://127.0.0.1:8100
@@ -788,24 +785,6 @@ def seed_squads(client: httpx.Client) -> None:
     ).raise_for_status()
 
 
-CATALOGUE = Path(__file__).resolve().parents[1] / "catalogues" / "smb-architecture.yaml"
-CATALOGUE_DRAFT = "SMB architecture: Business Pro Plus"
-
-
-def seed_architecture(client: httpx.Client) -> None:
-    """The rebuilt catalogue, imported into a draft through the catalogue-file endpoint."""
-    draft = client.post(
-        "/architecture-knowledge/releases", json={"name": CATALOGUE_DRAFT}, headers=OWNER
-    )
-    draft.raise_for_status()
-    client.post(
-        f"/architecture-knowledge/releases/{draft.json()['id']}/catalogue-file",
-        data={"expected_revision": str(draft.json()["revision"])},
-        files={"file": (CATALOGUE.name, CATALOGUE.read_bytes(), "application/yaml")},
-        headers=OWNER,
-    ).raise_for_status()
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--api", default="http://127.0.0.1:8100")
@@ -819,7 +798,6 @@ def main() -> None:
         seed_governance(client)
         seed_published_catalogue(client)
         seed_catalogue(client)
-        seed_architecture(client)
         seed_squads(client)
     print("Seeded sample curation work.")
 
