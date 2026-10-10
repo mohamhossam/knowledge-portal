@@ -13,7 +13,7 @@
  * Keyboard: the map is one tab stop; arrow keys move between systems by
  * position, Home/End jump to the first/last, Escape clears the selection.
  */
-import { type CSSProperties, type KeyboardEvent, memo, useCallback, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, type KeyboardEvent, type ReactNode, memo, useCallback, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import type { CatalogueData } from "../../architecture/adapter";
 import type { Integration, StepRole, System, TamDomain } from "../../architecture/model";
@@ -37,6 +37,70 @@ const ROLE_SHORT: Record<StepRole, string> = {
   bill: "Bills",
   record: "Records",
 };
+
+/** One line icon per TAM layer, on a 16px grid in the layer's ink. */
+const LAYER_ICON: Record<string, ReactNode> = {
+  "market-sales": <path d="M2 12.5 6 8.5l3 3 5-6M10.5 5.5H14V9" />,
+  product: <path d="M2.5 4.5 8 2l5.5 2.5v7L8 14l-5.5-2.5zM2.5 4.5 8 7l5.5-2.5M8 7v7" />,
+  customer: (
+    <>
+      <circle cx="8" cy="5.5" r="2.5" />
+      <path d="M3 14c0-2.8 2.2-4.8 5-4.8s5 2 5 4.8" />
+    </>
+  ),
+  service: (
+    <>
+      <rect x="2" y="2.5" width="5" height="4" rx="1" />
+      <rect x="9" y="9.5" width="5" height="4" rx="1" />
+      <path d="M4.5 6.5v3.5a1.5 1.5 0 0 0 1.5 1.5h3M9 4.5h2.5A1.5 1.5 0 0 1 13 6v3.5" />
+    </>
+  ),
+  resource: (
+    <>
+      <rect x="2.5" y="2.5" width="11" height="4.5" rx="1" />
+      <rect x="2.5" y="9" width="11" height="4.5" rx="1" />
+      <path d="M5 4.75h.01M5 11.25h.01M8 4.75h3.5M8 11.25h3.5" />
+    </>
+  ),
+  "engaged-party": (
+    <>
+      <circle cx="5.5" cy="5.5" r="2" />
+      <circle cx="10.5" cy="5.5" r="2" />
+      <path d="M1.5 13c0-2.2 1.8-4 4-4s4 1.8 4 4M8.5 9.4c.6-.3 1.3-.4 2-.4 2.2 0 4 1.8 4 4" />
+    </>
+  ),
+  enterprise: <path d="M3 14V2.5h6V14M9 6h4v8M2 14h12M5 5h2M5 8h2M5 11h2M11 9h.01M11 11.5h.01" />,
+  integration: (
+    <>
+      <path d="M1.5 8h13" />
+      <circle cx="4" cy="8" r="1.5" />
+      <circle cx="8" cy="8" r="1.5" />
+      <circle cx="12" cy="8" r="1.5" />
+      <path d="M4 3v3.5M8 3v3.5M12 9.5V13M8 9.5V13" />
+    </>
+  ),
+};
+
+/** A system's monogram: its acronym in brackets, the start of an all-capitals name, or the initials of its first two words. */
+function monogram(name: string): string {
+  const bracket = /(([A-Z0-9]{2,4}))/.exec(name)?.[1];
+  if (bracket) return bracket;
+  const words = name.replace(/(.*)/, "").split(/[s/]+/).filter(Boolean);
+  const first = words[0] ?? name;
+  if (/^[A-Z0-9]{2,}$/.test(first)) return first.length <= 4 ? first : first.slice(0, 3);
+  if (words.length > 1) return (first[0] ?? "") + (words[1]?.[0] ?? "");
+  return first.slice(0, 2);
+}
+
+function LayerIcon({ id }: { id: string }) {
+  return (
+    <span className="am-icon" aria-hidden="true">
+      <svg viewBox="0 0 16 16" width="16" height="16">
+        {LAYER_ICON[id] ?? LAYER_ICON.enterprise}
+      </svg>
+    </span>
+  );
+}
 
 export type Foot = { tier: "core" | "used" | "carries"; roles: StepRole[]; journeys: number };
 
@@ -198,7 +262,8 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
 
   const call = journey?.calls[journey.current];
   const involved = new Set(call ? [call.from, call.to, call.via].filter((id): id is string => Boolean(id)) : []);
-  const tabStop = focusId && cards.current.has(focusId) ? focusId : selected && bySystem.size ? selected : (order[0]?.id ?? null);
+  const known = (id: string | null) => id !== null && order.some((system) => system.id === id);
+  const tabStop = known(focusId) ? focusId : known(selected) ? selected : (order[0]?.id ?? null);
 
   const keyDown = (id: string) => (event: KeyboardEvent<HTMLButtonElement>) => {
     let target: string | undefined;
@@ -270,10 +335,15 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
         onKeyDown={keyDown(system.id)}
         onClick={() => onSelect(journey ? system.id : isSelected ? null : system.id)}
       >
-        <span className="am-card-name" translate="no">
-          {system.name}
+        <span className={`am-mono am-mono--${monogram(system.name).length}`} aria-hidden="true" translate="no">
+          {monogram(system.name)}
         </span>
-        {caption && <span className="am-card-fn">{caption}</span>}
+        <span className="am-card-text">
+          <span className="am-card-name" translate="no">
+            {system.name}
+          </span>
+          {caption && <span className="am-card-fn">{caption}</span>}
+        </span>
         {journey?.entry === system.id && <span className="am-tag">Entry</span>}
         {system.proposedMove && <i className="am-flag" aria-hidden="true" />}
       </button>
@@ -306,6 +376,7 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
     return (
       <div key={id} className={`am-layer am-layer--${id}${half ? " am-layer--half" : ""}${dim ? " is-dim" : ""}`}>
         <div className="am-layer-head">
+          <LayerIcon id={id} />
           <span className="am-layer-no" aria-hidden="true">
             {numbers.get(id)}
           </span>
@@ -316,7 +387,10 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
         <div className="am-groups">
           {groups.map((group) => (
             <div key={group.id} className="am-group" style={{ "--am-weight": group.systems.length } as CSSProperties}>
-              <span className="am-group-name">{group.name}</span>
+              <span className="am-group-name">
+                {group.name}
+                <small>{group.systems.length}</small>
+              </span>
               <div className="am-cards">{group.systems.map((system) => card(system, domain))}</div>
             </div>
           ))}
@@ -331,6 +405,7 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
     return (
       <div key={id} className={`am-bus${focusLayer && focusLayer !== id ? " is-dim" : ""}`}>
         <div className="am-bus-head">
+          <LayerIcon id={id} />
           <span className="am-layer-name">{domain?.name ?? id}</span>
           <span className="am-layer-scope">{domain?.scope}</span>
         </div>

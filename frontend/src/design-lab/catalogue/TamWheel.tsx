@@ -32,7 +32,7 @@ const ORDER = [
 ];
 const TONE: Record<string, string> = {
   "market-sales": "market",
-  product: "market",
+  product: "product",
   customer: "customer",
   service: "service",
   resource: "resource",
