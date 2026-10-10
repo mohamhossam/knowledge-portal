@@ -52,13 +52,13 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
     expect(screen.getByText("Assisted")).toBeInTheDocument();
     expect(screen.getByText("Self-service")).toBeInTheDocument();
     expect(screen.queryByText(/^NPS/)).not.toBeInTheDocument();
-    // Who can buy: the customer type, flagged as inferred.
+    // Who can buy: the customer type, with no review notes on the card.
     expect(screen.getByText("SMB customers")).toBeInTheDocument();
-    expect(screen.getByText("inferred")).toBeInTheDocument();
-    // Commercial terms: the contract periods as one track, the exit charge from the rules, and the price as a gap.
+    expect(screen.queryByText(/inferred|to confirm/i)).not.toBeInTheDocument();
+    // Commercial terms: the contract periods as one track.
     expect(within(screen.getByRole("list", { name: "Contract periods" })).getAllByRole("listitem").map((item) => item.textContent)).toEqual(["No contract", "1 year", "2 years"]);
-    expect(screen.getByText("AED 650")).toBeInTheDocument();
-    expect(screen.getByText("Price not stated")).toBeInTheDocument();
+    // The page is a catalogue of many products: no one product's counts in the hero.
+    expect(screen.queryByText("Order types")).not.toBeInTheDocument();
     // In the bundle: short names, optional parts marked.
     expect(screen.getByText("Fibre internet")).toBeInTheDocument();
     expect(screen.getByText("optional")).toBeInTheDocument();

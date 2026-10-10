@@ -439,4 +439,10 @@ Checks: tests 28/28 with axe; lint, brand lint, build and budget green.
 
 At 1440 × 900 the page height equals the viewport: no scroll. Checks: tests 28/28 with axe (the terms track, exit charge and price gap are asserted); lint, brand lint, build and budget green.
 
+**Products page: catalogue-level only (2026-10-10, user).** The page lists many products across many families, so it carries neither review notes nor one product's counts.
+- **Card:** the exit-charge, plans and "Price not stated" chips are gone, as are the "inferred" and "to confirm" tags, the evidence dots and the order-types / journeys / systems line. It answers four things: Sold through, Who can buy, Commercial terms (the contract-period track only) and In the bundle, with its Overview, Architecture and Journeys buttons.
+- **Hero:** shows Products, Families and Segments.
+
+Evidence and per-product figures stay on each product's own pages. Checks: tests 28/28 with axe; the page still fits 1440 × 900 without scrolling.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.

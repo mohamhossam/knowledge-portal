@@ -18,7 +18,6 @@ import { AreaTabs } from "./CatalogueLab";
 import { journeyHref, LAB, useLabData } from "./labData";
 import { firstSentence, monogram, plural, useTitle } from "./labUtil";
 import { capabilityOf, DEVICE_ICON, shortComponentName } from "./capabilities";
-import { reachOf } from "./posterModel";
 import { STAGES, stageOfCode } from "./stages";
 
 function Icon({ children }: { children: ReactNode }) {
@@ -89,7 +88,6 @@ function headline(text: string): string {
  */
 function ProductCard({ offering }: { offering: Offering }) {
   const data = useLabData();
-  const reach = useMemo(() => reachOf(data, offering.id), [data, offering.id]);
   const journeys = data.journeys.filter((journey) => journey.offeringId === offering.id);
   const base = `${LAB}/products/${offering.id}`;
 
@@ -105,13 +103,9 @@ function ProductCard({ offering }: { offering: Offering }) {
   // Who can buy: the customer type, cut to its headline.
   const who = offering.eligibility.filter((point) => /segment|customer|audience/i.test(point.title));
 
-  // Commercial terms: the contract periods (one stop each), the exit charge a rule names, the plans, and the price (a gap when no plan states one).
+  // Commercial terms: the contract periods a customer can choose, one stop each.
   const commitment = offering.eligibility.find((point) => /commitment|contract|term/i.test(point.title));
   const periods = commitment ? headline(commitment.detail).split(/\s*,\s*|\s+or\s+/).filter(Boolean) : [];
-  const exitRule = offering.rules.find((rule) => /exit charge/i.test(rule.statement) && /AED\s?[\d,]+/i.test(rule.statement));
-  const exitCharge = exitRule ? /AED\s?[\d,]+/i.exec(exitRule.statement)?.[0] : undefined;
-  const exitUnconfirmed = exitRule ? /to be confirmed/i.test(exitRule.statement) : false;
-  const priced = offering.plans.some((plan) => plan.characteristics.some((fact) => /price|fee|mrc/i.test(fact.name)));
 
   // In the bundle: the device first, then the rest, optional parts last.
   const hub = offering.components.find((item) => /device|router/i.test(item.name)) ?? offering.components.find((item) => /\bcpe\b/i.test(item.name));
@@ -131,17 +125,6 @@ function ProductCard({ offering }: { offering: Offering }) {
             <p>{firstSentence(offering.purpose || offering.summary)}</p>
           </div>
         </div>
-        <p className="cl-prodcard-stats">
-          <span>
-            <b>{offering.orderTypes.length}</b> order types
-          </span>
-          <span>
-            <b>{journeys.length}</b> journeys
-          </span>
-          <span>
-            <b>{reach.size}</b>/{data.systems.length} systems
-          </span>
-        </p>
         <nav className="cl-prodcard-links" aria-label={`${offering.name} pages`}>
           <Link className="cl-btn" to={base}>
             <Icon>{CARD_LINK_ICONS.overview}</Icon>
@@ -193,10 +176,8 @@ function ProductCard({ offering }: { offering: Offering }) {
           <dd className="cl-chips-wrap">
             {who.length ? (
               who.map((point) => (
-                <span key={point.title} className={`cl-fact-chip is-strong is-${point.evidence.status}`} title={`${point.title}: ${point.detail}`}>
-                  <i aria-hidden="true" />
+                <span key={point.title} className="cl-fact-chip is-strong" title={`${point.title}: ${point.detail}`}>
                   {headline(point.detail)}
-                  {point.evidence.status !== "confirmed" && <span className="cl-fact-note">{point.evidence.status}</span>}
                 </span>
               ))
             ) : (
@@ -219,16 +200,7 @@ function ProductCard({ offering }: { offering: Offering }) {
                 ))}
               </span>
             )}
-            {exitCharge && (
-              <span className="cl-fact-chip" title={exitRule?.statement}>
-                Exit charge <b>{exitCharge}</b>
-                {exitUnconfirmed && <span className="cl-fact-note">to confirm</span>}
-              </span>
-            )}
-            <span className="cl-fact-chip">
-              <b>{offering.plans.length}</b> plans
-            </span>
-            {!priced && <span className="cl-fact-chip is-gapchip">Price not stated</span>}
+            {periods.length === 0 && <span className="cl-none">No contract period stated</span>}
           </dd>
         </div>
         <div>
@@ -277,7 +249,15 @@ export function ProductsIndex() {
     offerings: shown.filter((offering) => (offering.nodeId ?? "") === nodeId),
   }));
   const familyCount = new Set(data.offerings.map((offering) => offering.nodeId ?? "")).size;
-  const orderTypes = new Set(data.offerings.flatMap((offering) => offering.orderTypes.map((type) => type.code))).size;
+  // The customer segments the catalogue sells to: the "segment" level of each product's portfolio path, else the level above its family.
+  const segmentCount = new Set(
+    data.offerings
+      .map((offering) => {
+        const path = pathTo(data.portfolio, offering.nodeId);
+        return (path.find((node) => /segment/i.test(node.level)) ?? path.at(-2))?.id;
+      })
+      .filter(Boolean),
+  ).size;
 
   return (
     <>
@@ -299,12 +279,8 @@ export function ProductsIndex() {
               <dd>{familyCount}</dd>
             </div>
             <div>
-              <dt>Order types</dt>
-              <dd>{orderTypes}</dd>
-            </div>
-            <div>
-              <dt>Journeys</dt>
-              <dd>{data.journeys.filter((journey) => journey.offeringId).length}</dd>
+              <dt>Segments</dt>
+              <dd>{segmentCount}</dd>
             </div>
           </dl>
           <div className="cl-find">
