@@ -18,7 +18,8 @@ import { EVIDENCE_WORDS, type Evidence } from "../../architecture/model";
 import { JourneyFlow } from "./JourneyFlow";
 import { firstJourneyHref, LAB, LabData, useLabData } from "./labData";
 import { LandscapeHero } from "./LandscapeHero";
-import { ProductArchitecture, ProductOverview } from "./ProductPage";
+import { ProductArchitecture } from "./ProductArchitecture";
+import { ProductOverview } from "./ProductPage";
 import { ProductComponents, ProductHierarchy, ProductPlans, ProductRules } from "./ProductTabs";
 
 /** "Confirmed · SDD v2.3 §P1.1": how sure, and from where, in one line. */
@@ -35,7 +36,55 @@ export function EvidenceTag({ evidence }: { evidence: Evidence }) {
   );
 }
 
-/** The catalogue's sections, the same on every screen; the ones not mocked are shown as such. */
+/** One line icon per catalogue section, drawn on a 16px grid in the text colour. */
+const ICONS: Record<string, ReactNode> = {
+  landscape: (
+    <>
+      <path d="M8 2 14 5 8 8 2 5z" />
+      <path d="m2 8 6 3 6-3" />
+      <path d="m2 11 6 3 6-3" />
+    </>
+  ),
+  products: (
+    <>
+      <path d="M2.5 4.5 8 2l5.5 2.5v7L8 14l-5.5-2.5z" />
+      <path d="M2.5 4.5 8 7l5.5-2.5M8 7v7" />
+    </>
+  ),
+  journeys: (
+    <>
+      <circle cx="3.5" cy="12.5" r="1.5" />
+      <circle cx="12.5" cy="3.5" r="1.5" />
+      <path d="M5 12.5h4.5a2 2 0 0 0 0-4h-3a2 2 0 0 1 0-4H11" />
+    </>
+  ),
+  systems: (
+    <>
+      <rect x="2" y="2" width="5" height="5" rx="1" />
+      <rect x="9" y="2" width="5" height="5" rx="1" />
+      <rect x="2" y="9" width="5" height="5" rx="1" />
+      <rect x="9" y="9" width="5" height="5" rx="1" />
+    </>
+  ),
+  governance: (
+    <>
+      <path d="M8 1.5 13.5 3.5v4c0 3.2-2.3 5.6-5.5 7-3.2-1.4-5.5-3.8-5.5-7v-4z" />
+      <path d="m5.5 8 1.8 1.8L10.8 6.3" />
+    </>
+  ),
+  versions: (
+    <>
+      <circle cx="8" cy="8" r="6" />
+      <path d="M8 4.5V8l2.5 1.5" />
+    </>
+  ),
+};
+
+/**
+ * The catalogue's own bar, the same on every screen: which catalogue and
+ * version this is, then its sections with an icon and a count each. The
+ * sections not in these mock-ups are shown, but say so.
+ */
 export function AreaTabs({ current }: { current: "landscape" | "products" | "journeys" }) {
   const data = useLabData();
   const product = data.offerings[0];
@@ -47,22 +96,64 @@ export function AreaTabs({ current }: { current: "landscape" | "products" | "jou
     { id: "governance", label: "Governance", count: data.findings.length },
     { id: "versions", label: "Versions" },
   ];
+  const icon = (id: string) => (
+    <svg className="cl-area-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+      {ICONS[id]}
+    </svg>
+  );
   return (
-    <nav className="cl-tabs" aria-label="Catalogue sections">
-      {items.map((item) =>
-        item.to ? (
-          <Link key={item.id} to={item.to} aria-current={item.id === current ? "page" : undefined}>
-            {item.label}
-            {item.count !== undefined && <span className="cl-count">{item.count}</span>}
-          </Link>
-        ) : (
-          <span key={item.id} className="cl-tab-off">
-            {item.label}
-            {item.count !== undefined && <span className="cl-count">{item.count}</span>}
-            <span className="ds-visually-hidden"> (not in these mock-ups)</span>
-          </span>
-        ),
-      )}
+    <div className="cl-area">
+      <div className="cl-area-id">
+        <span className="cl-area-mark" aria-hidden="true">
+          {icon("landscape")}
+        </span>
+        <span>
+          <strong>SMB architecture</strong>
+          <small>
+            {data.status === "draft" ? "Draft" : "Published"} · revision {data.revision}
+          </small>
+        </span>
+      </div>
+      <nav className="cl-area-nav" aria-label="Catalogue sections">
+        {items.map((item) =>
+          item.to ? (
+            <Link key={item.id} to={item.to} aria-current={item.id === current ? "page" : undefined}>
+              {icon(item.id)}
+              {item.label}
+              {item.count !== undefined && <span className="cl-area-count">{item.count}</span>}
+            </Link>
+          ) : (
+            <span key={item.id} className="cl-area-off" title="Not in these mock-ups">
+              {icon(item.id)}
+              {item.label}
+              {item.count !== undefined && <span className="cl-area-count">{item.count}</span>}
+              <span className="ds-visually-hidden"> (not in these mock-ups)</span>
+            </span>
+          ),
+        )}
+      </nav>
+    </div>
+  );
+}
+
+/**
+ * Where a page sits, drawn as a path through the portfolio: each level's kind
+ * ("Business unit", "Segment"…) above its name, the page itself last.
+ */
+export function PathBar({ label, items }: { label: string; items: { level?: string; name: string; to?: string }[] }) {
+  return (
+    <nav className="cl-path" aria-label={label}>
+      <ol>
+        {items.map((item, index) => {
+          const last = index === items.length - 1;
+          return (
+            <li key={`${item.name}-${index}`} aria-current={last ? "page" : undefined}>
+              {item.level && <small>{item.level}</small>}
+              {item.to && !last ? <Link to={item.to}>{item.name}</Link> : <span>{item.name}</span>}
+            </li>
+          );
+        })}
+      </ol>
     </nav>
   );
 }

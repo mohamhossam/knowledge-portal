@@ -1,21 +1,16 @@
 /**
- * Mock-ups 2 and 3: a product's page (its value proposition, bundle, customer
- * value, plans) and its Architecture tab (the landscape poster with one
- * journey's systems lit and its calls stepped through in order). Both share
- * one header, so the product's tabs stay in the same place.
+ * Mock-up 2: a product's page (its value proposition, bundle, customer
+ * value, plans) and the header every product tab shares, so the product's
+ * tabs stay in the same place. The Architecture tab is ProductArchitecture.tsx.
  */
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { type ReactNode, useMemo } from "react";
+import { Link } from "react-router-dom";
 
-import { journeyView } from "../../architecture/adapter";
-import { impactOf } from "../../architecture/impact";
-import { type Component, type Offering, ROLE_WORDS } from "../../architecture/model";
-import { AreaTabs, EvidenceTag } from "./CatalogueLab";
-import { JourneyPicker } from "./JourneyPicker";
+import { type Component, type Offering } from "../../architecture/model";
+import { AreaTabs, EvidenceTag, PathBar } from "./CatalogueLab";
 import { firstJourneyHref, journeyHref, LAB, useLabData, useOffering } from "./labData";
 import { leadingNumber, plural, useTitle } from "./labUtil";
-import { Poster } from "./poster";
-import { allIntegrations, allViews, degrees as degreesOf, links } from "./posterModel";
+import { allViews } from "./posterModel";
 
 export function Missing({ what }: { what: string }) {
   return (
@@ -33,10 +28,10 @@ export type ProductSection = "overview" | "hierarchy" | "plans" | "rules" | "com
 /** The product's header: where it sits, what it is for (one statement), and its tabs. */
 export function ProductHeader({ offering, current, actions, compact = false }: { offering: Offering; current: ProductSection; actions?: ReactNode; compact?: boolean }) {
   const data = useLabData();
-  const path: { id: string; name: string }[] = [];
+  const path: { id: string; name: string; level: string }[] = [];
   let node = data.portfolio.find((item) => item.id === offering.nodeId);
   while (node) {
-    path.unshift({ id: node.id, name: node.name });
+    path.unshift({ id: node.id, name: node.name, level: node.level });
     const parent = node.parentId;
     node = parent ? data.portfolio.find((item) => item.id === parent) : undefined;
   }
@@ -62,19 +57,10 @@ export function ProductHeader({ offering, current, actions, compact = false }: {
   return (
     <>
       <AreaTabs current="products" />
-      <nav className="cl-crumbs" aria-label="Where it sits in the portfolio">
-        <ol>
-          <li>
-            <Link to={LAB}>Catalogue</Link>
-          </li>
-          {path.map((item) => (
-            <li key={item.id}>
-              <Link to={`${base}/hierarchy`}>{item.name}</Link>
-            </li>
-          ))}
-          <li aria-current="page">{offering.name}</li>
-        </ol>
-      </nav>
+      <PathBar
+        label="Where it sits in the portfolio"
+        items={[{ name: "Catalogue", to: LAB }, ...path.map((item) => ({ level: item.level, name: item.name, to: `${base}/hierarchy` })), { level: "Offering", name: offering.name }]}
+      />
       <header className="cl-head">
         <div className="cl-head-text">
           <h1>{offering.name}</h1>
@@ -399,213 +385,6 @@ export function ProductOverview() {
         </section>
         <WhoCanBuy offering={offering} />
         <PlansAtAGlance offering={offering} />
-      </div>
-    </>
-  );
-}
-
-export function ProductArchitecture() {
-  const data = useLabData();
-  const offering = useOffering();
-  useTitle(offering ? `${offering.name} architecture` : "Architecture");
-  const [params, setParams] = useSearchParams();
-  const journeys = useMemo(() => data.journeys.filter((journey) => journey.offeringId === offering?.id), [data, offering]);
-  const def = journeys.find((journey) => journey.id === params.get("journey")) ?? journeys[0];
-  const wanted = params.get("channel");
-  const channel = def && wanted && def.channels.includes(wanted) ? wanted : (def?.channels[0] ?? null);
-  const view = useMemo(() => (def ? journeyView(data, def.id, channel) : null), [data, def, channel]);
-  const calls = useMemo(() => view?.integrations ?? [], [view]);
-  const scopeKey = `${view?.id ?? ""}:${view?.channel ?? ""}`;
-  const [position, setPosition] = useState({ key: scopeKey, index: 0 });
-  const current = position.key === scopeKey ? Math.min(position.index, Math.max(0, calls.length - 1)) : 0;
-  const go = (index: number) => setPosition({ key: scopeKey, index: Math.max(0, Math.min(calls.length - 1, index)) });
-
-  const integrations = useMemo(() => allIntegrations(data), [data]);
-  const linkCounts = useMemo(() => links(data, calls), [data, calls]);
-  const degrees = useMemo(() => degreesOf(integrations), [integrations]);
-  const impact = useMemo(() => (offering && def ? impactOf(data, { offeringId: offering.id, orderType: def.orderType, channel }) : null), [data, offering, def, channel]);
-  const systemById = useMemo(() => new Map(data.systems.map((system) => [system.id, system])), [data]);
-  const entry = Object.keys(view?.laneLabels ?? {})[0];
-  const lit = useMemo(() => {
-    const ids = new Set<string>();
-    for (const call of calls) for (const id of [call.from, call.to, call.via]) if (id && systemById.has(id)) ids.add(id);
-    for (const step of view?.steps ?? []) if (systemById.has(step.lane)) ids.add(step.lane);
-    if (entry && systemById.has(entry)) ids.add(entry);
-    return ids;
-  }, [calls, view, systemById, entry]);
-  const footprint = useMemo(
-    () =>
-      data.domains
-        .map((domain) => {
-          const all = data.systems.filter((system) => system.domain === domain.id);
-          return { domain, total: all.length, lit: all.filter((system) => lit.has(system.id)).length };
-        })
-        .filter((row) => row.total > 0),
-    [data, lit],
-  );
-  const journeyProp = useMemo(() => ({ lit, entry, calls, current }), [lit, entry, calls, current]);
-
-  // ← / → step through the calls when focus isn't in a field.
-  useEffect(() => {
-    const onKey = (event: globalThis.KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (event.altKey || event.ctrlKey || event.metaKey || target?.closest("input, textarea, select, [role='group'][aria-label*='map']")) return;
-      if (event.key === "ArrowRight") setPosition((value) => ({ key: scopeKey, index: Math.min(calls.length - 1, (value.key === scopeKey ? value.index : 0) + 1) }));
-      else if (event.key === "ArrowLeft") setPosition((value) => ({ key: scopeKey, index: Math.max(0, (value.key === scopeKey ? value.index : 0) - 1) }));
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [calls.length, scopeKey]);
-
-  const list = useRef<HTMLOListElement>(null);
-  // Keep the current call in view inside the aside only; never scroll the page.
-  useEffect(() => {
-    const item = list.current?.querySelector<HTMLElement>('[aria-current="step"]');
-    const pane = item?.closest<HTMLElement>(".cl-insp");
-    if (!item || !pane) return;
-    const top = item.getBoundingClientRect().top - pane.getBoundingClientRect().top + pane.scrollTop;
-    if (top < pane.scrollTop + 40 || top + item.offsetHeight > pane.scrollTop + pane.clientHeight - 16) pane.scrollTop = Math.max(0, top - pane.clientHeight / 2);
-  }, [current, scopeKey]);
-
-  if (!offering) return <Missing what="No such product" />;
-  if (!def || !view) return <Missing what="No journey is modelled for this product yet" />;
-  const name = (id?: string) => (id ? (systemById.get(id)?.name ?? (id.startsWith("team:") ? id.slice(5) : id === "channel" ? "Ordering channel" : id)) : "");
-  const call = calls[current];
-  const step = call ? view.steps.find((item) => item.id === call.step) : undefined;
-  const setScope = (journey: string, nextChannel: string | null) => {
-    const next = new URLSearchParams(params);
-    next.set("journey", journey);
-    if (nextChannel) next.set("channel", nextChannel);
-    else next.delete("channel");
-    setParams(next, { replace: true });
-  };
-  const channelName = (id: string) => data.channels.find((item) => item.id === id)?.name ?? id;
-  const roles = (id: string) => impact?.systems.get(id)?.roles ?? [];
-  const pick = (id: string | null) => {
-    if (!id) return;
-    const index = calls.findIndex((item) => [item.from, item.to, item.via].includes(id));
-    if (index >= 0) go(index);
-  };
-
-  return (
-    <>
-      <ProductHeader
-        offering={offering}
-        current="architecture"
-        actions={
-          <Link className="cl-btn" to={journeyHref(def.id, channel)}>
-            Open this journey's flow
-          </Link>
-        }
-      />
-      <div className="cl-toolbar">
-        <JourneyPicker journeys={journeys} current={def} onPick={(journey) => setScope(journey.id, journey.channels[0] ?? null)} />
-        {def.channels.length > 0 && (
-          <div className="cl-chips" role="group" aria-label="Channel">
-            <span className="cl-chiplabel" aria-hidden="true">
-              Channel
-            </span>
-            {def.channels.map((item) => (
-              <button key={item} type="button" className="cl-chip" aria-pressed={item === channel} onClick={() => setScope(def.id, item)}>
-                {channelName(item)}
-              </button>
-            ))}
-          </div>
-        )}
-        <div className="cl-stepper" role="group" aria-label="Step through the calls">
-          <button type="button" className="cl-btn" aria-disabled={current === 0} aria-keyshortcuts="ArrowLeft" onClick={() => current > 0 && go(current - 1)}>
-            Previous
-          </button>
-          <output aria-live="polite">{calls.length ? `Call ${current + 1} of ${calls.length}` : "No calls modelled"}</output>
-          <button type="button" className="cl-btn primary" aria-disabled={current >= calls.length - 1} aria-keyshortcuts="ArrowRight" onClick={() => current < calls.length - 1 && go(current + 1)}>
-            Next
-          </button>
-        </div>
-      </div>
-      <p className="cl-hint">
-        {plural(lit.size, "system")} of {data.systems.length} lit · {plural(calls.length, "call")} for {def.name}
-        {channel ? ` through ${channelName(channel)}` : ""}. Click a system to jump to its first call; ← and → step.
-      </p>
-      <div className="cl-board">
-        <div className="cl-board-main">
-          <Poster data={data} degrees={degrees} linkCounts={linkCounts} label={`${def.name} on the SMB architecture map`} selected={null} onSelect={pick} journey={journeyProp} />
-        </div>
-        <aside className="cl-insp" aria-labelledby="cl-call-h">
-          {call ? (
-            <>
-              <p className="cl-sub">Call {current + 1}</p>
-              <h2 id="cl-call-h">
-                <span translate="no">{name(call.from)}</span> → <span translate="no">{name(call.to)}</span>
-              </h2>
-              <p className="cl-sub">
-                {call.via ? `Through ${name(call.via)}. ` : ""}
-                {step ? `During “${step.name}”.` : ""}
-              </p>
-              <p className="cl-body">{call.purpose}</p>
-              <dl className="cl-pairs">
-                <div>
-                  <dt>Interface</dt>
-                  <dd translate="no">{call.operation || "Not stated"}</dd>
-                </div>
-                <div>
-                  <dt>Style</dt>
-                  <dd>
-                    {call.style}
-                    {call.mode !== "not stated" ? ` · ${call.mode}` : ""}
-                  </dd>
-                </div>
-                <div>
-                  <dt>TM Forum equivalent</dt>
-                  <dd translate="no">{call.tmf ?? "None suggested"}</dd>
-                </div>
-              </dl>
-              <EvidenceTag evidence={call.evidence} />
-              {roles(call.to).length > 0 && (
-                <ul className="cl-roles" aria-label={`${name(call.to)}'s roles in this journey`}>
-                  {roles(call.to).map((role) => (
-                    <li key={role} className="cl-role">
-                      {ROLE_WORDS[role]}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </>
-          ) : (
-            <h2 id="cl-call-h">No calls modelled</h2>
-          )}
-          <h3>Footprint by layer</h3>
-          <ul className="cl-bars">
-            {footprint.map((row) => (
-              <li key={row.domain.id}>
-                <div className="cl-bar-row">
-                  <span>{row.domain.name}</span>
-                  <b>
-                    {row.lit}/{row.total}
-                  </b>
-                  <i aria-hidden="true">
-                    <i style={{ width: `${(row.lit / row.total) * 100}%` }} />
-                  </i>
-                </div>
-              </li>
-            ))}
-          </ul>
-          <h3>Every call, in order</h3>
-          <ol className="cl-calls" ref={list}>
-            {calls.map((item, index) => (
-              <li key={item.id}>
-                <button type="button" aria-current={index === current ? "step" : undefined} onClick={() => go(index)}>
-                  <span className="n" aria-hidden="true">
-                    {index + 1}
-                  </span>
-                  <strong>
-                    <span translate="no">{name(item.from)}</span> → <span translate="no">{name(item.to)}</span>
-                  </strong>
-                  <span translate="no">{item.operation || item.purpose}</span>
-                </button>
-              </li>
-            ))}
-          </ol>
-        </aside>
       </div>
     </>
   );

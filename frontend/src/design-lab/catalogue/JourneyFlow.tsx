@@ -1,17 +1,16 @@
 /**
  * Mock-up 4, a product's journey: its BPMN flow across the full width (lane
- * names stay put while it scrolls, a minimap shows the whole of it), the
- * picked step and every step underneath, and an Integrations tab with the
+ * names stay put while it scrolls), the picked step and every step underneath, and an Integrations tab with the
  * journey's call register. It sits inside its product's tabs.
  */
-import { type KeyboardEvent, type PointerEvent, type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { type KeyboardEvent, type ReactNode, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { journeyView, laneName } from "../../architecture/adapter";
 import { download, toBpmn, toCsv, toMermaid, toPlantUml } from "../../architecture/exports";
 import { GEOMETRY, layoutFlow } from "../../architecture/flowLayout";
 import { type JourneyView, ROLE_WORDS, type Step } from "../../architecture/model";
-import { AreaTabs, EvidenceTag } from "./CatalogueLab";
+import { AreaTabs, EvidenceTag, PathBar } from "./CatalogueLab";
 import { JourneyPicker } from "./JourneyPicker";
 import { journeyHref, LAB, useLabData } from "./labData";
 import { plural, useTitle } from "./labUtil";
@@ -194,7 +193,6 @@ export function JourneyFlow() {
   const selected = picked && tasks.some((item) => item.step.id === picked) ? picked : (tasks[0]?.step.id ?? null);
   const canvas = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState(560);
-  const [viewport, setViewport] = useState({ left: 0, top: 0, width: 1, height: 1 });
 
   // The flow takes the rest of the window (the step details sit below it).
   useLayoutEffect(() => {
@@ -208,12 +206,6 @@ export function JourneyFlow() {
     window.addEventListener("resize", fit);
     return () => window.removeEventListener("resize", fit);
   }, [def?.id, tab]);
-
-  const sync = () => {
-    const element = canvas.current;
-    if (element) setViewport({ left: element.scrollLeft, top: element.scrollTop, width: element.clientWidth, height: element.clientHeight });
-  };
-  useEffect(sync, [scale, height, layout, tab]);
 
   if (!def || !view || !layout) {
     return (
@@ -269,41 +261,12 @@ export function JourneyFlow() {
     }
   };
 
-  // Minimap: the whole drawing in a strip, with the visible part framed.
-  const MINI_H = 64;
-  const miniScale = MINI_H / H;
-  const miniW = W * miniScale;
-  const panTo = (event: PointerEvent<SVGSVGElement>) => {
-    const element = canvas.current;
-    if (!element) return;
-    const box = event.currentTarget.getBoundingClientRect();
-    const x = ((event.clientX - box.left) / box.width) * W * scale;
-    const y = ((event.clientY - box.top) / box.height) * H * scale;
-    element.scrollTo?.({ left: Math.max(0, x - element.clientWidth / 2), top: Math.max(0, y - element.clientHeight / 2) });
-  };
-  const miniKey = (event: KeyboardEvent<SVGSVGElement>) => {
-    const element = canvas.current;
-    if (!element) return;
-    const moves: Record<string, [number, number]> = { ArrowLeft: [-160, 0], ArrowRight: [160, 0], ArrowUp: [0, -160], ArrowDown: [0, 160] };
-    const move = moves[event.key];
-    if (!move) return;
-    event.preventDefault();
-    element.scrollBy?.({ left: move[0], top: move[1] });
-  };
-
   const top: ReactNode = offering ? (
     <ProductHeader offering={offering} current="journeys" compact />
   ) : (
     <>
       <AreaTabs current="journeys" />
-      <nav className="cl-crumbs" aria-label="Where this journey belongs">
-        <ol>
-          <li>
-            <Link to={LAB}>Catalogue</Link>
-          </li>
-          <li aria-current="page">{def.name}</li>
-        </ol>
-      </nav>
+      <PathBar label="Where this journey belongs" items={[{ name: "Catalogue", to: LAB }, { level: "Journey", name: def.name }]} />
     </>
   );
   const Heading = offering ? "h2" : "h1";
@@ -361,34 +324,6 @@ export function JourneyFlow() {
       ) : (
         <>
           <div className="cl-flowbar">
-            <div className="cl-minimap">
-              <svg
-                viewBox={`0 0 ${miniW} ${MINI_H}`}
-                width="100%"
-                height={MINI_H}
-                preserveAspectRatio="none"
-                role="img"
-                aria-label="Minimap of the whole flow. Click or use the arrow keys to move the view."
-                tabIndex={0}
-                onPointerDown={panTo}
-                onPointerMove={(event) => event.buttons === 1 && panTo(event)}
-                onKeyDown={miniKey}
-              >
-                {layout.lanes.map((lane, index) => (
-                  <rect key={lane} x={0} y={index * LANE * miniScale} width={miniW} height={LANE * miniScale} fill={tint(lane)} />
-                ))}
-                {tasks.map(({ step: item, x, y, height: h }) => (
-                  <rect key={item.id} x={(x - shift) * miniScale} y={laneY(y + h / 2) * miniScale - 2} width={Math.max(4, 144 * miniScale)} height={4} fill={item.id === selected ? "var(--cl-red)" : "var(--cl-maroon)"} />
-                ))}
-                <rect
-                  className="cl-minimap-view"
-                  x={(viewport.left / scale) * miniScale}
-                  y={(viewport.top / scale) * miniScale}
-                  width={Math.min(miniW, ((viewport.width - LABEL_W) / scale) * miniScale)}
-                  height={Math.min(MINI_H, (viewport.height / scale) * miniScale)}
-                />
-              </svg>
-            </div>
             <div className="cl-zoom" role="group" aria-label="Zoom">
               <button type="button" onClick={() => setScale((value) => Math.max(0.5, +(value - 0.1).toFixed(2)))} aria-disabled={scale <= 0.5}>
                 <span aria-hidden="true">−</span>
@@ -406,7 +341,7 @@ export function JourneyFlow() {
               </button>
             </div>
           </div>
-          <div className="cl-canvas" ref={canvas} style={{ height }} onScroll={sync} role="region" aria-label={`${def.name}, process flow (scrolls)`} tabIndex={-1}>
+          <div className="cl-canvas" ref={canvas} style={{ height }} role="region" aria-label={`${def.name}, process flow (scrolls)`} tabIndex={-1}>
             <div className="cl-flow" style={{ width: LABEL_W + W * scale, height: H * scale }}>
               <div className="cl-lanes" aria-hidden="true" style={{ height: H * scale }}>
                 {layout.lanes.map((lane) => {

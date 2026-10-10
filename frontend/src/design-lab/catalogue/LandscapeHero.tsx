@@ -1,19 +1,18 @@
 /**
- * Mock-up 1, the Landscape hero: the SMB architecture as one layered poster
- * (or, on request, as an integration matrix). No product bar: a product's
- * footprint lives on its own Architecture tab.
+ * Mock-up 1, the Landscape hero: the SMB architecture as a TAM layer map (or,
+ * on request, as an integration matrix). The side panel is a layer navigator
+ * at rest and the picked system's card when one is chosen. No product bar: a
+ * product's footprint lives on its own Architecture tab.
  */
 import { type FormEvent, useCallback, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
+import { ArchitectureMap } from "./ArchitectureMap";
 import { AreaTabs, EvidenceTag } from "./CatalogueLab";
 import { IntegrationMatrix } from "./IntegrationMatrix";
 import { journeyHref, LAB, useLabData } from "./labData";
 import { firstSentence, listOf, plural, useTitle } from "./labUtil";
-import { Poster } from "./poster";
 import { allIntegrations, allViews, degrees as degreesOf, links, partnersOf } from "./posterModel";
-
-const TOP = 10;
 
 export function LandscapeHero() {
   const data = useLabData();
@@ -21,8 +20,8 @@ export function LandscapeHero() {
   const [params, setParams] = useSearchParams();
   const selected = params.get("system");
   const view = params.get("view") === "matrix" ? "matrix" : "map";
-  const [showAll, setShowAll] = useState(false);
-  const [everyone, setEveryone] = useState(false);
+  const [showLinks, setShowLinks] = useState(false);
+  const [focusLayer, setFocusLayer] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [notFound, setNotFound] = useState<string | null>(null);
 
@@ -31,17 +30,8 @@ export function LandscapeHero() {
   const degrees = useMemo(() => degreesOf(integrations), [integrations]);
   const views = useMemo(() => allViews(data), [data]);
   const systemById = useMemo(() => new Map(data.systems.map((system) => [system.id, system])), [data]);
-  const recorded = useMemo(() => (data.release.journeys ?? []).reduce((sum, journey) => sum + (journey.integrations?.length ?? 0), 0), [data]);
-  const domains = data.domains.filter((domain) => domain.id !== "integration").length;
-  const ranked = useMemo(
-    () =>
-      data.systems
-        .map((system) => ({ system, degree: degrees.get(system.id) }))
-        .filter((item) => (item.degree?.total ?? 0) > 0)
-        .sort((a, b) => (b.degree?.total ?? 0) - (a.degree?.total ?? 0)),
-    [data, degrees],
-  );
-  const top = ranked[0];
+  const layers = useMemo(() => data.domains.map((domain) => ({ domain, systems: data.systems.filter((system) => system.domain === domain.id) })).filter((item) => item.systems.length), [data]);
+  const groups = new Set(data.systems.map((system) => `${system.domain}/${system.group}`)).size;
 
   const setParam = useCallback(
     (key: string, value: string | null) => {
@@ -71,16 +61,16 @@ export function LandscapeHero() {
 
   const system = selected ? (systemById.get(selected) ?? null) : null;
   const partners = system ? partnersOf(system.id, linkCounts) : [];
-  const degree = system ? degrees.get(system.id) : undefined;
-  const maxPartner = Math.max(1, ...partners.map((item) => item.count));
   const journeysThrough = system
     ? data.journeys.filter((journey) => views.some((item) => item.id === journey.id && (item.steps.some((step) => step.lane === system.id) || item.integrations.some((call) => [call.from, call.to, call.via].includes(system.id)))))
     : [];
   const steps = system ? new Set(views.flatMap((item) => item.steps.filter((step) => step.kind === "task" && step.lane === system.id).map((step) => `${item.id}:${step.id}`))).size : 0;
   const domain = system ? data.domains.find((item) => item.id === system.domain) : null;
   const group = domain?.groups.find((item) => item.id === system?.group);
-  const shown = everyone ? ranked : ranked.slice(0, TOP);
-  const max = top?.degree?.total ?? 1;
+  // The linked systems, by the layer they sit in, in map order.
+  const partnerLayers = layers
+    .map(({ domain: layer }) => ({ layer, items: partners.map((item) => systemById.get(item.id)).filter((item) => item?.domain === layer.id) }))
+    .filter((item) => item.items.length);
 
   return (
     <>
@@ -89,7 +79,7 @@ export function LandscapeHero() {
         <div className="cl-head-text">
           <h1>SMB architecture</h1>
           <p className="cl-lede">
-            The SMB estate on the TM Forum application map, and how its systems call each other. {data.status === "draft" ? "A draft" : "Published"}, built only from {listOf(data.sources.map((source) => source.short))}.
+            The SMB estate on the TM Forum application map: each layer, its functional groups and the systems in them. {data.status === "draft" ? "A draft" : "Published"}, built only from {listOf(data.sources.map((source) => source.short))}.
           </p>
         </div>
         <dl className="cl-meta">
@@ -98,16 +88,16 @@ export function LandscapeHero() {
             <dd>{data.systems.length}</dd>
           </div>
           <div>
-            <dt>Domains</dt>
-            <dd>{domains}</dd>
+            <dt>Layers</dt>
+            <dd>{layers.length}</dd>
           </div>
           <div>
-            <dt>Calls</dt>
-            <dd>{recorded}</dd>
+            <dt>Groups</dt>
+            <dd>{groups}</dd>
           </div>
           <div>
-            <dt>System pairs</dt>
-            <dd>{linkCounts.size}</dd>
+            <dt>External</dt>
+            <dd>{data.systems.filter((item) => item.external).length}</dd>
           </div>
           <div>
             <dt>Journeys</dt>
@@ -126,8 +116,8 @@ export function LandscapeHero() {
           </button>
         </div>
         {view === "map" && (
-          <button type="button" className="cl-chip" aria-pressed={showAll} onClick={() => setShowAll((value) => !value)}>
-            All links
+          <button type="button" className="cl-chip" aria-pressed={showLinks} onClick={() => setShowLinks((value) => !value)}>
+            Show every link
           </button>
         )}
         <form className="cl-find" role="search" onSubmit={find}>
@@ -173,8 +163,12 @@ export function LandscapeHero() {
             Placement proposed
           </span>
           <span>
-            <i className="deg" />
-            Integration weight
+            <i className="sel" />
+            Selected
+          </span>
+          <span>
+            <i className="lnk" />
+            Linked
           </span>
         </div>
       </div>
@@ -182,7 +176,7 @@ export function LandscapeHero() {
       <div className="cl-board">
         <div className="cl-board-main">
           {view === "map" ? (
-            <Poster data={data} degrees={degrees} linkCounts={linkCounts} label="SMB architecture map" selected={selected} onSelect={select} showAll={showAll} />
+            <ArchitectureMap data={data} label="SMB architecture map" linkCounts={linkCounts} selected={selected} onSelect={select} showLinks={showLinks} focusLayer={focusLayer} />
           ) : (
             <IntegrationMatrix data={data} degrees={degrees} linkCounts={linkCounts} selected={selected} onSelect={select} />
           )}
@@ -209,43 +203,36 @@ export function LandscapeHero() {
                   <strong>Placement proposed.</strong> Its source places it in {system.proposedMove.from}. {system.proposedMove.reason}
                 </p>
               )}
-              <dl className="cl-stats">
-                <div>
-                  <dt>Calls</dt>
-                  <dd>{degree?.total ?? 0}</dd>
-                </div>
+              <dl className="cl-stats cl-stats--3">
                 <div>
                   <dt>Linked</dt>
                   <dd>{partners.length}</dd>
                 </div>
                 <div>
-                  <dt>Steps</dt>
-                  <dd>{steps}</dd>
-                </div>
-                <div>
                   <dt>Journeys</dt>
                   <dd>{journeysThrough.length}</dd>
                 </div>
+                <div>
+                  <dt>Steps</dt>
+                  <dd>{steps}</dd>
+                </div>
               </dl>
-              {degree && degree.total > 0 && (
-                <p className="cl-sub">
-                  Makes {degree.made} · receives {degree.received}
-                  {degree.carried ? ` · carries ${degree.carried}` : ""}
-                </p>
-              )}
-              {partners.length > 0 && (
+              {partnerLayers.length > 0 && (
                 <>
                   <h3>Linked systems</h3>
-                  <ul className="cl-bars">
-                    {partners.map((partner) => (
-                      <li key={partner.id}>
-                        <button type="button" onClick={() => select(partner.id)} aria-label={`${systemById.get(partner.id)?.name ?? partner.id}: ${plural(partner.count, "call")}`}>
-                          <span translate="no">{systemById.get(partner.id)?.name ?? partner.id}</span>
-                          <b>{partner.count}</b>
-                          <i aria-hidden="true">
-                            <i style={{ width: `${(partner.count / maxPartner) * 100}%` }} />
-                          </i>
-                        </button>
+                  <ul className="cl-linked">
+                    {partnerLayers.map(({ layer, items }) => (
+                      <li key={layer.id} className={`cl-linked--${layer.id}`}>
+                        <span>{layer.name}</span>
+                        <div>
+                          {items.map((item) =>
+                            item ? (
+                              <button key={item.id} type="button" className="cl-pill" onClick={() => select(item.id)} translate="no">
+                                {item.name}
+                              </button>
+                            ) : null,
+                          )}
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -273,44 +260,20 @@ export function LandscapeHero() {
             </>
           ) : (
             <>
-              <h2 id="cl-insp-h">Integration weight</h2>
-              {top && (
-                <p className="cl-body">
-                  <strong translate="no">{top.system.name}</strong> takes part in {top.degree?.total} of {recorded} calls ({Math.round(((top.degree?.total ?? 0) / Math.max(1, recorded)) * 100)}%). Pick a system to see what it talks to.
-                </p>
-              )}
-              <p className="cl-key" aria-hidden="true">
-                <i className="made" />
-                Makes
-                <i className="received" />
-                Receives
-                <i className="carried" />
-                Carries
-              </p>
-              <ul className="cl-bars stacked">
-                {shown.map(({ system: item, degree: d }) => (
-                  <li key={item.id}>
-                    <button
-                      type="button"
-                      onClick={() => select(item.id)}
-                      aria-label={`${item.name}: ${plural(d?.total ?? 0, "call")}; makes ${d?.made ?? 0}, receives ${d?.received ?? 0}, carries ${d?.carried ?? 0}`}
-                    >
-                      <span translate="no">{item.name}</span>
-                      <b>{d?.total}</b>
-                      <i aria-hidden="true">
-                        <i className="made" style={{ width: `${((d?.made ?? 0) / max) * 100}%` }} />
-                        <i className="received" style={{ width: `${((d?.received ?? 0) / max) * 100}%` }} />
-                        <i className="carried" style={{ width: `${((d?.carried ?? 0) / max) * 100}%` }} />
-                      </i>
+              <h2 id="cl-insp-h">Layers</h2>
+              <p className="cl-body">Pick a layer to bring it forward, or a system to see what it talks to.</p>
+              <ul className="cl-layers">
+                {layers.map(({ domain: layer, systems }) => (
+                  <li key={layer.id}>
+                    <button type="button" className={`cl-layer cl-layer--${layer.id}`} aria-pressed={focusLayer === layer.id} onClick={() => setFocusLayer((value) => (value === layer.id ? null : layer.id))}>
+                      <i aria-hidden="true" />
+                      <strong>{layer.name}</strong>
+                      <b>{systems.length}</b>
+                      <span>{layer.groups.filter((item) => systems.some((s) => s.group === item.id)).map((item) => item.name).join(" · ")}</span>
                     </button>
                   </li>
                 ))}
               </ul>
-              {ranked.length > TOP && (
-                <button type="button" className="cl-more" aria-expanded={everyone} onClick={() => setEveryone((value) => !value)}>
-                  {everyone ? `Show the top ${TOP}` : `Show all ${ranked.length} connected systems`}
-                </button>
-              )}
               <h3>Still open</h3>
               <dl className="cl-pairs">
                 <div>
@@ -339,11 +302,11 @@ export function LandscapeHero() {
             );
             return (
               <li key={offering.id}>
-                <Link className="cl-prod" to={`${LAB}/products/${offering.id}`}>
+                <Link className="cl-prod" to={`${LAB}/products/${offering.id}/architecture`}>
                   <strong>{offering.name}</strong>
                   <span>{firstSentence(offering.summary)}</span>
                   <small>
-                    {plural(data.journeys.filter((journey) => journey.offeringId === offering.id).length, "journey")} · {plural(touched.size, "system")} · {plural(offering.orderTypes.length, "order type")}
+                    Reaches {touched.size} of {data.systems.length} systems · {plural(data.journeys.filter((journey) => journey.offeringId === offering.id).length, "journey")} · see its footprint
                   </small>
                 </Link>
               </li>

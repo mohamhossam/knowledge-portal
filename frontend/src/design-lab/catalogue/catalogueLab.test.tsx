@@ -84,8 +84,20 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  it("draws the product's footprint on the architecture, with each system's role for it", async () => {
+    const { container } = open("/products/business-pro-plus/architecture");
+    const map = screen.getByRole("group", { name: /Business Pro Plus on the SMB architecture map/ });
+    expect(within(map).getByRole("button", { name: /^CWOM:.*core to the product/ })).toBeInTheDocument();
+    expect(within(map).getAllByRole("button", { name: /not used by the product/ }).length).toBeGreaterThan(0);
+    await userEvent.click(within(map).getByRole("button", { name: /^CWOM:/ }));
+    expect(screen.getByRole("heading", { level: 2, name: "CWOM" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 3, name: "What it does for the product" })).toBeInTheDocument();
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
   it("lights a journey's systems on the product's architecture and steps through its calls", async () => {
     const { container } = open("/products/business-pro-plus/architecture");
+    await userEvent.click(screen.getByRole("button", { name: "One journey at a time" }));
     expect(screen.getByText(/Call 1 of \d+/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Next" }));
     expect(screen.getByText(/Call 2 of \d+/)).toBeInTheDocument();
