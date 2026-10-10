@@ -19,7 +19,7 @@ recall and citation faithfulness for the mapper as configured.
   `catalogues/smb-architecture.yaml` (version `smb-architecture-business-pro-plus`).
 - The evaluation use case, the golden set file reader, the composition and the command.
 - Today's mapper scored with the fake models, kept as a CI floor.
-- ADR-0114 (proposed; authored in requirement-portal, copied here), with ADR-0115 and ADR-0116
+- ADR-0114 (accepted; authored in requirement-portal, copied here), with ADR-0115 and ADR-0116
   in requirement-portal.
 
 ## Out of Scope
@@ -94,7 +94,7 @@ baseline; each mislabel is refused; the scores on a hand-made set; a provider fa
 - The command scores the mapper with fakes in CI and with live models by hand. **Met for fakes;
   the live run needs provider credentials** (see Deferred).
 - The baseline is recorded here. **Met for the fake models.**
-- The ADRs are accepted by the owner. **Open.**
+- The ADRs are accepted by the owner. **Met 2026-10-10.**
 
 ## Baseline (2026-10-10)
 
@@ -120,10 +120,10 @@ What it shows:
 - Every new-plan and new-offering case that names Business Pro Plus is read as "change"; the
   stand-in cannot tell them apart. Phase 3's verdict reasoner is what fixes this.
 
-## Proposed verdict accuracy gate
+## Verdict accuracy gate
 
-For the owner to set (plan, Readiness): show the verdict to reviewers in Phase 4 only when, with
-the live models on this golden set,
+Set by the owner on 2026-10-10 (plan, Readiness): show the verdict to reviewers in Phase 4 only
+when, with the live models on this golden set,
 - verdict accuracy is at least **80%**, and
 - no new-product-line or new-offering case is called "change to an existing offering", since that
   is the mistake that hides product set-up work.
@@ -172,4 +172,3 @@ Contracts: 10 kept, 0 broken.
 
 - **The live-model baseline.** Run the command with the production `LLM_PROVIDER` and keys and
   add its scores here; that run, not the fake one, is what the verdict gate is measured against.
-- The owner's acceptance of ADR-0114 to ADR-0116 and of the verdict gate above.

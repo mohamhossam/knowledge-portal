@@ -13,4 +13,4 @@ were taken on 2026-10-09; requirement-portal's are authoritative if the two diff
 | [0101](adr-0101-product-architecture-explorer-on-the-catalogue.md) | The Product Architecture Explorer on the catalogue |
 | [0102](adr-0102-historic-requirements-and-ado-lineage.md) | Historic Requirements and their Azure DevOps lineage |
 | [0104](adr-0104-independent-portals-with-optional-links.md) | Independent portals with optional links |
-| [0114](adr-0114-capability-concepts-select-systems.md) | Curated capability concepts may select systems (proposed) |
+| [0114](adr-0114-capability-concepts-select-systems.md) | Curated capability concepts may select systems |
