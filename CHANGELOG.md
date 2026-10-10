@@ -10,6 +10,17 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 - Each GitHub release carries the internal and public OpenAPI contracts, so requirement work
   can pin the internal one it is built against.
 - Import-linter forbids importing requirement work's code (requirement-portal ADR-0104).
+- Squad resources (ontology plan, Phase 1b): a squad holds many people on each system, each in
+  a role from a controlled list (contact, solution architect, business analyst, developer,
+  tester), or an open seat. A migration turns each squad's existing system contacts into
+  "contact" seats. Organisation products link to the offerings they sell and to a portfolio
+  node, and `GET /organisation/references` flags squads and products naming systems, offerings
+  or portfolio nodes the version in service no longer has, products whose systems differ from
+  their offerings', and products linked to neither.
+
+### Changed
+
+- The organisation API's squad `systems` (one contact per system) is replaced by `resources`.
 
 ### Removed
 

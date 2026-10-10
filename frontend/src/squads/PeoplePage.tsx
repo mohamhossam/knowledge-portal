@@ -21,7 +21,7 @@ export function PeoplePage() {
     <section className="govsection catalogue__first" aria-labelledby="people-title">
       <h2 id="people-title" className="govsection__title">People</h2>
       <p className="govsection__lead">
-        Leads, scrum masters and contacts. Someone who holds no role can be marked inactive; nobody is deleted, so history keeps their name.
+        Leads, scrum masters and the people on each squad's systems. Someone who holds no role can be marked inactive; nobody is deleted, so history keeps their name.
       </p>
       <div className="filters">
         <p className="govsection__actions">
@@ -50,7 +50,7 @@ export function PeoplePage() {
               const words = [
                 ...roles.leads.map((stream) => `Leads ${stream.name}`),
                 ...roles.scrumMaster.map((squad) => `Scrum master of ${squad.name}`),
-                ...(roles.resource.length ? [`Contact for ${count(roles.resource.length, "system")}`] : []),
+                ...(roles.resource.length ? [`On ${count(new Set(roles.resource.map((item) => item.systemId)).size, "system")} in squads`] : []),
               ];
               const open = editing?.person?.id === person.id;
               return (

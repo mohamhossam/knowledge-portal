@@ -6,7 +6,7 @@ import type { OrgProduct, ValueStream } from "../api/client";
 import { EditButton } from "../catalogue/DraftEdits";
 import { count } from "../home/format";
 import { GiveSystem, OrgRemove, ProductEdit, StreamEdit } from "./OrgEdits";
-import { type SystemRow, streamSections, unnamedSystems } from "./organisation";
+import { productLinks, seatsLine, type SystemRow, streamSections, unnamedSystems } from "./organisation";
 import { useOrgContext } from "./useOrganisation";
 
 type Editing =
@@ -79,6 +79,7 @@ export function ProductsPage() {
               <div key={product.id} className="product">
                 <h3 className="product__title" dir="auto">{product.name}</h3>
                 {product.description && <p className="product__description" dir="auto">{product.description}</p>}
+                <ProductLinks product={product} />
                 <p className="sheet__row-actions">
                   <EditButton onClick={() => setEditing({ what: "product", product })}>
                     Edit the product<span className="visually-hidden"> {product.name}</span>
@@ -149,7 +150,28 @@ export function ProductsPage() {
   );
 }
 
-/** A product's systems, each with the squads that run it and their contact. */
+/** What a product sells and where it sits in the portfolio, then what to check in its links. */
+function ProductLinks({ product }: { product: OrgProduct }) {
+  const { release, flags } = useOrgContext();
+  const flag = flags.find((item) => item.subject === "product" && item.subject_id === product.id);
+  const { sells, portfolio, checks } = productLinks(product, release, flag);
+  const facts = [
+    ...(sells.length ? [`Sells ${sells.join(", ")}`] : []),
+    ...(portfolio ? [`Portfolio: ${portfolio}`] : []),
+  ];
+  return (
+    <>
+      {facts.length > 0 && <p className="product__links" dir="auto">{facts.join(" · ")}</p>}
+      {checks.length > 0 && (
+        <ul className="product__checks" aria-label={`To check in ${product.name}`}>
+          {checks.map((check) => <li key={check} dir="auto">{check}</li>)}
+        </ul>
+      )}
+    </>
+  );
+}
+
+/** A product's systems, each with the squads that run it and their seats on it. */
 function SystemRows({ caption, rows, keyOf, giving, setGiving, lit, setLit, empty }: {
   caption: string;
   rows: SystemRow[];
@@ -215,10 +237,10 @@ function RowsBody({ rows, keyOf, giving, setGiving, lit, setLit, hidePlace }: {
                 </th>
                 <td>
                   {row.runBy.length ? (
-                    row.runBy.map(({ squad, contact }) => (
+                    row.runBy.map(({ squad, seats }) => (
                       <span key={squad.id} className="runs__squad">
                         <Link to="/squads/squads" dir="auto">{squad.name}</Link>
-                        <span className="secondary govtable__by" dir="auto">{contact ? `Contact: ${contact.name}` : "No contact named"}</span>
+                        <span className="secondary govtable__by" dir="auto">{seatsLine(seats)}</span>
                       </span>
                     ))
                   ) : (

@@ -472,7 +472,7 @@ export function squadOverview(
 ): Overview {
   const owner = new Map<string, string>();
   for (const squad of organisation.squads) {
-    for (const held of squad.systems) owner.set(held.system_id, squad.name);
+    for (const held of squad.resources) owner.set(held.system_id, squad.name);
   }
   const systems = active?.systems ?? [];
   const lines: Line[] = [];

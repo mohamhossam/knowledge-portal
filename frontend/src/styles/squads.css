@@ -18,6 +18,23 @@
   color: var(--ink-2);
 }
 
+/* What it sells and where it sits: a secondary line, like the description. */
+.product__links {
+  max-width: 72ch;
+  color: var(--ink-2);
+}
+
+/* Links that need a maintainer's look are due: bold ink, one sentence per line, no colour. */
+.product__checks {
+  display: grid;
+  gap: var(--s1);
+  max-width: 72ch;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-weight: var(--w-bold);
+}
+
 .runs {
   margin-top: var(--s1);
 }

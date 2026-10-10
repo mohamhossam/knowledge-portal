@@ -25,14 +25,30 @@ const org = {
     { id: "omar", name: "Omar", active: true, revision: 1 },
   ],
   value_streams: [{ id: "retail", name: "Retail", lead_person_id: "layla", revision: 1 }],
-  products: [{ id: "p", name: "Partner channel", description: "", value_stream_id: "retail", system_ids: ["bcrm", "dcrm"], revision: 1 }],
-  squads: [{ id: "sales", name: "Sales", value_stream_id: "retail", scrum_master_person_id: "layla", systems: [{ system_id: "bcrm", person_id: "layla" }], revision: 4 }],
+  products: [
+    {
+      id: "p", name: "Partner channel", description: "", value_stream_id: "retail", system_ids: ["bcrm", "dcrm"],
+      offering_ids: [], portfolio_node_id: null, revision: 1,
+    },
+  ],
+  squads: [
+    {
+      id: "sales", name: "Sales", value_stream_id: "retail", scrum_master_person_id: "layla",
+      resources: [{ system_id: "bcrm", role: "system_contact", person_id: "layla" }], revision: 4,
+    },
+  ],
 } as unknown as Organisation;
 
 function renderAt(path: string, page: ReactNode, child: string) {
   vi.spyOn(api, "organisation").mockResolvedValue(org);
   vi.spyOn(api, "activeRelease").mockResolvedValue(release);
   vi.spyOn(api, "organisationAudit").mockResolvedValue([]);
+  vi.spyOn(api, "organisationReferences").mockResolvedValue([
+    {
+      subject: "product", subject_id: "p", retired_system_ids: [], retired_offering_ids: [], retired_portfolio_node_id: null,
+      systems_missing: [], systems_unexplained: [], unlinked: true,
+    },
+  ]);
   vi.spyOn(api, "knownActors").mockResolvedValue([]);
   render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
@@ -59,9 +75,10 @@ describe("ProductsPage", () => {
     const panel = screen.getByRole("form", { name: "Give DCRM to a squad" });
     const give = within(panel).getByRole("button", { name: "Give it to the squad" });
     expect(give).toBeDisabled();
-    const [squad, contact] = within(panel).getAllByRole("combobox");
+    const [squad, role, person] = within(panel).getAllByRole("combobox");
     fireEvent.change(squad!, { target: { value: "sales" } });
-    fireEvent.change(contact!, { target: { value: "omar" } });
+    fireEvent.change(role!, { target: { value: "developer" } });
+    fireEvent.change(person!, { target: { value: "omar" } });
     fireEvent.click(give);
     await waitFor(() => expect(save).toHaveBeenCalled());
     expect(save.mock.calls[0]).toEqual([
@@ -69,10 +86,22 @@ describe("ProductsPage", () => {
       "sales",
       {
         expected_revision: 4,
-        squad: expect.objectContaining({ systems: [{ system_id: "bcrm", person_id: "layla" }, { system_id: "dcrm", person_id: "omar" }] }),
+        squad: expect.objectContaining({
+          resources: [
+            { system_id: "bcrm", role: "system_contact", person_id: "layla" },
+            { system_id: "dcrm", role: "developer", person_id: "omar" },
+          ],
+        }),
       },
       false,
     ]);
+  });
+
+  it("flags a product linked to no offering or portfolio node, and counts it", async () => {
+    renderAt("/squads", <ProductsPage />, "index");
+    const checks = await screen.findByRole("list", { name: "To check in Partner channel" }, { timeout: 5000 });
+    expect(checks).toHaveTextContent("Not linked to an offering or a portfolio node.");
+    expect(screen.getByLabelText("Ownership of the systems in service")).toHaveTextContent("Products to check1");
   });
 
   it("refuses to remove a value stream that still holds products or squads", async () => {

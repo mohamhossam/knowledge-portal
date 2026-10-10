@@ -717,9 +717,10 @@ def seed_squads(client: httpx.Client) -> None:
                 "name": "Sales squad (sample)",
                 "value_stream_id": "retail",
                 "scrum_master_person_id": "layla",
-                "systems": [
-                    {"system_id": "bcrm", "person_id": "layla"},
-                    {"system_id": "b2b-web", "person_id": "layla"},
+                "resources": [
+                    {"system_id": "bcrm", "role": "system_contact", "person_id": "layla"},
+                    {"system_id": "b2b-web", "role": "system_contact", "person_id": "layla"},
+                    {"system_id": "b2b-web", "role": "developer"},
                 ],
             }
         },
@@ -731,7 +732,7 @@ def seed_squads(client: httpx.Client) -> None:
                 "id": "care",
                 "name": "Care squad (sample)",
                 "value_stream_id": "retail",
-                "systems": [{"system_id": "cim", "person_id": "omar"}],
+                "resources": [{"system_id": "cim", "role": "system_contact", "person_id": "omar"}],
             }
         },
     )
@@ -747,9 +748,10 @@ def seed_squads(client: httpx.Client) -> None:
                 "name": "Fulfilment squad (sample)",
                 "value_stream_id": "business",
                 "scrum_master_person_id": "omar",
-                "systems": [
-                    {"system_id": "cwom", "person_id": "omar"},
-                    {"system_id": "wfm"},
+                "resources": [
+                    {"system_id": "cwom", "role": "system_contact", "person_id": "omar"},
+                    {"system_id": "cwom", "role": "tester", "person_id": "layla"},
+                    {"system_id": "wfm", "role": "system_contact"},
                 ],
             }
         },
@@ -761,6 +763,7 @@ def seed_squads(client: httpx.Client) -> None:
             "name": "Fibre bundle ordering (sample)",
             "description": "Ordering a business fibre bundle online (sample).",
             "system_ids": ["b2b-web", "b2b-bff", "cbcm-crmgw", "cwom", "bscs"],
+            "offering_ids": ["business-fibre"],
         },
         {
             "id": "care",

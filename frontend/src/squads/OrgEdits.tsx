@@ -1,9 +1,9 @@
 import { useEffect, useId, useRef, useState } from "react";
 
-import type { OrgProduct, Person, Squad, ValueStream } from "../api/client";
+import type { OrgProduct, Person, Release, Squad, SquadResource, SquadRole, ValueStream } from "../api/client";
 import { EditPanel } from "../catalogue/DraftEdits";
 import { AreaField, CheckField, Rows, SelectField, TextField } from "../catalogue/forms";
-import { activePeople, freeId, holdsRoles, rolesOf, runBy } from "./organisation";
+import { activePeople, freeId, holdsRoles, ROLES, roleLabel, rolesOf, runBy, systemIdsOf } from "./organisation";
 import { useOrgContext } from "./useOrganisation";
 
 const NO_RELEASE = "No architecture version is in service, so systems cannot be linked yet.";
@@ -131,13 +131,46 @@ export function StreamEdit({ stream, onDone }: { stream?: ValueStream; onDone: (
   );
 }
 
-/** A product: its value stream, what it is, and the systems it rests on. */
+/** Each portfolio node in service by its path, "Enterprise › Fixed › SMB", in path order. */
+function portfolioOptions(release: Release | null, current: string | null | undefined) {
+  const nodes = release?.portfolio ?? [];
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const path = (id: string) => {
+    const names: string[] = [];
+    for (let node = byId.get(id); node && names.length <= nodes.length; node = node.parent_id ? byId.get(node.parent_id) : undefined) {
+      names.unshift(node.name);
+    }
+    return names.join(" › ");
+  };
+  return [
+    { value: "", label: "Not placed in the portfolio" },
+    ...nodes.map((node) => ({ value: node.id, label: path(node.id) })).sort((a, b) => a.label.localeCompare(b.label)),
+    ...(current && !byId.has(current) ? [{ value: current, label: `${current} (not in the catalogue in service)` }] : []),
+  ];
+}
+
+/** A product: its value stream, what it is, the offerings it sells, where it sits, and the systems it rests on. */
 export function ProductEdit({ product, streamId, onDone }: { product?: OrgProduct; streamId?: string; onDone: () => void }) {
   const { org, release, hook } = useOrgContext();
   const id = useId();
   const [value, setValue] = useState<OrgProduct>(
-    () => product ?? { id: "", name: "", description: "", value_stream_id: streamId ?? org.value_streams[0]?.id ?? "", system_ids: [], revision: 0 },
+    () => product ?? {
+      id: "", name: "", description: "", value_stream_id: streamId ?? org.value_streams[0]?.id ?? "",
+      system_ids: [], offering_ids: [], portfolio_node_id: null, revision: 0,
+    },
   );
+  const offerings = release?.products ?? [];
+  const offeringChoices = [
+    ...[...offerings].sort((a, b) => a.name.localeCompare(b.name)).map((offering) => ({ id: offering.id, name: offering.name })),
+    ...(product?.offering_ids ?? [])
+      .filter((offeringId) => !offerings.some((offering) => offering.id === offeringId))
+      .map((offeringId) => ({ id: offeringId, name: `${offeringId} (not in the catalogue in service)` })),
+  ];
+  const toggleOffering = (offeringId: string, on: boolean) =>
+    setValue({
+      ...value,
+      offering_ids: on ? [...value.offering_ids, offeringId] : value.offering_ids.filter((item) => item !== offeringId),
+    });
   const [filter, setFilter] = useState("");
   const inService = release?.systems ?? [];
   const lapsed = (product?.system_ids ?? []).filter((systemId) => !inService.some((system) => system.id === systemId));
@@ -168,7 +201,12 @@ export function ProductEdit({ product, streamId, onDone }: { product?: OrgProduc
           {
             kind: "products",
             isNew: !product,
-            record: { ...value, id: product?.id ?? freeId(value.name, org.products.map((item) => item.id)), name: value.name.trim() },
+            record: {
+              ...value,
+              id: product?.id ?? freeId(value.name, org.products.map((item) => item.id)),
+              name: value.name.trim(),
+              portfolio_node_id: value.portfolio_node_id || null,
+            },
           },
           { onSuccess: onDone },
         )
@@ -185,6 +223,26 @@ export function ProductEdit({ product, streamId, onDone }: { product?: OrgProduc
       </div>
       <AreaField label="What it is" value={value.description} onChange={(description) => setValue({ ...value, description })} />
       <fieldset className="choices form__systems">
+        <legend className="field__label">Offerings it sells ({value.offering_ids.length} chosen)</legend>
+        {offeringChoices.length ? (
+          <div className="form__checklist">
+            {offeringChoices.map((item) => (
+              <CheckField key={item.id} label={item.name} checked={value.offering_ids.includes(item.id)} onChange={(on) => toggleOffering(item.id, on)} />
+            ))}
+          </div>
+        ) : (
+          <p className="form__hint">The version in service has no offerings yet.</p>
+        )}
+      </fieldset>
+      <div className="form__grid">
+        <SelectField
+          label="Where it sits in the portfolio"
+          value={value.portfolio_node_id ?? ""}
+          options={portfolioOptions(release, value.portfolio_node_id)}
+          onChange={(portfolio_node_id) => setValue({ ...value, portfolio_node_id: portfolio_node_id || null })}
+        />
+      </div>
+      <fieldset className="choices form__systems">
         <legend className="field__label">Systems it rests on ({value.system_ids.length} chosen)</legend>
         <label className="field field--inline" htmlFor={`${id}-filter`}>
           <span className="field__label">Find</span>
@@ -200,20 +258,20 @@ export function ProductEdit({ product, streamId, onDone }: { product?: OrgProduc
   );
 }
 
-type SquadSystem = Squad["systems"][number];
+const roleOptions = ROLES.map((role) => ({ value: role.value, label: role.label }));
+const seatKey = (item: SquadResource) => `${item.system_id}|${item.person_id || `open:${item.role}`}`;
 
-/** A squad: its value stream, scrum master, and the systems it runs with a contact for each. */
+/** A squad: its value stream, scrum master, and its people on each system it runs, each in a role. */
 export function SquadEdit({ squad, streamId, onDone }: { squad?: Squad; streamId?: string; onDone: () => void }) {
   const { org, release, hook } = useOrgContext();
   const [value, setValue] = useState<Squad>(
-    () => squad ?? { id: "", name: "", value_stream_id: streamId ?? org.value_streams[0]?.id ?? "", scrum_master_person_id: null, systems: [], revision: 0 },
+    () => squad ?? { id: "", name: "", value_stream_id: streamId ?? org.value_streams[0]?.id ?? "", scrum_master_person_id: null, resources: [], revision: 0 },
   );
   const inService = release?.systems ?? [];
-  const lapsed = (squad?.systems ?? []).map((item) => item.system_id).filter((systemId) => !inService.some((system) => system.id === systemId));
+  const lapsed = (squad ? systemIdsOf(squad) : []).filter((systemId) => !inService.some((system) => system.id === systemId));
   const systemOptions = (current: string) => [
     ...(current ? [] : [{ value: "", label: "Choose a system" }]),
     ...[...inService]
-      .filter((system) => system.id === current || !value.systems.some((item) => item.system_id === system.id))
       .sort((a, b) => a.name.localeCompare(b.name))
       .map((system) => ({ value: system.id, label: system.name })),
     ...lapsed.filter((systemId) => systemId === current).map((systemId) => ({ value: systemId, label: `${systemId} (not in the catalogue in service)` })),
@@ -222,13 +280,18 @@ export function SquadEdit({ squad, streamId, onDone }: { squad?: Squad; streamId
     (item) => item.id !== squad?.id && item.value_stream_id === value.value_stream_id
       && item.name.trim().toLocaleLowerCase() === value.name.trim().toLocaleLowerCase(),
   );
+  const seats = value.resources.filter((item) => item.system_id).map(seatKey);
   const problem = !release
     ? NO_RELEASE
     : !value.name.trim()
       ? "Give the squad a name."
       : clash
         ? "This value stream already has a squad with that name."
-        : value.systems.some((item) => !item.system_id) ? "Choose a system on every row, or remove the row." : null;
+        : value.resources.some((item) => !item.system_id)
+          ? "Choose a system on every row, or remove the row."
+          : new Set(seats).size !== seats.length
+            ? "Someone is on the same system twice, or a system has two open seats in one role; remove one."
+            : null;
   return (
     <EditPanel
       conflictMessage={CONFLICT}
@@ -248,7 +311,7 @@ export function SquadEdit({ squad, streamId, onDone }: { squad?: Squad; streamId
               id: squad?.id ?? freeId(value.name, org.squads.map((item) => item.id)),
               name: value.name.trim(),
               scrum_master_person_id: value.scrum_master_person_id || null,
-              systems: value.systems.map((item) => ({ system_id: item.system_id, person_id: item.person_id || null })),
+              resources: value.resources.map((item) => ({ system_id: item.system_id, role: item.role, person_id: item.person_id || null })),
             },
           },
           { onSuccess: onDone },
@@ -270,20 +333,24 @@ export function SquadEdit({ squad, streamId, onDone }: { squad?: Squad; streamId
           onChange={(id) => setValue({ ...value, scrum_master_person_id: id || null })}
         />
       </div>
-      <Rows<SquadSystem>
-        legend="Systems it runs"
-        one="system"
-        items={value.systems}
-        onChange={(systems) => setValue({ ...value, systems })}
-        blank={() => ({ system_id: "", person_id: null })}
-        itemLabel={(item, index) => `system ${inService.find((system) => system.id === item.system_id)?.name ?? index + 1}`}
+      <Rows<SquadResource>
+        legend="Who works on the systems it runs"
+        one="seat"
+        items={value.resources}
+        onChange={(resources) => setValue({ ...value, resources })}
+        blank={() => ({ system_id: "", role: "developer", person_id: null })}
+        itemLabel={(item, index) => {
+          const system = inService.find((candidate) => candidate.id === item.system_id)?.name ?? item.system_id;
+          return system ? `${roleLabel(item.role).toLocaleLowerCase()} seat on ${system}` : `seat ${index + 1}`;
+        }}
         render={(item, update) => (
           <>
             <SelectField label="System" value={item.system_id} options={systemOptions(item.system_id)} onChange={(system_id) => update({ system_id })} />
+            <SelectField label="Role" value={item.role} options={roleOptions} onChange={(role) => update({ role: role as SquadRole })} />
             <SelectField
-              label="Contact for it"
+              label="Person"
               value={item.person_id ?? ""}
-              options={personOptions(activePeople(org), item.person_id, "No one named")}
+              options={personOptions(activePeople(org), item.person_id, "Open seat: no one yet")}
               onChange={(id) => update({ person_id: id || null })}
             />
           </>
@@ -293,17 +360,18 @@ export function SquadEdit({ squad, streamId, onDone }: { squad?: Squad; streamId
   );
 }
 
-/** Giving one system to a squad, with a contact for it: the catalogue's most common decision. */
+/** Giving one system to a squad, with a person in a role on it: the catalogue's most common decision. */
 export function GiveSystem({ systemId, systemName, onDone }: { systemId: string; systemName: string; onDone: (given: boolean) => void }) {
   const { org, release, hook } = useOrgContext();
   const [squadId, setSquadId] = useState("");
+  const [role, setRole] = useState<SquadRole>("system_contact");
   const [contact, setContact] = useState("");
   const squad = org.squads.find((item) => item.id === squadId);
   const options = [
     { value: "", label: "Choose a squad" },
     ...[...org.value_streams].sort((a, b) => a.name.localeCompare(b.name)).flatMap((stream) =>
       org.squads
-        .filter((item) => item.value_stream_id === stream.id && !item.systems.some((system) => system.system_id === systemId))
+        .filter((item) => item.value_stream_id === stream.id && !systemIdsOf(item).includes(systemId))
         .sort((a, b) => a.name.localeCompare(b.name))
         .map((item) => ({ value: item.id, label: item.name, group: stream.name })),
     ),
@@ -330,7 +398,7 @@ export function GiveSystem({ systemId, systemName, onDone }: { systemId: string;
           {
             kind: "squads",
             isNew: false,
-            record: { ...squad, systems: [...squad.systems, { system_id: systemId, person_id: contact || null }] },
+            record: { ...squad, resources: [...squad.resources, { system_id: systemId, role, person_id: contact || null }] },
           },
           { onSuccess: () => onDone(true) },
         )
@@ -341,7 +409,8 @@ export function GiveSystem({ systemId, systemName, onDone }: { systemId: string;
       ) : (
         <div className="form__grid" ref={fields}>
           <SelectField label="Squad" value={squadId} options={options} onChange={setSquadId} />
-          <SelectField label="Contact for it" value={contact} options={personOptions(activePeople(org), null, "No one named yet")} onChange={setContact} />
+          <SelectField label="Role" value={role} options={roleOptions} onChange={(next) => setRole(next as SquadRole)} />
+          <SelectField label="Person" value={contact} options={personOptions(activePeople(org), null, "Open seat: no one yet")} onChange={setContact} />
         </div>
       )}
     </EditPanel>
@@ -359,7 +428,7 @@ export function OrgRemove({ kind, record, onDone }: {
     ? [...org.products, ...org.squads].filter((item) => item.value_stream_id === record.id).length
     : 0;
   const orphaned = kind === "squads"
-    ? (record as Squad).systems.filter((item) => runBy(org, item.system_id).length === 1).length
+    ? systemIdsOf(record as Squad).filter((systemId) => runBy(org, systemId).length === 1).length
     : 0;
   return (
     <EditPanel

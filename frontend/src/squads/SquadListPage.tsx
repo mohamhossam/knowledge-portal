@@ -4,21 +4,21 @@ import { Link } from "react-router-dom";
 import type { Squad } from "../api/client";
 import { EditButton } from "../catalogue/DraftEdits";
 import { OrgRemove, SquadEdit } from "./OrgEdits";
-import { people } from "./organisation";
+import { seatsLine, seatsOn, systemIdsOf } from "./organisation";
 import { useOrgContext } from "./useOrganisation";
 
-/** The squads, by value stream: scrum master, then the systems each runs and the contact for each. */
+/** The squads, by value stream: scrum master, then the systems each runs and its people on each, by role. */
 export function SquadListPage() {
   const { org, release } = useOrgContext();
   const [editing, setEditing] = useState<{ what: "add" } | { what: "edit" | "remove"; squad: Squad } | null>(null);
-  const directory = people(org);
+  const directory = new Map(org.people.map((person) => [person.id, person]));
   const name = (systemId: string) => release?.systems.find((system) => system.id === systemId)?.name;
   const streams = [...org.value_streams].sort((a, b) => a.name.localeCompare(b.name));
   const done = () => setEditing(null);
   return (
     <section className="govsection catalogue__first" aria-labelledby="squads-list-title">
       <h2 id="squads-list-title" className="govsection__title">Squads</h2>
-      <p className="govsection__lead">Who runs each system, by value stream, with a contact for each system.</p>
+      <p className="govsection__lead">Who runs each system, by value stream, with the people on each system and their roles.</p>
       {streams.length ? (
         <p className="govsection__actions">
           <EditButton expanded={editing?.what === "add"} onClick={() => setEditing(editing?.what === "add" ? null : { what: "add" })}>
@@ -67,19 +67,18 @@ export function SquadListPage() {
                           </span>
                         </th>
                         <td>
-                          {squad.systems.length ? (
+                          {squad.resources.length ? (
                             <ul className="squadlist__systems">
-                              {squad.systems.map((item) => {
-                                const known = name(item.system_id);
-                                const contact = item.person_id ? directory.get(item.person_id) : undefined;
+                              {systemIdsOf(squad).map((systemId) => {
+                                const known = name(systemId);
                                 return (
-                                  <li key={item.system_id} className={known || !release ? undefined : "is-lapsed"}>
+                                  <li key={systemId} className={known || !release ? undefined : "is-lapsed"}>
                                     {known ? (
-                                      <Link to={`/architecture/systems/${encodeURIComponent(item.system_id)}`} dir="auto">{known}</Link>
+                                      <Link to={`/architecture/systems/${encodeURIComponent(systemId)}`} dir="auto">{known}</Link>
                                     ) : (
-                                      <span>{item.system_id} (not in the catalogue in service)</span>
+                                      <span>{systemId} (not in the catalogue in service)</span>
                                     )}
-                                    <span className="secondary" dir="auto"> · {contact ? contact.name : "no contact named"}</span>
+                                    <span className="secondary" dir="auto"> · {seatsLine(seatsOn(org, squad, systemId))}</span>
                                   </li>
                                 );
                               })}

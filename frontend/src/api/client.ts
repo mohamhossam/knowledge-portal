@@ -119,6 +119,10 @@ export type Person = Schemas["PersonSchema"];
 export type ValueStream = Schemas["ValueStreamSchema"];
 export type OrgProduct = Schemas["ProductSchema"];
 export type Squad = Schemas["SquadSchema"];
+export type SquadResource = Schemas["SquadResourceSchema"];
+export type SquadRole = Schemas["SquadRole"];
+/** A squad or product whose links the version in service leaves stale or out of step. */
+export type ReferenceFlag = Schemas["ReferenceFlagResponse"];
 export type SampleRequirements = Schemas["SampleRequirementsResponse"];
 export type SampleRequirement = Schemas["SampleRequirementSchema"];
 export type ImpactComparison = Schemas["ImpactComparisonResponse"];
@@ -352,6 +356,7 @@ export const api = {
       body: JSON.stringify({ expected_revision: expectedRevision }),
     }),
   organisationAudit: () => apiRequest<OrganisationAuditEvent[]>("/organisation/audit"),
+  organisationReferences: () => apiRequest<ReferenceFlag[]>("/organisation/references"),
 
   // Knowledge Center: requirement work's corpus, in counts (A′).
   requirementCorpus: () => apiRequest<RequirementCorpus>("/knowledge-center/requirement-corpus"),

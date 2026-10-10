@@ -50,7 +50,7 @@ export function SquadsPage() {
   }
   const org = organisation.data;
   const release = active.data ?? null;
-  const context: OrgContext = { org, release, hook };
+  const context: OrgContext = { org, release, flags: hook.references.data ?? [], hook };
   return (
     <section className="docpage squads" aria-labelledby="squads-title">
       {head(
@@ -89,6 +89,7 @@ function Gaps({ context }: { context: OrgContext }) {
     return <p className="docpage__notice">No architecture version is in service, so ownership cannot be counted and systems cannot be linked yet.</p>;
   }
   const counted = gaps(org, release);
+  const toCheck = context.flags.filter((flag) => flag.subject === "product").length;
   return (
     <div className="notice-table squads__gaps" role="status" aria-label="Ownership of the systems in service">
       <p className="notice-table__title">Who runs the systems in service</p>
@@ -97,6 +98,7 @@ function Gaps({ context }: { context: OrgContext }) {
         <div className="notice-table__item"><dt>Run by a squad</dt><dd>{counted.run}</dd></div>
         <div className="notice-table__item"><dt>No squad</dt><dd>{counted.noSquad}</dd></div>
         {counted.lapsed > 0 && <div className="notice-table__item"><dt>Links no longer in service</dt><dd>{counted.lapsed}</dd></div>}
+        {toCheck > 0 && <div className="notice-table__item"><dt>Products to check</dt><dd>{toCheck}</dd></div>}
       </dl>
       <p className="notice-table__total">
         {counted.noSquad
