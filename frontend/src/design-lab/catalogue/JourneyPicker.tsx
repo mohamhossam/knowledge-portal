@@ -7,24 +7,10 @@
 import { type KeyboardEvent, useEffect, useRef } from "react";
 
 import type { JourneyDef } from "../../architecture/model";
-
-const STAGES: { id: string; name: string; blurb: string; orderTypes: string[] }[] = [
-  { id: "join", name: "Join", blurb: "Becoming a customer", orderTypes: ["NEW", "MIGRATE", "PORTIN"] },
-  {
-    id: "change",
-    name: "Change",
-    blurb: "Changing a live account",
-    orderTypes: ["UPDOWNGRD", "ADDDELETE", "MODSUBS", "RENEWAL", "EXTSHIFTSITE", "CHNUMBER", "CHINTUSRN", "CHGPSWD", "CHGDOMN", "CHGSUBDOMN", "FLEXIMINMOV"],
-  },
-  { id: "support", name: "Support", blurb: "Tracking, repairs and visits", orderTypes: ["DVCREP", "TECHVISIT"] },
-  { id: "leave", name: "Leave", blurb: "Ending or suspending the service", orderTypes: ["CESSREQ", "PORTOUT", "DUNNING"] },
-];
+import { STAGES, stageOfCode } from "./stages";
 
 /** Where a journey sits; one without an order type (order tracking) supports every order. */
-function stageOf(journey: JourneyDef): string {
-  const code = journey.orderType?.toUpperCase();
-  return STAGES.find((stage) => code && stage.orderTypes.includes(code))?.id ?? (code ? "change" : "support");
-}
+const stageOf = (journey: JourneyDef) => stageOfCode(journey.orderType);
 
 export function JourneyPicker({ journeys, current, onPick }: { journeys: JourneyDef[]; current: JourneyDef; onPick: (journey: JourneyDef) => void }) {
   const menu = useRef<HTMLDetailsElement>(null);
