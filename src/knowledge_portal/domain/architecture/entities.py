@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
+from knowledge_portal.domain.architecture.assessment import ChangeType, PathStep, SystemRole
 from knowledge_portal.domain.architecture.errors import InvalidArchitectureContentError
 from knowledge_portal.domain.architecture.knowledge import (
     InvalidKnowledgeError,
@@ -184,6 +185,11 @@ class SystemReference:
     squads: tuple[OrganisationReference, ...] = ()
     value_streams: tuple[OrganisationReference, ...] = ()
     products: tuple[OrganisationReference, ...] = ()
+    # Why the mapping names it, what the item does to it, and each path from a concept the
+    # item names to it (ontology plan Phase 3). None and empty on impacts mapped before.
+    role: SystemRole | None = None
+    change_type: ChangeType | None = None
+    paths: tuple[tuple[PathStep, ...], ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", _text(self.id, "system id"))

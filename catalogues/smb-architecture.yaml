@@ -12,7 +12,22 @@ systems:
   description: 'MS Dynamics sales CRM: leads, opportunities, quotes and discount approvals. Captures assisted
     SMB orders.'
   landscape_domain: market-sales.sales
-  capabilities: []
+  capabilities:
+  - id: assisted-order-capture
+    name: Assisted order capture
+    triggers:
+    - assisted SMB orders
+    domain: customer
+    concept: cap-assisted-order-capture
+  - id: sales-quoting
+    name: Opportunities, quotes and discount approvals
+    triggers:
+    - leads
+    - opportunities
+    - quotes
+    - discount approvals
+    domain: market-sales
+    concept: cap-sales-quoting
   owner: Sales
   roadmap: Replaced by Netcracker CSRD over time
   confidence: confirmed
@@ -23,7 +38,14 @@ systems:
   - CSRD
   description: New sales and CRM screens replacing BCRM, including AI Studio.
   landscape_domain: market-sales.sales
-  capabilities: []
+  capabilities:
+  - id: sales-quoting
+    name: Sales and CRM screens
+    triggers:
+    - sales screens
+    - CRM screens
+    domain: market-sales
+    concept: cap-sales-quoting
   owner: Netcracker
   roadmap: Replaces BCRM
   confidence: confirmed
@@ -33,7 +55,13 @@ systems:
   aliases: []
   description: Recommendation engine; can trigger opportunities.
   landscape_domain: market-sales.recommendation
-  capabilities: []
+  capabilities:
+  - id: offer-recommendation
+    name: Offer recommendation
+    triggers:
+    - recommendation engine
+    domain: market-sales
+    concept: cap-offer-recommendation
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
 - id: sonic
@@ -41,7 +69,13 @@ systems:
   aliases: []
   description: In-house AI model for B2B discount recommendations.
   landscape_domain: market-sales.recommendation
-  capabilities: []
+  capabilities:
+  - id: discount-recommendation
+    name: Discount recommendation
+    triggers:
+    - B2B discount recommendations
+    domain: market-sales
+    concept: cap-offer-recommendation
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
 - id: bcc
@@ -52,7 +86,14 @@ systems:
   description: Digital product catalogue; offers uploaded by the business from Excel. Configured to accept
     the new Business Pro Plus POs.
   landscape_domain: product.catalogue
-  capabilities: []
+  capabilities:
+  - id: digital-catalogue
+    name: Digital product catalogue
+    triggers:
+    - digital product catalogue
+    - offers uploaded from Excel
+    domain: product
+    concept: cap-product-catalogue
   owner: Digital
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
@@ -63,7 +104,15 @@ systems:
   description: 'Enterprise catalogue module: eligibility rules, pricing, GL mapping. The master reference
     for package codes.'
   landscape_domain: product.catalogue
-  capabilities: []
+  capabilities:
+  - id: eligibility-pricing
+    name: Eligibility rules and pricing
+    triggers:
+    - eligibility rules
+    - pricing
+    - package codes
+    domain: product
+    concept: cap-product-catalogue
   owner: CBCM team
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
@@ -74,7 +123,15 @@ systems:
   description: 'CWOM''s catalogue: CFS, allowances and prices for fixed products and bundles. Answers
     the CPE and access-point model inquiry by bandwidth.'
   landscape_domain: product.catalogue
-  capabilities: []
+  capabilities:
+  - id: fixed-catalogue
+    name: Fixed product catalogue
+    triggers:
+    - CFS
+    - allowances
+    - prices for fixed products
+    domain: product
+    concept: cap-product-catalogue
   owner: Ericsson / CWOM
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory; §6 ECM = system
@@ -83,7 +140,14 @@ systems:
   aliases: []
   description: RTF's own catalogue of customer-facing services, for mobile fulfilment.
   landscape_domain: product.catalogue
-  capabilities: []
+  capabilities:
+  - id: mobile-catalogue
+    name: Mobile customer-facing service catalogue
+    triggers:
+    - customer-facing services
+    - mobile fulfilment
+    domain: product
+    concept: cap-product-catalogue
   owner: RTF team
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
@@ -98,7 +162,14 @@ systems:
     CPP. Its Automation Portal holds the bundle building blocks (SD-WAN/FortiPortal, Firewall, Static
     IP, Proactive Monitoring).
   landscape_domain: product.design
-  capabilities: []
+  capabilities:
+  - id: product-design
+    name: Product design and configuration
+    triggers:
+    - designs new products
+    - bundle building blocks
+    domain: product
+    concept: cap-product-design
   owner: Enterprise Catalog (ECM) team
   confidence: inferred
   source: 'SDD v2.3 · §P1 Bundle Definition · The SDD''s “Automation Portal for BFM” is read as this framework''s
@@ -111,7 +182,21 @@ systems:
   description: Angular web channel for SMB sales and customer management; catalogue from BCC. Opens FortiPortal
     by SAML single sign-on.
   landscape_domain: customer.self-service
-  capabilities: []
+  capabilities:
+  - id: web-ordering
+    name: Web sales and ordering
+    triggers:
+    - SMB sales
+    - web channel
+    domain: customer
+    concept: cap-self-service-order-capture
+  - id: customer-management
+    name: Customer management
+    triggers:
+    - customer management
+    - FortiPortal single sign-on
+    domain: customer
+    concept: cap-customer-self-management
   owner: Digital
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
@@ -120,7 +205,19 @@ systems:
   aliases: []
   description: iOS and Android equivalent of B2B Web.
   landscape_domain: customer.self-service
-  capabilities: []
+  capabilities:
+  - id: app-ordering
+    name: App sales and ordering
+    triggers:
+    - iOS and Android sales
+    domain: customer
+    concept: cap-self-service-order-capture
+  - id: customer-management
+    name: Customer management
+    triggers:
+    - customer management in the app
+    domain: customer
+    concept: cap-customer-self-management
   owner: Digital
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
@@ -129,7 +226,14 @@ systems:
   aliases: []
   description: 'Retail kiosk: biometric capture, document verification, bill payment, Customer 360.'
   landscape_domain: customer.self-service
-  capabilities: []
+  capabilities:
+  - id: document-verification
+    name: Biometric and document verification
+    triggers:
+    - biometric capture
+    - document verification
+    domain: customer
+    concept: cap-identity-verification
   owner: Digital / Retail
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
@@ -138,7 +242,13 @@ systems:
   aliases: []
   description: Agent screen for IVR, email and chat; complaint management APIs.
   landscape_domain: customer.assisted
-  capabilities: []
+  capabilities:
+  - id: complaints
+    name: Complaint management
+    triggers:
+    - complaint management APIs
+    domain: customer
+    concept: cap-complaint-management
   owner: Care
   roadmap: Replaced by Netcracker CPM over time
   confidence: confirmed
@@ -148,7 +258,13 @@ systems:
   aliases: []
   description: Back-office order capture; the front end to CRMGW.
   landscape_domain: customer.assisted
-  capabilities: []
+  capabilities:
+  - id: back-office-orders
+    name: Back-office order capture
+    triggers:
+    - back-office order capture
+    domain: customer
+    concept: cap-assisted-order-capture
   owner: CBCM team
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
@@ -160,7 +276,15 @@ systems:
   description: Central customer, billing account, product inventory and order store; the registry RTF
     loads summary-order baskets from.
   landscape_domain: customer.customer-data
-  capabilities: []
+  capabilities:
+  - id: customer-store
+    name: Customer, account and product inventory
+    triggers:
+    - billing account
+    - product inventory
+    - order store
+    domain: customer
+    concept: cap-customer-data
   owner: Enterprise Data
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory; §6 CBCM = CRMGW
@@ -171,7 +295,15 @@ systems:
   description: Customer, organisation, individual, contact and site data for customers migrated to NC
     Digital, read through TIBCO TMF APIs.
   landscape_domain: customer.customer-data
-  capabilities: []
+  capabilities:
+  - id: party-data
+    name: Customer and party data
+    triggers:
+    - organisation data
+    - contact data
+    - site data
+    domain: customer
+    concept: cap-customer-data
   owner: Netcracker
   confidence: confirmed
   source: SMB reference v1.0 · §3.1 step 4 branch
@@ -182,7 +314,15 @@ systems:
   description: Receives channel orders, validates business rules, builds the value order and hands fixed
     orders to CWOM; loads summary-order baskets from CRMGW.
   landscape_domain: customer.order
-  capabilities: []
+  capabilities:
+  - id: order-validation
+    name: Order validation and hand-off
+    triggers:
+    - channel orders
+    - business rule validation
+    - value order
+    domain: customer
+    concept: cap-order-orchestration
   owner: RTF team
   placement_from: Service
   placement_reason: 'RTF captures, validates and routes the customer''s order: TAM''s Customer Order Management.
@@ -195,7 +335,14 @@ systems:
   - BPM
   description: Hosts orders and milestones for the order-tracking journey (isBFMOrder, mergeOrderItems).
   landscape_domain: customer.order
-  capabilities: []
+  capabilities:
+  - id: order-milestones
+    name: Order milestones
+    triggers:
+    - order tracking journey
+    - order milestones
+    domain: customer
+    concept: cap-order-tracking
   owner: Middleware
   placement_from: Service
   placement_reason: 'Order tracking shows the customer''s order status: Customer Order Management in TAM.'
@@ -206,7 +353,14 @@ systems:
   aliases: []
   description: Stores order milestones for RTF and CWOM; read through getRealTimeOrderDetails.
   landscape_domain: customer.order
-  capabilities: []
+  capabilities:
+  - id: milestone-store
+    name: Order milestone store
+    triggers:
+    - stored order milestones
+    - real-time order details
+    domain: customer
+    concept: cap-order-tracking
   owner: RTF / CWOM
   placement_from: Service
   placement_reason: Holds customer-order milestones for tracking (Customer Order Management).
@@ -217,7 +371,14 @@ systems:
   aliases: []
   description: Raises contract events that start the renewal up/downgrade to a non-commitment package.
   landscape_domain: customer.order
-  capabilities: []
+  capabilities:
+  - id: contract-events
+    name: Contract events
+    triggers:
+    - contract events
+    - renewal up/downgrade
+    domain: customer
+    concept: cap-contract-lifecycle
   confidence: inferred
   source: SDD v2.3 · §EHS ADO 420619 · Not in the SMB reference; its full name and owner are not stated.
 - id: nc-cpm
@@ -226,7 +387,13 @@ systems:
   - CPM
   description: Complaint case management, replacing CIM and UCMS.
   landscape_domain: customer.problem
-  capabilities: []
+  capabilities:
+  - id: complaint-cases
+    name: Complaint case management
+    triggers:
+    - complaint cases
+    domain: customer
+    concept: cap-complaint-management
   owner: Netcracker
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
@@ -235,7 +402,13 @@ systems:
   aliases: []
   description: Billing system; billing starts when the order is fulfilled.
   landscape_domain: customer.bill
-  capabilities: []
+  capabilities:
+  - id: billing
+    name: Billing
+    triggers:
+    - billing
+    domain: customer
+    concept: cap-billing
   owner: Ericsson
   placement_from: Resource
   placement_reason: Billing is Customer Bill Management in TAM's Customer domain, not a resource.
@@ -248,7 +421,14 @@ systems:
   description: 'Order management for fixed products: validates against ECM, splits the order into sub-orders
     and orchestrates activation, field work, billing and notification.'
   landscape_domain: service.order
-  capabilities: []
+  capabilities:
+  - id: fixed-orders
+    name: Fixed order management
+    triggers:
+    - fixed product orders
+    - sub-orders
+    domain: service
+    concept: cap-fixed-order-management
   owner: Ericsson
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
@@ -258,7 +438,14 @@ systems:
   description: 'Service order management: provisions Fortinet HE CPEs in the dedicated ADOM cluster, SD-WAN
     and FortiPortal organisations.'
   landscape_domain: service.order
-  capabilities: []
+  capabilities:
+  - id: cpe-provisioning
+    name: CPE provisioning
+    triggers:
+    - Fortinet HE CPE provisioning
+    - ADOM cluster
+    domain: service
+    concept: cap-cpe-provisioning
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
 - id: xaas
@@ -266,7 +453,13 @@ systems:
   aliases: []
   description: SaaS activation layer (Microsoft, AWS and others); answers by callback.
   landscape_domain: service.activation
-  capabilities: []
+  capabilities:
+  - id: saas-activation
+    name: SaaS activation
+    triggers:
+    - SaaS activation
+    domain: service
+    concept: cap-saas-activation
   placement_from: Resource
   placement_reason: 'It activates customer-facing SaaS services: Service Configuration & Activation.'
   confidence: confirmed
@@ -276,7 +469,13 @@ systems:
   aliases: []
   description: SLA provisioning and activation.
   landscape_domain: service.quality
-  capabilities: []
+  capabilities:
+  - id: sla
+    name: SLA provisioning and activation
+    triggers:
+    - SLA provisioning
+    domain: service
+    unlinked_reason: No capability concept describes SLA management yet.
   placement_from: Resource
   placement_reason: 'SLAs are managed on the service: TAM''s Service Quality Management.'
   confidence: confirmed
@@ -289,7 +488,20 @@ systems:
   description: Mobile network activation (HLR, HSS); activates and removes the Backup 5G profile and commands
     IN and Alepo.
   landscape_domain: resource.activation
-  capabilities: []
+  capabilities:
+  - id: mobile-activation
+    name: Mobile network activation
+    triggers:
+    - HLR
+    - HSS
+    domain: resource
+    concept: cap-mobile-network-activation
+  - id: backup-profile
+    name: Backup 5G profile
+    triggers:
+    - Backup 5G profile
+    domain: service
+    concept: cap-mobile-backup-access
   owner: Ericsson
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
@@ -300,7 +512,26 @@ systems:
   description: Activates mobile SIM and data profiles; applies the Backup 5G speed offers (862–874) and
     the dunning throttle (854).
   landscape_domain: resource.activation
-  capabilities: []
+  capabilities:
+  - id: sim-data-profiles
+    name: SIM and data profiles
+    triggers:
+    - mobile SIM profiles
+    - data profiles
+    domain: resource
+    concept: cap-mobile-network-activation
+  - id: backup-speed
+    name: Backup 5G speed offers
+    triggers:
+    - Backup 5G speed offers
+    domain: service
+    concept: cap-mobile-backup-access
+  - id: dunning-throttle
+    name: Dunning throttle
+    triggers:
+    - dunning throttle
+    domain: customer
+    concept: cap-collections
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
 - id: alepo
@@ -308,7 +539,13 @@ systems:
   aliases: []
   description: Receives vEDA's commands for Backup 5G, as for DI/DPI.
   landscape_domain: resource.activation
-  capabilities: []
+  capabilities:
+  - id: backup-commands
+    name: Backup 5G commands
+    triggers:
+    - vEDA commands
+    domain: resource
+    concept: cap-mobile-network-activation
   confidence: inferred
   source: SDD v2.3 · §vEDA Cessation · Named once in the SDD; not in the SMB reference.
 - id: nrm
@@ -316,7 +553,14 @@ systems:
   aliases: []
   description: Port and network resource allocation.
   landscape_domain: resource.inventory
-  capabilities: []
+  capabilities:
+  - id: network-resources
+    name: Network resource allocation
+    triggers:
+    - port allocation
+    - network resource allocation
+    domain: resource
+    unlinked_reason: No capability concept describes network resource allocation yet.
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
 - id: inv-6d
@@ -325,7 +569,15 @@ systems:
   - SIM / Device / Number inventory
   description: Reserves, deducts and releases SIMs, devices and numbers.
   landscape_domain: resource.inventory
-  capabilities: []
+  capabilities:
+  - id: stock
+    name: SIM, device and number stock
+    triggers:
+    - SIM stock
+    - device stock
+    - number stock
+    domain: resource
+    concept: cap-device-logistics
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
 - id: nps
@@ -334,7 +586,14 @@ systems:
   description: 'Number portability: takes port-in and port-out requests and submits them to RTF with the
     summary-order flags.'
   landscape_domain: resource.inventory
-  capabilities: []
+  capabilities:
+  - id: porting
+    name: Number portability
+    triggers:
+    - port-in requests
+    - port-out requests
+    domain: resource
+    concept: cap-number-portability
   confidence: inferred
   source: SDD v2.3 · §NPS Port In & Port Out · Not in the SMB reference; placed with numbers.
 - id: gis
@@ -342,7 +601,14 @@ systems:
   aliases: []
   description: Network feasibility and availability check.
   landscape_domain: resource.inventory
-  capabilities: []
+  capabilities:
+  - id: feasibility
+    name: Network feasibility
+    triggers:
+    - feasibility check
+    - availability check
+    domain: resource
+    concept: cap-network-feasibility
   placement_from: Engaged Party
   placement_reason: 'Network feasibility reads the operator''s own network inventory: Resource domain.'
   confidence: confirmed
@@ -354,7 +620,14 @@ systems:
   description: 'Manual work orders: the technician installs the CPE and FortiAP, captures SIC codes and
     serials and updates CWOM.'
   landscape_domain: resource.field
-  capabilities: []
+  capabilities:
+  - id: work-orders
+    name: Field work orders
+    triggers:
+    - manual work orders
+    - technician installation
+    domain: resource
+    concept: cap-field-installation
   owner: Engineering
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory (WFM / Remedy)
@@ -363,7 +636,14 @@ systems:
   aliases: []
   description: Engineering ticketing and assurance.
   landscape_domain: resource.field
-  capabilities: []
+  capabilities:
+  - id: engineering-tickets
+    name: Engineering ticketing and assurance
+    triggers:
+    - engineering ticketing
+    - assurance
+    domain: service
+    concept: cap-trouble-ticketing
   owner: Engineering
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory (WFM / Remedy)
@@ -372,7 +652,14 @@ systems:
   aliases: []
   description: Trade licence and decree validation.
   landscape_domain: engaged-party.government
-  capabilities: []
+  capabilities:
+  - id: trade-licence
+    name: Trade licence validation
+    triggers:
+    - trade licence validation
+    - decree validation
+    domain: customer
+    concept: cap-identity-verification
   owner: External
   external: true
   confidence: confirmed
@@ -382,7 +669,13 @@ systems:
   aliases: []
   description: National ID reader device.
   landscape_domain: engaged-party.government
-  capabilities: []
+  capabilities:
+  - id: id-reader
+    name: National ID reading
+    triggers:
+    - national ID reader
+    domain: customer
+    concept: cap-identity-verification
   owner: External
   external: true
   confidence: confirmed
@@ -392,7 +685,15 @@ systems:
   aliases: []
   description: Reads trade licences, Emirates IDs and establishment cards.
   landscape_domain: engaged-party.government
-  capabilities: []
+  capabilities:
+  - id: document-reading
+    name: Licence and ID reading
+    triggers:
+    - trade licence reading
+    - Emirates ID reading
+    - establishment cards
+    domain: customer
+    concept: cap-identity-verification
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
 - id: fortinet
@@ -403,7 +704,19 @@ systems:
   description: 'Vendor platform: the dedicated ADOM FortiManager cluster for Business Pro Plus CPEs, and
     FortiPortal for customer self-management.'
   landscape_domain: engaged-party.partner
-  capabilities: []
+  capabilities:
+  - id: fortimanager
+    name: FortiManager CPE management
+    triggers:
+    - FortiManager cluster
+    domain: service
+    concept: cap-cpe-provisioning
+  - id: fortiportal
+    name: FortiPortal
+    triggers:
+    - FortiPortal
+    domain: customer
+    concept: cap-customer-self-management
   external: true
   confidence: confirmed
   source: SDD v2.3 · §P1 New Activation; §P3 ADO 194831
@@ -412,7 +725,13 @@ systems:
   aliases: []
   description: Sends port-out requests to NPS.
   landscape_domain: engaged-party.partner
-  capabilities: []
+  capabilities:
+  - id: port-out-requests
+    name: Port-out requests
+    triggers:
+    - port-out request sending
+    domain: resource
+    concept: cap-number-portability
   external: true
   confidence: inferred
   source: SDD v2.3 · §NPS Portout · Expanded nowhere in the sources.
@@ -422,7 +741,15 @@ systems:
   - Central Notification Service
   description: SMS and email with OTP; template-driven, English and Arabic.
   landscape_domain: enterprise.common
-  capabilities: []
+  capabilities:
+  - id: notifications
+    name: SMS and email
+    triggers:
+    - SMS
+    - email
+    - OTP
+    domain: customer
+    concept: cap-customer-notification
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
 - id: edms
@@ -430,7 +757,14 @@ systems:
   aliases: []
   description: Customer documents, technical templates and test results.
   landscape_domain: enterprise.common
-  capabilities: []
+  capabilities:
+  - id: documents
+    name: Customer documents
+    triggers:
+    - customer documents
+    - technical templates
+    domain: customer
+    concept: cap-document-management
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
 - id: itsm
@@ -440,7 +774,14 @@ systems:
   - ServiceNow
   description: IT ticketing; device-delivery shipment orders and confirmations (HPSM moving to ServiceNow).
   landscape_domain: enterprise.common
-  capabilities: []
+  capabilities:
+  - id: shipments
+    name: Device delivery shipments
+    triggers:
+    - shipment orders
+    - device delivery
+    domain: resource
+    concept: cap-device-logistics
   owner: IT
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
@@ -449,7 +790,12 @@ systems:
   aliases: []
   description: Single sign-on for CSRD and GIS screens.
   landscape_domain: enterprise.common
-  capabilities: []
+  capabilities:
+  - id: single-sign-on
+    name: Single sign-on
+    triggers:
+    - single sign-on
+    unlinked_reason: Single sign-on is a platform service, not a business capability.
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
 - id: tibco
@@ -458,7 +804,12 @@ systems:
   description: 'Integration bus: digital channels to government, vendors and NC CRM (TMF APIs); carries
     order-creation notices, milestones and order-tracking reads.'
   landscape_domain: integration.bus
-  capabilities: []
+  capabilities:
+  - id: integration-bus
+    name: Integration bus
+    triggers:
+    - integration bus
+    unlinked_reason: An integration bus realises no business capability of its own.
   owner: Middleware
   placement_from: Enterprise Management
   placement_reason: An integration bus is infrastructure every domain uses; it is drawn as the integration
@@ -471,7 +822,12 @@ systems:
   - BFF
   description: Backend for frontend of the digital channels.
   landscape_domain: integration.bus
-  capabilities: []
+  capabilities:
+  - id: channel-backend
+    name: Channel backend
+    triggers:
+    - backend for frontend
+    unlinked_reason: A channel backend realises no business capability of its own.
   confidence: inferred
   source: SMB reference v1.0 · §1 B2B Web integrations; §7 Glossary · Named as an integration, not described
     as a system.

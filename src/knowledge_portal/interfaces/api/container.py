@@ -38,6 +38,7 @@ from knowledge_portal.application.ports.architecture_mapping_stats import (
 )
 from knowledge_portal.application.ports.knowledge_events import KnowledgeEventOutboxPort
 from knowledge_portal.application.ports.product_catalog import ProductCatalogPort
+from knowledge_portal.application.ports.requirement_assessment import RequirementAssessmentPort
 from knowledge_portal.application.ports.requirement_citations import (
     RequirementCitationCountsPort,
 )
@@ -206,6 +207,7 @@ class Container:
     cited_passages: CitedPassages
     reference_knowledge: ReferenceKnowledge
     architecture_knowledge: ArchitectureKnowledgePort
+    requirement_assessment: RequirementAssessmentPort
     manage_architecture_knowledge: ManageArchitectureKnowledge
     explore_architecture: ExploreArchitecture
     catalog_plans: ReadCatalogPlans
@@ -396,6 +398,7 @@ def _build_container(
         cited_passages=CitedPassages(persistence.library_repository, review_cycle),
         reference_knowledge=reference_knowledge,
         architecture_knowledge=architecture.knowledge,
+        requirement_assessment=architecture.assess,
         manage_architecture_knowledge=architecture.manage,
         explore_architecture=ExploreArchitecture(persistence.architecture_repository),
         catalog_plans=ReadCatalogPlans(

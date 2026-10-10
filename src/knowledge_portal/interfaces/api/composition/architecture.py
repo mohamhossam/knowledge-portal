@@ -14,6 +14,7 @@ from knowledge_portal.application.ports.architecture_rag import (
 )
 from knowledge_portal.application.ports.architecture_tokenizer import ArchitectureTokenizerPort
 from knowledge_portal.application.ports.embedding import KnowledgeEmbeddingPort
+from knowledge_portal.application.ports.requirement_assessment import RequirementAssessmentPort
 from knowledge_portal.application.use_cases.architecture_documents import (
     ReadKnowledgeDocument,
     UploadArchitectureDocuments,
@@ -30,6 +31,7 @@ from knowledge_portal.application.use_cases.architecture_knowledge import (
 from knowledge_portal.application.use_cases.architecture_preview import (
     PreviewArchitectureImpact,
 )
+from knowledge_portal.application.use_cases.assess_requirement import AssessRequirement
 from knowledge_portal.application.use_cases.capability_concepts import (
     ProposeCapabilityConcepts,
     SuggestComponentCapabilities,
@@ -80,6 +82,8 @@ class ArchitectureRetrieval:
 @dataclass(frozen=True)
 class ArchitectureWiring:
     knowledge: ArchitectureKnowledgePort
+    # A whole requirement's verdict, systems, gaps and owners (ontology plan Phase 3).
+    assess: RequirementAssessmentPort
     manage: ManageArchitectureKnowledge
     build_index: BuildArchitectureIndex
     preview_impact: PreviewArchitectureImpact
@@ -171,6 +175,13 @@ def build_architecture(
             persistence.architecture_evidence_index,
             reasoner,
             YamlArchitectureKnowledge(default_knowledge_path()),
+            persistence.organisation_repository,
+        ),
+        assess=AssessRequirement(
+            persistence.architecture_repository,
+            persistence.architecture_evidence_index,
+            llm.requirement_reader,
+            llm.verdict_reasoner,
             persistence.organisation_repository,
         ),
         manage=manage,

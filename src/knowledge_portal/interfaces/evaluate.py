@@ -1,5 +1,8 @@
 """Score the impact mapper on the golden set: ``python -m knowledge_portal.interfaces.evaluate``.
 
+``--mapper assess`` (the default) scores the requirement assessment; ``--mapper match``
+today's per-item mapping, the Phase 0 baseline.
+
 It publishes the catalogue the golden set was labelled against into an in-memory release,
 maps every case with the models the settings configure (``LLM_PROVIDER``), and prints the
 scores. ``--json`` also writes each case's answer, for comparing two runs.
@@ -81,6 +84,7 @@ def render(report: EvaluationReport) -> str:
             f"{name.replace('_', ' '):<24}{_percent(value)}"
             for name, value in scores(report).items()
         ),
+        f"{'false changes':<24}{report.false_changes}",
     ]
     return "\n".join(lines)
 
@@ -90,6 +94,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--golden-set", type=Path, default=DEFAULT_GOLDEN_SET)
     parser.add_argument("--catalogue", type=Path, default=DEFAULT_CATALOGUE)
     parser.add_argument("--json", type=Path, help="Also write the scores and every case here.")
+    parser.add_argument(
+        "--mapper",
+        choices=("assess", "match"),
+        default="assess",
+        help="The requirement assessment (default), or today's per-item match.",
+    )
     arguments = parser.parse_args(argv)
     try:
         settings = Settings.from_env()
@@ -105,14 +115,21 @@ def main(argv: Sequence[str] | None = None) -> int:
         if missing := unknown_ids(golden, release):
             print("[evaluate] The catalogue lacks: " + "; ".join(missing), file=sys.stderr)
             return 2
-        report = evaluation.evaluate.execute(golden, release.id)
+        evaluate = (
+            evaluation.evaluate if arguments.mapper == "assess" else evaluation.evaluate_match
+        )
+        report = evaluate.execute(golden, release.id)
     finally:
         evaluation.close()
     print(render(report))
     if arguments.json is not None:
         arguments.json.write_text(
             json.dumps(
-                {"scores": scores(report), "cases": [_case(item) for item in report.results]},
+                {
+                    "scores": scores(report),
+                    "false_changes": report.false_changes,
+                    "cases": [_case(item) for item in report.results],
+                },
                 indent=2,
             )
             + "\n",

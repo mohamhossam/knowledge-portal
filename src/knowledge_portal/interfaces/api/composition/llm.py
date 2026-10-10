@@ -25,11 +25,23 @@ from knowledge_portal.application.ports.capability_link_suggester import (
 )
 from knowledge_portal.application.ports.catalogue_extractor import CatalogueExtractorPort
 from knowledge_portal.application.ports.embedding import KnowledgeEmbeddingPort
+from knowledge_portal.application.ports.requirement_assessment import (
+    RequirementReaderPort,
+    VerdictReasonerPort,
+)
 from knowledge_portal.application.ports.system_matcher import SystemMatcherPort
 from knowledge_portal.infrastructure.architecture.embeddings import ArchitectureEmbeddings
 from knowledge_portal.infrastructure.architecture.reasoning import (
     FakeArchitectureReasoner,
     StructuredArchitectureReasoner,
+)
+from knowledge_portal.infrastructure.architecture.requirement_reading import (
+    FakeRequirementReader,
+    StructuredRequirementReader,
+)
+from knowledge_portal.infrastructure.architecture.verdict_reasoning import (
+    FakeVerdictReasoner,
+    StructuredVerdictReasoner,
 )
 from knowledge_portal.infrastructure.config.options import ConfigurationError, LLMProvider
 from knowledge_portal.infrastructure.config.settings import Settings
@@ -66,6 +78,9 @@ class LLMAdapters:
     system_matcher: SystemMatcherPort
     architecture_reasoner: ArchitectureReasonerPort
     capability_linker: CapabilityLinkSuggesterPort
+    # Assessing a whole requirement (ontology plan Phase 3).
+    requirement_reader: RequirementReaderPort
+    verdict_reasoner: VerdictReasonerPort
     debug_trace: DebugTrace
     # Owns the HTTP clients the adapters share; closed with the container.
     resources: ExitStack
@@ -120,6 +135,8 @@ def _build_llm_adapters(settings: Settings, resources: ExitStack, metrics: Metri
             system_matcher=FakeSystemMatcher(),
             architecture_reasoner=FakeArchitectureReasoner(),
             capability_linker=FakeCapabilityLinkSuggester(),
+            requirement_reader=FakeRequirementReader(),
+            verdict_reasoner=FakeVerdictReasoner(),
             debug_trace=debug_trace,
             resources=resources,
         )
@@ -146,6 +163,10 @@ def _build_llm_adapters(settings: Settings, resources: ExitStack, metrics: Metri
         ),
         capability_linker=StructuredCapabilityLinkSuggester(
             models.catalogue, max_input_tokens=models.catalogue_input_tokens
+        ),
+        requirement_reader=StructuredRequirementReader(models.knowledge),
+        verdict_reasoner=StructuredVerdictReasoner(
+            models.knowledge, max_input_tokens=models.knowledge_input_tokens
         ),
         debug_trace=debug_trace,
         resources=resources,

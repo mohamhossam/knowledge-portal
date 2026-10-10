@@ -29,6 +29,8 @@ def test_the_contract_covers_every_seam_requirement_work_uses() -> None:
     paths = json.loads(CONTRACT.read_text(encoding="utf-8"))["paths"]
     assert set(paths) == {
         "/internal/architecture/match",
+        # A whole requirement's verdict, systems, gaps and owners (ontology plan Phase 3).
+        "/internal/architecture/assess",
         "/internal/library/published",
         "/internal/library/search",
         "/internal/library/retrieve",

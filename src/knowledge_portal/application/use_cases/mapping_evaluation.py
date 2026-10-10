@@ -8,7 +8,9 @@ changes.
 
 What is scored:
 - system precision and recall, over all cases together;
-- verdict accuracy, a case with no verdict counting as right only when none was given;
+- verdict accuracy, a case with no verdict counting as right only when none was given, and
+  the false changes: new offerings, new lines and vague cases called a change to an
+  existing offering;
 - offering accuracy, over the cases labelled with an offering;
 - concept-linking recall, once the mapper returns concepts (not measured before then);
 - citation faithfulness: each cited quote must be found in the passage it cites.
@@ -35,6 +37,10 @@ from knowledge_portal.application.ports.architecture_rag import (
     EvidenceChunk,
 )
 from knowledge_portal.application.ports.identity import Actor
+from knowledge_portal.application.ports.requirement_assessment import (
+    AssessmentQuery,
+    RequirementAssessmentPort,
+)
 from knowledge_portal.application.use_cases.architecture_index import BuildArchitectureIndex
 from knowledge_portal.application.use_cases.architecture_knowledge import (
     KnowledgeNotFoundError,
@@ -122,6 +128,34 @@ class MatchedImpact(ImpactMapperPort):
         )
 
 
+class AssessedImpact(ImpactMapperPort):
+    """The assessment (ontology plan Phase 3): `/internal/architecture/assess`.
+
+    Its verdict and its offering, when the verdict is about one, are the assessment's own;
+    its concepts are every concept a need was linked to.
+    """
+
+    def __init__(self, assessment: RequirementAssessmentPort) -> None:
+        self._assessment = assessment
+
+    @property
+    def name(self) -> str:
+        return "assess"
+
+    def predict(self, text: str, release_id: str) -> MappingPrediction:
+        result = self._assessment.assess(AssessmentQuery((text,), release_id=release_id))
+        verdict = result.verdict
+        return MappingPrediction(
+            system_ids=frozenset(item.id for item in result.systems),
+            verdict=verdict,
+            offering_id=result.offering_id if verdict and verdict.names_an_offering else None,
+            concept_ids=frozenset(
+                concept.concept_id for facet in result.facets for concept in facet.concepts
+            ),
+            citations=result.citations,
+        )
+
+
 @dataclass(frozen=True)
 class CaseResult:
     case: GoldenCase
@@ -151,6 +185,19 @@ class CaseResult:
     def verdict_correct(self) -> bool:
         predicted = self.prediction.verdict if self.prediction else None
         return predicted is self.case.verdict
+
+    @property
+    def false_change(self) -> bool:
+        """It called a change to an existing offering (or a new plan on one) what is a new
+        offering, a new product line or too vague to place: the error the owner's verdict
+        gate rules out."""
+        predicted = self.prediction.verdict if self.prediction else None
+        expected = self.case.verdict
+        return (
+            predicted is not None
+            and predicted.names_an_offering
+            and not (expected is not None and expected.names_an_offering)
+        )
 
     @property
     def offering_correct(self) -> bool:
@@ -194,6 +241,10 @@ class EvaluationReport:
     @property
     def verdict_accuracy(self) -> float | None:
         return _ratio(sum(item.verdict_correct for item in self.results), len(self.results))
+
+    @property
+    def false_changes(self) -> int:
+        return sum(item.false_change for item in self.results)
 
     @property
     def offering_accuracy(self) -> float | None:

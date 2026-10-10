@@ -2,7 +2,8 @@
 
 Every route needs the `requirements` service token. The request and response
 bodies are the shared contract values themselves: `ArchitectureQuery`,
-`ArchitectureKnowledgeMatch`, `ReferenceEvidence` and `KnowledgeEvent`, plus
+`ArchitectureKnowledgeMatch`, `AssessmentQuery`, `ArchitectureAssessment`,
+`ReferenceEvidence` and `KnowledgeEvent`, plus
 the read-only viewers' `CitedPassage` and `EvidenceChunk`, and a published historic
 requirement's content, read a page at a time (ADR-0102, amendment 1).
 `contracts/knowledge-internal.openapi.json` is the committed contract.
@@ -22,6 +23,10 @@ from knowledge_portal.application.ports.architecture_knowledge import (
 from knowledge_portal.application.ports.architecture_rag import EvidenceChunk
 from knowledge_portal.application.ports.knowledge_events import KnowledgeEvent
 from knowledge_portal.application.ports.reference_grounding import ReferenceEvidence
+from knowledge_portal.application.ports.requirement_assessment import (
+    ArchitectureAssessment,
+    AssessmentQuery,
+)
 from knowledge_portal.application.use_cases.cited_passages import CitedPassage, PassageCitation
 from knowledge_portal.domain.historic.historic_requirement import CONTENT_PAGE_MAX, ContentPart
 from knowledge_portal.interfaces.api.dependencies import ContainerDep, require_service_caller
@@ -50,6 +55,15 @@ class PublishedResponse(BaseModel):
 @router.post("/architecture/match")
 def match(query: ArchitectureQuery, container: ContainerDep) -> ArchitectureKnowledgeMatch:
     return container.architecture_knowledge.match(query)
+
+
+@router.post("/architecture/assess")
+def assess(query: AssessmentQuery, container: ContainerDep) -> ArchitectureAssessment:
+    """A whole requirement's product verdict, systems, gaps and owners (ontology plan Phase 3).
+
+    With no verdict yet, the answer carries the questions to ask instead.
+    """
+    return container.requirement_assessment.assess(query)
 
 
 @router.get("/library/published")
