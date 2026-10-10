@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -11,8 +12,10 @@ from knowledge_portal.domain.organisation.catalogue import (
     OrganisationCatalogue,
     Person,
     Product,
+    ReferenceFlag,
     Squad,
-    SquadSystemResource,
+    SquadResource,
+    SquadRole,
     SystemOwnership,
     ValueStream,
 )
@@ -73,6 +76,8 @@ class ProductSchema(BaseModel):
     name: Name
     description: Text = ""
     system_ids: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    offering_ids: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    portfolio_node_id: Identifier | None = None
     revision: int = 1
 
     @classmethod
@@ -83,18 +88,35 @@ class ProductSchema(BaseModel):
             name=product.name,
             description=product.description,
             system_ids=list(product.system_ids),
+            offering_ids=list(product.offering_ids),
+            portfolio_node_id=product.portfolio_node_id,
             revision=product.revision,
         )
 
     def to_domain(self) -> Product:
         return Product(
-            self.id, self.value_stream_id, self.name, self.description, tuple(self.system_ids)
+            self.id,
+            self.value_stream_id,
+            self.name,
+            self.description,
+            tuple(self.system_ids),
+            tuple(self.offering_ids),
+            self.portfolio_node_id,
         )
 
 
-class SquadSystemSchema(BaseModel):
+class SquadResourceSchema(BaseModel):
+    """A seat on a system in a role; no person while the seat is open."""
+
     system_id: RequiredIdentifier
+    role: SquadRole
     person_id: Identifier | None = None
+
+    @classmethod
+    def from_domain(cls, resource: SquadResource) -> SquadResourceSchema:
+        return cls.model_construct(
+            system_id=resource.system_id, role=resource.role, person_id=resource.person_id
+        )
 
 
 class SquadSchema(BaseModel):
@@ -102,7 +124,7 @@ class SquadSchema(BaseModel):
     name: Name
     value_stream_id: RequiredIdentifier
     scrum_master_person_id: Identifier | None = None
-    systems: list[SquadSystemSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    resources: list[SquadResourceSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     revision: int = 1
 
     @classmethod
@@ -112,12 +134,7 @@ class SquadSchema(BaseModel):
             name=squad.name,
             value_stream_id=squad.value_stream_id,
             scrum_master_person_id=squad.scrum_master_person_id,
-            systems=[
-                SquadSystemSchema.model_construct(
-                    system_id=item.system_id, person_id=item.person_id
-                )
-                for item in squad.systems
-            ],
+            resources=[SquadResourceSchema.from_domain(item) for item in squad.resources],
             revision=squad.revision,
         )
 
@@ -127,7 +144,9 @@ class SquadSchema(BaseModel):
             self.name,
             self.value_stream_id,
             self.scrum_master_person_id,
-            tuple(SquadSystemResource(item.system_id, item.person_id) for item in self.systems),
+            tuple(
+                SquadResource(item.system_id, item.role, item.person_id) for item in self.resources
+            ),
         )
 
 
@@ -160,6 +179,33 @@ class SystemOwnershipResponse(BaseModel):
             squads=[SquadSchema.from_domain(item) for item in ownership.squads],
             products=[ProductSchema.from_domain(item) for item in ownership.products],
             value_streams=[ValueStreamSchema.from_domain(item) for item in ownership.value_streams],
+        )
+
+
+class ReferenceFlagResponse(BaseModel):
+    """A squad or product naming what the version in service no longer has, or a product
+    whose systems differ from what its offerings name, or that is linked to nothing."""
+
+    subject: Literal["squad", "product"]
+    subject_id: str
+    retired_system_ids: list[str]
+    retired_offering_ids: list[str]
+    retired_portfolio_node_id: str | None
+    systems_missing: list[str]
+    systems_unexplained: list[str]
+    unlinked: bool
+
+    @classmethod
+    def from_domain(cls, flag: ReferenceFlag) -> ReferenceFlagResponse:
+        return cls.model_construct(
+            subject=flag.subject,
+            subject_id=flag.subject_id,
+            retired_system_ids=list(flag.retired_system_ids),
+            retired_offering_ids=list(flag.retired_offering_ids),
+            retired_portfolio_node_id=flag.retired_portfolio_node_id,
+            systems_missing=list(flag.systems_missing),
+            systems_unexplained=list(flag.systems_unexplained),
+            unlinked=flag.unlinked,
         )
 
 

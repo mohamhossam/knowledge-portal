@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import type { Organisation, Release } from "../api/client";
-import { freeId, gaps, historyLine, holdsRoles, rolesOf, runBy, streamSections, unnamedSystems } from "./organisation";
+import type { Organisation, ReferenceFlag, Release } from "../api/client";
+import { freeId, gaps, historyLine, holdsRoles, productLinks, rolesOf, runBy, seatsLine, streamSections, unnamedSystems } from "./organisation";
 
 const release = {
   id: "live", revision: 1, status: "published", documents: [], relationships: [],
@@ -12,6 +12,8 @@ const release = {
     { id: "eida", name: "EIDA", aliases: [], capabilities: [], components: [], constraints: [] },
   ],
   landscape_domains: [{ id: "channels", name: "Channels" }, { id: "orch", name: "Orchestration" }],
+  products: [{ id: "fibre-offer", name: "Business fibre" }],
+  portfolio: [{ id: "smb", name: "SMB", level: "Segment" }],
 } as unknown as Release;
 
 const org: Organisation = {
@@ -24,10 +26,27 @@ const org: Organisation = {
     { id: "retail", name: "Retail", lead_person_id: "layla", revision: 1 },
     { id: "business", name: "Business", lead_person_id: null, revision: 1 },
   ],
-  products: [{ id: "p", name: "Fibre", description: "", value_stream_id: "retail", system_ids: ["bcrm", "legacy"], revision: 1 }],
+  products: [
+    {
+      id: "p", name: "Fibre", description: "", value_stream_id: "retail", system_ids: ["bcrm", "legacy"],
+      offering_ids: ["fibre-offer"], portfolio_node_id: "smb", revision: 1,
+    },
+  ],
   squads: [
-    { id: "sales", name: "Sales", value_stream_id: "retail", scrum_master_person_id: "layla", systems: [{ system_id: "bcrm", person_id: "layla" }], revision: 1 },
-    { id: "ops", name: "Ops", value_stream_id: "business", systems: [{ system_id: "cwom", person_id: null }, { system_id: "bcrm", person_id: "omar" }], revision: 3 },
+    {
+      id: "sales", name: "Sales", value_stream_id: "retail", scrum_master_person_id: "layla",
+      resources: [{ system_id: "bcrm", role: "system_contact", person_id: "layla" }], revision: 1,
+    },
+    {
+      id: "ops", name: "Ops", value_stream_id: "business",
+      resources: [
+        { system_id: "cwom", role: "system_contact", person_id: null },
+        { system_id: "bcrm", role: "tester", person_id: "omar" },
+        { system_id: "bcrm", role: "developer", person_id: null },
+        { system_id: "bcrm", role: "system_contact", person_id: "layla" },
+      ],
+      revision: 3,
+    },
   ],
 } as unknown as Organisation;
 
@@ -36,9 +55,23 @@ describe("the organisation through what it sells", () => {
     const sections = streamSections(org, release);
     expect(sections.map((section) => [section.stream.name, section.lead?.name ?? null])).toEqual([["Business", null], ["Retail", "Layla"]]);
     const rows = sections[1]!.products[0]!.rows;
-    expect(rows.map((row) => [row.name, row.lapsed, row.runBy.map((item) => `${item.squad.name}/${item.contact?.name ?? "-"}`)])).toEqual([
-      ["BCRM", false, ["Ops/Omar", "Sales/Layla"]],
+    expect(rows.map((row) => [row.name, row.lapsed, row.runBy.map((item) => `${item.squad.name}: ${seatsLine(item.seats)}`)])).toEqual([
+      ["BCRM", false, ["Ops: Contact: Layla · Developer: open seat · Tester: Omar", "Sales: Contact: Layla"]],
       ["legacy", true, []],
+    ]);
+  });
+
+  it("says what a product sells, where it sits, and what to check in its links", () => {
+    const product = org.products[0]!;
+    expect(productLinks(product, release, undefined)).toEqual({ sells: ["Business fibre"], portfolio: "SMB (Segment)", checks: [] });
+    const flag: ReferenceFlag = {
+      subject: "product", subject_id: "p", retired_system_ids: ["legacy"], retired_offering_ids: ["old-offer"],
+      retired_portfolio_node_id: null, systems_missing: ["cwom"], systems_unexplained: ["bcrm"], unlinked: false,
+    };
+    expect(productLinks({ ...product, offering_ids: ["fibre-offer", "old-offer"] }, release, flag).checks).toEqual([
+      "old-offer: no longer an offering in service.",
+      "Its offerings also name CWOM, which it does not list.",
+      "It lists BCRM, which none of its offerings name.",
     ]);
   });
 
@@ -60,7 +93,7 @@ describe("people and their roles", () => {
     const layla = rolesOf(org, "layla");
     expect(layla.leads.map((item) => item.name)).toEqual(["Retail"]);
     expect(layla.scrumMaster.map((item) => item.name)).toEqual(["Sales"]);
-    expect(layla.resource).toHaveLength(1);
+    expect(layla.resource.map((item) => `${item.squad.name}/${item.role}`)).toEqual(["Sales/system_contact", "Ops/system_contact"]);
     expect(holdsRoles(layla)).toBe(true);
     expect(holdsRoles(rolesOf(org, "rana"))).toBe(false);
   });

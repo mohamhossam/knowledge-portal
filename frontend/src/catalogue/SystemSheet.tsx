@@ -8,6 +8,7 @@ import { errorMessage } from "../api/errors";
 import { connections, dependsHow, domainPath, sentenceCase, systemName, systemRoles, usedHow } from "./catalogue";
 import { ConnectionEdit, ConnectionRemove, EditButton, SystemEdit, SystemRemove } from "./DraftEdits";
 import { SystemReview } from "../reviews/SystemReview";
+import { roleLabel } from "../squads/organisation";
 import { useCatalogueContext } from "./useCatalogue";
 
 /** Where a sheet was reached from, so the way back can be lit and retraced. */
@@ -280,19 +281,21 @@ function Owners({ system }: { system: CatalogueSystem }) {
           <thead>
             <tr>
               <th scope="col">Squad</th>
-              <th scope="col">Contact</th>
+              <th scope="col">People on it</th>
             </tr>
           </thead>
           <tbody>
             {squads.map((squad) => {
-              const contact = squad.systems.find((item) => item.system_id === system.id)?.person_id;
+              const seats = squad.resources
+                .filter((item) => item.system_id === system.id)
+                .map((item) => `${roleLabel(item.role)}: ${item.person_id ? people.get(item.person_id) ?? item.person_id : "open seat"}`);
               return (
                 <tr key={squad.id} className="row">
                   <th scope="row" dir="auto">
                     {squad.name}
                     <span className="secondary govtable__by" dir="auto">{streams.get(squad.value_stream_id) ?? squad.value_stream_id}</span>
                   </th>
-                  <td dir="auto">{contact ? people.get(contact) ?? contact : <span className="secondary">No one named</span>}</td>
+                  <td dir="auto">{seats.join(" · ")}</td>
                 </tr>
               );
             })}

@@ -183,7 +183,7 @@ describe("squadOverview", () => {
     people: [{ id: "layla", name: "Layla", active: true }],
     value_streams: [{ id: "retail", name: "Retail" }],
     products: [],
-    squads: [{ id: "sales", name: "Sales", systems: [{ system_id: "bcrm", person_id: "layla" }] }],
+    squads: [{ id: "sales", name: "Sales", resources: [{ system_id: "bcrm", role: "system_contact", person_id: "layla" }] }],
   } as unknown as Organisation;
 
   it("lists the systems in force that no squad owns, keeping their Arabic names", () => {

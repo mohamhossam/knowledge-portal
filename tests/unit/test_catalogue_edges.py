@@ -60,7 +60,8 @@ from knowledge_portal.domain.organisation.catalogue import (
     Person,
     Product,
     Squad,
-    SquadSystemResource,
+    SquadResource,
+    SquadRole,
     ValueStream,
 )
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
@@ -114,7 +115,9 @@ def test_organisation_use_case_covers_every_record_kind() -> None:
     manage.save_value_stream(ValueStream("retail", "Retail", "layla"), None, MAINTAINER)
     manage.save_product(Product("fibre", "retail", "Fibre", system_ids=("bcrm",)), None, MAINTAINER)
     manage.save_squad(
-        Squad("sales", "Sales", "retail", None, (SquadSystemResource("bcrm"),)), None, MAINTAINER
+        Squad("sales", "Sales", "retail", None, (SquadResource("bcrm", SquadRole.SYSTEM_CONTACT),)),
+        None,
+        MAINTAINER,
     )
     # A link that lapsed from the active release does not block unrelated edits.
     releases.save(
@@ -466,7 +469,14 @@ def test_ai_mapping_of_a_published_release_records_organisation_ownership() -> N
             current.put_person(Person("bea", "Bea"), None)
             .put_value_stream(ValueStream("retail", "Retail"), None)
             .put_squad(
-                Squad("sales", "Sales", "retail", None, (SquadSystemResource("bcrm", "bea"),)), None
+                Squad(
+                    "sales",
+                    "Sales",
+                    "retail",
+                    None,
+                    (SquadResource("bcrm", SquadRole.SYSTEM_CONTACT, "bea"),),
+                ),
+                None,
             )
         ),
         "amina",

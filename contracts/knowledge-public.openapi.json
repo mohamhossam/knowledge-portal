@@ -7925,6 +7925,28 @@
             "title": "Name",
             "type": "string"
           },
+          "offering_ids": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Offering Ids",
+            "type": "array"
+          },
+          "portfolio_node_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Portfolio Node Id"
+          },
           "revision": {
             "default": 1,
             "title": "Revision",
@@ -8499,6 +8521,78 @@
           "end_offset"
         ],
         "title": "ReferenceChunk",
+        "type": "object"
+      },
+      "ReferenceFlagResponse": {
+        "description": "A squad or product naming what the version in service no longer has, or a product\nwhose systems differ from what its offerings name, or that is linked to nothing.",
+        "properties": {
+          "retired_offering_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Retired Offering Ids",
+            "type": "array"
+          },
+          "retired_portfolio_node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retired Portfolio Node Id"
+          },
+          "retired_system_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Retired System Ids",
+            "type": "array"
+          },
+          "subject": {
+            "enum": [
+              "squad",
+              "product"
+            ],
+            "title": "Subject",
+            "type": "string"
+          },
+          "subject_id": {
+            "title": "Subject Id",
+            "type": "string"
+          },
+          "systems_missing": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Systems Missing",
+            "type": "array"
+          },
+          "systems_unexplained": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Systems Unexplained",
+            "type": "array"
+          },
+          "unlinked": {
+            "title": "Unlinked",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "subject",
+          "subject_id",
+          "retired_system_ids",
+          "retired_offering_ids",
+          "retired_portfolio_node_id",
+          "systems_missing",
+          "systems_unexplained",
+          "unlinked"
+        ],
+        "title": "ReferenceFlagResponse",
         "type": "object"
       },
       "ReindexRequest": {
@@ -9429,6 +9523,50 @@
         "title": "SquadRequest",
         "type": "object"
       },
+      "SquadResourceSchema": {
+        "description": "A seat on a system in a role; no person while the seat is open.",
+        "properties": {
+          "person_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Person Id"
+          },
+          "role": {
+            "$ref": "#/components/schemas/SquadRole"
+          },
+          "system_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "System Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "system_id",
+          "role"
+        ],
+        "title": "SquadResourceSchema",
+        "type": "object"
+      },
+      "SquadRole": {
+        "description": "What a squad resource does on its system: a controlled list.",
+        "enum": [
+          "system_contact",
+          "developer",
+          "tester",
+          "solution_architect",
+          "business_analyst"
+        ],
+        "title": "SquadRole",
+        "type": "string"
+      },
       "SquadSchema": {
         "properties": {
           "id": {
@@ -9441,6 +9579,15 @@
             "maxLength": 300,
             "title": "Name",
             "type": "string"
+          },
+          "resources": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SquadResourceSchema"
+            },
+            "maxItems": 5000,
+            "title": "Resources",
+            "type": "array"
           },
           "revision": {
             "default": 1,
@@ -9459,15 +9606,6 @@
             ],
             "title": "Scrum Master Person Id"
           },
-          "systems": {
-            "default": [],
-            "items": {
-              "$ref": "#/components/schemas/SquadSystemSchema"
-            },
-            "maxItems": 5000,
-            "title": "Systems",
-            "type": "array"
-          },
           "value_stream_id": {
             "maxLength": 200,
             "minLength": 1,
@@ -9481,33 +9619,6 @@
           "value_stream_id"
         ],
         "title": "SquadSchema",
-        "type": "object"
-      },
-      "SquadSystemSchema": {
-        "properties": {
-          "person_id": {
-            "anyOf": [
-              {
-                "maxLength": 200,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Person Id"
-          },
-          "system_id": {
-            "maxLength": 200,
-            "minLength": 1,
-            "title": "System Id",
-            "type": "string"
-          }
-        },
-        "required": [
-          "system_id"
-        ],
-        "title": "SquadSystemSchema",
         "type": "object"
       },
       "SuggestionDecisionRequest": {
@@ -18394,6 +18505,64 @@
           }
         ],
         "summary": "Update Product",
+        "tags": [
+          "organisation"
+        ]
+      }
+    },
+    "/organisation/references": {
+      "get": {
+        "operationId": "references_organisation_references_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReferenceFlagResponse"
+                  },
+                  "title": "Response References Organisation References Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "References",
         "tags": [
           "organisation"
         ]

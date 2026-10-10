@@ -1790,6 +1790,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/organisation/references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** References */
+        get: operations["references_organisation_references_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/organisation/squads": {
         parameters: {
             query?: never;
@@ -4417,6 +4434,13 @@ export interface components {
             /** Name */
             name: string;
             /**
+             * Offering Ids
+             * @default []
+             */
+            offering_ids: string[];
+            /** Portfolio Node Id */
+            portfolio_node_id?: string | null;
+            /**
              * Revision
              * @default 1
              */
@@ -4635,6 +4659,32 @@ export interface components {
             version_id: string;
             /** Version Number */
             version_number: number;
+        };
+        /**
+         * ReferenceFlagResponse
+         * @description A squad or product naming what the version in service no longer has, or a product
+         *     whose systems differ from what its offerings name, or that is linked to nothing.
+         */
+        ReferenceFlagResponse: {
+            /** Retired Offering Ids */
+            retired_offering_ids: string[];
+            /** Retired Portfolio Node Id */
+            retired_portfolio_node_id: string | null;
+            /** Retired System Ids */
+            retired_system_ids: string[];
+            /**
+             * Subject
+             * @enum {string}
+             */
+            subject: "squad" | "product";
+            /** Subject Id */
+            subject_id: string;
+            /** Systems Missing */
+            systems_missing: string[];
+            /** Systems Unexplained */
+            systems_unexplained: string[];
+            /** Unlinked */
+            unlinked: boolean;
         };
         /** ReindexRequest */
         ReindexRequest: {
@@ -4983,6 +5033,23 @@ export interface components {
             expected_revision?: number | null;
             squad: components["schemas"]["SquadSchema"];
         };
+        /**
+         * SquadResourceSchema
+         * @description A seat on a system in a role; no person while the seat is open.
+         */
+        SquadResourceSchema: {
+            /** Person Id */
+            person_id?: string | null;
+            role: components["schemas"]["SquadRole"];
+            /** System Id */
+            system_id: string;
+        };
+        /**
+         * SquadRole
+         * @description What a squad resource does on its system: a controlled list.
+         * @enum {string}
+         */
+        SquadRole: "system_contact" | "developer" | "tester" | "solution_architect" | "business_analyst";
         /** SquadSchema */
         SquadSchema: {
             /** Id */
@@ -4990,26 +5057,19 @@ export interface components {
             /** Name */
             name: string;
             /**
+             * Resources
+             * @default []
+             */
+            resources: components["schemas"]["SquadResourceSchema"][];
+            /**
              * Revision
              * @default 1
              */
             revision: number;
             /** Scrum Master Person Id */
             scrum_master_person_id?: string | null;
-            /**
-             * Systems
-             * @default []
-             */
-            systems: components["schemas"]["SquadSystemSchema"][];
             /** Value Stream Id */
             value_stream_id: string;
-        };
-        /** SquadSystemSchema */
-        SquadSystemSchema: {
-            /** Person Id */
-            person_id?: string | null;
-            /** System Id */
-            system_id: string;
         };
         /** SuggestionDecisionRequest */
         SuggestionDecisionRequest: {
@@ -9235,6 +9295,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrganisationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    references_organisation_references_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceFlagResponse"][];
                 };
             };
             /** @description Validation Error */

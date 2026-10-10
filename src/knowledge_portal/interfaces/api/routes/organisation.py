@@ -23,6 +23,7 @@ from knowledge_portal.interfaces.api.schemas.organisation import (
     OrganisationResponse,
     PersonRequest,
     ProductRequest,
+    ReferenceFlagResponse,
     RemovalRequest,
     SquadRequest,
     SystemOwnershipResponse,
@@ -49,6 +50,13 @@ def audit(
     organisation: OrganisationDep, actor: KnowledgeActorDep
 ) -> list[OrganisationAuditEventResponse]:
     return [OrganisationAuditEventResponse.from_domain(item) for item in organisation.audit(actor)]
+
+
+@router.get("/references", response_model=list[ReferenceFlagResponse])
+def references(
+    organisation: OrganisationDep, actor: KnowledgeActorDep
+) -> list[ReferenceFlagResponse]:
+    return [ReferenceFlagResponse.from_domain(item) for item in organisation.references(actor)]
 
 
 @router.get("/systems/{system_id}/ownership", response_model=SystemOwnershipResponse)
