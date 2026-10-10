@@ -598,4 +598,16 @@ Checks: tests 28/28 with axe; lint, brand lint, build and budget green.
 - **Fit:** no page scroll on either view from 1280×720.
 - **Next, when the source exists:** feed the catalogue's own interface list from the SDD as the primary source.
 
+**Final polish and a whole-platform check (2026-10-10).**
+- **Products index:** wears the shared header band (mark, title, lede, filter; then the figures row), so every catalogue page opens the same way.
+- **`lab.css`:** 97 unused rules removed (old hero, estate bar, layer bars, earlier Landscape and header versions), found by a whole-word class sweep of the catalogue sources (1688 → 1587 lines, braces balanced).
+- **Whole platform from the catalogue:** its top menu now links the real areas (Your work, Library, Ownership, Requirements, Explorer). In development the real shell's secondary menu links "Catalogue redesign", so the lab is one click from every area.
+- **Deployment check, local offline stack:** a fresh API (fake providers, in memory), the demo seed and the web app.
+  - 29 platform pages load with seeded content, every API call answering 200: Your work, Library, a document's pages, Re-confirmations, Requirements (4 tabs), the current catalogue (8 pages plus a product and journeys), Explorer, Ownership (4 tabs), the design system and the earlier labs.
+  - 17 catalogue-redesign pages render with no error and no sideways overflow.
+- **Containers:** `deploy/compose.local.yaml` needs `KERNEL_READ_TOKEN` (private platform-kernel), which only the user holds. The lab is development-only, so a production build wouldn't include it anyway.
+- **Tests outside the lab, unrelated to it:**
+  - Frontend, run on their own: one failure, a time-zone assumption in `ExplorerPage.test.tsx` (expects 09:30, gets 13:30 on a UTC+4 machine). Under full-suite load, 10–13 tests in library, explorer, historic and the old catalogue editor time out.
+  - Backend: `test_knowledge_reviews` fails only in some run orders.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.

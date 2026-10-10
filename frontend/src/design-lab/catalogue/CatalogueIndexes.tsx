@@ -270,14 +270,30 @@ export function ProductsIndex() {
   return (
     <>
       <AreaTabs current="products" />
-      <section className="cl-hero cl-hero--slim" aria-labelledby="cl-products-h">
-        <div className="cl-hero-text">
-          <p className="cl-eyebrow">Product catalogue</p>
-          <h1 id="cl-products-h">Products</h1>
-          <p className="cl-hero-lede">Every product offering on the architecture: how it is sold, who can buy it, its terms and what is in it.</p>
+      <header className="lx-band cx-band">
+        <div className="lx-band-row">
+          <span className="lx-mark" aria-hidden="true">
+            <Icon>{PRODUCT_ICON}</Icon>
+          </span>
+          <div className="lx-title">
+            <h1 id="cl-products-h">Products</h1>
+            <p className="lx-lede">Every product offering: how it is sold, who can buy it, its terms and what is in it</p>
+          </div>
+          <div className="lx-tools">
+            <div className="cl-find lx-find">
+              <Icon>
+                <circle cx="7" cy="7" r="4.5" />
+                <path d="m10.5 10.5 3.5 3.5" />
+              </Icon>
+              <label className="ds-visually-hidden" htmlFor="cl-filter-products">
+                Filter products
+              </label>
+              <input id="cl-filter-products" type="search" className="cl-field" placeholder="Filter products by name…" value={query} onChange={(event) => setQuery(event.target.value)} autoComplete="off" />
+            </div>
+          </div>
         </div>
-        <div className="cl-hero-side">
-          <dl className="cl-hero-tiles">
+        <div className="sy-row">
+          <dl className="sy-figures">
             <div>
               <dt>Products</dt>
               <dd>{data.offerings.length}</dd>
@@ -291,21 +307,11 @@ export function ProductsIndex() {
               <dd>{segmentCount}</dd>
             </div>
           </dl>
-          <div className="cl-find">
-            <Icon>
-              <circle cx="7" cy="7" r="4.5" />
-              <path d="m10.5 10.5 3.5 3.5" />
-            </Icon>
-            <label className="ds-visually-hidden" htmlFor="cl-filter-products">
-              Filter products
-            </label>
-            <input id="cl-filter-products" type="search" className="cl-field" placeholder="Filter products by name…" value={query} onChange={(event) => setQuery(event.target.value)} autoComplete="off" />
-          </div>
-          <p className="cl-status" role="status">
+          <p className="cl-status sy-source" role="status">
             {text ? `${plural(shown.length, "product")} match “${query.trim()}”.` : ""}
           </p>
         </div>
-      </section>
+      </header>
       {families.length === 0 && <p className="cl-empty-note">No product matches “{query.trim()}”.</p>}
       {families.map((family) => (
         <section key={family.nodeId} className="cl-family" aria-labelledby={`cl-family-${family.nodeId}`}>
