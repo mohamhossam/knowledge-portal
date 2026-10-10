@@ -355,4 +355,10 @@ Maroon now means one thing only: selection and focus, the product's core and use
 - There is no saturated filled area.
 - Maroon stays inside the calm budget.
 
+**Portfolio path as a hierarchy rail (2026-10-10).** The path above the product title is now a rail with one node per level, from Catalogue (SMB architecture) through business unit, line of business, segment and product family to the offering.
+- Every item has the same two lines: the level kind above, the name below. They share one baseline, which fixes the misaligned last item, and steps are evenly spaced from the page's left edge.
+- The rail is in the pale maroon family, as the path to where you are. Ancestor nodes are rings; the current node is filled maroon with a soft halo, and its caption is maroon.
+- Links underline on hover only.
+- On a phone the rail scrolls inside itself and opens at its end, so the current page shows first.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.

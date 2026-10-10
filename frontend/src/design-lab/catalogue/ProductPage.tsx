@@ -59,7 +59,7 @@ export function ProductHeader({ offering, current, actions, compact = false }: {
       <AreaTabs current="products" />
       <PathBar
         label="Where it sits in the portfolio"
-        items={[{ name: "Catalogue", to: LAB }, ...path.map((item) => ({ level: item.level, name: item.name, to: `${base}/hierarchy` })), { level: "Offering", name: offering.name }]}
+        items={[{ level: "Catalogue", name: "SMB architecture", to: LAB }, ...path.map((item) => ({ level: item.level, name: item.name, to: `${base}/hierarchy` })), { level: "Offering", name: offering.name }]}
       />
       <header className="cl-head">
         <div className="cl-head-text">

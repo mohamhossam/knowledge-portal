@@ -8,7 +8,7 @@
 import "../../design";
 import "./lab.css";
 
-import { type ReactNode, useMemo } from "react";
+import { type ReactNode, useLayoutEffect, useMemo, useRef } from "react";
 import { Link, Route, Routes, useLocation } from "react-router-dom";
 
 import type { Release } from "../../api/client";
@@ -137,19 +137,28 @@ export function AreaTabs({ current }: { current: "landscape" | "products" | "jou
 }
 
 /**
- * Where a page sits, drawn as a path through the portfolio: each level's kind
- * ("Business unit", "Segment"…) above its name, the page itself last.
+ * Where a page sits, drawn as a hierarchy rail: one line through a node per
+ * level, each with its kind ("Business unit", "Segment"…) above its name. Every
+ * item has the same two lines, so names share one baseline; the page itself is
+ * the filled node at the end of the rail.
  */
-export function PathBar({ label, items }: { label: string; items: { level?: string; name: string; to?: string }[] }) {
+export function PathBar({ label, items }: { label: string; items: { level: string; name: string; to?: string }[] }) {
+  const rail = useRef<HTMLElement>(null);
+  // On a narrow screen the rail scrolls; start at its end, where the page itself is.
+  useLayoutEffect(() => {
+    const element = rail.current;
+    if (element) element.scrollLeft = element.scrollWidth;
+  }, [items.length]);
   return (
-    <nav className="cl-path" aria-label={label}>
+    <nav ref={rail} className="cl-path" aria-label={label}>
       <ol>
         {items.map((item, index) => {
           const last = index === items.length - 1;
           return (
             <li key={`${item.name}-${index}`} aria-current={last ? "page" : undefined}>
-              {item.level && <small>{item.level}</small>}
-              {item.to && !last ? <Link to={item.to}>{item.name}</Link> : <span>{item.name}</span>}
+              <i className="cl-path-node" aria-hidden="true" />
+              <small>{item.level}</small>
+              {item.to && !last ? <Link to={item.to}>{item.name}</Link> : <strong>{item.name}</strong>}
             </li>
           );
         })}
