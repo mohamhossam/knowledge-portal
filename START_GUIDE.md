@@ -271,11 +271,8 @@ runs the released images on their own (`docs/operations/deployment.md`).
   Confirm with `docker compose version`.
 - About 3 GB of memory for Docker, most of it for ClamAV, and about 4 GB of disk space.
 - Port `8090` free.
-- A GitHub token that can read
-  [platform-kernel](https://github.com/mohamhossam/platform-kernel), for the API image build.
-  It is a private dependency, so the build fetches it with this token. A fine-grained personal
-  access token with **Contents: read** on that repository works. If you use the GitHub CLI with
-  access to it, `gh auth token` prints one.
+- Internet access to `github.com`: the API image build fetches
+  [platform-kernel](https://github.com/mohamhossam/platform-kernel), a public dependency.
 
 ### Step 1: create the settings file
 
@@ -296,18 +293,10 @@ effect. Set anything else there, such as a real model provider (section 9).
 ### Step 2: build and start
 
 ```bash
-export KERNEL_READ_TOKEN=your-token        # or: export KERNEL_READ_TOKEN=$(gh auth token)
 docker compose -f deploy/compose.local.yaml up -d --build
 ```
 
-```powershell
-# Windows PowerShell
-$env:KERNEL_READ_TOKEN = "your-token"
-docker compose -f deploy/compose.local.yaml up -d --build
-```
-
-The first build takes several minutes. The token reaches only the build step, as a BuildKit
-secret, and is never stored in an image. `up` starts PostgreSQL and ClamAV, applies the
+The first build takes several minutes. `up` starts PostgreSQL and ClamAV, applies the
 migrations, then starts the API, the worker, the browser app and the edge. It returns once the
 edge is up.
 
@@ -345,7 +334,7 @@ docker compose -f deploy/compose.local.yaml down            # remove the contain
 docker compose -f deploy/compose.local.yaml down -v         # remove the containers and delete all data
 ```
 
-After a `git pull`, rebuild and restart with `up -d --build` (with `KERNEL_READ_TOKEN` set).
+After a `git pull`, rebuild and restart with `up -d --build`.
 `migrate` runs again first and applies any new migrations. Data is kept.
 
 After editing `deploy/local.env`, run `up -d` again: the containers are recreated with the new
@@ -354,7 +343,7 @@ values.
 ### Run a released version instead
 
 To run the images a release published to ghcr.io instead of building, name them and skip the
-build. No token is needed, because the images are public:
+build. The images are public:
 
 ```bash
 export KNOWLEDGE_API_IMAGE=ghcr.io/mohamhossam/knowledge-api:v0.2.0
@@ -532,9 +521,8 @@ is not read by the Docker stack.
 
 #### The API image build fails at the `uv sync` step
 
-The build could not read platform-kernel. Set `KERNEL_READ_TOKEN` in the same terminal, to a
-token that can read the repository, and run `up -d --build` again. The token must be set for
-every build, not only the first.
+The build could not fetch platform-kernel from GitHub. Check that the machine can reach
+`github.com`, and run `up -d --build` again.
 
 #### `up` stops with "dependency failed to start" or `api` stays unhealthy
 

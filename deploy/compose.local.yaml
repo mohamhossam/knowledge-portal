@@ -2,7 +2,7 @@
 # trying it on one machine. Built from this checkout; START_GUIDE.md, section 7.
 #
 #   cp .env.example deploy/local.env
-#   KERNEL_READ_TOKEN=... docker compose -f deploy/compose.local.yaml up -d --build
+#   docker compose -f deploy/compose.local.yaml up -d --build
 #   open http://localhost:8090/knowledge/
 #
 # The browser reaches only `edge` (127.0.0.1:8090): /knowledge/ is the browser
@@ -18,10 +18,6 @@ x-backend: &backend
   build:
     context: ..
     dockerfile: deploy/api/Dockerfile
-    # platform-kernel is a private git dependency (ADR-0100): a read token for
-    # it, as a BuildKit secret that never reaches an image layer.
-    secrets:
-      - kernel_read_token
   # Everything else, such as the model provider and its key, comes from here.
   env_file:
     - path: local.env
@@ -161,10 +157,6 @@ services:
         condition: service_healthy
       web:
         condition: service_healthy
-
-secrets:
-  kernel_read_token:
-    environment: KERNEL_READ_TOKEN
 
 volumes:
   postgres_data:

@@ -123,11 +123,10 @@ each screen shows every state it must handle. Checks: `npm run lint`, `npm run t
 
 ## Images and releases
 
-One backend image runs every process, chosen by command; see `deploy/api/Dockerfile`. Building
-it needs read access to platform-kernel as a BuildKit secret:
+One backend image runs every process, chosen by command; see `deploy/api/Dockerfile`:
 
 ```bash
-docker build --secret id=kernel_read_token,env=KERNEL_READ_TOKEN -f deploy/api/Dockerfile .
+docker build -f deploy/api/Dockerfile .
 ```
 
 To run both images on one machine, with PostgreSQL, ClamAV and an edge proxy, use
@@ -144,7 +143,7 @@ CI (`.github/workflows/ci.yml`) runs the checks with PostgreSQL, the frontend ch
 dependencies, and builds, scans and starts both images. Pushing a tag `vX.Y.Z` that matches
 `pyproject.toml` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` and
 `ghcr.io/mohamhossam/knowledge-web:vX.Y.Z` once CI passes, and attaches both OpenAPI contracts to the GitHub release; `deploy/compose.production.yaml`
-pulls them by tag. CI needs the `KERNEL_READ_TOKEN` repository secret. `CHANGELOG.md` says what
+pulls them by tag. `CHANGELOG.md` says what
 each release changes; add its entry in the pull request that bumps the version.
 
 ## Who uses it
