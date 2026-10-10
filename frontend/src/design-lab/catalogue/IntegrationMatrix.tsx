@@ -1,8 +1,11 @@
 /**
  * The integration matrix: the poster's links as a grid, so who talks to whom
  * (and how much) can be read exactly. Systems run down and across in TAM
- * layer order, busiest first within a layer; a cell's shade and number are
- * the calls between the pair. A real table, so it reads by row and column.
+ * layer order, busiest first within a layer, each layer's columns and rows
+ * in its own tint; a cell's shade and number are the calls between the pair,
+ * on a calm slate ramp (maroon stays for the picked system). Each row header
+ * carries a bar of the system's calls in all, against the busiest. A real
+ * table, so it reads by row and column.
  */
 import { Fragment, useMemo, useState } from "react";
 
@@ -10,12 +13,12 @@ import type { CatalogueData } from "../../architecture/adapter";
 import { plural } from "./labUtil";
 import type { Degree } from "./posterModel";
 
-/** One maroon ramp, light to dark, for 1, 2, 3–4 and 5+ calls. */
+/** One slate ramp, light to dark, for 1, 2, 3–4 and 5+ calls. */
 function shade(count: number): string {
-  if (count >= 5) return "cl-m4";
-  if (count >= 3) return "cl-m3";
-  if (count === 2) return "cl-m2";
-  return "cl-m1";
+  if (count >= 5) return "ix-4";
+  if (count >= 3) return "ix-3";
+  if (count === 2) return "ix-2";
+  return "ix-1";
 }
 
 export function IntegrationMatrix({
@@ -45,6 +48,7 @@ export function IntegrationMatrix({
   const domainName = (id: string) => data.domains.find((domain) => domain.id === id)?.name ?? id;
   const name = (id: string) => data.systems.find((system) => system.id === id)?.name ?? id;
   const focus = hover ?? (selected ? { row: selected, col: selected } : null);
+  const busiest = Math.max(1, ...linked.map((system) => degrees.get(system.id)?.total ?? 0));
 
   return (
     <div className="cl-matrix-wrap">
@@ -55,7 +59,7 @@ export function IntegrationMatrix({
             <tr>
               <td className="cl-matrix-corner" />
               {linked.map((system) => (
-                <th key={system.id} scope="col" className={[firstOfDomain.has(system.id) ? "cl-split" : "", focus?.col === system.id ? "on" : ""].join(" ")} title={system.name}>
+                <th key={system.id} scope="col" className={[`tone--${system.domain}`, firstOfDomain.has(system.id) ? "cl-split" : "", focus?.col === system.id ? "on" : ""].join(" ")} title={system.name}>
                   <span translate="no">{system.name}</span>
                 </th>
               ))}
@@ -65,9 +69,9 @@ export function IntegrationMatrix({
             {linked.map((row) => (
               <Fragment key={row.id}>
                 {firstOfDomain.has(row.id) && (
-                  <tr className="cl-matrix-domain">
+                  <tr className={`cl-matrix-domain tone--${row.domain}`}>
                     <th scope="rowgroup" colSpan={linked.length + 1}>
-                      {domainName(row.domain)}
+                      <span>{domainName(row.domain)}</span>
                     </th>
                   </tr>
                 )}
@@ -75,7 +79,12 @@ export function IntegrationMatrix({
                   <th scope="row">
                     <button type="button" aria-pressed={selected === row.id} onClick={() => onSelect(selected === row.id ? null : row.id)}>
                       <span translate="no">{row.name}</span>
-                      <b>{degrees.get(row.id)?.total ?? 0}</b>
+                      <span className="ix-deg" aria-label={plural(degrees.get(row.id)?.total ?? 0, "call")}>
+                        <i aria-hidden="true">
+                          <i style={{ width: `${((degrees.get(row.id)?.total ?? 0) / busiest) * 100}%` }} />
+                        </i>
+                        <b aria-hidden="true">{degrees.get(row.id)?.total ?? 0}</b>
+                      </span>
                     </button>
                   </th>
                   {linked.map((col) => {
@@ -100,7 +109,7 @@ export function IntegrationMatrix({
       </div>
       <p className="cl-matrix-key" aria-hidden="true">
         <span>Calls between a pair</span>
-        <i className="cl-m1" />1<i className="cl-m2" />2<i className="cl-m3" />3–4<i className="cl-m4" />5+
+        <i className="ix-1" />1<i className="ix-2" />2<i className="ix-3" />3–4<i className="ix-4" />5+
         {hover && hover.row !== hover.col && (
           <strong>
             {name(hover.row)} ↔ {name(hover.col)}: {plural(count(hover.row, hover.col), "call")}

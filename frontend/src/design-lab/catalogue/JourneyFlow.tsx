@@ -3,17 +3,17 @@
  * names stay put while it scrolls), the picked step and every step underneath, and an Integrations tab with the
  * journey's call register. It sits inside its product's tabs.
  */
-import { type KeyboardEvent, type ReactNode, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, type KeyboardEvent, type ReactNode, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { journeyView, laneName } from "../../architecture/adapter";
 import { download, toBpmn, toCsv, toMermaid, toPlantUml } from "../../architecture/exports";
 import { GEOMETRY, layoutFlow } from "../../architecture/flowLayout";
-import { type JourneyView, ROLE_WORDS, type Step } from "../../architecture/model";
+import { type Integration, type JourneyView, ROLE_WORDS, type Step } from "../../architecture/model";
 import { AreaTabs, EvidenceTag, PathBar } from "./CatalogueLab";
 import { JourneyPicker } from "./JourneyPicker";
 import { journeyHref, LAB, useLabData } from "./labData";
-import { plural, useTitle } from "./labUtil";
+import { monogram, plural, useTitle } from "./labUtil";
 import { ProductHeader } from "./ProductPage";
 
 const LAYER: Record<string, string> = {
@@ -79,12 +79,30 @@ function ExportMenu({ file, view }: { file: string; view: JourneyView }) {
   );
 }
 
-/** The journey's calls as a register: who calls whom, how, through what, and on whose word. */
+/**
+ * The journey's calls, in two views. Sequence (the default): the systems and
+ * parties as lifelines in the order the journey first reaches them, every call
+ * an arrow between two lifelines in the order it is made (through the
+ * integration layer when it goes via it), and the picked call's details beside
+ * it. Table: the same calls as a register, for reading and export. A system
+ * can be picked to bring its calls forward (sequence) or keep only its calls
+ * (table). How the calls are made reads as one slim bar.
+ */
 function IntegrationRegister({ view }: { view: JourneyView }) {
   const data = useLabData();
+  const [mode, setMode] = useState<"sequence" | "table">("sequence");
   const [system, setSystem] = useState<string | null>(null);
+  const [picked, setPicked] = useState(0);
   const name = (id?: string) => (id ? laneName(data, id) : "");
+  const tone = (id: string) => data.systems.find((item) => item.id === id)?.domain;
   const step = (id: string) => view.steps.find((item) => item.id === id);
+  const calls = view.integrations;
+  // The lifelines, in the order the journey first reaches them.
+  const lanes = useMemo(() => {
+    const order: string[] = [];
+    for (const call of view.integrations) for (const id of [call.from, call.via, call.to]) if (id && !order.includes(id)) order.push(id);
+    return order;
+  }, [view]);
   const involved = useMemo(() => {
     const counts = new Map<string, number>();
     for (const call of view.integrations) for (const id of new Set([call.from, call.to, call.via])) if (id) counts.set(id, (counts.get(id) ?? 0) + 1);
@@ -93,77 +111,199 @@ function IntegrationRegister({ view }: { view: JourneyView }) {
   const styles = useMemo(() => {
     const counts = new Map<string, number>();
     for (const call of view.integrations) counts.set(call.style || "Not stated", (counts.get(call.style || "Not stated") ?? 0) + 1);
-    return [...counts.entries()].sort((a, b) => b[1] - a[1]);
+    const stated = [...counts.entries()].filter(([style]) => style !== "Not stated").sort((a, b) => b[1] - a[1]);
+    const unstated = counts.get("Not stated");
+    return [...stated.map(([style, count], index) => ({ style, count, shade: `s${Math.min(index + 1, 4)}` })), ...(unstated ? [{ style: "Not stated", count: unstated, shade: "none" }] : [])];
   }, [view]);
-  const rows = view.integrations.map((call, index) => ({ call, index })).filter(({ call }) => !system || [call.from, call.to, call.via].includes(system));
+  const touches = (call: Integration) => !system || [call.from, call.to, call.via].includes(system);
+  const call = calls[Math.min(picked, calls.length - 1)];
+  const center = (id?: string) => (id ? ((lanes.indexOf(id) + 0.5) / lanes.length) * 100 : 0);
+  const tile = (id: string) => (
+    <span className={`am-mono cl-systile${tone(id) ? ` tone--${tone(id)}` : " is-party"} am-mono--${monogram(name(id)).length}`} aria-hidden="true" translate="no">
+      {monogram(name(id))}
+    </span>
+  );
+
   return (
     <section aria-labelledby="cl-reg-h" className="cl-register">
       <h3 id="cl-reg-h" className="ds-visually-hidden">
         Integration register
       </h3>
-      <div className="cl-register-summary">
-        <p>
-          <b>{view.integrations.length}</b> calls between <b>{involved.length}</b> systems and parties.
+      <div className="ir-bar">
+        <p className="ir-total">
+          <b>{calls.length}</b> calls between <b>{involved.length}</b> systems and parties
         </p>
-        <ul className="cl-stylebar" aria-label="Calls by style">
-          {styles.map(([style, count]) => (
-            <li key={style} style={{ flexGrow: count }}>
-              <span>{style}</span>
-              <b>{count}</b>
-            </li>
-          ))}
-        </ul>
-      </div>
-      <div className="cl-chips" role="group" aria-label="Show the calls of one system">
-        <button type="button" className="cl-chip" aria-pressed={system === null} onClick={() => setSystem(null)}>
-          Every system
-        </button>
-        {involved.map(([id, count]) => (
-          <button key={id} type="button" className="cl-chip" aria-pressed={system === id} onClick={() => setSystem(system === id ? null : id)}>
-            <span translate="no">{name(id)}</span> <small>{count}</small>
-          </button>
-        ))}
-      </div>
-      <div className="cl-tablewrap" role="region" aria-label="Calls table (scrolls sideways when narrow)" tabIndex={0}>
-        <table className="cl-table cl-regtable">
-          <thead>
-            <tr>
-              <th scope="col" className="num">
-                #
-              </th>
-              <th scope="col">From → to</th>
-              <th scope="col">Interface</th>
-              <th scope="col">Style</th>
-              <th scope="col">TM Forum</th>
-              <th scope="col">Purpose</th>
-              <th scope="col">Step</th>
-              <th scope="col">Evidence</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map(({ call, index }) => (
-              <tr key={call.id}>
-                <td className="num">{index + 1}</td>
-                <th scope="row" translate="no">
-                  {name(call.from)} → {name(call.to)}
-                  {call.via && <small> via {name(call.via)}</small>}
-                </th>
-                <td translate="no">{call.operation || <span className="gap">Not stated</span>}</td>
-                <td>
-                  {call.style}
-                  {call.mode !== "not stated" ? <small> · {call.mode}</small> : null}
-                </td>
-                <td translate="no">{call.tmf ?? <span className="gap">None</span>}</td>
-                <td>{call.purpose}</td>
-                <td>{step(call.step)?.name ?? ""}</td>
-                <td>
-                  <EvidenceTag evidence={call.evidence} />
-                </td>
-              </tr>
+        <div className="ir-styles">
+          <span className="ir-mix" aria-hidden="true">
+            {styles.map((item) => (
+              <i key={item.style} className={`is-${item.shade}`} style={{ flexGrow: item.count }} />
             ))}
-          </tbody>
-        </table>
+          </span>
+          <ul className="ir-legend" aria-label="Calls by how they are made">
+            {styles.map((item) => (
+              <li key={item.style}>
+                <i className={`is-${item.shade}`} aria-hidden="true" />
+                {item.style} <b>{item.count}</b>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="ir-tools">
+          <label className="ir-system">
+            <span>System</span>
+            <select className="cl-field" value={system ?? ""} onChange={(event) => setSystem(event.target.value || null)}>
+              <option value="">Every system</option>
+              {involved.map(([id, count]) => (
+                <option key={id} value={id}>
+                  {name(id)} ({count})
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="cl-seg" role="group" aria-label="View">
+            <button type="button" aria-pressed={mode === "sequence"} onClick={() => setMode("sequence")}>
+              Sequence
+            </button>
+            <button type="button" aria-pressed={mode === "table"} onClick={() => setMode("table")}>
+              Table
+            </button>
+          </div>
+        </div>
       </div>
+
+      {mode === "sequence" ? (
+        <div className="ir-seqwrap">
+          <div className="ir-seq" style={{ "--ir-lanes": lanes.length } as CSSProperties}>
+            <div className="ir-heads" aria-hidden="true">
+              <span className="ir-headgap" />
+              <span className="ir-lanes">
+                {lanes.map((id) => (
+                  <button key={id} type="button" tabIndex={-1} className={`ir-head${system === id ? " is-on" : ""}`} onClick={() => setSystem(system === id ? null : id)} title={name(id)}>
+                    {tile(id)}
+                    <span>{name(id)}</span>
+                  </button>
+                ))}
+              </span>
+            </div>
+            <ol className="ir-calls" aria-label={`Calls in order${system ? `, ${name(system)}'s brought forward` : ""}`}>
+              {calls.map((item, index) => {
+                const a = center(item.from);
+                const b = center(item.to);
+                const self = item.from === item.to;
+                const label = `${index + 1}. ${name(item.from)} to ${name(item.to)}${item.via ? ` via ${name(item.via)}` : ""}: ${item.operation || "interface not stated"}`;
+                return (
+                  <li key={item.id} className={touches(item) ? undefined : "is-quiet"}>
+                    <button type="button" className="ir-call" aria-pressed={index === picked} aria-label={label} onClick={() => setPicked(index)}>
+                      <span className="ir-num">{index + 1}</span>
+                      <span className="ir-op" translate="no">
+                        {item.operation || "Not stated"}
+                      </span>
+                      <span className="ir-lanes ir-track" aria-hidden="true">
+                        {self ? (
+                          <i className="ir-self" style={{ left: `${a}%` }} />
+                        ) : (
+                          <i className={`ir-arrow${b < a ? " is-back" : ""}`} style={{ left: `${Math.min(a, b)}%`, width: `${Math.abs(b - a)}%` }} />
+                        )}
+                        {item.via && <i className="ir-via" style={{ left: `${center(item.via)}%` }} />}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+          {call && (
+            <aside className="ir-detail" aria-labelledby="ir-detail-h" aria-live="polite">
+              <p className="ir-detail-count">
+                Call {Math.min(picked, calls.length - 1) + 1} of {calls.length}
+              </p>
+              <h4 id="ir-detail-h" className="ir-detail-route" translate="no">
+                {tile(call.from)}
+                {name(call.from)}
+                <span aria-hidden="true">→</span>
+                {tile(call.to)}
+                {name(call.to)}
+              </h4>
+              {call.via && <p className="ir-detail-via">Through {name(call.via)}</p>}
+              <dl className="ir-facts">
+                <div>
+                  <dt>Interface</dt>
+                  <dd translate="no">{call.operation || <span className="gap">Not stated</span>}</dd>
+                </div>
+                <div>
+                  <dt>Style</dt>
+                  <dd>
+                    {call.style}
+                    {call.mode !== "not stated" ? ` · ${call.mode}` : ""}
+                  </dd>
+                </div>
+                <div>
+                  <dt>TM Forum</dt>
+                  <dd translate="no">{call.tmf ?? <span className="gap">None</span>}</dd>
+                </div>
+                <div>
+                  <dt>Step</dt>
+                  <dd>{step(call.step)?.name ?? ""}</dd>
+                </div>
+              </dl>
+              <p className="ir-purpose">{call.purpose}</p>
+              <EvidenceTag evidence={call.evidence} />
+              <div className="ir-stepper">
+                <button type="button" className="cl-btn" aria-disabled={picked === 0} onClick={() => picked > 0 && setPicked(picked - 1)}>
+                  Previous
+                </button>
+                <button type="button" className="cl-btn primary" aria-disabled={picked >= calls.length - 1} onClick={() => picked < calls.length - 1 && setPicked(picked + 1)}>
+                  Next
+                </button>
+              </div>
+            </aside>
+          )}
+        </div>
+      ) : (
+        <div className="cl-tablewrap" role="region" aria-label="Calls table (scrolls sideways when narrow)" tabIndex={0}>
+          <table className="cl-table cl-regtable">
+            <thead>
+              <tr>
+                <th scope="col" className="num">
+                  #
+                </th>
+                <th scope="col">From → to</th>
+                <th scope="col">Interface</th>
+                <th scope="col">Style</th>
+                <th scope="col">TM Forum</th>
+                <th scope="col">Purpose</th>
+                <th scope="col">Step</th>
+                <th scope="col">Evidence</th>
+              </tr>
+            </thead>
+            <tbody>
+              {calls
+                .map((item, index) => ({ item, index }))
+                .filter(({ item }) => touches(item))
+                .map(({ item, index }) => (
+                  <tr key={item.id}>
+                    <td className="num">{index + 1}</td>
+                    <th scope="row" translate="no">
+                      {name(item.from)} → {name(item.to)}
+                      {item.via && <small> via {name(item.via)}</small>}
+                    </th>
+                    <td translate="no">{item.operation || <span className="gap">Not stated</span>}</td>
+                    <td>
+                      {item.style}
+                      {item.mode !== "not stated" ? <small> · {item.mode}</small> : null}
+                    </td>
+                    <td translate="no">{item.tmf ?? <span className="gap">None</span>}</td>
+                    <td>{item.purpose}</td>
+                    <td>{step(item.step)?.name ?? ""}</td>
+                    <td>
+                      <EvidenceTag evidence={item.evidence} />
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </section>
   );
 }
