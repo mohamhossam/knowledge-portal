@@ -385,4 +385,11 @@ Checks: tests 25/25 with axe; lint, typecheck and build green.
 - **Brand rule:** when the direction moves into production, the logo belongs in the primitive brand layer, and the brand team should confirm the asset and its clear space.
 - **Also:** the landscape intro now describes all three views, since Layers comes first.
 
+**Two-tier header (2026-10-10).**
+- **Mock-up bar removed:** it was a review aid that jumped between the four mock-up screens. The catalogue bar and the product tabs already reach every screen, so it carried no product value.
+- **Tier one, the masthead (56px):** content sits on the page's 1440px column, so the logo's left edge lines up with the catalogue bar, the path and the page title (all at 32px). The lockup "Etisalat | Knowledge Portal" is one home link: the logo optically centred, a 24px divider, and the product name "Knowledge Portal" as a proper name, at equal 16px spacing. Navigation sits on the bar's full height with a 3px underline for the current area, and the signed-in person has an initials avatar.
+- **Tier two, the catalogue bar:** full width, sticky under the masthead, with its content on the same column and tabs matching its height. The side panels' sticky offset accounts for both tiers. On a phone only the masthead stays pinned.
+
+Checks: tests 25/25 with axe; lint, brand lint, build and budget green; no sideways scroll at 375px or 1440px.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.
