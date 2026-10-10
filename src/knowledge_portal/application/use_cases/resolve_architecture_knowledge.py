@@ -29,12 +29,18 @@ from knowledge_portal.application.use_cases.architecture_evidence import (
     gather_evidence,
     named_systems,
 )
+from knowledge_portal.application.use_cases.assessment_lanes import concept_reach
 from knowledge_portal.application.use_cases.capability_domain_fallback import (
     suggest_domains,
 )
 from knowledge_portal.application.use_cases.impact_product_context import (
     journey_steps,
     product_contexts,
+)
+from knowledge_portal.domain.architecture.assessment import (
+    PathKind,
+    SystemRole,
+    change_type_in,
 )
 from knowledge_portal.domain.architecture.entities import (
     ArchitectureCitation,
@@ -126,9 +132,29 @@ class ResolveArchitectureKnowledge(ArchitectureKnowledgePort):
 
         text = " ".join(query.text)
         contexts = product_contexts(release, text)
+        reached = concept_reach(release, text)
+        named = {item.id for item in named_systems(release, text)}
+        change = change_type_in(text)
+
+        def explained(system: SystemReference) -> SystemReference:
+            """The system with its role, change type and paths (ontology plan Phase 3)."""
+            if not system.catalogued:
+                return replace(system, role=SystemRole.NAMED, change_type=change)
+            paths = reached.get(system.id, ())
+            role = (
+                SystemRole.PRIMARY
+                if any(path[0].kind is PathKind.CONCEPT for path in paths)
+                else SystemRole.CHANNEL
+                if paths
+                else SystemRole.NAMED
+                if system.id in named
+                else SystemRole.SUPPORTING
+            )
+            return replace(system, role=role, change_type=change, paths=paths)
+
         return replace(
             matched,
-            systems=tuple(owned(placed(system)) for system in matched.systems),
+            systems=tuple(explained(owned(placed(system))) for system in matched.systems),
             adjacent_systems=tuple(
                 owned(placed(_reference(systems[system_id]))) for system_id in nearby.system_ids
             ),

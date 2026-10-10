@@ -1,4 +1,4 @@
-"""The golden set and the evaluation harness (ontology plan, Phase 0)."""
+"""The golden set and the evaluation harness (ontology plan, Phases 0 and 3)."""
 
 from __future__ import annotations
 
@@ -51,13 +51,24 @@ BASELINE = {
     "offering_accuracy": 0.71,
     "citation_faithfulness": 1.0,
 }
+# The assessment with the fake models, recorded in docs/slices/ontology-phase-3-assessment.md.
+PHASE_3 = {
+    "system_precision": 0.65,
+    "system_recall": 0.24,
+    "verdict_accuracy": 0.67,
+    "offering_accuracy": 0.85,
+    "concept_recall": 0.21,
+    "citation_faithfulness": 1.0,
+}
+PHASE_3_FALSE_CHANGES = 5
 
 
-def _report() -> EvaluationReport:
+def _report(mapper: str = "assess") -> EvaluationReport:
     evaluation = build_mapping_evaluation(Settings(llm_provider=LLMProvider.FAKE), FixedClock(NOW))
     try:
         release = evaluation.publish.execute(CATALOGUE.name, CATALOGUE.read_bytes())
-        return evaluation.evaluate.execute(read_golden_set(GOLDEN.read_bytes()), release.id)
+        run = evaluation.evaluate if mapper == "assess" else evaluation.evaluate_match
+        return run.execute(read_golden_set(GOLDEN.read_bytes()), release.id)
     finally:
         evaluation.close()
 
@@ -79,7 +90,7 @@ def test_the_golden_set_covers_every_verdict_on_the_committed_catalogue() -> Non
 
 
 def test_today_s_mapper_never_falls_below_the_baseline() -> None:
-    report = _report()
+    report = _report("match")
 
     measured = evaluate.scores(report)
     assert report.failures == 0
@@ -88,6 +99,21 @@ def test_today_s_mapper_never_falls_below_the_baseline() -> None:
         assert value is not None and value >= floor, name
     # Today's match returns no concepts, so concept recall is not measured yet.
     assert measured["concept_recall"] is None
+
+
+def test_the_assessment_beats_the_baseline_and_never_falls_below_phase_3() -> None:
+    report = _report()
+
+    measured = evaluate.scores(report)
+    assert report.mapper == "assess"
+    assert report.failures == 0
+    for name, floor in (*BASELINE.items(), *PHASE_3.items()):
+        value = measured[name]
+        assert value is not None and value >= floor, name
+    assert report.false_changes <= PHASE_3_FALSE_CHANGES
+    # Every requirement too vague to place gets questions, not a verdict.
+    vague = [item for item in report.results if item.case.verdict is None]
+    assert vague and all(item.verdict_correct for item in vague)
 
 
 def _file(**case: Any) -> bytes:
@@ -242,6 +268,8 @@ def test_scores_count_systems_verdicts_offerings_and_citations() -> None:
     assert report.offering_accuracy == 1.0
     assert report.citation_faithfulness == pytest.approx(1 / 3)
     assert report.concept_recall is None
+    # A new product line called a change is the error the owner's gate rules out.
+    assert report.false_changes == 1
 
 
 def test_concept_recall_is_measured_once_the_mapper_returns_concepts() -> None:
@@ -279,11 +307,18 @@ def test_the_command_prints_the_scores_and_writes_every_case(
     assert evaluate.main(["--json", str(output)]) == 0
 
     printed = capsys.readouterr().out
+    assert "Mapper: assess" in printed
     assert "system recall" in printed
-    assert "concept recall          not measured" in printed
+    assert "false changes" in printed
     written = json.loads(output.read_text(encoding="utf-8"))
     assert len(written["cases"]) == len(read_golden_set(GOLDEN.read_bytes()).cases)
-    assert written["scores"]["concept_recall"] is None
+    assert written["scores"]["concept_recall"] is not None
+    assert written["false_changes"] == PHASE_3_FALSE_CHANGES
+
+    assert evaluate.main(["--mapper", "match", "--json", str(output)]) == 0
+
+    assert "concept recall          not measured" in capsys.readouterr().out
+    assert json.loads(output.read_text(encoding="utf-8"))["scores"]["concept_recall"] is None
 
 
 def test_the_command_refuses_a_malformed_golden_set(

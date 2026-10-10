@@ -1,4 +1,4 @@
-"""The golden-set evaluation's object graph (ontology plan, Phase 0).
+"""The golden-set evaluation's object graph (ontology plan, Phases 0 and 3).
 
 It uses the configured models, so the same run scores fake models in CI and live ones by
 hand, but keeps every release, index and squad record in memory: an evaluation never reads
@@ -18,7 +18,9 @@ from knowledge_portal.application.use_cases.architecture_index import BuildArchi
 from knowledge_portal.application.use_cases.architecture_knowledge import (
     ManageArchitectureKnowledge,
 )
+from knowledge_portal.application.use_cases.assess_requirement import AssessRequirement
 from knowledge_portal.application.use_cases.mapping_evaluation import (
+    AssessedImpact,
     EvaluateImpactMapping,
     MatchedImpact,
     PublishCatalogueForEvaluation,
@@ -53,7 +55,9 @@ from knowledge_portal.interfaces.api.composition.llm import build_llm_adapters
 @dataclass(frozen=True)
 class MappingEvaluation:
     publish: PublishCatalogueForEvaluation
+    # The assessment (Phase 3) by default; today's per-item match on request.
     evaluate: EvaluateImpactMapping
+    evaluate_match: EvaluateImpactMapping
     # Releases the model clients the run shares.
     close: Callable[[], None]
 
@@ -73,16 +77,23 @@ def build_mapping_evaluation(settings: Settings, clock: ClockPort) -> MappingEva
         LocatedDocumentExtractor(SafeDocumentTextExtractor()),
         retrieval.tokenizer,
     )
+    organisation = InMemoryOrganisationRepository(clock)
     knowledge = ResolveArchitectureKnowledge(
         repository,
         index,
         llm.architecture_reasoner,
         YamlArchitectureKnowledge(default_knowledge_path()),
-        InMemoryOrganisationRepository(clock),
+        organisation,
+    )
+    assessment = AssessRequirement(
+        repository, index, llm.requirement_reader, llm.verdict_reasoner, organisation
     )
     return MappingEvaluation(
         publish=PublishCatalogueForEvaluation(manage, build_index, clock),
         evaluate=EvaluateImpactMapping(
+            AssessedImpact(assessment), manage, llm.verdict_reasoner.model
+        ),
+        evaluate_match=EvaluateImpactMapping(
             MatchedImpact(knowledge), manage, llm.architecture_reasoner.model
         ),
         close=llm.close,

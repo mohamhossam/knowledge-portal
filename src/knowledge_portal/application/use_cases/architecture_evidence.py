@@ -17,16 +17,37 @@ EVIDENCE_LIMIT = 8
 MIN_SEARCH_RESULTS = 6
 
 
+# A label this short matches only as written or in capitals: "IN" is the system, "in" a word.
+SHORT_LABEL = 3
+
+
+def _labels(system: SystemDefinition) -> tuple[str, ...]:
+    """Its name, Arabic name and aliases, and its id when the id is not one of them."""
+    labels = tuple(item for item in (system.name, system.name_ar or "", *system.aliases) if item)
+    if system.id.casefold() not in {item.casefold() for item in labels}:
+        labels = (*labels, system.id)
+    return labels
+
+
+def _names(label: str, text: str) -> bool:
+    if len(label.strip()) <= SHORT_LABEL:
+        return any(
+            re.search(rf"(?<!\w){re.escape(form)}(?!\w)", text) is not None
+            for form in {label.strip(), label.strip().upper()}
+        )
+    return re.search(rf"(?<!\w){re.escape(label.casefold())}(?!\w)", text.casefold()) is not None
+
+
 def named_systems(release: ArchitectureKnowledge, text: str) -> tuple[SystemDefinition, ...]:
-    """Catalogue systems whose id, name, Arabic name or alias appears as a whole word."""
-    folded = text.casefold()
+    """Catalogue systems whose id, name, Arabic name or alias appears as a whole word.
+
+    A label of three characters or fewer matches only as written or in capitals, so the
+    English word "in" never names the system IN.
+    """
     return tuple(
         system
         for system in release.systems
-        if any(
-            label and re.search(rf"(?<!\w){re.escape(label.casefold())}(?!\w)", folded)
-            for label in (system.id, system.name, system.name_ar or "", *system.aliases)
-        )
+        if any(_names(label, text) for label in _labels(system))
     )
 
 
