@@ -69,6 +69,7 @@ const ROW_ICONS = {
       <path d="M3 14c0-2.8 2.2-4.8 5-4.8s5 2 5 4.8" />
     </>
   ),
+  terms: <path d="M4 1.5h5.5l3 3v10H4zM9.5 1.5v3h3M6 8.5h4.5M6 11h4.5" />,
   bundle: PRODUCT_ICON,
 };
 
@@ -101,13 +102,16 @@ function ProductCard({ offering }: { offering: Offering }) {
     .filter((item) => item.channels.length);
   const tone = (systemId: string) => data.systems.find((system) => system.id === systemId)?.domain ?? "customer";
 
-  // Who can buy: the customer type, then the terms, each cut to its headline; terms listed as alternatives become one chip each.
+  // Who can buy: the customer type, cut to its headline.
   const who = offering.eligibility.filter((point) => /segment|customer|audience/i.test(point.title));
-  const terms = offering.eligibility.filter((point) => /commitment|contract|term/i.test(point.title));
-  const termChips = terms.flatMap((point) => {
-    const parts = headline(point.detail).split(/\s*,\s*|\s+or\s+/).filter(Boolean);
-    return (parts.every((part) => part.length <= 24) ? parts : [headline(point.detail)]).map((label) => ({ label, evidence: point.evidence }));
-  });
+
+  // Commercial terms: the contract periods (one stop each), the exit charge a rule names, the plans, and the price (a gap when no plan states one).
+  const commitment = offering.eligibility.find((point) => /commitment|contract|term/i.test(point.title));
+  const periods = commitment ? headline(commitment.detail).split(/\s*,\s*|\s+or\s+/).filter(Boolean) : [];
+  const exitRule = offering.rules.find((rule) => /exit charge/i.test(rule.statement) && /AED\s?[\d,]+/i.test(rule.statement));
+  const exitCharge = exitRule ? /AED\s?[\d,]+/i.exec(exitRule.statement)?.[0] : undefined;
+  const exitUnconfirmed = exitRule ? /to be confirmed/i.test(exitRule.statement) : false;
+  const priced = offering.plans.some((plan) => plan.characteristics.some((fact) => /price|fee|mrc/i.test(fact.name)));
 
   // In the bundle: the device first, then the rest, optional parts last.
   const hub = offering.components.find((item) => /device|router/i.test(item.name)) ?? offering.components.find((item) => /\bcpe\b/i.test(item.name));
@@ -115,16 +119,45 @@ function ProductCard({ offering }: { offering: Offering }) {
 
   return (
     <li className="cl-prodcard">
-      <div className="cl-prodcard-head">
-        <span className="cl-cap-icon">
-          <Icon>{PRODUCT_ICON}</Icon>
-        </span>
-        <div>
-          <h3>
-            <Link to={base}>{offering.name}</Link>
-          </h3>
-          <p>{firstSentence(offering.purpose || offering.summary)}</p>
+      <div className="cl-prodcard-id">
+        <div className="cl-prodcard-head">
+          <span className="cl-cap-icon">
+            <Icon>{PRODUCT_ICON}</Icon>
+          </span>
+          <div>
+            <h3>
+              <Link to={base}>{offering.name}</Link>
+            </h3>
+            <p>{firstSentence(offering.purpose || offering.summary)}</p>
+          </div>
         </div>
+        <p className="cl-prodcard-stats">
+          <span>
+            <b>{offering.orderTypes.length}</b> order types
+          </span>
+          <span>
+            <b>{journeys.length}</b> journeys
+          </span>
+          <span>
+            <b>{reach.size}</b>/{data.systems.length} systems
+          </span>
+        </p>
+        <nav className="cl-prodcard-links" aria-label={`${offering.name} pages`}>
+          <Link className="cl-btn" to={base}>
+            <Icon>{CARD_LINK_ICONS.overview}</Icon>
+            Overview
+          </Link>
+          <Link className="cl-btn" to={`${base}/architecture`}>
+            <Icon>{CARD_LINK_ICONS.architecture}</Icon>
+            Architecture
+          </Link>
+          {journeys[0] && (
+            <Link className="cl-btn" to={journeyHref(journeys[0].id, journeys[0].channels[0])}>
+              <Icon>{CARD_LINK_ICONS.journeys}</Icon>
+              Journeys
+            </Link>
+          )}
+        </nav>
       </div>
       <dl className="cl-glance-rows">
         <div>
@@ -158,20 +191,44 @@ function ProductCard({ offering }: { offering: Offering }) {
             Who can buy
           </dt>
           <dd className="cl-chips-wrap">
-            {who.map((point) => (
-              <span key={point.title} className={`cl-fact-chip is-strong is-${point.evidence.status}`} title={`${point.title}: ${point.detail}`}>
-                <i aria-hidden="true" />
-                {headline(point.detail)}
-                {point.evidence.status !== "confirmed" && <span className="ds-visually-hidden"> ({point.evidence.status})</span>}
+            {who.length ? (
+              who.map((point) => (
+                <span key={point.title} className={`cl-fact-chip is-strong is-${point.evidence.status}`} title={`${point.title}: ${point.detail}`}>
+                  <i aria-hidden="true" />
+                  {headline(point.detail)}
+                  {point.evidence.status !== "confirmed" && <span className="cl-fact-note">{point.evidence.status}</span>}
+                </span>
+              ))
+            ) : (
+              <span className="cl-none">No customer type stated</span>
+            )}
+          </dd>
+        </div>
+        <div>
+          <dt>
+            <Icon>{ROW_ICONS.terms}</Icon>
+            Commercial terms
+          </dt>
+          <dd className="cl-terms">
+            {periods.length > 0 && (
+              <span className="cl-term-track" role="list" aria-label="Contract periods">
+                {periods.map((period) => (
+                  <span key={period} role="listitem">
+                    {period}
+                  </span>
+                ))}
               </span>
-            ))}
-            {termChips.map((chip) => (
-              <span key={chip.label} className={`cl-fact-chip is-${chip.evidence.status}`}>
-                <i aria-hidden="true" />
-                {chip.label}
+            )}
+            {exitCharge && (
+              <span className="cl-fact-chip" title={exitRule?.statement}>
+                Exit charge <b>{exitCharge}</b>
+                {exitUnconfirmed && <span className="cl-fact-note">to confirm</span>}
               </span>
-            ))}
-            {who.length + termChips.length === 0 && <span className="cl-none">No condition stated</span>}
+            )}
+            <span className="cl-fact-chip">
+              <b>{offering.plans.length}</b> plans
+            </span>
+            {!priced && <span className="cl-fact-chip is-gapchip">Price not stated</span>}
           </dd>
         </div>
         <div>
@@ -194,41 +251,18 @@ function ProductCard({ offering }: { offering: Offering }) {
           </dd>
         </div>
       </dl>
-      <div className="cl-prodcard-foot">
-        <p className="cl-prodcard-stats">
-          <span>
-            <b>{offering.plans.length}</b> plans
-          </span>
-          <span>
-            <b>{offering.orderTypes.length}</b> order types
-          </span>
-          <span>
-            <b>{journeys.length}</b> journeys
-          </span>
-          <span>
-            <b>{reach.size}</b>/{data.systems.length} systems
-          </span>
-        </p>
-        <nav className="cl-prodcard-links" aria-label={`${offering.name} pages`}>
-          <Link className="cl-btn" to={base}>
-            <Icon>{CARD_LINK_ICONS.overview}</Icon>
-            Overview
-          </Link>
-          <Link className="cl-btn" to={`${base}/architecture`}>
-            <Icon>{CARD_LINK_ICONS.architecture}</Icon>
-            Architecture
-          </Link>
-          {journeys[0] && (
-            <Link className="cl-btn" to={journeyHref(journeys[0].id, journeys[0].channels[0])}>
-              <Icon>{CARD_LINK_ICONS.journeys}</Icon>
-              Journeys
-            </Link>
-          )}
-        </nav>
-      </div>
     </li>
   );
 }
+
+const FAMILY_ICON = (
+  <>
+    <rect x="2" y="2.5" width="5" height="5" rx="1" />
+    <rect x="9" y="2.5" width="5" height="5" rx="1" />
+    <rect x="2" y="9" width="5" height="5" rx="1" />
+    <path d="M9 11.5h5M11.5 9v5" />
+  </>
+);
 
 export function ProductsIndex() {
   const data = useLabData();
@@ -236,7 +270,7 @@ export function ProductsIndex() {
   const [query, setQuery] = useState("");
   const text = query.trim().toLowerCase();
   const shown = data.offerings.filter((offering) => !text || offering.name.toLowerCase().includes(text) || offering.summary.toLowerCase().includes(text));
-  // One section per portfolio node that holds offerings, in portfolio order.
+  // One group per portfolio node that holds offerings, in portfolio order.
   const families = [...new Set(shown.map((offering) => offering.nodeId ?? ""))].map((nodeId) => ({
     nodeId,
     path: pathTo(data.portfolio, nodeId || null),
@@ -248,50 +282,58 @@ export function ProductsIndex() {
   return (
     <>
       <AreaTabs current="products" />
-      <section className="cl-hero cl-hero--compact" aria-labelledby="cl-products-h">
+      <section className="cl-hero cl-hero--slim" aria-labelledby="cl-products-h">
         <div className="cl-hero-text">
           <p className="cl-eyebrow">Product catalogue</p>
           <h1 id="cl-products-h">Products</h1>
-          <p className="cl-hero-lede">Every product offering on the architecture: where it sits in the portfolio, what it is made of, and how much of the estate its journeys reach.</p>
+          <p className="cl-hero-lede">Every product offering on the architecture: how it is sold, who can buy it, its terms and what is in it.</p>
         </div>
-        <dl className="cl-hero-stats cl-hero-stats--panel">
-          <div>
-            <dt>Products</dt>
-            <dd>{data.offerings.length}</dd>
+        <div className="cl-hero-side">
+          <dl className="cl-hero-tiles">
+            <div>
+              <dt>Products</dt>
+              <dd>{data.offerings.length}</dd>
+            </div>
+            <div>
+              <dt>Families</dt>
+              <dd>{familyCount}</dd>
+            </div>
+            <div>
+              <dt>Order types</dt>
+              <dd>{orderTypes}</dd>
+            </div>
+            <div>
+              <dt>Journeys</dt>
+              <dd>{data.journeys.filter((journey) => journey.offeringId).length}</dd>
+            </div>
+          </dl>
+          <div className="cl-find">
+            <Icon>
+              <circle cx="7" cy="7" r="4.5" />
+              <path d="m10.5 10.5 3.5 3.5" />
+            </Icon>
+            <label className="ds-visually-hidden" htmlFor="cl-filter-products">
+              Filter products
+            </label>
+            <input id="cl-filter-products" type="search" className="cl-field" placeholder="Filter products by name…" value={query} onChange={(event) => setQuery(event.target.value)} autoComplete="off" />
           </div>
-          <div>
-            <dt>Product families</dt>
-            <dd>{familyCount}</dd>
-          </div>
-          <div>
-            <dt>Order types</dt>
-            <dd>{orderTypes}</dd>
-          </div>
-          <div>
-            <dt>Journeys</dt>
-            <dd>{data.journeys.filter((journey) => journey.offeringId).length}</dd>
-          </div>
-        </dl>
+          <p className="cl-status" role="status">
+            {text ? `${plural(shown.length, "product")} match “${query.trim()}”.` : ""}
+          </p>
+        </div>
       </section>
-      <div className="cl-toolbar">
-        <div className="cl-find">
-          <Icon>
-            <circle cx="7" cy="7" r="4.5" />
-            <path d="m10.5 10.5 3.5 3.5" />
-          </Icon>
-          <label className="ds-visually-hidden" htmlFor="cl-filter-products">
-            Filter products
-          </label>
-          <input id="cl-filter-products" type="search" className="cl-field" placeholder="Filter products by name…" value={query} onChange={(event) => setQuery(event.target.value)} autoComplete="off" />
-        </div>
-        <p className="cl-status" role="status">
-          {text ? `${plural(shown.length, "product")} match “${query.trim()}”.` : ""}
-        </p>
-      </div>
       {families.length === 0 && <p className="cl-empty-note">No product matches “{query.trim()}”.</p>}
       {families.map((family) => (
         <section key={family.nodeId} className="cl-family" aria-labelledby={`cl-family-${family.nodeId}`}>
           <header>
+            <span className="cl-cap-icon">
+              <Icon>{FAMILY_ICON}</Icon>
+            </span>
+            <div className="cl-family-title">
+              <small>{family.path.at(-1)?.level ?? "Product family"}</small>
+              <h2 id={`cl-family-${family.nodeId}`}>{family.path.at(-1)?.name ?? "Not placed in the portfolio"}</h2>
+            </div>
+            <span className="cl-family-count">{plural(family.offerings.length, "product")}</span>
             <ol className="cl-family-path" aria-label="Portfolio path">
               {family.path.slice(0, -1).map((node) => (
                 <li key={node.id}>
@@ -300,9 +342,6 @@ export function ProductsIndex() {
                 </li>
               ))}
             </ol>
-            <h2 id={`cl-family-${family.nodeId}`}>
-              {family.path.at(-1)?.name ?? "Not placed in the portfolio"} <small>{plural(family.offerings.length, "product")}</small>
-            </h2>
           </header>
           <ul className="cl-prodcards">
             {family.offerings.map((offering) => (
