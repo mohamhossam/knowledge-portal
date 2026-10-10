@@ -407,23 +407,49 @@
 .cl-phrases li { padding: 10px 0; border-bottom: 1px solid var(--cl-hairline); display: flex; flex-direction: column; gap: 4px; }
 .cl-phrases p { line-height: 1.55; color: var(--cl-ink-2); max-width: 78ch; }
 .cl-phrases strong { color: var(--cl-maroon); font-weight: 700; }
-.cl-who { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--cl-gap); }
-.cl-who-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-content: start; }
-.cl-who-group h3, .cl-route h3 { font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--cl-ink-2); margin-bottom: 8px; }
-.cl-who-group ul { display: flex; flex-direction: column; gap: 8px; }
-.cl-who-group li { border: 1px solid var(--cl-hairline); border-radius: 4px; padding: 10px 12px; background: var(--cl-paper); display: flex; flex-direction: column; gap: 4px; }
-.cl-who-group strong { font-weight: 700; color: var(--cl-ink); }
-.cl-who-group span { color: var(--cl-ink-2); line-height: 1.5; }
-.cl-route-table { border-collapse: collapse; width: 100%; }
-.cl-route-table th, .cl-route-table td { padding: 5px 8px; border-bottom: 1px solid var(--cl-hairline); }
-.cl-route-table thead th { font-size: 0.8125rem; font-weight: 600; color: var(--cl-ink-2); text-align: center; border-bottom: 1px solid var(--cl-rule-strong); white-space: nowrap; }
-.cl-route-table thead th:first-child { text-align: left; }
-.cl-route-table tbody th { text-align: left; font-weight: 600; }
-.cl-route-table tbody th span { margin-right: 8px; }
+/* ---------- Who can buy it: question cards with an evidence checklist, and the order-type matrix ---------- */
+.cl-who { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: var(--cl-gap); align-items: start; }
+.cl-sure { display: inline-flex; gap: 6px; margin-left: auto; }
+.cl-sure-item { display: inline-flex; align-items: center; gap: 6px; padding: 1px 10px; border: 1px solid var(--cl-hairline); border-radius: 999px; background: var(--cl-page); font-size: 0.75rem; font-weight: 600; color: var(--cl-ink-2); }
+.cl-sure-item i, .cl-elig-node { width: 9px; height: 9px; border-radius: 50%; background: var(--cl-sage); }
+.cl-sure-item.inferred i, .is-inferred > .cl-elig-node { background: var(--cl-page); box-shadow: inset 0 0 0 2px var(--cl-ochre); }
+.cl-sure-item.gap i, .is-gap > .cl-elig-node { background: var(--cl-page); border: 1.5px dashed var(--cl-rule-strong); }
+.cl-elig { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.cl-elig-card { display: flex; flex-direction: column; border: 1px solid var(--cl-hairline); border-radius: 8px; background: var(--cl-page); overflow: hidden; }
+.cl-elig-card header { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--cl-hairline); background: var(--cl-paper); }
+.cl-elig-card h3 { font-size: 0.9375rem; font-weight: 700; line-height: 1.2; }
+.cl-elig-card header small { display: block; font-size: 0.75rem; color: var(--cl-ink-2); }
+.cl-elig-card ul { position: relative; display: grid; gap: 12px; padding: 12px 12px 14px 32px; }
+/* The checklist line: one rule down the conditions, a node per condition. */
+.cl-elig-card ul::before { content: ""; position: absolute; left: 16px; top: 18px; bottom: 22px; width: 2px; border-radius: 1px; background: var(--cl-hairline); }
+.cl-elig-card ul:has(> li:only-child)::before { display: none; }
+.cl-elig-card li { position: relative; display: flex; flex-direction: column; gap: 3px; }
+.cl-elig-node { position: absolute; left: -21px; top: 5px; box-shadow: 0 0 0 3px var(--cl-page); }
+.is-inferred > .cl-elig-node { box-shadow: inset 0 0 0 2px var(--cl-ochre), 0 0 0 3px var(--cl-page); }
+.cl-elig-card li strong { font-weight: 700; line-height: 1.3; }
+.cl-elig-card li p { font-size: 0.875rem; line-height: 1.5; color: var(--cl-ink-2); }
+.cl-elig-card li .cl-ev { font-size: 0.75rem; }
+.cl-route { min-width: 0; border: 1px solid var(--cl-hairline); border-radius: 8px; background: var(--cl-page); padding: 12px 12px 4px; }
+.cl-route > h3 { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; font-size: 0.9375rem; font-weight: 700; }
+.cl-route > h3 small { font-size: 0.75rem; font-weight: 500; color: var(--cl-ink-2); }
+.cl-route-table { width: 100%; border-collapse: collapse; }
+.cl-route-table th, .cl-route-table td { padding: 5px 6px; border-bottom: 1px solid var(--cl-hairline); }
+.cl-route-kinds th { padding: 2px 6px 6px; border-bottom: 0; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cl-ink-3); text-align: center; }
+.cl-route-kinds th + th { box-shadow: inset 1px 0 0 var(--cl-hairline); }
+.cl-route-kinds td { border-bottom: 0; }
+.cl-route-table thead tr:last-child th { vertical-align: bottom; border-bottom: 1px solid var(--cl-rule); font-size: 0.75rem; font-weight: 600; color: var(--cl-ink-2); text-align: left; }
+.cl-route-ch { text-align: center !important; min-width: 56px; }
+.cl-route-ch .cl-systile { display: grid; margin: 0 auto 4px; }
+.cl-route-chname { display: block; line-height: 1.25; color: var(--cl-ink); }
+.cl-route-ch small { display: inline-block; margin-top: 3px; padding: 0 6px; border-radius: 999px; background: var(--cl-sand); font-size: 0.6875rem; color: var(--cl-ink-2); }
+.cl-route-stage th { padding: 12px 8px 4px; border-bottom: 1px solid var(--cl-rule); font-size: 0.8125rem; font-weight: 700; color: var(--cl-ink); text-align: left; }
+.cl-route-stage th small { margin-left: 6px; font-size: 0.75rem; font-weight: 500; color: var(--cl-ink-2); }
+.cl-route-table tbody th[scope="row"] { min-width: 168px; text-align: left; font-weight: 600; line-height: 1.35; }
+.cl-route-table tbody th[scope="row"] span { margin-right: 8px; }
 .cl-route-table td { text-align: center; }
-.cl-route-table tbody tr:hover { background: var(--cl-paper); }
+.cl-route-table tbody tr:not(.cl-route-stage):hover { background: var(--cl-paper); }
 .cl-route-table td.cl-route-none { color: var(--cl-ink-2); font-style: italic; text-align: left; }
-.cl-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: var(--cl-maroon); vertical-align: middle; }
+.cl-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--cl-ink-2); vertical-align: middle; box-shadow: 0 0 0 3px var(--cl-sand); }
 .cl-tag { font-size: 0.75rem; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--cl-maroon-mist); color: var(--cl-maroon); text-decoration: none; white-space: nowrap; }
 :where(.cl) a.cl-tag:hover { background: var(--cl-maroon); color: #fff; }
 .cl-h2-link { margin-left: auto; font-size: 0.875rem; font-weight: 600; }
@@ -550,7 +576,7 @@
   .cl-labbar { padding: 6px 12px; scrollbar-width: none; }
   .cl-labbar strong { display: none; }
   .cl-meta { flex-wrap: wrap; }
-  .cl-values, .cl-who-groups, .cl-compcards, .cl-plancards, .cl-tree-branches, .cl-glance { grid-template-columns: 1fr; }
+  .cl-values, .cl-elig, .cl-compcards, .cl-plancards, .cl-tree-branches, .cl-glance { grid-template-columns: 1fr; }
   .cl-tree-row { grid-template-columns: 1fr; }
   .cl-tree-level { justify-self: center; margin: 0 0 6px; }
   .cl-tree-branches::after, .cl-tree-branch::before { display: none; }
@@ -902,3 +928,4 @@
 .am-card-name { overflow-wrap: break-word; hyphens: auto; }
 .am-bus:not(.is-dim) .am-bus-head > span:not(.am-icon) { background: var(--cl-spine); }
 .am-bus.is-dim .am-bus-head > span:not(.am-icon) { background: var(--cl-paper); }
+.cl-route-table thead tr:last-child th:first-child { width: 40%; }

@@ -11,6 +11,7 @@ import { AreaTabs, EvidenceTag, PathBar } from "./CatalogueLab";
 import { firstJourneyHref, journeyHref, LAB, useLabData, useOffering } from "./labData";
 import { leadingNumber, listOf, monogram, plural, useTitle } from "./labUtil";
 import { allViews } from "./posterModel";
+import { STAGES, stageOfCode } from "./stages";
 
 export function Missing({ what }: { what: string }) {
   return (
@@ -374,13 +375,64 @@ export function Plans({ offering }: { offering: Offering }) {
 }
 
 /** Eligibility grouped by what it answers: who, where, on what terms, through which route. */
-const ELIGIBILITY_GROUPS: { id: string; label: string; match: RegExp }[] = [
-  { id: "who", label: "Who", match: /segment|customer|audience|business/i },
-  { id: "where", label: "Where", match: /location|area|site|coverage/i },
-  { id: "terms", label: "On what terms", match: /commitment|contract|term|portal|account/i },
-  { id: "how", label: "Through which route", match: /activation|migration|port|channel|order/i },
+const ELIGIBILITY_GROUPS: { id: string; label: string; question: string; match: RegExp; icon: ReactNode }[] = [
+  {
+    id: "who",
+    label: "Who",
+    question: "Which customers",
+    match: /segment|customer|audience|business/i,
+    icon: (
+      <>
+        <circle cx="8" cy="5.5" r="2.5" />
+        <path d="M3 14c0-2.8 2.2-4.8 5-4.8s5 2 5 4.8" />
+      </>
+    ),
+  },
+  {
+    id: "where",
+    label: "Where",
+    question: "Which locations",
+    match: /location|area|site|coverage/i,
+    icon: (
+      <>
+        <path d="M8 14.5s-4.5-4.2-4.5-7.8a4.5 4.5 0 0 1 9 0c0 3.6-4.5 7.8-4.5 7.8z" />
+        <circle cx="8" cy="6.7" r="1.6" />
+      </>
+    ),
+  },
+  {
+    id: "terms",
+    label: "On what terms",
+    question: "Contract and account",
+    match: /commitment|contract|term|portal|account/i,
+    icon: <path d="M4 1.5h5.5l3 3v10H4zM9.5 1.5v3h3M6 8h4.5M6 10.5h4.5M6 13h2.5" />,
+  },
+  {
+    id: "how",
+    label: "Through which route",
+    question: "How the order arrives",
+    match: /activation|migration|port|channel|order/i,
+    icon: (
+      <>
+        <circle cx="3.5" cy="12.5" r="1.5" />
+        <circle cx="12.5" cy="3.5" r="1.5" />
+        <path d="M5 12.5h4.5a2 2 0 0 0 0-4h-3a2 2 0 0 1 0-4H11" />
+      </>
+    ),
+  },
 ];
 
+const CHANNEL_KINDS: Record<string, string> = { assisted: "Assisted", "self-service": "Self-service", system: "Systems" };
+
+/**
+ * Who can buy the offering and how its orders arrive. On the left, the
+ * conditions answer four questions, each a card with its own icon; every
+ * condition sits on a checklist line whose node shows how sure the catalogue is
+ * (filled: confirmed, ring: inferred, dashed: a gap). On the right, every order
+ * type against every ordering channel: rows grouped by the customer's stage
+ * (join, change, support, leave), channels grouped by kind, each channel with
+ * its monogram tile and how many order types it takes.
+ */
 function WhoCanBuy({ offering }: { offering: Offering }) {
   const data = useLabData();
   const grouped = new Map<string, Offering["eligibility"]>();
@@ -388,27 +440,63 @@ function WhoCanBuy({ offering }: { offering: Offering }) {
     const group = ELIGIBILITY_GROUPS.find((item) => item.match.test(point.title))?.id ?? "other";
     grouped.set(group, [...(grouped.get(group) ?? []), point]);
   }
-  const groups = [...ELIGIBILITY_GROUPS, { id: "other", label: "Also", match: /./ }].filter((group) => grouped.has(group.id));
+  const groups = [...ELIGIBILITY_GROUPS, { id: "other", label: "Also", question: "Other conditions", match: /./, icon: <path d="M3 8h.01M8 8h.01M13 8h.01" /> }].filter((group) => grouped.has(group.id));
+  const sure = { confirmed: 0, inferred: 0, gap: 0 };
+  for (const point of offering.eligibility) sure[point.evidence.status] += 1;
+
   const channels = data.channels.filter((channel) => offering.orderTypes.some((type) => type.channels.includes(channel.id)));
+  const kinds = [...new Set(channels.map((channel) => channel.kind))].map((kind) => ({ kind, channels: channels.filter((channel) => channel.kind === kind) }));
+  const ordered = kinds.flatMap((item) => item.channels);
+  const takes = (channelId: string) => offering.orderTypes.filter((type) => type.channels.includes(channelId)).length;
+  const tone = (systemId: string) => data.systems.find((system) => system.id === systemId)?.domain ?? "customer";
+  const stages = STAGES.map((stage) => ({ ...stage, types: offering.orderTypes.filter((type) => stageOfCode(type.code) === stage.id) })).filter((stage) => stage.types.length);
   const journeyFor = (code: string) => data.journeys.find((journey) => journey.offeringId === offering.id && journey.orderType === code);
+
   return (
     <section className="cl-card cl-span-12" aria-labelledby="cl-who-h">
       <h2 id="cl-who-h">
         Who can buy it, and how{" "}
         <small>
-          {plural(offering.eligibility.length, "condition")} · {plural(offering.orderTypes.length, "order type")}
+          {plural(offering.eligibility.length, "condition")} · {plural(offering.orderTypes.length, "order type")} · {plural(channels.length, "channel")}
         </small>
+        <span className="cl-sure">
+          <span className="cl-sure-item confirmed">
+            <i aria-hidden="true" />
+            {sure.confirmed} confirmed
+          </span>
+          {sure.inferred > 0 && (
+            <span className="cl-sure-item inferred">
+              <i aria-hidden="true" />
+              {sure.inferred} inferred
+            </span>
+          )}
+          {sure.gap > 0 && (
+            <span className="cl-sure-item gap">
+              <i aria-hidden="true" />
+              {sure.gap} {sure.gap === 1 ? "gap" : "gaps"}
+            </span>
+          )}
+        </span>
       </h2>
       <div className="cl-who">
-        <div className="cl-who-groups">
+        <div className="cl-elig">
           {groups.map((group) => (
-            <section key={group.id} className="cl-who-group" aria-labelledby={`cl-who-${group.id}`}>
-              <h3 id={`cl-who-${group.id}`}>{group.label}</h3>
+            <section key={group.id} className="cl-elig-card" aria-labelledby={`cl-who-${group.id}`}>
+              <header>
+                <span className="cl-cap-icon">
+                  <Glyph>{group.icon}</Glyph>
+                </span>
+                <span>
+                  <h3 id={`cl-who-${group.id}`}>{group.label}</h3>
+                  <small>{group.question}</small>
+                </span>
+              </header>
               <ul>
                 {(grouped.get(group.id) ?? []).map((point) => (
-                  <li key={point.title}>
+                  <li key={point.title} className={`is-${point.evidence.status}`}>
+                    <i className="cl-elig-node" aria-hidden="true" />
                     <strong>{point.title}</strong>
-                    <span>{point.detail}</span>
+                    <p>{point.detail}</p>
                     <EvidenceTag evidence={point.evidence} />
                   </li>
                 ))}
@@ -417,47 +505,68 @@ function WhoCanBuy({ offering }: { offering: Offering }) {
           ))}
         </div>
         <div className="cl-route">
-          <h3>Ordering channels for each order type</h3>
+          <h3>
+            Ordering channels for each order type <small>grouped by the customer's stage</small>
+          </h3>
           <div className="cl-tablewrap" role="region" aria-label="Channels by order type (scrolls sideways when narrow)" tabIndex={0}>
             <table className="cl-route-table">
               <thead>
+                <tr className="cl-route-kinds">
+                  <td />
+                  {kinds.map((item) => (
+                    <th key={item.kind} scope="colgroup" colSpan={item.channels.length}>
+                      {CHANNEL_KINDS[item.kind] ?? item.kind}
+                    </th>
+                  ))}
+                </tr>
                 <tr>
                   <th scope="col">Order type</th>
-                  {channels.map((channel) => (
-                    <th key={channel.id} scope="col">
-                      {channel.name}
+                  {ordered.map((channel) => (
+                    <th key={channel.id} scope="col" className="cl-route-ch">
+                      <span className={`am-mono cl-systile tone--${tone(channel.systemId)} am-mono--${monogram(channel.name).length}`} aria-hidden="true" translate="no">
+                        {monogram(channel.name)}
+                      </span>
+                      <span className="cl-route-chname">{channel.name.replace(/\s*\(.*\)\s*$/, "")}</span>
+                      <small>{takes(channel.id)}</small>
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody>
-                {offering.orderTypes.map((type) => {
-                  const journey = journeyFor(type.code);
-                  return (
-                    <tr key={type.code}>
-                      <th scope="row">
-                        <span>{type.name}</span>
-                        {journey && (
-                          <Link className="cl-tag" to={journeyHref(journey.id, journey.channels[0])}>
-                            Journey
-                          </Link>
-                        )}
-                      </th>
-                      {type.channels.length === 0 ? (
-                        <td className="cl-route-none" colSpan={channels.length}>
-                          No ordering channel stated
-                        </td>
-                      ) : (
-                        channels.map((channel) => (
-                          <td key={channel.id}>
-                            {type.channels.includes(channel.id) ? <span className="cl-dot" role="img" aria-label={`Through ${channel.name}`} /> : <span className="ds-visually-hidden">Not through {channel.name}</span>}
+              {stages.map((stage) => (
+                <tbody key={stage.id}>
+                  <tr className="cl-route-stage">
+                    <th scope="rowgroup" colSpan={ordered.length + 1}>
+                      {stage.name} <small>{stage.blurb} · {stage.types.length}</small>
+                    </th>
+                  </tr>
+                  {stage.types.map((type) => {
+                    const journey = journeyFor(type.code);
+                    return (
+                      <tr key={type.code}>
+                        <th scope="row">
+                          <span>{type.name}</span>
+                          {journey && (
+                            <Link className="cl-tag" to={journeyHref(journey.id, journey.channels[0])} aria-label={`${type.name} journey`}>
+                              Journey
+                            </Link>
+                          )}
+                        </th>
+                        {type.channels.length === 0 ? (
+                          <td className="cl-route-none" colSpan={ordered.length}>
+                            No ordering channel stated
                           </td>
-                        ))
-                      )}
-                    </tr>
-                  );
-                })}
-              </tbody>
+                        ) : (
+                          ordered.map((channel) => (
+                            <td key={channel.id}>
+                              {type.channels.includes(channel.id) ? <span className="cl-dot" role="img" aria-label={`Through ${channel.name}`} /> : <span className="ds-visually-hidden">Not through {channel.name}</span>}
+                            </td>
+                          ))
+                        )}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              ))}
             </table>
           </div>
         </div>

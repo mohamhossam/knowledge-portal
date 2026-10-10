@@ -371,4 +371,12 @@ Maroon now means one thing only: selection and focus, the product's core and use
 
 Also fixed `monogram()`: its backslashes had been lost, so it split names on the letter "s". It now prefers a name's acronym (CSRD, HPSM, BFF) and falls back to up to three initials (CAF, SSP). Checks: tests 25/25 with axe, with new bundle assertions; lint, typecheck and build green.
 
+**"Who can buy it, and how", redesigned (2026-10-10).**
+- **Heading:** counts conditions, order types and channels, and shows evidence pills (5 confirmed · 1 inferred).
+- **Eligibility:** four question cards (Who, Where, On what terms, Through which route), each with an icon and a sub-question. Every condition sits on a checklist line whose node shows its evidence: filled for confirmed, an ochre ring for inferred, dashed for a gap.
+- **Order-type matrix:** rows grouped by the customer's stage (Join, Change, Support, Leave, the same stages as the journey switcher; now shared in `stages.ts`). Channels are grouped by kind (assisted, self-service, systems), each with its monogram tile in its layer colour and the number of order types it takes. Availability dots are calm ink, not maroon.
+- **Layout:** the matrix now gets two-thirds of the width, so all six channels show without a sideways scroll.
+
+Checks: tests 25/25 with axe; lint, typecheck and build green.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.
