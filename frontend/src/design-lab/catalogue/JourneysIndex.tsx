@@ -11,10 +11,13 @@
  *
  * Lifecycle board: the customer's stages (join, change, support, leave) as a
  * chevron ribbon, every order type of the product as a tile in its stage, with
- * its journey's size, or "No journey yet".
+ * its journey's size, or "No journey yet". Not every channel takes every order
+ * type: an "Ordering channel" menu (`?channel=`) quiets the order types the
+ * channel can't take, and the preview lists the channels an order type is, and
+ * isn't, ordered through.
  *
  * Preview: the picked order type's journey: its route through the systems in
- * the order the order travels, its channels, its size, the decisions it
+ * the order the order travels, its ordering channels, its size, the decisions it
  * contains, and the way into the flow.
  */
 import { type KeyboardEvent, type ReactNode, useEffect, useRef } from "react";
@@ -191,32 +194,90 @@ export function JourneysIndex() {
   const stages = STAGES.map((stage) => ({ ...stage, codes: [...names.keys()].filter((code) => stageOfCode(code) === stage.id) })).filter((stage) => stage.codes.length);
   const shared = product ? data.journeys.filter((journey) => !journey.orderType && journey.offeringId === product.id) : [];
 
+  // Ordering channels: not every channel takes every order type. The product's channels, and the one the board is seen through.
+  const channelsOf = (code: string) => product?.orderTypes.find((type) => type.code === code)?.channels ?? [];
+  const productChannels = data.channels.filter((channel) => product?.orderTypes.some((type) => type.channels.includes(channel.id)));
+  const lens = productChannels.find((channel) => channel.id === params.get("channel")) ?? null;
+  const shortName = (name: string) => name.replace(/\s*\(.*\)\s*$/, "");
+  // A journey that follows any order type (no order type of its own) is open to every channel.
+  const through = (key: string) => !lens || !names.has(key) || channelsOf(key).includes(lens.id);
+
   // The picked tile: an order type code, or a shared journey's id.
   const typeParam = params.get("type") ?? "";
   const pickedKey = names.has(typeParam) || shared.some((journey) => journey.id === typeParam) ? typeParam : (stages[0]?.codes[0] ?? shared[0]?.id ?? null);
   const sharedPick = shared.find((journey) => journey.id === pickedKey);
   const journey = sharedPick ?? (pickedKey ? journeyOf(pickedKey) : undefined);
-  const shape = shapeOf(data, journey ? journeyView(data, journey.id, journey.channels[0] ?? null) : null);
+  // The flow opens on the channel the board is seen through, when the journey takes it.
+  const flowChannel = journey && lens && journey.channels.includes(lens.id) ? lens.id : journey?.channels[0];
+  const shape = shapeOf(data, journey ? journeyView(data, journey.id, flowChannel ?? null) : null);
   const pickedName = sharedPick?.name ?? (pickedKey ? names.get(pickedKey) : undefined);
   const pickedStage = sharedPick ? "across" : pickedKey ? stageOfCode(pickedKey) : null;
 
   const offered = product?.orderTypes.length ?? 0;
   const modelled = (product?.orderTypes ?? []).filter((type) => journeyOf(type.code)).length;
+  const viaLens = lens ? (product?.orderTypes ?? []).filter((type) => type.channels.includes(lens.id)).length : 0;
   const systemName = (id: string) => data.systems.find((system) => system.id === id)?.name ?? (id.startsWith("team:") ? id.slice(5) : id === "channel" ? "Ordering channel" : id);
   const systemTone = (id: string) => data.systems.find((system) => system.id === id)?.domain;
 
-  const tile = (key: string, name: string, steps: number | undefined) => (
-    <li key={key}>
-      <button type="button" className="jx-tile" aria-pressed={key === pickedKey} aria-label={`${name}: ${steps === undefined ? "no journey yet" : plural(steps, "step")}`} onClick={() => setParam({ type: key })}>
-        <span className="jx-tile-name" title={name}>
-          {name.replace(/\s*\(.*\)\s*$/, "") || name}
+  const tile = (key: string, name: string, steps: number | undefined) => {
+    const off = lens && !through(key) ? `Not through ${shortName(lens.name)}` : null;
+    const offPhrase = off ? `not through ${shortName(lens?.name ?? "")}` : null;
+    return (
+      <li key={key}>
+        <button
+          type="button"
+          className={`jx-tile${off ? " is-off" : ""}`}
+          aria-pressed={key === pickedKey}
+          aria-label={`${name}: ${steps === undefined ? "no journey yet" : plural(steps, "step")}${offPhrase ? `, ${offPhrase}` : ""}`}
+          onClick={() => setParam({ type: key })}
+        >
+          <span className="jx-tile-name" title={offPhrase ? `${name}: ${offPhrase}` : name}>
+            {name.replace(/\s*\(.*\)\s*$/, "") || name}
+          </span>
+          <span className="jx-tile-meta" aria-hidden="true">
+            {off ? (
+              <span className="jx-tile-off" title={off}>
+                <Icon size={14}>
+                  <circle cx="8" cy="8" r="5.5" />
+                  <path d="m4.2 11.8 7.6-7.6" />
+                </Icon>
+              </span>
+            ) : (
+              <span className={`jx-tile-steps${steps === undefined ? " is-gap" : ""}`}>{steps === undefined ? "No journey yet" : plural(steps, "step")}</span>
+            )}
+          </span>
+        </button>
+      </li>
+    );
+  };
+  // The picked order type's ordering channels, and the product's channels it can't be ordered through.
+  const chip = (id: string, muted = false) => {
+    const channel = data.channels.find((item) => item.id === id);
+    return channel ? (
+      <span key={id} className={`cl-chanchip${muted ? " is-off" : ""}`}>
+        <span className={`am-mono cl-systile tone--${systemTone(channel.systemId) ?? "customer"} am-mono--${monogram(channel.name).length}`} aria-hidden="true" translate="no">
+          {monogram(channel.name)}
         </span>
-        <span className="jx-tile-meta" aria-hidden="true">
-          <span className={`jx-tile-steps${steps === undefined ? " is-gap" : ""}`}>{steps === undefined ? "No journey yet" : plural(steps, "step")}</span>
-        </span>
-      </button>
-    </li>
-  );
+        {shortName(channel.name)}
+        <small>{CHANNEL_KIND_WORDS[channel.kind] ?? channel.kind}</small>
+      </span>
+    ) : null;
+  };
+  const isType = pickedKey !== null && names.has(pickedKey);
+  const pickedChannels = isType && pickedKey ? channelsOf(pickedKey) : [];
+  const notThrough = isType ? productChannels.filter((channel) => !pickedChannels.includes(channel.id)) : [];
+  const channelBlock = isType ? (
+    <>
+      <h3>Ordered through</h3>
+      {pickedChannels.length ? <p className="jx-channels">{pickedChannels.map((id) => chip(id))}</p> : <p className="jx-none">No ordering channel stated</p>}
+      {notThrough.length > 0 && (
+        <>
+          <h3>Not through</h3>
+          <p className="jx-channels">{notThrough.map((channel) => chip(channel.id, true))}</p>
+        </>
+      )}
+    </>
+  ) : null;
   const columns = stages.map((stage) => `minmax(0, ${Math.min(2, Math.ceil(stage.codes.length / 6))}fr)`).join(" ");
 
   return (
@@ -235,8 +296,18 @@ export function JourneysIndex() {
             <h1>Journeys</h1>
             <p className="lx-lede">Every order type of one product, by the customer&apos;s stage</p>
           </div>
+          {product && productChannels.length > 0 && (
+            <ul className="jx-lens">
+              <ScopeMenu level="Ordering channel" value={lens?.id ?? null} options={productChannels.map((channel) => ({ id: channel.id, name: shortName(channel.name) }))} onPick={(id) => setParam({ channel: id })} />
+            </ul>
+          )}
           {product && (
             <p className="jx-scope-sum" aria-live="polite">
+              {lens && (
+                <span className="jx-lens-sum">
+                  <b>{viaLens}</b> of {offered} through {shortName(lens.name)}
+                </span>
+              )}
               <span>
                 <b>{modelled}</b> of {plural(offered, "order type")} modelled
               </span>
@@ -351,25 +422,7 @@ export function JourneysIndex() {
                     ))}
                     {shape.route.length > 12 && <li className="jx-route-more">+{shape.route.length - 12}</li>}
                   </ol>
-                  {journey.channels.length > 0 && (
-                    <>
-                      <h3>Arrives through</h3>
-                      <p className="jx-channels">
-                        {journey.channels.map((id) => {
-                          const channel = data.channels.find((item) => item.id === id);
-                          return channel ? (
-                            <span key={id} className="cl-chanchip">
-                              <span className={`am-mono cl-systile tone--${systemTone(channel.systemId) ?? "customer"} am-mono--${monogram(channel.name).length}`} aria-hidden="true" translate="no">
-                                {monogram(channel.name)}
-                              </span>
-                              {channel.name.replace(/\s*\(.*\)\s*$/, "")}
-                              <small>{CHANNEL_KIND_WORDS[channel.kind] ?? channel.kind}</small>
-                            </span>
-                          ) : null;
-                        })}
-                      </p>
-                    </>
-                  )}
+                  {channelBlock}
                   {shape.decisions.length > 0 && (
                     <>
                       <h3>Decisions on the way</h3>
@@ -385,20 +438,23 @@ export function JourneysIndex() {
                     </>
                   )}
                   <div className="jx-actions">
-                    <Link className="cl-btn primary" to={journeyHref(journey.id, journey.channels[0])}>
+                    <Link className="cl-btn primary" to={journeyHref(journey.id, flowChannel)}>
                       Open the journey flow
                     </Link>
-                    <Link className="cl-btn" to={withView(journeyHref(journey.id, journey.channels[0]))}>
+                    <Link className="cl-btn" to={withView(journeyHref(journey.id, flowChannel))}>
                       Integrations
                     </Link>
                   </div>
                 </>
               ) : (
-                <div className="jx-empty">
-                  <p>
-                    <strong>No journey yet.</strong> {product.name} offers this order type, but its journey isn&apos;t modelled.
-                  </p>
-                </div>
+                <>
+                  <div className="jx-empty">
+                    <p>
+                      <strong>No journey yet.</strong> {product.name} offers this order type, but its journey isn&apos;t modelled.
+                    </p>
+                  </div>
+                  {channelBlock}
+                </>
               )}
             </>
           ) : (

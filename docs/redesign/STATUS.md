@@ -555,4 +555,14 @@ Checks: tests 28/28 with axe; lint, brand lint, build and budget green.
 - **Preview:** scrolls inside itself, its parts keep their size, and its actions stay pinned at its foot, with scroll padding so focus is never hidden behind them.
 - **Small screens:** the preview narrows (320–380px).
 
+**Channels are per order type (2026-10-10, user rule: not every assisted or self-service channel takes every order type).**
+- **Audit:** journeys already take their channels from their order type (the adapter), so the flow and architecture channel switches and the overview's order-type × channel table were correct.
+- **Journeys page:**
+  - An "Ordering channel" menu in the header band (`?channel=`). Order types the channel can't take go quiet (dashed tile, muted name, a "not available" icon), and their accessible name says "not through …".
+  - The header reads "N of M through …".
+  - The preview always lists the order type's own channels ("Ordered through") and the product's channels it can't be ordered through ("Not through"), even without a journey.
+  - The flow links open on the chosen channel when the journey takes it.
+- **Product cards:** a selling channel that doesn't take every way to join is dashed, its tooltip and accessible name say which ways it takes ("For New activation and Port in only"), and one note explains the dash.
+- **Tests:** two new ones.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.
