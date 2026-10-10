@@ -6053,3 +6053,247 @@ business_capabilities:
   domain: service
   confidence: inferred
   source: Ontology plan Phase 1 · golden set v1 concept list
+vocabulary:
+- id: etom-fulfillment
+  scheme: etom_process
+  pref_label: Fulfillment
+  alt_labels:
+  - Fulfilment
+  definition: The end-to-end process of providing what a customer ordered, on time and correctly.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own eTOM values
+- id: etom-selling
+  scheme: etom_process
+  pref_label: Selling
+  definition: Taking the customer from interest to a feasible, agreed order.
+  broader: etom-fulfillment
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own eTOM values
+- id: etom-order-handling
+  scheme: etom_process
+  pref_label: Order Handling
+  definition: Accepting, validating, tracking and closing the customer's order.
+  broader: etom-fulfillment
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own eTOM values
+- id: etom-service-configuration-activation
+  scheme: etom_process
+  pref_label: Service Configuration & Activation
+  definition: Configuring and activating the services an order needs.
+  broader: etom-fulfillment
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own eTOM values
+- id: etom-resource-provisioning
+  scheme: etom_process
+  pref_label: Resource Provisioning
+  definition: Allocating, installing and configuring the resources services run on.
+  broader: etom-fulfillment
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own eTOM values
+- id: etom-supplier-partner-requisition-management
+  scheme: etom_process
+  pref_label: Supplier/Partner Requisition Management
+  definition: Ordering what an order needs from suppliers and partners, and tracking it.
+  broader: etom-fulfillment
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own eTOM values
+- id: etom-assurance
+  scheme: etom_process
+  pref_label: Assurance
+  definition: Keeping delivered services working as promised.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own eTOM values
+- id: etom-problem-handling
+  scheme: etom_process
+  pref_label: Problem Handling
+  definition: Receiving, tracking and resolving the problems a customer reports.
+  broader: etom-assurance
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own eTOM values
+- id: etom-billing-revenue-management
+  scheme: etom_process
+  pref_label: Billing & Revenue Management
+  alt_labels:
+  - Billing
+  definition: Rating, charging and billing what a customer uses, and collecting payment.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own eTOM values
+- id: etom-customer-relationship-management
+  scheme: etom_process
+  pref_label: Customer Relationship Management
+  alt_labels:
+  - CRM
+  definition: Knowing the customer and handling every interaction with them.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own eTOM values
+- id: etom-customer-interface-management
+  scheme: etom_process
+  pref_label: Customer Interface Management
+  definition: Managing the contacts between the customer and the operator, in any channel.
+  broader: etom-customer-relationship-management
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own eTOM values
+- id: channel-assisted
+  scheme: channel_kind
+  pref_label: Assisted
+  definition: An order a sales agent, a shop or the back office places for the customer.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own channel kinds
+- id: channel-self-service
+  scheme: channel_kind
+  pref_label: Self-service
+  alt_labels:
+  - Digital self-service
+  definition: An order the customer places themselves, on the web or in an app.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own channel kinds
+- id: channel-system
+  scheme: channel_kind
+  pref_label: System
+  alt_labels:
+  - System to system
+  definition: An order another system raises, such as a portability or contract event.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own channel kinds
+- id: role-capture
+  scheme: responsibility_role
+  pref_label: Capture
+  alt_labels:
+  - Captures
+  definition: Takes in the order, or facts the order needs, from the customer or the field.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: role-catalog
+  scheme: responsibility_role
+  pref_label: Catalog
+  definition: Supplies the offer, its rules and its eligibility from the product catalogue.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: role-customer-data
+  scheme: responsibility_role
+  pref_label: Customer data
+  definition: Keeps the customer's account and party record.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: role-validate
+  scheme: responsibility_role
+  pref_label: Validate
+  definition: Checks that the order, the customer or the site qualifies.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: role-orchestrate
+  scheme: responsibility_role
+  pref_label: Orchestrate
+  alt_labels:
+  - Orchestrates
+  definition: Splits the order into sub-orders and drives each to completion.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: role-activate
+  scheme: responsibility_role
+  pref_label: Activate
+  alt_labels:
+  - Activates
+  - Provision
+  - Provisions
+  definition: Configures and activates the service or resource on the network.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: role-field
+  scheme: responsibility_role
+  pref_label: Field
+  alt_labels:
+  - Installation
+  definition: Schedules and records the work done at the customer's site.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: role-logistics
+  scheme: responsibility_role
+  pref_label: Logistics
+  definition: Ships, delivers or collects equipment.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: role-bill
+  scheme: responsibility_role
+  pref_label: Bill
+  definition: Starts, changes or stops billing for what was delivered.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: role-track
+  scheme: responsibility_role
+  pref_label: Track
+  definition: Shows the order's progress to the customer and to the operator.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: role-notify
+  scheme: responsibility_role
+  pref_label: Notify
+  definition: Tells the customer, or another party, that something happened.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: role-record
+  scheme: responsibility_role
+  pref_label: Record
+  definition: Keeps the record of what was delivered, such as the inventory.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: api-tmf620
+  scheme: open_api
+  pref_label: Product Catalog Management
+  alt_labels:
+  - Product Catalog
+  notation: TMF620
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own TMF equivalents
+- id: api-tmf621
+  scheme: open_api
+  pref_label: Trouble Ticket
+  notation: TMF621
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own TMF equivalents
+- id: api-tmf622
+  scheme: open_api
+  pref_label: Product Ordering
+  notation: TMF622
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own TMF equivalents
+- id: api-tmf629
+  scheme: open_api
+  pref_label: Customer Management
+  alt_labels:
+  - Customer
+  notation: TMF629
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own TMF equivalents
+- id: api-tmf632
+  scheme: open_api
+  pref_label: Party Management
+  notation: TMF632
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own TMF equivalents
+- id: api-tmf637
+  scheme: open_api
+  pref_label: Product Inventory
+  alt_labels:
+  - Product Inventory Management
+  notation: TMF637
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own TMF equivalents
+- id: api-tmf641
+  scheme: open_api
+  pref_label: Service Ordering
+  notation: TMF641
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own TMF equivalents
+- id: api-tmf679
+  scheme: open_api
+  pref_label: Product Offering Qualification
+  notation: TMF679
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own TMF equivalents
+- id: api-tmf681
+  scheme: open_api
+  pref_label: Communication
+  notation: TMF681
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own TMF equivalents

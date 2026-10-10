@@ -97,6 +97,16 @@
             ],
             "title": "Interface"
           },
+          "open_api_ids": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Open Api Ids",
+            "type": "array"
+          },
           "payload": {
             "anyOf": [
               {
@@ -278,6 +288,18 @@
             ],
             "title": "Etom"
           },
+          "etom_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Etom Id"
+          },
           "input": {
             "anyOf": [
               {
@@ -383,6 +405,18 @@
               }
             ],
             "title": "Role"
+          },
+          "role_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role Id"
           },
           "source": {
             "anyOf": [
@@ -1483,6 +1517,16 @@
             ],
             "title": "Technology"
           },
+          "term": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VocabularyTermSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "text": {
             "default": "",
             "maxLength": 10000,
@@ -1497,6 +1541,15 @@
             },
             "maxItems": 5000,
             "title": "Triggers",
+            "type": "array"
+          },
+          "value_refs": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/VocabularyRefSchema"
+            },
+            "maxItems": 5000,
+            "title": "Value Refs",
             "type": "array"
           }
         },
@@ -1521,7 +1574,8 @@
           "channel",
           "question",
           "concept",
-          "component_link"
+          "component_link",
+          "vocabulary_term"
         ],
         "title": "CandidateKind",
         "type": "string"
@@ -1869,7 +1923,8 @@
         "description": "A reading of the draft's own catalogue rather than of a document (ADR-0114).\n\nIts value stands in for the document version id, so a new reading replaces the\nundecided suggestions of the previous one.",
         "enum": [
           "concept_backfill",
-          "component_links"
+          "component_links",
+          "vocabulary_cleanup"
         ],
         "title": "CatalogueReading",
         "type": "string"
@@ -2464,7 +2519,8 @@
           "source",
           "conflict",
           "change_request",
-          "concept"
+          "concept",
+          "vocabulary_term"
         ],
         "title": "ChangedItem",
         "type": "string"
@@ -2522,6 +2578,18 @@
               }
             ],
             "title": "Kind"
+          },
+          "kind_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind Id"
           },
           "name": {
             "maxLength": 300,
@@ -2794,6 +2862,18 @@
             "maxLength": 300,
             "title": "Role",
             "type": "string"
+          },
+          "role_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role Id"
           },
           "source": {
             "anyOf": [
@@ -3621,6 +3701,21 @@
             "maxItems": 5000,
             "title": "Systems",
             "type": "array"
+          },
+          "vocabulary": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/VocabularyTermSchema"
+                },
+                "maxItems": 5000,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vocabulary"
           }
         },
         "required": [
@@ -5532,6 +5627,14 @@
             "maxItems": 5000,
             "title": "Systems",
             "type": "array"
+          },
+          "vocabulary": {
+            "items": {
+              "$ref": "#/components/schemas/VocabularyTermSchema"
+            },
+            "maxItems": 5000,
+            "title": "Vocabulary",
+            "type": "array"
           }
         },
         "required": [
@@ -6892,6 +6995,18 @@
               }
             ],
             "title": "Kind"
+          },
+          "kind_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind Id"
           },
           "mandatory": {
             "anyOf": [
@@ -10897,6 +11012,183 @@
         "title": "Versioned",
         "type": "object"
       },
+      "VocabularyField": {
+        "enum": [
+          "activity_etom",
+          "activity_role",
+          "channel_kind",
+          "component_kind",
+          "responsibility_role",
+          "integration_open_api"
+        ],
+        "title": "VocabularyField",
+        "type": "string"
+      },
+      "VocabularyRefSchema": {
+        "description": "One place a vocabulary value is written, and the value as it was read there.",
+        "properties": {
+          "field": {
+            "$ref": "#/components/schemas/VocabularyField"
+          },
+          "item": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item"
+          },
+          "owner_id": {
+            "maxLength": 200,
+            "title": "Owner Id",
+            "type": "string"
+          },
+          "part": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Part"
+          },
+          "value": {
+            "maxLength": 300,
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "field",
+          "owner_id",
+          "value"
+        ],
+        "title": "VocabularyRefSchema",
+        "type": "object"
+      },
+      "VocabularyScheme": {
+        "enum": [
+          "etom_process",
+          "channel_kind",
+          "component_kind",
+          "responsibility_role",
+          "open_api"
+        ],
+        "title": "VocabularyScheme",
+        "type": "string"
+      },
+      "VocabularyTermSchema": {
+        "description": "A term of a controlled vocabulary: an eTOM process, a channel or component kind, a\nrole or an Open API.",
+        "properties": {
+          "alt_labels": {
+            "default": [],
+            "items": {
+              "maxLength": 300,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Alt Labels",
+            "type": "array"
+          },
+          "broader_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Broader Id"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "definition": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition"
+          },
+          "exact_match": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exact Match"
+          },
+          "id": {
+            "maxLength": 200,
+            "title": "Id",
+            "type": "string"
+          },
+          "notation": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notation"
+          },
+          "pref_label": {
+            "maxLength": 300,
+            "title": "Pref Label",
+            "type": "string"
+          },
+          "scheme": {
+            "$ref": "#/components/schemas/VocabularyScheme"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          }
+        },
+        "required": [
+          "id",
+          "scheme",
+          "pref_label"
+        ],
+        "title": "VocabularyTermSchema",
+        "type": "object"
+      },
       "WithdrawRequest": {
         "properties": {
           "expected_version": {
@@ -14005,6 +14297,70 @@
           }
         ],
         "summary": "Put System",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
+    "/architecture-knowledge/releases/{release_id}/vocabulary-cleanup": {
+      "post": {
+        "description": "Suggest the term each eTOM process, channel kind, component kind, role and Open API\nvalue the draft writes means; a value no term names is suggested as a new term.\n\nThe suggestions replace the undecided ones of the previous clean-up.",
+        "operationId": "clean_up_vocabulary_architecture_knowledge_releases__release_id__vocabulary_cleanup_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtractionRunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Clean Up Vocabulary",
         "tags": [
           "architecture knowledge"
         ]

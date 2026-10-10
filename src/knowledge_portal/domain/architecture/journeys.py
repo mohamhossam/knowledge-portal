@@ -75,6 +75,10 @@ class Activity:
     # What it does for the order, as one code ("ORCHESTRATE", "ACTIVATE", "BILL"), so the
     # systems a journey touches can be named by their role.
     role: str | None = None
+    # The eTOM process term ``etom`` means, and the role term ``role`` means, beside the
+    # text; None while unmapped.
+    etom_id: str | None = None
+    role_id: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "number", required(self.number, "Activity number"))
@@ -89,6 +93,8 @@ class Activity:
             ("input", "Input"),
             ("output", "Output"),
             ("etom", "eTOM"),
+            ("etom_id", "eTOM process term"),
+            ("role_id", "Role term"),
             ("performer", "Performer"),
             ("point_of_no_return", "Point of no return"),
         ):
@@ -200,6 +206,8 @@ class ActivityIntegration:
     style: str | None = None
     # The TM Forum Open API that does the same job, such as "TMF622 Product Ordering".
     tmf_equivalent: str | None = None
+    # The Open API terms ``tmf_equivalent`` names, beside the text; empty while unmapped.
+    open_api_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "from_activity", required(self.from_activity, "From activity"))
@@ -218,6 +226,7 @@ class ActivityIntegration:
             ("tmf_equivalent", "TMF equivalent"),
         ):
             object.__setattr__(self, field, optional(getattr(self, field), label))
+        object.__setattr__(self, "open_api_ids", _codes(self.open_api_ids, "Open API term"))
         check_source(self)
 
     @property
@@ -436,6 +445,8 @@ def _merged_activity(first: Activity, second: Activity) -> Activity:
         performer=performs.performer,
         point_of_no_return=first_known(first.point_of_no_return, second.point_of_no_return),
         role=first_known(first.role, second.role),
+        etom_id=first_known(first.etom_id, second.etom_id),
+        role_id=first_known(first.role_id, second.role_id),
     )
 
 

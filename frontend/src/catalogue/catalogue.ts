@@ -317,6 +317,7 @@ const ITEM: Record<CatalogueDiff["changes"][number]["item"], [string, string]> =
   conflict: ["conflict between sources", "conflicts between sources"],
   change_request: ["change request", "change requests"],
   concept: ["capability concept", "capability concepts"],
+  vocabulary_term: ["vocabulary term", "vocabulary terms"],
   document: ["document", "documents"],
 };
 

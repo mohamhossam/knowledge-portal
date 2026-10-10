@@ -94,6 +94,7 @@ from knowledge_portal.domain.architecture.tracking import (
     TrackingEvent,
     TrackingFlow,
 )
+from knowledge_portal.domain.architecture.vocabularies import VocabularyTerm, vocabulary_scheme
 
 SYSTEMS = "Systems"
 COMPONENTS = "Components"
@@ -133,6 +134,7 @@ PLANS = "Plans"
 PLAN_CHARACTERISTICS = "PlanCharacteristics"
 BUSINESS_RULES = "BusinessRules"
 CONCEPTS = "Concepts"
+VOCABULARY = "Vocabulary"
 _CELLS = tuple(f"cell_{number}" for number in range(1, MAX_TABLE_COLUMNS + 1))
 INSTRUCTIONS = "Instructions"
 _DOMAIN_HEADERS = ("domain_id", "name", "name_ar", "parent_id", "description")
@@ -216,6 +218,7 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "source",
         "capability_ids",
         "unlinked_reason",
+        "type_term",
     ),
     RESPONSIBILITIES: (
         "product_id",
@@ -226,6 +229,7 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "order_types",
         "confidence",
         "source",
+        "role_term",
     ),
     PRODUCT_POINTS: ("product_id", "kind", "name", "description", "confidence", "source"),
     JOURNEYS: (
@@ -260,6 +264,8 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "performer",
         "point_of_no_return",
         "role",
+        "etom_term",
+        "role_term",
     ),
     FLOW_RULES: (
         "journey_id",
@@ -290,6 +296,7 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "purpose",
         "style",
         "tmf_equivalent",
+        "open_apis",
     ),
     CHANNELS: (
         "channel_id",
@@ -299,6 +306,7 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "description",
         "confidence",
         "source",
+        "kind_term",
     ),
     REALISATION: ("product_id", "component_id", "layer", "name", "confidence", "source"),
     NFRS: ("product_id", "quality", "coverage", "statement", "confidence", "source"),
@@ -440,6 +448,18 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "confidence",
         "source",
     ),
+    VOCABULARY: (
+        "term_id",
+        "scheme",
+        "pref_label",
+        "alt_labels",
+        "notation",
+        "definition",
+        "broader_id",
+        "exact_match",
+        "confidence",
+        "source",
+    ),
 }
 # Headers a sheet cannot do without. Columns added later stay optional, so
 # workbooks filled from an older template still import.
@@ -489,6 +509,7 @@ _REQUIRED_HEADERS: dict[str, tuple[str, ...]] = {
     PLAN_CHARACTERISTICS: ("product_id", "plan", "characteristic", "value"),
     BUSINESS_RULES: ("product_id", "rule_id", "statement"),
     CONCEPTS: ("concept_id", "pref_label"),
+    VOCABULARY: ("term_id", "scheme", "pref_label"),
 }
 _KINDS = ", ".join(kind.value for kind in RelationshipKind)
 _REQUIRED_SHEETS = (SYSTEMS,)
@@ -610,6 +631,13 @@ _INSTRUCTIONS = (
     (
         "Capabilities concept_id and OfferingComponents capability_ids (by ;) link them to "
         "concepts; unlinked_reason says why none fits.",
+    ),
+    (
+        "Vocabulary (optional): controlled terms, each in one scheme: etom_process, "
+        "channel_kind, component_kind, responsibility_role or open_api; notation is a code "
+        "such as TMF622. Activities etom_term and role_term, Channels kind_term, "
+        "OfferingComponents type_term, Responsibilities role_term and ActivityIntegrations "
+        "open_apis (by ;) name the term beside the text.",
     ),
     (
         "Systems owner, external (yes or no), roadmap, and placement_from with "
@@ -814,6 +842,7 @@ def content_from_mapping(raw: object) -> CatalogueContent:
         _history(_entries(raw, "change_history")) if "change_history" in raw else None,
         _portfolio(_entries(raw, "portfolio")),
         _concepts(_entries(raw, "business_capabilities")),
+        _terms(_entries(raw, "vocabulary")),
     )
 
 
@@ -856,6 +885,47 @@ def _concept_mapping(concept: BusinessCapability) -> dict[str, Any]:
     }
 
 
+def _terms(entries: list[dict[str, Any]]) -> list[VocabularyTerm]:
+    """Controlled vocabulary terms, each naming its scheme."""
+    terms = []
+    for number, item in enumerate(entries, start=1):
+        where = _where(item, f"vocabulary entry {number}")
+        try:
+            terms.append(
+                VocabularyTerm(
+                    _text(item.get("id"), where, "id"),
+                    vocabulary_scheme(_text(item.get("scheme"), where, "scheme")),
+                    _text(item.get("pref_label"), where, "pref_label"),
+                    _text_list(item.get("alt_labels"), where, "alt_labels"),
+                    _optional_text(item.get("notation"), where, "notation"),
+                    _optional_text(item.get("definition"), where, "definition"),
+                    _optional_text(item.get("broader"), where, "broader"),
+                    _optional_text(item.get("exact_match"), where, "exact_match"),
+                    _trust(item.get("confidence"), where),
+                    _optional_text(item.get("source"), where, "source"),
+                )
+            )
+        except InvalidKnowledgeError as exc:
+            raise _located(where, exc) from exc
+    return terms
+
+
+def _term_mapping(term: VocabularyTerm) -> dict[str, Any]:
+    return {
+        "id": term.id,
+        "scheme": term.scheme.value,
+        "pref_label": term.pref_label,
+        **_present(
+            alt_labels=list(term.alt_labels),
+            notation=term.notation,
+            definition=term.definition,
+            broader=term.broader_id,
+            exact_match=term.exact_match,
+        ),
+        **_sourced(term),
+    }
+
+
 class _LocatedError(InvalidKnowledgeError):
     """An error that already says which row or entry it is about."""
 
@@ -894,6 +964,8 @@ def _activity(step: dict[str, Any], place: str) -> Activity:
             step.get("point_of_no_return"), place, "point_of_no_return"
         ),
         role=_optional_text(step.get("role"), place, "role"),
+        etom_id=_optional_text(step.get("etom_term"), place, "etom_term"),
+        role_id=_optional_text(step.get("role_term"), place, "role_term"),
     )
 
 
@@ -928,6 +1000,7 @@ def _link(link: dict[str, Any], place: str) -> ActivityIntegration:
         purpose=_optional_text(link.get("purpose"), place, "purpose"),
         style=_optional_text(link.get("style"), place, "style"),
         tmf_equivalent=_optional_text(link.get("tmf_equivalent"), place, "tmf_equivalent"),
+        open_api_ids=_text_list(link.get("open_apis"), place, "open_apis"),
     )
 
 
@@ -1007,6 +1080,8 @@ def _journey_mapping(journey: Journey) -> dict[str, Any]:
                         performer=step.performer,
                         point_of_no_return=step.point_of_no_return,
                         role=step.role,
+                        etom_term=step.etom_id,
+                        role_term=step.role_id,
                     ),
                     **_sourced(step),
                 }
@@ -1043,6 +1118,7 @@ def _journey_mapping(journey: Journey) -> dict[str, Any]:
                         purpose=link.purpose,
                         style=link.style,
                         tmf_equivalent=link.tmf_equivalent,
+                        open_apis=list(link.open_api_ids),
                     ),
                     **_sourced(link),
                 }
@@ -1141,6 +1217,7 @@ def _offerings(entries: list[dict[str, Any]]) -> list[ProductOffering]:
                         _text_list(duty.get("order_types"), spot, "order_types"),
                         _trust(duty.get("confidence"), spot),
                         _optional_text(duty.get("source"), spot, "source"),
+                        _optional_text(duty.get("role_term"), spot, "role_term"),
                     )
                     for index, duty in enumerate(_sub_entries(part, "responsibilities", place), 1)
                     for spot in [_where(duty, f"{place}, responsibility {index}")]
@@ -1183,6 +1260,7 @@ def _offerings(entries: list[dict[str, Any]]) -> list[ProductOffering]:
                         unlinked_reason=_optional_text(
                             part.get("unlinked_reason"), place, "unlinked_reason"
                         ),
+                        kind_id=_optional_text(part.get("type_term"), place, "type_term"),
                     )
                 )
             offerings.append(
@@ -1515,7 +1593,9 @@ def _offering_mapping(offering: ProductOffering) -> dict[str, Any]:
                                 "system": duty.system_id,
                                 "role": duty.role,
                                 "description": duty.description,
-                                **_present(order_types=list(duty.order_types)),
+                                **_present(
+                                    order_types=list(duty.order_types), role_term=duty.role_id
+                                ),
                                 **_sourced(duty),
                             }
                             for duty in part.responsibilities
@@ -1526,6 +1606,7 @@ def _offering_mapping(offering: ProductOffering) -> dict[str, Any]:
                         ],
                         capabilities=list(part.capability_ids),
                         unlinked_reason=part.unlinked_reason,
+                        type_term=part.kind_id,
                     ),
                 }
                 for part in offering.components
@@ -1714,6 +1795,7 @@ def _content(
     history: list[ChangeRequestRecord] | None = None,
     portfolio: list[PortfolioNode] | None = None,
     concepts: list[BusinessCapability] | None = None,
+    terms: list[VocabularyTerm] | None = None,
 ) -> CatalogueContent:
     """The file's content, refusing a placement in a domain the file does not list, or a
     link to a concept it does not list."""
@@ -1750,6 +1832,7 @@ def _content(
         None if history is None else tuple(history),
         tuple(portfolio or ()),
         tuple(concepts or ()),
+        tuple(terms or ()),
     )
 
 
@@ -1764,6 +1847,7 @@ def _channels(entries: list[dict[str, Any]]) -> list[Channel]:
                     id=_text(item.get("id"), where, "id"),
                     name=_text(item.get("name"), where, "name"),
                     kind=_optional_text(item.get("kind"), where, "kind"),
+                    kind_id=_optional_text(item.get("kind_term"), where, "kind_term"),
                     entry_system_id=_optional_text(item.get("entry_system"), where, "entry_system"),
                     description=_optional_text(item.get("description"), where, "description"),
                     confidence=_trust(item.get("confidence"), where),
@@ -1781,6 +1865,7 @@ def _channel_mapping(channel: Channel) -> dict[str, Any]:
         "name": channel.name,
         **_present(
             kind=channel.kind,
+            kind_term=channel.kind_id,
             entry_system=channel.entry_system_id,
             description=channel.description,
         ),
@@ -2004,6 +2089,7 @@ def release_to_mapping(release: ArchitectureKnowledge) -> dict[str, Any]:
             business_capabilities=[
                 _concept_mapping(item) for item in release.business_capabilities
             ],
+            vocabulary=[_term_mapping(item) for item in release.vocabulary],
         ),
     }
 
@@ -2198,6 +2284,20 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                 for number, cells in _rows(workbook, CONCEPTS)
             ]
         )
+        terms = _terms(
+            [
+                {
+                    **cells,
+                    "_where": f"{VOCABULARY} row {number}",
+                    "id": cells.get("term_id"),
+                    "alt_labels": list(
+                        _split(cells.get("alt_labels"), f"{VOCABULARY} row {number}", "alt_labels")
+                    ),
+                    "broader": cells.get("broader_id"),
+                }
+                for number, cells in _rows(workbook, VOCABULARY)
+            ]
+        )
     finally:
         workbook.close()
     definitions = []
@@ -2238,6 +2338,7 @@ def _read_workbook(content: bytes) -> CatalogueContent:
         history,
         portfolio,
         concepts,
+        terms,
     )
 
 
@@ -2303,6 +2404,7 @@ def _sheet_journeys(workbook: Any) -> list[dict[str, Any]]:
                 "_where": where,
                 "from": cells.get("from_activity"),
                 "to": cells.get("to_activity"),
+                "open_apis": list(_split(cells.get("open_apis"), where, "open_apis")),
             }
         )
     return list(journeys.values())
@@ -2730,6 +2832,7 @@ def _write_offering(sheets: dict[str, Any], product: ProductOffering) -> None:
                 part.source,
                 f"{_LIST_SEPARATOR} ".join(part.capability_ids),
                 part.unlinked_reason,
+                part.kind_id,
             ),
         )
         for duty in part.responsibilities:
@@ -2744,6 +2847,7 @@ def _write_offering(sheets: dict[str, Any], product: ProductOffering) -> None:
                     f"{_LIST_SEPARATOR} ".join(duty.order_types),
                     _confidence(duty),
                     duty.source,
+                    duty.role_id,
                 ),
             )
         for item in part.realisation:
@@ -2938,6 +3042,8 @@ def _write_journey(sheets: dict[str, Any], journey: Journey) -> None:
                 step.performer,
                 step.point_of_no_return,
                 step.role,
+                step.etom_id,
+                step.role_id,
             ),
         )
     for rule in journey.flow_rules:
@@ -2976,6 +3082,7 @@ def _write_journey(sheets: dict[str, Any], journey: Journey) -> None:
                 link.purpose,
                 link.style,
                 link.tmf_equivalent,
+                joined(link.open_api_ids),
             ),
         )
 
@@ -3077,6 +3184,22 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 concept.source,
             ),
         )
+    for term in release.vocabulary if release is not None else ():
+        _append(
+            sheets[VOCABULARY],
+            (
+                term.id,
+                term.scheme.value,
+                term.pref_label,
+                f"{_LIST_SEPARATOR} ".join(term.alt_labels),
+                term.notation,
+                term.definition,
+                term.broader_id,
+                term.exact_match,
+                _confidence(term),
+                term.source,
+            ),
+        )
     for node in release.portfolio if release is not None else ():
         _append(
             sheets[PORTFOLIO],
@@ -3105,6 +3228,7 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 channel.description,
                 _confidence(channel),
                 channel.source,
+                channel.kind_id,
             ),
         )
     for source in release.sources if release is not None else ():

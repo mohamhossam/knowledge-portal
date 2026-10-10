@@ -47,6 +47,7 @@ from knowledge_portal.application.use_cases.change_requests import (
 from knowledge_portal.application.use_cases.resolve_architecture_knowledge import (
     ResolveArchitectureKnowledge,
 )
+from knowledge_portal.application.use_cases.vocabulary_cleanup import CleanUpVocabulary
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
 from knowledge_portal.infrastructure.architecture.catalogue_tables import (
     CatalogueTableReader,
@@ -89,6 +90,8 @@ class ArchitectureWiring:
     # The capability concept scheme and its links, as suggestions (ADR-0114).
     propose_concepts: ProposeCapabilityConcepts
     suggest_component_links: SuggestComponentCapabilities
+    # The clean-up mapping written values onto the controlled vocabularies.
+    clean_up_vocabulary: CleanUpVocabulary
     # Change requests from Requirement AI (requirement-portal ADR-0101, step 7).
     receive_change_request: ReceiveChangeRequest
     list_change_requests: ListChangeRequests
@@ -187,6 +190,7 @@ def build_architecture(
             persistence.change_requests,
         ),
         propose_concepts=ProposeCapabilityConcepts(manage, persistence.catalogue_candidates, clock),
+        clean_up_vocabulary=CleanUpVocabulary(manage, persistence.catalogue_candidates, clock),
         suggest_component_links=SuggestComponentCapabilities(
             manage, persistence.catalogue_candidates, llm.capability_linker, clock
         ),

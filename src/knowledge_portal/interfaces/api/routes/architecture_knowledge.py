@@ -258,6 +258,11 @@ def update_draft(
                 if body.business_capabilities is None
                 else tuple(item.to_domain() for item in body.business_capabilities)
             ),
+            vocabulary=(
+                None
+                if body.vocabulary is None
+                else tuple(item.to_domain() for item in body.vocabulary)
+            ),
         )
     )
 
@@ -718,6 +723,24 @@ def propose_capability_concepts(
     """
     return ExtractionRunResponse.from_domain(
         container.propose_capability_concepts.execute(release_id, actor)
+    )
+
+
+@router.post(
+    "/releases/{release_id}/vocabulary-cleanup",
+    response_model=ExtractionRunResponse,
+    status_code=201,
+)
+def clean_up_vocabulary(
+    release_id: str, container: ContainerDep, actor: KnowledgeActorDep
+) -> ExtractionRunResponse:
+    """Suggest the term each eTOM process, channel kind, component kind, role and Open API
+    value the draft writes means; a value no term names is suggested as a new term.
+
+    The suggestions replace the undecided ones of the previous clean-up.
+    """
+    return ExtractionRunResponse.from_domain(
+        container.clean_up_vocabulary.execute(release_id, actor)
     )
 
 

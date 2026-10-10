@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from enum import StrEnum
 
+from knowledge_portal.domain.architecture.journeys import Journey
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
     SystemDefinition,
@@ -43,6 +44,7 @@ _OFFERING_FIELDS = (
 _CHANNEL_FIELDS = (
     ("name", "name"),
     ("kind", "channel_kind"),
+    ("kind_id", "vocabulary_links"),
     ("entry_system_id", "entry_system_id"),
     ("description", "description"),
     ("confidence", "confidence"),
@@ -114,12 +116,94 @@ _CONCEPT_FIELDS = (
 )
 
 
+# A vocabulary term's attributes, as reported.
+_TERM_FIELDS = (
+    "scheme",
+    "pref_label",
+    "alt_labels",
+    "notation",
+    "definition",
+    "broader_id",
+    "exact_match",
+    "confidence",
+    "source",
+)
+
+
 def _bare(offering: ProductOffering) -> tuple[object, ...]:
-    """An offering's components without their responsibilities, realisation and concepts."""
+    """An offering's components without their responsibilities, realisation, concepts and
+    vocabulary terms."""
     return tuple(
-        replace(item, responsibilities=(), realisation=(), capability_ids=(), unlinked_reason=None)
+        replace(
+            item,
+            responsibilities=(),
+            realisation=(),
+            capability_ids=(),
+            unlinked_reason=None,
+            kind_id=None,
+        )
         for item in offering.components
     )
+
+
+def _duties(offering: ProductOffering) -> list[tuple[object, ...]]:
+    """Each component's responsibilities without their role terms."""
+    return [
+        tuple(replace(duty, role_id=None) for duty in item.responsibilities)
+        for item in offering.components
+    ]
+
+
+def _offering_terms(offering: ProductOffering) -> dict[tuple[str, ...], str]:
+    """The terms its parts and their responsibilities are linked to, by where."""
+    terms: dict[tuple[str, ...], str] = {
+        (item.id,): item.kind_id for item in offering.components if item.kind_id
+    }
+    terms.update(
+        ((item.id, duty.system_id, duty.role), duty.role_id)
+        for item in offering.components
+        for duty in item.responsibilities
+        if duty.role_id
+    )
+    return terms
+
+
+def _journey_fields(before: Journey, after: Journey) -> tuple[str, ...]:
+    """Which parts of a journey changed; the terms its activities and integrations are
+    linked to count as "vocabulary_links", apart from the rest of them."""
+
+    def bare(journey: Journey) -> Journey:
+        return replace(
+            journey,
+            activities=tuple(
+                replace(item, etom_id=None, role_id=None) for item in journey.activities
+            ),
+            integrations=tuple(replace(item, open_api_ids=()) for item in journey.integrations),
+        )
+
+    def terms(journey: Journey) -> dict[tuple[str, ...], tuple[str, ...]]:
+        found: dict[tuple[str, ...], tuple[str, ...]] = {
+            (item.number, name): (term,)
+            for item in journey.activities
+            for name, term in (("etom", item.etom_id), ("role", item.role_id))
+            if term
+        }
+        found.update(
+            ((str(position), "api"), item.open_api_ids)
+            for position, item in enumerate(journey.integrations)
+            if item.open_api_ids
+        )
+        return found
+
+    plain_before, plain_after = bare(before), bare(after)
+    fields = [
+        field
+        for field in _JOURNEY_FIELDS
+        if getattr(plain_before, field) != getattr(plain_after, field)
+    ]
+    if terms(before) != terms(after):
+        fields.append("vocabulary_links")
+    return tuple(fields)
 
 
 def _links(offering: ProductOffering) -> list[tuple[frozenset[str], str | None]]:
@@ -137,9 +221,7 @@ def _offering_fields(before: ProductOffering, after: ProductOffering) -> tuple[s
     ]
     if _bare(before) != _bare(after):
         fields.append("components")
-    if [item.responsibilities for item in before.components] != [
-        item.responsibilities for item in after.components
-    ]:
+    if _duties(before) != _duties(after):
         fields.append("responsibilities")
     if [item.realisation for item in before.components] != [
         item.realisation for item in after.components
@@ -147,6 +229,8 @@ def _offering_fields(before: ProductOffering, after: ProductOffering) -> tuple[s
         fields.append("realisation")
     if _links(before) != _links(after):
         fields.append("capability_links")
+    if _offering_terms(before) != _offering_terms(after):
+        fields.append("vocabulary_links")
     return tuple(fields)
 
 
@@ -173,6 +257,9 @@ class ChangedItem(StrEnum):
     CHANGE_REQUEST = "change_request"
     # A business capability concept (ADR-0114).
     CONCEPT = "concept"
+    # A controlled vocabulary term: an eTOM process, a channel or component kind, a role or
+    # an Open API.
+    VOCABULARY_TERM = "vocabulary_term"
 
 
 @dataclass(frozen=True)
@@ -455,11 +542,7 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
                 ChangeKind.CHANGED,
                 key,
                 label,
-                tuple(
-                    field
-                    for field in _JOURNEY_FIELDS
-                    if getattr(previous_journey[1], field) != getattr(journey, field)
-                ),
+                _journey_fields(previous_journey[1], journey),
             )
         )
     base_channels = {item.id: (item.name, item) for item in base.channels}
@@ -504,6 +587,14 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
             _CONCEPT_FIELDS,
             {item.id: (item.pref_label, item) for item in base.business_capabilities},
             {item.id: (item.pref_label, item) for item in draft.business_capabilities},
+        )
+    )
+    changes.extend(
+        _register_changes(
+            ChangedItem.VOCABULARY_TERM,
+            _TERM_FIELDS,
+            {item.id: (item.pref_label, item) for item in base.vocabulary},
+            {item.id: (item.pref_label, item) for item in draft.vocabulary},
         )
     )
     changes.extend(

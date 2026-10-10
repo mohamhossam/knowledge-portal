@@ -121,6 +121,8 @@ _ORDER = (
     CandidateKind.CONCEPT,
     # and a component is linked to concepts and belongs to an offering.
     CandidateKind.COMPONENT_LINK,
+    # A vocabulary term links values written in channels, offerings and journeys.
+    CandidateKind.VOCABULARY_TERM,
 )
 
 CommitFence = Callable[[], None]
@@ -145,6 +147,7 @@ def _view(candidate: CatalogueCandidate, release: ArchitectureKnowledge) -> Cand
         CandidateKind.QUESTION,
         CandidateKind.CONCEPT,
         CandidateKind.COMPONENT_LINK,
+        CandidateKind.VOCABULARY_TERM,
     }
     source = None if channel else find_system(release, candidate.content.system_id)
     target = None if channel else find_system(release, candidate.content.target_system_id or "")
@@ -523,6 +526,7 @@ def _accepted(
         sources=merged.sources,
         change_history=merged.change_history,
         business_capabilities=merged.business_capabilities,
+        vocabulary=merged.vocabulary,
     )
 
 

@@ -671,6 +671,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/architecture-knowledge/releases/{release_id}/vocabulary-cleanup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Clean Up Vocabulary
+         * @description Suggest the term each eTOM process, channel kind, component kind, role and Open API
+         *     value the draft writes means; a value no term names is suggested as a new term.
+         *
+         *     The suggestions replace the undecided ones of the previous clean-up.
+         */
+        post: operations["clean_up_vocabulary_architecture_knowledge_releases__release_id__vocabulary_cleanup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/architecture-knowledge/sample-requirements": {
         parameters: {
             query?: never;
@@ -2027,6 +2050,11 @@ export interface components {
             interaction?: string | null;
             /** Interface */
             interface?: string | null;
+            /**
+             * Open Api Ids
+             * @default []
+             */
+            open_api_ids: string[];
             /** Payload */
             payload?: string | null;
             /** Purpose */
@@ -2070,6 +2098,8 @@ export interface components {
             description?: string | null;
             /** Etom */
             etom?: string | null;
+            /** Etom Id */
+            etom_id?: string | null;
             /** Input */
             input?: string | null;
             /** Mode */
@@ -2090,6 +2120,8 @@ export interface components {
             point_of_no_return?: string | null;
             /** Role */
             role?: string | null;
+            /** Role Id */
+            role_id?: string | null;
             /** Source */
             source?: string | null;
             /**
@@ -2436,6 +2468,7 @@ export interface components {
             target_system_id?: string | null;
             /** Technology */
             technology?: string | null;
+            term?: components["schemas"]["VocabularyTermSchema"] | null;
             /**
              * Text
              * @default
@@ -2446,12 +2479,17 @@ export interface components {
              * @default []
              */
             triggers: string[];
+            /**
+             * Value Refs
+             * @default []
+             */
+            value_refs: components["schemas"]["VocabularyRefSchema"][];
         };
         /**
          * CandidateKind
          * @enum {string}
          */
-        CandidateKind: "system" | "component" | "capability" | "constraint" | "relationship" | "landscape_domain" | "placement" | "product" | "journey" | "channel" | "question" | "concept" | "component_link";
+        CandidateKind: "system" | "component" | "capability" | "constraint" | "relationship" | "landscape_domain" | "placement" | "product" | "journey" | "channel" | "question" | "concept" | "component_link" | "vocabulary_term";
         /**
          * CandidateMatch
          * @description How a candidate relates to the draft as it stands now.
@@ -2570,7 +2608,7 @@ export interface components {
          *     undecided suggestions of the previous one.
          * @enum {string}
          */
-        CatalogueReading: "concept_backfill" | "component_links";
+        CatalogueReading: "concept_backfill" | "component_links" | "vocabulary_cleanup";
         /** CatalogueSuggestionResponse */
         CatalogueSuggestionResponse: {
             basis: components["schemas"]["CandidateBasis"];
@@ -2744,7 +2782,7 @@ export interface components {
          * ChangedItem
          * @enum {string}
          */
-        ChangedItem: "system" | "capability" | "relationship" | "document" | "domain" | "component" | "landscape_domain" | "product" | "journey" | "channel" | "source" | "conflict" | "change_request" | "concept";
+        ChangedItem: "system" | "capability" | "relationship" | "document" | "domain" | "component" | "landscape_domain" | "product" | "journey" | "channel" | "source" | "conflict" | "change_request" | "concept" | "vocabulary_term";
         /**
          * ChannelSchema
          * @description Where orders are placed, and the system each is entered through (ADR-0101, step 3).
@@ -2759,6 +2797,8 @@ export interface components {
             id: string;
             /** Kind */
             kind?: string | null;
+            /** Kind Id */
+            kind_id?: string | null;
             /** Name */
             name: string;
             /** Source */
@@ -2864,6 +2904,8 @@ export interface components {
             order_types: string[];
             /** Role */
             role: string;
+            /** Role Id */
+            role_id?: string | null;
             /** Source */
             source?: string | null;
             /** System Id */
@@ -3101,6 +3143,8 @@ export interface components {
             sources?: components["schemas"]["KnowledgeSourceSchema"][] | null;
             /** Systems */
             systems: components["schemas"]["SystemDefinitionSchema"][];
+            /** Vocabulary */
+            vocabulary?: components["schemas"]["VocabularyTermSchema"][] | null;
         };
         /**
          * EvidenceBlockKind
@@ -3700,6 +3744,8 @@ export interface components {
             status: components["schemas"]["KnowledgeReleaseStatus"];
             /** Systems */
             systems: components["schemas"]["SystemDefinitionSchema"][];
+            /** Vocabulary */
+            vocabulary?: components["schemas"]["VocabularyTermSchema"][];
         };
         /**
          * KnowledgeReleaseStatus
@@ -4154,6 +4200,8 @@ export interface components {
             id: string;
             /** Kind */
             kind?: string | null;
+            /** Kind Id */
+            kind_id?: string | null;
             /** Mandatory */
             mandatory?: boolean | null;
             /** Name */
@@ -5533,6 +5581,59 @@ export interface components {
         Versioned: {
             /** Expected Version */
             expected_version: number;
+        };
+        /**
+         * VocabularyField
+         * @enum {string}
+         */
+        VocabularyField: "activity_etom" | "activity_role" | "channel_kind" | "component_kind" | "responsibility_role" | "integration_open_api";
+        /**
+         * VocabularyRefSchema
+         * @description One place a vocabulary value is written, and the value as it was read there.
+         */
+        VocabularyRefSchema: {
+            field: components["schemas"]["VocabularyField"];
+            /** Item */
+            item?: string | null;
+            /** Owner Id */
+            owner_id: string;
+            /** Part */
+            part?: string | null;
+            /** Value */
+            value: string;
+        };
+        /**
+         * VocabularyScheme
+         * @enum {string}
+         */
+        VocabularyScheme: "etom_process" | "channel_kind" | "component_kind" | "responsibility_role" | "open_api";
+        /**
+         * VocabularyTermSchema
+         * @description A term of a controlled vocabulary: an eTOM process, a channel or component kind, a
+         *     role or an Open API.
+         */
+        VocabularyTermSchema: {
+            /**
+             * Alt Labels
+             * @default []
+             */
+            alt_labels: string[];
+            /** Broader Id */
+            broader_id?: string | null;
+            confidence?: components["schemas"]["SourceConfidence"] | null;
+            /** Definition */
+            definition?: string | null;
+            /** Exact Match */
+            exact_match?: string | null;
+            /** Id */
+            id: string;
+            /** Notation */
+            notation?: string | null;
+            /** Pref Label */
+            pref_label: string;
+            scheme: components["schemas"]["VocabularyScheme"];
+            /** Source */
+            source?: string | null;
         };
         /** WithdrawRequest */
         WithdrawRequest: {
@@ -7084,6 +7185,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KnowledgeReleaseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    clean_up_vocabulary_architecture_knowledge_releases__release_id__vocabulary_cleanup_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtractionRunResponse"];
                 };
             };
             /** @description Validation Error */

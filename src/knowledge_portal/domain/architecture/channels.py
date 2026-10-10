@@ -25,6 +25,8 @@ class Channel:
     name: str
     # As the source says: "Digital", "Assisted", "Care".
     kind: str | None = None
+    # The channel kind term the kind means, beside the text; None while unmapped.
+    kind_id: str | None = None
     entry_system_id: str | None = None
     description: str | None = None
     confidence: SourceConfidence | None = None
@@ -35,6 +37,7 @@ class Channel:
         object.__setattr__(self, "name", required(self.name, "Channel name"))
         for field, label in (
             ("kind", "Channel kind"),
+            ("kind_id", "Channel kind term"),
             ("entry_system_id", "Entry system"),
             ("description", "Description"),
         ):
@@ -90,6 +93,7 @@ def merge_channels(first: Channel, second: Channel) -> Channel:
     return replace(
         first,
         kind=first.kind or second.kind,
+        kind_id=first.kind_id or second.kind_id,
         entry_system_id=first.entry_system_id or second.entry_system_id,
         description=first.description or second.description,
         confidence=first.confidence or second.confidence,

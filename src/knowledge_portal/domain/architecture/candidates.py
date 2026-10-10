@@ -53,6 +53,18 @@ from knowledge_portal.domain.architecture.products import (
     same_offering,
 )
 from knowledge_portal.domain.architecture.tracking import TrackingChannel
+from knowledge_portal.domain.architecture.vocabularies import (
+    SCHEME_NAMES,
+    VocabularyTerm,
+    find_term,
+)
+from knowledge_portal.domain.architecture.vocabulary_links import (
+    VocabularyRef,
+    kept_component_terms,
+    kept_journey_terms,
+    linkable,
+    with_terms,
+)
 
 
 class CandidateKind(StrEnum):
@@ -76,6 +88,8 @@ class CandidateKind(StrEnum):
     CONCEPT = "concept"
     # The concepts an offering component delivers, as a model suggests them (ADR-0114).
     COMPONENT_LINK = "component_link"
+    # A controlled vocabulary term, and the values written in the catalogue it covers.
+    VOCABULARY_TERM = "vocabulary_term"
 
 
 class CandidateStatus(StrEnum):
@@ -143,7 +157,9 @@ _PLACING = frozenset({CandidateKind.LANDSCAPE_DOMAIN, CandidateKind.PLACEMENT})
 # Reviewed and accepted whole, replacing the item they match; they name no one system.
 _WHOLE = frozenset({CandidateKind.PRODUCT, CandidateKind.JOURNEY})
 # Their subject is a concept or an offering, never a system.
-_CONCEPTUAL = frozenset({CandidateKind.CONCEPT, CandidateKind.COMPONENT_LINK})
+_CONCEPTUAL = frozenset(
+    {CandidateKind.CONCEPT, CandidateKind.COMPONENT_LINK, CandidateKind.VOCABULARY_TERM}
+)
 # What a model may infer rather than read: how systems depend, and what a component delivers.
 _INFERABLE = frozenset({CandidateKind.RELATIONSHIP, CandidateKind.COMPONENT_LINK})
 
@@ -176,6 +192,8 @@ class CandidateContent:
       are the system capabilities it covers, linked to it when it is accepted
     - component_link: ``system_id`` (the offering), ``component_id`` (its component) and the
       ``concept_ids`` it delivers
+    - vocabulary_term: the whole ``term``; its id is also the ``system_id``. ``value_refs``
+      are the places a value it means is written, linked to it when it is accepted
     """
 
     kind: CandidateKind
@@ -200,6 +218,8 @@ class CandidateContent:
     concept: BusinessCapability | None = None
     capability_refs: tuple[CapabilityRef, ...] = ()
     concept_ids: tuple[str, ...] = ()
+    term: VocabularyTerm | None = None
+    value_refs: tuple[VocabularyRef, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "kind", CandidateKind(self.kind))
@@ -260,6 +280,16 @@ class CandidateContent:
             raise InvalidKnowledgeError("Only a component link names concepts.")
         if len(set(self.concept_ids)) != len(self.concept_ids):
             raise InvalidKnowledgeError("A component link names a concept more than once.")
+        if (self.term is not None) != (self.kind is CandidateKind.VOCABULARY_TERM):
+            raise InvalidKnowledgeError("Only a vocabulary suggestion holds a term.")
+        if self.value_refs and self.kind is not CandidateKind.VOCABULARY_TERM:
+            raise InvalidKnowledgeError("Only a vocabulary suggestion covers written values.")
+        if len(set(self.value_refs)) != len(self.value_refs):
+            raise InvalidKnowledgeError("A vocabulary suggestion names a value more than once.")
+        if self.term is not None and any(
+            ref.scheme is not self.term.scheme for ref in self.value_refs
+        ):
+            raise InvalidKnowledgeError("A term covers only values of its own vocabulary.")
         if self.kind in _PLACING:
             _required(self.landscape_domain_id or "", "Landscape domain")
         if self.kind is CandidateKind.LANDSCAPE_DOMAIN:
@@ -271,6 +301,7 @@ class CandidateContent:
             CandidateKind.CHANNEL,
             CandidateKind.QUESTION,
             CandidateKind.CONCEPT,
+            CandidateKind.VOCABULARY_TERM,
         }:
             pass
         elif self.kind is CandidateKind.COMPONENT_LINK:
@@ -658,7 +689,8 @@ def _kept_governance(offering: ProductOffering, current: ProductOffering) -> Pro
 
 def _kept_links(offering: ProductOffering, current: ProductOffering) -> ProductOffering:
     """The suggested offering keeping each component's concepts, or the reason it has none,
-    where the reading says nothing about them: a document never unlinks a component."""
+    where the reading says nothing about them, and its vocabulary terms where it writes the
+    same values: a document never unlinks a component."""
     before = {item.id: item for item in current.components}
     parts = []
     for item in offering.components:
@@ -667,6 +699,8 @@ def _kept_links(offering: ProductOffering, current: ProductOffering) -> ProductO
             item = replace(
                 item, capability_ids=kept.capability_ids, unlinked_reason=kept.unlinked_reason
             )
+        if kept is not None:
+            item = kept_component_terms(item, kept)
         parts.append(item)
     return replace(offering, components=tuple(parts))
 
@@ -936,6 +970,8 @@ def _linked_component(
 
 
 def classify(content: CandidateContent, release: ArchitectureKnowledge) -> CandidateMatch:
+    if content.kind is CandidateKind.VOCABULARY_TERM and content.term is not None:
+        return _classify_term(content.term, content, release)
     if content.kind is CandidateKind.CONCEPT and content.concept is not None:
         if any(find_system(release, ref.system_id) is None for ref in content.capability_refs):
             return CandidateMatch.NEEDS_SYSTEM
@@ -992,7 +1028,7 @@ def classify(content: CandidateContent, release: ArchitectureKnowledge) -> Candi
         kept = _current_journey(journey, release)
         if kept is None:
             return CandidateMatch.NEW
-        same = replace(journey, id=kept.id) == kept
+        same = kept_journey_terms(replace(journey, id=kept.id), kept) == kept
         return CandidateMatch.ALREADY_PRESENT if same else CandidateMatch.UPDATES_EXISTING
     if content.kind is CandidateKind.PRODUCT and content.product is not None:
         offering, missing = _resolved_offering(content.product, release)
@@ -1161,9 +1197,15 @@ def needs_one_by_one(candidate: CatalogueCandidate, release: ArchitectureKnowled
     moves = (
         candidate.content.kind is CandidateKind.PLACEMENT or candidate.content.kind in _WHOLE
     ) and classify(candidate.content, release) is CandidateMatch.UPDATES_EXISTING
+    # A value no term names is flagged: a maintainer decides each new term alone.
+    flagged = (
+        candidate.content.kind is CandidateKind.VOCABULARY_TERM
+        and classify(candidate.content, release) is CandidateMatch.NEW
+    )
     return (
         candidate.basis is CandidateBasis.INFERRED
         or moves
+        or flagged
         or bool(open_matches(candidate, release))
     )
 
@@ -1331,7 +1373,7 @@ def _with_journey(journey: Journey, release: ArchitectureKnowledge) -> Architect
     current = _current_journey(resolved, release)
     if current is None:
         return release.updated(journeys=(*release.journeys, resolved))
-    kept = replace(resolved, id=current.id)
+    kept = kept_journey_terms(replace(resolved, id=current.id), current)
     return release.updated(
         journeys=tuple(kept if item.id == current.id else item for item in release.journeys)
     )
@@ -1527,6 +1569,116 @@ def _with_component_link(
     )
 
 
+def _term_broader(term: VocabularyTerm, release: ArchitectureKnowledge) -> VocabularyTerm:
+    """The term naming its broader term by id, however the suggestion named it."""
+    if term.broader_id is None:
+        return term
+    broader = find_term(release.vocabulary, term.scheme, term.broader_id)
+    if broader is None:
+        raise CandidateDependencyError(
+            f"Accept or add the {SCHEME_NAMES[term.scheme]} {term.broader_id!r} before the "
+            f"narrower {term.pref_label}."
+        )
+    return replace(term, broader_id=broader.id)
+
+
+def _term_to_apply(
+    suggested: VocabularyTerm, release: ArchitectureKnowledge
+) -> tuple[VocabularyTerm, VocabularyTerm | None]:
+    """The term the draft would hold once the suggestion is accepted, and the one it holds
+    now. Like a concept suggestion, it adds labels and fills what is missing; it never
+    moves a term a person placed, nor rewrites its definition."""
+    scheme, terms = suggested.scheme, release.vocabulary
+    current = find_term(terms, scheme, suggested.id) or find_term(
+        terms, scheme, suggested.pref_label
+    )
+    owner_id = current.id if current is not None else None
+
+    def free(label: str) -> bool:
+        owner = find_term(terms, scheme, label)
+        return owner is None or owner.id == owner_id
+
+    labels: list[str] = []
+    for label in (suggested.pref_label, *suggested.alt_labels):
+        key = label_key(label)
+        if free(label) and key not in {label_key(item) for item in labels}:
+            labels.append(label)
+    notation = suggested.notation if suggested.notation and free(suggested.notation) else None
+    if current is None:
+        if not labels or labels[0] != suggested.pref_label:
+            raise CandidateDependencyError(
+                f"{suggested.pref_label!r} already names another {SCHEME_NAMES[scheme]}; edit "
+                "the suggestion to merge into it or to use another label."
+            )
+        return replace(suggested, alt_labels=tuple(labels[1:]), notation=notation), None
+    known = {label_key(item) for item in current.labels}
+    extra = tuple(label for label in labels if label_key(label) not in known)
+    if notation is not None and label_key(notation) in {label_key(item) for item in extra}:
+        notation = None
+    return (
+        replace(
+            current,
+            alt_labels=(*current.alt_labels, *extra),
+            notation=current.notation or notation,
+            definition=current.definition or suggested.definition,
+            broader_id=current.broader_id or suggested.broader_id,
+            exact_match=current.exact_match or suggested.exact_match,
+        ),
+        current,
+    )
+
+
+def _term_places(
+    content: CandidateContent, term_id: str, release: ArchitectureKnowledge
+) -> tuple[VocabularyRef, ...]:
+    return linkable(
+        content.value_refs, term_id, release.products, release.journeys, release.channels
+    )
+
+
+def _classify_term(
+    term: VocabularyTerm, content: CandidateContent, release: ArchitectureKnowledge
+) -> CandidateMatch:
+    if term.broader_id is not None and (
+        find_term(release.vocabulary, term.scheme, term.broader_id) is None
+    ):
+        return CandidateMatch.NEEDS_CONCEPT
+    try:
+        merged, held = _term_to_apply(_term_broader(term, release), release)
+    except CandidateDependencyError:
+        return CandidateMatch.UPDATES_EXISTING
+    if held is None:
+        return CandidateMatch.NEW
+    places = _term_places(content, held.id, release)
+    return (
+        CandidateMatch.UPDATES_EXISTING
+        if places or merged != held
+        else CandidateMatch.ALREADY_PRESENT
+    )
+
+
+def _with_term(
+    content: CandidateContent, suggested: VocabularyTerm, release: ArchitectureKnowledge
+) -> ArchitectureKnowledge:
+    """The term added, or merged into the one it names, and the values it covers linked to
+    it. A place already linked to a term, or whose text has changed, keeps what it has."""
+    term, current = _term_to_apply(_term_broader(suggested, release), release)
+    vocabulary = (
+        tuple(term if item.id == current.id else item for item in release.vocabulary)
+        if current is not None
+        else (*release.vocabulary, term)
+    )
+    linked = with_terms(
+        content.value_refs, term.id, release.products, release.journeys, release.channels
+    )
+    return release.updated(
+        vocabulary=vocabulary,
+        products=linked.products,
+        journeys=linked.journeys,
+        channels=linked.channels,
+    )
+
+
 def apply_candidate(
     content: CandidateContent, release: ArchitectureKnowledge
 ) -> ArchitectureKnowledge:
@@ -1549,6 +1701,8 @@ def apply_candidate(
         return _with_concept(content, content.concept, release)
     if content.kind is CandidateKind.COMPONENT_LINK:
         return _with_component_link(content, release)
+    if content.kind is CandidateKind.VOCABULARY_TERM and content.term is not None:
+        return _with_term(content, content.term, release)
     if content.kind is CandidateKind.SYSTEM:
         existing = find_system(release, content.system_id) or find_system(release, content.name)
         arabic = (content.name_ar,) if content.name_ar else ()
