@@ -404,4 +404,13 @@ Checks: tests 25/25 with axe; lint, brand lint, build and budget green; no sidew
 - **Catalogue bar:** the identity line under "SMB architecture" reads "Architecture catalogue" instead of "Draft · revision 2".
 - **Products section:** "Products on this architecture" is removed from the bottom of the landscape. Products are reached from the catalogue bar's Products tab, and versions belong on the Versions section and product pages.
 
+**Built for many products (2026-10-10, user).** All screens were reviewed for single-product assumptions.
+- **Products index (`/products`, new):** every offering under its portfolio path (business unit › line of business › segment › family). Each product is a card with its purpose, its plans, components, order types and journeys, and a **reach strip**: one cell per system in map order, filled in its layer colour where the product's journeys reach. The page also has a filter.
+- **Journeys index (`/journeys`, new):** a hero with coverage (order types modelled out of offered) and counts per stage, and a **coverage matrix**: order types grouped by stage down the side, products across the top. Each cell is a modelled journey (with its step count), offered but not modelled (dashed ochre), or not offered. Shared journeys such as order tracking sit in an "Across order types" group.
+- **Catalogue bar:** Products and Journeys open these indexes instead of the first product and its first journey.
+- **Landscape side panel:** a picked system now lists "Used by products" (core or used, with "in n of m journeys"), linking to that product's Architecture tab with the system pre-selected (`?system=`), and its journeys grouped by product.
+- **Shared helpers:** `DOMAIN_ORDER`, `systemsInMapOrder()` and `reachOf()` in `posterModel.ts`. Product pages were already scoped to one product.
+
+The fixture has one product; no others were invented. Checks: tests 28/28 with axe (3 new); lint, brand lint, build and budget green.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.

@@ -16,8 +16,9 @@ import { fromRelease } from "../../architecture/adapter";
 import release from "../../architecture/fixtures/smb-release.json";
 import { EVIDENCE_WORDS, type Evidence } from "../../architecture/model";
 import brandLogo from "./assets/etisalat-logo-white.svg";
+import { JourneysIndex, ProductsIndex } from "./CatalogueIndexes";
 import { JourneyFlow } from "./JourneyFlow";
-import { firstJourneyHref, LAB, LabData, useLabData } from "./labData";
+import { LAB, LabData, useLabData } from "./labData";
 import { LandscapeHero } from "./LandscapeHero";
 import { ProductArchitecture } from "./ProductArchitecture";
 import { ProductOverview } from "./ProductPage";
@@ -88,11 +89,10 @@ const ICONS: Record<string, ReactNode> = {
  */
 export function AreaTabs({ current }: { current: "landscape" | "products" | "journeys" }) {
   const data = useLabData();
-  const product = data.offerings[0];
   const items: { id: string; label: string; to?: string; count?: number }[] = [
     { id: "landscape", label: "Landscape", to: LAB },
-    { id: "products", label: "Products", to: product ? `${LAB}/products/${product.id}` : undefined, count: data.offerings.length },
-    { id: "journeys", label: "Journeys", to: firstJourneyHref(data), count: data.journeys.length },
+    { id: "products", label: "Products", to: `${LAB}/products`, count: data.offerings.length },
+    { id: "journeys", label: "Journeys", to: `${LAB}/journeys`, count: data.journeys.length },
     { id: "systems", label: "Systems", count: data.systems.length },
     { id: "governance", label: "Governance", count: data.findings.length },
     { id: "versions", label: "Versions" },
@@ -220,6 +220,8 @@ export default function CatalogueLab() {
       <LabShell>
         <Routes>
           <Route index element={<LandscapeHero />} />
+          <Route path="products" element={<ProductsIndex />} />
+          <Route path="journeys" element={<JourneysIndex />} />
           <Route path="products/:offeringId" element={<ProductOverview />} />
           <Route path="products/:offeringId/hierarchy" element={<ProductHierarchy />} />
           <Route path="products/:offeringId/plans" element={<ProductPlans />} />

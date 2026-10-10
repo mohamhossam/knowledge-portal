@@ -14,9 +14,9 @@ import { Link, useSearchParams } from "react-router-dom";
 import { AreaTabs, EvidenceTag } from "./CatalogueLab";
 import { ArchitectureMap } from "./ArchitectureMap";
 import { IntegrationMatrix } from "./IntegrationMatrix";
-import { journeyHref, useLabData } from "./labData";
+import { journeyHref, LAB, useLabData } from "./labData";
 import { plural, useTitle } from "./labUtil";
-import { allIntegrations, allViews, degrees as degreesOf, links, partnersOf } from "./posterModel";
+import { allIntegrations, allViews, degrees as degreesOf, links, partnersOf, reachOf } from "./posterModel";
 import { TamWheel } from "./TamWheel";
 
 const VIEW_ICONS = {
@@ -61,6 +61,7 @@ export function LandscapeHero() {
   const linkCounts = useMemo(() => links(data, integrations), [data, integrations]);
   const degrees = useMemo(() => degreesOf(integrations), [integrations]);
   const views = useMemo(() => allViews(data), [data]);
+  const reach = useMemo(() => new Map(data.offerings.map((offering) => [offering.id, reachOf(data, offering.id)])), [data]);
   const systemById = useMemo(() => new Map(data.systems.map((system) => [system.id, system])), [data]);
   const layers = useMemo(() => data.domains.map((domain) => ({ domain, systems: data.systems.filter((system) => system.domain === domain.id) })).filter((item) => item.systems.length), [data]);
   const ORDER = ["market-sales", "product", "customer", "integration", "service", "resource", "engaged-party", "enterprise"];
@@ -100,6 +101,17 @@ export function LandscapeHero() {
   const journeysThrough = system
     ? data.journeys.filter((journey) => views.some((item) => item.id === journey.id && (item.steps.some((step) => step.lane === system.id) || item.integrations.some((call) => [call.from, call.to, call.via].includes(system.id)))))
     : [];
+  // Which products use the picked system, how centrally, and through which of their journeys.
+  const productUse = system
+    ? data.offerings
+        .map((offering) => {
+          const set = reach.get(offering.id)?.get(system.id);
+          const total = data.journeys.filter((journey) => journey.offeringId === offering.id).length;
+          return { offering, count: set?.size ?? 0, total, core: (set?.size ?? 0) >= Math.max(2, Math.ceil(total / 2)), journeys: journeysThrough.filter((journey) => journey.offeringId === offering.id) };
+        })
+        .filter((item) => item.count > 0)
+    : [];
+  const sharedThrough = journeysThrough.filter((journey) => !journey.offeringId);
   const steps = system ? new Set(views.flatMap((item) => item.steps.filter((step) => step.kind === "task" && step.lane === system.id).map((step) => `${item.id}:${step.id}`))).size : 0;
   const domain = system ? data.domains.find((item) => item.id === system.domain) : null;
   const group = domain?.groups.find((item) => item.id === system?.group);
@@ -297,16 +309,52 @@ export function LandscapeHero() {
                   </ul>
                 </>
               )}
+              {productUse.length > 0 && (
+                <>
+                  <h3>Used by products</h3>
+                  <ul className="cl-uses">
+                    {productUse.map((item) => (
+                      <li key={item.offering.id}>
+                        <Link to={`${LAB}/products/${item.offering.id}/architecture?system=${system.id}`}>{item.offering.name}</Link>
+                        <span className={`cl-use-tier${item.core ? " is-core" : ""}`}>{item.core ? "Core" : "Used"}</span>
+                        <small>
+                          in {item.count} of {plural(item.total, "journey")}
+                        </small>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
               {journeysThrough.length > 0 && (
                 <>
                   <h3>Journeys through it</h3>
-                  <ul className="cl-linklist">
-                    {journeysThrough.map((journey) => (
-                      <li key={journey.id}>
-                        <Link to={journeyHref(journey.id, journey.channels[0])}>{journey.name}</Link>
-                        <span>{journey.channels.length ? plural(journey.channels.length, "channel") : "Shared"}</span>
+                  <ul className="cl-linked">
+                    {productUse
+                      .filter((item) => item.journeys.length)
+                      .map((item) => (
+                        <li key={item.offering.id}>
+                          <span>{item.offering.name}</span>
+                          <div>
+                            {item.journeys.map((journey) => (
+                              <Link key={journey.id} className="cl-pill" to={journeyHref(journey.id, journey.channels[0])}>
+                                {journey.name}
+                              </Link>
+                            ))}
+                          </div>
+                        </li>
+                      ))}
+                    {sharedThrough.length > 0 && (
+                      <li>
+                        <span>Shared</span>
+                        <div>
+                          {sharedThrough.map((journey) => (
+                            <Link key={journey.id} className="cl-pill" to={journeyHref(journey.id, journey.channels[0])}>
+                              {journey.name}
+                            </Link>
+                          ))}
+                        </div>
                       </li>
-                    ))}
+                    )}
                   </ul>
                 </>
               )}

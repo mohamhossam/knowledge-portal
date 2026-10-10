@@ -73,3 +73,31 @@ export function partnersOf(systemId: string, linkCounts: Map<string, number>): {
   }
   return found.sort((x, y) => y.count - x.count);
 }
+
+/** The TAM domains in the map's reading order, top to bottom; any other domain comes after. */
+export const DOMAIN_ORDER = ["market-sales", "product", "customer", "integration", "service", "resource", "engaged-party", "enterprise"];
+
+export function domainRank(id: string): number {
+  return DOMAIN_ORDER.includes(id) ? DOMAIN_ORDER.indexOf(id) : DOMAIN_ORDER.length;
+}
+
+/** Every system, in the map's domain order. */
+export function systemsInMapOrder(data: CatalogueData): CatalogueData["systems"] {
+  return [...data.systems].sort((a, b) => domainRank(a.domain) - domainRank(b.domain));
+}
+
+/** For one offering: which of its journeys reach each system, by a step it performs or a call it takes part in. */
+export function reachOf(data: CatalogueData, offeringId: string): Map<string, Set<string>> {
+  const known = new Set(data.systems.map((system) => system.id));
+  const reach = new Map<string, Set<string>>();
+  const add = (id: string | undefined, journey: string) => {
+    if (!id || !known.has(id)) return;
+    reach.set(id, (reach.get(id) ?? new Set()).add(journey));
+  };
+  for (const view of allViews(data)) {
+    if (view.offeringId !== offeringId) continue;
+    for (const step of view.steps) if (step.kind === "task") add(step.lane, view.id);
+    for (const call of view.integrations) for (const id of [call.from, call.to, call.via]) add(id, view.id);
+  }
+  return reach;
+}

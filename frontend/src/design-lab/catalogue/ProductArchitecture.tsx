@@ -51,7 +51,8 @@ export function ProductArchitecture() {
     return out;
   }, [views, journeys.length, impact, systemById]);
   const productLinks = useMemo(() => links(data, views.flatMap((view) => view.integrations)), [data, views]);
-  const [picked, setPicked] = useState<string | null>(null);
+  // A system picked elsewhere (the landscape's "Used by products") arrives as ?system=.
+  const [picked, setPicked] = useState<string | null>(() => params.get("system"));
 
   // One journey: the journey, its channel, its calls and the current one.
   const def = journeys.find((journey) => journey.id === params.get("journey")) ?? journeys[0];
