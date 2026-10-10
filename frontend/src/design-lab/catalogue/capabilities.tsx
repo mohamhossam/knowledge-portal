@@ -6,6 +6,8 @@
  */
 import type { ReactNode } from "react";
 
+import type { CatalogueData } from "../../architecture/adapter";
+
 export const CAPABILITIES: { id: string; name: string; blurb: string; test: RegExp; icon: ReactNode }[] = [
   {
     id: "connect",
@@ -79,4 +81,32 @@ export function shortComponentName(name: string): string {
       .replace(/\s+on the .*$/i, "")
       .trim() || name
   );
+}
+
+/** The kinds of bundle part, in the order a bundle reads: the device first, anything unplaced last. */
+export const PART_KINDS: { id: string; name: string; icon: ReactNode }[] = [
+  { id: "device", name: "At the heart", icon: DEVICE_ICON },
+  ...CAPABILITIES.map(({ id, name, icon }) => ({ id, name, icon })),
+  { id: "more", name: "More", icon: <path d="M3 8h.01M8 8h.01M13 8h.01" /> },
+];
+
+/** A component's kind: the device by its name, else its capability, else "More". */
+export function partKind(name: string): string {
+  return /device|router/i.test(name) ? "device" : (capabilityOf(name)?.id ?? "more");
+}
+
+export type Part = { component: string; product: string; responsibility: string };
+
+/** Every system's parts, by kind, across all products. */
+export function systemParts(data: CatalogueData): Map<string, Map<string, Part[]>> {
+  const result = new Map<string, Map<string, Part[]>>();
+  for (const offering of data.offerings)
+    for (const component of offering.components)
+      for (const item of component.systems) {
+        const kinds = result.get(item.systemId) ?? new Map<string, Part[]>();
+        const kind = partKind(component.name);
+        kinds.set(kind, [...(kinds.get(kind) ?? []), { component: component.name, product: offering.name, responsibility: item.responsibility }]);
+        result.set(item.systemId, kinds);
+      }
+  return result;
 }

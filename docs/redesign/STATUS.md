@@ -587,4 +587,15 @@ Checks: tests 28/28 with axe; lint, brand lint, build and budget green.
 - **Grid:** a system's column lights up under the pointer. Its heading is a button that narrows the cards and brings them into view, with motion only when reduced motion isn't requested. Rows outside the filter go quiet.
 - **Tests:** the test covers both filters.
 
+**Systems page made product-neutral, with a capabilities view (2026-10-10, user approved recommendations 1–5).**
+- **Finding:** the page counted journey calls of the one modelled product, so its figures grew with repetition. "196 calls" covered 133 distinct interfaces, and "busiest pair CBCM ↔ RTF 25" was 3 interfaces; `evaluateOrder` alone counted 18 times. The catalogue has no interface list of its own (`relationships` is empty).
+- **Measure:** `distinctInterfaces()` (posterModel) keeps each interface once by caller, layer, callee and operation. The shared `useLinkCounts` hook uses it, so the Landscape's links and the drawer are product-neutral too.
+- **Matrix:** now directed (the row calls the column), with a cell = distinct interfaces (two hops through the integration layer) and the operations named in the tooltip and hover readout. Row bars show how many systems each system talks to.
+- **Figures:** systems linked, distinct interfaces, linked pairs, through the integration layer, most connected (by partners). The busiest pair and busiest system are gone.
+- **Source line:** "Read from the modelled journeys, each interface once, whatever uses it. The catalogue has no interface list of its own yet."
+- **Product usage:** stays on each product's Architecture tab.
+- **Capabilities view (`?view=capabilities`):** systems × kinds of bundle part across every product (`PART_KINDS`, `partKind`, `systemParts` in capabilities.tsx). A teal mark shows the number of components, named in the tooltip and accessible name.
+- **Fit:** no page scroll on either view from 1280×720.
+- **Next, when the source exists:** feed the catalogue's own interface list from the SDD as the primary source.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.

@@ -24,6 +24,21 @@ export function allIntegrations(data: CatalogueData): Integration[] {
   return [...seen.values()];
 }
 
+/**
+ * Each interface once, whatever journey, channel or product makes the call:
+ * the same caller, integration layer, callee and operation. This is the
+ * product-neutral measure of how systems connect; counting calls instead
+ * would grow with every journey that repeats one.
+ */
+export function distinctInterfaces(integrations: Integration[]): Integration[] {
+  const seen = new Map<string, Integration>();
+  for (const call of integrations) {
+    const key = [call.from, call.via ?? "", call.to, call.operation || call.purpose].join("|");
+    if (!seen.has(key)) seen.set(key, call);
+  }
+  return [...seen.values()];
+}
+
 /** System-to-system links: a call through the integration layer counts as two hops. */
 export function links(data: CatalogueData, integrations: Integration[]): Map<string, number> {
   const known = new Set(data.systems.map((system) => system.id));

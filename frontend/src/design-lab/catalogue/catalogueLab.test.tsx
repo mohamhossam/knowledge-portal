@@ -114,13 +114,22 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
     expect(screen.getByRole("link", { name: "Business Pro Plus" })).toHaveAttribute("href", expect.stringContaining("/products/business-pro-plus/architecture?system=cwom"));
   });
 
-  it("lists every integration on the Systems page, read by row and column, with the same details drawer", async () => {
+  it("shows on the Systems page who calls whom, product-neutral, and which systems deliver which capability", async () => {
     const { container } = open("/systems");
     expect(screen.getByRole("heading", { level: 1, name: "Systems" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Systems" })).toHaveAttribute("aria-current", "page");
+    // Interfaces, each counted once whatever uses it, never journey calls.
+    expect(screen.getByText("Distinct interfaces")).toBeInTheDocument();
+    expect(screen.queryByText(/Busiest/)).not.toBeInTheDocument();
     const matrix = screen.getByRole("table");
     await userEvent.click(within(matrix).getByRole("button", { name: /^CWOM/ }));
     expect(screen.getByRole("heading", { level: 2, name: "CWOM" })).toBeInTheDocument();
+    expect(await axe(container)).toHaveNoViolations();
+    // Capabilities: systems against the kinds of bundle part, across every product.
+    await userEvent.click(screen.getByRole("button", { name: "Capabilities" }));
+    const grid = screen.getByRole("table");
+    expect(within(grid).getByRole("columnheader", { name: /Security/ })).toBeInTheDocument();
+    expect(within(grid).getByRole("img", { name: /^CWOM, Security: 2 components/ })).toBeInTheDocument();
     expect(await axe(container)).toHaveNoViolations();
   });
 
