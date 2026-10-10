@@ -43,13 +43,22 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
     expect(await axe(container)).toHaveNoViolations();
   });
 
-  it("lists every product under its place in the portfolio, with how much of the map it reaches", async () => {
+  it("lists every product under its place in the portfolio: how it is sold, who can buy it, what is in it", async () => {
     const { container } = open("/products");
     expect(screen.getByRole("heading", { level: 1, name: "Products" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: /Business internet bundles/ })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Business Pro Plus" })).toBeInTheDocument();
-    expect(screen.getByText(/of 46 systems/)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 4, name: "Footprint by layer" })).toBeInTheDocument();
+    // Sold through assisted and self-service channels, never a system-initiated one such as NPS.
+    expect(screen.getByText("Assisted")).toBeInTheDocument();
+    expect(screen.getByText("Self-service")).toBeInTheDocument();
+    expect(screen.queryByText(/^NPS/)).not.toBeInTheDocument();
+    // Who can buy: the customer type, flagged as inferred, and the contract terms one chip each.
+    expect(screen.getByText("SMB customers")).toBeInTheDocument();
+    expect(screen.getByText("(inferred)")).toBeInTheDocument();
+    expect(screen.getByText("2 years")).toBeInTheDocument();
+    // In the bundle: short names, optional parts marked.
+    expect(screen.getByText("Fibre internet")).toBeInTheDocument();
+    expect(screen.getByText("optional")).toBeInTheDocument();
     await userEvent.type(screen.getByRole("searchbox", { name: "Filter products" }), "zzz");
     expect(screen.getByText(/No product matches/)).toBeInTheDocument();
     expect(await axe(container)).toHaveNoViolations();

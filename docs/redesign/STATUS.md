@@ -420,4 +420,14 @@ The fixture has one product; no others were invented. Checks: tests 28/28 with a
 
 Checks: tests 28/28 with axe; lint, typecheck and build green.
 
+**Product card, third pass (2026-10-10, user: sold through, who can buy, what is in it).** The card now answers the reader's questions, all read from the catalogue so any product fills it. The footprint detail stays on the product's Architecture tab.
+- **Sold through:** the channels of the product's joining order types (new activation, migration, port in), grouped Assisted (BCRM) and Self-service (B2B Web, SMB App), each with its monogram. System-initiated channels such as NPS are left out.
+- **Who can buy:** the customer type ("SMB customers", flagged inferred with an ochre ring), then the contract terms one chip each (No contract · 1 year · 2 years), each with its evidence dot.
+- **In the bundle:** short component names, each with its capability icon. The device comes first in dark ink and optional parts are dashed.
+- **Foot:** one quiet line (6 plans · 19 order types · 20 journeys · 27/46 systems) and the page buttons.
+- **Shared module:** the component grouping moved to `capabilities.tsx` (`CAPABILITIES`, `capabilityOf`, `shortComponentName`), so the bundle and the card share it.
+- **Fixed:** shell quoting had dropped regex escapes and left backspace characters in source. All were cleaned, and `src` was scanned for control characters.
+
+Checks: tests 28/28 with axe; lint, brand lint, build and budget green.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.

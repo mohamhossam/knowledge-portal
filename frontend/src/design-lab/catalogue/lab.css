@@ -555,8 +555,6 @@
 .cl-regtable small { color: var(--cl-ink-2); font-weight: 500; }
 .cl-regtable td { font-size: 0.8125rem; }
 
-@media (prefers-reduced-motion: reduce) {
-}
 @media (max-width: 1180px) {
   .cl-board, .cl-who, .cl-below { grid-template-columns: 1fr; }
   .cl-glance { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -1005,11 +1003,6 @@
 .cl-prodcard h3 a { color: var(--cl-ink); text-decoration: none; }
 .cl-prodcard h3 a:hover { color: var(--cl-maroon); text-decoration: underline; text-underline-offset: 4px; }
 .cl-prodcard-head p { margin-top: 4px; font-size: 0.875rem; line-height: 1.5; color: var(--cl-ink-2); }
-.cl-prodcard-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 10px 0; border-top: 1px solid var(--cl-hairline); border-bottom: 1px solid var(--cl-hairline); }
-.cl-prodcard-facts div { display: flex; flex-direction: column; gap: 2px; }
-.cl-prodcard-facts div + div { padding-left: 12px; border-left: 1px solid var(--cl-hairline); }
-.cl-prodcard-facts dt { font-size: 0.75rem; color: var(--cl-ink-2); }
-.cl-prodcard-facts dd { font-size: 1.25rem; font-weight: 700; font-stretch: 85%; line-height: 1.1; }
 .cl-prodcard-links { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: auto; padding-top: 4px; }
 .cl-prodcard-links a { display: inline-flex; align-items: center; min-height: 28px; font-size: 0.875rem; font-weight: 600; }
 /* Journeys: coverage bar and the order type × product matrix. */
@@ -1045,10 +1038,6 @@ a.cl-jcell:hover { border-color: var(--cl-maroon); color: var(--cl-maroon); }
 .cl-uses small { grid-column: 1 / -1; font-size: 0.75rem; color: var(--cl-ink-2); }
 .cl-use-tier { padding: 1px 8px; border-radius: 999px; background: var(--cl-sand); font-size: 0.75rem; font-weight: 700; color: var(--cl-ink-2); }
 .cl-use-tier.is-core { background: var(--cl-maroon-mist); color: var(--cl-maroon); }
-@media (max-width: 560px) {
-  .cl-prodcard-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 0; }
-  .cl-prodcard-facts div:nth-child(3) { padding-left: 0; border-left: 0; }
-}
 @media (prefers-reduced-motion: reduce) {
   .cl-prodcard { transition: none; }
 }
@@ -1057,34 +1046,42 @@ a.cl-jcell:hover { border-color: var(--cl-maroon); color: var(--cl-maroon); }
 a.cl-pill { display: inline-flex; align-items: center; text-decoration: none; }
 :where(.cl) a.cl-pill { color: var(--cl-ink); }
 a.cl-pill:hover { color: var(--cl-maroon); }
-/* Product card, second pass: a reach ring beside the facts, the footprint by layer as dot meters, buttons for the pages. */
-.cl-prodcard { gap: 16px; padding: 20px; }
+/* Product card, third pass: how it is sold, who can buy it, what is in it; then its size and pages. */
+.cl-prodcard { gap: 14px; padding: 20px; }
 .cl-prodcard-head p { -webkit-line-clamp: 2; }
-.cl-prodcard-body { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 20px; align-items: center; padding: 14px 0; border-top: 1px solid var(--cl-hairline); border-bottom: 1px solid var(--cl-hairline); }
-.cl-prodcard-reach { display: flex; align-items: center; gap: 12px; }
-.cl-prodcard-reach p { display: flex; flex-direction: column; gap: 2px; font-size: 0.875rem; color: var(--cl-ink-2); }
-.cl-prodcard-reach p b { font-size: 1rem; font-weight: 700; color: var(--cl-ink); }
-.cl-prodcard-reach p span { font-size: 0.75rem; }
-.cl-ring { flex: none; }
-.cl-ring .track { fill: none; stroke: var(--cl-sand); stroke-width: 8; }
-.cl-ring .arc { fill: none; stroke: var(--cl-maroon); stroke-width: 8; stroke-linecap: round; }
-.cl-ring .num { font-size: 17px; font-weight: 700; fill: var(--cl-ink); }
-.cl-ring .cap { font-size: 9px; fill: var(--cl-ink-2); }
-.cl-prodcard .cl-prodcard-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 0; padding: 0; border: 0; }
-.cl-prodcard .cl-prodcard-facts div:nth-child(odd) { padding-left: 0; border-left: 0; }
-.cl-prodcard .cl-prodcard-facts div:nth-child(even) { padding-left: 16px; border-left: 1px solid var(--cl-hairline); }
-.cl-prodcard-layers h4 { margin-bottom: 8px; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cl-ink-3); }
-.cl-prodcard-layers ul { display: grid; gap: 5px; }
-.cl-prodcard-layers li { display: grid; grid-template-columns: 128px minmax(0, 1fr) 44px; align-items: center; gap: 10px; font-size: 0.8125rem; }
-.cl-reach-name { color: var(--cl-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cl-reach-dots { display: flex; flex-wrap: wrap; gap: 4px; }
-.cl-reach-dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--cl-page); box-shadow: inset 0 0 0 1.5px var(--cl-rule); }
-.cl-reach-dots i.on { background: var(--cl-maroon); box-shadow: none; }
-.cl-reach-count { font-weight: 600; color: var(--cl-ink-2); text-align: right; font-variant-numeric: tabular-nums; }
-.cl-prodcard-links { gap: 8px; padding-top: 0; }
-.cl-prodcard-links .cl-btn { min-height: 34px; font-size: 0.8125rem; border-radius: 6px; text-decoration: none; }
-.cl-prodcard-links .cl-btn .cl-view-icon { color: var(--cl-ink-2); }
+.cl-glance-rows { display: grid; gap: 0; border-top: 1px solid var(--cl-hairline); }
+.cl-glance-rows > div { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 12px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--cl-hairline); }
+.cl-glance-rows dt { display: inline-flex; align-items: center; gap: 8px; min-height: 28px; white-space: nowrap; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--cl-ink-3); }
+.cl-glance-rows dt .cl-view-icon { color: var(--cl-ink-2); }
+.cl-glance-rows dd { min-width: 0; }
+.cl-none { font-size: 0.8125rem; color: var(--cl-ink-2); font-style: italic; }
+/* Sold through: channels grouped by kind, each with its monogram tile. */
+.cl-sold { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.cl-sold-group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.cl-sold-group > small { margin-right: 2px; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--cl-ink-2); }
+.cl-sold-group + .cl-sold-group { padding-left: 20px; border-left: 1px solid var(--cl-hairline); }
+.cl-chanchip { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 10px 0 2px; border: 1px solid var(--cl-hairline); border-radius: 999px; background: var(--cl-page); font-size: 0.8125rem; font-weight: 600; white-space: nowrap; }
+.cl-chanchip .cl-systile { width: 22px; height: 22px; border-radius: 50%; font-size: 0.5625rem; }
+/* Who can buy: chips carrying their evidence (filled: confirmed, ring: inferred, dashed: gap). */
+.cl-chips-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
+.cl-fact-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 10px; border: 1px solid var(--cl-hairline); border-radius: 999px; background: var(--cl-page); font-size: 0.8125rem; color: var(--cl-ink); }
+.cl-fact-chip.is-strong { font-weight: 700; border-color: var(--cl-rule); background: var(--cl-paper); }
+.cl-fact-chip i { width: 7px; height: 7px; border-radius: 50%; background: var(--cl-sage); flex: none; }
+.cl-fact-chip.is-inferred i { background: var(--cl-page); box-shadow: inset 0 0 0 1.5px var(--cl-ochre); }
+.cl-fact-chip.is-gap i { background: var(--cl-page); border: 1px dashed var(--cl-rule-strong); }
+/* In the bundle: the device first and darker, then each part with its capability icon; optional parts dashed. */
+.cl-part-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 10px 0 8px; border-radius: 6px; background: var(--cl-sand); font-size: 0.8125rem; color: var(--cl-ink); }
+.cl-part-chip .cl-view-icon { width: 14px; height: 14px; color: var(--cl-ink-2); }
+.cl-part-chip.is-hub { background: var(--cl-ink); color: #fff; font-weight: 600; }
+.cl-part-chip.is-hub .cl-view-icon { color: #fff; }
+.cl-part-chip.is-optional { background: transparent; border: 1px dashed var(--cl-rule-strong); }
+.cl-part-chip small { font-size: 0.6875rem; color: var(--cl-ink-2); }
+/* Foot: the size in one quiet line, then the pages. */
+.cl-prodcard-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin-top: auto; }
+.cl-prodcard-stats { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.8125rem; color: var(--cl-ink-2); }
+.cl-prodcard-stats b { font-weight: 700; color: var(--cl-ink); }
+.cl-prodcard-foot .cl-prodcard-links { margin: 0; }
 @media (max-width: 560px) {
-  .cl-prodcard-body { grid-template-columns: minmax(0, 1fr); }
-  .cl-prodcard-layers li { grid-template-columns: 96px minmax(0, 1fr) 40px; }
+  .cl-glance-rows > div { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .cl-sold-group + .cl-sold-group { padding-left: 0; border-left: 0; }
 }
