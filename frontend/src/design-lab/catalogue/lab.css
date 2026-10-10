@@ -361,7 +361,7 @@
 .cl-value { display: grid; grid-template-rows: auto 1fr auto; gap: 6px; padding: 12px 0 16px; border-bottom: 1px solid var(--cl-hairline); }
 .cl-value h3 { font-size: 1rem; font-weight: 700; font-stretch: 90%; color: var(--cl-maroon); }
 .cl-value p { color: var(--cl-ink-2); line-height: 1.5; }
-.cl-tablewrap { overflow-x: auto; }
+.cl-tablewrap { position: relative; overflow-x: auto; }
 .cl-table { width: 100%; border-collapse: collapse; }
 .cl-table th, .cl-table td { padding: 8px 10px; border-bottom: 1px solid var(--cl-hairline); text-align: left; vertical-align: top; }
 .cl-table thead th { font-weight: 600; color: var(--cl-ink-2); border-bottom: 1px solid var(--cl-rule-strong); }
@@ -1394,4 +1394,35 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 /* A short screen gives the tiles two pixels less, so the header band fits without a page scroll. */
 @media (min-width: 1101px) and (min-height: 600px) {
   .am--compact { --am-tile: clamp(26px, calc((100dvh - 600px) / 7), 48px); }
+}
+/* The product header: the Landscape's soft band, for a product. The rail, then the mark, name and statement with the page's actions, the figures as links into their tabs with the source, and the tabs as the band's lower edge. The name, statement and figures hang from the name's left edge; the rail, mark and tabs from the page's. */
+.pd-band { margin: 0 calc(50% - 50vw); padding: 0 calc(50vw - 50%); background: linear-gradient(100deg, color-mix(in srgb, var(--cl-sand) 85%, var(--cl-page)) 0%, var(--cl-paper) 55%, var(--cl-page) 100%); border-bottom: 1px solid var(--cl-hairline); }
+.pd-band .cl-path { margin-top: 0; padding-top: 12px; }
+.pd-head { display: flex; align-items: flex-start; gap: 12px 16px; margin-top: 12px; }
+.pd-mark { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 11px; background: var(--cl-maroon-mist); color: var(--cl-maroon); }
+.pd-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.pd-text h1 { font-size: 1.875rem; line-height: 44px; font-weight: 700; font-stretch: 87.5%; letter-spacing: -0.01em; }
+.pd-lede { max-width: 80ch; margin-top: -4px; font-size: 1rem; line-height: 1.55; color: var(--cl-ink-2); }
+.pd-actions { flex: none; display: flex; align-items: center; gap: 8px; min-height: 44px; }
+.pd-facts { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 20px; margin: 14px 0 0 60px; }
+.pd-figures { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.pd-figure { display: inline-flex; align-items: center; gap: 7px; min-height: 34px; padding: 0 13px 0 11px; border-radius: 10px; background: var(--cl-page); box-shadow: inset 0 0 0 1px var(--cl-hairline); color: var(--cl-ink-2); font-size: 0.8125rem; text-decoration: none; transition: box-shadow 150ms ease-out, color 150ms ease-out; }
+.pd-figure .cl-glyph { color: var(--cl-maroon); }
+.pd-figure b { font-size: 0.9375rem; font-weight: 700; color: var(--cl-ink); font-variant-numeric: tabular-nums; }
+.pd-figure:hover { color: var(--cl-ink); box-shadow: inset 0 0 0 1px var(--cl-m3); }
+.pd-source { margin-left: auto; font-size: 0.8125rem; }
+.pd-band .pd-tabs { margin: 12px 0 0; border-bottom: 0; }
+.pd-band--compact .pd-head { margin-top: 10px; }
+.pd-band--compact .pd-mark { width: 36px; height: 36px; border-radius: 9px; }
+.pd-band--compact .pd-text h1 { font-size: 1.5rem; line-height: 36px; }
+.pd-band--compact .pd-tabs { margin-top: 6px; }
+.pd-band + * { margin-top: 20px; }
+@media (prefers-reduced-motion: reduce) {
+  .pd-figure { transition: none; }
+}
+@media (max-width: 760px) {
+  .pd-head { flex-wrap: wrap; }
+  .pd-mark { display: none; }
+  .pd-facts { margin-left: 0; }
+  .pd-source { margin-left: 0; }
 }

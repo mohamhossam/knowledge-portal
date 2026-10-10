@@ -27,7 +27,37 @@ export function Missing({ what }: { what: string }) {
 
 export type ProductSection = "overview" | "hierarchy" | "plans" | "rules" | "components" | "journeys" | "architecture";
 
-/** The product's header: where it sits, what it is for (one statement), and its tabs. */
+/** The product's mark and the icons of its figures, drawn like the catalogue's other icons. */
+const HEAD_ICONS: Record<string, ReactNode> = {
+  product: <path d="M8 2 14 5v6l-6 3-6-3V5zM2 5l6 3 6-3M8 8v6" />,
+  plans: <path d="M3.5 2.5h9v11h-9zM6 5.5h4M6 8h4M6 10.5h2.5" />,
+  components: (
+    <>
+      <rect x="2.5" y="2.5" width="4.5" height="4.5" rx="1" />
+      <rect x="9" y="2.5" width="4.5" height="4.5" rx="1" />
+      <rect x="2.5" y="9" width="4.5" height="4.5" rx="1" />
+      <path d="M11.25 9v4.5M9 11.25h4.5" />
+    </>
+  ),
+  orders: <path d="M2.5 5.5h9M9 3l2.5 2.5L9 8M13.5 10.5h-9M7 8l-2.5 2.5L7 13" />,
+  journeys: (
+    <>
+      <circle cx="3.5" cy="12.5" r="1.5" />
+      <circle cx="12.5" cy="3.5" r="1.5" />
+      <path d="M5 12.5h3.5a2 2 0 0 0 0-4h-1a2 2 0 0 1 0-4H11" />
+    </>
+  ),
+  systems: <path d="M8 2 14 5 8 8 2 5zM2 8l6 3 6-3M2 11l6 3 6-3" />,
+};
+
+/**
+ * The product's header, the same on every product tab: a soft band under the
+ * catalogue bar, as wide as it (the Landscape's header band, for a product).
+ * It holds where the product sits (the hierarchy rail), its mark and name with
+ * one statement of what it is for, the page's actions, the product's figures
+ * as links into the tabs that hold them, its source, and its tabs. Compact
+ * keeps the rail, the name and the tabs.
+ */
 export function ProductHeader({ offering, current, actions, compact = false }: { offering: Offering; current: ProductSection; actions?: ReactNode; compact?: boolean }) {
   const data = useLabData();
   const path: { id: string; name: string; level: string }[] = [];
@@ -45,43 +75,70 @@ export function ProductHeader({ offering, current, actions, compact = false }: {
   );
   const journeys = data.journeys.filter((journey) => journey.offeringId === offering.id);
   const base = `${LAB}/products/${offering.id}`;
+  const journeysTo = firstJourneyHref(data, offering.id);
   const tabs: { id: ProductSection; label: string; to: string }[] = [
     { id: "overview", label: "Overview", to: base },
     { id: "hierarchy", label: "Hierarchy", to: `${base}/hierarchy` },
     { id: "plans", label: "Plans", to: `${base}/plans` },
     { id: "rules", label: "Business rules", to: `${base}/rules` },
     { id: "components", label: "Components", to: `${base}/components` },
-    { id: "journeys", label: "Journeys", to: firstJourneyHref(data, offering.id) },
+    { id: "journeys", label: "Journeys", to: journeysTo },
     { id: "architecture", label: "Architecture", to: `${base}/architecture` },
+  ];
+  // The product's figures, each a way into the tab that holds them.
+  const figures = [
+    { id: "plans", count: offering.plans.length, noun: "plan", to: `${base}/plans` },
+    { id: "components", count: offering.components.length, noun: "component", to: `${base}/components` },
+    { id: "orders", count: offering.orderTypes.length, noun: "order type", to: journeysTo },
+    { id: "journeys", count: journeys.length, noun: "journey", to: journeysTo },
+    { id: "systems", count: systems.size, noun: "system", to: `${base}/architecture` },
   ];
   // One statement of what the product is for; the bundle drawing carries what is in it.
   const statement = offering.purpose || offering.summary;
   return (
     <>
       <AreaTabs current="products" />
-      <PathBar
-        label="Where it sits in the portfolio"
-        items={[{ level: "Catalogue", name: "SMB architecture", to: LAB }, ...path.map((item) => ({ level: item.level, name: item.name, to: `${base}/hierarchy` })), { level: "Offering", name: offering.name }]}
-      />
-      <header className="cl-head">
-        <div className="cl-head-text">
-          <h1>{offering.name}</h1>
-          {!compact && <p className="cl-lede">{statement}</p>}
-          {!compact && <p className="cl-meta-line">
-            {plural(offering.plans.length, "plan")} · {plural(offering.components.length, "component")} · {plural(offering.orderTypes.length, "order type")} · {plural(journeys.length, "journey")} modelled ·{" "}
-            {plural(systems.size, "system")} touched
-          </p>}
-          {!compact && <EvidenceTag evidence={offering.evidence} />}
-        </div>
-        {actions && <div className="cl-head-actions">{actions}</div>}
-      </header>
-      <nav className="cl-tabs cl-tabs--sub" aria-label={`${offering.name} sections`}>
-        {tabs.map((tab) => (
-          <Link key={tab.id} to={tab.to} aria-current={tab.id === current ? "page" : undefined}>
-            {tab.label}
-          </Link>
-        ))}
-      </nav>
+      <div className={`pd-band${compact ? " pd-band--compact" : ""}`}>
+        <PathBar
+          label="Where it sits in the portfolio"
+          items={[{ level: "Catalogue", name: "SMB architecture", to: LAB }, ...path.map((item) => ({ level: item.level, name: item.name, to: `${base}/hierarchy` })), { level: "Offering", name: offering.name }]}
+        />
+        <header className="pd-head">
+          <span className="pd-mark" aria-hidden="true">
+            <Glyph size={22}>{HEAD_ICONS.product}</Glyph>
+          </span>
+          <div className="pd-text">
+            <h1>{offering.name}</h1>
+            {!compact && statement && <p className="pd-lede">{statement}</p>}
+          </div>
+          {actions && <div className="pd-actions">{actions}</div>}
+        </header>
+        {!compact && (
+          <div className="pd-facts">
+            <ul className="pd-figures" aria-label="At a glance">
+              {figures.map((figure) => (
+                <li key={figure.id}>
+                  <Link className="pd-figure" to={figure.to}>
+                    <Glyph>{HEAD_ICONS[figure.id]}</Glyph>
+                    <b>{figure.count}</b>
+                    {plural(figure.count, figure.noun).replace(/^\d+\s/, "")}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <div className="pd-source">
+              <EvidenceTag evidence={offering.evidence} />
+            </div>
+          </div>
+        )}
+        <nav className="cl-tabs cl-tabs--sub pd-tabs" aria-label={`${offering.name} sections`}>
+          {tabs.map((tab) => (
+            <Link key={tab.id} to={tab.to} aria-current={tab.id === current ? "page" : undefined}>
+              {tab.label}
+            </Link>
+          ))}
+        </nav>
+      </div>
     </>
   );
 }

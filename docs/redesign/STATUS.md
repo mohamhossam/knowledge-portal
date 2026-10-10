@@ -518,4 +518,13 @@ Checks: tests 28/28 with axe; lint, brand lint, build and budget green.
   - Engaged Party is now a soft sage (`#edf1e9`) and Enterprise a soft mist blue (`#eaeff3`), in place of the two greys.
 - **Fit:** on short screens the smallest tile height drops from 28px to 26px. No page scroll at 1280×720, 1366×768, 1536×730, 1440×900, 1920×950 and 1920×1080, at rest, with a system picked and with one layer shown.
 
+**Product header band (2026-10-10).** Every product tab now shares the landscape's soft header band, as wide as the tab bar.
+- **Contents, top to bottom:**
+  - The hierarchy rail.
+  - A product mark, the name and the one statement of what the product is for, with the page's actions on the right.
+  - The figures as linked tiles, each opening the tab that holds it: plans, components, order types, journeys and systems. The source sits at the right of the same row.
+  - The tabs, as the band's lower edge.
+- **Alignment:** the name, statement and figures hang from the name's left edge; the rail, mark and tabs from the page's left edge. The compact header (Journeys and Architecture tabs) keeps the rail, the name and the tabs.
+- **Fix:** the overview's route table no longer pushes the page sideways on a phone (its hidden labels now stay inside its scroll frame).
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.
