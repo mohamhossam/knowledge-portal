@@ -217,7 +217,7 @@ export function JourneysIndex() {
       </button>
     </li>
   );
-  const columns = stages.map((stage) => `${Math.min(2, Math.ceil(stage.codes.length / 6))}fr`).join(" ");
+  const columns = stages.map((stage) => `minmax(0, ${Math.min(2, Math.ceil(stage.codes.length / 6))}fr)`).join(" ");
 
   return (
     <>

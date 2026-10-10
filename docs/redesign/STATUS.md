@@ -548,4 +548,11 @@ Checks: tests 28/28 with axe; lint, brand lint, build and budget green.
 
 **Journeys scope opens with a choice at every level (2026-10-10).** After Fixed › SMB, the default continues through the first child that holds a product (today: Business internet bundles › Business Pro Plus). Every level stays selectable.
 
+**Journeys page fits the screen (2026-10-10).**
+- **Fit:** no page scroll and no sideways scroll at 1280×720, 1366×768, 1536×730, 1440×900 and 1920×1080. Below 1100px wide the page stacks and scrolls as before.
+- **Panels:** the board and preview take their own height and shrink to the space under the header band when that is less.
+- **Board:** more compact (shorter stage ribbon and tiles). Its stage columns can shrink, and stage subtitles wrap to two lines.
+- **Preview:** scrolls inside itself, its parts keep their size, and its actions stay pinned at its foot, with scroll padding so focus is never hidden behind them.
+- **Small screens:** the preview narrows (320–380px).
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.

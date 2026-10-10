@@ -1477,3 +1477,24 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 .jx-band .jx-scope-level + .jx-scope-level { padding-left: 22px; }
 .jx-band .jx-scope-level + .jx-scope-level::before { left: 7px; top: 50%; bottom: auto; transform: translateY(-50%) rotate(45deg); }
 .jx-scope-menu summary small { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--cl-ink-3); white-space: nowrap; }
+/* The Journeys page fits the screen: the board and the preview take their own height, and shrink to what is left under the header band when that is less. The board is compact enough to fit; the preview scrolls inside itself, its actions pinned at its foot (and kept clear of focus by the scroll padding). */
+@media (min-width: 1101px) and (min-height: 600px) {
+  .cl-page:has(.jx-band) { box-sizing: border-box; display: flex; flex-direction: column; height: calc(100dvh - var(--cl-mast)); padding-bottom: 16px; }
+  .cl-page:has(.jx-band) > .jx { flex: 0 1 auto; min-height: 0; grid-template-rows: minmax(0, 1fr); }
+  .jx-board { min-height: 0; overflow-y: auto; }
+  .jx-panel { position: static; min-height: 0; max-height: none; overflow-y: auto; scroll-padding-bottom: 76px; }
+  .jx-panel .jx-actions { position: sticky; bottom: -16px; z-index: 1; margin: auto -16px -16px; padding: 12px 16px 16px; border-top: 1px solid var(--cl-hairline); background: var(--cl-paper); }
+  .jx-stage { min-height: 46px; padding-top: 4px; padding-bottom: 4px; }
+  .jx-ribbon { margin-bottom: 8px; }
+  .jx-tile { min-height: 38px; padding-top: 6px; padding-bottom: 6px; }
+  .jx-col { gap: 5px; }
+  .jx-across { margin-top: 10px; padding-top: 10px; }
+  .jx .jx-panel { gap: 6px; }
+  /* The preview scrolls; its parts keep their size instead of squeezing to fit. */
+  .jx-panel > * { flex-shrink: 0; }
+}
+/* The preview narrows on a smaller screen, and a stage's subtitle wraps before its tiles give way, so all four stages keep their room. */
+@media (min-width: 1101px) {
+  .jx { grid-template-columns: minmax(0, 1fr) clamp(320px, 26vw, 380px); }
+  .jx-stage-text small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; white-space: normal; line-height: 1.2; }
+}
