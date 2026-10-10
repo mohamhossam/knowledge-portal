@@ -174,7 +174,7 @@
 .cl-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .cl-legend i { display: inline-block; }
 .cl-legend .ext { width: 18px; height: 12px; border: 1.5px dashed var(--cl-rule-strong); border-radius: 2px; }
-.cl-legend .flag { width: 0; height: 0; border-top: 12px solid var(--cl-ochre); border-left: 12px solid transparent; }
+.cl-legend .flag { width: 12px; height: 12px; background: var(--cl-ochre); clip-path: polygon(0 0, 100% 0, 100% 100%); }
 .cl-hint { font-size: 0.8125rem; color: var(--cl-ink-2); margin: -4px 0 12px; }
 .cl-stepper { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 .cl-stepper output { min-width: 108px; text-align: center; color: var(--cl-ink-2); }
@@ -593,7 +593,7 @@
 .am-card:hover { border-color: var(--cl-maroon); }
 .am-card:active { background: var(--cl-sand); }
 .am-card.is-external { border-style: dashed; border-color: var(--cl-rule-strong); }
-.am-flag { position: absolute; right: 0; top: 0; width: 0; height: 0; border-top: 10px solid var(--cl-ochre); border-left: 10px solid transparent; border-top-right-radius: 3px; }
+.am-flag { position: absolute; right: 0; top: 0; width: 10px; height: 10px; background: var(--cl-ochre); clip-path: polygon(0 0, 100% 0, 100% 100%); border-top-right-radius: 3px; }
 .am-tag { position: absolute; right: 6px; top: 5px; font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--cl-maroon); }
 /* Selection: the picked system in maroon, its partners outlined, the rest quiet but readable. */
 .am-card[aria-pressed="true"] { background: var(--cl-maroon); border-color: var(--cl-maroon); box-shadow: none; color: #fff; }
@@ -1064,7 +1064,7 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 .am--compact .am-card:hover { transform: none; border-color: var(--cl-m3); }
 .am--compact .am-mono, .am--compact .am-card-fn { display: none; }
 .am--compact .am-card-name { font-size: 0.75rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.am--compact .am-flag { border-top-width: 8px; border-left-width: 8px; }
+.am--compact .am-flag { width: 8px; height: 8px; }
 /* Calm selection: pale mist and a soft maroon edge, never a dark fill. */
 .am--compact .am-card[aria-pressed="true"] .am-card-name { color: var(--cl-maroon); }
 .am--compact .am-card.is-quiet { background: rgb(255 255 255 / 0.55); box-shadow: none; }
@@ -1109,7 +1109,7 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 .lx-key-panel p { display: flex; align-items: center; gap: 10px; font-size: 0.8125rem; color: var(--cl-ink-2); }
 .lx-key-panel i { flex: none; display: inline-block; width: 18px; height: 12px; border-radius: 3px; }
 .lx-key-panel .ext { background: var(--cl-page); outline: 1px dashed var(--cl-rule-strong); outline-offset: -1px; }
-.lx-key-panel .flag { width: 0; height: 0; border-radius: 0; border-top: 12px solid var(--cl-ochre); border-left: 12px solid transparent; margin-right: 6px; }
+.lx-key-panel .flag { width: 12px; height: 12px; border-radius: 0; background: var(--cl-ochre); clip-path: polygon(0 0, 100% 0, 100% 100%); margin-right: 6px; }
 .lx-key-panel .sel { background: var(--cl-maroon-mist); box-shadow: inset 0 0 0 1.5px var(--cl-m3); }
 .lx-key-panel .lnk { background: var(--cl-page); box-shadow: inset 0 0 0 1.5px var(--cl-m2); }
 .lx-key-panel .cl-chip { align-self: flex-start; margin-top: 2px; }
@@ -1471,9 +1471,9 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 .ir-lanes.ir-track { position: relative; display: block; align-self: stretch; height: 30px; background-image: linear-gradient(to right, transparent calc(50% - 0.5px), var(--cl-hairline) calc(50% - 0.5px), var(--cl-hairline) calc(50% + 0.5px), transparent calc(50% + 0.5px)); background-size: calc(100% / var(--ir-lanes)) 100%; }
 .ir-arrow { --ir-ink: var(--cl-ink-2); position: absolute; top: 50%; height: 2px; margin-top: -1px; background: var(--ir-ink); }
 .ir-arrow::before { content: ""; position: absolute; left: -3px; top: -2px; width: 6px; height: 6px; border-radius: 50%; background: var(--ir-ink); }
-.ir-arrow::after { content: ""; position: absolute; right: -1px; top: -4px; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 7px solid var(--ir-ink); }
+.ir-arrow::after { content: ""; position: absolute; right: -1px; top: -4px; width: 7px; height: 10px; background: var(--ir-ink); clip-path: polygon(0 0, 100% 50%, 0 100%); }
 .ir-arrow.is-back::before { left: auto; right: -3px; }
-.ir-arrow.is-back::after { right: auto; left: -1px; border-left: 0; border-right: 7px solid var(--ir-ink); }
+.ir-arrow.is-back::after { right: auto; left: -1px; clip-path: polygon(100% 0, 0 50%, 100% 100%); }
 .ir-via { position: absolute; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: var(--cl-page); box-shadow: inset 0 0 0 2px var(--cl-ink-2); }
 .ir-self { position: absolute; top: 7px; width: 16px; height: 16px; border: 2px solid var(--cl-ink-2); border-left: 0; border-radius: 0 8px 8px 0; }
 .ir-call[aria-pressed="true"] .ir-arrow { --ir-ink: var(--cl-maroon); }
