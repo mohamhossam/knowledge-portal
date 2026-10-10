@@ -90,6 +90,7 @@ function Gaps({ context }: { context: OrgContext }) {
   }
   const counted = gaps(org, release);
   const toCheck = context.flags.filter((flag) => flag.subject === "product").length;
+  const squadsToCheck = context.flags.filter((flag) => flag.subject === "squad").length;
   return (
     <div className="notice-table squads__gaps" role="status" aria-label="Ownership of the systems in service">
       <p className="notice-table__title">Who runs the systems in service</p>
@@ -99,6 +100,7 @@ function Gaps({ context }: { context: OrgContext }) {
         <div className="notice-table__item"><dt>No squad</dt><dd>{counted.noSquad}</dd></div>
         {counted.lapsed > 0 && <div className="notice-table__item"><dt>Links no longer in service</dt><dd>{counted.lapsed}</dd></div>}
         {toCheck > 0 && <div className="notice-table__item"><dt>Products to check</dt><dd>{toCheck}</dd></div>}
+        {squadsToCheck > 0 && <div className="notice-table__item"><dt>Squads to check</dt><dd>{squadsToCheck}</dd></div>}
       </dl>
       <p className="notice-table__total">
         {counted.noSquad

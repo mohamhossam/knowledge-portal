@@ -31,27 +31,63 @@ export const ROLES: { value: SquadRole; label: string }[] = [
 
 export const roleLabel = (role: SquadRole) => ROLES.find((item) => item.value === role)?.label ?? role;
 
-/** A seat in a squad on a system: its role and who holds it, or nobody yet. */
-export type Seat = { role: SquadRole; person: Person | null };
+/**
+ * A seat in a squad on a system: its role, who holds it (or nobody yet), and the
+ * capability concept it is scoped to, named, or null on the whole system. `lapsed`
+ * marks a scope the system's capabilities no longer link to in the version in service.
+ */
+export type Seat = { role: SquadRole; person: Person | null; capability: string | null; lapsed: boolean };
 
 export type RunBy = { squad: Squad; seats: Seat[] };
 
 /** The systems a squad staffs, each once, in the order first named. */
 export const systemIdsOf = (squad: Squad) => [...new Set(squad.resources.map((item) => item.system_id))];
 
-/** A squad's seats on one system, by role then name. */
-export function seatsOn(org: Organisation, squad: Squad, systemId: string): Seat[] {
+/** A capability concept's preferred label in the version in service, or its id. */
+export const conceptName = (release: Release | null, conceptId: string) =>
+  release?.business_capabilities?.find((item) => item.id === conceptId)?.pref_label ?? conceptId;
+
+/** The capability concepts a system's capabilities link to, by name: the scopes a seat on it can take. */
+export function conceptsOf(release: Release | null, systemId: string): { id: string; name: string }[] {
+  const system = release?.systems.find((item) => item.id === systemId);
+  const ids = new Set((system?.capabilities ?? []).flatMap((item) => (item.concept_id ? [item.concept_id] : [])));
+  return [...ids].map((id) => ({ id, name: conceptName(release, id) })).sort(byName);
+}
+
+function seat(resource: SquadResource, release: Release | null, directory: Map<string, Person>): Seat {
+  const scope = resource.capability_id ?? null;
+  return {
+    role: resource.role,
+    person: resource.person_id ? directory.get(resource.person_id) ?? null : null,
+    capability: scope ? conceptName(release, scope) : null,
+    lapsed: Boolean(scope && release?.systems.some((item) => item.id === resource.system_id)
+      && !conceptsOf(release, resource.system_id).some((item) => item.id === scope)),
+  };
+}
+
+/** A squad's seats on one system, by role, whole-system seats before scoped ones, then name. */
+export function seatsOn(org: Organisation, squad: Squad, systemId: string, release: Release | null = null): Seat[] {
   const directory = people(org);
   const order = (role: SquadRole) => ROLES.findIndex((item) => item.value === role);
   return squad.resources
     .filter((item) => item.system_id === systemId)
-    .map((item: SquadResource) => ({ role: item.role, person: item.person_id ? directory.get(item.person_id) ?? null : null }))
-    .sort((a, b) => order(a.role) - order(b.role) || (a.person?.name ?? "\uffff").localeCompare(b.person?.name ?? "\uffff"));
+    .map((item) => seat(item, release, directory))
+    .sort(
+      (a, b) =>
+        order(a.role) - order(b.role)
+        || (a.capability ?? "").localeCompare(b.capability ?? "")
+        || (a.person?.name ?? "\uffff").localeCompare(b.person?.name ?? "\uffff"),
+    );
 }
 
-/** Seats in words: "Contact: Layla · Developer: open seat". */
-export const seatsLine = (seats: Seat[]) =>
-  seats.map((seat) => `${roleLabel(seat.role)}: ${seat.person?.name ?? "open seat"}`).join(" · ");
+/** One seat in words: "Developer for Billing: Bea", or "Contact: open seat". */
+export const seatText = (seat: Seat) => {
+  const scope = seat.capability ? ` for ${seat.capability}${seat.lapsed ? " (no longer linked)" : ""}` : "";
+  return `${roleLabel(seat.role)}${scope}: ${seat.person?.name ?? "open seat"}`;
+};
+
+/** Seats in words: "Contact: Layla · Developer for Billing: open seat". */
+export const seatsLine = (seats: Seat[]) => seats.map(seatText).join(" · ");
 
 export type SystemRow = {
   systemId: string;
@@ -71,11 +107,11 @@ export function people(org: Organisation): Map<string, Person> {
 }
 
 /** The squads that run a system, each with its seats on it. */
-export function runBy(org: Organisation, systemId: string): RunBy[] {
+export function runBy(org: Organisation, systemId: string, release: Release | null = null): RunBy[] {
   return org.squads
     .filter((squad) => squad.resources.some((item) => item.system_id === systemId))
     .sort(byName)
-    .map((squad) => ({ squad, seats: seatsOn(org, squad, systemId) }));
+    .map((squad) => ({ squad, seats: seatsOn(org, squad, systemId, release) }));
 }
 
 function row(org: Organisation, release: Release | null, systemId: string): SystemRow {
@@ -86,7 +122,7 @@ function row(org: Organisation, release: Release | null, systemId: string): Syst
     name: system?.name ?? systemId,
     place: system ? domainPath(landscape, system.landscape_domain_id) : [],
     lapsed: release !== null && !system,
-    runBy: runBy(org, systemId),
+    runBy: runBy(org, systemId, release),
   };
 }
 
@@ -180,6 +216,17 @@ export function productLinks(product: OrgProduct, release: Release | null, flag:
     portfolio: node ? `${node.name} (${node.level})` : product.portfolio_node_id,
     checks,
   };
+}
+
+/** What a squad's seats name that the version in service no longer has, in words. */
+export function squadChecks(flag: ReferenceFlag | undefined, release: Release | null): string[] {
+  const systemName = (id: string) => release?.systems.find((item) => item.id === id)?.name ?? id;
+  return [
+    ...(flag?.retired_system_ids ?? []).map((id) => `${id}: no longer a system in service.`),
+    ...(flag?.retired_capabilities ?? []).map(
+      (scope) => `${systemName(scope.system_id)} › ${conceptName(release, scope.capability_id)}: no capability of the system links to it any more.`,
+    ),
+  ];
 }
 
 /** An id not yet taken: a slug of the name, then -2, -3. */

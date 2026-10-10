@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import type { Organisation, ReferenceFlag, Release } from "../api/client";
-import { freeId, gaps, historyLine, holdsRoles, productLinks, rolesOf, runBy, seatsLine, streamSections, unnamedSystems } from "./organisation";
+import {
+  conceptsOf, freeId, gaps, historyLine, holdsRoles, productLinks, rolesOf, runBy, seatsLine, seatsOn, squadChecks, streamSections, unnamedSystems,
+} from "./organisation";
 
 const release = {
   id: "live", revision: 1, status: "published", documents: [], relationships: [],
@@ -66,7 +68,7 @@ describe("the organisation through what it sells", () => {
     expect(productLinks(product, release, undefined)).toEqual({ sells: ["Business fibre"], portfolio: "SMB (Segment)", checks: [] });
     const flag: ReferenceFlag = {
       subject: "product", subject_id: "p", retired_system_ids: ["legacy"], retired_offering_ids: ["old-offer"],
-      retired_portfolio_node_id: null, systems_missing: ["cwom"], systems_unexplained: ["bcrm"], unlinked: false,
+      retired_portfolio_node_id: null, retired_capabilities: [], systems_missing: ["cwom"], systems_unexplained: ["bcrm"], unlinked: false,
     };
     expect(productLinks({ ...product, offering_ids: ["fibre-offer", "old-offer"] }, release, flag).checks).toEqual([
       "old-offer: no longer an offering in service.",
@@ -104,5 +106,50 @@ describe("people and their roles", () => {
     expect(historyLine({ action: "remove_squad", subject_id: "night-shift", actor_id: "a", created_at: "" }, org)).toBe(
       "Removed the squad night shift",
     );
+  });
+});
+
+describe("seats scoped to a capability", () => {
+  const billing = {
+    ...release,
+    business_capabilities: [
+      { id: "cap-billing", pref_label: "Billing", alt_labels: [] },
+      { id: "cap-charging", pref_label: "Charging", alt_labels: [] },
+    ],
+    systems: [
+      ...release.systems,
+      { id: "bscs", name: "BSCS", aliases: [], components: [], constraints: [], capabilities: [{ id: "bill", name: "Bill", triggers: [], concept_id: "cap-billing" }] },
+    ],
+  } as unknown as Release;
+  const squad = {
+    id: "zeta", name: "Zeta", value_stream_id: "retail", scrum_master_person_id: null, revision: 1,
+    resources: [
+      { system_id: "bscs", role: "developer", person_id: "omar", capability_id: "cap-billing" },
+      { system_id: "bscs", role: "developer", person_id: "layla", capability_id: null },
+      { system_id: "bscs", role: "tester", person_id: null, capability_id: "cap-charging" },
+    ],
+  } as Organisation["squads"][number];
+
+  it("offers the concepts a system's capabilities link to", () => {
+    expect(conceptsOf(billing, "bscs")).toEqual([{ id: "cap-billing", name: "Billing" }]);
+    expect(conceptsOf(billing, "bcrm")).toEqual([]);
+  });
+
+  it("names each seat's capability, whole-system seats first, and marks a lapsed scope", () => {
+    expect(seatsLine(seatsOn({ ...org, squads: [squad] }, squad, "bscs", billing))).toBe(
+      "Developer: Layla · Developer for Billing: Omar · Tester for Charging (no longer linked): open seat",
+    );
+  });
+
+  it("says what a squad names that the version in service no longer has", () => {
+    const flag: ReferenceFlag = {
+      subject: "squad", subject_id: "zeta", retired_system_ids: ["gone"], retired_offering_ids: [], retired_portfolio_node_id: null,
+      retired_capabilities: [{ system_id: "bscs", capability_id: "cap-charging" }], systems_missing: [], systems_unexplained: [], unlinked: false,
+    };
+    expect(squadChecks(flag, billing)).toEqual([
+      "gone: no longer a system in service.",
+      "BSCS › Charging: no capability of the system links to it any more.",
+    ]);
+    expect(squadChecks(undefined, billing)).toEqual([]);
   });
 });

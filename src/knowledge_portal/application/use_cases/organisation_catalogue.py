@@ -58,8 +58,10 @@ class ManageOrganisationCatalogue:
         require_maintainer(actor)
         return self._repository.audit(_AUDIT_LIMIT)
 
-    def ownership(self, system_id: str, actor: Actor) -> SystemOwnership:
-        return self.view(actor).ownership(system_id)
+    def ownership(
+        self, system_id: str, actor: Actor, capability_id: str | None = None
+    ) -> SystemOwnership:
+        return self.view(actor).ownership(system_id, capability_id)
 
     def references(self, actor: Actor) -> tuple[ReferenceFlag, ...]:
         """Squads and products whose links the version in service leaves stale.
@@ -103,7 +105,7 @@ class ManageOrganisationCatalogue:
             _require_known(
                 "Systems",
                 product.system_ids,
-                release.system_ids,
+                release.systems,
                 previous.system_ids if previous is not None else (),
             )
             _require_known(
@@ -132,12 +134,14 @@ class ManageOrganisationCatalogue:
 
         def change(current: OrganisationCatalogue) -> OrganisationCatalogue:
             previous = next((item for item in current.squads if item.id == squad.id), None)
+            release = _release_references(self._architecture.active())
             _require_known(
                 "Systems",
                 squad.system_ids,
-                {item.id for item in self._architecture.active().systems},
+                release.systems,
                 previous.system_ids if previous else (),
             )
+            _require_realised(squad, release, previous)
             return current.put_squad(squad, expected_revision)
 
         return self._repository.change(change, actor.id, "save_squad", squad.id)
@@ -178,7 +182,10 @@ class ManageOrganisationCatalogue:
 
 def _release_references(release: ArchitectureKnowledge) -> ReleaseReferences:
     return ReleaseReferences(
-        system_ids={item.id for item in release.systems},
+        systems={
+            system.id: {item.concept_id for item in system.capabilities if item.concept_id}
+            for system in release.systems
+        },
         offering_systems={
             offering.id: _offering_systems(release, offering) for offering in release.products
         },
@@ -222,3 +229,20 @@ def _require_known(
         raise InvalidOrganisationError(
             f"{label} {', '.join(unknown)} are not in the active architecture catalogue."
         )
+
+
+def _require_realised(squad: Squad, release: ReleaseReferences, previous: Squad | None) -> None:
+    """A seat newly scoped to a capability names a concept its system realises in the
+    active release; a scope the squad already had may have lapsed."""
+    kept = (
+        {(item.system_id, item.capability_id) for item in previous.resources} if previous else set()
+    )
+    for resource in squad.resources:
+        scope = (resource.system_id, resource.capability_id)
+        if resource.capability_id is None or scope in kept:
+            continue
+        if resource.capability_id not in release.systems.get(resource.system_id, ()):
+            raise InvalidOrganisationError(
+                f"{resource.system_id} has no capability linked to concept "
+                f"{resource.capability_id!r} in the active architecture catalogue."
+            )

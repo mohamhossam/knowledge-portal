@@ -3,7 +3,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { OrgProduct, Person, Release, Squad, SquadResource, SquadRole, ValueStream } from "../api/client";
 import { EditPanel } from "../catalogue/DraftEdits";
 import { AreaField, CheckField, Rows, SelectField, TextField } from "../catalogue/forms";
-import { activePeople, freeId, holdsRoles, ROLES, roleLabel, rolesOf, runBy, systemIdsOf } from "./organisation";
+import { activePeople, conceptName, conceptsOf, freeId, holdsRoles, ROLES, roleLabel, rolesOf, runBy, systemIdsOf } from "./organisation";
 import { useOrgContext } from "./useOrganisation";
 
 const NO_RELEASE = "No architecture version is in service, so systems cannot be linked yet.";
@@ -259,7 +259,7 @@ export function ProductEdit({ product, streamId, onDone }: { product?: OrgProduc
 }
 
 const roleOptions = ROLES.map((role) => ({ value: role.value, label: role.label }));
-const seatKey = (item: SquadResource) => `${item.system_id}|${item.person_id || `open:${item.role}`}`;
+const seatKey = (item: SquadResource) => `${item.system_id}|${item.capability_id ?? ""}|${item.person_id || `open:${item.role}`}`;
 
 /** A squad: its value stream, scrum master, and its people on each system it runs, each in a role. */
 export function SquadEdit({ squad, streamId, onDone }: { squad?: Squad; streamId?: string; onDone: () => void }) {
@@ -276,6 +276,18 @@ export function SquadEdit({ squad, streamId, onDone }: { squad?: Squad; streamId
       .map((system) => ({ value: system.id, label: system.name })),
     ...lapsed.filter((systemId) => systemId === current).map((systemId) => ({ value: systemId, label: `${systemId} (not in the catalogue in service)` })),
   ];
+  // A seat covers the whole system, or one capability concept the system's capabilities link to.
+  const capabilityOptions = (item: SquadResource) => {
+    const linked = conceptsOf(release, item.system_id);
+    const current = item.capability_id;
+    return [
+      { value: "", label: "Whole system" },
+      ...linked.map((concept) => ({ value: concept.id, label: concept.name })),
+      ...(current && !linked.some((concept) => concept.id === current)
+        ? [{ value: current, label: `${conceptName(release, current)} (no longer linked)` }]
+        : []),
+    ];
+  };
   const clash = org.squads.some(
     (item) => item.id !== squad?.id && item.value_stream_id === value.value_stream_id
       && item.name.trim().toLocaleLowerCase() === value.name.trim().toLocaleLowerCase(),
@@ -290,7 +302,7 @@ export function SquadEdit({ squad, streamId, onDone }: { squad?: Squad; streamId
         : value.resources.some((item) => !item.system_id)
           ? "Choose a system on every row, or remove the row."
           : new Set(seats).size !== seats.length
-            ? "Someone is on the same system twice, or a system has two open seats in one role; remove one."
+            ? "Someone is on the same system and capability twice, or it has two open seats in one role; remove one."
             : null;
   return (
     <EditPanel
@@ -311,7 +323,12 @@ export function SquadEdit({ squad, streamId, onDone }: { squad?: Squad; streamId
               id: squad?.id ?? freeId(value.name, org.squads.map((item) => item.id)),
               name: value.name.trim(),
               scrum_master_person_id: value.scrum_master_person_id || null,
-              resources: value.resources.map((item) => ({ system_id: item.system_id, role: item.role, person_id: item.person_id || null })),
+              resources: value.resources.map((item) => ({
+                system_id: item.system_id,
+                role: item.role,
+                person_id: item.person_id || null,
+                capability_id: item.capability_id || null,
+              })),
             },
           },
           { onSuccess: onDone },
@@ -338,14 +355,26 @@ export function SquadEdit({ squad, streamId, onDone }: { squad?: Squad; streamId
         one="seat"
         items={value.resources}
         onChange={(resources) => setValue({ ...value, resources })}
-        blank={() => ({ system_id: "", role: "developer", person_id: null })}
+        blank={() => ({ system_id: "", role: "developer", person_id: null, capability_id: null })}
         itemLabel={(item, index) => {
           const system = inService.find((candidate) => candidate.id === item.system_id)?.name ?? item.system_id;
-          return system ? `${roleLabel(item.role).toLocaleLowerCase()} seat on ${system}` : `seat ${index + 1}`;
+          const scope = item.capability_id ? ` › ${conceptName(release, item.capability_id)}` : "";
+          return system ? `${roleLabel(item.role).toLocaleLowerCase()} seat on ${system}${scope}` : `seat ${index + 1}`;
         }}
         render={(item, update) => (
           <>
-            <SelectField label="System" value={item.system_id} options={systemOptions(item.system_id)} onChange={(system_id) => update({ system_id })} />
+            <SelectField
+              label="System"
+              value={item.system_id}
+              options={systemOptions(item.system_id)}
+              onChange={(system_id) => update({ system_id, capability_id: null })}
+            />
+            <SelectField
+              label="Capability"
+              value={item.capability_id ?? ""}
+              options={capabilityOptions(item)}
+              onChange={(id) => update({ capability_id: id || null })}
+            />
             <SelectField label="Role" value={item.role} options={roleOptions} onChange={(role) => update({ role: role as SquadRole })} />
             <SelectField
               label="Person"

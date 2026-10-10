@@ -17,6 +17,12 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   node, and `GET /organisation/references` flags squads and products naming systems, offerings
   or portfolio nodes the version in service no longer has, products whose systems differ from
   their offerings', and products linked to neither.
+- Capability-scoped squad seats (ontology plan, Phase 1b): a seat can cover one capability
+  concept its system's capabilities link to rather than the whole system. Asking a system's
+  ownership for a capability (`?capability_id=`) lists that capability's seats first, then the
+  whole-system seats, and leaves out the system's other capabilities. `GET
+  /organisation/references` also flags seats on a capability the system no longer links to,
+  and the squad screens show and edit each seat's capability.
 
 ### Changed
 

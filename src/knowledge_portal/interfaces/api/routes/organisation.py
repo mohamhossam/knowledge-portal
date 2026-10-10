@@ -61,9 +61,15 @@ def references(
 
 @router.get("/systems/{system_id}/ownership", response_model=SystemOwnershipResponse)
 def system_ownership(
-    system_id: str, organisation: OrganisationDep, actor: KnowledgeActorDep
+    system_id: str,
+    organisation: OrganisationDep,
+    actor: KnowledgeActorDep,
+    capability_id: str | None = None,
 ) -> SystemOwnershipResponse:
-    return SystemOwnershipResponse.from_domain(organisation.ownership(system_id, actor))
+    """Who owns a system, or, with ``capability_id``, one business capability concept of it."""
+    return SystemOwnershipResponse.from_domain(
+        organisation.ownership(system_id, actor, capability_id)
+    )
 
 
 @router.post("/people", response_model=OrganisationResponse, status_code=201)

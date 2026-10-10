@@ -18,6 +18,8 @@ from knowledge_portal.application.use_cases.resolve_architecture_knowledge impor
     ResolveArchitectureKnowledge,
 )
 from knowledge_portal.domain.architecture.channels import Channel
+from knowledge_portal.domain.architecture.concepts import BusinessCapability
+from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge
 from knowledge_portal.domain.architecture.portfolio import PortfolioNode
 from knowledge_portal.domain.architecture.products import (
     ComponentResponsibility,
@@ -27,6 +29,7 @@ from knowledge_portal.domain.architecture.products import (
 )
 from knowledge_portal.domain.identity.errors import AuthorizationDeniedError
 from knowledge_portal.domain.organisation.catalogue import (
+    CapabilityScope,
     InvalidOrganisationError,
     OrganisationCatalogue,
     OrganisationConflictError,
@@ -207,7 +210,7 @@ def test_references_flag_what_a_release_retired_and_products_out_of_step() -> No
         )
     )
     release = ReleaseReferences(
-        system_ids={"bcrm", "cwom", "bscs"},
+        systems={"bcrm": (), "cwom": (), "bscs": ()},
         offering_systems={"fibre-offer": {"cwom", "bscs"}},
         portfolio_node_ids={"smb"},
     )
@@ -337,6 +340,106 @@ def test_products_link_offerings_and_portfolio_nodes_in_service_and_are_flagged(
     )
 
 
+def _billing_release() -> ArchitectureKnowledge:
+    """The seed with BSCS's billing capability linked to the concept cap-billing."""
+    seed = seed_knowledge()
+    return replace(
+        seed,
+        business_capabilities=(
+            BusinessCapability("cap-billing", "Billing", domain_id="billing"),
+            BusinessCapability("cap-charging", "Charging", broader_id="cap-billing"),
+        ),
+        systems=tuple(
+            replace(
+                system,
+                capabilities=tuple(
+                    replace(item, concept_id="cap-billing") for item in system.capabilities
+                ),
+            )
+            if system.id == "bscs"
+            else system
+            for system in seed.systems
+        ),
+    )
+
+
+def test_seats_on_a_capability_own_it_first_then_the_whole_system() -> None:
+    manage = ManageOrganisationCatalogue(
+        InMemoryOrganisationRepository(FixedClock(NOW)),
+        InMemoryArchitectureKnowledgeRepository(_billing_release()),
+    )
+    for person in ("bea", "omar", "rana"):
+        manage.save_person(Person(person, person.title()), None, MAINTAINER)
+    manage.save_value_stream(ValueStream("retail", "Retail"), None, MAINTAINER)
+    biller = SquadResource("bscs", SquadRole.DEVELOPER, "bea", "cap-billing")
+    manage.save_squad(Squad("zeta", "Zeta billing", "retail", None, (biller,)), None, MAINTAINER)
+    with pytest.raises(InvalidOrganisationError, match="no capability linked to concept"):
+        manage.save_squad(
+            Squad(
+                "alpha",
+                "Alpha platform",
+                "retail",
+                None,
+                (SquadResource("bscs", SquadRole.TESTER, "rana", "cap-charging"),),
+            ),
+            None,
+            MAINTAINER,
+        )
+    manage.save_squad(
+        Squad(
+            "alpha",
+            "Alpha platform",
+            "retail",
+            None,
+            (SquadResource("bscs", SquadRole.SYSTEM_CONTACT, "omar"),),
+        ),
+        None,
+        MAINTAINER,
+    )
+
+    whole = manage.ownership("bscs", READER)
+    assert [item.name for item in whole.squads] == ["Alpha platform", "Zeta billing"]
+    billing = manage.ownership("bscs", READER, "cap-billing")
+    assert [item.name for item in billing.squads] == ["Zeta billing", "Alpha platform"]
+    assert [(item.squad_id, item.resource.person_id) for item in billing.seats] == [
+        ("zeta", "bea"),
+        ("alpha", "omar"),
+    ]
+    # Another capability of the system leaves out seats scoped to billing.
+    assert [item.squad_id for item in manage.ownership("bscs", READER, "cap-other").seats] == [
+        "alpha"
+    ]
+
+
+def test_references_flag_seats_on_a_capability_the_release_no_longer_links() -> None:
+    catalogue = _catalogue().put_squad(
+        Squad(
+            "billing",
+            "Billing squad",
+            "retail",
+            None,
+            (
+                SquadResource("bscs", SquadRole.DEVELOPER, "bea", "cap-billing"),
+                SquadResource("bscs", SquadRole.TESTER, "bea", "cap-charging"),
+                SquadResource("gone", SquadRole.TESTER, "bea", "cap-billing"),
+            ),
+        ),
+        None,
+    )
+    release = ReleaseReferences(
+        systems={"bcrm": (), "bscs": ("cap-billing",)},
+        offering_systems={},
+        portfolio_node_ids=(),
+    )
+
+    flags = {(item.subject, item.subject_id): item for item in check_references(catalogue, release)}
+
+    billing = flags["squad", "billing"]
+    # A retired system is flagged once, as a system; its capability scopes go with it.
+    assert billing.retired_system_ids == ("gone",)
+    assert billing.retired_capabilities == (CapabilityScope("bscs", "cap-charging"),)
+
+
 def test_mapping_records_squads_value_streams_and_products_from_the_organisation() -> None:
     releases = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
     organisation = InMemoryOrganisationRepository(FixedClock(NOW))
@@ -415,14 +518,29 @@ def test_organisation_api_round_trip_and_permissions(client: TestClient) -> None
     assert read.status_code == 200
     assert read.json()["people"][0]["email"] is None
     assert read.json()["squads"][0]["resources"] == [
-        {"system_id": "bcrm", "role": "system_contact", "person_id": "layla"},
-        {"system_id": "bcrm", "role": "developer", "person_id": None},
+        {
+            "system_id": "bcrm",
+            "role": "system_contact",
+            "person_id": "layla",
+            "capability_id": None,
+        },
+        {"system_id": "bcrm", "role": "developer", "person_id": None, "capability_id": None},
     ]
     references = client.get("/organisation/references", headers=READER_HEADERS)
     assert references.status_code == 200
     assert references.json() == []
     ownership = client.get("/organisation/systems/bcrm/ownership", headers=READER_HEADERS)
     assert [item["name"] for item in ownership.json()["squads"]] == ["Sales squad"]
+    scoped = client.get(
+        "/organisation/systems/bcrm/ownership",
+        params={"capability_id": "cap-sales"},
+        headers=READER_HEADERS,
+    ).json()
+    assert scoped["capability_id"] == "cap-sales"
+    assert [(item["squad_id"], item["resource"]["role"]) for item in scoped["seats"]] == [
+        ("sales", "system_contact"),
+        ("sales", "developer"),
+    ]
     assert (
         client.post(
             "/organisation/people",
