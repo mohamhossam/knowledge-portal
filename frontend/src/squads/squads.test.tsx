@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { api, type Organisation, type Release } from "../api/client";
 import { PeoplePage } from "./PeoplePage";
 import { ProductsPage } from "./ProductsPage";
+import { SquadListPage } from "./SquadListPage";
 import { SquadsPage } from "./SquadsPage";
 
 afterEach(() => vi.restoreAllMocks());
@@ -14,8 +15,15 @@ afterEach(() => vi.restoreAllMocks());
 const release = {
   id: "live", revision: 1, status: "published", documents: [], relationships: [], landscape_domains: [],
   systems: [
-    { id: "bcrm", name: "BCRM", aliases: [], capabilities: [], components: [], constraints: [] },
+    {
+      id: "bcrm", name: "BCRM", aliases: [], components: [], constraints: [],
+      capabilities: [{ id: "leads", name: "Leads", triggers: [], concept_id: "cap-sales" }],
+    },
     { id: "dcrm", name: "DCRM", aliases: [], capabilities: [], components: [], constraints: [] },
+  ],
+  business_capabilities: [
+    { id: "cap-sales", pref_label: "Sales management", alt_labels: [] },
+    { id: "cap-old", pref_label: "Retired selling", alt_labels: [] },
   ],
 } as unknown as Release;
 
@@ -46,7 +54,11 @@ function renderAt(path: string, page: ReactNode, child: string) {
   vi.spyOn(api, "organisationReferences").mockResolvedValue([
     {
       subject: "product", subject_id: "p", retired_system_ids: [], retired_offering_ids: [], retired_portfolio_node_id: null,
-      systems_missing: [], systems_unexplained: [], unlinked: true,
+      retired_capabilities: [], systems_missing: [], systems_unexplained: [], unlinked: true,
+    },
+    {
+      subject: "squad", subject_id: "sales", retired_system_ids: [], retired_offering_ids: [], retired_portfolio_node_id: null,
+      retired_capabilities: [{ system_id: "bcrm", capability_id: "cap-old" }], systems_missing: [], systems_unexplained: [], unlinked: false,
     },
   ]);
   vi.spyOn(api, "knownActors").mockResolvedValue([]);
@@ -111,6 +123,44 @@ describe("ProductsPage", () => {
     const panel = screen.getByRole("form", { name: "Remove Retail" });
     expect(within(panel).getByText("Move or remove this value stream's products and squads first.")).toBeInTheDocument();
     expect(within(panel).getByRole("button", { name: "Remove it" })).toBeDisabled();
+  });
+});
+
+describe("SquadListPage", () => {
+  it("flags a seat on a capability the system no longer links to, and counts the squad", async () => {
+    renderAt("/squads/squads", <SquadListPage />, "squads");
+    const checks = await screen.findByRole("list", { name: "To check in Sales" }, { timeout: 5000 });
+    expect(checks).toHaveTextContent("BCRM › Retired selling: no capability of the system links to it any more.");
+    expect(screen.getByLabelText("Ownership of the systems in service")).toHaveTextContent("Squads to check1");
+  });
+
+  it("scopes a seat to a capability the system links to, and clears it when the system changes", async () => {
+    const save = vi.spyOn(api, "saveOrganisation").mockResolvedValue(org);
+    renderAt("/squads/squads", <SquadListPage />, "squads");
+    fireEvent.click(await screen.findByRole("button", { name: /Edit\s*Sales/ }, { timeout: 5000 }));
+    const panel = screen.getByRole("form", { name: "Edit Sales" });
+    fireEvent.click(within(panel).getByRole("button", { name: /Add another seat/ }));
+    const seat = within(panel).getAllByRole("group").at(-1)!;
+    const [system, capability, role] = within(seat).getAllByRole("combobox");
+    fireEvent.change(system!, { target: { value: "bcrm" } });
+    expect([...(capability as HTMLSelectElement).options].map((option) => option.text)).toEqual(["Whole system", "Sales management"]);
+    fireEvent.change(capability!, { target: { value: "cap-sales" } });
+    fireEvent.change(system!, { target: { value: "dcrm" } });
+    expect((capability as HTMLSelectElement).value).toBe("");
+    fireEvent.change(system!, { target: { value: "bcrm" } });
+    fireEvent.change(capability!, { target: { value: "cap-sales" } });
+    fireEvent.change(role!, { target: { value: "tester" } });
+    fireEvent.click(within(panel).getByRole("button", { name: "Save the squad" }));
+    await waitFor(() => expect(save).toHaveBeenCalled());
+    expect(save.mock.calls[0]![2]).toEqual({
+      expected_revision: 4,
+      squad: expect.objectContaining({
+        resources: [
+          { system_id: "bcrm", role: "system_contact", person_id: "layla", capability_id: null },
+          { system_id: "bcrm", role: "tester", person_id: null, capability_id: "cap-sales" },
+        ],
+      }),
+    });
   });
 });
 

@@ -1893,7 +1893,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** System Ownership */
+        /**
+         * System Ownership
+         * @description Who owns a system, or, with ``capability_id``, one business capability concept of it.
+         */
         get: operations["system_ownership_organisation_systems__system_id__ownership_get"];
         put?: never;
         post?: never;
@@ -2454,6 +2457,13 @@ export interface components {
         };
         /** CapabilityRefSchema */
         CapabilityRefSchema: {
+            /** Capability Id */
+            capability_id: string;
+            /** System Id */
+            system_id: string;
+        };
+        /** CapabilityScopeResponse */
+        CapabilityScopeResponse: {
             /** Capability Id */
             capability_id: string;
             /** System Id */
@@ -4288,6 +4298,12 @@ export interface components {
             /** Location */
             location: string;
         };
+        /** OwnedSeatResponse */
+        OwnedSeatResponse: {
+            resource: components["schemas"]["SquadResourceSchema"];
+            /** Squad Id */
+            squad_id: string;
+        };
         /** OwnershipTransfer */
         OwnershipTransfer: {
             new_owner: components["schemas"]["ActorSnapshot"];
@@ -4779,6 +4795,8 @@ export interface components {
          *     whose systems differ from what its offerings name, or that is linked to nothing.
          */
         ReferenceFlagResponse: {
+            /** Retired Capabilities */
+            retired_capabilities: components["schemas"]["CapabilityScopeResponse"][];
             /** Retired Offering Ids */
             retired_offering_ids: string[];
             /** Retired Portfolio Node Id */
@@ -5148,9 +5166,12 @@ export interface components {
         };
         /**
          * SquadResourceSchema
-         * @description A seat on a system in a role; no person while the seat is open.
+         * @description A seat on a system, or on one capability concept it realises, in a role; no person
+         *     while the seat is open.
          */
         SquadResourceSchema: {
+            /** Capability Id */
+            capability_id?: string | null;
             /** Person Id */
             person_id?: string | null;
             role: components["schemas"]["SquadRole"];
@@ -5270,10 +5291,18 @@ export interface components {
             /** Source */
             source?: string | null;
         };
-        /** SystemOwnershipResponse */
+        /**
+         * SystemOwnershipResponse
+         * @description Asked about a capability, its squads and seats come first, then those on the whole
+         *     system; seats on the system's other capabilities are left out.
+         */
         SystemOwnershipResponse: {
+            /** Capability Id */
+            capability_id: string | null;
             /** Products */
             products: components["schemas"]["ProductSchema"][];
+            /** Seats */
+            seats: components["schemas"]["OwnedSeatResponse"][];
             /** Squads */
             squads: components["schemas"]["SquadSchema"][];
             /** System Id */
@@ -9629,7 +9658,9 @@ export interface operations {
     };
     system_ownership_organisation_systems__system_id__ownership_get: {
         parameters: {
-            query?: never;
+            query?: {
+                capability_id?: string | null;
+            };
             header?: {
                 "X-Fake-Actor-Id"?: string | null;
             };

@@ -8,7 +8,7 @@ import { errorMessage } from "../api/errors";
 import { connections, dependsHow, domainPath, sentenceCase, systemName, systemRoles, usedHow } from "./catalogue";
 import { ConnectionEdit, ConnectionRemove, EditButton, SystemEdit, SystemRemove } from "./DraftEdits";
 import { SystemReview } from "../reviews/SystemReview";
-import { roleLabel } from "../squads/organisation";
+import { seatsLine, seatsOn } from "../squads/organisation";
 import { useCatalogueContext } from "./useCatalogue";
 
 /** Where a sheet was reached from, so the way back can be lit and retraced. */
@@ -256,14 +256,14 @@ function Connections({ title, rows, other, how, from, system, empty, editable }:
 
 /** Owners come from the squad catalogue as it is today, whichever version is being read. */
 function Owners({ system }: { system: CatalogueSystem }) {
-  const { inService } = useCatalogueContext();
+  const { book, inService } = useCatalogueContext();
   const id = useId();
   const ownership = useQuery({
     queryKey: ["organisation", "systems", system.id, "ownership"],
     queryFn: () => api.systemOwnership(system.id),
   });
   const organisation = useQuery({ queryKey: ["organisation"], queryFn: api.organisation });
-  const people = new Map((organisation.data?.people ?? []).map((person) => [person.id, person.name]));
+  const org = organisation.data ?? { people: [], value_streams: [], products: [], squads: [] };
   const streams = new Map((ownership.data?.value_streams ?? []).map((stream) => [stream.id, stream.name]));
   const squads = ownership.data?.squads ?? [];
   const products = ownership.data?.products ?? [];
@@ -286,16 +286,14 @@ function Owners({ system }: { system: CatalogueSystem }) {
           </thead>
           <tbody>
             {squads.map((squad) => {
-              const seats = squad.resources
-                .filter((item) => item.system_id === system.id)
-                .map((item) => `${roleLabel(item.role)}: ${item.person_id ? people.get(item.person_id) ?? item.person_id : "open seat"}`);
+              const seats = seatsOn(org, squad, system.id, book.release);
               return (
                 <tr key={squad.id} className="row">
                   <th scope="row" dir="auto">
                     {squad.name}
                     <span className="secondary govtable__by" dir="auto">{streams.get(squad.value_stream_id) ?? squad.value_stream_id}</span>
                   </th>
-                  <td dir="auto">{seats.join(" · ")}</td>
+                  <td dir="auto">{seatsLine(seats)}</td>
                 </tr>
               );
             })}

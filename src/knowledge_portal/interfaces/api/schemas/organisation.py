@@ -106,17 +106,25 @@ class ProductSchema(BaseModel):
 
 
 class SquadResourceSchema(BaseModel):
-    """A seat on a system in a role; no person while the seat is open."""
+    """A seat on a system, or on one capability concept it realises, in a role; no person
+    while the seat is open."""
 
     system_id: RequiredIdentifier
     role: SquadRole
     person_id: Identifier | None = None
+    capability_id: Identifier | None = None
 
     @classmethod
     def from_domain(cls, resource: SquadResource) -> SquadResourceSchema:
         return cls.model_construct(
-            system_id=resource.system_id, role=resource.role, person_id=resource.person_id
+            system_id=resource.system_id,
+            role=resource.role,
+            person_id=resource.person_id,
+            capability_id=resource.capability_id,
         )
+
+    def to_domain(self) -> SquadResource:
+        return SquadResource(self.system_id, self.role, self.person_id, self.capability_id)
 
 
 class SquadSchema(BaseModel):
@@ -144,9 +152,7 @@ class SquadSchema(BaseModel):
             self.name,
             self.value_stream_id,
             self.scrum_master_person_id,
-            tuple(
-                SquadResource(item.system_id, item.role, item.person_id) for item in self.resources
-            ),
+            tuple(item.to_domain() for item in self.resources),
         )
 
 
@@ -166,9 +172,19 @@ class OrganisationResponse(BaseModel):
         )
 
 
+class OwnedSeatResponse(BaseModel):
+    squad_id: str
+    resource: SquadResourceSchema
+
+
 class SystemOwnershipResponse(BaseModel):
+    """Asked about a capability, its squads and seats come first, then those on the whole
+    system; seats on the system's other capabilities are left out."""
+
     system_id: str
+    capability_id: str | None
     squads: list[SquadSchema]
+    seats: list[OwnedSeatResponse]
     products: list[ProductSchema]
     value_streams: list[ValueStreamSchema]
 
@@ -176,10 +192,23 @@ class SystemOwnershipResponse(BaseModel):
     def from_domain(cls, ownership: SystemOwnership) -> SystemOwnershipResponse:
         return cls.model_construct(
             system_id=ownership.system_id,
+            capability_id=ownership.capability_id,
+            seats=[
+                OwnedSeatResponse.model_construct(
+                    squad_id=item.squad_id,
+                    resource=SquadResourceSchema.from_domain(item.resource),
+                )
+                for item in ownership.seats
+            ],
             squads=[SquadSchema.from_domain(item) for item in ownership.squads],
             products=[ProductSchema.from_domain(item) for item in ownership.products],
             value_streams=[ValueStreamSchema.from_domain(item) for item in ownership.value_streams],
         )
+
+
+class CapabilityScopeResponse(BaseModel):
+    system_id: str
+    capability_id: str
 
 
 class ReferenceFlagResponse(BaseModel):
@@ -191,6 +220,7 @@ class ReferenceFlagResponse(BaseModel):
     retired_system_ids: list[str]
     retired_offering_ids: list[str]
     retired_portfolio_node_id: str | None
+    retired_capabilities: list[CapabilityScopeResponse]
     systems_missing: list[str]
     systems_unexplained: list[str]
     unlinked: bool
@@ -203,6 +233,12 @@ class ReferenceFlagResponse(BaseModel):
             retired_system_ids=list(flag.retired_system_ids),
             retired_offering_ids=list(flag.retired_offering_ids),
             retired_portfolio_node_id=flag.retired_portfolio_node_id,
+            retired_capabilities=[
+                CapabilityScopeResponse.model_construct(
+                    system_id=item.system_id, capability_id=item.capability_id
+                )
+                for item in flag.retired_capabilities
+            ],
             systems_missing=list(flag.systems_missing),
             systems_unexplained=list(flag.systems_unexplained),
             unlinked=flag.unlinked,

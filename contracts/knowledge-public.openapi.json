@@ -1627,6 +1627,24 @@
         "title": "CapabilityRefSchema",
         "type": "object"
       },
+      "CapabilityScopeResponse": {
+        "properties": {
+          "capability_id": {
+            "title": "Capability Id",
+            "type": "string"
+          },
+          "system_id": {
+            "title": "System Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "system_id",
+          "capability_id"
+        ],
+        "title": "CapabilityScopeResponse",
+        "type": "object"
+      },
       "CatalogPlanResponse": {
         "properties": {
           "description": {
@@ -7452,6 +7470,23 @@
         "title": "OriginalPreview",
         "type": "object"
       },
+      "OwnedSeatResponse": {
+        "properties": {
+          "resource": {
+            "$ref": "#/components/schemas/SquadResourceSchema"
+          },
+          "squad_id": {
+            "title": "Squad Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "squad_id",
+          "resource"
+        ],
+        "title": "OwnedSeatResponse",
+        "type": "object"
+      },
       "OwnershipTransfer": {
         "properties": {
           "new_owner": {
@@ -8768,6 +8803,13 @@
       "ReferenceFlagResponse": {
         "description": "A squad or product naming what the version in service no longer has, or a product\nwhose systems differ from what its offerings name, or that is linked to nothing.",
         "properties": {
+          "retired_capabilities": {
+            "items": {
+              "$ref": "#/components/schemas/CapabilityScopeResponse"
+            },
+            "title": "Retired Capabilities",
+            "type": "array"
+          },
           "retired_offering_ids": {
             "items": {
               "type": "string"
@@ -8830,6 +8872,7 @@
           "retired_system_ids",
           "retired_offering_ids",
           "retired_portfolio_node_id",
+          "retired_capabilities",
           "systems_missing",
           "systems_unexplained",
           "unlinked"
@@ -9766,8 +9809,20 @@
         "type": "object"
       },
       "SquadResourceSchema": {
-        "description": "A seat on a system in a role; no person while the seat is open.",
+        "description": "A seat on a system, or on one capability concept it realises, in a role; no person\nwhile the seat is open.",
         "properties": {
+          "capability_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capability Id"
+          },
           "person_id": {
             "anyOf": [
               {
@@ -10155,12 +10210,31 @@
         "type": "object"
       },
       "SystemOwnershipResponse": {
+        "description": "Asked about a capability, its squads and seats come first, then those on the whole\nsystem; seats on the system's other capabilities are left out.",
         "properties": {
+          "capability_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capability Id"
+          },
           "products": {
             "items": {
               "$ref": "#/components/schemas/ProductSchema"
             },
             "title": "Products",
+            "type": "array"
+          },
+          "seats": {
+            "items": {
+              "$ref": "#/components/schemas/OwnedSeatResponse"
+            },
+            "title": "Seats",
             "type": "array"
           },
           "squads": {
@@ -10184,7 +10258,9 @@
         },
         "required": [
           "system_id",
+          "capability_id",
           "squads",
+          "seats",
           "products",
           "value_streams"
         ],
@@ -19148,6 +19224,7 @@
     },
     "/organisation/systems/{system_id}/ownership": {
       "get": {
+        "description": "Who owns a system, or, with ``capability_id``, one business capability concept of it.",
         "operationId": "system_ownership_organisation_systems__system_id__ownership_get",
         "parameters": [
           {
@@ -19157,6 +19234,22 @@
             "schema": {
               "title": "System Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "capability_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Capability Id"
             }
           },
           {

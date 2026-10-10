@@ -424,6 +424,7 @@ def sample_catalogue(release: dict[str, Any]) -> dict[str, Any]:
                     "triggers": ["order milestones", "installation milestones"],
                     "domain_id": "order-fulfilment",
                     "component_id": "milestones",
+                    "concept_id": "cap-order-tracking",
                 },
             ]
             system["constraints"] = ["Fixed-line orders only (sample)."]
@@ -547,6 +548,15 @@ def sample_catalogue(release: dict[str, Any]) -> dict[str, Any]:
         "systems": systems,
         "relationships": relationships,
         "capability_domains": release.get("capability_domains", []),
+        "business_capabilities": [
+            {"id": "cap-order-fulfilment", "pref_label": "Order fulfilment (sample)"},
+            {
+                "id": "cap-order-tracking",
+                "pref_label": "Order tracking (sample)",
+                "alt_labels": ["Order milestones"],
+                "broader_id": "cap-order-fulfilment",
+            },
+        ],
         "landscape_domains": domains,
         "products": [offering],
         "journeys": [journey],
@@ -751,6 +761,12 @@ def seed_squads(client: httpx.Client) -> None:
                 "resources": [
                     {"system_id": "cwom", "role": "system_contact", "person_id": "omar"},
                     {"system_id": "cwom", "role": "tester", "person_id": "layla"},
+                    {
+                        "system_id": "cwom",
+                        "role": "developer",
+                        "person_id": "omar",
+                        "capability_id": "cap-order-tracking",
+                    },
                     {"system_id": "wfm", "role": "system_contact"},
                 ],
             }

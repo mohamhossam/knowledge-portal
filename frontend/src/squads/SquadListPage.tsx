@@ -4,12 +4,12 @@ import { Link } from "react-router-dom";
 import type { Squad } from "../api/client";
 import { EditButton } from "../catalogue/DraftEdits";
 import { OrgRemove, SquadEdit } from "./OrgEdits";
-import { seatsLine, seatsOn, systemIdsOf } from "./organisation";
+import { seatsLine, seatsOn, squadChecks, systemIdsOf } from "./organisation";
 import { useOrgContext } from "./useOrganisation";
 
 /** The squads, by value stream: scrum master, then the systems each runs and its people on each, by role. */
 export function SquadListPage() {
-  const { org, release } = useOrgContext();
+  const { org, release, flags } = useOrgContext();
   const [editing, setEditing] = useState<{ what: "add" } | { what: "edit" | "remove"; squad: Squad } | null>(null);
   const directory = new Map(org.people.map((person) => [person.id, person]));
   const name = (systemId: string) => release?.systems.find((system) => system.id === systemId)?.name;
@@ -49,6 +49,7 @@ export function SquadListPage() {
                 {squads.map((squad) => {
                   const master = squad.scrum_master_person_id ? directory.get(squad.scrum_master_person_id) : undefined;
                   const open = editing && editing.what !== "add" && editing.squad.id === squad.id;
+                  const checks = squadChecks(flags.find((item) => item.subject === "squad" && item.subject_id === squad.id), release);
                   return (
                     <Fragment key={squad.id}>
                       <tr className={open ? "row is-open" : "row"}>
@@ -57,6 +58,11 @@ export function SquadListPage() {
                           <span className="secondary govtable__by" dir="auto">
                             {master ? `Scrum master: ${master.name}` : "No scrum master named"}
                           </span>
+                          {checks.length > 0 && (
+                            <ul className="product__checks" aria-label={`To check in ${squad.name}`}>
+                              {checks.map((check) => <li key={check} dir="auto">{check}</li>)}
+                            </ul>
+                          )}
                           <span className="sheet__row-actions">
                             <EditButton onClick={() => setEditing({ what: "edit", squad })}>
                               Edit<span className="visually-hidden"> {squad.name}</span>
@@ -78,7 +84,7 @@ export function SquadListPage() {
                                     ) : (
                                       <span>{systemId} (not in the catalogue in service)</span>
                                     )}
-                                    <span className="secondary" dir="auto"> · {seatsLine(seatsOn(org, squad, systemId))}</span>
+                                    <span className="secondary" dir="auto"> · {seatsLine(seatsOn(org, squad, systemId, release))}</span>
                                   </li>
                                 );
                               })}

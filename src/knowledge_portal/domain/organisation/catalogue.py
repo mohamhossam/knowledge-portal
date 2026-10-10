@@ -5,7 +5,8 @@ record carries its own revision for optimistic concurrency) rather than released
 in versions like the architecture catalogue. Systems, offerings and portfolio
 nodes are referenced by their architecture catalogue id and are never created
 here, so a release can retire something a record still names; ``check_references``
-says which.
+says which. A squad seat may be scoped to one business capability concept of its system,
+which the system must realise through one of its capabilities.
 """
 
 from __future__ import annotations
@@ -186,13 +187,27 @@ class OrganisationAuditEvent:
 
 
 @dataclass(frozen=True)
+class OwnedSeat:
+    """One squad's seat on the system being asked about."""
+
+    squad_id: str
+    resource: SquadResource
+
+
+@dataclass(frozen=True)
 class SystemOwnership:
-    """Where one architecture system sits in the organisation."""
+    """Where one architecture system, or one capability of it, sits in the organisation.
+
+    Asked about a capability, the squads and seats scoped to it come first, then those on
+    the whole system; seats on the system's other capabilities are left out.
+    """
 
     system_id: str
     squads: tuple[Squad, ...]
     products: tuple[Product, ...]
     value_streams: tuple[ValueStream, ...]
+    capability_id: str | None = None
+    seats: tuple[OwnedSeat, ...] = ()
 
 
 def _put[R: (Person, ValueStream, Product, Squad)](
@@ -352,11 +367,32 @@ class OrganisationCatalogue:
     def remove_squad(self, squad_id: str, expected_revision: int) -> OrganisationCatalogue:
         return replace(self, squads=_remove(self.squads, squad_id, expected_revision, "Squad"))
 
-    def ownership(self, system_id: str) -> SystemOwnership:
+    def ownership(self, system_id: str, capability_id: str | None = None) -> SystemOwnership:
+        def fits(resource: SquadResource) -> bool:
+            return resource.system_id == system_id and (
+                capability_id is None or resource.capability_id in (None, capability_id)
+            )
+
+        def scoped_first(resource: SquadResource) -> int:
+            return 0 if capability_id is not None and resource.capability_id == capability_id else 1
+
+        by_name = sorted(self.squads, key=lambda item: item.name.casefold())
+        seats = sorted(
+            (
+                OwnedSeat(squad.id, resource)
+                for squad in by_name
+                for resource in squad.resources
+                if fits(resource)
+            ),
+            key=lambda item: scoped_first(item.resource),
+        )
+        first_seat: dict[str, int] = {}
+        for index, seat in enumerate(seats):
+            first_seat.setdefault(seat.squad_id, index)
         squads = tuple(
             sorted(
-                (squad for squad in self.squads if system_id in squad.system_ids),
-                key=lambda item: item.name.casefold(),
+                (squad for squad in by_name if squad.id in first_seat),
+                key=lambda item: first_seat[item.id],
             )
         )
         products = tuple(
@@ -374,7 +410,15 @@ class OrganisationCatalogue:
                 key=lambda item: item.name.casefold(),
             )
         )
-        return SystemOwnership(system_id, squads, products, streams)
+        return SystemOwnership(system_id, squads, products, streams, capability_id, tuple(seats))
+
+
+@dataclass(frozen=True)
+class CapabilityScope:
+    """One capability of one system, as a squad seat is scoped to it."""
+
+    system_id: str
+    capability_id: str
 
 
 @dataclass(frozen=True)
@@ -387,6 +431,8 @@ class ReferenceFlag:
     retired_system_ids: tuple[str, ...] = ()
     retired_offering_ids: tuple[str, ...] = ()
     retired_portfolio_node_id: str | None = None
+    # A squad's seats scoped to a capability its system no longer has.
+    retired_capabilities: tuple[CapabilityScope, ...] = ()
     # A product's systems its offerings name but it does not, and the reverse.
     systems_missing: tuple[str, ...] = ()
     systems_unexplained: tuple[str, ...] = ()
@@ -398,7 +444,8 @@ class ReferenceFlag:
 class ReleaseReferences:
     """What one architecture release offers the organisation catalogue to point at."""
 
-    system_ids: Collection[str]
+    # Each system by id, with the business capability concepts its capabilities are linked to.
+    systems: Mapping[str, Collection[str]]
     # Each offering by id, with the systems its components name.
     offering_systems: Mapping[str, Collection[str]]
     portfolio_node_ids: Collection[str]
@@ -408,12 +455,26 @@ def check_references(
     catalogue: OrganisationCatalogue, release: ReleaseReferences
 ) -> tuple[ReferenceFlag, ...]:
     """Flag each squad and product whose links a release leaves stale, squads first."""
-    systems = set(release.system_ids)
+    systems = set(release.systems)
     flags: list[ReferenceFlag] = []
     for squad in sorted(catalogue.squads, key=lambda item: item.name.casefold()):
         retired = tuple(item for item in squad.system_ids if item not in systems)
-        if retired:
-            flags.append(ReferenceFlag("squad", squad.id, retired_system_ids=retired))
+        # A capability lapses with its system, so only those of systems still in service.
+        lapsed = tuple(
+            dict.fromkeys(
+                CapabilityScope(item.system_id, item.capability_id)
+                for item in squad.resources
+                if item.capability_id is not None
+                and item.system_id in systems
+                and item.capability_id not in release.systems[item.system_id]
+            )
+        )
+        if retired or lapsed:
+            flags.append(
+                ReferenceFlag(
+                    "squad", squad.id, retired_system_ids=retired, retired_capabilities=lapsed
+                )
+            )
     for product in sorted(catalogue.products, key=lambda item: item.name.casefold()):
         offered = [item for item in product.offering_ids if item in release.offering_systems]
         named = {system for offering in offered for system in release.offering_systems[offering]}
