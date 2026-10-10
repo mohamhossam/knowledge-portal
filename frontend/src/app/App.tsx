@@ -50,16 +50,12 @@ function Loading({ children }: { children: ReactNode }) {
 
 
 /**
- * The redesign's wireframe lab (docs/redesign/STATUS.md, Phase 3). Development
- * only: in a production build `import.meta.env.DEV` is false, so the import is
- * dead code and the lab never reaches the bundle.
+ * The design-system gallery (Phase 5). Development only: in a production build
+ * `import.meta.env.DEV` is false, so the import is dead code and the gallery
+ * never reaches the bundle.
  */
-const DesignLab = import.meta.env.DEV ? lazy(() => import("../design-lab/wireframes/WireframesApp")) : null;
-/** The design-system gallery (Phase 5); development only, like the lab. */
 const DesignGallery = import.meta.env.DEV ? lazy(() => import("../design-lab/gallery/Gallery")) : null;
-/** The hi-fi prototype for usability round 2 (Phase 6); development only, like the lab. */
-const DesignPrototype = import.meta.env.DEV ? lazy(() => import("../design-lab/prototype/PrototypeApp")) : null;
-/** The catalogue's direction mock-ups (2026-10-09); development only, like the lab. */
+/** The catalogue's direction mock-ups (2026-10-09); development only, like the gallery. */
 const CatalogueLab = import.meta.env.DEV ? lazy(() => import("../design-lab/catalogue/CatalogueLab")) : null;
 
 export function App() {
@@ -74,18 +70,6 @@ export function App() {
         <Route
           path="design-system/*"
           element={<Suspense fallback={null}><DesignGallery /></Suspense>}
-        />
-      )}
-      {DesignPrototype && (
-        <Route
-          path="design-lab/prototype/*"
-          element={<Suspense fallback={null}><DesignPrototype /></Suspense>}
-        />
-      )}
-      {DesignLab && (
-        <Route
-          path="design-lab/wireframes/*"
-          element={<Suspense fallback={null}><DesignLab /></Suspense>}
         />
       )}
       <Route element={<Shell />}>

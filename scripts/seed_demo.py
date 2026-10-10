@@ -445,7 +445,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--api", default="http://127.0.0.1:8100")
     arguments = parser.parse_args()
-    with httpx.Client(base_url=arguments.api, timeout=30) as client:
+    # The worker reads the large sample documents while later requests arrive; on a small CI
+    # runner that can hold a request well past 30 s, so each one gets two minutes.
+    with httpx.Client(base_url=arguments.api, timeout=120) as client:
         # Both admins sign in once, so the portal can name them.
         client.get("/identity/me", headers=OWNER).raise_for_status()
         client.get("/identity/me", headers=REVIEWER).raise_for_status()
