@@ -4,9 +4,10 @@
  * Order types belong to a product, so the page always shows one product's.
  * The header is the catalogue's soft band: the title, how much of the product
  * is modelled, then the scope, a path through the portfolio (business unit ›
- * line of business › segment › product family) ending in the product. It opens
- * on Fixed › SMB and that scope's first product; each level above the product
- * has "Any …", the product level always names one.
+ * line of business › segment › product family) ending in the product. Every
+ * level opens with a choice: Fixed › SMB, then the first family and product
+ * under it. Each level stays selectable; those above the product have "Any …",
+ * the product level always names one.
  *
  * Lifecycle board: the customer's stages (join, change, support, leave) as a
  * chevron ribbon, every order type of the product as a tile in its stage, with
@@ -20,7 +21,7 @@ import { type KeyboardEvent, type ReactNode, useEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { type CatalogueData, journeyView } from "../../architecture/adapter";
-import type { JourneyView, PortfolioNode } from "../../architecture/model";
+import type { JourneyView, Offering, PortfolioNode } from "../../architecture/model";
 import { AreaTabs } from "./CatalogueLab";
 import { journeyHref, LAB, useLabData } from "./labData";
 import { monogram, plural, useTitle } from "./labUtil";
@@ -65,14 +66,20 @@ function pathTo(nodes: PortfolioNode[], nodeId: string | null): PortfolioNode[] 
   return path;
 }
 
-/** The node at the end of DEFAULT_SCOPE: the first name anywhere, each next name among the previous one's children. */
-function defaultScope(nodes: PortfolioNode[]): string | null {
+/**
+ * The scope the page opens on: DEFAULT_SCOPE by name (the first name anywhere,
+ * each next one among the previous one's children), then down through the
+ * first child that holds a product, so every level opens with a choice.
+ */
+function defaultScope(nodes: PortfolioNode[], offerings: Offering[]): string | null {
+  const holdsProduct = (node: PortfolioNode) => offerings.some((offering) => pathTo(nodes, offering.nodeId).some((item) => item.id === node.id));
   let node: PortfolioNode | undefined;
   for (const name of DEFAULT_SCOPE) {
     const found: PortfolioNode | undefined = nodes.find((item) => item.name === name && (!node || item.parentId === node.id));
     if (!found) break;
     node = found;
   }
+  for (let next = node && nodes.find((item) => item.parentId === node?.id && holdsProduct(item)); next; next = nodes.find((item) => item.parentId === node?.id && holdsProduct(item))) node = next;
   return node?.id ?? null;
 }
 
@@ -158,9 +165,9 @@ export function JourneysIndex() {
     setParams(next, { replace: true });
   };
 
-  // Scope: the deepest portfolio node chosen ("all" for the whole portfolio; none in the URL opens on Fixed › SMB), then one product in it.
+  // Scope: the deepest portfolio node chosen ("all" for the whole portfolio; none in the URL opens on the default path), then one product in it.
   const wantedScope = params.get("scope");
-  const scopeNode = wantedScope === "all" ? null : data.portfolio.some((node) => node.id === wantedScope) ? wantedScope : defaultScope(data.portfolio);
+  const scopeNode = wantedScope === "all" ? null : data.portfolio.some((node) => node.id === wantedScope) ? wantedScope : defaultScope(data.portfolio, data.offerings);
   const scopePath = pathTo(data.portfolio, scopeNode);
   const scoped = data.offerings.filter((offering) => !scopeNode || pathTo(data.portfolio, offering.nodeId).some((node) => node.id === scopeNode));
   const product = scoped.find((offering) => offering.id === params.get("product")) ?? scoped[0] ?? null;
@@ -210,7 +217,7 @@ export function JourneysIndex() {
       </button>
     </li>
   );
-  const columns = stages.map((stage) => `${Math.min(2, Math.ceil(stage.codes.length / 6))}fr`).join(" ");
+  const columns = stages.map((stage) => `minmax(0, ${Math.min(2, Math.ceil(stage.codes.length / 6))}fr)`).join(" ");
 
   return (
     <>
