@@ -323,4 +323,15 @@ Lab: a **journey switcher** replaces the 20-chip row on screens 3 and 4. One but
 
 The old `poster.tsx` and its layout and router were removed. Checks: lint, brand lint, typecheck, build and budget are green; architecture and lab tests pass 24/24, with axe, including a new footprint test. There is no horizontal overflow at 375 px or 1440 px.
 
+**Landscape as the TAM wheel (2026-10-10, user: "ignore the current template, more innovation").** The layer-block map on the landscape is replaced by **`TamWheel`**, which draws the TM Forum application map round its integration layer:
+- The seven domains are sectors on the rim, in their calm tints, each with a band and a curved name and count. Inside each sector, the functional groups are arcs.
+- The 44 rim systems are points on the ring, their names reading outwards. TIBCO and B2B BFF sit at the hub.
+- Every system-to-system link is drawn faintly and bundled through the hierarchy (system → group → domain → hub), so the estate's shape reads at a glance.
+- Pointing at a system previews its links and shows a hover card (full name, domain › group, purpose). Picking it keeps its bundle in maroon, puts its partners in bold maroon and quietens the rest; the side panel shows its linked systems by domain.
+- A domain can be brought forward from its band or from the side panel, which is now a domain navigator listing each domain's systems.
+- The view switch is **Wheel | Layers | Matrix** (user: keep the layer view beside the wheel and the matrix for a full presentation). Layers is the TAM layer-block map with "Show every link"; all three share the selection and the domain navigator. Keyboard: one tab stop; the arrow keys move round the wheel, Enter picks, Escape clears.
+- On a phone the wheel keeps a readable size and scrolls inside its own frame; the page never scrolls sideways.
+
+eTOM lifecycle columns were considered and rejected, because most systems have no lifecycle-attributed steps. `ArchitectureMap` serves the Layers view and the product's footprint. Checks: tests 25/25 with axe; lint, brand lint, build and budget green.
+
 **Next exact action:** the user reviews the four mock-ups. On approval: build them into `frontend/src/architecture/` (replacing the dropdown context bar), move the poster palette into the token layers, rewrite DESIGN.md from the built world (impeccable documenter), then the gate (critique, serious findings fixed, e2e routes in `REDESIGNED`), Explorer read views, and the decision on replacing `smb_architecture.yaml`.

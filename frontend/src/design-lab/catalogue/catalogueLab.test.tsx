@@ -34,6 +34,15 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  it("draws the same estate as TAM layers, with each layer's groups and systems", async () => {
+    const { container } = open("?view=layers");
+    const layers = screen.getByRole("group", { name: /SMB architecture layers/ });
+    expect(within(layers).getAllByRole("button")).toHaveLength(46);
+    await userEvent.click(within(layers).getByRole("button", { name: /^CWOM:/ }));
+    expect(screen.getByRole("heading", { level: 2, name: "CWOM" })).toBeInTheDocument();
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
   it("shows the same links as a matrix, read by row and column", async () => {
     const { container } = open("?view=matrix");
     const matrix = screen.getByRole("table");
