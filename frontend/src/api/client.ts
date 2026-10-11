@@ -58,6 +58,8 @@ export type SourceConfidence = Schemas["SourceConfidence"];
 export type ReleaseAuditEvent = Schemas["KnowledgeAuditEventResponse"];
 export type CatalogueDiff = Schemas["CatalogueDiffResponse"];
 export type MappingImpact = Schemas["MappingImpactResponse"];
+export type PrecedentSummaries = Schemas["PrecedentSummariesResponse"];
+export type ReleasePrecedents = Schemas["ReleasePrecedentsResponse"];
 export type SystemOwnership = Schemas["SystemOwnershipResponse"];
 export type CatalogueFileFormat = Schemas["CatalogueFileFormat"];
 export type Suggestion = Schemas["CatalogueSuggestionResponse"];
@@ -341,6 +343,8 @@ export const api = {
     return apiRequest<Release>(`${releasePath(releaseId)}/catalogue-file`, { method: "POST", body });
   },
   mappingImpact: () => apiRequest<MappingImpact>("/architecture-knowledge/mapping-impact"),
+  /** How reviewers decided suggested verdicts, per release (ontology plan Phase 5). */
+  precedentSummary: () => apiRequest<PrecedentSummaries>("/architecture-knowledge/precedents/summary"),
   systemOwnership: (systemId: string) =>
     apiRequest<SystemOwnership>(`/organisation/systems/${encodeURIComponent(systemId)}/ownership`),
   organisation: () => apiRequest<Organisation>("/organisation"),

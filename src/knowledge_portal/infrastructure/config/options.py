@@ -191,3 +191,28 @@ ADO_IMPORT_MAX_ITEMS_CEILING = 20000
 
 
 DEFAULT_PRODUCT_CATALOG_TIMEOUT_SECONDS = 10.0
+
+
+class RerankerProvider(Enum):
+    """What reorders an assessment's passages per facet (ontology plan Phase 5)."""
+
+    # Scores each passage by the facet's words it holds (BM25 over the passages found).
+    LEXICAL = "lexical"
+    # Keeps the evidence index's own order.
+    NONE = "none"
+    # A cross-encoder served over HTTP, such as Text Embeddings Inference or a hosted
+    # rerank API.
+    HTTP = "http"
+
+
+class RerankerApi(Enum):
+    """The request shape an HTTP reranker speaks."""
+
+    # {"query", "documents", "model"} → {"results": [{"index", "relevance_score"}]}:
+    # Cohere, Jina, vLLM and Infinity.
+    RERANK = "rerank"
+    # {"query", "texts"} → [{"index", "score"}]: Text Embeddings Inference.
+    TEI = "tei"
+
+
+DEFAULT_RERANKER_TIMEOUT_SECONDS = 10.0

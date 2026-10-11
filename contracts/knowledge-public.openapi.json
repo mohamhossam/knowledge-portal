@@ -2903,6 +2903,34 @@
         "title": "ComponentResponsibilitySchema",
         "type": "object"
       },
+      "ConceptOverridesResponse": {
+        "properties": {
+          "concept_id": {
+            "title": "Concept Id",
+            "type": "string"
+          },
+          "decided": {
+            "title": "Decided",
+            "type": "integer"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "overridden": {
+            "title": "Overridden",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "concept_id",
+          "label",
+          "decided",
+          "overridden"
+        ],
+        "title": "ConceptOverridesResponse",
+        "type": "object"
+      },
       "ConflictScopeSchema": {
         "properties": {
           "order_types": {
@@ -8080,6 +8108,23 @@
         "title": "PossibleMatchResponse",
         "type": "object"
       },
+      "PrecedentSummariesResponse": {
+        "description": "How reviewers decided suggested verdicts, per release, newest decision first.",
+        "properties": {
+          "releases": {
+            "items": {
+              "$ref": "#/components/schemas/ReleasePrecedentsResponse"
+            },
+            "title": "Releases",
+            "type": "array"
+          }
+        },
+        "required": [
+          "releases"
+        ],
+        "title": "PrecedentSummariesResponse",
+        "type": "object"
+      },
       "PreviewRequest": {
         "properties": {
           "query": {
@@ -9281,6 +9326,79 @@
         ],
         "title": "RelationshipKind",
         "type": "string"
+      },
+      "ReleasePrecedentsResponse": {
+        "properties": {
+          "accepted": {
+            "title": "Accepted",
+            "type": "integer"
+          },
+          "concepts": {
+            "items": {
+              "$ref": "#/components/schemas/ConceptOverridesResponse"
+            },
+            "title": "Concepts",
+            "type": "array"
+          },
+          "last_decided_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Decided At"
+          },
+          "overridden": {
+            "title": "Overridden",
+            "type": "integer"
+          },
+          "override_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override Rate"
+          },
+          "release_id": {
+            "title": "Release Id",
+            "type": "string"
+          },
+          "release_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Name"
+          },
+          "unknown": {
+            "title": "Unknown",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "release_id",
+          "release_name",
+          "accepted",
+          "overridden",
+          "unknown",
+          "override_rate",
+          "last_decided_at",
+          "concepts"
+        ],
+        "title": "ReleasePrecedentsResponse",
+        "type": "object"
       },
       "Reminder": {
         "properties": {
@@ -12096,6 +12214,61 @@
           }
         ],
         "summary": "Mapping Impact",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
+    "/architecture-knowledge/precedents/summary": {
+      "get": {
+        "description": "How reviewers decided suggested verdicts, per release: accepted, overridden, unknown,\nand the concepts most overridden (ontology plan Phase 5). Counts only, no text.",
+        "operationId": "precedent_summaries_architecture_knowledge_precedents_summary_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrecedentSummariesResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Precedent Summaries",
         "tags": [
           "architecture knowledge"
         ]

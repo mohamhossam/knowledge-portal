@@ -46,6 +46,10 @@ from knowledge_portal.application.use_cases.change_requests import (
     ReadChangeRequestIntoDraft,
     ReceiveChangeRequest,
 )
+from knowledge_portal.application.use_cases.precedents import (
+    ReadPrecedentSummaries,
+    RecordPrecedent,
+)
 from knowledge_portal.application.use_cases.resolve_architecture_knowledge import (
     ResolveArchitectureKnowledge,
 )
@@ -84,6 +88,9 @@ class ArchitectureWiring:
     knowledge: ArchitectureKnowledgePort
     # A whole requirement's verdict, systems, gaps and owners (ontology plan Phase 3).
     assess: RequirementAssessmentPort
+    # Decided verdicts from requirement work, and their counts (ontology plan Phase 5).
+    record_precedent: RecordPrecedent
+    precedent_summaries: ReadPrecedentSummaries
     manage: ManageArchitectureKnowledge
     build_index: BuildArchitectureIndex
     preview_impact: PreviewArchitectureImpact
@@ -183,6 +190,17 @@ def build_architecture(
             llm.requirement_reader,
             llm.verdict_reasoner,
             persistence.organisation_repository,
+            llm.passage_reranker,
+            persistence.precedents,
+        ),
+        record_precedent=RecordPrecedent(
+            persistence.architecture_repository,
+            persistence.architecture_evidence_index,
+            persistence.precedents,
+            clock,
+        ),
+        precedent_summaries=ReadPrecedentSummaries(
+            persistence.architecture_repository, persistence.precedents
         ),
         manage=manage,
         build_index=build_index,

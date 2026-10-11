@@ -25,12 +25,18 @@ from knowledge_portal.application.ports.capability_link_suggester import (
 )
 from knowledge_portal.application.ports.catalogue_extractor import CatalogueExtractorPort
 from knowledge_portal.application.ports.embedding import KnowledgeEmbeddingPort
+from knowledge_portal.application.ports.passage_reranker import PassageRerankerPort
 from knowledge_portal.application.ports.requirement_assessment import (
     RequirementReaderPort,
     VerdictReasonerPort,
 )
 from knowledge_portal.application.ports.system_matcher import SystemMatcherPort
 from knowledge_portal.infrastructure.architecture.embeddings import ArchitectureEmbeddings
+from knowledge_portal.infrastructure.architecture.passage_reranking import (
+    HttpPassageReranker,
+    IndexOrder,
+    LexicalPassageReranker,
+)
 from knowledge_portal.infrastructure.architecture.reasoning import (
     FakeArchitectureReasoner,
     StructuredArchitectureReasoner,
@@ -43,7 +49,11 @@ from knowledge_portal.infrastructure.architecture.verdict_reasoning import (
     FakeVerdictReasoner,
     StructuredVerdictReasoner,
 )
-from knowledge_portal.infrastructure.config.options import ConfigurationError, LLMProvider
+from knowledge_portal.infrastructure.config.options import (
+    ConfigurationError,
+    LLMProvider,
+    RerankerProvider,
+)
 from knowledge_portal.infrastructure.config.settings import Settings
 from knowledge_portal.infrastructure.llm.capability_links import (
     FakeCapabilityLinkSuggester,
@@ -81,6 +91,9 @@ class LLMAdapters:
     # Assessing a whole requirement (ontology plan Phase 3).
     requirement_reader: RequirementReaderPort
     verdict_reasoner: VerdictReasonerPort
+    # Reorders an assessment's passages per facet (ontology plan Phase 5); its own setting,
+    # whatever the model provider.
+    passage_reranker: PassageRerankerPort
     debug_trace: DebugTrace
     # Owns the HTTP clients the adapters share; closed with the container.
     resources: ExitStack
@@ -122,6 +135,7 @@ def _build_llm_adapters(settings: Settings, resources: ExitStack, metrics: Metri
                 settings.requirement_service_token,
                 settings.knowledge_service_token,
                 settings.knowledge_service_client_secret,
+                settings.reranker_api_key,
                 *(settings.llm_profiles.secrets if settings.llm_profiles else ()),
             )
             if value
@@ -137,6 +151,7 @@ def _build_llm_adapters(settings: Settings, resources: ExitStack, metrics: Metri
             capability_linker=FakeCapabilityLinkSuggester(),
             requirement_reader=FakeRequirementReader(),
             verdict_reasoner=FakeVerdictReasoner(),
+            passage_reranker=_reranker(settings, resources, metrics),
             debug_trace=debug_trace,
             resources=resources,
         )
@@ -168,9 +183,34 @@ def _build_llm_adapters(settings: Settings, resources: ExitStack, metrics: Metri
         verdict_reasoner=StructuredVerdictReasoner(
             models.knowledge, max_input_tokens=models.knowledge_input_tokens
         ),
+        passage_reranker=_reranker(settings, resources, metrics),
         debug_trace=debug_trace,
         resources=resources,
     )
+
+
+def _reranker(settings: Settings, resources: ExitStack, metrics: Metrics) -> PassageRerankerPort:
+    match settings.reranker_provider:
+        case RerankerProvider.NONE:
+            return IndexOrder()
+        case RerankerProvider.HTTP:
+            if settings.reranker_url is None or settings.reranker_model is None:
+                raise AssertionError("RERANKER_PROVIDER=http requires RERANKER_URL and MODEL.")
+            client = resources.enter_context(
+                httpx.Client(
+                    timeout=settings.reranker_timeout_seconds,
+                    transport=MeteredTransport(metrics, "reranker", httpx.HTTPTransport()),
+                )
+            )
+            return HttpPassageReranker(
+                client,
+                settings.reranker_url,
+                settings.reranker_model,
+                settings.reranker_api,
+                settings.reranker_api_key,
+            )
+        case _:
+            return LexicalPassageReranker()
 
 
 def _models(

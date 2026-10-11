@@ -18,6 +18,7 @@ from enum import StrEnum
 from typing import Protocol
 
 from knowledge_portal.application.ports.architecture_rag import EvidenceChunk
+from knowledge_portal.application.ports.precedents import PrecedentMatch
 from knowledge_portal.domain.architecture.assessment import (
     ChangeType,
     Facet,
@@ -30,9 +31,10 @@ from knowledge_portal.domain.architecture.entities import (
     OrganisationReference,
 )
 from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge
+from knowledge_portal.domain.architecture.precedents import PrecedentDecision
 from knowledge_portal.domain.architecture.verdicts import ProductVerdict, VerdictCall
 
-PROMPT_VERSION = "requirement-assessment-v2"
+PROMPT_VERSION = "requirement-assessment-v3"
 
 
 @dataclass(frozen=True)
@@ -42,6 +44,9 @@ class AssessmentQuery:
     text: tuple[str, ...]
     declared_systems: tuple[str, ...] = ()
     release_id: str | None = None
+    # requirement-portal's requirement id: its own decided verdicts are never shown back to
+    # it as precedents (ontology plan Phase 5).
+    requirement_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -164,6 +169,8 @@ class VerdictContext:
     rule: VerdictCall
     candidates: tuple[SystemCandidate, ...]
     evidence: tuple[EvidenceChunk, ...]
+    # The nearest decided requirements, as worked examples, never as evidence (Phase 5).
+    precedents: tuple[PrecedentMatch, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -289,6 +296,23 @@ class CapabilityOwners:
 
 
 @dataclass(frozen=True)
+class AssessedPrecedent:
+    """A decided requirement like this one, shown to the reasoner as a worked example."""
+
+    precedent_id: str
+    requirement_id: str
+    release_id: str
+    verdict: ProductVerdict
+    decision: PrecedentDecision
+    offering_id: str | None
+    # How near it is: the texts' similarity, with a share for the concepts both need.
+    score: float
+    # Its systems that the pinned release still holds.
+    system_ids: tuple[str, ...] = ()
+    shared_concept_ids: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class ArchitectureAssessment:
     knowledge_version: str
     facets: tuple[LinkedFacet, ...]
@@ -314,6 +338,10 @@ class ArchitectureAssessment:
     embedding_model: str | None = None
     prompt_version: str = PROMPT_VERSION
     index_revision: int | None = None
+    # Retrieval quality (ontology plan Phase 5): the nearest decided requirements, and the
+    # reranker that ordered the passages.
+    precedents: tuple[AssessedPrecedent, ...] = ()
+    reranker_model: str | None = None
 
 
 class RequirementAssessmentPort(Protocol):

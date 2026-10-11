@@ -5,6 +5,45 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ## Unreleased
 
+## 0.4.0 — 2026-10-11
+
+Phase 8's data, interfaces and realisation records, and Phase 5's retrieval quality: verdicts
+decided in requirement work come back as precedents (requirement-portal ADR-0114 to ADR-0116).
+requirement-portal's sending side needs this release.
+
+### Added
+
+- Data and interfaces (ontology plan, Phase 8): information entities as a sixth vocabulary,
+  the entities each system masters or reads, and the interfaces systems expose, consume and
+  relay, in the catalogue, the draft API and every file format. A requirement assessment names
+  a data or interface change's owners and consumers, with the path to each; the internal
+  contract gains the `owner` and `consumer` roles, the `entity` and `interface` path kinds and
+  the `interface` facet.
+- CFS, RFS and resource records (ontology plan, Phase 8): what a component is realised as
+  becomes a record with the systems that deliver it and what realises it one layer down,
+  in the catalogue, the draft API and every file format. A component's realisation links to
+  its record, and an assessment's paths walk through the records; the internal contract
+  gains the `realisation` path kind.
+- Retrieval quality and monitoring (ontology plan, Phase 5):
+  - an assessment's passages are reranked per facet and kept within budgets per facet, per
+    document and in all; the reranker is lexical by default, or a cross-encoder over HTTP
+    (`RERANKER_PROVIDER=http`, Text Embeddings Inference or a `/rerank` API);
+  - `POST /internal/architecture/precedents` receives each verdict a Requirement Owner
+    accepted, overrode or left unknown; the next assessment shows the nearest decided
+    requirements to the reasoner as worked examples, and offers the systems two of them
+    agree on as supporting candidates;
+  - `POST /internal/architecture/assess` takes the optional `requirement_id`, and answers with
+    `precedents` and `reranker_model`. All three changes are additive;
+  - `GET /architecture-knowledge/precedents/summary` and the front page show, per release,
+    how many suggested verdicts reviewers decided and overrode, and for which concepts;
+  - the evaluation command's `--precedents loo` scores the precedent lane with every other
+    golden case kept as an accepted verdict.
+
+### Changed
+
+- The assessment's prompt version is `requirement-assessment-v3`.
+- A migration adds the `architecture_precedents` table.
+
 ## 0.3.0 — 2026-10-10
 
 The ontology and impact plan's knowledge side: capability concepts, a concept-aware index and
@@ -49,18 +88,6 @@ ADR-0116).
   whole-system seats, and leaves out the system's other capabilities. `GET
   /organisation/references` also flags seats on a capability the system no longer links to,
   and the squad screens show and edit each seat's capability.
-- Data and interfaces (ontology plan, Phase 8): information entities as a sixth vocabulary,
-  the entities each system masters or reads, and the interfaces systems expose, consume and
-  relay, in the catalogue, the draft API and every file format. A requirement assessment names
-  a data or interface change's owners and consumers, with the path to each; the internal
-  contract gains the `owner` and `consumer` roles, the `entity` and `interface` path kinds and
-  the `interface` facet.
-- CFS, RFS and resource records (ontology plan, Phase 8): what a component is realised as
-  becomes a record with the systems that deliver it and what realises it one layer down,
-  in the catalogue, the draft API and every file format. A component's realisation links to
-  its record, and an assessment's paths walk through the records; the internal contract
-  gains the `realisation` path kind.
-
 ### Changed
 
 - The organisation API's squad `systems` (one contact per system) is replaced by `resources`.

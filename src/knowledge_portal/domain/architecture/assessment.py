@@ -36,7 +36,8 @@ class SystemRole(StrEnum):
     CHANNEL = "channel"
     # The requirement names it, and no concept reaches it.
     NAMED = "named"
-    # Chosen from the evidence alone, with a quote, as mapping does today.
+    # Chosen from the evidence alone, with a quote, as mapping does today; or reached
+    # through a decided requirement like this one (a precedent, ontology plan Phase 5).
     SUPPORTING = "supporting"
     # It is the system of record for data the requirement changes, or exposes an interface
     # it names (ontology plan Phase 8).
@@ -118,6 +119,8 @@ class PathKind(StrEnum):
     INTERFACE = "interface"
     # A CFS, RFS or resource a component is realised as (ontology plan Phase 8).
     REALISATION = "realisation"
+    # A decided requirement like this one, by requirement-portal's analysis id (Phase 5).
+    PRECEDENT = "precedent"
 
 
 @dataclass(frozen=True)

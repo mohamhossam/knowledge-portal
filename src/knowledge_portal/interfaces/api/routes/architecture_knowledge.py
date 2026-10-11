@@ -39,6 +39,7 @@ from knowledge_portal.application.use_cases.architecture_preview import (
 from knowledge_portal.application.use_cases.catalogue_candidates import (
     DecideCatalogueCandidate,
 )
+from knowledge_portal.application.use_cases.precedents import ReadPrecedentSummaries
 from knowledge_portal.domain.architecture.knowledge import InvalidKnowledgeError
 from knowledge_portal.interfaces.api.dependencies import (
     ContainerDep,
@@ -49,6 +50,7 @@ from knowledge_portal.interfaces.api.dependencies import (
     get_decide_catalogue_candidates,
     get_manage_architecture_knowledge,
     get_manage_sample_requirements,
+    get_precedent_summaries,
     get_preview_architecture_impact,
     get_read_knowledge_document,
     get_report_mapping_impact,
@@ -94,6 +96,7 @@ from knowledge_portal.interfaces.api.schemas.change_requests import (
     ChangeRequestResponse,
     ChangeRequestsResponse,
 )
+from knowledge_portal.interfaces.api.schemas.precedents import PrecedentSummariesResponse
 
 router = APIRouter(prefix="/architecture-knowledge", tags=["architecture knowledge"])
 job_router = APIRouter(prefix="/jobs", tags=["architecture jobs"])
@@ -565,6 +568,16 @@ def mapping_impact(
 ) -> MappingImpactResponse:
     """Counts of mapped and outdated requirements, features and stories; no titles."""
     return MappingImpactResponse.from_domain(report.execute(actor))
+
+
+@router.get("/precedents/summary", response_model=PrecedentSummariesResponse)
+def precedent_summaries(
+    actor: KnowledgeActorDep,
+    summaries: Annotated[ReadPrecedentSummaries, Depends(get_precedent_summaries)],
+) -> PrecedentSummariesResponse:
+    """How reviewers decided suggested verdicts, per release: accepted, overridden, unknown,
+    and the concepts most overridden (ontology plan Phase 5). Counts only, no text."""
+    return PrecedentSummariesResponse.from_domain(summaries.execute(actor))
 
 
 @router.get("/sample-requirements", response_model=SampleRequirementsResponse)

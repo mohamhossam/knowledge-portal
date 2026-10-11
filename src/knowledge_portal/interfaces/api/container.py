@@ -108,6 +108,10 @@ from knowledge_portal.application.use_cases.library_governance import LibraryGov
 from knowledge_portal.application.use_cases.organisation_catalogue import (
     ManageOrganisationCatalogue,
 )
+from knowledge_portal.application.use_cases.precedents import (
+    ReadPrecedentSummaries,
+    RecordPrecedent,
+)
 from knowledge_portal.application.use_cases.provider_call_rate import ProviderCallRateLimit
 from knowledge_portal.application.use_cases.reference_knowledge import (
     ReferenceKnowledge,
@@ -208,6 +212,9 @@ class Container:
     reference_knowledge: ReferenceKnowledge
     architecture_knowledge: ArchitectureKnowledgePort
     requirement_assessment: RequirementAssessmentPort
+    # Decided verdicts from requirement work, and their counts (ontology plan Phase 5).
+    record_precedent: RecordPrecedent
+    precedent_summaries: ReadPrecedentSummaries
     manage_architecture_knowledge: ManageArchitectureKnowledge
     explore_architecture: ExploreArchitecture
     catalog_plans: ReadCatalogPlans
@@ -399,6 +406,8 @@ def _build_container(
         reference_knowledge=reference_knowledge,
         architecture_knowledge=architecture.knowledge,
         requirement_assessment=architecture.assess,
+        record_precedent=architecture.record_precedent,
+        precedent_summaries=architecture.precedent_summaries,
         manage_architecture_knowledge=architecture.manage,
         explore_architecture=ExploreArchitecture(persistence.architecture_repository),
         catalog_plans=ReadCatalogPlans(

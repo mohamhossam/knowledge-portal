@@ -36,6 +36,8 @@ KNOWLEDGE_TABLES = {
     "architecture_knowledge_documents",
     "architecture_knowledge_indexes",
     "architecture_knowledge_releases",
+    # Decided verdicts, the precedent lane's examples (ontology plan Phase 5).
+    "architecture_precedents",
     "architecture_sample_requirements",
     # Change requests from Requirement AI (requirement-portal ADR-0101, step 7).
     "incoming_change_requests",

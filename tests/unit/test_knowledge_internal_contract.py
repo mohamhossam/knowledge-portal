@@ -39,6 +39,8 @@ def test_the_contract_covers_every_seam_requirement_work_uses() -> None:
         "/internal/architecture/releases/{release_id}/evidence/{chunk_id}",
         # requirement-portal delivers an approved backlog here (ADR-0101, step 7).
         "/internal/change-requests",
+        # requirement-portal sends each verdict decision here (ontology plan Phase 5).
+        "/internal/architecture/precedents",
         # A published historic requirement's content, a page at a time (ADR-0102).
         "/internal/historic-requirements/{historic_requirement_id}/passages",
         "/internal/historic-requirements/{historic_requirement_id}/items",

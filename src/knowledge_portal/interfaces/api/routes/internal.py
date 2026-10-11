@@ -3,7 +3,7 @@
 Every route needs the `requirements` service token. The request and response
 bodies are the shared contract values themselves: `ArchitectureQuery`,
 `ArchitectureKnowledgeMatch`, `AssessmentQuery`, `ArchitectureAssessment`,
-`ReferenceEvidence` and `KnowledgeEvent`, plus
+`PrecedentReceipt`, `ReferenceEvidence` and `KnowledgeEvent`, plus
 the read-only viewers' `CitedPassage` and `EvidenceChunk`, and a published historic
 requirement's content, read a page at a time (ADR-0102, amendment 1).
 `contracts/knowledge-internal.openapi.json` is the committed contract.
@@ -22,6 +22,7 @@ from knowledge_portal.application.ports.architecture_knowledge import (
 )
 from knowledge_portal.application.ports.architecture_rag import EvidenceChunk
 from knowledge_portal.application.ports.knowledge_events import KnowledgeEvent
+from knowledge_portal.application.ports.precedents import PrecedentReceipt
 from knowledge_portal.application.ports.reference_grounding import ReferenceEvidence
 from knowledge_portal.application.ports.requirement_assessment import (
     ArchitectureAssessment,
@@ -40,6 +41,7 @@ from knowledge_portal.interfaces.api.schemas.historic import (
     HistoricPassageEntry,
     HistoricPassagesPage,
 )
+from knowledge_portal.interfaces.api.schemas.precedents import PrecedentBody
 
 router = APIRouter(prefix="/internal", dependencies=[Depends(require_service_caller)])
 
@@ -64,6 +66,27 @@ def assess(query: AssessmentQuery, container: ContainerDep) -> ArchitectureAsses
     With no verdict yet, the answer carries the questions to ask instead.
     """
     return container.requirement_assessment.assess(query)
+
+
+@router.post(
+    "/architecture/precedents",
+    status_code=201,
+    responses={200: {"description": "The same decision, or a later one, is already kept."}},
+)
+def record_precedent(
+    body: PrecedentBody, response: Response, container: ContainerDep
+) -> PrecedentReceipt:
+    """A Requirement Owner's decision on the suggested verdict (ontology plan Phase 5).
+
+    Kept once per analysis: a later decision replaces it, and the same one delivered again,
+    or an older one arriving late, answers 200 and changes nothing. The release must be
+    published (404 otherwise); systems and concepts it does not hold are left out, and the
+    systems are named in the receipt.
+    """
+    receipt = container.record_precedent.execute(body.to_request())
+    if not receipt.recorded:
+        response.status_code = 200
+    return receipt
 
 
 @router.get("/library/published")

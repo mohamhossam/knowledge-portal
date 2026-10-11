@@ -5,11 +5,14 @@
    from which the reader picks.
 3. Fit the offering in question and give the rules' verdict, with the gaps.
 4. With no verdict, stop and ask: the questions' answers come from the catalogue.
-5. Walk the catalogue from the concepts to the systems (graph lane) and fetch the
-   passages about those concepts (passage lane).
-6. The verdict reasoner weighs the rules' verdict against that evidence and selects the
-   systems, each with quotes from it.
+5. Walk the catalogue from the concepts to the systems (graph lane), find the nearest
+   decided requirements (precedent lane), and fetch the passages about each facet,
+   reranked and within each lane's budget (passage lane).
+6. The verdict reasoner weighs the rules' verdict against that evidence, with the
+   precedents as worked examples, and selects the systems, each with quotes from it.
 7. Add who owns each impacted capability, the staffing gaps and what the verdict proposes.
+
+The precedent lane and the reranker are ontology plan Phase 5.
 """
 
 from __future__ import annotations
@@ -24,8 +27,11 @@ from knowledge_portal.application.ports.architecture_rag import (
 from knowledge_portal.application.ports.organisation_repository import (
     OrganisationRepositoryPort,
 )
+from knowledge_portal.application.ports.passage_reranker import PassageRerankerPort
+from knowledge_portal.application.ports.precedents import PrecedentMatch, PrecedentStorePort
 from knowledge_portal.application.ports.requirement_assessment import (
     ArchitectureAssessment,
+    AssessedPrecedent,
     AssessedSystem,
     AssessmentGap,
     AssessmentProposal,
@@ -53,6 +59,8 @@ from knowledge_portal.application.use_cases.assessment_lanes import (
     offering_fit,
     order_type_id,
     passage_lane,
+    precedent_candidates,
+    precedent_lane,
     shortlist,
 )
 from knowledge_portal.application.use_cases.index_links import concept_path
@@ -92,12 +100,16 @@ class AssessRequirement(RequirementAssessmentPort):
         reader: RequirementReaderPort,
         reasoner: VerdictReasonerPort,
         organisation: OrganisationRepositoryPort,
+        reranker: PassageRerankerPort,
+        precedents: PrecedentStorePort,
     ) -> None:
         self._repository = repository
         self._index = index
         self._reader = reader
         self._reasoner = reasoner
         self._organisation = organisation
+        self._reranker = reranker
+        self._precedents = precedents
 
     def assess(self, query: AssessmentQuery) -> ArchitectureAssessment:
         release = self._release(query.release_id)
@@ -126,7 +138,14 @@ class AssessRequirement(RequirementAssessmentPort):
             for item in coverage
             if item.concept_id in gaps
         )
+        nearest = precedent_lane(self._precedents, self._index, text, needed, query.requirement_id)
         common = {
+            "precedents": tuple(
+                _precedent(release, needed, match, verdict, score)
+                for match, score in nearest
+                if (verdict := match.precedent.verdict) is not None
+            ),
+            "reranker_model": self._reranker.model,
             "knowledge_version": release.id,
             "facets": linked,
             "coverage": coverage,
@@ -158,9 +177,16 @@ class AssessRequirement(RequirementAssessmentPort):
             text,
             query.declared_systems,
         )
-        evidence = passage_lane(self._index, index_id, linked, candidates)
+        examples = tuple(match for match, _ in nearest)
+        candidates = (
+            *candidates,
+            *precedent_candidates(
+                release, examples, fit.offering_id if fit else None, needed, candidates
+            ),
+        )
+        evidence = passage_lane(self._index, self._reranker, index_id, linked, candidates)
         decision = self._reasoner.decide(
-            VerdictContext(text, release, linked, rule, candidates, evidence)
+            VerdictContext(text, release, linked, rule, candidates, evidence, examples)
         )
         offerings = {item.id: item for item in release.products}
         if decision.offering_id is not None and decision.offering_id not in offerings:
@@ -338,6 +364,28 @@ class AssessRequirement(RequirementAssessmentPort):
                 )
             )
         return tuple(questions)
+
+
+def _precedent(
+    release: ArchitectureKnowledge,
+    needed: frozenset[str],
+    match: PrecedentMatch,
+    verdict: ProductVerdict,
+    score: float,
+) -> AssessedPrecedent:
+    precedent = match.precedent
+    systems = {item.id for item in release.systems}
+    return AssessedPrecedent(
+        precedent_id=precedent.id,
+        requirement_id=precedent.requirement_id,
+        release_id=precedent.release_id,
+        verdict=verdict,
+        decision=precedent.decision,
+        offering_id=precedent.offering_id,
+        score=round(score, 4),
+        system_ids=tuple(item.system_id for item in precedent.systems if item.system_id in systems),
+        shared_concept_ids=tuple(item for item in precedent.concept_ids if item in needed),
+    )
 
 
 def _label(release: ArchitectureKnowledge, concept_id: str) -> str:
