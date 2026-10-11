@@ -57,6 +57,7 @@ import {
   Upload,
 } from "../../design/components";
 import { useDisclosure } from "../../design/hooks";
+import { DiagramSection } from "./DiagramSection";
 
 type Row = { id: string; title: string; state: "review" | "service" | "attention"; passages: number; owner: string };
 
@@ -76,6 +77,7 @@ const SECTIONS = [
   ["data", "Data table and review"],
   ["compare", "Compare, impact, provenance"],
   ["overlays", "Overlays and help"],
+  ["diagrams", "Diagrams"],
   ["red", "Red: right and wrong"],
 ] as const;
 
@@ -115,6 +117,7 @@ export default function Gallery() {
           <DataAndReview />
           <CompareAndProvenance />
           <OverlaysAndHelp />
+          <DiagramSection />
           <RedUsage />
         </div>
         {help.open && (
