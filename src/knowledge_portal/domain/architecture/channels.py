@@ -65,10 +65,6 @@ def check_channels(channels: tuple[Channel, ...], system_ids: set[str]) -> set[s
     return set(ids)
 
 
-def unknown_channels(named: tuple[str, ...], channel_ids: set[str]) -> list[str]:
-    return [item for item in named if item not in channel_ids]
-
-
 def _words(value: str) -> str:
     return " ".join(re.findall(r"\w+", value.casefold()))
 

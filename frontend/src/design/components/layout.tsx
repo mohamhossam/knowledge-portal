@@ -266,10 +266,6 @@ export function StickyFooter({ label, children }: { label: string; children: Rea
   );
 }
 
-export function ProvenanceLine({ children }: { children: ReactNode }) {
-  return <p className="ds-provenance">{children}</p>;
-}
-
 export function Breadcrumbs({ items, link: Link = Anchor }: { items: { href?: string; label: string }[]; link?: LinkLike }) {
   return (
     <nav aria-label="Breadcrumb" className="ds-breadcrumbs">

@@ -36,9 +36,9 @@ export type SolutionDocument = DocModel & {
 };
 
 /** The document's status, said the same way on the cover, in Document Control and in the footer. */
-export const STATUS = "DRAFT: generated from the catalogue; not approved until the architecture authority reviews it.";
+const STATUS = "DRAFT: generated from the catalogue; not approved until the architecture authority reviews it.";
 /** Steps no system performs, said one way everywhere: "2 steps: no system (gap)". */
-export const NO_SYSTEM = (n: number) => `${n} ${n === 1 ? "step" : "steps"}: no system (gap)`;
+const NO_SYSTEM = (n: number) => `${n} ${n === 1 ? "step" : "steps"}: no system (gap)`;
 /** Where a source is cited: its name, level and section, without the section's title after "›". */
 const citation = (text: string | null | undefined) => text?.split(" › ")[0]?.trim() || null;
 const NOT_HELD = (what: string) => `The catalogue does not hold ${what} yet, so this is a gap; nothing is filled in.`;

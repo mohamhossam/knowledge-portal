@@ -662,10 +662,6 @@ html:has(.galley) {
   gap: var(--s3);
 }
 
-.suggestion-editor__title {
-  font-weight: var(--w-bold);
-}
-
 /* Forms: fields on a wrapping grid; repeating rows ruled, never boxed. */
 .form {
   display: grid;

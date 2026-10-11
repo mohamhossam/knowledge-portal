@@ -30,7 +30,7 @@ export function cycleDays(standing: ReviewStanding): number {
 }
 
 /** How long before its due date a review is reminded of (the service's window). */
-export const REMINDER_WINDOW_DAYS = 14;
+const REMINDER_WINDOW_DAYS = 14;
 
 /** The cycle's statuses, kept apart from passage review's "Awaiting your review". */
 export const REVIEW_STATUS = { overdue: "Re-confirmation overdue", due_soon: "Re-confirmation due soon" } as const;

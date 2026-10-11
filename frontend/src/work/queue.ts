@@ -21,7 +21,7 @@ import { gaps } from "../squads/gaps";
  * Where each kind of entry is decided. The areas that move these pages
  * (3 catalogue curation, 6 re-confirmations, 7 ownership) update this map.
  */
-export const WORK_ROUTES = {
+const WORK_ROUTES = {
   document: (id: string) => `/library/${id}`,
   decide: (releaseId: string) => `/architecture/versions/${releaseId}/sources`,
   reConfirmations: "/reminders",
@@ -50,7 +50,7 @@ export type Entry =
   | { kind: "gaps"; id: string; mine: boolean; subject: string; count: number; to: string };
 
 export type SectionKey = "attention" | "decisions" | "due" | "gaps";
-export type Sections = Record<SectionKey, Entry[]>;
+type Sections = Record<SectionKey, Entry[]>;
 
 export type QueueInput = {
   documents: LibraryDocument[];
@@ -71,7 +71,7 @@ const FILE_TYPES: [RegExp, string][] = [
   [/^text\//, "Text"],
 ];
 
-export function fileType(mime: string | null | undefined): string {
+function fileType(mime: string | null | undefined): string {
   return FILE_TYPES.find(([pattern]) => pattern.test(mime ?? ""))?.[1] ?? "File";
 }
 

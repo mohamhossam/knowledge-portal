@@ -74,7 +74,8 @@ Paper. Do not copy requirement-portal's tokens, primitives or shell.
   semantic tokens. `npm run lint:brand` enforces it.
 - **Fonts are self-hosted only** (`@fontsource` or licensed files, CSP-safe), with Arabic
   coverage.
-- **Gates.** `npm run lint:brand`, `npm run budget` (after a build) and `npm run e2e` (route
+- **Gates.** `npm run lint:brand`, `npm run lint:legacy-css` (the stylesheets in `src/styles/`
+  may only shrink), `npm run budget` (after a build) and `npm run e2e` (route
   axe ratchet and keyboard journeys) must stay green. Screenshot baselines are not kept in git.
 - **Evidence vs HYPOTHESIS.** Never invent research results, quotes, metrics or users.
   Anything not backed by evidence the user provided is labelled **HYPOTHESIS**.

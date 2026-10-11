@@ -14,15 +14,15 @@ import type { LibraryDocument, LibraryVersion, Publication } from "../api/client
 type Schemas = components["schemas"];
 export type Block = Schemas["DocumentEvidenceBlock"];
 export type Warning = Schemas["DocumentExtractionWarning"];
-export type ReviewedPassage = Schemas["ReviewedPassage"];
-export type Revision = Schemas["ExtractionRevision"];
+type ReviewedPassage = Schemas["ReviewedPassage"];
+type Revision = Schemas["ExtractionRevision"];
 
 /** The reviewer's working decision for one block. */
 export type Draft = { text: string; included: boolean; reason: string };
 export type Drafts = Record<string, Draft>;
 
 export type Change = "same" | "edited" | "excluded" | "new" | "removed";
-export type Filter = "all" | "changed" | "flagged" | "excluded" | "removed";
+type Filter = "all" | "changed" | "flagged" | "excluded" | "removed";
 
 export type Row = {
   key: string;
@@ -48,7 +48,7 @@ export function newestVersion(document: LibraryDocument): LibraryVersion | undef
 }
 
 /** Where the newest version stands. An admin who doesn't own the document gets only its outline. */
-export type NewestState = LibraryVersion | Schemas["VersionOutline"];
+type NewestState = LibraryVersion | Schemas["VersionOutline"];
 
 export function newestState(document: LibraryDocument): NewestState | undefined {
   return document.newest ?? newestVersion(document);
@@ -112,7 +112,7 @@ export const whereOf = (block: Block) =>
 const placeKey = (block: Block) => `${block.section_path.join("/")}::${block.label}`;
 
 /** What the working copy is compared against, and the passages it cites. */
-export type Basis =
+type Basis =
   | { kind: "edition"; publication: Publication; version: LibraryVersion; passages: Map<string, ReviewedPassage> }
   | { kind: "extraction" };
 
@@ -322,7 +322,7 @@ export function approvalBlocker(document: LibraryDocument, version: LibraryVersi
   return null;
 }
 
-export type Standing =
+type Standing =
   | { kind: "service"; publication: Publication; versionNumber: number | undefined }
   | { kind: "indexing"; publication: Publication; stuck: boolean }
   | { kind: "withdrawn"; publication: Publication }

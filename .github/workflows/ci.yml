@@ -88,6 +88,8 @@ jobs:
       - run: npm run build
       - name: Brand lint (colours only in the token layers)
         run: npm run lint:brand
+      - name: Legacy CSS may only shrink
+        run: npm run lint:legacy-css
       - name: Bundle budget (main chunk ≤ 110% of the pre-redesign baseline)
         run: npm run budget
       - name: npm dependency audit

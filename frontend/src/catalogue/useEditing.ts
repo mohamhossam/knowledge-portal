@@ -36,8 +36,6 @@ export function useEditing(release: Release) {
   return { saveSystem, removeSystem, saveDraft };
 }
 
-export type Editing = ReturnType<typeof useEditing>;
-
 /** The draft's build for matching, checked every few seconds while it runs. */
 export function useBuild(release: Release) {
   const queryClient = useQueryClient();

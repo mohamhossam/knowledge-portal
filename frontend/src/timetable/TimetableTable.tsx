@@ -22,7 +22,7 @@ export type Column = {
   priority?: 1 | 2 | 3;
 };
 
-export type Row = {
+type Row = {
   key: string;
   rank: Rank;
   cells: Record<string, ReactNode>;
@@ -30,7 +30,7 @@ export type Row = {
   note?: string;
 };
 
-export type Note = { id: string; text: ReactNode };
+type Note = { id: string; text: ReactNode };
 
 export type NextDecision =
   | { to: string; href?: undefined; label: string }

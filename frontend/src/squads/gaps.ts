@@ -1,6 +1,6 @@
 import type { Organisation, Release } from "../api/client";
 
-export type Gap = {
+type Gap = {
   system: Release["systems"][number];
   kind: "no-squad" | "no-contact";
   squad?: string;

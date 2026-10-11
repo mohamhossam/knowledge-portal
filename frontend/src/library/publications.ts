@@ -14,16 +14,6 @@ export type PublicationState =
   | "withdrawn"
   | "discarded";
 
-export const STATE_LABEL: Record<PublicationState, string> = {
-  "in-service": "In service",
-  indexing: "Being indexed",
-  stuck: "Indexing stopped",
-  ready: "Built, awaiting activation",
-  previous: "Replaced",
-  withdrawn: "Withdrawn",
-  discarded: "Discarded",
-};
-
 /** Index attempts after which the service stops trying and waits for its owner. */
 export const ATTEMPT_LIMIT = 3;
 

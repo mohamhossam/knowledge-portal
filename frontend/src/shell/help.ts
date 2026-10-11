@@ -3,7 +3,7 @@
  * listed are the ones each page has today: an area that rebuilds a page
  * updates its entry in the same change. Wording follows docs/ux/content.
  */
-export type HelpEntry = { title: string; body: string[]; terms: [string, string][]; keys: [string, string][] };
+type HelpEntry = { title: string; body: string[]; terms: [string, string][]; keys: [string, string][] };
 
 export const PAGE_KEYS: [string, string][] = [
   ["?", "Open this help"],

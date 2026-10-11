@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "lint:brand": "node scripts/brand-lint.mjs",
+    "lint:legacy-css": "node scripts/legacy-css.mjs",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run",
     "e2e": "playwright test",

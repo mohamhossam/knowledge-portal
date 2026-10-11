@@ -31,7 +31,7 @@ export function useHistoricList(status: HistoricStatus | null, query: string) {
 }
 
 /** Whether something is being read for it right now: its BRDs, or its breakdown. */
-export function busy(record: Pick<HistoricSummary, "brds_reading" | "run_status">): boolean {
+function busy(record: Pick<HistoricSummary, "brds_reading" | "run_status">): boolean {
   return record.brds_reading > 0 || record.run_status === "queued" || record.run_status === "running";
 }
 

@@ -15,7 +15,7 @@ const releaseKey = (releaseId: string) => ["architecture", "releases", releaseId
 const suggestionsKey = (releaseId: string) => ["architecture", "releases", releaseId, "suggestions"] as const;
 const extractionsKey = (releaseId: string) => ["architecture", "releases", releaseId, "extractions"] as const;
 
-export type Decision = { suggestionId: string; accept: boolean; content?: SuggestionContent | null };
+type Decision = { suggestionId: string; accept: boolean; content?: SuggestionContent | null };
 
 /**
  * A draft's documents and suggestions, and every change to them.

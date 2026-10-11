@@ -36,7 +36,7 @@ export const roleLabel = (role: SquadRole) => ROLES.find((item) => item.value ==
  * capability concept it is scoped to, named, or null on the whole system. `lapsed`
  * marks a scope the system's capabilities no longer link to in the version in service.
  */
-export type Seat = { role: SquadRole; person: Person | null; capability: string | null; lapsed: boolean };
+type Seat = { role: SquadRole; person: Person | null; capability: string | null; lapsed: boolean };
 
 export type RunBy = { squad: Squad; seats: Seat[] };
 
@@ -81,7 +81,7 @@ export function seatsOn(org: Organisation, squad: Squad, systemId: string, relea
 }
 
 /** One seat in words: "Developer for Billing: Bea", or "Contact: open seat". */
-export const seatText = (seat: Seat) => {
+const seatText = (seat: Seat) => {
   const scope = seat.capability ? ` for ${seat.capability}${seat.lapsed ? " (no longer linked)" : ""}` : "";
   return `${roleLabel(seat.role)}${scope}: ${seat.person?.name ?? "open seat"}`;
 };
@@ -99,10 +99,10 @@ export type SystemRow = {
   runBy: RunBy[];
 };
 
-export type ProductSection = { product: OrgProduct; rows: SystemRow[] };
-export type StreamSection = { stream: ValueStream; lead: Person | null; products: ProductSection[]; squads: Squad[] };
+type ProductSection = { product: OrgProduct; rows: SystemRow[] };
+type StreamSection = { stream: ValueStream; lead: Person | null; products: ProductSection[]; squads: Squad[] };
 
-export function people(org: Organisation): Map<string, Person> {
+function people(org: Organisation): Map<string, Person> {
   return new Map(org.people.map((person) => [person.id, person]));
 }
 
@@ -156,7 +156,7 @@ export function unnamedSystems(org: Organisation, release: Release | null): { pl
     .map(([place, rows]) => ({ place: place || "Not placed in the landscape", rows }));
 }
 
-export type Gaps = { inService: number; run: number; noSquad: number; lapsed: number };
+type Gaps = { inService: number; run: number; noSquad: number; lapsed: number };
 
 /** How far ownership reaches across the version in service. */
 export function gaps(org: Organisation, release: Release | null): Gaps {
@@ -172,7 +172,7 @@ export function gaps(org: Organisation, release: Release | null): Gaps {
   };
 }
 
-export type Roles = { leads: ValueStream[]; scrumMaster: Squad[]; resource: { squad: Squad; systemId: string; role: SquadRole }[] };
+type Roles = { leads: ValueStream[]; scrumMaster: Squad[]; resource: { squad: Squad; systemId: string; role: SquadRole }[] };
 
 /** What a person holds; a person holding anything cannot be made inactive. */
 export function rolesOf(org: Organisation, personId: string): Roles {

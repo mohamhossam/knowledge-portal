@@ -25,7 +25,7 @@ export function locationGroup(where: string): string {
   return human.split(/, rows? | › /)[0] ?? human;
 }
 
-export type Cell = { column: string; row: number; value: string };
+type Cell = { column: string; row: number; value: string };
 
 const CELL = /^([A-Z]{1,3})(\d+)=([\s\S]*)$/;
 

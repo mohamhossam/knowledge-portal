@@ -22,7 +22,7 @@ declare module "vitest" {
   }
 }
 
-export const axe = configureAxe({
+const axe = configureAxe({
   rules: {
     "color-contrast": { enabled: false },
     region: { enabled: false },

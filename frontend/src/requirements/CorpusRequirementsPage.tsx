@@ -14,7 +14,7 @@ import { RequirementLink } from "./RequirementLink";
 import { useAuth } from "../auth/authContext";
 
 /** How long since a screen before a requirement counts as not screened lately. */
-export const STALE_DAYS = 30;
+const STALE_DAYS = 30;
 
 type StateFilter = IndexState | "all" | "retired";
 

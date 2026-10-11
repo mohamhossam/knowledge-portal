@@ -8,7 +8,7 @@ import type { ExplorerRelease } from "../../api/client";
 import { orderedSteps } from "../../catalogue/catalogue";
 import { performer, trackingFor, type Scenario } from "../scenario";
 
-export type Stage = { phase: string; systems: string[]; unnamed: number };
+type Stage = { phase: string; systems: string[]; unnamed: number };
 
 const NO_PHASE = "Not placed in a phase";
 

@@ -140,7 +140,7 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
   `lead`, `meta` (status, owner), `provenance` and `actions`; `children` take tabs or a state line.
 - **`StateLine`:** `plain` or `proof` (a replaced version, on the beige tint). It is sticky,
   `role="status"`, and publishes `--sticky-state`.
-- **`ProvenanceLine`, `Breadcrumbs`:** the last crumb is `aria-current="page"`.
+- **`Breadcrumbs`:** the last crumb is `aria-current="page"`.
 - **`SubNav`:** navigation that changes the URL (`aria-current`).
 - **`Tabs`:** ARIA tabs for the same URL. ← → move between tabs, Home/End jump, there is one tab
   stop, and focus follows the selection.

@@ -97,7 +97,7 @@ function alertOf(delayed: string | null, due: string | null): Overview["alert"] 
   return delayed ? { rank: "delayed", text: delayed } : due ? { rank: "due", text: due } : undefined;
 }
 
-export type NameOf = (actorId: string | null | undefined) => string;
+type NameOf = (actorId: string | null | undefined) => string;
 
 /** Who did something, by name. The packaged initial catalogue has no person behind it. */
 export function nameDirectory(actors: Actor[] | undefined): NameOf {
@@ -613,7 +613,7 @@ export function squadOverview(
 // Table 4 ----------------------------------------------------------------------
 
 /** Requirement work, where its owners act on what Table 4 reports. */
-export const REQUIREMENT_WORK_LEAVES = "opens requirement work";
+const REQUIREMENT_WORK_LEAVES = "opens requirement work";
 
 // Table 4's own pages, filtered to what a row counts.
 const REQUIREMENTS = "/requirement-knowledge/requirements";
@@ -624,7 +624,7 @@ const AWAITING = `${FINDINGS}?age=from_7_to_30_days`;
 const HISTORIC = "/requirement-knowledge/historic";
 
 /** How many historic Requirements stand in each state (Knowledge Center E). */
-export type HistoricTally = { draft: number; published: number; withdrawn: number; refresh_waiting: number };
+type HistoricTally = { draft: number; published: number; withdrawn: number; refresh_waiting: number };
 
 /**
  * Requirement work's corpus, in counts (requirement-portal ADR-0099, Amendment 1). Its teams
