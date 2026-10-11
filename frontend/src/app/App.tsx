@@ -25,6 +25,7 @@ import { PeoplePage } from "../squads/PeoplePage";
 import { ProductsPage } from "../squads/ProductsPage";
 import { SquadListPage } from "../squads/SquadListPage";
 import { SquadsPage } from "../squads/SquadsPage";
+import { OwnershipGrid } from "../squads/OwnershipGrid";
 import { ExplorerPage } from "../explorer/ExplorerPage";
 import { CorpusFindingsPage } from "../requirements/CorpusFindingsPage";
 import { CorpusRequirementsPage } from "../requirements/CorpusRequirementsPage";
@@ -127,7 +128,8 @@ export function App() {
         </Route>
         <Route path="explorer" element={<ExplorerPage linkSystems />} />
         <Route path="squads" element={<SquadsPage />}>
-          <Route index element={<ProductsPage />} />
+          <Route index element={<OwnershipGrid />} />
+          <Route path="products" element={<ProductsPage />} />
           <Route path="squads" element={<SquadListPage />} />
           <Route path="people" element={<PeoplePage />} />
           <Route path="history" element={<HistoryPage />} />

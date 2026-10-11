@@ -40,7 +40,8 @@ test("Ctrl+K searches the library and catalogue from any page and opens a result
   const field = page.getByRole("combobox", { name: "Search the library and catalogue" });
   await expect(field).toBeFocused();
   await field.fill("coverage");
-  const first = page.getByRole("option").first();
+  // The results' own options: the page under it (the ownership grid) has select options too.
+  const first = page.getByRole("listbox", { name: "Results" }).getByRole("option").first();
   await expect(first).toHaveAttribute("aria-selected", "true");
   const title = (await first.locator(".ds-search__title").textContent()) ?? "";
   await page.keyboard.press("Enter");

@@ -204,6 +204,10 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
   isolated.
 - **`Upload`:** a labelled file control; each file shows its scan and read state
   (`JobStatus`).
+- **`FormPanel`:** an edit opened in place (§1): a form named by its heading, its fields, then the
+  verb (primary) and Cancel. While it can't be sent, the verb stays focusable with the reason
+  beside it (§1.2). A failure is announced in a line mounted from the start; Esc cancels. Pass a
+  disclosure's `panel` as `panelRef` so focus moves in and back.
 
 ### Data and review (`data.tsx`)
 

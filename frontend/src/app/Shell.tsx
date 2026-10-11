@@ -29,6 +29,8 @@ const REDESIGNED: ((path: string) => boolean)[] = [
   // rebuilt yet (Landscape, Channels, Versions, Compare) keep their body in an island under the new head.
   (path) => path === "/architecture" || path.startsWith("/architecture/"),
   (path) => path === "/explorer",
+  // Area 4: ownership (the systems grid, products, squads, people and history).
+  (path) => path === "/squads" || path.startsWith("/squads/"),
 ];
 
 function useOnline() {

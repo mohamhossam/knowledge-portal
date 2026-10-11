@@ -12,6 +12,7 @@ import {
   type Squad,
   type ValueStream,
 } from "../api/client";
+import { ApiError, errorMessage } from "../api/errors";
 
 /** The squad catalogue, and every save to it. Each save returns the whole catalogue. */
 export function useOrganisation() {
@@ -61,3 +62,8 @@ export type OrgContext = { org: Organisation; release: Release | null; flags: Re
 export function useOrgContext() {
   return useOutletContext<OrgContext>();
 }
+
+const CONFLICT = "The squad catalogue changed while you edited (someone else saved first). Reload the page; your edit wasn't saved.";
+
+/** What a failed save says: a 409 in the catalogue's own words, anything else as the service put it. */
+export const failureOf = (error: unknown) => (error ? (error instanceof ApiError && error.status === 409 ? CONFLICT : errorMessage(error)) : null);
