@@ -1,7 +1,8 @@
 """Controlled vocabularies: the closed lists behind fields that were free text (ADR-0114).
 
-Five schemes, each a small SKOS-style list curated with the release: eTOM process,
-channel kind, component kind, responsibility role and TM Forum Open API. A term has
+Six schemes, each a small SKOS-style list curated with the release: eTOM process,
+channel kind, component kind, responsibility role, TM Forum Open API and information
+entity (the SID's aggregate business entities: Customer, Product, Order). A term has
 a preferred label, other labels people write, an optional code (such as "TMF622"),
 and a broader term in its own scheme.
 
@@ -36,6 +37,8 @@ class VocabularyScheme(StrEnum):
     # What a system does for a component or an activity: orchestrate, activate, bill.
     RESPONSIBILITY_ROLE = "responsibility_role"
     OPEN_API = "open_api"
+    # What systems master or read, and interfaces carry: Customer, Product order.
+    INFORMATION_ENTITY = "information_entity"
 
 
 SCHEME_NAMES = {
@@ -44,6 +47,7 @@ SCHEME_NAMES = {
     VocabularyScheme.COMPONENT_KIND: "component kind",
     VocabularyScheme.RESPONSIBILITY_ROLE: "role",
     VocabularyScheme.OPEN_API: "Open API",
+    VocabularyScheme.INFORMATION_ENTITY: "information entity",
 }
 
 _ID_PREFIXES = {
@@ -52,6 +56,7 @@ _ID_PREFIXES = {
     VocabularyScheme.COMPONENT_KIND: "component",
     VocabularyScheme.RESPONSIBILITY_ROLE: "role",
     VocabularyScheme.OPEN_API: "api",
+    VocabularyScheme.INFORMATION_ENTITY: "entity",
 }
 
 

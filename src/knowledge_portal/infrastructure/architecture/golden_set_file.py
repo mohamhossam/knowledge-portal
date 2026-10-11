@@ -34,6 +34,10 @@ class _Case(_Strict):
     systems: list[str]
     concepts: list[str]
     missing_facets: list[str]
+    # The systems of record and interface owners, and the consumers, a data or interface
+    # change must reach (ontology plan Phase 8); each among the case's systems.
+    owners: list[str] = []
+    consumers: list[str] = []
     note: str | None = None
 
 
@@ -64,6 +68,12 @@ def _case(raw: _Case, concepts: frozenset[str]) -> GoldenCase:
     systems = _clean(raw.systems, f"{where}'s systems")
     needed = _clean(raw.concepts, f"{where}'s concepts")
     facets = _clean(raw.missing_facets, f"{where}'s missing facets")
+    owners = _clean(raw.owners, f"{where}'s owners")
+    consumers = _clean(raw.consumers, f"{where}'s consumers")
+    if not (owners | consumers) <= systems:
+        raise GoldenSetFileError(f"{where} names owners or consumers outside its systems.")
+    if owners & consumers:
+        raise GoldenSetFileError(f"{where} names a system as both owner and consumer.")
     if unknown := sorted(needed - concepts):
         raise GoldenSetFileError(f"{where} names undeclared concepts: {', '.join(unknown)}.")
     offering = raw.offering.strip() if raw.offering is not None else None
@@ -90,6 +100,8 @@ def _case(raw: _Case, concepts: frozenset[str]) -> GoldenCase:
         systems,
         needed,
         tuple(sorted(facets)),
+        owners,
+        consumers,
     )
 
 

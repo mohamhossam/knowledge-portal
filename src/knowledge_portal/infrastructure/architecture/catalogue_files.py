@@ -49,6 +49,11 @@ from knowledge_portal.domain.architecture.governance import (
     OpenQuestion,
     SourceConflict,
 )
+from knowledge_portal.domain.architecture.interfaces import (
+    InterfaceStyle,
+    SystemInterface,
+    interface_style,
+)
 from knowledge_portal.domain.architecture.journeys import (
     Activity,
     ActivityIntegration,
@@ -135,6 +140,7 @@ PLAN_CHARACTERISTICS = "PlanCharacteristics"
 BUSINESS_RULES = "BusinessRules"
 CONCEPTS = "Concepts"
 VOCABULARY = "Vocabulary"
+INTERFACES = "Interfaces"
 _CELLS = tuple(f"cell_{number}" for number in range(1, MAX_TABLE_COLUMNS + 1))
 INSTRUCTIONS = "Instructions"
 _DOMAIN_HEADERS = ("domain_id", "name", "name_ar", "parent_id", "description")
@@ -153,6 +159,8 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "placement_reason",
         "confidence",
         "source",
+        "masters",
+        "reads",
     ),
     COMPONENTS: (
         "system_id",
@@ -460,6 +468,19 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "confidence",
         "source",
     ),
+    INTERFACES: (
+        "interface_id",
+        "name",
+        "system_id",
+        "style",
+        "consumers",
+        "open_apis",
+        "entities",
+        "description",
+        "confidence",
+        "source",
+        "relays",
+    ),
 }
 # Headers a sheet cannot do without. Columns added later stay optional, so
 # workbooks filled from an older template still import.
@@ -510,6 +531,7 @@ _REQUIRED_HEADERS: dict[str, tuple[str, ...]] = {
     BUSINESS_RULES: ("product_id", "rule_id", "statement"),
     CONCEPTS: ("concept_id", "pref_label"),
     VOCABULARY: ("term_id", "scheme", "pref_label"),
+    INTERFACES: ("interface_id", "name", "system_id"),
 }
 _KINDS = ", ".join(kind.value for kind in RelationshipKind)
 _REQUIRED_SHEETS = (SYSTEMS,)
@@ -638,6 +660,18 @@ _INSTRUCTIONS = (
         "such as TMF622. Activities etom_term and role_term, Channels kind_term, "
         "OfferingComponents type_term, Responsibilities role_term and ActivityIntegrations "
         "open_apis (by ;) name the term beside the text.",
+    ),
+    (
+        "Vocabulary scheme information_entity: the data systems master or read, such as "
+        "Customer or Product order. Systems masters and reads: the entity term ids it is the "
+        "system of record for, and those it reads, by ;.",
+    ),
+    (
+        "Interfaces (optional): an API, event or file contract one system_id exposes; style is "
+        "api, event, file or unspecified; consumers are the system ids that call or receive "
+        "it, open_apis the Open API term ids and entities the information entity term ids it "
+        "carries, each by ;. relays: the interface ids it passes on, by ;, each one its "
+        "system consumes, as an integration layer does.",
     ),
     (
         "Systems owner, external (yes or no), roadmap, and placement_from with "
@@ -811,6 +845,8 @@ def content_from_mapping(raw: object) -> CatalogueContent:
                     ),
                     confidence=_trust(item.get("confidence"), where),
                     source=_optional_text(item.get("source"), where, "source"),
+                    masters=_text_list(item.get("masters"), where, "masters"),
+                    reads=_text_list(item.get("reads"), where, "reads"),
                 )
             )
         except InvalidKnowledgeError as exc:
@@ -843,6 +879,7 @@ def content_from_mapping(raw: object) -> CatalogueContent:
         _portfolio(_entries(raw, "portfolio")),
         _concepts(_entries(raw, "business_capabilities")),
         _terms(_entries(raw, "vocabulary")),
+        _interfaces(_entries(raw, "interfaces")),
     )
 
 
@@ -923,6 +960,52 @@ def _term_mapping(term: VocabularyTerm) -> dict[str, Any]:
             exact_match=term.exact_match,
         ),
         **_sourced(term),
+    }
+
+
+def _interfaces(entries: list[dict[str, Any]]) -> list[SystemInterface]:
+    """The contracts systems expose, with their consumers, Open APIs and entities."""
+    interfaces = []
+    for number, item in enumerate(entries, start=1):
+        where = _where(item, f"interfaces entry {number}")
+        try:
+            interfaces.append(
+                SystemInterface(
+                    _text(item.get("id"), where, "id"),
+                    _text(item.get("name"), where, "name"),
+                    _text(item.get("system"), where, "system"),
+                    interface_style(
+                        _optional_text(item.get("style"), where, "style")
+                        or InterfaceStyle.UNSPECIFIED
+                    ),
+                    _text_list(item.get("consumers"), where, "consumers"),
+                    _text_list(item.get("open_apis"), where, "open_apis"),
+                    _text_list(item.get("entities"), where, "entities"),
+                    _optional_text(item.get("description"), where, "description"),
+                    _trust(item.get("confidence"), where),
+                    _optional_text(item.get("source"), where, "source"),
+                    _text_list(item.get("relays"), where, "relays"),
+                )
+            )
+        except InvalidKnowledgeError as exc:
+            raise _located(where, exc) from exc
+    return interfaces
+
+
+def _interface_mapping(interface: SystemInterface) -> dict[str, Any]:
+    return {
+        "id": interface.id,
+        "name": interface.name,
+        "system": interface.system_id,
+        **_present(
+            style=None if interface.style is InterfaceStyle.UNSPECIFIED else interface.style.value,
+            consumers=list(interface.consumer_ids),
+            open_apis=list(interface.open_api_ids),
+            entities=list(interface.entity_ids),
+            description=interface.description,
+        ),
+        **_sourced(interface),
+        **_present(relays=list(interface.relays)),
     }
 
 
@@ -1796,6 +1879,7 @@ def _content(
     portfolio: list[PortfolioNode] | None = None,
     concepts: list[BusinessCapability] | None = None,
     terms: list[VocabularyTerm] | None = None,
+    interfaces: list[SystemInterface] | None = None,
 ) -> CatalogueContent:
     """The file's content, refusing a placement in a domain the file does not list, or a
     link to a concept it does not list."""
@@ -1833,6 +1917,7 @@ def _content(
         tuple(portfolio or ()),
         tuple(concepts or ()),
         tuple(terms or ()),
+        tuple(interfaces or ()),
     )
 
 
@@ -2040,6 +2125,7 @@ def release_to_mapping(release: ArchitectureKnowledge) -> dict[str, Any]:
                     placement_reason=item.placement_reason,
                 ),
                 **_sourced(item),
+                **_present(masters=list(item.masters), reads=list(item.reads)),
             }
             for item in release.systems
         ],
@@ -2090,6 +2176,7 @@ def release_to_mapping(release: ArchitectureKnowledge) -> dict[str, Any]:
                 _concept_mapping(item) for item in release.business_capabilities
             ],
             vocabulary=[_term_mapping(item) for item in release.vocabulary],
+            interfaces=[_interface_mapping(item) for item in release.interfaces],
         ),
     }
 
@@ -2170,6 +2257,8 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                 ),
                 "confidence": _trust(cells.get("confidence"), where),
                 "source": _optional_text(cells.get("source"), where, "source"),
+                "masters": _split(cells.get("masters"), where, "masters"),
+                "reads": _split(cells.get("reads"), where, "reads"),
                 "capabilities": [],
                 "constraints": [],
                 "components": [],
@@ -2298,6 +2387,21 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                 for number, cells in _rows(workbook, VOCABULARY)
             ]
         )
+        interfaces = _interfaces(
+            [
+                {
+                    **cells,
+                    "_where": f"{INTERFACES} row {number}",
+                    "id": cells.get("interface_id"),
+                    "system": cells.get("system_id"),
+                    **{
+                        key: list(_split(cells.get(key), f"{INTERFACES} row {number}", key))
+                        for key in ("consumers", "open_apis", "entities", "relays")
+                    },
+                }
+                for number, cells in _rows(workbook, INTERFACES)
+            ]
+        )
     finally:
         workbook.close()
     definitions = []
@@ -2321,6 +2425,8 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                     placement_reason=data["placement_reason"],
                     confidence=data["confidence"],
                     source=data["source"],
+                    masters=data["masters"],
+                    reads=data["reads"],
                 )
             )
         except InvalidKnowledgeError as exc:
@@ -2339,6 +2445,7 @@ def _read_workbook(content: bytes) -> CatalogueContent:
         portfolio,
         concepts,
         terms,
+        interfaces,
     )
 
 
@@ -3119,6 +3226,8 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 system.placement_reason,
                 _confidence(system),
                 system.source,
+                f"{_LIST_SEPARATOR} ".join(system.masters),
+                f"{_LIST_SEPARATOR} ".join(system.reads),
             ),
         )
         for capability in system.capabilities:
@@ -3198,6 +3307,23 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 term.exact_match,
                 _confidence(term),
                 term.source,
+            ),
+        )
+    for interface in release.interfaces if release is not None else ():
+        _append(
+            sheets[INTERFACES],
+            (
+                interface.id,
+                interface.name,
+                interface.system_id,
+                interface.style.value,
+                f"{_LIST_SEPARATOR} ".join(interface.consumer_ids),
+                f"{_LIST_SEPARATOR} ".join(interface.open_api_ids),
+                f"{_LIST_SEPARATOR} ".join(interface.entity_ids),
+                interface.description,
+                _confidence(interface),
+                interface.source,
+                f"{_LIST_SEPARATOR} ".join(interface.relays),
             ),
         )
     for node in release.portfolio if release is not None else ():

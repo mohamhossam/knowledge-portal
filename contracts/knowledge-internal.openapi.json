@@ -130,7 +130,7 @@
             "type": "array"
           },
           "prompt_version": {
-            "default": "requirement-assessment-v1",
+            "default": "requirement-assessment-v2",
             "title": "Prompt Version",
             "type": "string"
           },
@@ -1293,7 +1293,8 @@
           "characteristic",
           "excluded",
           "data",
-          "change_type"
+          "change_type",
+          "interface"
         ],
         "title": "FacetKind",
         "type": "string"
@@ -1772,7 +1773,9 @@
           "offering",
           "component",
           "channel",
-          "system"
+          "system",
+          "entity",
+          "interface"
         ],
         "title": "PathKind",
         "type": "string"
@@ -2247,7 +2250,9 @@
           "primary",
           "channel",
           "named",
-          "supporting"
+          "supporting",
+          "owner",
+          "consumer"
         ],
         "title": "SystemRole",
         "type": "string"

@@ -49,6 +49,7 @@ def scores(report: EvaluationReport) -> dict[str, float | None]:
         "offering_accuracy": report.offering_accuracy,
         "concept_recall": report.concept_recall,
         "citation_faithfulness": report.citation_faithfulness,
+        "owner_consumer_reach": report.reach,
     }
 
 

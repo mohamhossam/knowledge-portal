@@ -2520,7 +2520,8 @@
           "conflict",
           "change_request",
           "concept",
-          "vocabulary_term"
+          "vocabulary_term",
+          "interface"
         ],
         "title": "ChangedItem",
         "type": "string"
@@ -3610,6 +3611,21 @@
           "expected_revision": {
             "title": "Expected Revision",
             "type": "integer"
+          },
+          "interfaces": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SystemInterfaceSchema"
+                },
+                "maxItems": 5000,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interfaces"
           },
           "journeys": {
             "anyOf": [
@@ -5028,6 +5044,17 @@
         "title": "IngestionStage",
         "type": "string"
       },
+      "InterfaceStyle": {
+        "description": "How an interface is called, when its sources say.",
+        "enum": [
+          "api",
+          "event",
+          "file",
+          "unspecified"
+        ],
+        "title": "InterfaceStyle",
+        "type": "string"
+      },
       "ItemChangeView": {
         "properties": {
           "fields": {
@@ -5529,6 +5556,14 @@
               }
             ],
             "title": "Index Profile"
+          },
+          "interfaces": {
+            "items": {
+              "$ref": "#/components/schemas/SystemInterfaceSchema"
+            },
+            "maxItems": 5000,
+            "title": "Interfaces",
+            "type": "array"
           },
           "journeys": {
             "items": {
@@ -10275,6 +10310,16 @@
             ],
             "title": "Landscape Domain Id"
           },
+          "masters": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Masters",
+            "type": "array"
+          },
           "name": {
             "maxLength": 300,
             "title": "Name",
@@ -10328,6 +10373,16 @@
             ],
             "title": "Placement Reason"
           },
+          "reads": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Reads",
+            "type": "array"
+          },
           "roadmap": {
             "anyOf": [
               {
@@ -10358,6 +10413,111 @@
           "name"
         ],
         "title": "SystemDefinitionSchema",
+        "type": "object"
+      },
+      "SystemInterfaceSchema": {
+        "description": "An API, event or file contract one system exposes, and the systems that consume it.",
+        "properties": {
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "consumer_ids": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Consumer Ids",
+            "type": "array"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "entity_ids": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Entity Ids",
+            "type": "array"
+          },
+          "id": {
+            "maxLength": 200,
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 300,
+            "title": "Name",
+            "type": "string"
+          },
+          "open_api_ids": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Open Api Ids",
+            "type": "array"
+          },
+          "relays": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Relays",
+            "type": "array"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "style": {
+            "$ref": "#/components/schemas/InterfaceStyle",
+            "default": "unspecified"
+          },
+          "system_id": {
+            "maxLength": 200,
+            "title": "System Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "system_id"
+        ],
+        "title": "SystemInterfaceSchema",
         "type": "object"
       },
       "SystemOwnershipResponse": {
@@ -11079,13 +11239,14 @@
           "channel_kind",
           "component_kind",
           "responsibility_role",
-          "open_api"
+          "open_api",
+          "information_entity"
         ],
         "title": "VocabularyScheme",
         "type": "string"
       },
       "VocabularyTermSchema": {
-        "description": "A term of a controlled vocabulary: an eTOM process, a channel or component kind, a\nrole or an Open API.",
+        "description": "A term of a controlled vocabulary: an eTOM process, a channel or component kind, a\nrole, an Open API or an information entity.",
         "properties": {
           "alt_labels": {
             "default": [],

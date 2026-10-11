@@ -23,6 +23,11 @@ from knowledge_portal.domain.architecture.governance import (
     SourceConflict,
     check_governance,
 )
+from knowledge_portal.domain.architecture.interfaces import (
+    SystemInterface,
+    check_data_roles,
+    check_interfaces,
+)
 
 # Re-exported: the rest of the codebase imports the error from here.
 from knowledge_portal.domain.architecture.invariants import (
@@ -255,6 +260,10 @@ class SystemDefinition:
     placement_reason: str | None = None
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # The information entities it is the system of record for, and those it reads, by
+    # term id (ontology plan Phase 8).
+    masters: tuple[str, ...] = ()
+    reads: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         _required(self.id, "System id")
@@ -423,6 +432,9 @@ class ArchitectureKnowledge:
     # The controlled vocabularies behind eTOM process, channel kind, component kind,
     # role and Open API values, each beside the text it covers (ADR-0114).
     vocabulary: tuple[VocabularyTerm, ...] = ()
+    # The contracts systems expose and consume (ontology plan Phase 8); with the
+    # information entities systems master or read, what a data change ripples through.
+    interfaces: tuple[SystemInterface, ...] = ()
 
     def __post_init__(self) -> None:
         _required(self.id, "Knowledge id")
@@ -496,9 +508,11 @@ class ArchitectureKnowledge:
                     "which is not in the portfolio."
                 )
         check_journeys(self.journeys, system_ids, self.products, channel_ids)
-        check_vocabulary_links(
-            check_vocabulary(self.vocabulary), self.products, self.journeys, self.channels
-        )
+        terms = check_vocabulary(self.vocabulary)
+        check_vocabulary_links(terms, self.products, self.journeys, self.channels)
+        for system in self.systems:
+            check_data_roles(system.name, system.masters, system.reads, terms)
+        check_interfaces(self.interfaces, system_ids, terms)
         check_governance(
             self.sources,
             self.conflicts,
@@ -545,6 +559,7 @@ class ArchitectureKnowledge:
         portfolio: tuple[PortfolioNode, ...] | None = None,
         business_capabilities: tuple[BusinessCapability, ...] | None = None,
         vocabulary: tuple[VocabularyTerm, ...] | None = None,
+        interfaces: tuple[SystemInterface, ...] | None = None,
     ) -> ArchitectureKnowledge:
         if self.status is not KnowledgeReleaseStatus.DRAFT:
             raise KnowledgeConflictError("Published knowledge is immutable.")
@@ -577,6 +592,7 @@ class ArchitectureKnowledge:
                 else business_capabilities
             ),
             vocabulary=self.vocabulary if vocabulary is None else vocabulary,
+            interfaces=self.interfaces if interfaces is None else interfaces,
         )
 
     def domain_path(self, domain_id: str | None) -> tuple[CapabilityDomain, ...]:

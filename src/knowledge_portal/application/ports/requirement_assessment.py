@@ -32,7 +32,7 @@ from knowledge_portal.domain.architecture.entities import (
 from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge
 from knowledge_portal.domain.architecture.verdicts import ProductVerdict, VerdictCall
 
-PROMPT_VERSION = "requirement-assessment-v1"
+PROMPT_VERSION = "requirement-assessment-v2"
 
 
 @dataclass(frozen=True)
@@ -61,6 +61,9 @@ class CatalogueTerms:
     families: tuple[CatalogueTerm, ...] = ()
     channels: tuple[CatalogueTerm, ...] = ()
     order_types: tuple[CatalogueTerm, ...] = ()
+    # Information entities and interfaces (ontology plan Phase 8).
+    entities: tuple[CatalogueTerm, ...] = ()
+    interfaces: tuple[CatalogueTerm, ...] = ()
 
     def ids(self, kind: FacetKind) -> frozenset[str]:
         lists = {
@@ -69,6 +72,8 @@ class CatalogueTerms:
             FacetKind.FAMILY: self.families,
             FacetKind.CHANNEL: self.channels,
             FacetKind.ORDER_TYPE: self.order_types,
+            FacetKind.DATA: self.entities,
+            FacetKind.INTERFACE: self.interfaces,
         }
         return frozenset(item.id for item in lists.get(kind, ()))
 

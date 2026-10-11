@@ -10,6 +10,7 @@ from knowledge_portal.domain.architecture.change_requests import ChangeRequestRe
 from knowledge_portal.domain.architecture.channels import Channel
 from knowledge_portal.domain.architecture.concepts import BusinessCapability
 from knowledge_portal.domain.architecture.governance import KnowledgeSource, SourceConflict
+from knowledge_portal.domain.architecture.interfaces import SystemInterface
 from knowledge_portal.domain.architecture.journeys import Journey
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
@@ -72,6 +73,8 @@ class CatalogueContent:
     business_capabilities: tuple[BusinessCapability, ...] = ()
     # The controlled vocabularies written values are linked to.
     vocabulary: tuple[VocabularyTerm, ...] = ()
+    # The contracts systems expose and consume (ontology plan Phase 8).
+    interfaces: tuple[SystemInterface, ...] = ()
 
 
 class CatalogueFilePort(Protocol):
