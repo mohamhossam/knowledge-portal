@@ -7,6 +7,7 @@ import { EXPLORED } from "../explorer/fixtures";
 import { fieldsInWords } from "./drafting";
 import { offeringProblem } from "./editing";
 import { OfferingEditor } from "./OfferingEditor";
+import { TrackingSection } from "./Tracking";
 
 const OFFERING = EXPLORED.products![0]!;
 const TRACKING = OFFERING.tracking!;
@@ -97,5 +98,51 @@ describe("an offering read from a document, in the suggestion editor", () => {
     expect((within(flows).getByLabelText("From") as HTMLSelectElement).selectedOptions[0]!.textContent).toBe("Order Store (not in the draft yet)");
     expect((screen.getAllByRole("checkbox", { name: "Business Web (not in the draft yet)" })[0] as HTMLInputElement).checked).toBe(true);
     expect((screen.getByRole("checkbox", { name: "Shop (not in the draft yet)" }) as HTMLInputElement).checked).toBe(true);
+  });
+});
+
+describe("order tracking read on a sheet and in the explorer", () => {
+  const names: Record<string, string> = { web: "B2B Web", rtf: "RTF", cwom: "CWOM", online: "Online", shop: "Shop", NEW: "New Activation", CEASE: "Cease" };
+  const name = (id: string) => names[id] ?? id;
+  type Focus = Parameters<typeof TrackingSection>[0]["focus"];
+  const read = (focus?: Focus) =>
+    render(<TrackingSection offering={OFFERING} headingId="tracking" system={name} channelName={name} orderName={name} focus={focus} />);
+  const section = () => within(screen.getByRole("heading", { name: "Order tracking" }).closest("section")!);
+
+  it("reads the order's tracking through one channel, with its screen's read path", () => {
+    read({ orderName: "New Activation", applies: true, channel: { id: "online", name: "Online" }, entry: TRACKING.channels[0]!, flows: [
+      ...TRACKING.flows,
+      { from_system_id: "rtf", to_system_id: "web", label: "getRealTimeOrderDetails", readFor: "Online" },
+    ] });
+    expect(section().getByText("Specified for New Activation.")).toBeInTheDocument();
+    const online = within(section().getByRole("table", { name: "How Online tracks its orders of Business Pro Plus" })).getByRole("row", { name: /Online/ });
+    expect(online.querySelectorAll("td")[0]).toHaveTextContent("Digital Order ID ↔ CWOM Order ID");
+    expect(online).toHaveTextContent("Reads its status from RTF over getRealTimeOrderDetails");
+    const flows = within(section().getByRole("table", { name: /Flows that carry/ })).getAllByRole("row").slice(1);
+    const cells = (row: HTMLElement) => [row.querySelector("th")!.textContent, ...[...row.querySelectorAll("td")].map((cell) => cell.textContent)];
+    expect(flows.map(cells)).toEqual([
+      ["CWOM", "RTF", "Sub-order milestonesOver notifyMilestone"],
+      ["RTF", "Logs it itself", "Timestamps"],
+      ["RTF", "B2B Web", "getRealTimeOrderDetailsHow Online's tracking screen reads the order's status"],
+    ]);
+    // A milestone its source leaves a gap says so, with its icon.
+    const milestone = section().getByText("Installation done").closest("li")!;
+    expect(within(milestone).getByText("Its source leaves gaps").closest(".ds-status--attention")).not.toBeNull();
+    expect(section().getByRole("row", { name: /Rejected by business rules/ })).toHaveTextContent("Back to the channel");
+  });
+
+  it("says what a channel leaves undefined, as due", () => {
+    read();
+    const shop = within(section().getByRole("table", { name: /How each channel tracks/ })).getByRole("row", { name: /Shop/ });
+    expect(within(shop).getByText("Not defined").closest(".ds-status--attention")).not.toBeNull();
+    expect(within(shop).getByText("Not named").closest(".ds-status--attention")).not.toBeNull();
+  });
+
+  it("says when tracking is not specified for the order type, as a fact rather than a gap", () => {
+    read({ orderName: "Cease", applies: false, channel: null, entry: null, flows: [] });
+    const note = section().getByText("Not specified for Cease. Tracking is not specified for a cease.");
+    expect(note.closest(".ds-status")).toBeNull();
+    expect(section().queryByRole("table", { name: /Flows that carry/ })).not.toBeInTheDocument();
+    expect(section().getByRole("table", { name: /fall out/ })).toBeInTheDocument();
   });
 });

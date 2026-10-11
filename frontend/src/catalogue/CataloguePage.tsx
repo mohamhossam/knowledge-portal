@@ -1,21 +1,19 @@
-import { useQuery } from "@tanstack/react-query";
-import { RotateCw } from "lucide-react";
-import { type ReactNode, useEffect } from "react";
-import { Link, Outlet, useLocation, useParams } from "react-router-dom";
+import "./frame/catalogue.css";
 
-import { api, type Release } from "../api/client";
+import { Outlet, useLocation, useParams } from "react-router-dom";
+
 import { ApiError, errorMessage } from "../api/errors";
-import { count, formatDay } from "../home/format";
-import { changeSentence, contents } from "./catalogue";
-import { DraftBanner, DraftFrame } from "./draft/DraftFrame";
+import { ActionGroup, Button, EmptyState, PageHeader, Skeleton } from "../design/components";
+import { ButtonLink } from "../shell/links";
+import { DraftFrame } from "./draft/DraftFrame";
 import { draftStepOf } from "./draft/progress";
-import { useChangeRequests } from "./inbox";
 import { SourcesContext } from "./governance";
-import { type CatalogueContext, useActorNames, useMappingImpact, useRelease } from "./useCatalogue";
+import { type CatalogueContext, useActorNames, useRelease } from "./useCatalogue";
 
 /**
  * Table 2, the architecture catalogue: the version in service, or any other
- * version read the same way, with its pages under one head.
+ * version read the same way. This frame opens the version; each page draws its
+ * own head (CatalogueHeader), so a record page can be titled by its record.
  */
 export function CataloguePage() {
   const { releaseId } = useParams();
@@ -23,173 +21,52 @@ export function CataloguePage() {
   const actorName = useActorNames();
   const base = releaseId === undefined ? "/architecture" : `/architecture/versions/${encodeURIComponent(releaseId)}`;
   const inService = releaseId === undefined || (activeId !== undefined && releaseId === activeId);
-  // A draft's steps (Sources, Decide, Changes, Check, Publish) are rebuilt on the design system.
+  // A draft's steps (Sources, Decide, Changes, Check, Publish) have their own frame.
   const step = draftStepOf(useLocation().pathname, base);
-
-  useEffect(() => {
-    if (step) return;
-    const name = releaseId !== undefined && query.data?.name ? `${query.data.name} · ` : "";
-    document.title = `${name}Architecture catalogue · Knowledge portal`;
-  }, [releaseId, query.data?.name, step]);
 
   if (step) return <DraftFrame step={step} query={query} book={book} base={base} inService={inService} actorName={actorName} />;
 
-  const head = (edition: ReactNode, pages = false) => (
-    <header className="docpage__head">
-      <p className="docpage__number" aria-hidden="true">2</p>
-      <div className="docpage__heading">
-        <h1 id="catalogue-title" className="docpage__title">
-          <span className="visually-hidden">Table 2:</span> Architecture catalogue
-        </h1>
-        {edition}
-        {pages && book && <SubIndex base={base} inService={inService} />}
-      </div>
-    </header>
-  );
-
   if (query.isPending) {
     return (
-      <section className="docpage" aria-labelledby="catalogue-title" aria-busy="true">
-        {head(<p className="docpage__edition">Opening the catalogue…</p>)}
-      </section>
+      <div className="cat">
+        <PageHeader title="Architecture catalogue" documentTitle="Architecture catalogue" />
+        <Skeleton label="Opening the catalogue" rows={8} />
+      </div>
     );
   }
-  if (query.isError) {
+  if (query.isError || !book) {
     const missing = query.error instanceof ApiError && query.error.status === 404;
     return (
-      <section className="docpage" aria-labelledby="catalogue-title">
-        {head(null)}
-        <p className="docpage__failure" role="alert">
-          {missing ? "There is no catalogue version at this address." : errorMessage(query.error)}
-          {missing ? (
-            <Link to="/architecture/versions">See every version</Link>
-          ) : (
-            <button type="button" className="text-button" onClick={() => void query.refetch()}>
-              <RotateCw size={14} aria-hidden="true" />
-              Try again
-            </button>
-          )}
-        </p>
-      </section>
-    );
-  }
-  if (!book) {
-    return (
-      <section className="docpage" aria-labelledby="catalogue-title">
-        {head(<p className="docpage__edition">No catalogue version is in service yet.</p>)}
-      </section>
+      <div className="cat">
+        <PageHeader
+          title={missing ? "There is no catalogue version here" : query.isError ? "Couldn't open the catalogue" : "No catalogue version is in service yet"}
+          documentTitle="Architecture catalogue"
+        />
+        <EmptyState
+          title={
+            missing
+              ? "It may have been removed, or the address is wrong."
+              : query.isError
+                ? `The knowledge service didn't answer: ${errorMessage(query.error)}`
+                : "Start a draft from Versions, and publish it to put it in service."
+          }
+          action={
+            <ActionGroup>
+              {query.isError && !missing && <Button onClick={() => void query.refetch()}>Try again</Button>}
+              <ButtonLink to="/architecture/versions">See every version</ButtonLink>
+            </ActionGroup>
+          }
+        />
+      </div>
     );
   }
 
   const context: CatalogueContext = { book, base, inService, actorName, editable: book.release.status === "draft" };
   return (
-    <section className="docpage catalogue" aria-labelledby="catalogue-title">
-      {head(
-        <>
-          <p className="docpage__edition">
-            <Edition release={book.release} inService={inService} actorName={actorName} />
-          </p>
-          {inService ? <MappedEarlier /> : <Consequence release={book.release} />}
-          <DraftBanner readingDraft={book.release.status === "draft" ? book.release : undefined} />
-        </>,
-        true,
-      )}
+    <div className="cat">
       <SourcesContext.Provider value={book.release.sources ?? []}>
         <Outlet context={context} />
       </SourcesContext.Provider>
-    </section>
-  );
-}
-
-function Edition({ release, inService, actorName }: {
-  release: Release;
-  inService: boolean;
-  actorName: CatalogueContext["actorName"];
-}) {
-  const name = release.name || "Untitled version";
-  const holds = contents(release);
-  const tally = `${count(holds.systems, "system")}, ${count(holds.connections, "connection")}.`;
-  if (release.status === "draft") {
-    return (
-      <>
-        In preparation: <strong dir="auto">‘{name}’</strong>, started by {actorName(release.created_by)}; not yet published.
-        {" "}{tally} <Link to="/architecture">Read the version in service</Link>
-      </>
-    );
-  }
-  const published = `published by ${actorName(release.published_by)} on ${formatDay(release.published_at)}`;
-  if (inService) {
-    return <>In service: <strong dir="auto">‘{name}’</strong>, {published}. {tally}</>;
-  }
-  return (
-    <>
-      Replaced: <strong dir="auto">‘{name}’</strong>, {published}; no longer in service. {tally}{" "}
-      <Link to="/architecture">Read the version in service</Link>
-    </>
-  );
-}
-
-/** Requirement work still mapped with an earlier version, when there is any. */
-function MappedEarlier() {
-  const impact = useMappingImpact();
-  const outdated = impact.data?.outdated_requirements ?? 0;
-  if (!outdated) return null;
-  return (
-    <p className="docpage__version">
-      <strong className="catalogue__due">{count(outdated, "requirement")} still mapped with an earlier version.</strong>
-    </p>
-  );
-}
-
-/** Shown on any other version: what putting it in service would change. */
-function Consequence({ release }: { release: Release }) {
-  const changes = useQuery({
-    queryKey: ["architecture", "releases", release.id, "changes", release.revision],
-    queryFn: () => api.releaseChanges(release.id),
-  });
-  if (!changes.data) return null;
-  const sentence = changeSentence(changes.data);
-  const verb = release.status === "draft" ? "Publishing it" : "Putting it back in service";
-  return (
-    <p className="docpage__version">
-      {sentence ? `${verb} would ${sentence}.` : "Its contents match the version in service."}
-    </p>
-  );
-}
-
-function SubIndex({ base, inService }: { base: string; inService: boolean }) {
-  const { pathname } = useLocation();
-  // Change requests from Requirement AI wait on Versions; the count is seen from every page.
-  const waiting = (useChangeRequests().data ?? []).filter((item) => item.status === "waiting").length;
-  const pages: { label: string; to: string; current: boolean; note?: string }[] = [
-    { label: "Systems", to: base, current: pathname === base || pathname.startsWith(`${base}/systems`) },
-    { label: "Domains", to: `${base}/domains`, current: pathname.startsWith(`${base}/domains`) },
-    { label: "Channels", to: `${base}/channels`, current: pathname.startsWith(`${base}/channels`) },
-    { label: "Governance", to: `${base}/governance`, current: pathname.startsWith(`${base}/governance`) },
-    { label: "Offerings", to: `${base}/offerings`, current: pathname.startsWith(`${base}/offerings`) },
-    { label: "Journeys", to: `${base}/journeys`, current: pathname.startsWith(`${base}/journeys`) },
-    // The explorer reads the version in service only.
-    ...(inService ? [{ label: "Explorer", to: "/explorer", current: false }] : []),
-    {
-      label: inService ? "Versions" : "All versions",
-      to: "/architecture/versions",
-      // Comparing two versions is part of reading them all.
-      current: pathname === "/architecture/versions" || pathname === "/architecture/compare",
-      note: waiting ? `${waiting} waiting` : undefined,
-    },
-  ];
-  return (
-    <nav className="subindex" aria-label="This catalogue">
-      <ul className="subindex__list">
-        {pages.map((page) => (
-          <li key={page.label}>
-            <Link to={page.to} className="subindex__link" aria-current={page.current ? "page" : undefined}>
-              {page.label}
-              {page.note && <span className="subindex__note"> · {page.note}</span>}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </nav>
+    </div>
   );
 }

@@ -1,136 +1,203 @@
 import { Plus } from "lucide-react";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
 
+import type { CatalogueSystem, Relationship } from "../api/client";
+import {
+  Button, type Column, DataTable, EmptyState, FilterStrip, Section, type Sort, SplitPane, Status,
+} from "../design/components";
 import { count } from "../home/format";
-import { LINK_VERB, allConnections, findSystems, systemGroups, systemName, UNPLACED } from "./catalogue";
+import { RouterLink } from "../shell/links";
+import { LINK_VERB, allConnections, domainPath, findSystems, systemName } from "./catalogue";
 import { SystemEdit } from "./DraftEdits";
-import { SystemSheet } from "./SystemSheet";
+import { CatalogueHeader } from "./frame/CatalogueHeader";
+import { type ConceptIndex, conceptIndex, interfacesOf, SOURCE_TONE, SOURCE_WORD, systemConcepts, systemDomains } from "./ontology";
+import { SystemRecord } from "./SystemRecord";
 import { useCatalogueContext } from "./useCatalogue";
 
+type Row = { system: CatalogueSystem; place: string; why: string | null };
+
+const ALL = "all";
+
 /**
- * The systems of a version: an index grouped by where each system sits, beside
- * either every connection or one system's sheet.
+ * The systems of a version (redesign phase 5): a ledger of every system, what
+ * it does in the ontology's words and how it connects, beside the record of
+ * the one chosen. Without a choice, every connection follows the table.
  */
 export function SystemsPage() {
   const { systemId } = useParams();
   const { book, base, editable } = useCatalogueContext();
-  const location = useLocation();
-  const notice = (location.state as { notice?: string } | null)?.notice;
+  const notice = (useLocation().state as { notice?: string } | null)?.notice;
   const [adding, setAdding] = useState(false);
   const chosen = systemId !== undefined ? book.systems.get(systemId) : undefined;
+  const index = useMemo(() => conceptIndex(book.release), [book.release]);
+
+  const list = (
+    <>
+      {notice && !adding && <p role="status" className="cat-notice"><Status tone="done">{notice}</Status></p>}
+      {editable && !adding && (
+        <p className="cat-actions">
+          <Button icon={<Plus size={16} />} onClick={() => setAdding(true)}>Add a system</Button>
+        </p>
+      )}
+      {adding && (
+        <div className="ds-legacy cat-legacy">
+          <SystemEdit onDone={() => setAdding(false)} />
+        </div>
+      )}
+      <SystemsTable index={index} current={chosen?.id} />
+    </>
+  );
+
   return (
-    <div className={chosen || adding ? "catalogue__systems has-sheet" : "catalogue__systems"}>
-      <SystemsIndex current={chosen?.id} onAdd={editable && !adding ? () => setAdding(true) : undefined} />
-      <div className="catalogue__main">
-        {notice && !adding && <p className="toolbar__notice catalogue__first" role="status">{notice}</p>}
-        {adding ? (
-          <div className="catalogue__first">
-            <SystemEdit onDone={() => setAdding(false)} />
-          </div>
-        ) : systemId !== undefined && !chosen ? (
-          <p className="docpage__failure" role="alert">
-            This version has no system “{systemId}”. <Link to={base}>See every system</Link>
-          </p>
-        ) : chosen ? (
-          <SystemSheet key={chosen.id} system={chosen} />
-        ) : (
+    <>
+      <CatalogueHeader page="systems" />
+      {systemId !== undefined && !chosen ? (
+        <>
+          <EmptyState
+            title={`This version has no system “${systemId}”.`}
+            action={<RouterLink href={base}>See every system</RouterLink>}
+          />
+          {list}
+        </>
+      ) : chosen ? (
+        <SplitPane list={list} pane={<SystemRecord key={chosen.id} system={chosen} index={index} />} paneLabel={`System: ${chosen.name}`} />
+      ) : (
+        <>
+          {list}
           <AllConnections />
-        )}
-      </div>
+        </>
+      )}
+    </>
+  );
+}
+
+function SystemsTable({ index, current }: { index: ConceptIndex; current?: string }) {
+  const { book, base } = useCatalogueContext();
+  const release = book.release;
+  const [params, setParams] = useSearchParams();
+  const [sort, setSort] = useState<Sort>({ id: "place", direction: "ascending" });
+  const area = params.get("area") ?? ALL;
+  const find = params.get("find") ?? "";
+  const set = (key: string, value: string, empty: string) =>
+    setParams((previous) => {
+      const next = new URLSearchParams(previous);
+      if (value === empty) next.delete(key);
+      else next.set(key, value);
+      return next;
+    }, { replace: true });
+
+  const rows = useMemo<Row[]>(() => {
+    const found = findSystems(book, find);
+    return release.systems
+      .filter((system) => area === ALL || systemDomains(system).includes(area))
+      .filter((system) => !find.trim() || found.has(system.id))
+      .map((system) => ({
+        system,
+        place: domainPath(book.landscape, system.landscape_domain_id).join(" › "),
+        why: found.get(system.id) ?? null,
+      }));
+  }, [book, release.systems, area, find]);
+
+  const sorted = useMemo(() => {
+    const key = (row: Row) => (sort.id === "owner" ? row.system.owner ?? "" : sort.id === "place" ? `${row.place || "~"}\u0000${row.system.name}` : row.system.name);
+    const order = [...rows].sort((a, b) => key(a).localeCompare(key(b), "en", { sensitivity: "base" }));
+    return sort.direction === "descending" ? order.reverse() : order;
+  }, [rows, sort]);
+
+  const areas = release.capability_domains ?? [];
+  const filters = [
+    { id: ALL, label: "All", count: release.systems.length },
+    ...areas.map((domain) => ({ id: domain.id, label: domain.name, count: release.systems.filter((system) => systemDomains(system).includes(domain.id)).length })),
+  ];
+
+  const columns: Column<Row>[] = [
+    {
+      id: "name",
+      header: "System",
+      rowHeader: true,
+      sortable: true,
+      bidi: true,
+      cell: ({ system, why }) => (
+        <>
+          <Link
+            to={`${base}/systems/${encodeURIComponent(system.id)}${params.size ? `?${params}` : ""}`}
+            className="cat-name"
+            aria-current={system.id === current ? "page" : undefined}
+          >
+            {system.name}
+          </Link>
+          {why && <span className="cat-detail">{why}</span>}
+        </>
+      ),
+    },
+    { id: "place", header: "Sits in", sortable: true, bidi: true, cell: ({ place }) => place || <span className="cat-quiet">Not placed</span> },
+    {
+      id: "concepts",
+      header: "Does (concept)",
+      cell: ({ system }) => <ConceptChips system={system} index={index} />,
+    },
+    {
+      id: "interfaces",
+      header: "Interfaces",
+      cell: ({ system }) => {
+        const { exposes, uses } = interfacesOf(release, system.id);
+        if (!exposes.length && !uses.length) return <span className="cat-quiet">None recorded</span>;
+        return <span className="cat-nowrap">{exposes.length} exposed · {uses.length} used</span>;
+      },
+    },
+    { id: "owner", header: "Owner", sortable: true, bidi: true, cell: ({ system }) => system.owner ?? <span className="cat-quiet">Not stated</span> },
+    {
+      id: "source",
+      header: "Source",
+      cell: ({ system }) => (system.confidence ? <Status tone={SOURCE_TONE[system.confidence]}>{SOURCE_WORD[system.confidence]}</Status> : <span className="cat-quiet">Not stated</span>),
+    },
+  ];
+
+  return (
+    <div className="cat-list">
+      <FilterStrip
+        label="Systems by capability domain"
+        filters={filters}
+        active={area}
+        onChange={(id) => set("area", id, ALL)}
+        find={{ label: "Find a system", value: find, onChange: (value) => set("find", value, ""), placeholder: "Name, alias, capability or phrase" }}
+        onClear={area !== ALL || find ? () => setParams({}, { replace: true }) : undefined}
+      />
+      <p className="cat-count" aria-live="polite">
+        {area === ALL && !find.trim() ? count(release.systems.length, "system") : `${count(rows.length, "system")} of ${release.systems.length}`}
+      </p>
+      <DataTable
+        caption="Systems in this version"
+        captionHidden
+        columns={columns}
+        rows={sorted}
+        rowId={(row) => row.system.id}
+        sort={sort}
+        onSort={setSort}
+        emptyText={find.trim() ? `No system is known by “${find.trim()}”.` : "No system works in this capability domain."}
+      />
     </div>
   );
 }
 
-function SystemsIndex({ current, onAdd }: { current?: string; onAdd?: () => void }) {
-  const { book, base } = useCatalogueContext();
-  const [query, setQuery] = useState("");
-  const id = useId();
-  const groups = useMemo(() => systemGroups(book), [book]);
-  const found = useMemo(() => findSystems(book, query), [book, query]);
-  const finding = query.trim() !== "";
-  const shown = groups
-    .map((group) => ({ ...group, systems: finding ? group.systems.filter((system) => found.has(system.id)) : group.systems }))
-    .filter((group) => group.systems.length > 0);
-  const currentLink = useRef<HTMLAnchorElement>(null);
-  const nav = useRef<HTMLElement>(null);
-
-  // Following a connection keeps the new system's entry in view: the index scrolls itself, after the
-  // sheet has brought its own heading into view, so neither undoes the other.
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      const link = currentLink.current;
-      const box = nav.current;
-      if (!link || !box || box.scrollHeight <= box.clientHeight) return;
-      const masthead = document.querySelector(".masthead")?.getBoundingClientRect().bottom ?? 0;
-      const navRect = box.getBoundingClientRect();
-      const top = Math.max(navRect.top, masthead);
-      const bottom = Math.min(navRect.bottom, window.innerHeight);
-      const linkRect = link.getBoundingClientRect();
-      if (linkRect.top >= top && linkRect.bottom <= bottom) return;
-      box.scrollTop += linkRect.top + linkRect.height / 2 - (top + bottom) / 2;
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [current]);
-
-  return (
-    <nav ref={nav} className="sysindex" aria-labelledby={`${id}-title`}>
-      <h2 id={`${id}-title`} className="visually-hidden">Systems in this version</h2>
-      <label className="field sysindex__find" htmlFor={`${id}-find`}>
-        <span className="field__label">Find a system</span>
-        <input
-          id={`${id}-find`}
-          type="search"
-          className="field__input"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Name, alias or phrase"
-          aria-describedby={`${id}-count`}
-        />
-      </label>
-      <p id={`${id}-count`} className="sysindex__count" aria-live="polite">
-        {finding
-          ? found.size
-            ? `${count(found.size, "system")} known by “${query.trim()}”`
-            : `No system is known by “${query.trim()}”.`
-          : count(book.release.systems.length, "system")}
-      </p>
-      {onAdd && (
-        <p className="sysindex__add">
-          <button type="button" className="text-button" onClick={onAdd}>
-            <Plus size={14} aria-hidden="true" />
-            Add a system
-          </button>
-        </p>
-      )}
-      {shown.map((group) => (
-        <section key={group.id} className="sysindex__group" aria-labelledby={`${id}-${group.id}`}>
-          <h3 id={`${id}-${group.id}`} className="sysindex__place" dir="auto">
-            {group.id === UNPLACED ? "Not placed in the landscape" : group.path.join(" › ")}
-          </h3>
-          <ul className="sysindex__list">
-            {group.systems.map((system) => {
-              const reason = found.get(system.id);
-              const isCurrent = system.id === current;
-              return (
-                <li key={system.id}>
-                  <Link
-                    ref={isCurrent ? currentLink : undefined}
-                    to={`${base}/systems/${encodeURIComponent(system.id)}`}
-                    className="sysindex__link"
-                    aria-current={isCurrent ? "page" : undefined}
-                  >
-                    <span dir="auto">{system.name}</span>
-                    {reason && <span className="sysindex__why" dir="auto">{reason}</span>}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ))}
-    </nav>
-  );
+/** The concepts a system's capabilities name; "None fits" when a capability was looked at and none did. */
+export function ConceptChips({ system, index }: { system: CatalogueSystem; index: ConceptIndex }) {
+  const { base } = useCatalogueContext();
+  const concepts = systemConcepts(system, index);
+  if (concepts.length) {
+    return (
+      <ul className="cat-chips">
+        {concepts.map((concept) => (
+          <li key={concept.id}>
+            <Link to={`${base}/concepts/${encodeURIComponent(concept.id)}`} className="cat-chip" dir="auto">{concept.pref_label}</Link>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+  if (system.capabilities.some((item) => item.unlinked_reason)) return <span className="cat-quiet">None fits</span>;
+  return <span className="cat-quiet">Not linked</span>;
 }
 
 /** With no system chosen: every connection in the version, read as a sentence. */
@@ -141,42 +208,25 @@ function AllConnections() {
   const link = (systemId: string) => (
     <Link to={`${base}/systems/${encodeURIComponent(systemId)}`} dir="auto">{systemName(book, systemId)}</Link>
   );
+  const columns: Column<Relationship>[] = [
+    { id: "from", header: "From", rowHeader: true, bidi: true, cell: (row) => link(row.source_system_id) },
+    { id: "how", header: "How", cell: (row) => LINK_VERB[row.kind] },
+    { id: "to", header: "To", bidi: true, cell: (row) => link(row.target_system_id) },
+    { id: "what", header: "For what", bidi: true, cell: (row) => row.description },
+  ];
   return (
-    <section className="govsection catalogue__first" aria-labelledby="connections-title">
-      <h2 id="connections-title" className="govsection__title">All connections</h2>
-      <p className="govsection__lead">
-        {count(rows.length, "connection")} between {count(linked.size, "system")}. Each reads from the system that
-        depends to the one it depends on. Choose a system for its sheet.
+    <Section title="Connections" count={rows.length}>
+      <p className="cat-lead">
+        {count(rows.length, "connection")} between {count(linked.size, "system")}. Each reads from the system that depends to the one it depends on.
       </p>
-      {rows.length ? (
-        <table className="govtable">
-          <caption className="visually-hidden">Every connection between systems in this version</caption>
-          <thead>
-            <tr>
-              <th scope="col">From</th>
-              <th scope="col" className="connections__to">To</th>
-              <th scope="col">For what</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={`${row.source_system_id}>${row.target_system_id}`} className="row">
-                <th scope="row" className="connections__from">
-                  {link(row.source_system_id)}
-                  <span className="secondary govtable__by connections__verb">{LINK_VERB[row.kind]}</span>
-                  <span className="secondary govtable__by connections__inline">
-                    {LINK_VERB[row.kind]} {link(row.target_system_id)}
-                  </span>
-                </th>
-                <td className="connections__to">{link(row.target_system_id)}</td>
-                <td dir="auto">{row.description}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : (
-        <p className="timetable__quiet">No system depends on another in this version.</p>
-      )}
-    </section>
+      <DataTable
+        caption="Every connection between systems in this version"
+        captionHidden
+        columns={columns}
+        rows={rows}
+        rowId={(row) => `${row.source_system_id}>${row.target_system_id}`}
+        emptyText="No system depends on another in this version."
+      />
+    </Section>
   );
 }

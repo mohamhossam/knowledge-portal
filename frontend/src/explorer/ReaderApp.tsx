@@ -1,9 +1,12 @@
+import { UserRound } from "lucide-react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
-import { Account } from "../app/legacyMasthead";
 import { useAuth } from "../auth/authContext";
 import { NoAccess } from "../auth/Gate";
 import { CALLBACK_PATH, REQUIREMENT_APP_URL, SILENT_CALLBACK_PATH } from "../auth/paths";
+import { ActionGroup, AppShell, Button, Drawer, MastheadButton, Select } from "../design/components";
+import { useDisclosure } from "../design/hooks";
+import { RouterLink } from "../shell/links";
 import { ExplorerPage } from "./ExplorerPage";
 
 /**
@@ -24,27 +27,50 @@ export function ReaderApp() {
   );
 }
 
+/**
+ * The reader's frame: the masthead without the areas bar (AppShell's reader
+ * variant), the way back to Requirement AI, and their account.
+ */
 function ReaderShell() {
   const auth = useAuth();
+  const actor = auth?.reader ?? null;
+  const account = useDisclosure(() => document.getElementById("reader-account"));
+  const offline = auth?.config?.mode === "fake";
   return (
-    <>
-      <a className="skip-link" href="#main">Skip to the explorer</a>
-      <header className="masthead">
-        <p className="masthead__title">
-          {REQUIREMENT_APP_URL !== null && (
-            <>
-              <a href={REQUIREMENT_APP_URL}>Requirement AI</a>
-              <span aria-hidden="true" className="masthead__dot">·</span>
-            </>
-          )}
-          <span className="masthead__portal">Knowledge portal</span>
-        </p>
-        <p className="masthead__valid">Reading only: curating is for knowledge admins.</p>
-        <Account actor={auth?.reader ?? null} />
-      </header>
-      <main id="main" className="page" tabIndex={-1}>
-        <ExplorerPage linkSystems={false} />
-      </main>
-    </>
+    <AppShell
+      homeHref="/explorer"
+      product="Knowledge Portal"
+      reader
+      link={RouterLink}
+      outbound={REQUIREMENT_APP_URL === null ? undefined : { href: REQUIREMENT_APP_URL, label: "Requirement AI" }}
+      utilities={
+        actor ? (
+          <MastheadButton
+            id="reader-account"
+            icon={<UserRound size={16} />}
+            label={actor.display_name}
+            hiddenPrefix="Account:"
+            expanded={account.open}
+            onClick={(event) => (account.open ? account.close() : account.show(event))}
+          />
+        ) : undefined
+      }
+      panel={
+        account.open && actor ? (
+          <Drawer title="Account" onClose={account.close} panelRef={account.panel}>
+            <p>Signed in as <strong><bdi>{actor.display_name}</bdi></strong>. Reading only: curating is for knowledge admins.</p>
+            {offline && auth?.config ? (
+              <Select label="Persona" hint="Offline sign-in: switch who you act as." value={actor.id} onChange={(event) => void auth.switchFakeActor(event.target.value)}>
+                {auth.config.fake_actors.map((item) => <option key={item.id} value={item.id} dir="auto">{item.display_name}</option>)}
+              </Select>
+            ) : (
+              <ActionGroup><Button onClick={() => void auth?.signOut()}>Sign out</Button></ActionGroup>
+            )}
+          </Drawer>
+        ) : null
+      }
+    >
+      <ExplorerPage linkSystems={false} />
+    </AppShell>
   );
 }

@@ -1,10 +1,14 @@
+import "./offering/offering.css";
+
 import { Fragment, type ReactNode } from "react";
 
 import type { Offering } from "../api/client";
-import { CONFIDENCE, COVERAGE, LAYERS } from "./catalogue";
-import { useSourceText } from "./governance";
+import { type Column, DataTable, Section, Status, type StatusTone } from "../design/components";
+import { COVERAGE, LAYERS } from "./catalogue";
+import { ConfidenceMark, Provenance } from "./GovernanceSections";
 
 type Part = Offering["components"][number];
+type Nfr = Offering["nfrs"][number];
 
 /** "CFSS_INTERNET_CPE_HE" may break after each underscore, never between letters. */
 function breakable(name: string) {
@@ -25,26 +29,29 @@ function breakable(name: string) {
  * How a part is realised, layer by layer, as a list for a table cell: "CFS
  * CFSS_ONPREM_FIREWALL_HE", then its RFSs and resources. A layer its sources
  * name nothing for is left out. A part with none, and a layer its source marks
- * as a gap, are due (the Weight Is Rank Rule): someone has to fill them.
+ * as a gap, are due (the Weight Is Rank Rule): someone has to fill them; one
+ * inferred rather than stated carries the Suggested mark.
  */
 export function RealisedAs({ part }: { part: Part }) {
   const realisation = part.realisation ?? [];
-  if (!realisation.length) return <span className="realised__missing">Not stated</span>;
+  if (!realisation.length) return <Status tone="attention">Not stated</Status>;
   return (
-    <ul className="sheet__roles realised">
+    <ul className="offering-realised">
       {LAYERS.flatMap(({ layer, short, long }) =>
         realisation
           .filter((item) => item.layer === layer)
           .map((item) => (
-            <li key={`${layer}:${item.name}`} className={item.confidence === "gap" ? "realised__item--due" : undefined}>
+            <li key={`${layer}:${item.name}`}>
               {short === long ? (
-                <span className="realised__layer">{short}</span>
+                <span className="offering-realised__layer">{short}</span>
               ) : (
-                <abbr className="realised__layer" title={long}>{short}</abbr>
+                <abbr className="offering-realised__layer" title={long}>{short}</abbr>
               )}{" "}
-              <span dir="auto" className="realised__name">{breakable(item.name)}</span>
-              {item.confidence && item.confidence !== "confirmed" && (
-                <span className="secondary govtable__by">{CONFIDENCE[item.confidence]}</span>
+              <span dir="auto" className={item.confidence === "gap" ? "offering-realised__name offering-due" : "offering-realised__name"}>
+                {breakable(item.name)}
+              </span>
+              {(item.confidence === "inferred" || item.confidence === "gap") && (
+                <span className="offering-by"><ConfidenceMark confidence={item.confidence} /></span>
               )}
             </li>
           )),
@@ -60,10 +67,10 @@ export function RealisedAs({ part }: { part: Part }) {
  */
 export function RealisedInline({ part }: { part: Part }) {
   return (
-    <span className="parts__realised-inline">
-      <span className="secondary govtable__by">Realised as</span>
+    <div className="offering-realised-inline">
+      <span className="offering-quiet">Realised as</span>
       <RealisedAs part={part} />
-    </span>
+    </div>
   );
 }
 
@@ -71,64 +78,69 @@ export function RealisedInline({ part }: { part: Part }) {
 export function RealisationKey({ offering }: { offering: Offering }) {
   if (!offering.components.some((part) => (part.realisation ?? []).length)) return null;
   return (
-    <p className="realised__key">
+    <p className="offering-key">
       Realised as: <strong>CFS</strong>, what the customer is sold · <strong>RFS</strong>, what delivers it ·{" "}
       <strong>Resource</strong>, what it runs on.
     </p>
   );
 }
 
+const COVERAGE_TONE: Record<Nfr["coverage"], StatusTone> = {
+  defined: "done",
+  partial: "neutral",
+  missing: "attention",
+};
+
+const NFR_COLUMNS: Column<Nfr>[] = [
+  { id: "quality", header: "Quality", rowHeader: true, bidi: true, width: "11rem", cell: (item) => item.quality },
+  { id: "defined", header: "Defined", width: "10rem", cell: (item) => <Status tone={COVERAGE_TONE[item.coverage]}>{COVERAGE[item.coverage]}</Status> },
+  {
+    id: "said",
+    header: "What the sources say",
+    bidi: true,
+    cell: (item) => (
+      <>
+        {item.statement ?? <span className="offering-quiet">Not stated</span>}
+        <Provenance item={item} />
+      </>
+    ),
+  },
+];
+
 /**
- * An offering's non-functional requirements as a governance section. A quality
- * its sources leave undefined is a due line in bold (the Weight Is Rank Rule):
+ * An offering's non-functional requirements as a section. A quality its sources
+ * leave undefined says so as a status needing attention (the Weight Is Rank Rule):
  * it is a gap someone has to fill, not an absence to skip over.
  */
-export function NfrSection({ offering, headingId, action }: { offering: Offering; headingId: string; action?: ReactNode }) {
+export function NfrSection({ offering, action, level = 3 }: {
+  offering: Offering;
+  /** Kept for callers; the section names its own heading. */
+  headingId: string;
+  action?: ReactNode;
+  level?: 2 | 3;
+}) {
   const nfrs = offering.nfrs ?? [];
   const missing = nfrs.filter((item) => item.coverage === "missing").length;
-  const sourceText = useSourceText();
   return (
-    <section className="govsection" aria-labelledby={headingId}>
-      <h3 id={headingId} className="govsection__title">
-        Non-functional requirements {nfrs.length > 0 && <span className="govsection__count">{nfrs.length}</span>}
-      </h3>
-      {action && <p className="govsection__actions">{action}</p>}
+    <Section title="Non-functional requirements" count={nfrs.length > 0 ? nfrs.length : undefined} actions={action} headingLevel={level}>
       {nfrs.length ? (
         <>
           {missing > 0 && (
-            <p className="govsection__lead">
+            <p className="offering-lead">
               <strong>{missing === 1 ? "1 quality is" : `${missing} qualities are`} not defined</strong> by any source yet.
             </p>
           )}
-          <table className="govtable nfrs">
-            <caption className="visually-hidden">Non-functional requirements of {offering.name}</caption>
-            <thead>
-              <tr>
-                <th scope="col">Quality</th>
-                <th scope="col" className="nfr__defined">Defined</th>
-                <th scope="col">What the sources say</th>
-              </tr>
-            </thead>
-            <tbody>
-              {nfrs.map((item) => (
-                <tr key={item.quality} className={item.coverage === "missing" ? "row row--due" : "row"}>
-                  <th scope="row" dir="auto">
-                    {item.quality}
-                    <span className="secondary govtable__by nfr__defined-inline">{COVERAGE[item.coverage]}</span>
-                  </th>
-                  <td className={item.coverage === "missing" ? "nfr__defined nfr__missing" : "nfr__defined"}>{COVERAGE[item.coverage]}</td>
-                  <td dir="auto">
-                    {item.statement ?? <span className="secondary">Not stated</span>}
-                    {item.source && <span className="secondary govtable__by" dir="auto">{sourceText(item.source)}</span>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <DataTable
+            caption={`Non-functional requirements of ${offering.name}`}
+            captionHidden
+            columns={NFR_COLUMNS}
+            rows={nfrs}
+            rowId={(item) => item.quality}
+          />
         </>
       ) : (
-        <p className="timetable__quiet">No non-functional requirement is recorded.</p>
+        <p className="offering-quiet">No non-functional requirement is recorded.</p>
       )}
-    </section>
+    </Section>
   );
 }

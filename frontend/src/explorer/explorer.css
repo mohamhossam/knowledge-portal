@@ -1,0 +1,83 @@
+/*
+ * The product architecture explorer (redesign area 5), on the Calm Ledger.
+ * Layout only, from semantic and component tokens; logical properties only.
+ * It shares the catalogue's cell lines (.cat-detail, .cat-quiet, .cat-plain).
+ */
+
+.explorer {
+  display: grid;
+  gap: var(--space-5);
+  align-content: start;
+  min-inline-size: 0;
+  max-inline-size: var(--page-max);
+}
+
+.explorer > .ds-pagehead {
+  margin-block-end: 0;
+}
+
+/* The three choices sit side by side, and stack on phones. */
+.explorer-choose {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 22rem));
+  gap: var(--space-3) var(--space-4);
+  align-items: end;
+}
+
+.explorer-sheet {
+  display: grid;
+  gap: var(--space-6);
+  min-inline-size: 0;
+}
+
+.explorer-sheet__head {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  padding-block-start: var(--space-4);
+  border-block-start: var(--ledger-rule);
+}
+
+.explorer-sheet__title {
+  margin: 0;
+  font-size: var(--text-h2);
+  font-stretch: var(--stretch-title);
+  line-height: var(--leading-tight);
+}
+
+.explorer-sheet__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  margin: 0;
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.explorer-sheet__lead {
+  margin: 0;
+  max-inline-size: 72ch;
+}
+
+/* What the catalogue does not say is a curator's to fill: it carries weight, not colour. */
+.explorer-gap {
+  font-weight: var(--weight-emphasis);
+}
+
+.explorer-download {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
+}
+
+.explorer-download__what {
+  margin: 0;
+  max-inline-size: 60ch;
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.explorer-amount {
+  white-space: nowrap;
+}

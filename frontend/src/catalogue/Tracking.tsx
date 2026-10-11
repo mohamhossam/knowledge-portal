@@ -1,12 +1,15 @@
+import "./offering/offering.css";
+
 import type { ReactNode } from "react";
 
 import type { Offering } from "../api/client";
-import { CONFIDENCE } from "./catalogue";
-import { useSourceText } from "./governance";
+import { type Column, DataTable, Lines, Section, Status } from "../design/components";
+import { PartHeading, Provenance } from "./GovernanceSections";
 
 type Tracking = NonNullable<Offering["tracking"]>;
 type Flow = Tracking["flows"][number];
 type TrackingChannel = Tracking["channels"][number];
+type Fallout = Tracking["fallout"][number];
 
 /** A flow as one row: the read path a channel's tracking screen takes is marked as such. */
 type TrackingRow = Flow & { readFor?: string };
@@ -22,17 +25,8 @@ type TrackingFocus = {
   flows: TrackingRow[];
 };
 
-function Sourced({ item }: { item: { confidence?: string | null; source?: string | null } }) {
-  const sourceText = useSourceText();
-  const confidence = item.confidence && item.confidence !== "confirmed" ? CONFIDENCE[item.confidence as keyof typeof CONFIDENCE] : null;
-  const line = [confidence, sourceText(item.source)].filter(Boolean).join(" · ");
-  return line ? <span className="secondary govtable__by" dir="auto">{line}</span> : null;
-}
-
-/** A value its source marks as a gap is due (the Weight Is Rank Rule). */
-function Value({ gap, children }: { gap: boolean; children: ReactNode }) {
-  return gap ? <span className="tracking__missing">{children}</span> : <>{children}</>;
-}
+/** What the sources leave undefined is due (the Weight Is Rank Rule): an icon and its words. */
+const Due = ({ children }: { children: ReactNode }) => <Status tone="attention">{children}</Status>;
 
 /**
  * How an offering's orders are tracked once placed (requirement-portal ADR-0101):
@@ -40,31 +34,26 @@ function Value({ gap, children }: { gap: boolean; children: ReactNode }) {
  * milestone events, what the customer sees, the internal statuses, and what
  * happens when an order falls out. What the sources leave undefined is due.
  */
-export function TrackingSection({ offering, headingId, system, channelName, orderName, focus, action }: {
+export function TrackingSection({ offering, system, channelName, orderName, focus, action, level = 3 }: {
   offering: Offering;
+  /** Kept for callers; the section names its own heading. */
   headingId: string;
   system: (systemId: string) => ReactNode;
   channelName: (channelId: string) => string;
   orderName: (code: string) => string;
   focus?: TrackingFocus;
-  /** An edit offered under the title, on a draft's sheet. */
+  /** An edit offered beside the title, on a draft's sheet. */
   action?: ReactNode;
+  level?: 2 | 3;
 }) {
   const tracking = offering.tracking;
-  const title = (
-    <>
-      <h3 id={headingId} className="govsection__title">Order tracking</h3>
-      {action && <p className="govsection__actions">{action}</p>}
-    </>
+  const frame = (children: ReactNode) => (
+    <Section title="Order tracking" actions={action} headingLevel={level}>
+      {children}
+    </Section>
   );
-  if (!tracking) {
-    return (
-      <section className="govsection" aria-labelledby={headingId}>
-        {title}
-        <p className="timetable__quiet">No order tracking is recorded for {offering.name}.</p>
-      </section>
-    );
-  }
+  if (!tracking) return frame(<p className="offering-quiet">No order tracking is recorded for {offering.name}.</p>);
+
   const others = tracking.order_types.length - 1;
   const scope = !tracking.order_types.length
     ? "Specified for every order type."
@@ -73,178 +62,179 @@ export function TrackingSection({ offering, headingId, system, channelName, orde
       : `Specified for ${tracking.order_types.map(orderName).join(", ")}.`;
 
   if (focus && !focus.applies) {
-    return (
-      <section className="govsection" aria-labelledby={headingId}>
-        {title}
-        <p className="govsection__lead" dir="auto">
+    return frame(
+      <>
+        <p className="offering-lead" dir="auto">
           Not specified for {focus.orderName}. {tracking.not_applicable_note ?? scope}
         </p>
-        <Fallout tracking={tracking} />
-      </section>
+        <FalloutPart tracking={tracking} level={level} />
+      </>,
     );
   }
 
   const channels = focus ? (focus.entry ? [focus.entry] : []) : tracking.channels;
   const flows: TrackingRow[] = focus ? focus.flows : tracking.flows;
-  return (
-    <section className="govsection" aria-labelledby={headingId}>
-      {title}
-      <p className="govsection__lead" dir="auto">
+  const channelColumns: Column<TrackingChannel>[] = [
+    {
+      id: "channel",
+      header: "Channel",
+      rowHeader: true,
+      bidi: true,
+      width: "30%",
+      cell: (item) => (
+        <>
+          {channelName(item.channel_id)}
+          {item.story && <span className="offering-by" dir="auto">{item.story}</span>}
+          <Provenance item={item} />
+        </>
+      ),
+    },
+    {
+      id: "key",
+      header: "Correlation key",
+      bidi: true,
+      cell: (item) => item.correlation_key ?? <Due>Not defined</Due>,
+    },
+    {
+      id: "ui",
+      header: "Tracked in",
+      cell: (item) => (
+        <>
+          {item.ui_system_id ? system(item.ui_system_id) : <Due>Not named</Due>}
+          {item.read_system_id && (
+            <span className="offering-by">
+              <span>
+                Reads its status from {system(item.read_system_id)}
+                {item.read_interface && <> over <bdi>{item.read_interface}</bdi></>}
+              </span>
+            </span>
+          )}
+          {item.ui_note && <span className="offering-by" dir="auto">{item.ui_note}</span>}
+        </>
+      ),
+    },
+  ];
+  const flowColumns: Column<TrackingRow & { key: string }>[] = [
+    { id: "from", header: "From", rowHeader: true, width: "22%", cell: (flow) => system(flow.from_system_id) },
+    {
+      id: "to",
+      header: "To",
+      width: "22%",
+      cell: (flow) => (flow.from_system_id === flow.to_system_id ? <span className="offering-quiet">Logs it itself</span> : system(flow.to_system_id)),
+    },
+    {
+      id: "carries",
+      header: "What it carries",
+      bidi: true,
+      cell: (flow) => (
+        <>
+          {flow.label}
+          {flow.readFor && <span className="offering-by">How {flow.readFor}'s tracking screen reads the order's status</span>}
+          {flow.interface && <span className="offering-by" dir="auto">Over {flow.interface}</span>}
+          <Provenance item={flow} />
+        </>
+      ),
+    },
+  ];
+  return frame(
+    <>
+      <p className="offering-lead" dir="auto">
         {scope}
         {tracking.scope_note && <> {tracking.scope_note}</>}
       </p>
 
-      <h4 className="govsection__part">{focus?.channel ? `How ${focus.channel.name} tracks its orders` : "How each channel tracks its orders"}</h4>
+      <PartHeading level={level}>{focus?.channel ? `How ${focus.channel.name} tracks its orders` : "How each channel tracks its orders"}</PartHeading>
       {channels.length ? (
-        <table className="govtable tracking__channels">
-          <caption className="visually-hidden">
-            {focus?.channel ? `How ${focus.channel.name} tracks its orders of ${offering.name}` : `How each channel tracks its orders of ${offering.name}`}
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col">Channel</th>
-              <th scope="col" className="tracking__wide">Correlation key</th>
-              <th scope="col">Tracked in</th>
-            </tr>
-          </thead>
-          <tbody>
-            {channels.map((item) => (
-              <tr key={item.channel_id} className={!item.correlation_key || !item.ui_system_id ? "row row--due" : "row"}>
-                <th scope="row" dir="auto">
-                  {channelName(item.channel_id)}
-                  {item.story && <span className="secondary govtable__by" dir="auto">{item.story}</span>}
-                  <Sourced item={item} />
-                  <span className="secondary govtable__by tracking__inline" dir="auto">
-                    Correlation key: {item.correlation_key ?? <span className="tracking__missing">Not defined</span>}
-                  </span>
-                </th>
-                <td dir="auto" className="tracking__wide">
-                  {item.correlation_key ?? <span className="tracking__missing">Not defined</span>}
-                </td>
-                <td>
-                  {item.ui_system_id ? system(item.ui_system_id) : <span className="tracking__missing">Not named</span>}
-                  {item.read_system_id && (
-                    <span className="secondary govtable__by">
-                      Reads its status from {system(item.read_system_id)}
-                      {item.read_interface && <> over <span dir="auto">{item.read_interface}</span></>}
-                    </span>
-                  )}
-                  {item.ui_note && <span className="secondary govtable__by" dir="auto">{item.ui_note}</span>}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <DataTable
+          caption={focus?.channel ? `How ${focus.channel.name} tracks its orders of ${offering.name}` : `How each channel tracks its orders of ${offering.name}`}
+          captionHidden
+          columns={channelColumns}
+          rows={channels}
+          rowId={(item) => item.channel_id}
+        />
       ) : (
-        <p className="timetable__quiet explorer__gap">
-          {focus?.channel ? `Order tracking does not say how ${focus.channel.name} tracks its orders.` : "No channel's tracking is described."}
+        <p className="offering-quiet">
+          <Due>{focus?.channel ? `Order tracking does not say how ${focus.channel.name} tracks its orders.` : "No channel's tracking is described."}</Due>
         </p>
       )}
 
-      <h4 className="govsection__part">What carries the order's progress</h4>
+      <PartHeading level={level}>What carries the order's progress</PartHeading>
       {flows.length ? (
-        <table className="govtable tracking__flows">
-          <caption className="visually-hidden">Flows that carry order and milestone events for {offering.name}</caption>
-          <thead>
-            <tr>
-              <th scope="col">From</th>
-              <th scope="col" className="tracking__wide">To</th>
-              <th scope="col">What it carries</th>
-            </tr>
-          </thead>
-          <tbody>
-            {flows.map((flow, index) => {
-              const to = flow.from_system_id === flow.to_system_id ? <span className="secondary">Logs it itself</span> : system(flow.to_system_id);
-              return (
-                <tr key={`${flow.from_system_id}>${flow.to_system_id}:${flow.label}:${index}`} className="row">
-                  <th scope="row">
-                    {system(flow.from_system_id)}
-                    <span className="secondary govtable__by tracking__inline">To {to}</span>
-                  </th>
-                  <td className="tracking__wide">{to}</td>
-                  <td dir="auto">
-                    <Value gap={flow.confidence === "gap"}>{flow.label}</Value>
-                    {flow.readFor && <span className="secondary govtable__by">How {flow.readFor}'s tracking screen reads the order's status</span>}
-                    {flow.interface && <span className="secondary govtable__by" dir="auto">Over {flow.interface}</span>}
-                    <Sourced item={flow} />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <DataTable
+          caption={`Flows that carry order and milestone events for ${offering.name}`}
+          captionHidden
+          columns={flowColumns}
+          rows={flows.map((flow, index) => ({ ...flow, key: `${flow.from_system_id}>${flow.to_system_id}:${flow.label}:${index}` }))}
+          rowId={(flow) => flow.key}
+        />
       ) : (
-        <p className="timetable__quiet">No flow is recorded.</p>
+        <p className="offering-quiet">No flow is recorded.</p>
       )}
 
-      <h4 className="govsection__part">What the customer sees</h4>
+      <PartHeading level={level}>What the customer sees</PartHeading>
       {tracking.milestones.length ? (
-        <ol className="sheet__list tracking__milestones">
+        <ol className="offering-steps">
           {tracking.milestones.map((item) => (
             <li key={item.label}>
-              <span>
-                <span dir="auto"><Value gap={item.confidence === "gap"}>{item.label}</Value></span>
-                {item.system_id && <span className="secondary"> · {system(item.system_id)}</span>}
-                {item.detail && <span className="secondary govtable__by" dir="auto">{item.detail}</span>}
-                <Sourced item={item} />
-              </span>
+              <span dir="auto">{item.label}</span>
+              {item.system_id && <span className="offering-quiet"> · {system(item.system_id)}</span>}
+              {item.detail && <span className="offering-by" dir="auto">{item.detail}</span>}
+              <Provenance item={item} />
             </li>
           ))}
         </ol>
       ) : (
-        <p className="timetable__quiet">No milestone is recorded.</p>
+        <p className="offering-quiet">No milestone is recorded.</p>
       )}
 
       {tracking.statuses.length > 0 && (
         <>
-          <h4 className="govsection__part">Internal statuses</h4>
-          <ul className="sheet__list">
+          <PartHeading level={level}>Internal statuses</PartHeading>
+          <Lines>
             {tracking.statuses.map((item) => (
               <li key={item.label}>
-                <span dir="auto" className="tracking__status">{item.label}</span>
-                {item.detail && <span className="secondary govtable__by" dir="auto">{item.detail}</span>}
+                <span dir="auto" className="offering-items__title">{item.label}</span>
+                {item.detail && <span className="offering-by" dir="auto">{item.detail}</span>}
               </li>
             ))}
-          </ul>
+          </Lines>
         </>
       )}
 
-      <Fallout tracking={tracking} />
-    </section>
+      <FalloutPart tracking={tracking} level={level} />
+    </>,
   );
 }
 
-function Fallout({ tracking }: { tracking: Tracking }) {
+const FALLOUT_COLUMNS: Column<Fallout>[] = [
+  { id: "when", header: "When", rowHeader: true, bidi: true, width: "35%", cell: (item) => item.trigger },
+  {
+    id: "handling",
+    header: "What happens",
+    bidi: true,
+    cell: (item) => (
+      <>
+        {item.handling ?? <Due>Not stated</Due>}
+        <Provenance item={item} />
+      </>
+    ),
+  },
+];
+
+function FalloutPart({ tracking, level }: { tracking: Tracking; level: 2 | 3 }) {
   return (
     <>
-      <h4 className="govsection__part">When an order falls out</h4>
+      <PartHeading level={level}>When an order falls out</PartHeading>
       {tracking.fallout.length ? (
-        <table className="govtable">
-          <caption className="visually-hidden">What makes an order fall out, and how it is handled</caption>
-          <thead>
-            <tr>
-              <th scope="col">When</th>
-              <th scope="col">What happens</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tracking.fallout.map((item) => (
-              <tr key={item.trigger} className="row">
-                <th scope="row" dir="auto">{item.trigger}</th>
-                <td dir="auto">
-                  {item.handling ? (
-                    <Value gap={item.confidence === "gap"}>{item.handling}</Value>
-                  ) : (
-                    <span className="tracking__missing">Not stated</span>
-                  )}
-                  <Sourced item={item} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <DataTable
+          caption="What makes an order fall out, and how it is handled"
+          captionHidden
+          columns={FALLOUT_COLUMNS}
+          rows={tracking.fallout}
+          rowId={(item) => item.trigger}
+        />
       ) : (
-        <p className="timetable__quiet">No fallout case is recorded.</p>
+        <p className="offering-quiet">No fallout case is recorded.</p>
       )}
     </>
   );

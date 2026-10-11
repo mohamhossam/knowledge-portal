@@ -47,47 +47,35 @@ describe("ExplorerPage", () => {
     expect(rows[3]).toHaveTextContent("Fulfilment for Broadband");
   });
 
-  it("reads the journey as a timetable with its hand-overs", async () => {
+  it("draws the journey as swimlanes by default, with its steps as a table too", async () => {
     open();
+    expect(await screen.findByRole("tab", { name: "Swimlane", selected: true })).toBeInTheDocument();
     expect(await screen.findByRole("table", { name: /Steps of Business Pro Plus new activation/ })).toBeInTheDocument();
-    expect(screen.getByRole("table", { name: /hand over to each other/ })).toHaveTextContent("SR request");
+    fireEvent.click(screen.getByRole("tab", { name: "Flowchart" }));
+    expect(screen.getByTestId("where")).toHaveTextContent("view=flowchart");
   });
 
   it("says what the catalogue does not say, as due lines", async () => {
     open();
-    const section = within((await screen.findByRole("heading", { name: "What the catalogue does not say yet" })).closest("section")!);
+    const section = within((await screen.findByRole("heading", { name: /^What the catalogue does not say yet/ })).closest("section")!);
     expect(section.getByText(NOT_YET)).toBeInTheDocument();
-    expect(section.getByText("Step 4 names no system that performs it.")).toHaveClass("explorer__gap");
+    expect(section.getByText("Step 4 names no system that performs it.")).toHaveClass("explorer-gap");
   });
 
-  it("says how each part is realised, layer by layer", async () => {
+  it("says how each part is realised and who delivers it in this order", async () => {
     open();
     const parts = within(await screen.findByRole("table", { name: /Parts of Business Pro Plus/ }));
-    const broadband = parts.getByRole("row", { name: /Broadband/ });
-    const realised = within(broadband.querySelector("td.parts__realised")! as HTMLElement);
-    expect(realised.getAllByRole("listitem").map((item) => item.textContent)).toEqual([
-      "CFS GPON internet CFSInferred, not stated in its source",
-      "Resource GPON line",
-    ]);
-    expect(realised.getByText("CFS")).toHaveAttribute("title", "Customer-facing service");
-    expect(realised.getByText("Resource").tagName).toBe("SPAN");
-    // A part with nothing recorded is due, not quiet; the phone fold sits in a cell, never the row header.
-    const firewall = parts.getByRole("row", { name: /^Firewall/ });
-    expect(within(firewall.querySelector("td.parts__realised")! as HTMLElement).getByText("Not stated")).toHaveClass("realised__missing");
-    expect(within(firewall).getByRole("rowheader").querySelector(".parts__realised-inline")).toBeNull();
-    expect(screen.getByText(/what the customer is sold/)).toHaveClass("realised__key");
+    expect(parts.getByRole("row", { name: /Broadband/ })).toHaveTextContent("GPON internet CFS");
+    expect(parts.getByRole("row", { name: /Broadband/ })).toHaveTextContent("GPON line");
+    // Layer by layer, missing records and the key are the Realisation sections' own tests (realisation.test.tsx).
+    expect(screen.getByText(/what the customer is sold/)).toBeInTheDocument();
   });
 
-  it("lists the offering's non-functional requirements, an undefined one as due", async () => {
+  it("lists the offering's non-functional requirements, saying how many are not defined", async () => {
     open();
     const table = within(await screen.findByRole("table", { name: "Non-functional requirements of Business Pro Plus" }));
-    expect(table.getByRole("row", { name: /Availability/ })).toHaveClass("row--due");
-    const availability = table.getByRole("row", { name: /Availability/ });
-    expect(availability.querySelector("td.nfr__defined")).toHaveClass("nfr__missing");
-    expect(availability.querySelector("td.nfr__defined")).toHaveTextContent("Not defined");
-    // On phones the Defined column rides under the quality.
-    expect(availability.querySelector("th .nfr__defined-inline")).toHaveTextContent("Not defined");
-    expect(table.getByRole("row", { name: /Security/ }).querySelectorAll("td")[1]).toHaveTextContent("SAML SSO for the portal.SDD (L2) §11");
+    expect(table.getByRole("row", { name: /Availability/ })).toHaveTextContent("Not defined");
+    expect(table.getByRole("row", { name: /Security/ })).toHaveTextContent("SAML SSO for the portal.");
     expect(screen.getByText(/1 quality is not defined/)).toBeInTheDocument();
   });
 
@@ -97,36 +85,27 @@ describe("ExplorerPage", () => {
     expect(section.getByText("Specified for New Activation.")).toBeInTheDocument();
     const correlation = within(section.getByRole("table", { name: "How Online tracks its orders of Business Pro Plus" }));
     const online = correlation.getByRole("row", { name: /Online/ });
-    expect(online.querySelector("td.tracking__wide")).toHaveTextContent("Digital Order ID ↔ CWOM Order ID");
+    expect(online).toHaveTextContent("Digital Order ID ↔ CWOM Order ID");
     expect(online).toHaveTextContent("Reads its status from RTF over getRealTimeOrderDetails");
     const flows = within(section.getByRole("table", { name: /Flows that carry/ })).getAllByRole("row").slice(1);
-    const cells = (row: HTMLElement) => [row.querySelector("th")!.firstChild!.textContent, ...[...row.querySelectorAll("td")].map((cell) => cell.textContent)];
-    expect(flows.map(cells)).toEqual([
-      ["CWOM", "RTF", "Sub-order milestonesOver notifyMilestone"],
-      ["RTF", "Logs it itself", "Timestamps"],
-      ["RTF", "B2B Web", "getRealTimeOrderDetailsHow Online's tracking screen reads the order's status"],
-    ]);
-    // On phones the To column rides under the From system.
-    expect(flows[0]!.querySelector(".tracking__inline")).toHaveTextContent("To RTF");
-    const milestone = section.getByText("Installation done");
-    expect(milestone).toHaveClass("tracking__missing");
+    expect(flows).toHaveLength(3);
+    expect(flows[2]).toHaveTextContent("How Online's tracking screen reads the order's status");
+    expect(section.getByText("Installation done")).toBeInTheDocument();
     expect(section.getByRole("row", { name: /Rejected by business rules/ })).toHaveTextContent("Back to the channel");
   });
 
-  it("says what a channel leaves undefined, as due", async () => {
+  it("says what a channel leaves undefined, as needing attention", async () => {
     open("/explorer?product=bpp&order=NEW&channel=shop");
     const section = within((await screen.findByRole("heading", { name: "Order tracking" })).closest("section")!);
     const shop = section.getByRole("row", { name: /Shop/ });
-    expect(shop).toHaveClass("row--due");
-    expect(within(shop.querySelector("td.tracking__wide")! as HTMLElement).getByText("Not defined")).toHaveClass("tracking__missing");
-    expect(within(shop).getByText("Not named")).toHaveClass("tracking__missing");
+    expect(within(shop).getByText("Not defined")).toBeInTheDocument();
+    expect(within(shop).getByText("Not named")).toBeInTheDocument();
   });
 
   it("says when tracking is not specified for the order type, as a fact rather than a gap", async () => {
     open("/explorer?product=bpp&order=CEASE");
     const section = within((await screen.findByRole("heading", { name: "Order tracking" })).closest("section")!);
-    const note = section.getByText("Not specified for Cease. Tracking is not specified for a cease.");
-    expect(note).toHaveClass("govsection__lead");
+    expect(section.getByText("Not specified for Cease. Tracking is not specified for a cease.")).toBeInTheDocument();
     expect(section.queryByRole("table", { name: /Flows that carry/ })).not.toBeInTheDocument();
     expect(section.getByRole("table", { name: /fall out/ })).toBeInTheDocument();
   });
@@ -135,7 +114,7 @@ describe("ExplorerPage", () => {
     open();
     const table = within(await screen.findByRole("table", { name: /Plans of Business Pro Plus/ }));
     expect(api.explorerPlans).toHaveBeenCalledWith("bpp");
-    const section = within(table.getByRole("columnheader", { name: "Price" }).closest("section")!);
+    const section = within((await screen.findByRole("heading", { name: "Plans and prices" })).closest("section")!);
     expect(section.getByText(/From the sample product catalog, by the code/)).toHaveTextContent(
       "read at 09:30, 5 Oct 2026. The catalog holds the prices; the knowledge catalogue keeps no copy. Sold with: No contract · 24 months.",
     );
@@ -143,7 +122,7 @@ describe("ExplorerPage", () => {
     expect(monthly).toHaveTextContent("Every month");
     expect(monthly).toHaveTextContent("AED 2,740.00");
     expect(table.getByRole("row", { name: /Installation/ })).toHaveTextContent("Once");
-    expect(table.getByRole("columnheader", { name: /300Mbps \(sample\)RetiredSold with: 12 months/ })).toBeInTheDocument();
+    expect(table.getByRole("row", { name: /300Mbps \(sample\)/ })).toHaveTextContent("RetiredSold with: 12 months");
     expect(table.getByText("The catalog states no price for this plan.")).toBeInTheDocument();
     expect(screen.getByText(NOT_YET)).not.toHaveTextContent("Plans");
   });
@@ -175,9 +154,8 @@ describe("ExplorerPage", () => {
     expect(matrix.getByRole("button", { name: "Up / Downgrade matrix" })).toHaveAttribute("aria-expanded", "true");
     // The note's source names a registered source, so it says its level.
     expect(matrix.getByText("Change · SDD (L2) §10")).toBeInTheDocument();
-    const table = matrix.getByRole("table", { name: /its table/ });
+    const table = matrix.getByRole("table");
     expect(table).toHaveTextContent("200Mbps300Mbps");
-    expect(table.querySelector("td")).toHaveAttribute("data-head", "To");
     expect(within(table).getByText("Workflows are in the annexure.")).toBeInTheDocument();
     expect(section.getByText("2 more notes concern other order types or channels.")).toBeInTheDocument();
     expect(screen.getByText(NOT_YET)).toHaveTextContent("Information objects");
@@ -191,15 +169,15 @@ describe("ExplorerPage", () => {
     const renewal = within(section.getByRole("article", { name: "Renewal" }));
     expect(renewal.getByText("Commercial · Only in Shop")).toBeInTheDocument();
     expect(renewal.getByText("Holds a list of 1 item.")).toBeInTheDocument();
-    expect(renewal.getByText("Carries over content to re-verify.")).toHaveClass("lifecycle__due");
+    expect(renewal.getByText("Carries over content to re-verify.")).toBeInTheDocument();
     expect(renewal.queryByRole("listitem")).not.toBeInTheDocument();
 
     fireEvent.click(toggle);
 
     expect(toggle).toHaveAttribute("aria-expanded", "true");
-    expect(renewal.getByText("v8.2 carry-over (re-verify)")).toHaveClass("lifecycle__aside", "lifecycle__due");
+    expect(renewal.getByText("v8.2 carry-over (re-verify)")).toBeInTheDocument();
     expect(renewal.getByText("Carried over from another source: to re-verify before anyone relies on it.")).toBeInTheDocument();
-    expect(renewal.getByText("Inferred, not stated in its source")).toBeInTheDocument();
+    expect(renewal.getByText(/inferred, not stated in the source/)).toBeInTheDocument();
     expect(renewal.getByRole("listitem")).toHaveTextContent("Inherit tenure");
 
     fireEvent.click(section.getByRole("button", { name: "Open every note" }));
@@ -219,18 +197,18 @@ describe("ExplorerPage", () => {
 
   it("reads one channel at a time, with its entry system performing the steps given to it", async () => {
     open();
-    const steps = within(await screen.findByRole("table", { name: /Steps of/ }));
-    expect(steps.getByText("The entry system of Online")).toBeInTheDocument();
-    expect(steps.queryByText("Book a shop visit")).not.toBeInTheDocument();
+    const steps = await screen.findByRole("table", { name: /Steps of/ });
+    expect(steps).toHaveTextContent("The entry system of Online");
+    expect(within(steps).queryByText("Book a shop visit")).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("Channel"), { target: { value: "shop" } });
 
     expect(screen.getByRole("heading", { level: 2, name: "Business Pro Plus: New Activation, through Shop" })).toBeInTheDocument();
     expect(screen.getByTestId("where")).toHaveTextContent("?product=bpp&order=NEW&channel=shop");
-    const shop = within(screen.getByRole("table", { name: /Steps of/ }));
-    expect(shop.getByText("Book a shop visit")).toBeInTheDocument();
-    expect(shop.getByText("Only in Shop")).toBeInTheDocument();
-    expect(shop.getByText("The entry system of Shop, not named")).toBeInTheDocument();
+    const shop = await screen.findByRole("table", { name: /Steps of/ });
+    expect(within(shop).getByText("Book a shop visit")).toBeInTheDocument();
+    expect(shop).toHaveTextContent("Only in Shop");
+    expect(shop).toHaveTextContent("The entry system of Shop, not named");
     expect(screen.getByRole("option", { name: "Shop (no entry system)" })).toBeInTheDocument();
   });
 

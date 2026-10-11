@@ -1,0 +1,266 @@
+/*
+ * The architecture catalogue (redesign area 5): its pages, records and the
+ * concepts ledger, on the Calm Ledger. Layout only, from semantic and
+ * component tokens; logical properties only.
+ */
+
+.cat {
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+  min-inline-size: 0;
+  max-inline-size: var(--page-max);
+}
+
+.cat > .ds-pagehead {
+  margin-block-end: 0;
+}
+
+.cat-list {
+  display: grid;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+
+.cat-lead {
+  margin: 0;
+  max-inline-size: 72ch;
+  color: var(--color-ink-2);
+}
+
+.cat-quiet {
+  color: var(--color-ink-2);
+}
+
+p.cat-quiet {
+  margin: 0;
+}
+
+.cat-count {
+  margin: 0;
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.cat-notice,
+.cat-actions {
+  margin: 0;
+}
+
+/* A second, quieter line inside a cell: what matched, the source, the who. */
+.cat-detail {
+  display: block;
+  margin-block-start: var(--space-1);
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+  overflow-wrap: anywhere;
+}
+
+.cat-name {
+  font-weight: var(--weight-emphasis);
+}
+
+.cat-name[aria-current="page"] {
+  color: var(--color-on-selected);
+  text-decoration-thickness: 2px;
+}
+
+/* The chosen row: the selection tint and its bar, as the kit's current row. */
+.ds-table tr:has(.cat-name[aria-current="page"]) > * {
+  background: var(--color-selected);
+}
+
+.ds-table tr:has(.cat-name[aria-current="page"]) > :first-child {
+  box-shadow: inset var(--rule-heavy) 0 0 var(--color-action);
+}
+
+.cat-nowrap {
+  white-space: nowrap;
+}
+
+.cat-inline {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Concepts named as chips: the ontology's own vocabulary, beside a system or a component. */
+.cat-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cat-chip {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-min);
+  padding-inline: var(--space-2);
+  border: var(--hair-rule);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-2);
+  color: var(--color-ink);
+  font-size: var(--text-meta);
+  text-decoration: none;
+}
+
+a.cat-chip:hover {
+  border-color: var(--color-rule-strong);
+  text-decoration: underline;
+}
+
+.cat-chip--preferred {
+  border-color: var(--color-action);
+  background: var(--color-selected);
+  color: var(--color-on-selected);
+  font-weight: var(--weight-emphasis);
+}
+
+.cat-chip--plain {
+  background: var(--color-surface);
+}
+
+/* A record in the split pane: a system, a concept. */
+.cat-record {
+  display: grid;
+  gap: var(--space-5);
+  min-inline-size: 0;
+}
+
+.cat-record__head {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+}
+
+.cat-record__head > .ds-facts {
+  justify-self: stretch;
+}
+
+.cat-record__title {
+  margin: 0;
+  font-size: var(--text-h2);
+  font-stretch: var(--stretch-title);
+  line-height: var(--leading-tight);
+}
+
+.cat-record__arabic {
+  margin: 0;
+  font-family: var(--font-arabic);
+  line-height: var(--leading-arabic);
+}
+
+.cat-record__path {
+  margin: 0;
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.cat-record__lead {
+  margin: 0;
+  max-inline-size: 72ch;
+}
+
+/* How much is mapped to concepts: four counts in a row, wrapping on narrow screens. */
+.cat-tally__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.cat-tally__list > div {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: var(--hair-rule);
+  border-block-start: var(--ledger-rule);
+  background: var(--color-surface);
+}
+
+.cat-tally__list dt {
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.cat-tally__list dd {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+}
+
+.cat-tally__list strong {
+  font-size: var(--text-h3);
+  font-stretch: var(--stretch-numeral);
+  font-variant-numeric: tabular-nums;
+}
+
+.cat-tally__list span {
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+/* A form or page not rebuilt yet, in the legacy island inside a rebuilt page. */
+.cat-legacy {
+  min-block-size: 0;
+  padding: var(--space-2);
+}
+
+.cat-legacy--inline {
+  padding: 0;
+  background: transparent;
+}
+
+.cat-legacy:empty {
+  display: none;
+}
+
+.cat-stack {
+  display: grid;
+  gap: var(--space-6);
+  min-inline-size: 0;
+}
+
+.cat-clamp {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.cat-plain {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A realisation's layer (CFS, RFS, Resource) as a small label before its record. */
+.cat-layer {
+  display: inline-block;
+  padding-inline: var(--space-1);
+  border: var(--hair-rule);
+  border-radius: var(--radius-control);
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+  font-stretch: var(--stretch-label);
+  font-weight: var(--weight-emphasis);
+}
+
+.cat-code {
+  font-family: var(--font-code);
+  font-size: var(--text-meta);
+  overflow-wrap: anywhere;
+}
+
+.cat-mark {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-min);
+}
