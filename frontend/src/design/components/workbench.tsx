@@ -102,7 +102,7 @@ export type RecordItem = {
   bidi?: boolean;
 };
 
-export type RecordGroup = { id: string; label: ReactNode; items: RecordItem[] };
+export type RecordGroup = { id: string; label: ReactNode; items: RecordItem[]; /** Said after the label; the group's rows when left out. */ count?: number };
 
 /**
  * The rows of a workbench list: each a link to its record, with the record
@@ -130,14 +130,16 @@ export function RecordList({ label, items, groups, currentId, empty = "Nothing m
     // After layout: the workbench sizes itself (and the list learns its head's height) in effects of its own.
     const frame = requestAnimationFrame(() => {
       const row = root.current?.querySelector<HTMLElement>("[aria-current]");
-      const list = row?.closest<HTMLElement>(".ds-bench__list");
-      if (!row || !list || list.scrollHeight <= list.clientHeight) return;
-      const head = parseFloat(getComputedStyle(list).getPropertyValue("--bench-tools-height")) || 0;
+      // The rows scroll in the list beside the record, or in their own short box when stacked.
+      const box = root.current;
+      const list = box && box.scrollHeight > box.clientHeight + 1 ? box : row?.closest<HTMLElement>(".ds-bench__list");
+      if (!row || !list || list.scrollHeight <= list.clientHeight + 1) return;
+      const head = list === box ? 0 : parseFloat(getComputedStyle(list).getPropertyValue("--bench-tools-height")) || 0;
       const label = row.closest(".ds-records__group")?.querySelector<HTMLElement>(".ds-records__label")?.offsetHeight ?? 0;
       const top = row.getBoundingClientRect().top - list.getBoundingClientRect().top;
       const bottom = top + row.offsetHeight;
       // Out of view: bring it a third of the way down, so it stays in view if the page above it grows.
-      if (top < head + label || bottom > list.clientHeight) list.scrollTop += top - head - label - (list.clientHeight - head) / 3;
+      if (top < head + label || bottom > list.clientHeight) list.scrollTop += top - head - label - (list.clientHeight - head - label) / 3;
     });
     return () => cancelAnimationFrame(frame);
   }, [currentId]);
@@ -167,7 +169,9 @@ export function RecordList({ label, items, groups, currentId, empty = "Nothing m
       {groups ? (
         groups.filter((group) => group.items.length).map((group) => (
           <div key={group.id} className="ds-records__group">
-            <p className="ds-records__label" id={`${id}-${group.id}`}>{group.label}</p>
+            <p className="ds-records__label" id={`${id}-${group.id}`}>
+              {group.label} <span className="ds-records__count">{(group.count ?? group.items.length).toLocaleString("en")}</span>
+            </p>
             <ul aria-labelledby={`${id}-${group.id}`}>{group.items.map(row)}</ul>
           </div>
         ))

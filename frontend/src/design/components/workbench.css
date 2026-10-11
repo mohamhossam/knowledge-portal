@@ -30,12 +30,22 @@
   }
 }
 
-/* Stacked, with a record chosen: the list keeps to a short box so the record follows it. */
+/* Stacked, with a record chosen: the rows keep to a short box (the find and filters stay above
+   it), so the record follows close under the list. */
 @container main (max-width: 59.99rem) {
-  .ds-bench[data-chosen] .ds-bench__list {
-    max-block-size: 40vh;
+  .ds-bench[data-chosen] .ds-records {
+    max-block-size: 16rem;
     overflow-y: auto;
+    overscroll-behavior: contain;
     border-block-end: var(--bench-rule);
+  }
+
+  .ds-bench[data-chosen] .ds-records__label {
+    inset-block-start: 0;
+  }
+
+  .ds-listtools {
+    position: static;
   }
 }
 
@@ -68,8 +78,18 @@
 }
 
 .ds-listtools__controls > * {
-  flex: 1 1 10rem;
+  flex: 1 1 8rem;
   min-inline-size: 0;
+}
+
+/* The find field takes its own line; filters share the next. */
+.ds-listtools__controls > .ds-listfind {
+  flex-basis: 100%;
+}
+
+/* A text action (Add, Clear filters) keeps its own width. */
+.ds-listtools__controls > .ds-button {
+  flex: 0 0 auto;
 }
 
 .ds-listfind {
@@ -124,6 +144,10 @@
   color: var(--color-ink-2);
   background: var(--color-surface-2);
   border-block-end: var(--rule-hair) solid var(--color-rule);
+}
+
+.ds-records__count {
+  font-weight: var(--weight-body);
 }
 
 .ds-records__link {
