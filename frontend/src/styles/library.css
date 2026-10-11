@@ -459,9 +459,3 @@ kbd {
   flex-basis: 100%;
   font-weight: var(--w-medium);
 }
-
-/* Search: one field, then exact passages. */
-
-/* Each place on its own line; the cited one in ink, its neighbours in ink 2. */
-
-}

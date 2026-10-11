@@ -30,8 +30,6 @@
   gap: var(--s2);
 }
 
-}
-
 .sheet__roles {
   display: grid;
   gap: var(--s2);
@@ -329,8 +327,6 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
   margin: 0;
   padding: 0;
   border: 0;
-}
-
 }
 
 /* A plain way back, tall enough to hit. */
