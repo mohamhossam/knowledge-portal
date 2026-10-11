@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 
 import type { Channel, Journey, Offering, RelationshipKind, Release, Suggestion, SuggestionContent } from "../api/client";
+import { ActionGroup, Button } from "../design/components";
 import { finishedOffering, journeyProblem, lines, offeringProblem, slug } from "./editing";
 import { AreaField, LinesField, SelectField, SystemField, TextField } from "./forms";
 import { JourneyEditor } from "./JourneyEditor";
@@ -310,11 +311,12 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
   const whole = content.kind === "product" || content.kind === "journey";
   return (
     <form
-      className="suggestion-editor"
+      className="cat-form"
+      noValidate
       aria-labelledby={`${id}-title`}
       onSubmit={(event) => {
         event.preventDefault();
-        if (!problem) onAccept(finished());
+        if (!problem && !busy) onAccept(finished());
       }}
       onKeyDown={(event) => {
         if (event.key === "Escape") {
@@ -323,15 +325,16 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
         }
       }}
     >
-      <h3 ref={title} id={`${id}-title`} className="suggestion-detail__label" tabIndex={-1}>Edit, then accept</h3>
-      {whole ? fields : <div className="form__grid">{fields}</div>}
-      <p className="suggestion-editor__actions">
-        <button type="submit" className="action-button" disabled={!!problem || busy} aria-describedby={problem ? `${id}-why` : undefined}>
-          {busy ? "Accepting…" : "Accept as edited"}
-        </button>
-        <button type="button" className="text-button" onClick={onCancel}>Stop editing</button>
-      </p>
-      {problem && <p id={`${id}-why`} className="suggestion-editor__why">{problem}</p>}
+      <h3 ref={title} id={`${id}-title`} className="cat-edit__title" tabIndex={-1}>Edit, then accept</h3>
+      {whole ? fields : <div className="cat-form__grid">{fields}</div>}
+      <div className="cat-edit__foot cat-edit__foot--flush">
+        <ActionGroup>
+          <Button type="submit" variant="primary" busy={busy} unavailableReason={busy ? null : problem}>
+            {busy ? "Accepting…" : "Accept as edited"}
+          </Button>
+          <Button variant="tertiary" onClick={onCancel}>Stop editing</Button>
+        </ActionGroup>
+      </div>
     </form>
   );
 }

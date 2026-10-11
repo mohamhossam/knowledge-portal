@@ -96,7 +96,7 @@ jobs:
         run: npm audit --omit=dev --audit-level=high
 
   e2e:
-    # Route accessibility (axe, WCAG 2.x A/AA, a ratchet on a11y-baseline.json)
+    # Route accessibility (axe, WCAG 2.x A/AA, no serious or critical issue on any route)
     # and the keyboard journeys, on the offline fake stack: the
     # API in memory with fake identity and LLM, seeded, and `vite preview`.
     runs-on: ubuntu-latest

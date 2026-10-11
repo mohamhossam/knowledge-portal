@@ -117,7 +117,7 @@ export function domainPath(landscape: Map<string, LandscapeDomain>, domainId: st
   return path;
 }
 
-type DomainRow<T extends { id: string; parent_id?: string | null }> = { domain: T; depth: number };
+export type DomainRow<T extends { id: string; parent_id?: string | null }> = { domain: T; depth: number };
 
 /** A domain tree in reading order: each domain, then its children, as the catalogue lists them. */
 export function domainTree<T extends { id: string; parent_id?: string | null }>(domains: T[]): DomainRow<T>[] {

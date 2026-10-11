@@ -56,7 +56,7 @@ export function OfferingFacts({ value, onChange }: SectionProps) {
   const set = (patch: Partial<Offering>) => onChange({ ...value, ...patch });
   return (
     <>
-      <div className="form__grid">
+      <div className="cat-form__grid">
         <TextField label="Name" value={value.name} required onChange={(name) => set({ name })} />
         <TextField label="Code" value={value.code} onChange={(code) => set({ code: code || null })} />
         <TextField label="Family" value={value.family} onChange={(family) => set({ family: family || null })} />
@@ -158,8 +158,8 @@ export function OfferingParts({ value, onChange, systems, names }: SectionProps)
                 <TextField label="Role" value={item.role} required onChange={(role) => change({ role })} />
                 <AreaField label="What it does for this part" value={item.description} onChange={(description) => change({ description })} />
                 {orders.length > 0 && (
-                  <fieldset className="choices form__field--wide">
-                    <legend className="field__label">For order types (none means all)</legend>
+                  <fieldset className="cat-form__choices cat-form__wide">
+                    <legend className="ds-field__label">For order types (none means all)</legend>
                     {orders.map((type) => (
                       <CheckField
                         key={type.code}
@@ -279,8 +279,8 @@ export function QuestionFields({ item, orders, change }: {
       <AreaField label="Question" value={item.text} required onChange={(text) => change({ text })} />
       <AreaField label="What the catalogue does meanwhile" value={item.impact} onChange={(impact) => change({ impact: impact || null })} />
       {choices.length > 0 && (
-        <fieldset className="choices form__field--wide">
-          <legend className="field__label">Asked for the order types (none means the whole offering)</legend>
+        <fieldset className="cat-form__choices cat-form__wide">
+          <legend className="ds-field__label">Asked for the order types (none means the whole offering)</legend>
           {choices.map((type) => (
             <CheckField
               key={type.code}
@@ -349,9 +349,9 @@ export function OfferingSources({ value, onChange, register = [] }: SectionProps
   };
   return (
     <>
-      <fieldset className="choices form__field--wide">
-        <legend className="field__label">Read from</legend>
-        {register.length === 0 && chosen.length === 0 && <p className="form__hint">Register its sources on the Governance page first.</p>}
+      <fieldset className="cat-form__choices cat-form__wide">
+        <legend className="ds-field__label">Read from</legend>
+        {register.length === 0 && chosen.length === 0 && <p className="ds-field__hint cat-form__all">Register its sources on the Governance page first.</p>}
         {[...chosen.filter((id) => !named(id)), ...register.map((source) => source.id)].map((id) => (
           <CheckField
             key={id}
@@ -388,7 +388,7 @@ export function OfferingRules({ value, onChange }: SectionProps) {
 export function OfferingEditor({ value, onChange, systems, channels = [], names, register }: Omit<SectionProps, "channels"> & { channels?: Channel[] }) {
   const props = { value, onChange, systems, channels, names, register };
   return (
-    <div className="form">
+    <div className="cat-form">
       <OfferingFacts {...props} />
       <OfferingOrderTypes {...props} />
       <OfferingParts {...props} />
@@ -419,8 +419,8 @@ export function ChannelChoices({ legend, channels, chosen, onChange, names }: {
 }) {
   const written = chosen.filter((id) => !channels.some((channel) => channel.id === id));
   return (
-    <fieldset className="choices form__field--wide">
-      <legend className="field__label">{legend}</legend>
+    <fieldset className="cat-form__choices cat-form__wide">
+      <legend className="ds-field__label">{legend}</legend>
       {written.map((id) => (
         <CheckField
           key={`written:${id}`}

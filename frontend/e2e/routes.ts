@@ -1,10 +1,8 @@
 /**
  * The routes the e2e suites visit. Seeded ids are looked up from the API, by
  * the seed's own titles, so the keys stay stable across reseeds.
- *
- * `REDESIGNED` lists the route keys rebuilt on the design system. Each Phase 8
- * area adds its keys here, which drops them from `a11y-baseline.json` (they
- * must have no serious or critical issues).
+ * Every route is on the design system, so none may have a serious or
+ * critical accessibility issue (a11y.spec.ts).
  */
 import { apiUrl, OWNER } from "./env";
 
@@ -39,14 +37,13 @@ export const ROUTES: RouteDef[] = [
   { key: "library-review", path: (s) => s.reviewDocument && `library/${s.reviewDocument}`, viewOnly: true },
   // Focus mode (UX rebuild, phase 2): the same review, one question at a time.
   { key: "library-review-focus", path: (s) => s.reviewDocument && `library/${s.reviewDocument}/focus` },
-  { key: "library-document", path: (s) => s.serviceDocument && `library/${s.serviceDocument}`, mask: [".ds-provenance", ".lib-reconfirm__line", ".ds-facts dd:first-of-type"] },
-  { key: "library-versions", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/versions`, mask: [".ds-provenance", ".lib-reconfirm__line", "tbody td:nth-child(3)", "tbody th"] },
-  { key: "library-cited-by", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/cited-by`, mask: [".ds-provenance", ".lib-reconfirm__line"] },
+  { key: "library-document", path: (s) => s.serviceDocument && `library/${s.serviceDocument}`, mask: [".ds-provenance", ".review-line__text", ".ds-facts dd:first-of-type"] },
+  { key: "library-versions", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/versions`, mask: [".ds-provenance", ".review-line__text", "tbody td:nth-child(3)", "tbody th"] },
+  { key: "library-cited-by", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/cited-by`, mask: [".ds-provenance", ".review-line__text"] },
   // The old address, kept working until area 10 makes it a redirect.
-  { key: "library-citations", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/citations`, mask: [".ds-provenance", ".lib-reconfirm__line"] },
-  { key: "library-ownership", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/ownership`, mask: [".ds-provenance", ".lib-reconfirm__line", "tbody th"] },
-  // The architecture catalogue (area 5: rebuilt on the design system). Landscape, Channels,
-  // and Compare keep their body in the legacy island under the new head.
+  { key: "library-citations", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/citations`, mask: [".ds-provenance", ".review-line__text"] },
+  { key: "library-ownership", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/ownership`, mask: [".ds-provenance", ".review-line__text", "tbody th"] },
+  // The architecture catalogue.
   { key: "architecture", path: at("architecture") },
   // The map (UX rebuild phase 4): how systems connect, one system in context, what systems do.
   { key: "architecture-map", path: at("architecture/map") },
@@ -63,6 +60,7 @@ export const ROUTES: RouteDef[] = [
   { key: "architecture-domains", path: at("architecture/domains") },
   { key: "architecture-channels", path: at("architecture/channels") },
   { key: "architecture-versions", path: at("architecture/versions") },
+  { key: "architecture-compare", path: (s) => s.replaced && `architecture/compare?to=${s.replaced}` },
   { key: "architecture-version", path: (s) => s.replaced && `architecture/versions?version=${s.replaced}` },
   { key: "architecture-draft", path: (s) => s.draft && `architecture/versions/${s.draft}` },
   // The draft's steps (area 3: rebuilt on the design system).
@@ -91,65 +89,6 @@ export const ROUTES: RouteDef[] = [
   { key: "requirement-knowledge-findings", path: at("requirement-knowledge/findings") },
   { key: "requirement-knowledge-historic", path: at("requirement-knowledge/historic") },
   { key: "not-found", path: at("no-such-page") },
-];
-
-/** Route keys rebuilt on the design system (Phase 8 adds to this, area by area). */
-export const REDESIGNED: string[] = [
-  "home",
-  // Area 2: the library.
-  "library",
-  "library-search",
-  "library-review",
-  "library-review-focus",
-  "library-document",
-  "library-versions",
-  "library-cited-by",
-  "library-citations",
-  "library-ownership",
-  // Area 3: the draft release workflow.
-  "architecture-draft-sources",
-  "architecture-draft-decide",
-  "architecture-draft-decide-focus",
-  "architecture-draft-changes",
-  "architecture-draft-check",
-  "architecture-draft-publish",
-  // Area 5: the catalogue and the explorer.
-  "architecture",
-  "architecture-map",
-  "architecture-map-system",
-  "architecture-map-capabilities",
-  "architecture-system",
-  "architecture-concepts",
-  "architecture-concept",
-  "architecture-offerings",
-  "architecture-offering",
-  "architecture-journeys",
-  "architecture-journey",
-  "architecture-governance",
-  // UX rebuild phase 3: Versions on the workbench.
-  "architecture-versions",
-  "architecture-version",
-  "explorer",
-  // Area 4: ownership.
-  "squads",
-  "squads-no-squad",
-  "squads-system",
-  "squads-assign",
-  "squads-product",
-  "squads-squad",
-  "squads-person",
-  "squads-tree",
-  "squads-products",
-  "squads-squads",
-  "squads-people",
-  "squads-history",
-  // UX rebuild phase 3: requirements, findings and historic requirements.
-  "requirement-knowledge",
-  "requirement-knowledge-requirements",
-  "requirement-knowledge-findings",
-  "requirement-knowledge-historic",
-  // UX rebuild phase 1: the page for an address outside every area.
-  "not-found",
 ];
 
 type Named = { id: string; title?: string; name?: string | null; status?: string };

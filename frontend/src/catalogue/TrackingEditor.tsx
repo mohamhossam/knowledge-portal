@@ -1,6 +1,7 @@
 import { Plus, X } from "lucide-react";
 
 import type { CatalogueSystem, Channel, Offering, SourceConfidence } from "../api/client";
+import { Button } from "../design/components";
 import { CONFIDENCE_OPTIONS } from "./catalogue";
 import { AreaField, CheckField, Rows, SelectField, SystemField, TextField } from "./forms";
 import type { Names } from "./OfferingEditor";
@@ -48,13 +49,14 @@ export function TrackingEditor({ value, onChange, systems, channels, orderTypes,
 }) {
   if (!value) {
     return (
-      <fieldset className="form__rows">
-        <legend className="form__legend">Order tracking</legend>
-        <p className="form__hint">Its sources' tracking is not recorded.</p>
-        <button type="button" className="text-button" onClick={() => onChange(BLANK)}>
-          <Plus size={14} aria-hidden="true" />
-          Describe how its orders are tracked
-        </button>
+      <fieldset className="cat-form__rows">
+        <legend className="cat-form__legend">Order tracking</legend>
+        <p className="ds-field__hint">Its sources' tracking is not recorded.</p>
+        <div className="cat-form__remove">
+          <Button variant="tertiary" icon={<Plus size={14} />} onClick={() => onChange(BLANK)}>
+            Describe how its orders are tracked
+          </Button>
+        </div>
       </fieldset>
     );
   }
@@ -66,11 +68,11 @@ export function TrackingEditor({ value, onChange, systems, channels, orderTypes,
   const written = (id: string) => (id && !channels.some((channel) => channel.id === id) ? [{ value: id, label: `${channelName(id)} (not in the draft yet)` }] : []);
   const system = (id: string | null | undefined) => (id ? names?.system(id) : undefined);
   return (
-    <fieldset className="form__rows">
-      <legend className="form__legend">Order tracking</legend>
+    <fieldset className="cat-form__rows">
+      <legend className="cat-form__legend">Order tracking</legend>
       {orderTypes.length > 0 && (
-        <fieldset className="choices form__field--wide">
-          <legend className="field__label">Specified for (none means every order type)</legend>
+        <fieldset className="cat-form__choices cat-form__wide">
+          <legend className="ds-field__label">Specified for (none means every order type)</legend>
           {orderTypes.map((type) => (
             <CheckField
               key={type.code}
@@ -175,10 +177,11 @@ export function TrackingEditor({ value, onChange, systems, channels, orderTypes,
         )}
       />
 
-      <button type="button" className="text-button form__remove" onClick={() => onChange(null)}>
-        <X size={14} aria-hidden="true" />
-        Remove its order tracking
-      </button>
+      <div className="cat-form__remove">
+        <Button variant="tertiary" icon={<X size={14} />} onClick={() => onChange(null)}>
+          Remove its order tracking
+        </Button>
+      </div>
     </fieldset>
   );
 }

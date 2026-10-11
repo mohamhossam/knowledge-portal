@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 /**
  * Legacy CSS ratchet: the global stylesheets in `src/styles/` may only shrink.
+ * The last of them went with the legacy removal (UX rebuild), so the record is
+ * empty and any stylesheet there fails: styles belong to the design system or
+ * beside an area's components.
  *
  * Screens move onto the design system (`src/design/`) one area at a time, and
  * an area's own layout lives beside it. `legacy-css.json` records the lines
@@ -10,7 +13,7 @@
  *   node scripts/legacy-css.mjs            check
  *   node scripts/legacy-css.mjs --update   rewrite the record (counts may only fall)
  */
-import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -25,7 +28,7 @@ function lines(file) {
 }
 
 const now = Object.fromEntries(
-  readdirSync(styles)
+  (existsSync(styles) ? readdirSync(styles) : [])
     .filter((name) => name.endsWith(".css"))
     .sort()
     .map((name) => [name, lines(name)]),

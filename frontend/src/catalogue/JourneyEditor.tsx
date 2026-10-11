@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 
 import type { CatalogueSystem, Channel, Journey, JourneyActivity, Offering, SourceConfidence } from "../api/client";
+import { Button } from "../design/components";
 import { CONFIDENCE, orderedSteps } from "./catalogue";
 import { AreaField, CheckField, Rows, SelectField, SystemField, TextField } from "./forms";
 import { ChannelChoices } from "./OfferingEditor";
@@ -53,8 +54,8 @@ export function JourneyEditor({ value, onChange, systems, offerings, channels = 
   const firstStep = stepOptions[0]?.value ?? "";
 
   return (
-    <div className="form">
-      <div className="form__grid">
+    <div className="cat-form">
+      <div className="cat-form__grid">
         <TextField label="Name" value={value.name} required onChange={(name) => set({ name })} wide />
         <SelectField
           label="Fulfils the offering"
@@ -184,7 +185,7 @@ function Supporting({ chosen, systems, onChange }: { chosen: string[]; systems: 
   const name = (id: string) => systems.find((system) => system.id === id)?.name ?? id;
   const left = systems.filter((system) => !chosen.includes(system.id)).sort((a, b) => a.name.localeCompare(b.name));
   return (
-    <div className="form__field form__field--wide">
+    <div className="cat-form__cell cat-form__wide">
       <SelectField
         label="Supported by"
         value=""
@@ -192,14 +193,13 @@ function Supporting({ chosen, systems, onChange }: { chosen: string[]; systems: 
         onChange={(id) => id && onChange([...chosen, id])}
       />
       {chosen.length > 0 && (
-        <ul className="form__chosen">
+        <ul className="cat-form__chosen">
           {chosen.map((id) => (
             <li key={id}>
               <span dir="auto">{name(id)}</span>
-              <button type="button" className="text-button" onClick={() => onChange(chosen.filter((item) => item !== id))}>
-                <X size={14} aria-hidden="true" />
-                <span className="visually-hidden">Remove {name(id)}</span>
-              </button>
+              <Button variant="tertiary" icon={<X size={14} />} aria-label={`Remove ${name(id)}`} onClick={() => onChange(chosen.filter((item) => item !== id))}>
+                {null}
+              </Button>
             </li>
           ))}
         </ul>

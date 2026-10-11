@@ -293,3 +293,33 @@ a.cat-chip:hover {
   gap: var(--space-1);
   margin-block-start: var(--space-1);
 }
+
+/* A domain set in by its depth in its tree (Landscape). */
+.cat-depth {
+  display: block;
+}
+
+.cat-depth--1 {
+  padding-inline-start: var(--space-4);
+}
+
+.cat-depth--2 {
+  padding-inline-start: var(--space-6);
+}
+
+.cat-plain--tight {
+  gap: var(--space-1);
+}
+
+/* Compare: the two versions side by side, the swap between them. */
+.cat-compare {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-3) var(--space-4);
+}
+
+.cat-compare > .ds-field {
+  flex: 1 1 18rem;
+  min-inline-size: 0;
+}

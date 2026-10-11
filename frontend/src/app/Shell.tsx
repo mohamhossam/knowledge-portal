@@ -17,29 +17,6 @@ import { useWorkQueue } from "../work/queue";
 
 type Panel = "jobs" | "help" | "account";
 
-/** Every area's address. */
-const AREAS = ["/library", "/architecture", "/explorer", "/squads", "/requirement-knowledge"];
-
-/**
- * Routes rebuilt on the design system (redesign Phase 8). Any other route
- * renders in the legacy island, looking as it did, until its area is built.
- */
-const REDESIGNED: ((path: string) => boolean)[] = [
-  (path) => path === "/",
-  // Area 2: the library, its search and every document's pages.
-  (path) => path === "/library" || path.startsWith("/library/"),
-  // Areas 3 and 5: the architecture catalogue, every version's pages and a draft's steps. Pages not
-  // rebuilt yet (Landscape, Channels, Versions, Compare) keep their body in an island under the new head.
-  (path) => path === "/architecture" || path.startsWith("/architecture/"),
-  (path) => path === "/explorer",
-  // Area 4: ownership (the systems grid, products, squads, people and history).
-  (path) => path === "/squads" || path.startsWith("/squads/"),
-  // Requirements: the corpus, its findings and historic requirements, on the workbench (UX rebuild, phase 3).
-  (path) => path === "/requirement-knowledge" || path.startsWith("/requirement-knowledge/"),
-  // An address outside every area: the rebuilt "Page not found" (UX rebuild, phase 1).
-  (path) => path !== "/" && !AREAS.some((area) => path === area || path.startsWith(`${area}/`)),
-];
-
 function useOnline() {
   const [online, setOnline] = useState(() => navigator.onLine);
   useEffect(() => {
@@ -142,14 +119,12 @@ export function Shell() {
     <AccountPanel actor={actor} onClose={close} panelRef={sidePanel} />
   ) : null;
 
-  const redesigned = REDESIGNED.some((match) => match(path));
   // Focus mode (UX rebuild, phase 2): one question at a time, without the sidebar.
   const focus = /\/focus\/?$/.test(path);
   const busy = activeJobs(jobs.jobs);
 
   return (
-    // A page without a dark mode (not rebuilt yet, or the light-only catalogue redesign) keeps its whole view light, so one view is one theme.
-    <div data-density={densityFor(density, "page")} data-theme={redesigned ? undefined : "light"}>
+    <div data-density={densityFor(density, "page")}>
       <AppShell
         homeHref="/"
         product="Knowledge Portal"
@@ -172,15 +147,7 @@ export function Shell() {
         overlay={search.overlay}
       >
         <LiveMessage message={jobs.announcement} />
-        {redesigned ? (
-          <Outlet />
-        ) : (
-          <div className="ds-legacy">
-            <div className="page">
-              <Outlet />
-            </div>
-          </div>
-        )}
+        <Outlet />
       </AppShell>
     </div>
   );

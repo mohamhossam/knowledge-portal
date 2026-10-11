@@ -42,10 +42,9 @@ Paper. Do not copy requirement-portal's tokens, primitives or shell.
 ## Design system (e& calm)
 
 - `DESIGN.md` ("The Calm Ledger") and `docs/design-system.md` describe the design system in
-  `frontend/src/design/`. Rebuilt routes are listed in `REDESIGNED` (`frontend/src/app/Shell.tsx`).
-- Every other route renders in the legacy island (`styles/legacy-island.css`) and follows the
-  archived Timetable Book, `docs/design-history/timetable-book-DESIGN.md`, until its area is
-  rebuilt.
+  `frontend/src/design/`. Every route is built on it; the legacy island and `src/styles/` are
+  gone, and the archived Timetable Book (`docs/design-history/timetable-book-DESIGN.md`) is history
+  only.
 - **Authority.**
   - Impeccable (`/impeccable:impeccable`) leads UX and judges design.
   - ui-ux-pro-max leads visual direction and the design system, only after the UX structure
@@ -74,8 +73,8 @@ Paper. Do not copy requirement-portal's tokens, primitives or shell.
   semantic tokens. `npm run lint:brand` enforces it.
 - **Fonts are self-hosted only** (`@fontsource` or licensed files, CSP-safe), with Arabic
   coverage.
-- **Gates.** `npm run lint:brand`, `npm run lint:legacy-css` (the stylesheets in `src/styles/`
-  may only shrink), `npm run budget` (after a build) and `npm run e2e` (route
-  axe ratchet and keyboard journeys) must stay green. Screenshot baselines are not kept in git.
+- **Gates.** `npm run lint:brand`, `npm run lint:legacy-css` (`src/styles/` stays empty: styles
+  live in the design system or beside an area's components), `npm run budget` (after a build)
+  and `npm run e2e` (route axe checks and keyboard journeys) must stay green. Screenshot baselines are not kept in git.
 - **Evidence vs HYPOTHESIS.** Never invent research results, quotes, metrics or users.
   Anything not backed by evidence the user provided is labelled **HYPOTHESIS**.

@@ -47,7 +47,7 @@ describe("ChannelsPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Remove channel Shop" }));
 
     expect(screen.getByText(/Still named: Shop \(Business Pro Plus: New Activation\), Shop \(the journey/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Save the channels" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Save the channels" })).toHaveAttribute("aria-disabled", "true");
   });
 });
 
