@@ -279,12 +279,18 @@ export function awaitingReview(document: LibraryDocument): boolean {
 }
 
 /** What stops this draft from being saved, in the reviewer's words; empty when it can be. */
-export function saveProblems(version: LibraryVersion, drafts: Drafts, summary: string): string[] {
+/** What stops the passages being saved as they stand, the summary aside. */
+export function passageProblems(version: LibraryVersion, drafts: Drafts): string[] {
   const problems: string[] = [];
   const missingReason = version.blocks.filter((block) => drafts[block.id] && !drafts[block.id]!.included && !drafts[block.id]!.reason.trim()).length;
   const blank = version.blocks.filter((block) => drafts[block.id] && !drafts[block.id]!.text.trim()).length;
   if (missingReason) problems.push(`${missingReason} excluded ${missingReason === 1 ? "passage needs" : "passages need"} a reason.`);
   if (blank) problems.push(`${blank} ${blank === 1 ? "passage has" : "passages have"} no text.`);
+  return problems;
+}
+
+export function saveProblems(version: LibraryVersion, drafts: Drafts, summary: string): string[] {
+  const problems = passageProblems(version, drafts);
   if (!summary.trim()) problems.push("Write a review summary.");
   return problems;
 }

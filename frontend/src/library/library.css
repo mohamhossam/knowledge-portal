@@ -373,7 +373,7 @@
   border: var(--hair-rule);
 }
 
-/* The save bar: one line from 1200 px (backlog K1), the label beside its field. */
+/* The save bar: one line from 1200 px (backlog K1); the review summary is asked for in the pane. */
 .lib-savebar {
   display: grid;
   gap: var(--space-1);
@@ -385,20 +385,6 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2) var(--space-3);
-}
-
-.lib-savebar__row > .ds-field {
-  flex: 1 1 20rem;
-  display: grid;
-  grid-template-columns: max-content minmax(12rem, 1fr);
-  align-items: center;
-  gap: var(--space-1) var(--space-2);
-  margin: 0;
-}
-
-.lib-savebar__row > .ds-field > .ds-field__error {
-  grid-column: 2;
-  margin: 0;
 }
 
 .lib-savebar__row > .ds-actions {
@@ -423,15 +409,6 @@
   }
 }
 
-@media (max-width: 1023px) {
-  .lib-savebar__row > .ds-field {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .lib-savebar__row > .ds-field > .ds-field__error {
-    grid-column: 1;
-  }
-}
 
 @media (forced-colors: active) {
   .lib-excluded > span:first-child {
