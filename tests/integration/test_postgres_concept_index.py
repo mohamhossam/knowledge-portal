@@ -96,6 +96,8 @@ def _build(
         conflicts=content.conflicts,
         portfolio=content.portfolio,
         business_capabilities=content.business_capabilities,
+        vocabulary=content.vocabulary,
+        interfaces=content.interfaces,
     )
     built = BuildArchitectureIndex(
         knowledge,
