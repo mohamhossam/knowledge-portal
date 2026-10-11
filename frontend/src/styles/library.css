@@ -615,10 +615,6 @@ kbd {
 
 /* Each place on its own line; the cited one in ink, its neighbours in ink 2. */
 
-.nowrap {
-  white-space: nowrap;
-}
-
 /* Knowledge Center C: an admin acting on a document they don't own. */
 
 /* While the grant lasts, a band above the head between heavy rules, as a confirmation is:

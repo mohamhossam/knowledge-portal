@@ -121,7 +121,7 @@ export function App() {
         </Route>
         <Route path="architecture" element={<CataloguePage />}>
           {catalogueRoutes}
-          <Route path="versions" element={<LegacyPage page="versions"><CatalogueVersionsPage /></LegacyPage>} />
+          <Route path="versions" element={<CatalogueVersionsPage />} />
           <Route path="compare" element={<LegacyPage page="compare"><ComparePage /></LegacyPage>} />
         </Route>
         <Route path="architecture/versions/:releaseId" element={<CataloguePage />}>

@@ -219,7 +219,7 @@ describe("the inbox of change requests from Requirement AI", () => {
     expect(within(rows[1]!).getByRole("link", { name: /^Its suggestions ?\(CR-2\)$/ })).toHaveAttribute("href", "/architecture/versions/draft-9/decide");
     // Read into a draft still in preparation, it is settled there: no dismissing it.
     expect(within(rows[1]!).queryByRole("button", { name: /^Dismiss it/ })).not.toBeInTheDocument();
-    expect(rows[2]).toHaveClass("row--past");
+    expect(within(rows[2]!).getByText("Dismissed").closest(".ds-status--stopped")).not.toBeNull();
     expect(rows[2]).toHaveTextContent("Dismissedby Amina on 4 Oct 2026: Covered by CR-2.");
 
     const dismissButton = () => within(rows[0]!).getByRole("button", { name: /^Dismiss it ?\(CR-20261003-Business_Pro_Plus\)$/ });

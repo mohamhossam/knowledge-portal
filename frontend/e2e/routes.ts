@@ -45,7 +45,7 @@ export const ROUTES: RouteDef[] = [
   { key: "library-citations", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/citations`, mask: [".ds-provenance", ".lib-reconfirm__line"] },
   { key: "library-ownership", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/ownership`, mask: [".ds-provenance", ".lib-reconfirm__line", "tbody th"] },
   // The architecture catalogue (area 5: rebuilt on the design system). Landscape, Channels,
-  // Versions and Compare keep their body in the legacy island under the new head.
+  // and Compare keep their body in the legacy island under the new head.
   { key: "architecture", path: at("architecture") },
   { key: "architecture-system", path: (s) => s.system && `architecture/systems/${s.system}` },
   { key: "architecture-concepts", path: at("architecture/concepts") },
@@ -58,6 +58,7 @@ export const ROUTES: RouteDef[] = [
   { key: "architecture-domains", path: at("architecture/domains") },
   { key: "architecture-channels", path: at("architecture/channels") },
   { key: "architecture-versions", path: at("architecture/versions") },
+  { key: "architecture-version", path: (s) => s.replaced && `architecture/versions?version=${s.replaced}` },
   { key: "architecture-draft", path: (s) => s.draft && `architecture/versions/${s.draft}` },
   // The draft's steps (area 3: rebuilt on the design system).
   { key: "architecture-draft-sources", path: (s) => s.draft && `architecture/versions/${s.draft}/sources` },
@@ -107,6 +108,9 @@ export const REDESIGNED: string[] = [
   "architecture-journeys",
   "architecture-journey",
   "architecture-governance",
+  // UX rebuild phase 3: Versions on the workbench.
+  "architecture-versions",
+  "architecture-version",
   "explorer",
   // Area 4: ownership.
   "squads",

@@ -1,8 +1,8 @@
 /**
  * Area 5 keyboard journey ("Which system does this, and how does an order run
  * through it"): find a system from the catalogue by name, open its record
- * (focus lands on it), then read a journey and switch it from the swimlane to
- * the flowchart with the arrow keys. It changes nothing; it sits with the
+ * (focus lands on it), then choose a journey from the journeys' list and switch
+ * it from the swimlane to the flowchart with the arrow keys. It changes nothing; it sits with the
  * journeys so the seed's draft has already been read (playwright.config.ts).
  */
 import { expect, settled, test } from "./fixtures";
@@ -18,9 +18,9 @@ test("keyboard only: find a system, open its record, then read a journey as a fl
   await page.keyboard.type("CWOM");
   await expect(page.getByText(/^1 system of \d+$/)).toBeVisible();
 
-  // Tab on to the one system left, past the clear button and the column sorts.
-  const table = page.getByRole("table", { name: "Systems in this version", exact: true });
-  const link = table.getByRole("link", { name: "CWOM" });
+  // Tab on to the one system left in the list, past the capability filter.
+  const list = page.getByRole("region", { name: "Systems", exact: true });
+  const link = list.getByRole("link", { name: /^CWOM/ });
   for (let step = 0; step < 12 && !(await link.evaluate((element) => element === document.activeElement)); step += 1) {
     await page.keyboard.press("Tab");
   }
@@ -30,14 +30,22 @@ test("keyboard only: find a system, open its record, then read a journey as a fl
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\/architecture\/systems\/[^/?]+/);
   await expect(page.locator(":focus")).toHaveText("CWOM");
-  await expect(page.getByRole("complementary", { name: "System: CWOM" })).toBeVisible();
+  await expect(page.getByRole("article", { name: "CWOM" })).toBeVisible();
   await expect(link).toHaveAttribute("aria-current", "page");
 
-  // A journey reads as a swimlane first; the arrow keys move to the flowchart.
+  // A journey is chosen from the journeys' list the same way: ↓ moves along the rows, Enter opens one.
   const { journey } = await seeded();
   test.skip(!journey, "this seed has no journey");
-  await page.goto(`architecture/journeys/${journey}`);
+  await page.goto("architecture/journeys");
   await settled(page);
+  const journeys = page.getByRole("region", { name: "Journeys", exact: true });
+  await journeys.getByRole("link").first().focus();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(new RegExp(`/architecture/journeys/${journey}`));
+  await expect(page.getByRole("article")).toBeVisible();
+  await expect(journeys.getByRole("link").first()).toHaveAttribute("aria-current", "page");
+
+  // It reads as a swimlane first; the arrow keys move to the flowchart.
   const swimlane = page.getByRole("tab", { name: "Swimlane" });
   await expect(swimlane).toHaveAttribute("aria-selected", "true");
   await swimlane.focus();
