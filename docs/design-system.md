@@ -268,6 +268,31 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
 - **`HelpContent`:** the four parts of consistent help, always in order: this page, shortcuts,
   terms, ask the knowledge team (WCAG 3.2.6).
 
+### Diagrams (`design/diagram/`)
+
+A separate folder: import from `design/diagram`, not `design/components`. Shown in the gallery's
+Diagrams section with two seed-shaped examples (CWOM in context, the ownership tree).
+
+- **Layouts** (`layout.ts`, pure, unit-tested): `layered(nodes, edges, { lanes, containers })`
+  runs left to right, each node one column after whatever points at it or in the `lane` it names;
+  `containers` box grouped nodes as rows. `tree(nodes, edges)` is a left-to-right tidy tree, each
+  parent level with the middle of its children, with elbow edges. Both return a `DiagramLayout`.
+- **Parts** (`parts.tsx`): `DiagramNodeShape`, `DiagramEdgeLine`, `DiagramLaneBand`,
+  `DiagramContainerBox`, `DiagramArrowHead`, for a screen that needs its own arrangement.
+- **`Diagram`:** draws a layout at its natural size in a scrolling region, with a **Show as
+  table** switch (`aria-pressed`) that swaps the drawing for a table of every node with what it
+  links to and from.
+- **Tones:** `plain`, `subject` (maroon, what the page is about), `ready`, `decide`, `gap`
+  (dashed) and `muted` (dotted). Each differs by its frame as well as its colour, and every state
+  tone carries its words in `status`. Red is never drawn. Colours come from the `--diagram-*`
+  component tokens.
+- **Accessibility:** a diagram with nothing to open is one image (`role="img"`, named by
+  `label`). Once nodes open something (an `href`, or `onActivate`), it is a named group
+  (`aria-roledescription="diagram"`), because an image hides its children: Tab enters once,
+  arrows move to the nearest node that way, Home and End jump, Enter (and Space on buttons)
+  opens. Labels too long for a box end in "…"; the whole label is the accessible name and the
+  tooltip. No text is under 14px.
+
 ### Hooks (`hooks.ts`)
 
 | Hook | What it does |

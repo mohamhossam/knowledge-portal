@@ -118,4 +118,27 @@
   /* Evidence quote */
   --quote-rule: var(--rule-hair) solid var(--color-rule-strong);
   --quote-highlight: var(--color-highlight);
+
+  /* Diagram kit (design/diagram): tones say their state in words too; red is never drawn */
+  --diagram-bg: var(--color-surface);
+  --diagram-lane-bg: var(--color-surface-1);
+  --diagram-lane-fg: var(--color-ink-2);
+  --diagram-container-bg: var(--color-surface-1);
+  --diagram-container-border: var(--color-rule);
+  --diagram-container-fg: var(--color-ink-2);
+  --diagram-line: var(--color-ink-2);
+  --diagram-label-fg: var(--color-ink);
+  --diagram-detail-fg: var(--color-ink-2);
+  --diagram-node-bg: var(--color-surface);
+  --diagram-node-border: var(--color-rule-strong);
+  --diagram-node-hover-border: var(--color-action);
+  --diagram-subject-bg: var(--color-selected);
+  --diagram-subject-border: var(--color-action);
+  --diagram-ready-bg: var(--color-success-bg);
+  --diagram-ready-border: var(--color-success);
+  --diagram-decide-bg: var(--color-warning-bg);
+  --diagram-decide-border: var(--color-warning);
+  --diagram-muted-bg: var(--color-surface-2);
+  --diagram-muted-border: var(--color-rule-strong);
+  --diagram-focus: var(--color-focus);
 }
