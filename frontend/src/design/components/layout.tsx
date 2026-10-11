@@ -13,7 +13,7 @@ import {
 
 import etisalatLogo from "../assets/etisalat-logo-white.svg";
 import { rovingKeyDown, useFocusAfterRender, useStickySize } from "../hooks";
-import { Badge } from "./feedback";
+import { Badge, Status, type StatusTone } from "./feedback";
 
 function useMediaQuery(query: string): boolean {
   return useSyncExternalStore(
@@ -454,5 +454,47 @@ export function Section({ title, count, actions, children, headingLevel = 2 }: {
       </div>
       {children}
     </section>
+  );
+}
+
+export type Step = {
+  href: string;
+  label: string;
+  current?: boolean;
+  /** Where the step stands, in words with its tone: "12 waiting", "Built". */
+  status?: { tone: StatusTone; text: string };
+};
+
+/**
+ * A guided workflow's steps, in order (a draft's Sources → Decide → Changes →
+ * Check → Publish). Each step is a link that changes the URL: an ordered list
+ * in a labelled nav, the current step marked with aria-current. Each step says
+ * where it stands with a Status (icon and words), never colour alone. Any step
+ * can be opened: the order is advice, not a gate.
+ */
+export function Stepper({ label, steps, link: Link = Anchor }: { label: string; steps: Step[]; link?: LinkLike }) {
+  return (
+    <nav className="ds-stepper" aria-label={label}>
+      <ol>
+        {steps.map((step, index) => (
+          <li key={step.href} className="ds-stepper__step">
+            <Link href={step.href} aria-current={step.current ? "page" : undefined} className="ds-stepper__link">
+              <span className="ds-stepper__number" aria-hidden="true">{index + 1}</span>
+              <span className="ds-stepper__text">
+                <span className="ds-stepper__label">
+                  <span className="ds-visually-hidden">Step {index + 1}:</span> {step.label}
+                </span>
+                {step.status && <span className="ds-visually-hidden">,</span>}{" "}
+                {step.status && (
+                  <span className="ds-stepper__status">
+                    <Status tone={step.status.tone}>{step.status.text}</Status>
+                  </span>
+                )}
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ol>
+    </nav>
   );
 }

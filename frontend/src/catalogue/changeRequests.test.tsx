@@ -197,7 +197,7 @@ describe("the inbox of change requests from Requirement AI", () => {
 
     await waitFor(() => expect(read).toHaveBeenCalledWith("CR-20261003-Business_Pro_Plus"));
     expect(await screen.findByTestId("where")).toHaveTextContent(
-      "/architecture/versions/draft-1/sources CR-20261003-Business_Pro_Plus is read into a new draft named after it: 1 suggested question below.",
+      "/architecture/versions/draft-1/decide CR-20261003-Business_Pro_Plus is read into a new draft named after it: 1 suggested question below.",
     );
   });
 
@@ -216,7 +216,7 @@ describe("the inbox of change requests from Requirement AI", () => {
 
     expect(within(rows[0]!).getByRole("button", { name: /^Read it into ‘November’ ?\(CR-20261003-Business_Pro_Plus\)$/ })).toBeInTheDocument();
     expect(rows[1]).toHaveTextContent("Read into ‘November’by Amina on 4 Oct 2026");
-    expect(within(rows[1]!).getByRole("link", { name: /^Its suggestions ?\(CR-2\)$/ })).toHaveAttribute("href", "/architecture/versions/draft-9/sources");
+    expect(within(rows[1]!).getByRole("link", { name: /^Its suggestions ?\(CR-2\)$/ })).toHaveAttribute("href", "/architecture/versions/draft-9/decide");
     // Read into a draft still in preparation, it is settled there: no dismissing it.
     expect(within(rows[1]!).queryByRole("button", { name: /^Dismiss it/ })).not.toBeInTheDocument();
     expect(rows[2]).toHaveClass("row--past");

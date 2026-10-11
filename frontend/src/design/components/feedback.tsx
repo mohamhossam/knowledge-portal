@@ -168,3 +168,19 @@ export function LiveMessage({ message }: { message: string }) {
     </p>
   );
 }
+
+/**
+ * A calm line across the top of a page about something in progress elsewhere
+ * (a draft being prepared), with the way to it. A labelled region, not a live
+ * one: it is read in page order, never announced over the page. Never an alert
+ * colour: a neutral band with an icon and words.
+ */
+export function Banner({ label, icon, children, action }: { label: string; icon?: ReactNode; children: ReactNode; action?: ReactNode }) {
+  return (
+    <section className="ds-banner" aria-label={label}>
+      {icon && <span className="ds-banner__icon" aria-hidden="true">{icon}</span>}
+      <p className="ds-banner__text">{children}</p>
+      {action && <div className="ds-banner__action">{action}</div>}
+    </section>
+  );
+}

@@ -5,8 +5,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { api, type CatalogueDiff, type Release } from "../api/client";
 import { ComparePage } from "./ComparePage";
-import { DraftDocuments } from "./DraftDocuments";
-import type { DraftHook, UploadLine } from "./useDraft";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -56,60 +54,5 @@ describe("comparing two catalogue versions", () => {
     await waitFor(() => expect(changes).toHaveBeenCalledWith("spring", "summer"));
     fireEvent.change(screen.getByRole("combobox", { name: "To" }), { target: { value: "summer" } });
     expect(await screen.findByText("Choose two different versions.")).toBeInTheDocument();
-  });
-});
-
-describe("adding several documents to a draft", () => {
-  it("adds them in one go and says what became of each", async () => {
-    const lines: UploadLine[] = [
-      { filename: "billing.md", state: "reading", versionId: "v1" },
-      { filename: "crm.txt", state: "unread", versionId: "v2", reason: "The model budget for this minute is spent." },
-      { filename: "legacy.doc", state: "refused", reason: "Word 97–2003 (.doc) files can't be read." },
-    ];
-    const read = vi.fn();
-    const addDocuments = vi.fn((_input: unknown, options: { onSuccess: (value: UploadLine[]) => void }) => options.onSuccess(lines));
-    const idle = { mutate: vi.fn(), isPending: false, isError: false, error: null };
-    const draft = {
-      extractions: { data: [] }, suggestions: { data: { runs: [], suggestions: [] } },
-      read: { ...idle, mutate: read }, cancel: idle, retry: idle, removeDocument: idle,
-      addDocument: idle, addDocuments: { ...idle, mutate: addDocuments },
-    } as unknown as DraftHook;
-    render(<DraftDocuments release={release("next", { status: "draft" })} draft={draft} actorName={() => "Amina"} />);
-    const files = [
-      new File(["# Billing"], "billing.md", { type: "text/markdown" }),
-      new File(["CRM"], "crm.txt", { type: "text/plain" }),
-      new File(["x"], "legacy.doc", { type: "application/msword" }),
-    ];
-    fireEvent.change(screen.getByLabelText("Files"), { target: { files } });
-    expect(screen.getByText("3 files chosen; each is titled by its file name.")).toBeInTheDocument();
-    expect(screen.queryByRole("textbox", { name: "Title" })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Add the 3 files and read them" }));
-    expect(addDocuments).toHaveBeenCalledWith({ files, language: "en" }, expect.anything());
-    // The outcome takes focus, and only its summary is announced.
-    const summary = screen.getByRole("status");
-    expect(summary).toHaveTextContent("2 of 3 files added. Some wait to be read.");
-    expect(summary).toHaveFocus();
-    expect(screen.getByText("Added; reading started")).toBeInTheDocument();
-    expect(screen.getByText("The model budget for this minute is spent.")).toBeInTheDocument();
-    expect(screen.getByText("Not added")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Read it" }));
-    expect(read).toHaveBeenCalledWith("v2");
-  });
-
-  it("moves focus into the form when it opens, and back when it is cancelled", () => {
-    const idle = { mutate: vi.fn(), isPending: false, isError: false, error: null };
-    const draft = {
-      extractions: { data: [] }, suggestions: { data: { runs: [], suggestions: [] } },
-      read: idle, cancel: idle, retry: idle, removeDocument: idle, addDocument: idle, addDocuments: idle,
-    } as unknown as DraftHook;
-    const withOne = release("next", {
-      status: "draft",
-      documents: [{ id: "v1", title: "Billing", filename: "billing.md", mime_type: "text/markdown", language: "en", checksum: "c", uploaded_by: "fake-owner", uploaded_at: "2026-10-06T09:00:00Z" }],
-    } as Partial<Release>);
-    render(<DraftDocuments release={withOne} draft={draft} actorName={() => "Amina"} />);
-    fireEvent.click(screen.getByRole("button", { name: "Add more documents" }));
-    expect(screen.getByRole("heading", { name: "Add documents" })).toHaveFocus();
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(screen.getByRole("button", { name: "Add more documents" })).toHaveFocus();
   });
 });

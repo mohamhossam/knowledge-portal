@@ -99,16 +99,6 @@
   color: var(--ink);
 }
 
-.action-button--secondary {
-  background: var(--stock);
-  color: var(--ink);
-}
-
-.action-button--secondary:hover:not(:disabled):not([aria-disabled="true"]) {
-  background: var(--ink);
-  color: var(--stock);
-}
-
 /* aria-disabled keeps a waiting action focusable, so the reason tied to it is still read. */
 .action-button:disabled,
 .action-button[aria-disabled="true"] {
@@ -359,11 +349,6 @@
 .filter__count {
   margin-left: var(--s1);
   font-weight: var(--w-regular);
-}
-
-.keys {
-  color: var(--ink-2);
-  font-size: var(--t-meta);
 }
 
 kbd {
@@ -627,54 +612,8 @@ kbd {
 }
 
 /* Search: one field, then exact passages. */
-.searchbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  gap: var(--s3);
-  margin-top: var(--s4);
-}
-
-.searchbar__field {
-  flex: 1 1 28rem;
-}
-
-.searchbar__field .field__input {
-  width: 100%;
-  min-height: 2.25rem;
-}
-
-.searchbar + .govsection__lead,
-.searchbar + .docpage__failure {
-  margin-top: var(--s4);
-}
-
-.searchresults__context {
-  display: grid;
-  gap: var(--s1);
-  margin-top: var(--s2);
-  padding: var(--s2) var(--s3);
-  background: var(--stock-band);
-  font-size: var(--t-meta);
-  font-weight: var(--w-regular);
-}
 
 /* Each place on its own line; the cited one in ink, its neighbours in ink 2. */
-.context-place {
-  display: grid;
-  grid-template-columns: 6rem minmax(0, 1fr);
-  gap: var(--s2);
-  color: var(--ink-2);
-}
-
-.context-place.is-cited {
-  color: var(--ink);
-  font-weight: var(--w-medium);
-}
-
-.context-place__where {
-  color: var(--ink-3);
-}
 
 .nowrap {
   white-space: nowrap;

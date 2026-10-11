@@ -19,16 +19,6 @@ export const STATE_LABEL: Record<SuggestionState, string> = {
   rejected: "Rejected",
 };
 
-/** Rank by weight: a decision due is bold, a wait is set back, a decided row is past. */
-export const STATE_RANK: Record<SuggestionState, "due" | "service" | "running" | "past"> = {
-  decide: "due",
-  ready: "service",
-  waits: "running",
-  present: "running",
-  accepted: "past",
-  rejected: "past",
-};
-
 /** The order accepting-all walks, and the order rows sit inside a system. */
 const KIND_ORDER: SuggestionKind[] = [
   "landscape_domain", "system", "placement", "component", "capability", "constraint", "relationship", "channel", "product", "question", "journey",

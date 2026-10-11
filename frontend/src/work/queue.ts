@@ -23,7 +23,7 @@ import { gaps } from "../squads/gaps";
  */
 const WORK_ROUTES = {
   document: (id: string) => `/library/${id}`,
-  decide: (releaseId: string) => `/architecture/versions/${releaseId}/sources`,
+  decide: (releaseId: string) => `/architecture/versions/${releaseId}/decide`,
   reConfirmations: "/reminders",
   gaps: "/squads",
 };

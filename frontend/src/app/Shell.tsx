@@ -25,6 +25,8 @@ const REDESIGNED: ((path: string) => boolean)[] = [
   (path) => path === "/",
   // Area 2: the library, its search and every document's pages.
   (path) => path === "/library" || path.startsWith("/library/"),
+  // Area 3: a draft's steps (Sources, Decide, Changes, Check, Publish), of any catalogue version.
+  (path) => /^\/architecture(\/versions\/[^/]+)?\/(sources|decide|changes|check|publish)\/?$/.test(path),
 ];
 
 function useOnline() {
