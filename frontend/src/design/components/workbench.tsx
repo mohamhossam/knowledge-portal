@@ -36,7 +36,12 @@ export function Workbench({ list, listLabel, record, chosen }: {
 }
 
 /** The list's head: its find field and filters, and the count, kept at the top of the list as it scrolls. */
-export function ListTools({ children, count }: { children?: ReactNode; count?: ReactNode }) {
+export function ListTools({ children, count, note }: {
+  children?: ReactNode;
+  count?: ReactNode;
+  /** One quiet line under the count: what holds for most of the list, said once instead of on every row. */
+  note?: ReactNode;
+}) {
   const tools = useRef<HTMLDivElement>(null);
   // Group labels stick under the head, and a focused row scrolls clear of it: the list learns its height.
   useEffect(() => {
@@ -54,6 +59,7 @@ export function ListTools({ children, count }: { children?: ReactNode; count?: R
     <div ref={tools} className="ds-listtools">
       {children && <div className="ds-listtools__controls">{children}</div>}
       {count !== undefined && <p className="ds-listtools__count" role="status">{count}</p>}
+      {note && <p className="ds-listtools__count">{note}</p>}
     </div>
   );
 }

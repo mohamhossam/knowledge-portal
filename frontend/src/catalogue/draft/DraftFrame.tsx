@@ -1,14 +1,13 @@
 import "./draft.css";
 
 import type { UseQueryResult } from "@tanstack/react-query";
-import { FilePen } from "lucide-react";
 import { type RefObject, useState } from "react";
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 
 import type { Release } from "../../api/client";
 import { ApiError, errorMessage } from "../../api/errors";
 import {
-  ActionGroup, Banner, Breadcrumbs, Button, ConsequencePanel, EmptyState, PageHeader, Skeleton, Status, Stepper, TextField,
+  ActionGroup, Breadcrumbs, Button, ConsequencePanel, EmptyState, PageHeader, Skeleton, Status, Stepper, TextField,
 } from "../../design/components";
 import { useDisclosure } from "../../design/hooks";
 import { count } from "../../home/format";
@@ -201,32 +200,5 @@ function NotADraft({ release, step, inService, base }: { release: Release; step:
         <p>Sources, decisions and checks belong to a version while it is prepared.</p>
       </EmptyState>
     </div>
-  );
-}
-
-/**
- * On every other catalogue page: a draft is being prepared, and the way to it
- * (redesign phase 3). Read in page order, never announced.
- */
-export function DraftBanner({ readingDraft }: { readingDraft?: Release }) {
-  const releases = useReleases();
-  const location = useLocation();
-  const draft = readingDraft ?? releases.data?.find((item) => item.status === "draft");
-  if (!draft) return null;
-  const at = `/architecture/versions/${encodeURIComponent(draft.id)}`;
-  // On Versions, the draft has its own line; the banner would only say it twice.
-  if (location.pathname === "/architecture/versions") return null;
-  return (
-    <Banner
-      label="Draft in progress"
-      icon={<FilePen size={16} />}
-      action={<ButtonLink to={`${at}/sources`} variant={readingDraft ? "secondary" : "primary"}>{readingDraft ? "Back to its steps" : "Carry on with the draft"}</ButtonLink>}
-    >
-      {readingDraft ? (
-        <>You're reading the draft <strong><bdi>‘{nameOf(draft)}’</bdi></strong>. Its changes reach requirement work only once it is published.</>
-      ) : (
-        <>A new version, <strong><bdi>‘{nameOf(draft)}’</bdi></strong>, is in preparation. What you read here is the version in service.</>
-      )}
-    </Banner>
   );
 }

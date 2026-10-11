@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 
 import { DiagramLegend, tree } from "../design/diagram";
 import { RoutedDiagram } from "../shell/RoutedDiagram";
@@ -9,7 +9,7 @@ import { useOrgContext } from "./useOrganisation";
 export function OwnershipTree() {
   const { org, release } = useOrgContext();
   const graph = useMemo(() => ownershipTree(org, release), [org, release]);
-  const layout = useMemo(() => tree(graph.nodes, graph.edges, { columnGap: 72 }), [graph]);
+  const layout = useCallback((fitWidth?: number) => tree(graph.nodes, graph.edges, { columnGap: 72, fitWidth }), [graph]);
   return (
     <section className="own-stack" aria-labelledby="own-tree-title">
       <h2 id="own-tree-title" className="ds-visually-hidden">Who runs what</h2>

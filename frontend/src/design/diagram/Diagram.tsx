@@ -1,7 +1,7 @@
 import "./diagram.css";
 
 import { Table2 } from "lucide-react";
-import { type KeyboardEvent, type MouseEvent, type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { type KeyboardEvent, type MouseEvent, type ReactNode, type RefObject, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "../components/actions";
 import type { LinkLike } from "../components/layout";
@@ -16,6 +16,9 @@ const KEYS: Record<string, Direction> = { ArrowLeft: "left", ArrowRight: "right"
 /** The table's column headings. The defaults suit a flow; a tree reads better with "Has" and "Part of". */
 export type DiagramHeaders = { name: string; lane: string; container: string; detail: string; to: string; from: string };
 
+/** A layout for the width it has on screen; `undefined` before that is known. */
+export type DiagramLayoutFor = (fitWidth?: number) => DiagramLayout;
+
 const HEADERS: DiagramHeaders = { name: "Name", lane: "Lane", container: "Group", detail: "Details", to: "Goes to", from: "Comes from" };
 
 export type DiagramProps = {
@@ -23,7 +26,11 @@ export type DiagramProps = {
   label: string;
   /** The words above the drawing; the label when not given. */
   caption?: ReactNode;
-  layout: DiagramLayout;
+  /**
+   * The layout, or a function from the width the diagram has on screen to the
+   * layout (pass it on as `fitWidth`), so the drawing fits its pane wherever it can.
+   */
+  layout: DiagramLayout | DiagramLayoutFor;
   /**
    * Makes every node a button (a node with an href stays a link, and this runs
    * on its click first, so a router can take over). Without it, only nodes
@@ -46,7 +53,8 @@ export type DiagramProps = {
 
 /**
  * A diagram with its table one press away. The drawing keeps its natural size
- * and scrolls in place, so no text shrinks below the floor.
+ * and scrolls in place, so no text shrinks below the floor; given its layout
+ * as a function of width, it lays out again to fit whenever its width changes.
  *
  * Accessibility: a diagram with nothing to open is one image (`role="img"`,
  * named by `label`), in a focusable region so it scrolls by keyboard. A
@@ -56,14 +64,17 @@ export type DiagramProps = {
  * the first and last; Enter opens. "Show as table" swaps the drawing for a
  * table of every node with what it links to and from.
  */
-export function Diagram({ label, caption, layout, onActivate, link: Link = Anchor, legend, headers, startAsTable = false, table }: DiagramProps) {
+export function Diagram({ label, caption, layout: given, onActivate, link: Link = Anchor, legend, headers, startAsTable = false, table }: DiagramProps) {
   const [asTable, setAsTable] = useState(startAsTable);
   const captionId = useId();
   const arrowId = `${useId().replace(/:/g, "")}-arrow`;
   const words = { ...HEADERS, ...headers };
+  const figure = useRef<HTMLElement>(null);
+  const width = useWidth(figure);
+  const layout = useMemo(() => (typeof given === "function" ? given(width) : given), [given, width]);
 
   return (
-    <figure className="ds-diagram" aria-labelledby={captionId}>
+    <figure ref={figure} className="ds-diagram" aria-labelledby={captionId}>
       <div className="ds-diagram__bar">
         <figcaption id={captionId} className="ds-diagram__caption">
           {caption ?? label}
@@ -77,11 +88,33 @@ export function Diagram({ label, caption, layout, onActivate, link: Link = Ancho
       ) : (
         <>
           <Drawing label={label} layout={layout} onActivate={onActivate} arrowId={arrowId} />
+          {width !== undefined && layout.width > width && (
+            <p className="ds-diagram__more">Wider than this page: scroll it sideways, or show it as a table.</p>
+          )}
           {legend && <div className="ds-diagram__legend">{legend}</div>}
         </>
       )}
     </figure>
   );
+}
+
+/** An element's width, in steps of 8px so a resize lays out again only when it matters. */
+function useWidth(element: RefObject<HTMLElement | null>): number | undefined {
+  const [width, setWidth] = useState<number>();
+  useLayoutEffect(() => {
+    const target = element.current;
+    if (!target) return;
+    const read = () => {
+      const measured = Math.floor(target.clientWidth / 8) * 8;
+      if (measured > 0) setWidth(measured);
+    };
+    read();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(read);
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [element]);
+  return width;
 }
 
 function Drawing({ label, layout, onActivate, arrowId }: { label: string; layout: DiagramLayout; onActivate?: DiagramProps["onActivate"]; arrowId: string }) {

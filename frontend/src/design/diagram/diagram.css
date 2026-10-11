@@ -213,6 +213,13 @@ a.ds-diagram__node,
   text-underline-offset: 0.2em;
 }
 
+/* Said once, under a drawing that doesn't fit: there is more to the side. */
+.ds-diagram__more {
+  margin: var(--space-2) 0 0;
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
 .ds-diagram__legend {
   color: var(--color-ink-2);
   font-size: var(--text-meta);

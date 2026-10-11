@@ -2,7 +2,7 @@ import type { MouseEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { BASE } from "../auth/paths";
-import { Diagram, type DiagramLayout, type DiagramProps } from "../design/diagram";
+import { Diagram, type DiagramProps } from "../design/diagram";
 import type { LinkLike } from "../design/components";
 
 const appPath = (href: string) => (BASE && href.startsWith(`${BASE}/`) ? href.slice(BASE.length) : href);
@@ -17,7 +17,7 @@ const TableLink: LinkLike = ({ href, className, children }) => (
  * so a link opens in a new tab as any link does, while a plain click or Enter
  * stays in the app (the router takes over) instead of loading the page again.
  */
-export function RoutedDiagram(props: Omit<DiagramProps, "link"> & { layout: DiagramLayout }) {
+export function RoutedDiagram(props: Omit<DiagramProps, "link">) {
   const navigate = useNavigate();
   const onClick = (event: MouseEvent<HTMLDivElement>) => {
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;

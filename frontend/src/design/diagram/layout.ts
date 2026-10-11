@@ -10,7 +10,10 @@
  *              middle of its children, one column per depth.
  *
  * Geometry is in CSS pixels; the SVG is drawn at its natural size and scrolls
- * in place, so no text is ever scaled below the 14px floor.
+ * in place, so no text is ever scaled below the 14px floor. Given the width it
+ * has on screen (`fitWidth`), a layout closes its gaps or narrows its nodes to
+ * fit it, or widens them to use it; a label that no longer fits on one line
+ * wraps onto a second, and the nodes grow to hold it.
  */
 import type { DiagramEdge, DiagramLayout, DiagramNode, PlacedContainer, PlacedLane, PlacedNode, Point, RoutedEdge } from "./types";
 
@@ -21,6 +24,11 @@ export const DIAGRAM = {
   nodeHeight: 40,
   /** A node with a second line (`detail` or `status`). Every node of a layout takes one height. */
   nodeHeightDetail: 56,
+  /** Fitting to the screen narrows a node no further than this (its text wraps), and widens it no further than `nodeMax`. */
+  nodeMin: 128,
+  nodeMax: 264,
+  /** Fitting never closes a gap below this, nor below its widest edge label. */
+  columnGapMin: 40,
   columnGap: 120,
   rowGap: 16,
   /** Room above the nodes for the lanes' headings. */
@@ -52,24 +60,86 @@ export type LayeredOptions = {
    * of columns without edges reads best.
    */
   align?: "centre" | "start";
+  /** The width the drawing has on screen; see `fitted`. */
+  fitWidth?: number;
 };
 
 export type TreeOptions = {
   nodeWidth?: number;
   columnGap?: number;
   rowGap?: number;
+  /** The width the drawing has on screen; see `fitted`. */
+  fitWidth?: number;
 };
 
-type Geometry = { nodeWidth: number; nodeHeight: number; columnGap: number; rowGap: number };
+type Geometry = {
+  nodeWidth: number;
+  nodeHeight: number;
+  /** The gap after each column but the last. */
+  gaps: number[];
+  rowGap: number;
+};
+type SizeOptions = { nodeWidth?: number; columnGap?: number; rowGap?: number; fitWidth?: number };
 
-function geometry(nodes: DiagramNode[], options: { nodeWidth?: number; columnGap?: number; rowGap?: number }): Geometry {
-  return {
-    nodeWidth: options.nodeWidth ?? DIAGRAM.nodeWidth,
-    // The second line holds the detail, the state, or both.
-    nodeHeight: nodes.some((node) => node.detail || node.status) ? DIAGRAM.nodeHeightDetail : DIAGRAM.nodeHeight,
-    columnGap: options.columnGap ?? DIAGRAM.columnGap,
-    rowGap: options.rowGap ?? DIAGRAM.rowGap,
-  };
+/** The font sizes the parts draw at: a node's label, its second line, an edge's label. */
+export const TEXT_PX = { label: 15, detail: 14, edge: 14 } as const;
+/** A node's text keeps this far from its sides. */
+export const NODE_INSET = 16;
+/** A node's lines of text: each this far apart, the box this much taller than they are. */
+export const LINE = 18;
+const NODE_FRAME = 20;
+
+/** A node's second line: its detail and its state. */
+export const secondLine = (node: DiagramNode) => [node.detail, node.status].filter(Boolean).join(" · ");
+
+/** How tall a node is that shows this many lines of text. */
+export const nodeHeightFor = (lines: number) => Math.max(DIAGRAM.nodeHeight, NODE_FRAME + LINE * lines);
+
+/** A node's lines at a width: its label and its second line, each on at most two. */
+export function nodeLines(node: DiagramNode, width: number): { label: string[]; second: string[] } {
+  const inner = width - NODE_INSET;
+  const second = secondLine(node);
+  return { label: wrap(node.label, inner, TEXT_PX.label), second: second ? wrap(second, inner, TEXT_PX.detail) : [] };
+}
+
+/**
+ * The widths a layout takes, fitted to `fitWidth` when given. Too wide: the
+ * gaps close first, each no further than its widest edge label, then the
+ * nodes narrow (to `nodeMin`; their text wraps). Room to spare: the nodes
+ * widen until their text fits on one line each. Whatever still doesn't fit
+ * scrolls. Without `fitWidth`, every gap is `columnGap`.
+ */
+function fitted(nodes: DiagramNode[], columns: number, gapLabels: number[], options: SizeOptions, chrome: number): { nodeWidth: number; gaps: number[] } {
+  let nodeWidth = options.nodeWidth ?? DIAGRAM.nodeWidth;
+  const columnGap = options.columnGap ?? DIAGRAM.columnGap;
+  let gaps = Array.from({ length: Math.max(0, columns - 1) }, () => columnGap);
+  const room = options.fitWidth;
+  if (room === undefined || columns < 1) return { nodeWidth, gaps };
+  const total = () => chrome + columns * nodeWidth + gaps.reduce((sum, gap) => sum + gap, 0);
+  if (total() > room) {
+    const least = gaps.map((_, at) => Math.min(columnGap, Math.max(DIAGRAM.columnGapMin, Math.ceil(gapLabels[at] ?? 0))));
+    for (let close = 1; close <= columnGap && total() > room; close++) gaps = least.map((floor) => Math.max(floor, columnGap - close));
+    // Narrower nodes only when that makes it fit: a drawing that scrolls anyway keeps its words.
+    const narrowed = nodeWidth - Math.ceil((total() - room) / columns);
+    if (total() > room && narrowed >= Math.min(nodeWidth, DIAGRAM.nodeMin)) nodeWidth = narrowed;
+  } else {
+    const need = Math.min(
+      DIAGRAM.nodeMax,
+      Math.ceil(Math.max(0, ...nodes.map((node) => Math.max(textWidth(node.label, TEXT_PX.label), textWidth(secondLine(node), TEXT_PX.detail)))) + NODE_INSET),
+    );
+    if (need > nodeWidth) nodeWidth = Math.min(need, nodeWidth + Math.floor((room - total()) / columns));
+  }
+  return { nodeWidth, gaps };
+}
+
+function geometry(nodes: DiagramNode[], columns: number, gapLabels: number[], options: SizeOptions, chrome: number): Geometry {
+  const { nodeWidth, gaps } = fitted(nodes, columns, gapLabels, options, chrome);
+  // Every node of a layout takes one height: room for the most lines any of them needs.
+  const lines = Math.max(1, ...nodes.map((node) => {
+    const { label, second } = nodeLines(node, nodeWidth);
+    return label.length + second.length;
+  }));
+  return { nodeWidth, nodeHeight: nodeHeightFor(lines), gaps, rowGap: options.rowGap ?? DIAGRAM.rowGap };
 }
 
 /** Edges whose ends both exist, each pair once, no node to itself. */
@@ -204,11 +274,17 @@ function orderColumns(columns: string[][], edges: DiagramEdge[], rank: (id: stri
 /** A left-to-right layered layout: columns along the edges, or the lanes the nodes name. */
 export function layered(nodes: DiagramNode[], edges: DiagramEdge[], options: LayeredOptions = {}): DiagramLayout {
   const kept = knownEdges(nodes, edges);
-  const size = geometry(nodes, options);
   const laneIndex = new Map((options.lanes ?? []).map((lane, at) => [lane.id, at]));
   const computed = longestPathLevels(nodes, kept);
   const levelOf = new Map(nodes.map((node) => [node.id, node.lane !== undefined && laneIndex.has(node.lane) ? laneIndex.get(node.lane)! : computed.get(node.id)!]));
   const levels = Math.max(options.lanes?.length ?? 0, ...nodes.map((node) => levelOf.get(node.id)! + 1), 0);
+  // A forward edge's label sits in the gap before its target: that gap keeps room for it.
+  const gapLabels: number[] = [];
+  for (const edge of kept) {
+    const at = levelOf.get(edge.to)! - 1;
+    if (edge.label && at >= levelOf.get(edge.from)!) gapLabels[at] = Math.max(gapLabels[at] ?? 0, textWidth(edge.label, TEXT_PX.edge) + 24);
+  }
+  const size = geometry(nodes, levels, gapLabels, options, 2 * (DIAGRAM.pad + DIAGRAM.lanePad));
 
   // Containers are boxed rows; nodes outside every container share a last, unboxed row.
   const groups = (options.containers ?? []).filter((group) => nodes.some((node) => node.group === group.id));
@@ -224,7 +300,7 @@ export function layered(nodes: DiagramNode[], edges: DiagramEdge[], options: Lay
   const ordered = orderColumns(columns, kept, rowOf);
 
   const top = DIAGRAM.pad + (options.lanes?.length ? DIAGRAM.laneHead : 0);
-  const columnX = (level: number) => DIAGRAM.pad + DIAGRAM.lanePad + level * (size.nodeWidth + size.columnGap);
+  const columnX = (level: number) => DIAGRAM.pad + DIAGRAM.lanePad + level * size.nodeWidth + size.gaps.slice(0, level).reduce((sum, gap) => sum + gap, 0);
   const step = size.nodeHeight + size.rowGap;
 
   // Each row is as tall as its fullest column; a container adds its heading and padding.
@@ -254,7 +330,7 @@ export function layered(nodes: DiagramNode[], edges: DiagramEdge[], options: Lay
         label: groups[row]!.label,
         x: columnX(first) - DIAGRAM.containerPad,
         y,
-        width: (last - first) * (size.nodeWidth + size.columnGap) + size.nodeWidth + 2 * DIAGRAM.containerPad,
+        width: columnX(last) - columnX(first) + size.nodeWidth + 2 * DIAGRAM.containerPad,
         height: DIAGRAM.containerHead + inner + DIAGRAM.containerPad,
       });
     }
@@ -310,7 +386,6 @@ function elbow(edge: DiagramEdge, from: PlacedNode, to: PlacedNode): RoutedEdge 
  */
 export function tree(nodes: DiagramNode[], edges: DiagramEdge[], options: TreeOptions = {}): DiagramLayout {
   const kept = knownEdges(nodes, edges);
-  const size = geometry(nodes, options);
   const byId = new Map(nodes.map((node) => [node.id, node]));
   const children = new Map(nodes.map((node) => [node.id, [] as string[]]));
   const parent = new Map<string, string>();
@@ -319,6 +394,18 @@ export function tree(nodes: DiagramNode[], edges: DiagramEdge[], options: TreeOp
     parent.set(edge.to, edge.from);
     children.get(edge.from)!.push(edge.to);
   }
+  // How many columns the tree takes, for fitting: the deepest node under its first parent.
+  const depthOf = new Map<string, number>();
+  const measure = (id: string, depth: number) => {
+    if (depthOf.has(id)) return;
+    depthOf.set(id, depth);
+    for (const child of children.get(id)!) measure(child, depth + 1);
+  };
+  for (const node of nodes) if (!parent.has(node.id)) measure(node.id, 0);
+  for (const node of nodes) measure(node.id, 0);
+  const fit = geometry(nodes, Math.max(0, ...depthOf.values()) + 1, [], options, 2 * DIAGRAM.pad);
+  // A tree's gaps stay even: siblings share a trunk halfway across.
+  const size = { ...fit, columnGap: fit.gaps[0] ?? options.columnGap ?? DIAGRAM.columnGap };
 
   const placed = new Map<string, PlacedNode>();
   const step = size.nodeHeight + size.rowGap;
@@ -453,4 +540,23 @@ export function fit(text: string, width: number, fontPx: number): string {
   let end = 0;
   while (end < chars.length && used + advance(chars[end]!) * fontPx <= room) used += advance(chars[end++]!) * fontPx;
   return `${chars.slice(0, end).join("").trimEnd()}…`;
+}
+
+/**
+ * A text broken into at most `lines` lines that fit `width`, between words; the
+ * last line ends in "…" when the text runs on past it.
+ */
+export function wrap(text: string, width: number, fontPx: number, lines = 2): string[] {
+  const out: string[] = [];
+  let rest = text.trim();
+  while (rest && out.length < lines - 1 && textWidth(rest, fontPx) > width) {
+    const words = rest.split(" ");
+    let take = 0;
+    while (take < words.length && textWidth(words.slice(0, take + 1).join(" "), fontPx) <= width) take++;
+    if (!take) break; // one word wider than the line: cut it below
+    out.push(words.slice(0, take).join(" "));
+    rest = words.slice(take).join(" ");
+  }
+  if (rest) out.push(fit(rest, width, fontPx));
+  return out;
 }

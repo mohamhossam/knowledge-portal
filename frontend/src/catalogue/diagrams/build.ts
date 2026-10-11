@@ -113,6 +113,9 @@ export function systemContext(landscape: Landscape, systemId: string, options: {
     if (!nodes.some((item) => item.id === key)) nodes.push(node(row.target_system_id, "called", key));
     edges.push(edgeOf(row, systemId, key));
   }
+  // An empty side says so, rather than leave a blank column to puzzle over.
+  if (edges.length && !nodes.some((item) => item.lane === "callers")) nodes.push({ id: "none:callers", label: "Nothing depends on it", lane: "callers", tone: "muted" });
+  if (edges.length && !nodes.some((item) => item.lane === "called")) nodes.push({ id: "none:called", label: "It depends on nothing", lane: "called", tone: "muted" });
   return { nodes, edges };
 }
 

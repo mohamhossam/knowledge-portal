@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 
 import { Diagram, DiagramLegend, layered } from "../design/diagram";
 import { DOC_STATE_WORDS, type DocState } from "./docState";
@@ -14,7 +14,7 @@ export function LifecycleDiagram({ counts, active, onChoose }: {
   onChoose: (state: DocState | "all") => void;
 }) {
   const graph = useMemo(() => lifecycle(counts, active), [counts, active]);
-  const layout = useMemo(() => layered(graph.nodes, graph.edges, { nodeWidth: 168, columnGap: 64, rowGap: 12 }), [graph]);
+  const layout = useCallback((fitWidth?: number) => layered(graph.nodes, graph.edges, { nodeWidth: 168, columnGap: 64, rowGap: 12, fitWidth }), [graph]);
   return (
     <Diagram
       label="Show documents by state"

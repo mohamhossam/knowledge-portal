@@ -7,7 +7,7 @@ import { Breadcrumbs, PageHeader, Status, SubNav } from "../../design/components
 import { count, formatDay } from "../../home/format";
 import { ButtonLink, RouterLink } from "../../shell/links";
 import { changeSentence } from "../catalogue";
-import { DraftBanner } from "../draft/DraftFrame";
+import { useDraftAction } from "../draft/useDraftAction";
 import { useChangeRequests } from "../inbox";
 import { type CatalogueContext, useCatalogueContext, useMappingImpact } from "../useCatalogue";
 
@@ -83,7 +83,8 @@ export function CatalogueHeader({ page, chosen, record, children }: {
   const crumbs = <Breadcrumbs link={RouterLink} items={catalogueCrumbs(context, page, record?.name ?? chosen)} />;
   const where = inService ? "Catalogue" : name;
   const waiting = useWaitingRequests();
-  const banner = <DraftBanner readingDraft={draft ? release : undefined} />;
+  // A draft in preparation is one action on the head, not a banner.
+  const drafting = useDraftAction(draft ? release : undefined);
   if (record) {
     return (
       <>
@@ -93,11 +94,10 @@ export function CatalogueHeader({ page, chosen, record, children }: {
           documentTitle={`${record.name} · ${where}`}
           lead={record.lead}
           meta={record.meta}
-          actions={record.actions}
+          actions={record.actions || drafting ? <>{record.actions}{drafting}</> : undefined}
         >
           {children}
         </PageHeader>
-        {banner}
       </>
     );
   }
@@ -120,12 +120,18 @@ export function CatalogueHeader({ page, chosen, record, children }: {
             {inService && <MappedEarlier />}
           </>
         }
-        actions={inService ? <ButtonLink to="/explorer"><Compass size={16} aria-hidden="true" /> Open the explorer</ButtonLink> : undefined}
+        actions={
+          inService || drafting ? (
+            <>
+              {drafting}
+              {inService && <ButtonLink to="/explorer"><Compass size={16} aria-hidden="true" /> Open the explorer</ButtonLink>}
+            </>
+          ) : undefined
+        }
       >
         <SubNav label="This catalogue" link={RouterLink} items={pages(base, page, inService, release, waiting)} />
         {children}
       </PageHeader>
-      {banner}
     </>
   );
 }

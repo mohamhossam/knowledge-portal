@@ -4,7 +4,7 @@
  * its table one press away ("Show as table").
  */
 import { useQuery } from "@tanstack/react-query";
-import { type ReactNode, useMemo } from "react";
+import { type ReactNode, useCallback, useMemo } from "react";
 
 import { api, type Offering, type Release } from "../../api/client";
 import { DiagramLegend as Legend, layered, type LegendMark } from "../../design/diagram";
@@ -24,7 +24,7 @@ export function ConnectionsFlowDiagram({ landscape, href, highlight, table, capt
   caption?: ReactNode;
 }) {
   const flow = useMemo(() => connectionsFlow(landscape, { href, highlight }), [landscape, href, highlight]);
-  const layout = useMemo(() => layered(flow.nodes, flow.edges, { nodeWidth: 168, columnGap: 112 }), [flow]);
+  const layout = useCallback((fitWidth?: number) => layered(flow.nodes, flow.edges, { nodeWidth: 168, columnGap: 112, fitWidth }), [flow]);
   const keys: [LegendMark, string][] = [
     ...(highlight ? [["subject", "In this order"] as [LegendMark, string]] : []),
     ...(flow.edges.some((edge) => edge.dashed) ? [["dashed", "Dashed line: how it depends is not stated"] as [LegendMark, string]] : []),
@@ -59,7 +59,7 @@ export function SystemContextDiagram({ systemId }: { systemId: string }) {
   );
   const href = useMemo<Href>(() => (id) => diagramHref(`${base}/systems/${encodeURIComponent(id)}`), [base]);
   const graph = useMemo(() => systemContext(book.release, systemId, { href, owned }), [book.release, systemId, href, owned]);
-  const layout = useMemo(() => layered(graph.nodes, graph.edges, { lanes: CONTEXT_LANES, nodeWidth: 148, columnGap: 104 }), [graph]);
+  const layout = useCallback((fitWidth?: number) => layered(graph.nodes, graph.edges, { lanes: CONTEXT_LANES, nodeWidth: 148, columnGap: 104, fitWidth }), [graph]);
   const name = systemName(book, systemId);
   if (graph.edges.length === 0) return <p className="cat-quiet">{name} connects to no other system in this version.</p>;
   return (
@@ -78,7 +78,7 @@ export function CapabilityMapDiagram() {
   const { book, base } = useCatalogueContext();
   const href = useMemo<Href>(() => (id) => diagramHref(`${base}/systems/${encodeURIComponent(id)}`), [base]);
   const map = useMemo(() => capabilityMap(book.release, { href }), [book.release, href]);
-  const layout = useMemo(() => layered(map.nodes, map.edges, { lanes: map.lanes, nodeWidth: 184, columnGap: 20, align: "start" }), [map]);
+  const layout = useCallback((fitWidth?: number) => layered(map.nodes, map.edges, { lanes: map.lanes, nodeWidth: 184, columnGap: 20, align: "start", fitWidth }), [map]);
   if (!map.nodes.length) return <p className="cat-quiet">This version records no capability.</p>;
   return (
     <RoutedDiagram
@@ -101,7 +101,7 @@ export function OfferingStructureDiagram({ offering }: { offering: Offering }) {
       }),
     [offering, book, base],
   );
-  const layout = useMemo(() => layered(graph.nodes, graph.edges, { lanes: OFFERING_LANES, columnGap: 104 }), [graph]);
+  const layout = useCallback((fitWidth?: number) => layered(graph.nodes, graph.edges, { lanes: OFFERING_LANES, columnGap: 104, fitWidth }), [graph]);
   return (
     <RoutedDiagram
       label={`How ${offering.name} is made`}
@@ -120,7 +120,7 @@ export function VersionTimelineDiagram({ releases, activeId }: { releases: Relea
     [activeId],
   );
   const graph = useMemo(() => versionTimeline(releases, activeId, href), [releases, activeId, href]);
-  const layout = useMemo(() => layered(graph.nodes, graph.edges, { nodeWidth: 200, columnGap: 48 }), [graph]);
+  const layout = useCallback((fitWidth?: number) => layered(graph.nodes, graph.edges, { nodeWidth: 200, columnGap: 48, fitWidth }), [graph]);
   if (!graph.nodes.length) return null;
   return (
     <RoutedDiagram
