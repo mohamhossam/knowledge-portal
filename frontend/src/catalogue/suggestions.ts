@@ -8,7 +8,7 @@ import type {
 } from "../api/client";
 import { COVERAGE, LAYERS } from "./catalogue";
 
-export type SuggestionState = "ready" | "decide" | "waits" | "present" | "accepted" | "rejected";
+type SuggestionState = "ready" | "decide" | "waits" | "present" | "accepted" | "rejected";
 
 export const STATE_LABEL: Record<SuggestionState, string> = {
   ready: "Ready",
@@ -30,7 +30,7 @@ export const STATE_RANK: Record<SuggestionState, "due" | "service" | "running" |
 };
 
 /** The order accepting-all walks, and the order rows sit inside a system. */
-export const KIND_ORDER: SuggestionKind[] = [
+const KIND_ORDER: SuggestionKind[] = [
   "landscape_domain", "system", "placement", "component", "capability", "constraint", "relationship", "channel", "product", "question", "journey",
 ];
 
@@ -228,7 +228,7 @@ const SCHEME: Record<NonNullable<Suggestion["content"]["term"]>["scheme"], strin
   information_entity: "information entity",
 };
 
-export function targetName(suggestion: Suggestion, words: Lexicon): string {
+function targetName(suggestion: Suggestion, words: Lexicon): string {
   return suggestion.target_system_name ?? words.system(suggestion.content.target_system_id ?? "");
 }
 
@@ -578,7 +578,7 @@ export function warningInWords(text: string): string {
     .replace(/\b1 ([^.]*?)\bwere\b/g, "1 $1was");
 }
 
-export type Tally = Record<SuggestionState, number> & { waiting: number; all: number };
+type Tally = Record<SuggestionState, number> & { waiting: number; all: number };
 
 export function tally(suggestions: Suggestion[]): Tally {
   const counts: Tally = { ready: 0, decide: 0, waits: 0, present: 0, accepted: 0, rejected: 0, waiting: 0, all: suggestions.length };
@@ -619,7 +619,7 @@ export function inWords(message: string, words: Lexicon): string {
 }
 
 /** How the reading of one document stands. */
-export type Reading = { label: string; failed: boolean; busy: boolean };
+type Reading = { label: string; failed: boolean; busy: boolean };
 
 const JOB_ERROR: Record<string, string> = {
   attempts_exhausted: "it stopped after three attempts",

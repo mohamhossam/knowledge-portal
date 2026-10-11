@@ -47,7 +47,7 @@ type Tracking = NonNullable<Offering["tracking"]>;
 type TrackingFlow = Tracking["flows"][number];
 
 /** Order tracking as one scenario reads it: none when the offering records no tracking. */
-export type ScenarioTracking = {
+type ScenarioTracking = {
   tracking: Tracking;
   /** Whether tracking is specified for this order type. */
   applies: boolean;
@@ -71,7 +71,7 @@ export function journeyFor(release: ExplorerRelease, offeringId: string, orderCo
 }
 
 /** The steps of one channel: those it names and those every channel shares, with the arrows between them. */
-export function forChannel(journey: Journey, channelId: string | null): Journey {
+function forChannel(journey: Journey, channelId: string | null): Journey {
   if (channelId === null) return journey;
   const activities = journey.activities.filter((step) => !(step.channels ?? []).length || (step.channels ?? []).includes(channelId));
   const kept = new Set(activities.map((step) => step.number));
@@ -161,7 +161,7 @@ export function trackingFor(scenario: Scenario): ScenarioTracking | null {
 }
 
 /** Whether a responsibility holds for an order type: it names none (so every one), or names this one. */
-export function appliesTo(responsibility: Responsibility, orderCode: string): boolean {
+function appliesTo(responsibility: Responsibility, orderCode: string): boolean {
   return !responsibility.order_types.length || responsibility.order_types.some((code) => same(code, orderCode));
 }
 

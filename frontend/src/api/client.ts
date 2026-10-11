@@ -15,7 +15,6 @@ export type IdentityConfig = Schemas["IdentityConfigResponse"];
 export type LibraryDocument = Schemas["LibraryView"];
 export type LibraryVersion = Schemas["LibraryVersion"];
 export type Publication = Schemas["Publication"];
-export type IngestionStage = Schemas["IngestionStage"];
 export type Release = Schemas["KnowledgeReleaseResponse"];
 /** The version in service as the explorer reads it: content only, for anyone signed in. */
 export type ExplorerRelease = Schemas["ExplorerReleaseResponse"];
@@ -25,27 +24,25 @@ export type PlanPrice = Schemas["PlanPriceResponse"];
 export type CatalogueSuggestions = Schemas["CatalogueSuggestionsResponse"];
 export type Organisation = Schemas["OrganisationResponse"];
 export type OrganisationAuditEvent = Schemas["OrganisationAuditEventResponse"];
-export type OriginalPreview = Schemas["OriginalPreview"];
+type OriginalPreview = Schemas["OriginalPreview"];
 export type ReferenceChunk = Schemas["ReferenceChunk"];
-export type BuildPreview = Schemas["CorpusBuildPreview"];
-export type DependencyPage = Schemas["LibraryDependencyPage"];
+type BuildPreview = Schemas["CorpusBuildPreview"];
+type DependencyPage = Schemas["LibraryDependencyPage"];
 export type Dependency = Schemas["LibraryDependency"];
-export type ImpactPage = Schemas["DependencyImpactPage"];
+type ImpactPage = Schemas["DependencyImpactPage"];
 export type Impact = Schemas["DependencyImpact"];
 export type OwnershipTransfer = Schemas["OwnershipTransfer"];
 /** A knowledge admin's grant to act on a document they don't own (Knowledge Center C). */
-export type AdminGrant = Schemas["AdminGrant"];
+type AdminGrant = Schemas["AdminGrant"];
 export type AdminRecordEntry = Schemas["LibraryAdminRecord"];
 export type LibraryRetryScope = Schemas["LibraryRetryScope"];
-export type LibraryRetryResult = Schemas["LibraryRetryResult"];
-export type BatchUpload = Schemas["BatchUploadResponse"];
-export type FileResult = Schemas["FileResult"];
-export type ReviewRequest = Schemas["LibraryReviewRequest"];
+type LibraryRetryResult = Schemas["LibraryRetryResult"];
+type BatchUpload = Schemas["BatchUploadResponse"];
+type ReviewRequest = Schemas["LibraryReviewRequest"];
 export type CatalogueSystem = Schemas["SystemDefinitionSchema"];
 export type Relationship = Schemas["SystemRelationshipSchema"];
 export type RelationshipKind = Schemas["RelationshipKind"];
 export type LandscapeDomain = Schemas["LandscapeDomainSchema"];
-export type CapabilityDomain = Schemas["CapabilityDomainSchema"];
 export type Offering = Schemas["ProductOfferingSchema"];
 export type Journey = Schemas["JourneySchema"];
 /** Where orders are placed, and the system each is entered through. */
@@ -57,36 +54,35 @@ export type JourneyActivity = Schemas["ActivitySchema"];
 export type SourceConfidence = Schemas["SourceConfidence"];
 export type ReleaseAuditEvent = Schemas["KnowledgeAuditEventResponse"];
 export type CatalogueDiff = Schemas["CatalogueDiffResponse"];
-export type MappingImpact = Schemas["MappingImpactResponse"];
-export type PrecedentSummaries = Schemas["PrecedentSummariesResponse"];
+type MappingImpact = Schemas["MappingImpactResponse"];
+type PrecedentSummaries = Schemas["PrecedentSummariesResponse"];
 export type ReleasePrecedents = Schemas["ReleasePrecedentsResponse"];
-export type DeliverySummaries = Schemas["DeliverySummariesResponse"];
+type DeliverySummaries = Schemas["DeliverySummariesResponse"];
 export type ReleaseDeliveries = Schemas["ReleaseDeliveriesResponse"];
-export type SystemOwnership = Schemas["SystemOwnershipResponse"];
+type SystemOwnership = Schemas["SystemOwnershipResponse"];
 export type CatalogueFileFormat = Schemas["CatalogueFileFormat"];
 export type Suggestion = Schemas["CatalogueSuggestionResponse"];
 export type SuggestionContent = Schemas["CandidateContentSchema"];
 export type SuggestionKind = Schemas["CandidateKind"];
-export type SuggestionMatch = Schemas["CandidateMatch"];
 export type PossibleMatch = Schemas["PossibleMatchResponse"];
 export type ExtractionRun = Schemas["ExtractionRunResponse"];
 export type ArchitectureJob = Schemas["ArchitectureJobResponse"];
 export type DocumentExtraction = Schemas["DocumentExtractionResponse"];
 export type RequirementCorpus = Schemas["RequirementCorpusResponse"];
-export type CorpusRequirementsPage = Schemas["CorpusRequirementsResponse"];
+type CorpusRequirementsPage = Schemas["CorpusRequirementsResponse"];
 export type CorpusRequirement = Schemas["CorpusRequirementResponse"];
-export type CorpusFindingsPage = Schemas["CorpusFindingsResponse"];
+type CorpusFindingsPage = Schemas["CorpusFindingsResponse"];
 export type CorpusFinding = Schemas["CorpusFindingResponse"];
 export type IndexState = Schemas["IndexState"];
 export type FindingAge = Schemas["FindingAge"];
 export type FindingKind = Schemas["FindingKind"];
-export type Nudge = Schemas["NudgeResponse"];
-export type Membership = Schemas["MembershipResponse"];
+type Nudge = Schemas["NudgeResponse"];
+type Membership = Schemas["MembershipResponse"];
 export type ReindexScope = Schemas["ReindexScope"];
 /** A historic Requirement: an old BRD with its Azure DevOps breakdown (Knowledge Center E). */
 export type HistoricDetail = Schemas["HistoricDetail"];
 export type HistoricSummary = Schemas["HistoricSummary"];
-export type HistoricPage = Schemas["HistoricPageResponse"];
+type HistoricPage = Schemas["HistoricPageResponse"];
 export type HistoricStatus = Schemas["HistoricStatus"];
 export type HistoricBrd = Schemas["BrdView"];
 export type HistoricRun = Schemas["RunView"];
@@ -97,11 +93,11 @@ export type HistoricChange = Schemas["ItemChangeView"];
 export type HistoricSharedRoot = Schemas["SharedRootView"];
 /** A Requirement whose prior art cites a historic one: who and when, never what (E2). */
 export type HistoricCitation = Schemas["CitationView"];
-export type HistoricCitedBy = Schemas["CitedByResponse"];
+type HistoricCitedBy = Schemas["CitedByResponse"];
 /** When knowledge was last confirmed still right, by whom, and when it falls due (Knowledge Center D). */
 export type ReviewStanding = Schemas["ReviewStanding"];
 export type ReviewState = Schemas["ReviewState"];
-export type ReviewConfirmation = Schemas["ReviewConfirmation"];
+type ReviewConfirmation = Schemas["ReviewConfirmation"];
 /** Confirming it is still right: an optional note, and why when it is not yours to confirm. */
 export type ConfirmReview = Schemas["ReviewRequest"];
 export type SystemStanding = Schemas["SystemStanding"];
@@ -116,7 +112,7 @@ export type CorpusFilters = {
   retiredOnly?: boolean;
 };
 export type FindingFilters = { kind?: FindingKind; age?: FindingAge; ownerId?: string };
-export type CitedPassage = Schemas["DocumentPassageResponse"];
+type CitedPassage = Schemas["DocumentPassageResponse"];
 export type CatalogueDocument = Schemas["KnowledgeDocumentVersionResponse"];
 export type DocumentLanguage = "en" | "ar" | "mixed";
 export type Person = Schemas["PersonSchema"];
@@ -127,19 +123,19 @@ export type SquadResource = Schemas["SquadResourceSchema"];
 export type SquadRole = Schemas["SquadRole"];
 /** A squad or product whose links the version in service leaves stale or out of step. */
 export type ReferenceFlag = Schemas["ReferenceFlagResponse"];
-export type SampleRequirements = Schemas["SampleRequirementsResponse"];
+type SampleRequirements = Schemas["SampleRequirementsResponse"];
 export type SampleRequirement = Schemas["SampleRequirementSchema"];
 export type ImpactComparison = Schemas["ImpactComparisonResponse"];
 export type DraftUpdate = Schemas["DraftUpdateRequest"];
 /** A change request from Requirement AI waiting in the inbox (requirement-portal ADR-0101, step 7). */
 export type ChangeRequest = Schemas["ChangeRequestResponse"];
-export type ChangeRequestReading = Schemas["ChangeRequestReadingResponse"];
+type ChangeRequestReading = Schemas["ChangeRequestReadingResponse"];
 /** A change request applied to a version, in its change history. */
 export type ChangeRecord = Schemas["ChangeRequestRecordSchema"];
 /** One passage the draft's index holds, cited as evidence for a system. */
-export type Evidence = { id: string; source_label: string; location: string; text: string; document_version_id?: string | null };
+type Evidence = { id: string; source_label: string; location: string; text: string; document_version_id?: string | null };
 /** What this draft would map a requirement to, with the evidence behind each system. */
-export type ImpactPreview = {
+type ImpactPreview = {
   release_id: string;
   system_ids: string[];
   citation_ids: string[];
@@ -210,7 +206,7 @@ async function send(path: string, init?: RequestInit): Promise<Response> {
   return response;
 }
 
-export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
+async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const session = credentialSession;
   const result = (await (await send(path, init)).json()) as T;
   session.signal.throwIfAborted();

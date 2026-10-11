@@ -1,0 +1,147 @@
+/* A status can be a sentence (a failure and its cause): it wraps, its icon on the first line. */
+.ds-status {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--status-gap);
+}
+
+.ds-status__icon {
+  flex: none;
+  margin-block-start: 0.2em;
+}
+
+.ds-status--neutral,
+.ds-status--stopped {
+  color: var(--color-ink-2);
+}
+
+.ds-status--working {
+  color: var(--color-info);
+}
+
+.ds-status--done {
+  color: var(--color-success);
+}
+
+/* Severe states carry weight as well as hue, so they never read lighter than routine ones. */
+.ds-status--attention {
+  color: var(--color-danger);
+  font-weight: var(--weight-strong);
+}
+
+.ds-status--held {
+  color: var(--color-warning);
+  font-weight: var(--weight-strong);
+}
+
+.ds-badge {
+  display: inline-grid;
+  place-items: center;
+  min-inline-size: var(--target-min);
+  padding-inline: var(--space-1);
+  border: var(--rule-hair) solid var(--badge-border);
+  border-radius: var(--badge-radius);
+  font-size: var(--text-meta);
+  font-stretch: var(--stretch-numeral);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink-2);
+}
+
+.ds-suggested {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  padding-inline: var(--space-2);
+  border: var(--rule-hair) solid var(--suggested-border);
+  border-radius: var(--radius-control);
+  background: var(--suggested-bg);
+  color: var(--suggested-fg);
+  font-size: var(--text-meta);
+}
+
+/* The icon stays beside its words in a narrow cell; the words wrap, and model details take their own line. */
+.ds-suggested > svg {
+  flex: none;
+}
+
+.ds-suggested > span:first-of-type {
+  flex: 1 1 0;
+  min-inline-size: 10ch;
+}
+
+.ds-suggested__detail {
+  flex-basis: 100%;
+  color: var(--color-ink-2);
+}
+
+.ds-empty {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border-block-start: var(--ledger-rule);
+  max-inline-size: 64ch;
+}
+
+.ds-empty__title {
+  font-weight: var(--weight-strong);
+}
+
+.ds-empty__why {
+  color: var(--color-ink-2);
+}
+
+.ds-skeleton {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.ds-skeleton__row {
+  block-size: var(--density-row);
+  background: var(--skeleton-bg);
+}
+
+.ds-toast {
+  position: sticky;
+  inset-block-end: var(--space-4);
+  z-index: var(--z-toast);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--overlay-radius);
+  background: var(--toast-bg);
+  color: var(--toast-fg);
+  box-shadow: var(--overlay-shadow);
+}
+
+.ds-toast__close {
+  display: inline-grid;
+  place-items: center;
+  inline-size: var(--target-min);
+  block-size: var(--target-min);
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.ds-jobs {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.ds-jobs__item {
+  display: grid;
+  gap: var(--space-1);
+  padding-block-end: var(--space-3);
+  border-block-end: var(--hair-rule);
+}
+
+.ds-jobs__timing,
+.ds-jobs__empty {
+  font-size: var(--text-meta);
+  color: var(--color-ink-2);
+}

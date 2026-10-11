@@ -10,7 +10,7 @@ import type { Plugin } from "vite";
  * alone because Vite's dev server relies on inline scripts for hot reload.
  */
 
-export type PolicySources = {
+type PolicySources = {
   /** `VITE_API_BASE`; an absolute URL adds its origin to `connect-src`. */
   apiBase?: string;
   /**
@@ -26,7 +26,7 @@ export const RUNTIME_IDENTITY_ORIGINS = "__CSP_IDENTITY_ORIGINS__";
 
 const INLINE_SCRIPT = /<script>([\s\S]*?)<\/script>/g;
 
-export function inlineScriptHashes(html: string): string[] {
+function inlineScriptHashes(html: string): string[] {
   return [...html.matchAll(INLINE_SCRIPT)].map((match) => {
     // Browsers hash the script as parsed, and HTML parsing turns CRLF and CR
     // into LF. Hashing the raw text breaks on a Windows (CRLF) checkout.

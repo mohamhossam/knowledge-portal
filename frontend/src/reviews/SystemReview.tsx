@@ -95,7 +95,7 @@ export function SystemReview({ system }: { system: CatalogueSystem }) {
 }
 
 /** "Last confirmed by Max Maintainer on 2 Oct 2026", or that it counts from the publication. */
-export function ReviewSince({ item, publishedAt }: { item: SystemStanding; publishedAt: string | null | undefined }) {
+function ReviewSince({ item, publishedAt }: { item: SystemStanding; publishedAt: string | null | undefined }) {
   return sameMoment(item.standing.last_reviewed_at, publishedAt)
     ? <>Never confirmed since this version was published on {formatDay(item.standing.last_reviewed_at)}</>
     : <>Last confirmed by {item.standing.reviewer.display_name} on {formatDay(item.standing.last_reviewed_at)}</>;

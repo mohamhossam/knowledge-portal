@@ -20,7 +20,7 @@ export type TableState =
   | { status: "error"; error: unknown; retry: () => void }
   | { status: "ready"; overview: Overview };
 
-export type OverviewState = {
+type OverviewState = {
   library: TableState;
   architecture: TableState;
   squads: TableState;

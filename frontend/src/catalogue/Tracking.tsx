@@ -9,10 +9,10 @@ type Flow = Tracking["flows"][number];
 type TrackingChannel = Tracking["channels"][number];
 
 /** A flow as one row: the read path a channel's tracking screen takes is marked as such. */
-export type TrackingRow = Flow & { readFor?: string };
+type TrackingRow = Flow & { readFor?: string };
 
 /** Who is reading: the explorer reads one order type through one channel; a sheet reads all. */
-export type TrackingFocus = {
+type TrackingFocus = {
   orderName: string;
   applies: boolean;
   /** The channel being read, when the order type names channels. */

@@ -9,7 +9,7 @@ type Note = Offering["lifecycle_notes"][number];
 type Block = Note["blocks"][number];
 
 /** The explorer reads the notes of one order type, through one channel. */
-export type LifecycleFocus = { orderCode: string; orderName: string; channelId: string | null };
+type LifecycleFocus = { orderCode: string; orderName: string; channelId: string | null };
 
 function sourced(item: { confidence?: string | null; source?: string | null }, sourceText: (text: string | null | undefined) => string | null): string | null {
   const confidence = item.confidence && item.confidence !== "confirmed" ? CONFIDENCE[item.confidence as keyof typeof CONFIDENCE] : null;

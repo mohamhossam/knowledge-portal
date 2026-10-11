@@ -14,16 +14,6 @@ export type PublicationState =
   | "withdrawn"
   | "discarded";
 
-export const STATE_LABEL: Record<PublicationState, string> = {
-  "in-service": "In service",
-  indexing: "Being indexed",
-  stuck: "Indexing stopped",
-  ready: "Built, awaiting activation",
-  previous: "Replaced",
-  withdrawn: "Withdrawn",
-  discarded: "Discarded",
-};
-
 /** Index attempts after which the service stops trying and waits for its owner. */
 export const ATTEMPT_LIMIT = 3;
 
@@ -62,8 +52,4 @@ export function canRetryIndexing(document: LibraryDocument): boolean {
   const latest = document.publications.at(-1);
   return Boolean(latest && !latest.withdrawn_at && !latest.activated_at && !latest.built_at
     && latest.indexing_attempts >= ATTEMPT_LIMIT);
-}
-
-export function policyLabel(policy: string): string {
-  return policy.startsWith("table-fields") ? "Table-aware" : "Passages";
 }

@@ -11,7 +11,7 @@ import { formatDay } from "../home/format";
 
 type Trace = ChangeRequest["trace"];
 export type Delivery = NonNullable<ChangeRequest["delivery"]>;
-export type OfferingDraft = NonNullable<ChangeRequest["draft"]>;
+type OfferingDraft = NonNullable<ChangeRequest["draft"]>;
 
 export const CHANGE_REQUESTS_KEY = ["architecture", "change-requests"] as const;
 

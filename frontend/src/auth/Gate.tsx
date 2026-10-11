@@ -5,7 +5,7 @@ import { useAuth } from "./authContext";
 import { BASE, REQUIREMENT_APP_URL } from "./paths";
 
 /** Where a signed-in reader who is not an admin reads the catalogue in service. */
-export const EXPLORER_URL = `${BASE}/explorer`;
+const EXPLORER_URL = `${BASE}/explorer`;
 
 /**
  * Nobody reaches a table until the portal knows who they are and that they

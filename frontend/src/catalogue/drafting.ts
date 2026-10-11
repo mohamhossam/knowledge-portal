@@ -77,7 +77,7 @@ export function withoutSystem(release: Release, systemId: string): DraftUpdate {
 /** A new system's starting shape. */
 export const blankSystem = (): CatalogueSystem => ({ id: "", name: "", aliases: [], capabilities: [], components: [], constraints: [], external: false, masters: [], reads: [] });
 
-export type BuildState = "built" | "building" | "failed" | "stale" | "never";
+type BuildState = "built" | "building" | "failed" | "stale" | "never";
 
 /** How far the draft's build for matching has got, at its current revision. */
 export function buildState(release: Release, job: ArchitectureJob | null | undefined): BuildState {
@@ -240,7 +240,7 @@ export function connectionSentence(change: CatalogueDiff["changes"][number], rel
   return { sentence: `${name(source, labelSource)} ${lead} ${name(target, labelTarget)}`, forWhat };
 }
 
-export type DiffSection = { item: Item; label: string; changes: CatalogueDiff["changes"] };
+type DiffSection = { item: Item; label: string; changes: CatalogueDiff["changes"] };
 
 /** The diff's changes by kind, in the timetable's order, each kind's changes added, then changed, then removed. */
 export function diffSections(diff: CatalogueDiff): DiffSection[] {

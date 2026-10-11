@@ -64,7 +64,7 @@ export const CONFIDENCE_OPTIONS = [
   ...(Object.keys(CONFIDENCE) as SourceConfidence[]).map((value) => ({ value, label: CONFIDENCE[value] })),
 ];
 
-export const AUDIT_ACTION: Record<string, string> = {
+const AUDIT_ACTION: Record<string, string> = {
   create_draft: "Started",
   rename: "Renamed",
   edit_draft: "Edited",
@@ -117,7 +117,7 @@ export function domainPath(landscape: Map<string, LandscapeDomain>, domainId: st
   return path;
 }
 
-export type DomainRow<T extends { id: string; parent_id?: string | null }> = { domain: T; depth: number };
+type DomainRow<T extends { id: string; parent_id?: string | null }> = { domain: T; depth: number };
 
 /** A domain tree in reading order: each domain, then its children, as the catalogue lists them. */
 export function domainTree<T extends { id: string; parent_id?: string | null }>(domains: T[]): DomainRow<T>[] {
@@ -138,7 +138,7 @@ export function domainTree<T extends { id: string; parent_id?: string | null }>(
   return rows;
 }
 
-export type SystemGroup = { id: string; path: string[]; systems: CatalogueSystem[] };
+type SystemGroup = { id: string; path: string[]; systems: CatalogueSystem[] };
 
 export const UNPLACED = "unplaced";
 
@@ -214,8 +214,8 @@ export function allConnections(book: Catalogue): Relationship[] {
   );
 }
 
-export type OfferingRole = { offering: Offering; component: string; role: string; orderTypes: string[]; description: string };
-export type JourneyRole = { journey: Journey; activity: JourneyActivity; performs: boolean };
+type OfferingRole = { offering: Offering; component: string; role: string; orderTypes: string[]; description: string };
+type JourneyRole = { journey: Journey; activity: JourneyActivity; performs: boolean };
 
 /** Where a system plays a part: the offerings' components it is responsible for, and the journey steps it takes. */
 export function systemRoles(book: Catalogue, systemId: string): { offerings: OfferingRole[]; journeys: JourneyRole[] } {
@@ -246,7 +246,7 @@ export function systemRoles(book: Catalogue, systemId: string): { offerings: Off
 }
 
 /** Steps sort by number as a number ("75" before "100"), then as text, as the service orders them. */
-export function stepOrder(number: string): [number, number, string] {
+function stepOrder(number: string): [number, number, string] {
   const match = /^\d+(\.\d+)?/.exec(number);
   return match ? [0, Number(match[0]), number] : [1, 0, number];
 }

@@ -106,7 +106,7 @@
   gap: var(--s2);
   max-width: 44rem;
   padding-block: var(--s3);
-  border-block: 2px solid var(--rule-heavy);
+  border-block: 2px solid var(--tt-rule-heavy);
 }
 
 .knowledge__confirm-title {
@@ -150,7 +150,7 @@
 
 .govtable tbody .knowledge__act-row td {
   padding: var(--s3) var(--s4) var(--s4);
-  border-bottom: 2px solid var(--rule-heavy);
+  border-bottom: 2px solid var(--tt-rule-heavy);
 }
 
 .knowledge__act-form {
@@ -282,7 +282,7 @@
 
 .review__form {
   padding: var(--s3) var(--s4) var(--s4);
-  border-bottom: 2px solid var(--rule-heavy);
+  border-bottom: 2px solid var(--tt-rule-heavy);
   background: var(--stock-band);
 }
 
@@ -321,7 +321,7 @@
 
 .review__group-head {
   padding-bottom: var(--s1);
-  border-bottom: 2px solid var(--rule-heavy);
+  border-bottom: 2px solid var(--tt-rule-heavy);
   color: var(--ink-2);
   font-size: var(--t-meta);
   font-stretch: var(--width-condensed);
@@ -583,7 +583,7 @@
 }
 
 .historic h3[tabindex="-1"]:focus-visible {
-  outline: var(--focus-ring);
+  outline: var(--tt-focus-ring);
   outline-offset: 2px;
 }
 
