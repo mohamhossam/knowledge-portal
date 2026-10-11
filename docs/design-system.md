@@ -292,6 +292,27 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
 - **`HelpContent`:** the four parts of consistent help, always in order: this page, shortcuts,
   terms, ask the knowledge team (WCAG 3.2.6).
 
+### Focus mode (`focus.tsx`)
+
+One piece of work, one question at a time (UX rebuild plan, phase 2): a library review and a
+draft's decisions. A route whose path ends in `/focus` renders without the sidebar (`AppShell`
+`reader`).
+
+- **`FocusFrame`:** the work's name and where you are ("Question 2 of 5", "Summary"), a tertiary
+  **Leave** with its Esc key, a progress line whose segments repeat the "N of M answered" words
+  (answered in the success tone, skipped in the warning tone, the current one in maroon), and an
+  optional `aside` (a diagram) beside the question from 72rem, under it below. Esc leaves from
+  anywhere but a text field. The column is centred at `--focus-measure`.
+- **`FocusQuestion`:** a form: title, lead, the source it comes from (one heavy rule, never a
+  fill), then radio cards, each its answer (the accessible name) and what it does (the
+  description). Keys 1 to 9 choose, Enter confirms from anywhere but a button, link or text
+  area, Skip leaves it for later. Without an answer the primary button says why it can't run.
+- **`FocusTitle`:** the h1. The frame's first title leaves focus to the shell (a page opened
+  directly keeps the skip link first; the keys still work from there); each next question's
+  heading takes focus as it arrives, so it is announced.
+- **The summary is the commit.** Nothing is saved, published or sent before the summary the
+  person confirms. Leaving with unsent answers asks first (`Dialog`).
+
 ### Diagrams (`design/diagram/`)
 
 A separate folder: import from `design/diagram`, not `design/components`. Shown in the gallery's
@@ -323,7 +344,7 @@ Diagrams section with two seed-shaped examples (CWOM in context, the ownership t
 |---|---|
 | `useFocusAfterRender` | Focus after commit. Not `requestAnimationFrame`, which stops in background tabs. |
 | `useStickySize` | A sticky region publishes `--sticky-top`, `--sticky-state` or `--sticky-bottom`, so scroll padding keeps focus clear (§1.1) |
-| `useDisclosure` | Focus in on open, back to the opener (or a fallback) on close |
+| `useDisclosure` | Focus in on open, back to the opener (or a fallback) on close; `closeTo` sends it to what was said instead |
 | `useDelayedCommit` | Show a decision now, send it after 6s, `undo`, `flush` on leave (§4; BG3) |
 | `rovingKeyDown` | One tab stop with arrow keys for lists and toolbars |
 

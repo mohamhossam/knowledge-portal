@@ -446,7 +446,7 @@ export function architectureOverview(
             }
           : overdueSystems.length + dueSystems.length > 0
             ? {
-                to: "/reminders",
+                to: "/",
                 label: overdueSystems.length > 0
                   ? `${count(overdueSystems.length, "system")} overdue for re-confirmation`
                   : `${count(dueSystems.length, "system")} due for re-confirmation within two weeks`,

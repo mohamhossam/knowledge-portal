@@ -12,7 +12,7 @@ import { routerPath } from "../auth/paths";
 import { useAuth } from "../auth/authContext";
 import { formatDay } from "../home/format";
 import { DocumentReview } from "../reviews/DocumentReview";
-import { RouterLink } from "../shell/links";
+import { ButtonLink, RouterLink } from "../shell/links";
 import { ActAsAdmin, ActingBanner } from "./AdminGrant";
 import { type DocumentContext, type ReviewState, useDocumentContext } from "./documentContext";
 import { DOC_STATE_WORDS, DOC_TONE, docState } from "./docState";
@@ -148,7 +148,17 @@ function Record({ document, hook }: { document: LibraryDocument; hook: Hook }) {
     }
   };
 
-  const context: DocumentContext = { document, hook, review, setReview, dirty, announce };
+  const context: DocumentContext = { document, hook, review, setReview, dirty, announce, leaveTo: leave.leaveTo };
+
+  // Focus mode is the whole page: no head, no tabs; the same working copy and leave guard.
+  if (location.pathname.endsWith("/focus")) {
+    return (
+      <div className="lib lib-record">
+        <Outlet context={context} />
+        {leave.dialog}
+      </div>
+    );
+  }
 
   return (
     <div className="lib lib-record">
@@ -169,6 +179,7 @@ function Record({ document, hook }: { document: LibraryDocument; hook: Hook }) {
         actions={
           document.can_edit ? (
             <ActionGroup>
+              {desk && <ButtonLink to={`${base}/focus`} variant="primary">Review in focus mode</ButtonLink>}
               {document.is_owner && (
                 <FileButton
                   busy={hook.replace.isPending}
@@ -406,6 +417,9 @@ function ReaderView() {
 }
 
 
+const insideDocument = (documentId: string, path: string) =>
+  path.startsWith(`/library/${encodeURIComponent(documentId)}`) || path.startsWith(`/library/${documentId}`);
+
 /**
  * §4: unsaved review work asks before it is lost. Closing or reloading the tab uses the
  * browser's own question; a link that leaves the document (the rail, Jobs, a search result)
@@ -415,6 +429,11 @@ function ReaderView() {
 function useLeaveGuard(documentId: string, dirty: number) {
   const navigate = useNavigate();
   const [to, setTo] = useState<string | null>(null);
+  // A button that leaves (focus mode's Leave) asks the same question a link does.
+  const leaveTo = (path: string) => {
+    if (dirty > 0 && !insideDocument(documentId, path.split(/[?#]/)[0]!)) setTo(path);
+    else navigate(path);
+  };
   useEffect(() => {
     if (dirty === 0) return;
     const warn = (event: BeforeUnloadEvent) => event.preventDefault();
@@ -424,7 +443,7 @@ function useLeaveGuard(documentId: string, dirty: number) {
       if (!link || link.target || link.hasAttribute("download") || link.origin !== window.location.origin) return;
       const path = routerPath(link.pathname);
       // The document's own pages keep the unsaved review: it lives above them.
-      if (path.startsWith(`/library/${encodeURIComponent(documentId)}`) || path.startsWith(`/library/${documentId}`)) return;
+      if (insideDocument(documentId, path)) return;
       event.preventDefault();
       event.stopPropagation();
       setTo(`${path}${link.search}${link.hash}`);
@@ -451,7 +470,7 @@ function useLeaveGuard(documentId: string, dirty: number) {
       <p>You have {plural(dirty, "unsaved change")} to this review. Leaving loses {dirty === 1 ? "it" : "them"}.</p>
     </Dialog>
   );
-  return { dialog };
+  return { dialog, leaveTo };
 }
 
 const TAB_NAMES: Record<string, string | undefined> = { versions: "Versions", "cited-by": "Cited by", ownership: "Ownership" };
