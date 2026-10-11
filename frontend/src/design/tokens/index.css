@@ -123,7 +123,7 @@ html:has(.ds-root) {
  * line or outline instead. Words and icons carry the rest.
  */
 @media (forced-colors: active) {
-  .ds-rail__link[aria-current="page"] {
+  .ds-sidebar__link[aria-current="page"] {
     border-inline-start: var(--rail-marker-width) solid Highlight;
   }
 

@@ -67,7 +67,7 @@ function open(path: string) {
 
 describe("the shell", () => {
   it("offers the same utilities, skip links and areas on a rebuilt page and on a legacy one", async () => {
-    for (const [path, title] of [["/", "Your work"], ["/reminders", "Due for review"]] as const) {
+    for (const [path, title] of [["/", "To do"], ["/reminders", "Due for review"]] as const) {
       open(path);
       await screen.findByRole("heading", { level: 1, name: title });
       const banner = screen.getByRole("banner");
@@ -79,7 +79,7 @@ describe("the shell", () => {
       expect(help).toHaveAccessibleName("Help");
       expect(account).toHaveAccessibleName("Account: Amina Owner");
       expect(screen.getByRole("link", { name: "Skip to content" })).toBeInTheDocument();
-      expect(within(screen.getByRole("navigation", { name: "Areas" })).getByRole("link", { name: /Your work/ })).toHaveAccessibleName("Your work 1 need you");
+      expect(within(screen.getByRole("navigation", { name: "Areas" })).getByRole("link", { name: /To do/ })).toHaveAccessibleName("To do 1 need you");
       document.body.innerHTML = "";
     }
   });
@@ -90,10 +90,10 @@ describe("the shell", () => {
     expect(legacy.closest(".ds-legacy")).not.toBeNull();
     document.body.innerHTML = "";
     open("/");
-    expect((await screen.findByRole("heading", { level: 1, name: "Your work" })).closest(".ds-legacy")).toBeNull();
+    expect((await screen.findByRole("heading", { level: 1, name: "To do" })).closest(".ds-legacy")).toBeNull();
   });
 
-  it("ranks the failed read first on Your work, and the rail counts the same entries", async () => {
+  it("ranks the failed read first on To do, and the sidebar counts the same entries", async () => {
     open("/");
     const attention = await screen.findByRole("region", { name: /Needs attention/ });
     expect(attention).toHaveTextContent("Couldn't read");
@@ -113,7 +113,7 @@ describe("the shell", () => {
     await waitFor(() => expect(said).toHaveFocus());
   });
 
-  it("says a part of Your work couldn't be read, instead of saying nothing is due, and retries it", async () => {
+  it("says a part of To do couldn't be read, instead of saying nothing is due, and retries it", async () => {
     const reminders = vi.spyOn(api, "reminders").mockRejectedValue(new Error("offline"));
     open("/");
     const due = await screen.findByRole("region", { name: "Re-confirmations due" });
@@ -128,10 +128,10 @@ describe("the shell", () => {
 
   it("opens Help beside the page, with the four parts, and hands focus back on Esc", async () => {
     open("/");
-    await screen.findByRole("heading", { level: 1, name: "Your work" });
+    await screen.findByRole("heading", { level: 1, name: "To do" });
     const help = screen.getByRole("button", { name: "Help" });
     await userEvent.click(help);
-    for (const part of ["Your work", "Keyboard shortcuts", "Terms on this page", "Ask the knowledge team"]) {
+    for (const part of ["To do", "Keyboard shortcuts", "Terms on this page", "Ask the knowledge team"]) {
       expect(screen.getByRole("heading", { level: 3, name: part })).toBeInTheDocument();
     }
     await userEvent.keyboard("{Escape}");
@@ -141,7 +141,7 @@ describe("the shell", () => {
 
   it("shows the failed read in Jobs with its cause and the fix", async () => {
     open("/");
-    await screen.findByRole("heading", { level: 1, name: "Your work" });
+    await screen.findByRole("heading", { level: 1, name: "To do" });
     await userEvent.click(screen.getByRole("button", { name: /Jobs/ }));
     const jobs = screen.getByRole("list", { name: "Jobs" });
     expect(jobs).toHaveTextContent("Needs attention");
@@ -158,7 +158,7 @@ describe("the shell", () => {
     const retry = vi.spyOn(api, "retry").mockResolvedValue(failed);
     const cancel = vi.spyOn(api, "cancel").mockResolvedValue(running);
     open("/");
-    await screen.findByRole("heading", { level: 1, name: "Your work" });
+    await screen.findByRole("heading", { level: 1, name: "To do" });
     await userEvent.click(screen.getByRole("button", { name: /Jobs/ }));
     const jobs = screen.getByRole("list", { name: "Jobs" });
     expect(jobs).toHaveTextContent("Attempt 2 of 3");
@@ -171,7 +171,7 @@ describe("the shell", () => {
 
   it("keeps page-wide shortcuts off until the person turns them on in Account (WCAG 2.1.4)", async () => {
     open("/");
-    await screen.findByRole("heading", { level: 1, name: "Your work" });
+    await screen.findByRole("heading", { level: 1, name: "To do" });
     await userEvent.keyboard("?");
     expect(screen.queryByRole("heading", { level: 2, name: "Help" })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Account: Amina Owner" }));
@@ -184,7 +184,7 @@ describe("the shell", () => {
 
   it("hands focus back to the button pressed last when switching panels", async () => {
     open("/");
-    await screen.findByRole("heading", { level: 1, name: "Your work" });
+    await screen.findByRole("heading", { level: 1, name: "To do" });
     await userEvent.click(screen.getByRole("button", { name: /Jobs/ }));
     const help = screen.getByRole("button", { name: "Help" });
     await userEvent.click(help);
@@ -195,7 +195,7 @@ describe("the shell", () => {
 
   it("opens Help at its shortcuts from the address", async () => {
     open("/?help=shortcuts");
-    await screen.findByRole("heading", { level: 1, name: "Your work" });
+    await screen.findByRole("heading", { level: 1, name: "To do" });
     expect(await screen.findByRole("heading", { level: 3, name: "Keyboard shortcuts" })).toHaveFocus();
   });
 
@@ -212,7 +212,7 @@ describe("the shell", () => {
 
   it("switches the offline persona from Account", async () => {
     open("/");
-    await screen.findByRole("heading", { level: 1, name: "Your work" });
+    await screen.findByRole("heading", { level: 1, name: "To do" });
     await userEvent.click(screen.getByRole("button", { name: "Account: Amina Owner" }));
     await userEvent.selectOptions(screen.getByRole("combobox", { name: /Persona/ }), "fake-reviewer");
     expect(auth.switchFakeActor).toHaveBeenCalledWith("fake-reviewer");
@@ -221,7 +221,7 @@ describe("the shell", () => {
   it("opens search with Ctrl+K from anywhere, finds a document by its name, and opens it", async () => {
     const search = vi.spyOn(api, "search").mockResolvedValue([]);
     open("/");
-    await screen.findByRole("heading", { level: 1, name: "Your work" });
+    await screen.findByRole("heading", { level: 1, name: "To do" });
     await userEvent.keyboard("{Control>}k{/Control}");
     const field = screen.getByRole("combobox", { name: "Search the library and catalogue" });
     expect(field).toHaveFocus();

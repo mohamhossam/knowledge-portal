@@ -7,7 +7,7 @@ type HelpEntry = { title: string; body: string[]; terms: [string, string][]; key
 
 export const PAGE_KEYS: [string, string][] = [
   ["?", "Open this help"],
-  ["g w / l / c / o / r", "Go to Your work, Library, Catalogue, Ownership or Requirements"],
+  ["g w / l / c / o / r", "Go to To do, Library, Catalogue, Ownership or Requirements"],
   ["g j", "Open Jobs"],
   ["/", "Find on this page, where the page has a find field"],
   ["Esc", "Close a panel and go back to what opened it"],
@@ -188,13 +188,13 @@ const PAGES: { match: (path: string) => boolean; entry: HelpEntry }[] = [
   {
     match: (path) => path === "/",
     entry: {
-      title: "Your work",
+      title: "To do",
       body: ["Everything that needs you, most urgent first. Switch to Everyone's to see the whole team's."],
       terms: [
         ["Needs attention", "A failed job or blocked item someone must act on."],
         ["Job", "Background work: reading, indexing, building, checking."],
         ["Re-confirmation", "Confirming a document or system is still right, when due."],
-        ["Gap", "A system in service with no squad, or no contact. Gaps are listed, not counted in Your work's number."],
+        ["Gap", "A system in service with no squad, or no contact. Gaps are listed, not counted in To do's number."],
       ],
       keys: [],
     },

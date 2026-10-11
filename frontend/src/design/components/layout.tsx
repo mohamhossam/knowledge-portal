@@ -1,13 +1,15 @@
 import "./layout.css";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Info, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import {
   type ComponentType,
   type KeyboardEvent,
   type ReactNode,
+  type RefObject,
   useEffect,
   useId,
   useRef,
+  useState,
   useSyncExternalStore,
 } from "react";
 
@@ -32,14 +34,79 @@ export type LinkLike = ComponentType<{ href: string; className?: string; "aria-c
 
 const Anchor: LinkLike = ({ href, children, ...rest }) => <a href={href} {...rest}>{children}</a>;
 
-export type NavItem = { href: string; label: string; current?: boolean; count?: number; countLabel?: string; /** A 16px icon drawn before the label in the areas bar. */ icon?: ReactNode };
+export type NavItem = {
+  href: string;
+  label: string;
+  current?: boolean;
+  count?: number;
+  countLabel?: string;
+  /** A 16px icon drawn before the label; on its own when the sidebar is collapsed. */
+  icon?: ReactNode;
+  /** The sidebar group it starts or belongs to ("Look up"); consecutive items share one. */
+  group?: string;
+};
+
+const SIDEBAR_KEY = "knowledge-portal.sidebar";
+const sidebarListeners = new Set<() => void>();
+
+function readSidebar(): "expanded" | "collapsed" | null {
+  try {
+    const value = window.localStorage.getItem(SIDEBAR_KEY);
+    return value === "expanded" || value === "collapsed" ? value : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
- * IA §2, in the catalogue's two tiers: skip links; the maroon masthead (the
- * Etisalat lockup, then the way out and the utilities in a fixed order on every
- * page); under it the white areas bar (each area an icon and a label, the
- * current one underlined in maroon), both pinned together; then the page. On a location change, focus moves to the page h1 and the view
- * starts at the top (§1). `reader` drops the rail (Explorer readers).
+ * The sidebar's width: what the person chose last, kept in this browser; until
+ * they choose, expanded on a window 1440px or wider and collapsed to icons below.
+ */
+function useSidebar(): [boolean, () => void] {
+  const wide = useMediaQuery("(min-width: 1440px)");
+  const chosen = useSyncExternalStore(
+    (onChange) => {
+      sidebarListeners.add(onChange);
+      return () => sidebarListeners.delete(onChange);
+    },
+    readSidebar,
+    () => null,
+  );
+  const [memory, setMemory] = useState<"expanded" | "collapsed" | null>(null);
+  const choice = chosen ?? memory;
+  const expanded = choice ? choice === "expanded" : wide;
+  const toggle = () => {
+    const next = expanded ? "collapsed" : "expanded";
+    setMemory(next);
+    try {
+      window.localStorage.setItem(SIDEBAR_KEY, next);
+    } catch {
+      // Blocked storage: the choice lasts for this page.
+    }
+    sidebarListeners.forEach((listener) => listener());
+  };
+  return [expanded, toggle];
+}
+
+/** Consecutive items that share a group, in order. */
+function grouped(items: NavItem[]): { name?: string; items: NavItem[] }[] {
+  const groups: { name?: string; items: NavItem[] }[] = [];
+  for (const item of items) {
+    const last = groups.at(-1);
+    if (last && last.name === item.group) last.items.push(item);
+    else groups.push({ name: item.group, items: [item] });
+  }
+  return groups;
+}
+
+/**
+ * The workbench frame (UX rebuild, phase 1): skip links; a slim maroon brand
+ * bar (the Etisalat lockup, global search, the way out and the utilities, in a
+ * fixed order on every page); under it a sidebar of the areas beside the page.
+ * The sidebar collapses to icons (each keeps its name, shown beside it on hover
+ * or focus); below 640px it becomes a row that scrolls sideways. On a location
+ * change, focus moves to the page h1 and the view starts at the top (§1).
+ * `reader` drops the sidebar (Explorer readers).
  */
 export function AppShell({
   product = "Knowledge Portal",
@@ -60,13 +127,15 @@ export function AppShell({
 }: {
   product?: string;
   homeHref: string;
-  /** The logo slot; defaults to the white Etisalat lockup the catalogue uses. */
+  /** The logo slot; defaults to the white Etisalat lockup. */
   logo?: ReactNode;
   /** The way back to requirement-portal, e.g. { href, label: "Requirement AI" }. */
   outbound?: { href: string; label: string };
   /** Jobs, Help, Account: the same three, in the same place, on every page (WCAG 3.2.6). */
   utilities?: ReactNode;
+  /** The sidebar's areas, top first; `group` names the groups. */
   navigation?: NavItem[];
+  /** Areas set apart at the sidebar's foot. */
   secondaryNavigation?: NavItem[];
   reader?: boolean;
   /** Changes on every route change (e.g. location.pathname). */
@@ -76,7 +145,7 @@ export function AppShell({
   banner?: ReactNode;
   /** A non-modal side panel (Jobs, Help, Account) beside the page; the page stays usable. */
   panel?: ReactNode;
-  /** The way into global search, first on the masthead's end (e.g. a SearchTrigger). */
+  /** The way into global search, in the middle of the brand bar (e.g. a SearchTrigger). */
   search?: ReactNode;
   /** A modal layer outside the page and the panel (e.g. the search dialog), so neither can make it inert. */
   overlay?: ReactNode;
@@ -88,6 +157,9 @@ export function AppShell({
   // move under the panel (WCAG 2.4.11). Esc or Close hands focus back.
   const narrow = useMediaQuery("(max-width: 1023px)");
   const covered = Boolean(panel) && narrow;
+  const [expanded, toggleSidebar] = useSidebar();
+  // Esc hides a collapsed item's name shown on hover or focus, until focus or the pointer moves (WCAG 1.4.13).
+  const [quiet, setQuiet] = useState(false);
   const first = useRef(true);
   useEffect(() => {
     if (first.current) {
@@ -115,7 +187,7 @@ export function AppShell({
     }
     // The page is still loading (a skeleton, or its own code chunk): focus its h1 when it
     // arrives, unless the person has moved focus somewhere themselves in the meantime. Focus
-    // still on what navigated here (the rail link pressed) hasn't been moved by them.
+    // still on what navigated here (the sidebar link pressed) hasn't been moved by them.
     if (!main) return;
     const navigatedFrom = active;
     const observer = new MutationObserver(() => {
@@ -133,33 +205,40 @@ export function AppShell({
     };
   }, [locationKey]);
 
-  const nav = (items: NavItem[]) =>
-    items.map((item) => (
-      <li key={`${item.href}|${item.label}`}>
-        <Link href={item.href} className="ds-rail__link" aria-current={item.current ? "page" : undefined}>
-          {item.icon && <span className="ds-rail__icon" aria-hidden="true">{item.icon}</span>}
-          <span>{item.label}</span>
-          {item.count !== undefined && item.count > 0 && <Badge count={item.count} label={item.countLabel} />}
-        </Link>
-      </li>
+  const list = (items: NavItem[], key: string) =>
+    grouped(items).map((group, index) => (
+      <div key={`${key}-${index}`} className="ds-sidebar__group">
+        {group.name && <p className="ds-sidebar__heading" id={`ds-rail-${key}-${index}`}>{group.name}</p>}
+        <ul aria-labelledby={group.name ? `ds-rail-${key}-${index}` : undefined}>
+          {group.items.map((item) => (
+            <li key={`${item.href}|${item.label}`}>
+              <Link href={item.href} className="ds-sidebar__link" aria-current={item.current ? "page" : undefined}>
+                {item.icon && <span className="ds-sidebar__icon" aria-hidden="true">{item.icon}</span>}
+                <span className="ds-sidebar__label">{item.label}</span>
+                {item.count !== undefined && item.count > 0 && <Badge count={item.count} label={item.countLabel} />}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
     ));
 
   return (
-    <div className={`ds-root ds-shell${reader ? " ds-shell--reader" : ""}${panel ? " ds-shell--panel" : ""}`}>
+    <div className={`ds-root ds-shell${reader ? " ds-shell--reader" : ""}${panel ? " ds-shell--panel" : ""}${expanded ? "" : " ds-shell--collapsed"}`}>
       <a className="ds-skip" href="#ds-main">Skip to content</a>
       {!reader && <a className="ds-skip" href="#ds-rail">Skip to navigation</a>}
-      {/* The catalogue's two tiers, pinned together and measured as one: the maroon masthead, then the white areas bar. */}
+      {/* The slim brand bar, pinned and measured (--sticky-top). */}
       <div className="ds-topbar" ref={masthead}>
         <header className="ds-masthead">
           <div className="ds-masthead__brand">
             <Link href={homeHref} className="ds-masthead__home">
-              {logo ?? <img className="ds-masthead__logo" src={etisalatLogo} alt="Etisalat" width={115} height={24} />}
+              {logo ?? <img className="ds-masthead__logo" src={etisalatLogo} alt="Etisalat" width={96} height={20} />}
               <span className="ds-masthead__divider" aria-hidden="true" />
               <span className="ds-masthead__product">{product}</span>
             </Link>
           </div>
+          {search && <div className="ds-masthead__search" role="search" aria-label="Portal">{search}</div>}
           <div className="ds-masthead__end">
-            {search && <div className="ds-masthead__search" role="search" aria-label="Portal">{search}</div>}
             {outbound && (
               <a className="ds-masthead__out" href={outbound.href}>
                 {outbound.label}{" "}
@@ -169,16 +248,31 @@ export function AppShell({
             {utilities && <div className="ds-masthead__utilities">{utilities}</div>}
           </div>
         </header>
-        {!reader && (
-          <nav id="ds-rail" className="ds-rail" aria-label="Areas" tabIndex={-1} inert={covered || undefined}>
-            <ul>{nav(navigation)}</ul>
-            {secondaryNavigation.length > 0 && <ul className="ds-rail__secondary">{nav(secondaryNavigation)}</ul>}
-          </nav>
-        )}
       </div>
       {/* Always present, so a banner that appears later is announced (a live region must exist first). */}
       <div className={banner ? "ds-banner" : "ds-visually-hidden"} role="status">{banner}</div>
       <div className="ds-shell__body">
+        {!reader && (
+          <nav
+            id="ds-rail"
+            className={`ds-sidebar${quiet ? " ds-sidebar--quiet" : ""}`}
+            aria-label="Areas"
+            tabIndex={-1}
+            inert={covered || undefined}
+            onKeyDown={(event) => event.key === "Escape" && !expanded && setQuiet(true)}
+            onFocus={() => setQuiet(false)}
+            onPointerMove={quiet ? () => setQuiet(false) : undefined}
+          >
+            <div className="ds-sidebar__lists">
+              {list(navigation, "main")}
+              {secondaryNavigation.length > 0 && <div className="ds-sidebar__secondary">{list(secondaryNavigation, "more")}</div>}
+            </div>
+            <button type="button" className="ds-sidebar__toggle" aria-label={expanded ? "Collapse the sidebar" : "Expand the sidebar"} onClick={toggleSidebar}>
+              {expanded ? <PanelLeftClose size={16} aria-hidden="true" /> : <PanelLeftOpen size={16} aria-hidden="true" />}
+              <span className="ds-sidebar__toggle-label" aria-hidden="true">Collapse</span>
+            </button>
+          </nav>
+        )}
         <main id="ds-main" className="ds-main" tabIndex={-1} inert={covered || undefined}>
           {children}
         </main>
@@ -202,8 +296,11 @@ export function MastheadButton({ icon, label, hiddenPrefix, count, countLabel, e
 }
 
 /**
- * Every page's head: the h1 receives focus on arrival and sets the document
- * title first; status, owner and provenance sit under it; actions to the end.
+ * Every page's head, on one line: the h1 (the record's or the page's own name)
+ * with its status and facts beside it, the actions at the end. The h1
+ * receives focus on arrival and sets the document title first. Where the page
+ * sits and what it is for (breadcrumbs, lead, provenance) wait behind "About
+ * this page". `children` (tabs, a draft's steps) take a second, slim row.
  */
 export function PageHeader({
   title,
@@ -218,11 +315,14 @@ export function PageHeader({
   title: ReactNode;
   /** The tab title; defaults to the title when it is a string. */
   documentTitle?: string;
+  /** What the page is for, in a sentence: behind "About this page". */
   lead?: ReactNode;
+  /** Status and facts, on the title's line (a Status there shows as a pill). */
   meta?: ReactNode;
+  /** Where the record comes from: behind "About this page". */
   provenance?: ReactNode;
   actions?: ReactNode;
-  /** Where this page sits (a Breadcrumbs), above the title. */
+  /** Where this page sits (a Breadcrumbs): behind "About this page". */
   breadcrumbs?: ReactNode;
   /** Tabs, sub-navigation or a state line under the head. */
   children?: ReactNode;
@@ -231,19 +331,81 @@ export function PageHeader({
   useEffect(() => {
     if (tabTitle) document.title = `${tabTitle} · Knowledge portal`;
   }, [tabTitle]);
+  const heading = useRef<HTMLHeadingElement>(null);
+  useTruncatedTitle(heading);
   return (
     <div className="ds-pagehead">
-      {breadcrumbs}
       <div className="ds-pagehead__top">
         <div className="ds-pagehead__titles">
-          <h1 id="ds-page-title" tabIndex={-1} dir="auto">{title}</h1>
-          {lead && <p className="ds-pagehead__lead">{lead}</p>}
+          <h1 ref={heading} id="ds-page-title" tabIndex={-1} dir="auto">{title}</h1>
           {meta && <div className="ds-pagehead__meta">{meta}</div>}
-          {provenance && <p className="ds-provenance">{provenance}</p>}
+          {(breadcrumbs || lead || provenance) && (
+            <PageAbout>
+              {breadcrumbs}
+              {lead && <p className="ds-pagehead__lead">{lead}</p>}
+              {provenance && <p className="ds-provenance">{provenance}</p>}
+            </PageAbout>
+          )}
         </div>
         {actions && <div className="ds-pagehead__actions">{actions}</div>}
       </div>
       {children}
+    </div>
+  );
+}
+
+/** A name cut short by its ellipsis shows whole on hover (a `title`), and only then. */
+function useTruncatedTitle(ref: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const element = ref.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    const check = () => {
+      if (element.scrollWidth > element.clientWidth + 1) element.title = element.textContent ?? "";
+      else element.removeAttribute("title");
+    };
+    check();
+    const observer = new ResizeObserver(check);
+    observer.observe(element);
+    return () => observer.disconnect();
+  });
+}
+
+/**
+ * "About this page": a disclosure beside the title, not a modal. Its panel
+ * follows the button in reading order; Esc or a press outside closes it, and
+ * Esc hands focus back to the button.
+ */
+function PageAbout({ children }: { children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  const wrap = useRef<HTMLDivElement>(null);
+  const button = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const outside = (event: PointerEvent) => {
+      if (!wrap.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", outside);
+    return () => document.removeEventListener("pointerdown", outside);
+  }, [open]);
+  return (
+    <div
+      ref={wrap}
+      className="ds-pageabout"
+      onKeyDown={(event) => {
+        if (event.key !== "Escape" || !open) return;
+        event.stopPropagation();
+        setOpen(false);
+        button.current?.focus();
+      }}
+    >
+      <button ref={button} type="button" className="ds-icon-button ds-pageabout__button" aria-expanded={open} aria-controls={id} onClick={() => setOpen((on) => !on)}>
+        <Info size={16} aria-hidden="true" />
+        <span className="ds-visually-hidden">About this page</span>
+      </button>
+      <div id={id} className="ds-pageabout__panel" hidden={!open}>
+        {children}
+      </div>
     </div>
   );
 }
@@ -381,18 +543,48 @@ export function Toolbar({ label, children }: { label: string; children: ReactNod
 }
 
 /**
- * The review desk's split (from direction C): the list beside a full-height
- * sticky pane from 1200 px; stacked below that, with the pane after the list.
+ * The list and its record (UX rebuild, phase 1): once the page is wide enough
+ * the list and the record sit side by side and fill the window down to the
+ * page's bottom bar, each scrolling on its own, so the record never scrolls
+ * away from the row it shows. Narrower, they stack, the record after the list.
  */
 export function SplitPane({ list, pane, paneLabel }: { list: ReactNode; pane: ReactNode; paneLabel: string }) {
+  const split = useRef<HTMLDivElement>(null);
+  useFillHeight(split);
   return (
-    <div className="ds-split">
+    <div ref={split} className="ds-split">
       <div className="ds-split__list">{list}</div>
       <aside className="ds-split__pane" aria-label={paneLabel}>
         {pane}
       </aside>
     </div>
   );
+}
+
+/**
+ * Publishes where an element starts on the page (--split-top), so CSS can give
+ * it the rest of the window. Measured again whenever the page above it changes.
+ */
+function useFillHeight(ref: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const element = ref.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    let last = "";
+    const measure = () => {
+      const top = `${Math.round(element.getBoundingClientRect().top + window.scrollY)}px`;
+      if (top === last) return;
+      last = top;
+      element.style.setProperty("--split-top", top);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(document.getElementById("ds-main") ?? document.body);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [ref]);
 }
 
 /** Pages of a long list; the current page is marked and said. */

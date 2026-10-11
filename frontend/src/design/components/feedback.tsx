@@ -44,6 +44,23 @@ export function Badge({ count, label }: { count: number; label?: string }) {
 }
 
 /**
+ * What a record is missing, as one quiet badge ("3 gaps") instead of a column
+ * of "Not stated" per field (UX rebuild, phase 1). It names the fields for
+ * screen readers and on hover; the record says the rest. Nothing missing,
+ * nothing shown.
+ */
+export function GapBadge({ gaps }: { gaps: string[] }) {
+  if (gaps.length === 0) return null;
+  const list = gaps.join(", ");
+  return (
+    <span className="ds-gaps" title={`Missing: ${list}`}>
+      <span aria-hidden="true">{gaps.length === 1 ? "1 gap" : `${gaps.length} gaps`}</span>
+      <span className="ds-visually-hidden">{`Missing: ${list}`}</span>
+    </span>
+  );
+}
+
+/**
  * §9: anything a model proposed and nobody decided carries this mark,
  * readable without colour. Model details sit one step away (`detail`).
  */

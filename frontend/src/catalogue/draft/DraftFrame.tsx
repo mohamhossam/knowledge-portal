@@ -74,11 +74,13 @@ function Draft({ release, step, context }: { release: Release; step: DraftStep; 
   const holds = contents(release);
   return (
     <div className="draft">
-      <Breadcrumbs
-        link={RouterLink}
-        items={[{ href: "/architecture", label: "Catalogue" }, { href: "/architecture/versions", label: "Versions" }, { label: name }]}
-      />
       <PageHeader
+        breadcrumbs={
+          <Breadcrumbs
+            link={RouterLink}
+            items={[{ href: "/architecture", label: "Catalogue" }, { href: "/architecture/versions", label: "Versions" }, { label: name }]}
+          />
+        }
         title={<bdi>{name}</bdi>}
         documentTitle={`${stepLabel(step)} · ${name} · Catalogue draft`}
         lead="A draft of the architecture catalogue. Nothing in it reaches requirement work until it is published."

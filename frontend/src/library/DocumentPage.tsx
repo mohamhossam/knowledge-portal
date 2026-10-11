@@ -161,9 +161,10 @@ function Record({ document, hook }: { document: LibraryDocument; hook: Hook }) {
           <>
             <Status tone={DOC_TONE[state]}>{DOC_STATE_WORDS[state]}</Status>
             <span>Owner {document.is_owner ? "you" : <bdi>{owner}</bdi>}</span>
-            {version && <span>Version {version.number} · <bdi>{version.filename}</bdi></span>}
+            {version && <span>Version {version.number}</span>}
           </>
         }
+        lead={version && <>Version {version.number} was uploaded as <bdi>{version.filename}</bdi>.</>}
         provenance={provenance}
         actions={
           document.can_edit ? (

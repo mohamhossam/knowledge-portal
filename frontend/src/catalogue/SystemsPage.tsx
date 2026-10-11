@@ -2,9 +2,9 @@ import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
 
-import type { CatalogueSystem, Relationship } from "../api/client";
+import type { CatalogueSystem, Relationship, Release } from "../api/client";
 import {
-  Button, type Column, DataTable, EmptyState, FilterStrip, Section, type Sort, SplitPane, Status,
+  Button, type Column, DataTable, EmptyState, FilterStrip, GapBadge, Section, type Sort, SplitPane, Status,
 } from "../design/components";
 import { count } from "../home/format";
 import { RouterLink } from "../shell/links";
@@ -12,7 +12,7 @@ import { LINK_VERB, allConnections, domainPath, findSystems, systemName } from "
 import { SystemEdit } from "./DraftEdits";
 import { CatalogueHeader } from "./frame/CatalogueHeader";
 import { useFindParam } from "./frame/useFindParam";
-import { type ConceptIndex, conceptIndex, interfacesOf, SOURCE_TONE, SOURCE_WORD, systemConcepts, systemDomains } from "./ontology";
+import { type ConceptIndex, conceptIndex, interfacesOf, systemConcepts, systemDomains } from "./ontology";
 import { SystemRecord } from "./SystemRecord";
 import { useCatalogueContext } from "./useCatalogue";
 
@@ -101,7 +101,7 @@ function SystemsTable({ index, current }: { index: ConceptIndex; current?: strin
   }, [book, release.systems, area, find]);
 
   const sorted = useMemo(() => {
-    const key = (row: Row) => (sort.id === "owner" ? row.system.owner ?? "" : sort.id === "place" ? `${row.place || "~"}\u0000${row.system.name}` : row.system.name);
+    const key = (row: Row) => (sort.id === "place" ? `${row.place || "~"}\u0000${row.system.name}` : row.system.name);
     const order = [...rows].sort((a, b) => key(a).localeCompare(key(b), "en", { sensitivity: "base" }));
     return sort.direction === "descending" ? order.reverse() : order;
   }, [rows, sort]);
@@ -138,21 +138,8 @@ function SystemsTable({ index, current }: { index: ConceptIndex; current?: strin
       header: "Does (concept)",
       cell: ({ system }) => <ConceptChips system={system} index={index} />,
     },
-    {
-      id: "interfaces",
-      header: "Interfaces",
-      cell: ({ system }) => {
-        const { exposes, uses } = interfacesOf(release, system.id);
-        if (!exposes.length && !uses.length) return <span className="cat-quiet">None recorded</span>;
-        return <span className="cat-nowrap">{exposes.length} exposed · {uses.length} used</span>;
-      },
-    },
-    { id: "owner", header: "Owner", sortable: true, bidi: true, cell: ({ system }) => system.owner ?? <span className="cat-quiet">Not stated</span> },
-    {
-      id: "source",
-      header: "Source",
-      cell: ({ system }) => (system.confidence ? <Status tone={SOURCE_TONE[system.confidence]}>{SOURCE_WORD[system.confidence]}</Status> : <span className="cat-quiet">Not stated</span>),
-    },
+    // What the system's record doesn't say yet: one badge, not a column of "Not stated" per field.
+    { id: "gaps", header: "Gaps", cell: ({ system }) => <GapBadge gaps={systemGaps(release, system, index)} /> },
   ];
   // Beside a chosen system's record the list narrows to what finds a system; the record says the rest.
   const shown = current ? columns.filter((column) => ["name", "place", "concepts"].includes(column.id)) : columns;
@@ -189,6 +176,17 @@ function SystemsTable({ index, current }: { index: ConceptIndex; current?: strin
       />
     </div>
   );
+}
+
+/** The facts a system's record is missing, in the words its record uses. */
+function systemGaps(release: Release, system: CatalogueSystem, index: ConceptIndex): string[] {
+  const { exposes, uses } = interfacesOf(release, system.id);
+  const gaps: string[] = [];
+  if (!systemConcepts(system, index).length && !system.capabilities.some((item) => item.unlinked_reason)) gaps.push("concept");
+  if (!exposes.length && !uses.length) gaps.push("interfaces");
+  if (!system.owner) gaps.push("owner");
+  if (!system.confidence) gaps.push("source");
+  return gaps;
 }
 
 /** The concepts a system's capabilities name; "None fits" when a capability was looked at and none did. */

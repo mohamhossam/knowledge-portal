@@ -47,6 +47,18 @@
   color: var(--color-ink-2);
 }
 
+/* A record's gaps: one neutral pill on a dashed frame, never a warning. */
+.ds-gaps {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--space-2);
+  border: var(--rule-hair) dashed var(--color-rule-strong);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-meta);
+  color: var(--color-ink-2);
+  white-space: nowrap;
+}
+
 .ds-suggested {
   display: inline-flex;
   flex-wrap: wrap;

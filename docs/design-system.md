@@ -126,10 +126,17 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
 - **`AppShell`**
   - **What it does:**
     - skip links ("Skip to content", "Skip to navigation");
-    - the maroon masthead: logo slot, product, outbound "Requirement AI" link, `utilities`;
-    - the rail: `navigation` and `secondaryNavigation` items with `current` and `count`;
+    - the slim maroon brand bar (36px): logo slot and product at the start, `search` in the
+      middle, the outbound "Requirement AI" link and `utilities` at the end;
+    - the sidebar: `navigation` and `secondaryNavigation` items with `current`, `count` and an
+      `icon`. Items sharing a `group` sit under a small heading ("Look up"), a labelled list
+      each. It is 13rem wide with labels, or 3.5rem with icons only (the label shows beside
+      the icon on hover or focus; Esc hides it). The "Collapse"/"Expand" button at its foot
+      remembers the choice (`localStorage`, `knowledge-portal.sidebar`); with no choice made,
+      it is expanded from 1440px and collapsed below. Under 640px it becomes a scrolling row
+      of labelled links under the brand bar;
     - an optional shell `banner`.
-  - **Reader variant:** `reader` drops the rail.
+  - **Reader variant:** `reader` drops the sidebar.
   - **Behaviour:** when `locationKey` changes, it scrolls to the top and focuses `#ds-page-title`
     (§1). The masthead publishes `--sticky-top`. Three cases keep the focus the page placed
     itself: an address with a `#target`, a legacy island, and a pane marked `data-takes-focus`
@@ -141,9 +148,15 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
     panel, so neither can make it inert.
 - **`MastheadButton`:** Jobs, Help or Account, with a text label, an icon and an optional count
   (`aria-expanded`).
-- **`PageHeader`:** the h1 has `tabindex=-1` and the document title is set first. It has slots for
-  `breadcrumbs` (above the title), `lead`, `meta` (status, owner), `provenance` and `actions`;
-  `children` take tabs or a state line.
+- **`PageHeader`:** one line: the h1 (the record's own name), then `meta` (status as a pill,
+  then facts, a dot between each), then `actions` at the end; `children` (tabs or a state
+  line) take a slim row under it.
+  - The h1 has `tabindex=-1` and the document title is set first. From a 48rem-wide main area
+    the line never wraps: the facts give way first, then the name ends in an ellipsis, with the
+    whole name in its `title` (screen readers always read all of it).
+  - `breadcrumbs`, `lead` and `provenance` sit behind an "About this page" button (an icon
+    button with a hidden name, `aria-expanded`), so where a page sits and what it is for are
+    one press away without costing rows. Esc or a press outside closes it.
 - **`StateLine`:** `plain` or `proof` (a replaced version, on the beige tint). It is sticky,
   `role="status"`, and publishes `--sticky-state`.
 - **`Breadcrumbs`:** the last crumb is `aria-current="page"`. Record pages put them in
@@ -152,8 +165,10 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
 - **`Tabs`:** ARIA tabs for the same URL. ← → move between tabs, Home/End jump, there is one tab
   stop, and focus follows the selection.
 - **`Toolbar`:** `role="toolbar"`, roving with ← →.
-- **`SplitPane`:** the list beside a sticky, full-height detail pane from 1200px, stacked below
-  that. The pane is a labelled `complementary` region.
+- **`SplitPane`:** the list beside the detail pane once the main area is 60rem wide, stacked
+  below that. Side by side, it fills the window from where it starts (`--split-top`, measured)
+  to the sticky foot, and the list and the pane each scroll on their own; the list's table
+  head sticks to the top of the list. The pane is a labelled `complementary` region.
 - **`Pagination`:** `aria-current` on the current page; every page button is named "Page n".
 - **`Section`:** the ledger rule and an h2 with an optional count; a labelled `region`.
 
@@ -175,8 +190,9 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
 ### Actions and status (`actions.tsx`, `feedback.tsx`)
 
 - **`Button`**
-  - **Variants:** `secondary` (default), `primary` (the page's one main action), `danger` (rust,
-    with an icon), `quiet`, `link`.
+  - **Variants, by weight:** `primary` (filled maroon: the page's one main action),
+    `secondary` (outlined, the default), `tertiary` (text only, for minor actions beside
+    them), `danger` (rust, with an icon), `quiet` (the old name for tertiary), `link`.
   - **`unavailableReason`:** sets `aria-disabled`, keeps the button focusable, shows the reason
     beside it, and announces the reason on press (§1.2).
   - **`busy`:** sets `aria-busy` and ignores presses.
@@ -184,6 +200,9 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
 - **`Status`:** one of six tones (neutral, working, done, attention, held, stopped). It always
   shows an icon and words. Severe tones carry weight, so they never look lighter than routine ones.
 - **`Badge`:** a neutral count, named for screen readers ("6 need you").
+- **`GapBadge`:** a record's missing facts as one dashed pill ("3 gaps"), the list of what is
+  missing in its `title` and, for screen readers, as "Missing: concept, owner, source". Renders
+  nothing when nothing is missing. A list shows gaps this way instead of a column per fact.
 - **`Suggested`:** the AI mark (§9), "Suggested · stated in the source" or "… inferred, not stated
   in the source", plus optional detail. It reads without colour.
 - **`EmptyState`:** what this is, why it is empty, and what to do (§8).
@@ -213,12 +232,17 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
 
 ### Data and review (`data.tsx`)
 
-- **`FilterStrip`:** pressed buttons with counts, an optional find field (`data-find` for the `/`
-  shortcut), and "Clear filters".
+- **`FilterStrip`:** toggle chips (`aria-pressed`) with counts; the pressed one is filled and
+  shows a check, so the state reads without colour. An optional find field (`data-find` for
+  the `/` shortcut), and "Clear filters".
 - **`DataTable`:** the ledger table.
   - **Always:** a caption; a sticky head under the heavy rule; `aria-sort` on sortable columns; a
     row-header column; `bidi` cells (`dir="auto"`); `numeric` columns (condensed, tabular,
     end-aligned); 24px selection checkboxes; an empty text; density-aware rows.
+  - **Row press:** a row whose row header holds a link opens that link on a press anywhere in
+    the row (Ctrl/⌘ or middle opens a new tab), except on its own controls or when text is
+    being selected. The name is not underlined until the row is hovered or the link focused;
+    the link stays the keyboard and screen-reader way in.
   - **With `onActivate`, it becomes a keyboard grid with one tab stop:**
     - ↑ ↓ (and j k) move between rows;
     - Home and End jump to the ends;

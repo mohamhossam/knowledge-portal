@@ -41,13 +41,20 @@
   color: var(--button-danger-fg);
 }
 
+/* Tertiary: text only, in the action ink; a soft tint on hover. */
+.ds-button--tertiary,
 .ds-button--quiet {
   border-color: transparent;
   background: transparent;
+  color: var(--color-link);
 }
 
+.ds-button--tertiary:hover,
 .ds-button--quiet:hover {
-  border-color: var(--button-border);
+  border-color: transparent;
+  background: var(--color-surface-2);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
 .ds-button--link {

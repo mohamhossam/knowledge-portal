@@ -18,7 +18,7 @@ export function ButtonLink({
   ...rest
 }: {
   to: string;
-  variant?: "secondary" | "primary" | "quiet";
+  variant?: "secondary" | "primary" | "tertiary" | "quiet";
   children: ReactNode;
   tabIndex?: number;
   "data-roving"?: boolean;

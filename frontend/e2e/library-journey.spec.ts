@@ -64,7 +64,10 @@ test("2.2 keyboard only: exclude the hidden sheet with a reason, then approve an
   await page.keyboard.press("Control+A");
   await page.keyboard.type("Internal pricing: not for publication.");
 
-  // Unsaved decisions don't stop publishing: from the reason, Tab past Save review to Approve.
+  // Unsaved decisions don't stop publishing: from the reason, Tab past the pane's All shortcuts
+  // and the bar's Save review to Approve.
+  await page.keyboard.press("Tab");
+  await expect(page.locator(":focus")).toHaveText("All shortcuts");
   await page.keyboard.press("Tab");
   await page.keyboard.press("Tab");
   await expect(page.locator(":focus")).toHaveText("Approve and publish…");

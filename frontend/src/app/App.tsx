@@ -1,5 +1,5 @@
 import { type ComponentType, lazy, type ReactNode, Suspense, useEffect } from "react";
-import { Link, Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 
 import { CALLBACK_PATH, SILENT_CALLBACK_PATH } from "../auth/paths";
 import { CataloguePage } from "../catalogue/CataloguePage";
@@ -33,7 +33,8 @@ import { RequirementKnowledgePage } from "../requirements/RequirementKnowledgePa
 import { RemindersPage } from "../reviews/RemindersPage";
 import { HistoricListPage } from "../historic/HistoricListPage";
 import { HistoricRecordPage } from "../historic/HistoricRecordPage";
-import { Skeleton } from "../design/components";
+import { ActionGroup, EmptyState, PageHeader, Skeleton } from "../design/components";
+import { ButtonLink } from "../shell/links";
 import { HomePage } from "./HomePage";
 import { Shell } from "./Shell";
 
@@ -143,15 +144,23 @@ export function App() {
   );
 }
 
+/** An address outside every page: says so plainly and offers the way back (UX rebuild, phase 1). */
 function NotFound() {
-  useEffect(() => {
-    document.title = "No such table · Knowledge portal";
-  }, []);
   return (
-    <section className="missing" aria-labelledby="missing-title">
-      <h1 id="missing-title" className="missing__title">There is no table at this address</h1>
-      <p>The portal has four tables: the library, the architecture catalogue, the squad catalogue and requirement knowledge.</p>
-      <p><Link to="/">Back to the front page</Link></p>
-    </section>
+    <div className="not-found">
+      <PageHeader title="Page not found" documentTitle="Page not found" />
+      <EmptyState
+        title="Nothing in the knowledge portal is at this address."
+        action={
+          <ActionGroup label="Where to go instead">
+            <ButtonLink to="/" variant="primary">Open To do</ButtonLink>
+            <ButtonLink to="/library">Open the library</ButtonLink>
+            <ButtonLink to="/architecture">Open the catalogue</ButtonLink>
+          </ActionGroup>
+        }
+      >
+        <p>The page may have moved, or the address may have a typing mistake. Search (Ctrl K) finds documents and systems by name.</p>
+      </EmptyState>
+    </div>
   );
 }

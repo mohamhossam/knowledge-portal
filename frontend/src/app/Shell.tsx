@@ -1,4 +1,4 @@
-import { BellRing, BookOpen, CircleHelp, Compass, FileText, Layers, LayoutDashboard, ListChecks, UserRound, UsersRound, WifiOff } from "lucide-react";
+import { BellRing, BookOpen, CircleHelp, Compass, FileText, Inbox, Layers, ListChecks, UserRound, UsersRound, WifiOff } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Outlet, useLocation, useSearchParams } from "react-router-dom";
 
@@ -17,6 +17,9 @@ import { useWorkQueue } from "../work/queue";
 
 type Panel = "jobs" | "help" | "account";
 
+/** Every area's address; the legacy ones (Re-confirmations, Requirements) keep their island. */
+const AREAS = ["/library", "/architecture", "/explorer", "/squads", "/reminders", "/requirement-knowledge"];
+
 /**
  * Routes rebuilt on the design system (redesign Phase 8). Any other route
  * renders in the legacy island, looking as it did, until its area is built.
@@ -31,6 +34,8 @@ const REDESIGNED: ((path: string) => boolean)[] = [
   (path) => path === "/explorer",
   // Area 4: ownership (the systems grid, products, squads, people and history).
   (path) => path === "/squads" || path.startsWith("/squads/"),
+  // An address outside every area: the rebuilt "Page not found" (UX rebuild, phase 1).
+  (path) => path !== "/" && !AREAS.some((area) => path === area || path.startsWith(`${area}/`)),
 ];
 
 function useOnline() {
@@ -48,10 +53,11 @@ function useOnline() {
 }
 
 /**
- * The portal's frame (IA §2): skip links, the maroon masthead with the same
- * three utilities on every page (Jobs, Help, Account; WCAG 3.2.6), the
- * five-area rail with the shared "need you" count, and Jobs, Help and Account
- * as side panels beside the page. "?help" in the address opens Help.
+ * The portal's frame (IA §2): skip links, the slim maroon brand bar with search
+ * and the same three utilities on every page (Jobs, Help, Account; WCAG 3.2.6),
+ * the sidebar (To do with the shared "need you" count, then the look-up areas),
+ * and Jobs, Help and Account as side panels beside the page. "?help" in the
+ * address opens Help.
  */
 export function Shell() {
   const auth = useAuth();
@@ -112,16 +118,17 @@ export function Shell() {
 
   const path = location.pathname;
   const under = (prefix: string) => path === prefix || path.startsWith(`${prefix}/`);
+  // To do first, with the one count; then the areas you look things up in (UX rebuild plan, phase 1).
   const navigation: NavItem[] = [
-    { href: "/", label: "Your work", current: path === "/", count: needsYou, countLabel: "need you", icon: <LayoutDashboard /> },
-    { href: "/library", label: "Library", current: under("/library"), icon: <BookOpen /> },
-    // In development the catalogue opens on its redesign (a development-only lab, like its route); production keeps /architecture.
-    { href: "/architecture", label: "Catalogue", current: under("/architecture"), icon: <Layers /> },
-    { href: "/squads", label: "Ownership", current: under("/squads"), icon: <UsersRound /> },
-    { href: "/requirement-knowledge", label: "Requirements", current: under("/requirement-knowledge"), icon: <FileText /> },
+    { href: "/", label: "To do", current: path === "/", count: needsYou, countLabel: "need you", icon: <Inbox /> },
+    { href: "/library", label: "Library", current: under("/library"), icon: <BookOpen />, group: "Look up" },
+    { href: "/architecture", label: "Catalogue", current: under("/architecture"), icon: <Layers />, group: "Look up" },
+    { href: "/squads", label: "Ownership", current: under("/squads"), icon: <UsersRound />, group: "Look up" },
+    { href: "/requirement-knowledge", label: "Requirements", current: under("/requirement-knowledge"), icon: <FileText />, group: "Look up" },
   ];
   const secondary: NavItem[] = [
     { href: "/explorer", label: "Explorer", current: under("/explorer"), icon: <Compass /> },
+    // Joins To do in phase 2.
     { href: "/reminders", label: "Re-confirmations", current: under("/reminders"), icon: <BellRing /> },
   ];
 
