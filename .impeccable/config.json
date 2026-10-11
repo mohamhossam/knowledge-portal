@@ -1,0 +1,32 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "frontend/src/design-lab/gallery/gallery.css"
+        ],
+        "createdAt": "2026-10-08T00:18:27.678Z",
+        "reason": "Agent triage: L90 is the gallery's demo of the brief-mandated red active-nav marker (3px inset on the current area, same as .ds-rail__link[aria-current]); a navigation location marker, not a card accent. Dev-only gallery file."
+      },
+      {
+        "rule": "design-system-font",
+        "value": "archivo",
+        "createdAt": "2026-10-09T13:27:47.250Z",
+        "reason": "agent: DESIGN.md declares 'Archivo Variable' (self-hosted @fontsource); 'Archivo' is the same family's Google Fonts name used in decision sketches"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "spectral",
+        "files": [
+          ".impeccable/mocks/decision/challenger-atlas.html"
+        ],
+        "createdAt": "2026-10-09T13:30:27.189Z",
+        "reason": "agent: decision-round sketch of the star-atlas challenger world, whose system grammar names a serif italic for constellation names; not shipped"
+      }
+    ]
+  }
+}

@@ -64,7 +64,7 @@
 
 .timetable__grid thead th {
   padding: 0 var(--s4) var(--s2) 0;
-  border-bottom: 2px solid var(--rule-heavy);
+  border-bottom: 2px solid var(--tt-rule-heavy);
   color: var(--ink-2);
   font-size: var(--t-meta);
   font-stretch: var(--width-condensed);
@@ -178,7 +178,7 @@
 .timetable__quiet {
   margin-top: var(--s4);
   padding-block: var(--s3);
-  border-top: 2px solid var(--rule-heavy);
+  border-top: 2px solid var(--tt-rule-heavy);
   color: var(--ink-2);
 }
 
@@ -191,7 +191,7 @@
 .timetable__totals-label {
   margin-top: var(--s5);
   padding-bottom: var(--s1);
-  border-bottom: 2px solid var(--rule-heavy);
+  border-bottom: 2px solid var(--tt-rule-heavy);
   color: var(--ink-2);
   font-size: var(--t-meta);
   font-stretch: var(--width-condensed);
@@ -223,7 +223,7 @@
   gap: var(--s1);
   margin-top: var(--s5);
   padding-top: var(--s3);
-  border-top: 3px double var(--rule-heavy);
+  border-top: 3px double var(--tt-rule-heavy);
   color: var(--ink-2);
   font-size: var(--t-meta);
 }

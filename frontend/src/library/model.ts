@@ -31,6 +31,8 @@ export type Row = {
   block: Block | null;
   /** The text on the comparison side: in service, or as extracted. */
   basis: string | null;
+  /** The block the comparison text came from (in service, it can be an older version's). */
+  basisBlockId: string | null;
   /** The working decision; null for a passage removed since the edition. */
   draft: Draft | null;
   change: Change;
@@ -74,6 +76,17 @@ const placeholder = (block: Block): string => block.text ?? `[Image: ${block.lab
  * both start excluded with that reason, ready to be overruled.
  */
 export function initialDrafts(version: LibraryVersion): Drafts {
+  // One per version object (the API's answers are immutable): "unsaved" asks on every keystroke.
+  const cached = startingDrafts.get(version);
+  if (cached) return cached;
+  const drafts = startOf(version);
+  startingDrafts.set(version, drafts);
+  return drafts;
+}
+
+const startingDrafts = new WeakMap<LibraryVersion, Drafts>();
+
+function startOf(version: LibraryVersion): Drafts {
   const saved = latestRevision(version);
   if (saved) {
     return Object.fromEntries(saved.passages.map((passage) => [
@@ -92,7 +105,7 @@ export function initialDrafts(version: LibraryVersion): Drafts {
 }
 
 /** Where a passage sits: its label, after any section its label does not already name. */
-const whereOf = (block: Block) =>
+export const whereOf = (block: Block) =>
   [...block.section_path.filter((segment) => !block.label.includes(segment)), block.label]
     .filter(Boolean)
     .join(" › ");
@@ -130,9 +143,10 @@ export function reviewRows(document: LibraryDocument, working: LibraryVersion, d
       byPlace.set(placeKey(block), [...(byPlace.get(placeKey(block)) ?? []), block]);
     }
     const take = (candidates: Block[] | undefined) => candidates?.find((block) => !used.has(block.id));
+    const sameVersion = new Map(oldBlocks.map((item) => [item.id, item]));
     for (const block of working.blocks) {
       const old = basis.version.id === working.id
-        ? oldBlocks.find((item) => item.id === block.id)
+        ? sameVersion.get(block.id)
         : take(byContent.get(block.content_fingerprint)) ?? take(byPlace.get(placeKey(block)));
       if (old) {
         used.add(old.id);
@@ -141,9 +155,13 @@ export function reviewRows(document: LibraryDocument, working: LibraryVersion, d
     }
   }
 
+  const warningsOf = new Map<string, Warning[]>();
+  for (const warning of working.warning_details) {
+    if (warning.block_id) warningsOf.set(warning.block_id, [...(warningsOf.get(warning.block_id) ?? []), warning]);
+  }
   const rows: Row[] = [...working.blocks].sort((a, b) => a.ordinal - b.ordinal).map((block) => {
     const draft = drafts[block.id] ?? { text: placeholder(block), included: true, reason: "" };
-    const warnings = working.warning_details.filter((warning) => warning.block_id === block.id);
+    const warnings = warningsOf.get(block.id) ?? [];
     const old = matched.get(block.id);
     const basisText = basis.kind === "edition"
       ? (old ? basis.passages.get(old.id)?.text ?? null : null)
@@ -159,6 +177,7 @@ export function reviewRows(document: LibraryDocument, working: LibraryVersion, d
       where: whereOf(block),
       block,
       basis: basisText,
+      basisBlockId: basis.kind === "edition" ? old?.id ?? null : block.id,
       draft,
       change,
       warnings,
@@ -177,6 +196,7 @@ export function reviewRows(document: LibraryDocument, working: LibraryVersion, d
         where: whereOf(block),
         block: null,
         basis: passage.text,
+        basisBlockId: block.id,
         draft: null,
         change: "removed",
         warnings: [],
@@ -218,7 +238,11 @@ export function matches(row: Row, filter: Filter, find: string): boolean {
   return [row.where, row.basis ?? "", row.draft?.text ?? ""].some((text) => text.toLocaleLowerCase().includes(needle));
 }
 
-/** How many passages differ from the last saved revision (or from where the review started). */
+/**
+ * How many passages differ from the last saved revision (or from where the
+ * review started, before any save). Each save answers with the new revision,
+ * so "unsaved" is always counted against the last save, never the first read.
+ */
 export function unsaved(version: LibraryVersion, drafts: Drafts): number {
   const start = initialDrafts(version);
   return version.blocks.filter((block) => {
@@ -227,6 +251,31 @@ export function unsaved(version: LibraryVersion, drafts: Drafts): number {
     if (!a || !b) return false;
     return a.text !== b.text || a.included !== b.included || (!a.included && a.reason !== b.reason);
   }).length;
+}
+
+/**
+ * Where `n` goes (backlog O-1): the next flagged passage not seen yet, then the
+ * next passage not seen yet, searching forward from the current one and round
+ * from the top (backward for Shift+n). Undefined when every passage is seen.
+ */
+export function nextToReview(rows: Row[], fromKey: string | undefined, seen: ReadonlySet<string>, backward = false): Row | undefined {
+  const index = Math.max(0, rows.findIndex((row) => row.key === fromKey));
+  const after = backward ? rows.slice(0, index).reverse() : rows.slice(index + 1);
+  const before = backward ? rows.slice(index + 1).reverse() : rows.slice(0, index);
+  const order = [...after, ...before];
+  return order.find((row) => row.warnings.length > 0 && !seen.has(row.key)) ?? order.find((row) => !seen.has(row.key));
+}
+
+/**
+ * Whether the owner has a review to finish: the newest version is read and its
+ * saved review (if any) has never been published. A withdrawn edition is not
+ * awaiting review: it returns to service as it was (StandingPanel).
+ */
+export function awaitingReview(document: LibraryDocument): boolean {
+  const version = newestVersion(document);
+  if (!document.can_edit || version?.stage !== "ready_for_review") return false;
+  if (!latestRevision(version) || !document.review_fingerprint) return true;
+  return !document.publications.some((item) => item.version_id === version.id && item.fingerprint === document.review_fingerprint);
 }
 
 /** What stops this draft from being saved, in the reviewer's words; empty when it can be. */
@@ -300,7 +349,7 @@ export function isTheEdition(document: LibraryDocument, version: LibraryVersion,
 
 /** Whether the page should keep asking: the file is being read, or an approval is being indexed. */
 export function settling(document: LibraryDocument): boolean {
-  const newest = newestVersion(document);
+  const newest = newestState(document);
   if (newest && IN_PROGRESS.has(newest.stage)) return true;
   // An approval or a build still being indexed.
   return document.publications.some((item) =>

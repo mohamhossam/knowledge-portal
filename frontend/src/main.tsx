@@ -18,6 +18,9 @@ import "./styles/catalogue.css";
 import "./styles/squads.css";
 import "./styles/explorer.css";
 import "./styles/knowledge.css";
+// The design system (fonts + tokens), after the legacy CSS; legacy pages sit in an island.
+import "./design";
+import "./styles/legacy-island.css";
 
 import { ApiError } from "./api/errors";
 import { App } from "./app/App";

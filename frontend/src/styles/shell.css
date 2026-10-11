@@ -7,8 +7,8 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--s2) var(--s5);
-  padding: var(--s2) var(--gutter);
-  border-bottom: 2px solid var(--rule-heavy);
+  padding: var(--s2) var(--tt-gutter);
+  border-bottom: 2px solid var(--tt-rule-heavy);
   background: var(--stock);
 }
 
@@ -122,119 +122,15 @@
   text-decoration: none;
 }
 
-.spin {
-  animation: spin 900ms linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(1turn);
-  }
-}
-
-/* The index of tables: number, title, and how much each table holds. */
-.index {
-  padding: 0 var(--gutter);
-  border-bottom: 1px solid var(--rule);
-}
-
-.index__list {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  max-width: calc(var(--page-max) - 2 * var(--gutter));
-  margin-inline: auto;
-}
-
-.index__entry {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  grid-template-rows: auto auto;
-  column-gap: var(--s3);
-  padding: var(--s3) var(--s4) var(--s3) 0;
-  color: var(--ink);
-  text-decoration: none;
-}
-
-.index__entry:hover .index__title {
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
-}
-
-.index__entry[aria-current="page"] {
-  box-shadow: inset 0 -3px 0 var(--ink);
-}
-
-.index__number {
-  grid-row: 1 / span 3;
-  font-size: 2.25rem;
-  font-stretch: var(--width-monument);
-  font-weight: var(--w-heavy);
-  line-height: 0.85;
-}
-
-.index__title {
-  font-weight: var(--w-bold);
-  font-stretch: 88%;
-}
-
-.index__extent {
-  display: flex;
-  align-items: center;
-  gap: var(--s2);
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-}
-
-/* A fixed track, so each rule's length is its table's share of the largest. */
-.index__track {
-  display: block;
-  inline-size: 7rem;
-  flex: none;
-}
-
-.index__rule {
-  display: block;
-  block-size: 3px;
-  background: var(--ink);
-  transition: inline-size 400ms var(--ease-out);
-}
-
-.index__count {
-  white-space: nowrap;
-}
-
-/* An entry's most pressing state, set as its table sets the row: red when disrupted, bold when due. */
-.index__alert {
-  grid-column: 2;
-  font-size: var(--t-meta);
-}
-
-.index__alert--delayed {
-  color: var(--disruption);
-  font-weight: var(--w-medium);
-}
-
-.index__alert--due {
-  font-weight: var(--w-bold);
-}
-
 /* The page the tables sit on. */
 .page {
-  max-width: var(--page-max);
+  max-width: var(--tt-page-max);
   margin-inline: auto;
-  padding: 0 var(--gutter) var(--s8);
+  padding: 0 var(--tt-gutter) var(--s8);
 }
 
 .page:focus {
   outline: none;
-}
-
-.page__preparing {
-  max-width: 64ch;
-  margin-left: calc(var(--margin-column) + var(--s5));
-  padding-top: var(--s4);
-  border-top: 1px solid var(--rule);
-  color: var(--ink-2);
 }
 
 .name-ar {
@@ -246,14 +142,14 @@
 .notice {
   max-width: 40rem;
   margin: 0 auto;
-  padding: var(--s8) var(--gutter);
+  padding: var(--s8) var(--tt-gutter);
 }
 
 .notice__portal {
   display: flex;
   gap: var(--s2);
   padding-bottom: var(--s3);
-  border-bottom: 2px solid var(--rule-heavy);
+  border-bottom: 2px solid var(--tt-rule-heavy);
   color: var(--ink-2);
   font-size: var(--t-meta);
   font-stretch: var(--width-condensed);
@@ -340,32 +236,11 @@
   font-weight: var(--w-medium);
 }
 
-/* Four tables share one row on a wide page, two rows of two below 60rem, and one column on phones. */
-@media (max-width: 60rem) {
-  .index__list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 45rem) {
   .masthead {
     position: static;
   }
 
-  .index__list {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .index__entry {
-    padding-block: var(--s2);
-    border-bottom: 1px solid var(--rule-faint);
-  }
-
-  .index__number {
-    font-size: 1.75rem;
-  }
-
-  .page__preparing,
   .missing {
     margin-left: 0;
   }

@@ -1,0 +1,91 @@
+.ds-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-block-size: var(--button-height);
+  min-inline-size: var(--target-min);
+  padding-inline: var(--button-pad-inline);
+  border: var(--rule-hair) solid var(--button-border);
+  border-radius: var(--button-radius);
+  background: var(--button-bg);
+  color: var(--button-fg);
+  font-weight: var(--button-font-weight);
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.ds-button:hover {
+  border-color: var(--button-hover-border);
+}
+
+.ds-button__icon {
+  display: inline-flex;
+}
+
+.ds-button--primary {
+  background: var(--button-primary-bg);
+  border-color: var(--button-primary-border);
+  color: var(--button-primary-fg);
+}
+
+.ds-button--primary:hover {
+  background: var(--button-primary-hover-bg);
+}
+
+/* Danger is its own token with an icon; never brand red. */
+.ds-button--danger {
+  background: var(--button-danger-bg);
+  border-color: var(--button-danger-bg);
+  color: var(--button-danger-fg);
+}
+
+.ds-button--quiet {
+  border-color: transparent;
+  background: transparent;
+}
+
+.ds-button--quiet:hover {
+  border-color: var(--button-border);
+}
+
+.ds-button--link {
+  min-block-size: var(--target-min);
+  padding-inline: 0;
+  border: 0;
+  background: none;
+  color: var(--color-link);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* Unavailable: an outline with the reason beside it, never a faded fill. */
+.ds-button[aria-disabled="true"] {
+  background: var(--button-bg);
+  border-color: var(--button-unavailable-border);
+  color: var(--button-unavailable-fg);
+  cursor: not-allowed;
+}
+
+.ds-button--link[aria-disabled="true"] {
+  background: none;
+}
+
+.ds-button[aria-busy="true"] {
+  cursor: progress;
+}
+
+.ds-button__why {
+  display: block;
+  margin-block-start: var(--space-1);
+  font-size: var(--text-meta);
+  color: var(--color-ink-2);
+}
+
+.ds-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}

@@ -1,0 +1,10 @@
+/* The shell's side panels (redesign area 1). Tokens only. */
+.shell-panel__lead,
+.shell-panel__saved {
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.shell-panel__said:empty {
+  position: absolute;
+}

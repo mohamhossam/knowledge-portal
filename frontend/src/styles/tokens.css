@@ -12,7 +12,7 @@
   --ink: #16181d;
   --ink-2: #474c55;
   --ink-3: #686e78;
-  --rule-heavy: #16181d;
+  --tt-rule-heavy: #16181d;
   --rule: #cfd2d6;
   --rule-faint: #e4e5e7;
 
@@ -53,9 +53,9 @@
 
   /* The page: a margin column for table numbers, then the table */
   --margin-column: 7.5rem;
-  --page-max: 78rem;
-  --gutter: clamp(1rem, 0.5rem + 2vw, 2.5rem);
+  --tt-page-max: 78rem;
+  --tt-gutter: clamp(1rem, 0.5rem + 2vw, 2.5rem);
 
-  --focus-ring: 2px solid var(--reference);
+  --tt-focus-ring: 2px solid var(--reference);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }

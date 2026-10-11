@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { LibraryDocument, LibraryVersion } from "../api/client";
 import {
-  approvalBlocker, comparisonBasis, counts, initialDrafts, isTheEdition, matches, reviewBody, reviewRows, saveProblems,
+  approvalBlocker, awaitingReview, comparisonBasis, counts, initialDrafts, isTheEdition, matches, nextToReview, reviewBody, reviewRows, saveProblems,
   standing, unsaved, type Block,
 } from "./model";
 
@@ -195,5 +195,41 @@ describe("the change notice against an edition", () => {
     const tally = counts(reviewRows(doc, v, drafts), "edition");
     expect([tally.excluded, tally.excludedAll]).toEqual([1, 2]);
     expect(isTheEdition(doc, v, 1)).toBe(false);
+  });
+});
+
+describe("nextToReview (backlog O-1)", () => {
+  const working = version("v", 1, [block("a", 1, "A"), block("b", 2, "B"), block("c", 3, "C"), block("d", 4, "D")], {
+    warning_details: [{ code: "w", severity: "warning", message: "Check.", block_id: "c" }],
+  });
+  const rows = reviewRows(document([working]), working, initialDrafts(working));
+
+  it("goes to the next flagged passage not seen yet first, then the next not seen, round from the top", () => {
+    expect(nextToReview(rows, "a", new Set(["a"]))?.key).toBe("c");
+    expect(nextToReview(rows, "c", new Set(["a", "c"]))?.key).toBe("d");
+    expect(nextToReview(rows, "d", new Set(["a", "c", "d"]))?.key).toBe("b");
+    expect(nextToReview(rows, "b", new Set(["a", "b", "c", "d"]))).toBeUndefined();
+  });
+
+  it("goes backward with Shift+n", () => {
+    expect(nextToReview(rows, "d", new Set(["d"]), true)?.key).toBe("c");
+    expect(nextToReview(rows, "c", new Set(["c", "d"]), true)?.key).toBe("b");
+  });
+});
+
+describe("awaitingReview", () => {
+  const saved = (passages: boolean) => version("v", 1, [block("a", 1, "A")], passages ? { revisions: [{ id: "r", passages: [] }] as never } : {});
+
+  it("is the desk while the newest version's saved review has never been published", () => {
+    expect(awaitingReview(document([saved(false)]))).toBe(true);
+    expect(awaitingReview(document([saved(true)], { review_fingerprint: "f" }))).toBe(true);
+    const published = { id: "p", version_id: "v", fingerprint: "f", withdrawn_at: null } as never;
+    expect(awaitingReview(document([saved(true)], { review_fingerprint: "f", publications: [published] }))).toBe(false);
+    // A withdrawn edition returns to service as it was: no desk.
+    const withdrawn = { id: "p", version_id: "v", fingerprint: "f", withdrawn_at: "2026-10-08T00:00:00Z" } as never;
+    expect(awaitingReview(document([saved(true)], { review_fingerprint: "f", publications: [withdrawn] }))).toBe(false);
+    // Not for someone who can't edit it, nor before it is read.
+    expect(awaitingReview(document([saved(false)], { can_edit: false }))).toBe(false);
+    expect(awaitingReview(document([version("v", 1, [], { stage: "extracting" })]))).toBe(false);
   });
 });

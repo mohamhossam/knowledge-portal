@@ -5,10 +5,9 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { api, type LibraryDocument, type Release, type Reminders, type ReviewStanding, type SystemStanding } from "../api/client";
-import { ReviewsDue } from "../app/Shell";
+import { ReviewsDue } from "../app/legacyMasthead";
 import { AuthContext, type AuthState } from "../auth/authContext";
 import { architectureOverview, libraryOverview, nameDirectory } from "../home/derive";
-import { libraryRow } from "../library/libraryRow";
 import { DocumentReview } from "./DocumentReview";
 import { RemindersPage } from "./RemindersPage";
 
@@ -176,14 +175,7 @@ describe("a document's review line", () => {
 });
 
 describe("reviews in the tables", () => {
-  it("ranks a document in service by its review, once nothing else needs it", () => {
-    expect(libraryRow(document())).toMatchObject({ rank: "delayed", status: "Re-confirmation overdue", since: "2026-10-01T09:00:00Z" });
-    expect(libraryRow(document({ review: standing("due_soon") }))).toMatchObject({
-      rank: "due", status: "Re-confirmation due soon", since: "2026-09-17T09:00:00.000Z",
-    });
-    expect(libraryRow(document({ review: standing("current") }))).toMatchObject({ rank: "service", status: "In service" });
-  });
-
+  // The library's row says "Re-confirmation overdue" beside its state: library/curation.test.tsx.
   it("flags overdue documents and systems on the front page", () => {
     const library = libraryOverview([document()]);
     expect(library.lines).toMatchObject([{ rank: "delayed", cells: { status: "Re-confirmation overdue", since: "1 Oct 2026" } }]);
