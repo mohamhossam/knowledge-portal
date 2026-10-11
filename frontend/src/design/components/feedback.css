@@ -145,3 +145,30 @@
   font-size: var(--text-meta);
   color: var(--color-ink-2);
 }
+
+/* A calm band about work in progress elsewhere: neutral, framed, icon and words. */
+.ds-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-2);
+  border: var(--rule-hair) solid var(--color-rule);
+}
+
+.ds-banner__icon {
+  display: inline-flex;
+  color: var(--color-ink-2);
+}
+
+.ds-banner__text {
+  flex: 1 1 20rem;
+  margin: 0;
+}
+
+.ds-banner__action {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}

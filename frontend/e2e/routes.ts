@@ -48,6 +48,11 @@ export const ROUTES: RouteDef[] = [
   { key: "architecture-journeys", path: at("architecture/journeys") },
   { key: "architecture-versions", path: at("architecture/versions") },
   { key: "architecture-draft", path: (s) => s.draft && `architecture/versions/${s.draft}` },
+  // The draft's steps (area 3: rebuilt on the design system).
+  { key: "architecture-draft-sources", path: (s) => s.draft && `architecture/versions/${s.draft}/sources` },
+  { key: "architecture-draft-decide", path: (s) => s.draft && `architecture/versions/${s.draft}/decide`, viewOnly: true },
+  { key: "architecture-draft-changes", path: (s) => s.draft && `architecture/versions/${s.draft}/changes` },
+  { key: "architecture-draft-check", path: (s) => s.draft && `architecture/versions/${s.draft}/check` },
   { key: "architecture-draft-publish", path: (s) => s.draft && `architecture/versions/${s.draft}/publish` },
   { key: "explorer", path: at("explorer") },
   { key: "squads", path: at("squads") },
@@ -75,6 +80,12 @@ export const REDESIGNED: string[] = [
   "library-cited-by",
   "library-citations",
   "library-ownership",
+  // Area 3: the draft release workflow.
+  "architecture-draft-sources",
+  "architecture-draft-decide",
+  "architecture-draft-changes",
+  "architecture-draft-check",
+  "architecture-draft-publish",
   // Area 4: ownership.
   "squads",
   "squads-no-squad",

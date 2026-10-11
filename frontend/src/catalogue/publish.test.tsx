@@ -6,8 +6,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { api, type Release } from "../api/client";
 import { catalogue } from "./catalogue";
-import { CheckPage } from "./CheckPage";
-import { PublishPage } from "./PublishPage";
 import { SystemsPage } from "./SystemsPage";
 import type { CatalogueContext } from "./useCatalogue";
 
@@ -81,47 +79,5 @@ describe("hand edits on a system's sheet", () => {
       expected_revision: 5,
       relationships: [{ source_system_id: "cwom", target_system_id: "bscs", kind: "calls_api", description: "Order closure updates billing." }],
     });
-  });
-});
-
-describe("CheckPage", () => {
-  it("compares every sample and says what moves", async () => {
-    vi.spyOn(api, "samples").mockResolvedValue({ revision: 1, updated_at: null, updated_by: null, items: [{ id: "s1", text: "Order Hub takes orders" }] });
-    vi.spyOn(api, "compareImpact").mockResolvedValue({
-      query: "Order Hub takes orders",
-      in_use: { release_id: "live", systems: [], uncertainty: null },
-      this_version: { release_id: "d", systems: [{ id: "hub", name: "Order Hub" }], uncertainty: null },
-    });
-    renderAt(draft(), "/architecture/versions/d/check", <Route path="check" element={<CheckPage />} />);
-    expect(await screen.findByText(/at revision 5/)).toBeInTheDocument();
-    fireEvent.click(await screen.findByRole("button", { name: "Compare all 1" }));
-    expect(await screen.findByText("Now also finds Order Hub")).toBeInTheDocument();
-    expect(screen.getByText("All compared:", { exact: false })).toHaveTextContent("1 mapping would move.");
-  });
-});
-
-describe("PublishPage", () => {
-  it("says the consequence, waits for a reason, then publishes and returns to the version in service", async () => {
-    const publish = vi.spyOn(api, "publish").mockResolvedValue(draft({ status: "published" }));
-    const build = vi.spyOn(api, "buildRelease");
-    renderAt(draft(), "/architecture/versions/d/publish", <Route path="publish" element={<PublishPage />} />);
-    expect(await screen.findByText(/5 requirements/)).toBeInTheDocument();
-    const action = screen.getByRole("button", { name: "Publish it" });
-    expect(action).toBeDisabled();
-    fireEvent.change(screen.getByLabelText("What did you check?"), { target: { value: "Compared the samples." } });
-    fireEvent.click(action);
-    await waitFor(() => expect(publish).toHaveBeenCalledWith("d", { expected_revision: 5, rationale: "Compared the samples." }));
-    expect(build).not.toHaveBeenCalled();
-    expect(await screen.findByText("In service now")).toBeInTheDocument();
-  });
-
-  it("builds first when the draft is not built at its revision", async () => {
-    const build = vi.spyOn(api, "buildRelease").mockResolvedValue({ id: "j", status: "succeeded", fingerprint: "5|p" } as never);
-    const publish = vi.spyOn(api, "publish").mockResolvedValue(draft({ status: "published" }));
-    renderAt(draft({ built_revision: 4 }), "/architecture/versions/d/publish", <Route path="publish" element={<PublishPage />} />);
-    fireEvent.change(await screen.findByLabelText("What did you check?"), { target: { value: "Checked." } });
-    fireEvent.click(screen.getByRole("button", { name: "Build it, then publish" }));
-    await waitFor(() => expect(publish).toHaveBeenCalled());
-    expect(build).toHaveBeenCalledWith("d", 5);
   });
 });

@@ -36,9 +36,6 @@
  * otherwise replace it, and focus could scroll under a legacy save bar (WCAG
  * 2.4.11). These are more specific, in the book's own order.
  */
-html:has(.ds-legacy .galley) {
-  scroll-padding-bottom: var(--s6);
-}
 
 html:has(.ds-legacy .edit-panel__foot),
 html:has(.ds-legacy .suggestion-editor > .suggestion-editor__actions) {

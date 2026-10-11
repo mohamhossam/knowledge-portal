@@ -45,7 +45,7 @@ describe("workQueue", () => {
     }));
     expect(sections.attention).toEqual([expect.objectContaining({ kind: "unreadable", subject: "Broken", cause: "Row 2 is short.", to: "/library/f" })]);
     expect(sections.decisions.map((entry) => entry.kind)).toEqual(["review", "suggestions"]);
-    expect(sections.decisions[1]).toEqual(expect.objectContaining({ count: 1, to: "/architecture/versions/draft-1/sources" }));
+    expect(sections.decisions[1]).toEqual(expect.objectContaining({ count: 1, to: "/architecture/versions/draft-1/decide" }));
     expect(sections.due).toEqual([expect.objectContaining({ kind: "due", overdue: true, to: "/reminders" })]);
     expect(sections.gaps).toEqual([expect.objectContaining({ kind: "gaps", count: 1, subject: "CRM" })]);
   });

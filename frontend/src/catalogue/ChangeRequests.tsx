@@ -3,7 +3,7 @@ import { RotateCw } from "lucide-react";
 import { type FormEvent, useId, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-import { api, type ChangeRequest, type ExtractionRun, type Release, type Suggestion } from "../api/client";
+import { api, type ChangeRequest, type Release } from "../api/client";
 import { errorMessage } from "../api/errors";
 import { count, formatDay } from "../home/format";
 import {
@@ -16,7 +16,6 @@ import {
   traceLine,
   useChangeRequests,
 } from "./inbox";
-import { warningInWords } from "./suggestions";
 
 /** The offerings a change request's features name, as the requirement named them. */
 function offeringsNamed(item: ChangeRequest): string[] {
@@ -106,7 +105,7 @@ export function ChangeRequestInbox({ releases, actorName }: {
       void queryClient.invalidateQueries({ queryKey: ["architecture"] });
       const asked = reading.run.candidate_count;
       const what = reading.change_request.delivery || reading.change_request.draft ? "suggestion" : "suggested question";
-      navigate(`/architecture/versions/${encodeURIComponent(reading.release.id)}/sources`, {
+      navigate(`/architecture/versions/${encodeURIComponent(reading.release.id)}/decide`, {
         state: {
           notice: `${reading.change_request.id} is read into ${
             reading.release.name === reading.change_request.id ? "a new draft named after it" : `‘${reading.release.name || "the draft"}’`
@@ -230,7 +229,7 @@ export function ChangeRequestInbox({ releases, actorName }: {
                         ) : (
                           <span className="documents__actions">
                             {item.status === "read" && stillOpen ? (
-                              <Link className="changerequests__link" to={`/architecture/versions/${encodeURIComponent(into.id)}/sources`}>
+                              <Link className="changerequests__link" to={`/architecture/versions/${encodeURIComponent(into.id)}/decide`}>
                                 Its suggestions <span aria-hidden="true">→</span>
                                 <span className="visually-hidden"> ({item.id})</span>
                               </Link>
@@ -327,92 +326,5 @@ function Dismissal({ item, onDone }: { item: ChangeRequest; onDone: (dismissed: 
       </span>
       {!reason.trim() && <p id={`${id}-first`} className="secondary">Give a reason first.</p>}
     </form>
-  );
-}
-
-/**
- * The change requests read into this draft, on its Sources page beside its documents: what
- * the reading could not match, and how many of their suggestions still wait.
- */
-export function DraftChangeRequests({ release, runs, suggestions }: {
-  release: Release;
-  runs: ExtractionRun[];
-  suggestions: Suggestion[];
-}) {
-  const id = useId().replace(/:/g, "");
-  const queryClient = useQueryClient();
-  const inbox = useChangeRequests();
-  const read = useMutation({
-    mutationFn: (changeRequestId: string) => api.readChangeRequest(changeRequestId),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["architecture"] }),
-  });
-  const readings = new Map<string, ExtractionRun>();
-  for (const run of runs) if (run.change_request_id) readings.set(run.change_request_id, run);
-  const items = (inbox.data ?? []).filter((item) => readings.has(item.id) || item.read_into === release.id);
-  if (!items.length) return null;
-  const waiting = (changeRequestId: string) =>
-    suggestions.filter((item) => item.change_request?.change_request_id === changeRequestId && item.status === "proposed").length;
-  return (
-    <section className="govsection" aria-labelledby={`${id}-title`}>
-      <h2 id={`${id}-title`} className="govsection__title">Change requests</h2>
-      <p className="govsection__lead">
-        Approved backlogs and closed Epics from Requirement AI, read with fixed rules: each approved feature asks a question of
-        the offering it names, and each closed Epic suggests the capabilities it delivered.
-      </p>
-      {read.isError && <p className="docpage__failure" role="alert">{errorMessage(read.error)}</p>}
-      <table className="govtable governance__table changerequests" role="table">
-        <caption className="visually-hidden">The change requests read into this draft</caption>
-        <colgroup>
-          <col className="changerequests__col-request" />
-          <col className="changerequests__col-reading" />
-          <col className="changerequests__col-waiting" />
-        </colgroup>
-        <thead role="rowgroup">
-          <tr role="row">
-            <th scope="col" role="columnheader">Change request</th>
-            <th scope="col" role="columnheader">Reading</th>
-            <th scope="col" role="columnheader" className="cell--end">Waiting</th>
-          </tr>
-        </thead>
-        <tbody role="rowgroup">
-          {items.map((item) => {
-            const run = readings.get(item.id);
-            return (
-              <tr key={item.id} role="row" className="row">
-                <th scope="row" role="rowheader">
-                  <span className="governance__id">{item.id}</span>
-                  <span className="changerequests__title" dir="auto">{item.title}</span>
-                  <span className="secondary govtable__by" dir="auto">{traceLine(item.trace)}</span>
-                </th>
-                <td role="cell" data-head="Reading">
-                  <span className="status">Read</span>
-                  {run && <span className="secondary govtable__by">{count(run.candidate_count, "suggestion")} on its last reading</span>}
-                  {run && run.warnings.length > 0 && (
-                    <ul className="changerequests__warnings" aria-label={`What the reading of ${item.id} could not match`}>
-                      {run.warnings.map((warning) => (
-                        <li key={warning} dir="auto">{warningInWords(warning)}</li>
-                      ))}
-                    </ul>
-                  )}
-                  <span className="documents__actions">
-                    <button
-                      type="button"
-                      className="text-button"
-                      aria-disabled={read.isPending || undefined}
-                      onClick={() => !read.isPending && read.mutate(item.id)}
-                    >
-                      <RotateCw size={14} aria-hidden="true" />
-                      {read.isPending && read.variables === item.id ? "Reading…" : "Read it again"}
-                      <span className="visually-hidden"> ({item.id})</span>
-                    </button>
-                  </span>
-                </td>
-                <td role="cell" data-head="Waiting" className="cell--end">{waiting(item.id)}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </section>
   );
 }

@@ -5,16 +5,17 @@ import { CALLBACK_PATH, SILENT_CALLBACK_PATH } from "../auth/paths";
 import { CataloguePage } from "../catalogue/CataloguePage";
 import { ChannelsPage } from "../catalogue/ChannelsPage";
 import { GovernancePage } from "../catalogue/GovernancePage";
-import { ChangesPage } from "../catalogue/ChangesPage";
 import { ComparePage } from "../catalogue/ComparePage";
-import { CheckPage } from "../catalogue/CheckPage";
 import { EvidencePage } from "../catalogue/EvidencePage";
-import { PublishPage } from "../catalogue/PublishPage";
 import { DomainsPage } from "../catalogue/DomainsPage";
 import { JourneyPage, JourneysPage } from "../catalogue/JourneysPage";
 import { OfferingPage, OfferingsPage } from "../catalogue/OfferingsPage";
-import { SuggestionsPage } from "../catalogue/SuggestionsPage";
 import { SystemsPage } from "../catalogue/SystemsPage";
+import { ChangesStep } from "../catalogue/draft/ChangesStep";
+import { CheckStep } from "../catalogue/draft/CheckStep";
+import { DecideStep } from "../catalogue/draft/DecideStep";
+import { PublishStep } from "../catalogue/draft/PublishStep";
+import { SourcesStep } from "../catalogue/draft/SourcesStep";
 import { VersionsPage as CatalogueVersionsPage } from "../catalogue/VersionsPage";
 import { HistoryPage } from "../squads/HistoryPage";
 import { PeoplePage } from "../squads/PeoplePage";
@@ -57,11 +58,13 @@ const catalogueRoutes = (
     <Route path="offerings/:offeringId" element={<OfferingPage />} />
     <Route path="journeys" element={<JourneysPage />} />
     <Route path="journeys/:journeyId" element={<JourneyPage />} />
-    <Route path="sources" element={<SuggestionsPage />} />
-    <Route path="suggestions" element={<Navigate to="../sources" replace />} />
-    <Route path="changes" element={<ChangesPage />} />
-    <Route path="check" element={<CheckPage />} />
-    <Route path="publish" element={<PublishPage />} />
+    {/* A draft's steps, in order (redesign area 3). */}
+    <Route path="sources" element={<SourcesStep />} />
+    <Route path="decide" element={<DecideStep />} />
+    <Route path="suggestions" element={<Navigate to="../decide" replace />} />
+    <Route path="changes" element={<ChangesStep />} />
+    <Route path="check" element={<CheckStep />} />
+    <Route path="publish" element={<PublishStep />} />
     <Route path="evidence/:chunkId" element={<EvidencePage />} />
   </>
 );

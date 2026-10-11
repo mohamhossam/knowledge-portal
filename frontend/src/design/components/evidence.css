@@ -148,3 +148,55 @@
 .ds-consequence > * {
   min-inline-size: 0;
 }
+
+/* Pre-flight checklist: the verdict first, then one ruled line per check. */
+.ds-checklist {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.ds-checklist__summary {
+  margin: 0;
+  font-weight: var(--weight-strong);
+}
+
+.ds-checklist__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-block-start: var(--ledger-rule);
+}
+
+.ds-checklist__item {
+  display: grid;
+  grid-template-columns: minmax(9rem, max-content) minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-4);
+  padding-block: var(--space-2);
+  border-block-end: var(--hair-rule);
+}
+
+.ds-checklist__body {
+  display: grid;
+  gap: var(--space-1);
+  min-inline-size: 0;
+}
+
+.ds-checklist__detail {
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.ds-checklist__action {
+  justify-self: end;
+}
+
+@media (max-width: 40rem) {
+  .ds-checklist__item {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ds-checklist__action {
+    justify-self: start;
+  }
+}

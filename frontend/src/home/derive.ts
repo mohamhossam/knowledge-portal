@@ -428,7 +428,7 @@ export function architectureOverview(
         : firstFailure.failedReadings > 0
           ? {
               // Readings are redone on Sources, where their documents are; a build waits for them.
-              to: draftSuggestions(firstFailed.key),
+              to: draftSources(firstFailed.key),
               label: `Read ${count(firstFailure.failedReadings, "document")} again in ‘${firstFailed.name}’${firstFailure.build ? ", then rebuild" : ""}`,
             }
           : { to: draftCheck(firstFailed.key), label: `Rebuild the evidence index of ‘${firstFailed.name}’` }
@@ -547,8 +547,10 @@ export function deliveryHits(summary: ReleaseDeliveries): {
   };
 }
 
-/** Where a draft is worked on: its sources, documents and suggestions. */
-const draftSuggestions = (releaseId: string) => `/architecture/versions/${encodeURIComponent(releaseId)}/sources`;
+/** Where a draft's documents are added and read. */
+const draftSources = (releaseId: string) => `/architecture/versions/${encodeURIComponent(releaseId)}/sources`;
+/** Where a draft's suggestions are decided. */
+const draftSuggestions = (releaseId: string) => `/architecture/versions/${encodeURIComponent(releaseId)}/decide`;
 /** Where a draft's evidence index is built and checked. */
 const draftCheck = (releaseId: string) => `/architecture/versions/${encodeURIComponent(releaseId)}/check`;
 
