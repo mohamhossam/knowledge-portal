@@ -2782,7 +2782,7 @@ export interface components {
          * ChangedItem
          * @enum {string}
          */
-        ChangedItem: "system" | "capability" | "relationship" | "document" | "domain" | "component" | "landscape_domain" | "product" | "journey" | "channel" | "source" | "conflict" | "change_request" | "concept" | "vocabulary_term" | "interface";
+        ChangedItem: "system" | "capability" | "relationship" | "document" | "domain" | "component" | "landscape_domain" | "product" | "journey" | "channel" | "source" | "conflict" | "change_request" | "concept" | "vocabulary_term" | "interface" | "realisation";
         /**
          * ChannelSchema
          * @description Where orders are placed, and the system each is entered through (ADR-0101, step 3).
@@ -3139,6 +3139,8 @@ export interface components {
             portfolio?: components["schemas"]["PortfolioNodeSchema"][] | null;
             /** Products */
             products?: components["schemas"]["ProductOfferingSchema"][] | null;
+            /** Realisations */
+            realisations?: components["schemas"]["RealisationRecordSchema"][] | null;
             /** Relationships */
             relationships: components["schemas"]["SystemRelationshipSchema"][];
             /** Sources */
@@ -3744,6 +3746,8 @@ export interface components {
             published_at?: string | null;
             /** Published By */
             published_by?: string | null;
+            /** Realisations */
+            realisations?: components["schemas"]["RealisationRecordSchema"][];
             /** Relationships */
             relationships: components["schemas"]["SystemRelationshipSchema"][];
             /** Revision */
@@ -4817,6 +4821,37 @@ export interface components {
          */
         RealisationLayer: "cfs" | "rfs" | "resource";
         /**
+         * RealisationRecordSchema
+         * @description A CFS, RFS or resource, the systems that deliver it, and what realises it below.
+         */
+        RealisationRecordSchema: {
+            /**
+             * Aliases
+             * @default []
+             */
+            aliases: string[];
+            confidence?: components["schemas"]["SourceConfidence"] | null;
+            /** Description */
+            description?: string | null;
+            /** Id */
+            id: string;
+            layer: components["schemas"]["RealisationLayer"];
+            /** Name */
+            name: string;
+            /**
+             * Realised By
+             * @default []
+             */
+            realised_by: string[];
+            /** Source */
+            source?: string | null;
+            /**
+             * System Ids
+             * @default []
+             */
+            system_ids: string[];
+        };
+        /**
          * RealisationSchema
          * @description One thing a component is realised as: its CFS, an RFS behind it, or a resource.
          */
@@ -4825,6 +4860,8 @@ export interface components {
             layer: components["schemas"]["RealisationLayer"];
             /** Name */
             name: string;
+            /** Record Id */
+            record_id?: string | null;
             /** Source */
             source?: string | null;
         };

@@ -1175,6 +1175,12 @@ products:
     mandatory: true
     description: The broadband access, at the plan's speed profile.
     technical_spec: CFSS_INTERNET_CPE_ONPREM_HE
+    realisation:
+    - layer: cfs
+      name: CFSS_INTERNET_CPE_ONPREM_HE
+      confidence: inferred
+      source: Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)
+      record: cfs-internet-cpe-onprem-he
     confidence: confirmed
     source: SDD v2.3 · §P1 Catalog Modelling
     capabilities:
@@ -1196,6 +1202,12 @@ products:
     description: Generic CPE offer with CPE_PLATFORM_TYPE “Fortinet HE”, SIC_CODE, MODEL and LIST_OF_MODELS;
       a new generic CPE rate plan for B. Pro+ (ADO 438907).
     technical_spec: RPCUSTONPREMEQPT
+    realisation:
+    - layer: resource
+      name: Fortinet HE CPE
+      confidence: inferred
+      source: Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)
+      record: res-fortinet-he-cpe
     confidence: confirmed
     source: SDD v2.3 · §P1 Catalog Modelling; §ADO 438907
     capabilities:
@@ -1217,6 +1229,12 @@ products:
     description: Default or non-default configuration from the bundle; UTP licence per the existing SMB
       FW implementation.
     technical_spec: CFSS_ONPREM_FIREWALL_HE
+    realisation:
+    - layer: cfs
+      name: CFSS_ONPREM_FIREWALL_HE
+      confidence: inferred
+      source: Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)
+      record: cfs-onprem-firewall-he
     confidence: confirmed
     source: SDD v2.3 · §P1 Firewall; §P1.1
     capabilities:
@@ -1235,6 +1253,12 @@ products:
     description: FortiPortal access; shown in B2B as “Security & Services Portal” (rate plan RP_SELFSERVICE_PORTAL_ACCESS,
       component type SSPRTL).
     technical_spec: CFSS_SELFSERVICE_PORTAL_ACCESS
+    realisation:
+    - layer: cfs
+      name: CFSS_SELFSERVICE_PORTAL_ACCESS
+      confidence: inferred
+      source: Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)
+      record: cfs-selfservice-portal-access
     confidence: confirmed
     source: SDD v2.3 · §P1 Bundle Definition; §P3 ADO 194831
     capabilities:
@@ -1255,6 +1279,12 @@ products:
     mandatory: true
     description: 'SD-WAN service; its configuration is Day-N by MSS. MSS team: Day-N configuration.'
     technical_spec: CFSS_SDWAN_NEW
+    realisation:
+    - layer: cfs
+      name: CFSS_SDWAN_NEW
+      confidence: inferred
+      source: Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)
+      record: cfs-sdwan-new
     confidence: confirmed
     source: SDD v2.3 · §P1 Bundle Definition; General Highlights
     capabilities:
@@ -1269,6 +1299,12 @@ products:
     mandatory: true
     description: Generic AP offer with SIC_CODE, MODEL, DEVICE_RECOVERY, LIST_OF_MODELS and CAPTURE_REQUIRED.
     technical_spec: PRS_ACCESS_POINT
+    realisation:
+    - layer: resource
+      name: FortiAP
+      confidence: inferred
+      source: Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)
+      record: res-fortiap
     confidence: confirmed
     source: SDD v2.3 · §P1.1 Generic FortiAP Offer
     capabilities:
@@ -7354,3 +7390,65 @@ interfaces:
   description: Validates a trade licence or decree.
   confidence: inferred
   source: Ontology plan Phase 8 · the journeys' integrations
+realisations:
+- id: cfs-internet-cpe-onprem-he
+  layer: cfs
+  name: CFSS_INTERNET_CPE_ONPREM_HE
+  systems:
+  - cwom
+  - e2eso
+  realised_by:
+  - res-fortinet-he-cpe
+  description: 'Fibre internet on the on-premises CPE: the customer-facing service the GPON component
+    is sold as.'
+  confidence: inferred
+  source: Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)
+- id: cfs-onprem-firewall-he
+  layer: cfs
+  name: CFSS_ONPREM_FIREWALL_HE
+  systems:
+  - cwom
+  - e2eso
+  realised_by:
+  - res-fortinet-he-cpe
+  description: The firewall on the on-premises CPE, default or non-default configuration.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)
+- id: cfs-selfservice-portal-access
+  layer: cfs
+  name: CFSS_SELFSERVICE_PORTAL_ACCESS
+  systems:
+  - e2eso
+  description: FortiPortal access, shown in B2B as Security & Services Portal.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)
+- id: cfs-sdwan-new
+  layer: cfs
+  name: CFSS_SDWAN_NEW
+  systems:
+  - cwom
+  description: SD-WAN; its configuration is Day-N by MSS.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)
+- id: res-fortinet-he-cpe
+  layer: resource
+  name: Fortinet HE CPE
+  aliases:
+  - Fortinet 90G
+  - Fortinet 120G
+  systems:
+  - e2eso
+  description: The CPE device (CPE_PLATFORM_TYPE Fortinet HE, models 90G and 120G), provisioned in the
+    ADOM cluster.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)
+- id: res-fortiap
+  layer: resource
+  name: FortiAP
+  aliases:
+  - PRS_ACCESS_POINT
+  systems:
+  - cwom
+  description: The access point device, with its SIC code and model.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)

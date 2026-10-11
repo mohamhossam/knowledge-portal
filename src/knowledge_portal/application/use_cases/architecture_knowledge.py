@@ -44,6 +44,7 @@ from knowledge_portal.domain.architecture.knowledge import (
 )
 from knowledge_portal.domain.architecture.portfolio import PortfolioNode
 from knowledge_portal.domain.architecture.products import ProductOffering
+from knowledge_portal.domain.architecture.realisations import RealisationRecord
 from knowledge_portal.domain.architecture.vocabularies import VocabularyTerm
 
 
@@ -230,6 +231,7 @@ class ManageArchitectureKnowledge:
         business_capabilities: tuple[BusinessCapability, ...] | None = None,
         vocabulary: tuple[VocabularyTerm, ...] | None = None,
         interfaces: tuple[SystemInterface, ...] | None = None,
+        realisations: tuple[RealisationRecord, ...] | None = None,
     ) -> ArchitectureKnowledge:
         require_maintainer(actor)
         current = self.get(release_id)
@@ -249,6 +251,7 @@ class ManageArchitectureKnowledge:
             business_capabilities=business_capabilities,
             vocabulary=vocabulary,
             interfaces=interfaces,
+            realisations=realisations,
         )
         self._repository.save(updated, expected_revision, actor.id, "edit_draft")
         return updated
@@ -372,6 +375,7 @@ class ManageArchitectureKnowledge:
             business_capabilities=imported.business_capabilities,
             vocabulary=imported.vocabulary,
             interfaces=imported.interfaces,
+            realisations=imported.realisations,
         )
 
     def preview_file_import(
@@ -409,6 +413,7 @@ class ManageArchitectureKnowledge:
             business_capabilities=imported.business_capabilities,
             vocabulary=imported.vocabulary,
             interfaces=imported.interfaces,
+            realisations=imported.realisations,
         )
 
     def export_file(self, release_id: str, file_format: CatalogueFileFormat, actor: Actor) -> bytes:

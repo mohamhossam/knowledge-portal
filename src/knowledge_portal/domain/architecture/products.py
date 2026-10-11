@@ -122,10 +122,14 @@ class Realisation:
     name: str
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # The realisation record the name means, by id (ontology plan Phase 8); None until a
+    # maintainer links one.
+    record_id: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "layer", realisation_layer(self.layer))
         object.__setattr__(self, "name", required(self.name, "Realisation"))
+        object.__setattr__(self, "record_id", optional(self.record_id, "Realisation record"))
         check_source(self)
 
 

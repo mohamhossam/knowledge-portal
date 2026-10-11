@@ -197,6 +197,7 @@ def test_a_draft_saves_them_through_the_api(client: TestClient) -> None:
         "name": "Fortinet HE CPE",
         "confidence": None,
         "source": None,
+        "record_id": None,
     }
     assert saved["nfrs"][0]["coverage"] == "missing"
 

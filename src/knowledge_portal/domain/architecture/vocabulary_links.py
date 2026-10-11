@@ -287,14 +287,20 @@ def with_terms(
 
 def kept_component_terms(item: OfferingComponent, kept: OfferingComponent) -> OfferingComponent:
     """A component read again keeping the terms linked where it still writes the same
-    value: a document never unlinks what a maintainer mapped."""
+    value: a document never unlinks what a maintainer mapped. Its realisations keep their
+    records likewise, by layer and name (ontology plan Phase 8)."""
     roles = {(duty.system_id, duty.role): duty.role_id for duty in kept.responsibilities}
+    records = {(layer.layer, layer.name): layer.record_id for layer in kept.realisation}
     return replace(
         item,
         kind_id=item.kind_id or (kept.kind_id if item.kind == kept.kind else None),
         responsibilities=tuple(
             replace(duty, role_id=duty.role_id or roles.get((duty.system_id, duty.role)))
             for duty in item.responsibilities
+        ),
+        realisation=tuple(
+            replace(layer, record_id=layer.record_id or records.get((layer.layer, layer.name)))
+            for layer in item.realisation
         ),
     )
 

@@ -144,6 +144,17 @@ _INTERFACE_FIELDS = (
     "source",
 )
 
+_REALISATION_FIELDS = (
+    "layer",
+    "name",
+    "aliases",
+    "system_ids",
+    "realised_by",
+    "description",
+    "confidence",
+    "source",
+)
+
 
 def _bare(offering: ProductOffering) -> tuple[object, ...]:
     """An offering's components without their responsibilities, realisation, concepts and
@@ -277,6 +288,7 @@ class ChangedItem(StrEnum):
     VOCABULARY_TERM = "vocabulary_term"
     # A contract a system exposes, with its consumers (ontology plan Phase 8).
     INTERFACE = "interface"
+    REALISATION = "realisation"
 
 
 @dataclass(frozen=True)
@@ -624,6 +636,14 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
             _INTERFACE_FIELDS,
             {item.id: (item.name, item) for item in base.interfaces},
             {item.id: (item.name, item) for item in draft.interfaces},
+        )
+    )
+    changes.extend(
+        _register_changes(
+            ChangedItem.REALISATION,
+            _REALISATION_FIELDS,
+            {item.id: (item.name, item) for item in base.realisations},
+            {item.id: (item.name, item) for item in draft.realisations},
         )
     )
     changes.extend(

@@ -37,6 +37,10 @@ from knowledge_portal.domain.architecture.invariants import required
 from knowledge_portal.domain.architecture.journeys import Journey, check_journeys
 from knowledge_portal.domain.architecture.portfolio import PortfolioNode, check_portfolio
 from knowledge_portal.domain.architecture.products import ProductOffering, check_offerings
+from knowledge_portal.domain.architecture.realisations import (
+    RealisationRecord,
+    check_realisations,
+)
 from knowledge_portal.domain.architecture.sources import SourceConfidence, check_source
 from knowledge_portal.domain.architecture.vocabularies import VocabularyTerm, check_vocabulary
 from knowledge_portal.domain.architecture.vocabulary_links import check_vocabulary_links
@@ -435,6 +439,8 @@ class ArchitectureKnowledge:
     # The contracts systems expose and consume (ontology plan Phase 8); with the
     # information entities systems master or read, what a data change ripples through.
     interfaces: tuple[SystemInterface, ...] = ()
+    # The CFSs, RFSs and resources components are realised as (ontology plan Phase 8).
+    realisations: tuple[RealisationRecord, ...] = ()
 
     def __post_init__(self) -> None:
         _required(self.id, "Knowledge id")
@@ -513,6 +519,7 @@ class ArchitectureKnowledge:
         for system in self.systems:
             check_data_roles(system.name, system.masters, system.reads, terms)
         check_interfaces(self.interfaces, system_ids, terms)
+        check_realisations(self.realisations, system_ids, self.products)
         check_governance(
             self.sources,
             self.conflicts,
@@ -560,6 +567,7 @@ class ArchitectureKnowledge:
         business_capabilities: tuple[BusinessCapability, ...] | None = None,
         vocabulary: tuple[VocabularyTerm, ...] | None = None,
         interfaces: tuple[SystemInterface, ...] | None = None,
+        realisations: tuple[RealisationRecord, ...] | None = None,
     ) -> ArchitectureKnowledge:
         if self.status is not KnowledgeReleaseStatus.DRAFT:
             raise KnowledgeConflictError("Published knowledge is immutable.")
@@ -593,6 +601,7 @@ class ArchitectureKnowledge:
             ),
             vocabulary=self.vocabulary if vocabulary is None else vocabulary,
             interfaces=self.interfaces if interfaces is None else interfaces,
+            realisations=self.realisations if realisations is None else realisations,
         )
 
     def domain_path(self, domain_id: str | None) -> tuple[CapabilityDomain, ...]:
