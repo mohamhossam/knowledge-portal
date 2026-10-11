@@ -115,6 +115,8 @@ export const REDESIGNED: string[] = [
   "squads-squads",
   "squads-people",
   "squads-history",
+  // UX rebuild phase 1: the page for an address outside every area.
+  "not-found",
 ];
 
 type Named = { id: string; title?: string; name?: string | null; status?: string };

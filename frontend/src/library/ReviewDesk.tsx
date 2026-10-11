@@ -538,6 +538,19 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
         />
       )}
       {original === current.key && current.block && <OriginalPreview documentId={document.id} versionId={version.id} blockId={current.block.id} where={humanWhere(current.where)} />}
+      {/* The grid's keys, said once beside it in the record (§2.2), so the list keeps its rows. */}
+      <KeysHint
+        onMore={openShortcuts}
+        keys={[
+          { keys: ["↑", "↓", "j", "k"], does: "move" },
+          { keys: ["n"], does: "next to check" },
+          { keys: ["x", "i"], does: "exclude, include" },
+          { keys: ["e"], does: "edit" },
+          { keys: ["o"], does: "original" },
+          { keys: ["Space"], does: "select" },
+          { keys: ["Ctrl+Enter"], does: "save" },
+        ]}
+      />
     </>
   );
   // The bulk and publish panels open in the pane, beside the list and next to the bar that opened
@@ -546,33 +559,6 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
 
   return (
     <div ref={desk} className="lib-desk" data-density={densityFor(density, "desk")} onKeyDownCapture={onDeskKey}>
-      {/* Progress and the notes about the whole file on one row: the grid starts higher (GATE 8.2). */}
-      <div className="lib-deskhead">
-      <section className="lib-progress" aria-label="Review progress">
-        <p>
-          Seen <strong className="ds-num">{seen.size.toLocaleString("en")}</strong> of {rows.length.toLocaleString("en")}
-          {" · "}{tally.flagged.toLocaleString("en")} flagged
-          {" · "}{tally.blocking.toLocaleString("en")} {tally.blocking === 1 ? "blocks" : "block"} approval
-          {" · "}<span className={dirty > 0 ? "lib-strong" : undefined}>{dirty.toLocaleString("en")} unsaved {dirty === 1 ? "change" : "changes"}</span>
-          <span className="lib-quiet">
-            {" · "}{basis.kind === "edition" ? `compared with version ${liveNumber ?? "?"} in service` : "compared with the text as read"}
-          </span>
-        </p>
-        <progress max={Math.max(rows.length, 1)} value={seen.size} aria-label="Passages seen" />
-      </section>
-        {fileWarnings.some((warning) => warning.severity !== "blocking") && (
-          <details className="lib-filenotes">
-            <summary>
-              <Status tone="held">Flagged, whole file</Status>{" "}
-              {plural(fileWarnings.filter((warning) => warning.severity !== "blocking").length, "note")} about reading it
-            </summary>
-            <Lines>
-              {fileWarnings.filter((warning) => warning.severity !== "blocking").map((warning, index) => <li key={`${warning.code}-${index}`}>{warning.message}</li>)}
-            </Lines>
-          </details>
-        )}
-      </div>
-
       {fileWarnings.filter((warning) => warning.severity === "blocking").length > 0 && (
         <Lines label="Blocks approval, about the whole file">
           {fileWarnings.filter((warning) => warning.severity === "blocking").map((warning, index) => (
@@ -621,19 +607,18 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
             <Button variant="link" onClick={() => setPicking(false)}>Done</Button>
           </div>
         )}
+        {fileWarnings.some((warning) => warning.severity !== "blocking") && (
+          <details className="lib-filenotes">
+            <summary>
+              <Status tone="held">Whole file flagged</Status>{" "}
+              <span className="lib-quiet">{plural(fileWarnings.filter((warning) => warning.severity !== "blocking").length, "note")}</span>
+            </summary>
+            <Lines>
+              {fileWarnings.filter((warning) => warning.severity !== "blocking").map((warning, index) => <li key={`${warning.code}-${index}`}>{warning.message}</li>)}
+            </Lines>
+          </details>
+        )}
       </div>
-      <KeysHint
-        onMore={openShortcuts}
-        keys={[
-          { keys: ["↑", "↓", "j", "k"], does: "move" },
-          { keys: ["n"], does: "next to check" },
-          { keys: ["x", "i"], does: "exclude, include" },
-          { keys: ["e"], does: "edit" },
-          { keys: ["o"], does: "original" },
-          { keys: ["Space"], does: "select" },
-          { keys: ["Ctrl+Enter"], does: "save" },
-        ]}
-      />
 
       <SplitPane
         paneLabel={bulkPanel ? "Exclude the selected passages" : approvePanel ? "Publish" : savePanel ? "Save the review" : current ? `Passage ${current.ordinal}` : "Passage"}
@@ -683,6 +668,18 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
         </BulkActionBar>
         <div className="lib-savebar">
           <div className="lib-savebar__row">
+            <section className="lib-progress" aria-label="Review progress">
+              <p>
+                Seen <strong className="ds-num">{seen.size.toLocaleString("en")}</strong> of {rows.length.toLocaleString("en")}
+                {" · "}{tally.flagged.toLocaleString("en")} flagged
+                {" · "}{tally.blocking.toLocaleString("en")} {tally.blocking === 1 ? "blocks" : "block"} approval
+                {" · "}<span className={dirty > 0 ? "lib-strong" : undefined}>{dirty.toLocaleString("en")} unsaved {dirty === 1 ? "change" : "changes"}</span>
+                <span className="lib-quiet">
+                  {" · "}{basis.kind === "edition" ? `compared with version ${liveNumber ?? "?"} in service` : "compared with the text as read"}
+                </span>
+              </p>
+              <progress max={Math.max(rows.length, 1)} value={seen.size} aria-label="Passages seen" />
+            </section>
             <ActionGroup>
               <Button id="desk-save" busy={hook.review.isPending && !approve.open} aria-expanded={asking.open} onClick={save}>{hook.review.isPending && !approve.open ? "Saving…" : "Save review"}</Button>
               <Button

@@ -6,7 +6,7 @@ import { api, type Release } from "../../api/client";
 import { Breadcrumbs, PageHeader, Status, SubNav } from "../../design/components";
 import { count, formatDay } from "../../home/format";
 import { ButtonLink, RouterLink } from "../../shell/links";
-import { changeSentence, contents } from "../catalogue";
+import { changeSentence } from "../catalogue";
 import { DraftBanner } from "../draft/DraftFrame";
 import { useChangeRequests } from "../inbox";
 import { type CatalogueContext, useCatalogueContext, useMappingImpact } from "../useCatalogue";
@@ -54,9 +54,9 @@ function catalogueCrumbs(context: Pick<CatalogueContext, "book" | "base" | "inSe
 
 /**
  * Every catalogue page's head (redesign phase 5). A page of the version
- * (Systems, Concepts, …) is titled by the version, with the version's pages
- * as sub-navigation; a record page (an offering, a journey) is titled by its
- * record and finds its way back by the breadcrumbs.
+ * (Systems, Concepts, …) is titled by its own name, the version and its state
+ * beside it, with the version's pages as sub-navigation; a record page (an
+ * offering, a journey) is titled by its record (UX rebuild, phase 1).
  */
 export function CatalogueHeader({ page, record, children }: {
   page: CataloguePageId;
@@ -101,14 +101,19 @@ export function CatalogueHeader({ page, record, children }: {
     <>
       <PageHeader
         breadcrumbs={crumbs}
-        title={inService ? "Architecture catalogue" : <bdi>{name}</bdi>}
+        title={PAGE_LABEL[page]}
         documentTitle={`${PAGE_LABEL[page]} · ${inService ? "Architecture catalogue" : `${name} · Catalogue`}`}
-        lead={<Edition release={release} inService={inService} actorName={context.actorName} />}
+        lead={
+          <>
+            <Edition release={release} inService={inService} actorName={context.actorName} />
+            {!inService && <>{" "}<Consequence release={release} /></>}
+          </>
+        }
         meta={
           <>
             {inService ? <Status tone="done">In service</Status> : draft ? <Status tone="working">In preparation</Status> : <Status tone="stopped">Replaced</Status>}
-            <span>{tally(release)}</span>
-            {inService ? <MappedEarlier /> : <Consequence release={release} />}
+            <bdi>{name}</bdi>
+            {inService && <MappedEarlier />}
           </>
         }
         actions={inService ? <ButtonLink to="/explorer"><Compass size={16} aria-hidden="true" /> Open the explorer</ButtonLink> : undefined}
@@ -119,16 +124,6 @@ export function CatalogueHeader({ page, record, children }: {
       {banner}
     </>
   );
-}
-
-function tally(release: Release): string {
-  const holds = contents(release);
-  return [
-    count(holds.systems, "system"),
-    count(release.business_capabilities?.length ?? 0, "concept"),
-    count(holds.offerings, "offering"),
-    count(holds.journeys, "journey"),
-  ].join(" · ");
 }
 
 function pages(base: string, page: CataloguePageId, inService: boolean, release: Release, waiting: number) {

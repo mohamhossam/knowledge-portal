@@ -12,7 +12,7 @@ import { checkAxeAfterEach } from "../../test/axe";
 checkAxeAfterEach();
 
 const NAV = [
-  { href: "/", label: "Your work", current: false, count: 6, countLabel: "need you" },
+  { href: "/", label: "To do", current: false, count: 6, countLabel: "need you" },
   { href: "/library", label: "Library", current: true },
   { href: "/architecture", label: "Catalogue" },
 ];
@@ -30,9 +30,30 @@ describe("AppShell", () => {
     expect(screen.getByRole("navigation", { name: "Areas" })).toBeInTheDocument();
     expect(screen.getByRole("main")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Library" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("link", { name: "Your work 6 need you" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "To do 6 need you" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Requirement AI (leaves the knowledge portal)" })).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Etisalat" })).toBeInTheDocument();
+  });
+
+  it("groups the sidebar's areas and collapses it to icons that keep their names, remembered", async () => {
+    window.localStorage.removeItem("knowledge-portal.sidebar");
+    const { container, unmount } = render(
+      <AppShell homeHref="/" navigation={[...NAV.slice(0, 1), ...NAV.slice(1).map((item) => ({ ...item, group: "Look up" }))]}>
+        <p>Page</p>
+      </AppShell>,
+    );
+    const areas = screen.getByRole("navigation", { name: "Areas" });
+    expect(screen.getByRole("list", { name: "Look up" })).toHaveTextContent("LibraryCatalogue");
+    // jsdom has no wide window: the sidebar starts collapsed, its names still the links' names.
+    expect(container.firstElementChild).toHaveClass("ds-shell--collapsed");
+    expect(areas).toContainElement(screen.getByRole("link", { name: "Library" }));
+    await userEvent.click(screen.getByRole("button", { name: "Expand the sidebar" }));
+    expect(container.firstElementChild).not.toHaveClass("ds-shell--collapsed");
+    expect(window.localStorage.getItem("knowledge-portal.sidebar")).toBe("expanded");
+    unmount();
+    render(<AppShell homeHref="/" navigation={NAV}><p>Page</p></AppShell>);
+    expect(screen.getByRole("button", { name: "Collapse the sidebar" })).toBeInTheDocument();
+    window.localStorage.removeItem("knowledge-portal.sidebar");
   });
 
   it("moves focus to the new page's h1 when the location changes (§1)", () => {
@@ -91,6 +112,34 @@ describe("page structure", () => {
     render(<PageHeader title="Your work" lead="3 things need you." />);
     expect(document.title).toBe("Your work · Knowledge portal");
     expect(screen.getByRole("heading", { level: 1 })).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("keeps the head to one line: facts beside the title, where and why behind About this page", async () => {
+    render(
+      <PageHeader
+        title="Product eligibility matrix"
+        meta={<span>Version 1</span>}
+        lead="Reviewed reference documents."
+        breadcrumbs={<Breadcrumbs items={[{ href: "/library", label: "Library" }, { label: "Product eligibility matrix" }]} />}
+        actions={<Button>Upload a new version</Button>}
+      />,
+    );
+    const about = screen.getByRole("button", { name: "About this page" });
+    expect(about).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("navigation", { name: "Breadcrumb" })).not.toBeInTheDocument();
+    await userEvent.click(about);
+    expect(about).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("navigation", { name: "Breadcrumb" })).toBeInTheDocument();
+    expect(screen.getByText("Reviewed reference documents.")).toBeVisible();
+    await userEvent.keyboard("{Tab}");
+    await userEvent.keyboard("{Escape}");
+    expect(about).toHaveAttribute("aria-expanded", "false");
+    expect(about).toHaveFocus();
+  });
+
+  it("has no About button when there is nothing to say", () => {
+    render(<PageHeader title="Library" meta={<span>12 documents</span>} />);
+    expect(screen.queryByRole("button", { name: "About this page" })).not.toBeInTheDocument();
   });
 
   it("announces a state line as status", () => {

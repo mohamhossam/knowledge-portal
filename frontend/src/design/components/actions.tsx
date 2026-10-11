@@ -2,7 +2,12 @@ import "./actions.css";
 
 import { type ButtonHTMLAttributes, type ReactNode, useId, useState } from "react";
 
-export type ButtonVariant = "secondary" | "primary" | "danger" | "quiet" | "link";
+/**
+ * The control hierarchy (UX rebuild, phase 1): `primary` filled, for the page's
+ * one main action; `secondary` outlined; `tertiary` text only. `quiet` is the
+ * tertiary look under its older name; `link` sits inside a sentence.
+ */
+export type ButtonVariant = "secondary" | "primary" | "danger" | "tertiary" | "quiet" | "link";
 
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;

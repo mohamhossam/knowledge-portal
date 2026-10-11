@@ -1,7 +1,7 @@
 import "./data.css";
 
-import { ArrowDown, ArrowUp, ArrowUpDown, Minus, Plus, RefreshCw } from "lucide-react";
-import { type KeyboardEvent, type ReactNode, type RefObject, useEffect, useId, useRef, useState } from "react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Check, Minus, Plus, RefreshCw } from "lucide-react";
+import { type KeyboardEvent, type MouseEvent, type ReactNode, type RefObject, useEffect, useId, useRef, useState } from "react";
 
 import { useFocusAfterRender, useStickySize } from "../hooks";
 import type { LinkLike } from "./layout";
@@ -9,8 +9,9 @@ import type { LinkLike } from "./layout";
 export type Filter = { id: string; label: string; count?: number };
 
 /**
- * Filters as pressed buttons with their counts; state belongs in the URL (the
- * caller's job). "Clear filters" appears only when a filter is on.
+ * Filters as toggle chips with their counts (pressed buttons: the one on shows
+ * a check); state belongs in the URL (the caller's job). "Clear filters"
+ * appears only when a filter is on.
  */
 export function FilterStrip({
   label,
@@ -32,6 +33,7 @@ export function FilterStrip({
     <div className="ds-filters" role="group" aria-label={label}>
       {filters.map((filter) => (
         <button key={filter.id} type="button" className="ds-filters__button" aria-pressed={active === filter.id} onClick={() => onChange(filter.id)}>
+          {active === filter.id && <Check size={14} aria-hidden="true" className="ds-filters__check" />}
           {filter.label}
           {filter.count !== undefined && <>{" "}<span className="ds-filters__count">{filter.count.toLocaleString("en")}</span></>}
         </button>
@@ -83,13 +85,15 @@ export type Column<T> = {
 export type Sort = { id: string; direction: "ascending" | "descending" };
 
 /**
- * The ledger table. Dense, sticky head under the heavy rule, sortable columns
+ * The ledger table. Dense, sticky head under the rule, sortable columns
  * (aria-sort), optional selection (24 px checkboxes), and, when `onActivate`
  * is given, a keyboard grid: ↑ ↓ (or j k) move, Home/End jump, Enter opens,
  * Space selects, Shift+↑/↓ extends. One tab stop for the whole grid.
  * `onRowKey` adds the widget's own keys (the review desk's i, x, e, a, r):
  * return true when the key was handled. Plain letters only, never with Ctrl,
- * Alt or Meta, and they reach only a focused grid (WCAG 2.1.4).
+ * Alt or Meta, and they reach only a focused grid (WCAG 2.1.4). Outside a grid,
+ * a row whose row header is a link opens with a press anywhere on the row; the
+ * name reads as a name (no underline until hover or focus).
  */
 export function DataTable<T>({
   caption,
@@ -181,6 +185,20 @@ export function DataTable<T>({
     event.preventDefault();
   };
 
+  // A row whose name is a link opens with a press anywhere on it (UX rebuild, phase 1). The
+  // link stays the one keyboard stop; presses on the row's own controls, or ending a text
+  // selection, keep their meaning.
+  const pressRow = (event: MouseEvent<HTMLTableSectionElement>) => {
+    if (grid || event.button !== 0) return;
+    const target = event.target as HTMLElement;
+    if (target.closest("a,button,input,select,textarea,label,summary,[role='button']")) return;
+    if (window.getSelection()?.toString()) return;
+    const link = target.closest("tr")?.querySelector<HTMLAnchorElement>(":scope > th[scope='row'] a[href]");
+    if (!link) return;
+    if (event.ctrlKey || event.metaKey || event.shiftKey) window.open(link.href, "_blank", "noopener");
+    else link.click();
+  };
+
   const header = (column: Column<T>) => {
     const sorted = sort?.id === column.id ? sort.direction : undefined;
     return (
@@ -211,7 +229,7 @@ export function DataTable<T>({
             {columns.map(header)}
           </tr>
         </thead>
-        <tbody ref={body} onKeyDown={keyDown}>
+        <tbody ref={body} onKeyDown={keyDown} onClick={pressRow}>
           {rows.length === 0 ? (
             <tr><td colSpan={columns.length + (selected ? 1 : 0)} className="ds-table__empty">{emptyText}</td></tr>
           ) : (

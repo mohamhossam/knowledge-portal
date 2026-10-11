@@ -40,6 +40,19 @@ for (const [width, height] of [[1440, 900], [1280, 800]] as const) {
   });
 }
 
+// The UX rebuild's phase 1 gate: on a 1280×720 laptop, the desk shows fifteen passages or more
+// as it opens, between the list's head and the save bar.
+test("phase 1 gate: the review desk at 1280×720 shows 15 rows or more on arrival", async ({ page }) => {
+  const { reviewDocument } = await seeded();
+  test.skip(!reviewDocument, "this seed has no document waiting for review");
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto(`library/${reviewDocument}`);
+  await settled(page);
+  const measured = await chrome(page);
+  test.info().annotations.push({ type: "measured", description: JSON.stringify(measured) });
+  expect(measured.rows).toBeGreaterThanOrEqual(15);
+});
+
 test("2.3 withdraw says who cites it (or that the count is unknown) before the button that withdraws", async ({ page }) => {
   const { serviceDocument } = await seeded();
   test.skip(!serviceDocument, "this seed has no document in service");

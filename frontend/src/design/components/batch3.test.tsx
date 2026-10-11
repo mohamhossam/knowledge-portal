@@ -34,6 +34,22 @@ function Grid({ onActivate = vi.fn(), onRowKey }: { onActivate?: (d: Doc) => voi
 }
 
 describe("DataTable", () => {
+  it("opens a row's named link with a press anywhere on the row, but not on the row's own controls", async () => {
+    const opened = vi.fn((event: Event) => event.preventDefault());
+    const pressed = vi.fn();
+    const columns: Column<Doc>[] = [
+      { id: "title", header: "Document", rowHeader: true, cell: (d) => <a href={`/library/${d.id}`} onClick={(event) => opened(event.nativeEvent)}>{d.title}</a> },
+      { id: "count", header: "Passages", numeric: true, cell: (d) => d.count },
+      { id: "act", header: "Act", cell: (d) => <Button onClick={pressed}>Retry {d.title}</Button> },
+    ];
+    render(<DataTable caption="Documents" columns={columns} rows={DOCS} rowId={(d) => d.id} />);
+    await userEvent.click(screen.getByRole("cell", { name: "404" }));
+    expect(opened).toHaveBeenCalledOnce();
+    await userEvent.click(screen.getByRole("button", { name: "Retry XGPON coverage rules" }));
+    expect(pressed).toHaveBeenCalledOnce();
+    expect(opened).toHaveBeenCalledOnce();
+  });
+
   it("is a captioned table with sortable headers that say their order", async () => {
     render(<Grid />);
     const table = screen.getByRole("grid", { name: "Documents" });
@@ -109,6 +125,9 @@ describe("filters, decisions and bulk", () => {
     const onClear = vi.fn();
     render(<FilterStrip label="Show passages" filters={[{ id: "all", label: "All", count: 404 }, { id: "flagged", label: "Flagged", count: 3 }]} active="all" onChange={onChange} onClear={onClear} />);
     expect(screen.getByRole("button", { name: "All 404" })).toHaveAttribute("aria-pressed", "true");
+    // The filter that is on shows a check as well as its tint: state never by colour alone.
+    expect(screen.getByRole("button", { name: "All 404" }).querySelector("svg")).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Flagged 3" }).querySelector("svg")).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Flagged 3" }));
     expect(onChange).toHaveBeenCalledWith("flagged");
     await userEvent.click(screen.getByRole("button", { name: "Clear filters" }));

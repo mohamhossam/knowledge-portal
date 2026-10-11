@@ -5,35 +5,50 @@
   gap: var(--space-2);
 }
 
+/* Filters are toggles, not buttons: a quiet pill, the pressed one in Maroon Mist with a check. */
 .ds-filters__button {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  min-block-size: 2rem;
+  min-block-size: 1.75rem;
   padding-inline: var(--space-3);
   border: var(--rule-hair) solid var(--color-rule-strong);
-  border-radius: var(--radius-control);
-  background: var(--color-surface);
+  border-radius: var(--radius-pill);
+  background: transparent;
   color: var(--color-ink);
+  font-size: var(--text-meta);
   cursor: pointer;
 }
 
 .ds-filters__button[aria-pressed="true"] {
+  padding-inline-start: var(--space-2);
   background: var(--color-selected);
   border-color: var(--color-action);
   color: var(--color-on-selected);
   font-weight: var(--weight-strong);
 }
 
+.ds-filters__check {
+  flex: none;
+}
+
 .ds-filters__count {
   font-stretch: var(--stretch-numeral);
   font-variant-numeric: tabular-nums;
+  color: var(--color-ink-2);
+}
+
+.ds-filters__button[aria-pressed="true"] .ds-filters__count {
   color: inherit;
-  opacity: 0.85;
 }
 
 .ds-filters__find {
-  min-inline-size: 12rem;
+  min-inline-size: 10rem;
+}
+
+.ds-filters__find .ds-input {
+  min-block-size: 1.75rem;
+  padding-block: 0;
 }
 
 /* The ledger table */
@@ -103,6 +118,11 @@
 
 .ds-filters__button:hover {
   border-color: var(--color-action);
+  background: var(--color-surface-2);
+}
+
+.ds-filters__button[aria-pressed="true"]:hover {
+  background: var(--color-selected);
 }
 
 .ds-table__sort:hover {
@@ -128,6 +148,11 @@
   inline-size: 2.5rem;
 }
 
+/* A block, so a row is the box's height and no taller (no line box under it). */
+.ds-table__select > .ds-check__box {
+  display: block;
+}
+
 .ds-table__sort {
   display: inline-flex;
   align-items: center;
@@ -148,6 +173,23 @@
 
 .ds-table__empty {
   color: var(--color-ink-2);
+}
+
+/* A row's name is a name, not an underlined link: the whole row opens it (data.tsx). */
+.ds-table tbody th[scope="row"] a {
+  color: var(--color-ink);
+  font-weight: var(--weight-emphasis);
+  text-decoration: none;
+}
+
+.ds-table tbody tr:has(> th[scope="row"] a[href]) {
+  cursor: pointer;
+}
+
+.ds-table tbody tr:hover > th[scope="row"] a,
+.ds-table tbody th[scope="row"] a:focus-visible {
+  color: var(--color-link);
+  text-decoration: underline;
 }
 
 /* Cell links meet the 24 px target by their own size. */

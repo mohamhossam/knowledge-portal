@@ -258,8 +258,8 @@ export function YourWork() {
   return (
     <div className="work">
       <PageHeader
-        title="Your work"
-        lead={lead}
+        title="To do"
+        meta={lead && <span>{lead}</span>}
         actions={
           <FilterStrip
             label="Whose work"

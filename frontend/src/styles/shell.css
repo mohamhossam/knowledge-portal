@@ -160,22 +160,6 @@
   color: var(--ink);
 }
 
-.missing {
-  max-width: 62ch;
-  padding-block: var(--s7);
-  margin-left: calc(var(--margin-column) + var(--s5));
-}
-
-.missing__title {
-  margin-bottom: var(--s4);
-  font-size: var(--t-title);
-  font-stretch: 88%;
-}
-
-.missing p + p {
-  margin-top: var(--s3);
-}
-
 .timetable__quiet--failed {
   display: flex;
   flex-wrap: wrap;
@@ -191,9 +175,5 @@
 @media (max-width: 45rem) {
   .masthead {
     position: static;
-  }
-
-  .missing {
-    margin-left: 0;
   }
 }

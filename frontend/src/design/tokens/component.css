@@ -40,13 +40,15 @@
   --focus-ring: var(--focus-ring-width) solid var(--color-focus);
   --focus-halo: 0 0 0 var(--focus-ring-halo) var(--color-surface);
 
-  /* Masthead and rail (app shell) */
-  --masthead-height: 3rem;
+  /* Brand bar and sidebar (app shell) */
+  --masthead-height: 2.25rem;
   --masthead-bg: var(--color-masthead);
   --masthead-fg: var(--color-on-masthead);
   --masthead-control-border: var(--color-masthead-rule);
   --rail-width: 13rem;
-  --rail-bg: var(--color-surface);
+  --rail-width-collapsed: 3.5rem;
+  --rail-item-height: 2.25rem;
+  --rail-bg: var(--color-surface-1);
   --rail-fg: var(--color-ink);
   --rail-current-bg: var(--color-selected);
   --rail-current-fg: var(--color-on-selected);
@@ -57,7 +59,7 @@
 
   /* Page and ledger rules */
   --page-max: 90rem;
-  --ledger-rule: var(--rule-heavy) solid var(--color-rule-heavy);
+  --ledger-rule: var(--rule-hair) solid var(--color-rule-strong);
   --hair-rule: var(--rule-hair) solid var(--color-rule-soft);
 
   /* Data table */
