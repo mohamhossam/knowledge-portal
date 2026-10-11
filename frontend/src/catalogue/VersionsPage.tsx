@@ -76,6 +76,7 @@ export function VersionsPage() {
     <VersionRecord
       key={chosen.id}
       release={chosen}
+      releases={rows}
       state={state(chosen)}
       previous={previous}
       activeId={activeId}
@@ -146,8 +147,10 @@ const FORMATS: { format: CatalogueFileFormat; label: string }[] = [
   { format: "json", label: "JSON" },
 ];
 
-function VersionRecord({ release, state, previous, activeId, onPutBack }: {
+function VersionRecord({ release, releases, state, previous, activeId, onPutBack }: {
   release: Release;
+  /** Every version: the change requests name the draft they were read into. */
+  releases: Release[];
   state: State;
   /** The version published before it, if any. */
   previous?: Release;
@@ -209,6 +212,8 @@ function VersionRecord({ release, state, previous, activeId, onPutBack }: {
       <Changes release={release} state={state} previous={previous} activeId={activeId} />
       <Files release={release} />
       <History release={release} />
+      {/* Change requests are read into the draft, so the draft's record carries them. */}
+      {state === "draft" && <ChangeRequestInbox releases={releases} actorName={actorName} headingLevel={3} />}
     </RecordView>
   );
 }

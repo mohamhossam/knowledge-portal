@@ -88,9 +88,11 @@ const STATE_TONE = { waiting: "attention", read: "done", dismissed: "stopped" } 
  * Versions page: what each asks, where it comes from, and reading it into the draft or
  * dismissing it.
  */
-export function ChangeRequestInbox({ releases, actorName }: {
+export function ChangeRequestInbox({ releases, actorName, headingLevel = 2 }: {
   releases: Release[];
   actorName: (id: string | null | undefined) => string;
+  /** 3 inside a version's record, under its name. */
+  headingLevel?: 2 | 3;
 }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -239,6 +241,7 @@ export function ChangeRequestInbox({ releases, actorName }: {
 
   return (
     <Section
+      headingLevel={headingLevel}
       title={<>Change requests from Requirement AI{waiting > 0 && <>{" "}<span className="ds-section__count">{waiting} waiting</span></>}</>}
     >
       <p className="cat-lead">

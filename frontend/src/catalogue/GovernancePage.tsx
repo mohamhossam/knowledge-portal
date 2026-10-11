@@ -175,7 +175,7 @@ function GovernanceList({ current }: { current?: string }) {
   return (
     <>
       <ListTools count={show === ALL && !find.trim() ? count(total, "record") : `${count(shownCount, "record")} of ${total}`}>
-        <ListFind label="Find a source, conflict or change request" value={find} onChange={setFind} placeholder="Id, title or what it says" />
+        {total > 0 && <ListFind label="Find a source, conflict or change request" value={find} onChange={setFind} placeholder="Id, title or what it says" />}
         {total > 0 && <ListFilter
           label="Register"
           value={show}

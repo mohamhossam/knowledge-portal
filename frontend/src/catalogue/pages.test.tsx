@@ -103,6 +103,15 @@ describe("VersionsPage", () => {
     expect(await screen.findByText("No change request has come from Requirement AI yet.")).toBeInTheDocument();
   });
 
+  it("carries the change requests in the draft's record, where they are read into", async () => {
+    mockVersions();
+    vi.mocked(api.releases).mockResolvedValue([release("next", { status: "draft", name: "October" } as Partial<Release>), release("old"), release("live")]);
+    renderAt("/architecture/versions?version=next", <Route path="versions" element={<VersionsPage />} />);
+    const record = within(await screen.findByRole("article", { name: "October" }));
+    expect(record.getByRole("heading", { level: 3, name: "Change requests from Requirement AI" })).toBeInTheDocument();
+    expect(await record.findByText("No change request has come from Requirement AI yet.")).toBeInTheDocument();
+  });
+
   it("puts a replaced version back only with a reason, naming what it would change", async () => {
     mockVersions();
     const activate = vi.spyOn(api, "activateRelease").mockResolvedValue(release("old"));
