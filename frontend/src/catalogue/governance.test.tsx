@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Outlet, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -27,6 +27,7 @@ function open(path: string, editable = true) {
           <Routes>
             <Route path="architecture" element={<Outlet context={context} />}>
               <Route path="governance" element={<GovernancePage />} />
+              <Route path="governance/:register/:itemId" element={<GovernancePage />} />
               <Route path="offerings/:offeringId" element={<OfferingsPage />} />
             </Route>
           </Routes>
@@ -54,33 +55,43 @@ describe("source levels on facts", () => {
 });
 
 describe("GovernancePage", () => {
-  it("lists the sources by level, the unsupplied one as due, and each conflict with what it affects", () => {
+  it("lists the conflicts first, then the sources by level, then the change requests applied", () => {
     open("/architecture/governance", false);
-
-    const sources = within(screen.getByRole("table", { name: "Sources, by level" })).getAllByRole("row").slice(1);
-    expect(sources.map((row) => row.querySelector("th")!.firstChild!.textContent)).toEqual([
-      "SMB Value Stream — Architecture Reference",
-      "Business Pro Plus Solution Design",
-      "Explorer v8.2",
-    ]);
-    // The unsupplied source is due: a status with its icon and words, never colour alone.
-    expect(within(sources[2]!).getByText("Not supplied: carried forward unread").closest(".ds-status--attention")).not.toBeNull();
-    expect(sources[2]).toHaveTextContent("Cannot tell: Workflow images are not machine-readable.");
-
-    const conflicts = within(screen.getByRole("table", { name: "Conflicts between sources" })).getAllByRole("row").slice(1);
-    expect(conflicts[0]).toHaveTextContent("CF-01 Up / Downgrade channel scope");
-    expect(conflicts[0]).toHaveTextContent("BPP SDD (L2) §11.1.3");
-    expect(conflicts[0]).toHaveTextContent("Affects Business Pro Plus: New Activation, raises OQ-01");
-    expect(conflicts[1]).toHaveTextContent("Business Pro Plus, every order type");
+    const list = within(screen.getByRole("region", { name: "Sources, conflicts and change requests" }));
+    const names = (group: string) => within(list.getByRole("list", { name: group })).getAllByRole("link").map((link) => link.querySelector(".ds-records__name")!.textContent);
+    expect(names("Conflicts between sources")).toEqual(["Up / Downgrade channel scope", "Commitment model"]);
+    expect(names("Sources")).toEqual(["SMB Value Stream — Architecture Reference", "Business Pro Plus Solution Design", "Explorer v8.2"]);
+    expect(names("Change requests applied")).toEqual(["Microsoft 365 for Business Pro Plus"]);
+    // The unsupplied source is due in the list too: a status with its words, never colour alone.
+    expect(list.getByText("Not supplied").closest(".ds-status--attention")).not.toBeNull();
     expect(screen.queryByRole("button", { name: "Edit the sources" })).not.toBeInTheDocument();
+  });
 
-    const history = within(screen.getByRole("table", { name: "Change requests applied to this version" })).getAllByRole("row").slice(1);
-    expect(history[0]).toHaveTextContent("CR-20261003-Business_Pro_Plus");
-    expect(history[0]).toHaveTextContent("From Requirement AI");
-    expect(history[0]).not.toHaveTextContent("asked by");
-    expect(history[0]).toHaveTextContent("REQ-2026-0412, revision 3, approved by Layla Haddad on 3 Oct 2026");
-    expect(history[0]).toHaveTextContent("4 Oct 2026to Business Pro Plus");
-    expect(history[0]).toHaveTextContent("FT-1 Asks of Business Pro Plus: Offer Microsoft 365");
+  it("reads a conflict: what each source says, the decision it needs and what it affects", () => {
+    open("/architecture/governance/conflicts/CF-01", false);
+    const record = within(screen.getByRole("article"));
+    expect(record.getByRole("heading", { level: 2, name: "Up / Downgrade channel scope" })).toBeInTheDocument();
+    expect(record.getByText("BPP SDD (L2) §11.1.3")).toBeInTheDocument();
+    expect(record.getByText("v8.2 (L3, not supplied) OrderEvaluate")).toBeInTheDocument();
+    expect(record.getByRole("heading", { name: /^What it affects/ }).closest("section")).toHaveTextContent("Affects Business Pro Plus: New Activation, raises OQ-01");
+    expect(within(screen.getByRole("region", { name: "Sources, conflicts and change requests" })).getByRole("link", { name: /^Up \/ Downgrade channel scope/ })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("reads a source, unsupplied as due, and a change request applied", () => {
+    open("/architecture/governance/sources/V82", false);
+    let record = within(screen.getByRole("article"));
+    expect(record.getByText("Not supplied: carried forward unread").closest(".ds-status--attention")).not.toBeNull();
+    expect(record.getByText("Workflow images are not machine-readable.")).toBeInTheDocument();
+    cleanup();
+
+    open("/architecture/governance/changes/CR-20261003-Business_Pro_Plus", false);
+    record = within(screen.getByRole("article"));
+    expect(record.getByText("From Requirement AI")).toBeInTheDocument();
+    expect(record.queryByText("Asked by")).not.toBeInTheDocument();
+    expect(record.getByText("REQ-2026-0412, revision 3, approved by Layla Haddad on 3 Oct 2026")).toBeInTheDocument();
+    expect(record.getByText("4 Oct 2026")).toBeInTheDocument();
+    expect(record.getByRole("link", { name: "Business Pro Plus" })).toBeInTheDocument();
+    expect(record.getByRole("heading", { name: /^What it changed/ }).closest("section")).toHaveTextContent("FT-1 Asks of Business Pro Plus: Offer Microsoft 365");
   });
 
   it("will not drop a source an offering or a conflict still names", () => {

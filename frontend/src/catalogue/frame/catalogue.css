@@ -175,6 +175,7 @@ a.cat-chip:hover {
 
 .cat-tally__list > div {
   display: grid;
+  align-content: start;
   gap: var(--space-1);
   padding: var(--space-3);
   border: var(--hair-rule);
