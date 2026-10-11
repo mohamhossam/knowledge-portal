@@ -21,10 +21,11 @@ export function useEditor<T>() {
     focusLater(() => panel.current?.querySelector<HTMLElement>(FIRST) ?? panel.current?.querySelector<HTMLElement>("h2,h3,[tabindex='-1']"));
   }, [focusLater]);
 
-  const close = useCallback((fallback?: () => HTMLElement | null | undefined) => {
+  /** `moved`: the edit opened something new (a record just added), so focus goes to the fallback, not back. */
+  const close = useCallback((fallback?: () => HTMLElement | null | undefined, moved = false) => {
     setEditing(null);
     // An opener that is gone, or hidden now (a selection bar with nothing selected), can't take focus.
-    focusLater(() => (opener.current?.isConnected && !opener.current.closest("[hidden]") ? opener.current : fallback?.()));
+    focusLater(() => (!moved && opener.current?.isConnected && !opener.current.closest("[hidden]") ? opener.current : fallback?.()));
   }, [focusLater]);
 
   return { editing, open, close, panel };

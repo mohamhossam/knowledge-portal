@@ -24,6 +24,8 @@ const NO_RELEASE = "No architecture version is in service, so systems can't be l
 const orNull = (text: string | null | undefined) => (text && text.trim() ? text.trim() : null);
 
 type Panel = { panelRef: RefObject<HTMLElement | null> };
+/** Called with the saved record's id once it is saved; `onDone` when not given. */
+type Saved = { onSaved?: (id: string) => void };
 
 /** The people who can hold a role, as options; the current one stays even if no longer active. */
 function PersonOptions({ people, current, none }: { people: Person[]; current: string | null | undefined; none: string }) {
@@ -45,7 +47,7 @@ function StreamOptions() {
   return <>{org.value_streams.map((stream) => <option key={stream.id} value={stream.id}>{stream.name}</option>)}</>;
 }
 
-export function PersonEdit({ person, onDone, panelRef }: { person?: Person; onDone: () => void } & Panel) {
+export function PersonEdit({ person, onDone, onSaved, panelRef }: { person?: Person; onDone: () => void } & Saved & Panel) {
   const { org, hook } = useOrgContext();
   const [value, setValue] = useState<Person>(() => person ?? { id: "", name: "", email: null, team: null, active: true, revision: 0 });
   const roles = person ? rolesOf(org, person.id) : null;
@@ -61,6 +63,7 @@ export function PersonEdit({ person, onDone, panelRef }: { person?: Person; onDo
   return (
     <FormPanel
       panelRef={panelRef}
+      headingLevel={3}
       title={person ? <>Edit <bdi>{person.name}</bdi></> : "Add a person"}
       submitLabel={person ? "Save the person" : "Add the person"}
       busy={hook.save.isPending}
@@ -80,7 +83,7 @@ export function PersonEdit({ person, onDone, panelRef }: { person?: Person; onDo
               team: orNull(value.team),
             },
           },
-          { onSuccess: onDone },
+          { onSuccess: (_, saved) => (onSaved ? onSaved(saved.record.id) : onDone()) },
         )
       }
     >
@@ -111,6 +114,7 @@ export function StreamEdit({ stream, onDone, panelRef }: { stream?: ValueStream;
   return (
     <FormPanel
       panelRef={panelRef}
+      headingLevel={3}
       title={stream ? <>Edit <bdi>{stream.name}</bdi></> : "Add a value stream"}
       submitLabel={stream ? "Save the value stream" : "Add the value stream"}
       busy={hook.save.isPending}
@@ -197,7 +201,7 @@ function Checklist({ legend, items, chosen, onChange, empty, findable }: {
 }
 
 /** A product: its value stream, what it is, the offerings it sells, where it sits, and the systems it rests on. */
-export function ProductEdit({ product, streamId, onDone, panelRef }: { product?: OrgProduct; streamId?: string; onDone: () => void } & Panel) {
+export function ProductEdit({ product, streamId, onDone, onSaved, panelRef }: { product?: OrgProduct; streamId?: string; onDone: () => void } & Saved & Panel) {
   const { org, release, hook } = useOrgContext();
   const [value, setValue] = useState<OrgProduct>(
     () => product ?? {
@@ -248,7 +252,7 @@ export function ProductEdit({ product, streamId, onDone, panelRef }: { product?:
               portfolio_node_id: value.portfolio_node_id || null,
             },
           },
-          { onSuccess: onDone },
+          { onSuccess: (_, saved) => (onSaved ? onSaved(saved.record.id) : onDone()) },
         )
       }
     >
@@ -289,7 +293,7 @@ export function ProductEdit({ product, streamId, onDone, panelRef }: { product?:
 const seatKey = (item: SquadResource) => `${item.system_id}|${item.capability_id ?? ""}|${item.person_id || `open:${item.role}`}`;
 
 /** A squad: its value stream, scrum master, and its people on each system it runs, each in a role. */
-export function SquadEdit({ squad, onDone, panelRef }: { squad?: Squad; onDone: () => void } & Panel) {
+export function SquadEdit({ squad, onDone, onSaved, panelRef }: { squad?: Squad; onDone: () => void } & Saved & Panel) {
   const { org, release, hook } = useOrgContext();
   const id = useId();
   const [value, setValue] = useState<Squad>(
@@ -323,6 +327,7 @@ export function SquadEdit({ squad, onDone, panelRef }: { squad?: Squad; onDone: 
   return (
     <FormPanel
       panelRef={panelRef}
+      headingLevel={3}
       title={squad ? <>Edit <bdi>{squad.name}</bdi></> : "Add a squad"}
       submitLabel={squad ? "Save the squad" : "Add the squad"}
       busy={hook.save.isPending}
@@ -347,7 +352,7 @@ export function SquadEdit({ squad, onDone, panelRef }: { squad?: Squad; onDone: 
               })),
             },
           },
-          { onSuccess: onDone },
+          { onSuccess: (_, saved) => (onSaved ? onSaved(saved.record.id) : onDone()) },
         )
       }
     >
@@ -448,6 +453,7 @@ export function GiveSystems({ systemIds, onDone, onCancel, panelRef }: {
   return (
     <FormPanel
       panelRef={panelRef}
+      headingLevel={3}
       title={`Give ${plural(systemIds.length, "system")} to a squad`}
       submitLabel={squad && given.length ? `Give ${plural(given.length, "system")} to ${squad.name}` : "Give them to the squad"}
       busy={hook.save.isPending}
@@ -479,7 +485,7 @@ export function GiveSystems({ systemIds, onDone, onCancel, panelRef }: {
             ) : null;
           })}
         </Select>
-        <Select label="Role on each" value={role} onChange={(event) => setRole(event.target.value as SquadRole)}>
+        <Select label={systemIds.length === 1 ? "Role" : "Role on each"} value={role} onChange={(event) => setRole(event.target.value as SquadRole)}>
           <RoleOptions />
         </Select>
         <Select label="Person" value={personId} onChange={(event) => setPersonId(event.target.value)}>
@@ -490,7 +496,7 @@ export function GiveSystems({ systemIds, onDone, onCancel, panelRef }: {
         {squad ? (
           <>
             <bdi>{squad.name}</bdi> will run {given.length ? list(given) : "nothing new"}
-            {given.length > 0 && <>, with a {roleLabel(role).toLocaleLowerCase()} seat on each {person ? <>held by <bdi>{person.name}</bdi></> : "left open"}</>}.
+            {given.length > 0 && <>, with a {roleLabel(role).toLocaleLowerCase()} seat on {systemIds.length === 1 ? "it" : "each"} {person ? <>held by <bdi>{person.name}</bdi></> : "left open"}</>}.
             {already.length > 0 && <> It already runs {list(already)}; {already.length === 1 ? "that one stays" : "those stay"} as {already.length === 1 ? "it is" : "they are"}.</>}
           </>
         ) : (
@@ -502,10 +508,12 @@ export function GiveSystems({ systemIds, onDone, onCancel, panelRef }: {
 }
 
 /** Removing an empty value stream, a product, or a squad (naming the systems it leaves without one). */
-export function OrgRemove({ kind, record, onDone, panelRef }: {
+export function OrgRemove({ kind, record, onDone, onRemoved, panelRef }: {
   kind: "value-streams" | "products" | "squads";
   record: ValueStream | OrgProduct | Squad;
   onDone: () => void;
+  /** After the removal is saved (the record is gone); `onDone` when not given. */
+  onRemoved?: () => void;
 } & Panel) {
   const { org, release, hook } = useOrgContext();
   const name = (systemId: string) => release?.systems.find((system) => system.id === systemId)?.name ?? systemId;
@@ -536,7 +544,7 @@ export function OrgRemove({ kind, record, onDone, panelRef }: {
       busy={hook.remove.isPending}
       failure={failureOf(hook.remove.error)}
       onKeep={onDone}
-      onConfirm={() => hook.remove.mutate({ kind, record }, { onSuccess: onDone })}
+      onConfirm={() => hook.remove.mutate({ kind, record }, { onSuccess: onRemoved ?? onDone })}
     />
   );
 }

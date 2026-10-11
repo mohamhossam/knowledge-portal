@@ -1,10 +1,12 @@
 import { UsersRound } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 
 import { BulkActionBar, Button, type Column, DataTable, FilterStrip, Select, type Sort, Status } from "../design/components";
 import { plural } from "../library/where";
 import { RouterLink } from "../shell/links";
+import { href } from "./bench";
+import { Tag } from "./Tag";
 import { GiveSystems } from "./OrgEdits";
 import { type OwnershipRow, ownershipRows, seatsLine } from "./organisation";
 import { useEditor } from "./useEditor";
@@ -17,13 +19,15 @@ const SORTS = ["name", "place"];
 const stateOf = (row: OwnershipRow): Exclude<Show, "all"> => (row.lapsed ? "lapsed" : row.runBy.length ? "run" : "none");
 
 /**
- * The ownership grid (Browse archetype): every system in service with where it
- * sits, the products that name it and who runs it; filtered in the address
- * ("No squad" first among them), and given to a squad in bulk, one save.
+ * Assign several (the ownership grid, Browse archetype): every system in
+ * service with where it sits, the products that name it and who runs it;
+ * filtered in the address ("No squad" first among them), and given to a squad
+ * in bulk, one save. A secondary view of Systems: the workbench is the default.
  */
 export function OwnershipGrid() {
   const { org, release, hook } = useOrgContext();
   const [params, setParams] = useSearchParams();
+  const { search } = useLocation();
   const show = (SHOWS.includes(params.get("show") as Show) ? params.get("show") : "all") as Show;
   const squadId = params.get("squad") ?? "";
   const productId = params.get("product") ?? "";
@@ -96,7 +100,7 @@ export function OwnershipGrid() {
       bidi: true,
       cell: (row) => (
         <>
-          {row.lapsed ? <span>{row.name}</span> : <RouterLink href={`/architecture/systems/${encodeURIComponent(row.systemId)}`}>{row.name}</RouterLink>}
+          <RouterLink href={href.system(row.systemId)}>{row.name}</RouterLink>
           {row.lapsed && <span className="own-detail">Not in the version in service</span>}
         </>
       ),
@@ -115,14 +119,14 @@ export function OwnershipGrid() {
         row.runBy.length ? (
           row.runBy.map(({ squad, seats }) => (
             <span key={squad.id} className="own-squad">
-              <RouterLink href={`/squads?squad=${encodeURIComponent(squad.id)}`}>{squad.name}</RouterLink>
+              <RouterLink href={href.squad(squad.id)}>{squad.name}</RouterLink>
               <span className="own-detail own-detail--plain"><bdi>{seatsLine(seats)}</bdi></span>
             </span>
           ))
         ) : row.lapsed ? (
           <Status tone="stopped">Link to check</Status>
         ) : (
-          <Status tone="attention">No squad</Status>
+          <Tag>No squad</Tag>
         ),
     },
   ];
@@ -134,8 +138,12 @@ export function OwnershipGrid() {
   const backToGrid = () => document.querySelector<HTMLElement>(".own-grid input[type=checkbox]") ?? said.current;
 
   return (
-    <section className="own-stack" aria-labelledby="own-systems-title">
-      <h2 id="own-systems-title" className="ds-visually-hidden">Systems</h2>
+    <section className="own-stack own-assign" aria-labelledby="own-systems-title">
+      <div className="own-assign__head">
+        <h2 id="own-systems-title" className="own-assign__title">Assign several systems</h2>
+        <p className="own-quiet">Select systems, then give them all to one squad in a single save.</p>
+        <RouterLink href={`/squads${search}`}>Back to the systems list</RouterLink>
+      </div>
       <div className="own-toolbar">
         <FilterStrip
           label="Show systems"
