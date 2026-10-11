@@ -5,6 +5,12 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ## Unreleased
 
+## 0.5.0 — 2026-10-11
+
+Phase 7: what a closed Epic delivered comes back as a catalogue change, and the front page
+shows how often the predicted systems were delivered. requirement-portal's Epic-closed hook
+needs this release.
+
 ### Added
 
 - What a closed Epic delivered (ontology plan, Phase 7): `POST
