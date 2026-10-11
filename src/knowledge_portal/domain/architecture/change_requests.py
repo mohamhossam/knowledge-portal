@@ -15,6 +15,10 @@ requirement was published as closes in the work-item tracker, requirement-portal
 was delivered: the Features closed as done, the catalogue changes the decided product impact
 implies for them, and the systems the assessment predicted. It is read into a draft as
 suggestions like any other, and a removed Epic withdraws one still waiting.
+
+An approved backlog whose decided product impact is a new offering (ontology plan Phase 9)
+also carries the offering and journey the assessment drafted. Reading it suggests both,
+the offering first, for a curator to edit and accept.
 """
 
 from __future__ import annotations
@@ -25,6 +29,7 @@ from dataclasses import dataclass, replace
 from datetime import date, datetime
 from enum import StrEnum
 
+from knowledge_portal.domain.architecture.drafts import OfferingDraft
 from knowledge_portal.domain.architecture.invariants import (
     InvalidKnowledgeError,
     optional,
@@ -425,9 +430,14 @@ class IncomingChangeRequest:
     kind: ChangeRequestKind = ChangeRequestKind.APPROVED_BACKLOG
     # What a closed Epic delivered; only on a catalogue change.
     delivery: DeliveryTrace | None = None
+    # The offering and journey drafted for a new-offering verdict, as the decided product
+    # impact sent them; only on an approved backlog (ontology plan Phase 9).
+    draft: OfferingDraft | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "kind", ChangeRequestKind(self.kind))
+        if self.draft is not None and self.kind is not ChangeRequestKind.APPROVED_BACKLOG:
+            raise InvalidKnowledgeError("Only an approved backlog carries a drafted offering.")
         if (self.delivery is None) != (self.kind is ChangeRequestKind.APPROVED_BACKLOG):
             raise InvalidKnowledgeError("Only a catalogue change carries what was delivered.")
         if self.delivery is not None:

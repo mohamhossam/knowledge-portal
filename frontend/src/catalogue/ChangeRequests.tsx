@@ -6,7 +6,16 @@ import { Link, useNavigate } from "react-router-dom";
 import { api, type ChangeRequest, type ExtractionRun, type Release, type Suggestion } from "../api/client";
 import { errorMessage } from "../api/errors";
 import { count, formatDay } from "../home/format";
-import { CHANGE_REQUESTS_KEY, closedLine, type Delivery, deliveredChangeSentence, hitLine, traceLine, useChangeRequests } from "./inbox";
+import {
+  CHANGE_REQUESTS_KEY,
+  closedLine,
+  type Delivery,
+  deliveredChangeSentence,
+  draftLines,
+  hitLine,
+  traceLine,
+  useChangeRequests,
+} from "./inbox";
 import { warningInWords } from "./suggestions";
 
 /** The offerings a change request's features name, as the requirement named them. */
@@ -96,7 +105,7 @@ export function ChangeRequestInbox({ releases, actorName }: {
     onSuccess: (reading) => {
       void queryClient.invalidateQueries({ queryKey: ["architecture"] });
       const asked = reading.run.candidate_count;
-      const what = reading.change_request.delivery ? "suggestion" : "suggested question";
+      const what = reading.change_request.delivery || reading.change_request.draft ? "suggestion" : "suggested question";
       navigate(`/architecture/versions/${encodeURIComponent(reading.release.id)}/sources`, {
         state: {
           notice: `${reading.change_request.id} is read into ${
@@ -107,6 +116,13 @@ export function ChangeRequestInbox({ releases, actorName }: {
     },
   });
   const waiting = (inbox.data ?? []).filter((item) => item.status === "waiting").length;
+  // A drafted offering names systems and its nearest offering by id: named as the catalogue names them.
+  const names = new Map<string, string>();
+  for (const release of releases) {
+    for (const system of release.systems) names.set(system.id, system.name);
+    for (const offering of release.products ?? []) names.set(offering.id, offering.name);
+  }
+  const nameOf = (catalogueId: string) => names.get(catalogueId) ?? catalogueId;
 
   return (
     <section className="govsection" aria-labelledby={`${id}-title`}>
@@ -116,8 +132,8 @@ export function ChangeRequestInbox({ releases, actorName }: {
       <p className="govsection__lead">
         Requirement AI sends a requirement’s approved backlog here when its final approval is recorded, and what its Epic
         delivered once the Epic is closed. Reading an approved backlog into the draft turns each approved feature into a
-        suggested question for the offering it names; reading a closed Epic suggests the capabilities it delivered. Nothing
-        reaches the catalogue until it is accepted.
+        suggested question for the offering it names, and suggests the offering and journey drafted for a new offering;
+        reading a closed Epic suggests the capabilities it delivered. Nothing reaches the catalogue until it is accepted.
       </p>
       {inbox.isPending ? (
         <p className="timetable__quiet">Reading the change requests…</p>
@@ -172,13 +188,21 @@ export function ChangeRequestInbox({ releases, actorName }: {
                     {item.delivery ? (
                       <DeliveryFacts item={item} delivery={item.delivery} />
                     ) : (
-                      <ol className="changerequests__features">
-                        {item.features.map((feature) => (
-                          <li key={feature.id}>
-                            <span className="governance__id">{feature.id}</span> <span dir="auto">{feature.name}</span>
-                          </li>
-                        ))}
-                      </ol>
+                      <>
+                        <ol className="changerequests__features">
+                          {item.features.map((feature) => (
+                            <li key={feature.id}>
+                              <span className="governance__id">{feature.id}</span> <span dir="auto">{feature.name}</span>
+                            </li>
+                          ))}
+                        </ol>
+                        {item.draft &&
+                          draftLines(item.draft, nameOf, nameOf).map((line) => (
+                            <p key={line} className="changerequests__note" dir="auto">
+                              {line}
+                            </p>
+                          ))}
+                      </>
                     )}
                   </td>
                   <td role="cell" data-head="State">

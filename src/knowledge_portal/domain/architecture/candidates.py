@@ -27,6 +27,7 @@ from knowledge_portal.domain.architecture.concepts import (
     CapabilityRef,
     label_key,
 )
+from knowledge_portal.domain.architecture.drafts import OfferingDraft
 from knowledge_portal.domain.architecture.governance import (
     KnowledgeSource,
     OpenQuestion,
@@ -37,6 +38,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
     InvalidKnowledgeError,
     KnowledgeCapability,
+    KnowledgeReleaseStatus,
     LandscapeDomain,
     RelationshipKind,
     SystemComponent,
@@ -1213,6 +1215,8 @@ def needs_one_by_one(candidate: CatalogueCandidate, release: ArchitectureKnowled
     moves = (
         candidate.content.kind is CandidateKind.PLACEMENT or candidate.content.kind in _WHOLE
     ) and classify(candidate.content, release) is CandidateMatch.UPDATES_EXISTING
+    # An offering or journey drafted for a requirement is reviewed alone (Phase 9).
+    drafted = candidate.change_request is not None and candidate.content.kind in _WHOLE
     # A value no term names is flagged: a maintainer decides each new term alone.
     flagged = (
         candidate.content.kind is CandidateKind.VOCABULARY_TERM
@@ -1221,6 +1225,7 @@ def needs_one_by_one(candidate: CatalogueCandidate, release: ArchitectureKnowled
     return (
         candidate.basis is CandidateBasis.INFERRED
         or moves
+        or drafted
         or flagged
         or bool(open_matches(candidate, release))
     )
@@ -1426,6 +1431,41 @@ def _with_question(
     )
 
 
+def draft_contents(draft: OfferingDraft) -> tuple[CandidateContent, ...]:
+    """A drafted offering and journey as two whole suggestions, the offering first."""
+    offering = CandidateContent(
+        CandidateKind.PRODUCT, draft.offering.id, name=draft.offering.name, product=draft.offering
+    )
+    if draft.journey is None:
+        return (offering,)
+    return (
+        offering,
+        CandidateContent(
+            CandidateKind.JOURNEY, draft.journey.id, name=draft.journey.name, journey=draft.journey
+        ),
+    )
+
+
+def draft_problems(release: ArchitectureKnowledge, draft: OfferingDraft) -> tuple[str, ...]:
+    """Why a drafted offering and journey would not apply to the release as new items, the
+    offering first; none when both apply cleanly (ontology plan Phase 9)."""
+    if release.status is not KnowledgeReleaseStatus.DRAFT:
+        release = replace(release, status=KnowledgeReleaseStatus.DRAFT)
+    problems: list[str] = []
+    for content in draft_contents(draft):
+        what = f"The drafted {content.kind.value} {content.system_id}"
+        match = classify(content, release)
+        if match is not CandidateMatch.NEW:
+            problems.append(f"{what} {match.value.replace('_', ' ')}.")
+            break
+        try:
+            release = apply_candidate(content, release)
+        except (InvalidKnowledgeError, CandidateDependencyError) as exc:
+            problems.append(f"{what}: {exc}")
+            break
+    return tuple(problems)
+
+
 def change_request_source(incoming: IncomingChangeRequest) -> KnowledgeSource:
     """The change request as a source: L2, its approval trace as its authority."""
     trace = incoming.trace
@@ -1472,11 +1512,15 @@ def accept_from_change_request(
         )
     question = content.question
     feature = next((item for item in incoming.features if item.id == feature_id), None)
-    summary = (
-        f"Asks of {_asked_of(question, offering, content.system_id)}: {question.text}"
-        if question is not None
-        else (feature.asks() if feature else feature_id)
-    )
+    if question is not None:
+        summary = f"Asks of {_asked_of(question, offering, content.system_id)}: {question.text}"
+    elif content.product is not None:
+        summary = f"Adds the offering {content.product.name}, drafted for the requirement"
+    elif content.journey is not None:
+        summary = f"Adds the journey {content.journey.name}, drafted for the requirement"
+        offering = find_offering(release.products, content.journey.product_id or "")
+    else:
+        summary = feature.asks() if feature else feature_id
     item = ChangeItem(kind=content.kind.value, summary=summary, feature_id=feature_id)
     history = release.change_history
     current = next((each for each in history if each.id == incoming.id), None)

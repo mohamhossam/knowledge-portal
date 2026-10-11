@@ -26,6 +26,7 @@ from knowledge_portal.domain.architecture.assessment import (
     PathStep,
     SystemRole,
 )
+from knowledge_portal.domain.architecture.drafts import OfferingDraft
 from knowledge_portal.domain.architecture.entities import (
     ArchitectureCitation,
     OrganisationReference,
@@ -230,6 +231,9 @@ class AssessmentProposal:
     journey_ids: tuple[str, ...] = ()
     # Characteristic values a new plan sets.
     new_values: tuple[str, ...] = ()
+    # For a new offering, in a family or as a new product line: the offering and journey
+    # drafted from the nearest offering by fixed rules (ontology plan Phase 9).
+    draft: OfferingDraft | None = None
 
 
 @dataclass(frozen=True)

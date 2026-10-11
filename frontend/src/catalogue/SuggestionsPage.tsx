@@ -10,7 +10,7 @@ import { DraftChangeRequests } from "./ChangeRequests";
 import { DraftDocuments } from "./DraftDocuments";
 import { type RowFocus, SuggestionRow } from "./SuggestionRow";
 import {
-  type Filter, type SuggestionGroup, bulkAcceptable, changeSentence, featureWarnings, inWords, lexicon, matchesFind, shown,
+  type Filter, type SuggestionGroup, bulkAcceptable, changeSentence, draftedForRequirement, featureWarnings, inWords, lexicon, matchesFind, shown,
   suggestionGroups, suggestionState, tally,
 } from "./suggestions";
 import { useCatalogueContext } from "./useCatalogue";
@@ -360,7 +360,7 @@ function Suggestions() {
                         busy={draft.pending > 0}
                         kept={edits[suggestion.id]}
                         notes={
-                          suggestion.change_request
+                          suggestion.change_request && !draftedForRequirement(suggestion)
                             ? notes.get(`${suggestion.change_request.change_request_id}/${suggestion.change_request.feature_id}`)
                             : undefined
                         }

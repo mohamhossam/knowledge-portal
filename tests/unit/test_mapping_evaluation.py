@@ -20,6 +20,7 @@ from knowledge_portal.application.use_cases.architecture_knowledge import (
     KnowledgeNotFoundError,
 )
 from knowledge_portal.application.use_cases.mapping_evaluation import (
+    NEW_OFFERINGS,
     EvaluateImpactMapping,
     EvaluationReport,
     GoldenCase,
@@ -79,6 +80,9 @@ PHASE_8 = {
 # The assessment with every other case kept as an accepted verdict (leave-one-out), recorded
 # in docs/slices/ontology-phase-5-retrieval-quality.md.
 PHASE_5 = {**PHASE_8, "system_precision": 0.74, "system_recall": 0.339}
+# The new-offering cases the assessment drafts for with the fake models, recorded in
+# docs/slices/ontology-phase-9-new-offering-drafts.md.
+PHASE_9_DRAFTED = 2
 
 
 def _report(mapper: str = "assess", *, precedents: bool = False) -> EvaluationReport:
@@ -141,6 +145,19 @@ def test_the_assessment_beats_the_baseline_and_never_falls_below_phase_3() -> No
     # Every requirement too vague to place gets questions, not a verdict.
     vague = [item for item in report.results if item.case.verdict is None]
     assert vague and all(item.verdict_correct for item in vague)
+
+
+def test_every_offering_the_assessment_drafts_applies_cleanly() -> None:
+    report = _report()
+
+    # Exit (Phase 9): each draft applies to the release as a new offering and journey.
+    assert report.drafts_applied == 1.0
+    labelled, drafted = report.new_offerings
+    assert labelled == 12 and drafted >= PHASE_9_DRAFTED
+    for item in report.results:
+        predicted = item.prediction.verdict if item.prediction else None
+        assert (item.draft_problems is not None) == (predicted in NEW_OFFERINGS), item.case.id
+    assert evaluate.scores(report)["drafts_applied"] == 1.0
 
 
 def test_precedents_raise_recall_without_costing_precision() -> None:

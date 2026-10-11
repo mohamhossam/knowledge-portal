@@ -4,7 +4,9 @@
 requirement-portal sends an approved backlog when its final approval is recorded. It is
 kept once per approval. A knowledge admin then reads it into the draft (starting one if
 none is open), where each approved feature becomes a suggested open question on the
-offering it names, or dismisses it. The reading is fixed rules, not a model: what the
+offering it names, or dismisses it. When the decided product impact is a new offering, the
+offering and journey the assessment drafted (ontology plan Phase 9) become two suggestions
+as well. The reading is fixed rules, not a model: what the
 approved backlog says, matched to the draft by id, then by name.
 
 When the Epic closes, requirement-portal sends what it delivered (ontology plan Phase 7),
@@ -48,6 +50,7 @@ from knowledge_portal.domain.architecture.candidates import (
     CatalogueCandidate,
     ChangeRequestCitation,
     classify,
+    draft_contents,
     find_concept,
     find_system,
 )
@@ -66,6 +69,7 @@ from knowledge_portal.domain.architecture.change_requests import (
     delivery_summaries,
 )
 from knowledge_portal.domain.architecture.concepts import BusinessCapability
+from knowledge_portal.domain.architecture.drafts import OfferingDraft
 from knowledge_portal.domain.architecture.governance import OpenQuestion
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
@@ -96,6 +100,8 @@ class DeliveredBacklog:
     trace: RequirementTrace
     features: tuple[IncomingFeature, ...]
     reason: str | None = None
+    # The offering and journey drafted for a new-offering verdict (ontology plan Phase 9).
+    draft: OfferingDraft | None = None
 
 
 def _most_named(backlog: DeliveredBacklog) -> str:
@@ -129,6 +135,7 @@ class ReceiveChangeRequest:
             features=backlog.features,
             received_at=now,
             reason=backlog.reason,
+            draft=backlog.draft,
         )
         return self._inbox.receive(item)
 
@@ -261,7 +268,8 @@ def read_change_request(
 ) -> tuple[tuple[CatalogueCandidate, ...], tuple[str, ...]]:
     """The questions a change request puts to the draft, and what the reading could not match.
 
-    One question for each approved feature and each offering it names, asked for the order
+    The drafted offering and journey first, when the decided product impact sent them, then
+    one question for each approved feature and each offering it names, asked for the order
     types it names. A question already in the draft as it is now is left out. A catalogue
     change is read as `read_delivery` says.
     """
@@ -269,6 +277,8 @@ def read_change_request(
         return read_delivery(incoming, incoming.delivery, release, at, active_id)
     warnings: list[str] = []
     candidates: list[CatalogueCandidate] = []
+    if incoming.draft is not None:
+        candidates.extend(_drafted(incoming, incoming.draft, release, at, warnings))
     present = 0
     trace = incoming.trace
     if trace.knowledge_version and active_id and trace.knowledge_version != active_id:
@@ -365,6 +375,52 @@ def read_change_request(
             f"{'were' if present != 1 else 'was'} left out."
         )
     return tuple(candidates), tuple(dict.fromkeys(warnings))
+
+
+def _drafted(
+    incoming: IncomingChangeRequest,
+    draft: OfferingDraft,
+    release: ArchitectureKnowledge,
+    at: datetime,
+    warnings: list[str],
+) -> tuple[CatalogueCandidate, ...]:
+    """The drafted offering and journey as two suggestions, the offering first. One already
+    in the draft is left out; one that would replace an offering or journey there is
+    suggested with a warning, and is accepted alone."""
+    first = min(incoming.features, key=lambda item: item.sequence)
+    based = find_offering(release.products, draft.based_on or "")
+    quote = f"New offering for {incoming.title}" + (f", drafted from {based.name}" if based else "")
+    found: list[CatalogueCandidate] = []
+    for content in draft_contents(draft):
+        if content.product is not None:
+            what, name = "offering", content.product.name
+        else:
+            what, name = "journey", draft.journey.name if draft.journey else content.system_id
+        match = classify(content, release)
+        if match is CandidateMatch.ALREADY_PRESENT:
+            warnings.append(
+                f"The drafted {what} {name} is already in the draft, so it is left out."
+            )
+            continue
+        if match is CandidateMatch.UPDATES_EXISTING:
+            warnings.append(
+                f"The drafted {what} {name} matches one already in the draft; accepting it "
+                "replaces that one, so rename it first if it is new."
+            )
+        found.append(
+            CatalogueCandidate(
+                uuid4().hex,
+                release.id,
+                incoming.id,
+                content,
+                (CandidateCitation("Decided product impact", quote),),
+                READER,
+                READER_VERSION,
+                at,
+                change_request=ChangeRequestCitation(incoming.id, first.id),
+            )
+        )
+    return tuple(found)
 
 
 def capability_id(concept_id: str) -> str:

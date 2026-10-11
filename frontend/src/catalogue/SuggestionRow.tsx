@@ -8,7 +8,8 @@ import { formatDay } from "../home/format";
 import { traceLine, useChangeRequests } from "./inbox";
 import { SuggestionEditor } from "./SuggestionEditor";
 import {
-  type Lexicon, STATE_LABEL, STATE_RANK, changeSentence, decideWhy, offeringHolds, suggestionState, waitsFor, waitsForMany,
+  type Lexicon, STATE_LABEL, STATE_RANK, changeSentence, decideWhy, draftedForRequirement, offeringHolds, suggestionState, waitsFor,
+  waitsForMany,
 } from "./suggestions";
 
 const TABLE_READER = "catalogue-table-reader";
@@ -78,7 +79,7 @@ export function SuggestionRow({
           <span className="secondary govtable__by suggestion__source" dir="ltr">
             {suggestion.change_request ? (
               <>
-                <bdi>{suggestion.change_request.change_request_id}</bdi> · Feature {suggestion.change_request.feature_id} · from Requirement AI
+                <bdi>{suggestion.change_request.change_request_id}</bdi> · {citedPart(suggestion)} · from Requirement AI
               </>
             ) : (
               <>
@@ -359,6 +360,11 @@ function linked(suggestion: Suggestion, choice: Record<string, string>): Suggest
 }
 
 /** One cited place: the quote, then the passage with its neighbours on request (or the image). */
+/** The part of a change request a suggestion comes from: an approved feature, or the decided product impact. */
+function citedPart(suggestion: Suggestion): string {
+  return draftedForRequirement(suggestion) ? "the decided product impact" : `Feature ${suggestion.change_request?.feature_id ?? ""}`;
+}
+
 /** Where a suggestion from a change request comes from: the feature, and the approval it carries. */
 function ChangeRequestCitation({ suggestion, notes }: { suggestion: Suggestion; notes?: string[] }) {
   const inbox = useChangeRequests();
@@ -369,7 +375,7 @@ function ChangeRequestCitation({ suggestion, notes }: { suggestion: Suggestion; 
     <div className="citation">
       {citation?.quote && <p className="citation__quote" dir="auto">“{citation.quote}”</p>}
       <p className="citation__where" dir="ltr">
-        <bdi>{cited?.change_request_id}</bdi> · Feature {cited?.feature_id}
+        <bdi>{cited?.change_request_id}</bdi> · {citedPart(suggestion)}
       </p>
       {item && (
         <p className="secondary" dir="auto">

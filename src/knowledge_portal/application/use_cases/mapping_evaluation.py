@@ -15,7 +15,10 @@ What is scored:
 - concept-linking recall, once the mapper returns concepts (not measured before then);
 - citation faithfulness: each cited quote must be found in the passage it cites;
 - owner and consumer reach (Phase 8): of the owners and consumers the data and interface
-  cases label, the share the mapper names.
+  cases label, the share the mapper names;
+- drafts that apply (Phase 9): of the offerings and journeys drafted, the share that apply
+  cleanly to the release as new items, and how many of the cases labelled a new offering or
+  a new product line were drafted for.
 
 With leave-one-out precedents (Phase 5), every other labelled case is first kept as an
 accepted verdict, so each case is assessed with the decided requirements nearest to it,
@@ -57,11 +60,14 @@ from knowledge_portal.application.use_cases.architecture_knowledge import (
     ManageArchitectureKnowledge,
 )
 from knowledge_portal.application.use_cases.precedents import RecordPrecedent
+from knowledge_portal.domain.architecture.candidates import draft_problems
+from knowledge_portal.domain.architecture.drafts import OfferingDraft
 from knowledge_portal.domain.architecture.entities import ArchitectureCitation
 from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge
 from knowledge_portal.domain.architecture.precedents import PrecedentDecision
 from knowledge_portal.domain.architecture.verdicts import ProductVerdict
 
+NEW_OFFERINGS = frozenset({ProductVerdict.NEW_OFFERING_IN_FAMILY, ProductVerdict.NEW_PRODUCT_LINE})
 EVALUATOR = Actor("golden-set-evaluation", frozenset({"knowledge_maintainer"}))
 
 
@@ -101,6 +107,8 @@ class MappingPrediction:
     offering_id: str | None
     concept_ids: frozenset[str] | None
     citations: tuple[ArchitectureCitation, ...]
+    # The offering and journey drafted for a new-offering verdict (Phase 9).
+    draft: OfferingDraft | None = None
 
 
 class ImpactMapperPort(Protocol):
@@ -118,6 +126,10 @@ class ImpactMapperPort(Protocol):
 
 class PublishedEvidencePort(Protocol):
     def published_evidence(self, release_id: str, chunk_id: str) -> EvidenceChunk: ...
+
+
+class ReleaseSourcePort(Protocol):
+    def get(self, release_id: str) -> ArchitectureKnowledge: ...
 
 
 class MatchedImpact(ImpactMapperPort):
@@ -178,6 +190,7 @@ class AssessedImpact(ImpactMapperPort):
                 concept.concept_id for facet in result.facets for concept in facet.concepts
             ),
             citations=result.citations,
+            draft=result.proposal.draft if result.proposal else None,
         )
 
 
@@ -189,6 +202,18 @@ class CaseResult:
     failure: str | None
     citations_checked: int
     citations_faithful: int
+    # Why the drafted offering and journey would not apply to the release; None when the
+    # mapper drafted none, empty when they apply cleanly (Phase 9).
+    draft_problems: tuple[str, ...] | None = None
+
+    @property
+    def new_offering(self) -> bool:
+        """It is labelled a new offering or a new product line, so a draft is expected."""
+        return self.case.verdict in NEW_OFFERINGS
+
+    @property
+    def draft_applies(self) -> bool:
+        return self.draft_problems is not None and not self.draft_problems
 
     @property
     def predicted_systems(self) -> frozenset[str]:
@@ -302,6 +327,19 @@ class EvaluationReport:
         )
 
     @property
+    def drafts_applied(self) -> float | None:
+        """Of the drafted offerings and journeys, the share that apply cleanly; None when the
+        mapper drafted none."""
+        drafted = [item for item in self.results if item.draft_problems is not None]
+        return _ratio(sum(item.draft_applies for item in drafted), len(drafted))
+
+    @property
+    def new_offerings(self) -> tuple[int, int]:
+        """The cases labelled a new offering, and how many of them the mapper drafted for."""
+        expected = [item for item in self.results if item.new_offering]
+        return len(expected), sum(item.draft_problems is not None for item in expected)
+
+    @property
     def citation_faithfulness(self) -> float | None:
         return _ratio(
             sum(item.citations_faithful for item in self.results),
@@ -317,11 +355,16 @@ class EvaluateImpactMapping:
     """Run the mapper over every golden case and score what it said."""
 
     def __init__(
-        self, mapper: ImpactMapperPort, evidence: PublishedEvidencePort, model: str
+        self,
+        mapper: ImpactMapperPort,
+        evidence: PublishedEvidencePort,
+        model: str,
+        releases: ReleaseSourcePort | None = None,
     ) -> None:
         self._mapper = mapper
         self._evidence = evidence
         self._model = model
+        self._releases = releases
 
     def execute(
         self,
@@ -351,7 +394,12 @@ class EvaluateImpactMapping:
             # report counts it as a case with no answer.
             return CaseResult(case, None, str(exc), 0, 0)
         faithful = sum(self._faithful(release_id, citation) for citation in prediction.citations)
-        return CaseResult(case, prediction, None, len(prediction.citations), faithful)
+        problems = (
+            draft_problems(self._releases.get(release_id), prediction.draft)
+            if prediction.draft is not None and self._releases is not None
+            else None
+        )
+        return CaseResult(case, prediction, None, len(prediction.citations), faithful, problems)
 
     def _faithful(self, release_id: str, citation: ArchitectureCitation) -> bool:
         try:

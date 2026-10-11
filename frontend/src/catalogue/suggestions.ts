@@ -44,7 +44,9 @@ export function needsOneByOne(suggestion: Suggestion): boolean {
     || suggestion.possible_matches.length > 0
     || ((kind === "placement" || kind === "product" || kind === "journey") && suggestion.match === "updates_existing")
     // A value no term names is flagged as a new term, decided alone.
-    || (kind === "vocabulary_term" && suggestion.match === "new");
+    || (kind === "vocabulary_term" && suggestion.match === "new")
+    // An offering or journey drafted for a new offering is reviewed alone once it can be.
+    || (draftedForRequirement(suggestion) && !suggestion.match.startsWith("needs_"));
 }
 
 export function suggestionState(suggestion: Suggestion): SuggestionState {
@@ -330,6 +332,15 @@ export function waitsForMany(suggestion: Suggestion, words: Lexicon): boolean {
   return systems.length + channels.length !== 1;
 }
 
+/**
+ * An offering or journey a change request carries was drafted for a new offering (ontology
+ * plan Phase 9): it comes from the decided product impact, not from one of its features.
+ */
+export function draftedForRequirement(suggestion: Suggestion): boolean {
+  const { kind } = suggestion.content;
+  return suggestion.change_request != null && (kind === "product" || kind === "journey");
+}
+
 /** Why a person must decide, in words. */
 export function decideWhy(suggestion: Suggestion): string {
   if (suggestion.possible_matches.length) {
@@ -337,6 +348,9 @@ export function decideWhy(suggestion: Suggestion): string {
     return `“${[...new Set(names)].join("”, “")}” may be a system the draft already has`;
   }
   if (suggestion.basis === "inferred") return "Inferred, not stated in the document";
+  if (draftedForRequirement(suggestion) && suggestion.match !== "updates_existing") {
+    return "Drafted for a new offering: review what it holds";
+  }
   return "Would replace what the draft has";
 }
 

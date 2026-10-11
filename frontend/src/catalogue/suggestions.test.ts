@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import type { Release, Suggestion } from "../api/client";
 import {
-  bulkAcceptable, changeSentence, inWords, lexicon, needsOneByOne, reading, suggestionGroups, suggestionState, tally, typedFile,
-  offeringHolds, waitsFor, waitsForMany, warningInWords,
+  bulkAcceptable, changeSentence, decideWhy, inWords, lexicon, needsOneByOne, reading, suggestionGroups, suggestionState, tally,
+  typedFile, offeringHolds, waitsFor, waitsForMany, warningInWords,
 } from "./suggestions";
 
 const release = {
@@ -59,6 +59,18 @@ describe("suggestion state", () => {
     expect(needsOneByOne(placement)).toBe(true);
     expect(suggestionState(accepted)).toBe("accepted");
     expect(tally(all)).toMatchObject({ waiting: 7, ready: 2, decide: 3, waits: 2, accepted: 1, all: 8 });
+  });
+
+  it("keeps an offering and journey drafted for a requirement to be decided alone, once it can be", () => {
+    const cited = { change_request: { change_request_id: "CR-1", feature_id: "FT-1" } } as Partial<Suggestion>;
+    const offering = suggestion({ kind: "product", system_id: "cloud-voice", name: "Cloud Voice" }, cited);
+    const journey = suggestion({ kind: "journey", system_id: "cloud-voice-new", name: "New activation" }, { ...cited, match: "needs_offering" });
+    const question = suggestion({ kind: "question", system_id: "cloud-voice" }, cited);
+
+    expect(suggestionState(offering)).toBe("decide");
+    expect(decideWhy(offering)).toBe("Drafted for a new offering: review what it holds");
+    expect(suggestionState(journey)).toBe("waits");
+    expect(suggestionState(question)).toBe("ready");
   });
 
   it("says what each would change, and what a waiting one waits for, in the documents' names", () => {
