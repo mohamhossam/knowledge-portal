@@ -100,7 +100,13 @@ export function useDisclosure(fallback?: () => HTMLElement | null) {
     focusLater(() => (opener.current?.isConnected ? opener.current : fallback?.()));
   }, [fallback, focusLater]);
 
-  return { open, show, close, panel };
+  /** Closes it, focus going to `to` instead of back to the opener (an outcome that was said, say). */
+  const closeTo = useCallback((to: () => HTMLElement | null) => {
+    setOpen(false);
+    focusLater(to);
+  }, [focusLater]);
+
+  return { open, show, close, closeTo, panel };
 }
 
 export type Pending<T> = { id: string; label: string; value: T; until: number };

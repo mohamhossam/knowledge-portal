@@ -55,7 +55,8 @@ function open(path: string) {
           <Routes>
             <Route element={<Shell />}>
               <Route index element={<HomePage />} />
-              <Route path="reminders" element={<h1>Due for review</h1>} />
+              {/* Every area is rebuilt now: an address under one that the shell doesn't list still takes the island. */}
+              <Route path="explorer/older" element={<h1>An older page</h1>} />
               <Route path="library/:documentId" element={<h1>A library document</h1>} />
             </Route>
           </Routes>
@@ -67,7 +68,7 @@ function open(path: string) {
 
 describe("the shell", () => {
   it("offers the same utilities, skip links and areas on a rebuilt page and on a legacy one", async () => {
-    for (const [path, title] of [["/", "To do"], ["/reminders", "Due for review"]] as const) {
+    for (const [path, title] of [["/", "To do"], ["/explorer/older", "An older page"]] as const) {
       open(path);
       await screen.findByRole("heading", { level: 1, name: title });
       const banner = screen.getByRole("banner");
@@ -85,8 +86,8 @@ describe("the shell", () => {
   });
 
   it("keeps a page that isn't rebuilt yet in the legacy island, and a rebuilt one out of it", async () => {
-    open("/reminders");
-    const legacy = await screen.findByRole("heading", { level: 1, name: "Due for review" });
+    open("/explorer/older");
+    const legacy = await screen.findByRole("heading", { level: 1, name: "An older page" });
     expect(legacy.closest(".ds-legacy")).not.toBeNull();
     document.body.innerHTML = "";
     open("/");
@@ -98,8 +99,8 @@ describe("the shell", () => {
     const attention = await screen.findByRole("region", { name: /Needs attention/ });
     expect(attention).toHaveTextContent("Couldn't read");
     expect(attention).toHaveTextContent("Row 2 is short.");
-    const row = within(attention).getByRole("rowheader", { name: "Site survey checklist" });
-    expect(within(row).getByRole("link", { name: "Site survey checklist" })).toHaveAttribute("href", "/library/f");
+    const task = within(attention).getByRole("heading", { level: 3, name: "Site survey checklist" });
+    expect(within(task).getByRole("link", { name: "Site survey checklist" })).toHaveAttribute("href", "/library/f");
   });
 
   it("acts on the failed read from its row: tries reading again, says so, and moves focus to what it said (area 2)", async () => {

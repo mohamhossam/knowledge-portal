@@ -15,6 +15,7 @@ import { SystemsPage } from "../catalogue/SystemsPage";
 import { LegacyPage } from "../catalogue/frame/LegacyPage";
 import { ChangesStep } from "../catalogue/draft/ChangesStep";
 import { CheckStep } from "../catalogue/draft/CheckStep";
+import { DecideFocus } from "../catalogue/draft/DecideFocus";
 import { DecideStep } from "../catalogue/draft/DecideStep";
 import { PublishStep } from "../catalogue/draft/PublishStep";
 import { SourcesStep } from "../catalogue/draft/SourcesStep";
@@ -29,7 +30,6 @@ import { SystemsBench } from "../squads/SystemsBench";
 import { ExplorerPage } from "../explorer/ExplorerPage";
 import { FindingsPage } from "../requirements/FindingsPage";
 import { RequirementKnowledgeIndex, RequirementsPage } from "../requirements/RequirementsPage";
-import { RemindersPage } from "../reviews/RemindersPage";
 import { HistoricPage } from "../historic/HistoricPage";
 import { ActionGroup, EmptyState, PageHeader, Skeleton } from "../design/components";
 import { ButtonLink } from "../shell/links";
@@ -47,6 +47,7 @@ const MainPage = fromLibrary("MainPage");
 const VersionsPage = fromLibrary("VersionsPage");
 const CitationsPage = fromLibrary("CitationsPage");
 const OwnershipPage = fromLibrary("OwnershipPage");
+const ReviewFocus = fromLibrary("ReviewFocus");
 
 /** A catalogue version's pages, the same for the version in service and any other. */
 const catalogueRoutes = (
@@ -66,6 +67,8 @@ const catalogueRoutes = (
     {/* A draft's steps, in order (redesign area 3). */}
     <Route path="sources" element={<SourcesStep />} />
     <Route path="decide" element={<DecideStep />} />
+    {/* The Decide step one question at a time (UX rebuild, phase 2): the shell hides its sidebar. */}
+    <Route path="decide/focus" element={<DecideFocus />} />
     <Route path="suggestions" element={<Navigate to="../decide" replace />} />
     <Route path="changes" element={<ChangesStep />} />
     <Route path="check" element={<CheckStep />} />
@@ -103,7 +106,8 @@ export function App() {
       <Route element={<Shell />}>
         <Route index element={<HomePage />} />
         <Route path="library" element={<Loading><LibraryPage /></Loading>} />
-        <Route path="reminders" element={<RemindersPage />} />
+        {/* Re-confirmations are confirmed on To do now (UX rebuild, phase 2). */}
+        <Route path="reminders" element={<Navigate to="/" replace />} />
         {/* The overview folded into Requirements (UX rebuild, phase 3); its address keeps working. */}
         <Route path="requirement-knowledge" element={<RequirementKnowledgeIndex />} />
         <Route path="requirement-knowledge/requirements" element={<RequirementsPage />} />
@@ -120,6 +124,8 @@ export function App() {
           {/* The old address keeps working until area 10 turns it into a redirect. */}
           <Route path="citations" element={<Loading><CitationsPage /></Loading>} />
           <Route path="ownership" element={<Loading><OwnershipPage /></Loading>} />
+          {/* The review one question at a time (UX rebuild, phase 2): the shell hides its sidebar. */}
+          <Route path="focus" element={<Loading><ReviewFocus /></Loading>} />
         </Route>
         <Route path="architecture" element={<CataloguePage />}>
           {catalogueRoutes}

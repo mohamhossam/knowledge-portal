@@ -424,9 +424,10 @@ function bySuggestionOrder(a: Suggestion, b: Suggestion): number {
 /**
  * What "accept everything that needs no decision" would accept: the ready ones,
  * then, again and again, the waiting ones whose wait one of those would lift.
- * A suggestion waiting on something no suggestion adds stays out.
+ * A suggestion waiting on something no suggestion adds stays out. `given` are
+ * suggestions about to be accepted by a person's answer: what they add lifts waits too.
  */
-export function bulkAcceptable(release: Release, suggestions: Suggestion[]): { ready: Suggestion[]; lifted: Suggestion[] } {
+export function bulkAcceptable(release: Release, suggestions: Suggestion[], given: Suggestion[] = []): { ready: Suggestion[]; lifted: Suggestion[] } {
   const known = new Set<string>();
   for (const system of release.systems) {
     known.add(`system:${system.id}`);
@@ -439,6 +440,8 @@ export function bulkAcceptable(release: Release, suggestions: Suggestion[]): { r
   const ready = open.filter((item) => !item.match.startsWith("needs_"));
   const provided = new Set(known);
   const add = (item: Suggestion) => provides(item).forEach((key) => provided.add(key));
+  // Suggestions a person has said they accept (focus mode's answers) provide what they add, too.
+  given.forEach(add);
   ready.forEach(add);
   const lifted: Suggestion[] = [];
   let waiting = open.filter((item) => item.match.startsWith("needs_"));
@@ -455,6 +458,29 @@ export function bulkAcceptable(release: Release, suggestions: Suggestion[]): { r
     waiting = still;
   }
   return { ready, lifted };
+}
+
+/**
+ * Which suggestion waits on which: an edge from each open suggestion to every
+ * open one that needs what it adds (the draft decision tree, UX rebuild phase 2).
+ */
+export function dependencyEdges(suggestions: Suggestion[]): { from: string; to: string }[] {
+  const open = suggestions.filter((item) => item.status === "proposed");
+  const providers = new Map<string, string[]>();
+  for (const item of open) for (const key of provides(item)) providers.set(key, [...(providers.get(key) ?? []), item.id]);
+  const edges: { from: string; to: string }[] = [];
+  for (const item of open) {
+    if (!item.match.startsWith("needs_")) continue;
+    for (const key of new Set(requires(item))) {
+      for (const from of providers.get(key) ?? []) if (from !== item.id) edges.push({ from, to: item.id });
+    }
+  }
+  return edges;
+}
+
+/** Suggestions in the order accepting them works: domains, then systems, then what hangs on them. */
+export function inDependencyOrder(suggestions: Suggestion[]): Suggestion[] {
+  return [...suggestions].sort((a, b) => KIND_ORDER.indexOf(a.content.kind) - KIND_ORDER.indexOf(b.content.kind));
 }
 
 function provides(suggestion: Suggestion): string[] {

@@ -21,6 +21,8 @@ export type DocumentContext = {
    * a change that removes the control that made it (publishing closes the desk).
    */
   announce: (text: string, failed?: boolean) => void;
+  /** Goes to `path`, asking first when that would lose unsaved review changes (focus mode's Leave). */
+  leaveTo: (path: string) => void;
 };
 
 export function useDocumentContext() {

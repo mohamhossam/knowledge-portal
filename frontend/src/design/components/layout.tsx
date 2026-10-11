@@ -181,20 +181,17 @@ export function AppShell({
       title.focus({ preventScroll: true });
     };
     const title = titleOf();
-    if (title) {
-      focusTitle(title);
-      return;
-    }
-    // The page is still loading (a skeleton, or its own code chunk): focus its h1 when it
+    if (title) focusTitle(title);
+    // The page is still loading (a skeleton, or its own code chunk), or its h1 is a loading
+    // one that the page replaces (the catalogue's, then a focus page's): focus its h1 when it
     // arrives, unless the person has moved focus somewhere themselves in the meantime. Focus
     // still on what navigated here (the sidebar link pressed) hasn't been moved by them.
     if (!main) return;
     const navigatedFrom = active;
     const observer = new MutationObserver(() => {
       const arrived = titleOf();
-      if (!arrived) return;
-      observer.disconnect();
       const now = document.activeElement;
+      if (!arrived || arrived === now) return;
       if (!now || now === document.body || now === main || now === navigatedFrom) focusTitle(arrived);
     });
     observer.observe(main, { childList: true, subtree: true });

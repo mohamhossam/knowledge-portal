@@ -1,13 +1,20 @@
 import "./work.css";
 
-import { AlertTriangle, Clock, ListTodo } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, Clock, ListTodo, UsersRound } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
-import { ActionGroup, Button, type Column, DataTable, EmptyState, FilterStrip, PageHeader, Section, Skeleton, Status } from "../design/components";
+import { api, type ConfirmReview, type Reminder } from "../api/client";
+import { errorMessage } from "../api/errors";
+import { ActionGroup, Button, ConsequencePanel, EmptyState, FilterStrip, PageHeader, Section, Skeleton, Status } from "../design/components";
+import { useDisclosure } from "../design/hooks";
+import { formatDay } from "../home/format";
 import { type JobAction, useJobActions } from "../library/actions";
 import { FileButton } from "../library/FileButton";
-import { RouterLink } from "../shell/links";
+import { REVIEW_READS } from "../reviews/review";
+import { useConfirmSystems } from "../reviews/useReviews";
+import { ButtonLink, RouterLink } from "../shell/links";
 import { type Entry, type SectionKey, useWorkQueue } from "./queue";
 
 type Ranked = Exclude<SectionKey, "gaps">;
@@ -17,6 +24,9 @@ const SECTIONS: { key: Ranked; title: string; teamTitle?: string; icon: typeof A
   { key: "decisions", title: "Decisions waiting on you", teamTitle: "Decisions waiting", icon: ListTodo, clear: "no review or suggestion is waiting", source: "the documents and the draft's suggestions" },
   { key: "due", title: "Re-confirmations due", icon: Clock, clear: "no re-confirmations are due", source: "your re-confirmations" },
 ];
+
+/** How many names a confirmation of several systems spells out before "and N more". */
+const NAMED = 12;
 
 const DAY = 86_400_000;
 
@@ -37,11 +47,6 @@ function Age({ at, now }: { at: string; now: number }) {
 
 function plural(count: number, one: string, many: string) {
   return `${count.toLocaleString("en")} ${count === 1 ? one : many}`;
-}
-
-/** The row's name: the link to where it is decided, isolated for either language. */
-function Name({ entry }: { entry: Entry }) {
-  return <RouterLink href={entry.to}><bdi>{entry.subject}</bdi></RouterLink>;
 }
 
 type Act = (entry: Entry, action: JobAction, file?: File) => void;
@@ -66,96 +71,38 @@ function Remedy({ entry, act, busy }: { entry: Entry; act: Act; busy: boolean })
   );
 }
 
-function attentionColumns(now: number, act: Act, busyId: string | undefined): Column<Entry>[] {
-  return [
-    { id: "name", header: "Item", rowHeader: true, bidi: true, cell: (entry) => <Name entry={entry} /> },
-    {
-      id: "what",
-      header: "What happened",
-      cell: (entry) =>
-        entry.kind === "unreadable" ? (
-          <>
-            <Status tone={entry.held ? "held" : "attention"}>{entry.held ? "Held by the malware scan" : "Couldn't read"}</Status>
-            <span className="work__detail">{entry.held ? "It won't be read. Upload a clean copy." : <>{entry.cause ?? `The ${entry.fileType} file couldn't be read.`}</>}</span>
-          </>
-        ) : entry.kind === "unsearchable" ? (
-          <>
-            <Status tone="attention">Couldn't make it searchable</Status>
-            <span className="work__detail">Requirement work can't cite it yet.</span>
-          </>
-        ) : null,
-    },
-    { id: "remedy", header: "Next step", width: "22rem", cell: (entry) => <Remedy entry={entry} act={act} busy={busyId === entry.id} /> },
-    { id: "waiting", header: "Waiting", numeric: true, width: "7rem", cell: (entry) => ("sinceAt" in entry ? <Age at={entry.sinceAt} now={now} /> : "—") },
-  ];
+/** What a task card is made of: its mark, what it is, why it waits, and the next step. */
+function Task({ mark, title, why, meta, action, children }: { mark: ReactNode; title: ReactNode; why?: ReactNode; meta?: ReactNode; action?: ReactNode; children?: ReactNode }) {
+  return (
+    <li className="work-task">
+      <span className="work-task__mark" aria-hidden="true">{mark}</span>
+      <div className="work-task__body">
+        <h3 className="work-task__title">{title}</h3>
+        {why && <p className="work-task__why">{why}</p>}
+        {meta && <p className="work-task__meta">{meta}</p>}
+      </div>
+      {action && <div className="work-task__act">{action}</div>}
+      {children && <div className="work-task__panel">{children}</div>}
+    </li>
+  );
 }
 
-function decisionColumns(now: number, team: boolean): Column<Entry>[] {
-  return [
-    { id: "name", header: "Item", rowHeader: true, bidi: true, cell: (entry) => <Name entry={entry} /> },
-    {
-      id: "decision",
-      header: "Decision",
-      cell: (entry) =>
-        entry.kind === "review" ? (
-          <>
-            Review version {entry.facts.number}
-            <span className="work__detail">
-              {entry.facts.fileType} · {entry.facts.replaces ? `replaces version ${entry.facts.replaces} in service` : "not in service yet"}
-            </span>
-          </>
-        ) : entry.kind === "suggestions" ? (
-          <>
-            Decide suggestions
-            <span className="work__detail">in the draft catalogue version</span>
-          </>
-        ) : null,
-    },
-    {
-      id: "size",
-      header: "Size",
-      numeric: true,
-      width: "9rem",
-      cell: (entry) => (entry.kind === "review" ? plural(entry.facts.passages, "passage", "passages") : entry.kind === "suggestions" ? plural(entry.count, "suggestion", "suggestions") : "—"),
-    },
-    {
-      id: "flags",
-      header: "Flags",
-      numeric: true,
-      width: "10rem",
-      cell: (entry) =>
-        entry.kind !== "review" || entry.facts.flagged === 0 ? (
-          <span className="work__none"><span aria-hidden="true">—</span><span className="ds-visually-hidden">none</span></span>
-        ) : entry.facts.blocking > 0 ? (
-          <Status tone="attention">{plural(entry.facts.blocking, "passage blocks", "passages block")} approval</Status>
-        ) : (
-          `${entry.facts.flagged.toLocaleString("en")} flagged`
-        ),
-    },
-    ...(team
-      ? [{ id: "owner", header: "Owner", bidi: true, cell: (entry: Entry) => (entry.kind === "review" ? <bdi>{entry.mine ? "You" : entry.owner}</bdi> : "Any admin") }]
-      : []),
-    { id: "waiting", header: "Waiting", numeric: true, width: "7rem", cell: (entry) => (entry.kind === "review" ? <Age at={entry.sinceAt} now={now} /> : "—") },
-  ];
+/** "ADFS, BSCS, CNS and 20 more": the names one confirmation stands for. */
+function named(items: Reminder[]): string {
+  const names = items.slice(0, NAMED).map((item) => item.title);
+  const rest = items.length - names.length;
+  if (rest > 0) return `${names.join(", ")} and ${rest} more`;
+  return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : names.join("");
 }
-
-const dueColumns: Column<Entry>[] = [
-  { id: "name", header: "Item", rowHeader: true, bidi: true, cell: (entry) => <Name entry={entry} /> },
-  { id: "kind", header: "Kind", width: "8rem", cell: (entry) => (entry.kind === "due" ? (entry.what === "document" ? "Document" : "System") : null) },
-  {
-    id: "when",
-    header: "Due",
-    width: "14rem",
-    cell: (entry) => (entry.kind === "due" ? (entry.overdue ? <Status tone="attention">Overdue since {entry.when}</Status> : <>Due {entry.when}</>) : null),
-  },
-];
 
 /**
- * Queue archetype (IA §3), as the Calm Ledger sets it: each kind of work a
- * ruled table with the item's name as its link, and what you need to choose
- * by (version, size, flags, how long it has waited) in condensed numerals.
- * Severity is carried by order, icon and words, never colour. Empty kinds
- * fold into one line; the standing gaps backlog sits below the queue.
+ * To do (UX rebuild plan, phase 2): one list of everything that needs you,
+ * most urgent first, each a card that says what is wrong and the next step.
+ * A review or a draft's decisions start in focus mode, one question at a
+ * time; a re-confirmation is confirmed right here (Re-confirmations is no
+ * longer an area of its own). Severity is carried by order, icon and words,
+ * never colour. Empty kinds fold into one line; the standing gaps backlog
+ * sits below, outside the count.
  */
 export function YourWork() {
   const [params, setParams] = useSearchParams();
@@ -174,6 +121,8 @@ export function YourWork() {
   const anyPending = sections.some((section) => section.pending);
   const settledEmpty = !queue.loading && needs === 0 && !anyFailed && !anyPending;
   const gap = queue.sections.gaps[0];
+  // The page's one main action: the first card that starts in focus mode.
+  const firstStart = sections.flatMap((section) => section.rows).find((entry) => entry.kind === "review" || entry.kind === "suggestions")?.id;
 
   // After "Try again" succeeds, its button is gone: focus goes to the section it repaired.
   // A ref, not state: the effect below runs when the reads settle and clears it, without a re-render.
@@ -199,10 +148,11 @@ export function YourWork() {
         ? anyFailed ? "Some of your work couldn't be read." : "Nothing needs the team today."
         : `${plural(needs, "thing needs", "things need")} ${team ? "the team" : "you"}, most urgent first.`;
 
-  // Acting from the queue (area 2): the row's remedy runs here; once its row has gone, focus goes to what was said.
+  // Acting from To do: the card's remedy or confirmation runs here; once its card has gone, focus goes to what was said.
   const actions = useJobActions();
   const said = useRef<HTMLParagraphElement>(null);
   const busyId = actions.busy ? `doc-${actions.busy.document.id}` : undefined;
+  const [outcome, setOutcome] = useState<{ text: string; failed?: boolean } | null>(null);
   // Counts settled actions; each one moves focus to what was said (an effect, not a ref read in render).
   const [settled, setSettled] = useState(0);
   useEffect(() => {
@@ -210,9 +160,159 @@ export function YourWork() {
   }, [settled]);
   const act: Act = (entry, action, file) => {
     if (entry.kind !== "unreadable" && entry.kind !== "unsearchable") return;
+    setOutcome(null);
     actions.act(entry.document, action, file, () => setSettled((n) => n + 1));
   };
-  const columns = (key: Ranked) => (key === "attention" ? attentionColumns(now, act, busyId) : key === "decisions" ? decisionColumns(now, team) : dueColumns);
+
+  // Re-confirmations, confirmed in place: one panel at a time, under its card.
+  const queryClient = useQueryClient();
+  const [confirming, setConfirming] = useState<string | null>(null);
+  const panel = useDisclosure(() => said.current);
+  const confirmDocument = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: ConfirmReview }) => api.confirmDocumentReview(id, body),
+    onSuccess: () => Promise.all(REVIEW_READS.map((queryKey) => queryClient.invalidateQueries({ queryKey }))),
+  });
+  const confirmSystems = useConfirmSystems();
+  const confirmFailure = confirmDocument.error ?? confirmSystems.error;
+  const confirmed = (text: string) => {
+    setOutcome({ text });
+    setConfirming(null);
+    // Done: focus goes to what was said, not back to a button whose card is about to go.
+    panel.closeTo(() => said.current);
+    setSettled((n) => n + 1);
+  };
+  const confirm = (entry: Extract<Entry, { kind: "due" }>, note: string) => {
+    const body: ConfirmReview = { note: note || null, reason: null };
+    if (entry.what === "document") {
+      confirmDocument.mutate({ id: entry.items[0]!.id, body }, {
+        onSuccess: (document) => confirmed(`Confirmed ‘${entry.subject}’. It falls due again on ${formatDay(document.review?.due_at)}.`),
+      });
+    } else {
+      confirmSystems.mutate({ systemIds: entry.items.map((item) => item.id), body }, {
+        onSuccess: (result) => confirmed(entry.items.length === 1
+          ? `Confirmed ${entry.subject}. It falls due again on ${formatDay(result[0]?.standing.due_at)}.`
+          : `Confirmed ${plural(result.length, "system", "systems")}. They fall due again on ${formatDay(result[0]?.standing.due_at)}.`),
+      });
+    }
+  };
+
+  const card = (entry: Entry): ReactNode => {
+    switch (entry.kind) {
+      case "unreadable":
+      case "unsearchable":
+        return (
+          <Task
+            key={entry.id}
+            mark={<AlertTriangle size={16} />}
+            title={<RouterLink href={entry.to} className="work-task__link"><bdi>{entry.subject}</bdi></RouterLink>}
+            why={entry.kind === "unsearchable"
+              ? <><Status tone="attention">Couldn't make it searchable</Status> Requirement work can't cite it yet.</>
+              : entry.held
+                ? <><Status tone="held">Held by the malware scan</Status> It won't be read. Upload a clean copy.</>
+                : <><Status tone="attention">Couldn't read</Status> {entry.cause ?? `The ${entry.fileType} file couldn't be read.`}</>}
+            meta={<>Waiting <Age at={entry.sinceAt} now={now} /></>}
+            action={<Remedy entry={entry} act={act} busy={busyId === entry.id} />}
+          />
+        );
+      case "review":
+        return (
+          <Task
+            key={entry.id}
+            mark={<span className="ds-num">{entry.questions}</span>}
+            title={<><RouterLink href={entry.record} className="work-task__link"><bdi>{entry.subject}</bdi></RouterLink> · {plural(entry.questions, "question", "questions")}</>}
+            why={entry.first && <bdi>{entry.first}</bdi>}
+            meta={
+              <>
+                Review version {entry.facts.number} · {entry.facts.fileType} · {plural(entry.facts.passages, "passage", "passages")}
+                {entry.facts.replaces ? ` · replaces version ${entry.facts.replaces} in service` : ""}
+                {team ? <> · <bdi>{entry.mine ? "yours" : entry.owner}</bdi></> : null}
+                {" · waiting "}<Age at={entry.sinceAt} now={now} />
+              </>
+            }
+            action={<ButtonLink to={entry.to} variant={entry.id === firstStart ? "primary" : "secondary"}>Start<span className="ds-visually-hidden">: {entry.subject}</span></ButtonLink>}
+          />
+        );
+      case "suggestions":
+        return (
+          <Task
+            key={entry.id}
+            mark={<span className="ds-num">{entry.count}</span>}
+            title={<><RouterLink href={entry.record} className="work-task__link"><bdi>{entry.subject}</bdi></RouterLink> · {plural(entry.count, "question", "questions")}</>}
+            why={entry.first && <>{entry.first}{entry.count > 1 ? ` And ${plural(entry.count - 1, "more", "more")}.` : ""}</>}
+            meta={<>Suggestions read into the draft catalogue version{team ? " · any admin" : ""}</>}
+            action={<ButtonLink to={entry.to} variant={entry.id === firstStart ? "primary" : "secondary"}>Start<span className="ds-visually-hidden">: {entry.subject}</span></ButtonLink>}
+          />
+        );
+      case "due": {
+        const several = entry.items.length > 1;
+        const open = panel.open && confirming === entry.id;
+        const label = entry.what === "document" ? `‘${entry.subject}’` : entry.subject;
+        return (
+          <Task
+            key={entry.id}
+            mark={<Clock size={16} />}
+            title={several ? <>Confirm {entry.subject} are still right</> : <>Confirm <RouterLink href={entry.to} className="work-task__link"><bdi>{label}</bdi></RouterLink> is still right</>}
+            why={
+              <>
+                {entry.overdue ? <Status tone="attention">Overdue since {entry.when}</Status> : <>Due {entry.when}</>}
+                {entry.fromPublication ? " · not confirmed since the catalogue version was published" : ""}
+                {several && <> · <span dir="auto">{named(entry.items)}</span></>}
+              </>
+            }
+            meta={entry.what === "document" ? "A library document you own. It stays in use meanwhile." : "Systems in service. Any catalogue maintainer may confirm them; they stay in use meanwhile."}
+            action={
+              <Button
+                aria-expanded={open}
+                onClick={(event) => {
+                  if (open) {
+                    setConfirming(null);
+                    panel.close();
+                    return;
+                  }
+                  confirmDocument.reset();
+                  confirmSystems.reset();
+                  setOutcome(null);
+                  setConfirming(entry.id);
+                  panel.show(event);
+                }}
+              >
+                {several ? `Confirm ${plural(entry.items.length, "system", "systems")}…` : "Confirm…"}<span className="ds-visually-hidden">: {entry.subject}</span>
+              </Button>
+            }
+          >
+            {open && (
+              <ConsequencePanel
+                panelRef={panel.panel}
+                title={several ? <>Confirm {entry.subject} are still right</> : <>Confirm <bdi>{label}</bdi> is still right</>}
+                happens={entry.what === "document"
+                  ? "Its version in service stays as it is. Confirming starts its review cycle again, and requirement work stops flagging citations of it as overdue."
+                  : several
+                    ? "One confirmation for each of them, with your note. Their sheets stay as they are, and each starts its review cycle again."
+                    : "Its sheet in the version in service stays as it is. Confirming starts its review cycle again for every catalogue maintainer."}
+                affects={several ? <p dir="auto">{named(entry.items)}.</p> : undefined}
+                reversibility="Being due never takes anything out of use; confirming only records that you checked."
+                reason={several
+                  ? { label: "What you checked", hint: "It stands for every one of them, for whoever confirms them next.", maxLength: 500 }
+                  : { label: "Note (optional)", hint: "What you checked, for whoever confirms it next.", maxLength: 500, optional: true }}
+                confirmLabel={several ? `Confirm ${plural(entry.items.length, "system", "systems")}` : "Confirm it"}
+                keepLabel="Cancel"
+                busy={confirmDocument.isPending || confirmSystems.isPending}
+                busyLabel="Confirming…"
+                failure={confirmFailure ? errorMessage(confirmFailure) : null}
+                onConfirm={(note) => confirm(entry, note)}
+                onKeep={() => {
+                  setConfirming(null);
+                  panel.close();
+                }}
+              />
+            )}
+          </Task>
+        );
+      }
+      default:
+        return null;
+    }
+  };
 
   let body: ReactNode;
   if (queue.loading) {
@@ -240,7 +340,7 @@ export function YourWork() {
                   <Button variant="link" busy={queue.retrying} onClick={() => { retried.current = section.key; queue.retry(); }}>Try again</Button>
                 </p>
               ) : (
-                <DataTable<Entry> caption={team && section.teamTitle ? section.teamTitle : section.title} captionHidden columns={columns(section.key)} rows={section.rows} rowId={(entry) => entry.id} />
+                <ol className="work-tasks">{section.rows.map(card)}</ol>
               )}
             </Section>
           </div>
@@ -255,6 +355,7 @@ export function YourWork() {
     );
   }
 
+  const spoken = outcome ?? actions.said;
   return (
     <div className="work">
       <PageHeader
@@ -277,17 +378,24 @@ export function YourWork() {
         }
       />
       <p ref={said} tabIndex={-1} className="work__said" role="status">
-        {actions.said ? actions.said.failed ? <Status tone="attention">{actions.said.text}</Status> : actions.said.text : null}
+        {spoken ? spoken.failed ? <Status tone="attention">{spoken.text}</Status> : spoken.text : null}
       </p>
       {body}
-      {/* A standing backlog, not a decision waiting on you: one quiet line, outside the count. */}
+      {/* A standing backlog, not a decision waiting on you: one quiet card, outside the count. */}
       {queue.pending.gaps ? null : queue.failed.gaps ? (
         <p className="work__backlog">Couldn't read who runs the systems in service.</p>
       ) : gap?.kind === "gaps" ? (
-        <p className="work__backlog">
-          Standing backlog: {plural(gap.count, "system in service has", "systems in service have")} no squad or no contact, starting with '<bdi>{gap.subject}</bdi>'.{" "}
-          <RouterLink href={gap.to}>See who runs what</RouterLink>
-        </p>
+        <section className="work__backlog" aria-labelledby="work-backlog">
+          <h2 id="work-backlog" className="work__backlog-title">Standing backlog</h2>
+          <ol className="work-tasks">
+            <Task
+              mark={<UsersRound size={16} />}
+              title={<>{plural(gap.count, "system in service has", "systems in service have")} no squad or no contact</>}
+              why={<>Starting with ‘<bdi>{gap.subject}</bdi>’. It isn't counted in To do: it rarely empties.</>}
+              action={<ButtonLink to={gap.to}>See who runs what</ButtonLink>}
+            />
+          </ol>
+        </section>
       ) : null}
     </div>
   );

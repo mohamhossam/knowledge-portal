@@ -318,6 +318,7 @@ function Decide() {
           onClear={filter !== "waiting" || find ? () => setView("waiting", "") : undefined}
         />
         <ActionGroup>
+          {counts.decide > 0 && <ButtonLink to={`${base}/decide/focus`} variant="primary">Answer the {count(counts.decide, "question")}</ButtonLink>}
           <Button
             busy={draft.acceptReady.isPending}
             unavailableReason={bulkCount === 0 ? "Nothing is ready to accept without a decision." : null}

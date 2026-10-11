@@ -22,6 +22,26 @@ const NEUTRAL: HelpEntry = {
 
 const PAGES: { match: (path: string) => boolean; entry: HelpEntry }[] = [
   {
+    // Focus mode (UX rebuild, phase 2): a review or a draft's decisions, one question at a time.
+    match: (path) => /\/focus\/?$/.test(path),
+    entry: {
+      title: "Focus mode",
+      body: [
+        "One question at a time. What needs you comes first; the rest is asked a group at a time. Nothing is sent until the summary at the end, which you confirm.",
+        "Skip a question to come back to it. Leave keeps your answers here; the full page shows them too.",
+      ],
+      terms: [
+        ["Accept group", "Takes a sheet's or slide's passages as they stand. Change any one on the full page."],
+        ["What follows", "Suggestions that become ready once the ones you accept are in the draft."],
+      ],
+      keys: [
+        ["1–9", "Choose an answer"],
+        ["Enter", "Confirm and go to the next question"],
+        ["Esc", "Leave focus mode"],
+      ],
+    },
+  },
+  {
     match: (path) => path === "/library/search",
     entry: {
       title: "Search passages",
@@ -177,19 +197,13 @@ const PAGES: { match: (path: string) => boolean; entry: HelpEntry }[] = [
     },
   },
   {
-    match: (path) => path.startsWith("/reminders"),
-    entry: {
-      title: "Re-confirmations",
-      body: ["Documents and systems you answer for that must be confirmed as still right, by their due date."],
-      terms: [["Re-confirmation", "Confirming a document or system is still right, when due."]],
-      keys: [],
-    },
-  },
-  {
     match: (path) => path === "/",
     entry: {
       title: "To do",
-      body: ["Everything that needs you, most urgent first. Switch to Everyone's to see the whole team's."],
+      body: [
+        "Everything that needs you, most urgent first. Switch to Everyone's to see the whole team's.",
+        "Start opens a review or a draft's decisions in focus mode, one question at a time. Re-confirmations are confirmed here, on their card.",
+      ],
       terms: [
         ["Needs attention", "A failed job or blocked item someone must act on."],
         ["Job", "Background work: reading, indexing, building, checking."],
