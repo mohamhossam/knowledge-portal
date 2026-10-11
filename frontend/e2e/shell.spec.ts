@@ -6,7 +6,7 @@
 import { expect, settled, test } from "./fixtures";
 import { ROUTES, seeded } from "./routes";
 
-test("every route has Jobs, Help and Account in the masthead, in that order, and the skip link first", async ({ page }) => {
+test("every route has Search, Jobs, Help and Account in the masthead, in that order, and the skip link first", async ({ page }) => {
   // It opens every route in turn (34 since area 2, some loading their own chunk): more than one page's time.
   test.slow();
   const ids = await seeded();
@@ -16,7 +16,7 @@ test("every route has Jobs, Help and Account in the masthead, in that order, and
     await page.goto(path);
     await settled(page);
     const utilities = page.getByRole("banner").getByRole("button");
-    await expect(utilities, route.key).toHaveText([/^Jobs/, "Help", /Amina Owner/]);
+    await expect(utilities, route.key).toHaveText([/^Search/, /^Jobs/, "Help", /Amina Owner/]);
     await page.keyboard.press("Tab");
     await expect(page.locator(":focus"), route.key).toHaveText("Skip to content");
   }
@@ -31,4 +31,24 @@ test("a rail link moves focus to the new page's h1, rebuilt or not", async ({ pa
     await expect(page.locator(":focus")).toHaveRole("heading");
     await expect(page.locator(":focus")).toContainText(title);
   }
+});
+
+test("Ctrl+K searches the library and catalogue from any page and opens a result at its page", async ({ page }) => {
+  await page.goto("squads");
+  await settled(page);
+  await page.keyboard.press("Control+k");
+  const field = page.getByRole("combobox", { name: "Search the library and catalogue" });
+  await expect(field).toBeFocused();
+  await field.fill("coverage");
+  const first = page.getByRole("option").first();
+  await expect(first).toHaveAttribute("aria-selected", "true");
+  const title = (await first.locator(".ds-search__title").textContent()) ?? "";
+  await page.keyboard.press("Enter");
+  await settled(page);
+  await expect(page.locator(":focus")).toHaveRole("heading");
+  await expect(page.locator(":focus")).toContainText(title.slice(0, 20));
+  // Esc closes it and hands focus back to the masthead's field.
+  await page.getByRole("button", { name: "Search" }).click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("button", { name: "Search" })).toBeFocused();
 });

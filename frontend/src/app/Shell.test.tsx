@@ -56,6 +56,7 @@ function open(path: string) {
             <Route element={<Shell />}>
               <Route index element={<HomePage />} />
               <Route path="squads" element={<h1>Table 3: Squad catalogue</h1>} />
+              <Route path="library/:documentId" element={<h1>A library document</h1>} />
             </Route>
           </Routes>
         </MemoryRouter>
@@ -71,7 +72,9 @@ describe("the shell", () => {
       await screen.findByRole("heading", { level: 1, name: title });
       const banner = screen.getByRole("banner");
       await within(banner).findByRole("button", { name: "Jobs 1 active or needing attention" });
-      const [jobs, help, account] = within(banner).getAllByRole("button");
+      const [search, jobs, help, account] = within(banner).getAllByRole("button");
+      expect(search).toHaveAccessibleName("Search");
+      expect(within(banner).getByRole("search", { name: "Portal" })).toContainElement(search!);
       expect(jobs).toHaveAccessibleName("Jobs 1 active or needing attention");
       expect(help).toHaveAccessibleName("Help");
       expect(account).toHaveAccessibleName("Account: Amina Owner");
@@ -213,5 +216,22 @@ describe("the shell", () => {
     await userEvent.click(screen.getByRole("button", { name: "Account: Amina Owner" }));
     await userEvent.selectOptions(screen.getByRole("combobox", { name: /Persona/ }), "fake-reviewer");
     expect(auth.switchFakeActor).toHaveBeenCalledWith("fake-reviewer");
+  });
+
+  it("opens search with Ctrl+K from anywhere, finds a document by its name, and opens it", async () => {
+    const search = vi.spyOn(api, "search").mockResolvedValue([]);
+    open("/");
+    await screen.findByRole("heading", { level: 1, name: "Your work" });
+    await userEvent.keyboard("{Control>}k{/Control}");
+    const field = screen.getByRole("combobox", { name: "Search the library and catalogue" });
+    expect(field).toHaveFocus();
+    await userEvent.type(field, "survey");
+    const hit = await screen.findByRole("option", { name: /Site survey checklist/ });
+    expect(hit).toHaveAttribute("aria-selected", "true");
+    // Passages are searched by the service once typing pauses.
+    await waitFor(() => expect(search).toHaveBeenCalledWith("survey"));
+    await userEvent.keyboard("{Enter}");
+    expect(await screen.findByRole("heading", { level: 1, name: "A library document" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Search" })).toHaveAttribute("aria-expanded", "false");
   });
 });
