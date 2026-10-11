@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
+import type { Channel } from "../api/client";
+import { Button, type Column, DataTable, Section } from "../design/components";
 import { CONFIDENCE, sentenceCase, systemName } from "./catalogue";
-import { ChannelsEdit, EditButton } from "./DraftEdits";
+import { ChannelsEdit } from "./DraftEdits";
 import { useCatalogueContext } from "./useCatalogue";
 
 /**
@@ -18,76 +20,75 @@ export function ChannelsPage() {
     (book.release.products ?? [])
       .map((offering) => ({ offering, types: offering.order_types.filter((type) => (type.channels ?? []).includes(channelId)) }))
       .filter((item) => item.types.length > 0);
+  const columns: Column<Channel>[] = [
+    {
+      id: "channel",
+      header: "Channel",
+      rowHeader: true,
+      bidi: true,
+      cell: (channel) => (
+        <>
+          <span className="cat-name">{channel.name}</span>
+          {(channel.kind || channel.confidence) && (
+            <span className="cat-detail">
+              {[channel.kind ? sentenceCase(channel.kind) : null, channel.confidence ? CONFIDENCE[channel.confidence] : null].filter(Boolean).join(" · ")}
+            </span>
+          )}
+          {channel.description && <span className="cat-detail" dir="auto">{channel.description}</span>}
+        </>
+      ),
+    },
+    {
+      id: "entry",
+      header: "Orders enter through",
+      cell: (channel) =>
+        channel.entry_system_id ? (
+          <Link to={`${base}/systems/${encodeURIComponent(channel.entry_system_id)}`} dir="auto">
+            {systemName(book, channel.entry_system_id)}
+          </Link>
+        ) : (
+          <span className="cat-quiet">No system is named</span>
+        ),
+    },
+    {
+      id: "orders",
+      header: "Can be ordered through it",
+      cell: (channel) => {
+        const through = orders(channel.id);
+        return through.length ? (
+          <ul className="cat-plain">
+            {through.map(({ offering, types }) => (
+              <li key={offering.id}>
+                <Link to={`${base}/offerings/${encodeURIComponent(offering.id)}`} dir="auto">{offering.name}</Link>
+                <span className="cat-detail" dir="auto">{types.map((type) => type.name).join(" · ")}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <span className="cat-quiet">No order type names it</span>
+        );
+      },
+    },
+  ];
   return (
-    <section className="govsection catalogue__first" aria-labelledby="channels-title">
-      <h2 id="channels-title" className="govsection__title">Channels</h2>
-      <p className="govsection__lead">
-        Where orders are placed, the system that takes each channel’s orders in, and what can be ordered through it.
-      </p>
-      {editable && !editing && (
-        <p className="govsection__actions">
-          <EditButton onClick={() => setEditing(true)}>Edit the channels</EditButton>
-        </p>
-      )}
+    <Section
+      title="Where orders are placed"
+      count={channels.length}
+      actions={editable && !editing ? <Button aria-expanded={false} onClick={() => setEditing(true)}>Edit the channels</Button> : undefined}
+    >
+      <p className="cat-lead">The system that takes each channel’s orders in, and what can be ordered through it.</p>
       {editing ? (
         <ChannelsEdit onDone={() => setEditing(false)} />
-      ) : channels.length ? (
-        <table className="govtable">
-          <caption className="visually-hidden">Channels in this version</caption>
-          <thead>
-            <tr>
-              <th scope="col">Channel</th>
-              <th scope="col">Orders enter through</th>
-              <th scope="col">Can be ordered through it</th>
-            </tr>
-          </thead>
-          <tbody>
-            {channels.map((channel) => {
-              const through = orders(channel.id);
-              return (
-                <tr key={channel.id} className="row">
-                  <th scope="row" dir="auto">
-                    {channel.name}
-                    {(channel.kind || channel.confidence) && (
-                      <span className="secondary govtable__by">
-                        {[channel.kind ? sentenceCase(channel.kind) : null, channel.confidence ? CONFIDENCE[channel.confidence] : null]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </span>
-                    )}
-                    {channel.description && <span className="secondary govtable__by" dir="auto">{channel.description}</span>}
-                  </th>
-                  <td>
-                    {channel.entry_system_id ? (
-                      <Link to={`${base}/systems/${encodeURIComponent(channel.entry_system_id)}`} dir="auto">
-                        {systemName(book, channel.entry_system_id)}
-                      </Link>
-                    ) : (
-                      <span className="secondary">No system is named</span>
-                    )}
-                  </td>
-                  <td>
-                    {through.length ? (
-                      <ul className="sheet__roles">
-                        {through.map(({ offering, types }) => (
-                          <li key={offering.id}>
-                            <Link to={`${base}/offerings/${encodeURIComponent(offering.id)}`} dir="auto">{offering.name}</Link>
-                            <span className="secondary govtable__by" dir="auto">{types.map((type) => type.name).join(" · ")}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <span className="secondary">No order type names it</span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
       ) : (
-        <p className="timetable__quiet">This version names no channel.</p>
+        <DataTable
+          caption="Channels in this version"
+          captionHidden
+          columns={columns}
+          rows={channels}
+          rowId={(channel) => channel.id}
+          emptyText="This version names no channel."
+        />
       )}
-    </section>
+    </Section>
   );
 }

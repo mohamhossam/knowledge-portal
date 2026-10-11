@@ -167,14 +167,13 @@ export function AppShell({
       return;
     }
     // An address with a target ("#passage-…") is the page's to focus: if it already did, it keeps it.
-    // So does a page in the legacy island (Phase 8) that moved focus itself, as it did before,
-    // and a record pane marked data-takes-focus that focused its own heading (a chosen row).
+    // So does a record pane marked data-takes-focus that focused its own heading (a chosen row).
     const main = document.getElementById("ds-main");
     const active = document.activeElement;
     const placed = Boolean(main && active && active !== main && main.contains(active));
-    if (placed && (window.location.hash || active?.closest(".ds-legacy, [data-takes-focus]"))) return;
+    if (placed && (window.location.hash || active?.closest("[data-takes-focus]"))) return;
     window.scrollTo(0, 0);
-    // The page's h1: the design system's, or a legacy page's first h1.
+    // The page's h1: the page header's, or else the page's first h1.
     const titleOf = () => document.getElementById("ds-page-title") ?? main?.querySelector<HTMLElement>("h1") ?? null;
     const focusTitle = (title: HTMLElement) => {
       if (!title.hasAttribute("tabindex")) title.setAttribute("tabindex", "-1");

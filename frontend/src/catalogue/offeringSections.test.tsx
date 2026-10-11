@@ -97,7 +97,7 @@ describe("an offering edited one section at a time", () => {
     fireEvent.click(within(panel).getByRole("button", { name: /Remove order type Cease/ }));
 
     expect(within(panel).getByText(/Broadband’s responsibility FULFILMENT still names the order type ‘CEASE’/)).toBeInTheDocument();
-    expect(within(panel).getByRole("button", { name: "Save the order types" })).toBeDisabled();
+    expect(within(panel).getByRole("button", { name: "Save the order types" })).toHaveAttribute("aria-disabled", "true");
   });
 
   it("adds an offering with what it is, leaving the rest to its sheet", () => {

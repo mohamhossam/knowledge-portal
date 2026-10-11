@@ -25,8 +25,10 @@ import type {
 import { jobReason, reading } from "../catalogue/suggestions";
 import { REVIEW_STATUS, reviewSince } from "../reviews/review";
 import { newestState } from "../library/model";
-import type { Rank } from "../timetable/TimetableTable";
 import { count, formatDay } from "./format";
+
+/** How much a line needs someone: a line that needs someone ranks first, one in the past last. */
+export type Rank = "due" | "delayed" | "running" | "service" | "past";
 
 export type Line = {
   key: string;

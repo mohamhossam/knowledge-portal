@@ -1,3 +1,5 @@
+import "./draft.css";
+
 import { Minus, Plus, RefreshCw } from "lucide-react";
 import { useMemo, useState } from "react";
 

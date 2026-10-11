@@ -13,7 +13,7 @@ import {
 import type { StatusTone } from "../design/components";
 import { count } from "../home/format";
 import { HISTORIC_PATH } from "../requirements/knowledge";
-import type { Rank } from "../timetable/TimetableTable";
+import type { Rank } from "../home/derive";
 
 /** Historic Requirements live on Table 4, beside the corpus they will join (ADR-0102). */
 export { HISTORIC_PATH };

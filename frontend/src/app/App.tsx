@@ -13,7 +13,7 @@ import { MapPage } from "../catalogue/MapPage";
 import { JourneysPage } from "../catalogue/JourneysPage";
 import { OfferingsPage } from "../catalogue/OfferingsPage";
 import { SystemsPage } from "../catalogue/SystemsPage";
-import { LegacyPage } from "../catalogue/frame/LegacyPage";
+import { HeadedPage } from "../catalogue/frame/HeadedPage";
 import { ChangesStep } from "../catalogue/draft/ChangesStep";
 import { CheckStep } from "../catalogue/draft/CheckStep";
 import { DecideFocus } from "../catalogue/draft/DecideFocus";
@@ -59,8 +59,8 @@ const catalogueRoutes = (
     <Route path="map" element={<MapPage />} />
     <Route path="concepts" element={<ConceptsPage />} />
     <Route path="concepts/:conceptId" element={<ConceptsPage />} />
-    <Route path="domains" element={<LegacyPage page="domains"><DomainsPage /></LegacyPage>} />
-    <Route path="channels" element={<LegacyPage page="channels"><ChannelsPage /></LegacyPage>} />
+    <Route path="domains" element={<HeadedPage page="domains"><DomainsPage /></HeadedPage>} />
+    <Route path="channels" element={<HeadedPage page="channels"><ChannelsPage /></HeadedPage>} />
     <Route path="governance" element={<GovernancePage />} />
     <Route path="governance/:register/:itemId" element={<GovernancePage />} />
     <Route path="offerings" element={<OfferingsPage />} />
@@ -76,7 +76,7 @@ const catalogueRoutes = (
     <Route path="changes" element={<ChangesStep />} />
     <Route path="check" element={<CheckStep />} />
     <Route path="publish" element={<PublishStep />} />
-    <Route path="evidence/:chunkId" element={<LegacyPage page="evidence"><EvidencePage /></LegacyPage>} />
+    <Route path="evidence/:chunkId" element={<HeadedPage page="evidence"><EvidencePage /></HeadedPage>} />
   </>
 );
 
@@ -133,7 +133,7 @@ export function App() {
         <Route path="architecture" element={<CataloguePage />}>
           {catalogueRoutes}
           <Route path="versions" element={<CatalogueVersionsPage />} />
-          <Route path="compare" element={<LegacyPage page="compare"><ComparePage /></LegacyPage>} />
+          <Route path="compare" element={<HeadedPage page="compare"><ComparePage /></HeadedPage>} />
         </Route>
         <Route path="architecture/versions/:releaseId" element={<CataloguePage />}>
           {catalogueRoutes}

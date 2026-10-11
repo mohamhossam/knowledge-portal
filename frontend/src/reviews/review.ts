@@ -4,7 +4,7 @@
  */
 import type { ReviewStanding, ReviewState } from "../api/client";
 import { formatDay } from "../home/format";
-import type { Rank } from "../timetable/TimetableTable";
+import type { Rank } from "../home/derive";
 
 export const REMINDERS_KEY = ["reviews", "reminders"] as const;
 export const SYSTEM_REVIEWS_KEY = ["architecture", "system-reviews"] as const;

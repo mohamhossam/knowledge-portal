@@ -189,22 +189,6 @@
 }
 
 /* The record */
-.lib-reconfirm {
-  display: grid;
-  gap: var(--space-2);
-  margin-block-end: var(--space-2);
-}
-
-.lib-reconfirm__line {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--space-1) var(--space-2);
-  margin: 0;
-  font-size: var(--text-meta);
-  color: var(--color-ink-2);
-}
-
 .lib-admin {
   display: grid;
   gap: var(--space-2);

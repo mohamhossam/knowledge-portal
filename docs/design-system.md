@@ -12,7 +12,7 @@ every component's API, states, keyboard and accessibility behaviour.
 | See it | `http://localhost:5184/knowledge/design-system` (dev only): every component, both themes, both densities |
 | Tests | `npx vitest run src/design`: 159 tests covering the token contract, behaviour, keyboard and ARIA |
 | Related | `docs/ux/interaction/model.md` (behaviour rules, cited as §n below) · `docs/ux/content/` (voice, microcopy, glossary) |
-| Status | Foundation (Phase 5). Today's screens still use the legacy `tokens.css` until their area migrates (Phase 8). |
+| Status | In use on every screen. The legacy `src/styles/` and its island were removed in the UX rebuild's last phase. |
 
 ## 1. Calm rules, as enforced
 
@@ -139,7 +139,7 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
   - **Reader variant:** `reader` drops the sidebar.
   - **Behaviour:** when `locationKey` changes, it scrolls to the top and focuses `#ds-page-title`
     (§1). The masthead publishes `--sticky-top`. Three cases keep the focus the page placed
-    itself: an address with a `#target`, a legacy island, and a pane marked `data-takes-focus`
+    itself: an address with a `#target`, and a pane marked `data-takes-focus`
     (a list-and-record page that focuses the chosen record's heading, as the catalogue does).
   - **ARIA:** `banner`, `navigation "Areas"`, `main`. The current item has
     `aria-current="page"` and the red marker.

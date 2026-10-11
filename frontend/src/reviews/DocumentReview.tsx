@@ -1,3 +1,5 @@
+import "./reviews.css";
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type RefObject, useEffect, useId, useRef, useState } from "react";
 
@@ -41,8 +43,8 @@ export function DocumentReview({ document }: { document: LibraryDocument }) {
   const byApproval = sameMoment(standing.last_reviewed_at, published?.approved_at);
 
   return (
-    <div className="lib-reconfirm">
-      <p className="lib-reconfirm__line">
+    <div className="review-line">
+      <p className="review-line__text">
         {standing.state === "current" ? null : <><Status tone={standing.state === "overdue" ? "attention" : "neutral"}>{dueWords(standing)}</Status>{" "}</>}
         <span>
           {byApproval ? "Not confirmed since its approval" : <>Last confirmed by <bdi>{standing.reviewer.display_name}</bdi> on {formatDay(standing.last_reviewed_at)}</>}

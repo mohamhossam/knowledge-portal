@@ -27,8 +27,8 @@ export function SystemEditor({ value, onChange, release }: {
     ...value.components.filter((item) => item.name.trim()).map((item) => ({ value: item.id || item.name, label: item.name })),
   ];
   return (
-    <div className="form">
-      <div className="form__grid">
+    <div className="cat-form">
+      <div className="cat-form__grid">
         <TextField label="Name" value={value.name} required onChange={(name) => set({ name })} />
         <TextField label="Arabic name" value={value.name_ar} dir="rtl" onChange={(name_ar) => set({ name_ar: name_ar || null })} />
         <SelectField

@@ -70,7 +70,7 @@ describe("hand edits on a system's sheet", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add a dependency" }));
     const panel = screen.getByRole("form", { name: /Add a dependency of CWOM/ });
     const add = within(panel).getByRole("button", { name: "Add the dependency" });
-    expect(add).toBeDisabled();
+    expect(add).toHaveAttribute("aria-disabled", "true");
     fireEvent.change(within(panel).getByLabelText("Depends on"), { target: { value: "bscs" } });
     fireEvent.change(within(panel).getByLabelText(/For what/), { target: { value: "Order closure updates billing." } });
     fireEvent.click(add);

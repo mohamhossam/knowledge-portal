@@ -53,15 +53,13 @@ export function JourneysPage() {
   const chosen = journeyId !== undefined ? journeys.find((item) => item.id === journeyId) : undefined;
 
   const record = adding ? (
-    <div className="ds-legacy cat-legacy">
-      <JourneyEdit
-        onDone={(saved) => {
-          setAdding(false);
-          if (saved) return navigate(`${base}/journeys/${encodeURIComponent(saved)}`);
-          focusLater(() => document.getElementById("journey-add"));
-        }}
-      />
-    </div>
+    <JourneyEdit
+      onDone={(saved) => {
+        setAdding(false);
+        if (saved) return navigate(`${base}/journeys/${encodeURIComponent(saved)}`);
+        focusLater(() => document.getElementById("journey-add"));
+      }}
+    />
   ) : chosen ? (
     <JourneyRecord key={chosen.id} journey={chosen} />
   ) : journeyId !== undefined ? (
@@ -265,11 +263,9 @@ function JourneyRecord({ journey }: { journey: Journey }) {
         ) : undefined
       }
     >
-      {editing === "edit" && <div className="ds-legacy cat-legacy"><JourneyEdit journey={journey} onDone={() => setEditing(null)} /></div>}
+      {editing === "edit" && <JourneyEdit journey={journey} onDone={() => setEditing(null)} />}
       {editing === "remove" && (
-        <div className="ds-legacy cat-legacy">
-          <WholeRemove kind="journey" item={journey} onDone={(removed) => (removed ? navigate(`${base}/journeys`) : setEditing(null))} />
-        </div>
+        <WholeRemove kind="journey" item={journey} onDone={(removed) => (removed ? navigate(`${base}/journeys`) : setEditing(null))} />
       )}
       {editing !== "edit" && (
         <Suspense fallback={<Skeleton label="Drawing the journey" rows={6} />}>

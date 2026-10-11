@@ -55,7 +55,6 @@ function open(path: string) {
           <Routes>
             <Route element={<Shell />}>
               <Route index element={<HomePage />} />
-              {/* Every area is rebuilt now: an address under one that the shell doesn't list still takes the island. */}
               <Route path="explorer/older" element={<h1>An older page</h1>} />
               <Route path="library/:documentId" element={<h1>A library document</h1>} />
             </Route>
@@ -67,7 +66,7 @@ function open(path: string) {
 }
 
 describe("the shell", () => {
-  it("offers the same utilities, skip links and areas on a rebuilt page and on a legacy one", async () => {
+  it("offers the same utilities, skip links and areas on every page", async () => {
     for (const [path, title] of [["/", "To do"], ["/explorer/older", "An older page"]] as const) {
       open(path);
       await screen.findByRole("heading", { level: 1, name: title });
@@ -83,15 +82,6 @@ describe("the shell", () => {
       expect(within(screen.getByRole("navigation", { name: "Areas" })).getByRole("link", { name: /To do/ })).toHaveAccessibleName("To do 1 need you");
       document.body.innerHTML = "";
     }
-  });
-
-  it("keeps a page that isn't rebuilt yet in the legacy island, and a rebuilt one out of it", async () => {
-    open("/explorer/older");
-    const legacy = await screen.findByRole("heading", { level: 1, name: "An older page" });
-    expect(legacy.closest(".ds-legacy")).not.toBeNull();
-    document.body.innerHTML = "";
-    open("/");
-    expect((await screen.findByRole("heading", { level: 1, name: "To do" })).closest(".ds-legacy")).toBeNull();
   });
 
   it("ranks the failed read first on To do, and the sidebar counts the same entries", async () => {

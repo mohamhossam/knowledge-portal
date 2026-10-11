@@ -53,8 +53,7 @@ export function SystemRecord({ system, index }: { system: CatalogueSystem; index
             Back to <bdi>{systemName(book, from)}</bdi>
           </Button>
         )}
-        {/* The review line moves onto the kit with re-confirmations (area 6; docs/ux/backlog.md). */}
-        <div className="ds-legacy cat-legacy cat-legacy--inline"><SystemReview system={system} /></div>
+        <SystemReview system={system} />
         <Facts
           items={[
             ...(system.aliases.length ? [["Also called", <bdi key="aliases">{system.aliases.join(", ")}</bdi>] as [string, ReactNode]] : []),
@@ -72,9 +71,8 @@ export function SystemRecord({ system, index }: { system: CatalogueSystem; index
         />
       </div>
 
-      {/* Hand edits move onto the kit with the catalogue's edit forms (area 5; docs/ux/backlog.md). */}
-      {editing === "system" && <div className="ds-legacy cat-legacy"><SystemEdit system={system} onDone={() => setEditing(null)} /></div>}
-      {editing === "remove" && <div className="ds-legacy cat-legacy"><SystemRemove system={system} onDone={() => setEditing(null)} /></div>}
+      {editing === "system" && <SystemEdit system={system} onDone={() => setEditing(null)} />}
+      {editing === "remove" && <SystemRemove system={system} onDone={() => setEditing(null)} />}
       {editing !== "system" && (
         <>
           <Section
@@ -287,16 +285,14 @@ function ConnectionTable({ title, rows, other, how, from, system, empty, editabl
         <p className="cat-quiet">{empty}</p>
       )}
       {editing && (
-        <div className="ds-legacy cat-legacy">
-          <ConnectionEdit
-            key={editing === "new" ? "new" : `${editing.source_system_id}>${editing.target_system_id}`}
-            system={system}
-            connection={editing === "new" ? undefined : editing}
-            onDone={() => setEditing(null)}
-          />
-        </div>
+        <ConnectionEdit
+          key={editing === "new" ? "new" : `${editing.source_system_id}>${editing.target_system_id}`}
+          system={system}
+          connection={editing === "new" ? undefined : editing}
+          onDone={() => setEditing(null)}
+        />
       )}
-      {removing && <div className="ds-legacy cat-legacy"><ConnectionRemove connection={removing} onDone={() => setRemoving(null)} /></div>}
+      {removing && <ConnectionRemove connection={removing} onDone={() => setRemoving(null)} />}
     </Section>
   );
 }

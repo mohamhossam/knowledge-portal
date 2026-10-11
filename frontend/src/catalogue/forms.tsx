@@ -1,12 +1,15 @@
 /**
- * The catalogue's form kit: labelled fields in the world's field style, lists
- * edited one item per line, and repeating rows. Shared by the suggestion
- * editors and, later, the hand editors.
+ * The catalogue's form kit, on the design system's fields: labelled fields on
+ * a wrapping grid, lists edited one item per line, and repeating rows. Shared
+ * by the suggestion editors and the hand editors.
  */
+import "./frame/forms.css";
+
 import { Plus, X } from "lucide-react";
-import { type ReactNode, useId } from "react";
+import type { ReactNode } from "react";
 
 import type { CatalogueSystem } from "../api/client";
+import { Button, Checkbox, Field } from "../design/components";
 
 export function TextField({ label, value, onChange, required, dir = "auto", wide, hint }: {
   label: string;
@@ -17,21 +20,21 @@ export function TextField({ label, value, onChange, required, dir = "auto", wide
   wide?: boolean;
   hint?: string;
 }) {
-  const id = useId();
   return (
-    <label className={wide ? "field form__field form__field--wide" : "field form__field"} htmlFor={id}>
-      <span className="field__label">{label}{required && <span className="visually-hidden"> (required)</span>}</span>
-      <input
-        id={id}
-        className="field__input"
-        value={value ?? ""}
-        dir={dir}
-        required={required}
-        aria-describedby={hint ? `${id}-hint` : undefined}
-        onChange={(event) => onChange(event.target.value)}
-      />
-      {hint && <span id={`${id}-hint`} className="form__hint">{hint}</span>}
-    </label>
+    <div className={wide ? "cat-form__cell cat-form__wide" : "cat-form__cell"}>
+      <Field label={label} hint={hint} required={required}>
+        {(control) => (
+          <input
+            className="ds-input"
+            {...control}
+            value={value ?? ""}
+            dir={dir}
+            required={required}
+            onChange={(event) => onChange(event.target.value)}
+          />
+        )}
+      </Field>
+    </div>
   );
 }
 
@@ -43,22 +46,22 @@ export function AreaField({ label, value, onChange, rows = 2, hint, required }: 
   hint?: string;
   required?: boolean;
 }) {
-  const id = useId();
   return (
-    <label className="field form__field form__field--wide" htmlFor={id}>
-      <span className="field__label">{label}{required && <span className="visually-hidden"> (required)</span>}</span>
-      <textarea
-        id={id}
-        className="field__input field__input--text"
-        rows={rows}
-        value={value ?? ""}
-        dir="auto"
-        required={required}
-        aria-describedby={hint ? `${id}-hint` : undefined}
-        onChange={(event) => onChange(event.target.value)}
-      />
-      {hint && <span id={`${id}-hint`} className="form__hint">{hint}</span>}
-    </label>
+    <div className="cat-form__cell cat-form__wide">
+      <Field label={label} hint={hint} required={required}>
+        {(control) => (
+          <textarea
+            className="ds-input ds-input--area"
+            {...control}
+            rows={rows}
+            value={value ?? ""}
+            dir="auto"
+            required={required}
+            onChange={(event) => onChange(event.target.value)}
+          />
+        )}
+      </Field>
+    </div>
   );
 }
 
@@ -91,7 +94,6 @@ export function SelectField({ label, value, onChange, options, wide }: {
   options: { value: string; label: string; group?: string }[];
   wide?: boolean;
 }) {
-  const id = useId();
   const runs: { group?: string; options: typeof options }[] = [];
   for (const option of options) {
     const last = runs.at(-1);
@@ -100,23 +102,32 @@ export function SelectField({ label, value, onChange, options, wide }: {
   }
   const render = (list: typeof options) => list.map((option) => <option key={option.value} value={option.value}>{option.label}</option>);
   return (
-    <label className={wide ? "field form__field form__field--wide" : "field form__field"} htmlFor={id}>
-      <span className="field__label">{label}</span>
-      <select id={id} className="field__input form__select" value={value} onChange={(event) => onChange(event.target.value)}>
-        {runs.map((run, index) =>
-          run.group ? <optgroup key={`${run.group}:${index}`} label={run.group}>{render(run.options)}</optgroup> : render(run.options),
+    <div className={wide ? "cat-form__cell cat-form__wide" : "cat-form__cell"}>
+      <Field label={label}>
+        {(control) => (
+          <select className="ds-input ds-input--select" {...control} value={value} onChange={(event) => onChange(event.target.value)}>
+            {runs.map((run, index) =>
+              run.group ? <optgroup key={`${run.group}:${index}`} label={run.group}>{render(run.options)}</optgroup> : render(run.options),
+            )}
+          </select>
         )}
-      </select>
-    </label>
+      </Field>
+    </div>
   );
 }
 
 export function CheckField({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
+  return <Checkbox label={label} checked={checked} onChange={(event) => onChange(event.target.checked)} />;
+}
+
+/** A group of checkboxes under one label: order types, sources. Long groups set in columns. */
+export function Choices({ legend, hint, children }: { legend: ReactNode; hint?: ReactNode; children: ReactNode }) {
   return (
-    <label className="check form__check">
-      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
-      {label}
-    </label>
+    <fieldset className="cat-form__choices cat-form__wide">
+      <legend className="ds-field__label">{legend}</legend>
+      {hint && <p className="ds-field__hint cat-form__all">{hint}</p>}
+      {children}
+    </fieldset>
   );
 }
 
@@ -157,27 +168,29 @@ export function Rows<T>({ legend, one, items, onChange, blank, render, itemLabel
   labelled?: boolean;
 }) {
   return (
-    <fieldset className="form__rows">
-      <legend className="form__legend">{legend}</legend>
-      {items.length === 0 && <p className="form__hint">None yet.</p>}
+    <fieldset className="cat-form__rows">
+      <legend className="cat-form__legend">{legend}</legend>
+      {items.length === 0 && <p className="ds-field__hint">None yet.</p>}
       {items.map((item, index) => (
-        <fieldset key={index} className="form__row">
-          <legend className={labelled ? "form__row-title" : "visually-hidden"}>
+        <fieldset key={index} className="cat-form__row">
+          <legend className={labelled ? "cat-form__row-title" : "ds-visually-hidden"}>
             {labelled ? sentence(itemLabel(item, index)) : itemLabel(item, index)}
           </legend>
-          <div className="form__grid">
+          <div className="cat-form__grid">
             {render(item, (patch) => onChange(items.map((current, at) => (at === index ? { ...current, ...patch } : current))), index)}
           </div>
-          <button type="button" className="text-button form__remove" onClick={() => onChange(items.filter((_, at) => at !== index))}>
-            <X size={14} aria-hidden="true" />
-            Remove {itemLabel(item, index)}
-          </button>
+          <div className="cat-form__remove">
+            <Button variant="tertiary" icon={<X size={14} />} onClick={() => onChange(items.filter((_, at) => at !== index))}>
+              Remove {itemLabel(item, index)}
+            </Button>
+          </div>
         </fieldset>
       ))}
-      <button type="button" className="text-button" onClick={() => onChange([...items, blank()])}>
-        <Plus size={14} aria-hidden="true" />
-        Add {items.length ? "another" : "a"} {one}
-      </button>
+      <div className="cat-form__remove">
+        <Button variant="tertiary" icon={<Plus size={14} />} onClick={() => onChange([...items, blank()])}>
+          Add {items.length ? "another" : "a"} {one}
+        </Button>
+      </div>
     </fieldset>
   );
 }

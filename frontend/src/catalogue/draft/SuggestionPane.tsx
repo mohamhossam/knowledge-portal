@@ -90,19 +90,16 @@ export function SuggestionPane({
             {formatDay(suggestion.decided_at)}{suggestion.edited && ", with edits"}. A decision stays; correct the draft with hand edits on its pages.
           </p>
         ) : editing ? (
-          // The suggestion editor's forms move onto the kit with the catalogue's hand edits (area 5; docs/ux/backlog.md).
-          <div className="ds-legacy draft-legacy">
-            <SuggestionEditor
-              suggestion={suggestion}
-              release={release}
-              words={words}
-              busy={busy}
-              kept={kept}
-              onChange={onKeep}
-              onAccept={(content) => onDecide(true, content)}
-              onCancel={() => onEdit(false)}
-            />
-          </div>
+          <SuggestionEditor
+            suggestion={suggestion}
+            release={release}
+            words={words}
+            busy={busy}
+            kept={kept}
+            onChange={onKeep}
+            onAccept={(content) => onDecide(true, content)}
+            onCancel={() => onEdit(false)}
+          />
         ) : (
           <Decision key={suggestion.id} suggestion={suggestion} words={words} busy={busy} kept={kept !== undefined} onEdit={() => onEdit(true)} onDrop={() => onKeep(null)} onDecide={onDecide} />
         )}

@@ -36,9 +36,7 @@ export function SystemsPage() {
   const index = useMemo(() => conceptIndex(book.release), [book.release]);
 
   const record = adding ? (
-    <div className="ds-legacy cat-legacy">
-      <SystemEdit onDone={() => setAdding(false)} />
-    </div>
+    <SystemEdit onDone={() => setAdding(false)} />
   ) : chosen ? (
     <SystemRecord key={chosen.id} system={chosen} index={index} />
   ) : systemId !== undefined ? (

@@ -103,7 +103,7 @@ describe("GovernancePage", () => {
     fireEvent.click(within(panel).getByRole("button", { name: /Remove source SMB Ref/ }));
 
     expect(within(panel).getByText(/Still named: SMB Ref \(the offering Business Pro Plus\), SMB Ref \(the conflict Commitment model\)/)).toBeInTheDocument();
-    expect(within(panel).getByRole("button", { name: "Save the sources" })).toBeDisabled();
+    expect(within(panel).getByRole("button", { name: "Save the sources" })).toHaveAttribute("aria-disabled", "true");
     expect(sourceUses(RELEASE, "CANON")).toEqual(["the offering Business Pro Plus", "the conflict Commitment model"]);
   });
 

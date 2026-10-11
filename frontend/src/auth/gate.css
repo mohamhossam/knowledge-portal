@@ -1,0 +1,40 @@
+/*
+ * The portal's front door, before the shell: opening, signing in, or why it
+ * is closed. One column on the design system's surface.
+ */
+.gate {
+  min-block-size: 100vh;
+}
+
+.gate__main {
+  display: grid;
+  gap: var(--space-4);
+  max-inline-size: 40rem;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-4);
+}
+
+.gate__portal {
+  display: flex;
+  gap: var(--space-2);
+  padding-block-end: var(--space-3);
+  border-block-end: var(--rule-heavy) solid var(--color-rule-heavy);
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.gate__title {
+  margin-block-start: var(--space-4);
+  font-size: var(--text-h1);
+}
+
+.gate__body {
+  display: grid;
+  gap: var(--space-4);
+  max-inline-size: 62ch;
+}
+
+.gate__body code {
+  font-family: inherit;
+  font-weight: var(--weight-strong);
+}

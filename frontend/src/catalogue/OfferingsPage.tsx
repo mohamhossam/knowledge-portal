@@ -44,15 +44,13 @@ export function OfferingsPage() {
   const chosen = offeringId !== undefined ? offerings.find((item) => item.id === offeringId) : undefined;
 
   const record = adding ? (
-    <div className="ds-legacy cat-legacy">
-      <OfferingEdit
-        onDone={(saved) => {
-          setAdding(false);
-          if (saved) return navigate(`${base}/offerings/${encodeURIComponent(saved)}`);
-          focusLater(() => document.getElementById("offering-add"));
-        }}
-      />
-    </div>
+    <OfferingEdit
+      onDone={(saved) => {
+        setAdding(false);
+        if (saved) return navigate(`${base}/offerings/${encodeURIComponent(saved)}`);
+        focusLater(() => document.getElementById("offering-add"));
+      }}
+    />
   ) : chosen ? (
     <OfferingRecord key={chosen.id} offering={chosen} />
   ) : offeringId !== undefined ? (
@@ -215,16 +213,14 @@ function OfferingRecord({ offering }: { offering: Offering }) {
       <Button id={buttonId(key)} variant="quiet" onClick={() => setEditing(key)}>Edit {OFFERING_SECTIONS[key].edit}</Button>
     ) : null;
   const panel = (key: OfferingSection) => (
-    <div className="ds-legacy cat-legacy">
-      <OfferingSectionEdit
-        offering={offering}
-        section={key}
-        onDone={() => {
-          setReturnTo(buttonId(key));
-          setEditing(null);
-        }}
-      />
-    </div>
+    <OfferingSectionEdit
+      offering={offering}
+      section={key}
+      onDone={() => {
+        setReturnTo(buttonId(key));
+        setEditing(null);
+      }}
+    />
   );
   const edited = (key: OfferingSection, read: ReactNode) => (editing === key ? panel(key) : read);
 
@@ -271,17 +267,15 @@ function OfferingRecord({ offering }: { offering: Offering }) {
     >
       {editing === "facts" && panel("facts")}
       {editing === "remove" && (
-        <div className="ds-legacy cat-legacy">
-          <WholeRemove
-            kind="offering"
-            item={offering}
-            onDone={(removed) => {
-              if (removed) return navigate(`${base}/offerings`);
-              setReturnTo(buttonId("remove"));
-              setEditing(null);
-            }}
-          />
-        </div>
+        <WholeRemove
+          kind="offering"
+          item={offering}
+          onDone={(removed) => {
+            if (removed) return navigate(`${base}/offerings`);
+            setReturnTo(buttonId("remove"));
+            setEditing(null);
+          }}
+        />
       )}
       {/* Who it is for and what it promises, by name; what each means is on its own tab. */}
       {(offering.audiences.length > 0 || offering.values.length > 0) && (
