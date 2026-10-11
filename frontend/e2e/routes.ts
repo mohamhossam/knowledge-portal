@@ -115,6 +115,11 @@ export const REDESIGNED: string[] = [
   "squads-squads",
   "squads-people",
   "squads-history",
+  // UX rebuild phase 3: requirements, findings and historic requirements.
+  "requirement-knowledge",
+  "requirement-knowledge-requirements",
+  "requirement-knowledge-findings",
+  "requirement-knowledge-historic",
   // UX rebuild phase 1: the page for an address outside every area.
   "not-found",
 ];
