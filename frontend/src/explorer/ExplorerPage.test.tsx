@@ -302,7 +302,7 @@ describe("the Solution Architecture download", () => {
   });
 
   it("says when the document could not be written, and offers it again", async () => {
-    saving();
+    const saved = saving();
     vi.mocked(URL.createObjectURL).mockImplementationOnce(() => {
       throw new Error("No room to save it.");
     });
@@ -314,5 +314,8 @@ describe("the Solution Architecture download", () => {
     // The retry takes "Try again" away; focus lands on the download, never on the page.
     expect(screen.getByRole("button", { name: /Solution Architecture|Writing the document/ })).toHaveFocus();
     await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
+    // The retry runs to the end before the test does, so no write lands after teardown.
+    await waitFor(() => expect(saved).toHaveLength(1));
+    expect(screen.getByRole("button", { name: "Download the Solution Architecture (.docx)" })).not.toHaveAttribute("aria-disabled");
   });
 });
