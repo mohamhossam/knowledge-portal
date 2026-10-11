@@ -34,13 +34,23 @@ function named(suggestion: Suggestion, words: Lexicon): { label: string; detail:
   }
 }
 
+/** What a screen changes on a node: the person's answer so far, say. */
+export type NodeMark = Pick<DiagramNode, "status" | "tone">;
+
 /**
  * The draft's open decisions as chains: each suggestion that adds something
  * points at the ones waiting for it. Only suggestions in a chain, or needing a
  * person, are drawn; deciding one at the left settles what hangs on it.
+ * `keep` draws exactly those suggestions instead, whatever their status;
+ * `current` marks the one in hand and `mark` overrides a node's status and tone.
  */
-export function decisionTree(suggestions: Suggestion[], words: Lexicon) {
-  const open = suggestions.filter((item) => item.status === "proposed");
+export function decisionTree(
+  suggestions: Suggestion[],
+  words: Lexicon,
+  options: { keep?: ReadonlySet<string>; current?: string; mark?: (suggestion: Suggestion) => NodeMark | undefined } = {},
+) {
+  const { keep, current, mark } = options;
+  const open = keep ? suggestions.filter((item) => keep.has(item.id)) : suggestions.filter((item) => item.status === "proposed");
   const providers = new Map<string, Suggestion[]>();
   for (const item of open) for (const key of provides(item)) providers.set(key, [...(providers.get(key) ?? []), item]);
   const edges: DiagramEdge[] = [];
@@ -52,14 +62,16 @@ export function decisionTree(suggestions: Suggestion[], words: Lexicon) {
   }
   const linked = new Set(edges.flatMap((edge) => [edge.from, edge.to]));
   const nodes: DiagramNode[] = open
-    .filter((item) => linked.has(item.id) || suggestionState(item) === "decide")
-    .map((item) => {
+    .filter((item) => keep || linked.has(item.id) || suggestionState(item) === "decide")
+    .map((item): DiagramNode => {
       const state = suggestionState(item);
       return {
         id: item.id,
         ...named(item, words),
         status: STATE_LABEL[state],
         tone: state === "decide" ? "decide" : state === "ready" ? "ready" : "plain",
+        ...mark?.(item),
+        ...(item.id === current ? { tone: "subject" as const } : {}),
       };
     });
   return { nodes, edges };

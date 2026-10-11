@@ -26,4 +26,22 @@ describe("decisionTree", () => {
     expect(nodes.find((node) => node.id === "crm")).toMatchObject({ tone: "decide", status: "Needs your decision" });
     expect(nodes.find((node) => node.id === "hub")).toMatchObject({ tone: "ready" });
   });
+
+  it("draws exactly the kept suggestions, with the screen's marks and the current one", () => {
+    const suggestions = [
+      suggestion("hub", { kind: "system", system_id: "order-hub", name: "Order Hub" }, { status: "accepted" }),
+      suggestion("api", { kind: "component", system_id: "order-hub", component_id: "api", name: "Order API" }, { match: "needs_system" }),
+      suggestion("alone", { kind: "system", system_id: "alone", name: "Alone" }),
+      suggestion("other", { kind: "system", system_id: "other", name: "Other" }),
+    ];
+    const { nodes, edges } = decisionTree(suggestions, lexicon(draft, suggestions), {
+      keep: new Set(["hub", "api", "alone"]),
+      current: "api",
+      mark: (item) => (item.status === "accepted" ? { status: "Accepted", tone: "ready" } : undefined),
+    });
+    expect(nodes.map((node) => node.id)).toEqual(["hub", "api", "alone"]);
+    expect(edges).toEqual([{ from: "hub", to: "api" }]);
+    expect(nodes.find((node) => node.id === "hub")).toMatchObject({ status: "Accepted", tone: "ready" });
+    expect(nodes.find((node) => node.id === "api")).toMatchObject({ tone: "subject" });
+  });
 });
