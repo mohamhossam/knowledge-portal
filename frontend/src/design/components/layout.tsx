@@ -565,7 +565,7 @@ export function SplitPane({ list, pane, paneLabel }: { list: ReactNode; pane: Re
  * Publishes where an element starts on the page (--split-top), so CSS can give
  * it the rest of the window. Measured again whenever the page above it changes.
  */
-function useFillHeight(ref: RefObject<HTMLElement | null>) {
+export function useFillHeight(ref: RefObject<HTMLElement | null>) {
   useEffect(() => {
     const element = ref.current;
     if (!element || typeof ResizeObserver === "undefined") return;

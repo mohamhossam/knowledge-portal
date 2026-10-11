@@ -7,3 +7,4 @@ export * from "./forms";
 export * from "./layout";
 export * from "./overlays";
 export * from "./search";
+export * from "./workbench";

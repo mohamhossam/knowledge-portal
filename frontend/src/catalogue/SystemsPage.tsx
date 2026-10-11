@@ -4,7 +4,8 @@ import { Link, useLocation, useParams, useSearchParams } from "react-router-dom"
 
 import type { CatalogueSystem, Relationship, Release } from "../api/client";
 import {
-  Button, type Column, DataTable, EmptyState, FilterStrip, GapBadge, Section, type Sort, SplitPane, Status,
+  Button, type Column, DataTable, EmptyState, GapBadge, ListFilter, ListFind, ListTools, RecordList, type RecordGroup,
+  RecordPlaceholder, Section, Status, Workbench,
 } from "../design/components";
 import { count } from "../home/format";
 import { RouterLink } from "../shell/links";
@@ -21,72 +22,56 @@ type Row = { system: CatalogueSystem; place: string; why: string | null };
 const ALL = "all";
 
 /**
- * The systems of a version (redesign phase 5): a ledger of every system, what
- * it does in the ontology's words and how it connects, beside the record of
- * the one chosen. Without a choice, every connection follows the table.
+ * The systems of a version on the workbench (UX rebuild, phase 3): every
+ * system in a narrow list, grouped by where it sits, beside the record of the
+ * one chosen. With none chosen, the record side shows every connection.
  */
 export function SystemsPage() {
   const { systemId } = useParams();
   const { book, base, editable } = useCatalogueContext();
-  const notice = (useLocation().state as { notice?: string } | null)?.notice;
+  const location = useLocation();
+  const notice = (location.state as { notice?: string } | null)?.notice;
   const [adding, setAdding] = useState(false);
   const chosen = systemId !== undefined ? book.systems.get(systemId) : undefined;
   const index = useMemo(() => conceptIndex(book.release), [book.release]);
 
-  const list = (
-    <>
-      {notice && !adding && <p role="status" className="cat-notice"><Status tone="done">{notice}</Status></p>}
-      {editable && !adding && (
-        <p className="cat-actions">
-          <Button icon={<Plus size={16} />} onClick={() => setAdding(true)}>Add a system</Button>
-        </p>
-      )}
-      {adding && (
-        <div className="ds-legacy cat-legacy">
-          <SystemEdit onDone={() => setAdding(false)} />
-        </div>
-      )}
-      <SystemsTable index={index} current={chosen?.id} />
-    </>
+  const record = adding ? (
+    <div className="ds-legacy cat-legacy">
+      <SystemEdit onDone={() => setAdding(false)} />
+    </div>
+  ) : chosen ? (
+    <SystemRecord key={chosen.id} system={chosen} index={index} />
+  ) : systemId !== undefined ? (
+    <EmptyState
+      title={`This version has no system “${systemId}”.`}
+      action={<RouterLink href={base}>See every system</RouterLink>}
+    />
+  ) : (
+    <RecordPlaceholder title={`${count(book.release.systems.length, "system")}. Choose one to read its record.`}>
+      {notice && <p role="status" className="cat-notice"><Status tone="done">{notice}</Status></p>}
+      <AllConnections />
+    </RecordPlaceholder>
   );
 
   return (
     <>
       <CatalogueHeader page="systems" />
-      {systemId !== undefined && !chosen ? (
-        <>
-          <EmptyState
-            title={`This version has no system “${systemId}”.`}
-            action={<RouterLink href={base}>See every system</RouterLink>}
-          />
-          {list}
-        </>
-      ) : chosen ? (
-        <SplitPane list={list} pane={<SystemRecord key={chosen.id} system={chosen} index={index} />} paneLabel={`System: ${chosen.name}`} />
-      ) : (
-        <>
-          {list}
-          <AllConnections />
-        </>
-      )}
+      <Workbench
+        listLabel="Systems"
+        chosen={Boolean(chosen) || adding}
+        list={<SystemsList index={index} current={chosen?.id} onAdd={editable && !adding ? () => setAdding(true) : undefined} />}
+        record={record}
+      />
     </>
   );
 }
 
-function SystemsTable({ index, current }: { index: ConceptIndex; current?: string }) {
+function SystemsList({ index, current, onAdd }: { index: ConceptIndex; current?: string; onAdd?: () => void }) {
   const { book, base } = useCatalogueContext();
   const release = book.release;
   const [params, setParams] = useSearchParams();
-  const [sort, setSort] = useState<Sort>({ id: "place", direction: "ascending" });
   const area = params.get("area") ?? ALL;
   const [find, setFind] = useFindParam();
-  const set = (key: string, value: string, empty: string) =>
-    setParams((previous) => {
-      const next = new URLSearchParams(previous);
-      if (value === empty) next.delete(key);
-      else next.set(key, value);
-      return next;
-    }, { replace: true });
 
   const rows = useMemo<Row[]>(() => {
     const found = findSystems(book, find);
@@ -100,81 +85,60 @@ function SystemsTable({ index, current }: { index: ConceptIndex; current?: strin
       }));
   }, [book, release.systems, area, find]);
 
-  const sorted = useMemo(() => {
-    const key = (row: Row) => (sort.id === "place" ? `${row.place || "~"}\u0000${row.system.name}` : row.system.name);
-    const order = [...rows].sort((a, b) => key(a).localeCompare(key(b), "en", { sensitivity: "base" }));
-    return sort.direction === "descending" ? order.reverse() : order;
-  }, [rows, sort]);
+  // Grouped by the landscape's top level, the unplaced last; by name inside each.
+  const groups = useMemo<RecordGroup[]>(() => {
+    const byTop = new Map<string, Row[]>();
+    for (const row of rows) {
+      const top = row.place.split(" › ")[0] || "";
+      byTop.set(top, [...(byTop.get(top) ?? []), row]);
+    }
+    const query = params.size ? `?${params}` : "";
+    return [...byTop.entries()]
+      .sort(([a], [b]) => (a ? (b ? a.localeCompare(b, "en", { sensitivity: "base" }) : -1) : 1))
+      .map(([top, members]) => ({
+        id: top || "unplaced",
+        label: top ? <bdi>{top}</bdi> : "Not placed in the landscape",
+        items: members
+          .sort((a, b) => a.system.name.localeCompare(b.system.name, "en", { sensitivity: "base" }))
+          .map(({ system, place, why }) => ({
+            id: system.id,
+            href: `${base}/systems/${encodeURIComponent(system.id)}${query}`,
+            name: system.name,
+            bidi: true,
+            detail: why ?? (place.split(" › ").slice(1).join(" › ") || undefined),
+            meta: <GapBadge gaps={systemGaps(release, system, index)} />,
+          })),
+      }));
+  }, [rows, params, base, release, index]);
 
   const areas = release.capability_domains ?? [];
   const filters = [
-    { id: ALL, label: "All", count: release.systems.length },
+    { id: ALL, label: "Any capability", count: release.systems.length },
     ...areas.map((domain) => ({ id: domain.id, label: domain.name, count: release.systems.filter((system) => systemDomains(system).includes(domain.id)).length })),
   ];
-
-  const columns: Column<Row>[] = [
-    {
-      id: "name",
-      header: "System",
-      rowHeader: true,
-      sortable: true,
-      bidi: true,
-      cell: ({ system, why }) => (
-        <>
-          <Link
-            to={`${base}/systems/${encodeURIComponent(system.id)}${params.size ? `?${params}` : ""}`}
-            className="cat-name"
-            aria-current={system.id === current ? "page" : undefined}
-          >
-            {system.name}
-          </Link>
-          {why && <span className="cat-detail">{why}</span>}
-        </>
-      ),
-    },
-    { id: "place", header: "Sits in", sortable: true, bidi: true, cell: ({ place }) => place || <span className="cat-quiet">Not placed</span> },
-    {
-      id: "concepts",
-      header: "Does (concept)",
-      cell: ({ system }) => <ConceptChips system={system} index={index} />,
-    },
-    // What the system's record doesn't say yet: one badge, not a column of "Not stated" per field.
-    { id: "gaps", header: "Gaps", cell: ({ system }) => <GapBadge gaps={systemGaps(release, system, index)} /> },
-  ];
-  // Beside a chosen system's record the list narrows to what finds a system; the record says the rest.
-  const shown = current ? columns.filter((column) => ["name", "place", "concepts"].includes(column.id)) : columns;
+  const set = (value: string) =>
+    setParams((previous) => {
+      const next = new URLSearchParams(previous);
+      if (value === ALL) next.delete("area");
+      else next.set("area", value);
+      return next;
+    }, { replace: true });
 
   return (
-    <div className="cat-list">
-      <FilterStrip
-        label="Systems by capability domain"
-        filters={filters}
-        active={area}
-        onChange={(id) => set("area", id, ALL)}
-        find={{ label: "Find a system", value: find, onChange: setFind, placeholder: "Name, alias or capability" }}
-        onClear={
-          area !== ALL || find
-            ? () => {
-                setFind("");
-                setParams({}, { replace: true });
-              }
-            : undefined
-        }
+    <>
+      <ListTools count={area === ALL && !find.trim() ? count(release.systems.length, "system") : `${count(rows.length, "system")} of ${release.systems.length}`}>
+        <ListFind label="Find a system" value={find} onChange={setFind} placeholder="Name, alias or capability" />
+        <ListFilter label="Capability domain" value={area} options={filters} onChange={set} />
+        {onAdd && <Button variant="tertiary" icon={<Plus size={16} />} onClick={onAdd}>Add a system</Button>}
+      </ListTools>
+      <RecordList
+        label="Systems in this version"
+        groups={groups}
+        currentId={current}
+        link={RouterLink}
+        empty={find.trim() ? `No system is known by “${find.trim()}”.` : "No system works in this capability domain."}
       />
-      <p className="cat-count" aria-live="polite">
-        {area === ALL && !find.trim() ? count(release.systems.length, "system") : `${count(rows.length, "system")} of ${release.systems.length}`}
-      </p>
-      <DataTable
-        caption="Systems in this version"
-        captionHidden
-        columns={shown}
-        rows={sorted}
-        rowId={(row) => row.system.id}
-        sort={sort}
-        onSort={setSort}
-        emptyText={find.trim() ? `No system is known by “${find.trim()}”.` : "No system works in this capability domain."}
-      />
-    </div>
+    </>
   );
 }
 

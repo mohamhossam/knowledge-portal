@@ -103,6 +103,11 @@
   --split-pane-bg: var(--color-surface-1);
   --split-pane-rule: var(--rule-hair) solid var(--color-rule-strong);
 
+  /* Workbench: a look-up area's narrow list beside its record (UX rebuild, phase 3) */
+  --bench-list-width: clamp(18rem, 26vw, 24rem);
+  --bench-list-bg: var(--color-surface);
+  --bench-rule: var(--rule-hair) solid var(--color-rule-strong);
+
   /* Overlays */
   --drawer-width: min(26rem, 92vw);
   --overlay-bg: var(--color-surface);
