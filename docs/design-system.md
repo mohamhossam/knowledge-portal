@@ -146,8 +146,14 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
   - **`search` and `overlay`:** `search` puts the way into global search first on the masthead's
     end, in a `search` landmark; `overlay` renders a modal layer outside the page and the side
     panel, so neither can make it inert.
+  - **Side panel over the page:** below 1024px, or wherever a page pins the panel over itself
+    (`position: fixed`, as the review desk does), the page and the sidebar go inert while it is
+    open, so focus never moves under it (WCAG 2.4.11).
 - **`MastheadButton`:** Jobs, Help or Account, with a text label, an icon and an optional count
-  (`aria-expanded`).
+  (`aria-expanded`; `controls` names the open panel's id as `aria-controls`). `reserveCount`
+  holds a count's room while there is none, so the bar doesn't shift when one arrives. Up to
+  800px the portal's name leaves the bar (the home link still says it) and a long label ends
+  in an ellipsis, so everything stays on one line.
 - **`PageHeader`:** one line: the h1 (the record's own name), then `meta` (status as a pill,
   then facts, a dot between each), then `actions` at the end; `children` (tabs or a state
   line) take a slim row under it.
@@ -185,7 +191,8 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
   - **`RecordView`:** the record as an `article` named by its h2 (under the area's h1), with status
     and short facts on the title's line, actions at the end and a lead. `takeFocus` (choosing a
     row, not a fresh load) moves focus to the name, and `data-takes-focus` keeps the shell from
-    taking it back. A new record opens at its top.
+    taking it back. A new record opens at its top. Stacked (below 60rem), the record scrolls itself
+    into view, so a shared link opens on the record, not the list; a fresh load leaves focus be.
   - **`RecordPlaceholder`:** the record side with nothing chosen: what the list holds, in a line,
     and a useful summary under it (counts, the version's connections), never an empty pane.
 - **`Pagination`:** `aria-current` on the current page; every page button is named "Page n".
@@ -216,7 +223,7 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
     beside it, and announces the reason on press (§1.2).
   - **`busy`:** sets `aria-busy` and ignores presses.
 - **`ActionGroup`:** a labelled group.
-- **`Status`:** one of six tones (neutral, working, done, attention, held, stopped). It always
+- **`Status`:** one of seven tones (neutral, working, done, attention, warning, held, stopped). It always
   shows an icon and words. Severe tones carry weight, so they never look lighter than routine ones.
 - **`Badge`:** a neutral count, named for screen readers ("6 need you").
 - **`GapBadge`:** a record's missing facts as one dashed pill ("3 gaps"), the list of what is
@@ -229,7 +236,8 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
 - **`UndoToast`:** the only toast, used for the delayed-commit window (§4). It is polite and never
   takes focus.
 - **`JobStatus`, `JobTray`:** jobs ordered by need. Each shows its object, timing, cause and fix,
-  with retry and stop named for their job (§6).
+  with retry and stop named for their job (§6). A job's `busy` press says "Trying again…" or
+  "Stopping…" (`aria-busy`) and ignores a second press.
 - **`LiveMessage`:** one polite live region.
 
 ### Forms (`forms.tsx`)
@@ -253,11 +261,14 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
 
 - **`FilterStrip`:** toggle chips (`aria-pressed`) with counts; the pressed one is filled and
   shows a check, so the state reads without colour. An optional find field (`data-find` for
-  the `/` shortcut), and "Clear filters".
+  the `/` shortcut), and "Clear filters". More than four chips fold into one select, labelled
+  with the strip's label, when the main area is under 40rem.
 - **`DataTable`:** the ledger table.
   - **Always:** a caption; a sticky head under the heavy rule; `aria-sort` on sortable columns; a
     row-header column; `bidi` cells (`dir="auto"`); `numeric` columns (condensed, tabular,
-    end-aligned); 24px selection checkboxes; an empty text; density-aware rows.
+    end-aligned); 24px selection checkboxes; an empty text; density-aware rows. A ticked row takes
+    `--table-row-selected` (Maroon Mist; `--color-selected-row`), deeper than the current row's
+    tint, which keeps its maroon bar, so the two never read alike.
   - **Row press:** a row whose row header holds a link opens that link on a press anywhere in
     the row (Ctrl/⌘ or middle opens a new tab), except on its own controls or when text is
     being selected. The name is not underlined until the row is hovered or the link focused;
@@ -294,8 +305,9 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
   caveat (§11).
 - **`ProvenanceTrail`:** an ordered list of hops (fact → evidence → document version → catalogue
   version → decided by), in a labelled nav (§10).
-- **`EvidenceQuote`:** the passage with only the quoted line highlighted (beige), in its own
-  direction, with the source underneath.
+- **`EvidenceQuote`:** the passage with only the quoted line (`quote`) highlighted (beige), in its
+  own direction, with the source underneath. `lang` (the document's language) marks the passage
+  alone, never the English source line.
 
 ### Overlays and help (`overlays.tsx`)
 
@@ -303,11 +315,13 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
   a 409 that needs a choice (§4). Focus moves to its first button and returns to the opener;
   Esc closes it.
 - **`Drawer`:** a non-modal side panel (Help, Jobs, Account, upload). Esc closes it. Pair it with
-  `useDisclosure` for focus in and back.
+  `useDisclosure` for focus in and back. `id` is for the button that opens it (`aria-controls`).
 - **`Toggletip`:** opened by press, never by hover alone. It is announced politely and closed with
   Esc (§14).
 - **`ShortcutHelp`:** the widget's keys plus the page-wide keys, with the on/off switch that WCAG
-  2.1.4 requires.
+  2.1.4 requires. Each group is named once, by its heading. Each key is its own `<kbd>`: a space
+  separates keys, `+` joins keys held together (one `<kbd>` around a `<kbd>` per key), and
+  ` / ` reads as "or".
 - **`HelpContent`:** the four parts of consistent help, always in order: this page, shortcuts,
   terms, ask the knowledge team (WCAG 3.2.6).
 

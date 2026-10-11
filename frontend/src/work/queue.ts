@@ -180,6 +180,63 @@ export function workQueue(input: QueueInput): Sections {
   return { attention, decisions, due, gaps: gapEntries };
 }
 
+/** How To do can order each section: its ranking (the default), or by how long each has waited. */
+export type WorkOrder = "urgent" | "oldest" | "newest";
+
+/** When an entry began waiting, where the reads say: the version's upload, an overdue re-confirmation's due date. */
+export function waitingSince(entry: Entry): number | null {
+  const at = entry.kind === "unreadable" || entry.kind === "unsearchable" || entry.kind === "review"
+    ? entry.sinceAt
+    : entry.kind === "due" && entry.overdue ? entry.items[0]?.standing.due_at : undefined;
+  const time = Date.parse(at ?? "");
+  return Number.isNaN(time) ? null : time;
+}
+
+/** Pure: one section's entries in the chosen order. Entries without a time keep their rank, after the rest. */
+export function ordered(entries: Entry[], order: WorkOrder): Entry[] {
+  if (order === "urgent") return entries;
+  const timed = entries.map((entry, rank) => ({ entry, rank, at: waitingSince(entry) }));
+  timed.sort((a, b) => {
+    if (a.at === null || b.at === null) return Number(a.at === null) - Number(b.at === null) || a.rank - b.rank;
+    return (order === "oldest" ? a.at - b.at : b.at - a.at) || a.rank - b.rank;
+  });
+  return timed.map(({ entry }) => entry);
+}
+
+/** Began waiting after the last visit: new to this person. On a first visit (no last visit), nothing is. */
+export function isNew(entry: Entry, lastVisit: number | null): boolean {
+  const at = waitingSince(entry);
+  return lastVisit !== null && at !== null && at > lastVisit;
+}
+
+/** Whether an entry's name, owner or systems contain the text found, ignoring case. */
+export function matches(entry: Entry, find: string): boolean {
+  const text = find.trim().toLocaleLowerCase();
+  if (!text) return true;
+  const names = [entry.subject, ...(entry.kind === "review" ? [entry.owner] : []), ...(entry.kind === "due" ? entry.items.map((item) => item.title) : [])];
+  return names.some((name) => name.toLocaleLowerCase().includes(text));
+}
+
+const LAST_VISIT = "knowledge-portal.todo.last-visit";
+
+/** When this browser last opened To do; null on a first visit or with storage blocked. */
+export function readLastVisit(): number | null {
+  try {
+    const at = Number(window.localStorage.getItem(LAST_VISIT));
+    return Number.isFinite(at) && at > 0 ? at : null;
+  } catch {
+    return null;
+  }
+}
+
+export function writeLastVisit(at: number) {
+  try {
+    window.localStorage.setItem(LAST_VISIT, String(at));
+  } catch {
+    // Blocked storage: every visit is a first one, and nothing is marked new.
+  }
+}
+
 function nextDue(reminders: Reminders | undefined): string | null {
   const ahead = (reminders?.items ?? []).filter((item) => item.standing.state === "current").map((item) => item.standing.due_at).sort();
   return ahead[0] ? formatDay(ahead[0]) : null;
@@ -220,25 +277,36 @@ export function useWorkQueue() {
     [documents.data, releases.data, active.data, suggestions.data, organisation.data, reminders.data],
   );
   const reads = [documents, releases, active, organisation, reminders, suggestions];
+  // Each kept the same object until one of its flags changes, so an effect can depend on it.
+  const [attentionPending, decisionsPending, duePending, gapsPending] = [
+    documents.isPending,
+    documents.isPending || releases.isPending || (Boolean(draft) && suggestions.isPending),
+    reminders.isPending,
+    active.isPending || organisation.isPending,
+  ];
+  const pending = useMemo(
+    () => ({ attention: attentionPending, decisions: decisionsPending, due: duePending, gaps: gapsPending }) satisfies Record<SectionKey, boolean>,
+    [attentionPending, decisionsPending, duePending, gapsPending],
+  );
+  const [attentionFailed, decisionsFailed, dueFailed, gapsFailed] = [
+    documents.isError,
+    documents.isError || releases.isError || suggestions.isError,
+    reminders.isError,
+    active.isError || organisation.isError,
+  ];
+  const failed = useMemo(
+    () => ({ attention: attentionFailed, decisions: decisionsFailed, due: dueFailed, gaps: gapsFailed }) satisfies Record<SectionKey, boolean>,
+    [attentionFailed, decisionsFailed, dueFailed, gapsFailed],
+  );
   return {
     sections,
     mine: mineCount(sections),
     loading: documents.isPending || releases.isPending || organisation.isPending,
     retrying: reads.some((read) => read.isError && read.isFetching),
     /** Sections whose reads are still in flight: they show a skeleton, never "nothing". */
-    pending: {
-      attention: documents.isPending,
-      decisions: documents.isPending || releases.isPending || (Boolean(draft) && suggestions.isPending),
-      due: reminders.isPending,
-      gaps: active.isPending || organisation.isPending,
-    } satisfies Record<SectionKey, boolean>,
+    pending,
     /** Which sections' reads failed, so a section can say so instead of showing "nothing". */
-    failed: {
-      attention: documents.isError,
-      decisions: documents.isError || releases.isError || suggestions.isError,
-      due: reminders.isError,
-      gaps: active.isError || organisation.isError,
-    } satisfies Record<SectionKey, boolean>,
+    failed,
     retry: () => reads.forEach((read) => {
       if (read.isError) void read.refetch();
     }),

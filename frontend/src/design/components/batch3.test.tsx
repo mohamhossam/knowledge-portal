@@ -134,6 +134,21 @@ describe("filters, decisions and bulk", () => {
     expect(onClear).toHaveBeenCalledOnce();
   });
 
+  it("folds many filters into a labelled select as well (shown instead of the chips when narrow)", async () => {
+    const onChange = vi.fn();
+    const many = ["All", "Billing", "CRM", "Fulfilment", "Network"].map((name) => ({ id: name.toLowerCase(), label: name, count: 2 }));
+    const { rerender } = render(<FilterStrip label="Capability domain" filters={many} active="all" onChange={onChange} />);
+    // Hidden by a container query until the main area is narrow, so found by its label.
+    const select = screen.getByLabelText("Capability domain", { selector: "select" });
+    expect(select).toHaveValue("all");
+    expect(screen.getByRole("option", { name: "CRM (2)", hidden: true })).toBeInTheDocument();
+    await userEvent.selectOptions(select, "crm");
+    expect(onChange).toHaveBeenCalledWith("crm");
+    // A short strip stays chips at any width.
+    rerender(<FilterStrip label="Capability domain" filters={many.slice(0, 4)} active="all" onChange={onChange} />);
+    expect(document.querySelector("select")).toBeNull();
+  });
+
   it("names decision buttons for their row and declares their keys", async () => {
     const onDecide = vi.fn();
     render(<DecisionButtons kind="suggestion" subject="Adds the system Dynamics CRM" onDecide={onDecide} />);
@@ -236,5 +251,11 @@ describe("compare and evidence", () => {
     render(<EvidenceQuote text={"System: Order Hub\nCaptures business orders."} quote="System: Order Hub" source="Integration design · lines 1–12" />);
     expect(screen.getByText("System: Order Hub").tagName).toBe("MARK");
     expect(document.querySelector("blockquote")).toHaveAttribute("dir", "auto");
+  });
+
+  it("marks the passage's language on the quote alone, not its source line", () => {
+    render(<EvidenceQuote text="نظام الطلبات" source="Integration design · lines 1–12" lang="ar" />);
+    expect(document.querySelector("blockquote")).toHaveAttribute("lang", "ar");
+    expect(document.querySelector("figcaption")).not.toHaveAttribute("lang");
   });
 });

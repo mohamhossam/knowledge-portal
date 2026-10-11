@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { LibraryDocument, Organisation, Release, Reminders, Suggestion } from "../api/client";
-import { mineCount, type QueueInput, workQueue } from "./queue";
+import { isNew, matches, mineCount, ordered, type QueueInput, readLastVisit, workQueue, writeLastVisit } from "./queue";
 
 const amina = { id: "fake-owner", display_name: "Amina Owner", email: null };
 
@@ -97,5 +97,64 @@ describe("workQueue", () => {
   it("has nothing to say when nothing needs anyone", () => {
     const sections = workQueue(input({ documents: [document("p", "Published", { published: true })] }));
     expect(Object.values(sections).flat()).toEqual([]);
+  });
+});
+
+describe("To do's order, find and new marks", () => {
+  const uploaded = (id: string, title: string, at: string) =>
+    ({ ...document(id, title), versions: [{ ...document(id, title).versions[0]!, uploaded_at: at }] }) as LibraryDocument;
+  const reviews = () => workQueue(input({
+    documents: [uploaded("a", "August", "2026-08-01T09:00:00Z"), uploaded("c", "October", "2026-10-05T09:00:00Z"), uploaded("s", "September", "2026-09-01T09:00:00Z")],
+    releases: [release("draft-1", "draft")],
+    suggestions: [suggestion("s1")],
+  })).decisions;
+
+  it("keeps the ranking by default, or orders by how long each has waited; what has no time stays last, in rank", () => {
+    expect(ordered(reviews(), "urgent").map((entry) => entry.subject)).toEqual(["August", "September", "October", "Version draft-1"]);
+    expect(ordered(reviews(), "newest").map((entry) => entry.subject)).toEqual(["October", "September", "August", "Version draft-1"]);
+    expect(ordered(reviews(), "oldest").map((entry) => entry.subject)).toEqual(["August", "September", "October", "Version draft-1"]);
+  });
+
+  it("marks as new only what began waiting after the last visit, and nothing on a first visit", () => {
+    const [august, september, october, draft] = reviews();
+    const lastVisit = Date.parse("2026-09-15T00:00:00Z");
+    expect([august, september, october, draft].map((entry) => isNew(entry!, lastVisit))).toEqual([false, false, true, false]);
+    expect(isNew(october!, null)).toBe(false);
+    // An overdue re-confirmation is new once it fell due after the last visit; one due soon isn't yet.
+    const due = workQueue(input({ reminders: { overdue: 1, due_soon: 1, items: [reminder("late", "overdue", "2026-10-01T00:00:00Z"), reminder("soon", "due_soon", "2026-10-20T00:00:00Z")] } })).due;
+    expect(due.map((entry) => isNew(entry, lastVisit))).toEqual([true, false]);
+  });
+
+  it("finds by name, owner, or a system's name in a group, ignoring case", () => {
+    const [august] = reviews();
+    expect(matches(august!, "  aug ")).toBe(true);
+    expect(matches(august!, "amina")).toBe(true);
+    expect(matches(august!, "billing")).toBe(false);
+    expect(matches(august!, "")).toBe(true);
+  });
+
+  describe("the last visit", () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+      window.localStorage.clear();
+    });
+
+    it("is kept in this browser, and is none on a first visit", () => {
+      window.localStorage.clear();
+      expect(readLastVisit()).toBeNull();
+      writeLastVisit(1_760_000_000_000);
+      expect(readLastVisit()).toBe(1_760_000_000_000);
+    });
+
+    it("is none, and nothing breaks, when storage is blocked", () => {
+      vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+        throw new Error("blocked");
+      });
+      vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+        throw new Error("blocked");
+      });
+      expect(() => writeLastVisit(1)).not.toThrow();
+      expect(readLastVisit()).toBeNull();
+    });
   });
 });

@@ -7,7 +7,7 @@ import { useSearchParams } from "react-router-dom";
 
 import { api, type ConfirmReview, type Reminder } from "../api/client";
 import { errorMessage } from "../api/errors";
-import { ActionGroup, Button, ConsequencePanel, EmptyState, FilterStrip, PageHeader, Section, Skeleton, Status } from "../design/components";
+import { ActionGroup, Button, ConsequencePanel, EmptyState, FilterStrip, PageHeader, Section, Select, Skeleton, Status } from "../design/components";
 import { useDisclosure } from "../design/hooks";
 import { formatDay } from "../home/format";
 import { type JobAction, useJobActions } from "../library/actions";
@@ -15,7 +15,7 @@ import { FileButton } from "../library/FileButton";
 import { REVIEW_READS } from "../reviews/review";
 import { useConfirmSystems } from "../reviews/useReviews";
 import { ButtonLink, RouterLink } from "../shell/links";
-import { type Entry, type SectionKey, useWorkQueue } from "./queue";
+import { type Entry, isNew, matches, ordered, readLastVisit, type SectionKey, useWorkQueue, type WorkOrder, writeLastVisit } from "./queue";
 
 type Ranked = Exclude<SectionKey, "gaps">;
 
@@ -23,6 +23,12 @@ const SECTIONS: { key: Ranked; title: string; teamTitle?: string; icon: typeof A
   { key: "attention", title: "Needs attention", icon: AlertTriangle, clear: "nothing has failed or is held", source: "the documents" },
   { key: "decisions", title: "Decisions waiting on you", teamTitle: "Decisions waiting", icon: ListTodo, clear: "no review or suggestion is waiting", source: "the documents and the draft's suggestions" },
   { key: "due", title: "Re-confirmations due", icon: Clock, clear: "no re-confirmations are due", source: "your re-confirmations" },
+];
+
+const ORDERS: { id: WorkOrder; label: string; lead: string }[] = [
+  { id: "urgent", label: "Most urgent first", lead: "most urgent first" },
+  { id: "oldest", label: "Waiting longest first", lead: "waiting longest first" },
+  { id: "newest", label: "Newest first", lead: "newest first" },
 ];
 
 /** How many names a confirmation of several systems spells out before "and N more". */
@@ -71,15 +77,21 @@ function Remedy({ entry, act, busy }: { entry: Entry; act: Act; busy: boolean })
   );
 }
 
-/** What a task card is made of: its mark, what it is, why it waits, and the next step. */
-function Task({ mark, title, why, meta, action, children }: { mark: ReactNode; title: ReactNode; why?: ReactNode; meta?: ReactNode; action?: ReactNode; children?: ReactNode }) {
+/** What a task card is made of: its mark, what it is, why it waits, and the next step. `fresh`: new since the last visit. */
+function Task({ mark, title, why, meta, fresh, action, children }: { mark: ReactNode; title: ReactNode; why?: ReactNode; meta?: ReactNode; fresh?: boolean; action?: ReactNode; children?: ReactNode }) {
   return (
     <li className="work-task">
       <span className="work-task__mark" aria-hidden="true">{mark}</span>
       <div className="work-task__body">
         <h3 className="work-task__title">{title}</h3>
         {why && <p className="work-task__why">{why}</p>}
-        {meta && <p className="work-task__meta">{meta}</p>}
+        {(meta || fresh) && (
+          <p className="work-task__meta">
+            {meta}
+            {/* Words and an icon, never colour alone. */}
+            {fresh && <>{meta ? " · " : null}<Status tone="neutral">New<span className="ds-visually-hidden"> since your last visit</span></Status></>}
+          </p>
+        )}
       </div>
       {action && <div className="work-task__act">{action}</div>}
       {children && <div className="work-task__panel">{children}</div>}
@@ -108,15 +120,29 @@ export function YourWork() {
   const [params, setParams] = useSearchParams();
   const scope = params.get("scope") === "everyone" ? "everyone" : "mine";
   const team = scope === "everyone";
+  const order: WorkOrder = ORDERS.find((each) => each.id === params.get("order"))?.id ?? "urgent";
+  const find = params.get("find") ?? "";
+  const setParam = (name: string, value: string | null) => {
+    setParams((previous) => {
+      const next = new URLSearchParams(previous);
+      if (value) next.set(name, value);
+      else next.delete(name);
+      return next;
+    }, { replace: true });
+  };
   const queue = useWorkQueue();
   // Ages read one clock per visit (a render must stay pure).
   const [now] = useState(() => Date.now());
+  // "New since your last visit": the visit before this one, read once; this one is kept for the next.
+  const [lastVisit] = useState(readLastVisit);
+  useEffect(() => writeLastVisit(now), [now]);
 
   const rows = (key: SectionKey) => queue.sections[key].filter((entry) => team || entry.mine);
   const sections = SECTIONS.map((section) => ({ ...section, rows: rows(section.key), failed: queue.failed[section.key], pending: queue.pending[section.key] }));
   const shown = sections.filter((section) => section.pending || section.failed || section.rows.length > 0);
   const clear = sections.filter((section) => !section.pending && !section.failed && section.rows.length === 0);
   const needs = sections.reduce((sum, section) => sum + section.rows.length, 0);
+  const fresh = sections.reduce((sum, section) => sum + section.rows.filter((entry) => isNew(entry, lastVisit)).length, 0);
   const anyFailed = sections.some((section) => section.failed);
   const anyPending = sections.some((section) => section.pending);
   const settledEmpty = !queue.loading && needs === 0 && !anyFailed && !anyPending;
@@ -146,7 +172,7 @@ export function YourWork() {
       ? undefined
       : needs === 0
         ? anyFailed ? "Some of your work couldn't be read." : "Nothing needs the team today."
-        : `${plural(needs, "thing needs", "things need")} ${team ? "the team" : "you"}, most urgent first.`;
+        : `${plural(needs, "thing needs", "things need")} ${team ? "the team" : "you"}, ${ORDERS.find((each) => each.id === order)!.lead}.${fresh > 0 ? ` ${fresh.toLocaleString("en")} new since your last visit.` : ""}`;
 
   // Acting from To do: the card's remedy or confirmation runs here; once its card has gone, focus goes to what was said.
   const actions = useJobActions();
@@ -211,6 +237,7 @@ export function YourWork() {
                 ? <><Status tone="held">Held by the malware scan</Status> It won't be read. Upload a clean copy.</>
                 : <><Status tone="attention">Couldn't read</Status> {entry.cause ?? `The ${entry.fileType} file couldn't be read.`}</>}
             meta={<>Waiting <Age at={entry.sinceAt} now={now} /></>}
+            fresh={isNew(entry, lastVisit)}
             action={<Remedy entry={entry} act={act} busy={busyId === entry.id} />}
           />
         );
@@ -229,6 +256,7 @@ export function YourWork() {
                 {" · waiting "}<Age at={entry.sinceAt} now={now} />
               </>
             }
+            fresh={isNew(entry, lastVisit)}
             action={<ButtonLink to={entry.to} variant={entry.id === firstStart ? "primary" : "secondary"}>Start<span className="ds-visually-hidden">: {entry.subject}</span></ButtonLink>}
           />
         );
@@ -260,6 +288,7 @@ export function YourWork() {
               </>
             }
             meta={entry.what === "document" ? "A library document you own. It stays in use meanwhile." : "Systems in service. Any catalogue maintainer may confirm them; they stay in use meanwhile."}
+            fresh={isNew(entry, lastVisit)}
             action={
               <Button
                 aria-expanded={open}
@@ -326,25 +355,30 @@ export function YourWork() {
   } else {
     body = (
       <>
-        {shown.map((section) => (
-          <div key={section.key} ref={(element) => { if (element) regions.current.set(section.key, element); }} className="work__section">
-            <Section
-              title={<><section.icon size={16} aria-hidden="true" /> {team && section.teamTitle ? section.teamTitle : section.title}</>}
-              count={section.failed || section.pending ? undefined : section.rows.length}
-            >
-              {section.pending ? (
-                <Skeleton label={`Reading ${section.source}`} rows={2} />
-              ) : section.failed ? (
-                <p className="work__none">
-                  Couldn't read {section.source}.{" "}
-                  <Button variant="link" busy={queue.retrying} onClick={() => { retried.current = section.key; queue.retry(); }}>Try again</Button>
-                </p>
-              ) : (
-                <ol className="work-tasks">{section.rows.map(card)}</ol>
-              )}
-            </Section>
-          </div>
-        ))}
+        {shown.map((section) => {
+          const visible = ordered(section.rows.filter((entry) => matches(entry, find)), order);
+          return (
+            <div key={section.key} ref={(element) => { if (element) regions.current.set(section.key, element); }} className="work__section">
+              <Section
+                title={<><section.icon size={16} aria-hidden="true" /> {team && section.teamTitle ? section.teamTitle : section.title}</>}
+                count={section.failed || section.pending ? undefined : visible.length}
+              >
+                {section.pending ? (
+                  <Skeleton label={`Reading ${section.source}`} rows={2} />
+                ) : section.failed ? (
+                  <p className="work__none">
+                    Couldn't read {section.source}.{" "}
+                    <Button variant="link" busy={queue.retrying} onClick={() => { retried.current = section.key; queue.retry(); }}>Try again</Button>
+                  </p>
+                ) : visible.length === 0 ? (
+                  <p className="work__none">None of these match ‘<bdi>{find.trim()}</bdi>’.</p>
+                ) : (
+                  <ol className="work-tasks">{visible.map(card)}</ol>
+                )}
+              </Section>
+            </div>
+          );
+        })}
         {clear.length > 0 && (
           <p className="work__clear" ref={clearLine}>
             Also clear: {clear.map((section) => section.clear).join("; ")}.
@@ -362,19 +396,20 @@ export function YourWork() {
         title="To do"
         meta={lead && <span>{lead}</span>}
         actions={
-          <FilterStrip
-            label="Whose work"
-            filters={[{ id: "mine", label: "Mine" }, { id: "everyone", label: "Everyone's" }]}
-            active={scope}
-            onChange={(id) => {
-              setParams((previous) => {
-                const next = new URLSearchParams(previous);
-                if (id === "everyone") next.set("scope", "everyone");
-                else next.delete("scope");
-                return next;
-              }, { replace: true });
-            }}
-          />
+          <>
+            <FilterStrip
+              label="Whose work"
+              filters={[{ id: "mine", label: "Mine" }, { id: "everyone", label: "Everyone's" }]}
+              active={scope}
+              onChange={(id) => setParam("scope", id === "everyone" ? "everyone" : null)}
+              find={{ label: "Find in To do", value: find, onChange: (value) => setParam("find", value) }}
+            />
+            <div className="work__order">
+              <Select label="Order" value={order} onChange={(event) => setParam("order", event.target.value === "urgent" ? null : event.target.value)}>
+                {ORDERS.map((each) => <option key={each.id} value={each.id}>{each.label}</option>)}
+              </Select>
+            </div>
+          </>
         }
       />
       <p ref={said} tabIndex={-1} className="work__said" role="status">

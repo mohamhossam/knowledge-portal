@@ -8,36 +8,53 @@ import { useCallback, useSyncExternalStore } from "react";
 export type Density = "automatic" | "comfortable" | "compact";
 
 const KEYS = { density: "knowledge-portal.density", shortcuts: "knowledge-portal.shortcuts" } as const;
-const memory = new Map<string, string>();
+type Key = (typeof KEYS)[keyof typeof KEYS];
+const memory = new Map<Key, string>();
 const listeners = new Set<() => void>();
+/** What each key holds, read from storage once and kept until it changes (here or in another tab). */
+const cache = new Map<Key, string | null>();
 
-function read(key: string): string | null {
+function read(key: Key): string | null {
+  if (cache.has(key)) return cache.get(key)!;
+  let value: string | null;
   try {
-    return window.localStorage.getItem(key) ?? memory.get(key) ?? null;
+    value = window.localStorage.getItem(key) ?? memory.get(key) ?? null;
   } catch {
-    return memory.get(key) ?? null;
+    value = memory.get(key) ?? null;
   }
+  cache.set(key, value);
+  return value;
 }
 
-function write(key: string, value: string) {
+function notify() {
+  listeners.forEach((listener) => listener());
+}
+
+function write(key: Key, value: string) {
   memory.set(key, value);
+  cache.set(key, value);
   try {
     window.localStorage.setItem(key, value);
   } catch {
     // Blocked storage: the in-memory value still applies for this page.
   }
-  listeners.forEach((listener) => listener());
+  notify();
+}
+
+/** Another tab changed a preference: read it again. One listener for the module, while anyone listens. */
+function onStorage(event: StorageEvent) {
+  // A cleared storage (key null) may have taken either preference with it.
+  if (event.key !== null && event.key !== KEYS.density && event.key !== KEYS.shortcuts) return;
+  cache.clear();
+  notify();
 }
 
 function subscribe(listener: () => void) {
+  if (listeners.size === 0) window.addEventListener("storage", onStorage);
   listeners.add(listener);
-  const onStorage = (event: StorageEvent) => {
-    if (event.key === KEYS.density || event.key === KEYS.shortcuts) listener();
-  };
-  window.addEventListener("storage", onStorage);
   return () => {
     listeners.delete(listener);
-    window.removeEventListener("storage", onStorage);
+    if (listeners.size === 0) window.removeEventListener("storage", onStorage);
   };
 }
 

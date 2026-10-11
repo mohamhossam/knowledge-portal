@@ -85,15 +85,17 @@ test("2.4 a search result opens its document at that passage, focused", async ({
   await expect(focused.locator("xpath=ancestor::tr")).toContainText((quote ?? "").trim().slice(0, 40));
 });
 
-test("A3 the document's pages: each link moves focus to the page's h1", async ({ page }) => {
+test("A3 the document's pages: each link moves focus to its panel's heading (model §1)", async ({ page }) => {
   const { serviceDocument } = await seeded();
   test.skip(!serviceDocument, "this seed has no document in service");
   await page.goto(`library/${serviceDocument}`);
   await settled(page);
-  for (const name of ["Versions", "Cited by", "Ownership", "Overview"]) {
+  for (const name of ["Versions", "Cited by", "Owner", "Overview"]) {
     await page.getByRole("navigation", { name: "This document" }).getByRole("link", { name }).click();
     await settled(page);
     await expect(page.locator(":focus")).toHaveRole("heading");
+    // The panel's heading, not the record's h1: the record stays the same, its tab changed.
+    await expect(page.locator(":focus")).not.toHaveAttribute("id", "ds-page-title");
     await expect(page.getByRole("navigation", { name: "This document" }).getByRole("link", { name })).toHaveAttribute("aria-current", "page");
   }
 });

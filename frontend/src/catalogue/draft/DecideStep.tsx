@@ -1,5 +1,5 @@
 import { Network } from "lucide-react";
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { type MouseEvent, useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 
 import type { Suggestion, SuggestionContent } from "../../api/client";
@@ -162,6 +162,19 @@ function Decide() {
   };
 
   const toPane = () => focusLater(() => desk.current?.querySelector<HTMLElement>(".ds-split__pane input, .ds-split__pane .ds-button"));
+  // Stacked (a narrow screen), the pane sits under every listed suggestion: a row tapped (not its
+  // checkbox) brings the pane into view and moves focus to its heading, as Enter moves it into the pane.
+  const tapped = (event: MouseEvent<HTMLElement>) => {
+    const target = event.target as HTMLElement;
+    if (!target.closest(".ds-split__list tr[data-row-id]") || target.closest("input, button, a, label")) return;
+    focusLater(() => {
+      const list = desk.current?.querySelector<HTMLElement>(".ds-split__list")?.getBoundingClientRect();
+      const pane = desk.current?.querySelector<HTMLElement>(".ds-split__pane");
+      if (!list || !list.height || !pane || pane.getBoundingClientRect().top < list.bottom - 1) return null;
+      pane.scrollIntoView({ block: "start" });
+      return heading.current;
+    });
+  };
   const edit = () => {
     setEditing(true);
     focusLater(() => desk.current?.querySelector<HTMLElement>(".draft-legacy input, .draft-legacy textarea, .draft-legacy select"));
@@ -291,6 +304,7 @@ function Decide() {
       ref={desk}
       className="draft-desk"
       data-density={densityFor(density, "desk")}
+      onClick={tapped}
       onKeyDown={(event) => {
         // Esc in the pane goes back to the suggestion in the list.
         if (event.key === "Escape" && current && (event.target as HTMLElement).closest(".ds-split__pane") && !editing) {

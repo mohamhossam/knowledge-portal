@@ -14,8 +14,8 @@ function Where() {
   return <p data-testid="where">{location.search}</p>;
 }
 
-function open(path = "/explorer", linkSystems = false, plans: () => Promise<CatalogPlans> = async () => PLANS) {
-  vi.spyOn(api, "explorerRelease").mockResolvedValue(EXPLORED);
+function open(path = "/explorer", linkSystems = false, plans: () => Promise<CatalogPlans> = async () => PLANS, release = EXPLORED) {
+  vi.spyOn(api, "explorerRelease").mockResolvedValue(release);
   vi.spyOn(api, "explorerPlans").mockImplementation(plans);
   render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
@@ -60,6 +60,29 @@ describe("ExplorerPage", () => {
     const section = within((await screen.findByRole("heading", { name: /^What the catalogue does not say yet/ })).closest("section")!);
     expect(section.getByText(NOT_YET)).toBeInTheDocument();
     expect(section.getByText("Step 4 names no system that performs it.")).toHaveClass("explorer-gap");
+  });
+
+  it("folds the sections with nothing recorded into what the catalogue does not say", async () => {
+    const offering = EXPLORED.products![0];
+    const sparse = {
+      ...offering!,
+      lifecycle_notes: [], tracking: undefined, sources: [], questions: [], decisions: [], boundaries: [], not_used: [], nfrs: [], components: [],
+    };
+    open("/explorer", false, undefined, { ...EXPLORED, products: [sparse] } as typeof EXPLORED);
+    const section = within((await screen.findByRole("heading", { name: /^What the catalogue does not say yet/ })).closest("section")!);
+    for (const title of ["Order tracking", /^Lifecycle notes/, /^Parts, and who/, /^Non-functional/, /^Open questions/, /^Architecture decisions/, "Sources and boundaries"]) {
+      expect(screen.queryByRole("heading", { name: title })).not.toBeInTheDocument();
+    }
+    expect(screen.getByRole("heading", { name: /^Systems in this order/ })).toBeInTheDocument();
+    for (const line of [
+      "No order tracking is recorded for Business Pro Plus.",
+      "No lifecycle note concerns New Activation through Online.",
+      "No part of Business Pro Plus is recorded.",
+      "No non-functional requirement is recorded for Business Pro Plus.",
+      "No open question is recorded for Business Pro Plus.",
+      "No architecture decision is recorded for Business Pro Plus.",
+      "No source is named for Business Pro Plus.",
+    ]) expect(section.getByText(line)).toHaveClass("explorer-gap");
   });
 
   it("says how each part is realised and who delivers it in this order", async () => {

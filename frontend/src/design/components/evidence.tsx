@@ -211,13 +211,21 @@ export function ProvenanceTrail({ hops, label = "Where this comes from", link: L
 
 /**
  * The cited passage with the quoted line highlighted (not the whole chunk),
- * in its own direction, and its source underneath.
+ * in its own direction, and its source underneath. `lang` is the passage's
+ * language, set on the quote alone: the source line is the portal's English.
  */
-export function EvidenceQuote({ text, quote, source }: { text: string; quote?: string; source: ReactNode }) {
+export function EvidenceQuote({ text, quote, source, lang }: {
+  text: string;
+  /** The line within `text` the citation quotes; marked when found, else nothing is. */
+  quote?: string;
+  source: ReactNode;
+  /** The passage's language ("ar", "en"), when known. */
+  lang?: string;
+}) {
   const at = quote ? text.indexOf(quote) : -1;
   return (
     <figure className="ds-quote">
-      <blockquote dir="auto" className="ds-quote__text">
+      <blockquote dir="auto" lang={lang} className="ds-quote__text">
         {at < 0 || !quote ? (
           text
         ) : (

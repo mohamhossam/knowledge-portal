@@ -1,15 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 
 import { api } from "../api/client";
 import { errorMessage } from "../api/errors";
 import { EvidenceQuote, Section, Skeleton, Status } from "../design/components";
 import { RouterLink } from "../shell/links";
+import { documentLang } from "./draft/decide";
 import { useCatalogueContext } from "./useCatalogue";
 
 /** One passage of a version's index, as it is cited for a system. */
 export function EvidencePage() {
   const { chunkId = "" } = useParams();
+  // The line the citation quotes (O-4), carried by the link from the checks: only it is marked.
+  const quote = useSearchParams()[0].get("quote")?.trim() || undefined;
   const { book, base } = useCatalogueContext();
   const evidence = useQuery({
     queryKey: ["architecture", "releases", book.release.id, "evidence", chunkId],
@@ -27,6 +30,8 @@ export function EvidencePage() {
       ) : (
         <EvidenceQuote
           text={evidence.data.text}
+          quote={quote}
+          lang={aboutSystem ? undefined : documentLang(document)}
           source={
             aboutSystem ? (
               <>

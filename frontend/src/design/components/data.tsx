@@ -11,8 +11,13 @@ export type Filter = { id: string; label: string; count?: number };
 /**
  * Filters as toggle chips with their counts (pressed buttons: the one on shows
  * a check); state belongs in the URL (the caller's job). "Clear filters"
- * appears only when a filter is on.
+ * appears only when a filter is on. More than `FOLD_AFTER` chips fold into one
+ * labelled select on a narrow main area (below 40rem), where they would wrap
+ * to several rows before the table.
  */
+/** Up to this many chips stay chips at any width. */
+const FOLD_AFTER = 4;
+
 export function FilterStrip({
   label,
   filters,
@@ -29,8 +34,20 @@ export function FilterStrip({
   find?: { label: string; value: string; onChange: (value: string) => void; placeholder?: string };
   onClear?: () => void;
 }) {
+  const foldId = useId();
+  const foldable = filters.length > FOLD_AFTER;
   return (
-    <div className="ds-filters" role="group" aria-label={label}>
+    <div className="ds-filters" role="group" aria-label={label} data-foldable={foldable || undefined}>
+      {foldable && (
+        <div className="ds-filters__fold">
+          <label htmlFor={foldId} className="ds-filters__fold-label">{label}</label>
+          <select id={foldId} className="ds-input ds-input--select" value={active} onChange={(event) => onChange(event.target.value)}>
+            {filters.map((filter) => (
+              <option key={filter.id} value={filter.id}>{filter.count === undefined ? filter.label : `${filter.label} (${filter.count.toLocaleString("en")})`}</option>
+            ))}
+          </select>
+        </div>
+      )}
       {filters.map((filter) => (
         <button key={filter.id} type="button" className="ds-filters__button" aria-pressed={active === filter.id} onClick={() => onChange(filter.id)}>
           {active === filter.id && <Check size={14} aria-hidden="true" className="ds-filters__check" />}

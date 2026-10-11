@@ -1,6 +1,6 @@
 import "./feedback.css";
 
-import { AlertTriangle, Check, Clock, Lightbulb, Loader, ShieldAlert, Square, X } from "lucide-react";
+import { AlertTriangle, Check, Clock, Flag, Lightbulb, Loader, ShieldAlert, Square, X } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { type JobState, JOB_WORDS } from "../words";
@@ -9,14 +9,19 @@ import type { LinkLike } from "./layout";
 
 export type { JobState };
 
-/** One status vocabulary across the portal (interaction model §6, content guide §7). */
-export type StatusTone = "neutral" | "working" | "done" | "attention" | "held" | "stopped";
+/**
+ * One status vocabulary across the portal (interaction model §6, content guide §7). `warning`
+ * is a note to check (a flagged passage, a flag icon): lighter than `attention`, and not `held`,
+ * the malware scan's shield.
+ */
+export type StatusTone = "neutral" | "working" | "done" | "attention" | "warning" | "held" | "stopped";
 
 const ICON: Record<StatusTone, typeof Check> = {
   neutral: Clock,
   working: Loader,
   done: Check,
   attention: AlertTriangle,
+  warning: Flag,
   held: ShieldAlert,
   stopped: Square,
 };
@@ -143,6 +148,8 @@ export type Job = {
   retryLabel?: string;
   onCancel?: () => void;
   subjectHref?: string;
+  /** The press in flight for this job: its button says so and ignores a second press. */
+  busy?: "retry" | "cancel";
 };
 
 /**
@@ -167,8 +174,8 @@ export function JobTray({ jobs, empty = "No jobs are running. Reading, indexing 
           {(job.onRetry || job.onCancel || job.fix) && (
             <div className="ds-actions">
               {job.fix}
-              {job.onRetry && <Button onClick={job.onRetry}>{job.retryLabel ?? "Try again"}<span className="ds-visually-hidden">: {job.kind} {job.subject}</span></Button>}
-              {job.onCancel && <Button variant="quiet" onClick={job.onCancel}>Stop<span className="ds-visually-hidden">: {job.kind} {job.subject}</span></Button>}
+              {job.onRetry && <Button busy={job.busy === "retry"} onClick={job.onRetry}>{job.busy === "retry" ? "Trying again…" : job.retryLabel ?? "Try again"}<span className="ds-visually-hidden">: {job.kind} {job.subject}</span></Button>}
+              {job.onCancel && <Button variant="quiet" busy={job.busy === "cancel"} onClick={job.onCancel}>{job.busy === "cancel" ? "Stopping…" : "Stop"}<span className="ds-visually-hidden">: {job.kind} {job.subject}</span></Button>}
             </div>
           )}
         </li>

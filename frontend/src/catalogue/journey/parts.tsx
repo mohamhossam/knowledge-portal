@@ -81,7 +81,11 @@ export function Diagram({ title, caption, legend, children }: { title: string; c
   const id = useId();
   return (
     <figure className="journey-figure" aria-labelledby={id}>
-      <figcaption id={id} className="journey-figure__caption">{caption}</figcaption>
+      <figcaption id={id} className="journey-figure__caption">
+        {caption}{" "}
+        {/* Every view is followed by its steps as a table, closed: the figure says it is there and how to open it. */}
+        <span className="ds-visually-hidden">Every step is also in “Steps as a table”, after the drawing; press it to open the table.</span>
+      </figcaption>
       <div className="journey-scroll" role="region" tabIndex={0} aria-label={`${title} (scrolls sideways)`}>
         {children}
       </div>

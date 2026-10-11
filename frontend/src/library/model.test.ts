@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { LibraryDocument, LibraryVersion } from "../api/client";
 import {
+  matchRows, wrapWords,
   approvalBlocker, awaitingReview, comparisonBasis, counts, initialDrafts, isTheEdition, matches, nextToReview, reviewBody, reviewRows, saveProblems,
   standing, unsaved, type Block,
 } from "./model";
@@ -231,5 +232,41 @@ describe("awaitingReview", () => {
     // Not for someone who can't edit it, nor before it is read.
     expect(awaitingReview(document([saved(false)], { can_edit: false }))).toBe(false);
     expect(awaitingReview(document([version("v", 1, [], { stage: "extracting" })]))).toBe(false);
+  });
+});
+
+describe("the matching, worked out once per answer (area 2 backlog)", () => {
+  it("gives the same rows when passed in as when worked out per call", () => {
+    const old = version("v1", 1, [block("a", 1, "Kept"), block("b", 2, "Gone")], {
+      revisions: [{ id: "r1", explanation: "x", passages: [
+        { block_id: "a", text: "Kept", included: true, exclusion_reason: null },
+        { block_id: "b", text: "Gone", included: true, exclusion_reason: null },
+      ] }],
+    } as unknown as Partial<LibraryVersion>);
+    const working = version("v2", 2, [block("c", 1, "Kept"), block("d", 2, "New", { label: "Line 9" })]);
+    const doc = document([old, working], { published_id: "p", publications: [{ id: "p", version_id: "v1", revision_id: "r1" }] } as Partial<LibraryDocument>);
+    const matching = matchRows(doc, working);
+    const drafts = initialDrafts(working);
+    expect(reviewRows(doc, working, drafts, matching)).toEqual(reviewRows(doc, working, drafts));
+    expect(reviewRows(doc, working, drafts, matching).map((row) => [row.key, row.change])).toEqual([
+      ["c", "same"], ["d", "new"], ["removed-b", "removed"],
+    ]);
+    // A decision re-runs only the light pass: the removed rows are the matching's own.
+    const excluded = reviewRows(doc, working, { ...drafts, c: { ...drafts.c!, included: false, reason: "No" } }, matching);
+    expect(excluded[0]!.change).toBe("excluded");
+    expect(excluded.at(-1)).toBe(matching.removed[0]);
+  });
+});
+
+describe("what n says when it goes round (model §1)", () => {
+  const rows = reviewRows(document([version("v", 1, [block("a", 1, "A"), block("b", 2, "B"), block("c", 3, "C")])]), version("v", 1, [block("a", 1, "A"), block("b", 2, "B"), block("c", 3, "C")]), {});
+  it("says going round past the last row, or past the first going back", () => {
+    expect(wrapWords(rows, "c", rows[0]!)).toBe("Back round to the top of the list: passage 1, Line 1.");
+    expect(wrapWords(rows, "a", rows[2]!, true)).toBe("Back round to the end of the list: passage 3, Line 3.");
+  });
+  it("says nothing for a step that doesn't go round", () => {
+    expect(wrapWords(rows, "a", rows[1]!)).toBeNull();
+    expect(wrapWords(rows, "c", rows[1]!, true)).toBeNull();
+    expect(wrapWords(rows, undefined, rows[1]!)).toBeNull();
   });
 });

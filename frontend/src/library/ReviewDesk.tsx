@@ -24,17 +24,19 @@ import {
 } from "../design/components";
 import { useDisclosure, useFocusAfterRender } from "../design/hooks";
 import { openShortcuts } from "../shell/shortcuts";
+import { formatClock } from "../home/format";
 import { densityFor, usePreferences } from "../shell/preferences";
 import { approveReason } from "./approval";
 import { useDocumentContext } from "./documentContext";
 import {
-  comparisonBasis,
   counts,
   type Draft,
   latestRevision,
   livePublication,
   matches,
+  matchRows,
   nextToReview,
+  wrapWords,
   passageProblems,
   reviewBody,
   reviewRows,
@@ -103,8 +105,10 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
 
   // Typing the summary changes no passage: what the grid shows is memoized on the drafts and
   // "seen", so a keystroke there doesn't re-render 200 rows (area 2 reviews).
-  const basis = useMemo(() => comparisonBasis(document), [document]);
-  const rows = useMemo(() => reviewRows(document, version, drafts), [document, version, drafts]);
+  // The matching against the basis depends on the answer only; a decision re-runs the light pass.
+  const matching = useMemo(() => matchRows(document, version), [document, version]);
+  const basis = matching.basis;
+  const rows = useMemo(() => reviewRows(document, version, drafts, matching), [document, version, drafts, matching]);
   const headings = useMemo(() => sheetHeadings(version.blocks.map((block) => ({ where: whereOf(block), text: block.text ?? null }))), [version]);
   const tally = useMemo(() => counts(rows, basis.kind), [rows, basis.kind]);
   const revision = latestRevision(version);
@@ -213,14 +217,21 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
     focusLater(() => desk.current?.querySelector<HTMLElement>("[name='desk-edit']"));
   };
 
+  /**
+   * `n` (and a decision finished, §1): on to the next passage to check. Going round past the
+   * last row (or the first, with N) is said in the live outcome line: never a silent jump.
+   */
   const goNext = (from: Row, backward: boolean) => {
     const next = nextToReview(shown, from.key, seen, backward);
     if (!next) {
       setSaid({ text: tally.flagged > 0 ? "Every flagged passage and every other passage has been seen." : "Every passage has been seen." });
-      return;
+      return false;
     }
+    const round = wrapWords(shown, from.key, next, backward);
+    if (round) setSaid({ text: round });
     move(next.key);
     focusRow(next.key);
+    return true;
   };
 
   const onRowKey = (row: Row, key: string) => {
@@ -275,7 +286,7 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
           // The saved document, not the one this closure saw before the save.
           const saved = newestVersion(updated);
           const ready = saved !== undefined && approveReason(updated, saved, [], null) === null;
-          setSaid({ text: `Saved at ${clock(new Date())}.${ready ? " You can publish it when you're ready." : ""}` });
+          setSaid({ text: `Saved at ${formatClock(new Date())}.${ready ? " You can publish it when you're ready." : ""}` });
         },
         onError: (error) =>
           setSaid(
@@ -461,7 +472,7 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
       <p className="lib-quiet">{humanWhere(current.where)}{seen.has(current.key) ? " · seen" : ""}{current.change !== "same" ? ` · ${CHANGE_WORD[current.change].toLocaleLowerCase()}` : ""}</p>
       {current.warnings.map((warning, index) => (
         <p key={`${warning.code}-${index}`} className="lib-warning">
-          <Status tone={warning.severity === "blocking" ? "attention" : "held"}>{warning.severity === "blocking" ? (current.blocking ? "Blocks approval" : "Blocked approval, now excluded") : "Flagged"}</Status>{" "}
+          <Status tone={warning.severity === "blocking" ? "attention" : "warning"}>{warning.severity === "blocking" ? (current.blocking ? "Blocks approval" : "Blocked approval, now excluded") : "Flagged"}</Status>{" "}
           {warning.message}
           {warning.severity === "blocking" && current.blocking && " Exclude this passage with a reason and save, or upload a new version."}
         </p>
@@ -509,17 +520,19 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
         <TextField
           name="desk-reason"
           label="Why exclude it?"
-          hint="The document's reviewers see this. Enter goes back to the list."
+          hint="The document's reviewers see this. Enter goes on to the next passage to check; Esc back to this one."
           required
           maxLength={10000}
           value={current.draft.reason}
           error={said?.failed && !current.draft.reason.trim() ? "Give a reason: the document's reviewers see it." : null}
           onChange={(event) => change(current.key, { reason: event.target.value })}
           onKeyDown={(event) => {
-            if (event.key === "Escape" || event.key === "Enter") {
-              event.preventDefault();
-              focusRow();
-            }
+            if (event.key !== "Escape" && event.key !== "Enter") return;
+            event.preventDefault();
+            // A decision with its reason is done: on to the next row that needs one (§1). Without
+            // a reason it isn't, so focus goes back to the row; Esc always does.
+            if (event.key === "Enter" && current.draft?.reason.trim() && goNext(current, false)) return;
+            focusRow();
           }}
         />
       )}
@@ -596,7 +609,7 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
         {fileWarnings.some((warning) => warning.severity !== "blocking") && (
           <details className="lib-filenotes">
             <summary>
-              <Status tone="held">Whole file flagged</Status>{" "}
+              <Status tone="warning">Whole file flagged</Status>{" "}
               <span className="lib-quiet">{plural(fileWarnings.filter((warning) => warning.severity !== "blocking").length, "note")}</span>
             </summary>
             <Lines>
@@ -722,8 +735,6 @@ function OriginalPreview({ documentId, versionId, blockId, where }: { documentId
   );
 }
 
-const clock = (at: Date) => at.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
-
 /** A passage's text: a worksheet row as labelled cells (backlog O-3), else as it reads. */
 export function PassageText({ row, headings }: { row: Row; headings: Map<string, Map<string, string>> }) {
   const value = row.draft?.text ?? row.basis ?? "";
@@ -773,7 +784,7 @@ function passageColumns(seen: ReadonlySet<string>, headings: Map<string, Map<str
       width: "10rem",
       cell: (row) => (
         <span className="lib-state">
-          {row.blocking ? <Status tone="attention">Blocks approval</Status> : row.warnings.length ? <Status tone="held">Flagged</Status> : null}
+          {row.blocking ? <Status tone="attention">Blocks approval</Status> : row.warnings.length ? <Status tone="warning">Flagged</Status> : null}
           <span>{CHANGE_WORD[row.change]}</span>
         </span>
       ),

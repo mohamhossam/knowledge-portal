@@ -50,15 +50,13 @@ test("2.2 keyboard only: exclude the hidden sheet with a reason, then approve an
   await page.locator(".lib-desk [data-cell-focus][tabindex='0']").focus();
   await page.keyboard.press("n");
   await expect(page.locator(":focus")).toHaveText(/^Sheet 2 \(hidden\)/);
-  // x excludes (it already is: a hidden sheet starts excluded) and takes the reason; Enter goes back.
+  // x excludes (it already is: a hidden sheet starts excluded) and takes the reason; Enter goes on
+  // to the next row that needs a decision (model §1): the sheet's row, the next one down.
   await page.keyboard.press("x");
   await expect(page.locator(":focus")).toHaveAttribute("name", "desk-reason");
   await page.keyboard.press("Control+A");
   await page.keyboard.type("Internal pricing: not for publication.");
   await page.keyboard.press("Enter");
-  await expect(page.locator(":focus")).toHaveText(/^Sheet 2 \(hidden\)/);
-  // The sheet's row, the next one down.
-  await page.keyboard.press("j");
   await expect(page.locator(":focus")).toHaveText(/^Sheet 2 \(hidden\), row 1/);
   await page.keyboard.press("x");
   await page.keyboard.press("Control+A");

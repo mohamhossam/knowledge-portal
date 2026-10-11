@@ -10,6 +10,7 @@
  */
 import type { components } from "../api/schema";
 import type { LibraryDocument, LibraryVersion, Publication } from "../api/client";
+import { humanWhere } from "./where";
 
 type Schemas = components["schemas"];
 export type Block = Schemas["DocumentEvidenceBlock"];
@@ -129,8 +130,24 @@ export function comparisonBasis(document: LibraryDocument): Basis {
   };
 }
 
-/** Every row of the review, in reading order, with removed passages after their neighbours. */
-export function reviewRows(document: LibraryDocument, working: LibraryVersion, drafts: Drafts): Row[] {
+/**
+ * What the review's rows need that no decision changes: the basis, which old block each block
+ * matches, its warnings, where it sits, and the passages removed since the edition. It depends
+ * on the document and version only, so the desk works it out once per answer, not per keystroke
+ * (area 2 backlog: the Maps and sorts ran on every draft change).
+ */
+export type Matching = {
+  basis: Basis;
+  /** The working version's blocks in reading order. */
+  blocks: Block[];
+  where: Map<string, string>;
+  matched: Map<string, Block>;
+  warningsOf: Map<string, Warning[]>;
+  /** Rows for passages in service with no counterpart in the working version. */
+  removed: Row[];
+};
+
+export function matchRows(document: LibraryDocument, working: LibraryVersion): Matching {
   const basis = comparisonBasis(document);
   const matched = new Map<string, Block>();
   if (basis.kind === "edition") {
@@ -159,7 +176,39 @@ export function reviewRows(document: LibraryDocument, working: LibraryVersion, d
   for (const warning of working.warning_details) {
     if (warning.block_id) warningsOf.set(warning.block_id, [...(warningsOf.get(warning.block_id) ?? []), warning]);
   }
-  const rows: Row[] = [...working.blocks].sort((a, b) => a.ordinal - b.ordinal).map((block) => {
+  const blocks = [...working.blocks].sort((a, b) => a.ordinal - b.ordinal);
+  const where = new Map(blocks.map((block) => [block.id, whereOf(block)]));
+
+  const removed: Row[] = [];
+  if (basis.kind === "edition" && basis.version.id !== working.id) {
+    const kept = new Set([...matched.values()].map((block) => block.id));
+    for (const block of basis.version.blocks) {
+      const passage = basis.passages.get(block.id);
+      if (!passage?.included || kept.has(block.id)) continue;
+      removed.push({
+        key: `removed-${block.id}`,
+        ordinal: block.ordinal,
+        where: whereOf(block),
+        block: null,
+        basis: passage.text,
+        basisBlockId: block.id,
+        draft: null,
+        change: "removed",
+        warnings: [],
+        blocking: false,
+      });
+    }
+  }
+  return { basis, blocks, where, matched, warningsOf, removed };
+}
+
+/**
+ * Every row of the review, in reading order, with removed passages after their neighbours:
+ * the decisions laid over the matching (pass it in when it is memoized, as the desk does).
+ */
+export function reviewRows(document: LibraryDocument, working: LibraryVersion, drafts: Drafts, matching: Matching = matchRows(document, working)): Row[] {
+  const { basis, matched, warningsOf } = matching;
+  const rows: Row[] = matching.blocks.map((block) => {
     const draft = drafts[block.id] ?? { text: placeholder(block), included: true, reason: "" };
     const warnings = warningsOf.get(block.id) ?? [];
     const old = matched.get(block.id);
@@ -174,7 +223,7 @@ export function reviewRows(document: LibraryDocument, working: LibraryVersion, d
     return {
       key: block.id,
       ordinal: block.ordinal,
-      where: whereOf(block),
+      where: matching.where.get(block.id) ?? whereOf(block),
       block,
       basis: basisText,
       basisBlockId: basis.kind === "edition" ? old?.id ?? null : block.id,
@@ -185,24 +234,8 @@ export function reviewRows(document: LibraryDocument, working: LibraryVersion, d
     };
   });
 
-  if (basis.kind === "edition" && basis.version.id !== working.id) {
-    const kept = new Set([...matched.values()].map((block) => block.id));
-    for (const block of basis.version.blocks) {
-      const passage = basis.passages.get(block.id);
-      if (!passage?.included || kept.has(block.id)) continue;
-      rows.push({
-        key: `removed-${block.id}`,
-        ordinal: block.ordinal,
-        where: whereOf(block),
-        block: null,
-        basis: passage.text,
-        basisBlockId: block.id,
-        draft: null,
-        change: "removed",
-        warnings: [],
-        blocking: false,
-      });
-    }
+  if (matching.removed.length > 0) {
+    rows.push(...matching.removed);
     rows.sort((a, b) => a.ordinal - b.ordinal || (a.change === "removed" ? 1 : 0) - (b.change === "removed" ? 1 : 0));
   }
   return rows;
@@ -264,6 +297,17 @@ export function nextToReview(rows: Row[], fromKey: string | undefined, seen: Rea
   const before = backward ? rows.slice(index + 1).reverse() : rows.slice(0, index);
   const order = [...after, ...before];
   return order.find((row) => row.warnings.length > 0 && !seen.has(row.key)) ?? order.find((row) => !seen.has(row.key));
+}
+
+/**
+ * What `n` says when it goes round (model §1: never a silent jump): past the last row back to
+ * the top, or with Shift+n past the first to the end. Null for a step that doesn't go round.
+ */
+export function wrapWords(rows: Row[], fromKey: string | undefined, to: Row, backward = false): string | null {
+  const from = rows.findIndex((row) => row.key === fromKey);
+  const at = rows.findIndex((row) => row.key === to.key);
+  if (from < 0 || at < 0 || (backward ? at <= from : at >= from)) return null;
+  return `Back round to the ${backward ? "end" : "top"} of the list: passage ${to.ordinal}, ${humanWhere(to.where)}.`;
 }
 
 /**

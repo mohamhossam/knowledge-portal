@@ -143,7 +143,25 @@ describe("Decide", () => {
     expect(within(pane).getByRole("heading", { level: 2 })).toHaveTextContent("Adds the constraint “Nights only”");
     expect(within(pane).getByText(/Suggested · stated in the source/)).toBeInTheDocument();
     expect(within(pane).getByText("From the document")).toBeInTheDocument();
-    expect(within(pane).getByText("System: x")).toBeInTheDocument();
+    // The quote carries its document's language; the source line under it stays the page's.
+    expect(within(pane).getByText("System: x").closest("blockquote")).toHaveAttribute("lang", "en");
+  });
+
+  it("on a narrow screen, brings the pane into view when a row is tapped", async () => {
+    renderStep("decide");
+    await screen.findByRole("grid");
+    // Stacked: the list ends at 400px and the pane starts under it.
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (this: Element) {
+      const box = this.classList.contains("ds-split__list") ? { top: 0, bottom: 400, height: 400 } : { top: 420, bottom: 720, height: 300 };
+      return { ...box, left: 0, right: 390, width: 390, x: 0, y: box.top, toJSON: () => ({}) } as DOMRect;
+    });
+    const scrolled = vi.fn();
+    Element.prototype.scrollIntoView = scrolled;
+    fireEvent.click(cellOf("Adds the constraint “Nights only”"));
+    const pane = screen.getByRole("complementary", { name: "The suggestion" });
+    await waitFor(() => expect(within(pane).getByRole("heading", { level: 2 })).toHaveFocus());
+    expect(within(pane).getByRole("heading", { level: 2 })).toHaveTextContent("Adds the constraint “Nights only”");
+    expect(scrolled.mock.contexts[0]).toBe(pane);
   });
 
   it("sends a possible match to the pane instead of accepting it, and links the system chosen", async () => {

@@ -324,6 +324,18 @@
   font-size: var(--text-meta);
 }
 
+/* On a small screen the names take a narrower column (the steps scroll under them), so the
+   drawing doesn't start half a screen in. */
+@container main (max-width: 36rem) {
+  .journey-lanes {
+    --journey-lane-names: 7.5rem;
+  }
+
+  .journey-lanes__name {
+    padding: var(--space-2);
+  }
+}
+
 .journey-lanes__name:nth-child(odd) {
   background: var(--color-surface-1);
 }

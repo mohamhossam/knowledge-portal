@@ -88,6 +88,36 @@ function useSidebar(): [boolean, () => void] {
   return [expanded, toggle];
 }
 
+/**
+ * Whether the open side panel lies over the page (a page that pins it, e.g. the review desk)
+ * instead of beside it. Checked while a panel is open, as the page beneath it changes.
+ */
+function usePanelOverPage(body: RefObject<HTMLElement | null>, open: boolean): boolean {
+  const [over, setOver] = useState(false);
+  useEffect(() => {
+    const root = body.current;
+    if (!open || !root || typeof MutationObserver === "undefined") return;
+    let frame = 0;
+    const check = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const drawer = root.querySelector<HTMLElement>(":scope > .ds-drawer");
+        setOver(Boolean(drawer) && getComputedStyle(drawer!).position === "fixed");
+      });
+    };
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(root, { childList: true, subtree: true });
+    window.addEventListener("resize", check);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener("resize", check);
+    };
+  }, [body, open]);
+  return open && over;
+}
+
 /** Consecutive items that share a group, in order. */
 function grouped(items: NavItem[]): { name?: string; items: NavItem[] }[] {
   const groups: { name?: string; items: NavItem[] }[] = [];
@@ -153,10 +183,13 @@ export function AppShell({
 }) {
   const masthead = useRef<HTMLDivElement>(null);
   useStickySize(masthead, "--sticky-top");
-  // Below 1024px a side panel overlays the page: the page goes inert, so focus can't
-  // move under the panel (WCAG 2.4.11). Esc or Close hands focus back.
+  // Below 1024px a side panel overlays the page, and so does one a page pins over itself (the
+  // review desk): the page goes inert, so focus can't move under the panel (WCAG 2.4.11).
+  // Esc or Close hands focus back.
   const narrow = useMediaQuery("(max-width: 1023px)");
-  const covered = Boolean(panel) && narrow;
+  const body = useRef<HTMLDivElement>(null);
+  const pinned = usePanelOverPage(body, Boolean(panel));
+  const covered = Boolean(panel) && (narrow || pinned);
   const [expanded, toggleSidebar] = useSidebar();
   // Esc hides a collapsed item's name shown on hover or focus, until focus or the pointer moves (WCAG 1.4.13).
   const [quiet, setQuiet] = useState(false);
@@ -247,7 +280,7 @@ export function AppShell({
       </div>
       {/* Always present, so a banner that appears later is announced (a live region must exist first). */}
       <div className={banner ? "ds-banner" : "ds-visually-hidden"} role="status">{banner}</div>
-      <div className="ds-shell__body">
+      <div className="ds-shell__body" ref={body}>
         {!reader && (
           <nav
             id="ds-rail"
@@ -279,14 +312,19 @@ export function AppShell({
   );
 }
 
-/** A utility button for the masthead (Jobs, Help, Account): text label, icon, optional count. */
-export function MastheadButton({ icon, label, hiddenPrefix, count, countLabel, expanded, onClick, id }: { icon: ReactNode; label: string; /** Said before the label, e.g. "Account:" before a name. */ hiddenPrefix?: string; count?: number; countLabel?: string; expanded?: boolean; onClick: (event: { currentTarget: EventTarget | null }) => void; id?: string }) {
+/**
+ * A utility button for the masthead (Jobs, Help, Account): text label, icon, optional count.
+ * `controls` is the id of the panel it opens (aria-controls, while that panel is open).
+ * `reserveCount` keeps a count's room while there is none yet, so the bar never shifts when one arrives.
+ */
+export function MastheadButton({ icon, label, hiddenPrefix, count, countLabel, reserveCount, expanded, controls, onClick, id }: { icon: ReactNode; label: string; /** Said before the label, e.g. "Account:" before a name. */ hiddenPrefix?: string; count?: number; countLabel?: string; reserveCount?: boolean; expanded?: boolean; controls?: string; onClick: (event: { currentTarget: EventTarget | null }) => void; id?: string }) {
+  const counted = count !== undefined && count > 0;
   return (
-    <button id={id} type="button" className="ds-masthead__button" aria-expanded={expanded} onClick={onClick}>
+    <button id={id} type="button" className="ds-masthead__button" aria-expanded={expanded} aria-controls={expanded ? controls : undefined} onClick={onClick}>
       <span aria-hidden="true" className="ds-masthead__icon">{icon}</span>
       {hiddenPrefix && <><span className="ds-visually-hidden">{hiddenPrefix}</span>{" "}</>}
       <span className="ds-masthead__label" title={label}>{label}</span>
-      {count !== undefined && count > 0 && <Badge count={count} label={countLabel} />}
+      {counted ? <Badge count={count} label={countLabel} /> : reserveCount && <span className="ds-masthead__count-slot" aria-hidden="true" />}
     </button>
   );
 }

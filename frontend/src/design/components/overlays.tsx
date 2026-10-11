@@ -1,7 +1,7 @@
 import "./overlays.css";
 
 import { CircleHelp, X } from "lucide-react";
-import { type ReactNode, type RefObject, useEffect, useId, useRef, useState } from "react";
+import { Fragment, type ReactNode, type RefObject, useEffect, useId, useRef, useState } from "react";
 
 import { Button } from "./actions";
 
@@ -62,11 +62,14 @@ export function Dialog({
  * stays usable beside it; Esc or Close hands focus back (pair with useDisclosure).
  */
 export function Drawer({
+  id: panelId,
   title,
   onClose,
   panelRef,
   children,
 }: {
+  /** For the button that opens it (aria-controls). */
+  id?: string;
   title: string;
   onClose: () => void;
   panelRef?: RefObject<HTMLElement | null>;
@@ -75,6 +78,7 @@ export function Drawer({
   const id = useId();
   return (
     <aside
+      id={panelId}
       className="ds-root ds-drawer"
       aria-labelledby={`${id}-title`}
       ref={panelRef as RefObject<HTMLElement>}
@@ -115,11 +119,17 @@ export function Toggletip({ label, children }: { label: string; children: ReactN
   );
 }
 
+/**
+ * `keys` in words: a space between separate keys ("g w", "↑ ↓"), "+" between
+ * keys held together ("Ctrl+Enter"), and " / " or " or " between alternatives
+ * ("x / i"). Each key renders as its own <kbd>.
+ */
 export type Shortcut = { keys: string; does: string };
 
 /**
  * §2: the keyboard map for this page's widgets plus the page-wide keys, and
  * the on/off switch that WCAG 2.1.4 requires for single-character shortcuts.
+ * Each group is named once, by its heading; each key is its own <kbd>.
  */
 export function ShortcutHelp({
   widget,
@@ -135,19 +145,19 @@ export function ShortcutHelp({
   return (
     <div className="ds-shortcuts">
       {widget.map((group) => (
-        <section key={group.title} aria-label={group.title}>
+        <div key={group.title} className="ds-shortcuts__group">
           <h4>{group.title}</h4>
           <KeyList shortcuts={group.shortcuts} />
-        </section>
+        </div>
       ))}
-      <section aria-label="Page-wide shortcuts">
+      <div className="ds-shortcuts__group">
         <h4>Page-wide</h4>
         <p className="ds-shortcuts__state">
           Page-wide shortcuts are {enabled ? "on" : "off"}.{" "}
           <Button variant="link" onClick={() => onToggle(!enabled)}>Turn them {enabled ? "off" : "on"}</Button>
         </p>
         <KeyList shortcuts={global} />
-      </section>
+      </div>
     </div>
   );
 }
@@ -157,11 +167,37 @@ function KeyList({ shortcuts }: { shortcuts: Shortcut[] }) {
     <dl className="ds-keylist">
       {shortcuts.map((shortcut) => (
         <div key={shortcut.keys}>
-          <dt><kbd>{shortcut.keys}</kbd></dt>
+          <dt><Keys keys={shortcut.keys} /></dt>
           <dd>{shortcut.does}</dd>
         </div>
       ))}
     </dl>
+  );
+}
+
+/** One <kbd> per key, as KeysHint does; keys held together nest in one (HTML's own pattern); "or" between alternatives. */
+function Keys({ keys }: { keys: string }) {
+  const parts = keys.split(/( \/ | or )/);
+  return (
+    <>
+      {parts.map((part, index) => {
+        if (index % 2 === 1) return <Fragment key={index}> or </Fragment>;
+        return (
+          <Fragment key={index}>
+            {part.split(" ").filter(Boolean).map((key, at) => (
+              <Fragment key={at}>
+                {at > 0 && " "}
+                {key.length > 1 && key.includes("+") ? (
+                  <kbd>{key.split("+").map((held, n) => <Fragment key={n}>{n > 0 && "+"}<kbd>{held}</kbd></Fragment>)}</kbd>
+                ) : (
+                  <kbd>{key}</kbd>
+                )}
+              </Fragment>
+            ))}
+          </Fragment>
+        );
+      })}
+    </>
   );
 }
 

@@ -53,6 +53,15 @@ describe("the language of content (K2, HYPOTHESIS heuristic)", () => {
     expect(contentLang("XGPON coverage rules (sample)")).toBeUndefined();
     expect(contentLang("Bundle 001 · باقة")).toBeUndefined();
     expect(contentLang("")).toBeUndefined();
+    // A tie isn't a majority; presentation forms count as Arabic.
+    expect(contentLang("ab يج")).toBeUndefined();
+    expect(contentLang("\uFEFB\uFEFB a")).toBe("ar");
+  });
+
+  it("decides as soon as the rest can't change the answer, on long text too", () => {
+    expect(contentLang(`${"يجب ".repeat(5000)}${"policy ".repeat(100)}`)).toBe("ar");
+    expect(contentLang(`${"policy ".repeat(5000)}${"يجب ".repeat(100)}`)).toBeUndefined();
+    expect(contentLang(`${"x".repeat(10)}${"ي".repeat(11)}`)).toBe("ar");
   });
 
   it("prefers the language the API gives, but never 'mixed'", () => {
