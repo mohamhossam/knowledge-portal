@@ -27,12 +27,10 @@ import { SquadListPage } from "../squads/SquadListPage";
 import { SquadsPage } from "../squads/SquadsPage";
 import { OwnershipGrid } from "../squads/OwnershipGrid";
 import { ExplorerPage } from "../explorer/ExplorerPage";
-import { CorpusFindingsPage } from "../requirements/CorpusFindingsPage";
-import { CorpusRequirementsPage } from "../requirements/CorpusRequirementsPage";
-import { RequirementKnowledgePage } from "../requirements/RequirementKnowledgePage";
+import { FindingsPage } from "../requirements/FindingsPage";
+import { RequirementKnowledgeIndex, RequirementsPage } from "../requirements/RequirementsPage";
 import { RemindersPage } from "../reviews/RemindersPage";
-import { HistoricListPage } from "../historic/HistoricListPage";
-import { HistoricRecordPage } from "../historic/HistoricRecordPage";
+import { HistoricPage } from "../historic/HistoricPage";
 import { ActionGroup, EmptyState, PageHeader, Skeleton } from "../design/components";
 import { ButtonLink } from "../shell/links";
 import { HomePage } from "./HomePage";
@@ -105,11 +103,14 @@ export function App() {
         <Route index element={<HomePage />} />
         <Route path="library" element={<Loading><LibraryPage /></Loading>} />
         <Route path="reminders" element={<RemindersPage />} />
-        <Route path="requirement-knowledge" element={<RequirementKnowledgePage />} />
-        <Route path="requirement-knowledge/requirements" element={<CorpusRequirementsPage />} />
-        <Route path="requirement-knowledge/findings" element={<CorpusFindingsPage />} />
-        <Route path="requirement-knowledge/historic" element={<HistoricListPage />} />
-        <Route path="requirement-knowledge/historic/:historicId" element={<HistoricRecordPage />} />
+        {/* The overview folded into Requirements (UX rebuild, phase 3); its address keeps working. */}
+        <Route path="requirement-knowledge" element={<RequirementKnowledgeIndex />} />
+        <Route path="requirement-knowledge/requirements" element={<RequirementsPage />} />
+        <Route path="requirement-knowledge/requirements/:requirementId" element={<RequirementsPage />} />
+        <Route path="requirement-knowledge/findings" element={<FindingsPage />} />
+        <Route path="requirement-knowledge/findings/:findingId" element={<FindingsPage />} />
+        <Route path="requirement-knowledge/historic" element={<HistoricPage />} />
+        <Route path="requirement-knowledge/historic/:historicId" element={<HistoricPage />} />
         <Route path="library/search" element={<Loading><SearchPage /></Loading>} />
         <Route path="library/:documentId" element={<Loading><DocumentPage /></Loading>}>
           <Route index element={<Loading><MainPage /></Loading>} />
