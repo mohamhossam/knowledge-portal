@@ -116,6 +116,7 @@ from knowledge_portal.domain.architecture.products import (
     RealisationLayer,
     SourceConfidence,
 )
+from knowledge_portal.domain.architecture.realisations import RealisationRecord
 from knowledge_portal.domain.architecture.samples import MAX_SAMPLES, SampleRequirementSet
 from knowledge_portal.domain.architecture.tracking import (
     FalloutCase,
@@ -807,15 +808,63 @@ class RealisationSchema(BaseModel):
     name: Text
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # The realisation record the name means (ontology plan Phase 8).
+    record_id: Identifier | None = None
 
     @classmethod
     def from_domain(cls, item: Realisation) -> RealisationSchema:
         return cls.model_construct(
-            layer=item.layer, name=item.name, confidence=item.confidence, source=item.source
+            layer=item.layer,
+            name=item.name,
+            confidence=item.confidence,
+            source=item.source,
+            record_id=item.record_id,
         )
 
     def to_domain(self) -> Realisation:
-        return Realisation(self.layer, self.name, self.confidence, self.source)
+        return Realisation(self.layer, self.name, self.confidence, self.source, self.record_id)
+
+
+class RealisationRecordSchema(BaseModel):
+    """A CFS, RFS or resource, the systems that deliver it, and what realises it below."""
+
+    id: Identifier
+    layer: RealisationLayer
+    name: Text
+    aliases: list[Text] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    system_ids: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    # The records one layer down that realise it.
+    realised_by: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    description: Text | None = None
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
+
+    @classmethod
+    def from_domain(cls, record: RealisationRecord) -> RealisationRecordSchema:
+        return cls.model_construct(
+            id=record.id,
+            layer=record.layer,
+            name=record.name,
+            aliases=list(record.aliases),
+            system_ids=list(record.system_ids),
+            realised_by=list(record.realised_by),
+            description=record.description,
+            confidence=record.confidence,
+            source=record.source,
+        )
+
+    def to_domain(self) -> RealisationRecord:
+        return RealisationRecord(
+            self.id,
+            self.layer,
+            self.name,
+            tuple(self.aliases),
+            tuple(self.system_ids),
+            tuple(self.realised_by),
+            self.description,
+            self.confidence,
+            self.source,
+        )
 
 
 class OfferingNfrSchema(BaseModel):
@@ -1826,6 +1875,10 @@ class KnowledgeReleaseResponse(BaseModel):
     interfaces: list[SystemInterfaceSchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
     )
+    # The CFSs, RFSs and resources components are realised as (ontology plan Phase 8).
+    realisations: list[RealisationRecordSchema] = Field(
+        default_factory=list, max_length=MAX_CATALOGUE_ITEMS
+    )
 
     @classmethod
     def from_domain(cls, release: ArchitectureKnowledge) -> KnowledgeReleaseResponse:
@@ -1868,6 +1921,9 @@ class KnowledgeReleaseResponse(BaseModel):
             ],
             vocabulary=[VocabularyTermSchema.from_domain(item) for item in release.vocabulary],
             interfaces=[SystemInterfaceSchema.from_domain(item) for item in release.interfaces],
+            realisations=[
+                RealisationRecordSchema.from_domain(item) for item in release.realisations
+            ],
         )
 
 
@@ -2081,6 +2137,10 @@ class DraftUpdateRequest(BaseModel):
     )
     # Likewise for interfaces (ontology plan Phase 8).
     interfaces: list[SystemInterfaceSchema] | None = Field(
+        default=None, max_length=MAX_CATALOGUE_ITEMS
+    )
+    # Likewise for realisation records (ontology plan Phase 8).
+    realisations: list[RealisationRecordSchema] | None = Field(
         default=None, max_length=MAX_CATALOGUE_ITEMS
     )
 

@@ -22,6 +22,7 @@ from knowledge_portal.domain.architecture.knowledge import (
 )
 from knowledge_portal.domain.architecture.portfolio import PortfolioNode
 from knowledge_portal.domain.architecture.products import ProductOffering
+from knowledge_portal.domain.architecture.realisations import RealisationRecord
 from knowledge_portal.domain.architecture.vocabularies import VocabularyTerm
 
 
@@ -75,6 +76,8 @@ class CatalogueContent:
     vocabulary: tuple[VocabularyTerm, ...] = ()
     # The contracts systems expose and consume (ontology plan Phase 8).
     interfaces: tuple[SystemInterface, ...] = ()
+    # The CFSs, RFSs and resources components are realised as.
+    realisations: tuple[RealisationRecord, ...] = ()
 
 
 class CatalogueFilePort(Protocol):

@@ -1,8 +1,9 @@
 """The catalogue walk from capability concepts to offerings and systems (ADR-0114).
 
 Only curated links are followed: a system capability linked to a concept, and an offering
-component that requires a concept, with the systems its responsibilities name. A concept
-also reaches what its narrower concepts reach. Domains, landscape areas and component
+component that requires a concept, with the systems its responsibilities name and the
+systems that deliver the CFSs, RFSs and resources it is realised as (ontology plan Phase 8).
+A concept also reaches what its narrower concepts reach. Domains, landscape areas and component
 names select nothing.
 """
 
@@ -14,6 +15,7 @@ from dataclasses import dataclass
 from knowledge_portal.domain.architecture.assessment import PathKind, PathStep
 from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge
 from knowledge_portal.domain.architecture.products import ProductOffering
+from knowledge_portal.domain.architecture.realisations import realisation_chains
 
 
 @dataclass(frozen=True)
@@ -44,10 +46,13 @@ def realisers(release: ArchitectureKnowledge, concept_id: str) -> tuple[Realiser
 
     A system's own capability comes first (concept, then system); then each offering
     component that requires the concept, with its responsible systems (concept, offering,
-    component, then system).
+    component, then system), then the systems delivering each record it is realised as,
+    down through what realises that record (concept, offering, component, each record,
+    then system).
     """
     found: dict[tuple[PathStep, ...], Realiser] = {}
     names = {item.id: item.name for item in release.systems}
+    records = {item.id: item for item in release.realisations}
     for concept in concept_family(release, concept_id):
         first = _concept_step(release, concept)
         for system in release.systems:
@@ -71,6 +76,23 @@ def realisers(release: ArchitectureKnowledge, concept_id: str) -> tuple[Realiser
                         PathStep(PathKind.SYSTEM, duty.system_id, names[duty.system_id]),
                     )
                     found.setdefault(steps, Realiser(duty.system_id, steps))
+                for layer in part.realisation:
+                    if layer.record_id not in records:
+                        continue
+                    for chain in realisation_chains(records, layer.record_id):
+                        for depth, record in enumerate(chain, start=1):
+                            for system_id in record.system_ids:
+                                via: tuple[PathStep, ...] = (
+                                    first,
+                                    PathStep(PathKind.OFFERING, offering.id, offering.name),
+                                    PathStep(PathKind.COMPONENT, part.id, part.name),
+                                    *(
+                                        PathStep(PathKind.REALISATION, item.id, item.name)
+                                        for item in chain[:depth]
+                                    ),
+                                    PathStep(PathKind.SYSTEM, system_id, names[system_id]),
+                                )
+                                found.setdefault(via, Realiser(system_id, via))
     return tuple(found.values())
 
 

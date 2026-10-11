@@ -271,6 +271,11 @@ def update_draft(
                 if body.interfaces is None
                 else tuple(item.to_domain() for item in body.interfaces)
             ),
+            realisations=(
+                None
+                if body.realisations is None
+                else tuple(item.to_domain() for item in body.realisations)
+            ),
         )
     )
 

@@ -208,6 +208,7 @@ def test_the_committed_smb_catalogue_reads_as_a_valid_release() -> None:
         business_capabilities=content.business_capabilities,
         vocabulary=content.vocabulary,
         interfaces=content.interfaces,
+        realisations=content.realisations,
     )
 
     assert [node.name for node in release.portfolio][:3] == ["Enterprise", "Fixed", "SMB"]

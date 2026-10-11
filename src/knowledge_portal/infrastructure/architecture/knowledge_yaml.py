@@ -41,6 +41,7 @@ def knowledge_from_yaml(text: str) -> ArchitectureKnowledge:
         business_capabilities=content.business_capabilities,
         vocabulary=content.vocabulary,
         interfaces=content.interfaces,
+        realisations=content.realisations,
     )
 
 

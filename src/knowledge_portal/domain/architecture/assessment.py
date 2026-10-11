@@ -117,6 +117,8 @@ class PathKind(StrEnum):
     # An information entity and an interface (ontology plan Phase 8).
     ENTITY = "entity"
     INTERFACE = "interface"
+    # A CFS, RFS or resource a component is realised as (ontology plan Phase 8).
+    REALISATION = "realisation"
     # A decided requirement like this one, by requirement-portal's analysis id (Phase 5).
     PRECEDENT = "precedent"
 

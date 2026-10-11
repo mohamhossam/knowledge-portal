@@ -2521,7 +2521,8 @@
           "change_request",
           "concept",
           "vocabulary_term",
-          "interface"
+          "interface",
+          "realisation"
         ],
         "title": "ChangedItem",
         "type": "string"
@@ -3714,6 +3715,21 @@
               }
             ],
             "title": "Products"
+          },
+          "realisations": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/RealisationRecordSchema"
+                },
+                "maxItems": 5000,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Realisations"
           },
           "relationships": {
             "items": {
@@ -5658,6 +5674,14 @@
               }
             ],
             "title": "Published By"
+          },
+          "realisations": {
+            "items": {
+              "$ref": "#/components/schemas/RealisationRecordSchema"
+            },
+            "maxItems": 5000,
+            "title": "Realisations",
+            "type": "array"
           },
           "relationships": {
             "items": {
@@ -8851,6 +8875,95 @@
         "title": "RealisationLayer",
         "type": "string"
       },
+      "RealisationRecordSchema": {
+        "description": "A CFS, RFS or resource, the systems that deliver it, and what realises it below.",
+        "properties": {
+          "aliases": {
+            "default": [],
+            "items": {
+              "maxLength": 10000,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Aliases",
+            "type": "array"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "id": {
+            "maxLength": 200,
+            "title": "Id",
+            "type": "string"
+          },
+          "layer": {
+            "$ref": "#/components/schemas/RealisationLayer"
+          },
+          "name": {
+            "maxLength": 10000,
+            "title": "Name",
+            "type": "string"
+          },
+          "realised_by": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Realised By",
+            "type": "array"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "system_ids": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "System Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "layer",
+          "name"
+        ],
+        "title": "RealisationRecordSchema",
+        "type": "object"
+      },
       "RealisationSchema": {
         "description": "One thing a component is realised as: its CFS, an RFS behind it, or a resource.",
         "properties": {
@@ -8871,6 +8984,18 @@
             "maxLength": 10000,
             "title": "Name",
             "type": "string"
+          },
+          "record_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Record Id"
           },
           "source": {
             "anyOf": [

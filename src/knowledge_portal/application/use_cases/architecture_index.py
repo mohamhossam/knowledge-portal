@@ -38,7 +38,12 @@ from knowledge_portal.domain.architecture.knowledge import (
     SystemDefinition,
     SystemRelationship,
 )
-from knowledge_portal.domain.architecture.products import ProductOffering, RealisationLayer
+from knowledge_portal.domain.architecture.products import (
+    ProductOffering,
+    Realisation,
+    RealisationLayer,
+)
+from knowledge_portal.domain.architecture.realisations import RealisationRecord
 from knowledge_portal.domain.document.value_objects import DocumentVersionId
 
 SECTION_TOKENS = 400
@@ -94,7 +99,30 @@ _LAYERS = {
 }
 
 
-def _offering_text(offering: ProductOffering, names: dict[str, str]) -> str:
+def _realised_text(
+    item: Realisation, records: dict[str, RealisationRecord], names: dict[str, str]
+) -> str:
+    """What a linked record adds to a realisation (ontology plan Phase 8): the systems that
+    deliver it, and what realises it one layer down, with theirs."""
+    if item.record_id is None:
+        return ""
+
+    def held(record: RealisationRecord) -> str:
+        systems = ", ".join(names[system] for system in record.system_ids)
+        return f" ({systems})" if systems else ""
+
+    record = records[item.record_id]
+    below = [records[other] for other in record.realised_by]
+    return held(record) + "".join(
+        f", on the {_LAYERS[other.layer]} {other.name}{held(other)}" for other in below
+    )
+
+
+def _offering_text(
+    offering: ProductOffering,
+    names: dict[str, str],
+    records: dict[str, RealisationRecord] | None = None,
+) -> str:
     """An offering as evidence: what it is, how it is ordered, and which system delivers
     each component in which role, so a requirement about a product finds its systems."""
     title = offering.name + (f" ({offering.code})" if offering.code else "")
@@ -128,6 +156,7 @@ def _offering_text(offering: ProductOffering, names: dict[str, str]) -> str:
         )
         lines.extend(
             f"{component.name} is realised by the {_LAYERS[item.layer]} {item.name}"
+            + _realised_text(item, records or {}, names)
             for item in component.realisation
         )
     lines.extend(
@@ -464,7 +493,7 @@ class BuildArchitectureIndex:
                 offering.id,
                 f"product:{offering.id}",
                 offering.name,
-                _offering_text(offering, names),
+                _offering_text(offering, names, {item.id: item for item in release.realisations}),
             )
         offerings = {item.id: item for item in release.products}
         for journey in release.journeys:
