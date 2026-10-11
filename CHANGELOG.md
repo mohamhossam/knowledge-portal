@@ -55,6 +55,11 @@ ADR-0116).
   a data or interface change's owners and consumers, with the path to each; the internal
   contract gains the `owner` and `consumer` roles, the `entity` and `interface` path kinds and
   the `interface` facet.
+- CFS, RFS and resource records (ontology plan, Phase 8): what a component is realised as
+  becomes a record with the systems that deliver it and what realises it one layer down,
+  in the catalogue, the draft API and every file format. A component's realisation links to
+  its record, and an assessment's paths walk through the records; the internal contract
+  gains the `realisation` path kind.
 
 ### Changed
 
