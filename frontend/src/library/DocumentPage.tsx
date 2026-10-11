@@ -26,7 +26,7 @@ import { useDocument } from "./useDocument";
 import { contentLang, humanWhere, plural } from "./where";
 
 const reviewKey = (version: LibraryVersion | undefined) => (version ? `${version.id}:${latestRevision(version)?.id ?? "none"}` : "none");
-const freshReview = (version: LibraryVersion | undefined): ReviewState => ({ key: reviewKey(version), drafts: version ? initialDrafts(version) : {}, summary: "" });
+const freshReview = (version: LibraryVersion | undefined): ReviewState => ({ key: reviewKey(version), drafts: version ? initialDrafts(version) : {}, summary: latestRevision(version)?.explanation ?? "" });
 
 /** Reading the file, in words (§6). */
 const STAGE: Record<string, string> = {
