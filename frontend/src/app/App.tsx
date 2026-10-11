@@ -26,6 +26,7 @@ import { ProductsPage } from "../squads/ProductsPage";
 import { SquadListPage } from "../squads/SquadListPage";
 import { SquadsPage } from "../squads/SquadsPage";
 import { OwnershipGrid } from "../squads/OwnershipGrid";
+import { SystemsBench } from "../squads/SystemsBench";
 import { ExplorerPage } from "../explorer/ExplorerPage";
 import { CorpusFindingsPage } from "../requirements/CorpusFindingsPage";
 import { CorpusRequirementsPage } from "../requirements/CorpusRequirementsPage";
@@ -129,10 +130,16 @@ export function App() {
         </Route>
         <Route path="explorer" element={<ExplorerPage linkSystems />} />
         <Route path="squads" element={<SquadsPage />}>
-          <Route index element={<OwnershipGrid />} />
+          {/* Each list beside its chosen record (UX rebuild, phase 3); the grid is "Assign several". */}
+          <Route index element={<SystemsBench />} />
+          <Route path="systems/:systemId" element={<SystemsBench />} />
+          <Route path="assign" element={<OwnershipGrid />} />
           <Route path="products" element={<ProductsPage />} />
+          <Route path="products/:productId" element={<ProductsPage />} />
           <Route path="squads" element={<SquadListPage />} />
+          <Route path="squads/:squadId" element={<SquadListPage />} />
           <Route path="people" element={<PeoplePage />} />
+          <Route path="people/:personId" element={<PeoplePage />} />
           <Route path="history" element={<HistoryPage />} />
         </Route>
         {/* Sign-in has already returned the admin to where they were going. */}

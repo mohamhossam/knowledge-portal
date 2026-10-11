@@ -43,7 +43,10 @@ export function ListTools({ children, count }: { children?: ReactNode; count?: R
     const element = tools.current;
     const list = element?.closest<HTMLElement>(".ds-bench__list");
     if (!element || !list || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(() => list.style.setProperty("--bench-tools-height", `${element.offsetHeight}px`));
+    const measure = () => list.style.setProperty("--bench-tools-height", `${element.offsetHeight}px`);
+    // Measured now too: the list scrolls its current row into view before the observer first reports.
+    measure();
+    const observer = new ResizeObserver(measure);
     observer.observe(element);
     return () => observer.disconnect();
   }, []);

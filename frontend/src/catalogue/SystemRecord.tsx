@@ -332,7 +332,7 @@ function Owners({ system }: { system: CatalogueSystem }) {
         <DataTable caption={`Squads that own ${system.name}`} captionHidden columns={columns} rows={squads} rowId={(squad) => squad.id} />
       ) : (
         <p className="cat-quiet">
-          No squad owns it. <RouterLink href="/squads">Give it to a squad in Ownership</RouterLink>
+          No squad owns it. <RouterLink href={`/squads/systems/${encodeURIComponent(system.id)}`}>Give it to a squad in Ownership</RouterLink>
         </p>
       )}
       {products.length > 0 && (

@@ -71,27 +71,62 @@
   margin-block-start: var(--space-2);
 }
 
-/* The head's counts: one row of label and value pairs, wrapping when narrow. */
-.own-counts .ds-facts {
+/* The list's two filters share a line when the list is wide enough; the find field keeps its own. */
+.own .ds-listtools__controls > .ds-listfind {
+  flex-basis: 100%;
+}
+
+.own .ds-listtools__controls > .ds-listfilter {
+  flex-basis: 8rem;
+}
+
+/* One quiet fact on a row or beside a name ("No squad"): a hair outline, words, no warning colour. */
+.own-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--space-2);
+  border: var(--rule-hair) dashed var(--color-rule-strong);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-meta);
+  color: var(--color-ink-2);
+  white-space: nowrap;
+}
+
+/* A system's seats, one per line. */
+.own-seats {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A line of a summary list with its action at the end. */
+.own-line {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-1) var(--space-6);
-  margin: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
 }
 
-/* Each label stays beside its value when the row wraps. */
-.own-counts .ds-facts > div {
+/* Assign several: its title, what it does and the way back, on one line when there is room. */
+.own-assign__head {
   display: flex;
-  gap: var(--space-2);
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-4);
 }
 
-.own-counts .ds-facts dt,
-.own-counts .ds-facts > div + div > dt {
+.own-assign__title {
   margin: 0;
+  font-size: var(--text-h2);
+  font-weight: var(--weight-heading);
 }
 
-.own-counts .ds-facts dd {
-  font-weight: var(--weight-strong);
+/* History is a log: compact, and no wider than it reads. */
+.own-log {
+  max-inline-size: 64rem;
 }
 
 .own-toolbar {
@@ -138,48 +173,13 @@
   min-inline-size: 0;
 }
 
-.own-product {
-  display: grid;
-  gap: var(--space-2);
-  min-inline-size: 0;
-  padding-block-start: var(--space-3);
-  border-block-start: var(--hair-rule);
-}
-
-.own-product__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-}
-
-.own-product__title {
-  margin: 0;
-  font-size: var(--text-body);
-  font-weight: var(--weight-strong);
-}
-
-.own-product p,
+/* What to check in a record's links, each an icon and words. */
 .own-checks {
-  margin: 0;
-}
-
-.own-checks,
-.own-runs {
   display: grid;
   gap: var(--space-1);
+  margin: 0;
   padding: 0;
   list-style: none;
-}
-
-.own-checks {
-  margin-block-start: var(--space-1);
-}
-
-.own-runs {
-  margin: 0;
-  gap: var(--space-2);
 }
 
 /* Edits opened in place */
