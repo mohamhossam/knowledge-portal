@@ -235,3 +235,20 @@ describe("reading a layout", () => {
     expect(textWidth(fit("WWWWWWWWWWWWWWWWWWWW", 150, 15), 15)).toBeLessThanOrEqual(150);
   });
 });
+
+describe("layered, aligned to the start", () => {
+  it("tops every column instead of centring the shorter ones", () => {
+    const nodes = [
+      { id: "a", label: "A", lane: "one" },
+      { id: "b", label: "B", lane: "one" },
+      { id: "c", label: "C", lane: "two" },
+    ];
+    const lanes = [{ id: "one", label: "One" }, { id: "two", label: "Two" }];
+    const centred = layered(nodes, [], { lanes });
+    const topped = layered(nodes, [], { lanes, align: "start" });
+    const y = (layout: typeof centred, id: string) => layout.nodes.find((node) => node.id === id)!.y;
+    expect(y(centred, "c")).toBeGreaterThan(y(centred, "a"));
+    expect(y(topped, "c")).toBe(y(topped, "a"));
+  });
+});
+

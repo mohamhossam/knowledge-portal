@@ -19,7 +19,7 @@ export const DIAGRAM = {
   pad: 16,
   nodeWidth: 176,
   nodeHeight: 40,
-  /** A node with a second line (`detail`). Every node of a layout takes one height. */
+  /** A node with a second line (`detail` or `status`). Every node of a layout takes one height. */
   nodeHeightDetail: 56,
   columnGap: 120,
   rowGap: 16,
@@ -46,6 +46,12 @@ export type LayeredOptions = {
   lanes?: { id: string; label: string }[];
   /** Boxed rows, top to bottom. A node whose `group` names one sits inside it. */
   containers?: { id: string; label: string }[];
+  /**
+   * Where a column shorter than its row sits: "centre" (the default) keeps a
+   * flow's ends level with what they join; "start" tops every column, as a map
+   * of columns without edges reads best.
+   */
+  align?: "centre" | "start";
 };
 
 export type TreeOptions = {
@@ -59,7 +65,8 @@ type Geometry = { nodeWidth: number; nodeHeight: number; columnGap: number; rowG
 function geometry(nodes: DiagramNode[], options: { nodeWidth?: number; columnGap?: number; rowGap?: number }): Geometry {
   return {
     nodeWidth: options.nodeWidth ?? DIAGRAM.nodeWidth,
-    nodeHeight: nodes.some((node) => node.detail) ? DIAGRAM.nodeHeightDetail : DIAGRAM.nodeHeight,
+    // The second line holds the detail, the state, or both.
+    nodeHeight: nodes.some((node) => node.detail || node.status) ? DIAGRAM.nodeHeightDetail : DIAGRAM.nodeHeight,
     columnGap: options.columnGap ?? DIAGRAM.columnGap,
     rowGap: options.rowGap ?? DIAGRAM.rowGap,
   };
@@ -233,7 +240,7 @@ export function layered(nodes: DiagramNode[], edges: DiagramEdge[], options: Lay
     const inner = most * step - size.rowGap;
     const startY = y + (boxed ? DIAGRAM.containerHead : 0);
     inRow.forEach((column, level) => {
-      const offset = ((most - column.length) * step) / 2;
+      const offset = options.align === "start" ? 0 : ((most - column.length) * step) / 2;
       column.forEach((id, at) => {
         placed.set(id, { ...byId.get(id)!, level, x: columnX(level), y: startY + offset + at * step, width: size.nodeWidth, height: size.nodeHeight });
       });

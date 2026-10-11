@@ -11,6 +11,7 @@ import { useFocusAfterRender } from "../design/hooks";
 import { count } from "../home/format";
 import { RouterLink } from "../shell/links";
 import { roleLabel, systemName } from "./catalogue";
+import { OfferingStructureDiagram } from "./diagrams/CatalogueDiagrams";
 import { OfferingEdit, OfferingSectionEdit, WholeRemove } from "./DraftEdits";
 import { CatalogueHeader } from "./frame/CatalogueHeader";
 import { useFindParam } from "./frame/useFindParam";
@@ -291,6 +292,7 @@ function OfferingRecord({ offering }: { offering: Offering }) {
           ]}
         />
       )}
+      <OfferingStructureDiagram offering={offering} />
       <Tabs label="This offering" tabs={TABS.map((id) => ({ id, label: TAB_LABEL[id] }))} selected={tab} onSelect={choose}>
         {tab === "audience" && (
           <div className="cat-stack">

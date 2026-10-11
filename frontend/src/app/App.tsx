@@ -9,6 +9,7 @@ import { ComparePage } from "../catalogue/ComparePage";
 import { ConceptsPage } from "../catalogue/ConceptsPage";
 import { EvidencePage } from "../catalogue/EvidencePage";
 import { DomainsPage } from "../catalogue/DomainsPage";
+import { MapPage } from "../catalogue/MapPage";
 import { JourneysPage } from "../catalogue/JourneysPage";
 import { OfferingsPage } from "../catalogue/OfferingsPage";
 import { SystemsPage } from "../catalogue/SystemsPage";
@@ -27,6 +28,7 @@ import { SquadListPage } from "../squads/SquadListPage";
 import { SquadsPage } from "../squads/SquadsPage";
 import { OwnershipGrid } from "../squads/OwnershipGrid";
 import { SystemsBench } from "../squads/SystemsBench";
+import { OwnershipTree } from "../squads/OwnershipTree";
 import { ExplorerPage } from "../explorer/ExplorerPage";
 import { FindingsPage } from "../requirements/FindingsPage";
 import { RequirementKnowledgeIndex, RequirementsPage } from "../requirements/RequirementsPage";
@@ -54,6 +56,7 @@ const catalogueRoutes = (
   <>
     <Route index element={<SystemsPage />} />
     <Route path="systems/:systemId" element={<SystemsPage />} />
+    <Route path="map" element={<MapPage />} />
     <Route path="concepts" element={<ConceptsPage />} />
     <Route path="concepts/:conceptId" element={<ConceptsPage />} />
     <Route path="domains" element={<LegacyPage page="domains"><DomainsPage /></LegacyPage>} />
@@ -141,6 +144,7 @@ export function App() {
           <Route index element={<SystemsBench />} />
           <Route path="systems/:systemId" element={<SystemsBench />} />
           <Route path="assign" element={<OwnershipGrid />} />
+          <Route path="tree" element={<OwnershipTree />} />
           <Route path="products" element={<ProductsPage />} />
           <Route path="products/:productId" element={<ProductsPage />} />
           <Route path="squads" element={<SquadListPage />} />

@@ -127,6 +127,7 @@ export function DiagramNodeShape({ node, action, nodeRef }: {
     <g
       {...common}
       role="button"
+      aria-pressed={node.pressed}
       ref={nodeRef}
       tabIndex={action.tabIndex}
       aria-label={nodeName(node)}

@@ -48,6 +48,10 @@ export const ROUTES: RouteDef[] = [
   // The architecture catalogue (area 5: rebuilt on the design system). Landscape, Channels,
   // and Compare keep their body in the legacy island under the new head.
   { key: "architecture", path: at("architecture") },
+  // The map (UX rebuild phase 4): how systems connect, one system in context, what systems do.
+  { key: "architecture-map", path: at("architecture/map") },
+  { key: "architecture-map-system", path: (s) => s.system && `architecture/map?system=${s.system}` },
+  { key: "architecture-map-capabilities", path: at("architecture/map?lens=capabilities") },
   { key: "architecture-system", path: (s) => s.system && `architecture/systems/${s.system}` },
   { key: "architecture-concepts", path: at("architecture/concepts") },
   { key: "architecture-concept", path: (s) => s.concept && `architecture/concepts/${s.concept}` },
@@ -77,6 +81,7 @@ export const ROUTES: RouteDef[] = [
   { key: "squads-product", path: at("squads/products/fibre-ordering") },
   { key: "squads-squad", path: at("squads/squads/sales") },
   { key: "squads-person", path: at("squads/people/layla") },
+  { key: "squads-tree", path: at("squads/tree") },
   { key: "squads-products", path: at("squads/products") },
   { key: "squads-squads", path: at("squads/squads") },
   { key: "squads-people", path: at("squads/people") },
@@ -110,6 +115,9 @@ export const REDESIGNED: string[] = [
   "architecture-draft-publish",
   // Area 5: the catalogue and the explorer.
   "architecture",
+  "architecture-map",
+  "architecture-map-system",
+  "architecture-map-capabilities",
   "architecture-system",
   "architecture-concepts",
   "architecture-concept",
@@ -130,6 +138,7 @@ export const REDESIGNED: string[] = [
   "squads-product",
   "squads-squad",
   "squads-person",
+  "squads-tree",
   "squads-products",
   "squads-squads",
   "squads-people",

@@ -2,14 +2,14 @@ import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
 
-import type { CatalogueSystem, Relationship, Release } from "../api/client";
+import type { CatalogueSystem, Release } from "../api/client";
 import {
-  Button, type Column, DataTable, EmptyState, GapBadge, ListFilter, ListFind, ListTools, RecordList, type RecordGroup,
-  RecordPlaceholder, Section, Status, Workbench,
+  Button, EmptyState, GapBadge, ListFilter, ListFind, ListTools, RecordList, type RecordGroup,
+  RecordPlaceholder, Status, Workbench,
 } from "../design/components";
 import { count } from "../home/format";
 import { RouterLink } from "../shell/links";
-import { LINK_VERB, allConnections, domainPath, findSystems, systemName } from "./catalogue";
+import { domainPath, findSystems } from "./catalogue";
 import { SystemEdit } from "./DraftEdits";
 import { CatalogueHeader } from "./frame/CatalogueHeader";
 import { useFindParam } from "./frame/useFindParam";
@@ -49,7 +49,7 @@ export function SystemsPage() {
   ) : (
     <RecordPlaceholder title={`${count(book.release.systems.length, "system")}. Choose one to read its record.`}>
       {notice && <p role="status" className="cat-notice"><Status tone="done">{notice}</Status></p>}
-      <AllConnections />
+      <MapLine />
     </RecordPlaceholder>
   );
 
@@ -172,33 +172,14 @@ export function ConceptChips({ system, index }: { system: CatalogueSystem; index
   return <span className="cat-quiet">Not linked</span>;
 }
 
-/** With no system chosen: every connection in the version, read as a sentence. */
-function AllConnections() {
+/** With no system chosen: how many connections there are, and the way to see them drawn. */
+function MapLine() {
   const { book, base } = useCatalogueContext();
-  const rows = useMemo(() => allConnections(book), [book]);
-  const linked = new Set(rows.flatMap((row) => [row.source_system_id, row.target_system_id]));
-  const link = (systemId: string) => (
-    <Link to={`${base}/systems/${encodeURIComponent(systemId)}`} dir="auto">{systemName(book, systemId)}</Link>
-  );
-  const columns: Column<Relationship>[] = [
-    { id: "from", header: "From", rowHeader: true, bidi: true, cell: (row) => link(row.source_system_id) },
-    { id: "how", header: "How", cell: (row) => LINK_VERB[row.kind] },
-    { id: "to", header: "To", bidi: true, cell: (row) => link(row.target_system_id) },
-    { id: "what", header: "For what", bidi: true, cell: (row) => row.description },
-  ];
+  const connections = book.release.relationships.length;
   return (
-    <Section title="Connections" count={rows.length}>
-      <p className="cat-lead">
-        {count(rows.length, "connection")} between {count(linked.size, "system")}. Each reads from the system that depends to the one it depends on.
-      </p>
-      <DataTable
-        caption="Every connection between systems in this version"
-        captionHidden
-        columns={columns}
-        rows={rows}
-        rowId={(row) => `${row.source_system_id}>${row.target_system_id}`}
-        emptyText="No system depends on another in this version."
-      />
-    </Section>
+    <p className="cat-lead">
+      {connections ? `${count(connections, "connection")} between systems in this version.` : "No system depends on another in this version."}{" "}
+      <RouterLink href={`${base}/map`}>See the map of how systems connect and what they do</RouterLink>
+    </p>
   );
 }

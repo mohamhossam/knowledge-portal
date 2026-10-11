@@ -3,12 +3,13 @@ import "./explorer.css";
 
 import { useQuery } from "@tanstack/react-query";
 import { CircleAlert } from "lucide-react";
-import { lazy, type ReactNode, Suspense, useId } from "react";
+import { lazy, type ReactNode, Suspense, useId, useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { api, type ExplorerRelease } from "../api/client";
 import { errorMessage } from "../api/errors";
 import { roleLabel, sentenceCase } from "../catalogue/catalogue";
+import { ConnectionsFlowDiagram } from "../catalogue/diagrams/CatalogueDiagrams";
 import type { JourneyView } from "../catalogue/journey/JourneyViews";
 import { NfrSection, RealisationKey, RealisedAs } from "../catalogue/Realisation";
 import { ArchitectureDecisions, ConflictList, OfferingSourceList, OpenQuestions } from "../catalogue/GovernanceSections";
@@ -21,6 +22,7 @@ import {
 } from "../design/components";
 import { formatDay } from "../home/format";
 import { RouterLink } from "../shell/links";
+import { diagramHref } from "../shell/diagramHref";
 import { DocumentDownload } from "./DocumentDownload";
 import { PlansAndPrices } from "./PlansAndPrices";
 import { gaps, type Involvement, involvement, journeyFor, listed, partsFor, pickScenario, type Scenario, trackingFor } from "./scenario";
@@ -31,6 +33,8 @@ export const NOT_YET =
 
 /** The journey diagrams load as their own chunk, shared with the catalogue's journey pages. */
 const JourneyViews = lazy(() => import("../catalogue/journey/JourneyViews"));
+
+const systemHref = (systemId: string) => diagramHref(`/architecture/systems/${encodeURIComponent(systemId)}`);
 const VIEWS: JourneyView[] = ["swimlane", "flowchart", "timeline"];
 
 function useExplorerRelease() {
@@ -177,6 +181,7 @@ function ScenarioSheet({ release, scenario, linkSystems, view, onView }: {
       <bdi>{nameOf(systemId)}</bdi>
     );
   const taking = involvement(scenario);
+  const highlight = useMemo(() => new Set(involvement(scenario).map((item) => item.systemId)), [scenario]);
   const parts = partsFor(scenario);
   const missing = gaps(scenario);
   const tracked = trackingFor(scenario);
@@ -300,20 +305,6 @@ function ScenarioSheet({ release, scenario, linkSystems, view, onView }: {
         </Banner>
       )}
 
-      <Section title="Systems in this order" count={taking.length} headingLevel={3}>
-        {taking.length ? (
-          <DataTable
-            caption={`Systems that take part in ${orderType.name} of ${offering.name}`}
-            captionHidden
-            columns={systemColumns}
-            rows={taking}
-            rowId={(item) => item.systemId}
-          />
-        ) : (
-          <p className="cat-quiet">No system is named for this order yet.</p>
-        )}
-      </Section>
-
       {journey && (
         <Section title="The journey" headingLevel={3}>
           <Suspense fallback={<Skeleton label="Drawing the journey" rows={6} />}>
@@ -329,6 +320,28 @@ function ScenarioSheet({ release, scenario, linkSystems, view, onView }: {
           </Suspense>
         </Section>
       )}
+      <Section title="Systems in this order" count={taking.length} headingLevel={3}>
+        {taking.length ? (
+          <DataTable
+            caption={`Systems that take part in ${orderType.name} of ${offering.name}`}
+            captionHidden
+            columns={systemColumns}
+            rows={taking}
+            rowId={(item) => item.systemId}
+          />
+        ) : (
+          <p className="cat-quiet">No system is named for this order yet.</p>
+        )}
+        {taking.length > 0 && release.relationships.length > 0 && (
+          <ConnectionsFlowDiagram
+            landscape={release}
+            highlight={highlight}
+            href={linkSystems ? systemHref : undefined}
+            caption="This order's systems among every connection in the catalogue."
+          />
+        )}
+      </Section>
+
 
       <TrackingSection
         offering={offering}

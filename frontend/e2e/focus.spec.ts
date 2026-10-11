@@ -57,7 +57,7 @@ test("keyboard only: a draft's decisions beside the tree, and leaving asks befor
   await settled(page);
   const heading = page.getByRole("heading", { level: 1 });
   await expect(heading).toBeFocused();
-  await expect(page.getByRole("img", { name: /What waits on what/ }).or(page.getByRole("figure", { name: /What waits on what/ })).first()).toBeVisible();
+  await expect(page.getByRole("img", { name: /What waits for what/ }).or(page.getByRole("figure", { name: /What waits for what/ })).first()).toBeVisible();
 
   // The last choice rejects; Enter goes on.
   const first = await heading.textContent();

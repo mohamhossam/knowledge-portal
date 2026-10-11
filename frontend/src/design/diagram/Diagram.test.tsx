@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { CWOM_EDGES, CWOM_LANES, CWOM_NODES, OWNERSHIP_EDGES, OWNERSHIP_NODES } from "../../design-lab/gallery/diagramExamples";
 import { checkAxeAfterEach } from "../../test/axe";
-import { Diagram } from "./Diagram";
+import { Diagram, DiagramLegend } from "./Diagram";
 import { layered, tree } from "./layout";
 
 checkAxeAfterEach();
@@ -114,5 +114,31 @@ describe("Show as table", () => {
     expect(within(table).getByRole("columnheader", { name: "Part of" })).toBeInTheDocument();
     await user.click(within(table).getByRole("button", { name: "CWOM" }));
     expect(onActivate.mock.calls[0]?.[0].id).toBe("cwom");
+  });
+
+  it("shows a screen's own table instead of its own, when given one", async () => {
+    const user = userEvent.setup();
+    render(<Diagram label="CWOM in context" layout={context} table={<table><caption>Every connection</caption><tbody><tr><td>For what</td></tr></tbody></table>} />);
+    await user.click(screen.getByRole("button", { name: "Show as table" }));
+    expect(screen.getByRole("table", { name: "Every connection" })).toBeInTheDocument();
+    expect(screen.queryByRole("table", { name: "CWOM in context" })).not.toBeInTheDocument();
+  });
+
+  it("reads a node that toggles something as a pressed button, drawn and in the table", async () => {
+    const user = userEvent.setup();
+    const toggled = layered([{ id: "a", label: "On", pressed: true }, { id: "b", label: "Off", pressed: false }], []);
+    render(<Diagram label="Filters" layout={toggled} onActivate={() => {}} />);
+    expect(screen.getByRole("button", { name: "On" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Off" })).toHaveAttribute("aria-pressed", "false");
+    await user.click(screen.getByRole("button", { name: "Show as table" }));
+    expect(within(screen.getByRole("table", { name: "Filters" })).getByRole("button", { name: "On" })).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+describe("DiagramLegend", () => {
+  it("says what each mark means in words, the marks hidden from assistive tech", () => {
+    const { container } = render(<DiagramLegend items={[["gap", "Dashed frame: no squad runs it"], ["dashed", "Dashed line: not stated"]]} />);
+    expect(screen.getAllByRole("listitem").map((item) => item.textContent)).toEqual(["Dashed frame: no squad runs it", "Dashed line: not stated"]);
+    expect(container.querySelector('[data-tone="gap"]')).not.toBeNull();
   });
 });

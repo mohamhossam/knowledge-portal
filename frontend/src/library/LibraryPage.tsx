@@ -18,6 +18,7 @@ import { REVIEW_STATUS } from "../reviews/review";
 import { ButtonLink, RouterLink } from "../shell/links";
 import { DOC_STATE_WORDS, DOC_TONE, type DocState, docState } from "./docState";
 import { LibraryRetry } from "./LibraryRetry";
+import { LifecycleDiagram } from "./LifecycleDiagram";
 import { newestState, newestVersion, standing } from "./model";
 import { Outcome } from "./parts";
 import { contentLang, plural } from "./where";
@@ -197,7 +198,7 @@ export function LibraryPage() {
       <DocumentSummary key={chosen.doc.id} row={chosen} takeFocus={chosenHere || location.key !== "default"} stopped={stopped} onRetried={retried} />
     ) : (
       <RecordPlaceholder title={chosenId ? "That document isn't in the library any more." : `${plural(all.length, "document")}. Choose one to see where it stands.`}>
-        <Facts items={URGENCY.filter((state) => counts.get(state)).map((state) => [DOC_STATE_WORDS[state], String(counts.get(state))])} />
+        <LifecycleDiagram counts={counts} active={status} onChoose={(state) => set({ status: state === "all" ? null : state })} />
         <LibraryRetry stopped={stopped} onDone={retried} />
       </RecordPlaceholder>
     );

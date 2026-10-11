@@ -14,6 +14,7 @@ import { count, formatDay } from "../home/format";
 import { ButtonLink, RouterLink } from "../shell/links";
 import { auditLabel, changeSentence, contents } from "./catalogue";
 import { ChangeRequestInbox } from "./ChangeRequests";
+import { VersionsTimeline } from "./diagrams/CatalogueDiagrams";
 import { StartDraft } from "./DraftActions";
 import { CatalogueHeader } from "./frame/CatalogueHeader";
 import { useActivate, useCatalogueContext, useMappingImpact, useReleases } from "./useCatalogue";
@@ -90,6 +91,7 @@ export function VersionsPage() {
         Requirement work maps against the version in service. Publishing a draft puts it in service; an earlier version can be put back,
         with a reason.
       </p>
+      <VersionsTimeline />
       <div className="cat-actions ds-actions">
         {draft && <ButtonLink to={`/architecture/versions/${encodeURIComponent(draft.id)}/sources`} variant="primary">Carry on with ‘<bdi>{nameOf(draft)}</bdi>’</ButtonLink>}
         {rows.length > 1 && <ButtonLink to="/architecture/compare">Compare any two versions</ButtonLink>}
