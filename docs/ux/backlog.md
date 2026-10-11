@@ -18,7 +18,7 @@ review findings here (step 7).
 | O-3 | Table-row passages show the extractor's raw form "A4=… \| B4=…". Render them as labelled cells (an evidence or passage block). | Medium | 2 Library | Done (area 2: labelled cells under each sheet's headings) |
 | O-4 | The evidence quote marks the whole citation; the API gives `quote`, so highlight the line only (`EvidenceQuote quote=`). | Low | 3 Catalogue curation | Planned |
 | O-5 | The origin of a change is a heuristic in the lab; it needs `change_history` per item. | Medium | 3 Catalogue curation | Planned (uses the release change history the API already returns; confirm in the plan) |
-| O-6 | No suggested squad for systems in no product. The prototype says "No squad runs a related system yet"; keep that. | Low | 7 Squads | Planned |
+| O-6 | No suggested squad for systems in no product. The prototype says "No squad runs a related system yet"; keep that. | Low | 7 Squads | Done (area 4: the bulk give offers the squad running the most related systems, else says "No squad runs a related system yet.") |
 | O-7 | "Accept with edits" is not built (it announces only). | High | 3 Catalogue curation | Planned |
 
 ## From building and measuring the prototype (Phase 6)

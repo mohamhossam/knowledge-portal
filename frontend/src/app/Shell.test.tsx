@@ -55,7 +55,7 @@ function open(path: string) {
           <Routes>
             <Route element={<Shell />}>
               <Route index element={<HomePage />} />
-              <Route path="squads" element={<h1>Table 3: Squad catalogue</h1>} />
+              <Route path="explorer" element={<h1>Explorer</h1>} />
             </Route>
           </Routes>
         </MemoryRouter>
@@ -66,7 +66,7 @@ function open(path: string) {
 
 describe("the shell", () => {
   it("offers the same utilities, skip links and areas on a rebuilt page and on a legacy one", async () => {
-    for (const [path, title] of [["/", "Your work"], ["/squads", "Table 3: Squad catalogue"]] as const) {
+    for (const [path, title] of [["/", "Your work"], ["/explorer", "Explorer"]] as const) {
       open(path);
       await screen.findByRole("heading", { level: 1, name: title });
       const banner = screen.getByRole("banner");
@@ -82,8 +82,8 @@ describe("the shell", () => {
   });
 
   it("keeps a page that isn't rebuilt yet in the legacy island, and a rebuilt one out of it", async () => {
-    open("/squads");
-    const legacy = await screen.findByRole("heading", { level: 1, name: "Table 3: Squad catalogue" });
+    open("/explorer");
+    const legacy = await screen.findByRole("heading", { level: 1, name: "Explorer" });
     expect(legacy.closest(".ds-legacy")).not.toBeNull();
     document.body.innerHTML = "";
     open("/");

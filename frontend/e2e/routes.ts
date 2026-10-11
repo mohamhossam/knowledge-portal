@@ -51,6 +51,8 @@ export const ROUTES: RouteDef[] = [
   { key: "architecture-draft-publish", path: (s) => s.draft && `architecture/versions/${s.draft}/publish` },
   { key: "explorer", path: at("explorer") },
   { key: "squads", path: at("squads") },
+  { key: "squads-no-squad", path: at("squads?show=none") },
+  { key: "squads-products", path: at("squads/products") },
   { key: "squads-squads", path: at("squads/squads") },
   { key: "squads-people", path: at("squads/people") },
   { key: "squads-history", path: at("squads/history") },
@@ -73,6 +75,13 @@ export const REDESIGNED: string[] = [
   "library-cited-by",
   "library-citations",
   "library-ownership",
+  // Area 4: ownership.
+  "squads",
+  "squads-no-squad",
+  "squads-products",
+  "squads-squads",
+  "squads-people",
+  "squads-history",
 ];
 
 type Named = { id: string; title?: string; name?: string | null; status?: string };

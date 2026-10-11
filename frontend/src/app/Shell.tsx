@@ -24,6 +24,8 @@ const REDESIGNED: ((path: string) => boolean)[] = [
   (path) => path === "/",
   // Area 2: the library, its search and every document's pages.
   (path) => path === "/library" || path.startsWith("/library/"),
+  // Area 4: ownership (the systems grid, products, squads, people and history).
+  (path) => path === "/squads" || path.startsWith("/squads/"),
 ];
 
 function useOnline() {
