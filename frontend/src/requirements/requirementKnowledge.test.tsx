@@ -303,8 +303,8 @@ describe("FindingsPage", () => {
     const row = await within(findings()).findByRole("link", { name: /^XGPON for offices/ });
     expect(row).toHaveAttribute("aria-current", "page");
     expect(row).toHaveTextContent("Possible duplicate of XGPON bundles");
-    expect(within(findings()).getByRole("list", { name: "Open over 30 days" })).toContainElement(row);
-    expect(within(findings()).getByRole("list", { name: "Open under 7 days" })).toBeInTheDocument();
+    expect(within(findings()).getByRole("list", { name: /^Open over 30 days \d+$/ })).toContainElement(row);
+    expect(within(findings()).getByRole("list", { name: /^Open under 7 days \d+$/ })).toBeInTheDocument();
 
     const view = screen.getByRole("article", { name: "XGPON for offices and XGPON bundles" });
     expect(within(view).getByText("Both order XGPON bundles through BCRM.")).toBeInTheDocument();

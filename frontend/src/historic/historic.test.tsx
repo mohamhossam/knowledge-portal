@@ -151,7 +151,7 @@ describe("the historic list", () => {
     const list = screen.getByRole("region", { name: "Historic requirements" });
     const draft = await within(list).findByRole("link", { name: /^XGPON bundles/ });
     expect(draft).toHaveAttribute("href", "/requirement-knowledge/historic/h1?status=draft");
-    expect(within(within(list).getByRole("list", { name: "Drafts" })).getByText("Link its work items")).toBeInTheDocument();
+    expect(within(within(list).getByRole("list", { name: /^Drafts \d+$/ })).getByText("Link its work items")).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "State" })).toHaveValue("draft");
     expect(screen.getByRole("option", { name: "Drafts (1)" })).toBeInTheDocument();
     // Cited by: a count, or nothing said when requirement work could not say.
