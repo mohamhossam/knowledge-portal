@@ -58,8 +58,8 @@ describe("SystemsPage", () => {
   it("finds a system by an alias and says so", () => {
     renderAt("/architecture", systemRoutes);
     fireEvent.change(screen.getByLabelText("Find a system"), { target: { value: "fixed order" } });
-    const index = screen.getByRole("table", { name: "Systems in this version" });
-    expect(within(index).getAllByRole("rowheader")).toHaveLength(1);
+    const index = screen.getByRole("region", { name: "Systems" });
+    expect(within(index).getAllByRole("link")).toHaveLength(1);
     expect(within(index).getByText("Also called “fixed order orchestration”")).toBeInTheDocument();
     expect(screen.getByText("1 system of 3")).toBeInTheDocument();
   });
@@ -72,7 +72,7 @@ describe("SystemsPage", () => {
     const title = await screen.findByRole("heading", { level: 2, name: "WFM" });
     expect(title).toHaveFocus();
     expect(within(within(screen.getByRole("article")).getByRole("link", { name: "CWOM" }).closest("tr")!).getByText("Where you came from")).toBeInTheDocument();
-    expect(within(screen.getByRole("table", { name: "Systems in this version" })).getByRole("link", { name: "WFM" })).toHaveAttribute("aria-current", "page");
+    expect(within(screen.getByRole("region", { name: "Systems" })).getByRole("link", { name: /^WFM/ })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("button", { name: "Back to CWOM" })).toBeInTheDocument();
   });
 });

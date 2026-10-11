@@ -7,7 +7,7 @@ import { api, type Release } from "../api/client";
 import { EXPLORED } from "../explorer/fixtures";
 import { catalogue } from "./catalogue";
 import { finishedOffering, journeyOrderProblem, offeringProblem } from "./editing";
-import { OfferingPage, OfferingsPage } from "./OfferingsPage";
+import { OfferingsPage } from "./OfferingsPage";
 import type { CatalogueContext } from "./useCatalogue";
 
 afterEach(() => vi.restoreAllMocks());
@@ -32,7 +32,7 @@ function open(editable: boolean, path = `/architecture/offerings/${OFFERING.id}`
         <Routes>
           <Route path="architecture" element={<Outlet context={context} />}>
             <Route path="offerings" element={<OfferingsPage />} />
-            <Route path="offerings/:offeringId" element={<OfferingPage />} />
+            <Route path="offerings/:offeringId" element={<OfferingsPage />} />
           </Route>
         </Routes>
       </MemoryRouter>

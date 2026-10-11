@@ -9,7 +9,7 @@ import { catalogue } from "./catalogue";
 import { sourceUses } from "./drafting";
 import { conflictsFor, namedSource, questionProblem, SourcesContext, withLevel } from "./governance";
 import { GovernancePage } from "./GovernancePage";
-import { OfferingPage } from "./OfferingsPage";
+import { OfferingsPage } from "./OfferingsPage";
 import type { CatalogueContext } from "./useCatalogue";
 
 afterEach(() => vi.restoreAllMocks());
@@ -27,7 +27,7 @@ function open(path: string, editable = true) {
           <Routes>
             <Route path="architecture" element={<Outlet context={context} />}>
               <Route path="governance" element={<GovernancePage />} />
-              <Route path="offerings/:offeringId" element={<OfferingPage />} />
+              <Route path="offerings/:offeringId" element={<OfferingsPage />} />
             </Route>
           </Routes>
         </SourcesContext.Provider>

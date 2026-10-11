@@ -9,8 +9,8 @@ import { ComparePage } from "../catalogue/ComparePage";
 import { ConceptsPage } from "../catalogue/ConceptsPage";
 import { EvidencePage } from "../catalogue/EvidencePage";
 import { DomainsPage } from "../catalogue/DomainsPage";
-import { JourneyPage, JourneysPage } from "../catalogue/JourneysPage";
-import { OfferingPage, OfferingsPage } from "../catalogue/OfferingsPage";
+import { JourneysPage } from "../catalogue/JourneysPage";
+import { OfferingsPage } from "../catalogue/OfferingsPage";
 import { SystemsPage } from "../catalogue/SystemsPage";
 import { CatalogueHeader } from "../catalogue/frame/CatalogueHeader";
 import { LegacyPage } from "../catalogue/frame/LegacyPage";
@@ -61,9 +61,9 @@ const catalogueRoutes = (
     <Route path="channels" element={<LegacyPage page="channels"><ChannelsPage /></LegacyPage>} />
     <Route path="governance" element={<><CatalogueHeader page="governance" /><GovernancePage /></>} />
     <Route path="offerings" element={<OfferingsPage />} />
-    <Route path="offerings/:offeringId" element={<OfferingPage />} />
+    <Route path="offerings/:offeringId" element={<OfferingsPage />} />
     <Route path="journeys" element={<JourneysPage />} />
-    <Route path="journeys/:journeyId" element={<JourneyPage />} />
+    <Route path="journeys/:journeyId" element={<JourneysPage />} />
     {/* A draft's steps, in order (redesign area 3). */}
     <Route path="sources" element={<SourcesStep />} />
     <Route path="decide" element={<DecideStep />} />

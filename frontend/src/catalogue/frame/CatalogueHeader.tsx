@@ -58,8 +58,10 @@ function catalogueCrumbs(context: Pick<CatalogueContext, "book" | "base" | "inSe
  * beside it, with the version's pages as sub-navigation; a record page (an
  * offering, a journey) is titled by its record (UX rebuild, phase 1).
  */
-export function CatalogueHeader({ page, record, children }: {
+export function CatalogueHeader({ page, chosen, record, children }: {
   page: CataloguePageId;
+  /** A workbench page with a record chosen: its name, for the tab title and the breadcrumb. */
+  chosen?: string;
   /** A record page: its title, lead, facts and actions. */
   record?: {
     name: string;
@@ -76,7 +78,7 @@ export function CatalogueHeader({ page, record, children }: {
   const release = book.release;
   const draft = release.status === "draft";
   const name = versionName(release);
-  const crumbs = <Breadcrumbs link={RouterLink} items={catalogueCrumbs(context, page, record?.name)} />;
+  const crumbs = <Breadcrumbs link={RouterLink} items={catalogueCrumbs(context, page, record?.name ?? chosen)} />;
   const where = inService ? "Catalogue" : name;
   const waiting = useWaitingRequests();
   const banner = <DraftBanner readingDraft={draft ? release : undefined} />;
@@ -102,7 +104,7 @@ export function CatalogueHeader({ page, record, children }: {
       <PageHeader
         breadcrumbs={crumbs}
         title={PAGE_LABEL[page]}
-        documentTitle={`${PAGE_LABEL[page]} · ${inService ? "Architecture catalogue" : `${name} · Catalogue`}`}
+        documentTitle={`${chosen ? `${chosen} · ` : ""}${PAGE_LABEL[page]} · ${inService ? "Architecture catalogue" : `${name} · Catalogue`}`}
         lead={
           <>
             <Edition release={release} inService={inService} actorName={context.actorName} />
