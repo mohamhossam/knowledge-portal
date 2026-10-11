@@ -169,6 +169,25 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
   below that. Side by side, it fills the window from where it starts (`--split-top`, measured)
   to the sticky foot, and the list and the pane each scroll on their own; the list's table
   head sticks to the top of the list. The pane is a labelled `complementary` region.
+- **`Workbench`** (`workbench.tsx`, UX rebuild phase 3): a look-up area's narrow list
+  (`--bench-list-width`) beside the chosen record, both filling the window from where they start
+  and scrolling on their own. The address names the record (a route or `?doc=`), so every row is
+  a link. Below 60rem they stack; with a record chosen, the rows keep to a short box so the
+  record follows close under them.
+  - **`ListTools`:** the list's sticky head: `ListFind` (a search field, `data-find`), one or two
+    `ListFilter` selects (a long row of chips doesn't fit a narrow list), an optional tertiary
+    action, and the count (`role="status"`).
+  - **`RecordList`:** rows as links (`aria-current="page"` on the record shown), each a name, one
+    quieter detail line and at most one meta (a status or a `GapBadge`). Rows may come in labelled
+    groups (systems by where they sit, documents by state) whose labels stick under the head. One
+    tab stop; ↑ ↓ move, Home/End jump, Enter opens. The current row is kept in view inside the
+    list, never by scrolling the window.
+  - **`RecordView`:** the record as an `article` named by its h2 (under the area's h1), with status
+    and short facts on the title's line, actions at the end and a lead. `takeFocus` (choosing a
+    row, not a fresh load) moves focus to the name, and `data-takes-focus` keeps the shell from
+    taking it back. A new record opens at its top.
+  - **`RecordPlaceholder`:** the record side with nothing chosen: what the list holds, in a line,
+    and a useful summary under it (counts, the version's connections), never an empty pane.
 - **`Pagination`:** `aria-current` on the current page; every page button is named "Page n".
 - **`Section`:** the ledger rule and an h2 with an optional count; a labelled `region`.
 
