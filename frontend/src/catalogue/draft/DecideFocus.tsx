@@ -1,6 +1,6 @@
 import "./draft.css";
 
-import { type ReactNode, useMemo, useState } from "react";
+import { type ReactNode, useCallback, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import type { Release, Suggestion } from "../../api/client";
@@ -8,15 +8,17 @@ import { errorMessage } from "../../api/errors";
 import {
   ActionGroup, Button, Dialog, EmptyState, EvidenceQuote, FocusFrame, FocusQuestion, type FocusStep, FocusTitle, Lines, Skeleton, Status, Suggested,
 } from "../../design/components";
-import { Diagram, type DiagramNode, tree } from "../../design/diagram";
+import { DiagramLegend } from "../../design/diagram";
 import { count } from "../../home/format";
 import { RouterLink } from "../../shell/links";
 import {
-  type Lexicon, bulkAcceptable, changeSentence, decideWhy, dependencyEdges, inDependencyOrder, inWords, lexicon, suggestionState, waitsFor,
+  type Lexicon, bulkAcceptable, changeSentence, decideWhy, inDependencyOrder, inWords, lexicon, suggestionState, waitsFor,
 } from "../suggestions";
 import { useCatalogueContext } from "../useCatalogue";
 import { useDraft } from "../useDraft";
 import { stateWords } from "./decide";
+import { DecisionTree } from "./DecisionTree";
+import { type NodeMark, touching } from "./decisionTree";
 import { type DecideAnswer, type DecideQuestion, decideChoices, decideQuestions } from "./questions";
 
 /** How many suggestions the summary names before "and N more". */
@@ -27,7 +29,7 @@ const nameOf = (release: Release) => release.name || "Untitled version";
 /**
  * A draft's Decide step in focus mode (UX rebuild plan, phase 2): the
  * suggestions a person must decide, one question at a time, beside the tree
- * of what waits on what. Answers are kept here until the summary, which lists
+ * of what waits for what. Answers are kept here until the summary, which lists
  * what the answers accept and reject and what follows from them; nothing
  * reaches the draft before the curator confirms it there.
  */
@@ -59,8 +61,15 @@ function Run({ release, base, back }: { release: Release; base: string; back: st
   if (frozen === null && draft.suggestions.isSuccess) setFrozen(fresh);
   const questions = useMemo(() => frozen ?? [], [frozen]);
   const asked = useMemo(() => questions.map((item) => item.id), [questions]);
+  // The tree beside the questions: only what they touch, with the answers so far.
+  const kept = useMemo(() => touching(all, asked), [all, asked]);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, DecideAnswer>>({});
+  const mark = useCallback((item: Suggestion): NodeMark | undefined => {
+    const answer = answers[item.id];
+    if (answer) return answer.accept ? { status: "You accept it", tone: "ready" } : { status: "You reject it", tone: "muted" };
+    return { status: stateWords(item) };
+  }, [answers]);
   const [skipped, setSkipped] = useState<Set<string>>(() => new Set());
   const [choice, setChoice] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
@@ -114,7 +123,15 @@ function Run({ release, base, back }: { release: Release; base: string; back: st
   const place = atSummary ? "Summary" : `Question ${index + 1} of ${questions.length}`;
   const current = questions[index];
   const aside = (
-    <DecisionTree suggestions={all} words={words} answers={answers} asked={asked} current={atSummary ? undefined : current?.suggestion.id} />
+    <DecisionTree
+      suggestions={all}
+      words={words}
+      keep={kept}
+      current={atSummary ? undefined : current?.suggestion.id}
+      mark={mark}
+      caption="What your answers settle: each one settles what is to its right."
+      legend={<DiagramLegend items={[["subject", "This question"], ["decide", "Needs your decision"], ["ready", "You accept it"], ["muted", "Dotted frame: you reject it"]]} />}
+    />
   );
   const frame = (children: ReactNode) => (
     <>
@@ -126,7 +143,7 @@ function Run({ release, base, back }: { release: Release; base: string; back: st
         leaveLabel="Leave focus mode"
         documentTitle={`${place} · Decide · ${nameOf(release)}`}
         aside={all.some((item) => item.status === "proposed") ? aside : undefined}
-        asideLabel="What waits on what"
+        asideLabel="What waits for what"
       >
         {children}
       </FocusFrame>
@@ -212,83 +229,6 @@ function Run({ release, base, back }: { release: Release; base: string; back: st
 }
 
 /** A suggestion's name in a node: what it adds, short. */
-function nodeLabel(suggestion: Suggestion, words: Lexicon): string {
-  const { content } = suggestion;
-  switch (content.kind) {
-    case "relationship":
-      return `${suggestion.system_name ?? words.system(content.system_id)} → ${suggestion.target_system_name ?? words.system(content.target_system_id ?? "")}`;
-    case "placement":
-      return `Place ${suggestion.system_name ?? words.system(content.system_id)}`;
-    case "constraint":
-      return content.text;
-    case "journey":
-      return content.journey?.name ?? content.name;
-    default:
-      return content.name || content.text || content.kind;
-  }
-}
-
-const KIND_WORD: Partial<Record<Suggestion["content"]["kind"], string>> = {
-  system: "System",
-  component: "Component",
-  capability: "Capability",
-  constraint: "Constraint",
-  relationship: "Link",
-  placement: "Placement",
-  landscape_domain: "Domain",
-  product: "Offering",
-  journey: "Journey",
-  channel: "Channel",
-  question: "Question",
-};
-
-/** The draft decision tree: what the suggestions to decide settle, to their right. */
-function DecisionTree({ suggestions, words, answers, asked, current }: {
-  suggestions: Suggestion[]; words: Lexicon; answers: Record<string, DecideAnswer>; asked: string[]; current?: string;
-}) {
-  const layout = useMemo(() => {
-    const proposed = suggestions.filter((item) => item.status === "proposed");
-    const edges = dependencyEdges(proposed);
-    // Only what the questions touch: what each one waits on, and what waits on it, all the way along.
-    const reach = (up: boolean) => {
-      const seen = new Set(asked);
-      for (let grew = true; grew; ) {
-        grew = false;
-        for (const edge of edges) {
-          const [from, to] = up ? [edge.to, edge.from] : [edge.from, edge.to];
-          if (seen.has(from) && !seen.has(to)) {
-            seen.add(to);
-            grew = true;
-          }
-        }
-      }
-      return seen;
-    };
-    const kept = new Set([...reach(true), ...reach(false)]);
-    const open = proposed.filter((item) => kept.has(item.id));
-    const nodes: DiagramNode[] = open.map((item) => {
-      const state = suggestionState(item);
-      const answer = answers[item.id];
-      return {
-        id: item.id,
-        label: nodeLabel(item, words),
-        detail: KIND_WORD[item.content.kind] ?? item.content.kind,
-        status: answer ? (answer.accept ? "You accept it" : "You reject it") : item.id === current ? "This question" : stateWords(item),
-        tone: item.id === current ? "subject" : answer ? (answer.accept ? "ready" : "muted") : state === "decide" ? "decide" : "plain",
-      };
-    });
-    return tree(nodes, edges.filter((edge) => kept.has(edge.from) && kept.has(edge.to)), { nodeWidth: 220, columnGap: 40 });
-  }, [suggestions, words, answers, asked, current]);
-  return (
-    <Diagram
-      label="What waits on what"
-      caption="What your answers settle: each one settles what is to its right"
-      layout={layout}
-      legend={<>Amber: needs your decision. Maroon: this question. Green: you accept it.</>}
-    />
-  );
-}
-
 function Summary({ release, all, words, questions, answers, draft, onBack, onDone }: {
   release: Release;
   all: Suggestion[];

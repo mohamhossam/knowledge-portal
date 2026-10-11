@@ -15,14 +15,11 @@ import { REVIEW_STATUS } from "../reviews/review";
 import { ButtonLink } from "../shell/links";
 import { DOC_STATE_WORDS, DOC_TONE, type DocState, docState } from "./docState";
 import { LibraryRetry } from "./LibraryRetry";
+import { LifecycleDiagram } from "./LifecycleDiagram";
 import { newestState, standing } from "./model";
 import { DocumentLink, Outcome } from "./parts";
 import { plural } from "./where";
 import { UploadFlow } from "./UploadFlow";
-
-/** The filters always offered, then any other state only while a document is in it. */
-const FILTERS: DocState[] = ["review", "service", "reading", "attention", "withdrawn"];
-const OTHERS: DocState[] = ["held", "indexing", "stopped", "none"];
 
 /** Sorting by state puts what needs someone first (§15), not the alphabet. */
 const URGENCY: Record<DocState, number> = { attention: 0, held: 1, stopped: 2, review: 3, reading: 4, indexing: 5, service: 6, none: 7, withdrawn: 8 };
@@ -145,7 +142,6 @@ export function LibraryPage() {
   ];
 
   const filtering = status !== "all" || owner !== "everyone" || find !== "";
-  const offered = [...FILTERS, ...OTHERS.filter((state) => (counts.get(state) ?? 0) > 0)];
 
   let body;
   if (documents.isPending) {
@@ -172,12 +168,13 @@ export function LibraryPage() {
     body = (
       <>
         <LibraryRetry stopped={stopped} onDone={() => void queryClient.invalidateQueries({ queryKey: ["library", "documents"] })} />
+        <LifecycleDiagram counts={counts} active={status} onChoose={(state) => set({ status: state === "all" ? null : state })} />
         <div className="lib-toolbar">
           <FilterStrip
-            label="Show documents"
-            filters={[{ id: "all", label: "All", count: all.length }, ...offered.map((state) => ({ id: state, label: DOC_STATE_WORDS[state], count: counts.get(state) ?? 0 }))]}
+            label="Find documents"
+            filters={[]}
             active={status}
-            onChange={(id) => set({ status: id === "all" ? null : id })}
+            onChange={() => {}}
             find={{ label: "Find a document by title", value: findDraft, onChange: setFindDraft, placeholder: "A title…" }}
             onClear={filtering ? () => setParams({}, { replace: true }) : undefined}
           />

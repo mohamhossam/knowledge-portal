@@ -49,10 +49,10 @@ const systemRoutes = (
 );
 
 describe("SystemsPage", () => {
-  it("lists every connection until a system is chosen", () => {
+  it("counts the connections until a system is chosen, and points to the map", () => {
     renderAt("/architecture", systemRoutes);
-    expect(screen.getByRole("heading", { name: /^Connections/ })).toBeInTheDocument();
-    expect(screen.getByText("2 connections between 3 systems.", { exact: false })).toBeInTheDocument();
+    expect(screen.getByText("2 connections between systems in this version.", { exact: false })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /See the map/ })).toHaveAttribute("href", "/architecture/map");
   });
 
   it("finds a system by an alias and says so", () => {
@@ -68,10 +68,10 @@ describe("SystemsPage", () => {
     renderAt("/architecture/systems/cwom", systemRoutes);
     expect(screen.getByText("Orchestrated by CWOM")).toBeInTheDocument();
     expect(screen.getByText("Orchestrates CWOM")).toBeInTheDocument();
-    fireEvent.click(within(screen.getByRole("article")).getByRole("link", { name: "WFM" }));
+    fireEvent.click(within(screen.getByRole("table", { name: "Depends on: CWOM" })).getByRole("link", { name: "WFM" }));
     const title = await screen.findByRole("heading", { level: 2, name: "WFM" });
     expect(title).toHaveFocus();
-    expect(within(within(screen.getByRole("article")).getByRole("link", { name: "CWOM" }).closest("tr")!).getByText("Where you came from")).toBeInTheDocument();
+    expect(within(within(screen.getByRole("table", { name: "Used by: WFM" })).getByRole("link", { name: "CWOM" }).closest("tr")!).getByText("Where you came from")).toBeInTheDocument();
     expect(within(screen.getByRole("table", { name: "Systems in this version" })).getByRole("link", { name: "WFM" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("button", { name: "Back to CWOM" })).toBeInTheDocument();
   });

@@ -1,7 +1,7 @@
 import "./diagram.css";
 
 import { Table2 } from "lucide-react";
-import { type KeyboardEvent, type MouseEvent, type ReactNode, useCallback, useId, useMemo, useRef, useState } from "react";
+import { type KeyboardEvent, type MouseEvent, type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { Button } from "../components/actions";
 import type { LinkLike } from "../components/layout";
@@ -37,6 +37,11 @@ export type DiagramProps = {
   headers?: Partial<DiagramHeaders>;
   /** Start on the table, for screens where the table is the better first read. */
   startAsTable?: boolean;
+  /**
+   * The screen's own table, shown by "Show as table" instead of the kit's: for a
+   * diagram whose rows say more than its drawing (what each connection is for).
+   */
+  table?: ReactNode;
 };
 
 /**
@@ -51,7 +56,7 @@ export type DiagramProps = {
  * the first and last; Enter opens. "Show as table" swaps the drawing for a
  * table of every node with what it links to and from.
  */
-export function Diagram({ label, caption, layout, onActivate, link: Link = Anchor, legend, headers, startAsTable = false }: DiagramProps) {
+export function Diagram({ label, caption, layout, onActivate, link: Link = Anchor, legend, headers, startAsTable = false, table }: DiagramProps) {
   const [asTable, setAsTable] = useState(startAsTable);
   const captionId = useId();
   const arrowId = `${useId().replace(/:/g, "")}-arrow`;
@@ -68,7 +73,7 @@ export function Diagram({ label, caption, layout, onActivate, link: Link = Ancho
         </Button>
       </div>
       {asTable ? (
-        <DiagramTable label={label} layout={layout} onActivate={onActivate} link={Link} headers={words} />
+        table ?? <DiagramTable label={label} layout={layout} onActivate={onActivate} link={Link} headers={words} />
       ) : (
         <>
           <Drawing label={label} layout={layout} onActivate={onActivate} arrowId={arrowId} />
@@ -86,6 +91,16 @@ function Drawing({ label, layout, onActivate, arrowId }: { label: string; layout
   const interactive = actionable.length > 0;
   // The roving stop: the node last focused, else the subject, else the first.
   const stop = actionable.some((node) => node.id === current) ? current : (actionable.find((node) => node.tone === "subject") ?? actionable[0])?.id;
+
+  // A drawing wider than its frame opens on its subject, so the record's own node is in view.
+  const frame = useRef<HTMLDivElement>(null);
+  const subject = layout.nodes.find((node) => node.tone === "subject");
+  const subjectCentre = subject ? subject.x + subject.width / 2 : null;
+  useEffect(() => {
+    const element = frame.current;
+    if (!element || subjectCentre === null || element.scrollWidth <= element.clientWidth) return;
+    element.scrollLeft = Math.max(0, subjectCentre - element.clientWidth / 2);
+  }, [subjectCentre]);
 
   const move = useCallback((id: string) => {
     setCurrent(id);
@@ -143,9 +158,9 @@ function Drawing({ label, layout, onActivate, arrowId }: { label: string; layout
   // The drawing is wider than a phone: it scrolls in place, by keyboard too. With nodes to
   // focus, moving between them scrolls it; without, the region itself takes focus.
   return interactive ? (
-    <div className="ds-diagram__scroll" dir="ltr">{svg}</div>
+    <div ref={frame} className="ds-diagram__scroll" dir="ltr">{svg}</div>
   ) : (
-    <div className="ds-diagram__scroll" dir="ltr" role="region" tabIndex={0} aria-label={`${label} (scrolls)`}>
+    <div ref={frame} className="ds-diagram__scroll" dir="ltr" role="region" tabIndex={0} aria-label={`${label} (scrolls)`}>
       {svg}
     </div>
   );
@@ -198,7 +213,7 @@ export function DiagramTable({ label, layout, onActivate, link: Link = Anchor, h
                 {node.href ? (
                   <Link href={node.href}>{node.label}</Link>
                 ) : onActivate ? (
-                  <button type="button" className="ds-diagram__name-button" onClick={(event) => onActivate(node, event)}>
+                  <button type="button" className="ds-diagram__name-button" aria-pressed={node.pressed} onClick={(event) => onActivate(node, event)}>
                     {node.label}
                   </button>
                 ) : (
@@ -215,5 +230,33 @@ export function DiagramTable({ label, layout, onActivate, link: Link = Anchor, h
         </tbody>
       </table>
     </div>
+  );
+}
+
+/** A mark the legend can show: a node's tone, or a dashed line. */
+export type LegendMark = "subject" | "ready" | "decide" | "gap" | "muted" | "dashed";
+
+/**
+ * What a diagram's marks mean, for its `legend`: each mark drawn as the
+ * drawing draws it, with its meaning in words, since colour never says it alone.
+ */
+export function DiagramLegend({ items }: { items: [LegendMark, string][] }) {
+  return (
+    <ul className="ds-diagram__key">
+      {items.map(([mark, meaning]) => (
+        <li key={mark}>
+          <svg className="ds-diagram__key-mark" width="28" height="16" viewBox="0 0 28 16" aria-hidden="true" focusable="false">
+            {mark === "dashed" ? (
+              <path d="M 1 8 H 27" className="ds-diagram__line" strokeDasharray="6 4" />
+            ) : (
+              <g className="ds-diagram__node" data-tone={mark}>
+                <rect className="ds-diagram__box" x="1" y="1" width="26" height="14" rx="3" />
+              </g>
+            )}
+          </svg>
+          {meaning}
+        </li>
+      ))}
+    </ul>
   );
 }
