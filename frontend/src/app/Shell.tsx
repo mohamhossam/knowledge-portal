@@ -27,6 +27,8 @@ const REDESIGNED: ((path: string) => boolean)[] = [
   (path) => path === "/library" || path.startsWith("/library/"),
   // Area 3: a draft's steps (Sources, Decide, Changes, Check, Publish), of any catalogue version.
   (path) => /^\/architecture(\/versions\/[^/]+)?\/(sources|decide|changes|check|publish)\/?$/.test(path),
+  // Area 4: ownership (the systems grid, products, squads, people and history).
+  (path) => path === "/squads" || path.startsWith("/squads/"),
 ];
 
 function useOnline() {

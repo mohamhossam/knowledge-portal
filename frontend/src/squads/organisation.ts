@@ -258,3 +258,53 @@ export function historyLine(event: OrganisationAuditEvent, org: Organisation): s
 
 /** Active people, by name: the only ones who can hold a role. */
 export const activePeople = (org: Organisation) => org.people.filter((person) => person.active).sort(byName);
+
+/** A row of the ownership grid: a system, where it sits, the products that name it and who runs it. */
+export type OwnershipRow = SystemRow & { products: OrgProduct[] };
+
+/**
+ * Every system in service, then every system a product or squad still names that the
+ * version in service no longer has (lapsed), by name: the ownership grid's rows.
+ */
+export function ownershipRows(org: Organisation, release: Release | null): OwnershipRow[] {
+  const ids = [
+    ...(release?.systems ?? []).map((system) => system.id),
+    ...org.products.flatMap((product) => product.system_ids),
+    ...org.squads.flatMap(systemIdsOf),
+  ];
+  return [...new Set(ids)]
+    .map((id) => ({ ...row(org, release, id), products: org.products.filter((product) => product.system_ids.includes(id)).sort(byName) }))
+    .sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base" }));
+}
+
+/**
+ * The squad to offer first for some systems: the one that runs the most other systems
+ * in the products naming them (a tie goes to the products' own value stream), with that reason in words. Null when no squad runs a
+ * related system yet (backlog O-6), or the systems are in no product.
+ */
+export function suggestSquad(org: Organisation, systemIds: string[]): { squad: Squad; reason: string } | null {
+  const chosen = new Set(systemIds);
+  const products = org.products.filter((product) => product.system_ids.some((id) => chosen.has(id)));
+  const related = new Set(products.flatMap((product) => product.system_ids).filter((id) => !chosen.has(id)));
+  // Most related systems first; on a tie, a squad of the products' own value stream, then by name.
+  const streams = new Set(products.map((product) => product.value_stream_id));
+  const best = org.squads
+    .map((squad) => ({ squad, runs: systemIdsOf(squad).filter((id) => related.has(id)).length }))
+    .filter((item) => item.runs > 0)
+    .sort((a, b) => b.runs - a.runs || Number(streams.has(b.squad.value_stream_id)) - Number(streams.has(a.squad.value_stream_id)) || byName(a.squad, b.squad))[0];
+  if (!best) return null;
+  const where = products
+    .filter((product) => product.system_ids.some((id) => related.has(id) && systemIdsOf(best.squad).includes(id)))
+    .map((product) => product.name);
+  return {
+    squad: best.squad,
+    reason: `it runs ${best.runs === 1 ? "1 other system" : `${best.runs} other systems`} in ${where.join(", ")}`,
+  };
+}
+
+/** A squad given some systems: one seat each, in a role, for a person or open; systems it already runs are left as they are. */
+export function giveSystems(squad: Squad, systemIds: string[], role: SquadRole, personId: string | null): Squad {
+  const runs = new Set(systemIdsOf(squad));
+  const added = systemIds.filter((id) => !runs.has(id)).map((system_id) => ({ system_id, role, person_id: personId, capability_id: null }));
+  return { ...squad, resources: [...squad.resources, ...added] };
+}

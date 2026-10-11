@@ -2,15 +2,25 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api, type Organisation, type Release } from "../api/client";
+import { checkAxeAfterEach } from "../test/axe";
+import { HistoryPage } from "./HistoryPage";
+import { OwnershipGrid } from "./OwnershipGrid";
 import { PeoplePage } from "./PeoplePage";
 import { ProductsPage } from "./ProductsPage";
 import { SquadListPage } from "./SquadListPage";
 import { SquadsPage } from "./SquadsPage";
 
-afterEach(() => vi.restoreAllMocks());
+// jsdom has no layout observer; the sticky measuring hook only needs the interface.
+beforeEach(() => vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} unobserve() {} }));
+checkAxeAfterEach();
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 
 const release = {
   id: "live", revision: 1, status: "published", documents: [], relationships: [], landscape_domains: [],
@@ -75,23 +85,40 @@ function renderAt(path: string, page: ReactNode, child: string) {
   );
 }
 
-describe("ProductsPage", () => {
-  it("counts the gap and gives a system to a squad in place, keeping the squad's revision", async () => {
+const counts = () => screen.findByRole("group", { name: "Who runs the systems in service" }, { timeout: 5000 });
+
+describe("OwnershipGrid", () => {
+  it("counts the gap as a way into the grid, and filters to the systems with no squad", async () => {
+    renderAt("/squads", <OwnershipGrid />, "index");
+    expect(await counts()).toHaveTextContent("No squad1 system");
+    expect(screen.getByRole("heading", { level: 1, name: "Ownership" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Systems" })).toHaveAttribute("aria-current", "page");
+    const table = screen.getByRole("table", { name: "Systems · 2" });
+    expect(within(table).getAllByRole("rowheader").map((cell) => cell.textContent)).toEqual(["BCRM", "DCRM"]);
+    fireEvent.click(screen.getByRole("button", { name: /^No squad/ }));
+    const filtered = screen.getByRole("table", { name: "Systems · 1 of 2 shown" });
+    expect(within(filtered).getByRole("rowheader")).toHaveTextContent("DCRM");
+    expect(within(filtered).getByText("No squad")).toBeInTheDocument();
+  });
+
+  it("gives the selected systems to the suggested squad in one save, keeping its revision", async () => {
     const save = vi.spyOn(api, "saveOrganisation").mockResolvedValue(org);
-    renderAt("/squads", <ProductsPage />, "index");
-    const notice = await screen.findByLabelText("Ownership of the systems in service", undefined, { timeout: 5000 });
-    expect(notice).toHaveTextContent("No squad1");
-    const row = screen.getByRole("link", { name: "DCRM" }).closest("tr")!;
-    expect(within(row).getByText("No squad")).toBeInTheDocument();
-    fireEvent.click(within(row).getByRole("button", { name: /Give it to a squad/ }));
-    const panel = screen.getByRole("form", { name: "Give DCRM to a squad" });
-    const give = within(panel).getByRole("button", { name: "Give it to the squad" });
-    expect(give).toBeDisabled();
-    const [squad, role, person] = within(panel).getAllByRole("combobox");
-    fireEvent.change(squad!, { target: { value: "sales" } });
-    fireEvent.change(role!, { target: { value: "developer" } });
-    fireEvent.change(person!, { target: { value: "omar" } });
-    fireEvent.click(give);
+    renderAt("/squads?show=none", <OwnershipGrid />, "index");
+    await counts();
+    expect(screen.queryByRole("region", { name: "Selection" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Select the 1 system shown" }));
+    const bar = screen.getByRole("region", { name: "Selection" });
+    expect(bar).toHaveTextContent("1 system selected");
+    fireEvent.click(within(bar).getByRole("button", { name: "Give to a squad…" }));
+    const panel = screen.getByRole("form", { name: "Give 1 system to a squad" });
+    // Sales runs BCRM, the other system in Partner channel: it is offered first.
+    const squad = within(panel).getByRole("combobox", { name: "Squad" });
+    expect(squad).toHaveValue("sales");
+    expect(squad).toHaveAccessibleDescription("Suggested: Sales, because it runs 1 other system in Partner channel.");
+    fireEvent.change(within(panel).getByRole("combobox", { name: "Role on each" }), { target: { value: "developer" } });
+    fireEvent.change(within(panel).getByRole("combobox", { name: "Person" }), { target: { value: "omar" } });
+    expect(panel).toHaveTextContent("Sales will run DCRM, with a developer seat on each held by Omar.");
+    fireEvent.click(within(panel).getByRole("button", { name: "Give 1 system to Sales" }));
     await waitFor(() => expect(save).toHaveBeenCalled());
     expect(save.mock.calls[0]).toEqual([
       "squads",
@@ -101,28 +128,58 @@ describe("ProductsPage", () => {
         squad: expect.objectContaining({
           resources: [
             { system_id: "bcrm", role: "system_contact", person_id: "layla" },
-            { system_id: "dcrm", role: "developer", person_id: "omar" },
+            { system_id: "dcrm", role: "developer", person_id: "omar", capability_id: null },
           ],
         }),
       },
       false,
     ]);
+    const said = await screen.findByText("Gave 1 system to Sales.");
+    expect(said).toHaveAttribute("role", "status");
+    // The bar that opened it is hidden now: focus lands on the outcome instead.
+    await waitFor(() => expect(said).toHaveFocus());
+  });
+
+  it("says why it can't give systems to a squad that already runs them all", async () => {
+    vi.spyOn(api, "saveOrganisation").mockResolvedValue(org);
+    renderAt("/squads?squad=sales", <OwnershipGrid />, "index");
+    await counts();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select BCRM" }));
+    fireEvent.click(screen.getByRole("button", { name: "Give to a squad…" }));
+    const panel = screen.getByRole("form", { name: "Give 1 system to a squad" });
+    fireEvent.change(within(panel).getByRole("combobox", { name: "Squad" }), { target: { value: "sales" } });
+    expect(within(panel).getByRole("button", { name: "Give them to the squad" })).toHaveAccessibleDescription("It already runs every system chosen.");
+    fireEvent.keyDown(within(panel).getByRole("combobox", { name: "Squad" }), { key: "Escape" });
+    expect(screen.queryByRole("form")).not.toBeInTheDocument();
+  });
+});
+
+describe("ProductsPage", () => {
+  it("shows each product's systems with no give link per row, and one way into the grid for its gaps", async () => {
+    renderAt("/squads/products", <ProductsPage />, "products");
+    const product = await screen.findByRole("article", { name: "Partner channel" }, { timeout: 5000 });
+    expect(within(product).getByRole("table")).toHaveTextContent("No squad");
+    expect(within(product).queryByRole("button", { name: /Give it to a squad/ })).not.toBeInTheDocument();
+    expect(within(product).getByRole("link", { name: "Give the system with no squad to a squad, in Partner channel" })).toHaveAttribute(
+      "href",
+      "/squads?show=none&product=p",
+    );
   });
 
   it("flags a product linked to no offering or portfolio node, and counts it", async () => {
-    renderAt("/squads", <ProductsPage />, "index");
+    renderAt("/squads/products", <ProductsPage />, "products");
     const checks = await screen.findByRole("list", { name: "To check in Partner channel" }, { timeout: 5000 });
     expect(checks).toHaveTextContent("Not linked to an offering or a portfolio node.");
-    expect(screen.getByLabelText("Ownership of the systems in service")).toHaveTextContent("Products to check1");
+    expect(await counts()).toHaveTextContent("Products to check1");
   });
 
-  it("refuses to remove a value stream that still holds products or squads", async () => {
-    renderAt("/squads", <ProductsPage />, "index");
-    const stream = (await screen.findByText("Retail", { selector: "h2" })).closest("section")!;
-    fireEvent.click(within(stream).getAllByRole("button", { name: /^Remove it ?\(Retail\)/ })[0]!);
-    const panel = screen.getByRole("form", { name: "Remove Retail" });
-    expect(within(panel).getByText("Move or remove this value stream's products and squads first.")).toBeInTheDocument();
-    expect(within(panel).getByRole("button", { name: "Remove it" })).toBeDisabled();
+  it("won't remove a value stream that still holds products or squads, and says why", async () => {
+    renderAt("/squads/products", <ProductsPage />, "products");
+    const remove = await screen.findByRole("button", { name: "Remove the value stream Retail" }, { timeout: 5000 });
+    expect(remove).toHaveAttribute("aria-disabled", "true");
+    expect(remove).toHaveAccessibleDescription("Move or remove its products and squads first.");
+    fireEvent.click(remove);
+    expect(screen.queryByRole("region", { name: /Remove Retail/ })).not.toBeInTheDocument();
   });
 });
 
@@ -131,25 +188,33 @@ describe("SquadListPage", () => {
     renderAt("/squads/squads", <SquadListPage />, "squads");
     const checks = await screen.findByRole("list", { name: "To check in Sales" }, { timeout: 5000 });
     expect(checks).toHaveTextContent("BCRM › Retired selling: no capability of the system links to it any more.");
-    expect(screen.getByLabelText("Ownership of the systems in service")).toHaveTextContent("Squads to check1");
+    expect(await counts()).toHaveTextContent("Squads to check1");
+  });
+
+  it("names the systems a removed squad leaves without one", async () => {
+    renderAt("/squads/squads", <SquadListPage />, "squads");
+    fireEvent.click(await screen.findByRole("button", { name: "Remove Sales" }, { timeout: 5000 }));
+    const panel = screen.getByRole("region", { name: "Remove Sales?" });
+    expect(panel).toHaveTextContent("This system will have no squad: BCRM.");
   });
 
   it("scopes a seat to a capability the system links to, and clears it when the system changes", async () => {
     const save = vi.spyOn(api, "saveOrganisation").mockResolvedValue(org);
     renderAt("/squads/squads", <SquadListPage />, "squads");
-    fireEvent.click(await screen.findByRole("button", { name: /Edit\s*Sales/ }, { timeout: 5000 }));
+    fireEvent.click(await screen.findByRole("button", { name: "Edit Sales" }, { timeout: 5000 }));
     const panel = screen.getByRole("form", { name: "Edit Sales" });
-    fireEvent.click(within(panel).getByRole("button", { name: /Add another seat/ }));
+    fireEvent.click(within(panel).getByRole("button", { name: "Add another seat" }));
     const seat = within(panel).getAllByRole("group").at(-1)!;
-    const [system, capability, role] = within(seat).getAllByRole("combobox");
-    fireEvent.change(system!, { target: { value: "bcrm" } });
+    const system = within(seat).getByRole("combobox", { name: "System" });
+    const capability = within(seat).getByRole("combobox", { name: "Capability" });
+    fireEvent.change(system, { target: { value: "bcrm" } });
     expect([...(capability as HTMLSelectElement).options].map((option) => option.text)).toEqual(["Whole system", "Sales management"]);
-    fireEvent.change(capability!, { target: { value: "cap-sales" } });
-    fireEvent.change(system!, { target: { value: "dcrm" } });
-    expect((capability as HTMLSelectElement).value).toBe("");
-    fireEvent.change(system!, { target: { value: "bcrm" } });
-    fireEvent.change(capability!, { target: { value: "cap-sales" } });
-    fireEvent.change(role!, { target: { value: "tester" } });
+    fireEvent.change(capability, { target: { value: "cap-sales" } });
+    fireEvent.change(system, { target: { value: "dcrm" } });
+    expect(capability).toHaveValue("");
+    fireEvent.change(system, { target: { value: "bcrm" } });
+    fireEvent.change(capability, { target: { value: "cap-sales" } });
+    fireEvent.change(within(seat).getByRole("combobox", { name: "Role" }), { target: { value: "tester" } });
     fireEvent.click(within(panel).getByRole("button", { name: "Save the squad" }));
     await waitFor(() => expect(save).toHaveBeenCalled());
     expect(save.mock.calls[0]![2]).toEqual({
@@ -181,11 +246,18 @@ describe("PeoplePage", () => {
     ]);
   });
 
-  it("will not make inactive someone who still holds a role", async () => {
+  it("won't make inactive someone who still holds a role", async () => {
     renderAt("/squads/people", <PeoplePage />, "people");
-    const row = (await screen.findByText("Layla", { selector: "th > span" })).closest("tr")!;
-    fireEvent.click(within(row).getByRole("button", { name: /^Edit ?Layla/ }));
-    expect(screen.getByRole("checkbox", { name: /Active/ })).toBeDisabled();
-    expect(screen.getByText(/still holds a role/)).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: "Edit Layla" }, { timeout: 5000 }));
+    const active = screen.getByRole("checkbox", { name: /Active/ });
+    expect(active).toBeDisabled();
+    expect(active).toHaveAccessibleDescription(/still holds a role/);
+  });
+});
+
+describe("HistoryPage", () => {
+  it("says when nothing has changed yet", async () => {
+    renderAt("/squads/history", <HistoryPage />, "history");
+    expect(await screen.findByText("Nothing has changed yet.", undefined, { timeout: 5000 })).toBeInTheDocument();
   });
 });

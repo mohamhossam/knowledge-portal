@@ -15,7 +15,6 @@ import "./styles/shell.css";
 import "./styles/timetable.css";
 import "./styles/library.css";
 import "./styles/catalogue.css";
-import "./styles/squads.css";
 import "./styles/explorer.css";
 import "./styles/knowledge.css";
 // The design system (fonts + tokens), after the legacy CSS; legacy pages sit in an island.

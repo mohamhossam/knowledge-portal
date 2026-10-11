@@ -1,98 +1,114 @@
-import { Fragment, useState } from "react";
+import { Pencil, Plus } from "lucide-react";
+import { useState } from "react";
 
 import type { Person } from "../api/client";
-import { EditButton } from "../catalogue/DraftEdits";
-import { count } from "../home/format";
+import { Button, type Column, DataTable, FilterStrip, Section, Status } from "../design/components";
+import { plural } from "../library/where";
 import { PersonEdit } from "./OrgEdits";
 import { rolesOf } from "./organisation";
+import { useEditor } from "./useEditor";
 import { useOrgContext } from "./useOrganisation";
+
+type Show = "all" | "active" | "inactive";
 
 /** Everyone the catalogue names, with the roles each holds. People are never deleted, only made inactive. */
 export function PeoplePage() {
-  const { org } = useOrgContext();
-  const [editing, setEditing] = useState<{ person?: Person } | null>(null);
+  const { org, hook } = useOrgContext();
+  const editor = useEditor<{ person?: Person }>();
+  const editing = editor.editing;
+  const [show, setShow] = useState<Show>("all");
   const [find, setFind] = useState("");
   const wanted = find.trim().toLocaleLowerCase();
-  const shown = [...org.people]
-    .sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name))
-    .filter((person) => !wanted || [person.name, person.team, person.email].some((text) => text?.toLocaleLowerCase().includes(wanted)));
-  const done = () => setEditing(null);
+  const all = [...org.people].sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name));
+  const rows = all.filter((person) =>
+    (show === "all" || person.active === (show === "active"))
+    && (!wanted || [person.name, person.team, person.email].some((text) => text?.toLocaleLowerCase().includes(wanted))));
+  const active = all.filter((person) => person.active).length;
+  const start = (value: { person?: Person }, event: { currentTarget: EventTarget | null }) => {
+    hook.save.reset();
+    editor.open(value, event);
+  };
+  const done = () => editor.close(() => document.getElementById("ds-page-title"));
+
+  const columns: Column<Person>[] = [
+    {
+      id: "person",
+      header: "Person",
+      rowHeader: true,
+      bidi: true,
+      width: "18rem",
+      cell: (person) => (
+        <>
+          <span className="own-strong">{person.name}</span>
+          <span className="own-detail">
+            {[person.team, person.email].filter((item): item is string => Boolean(item)).join(" · ") || "No team or email recorded"}
+          </span>
+        </>
+      ),
+    },
+    {
+      id: "roles",
+      header: "Roles",
+      bidi: true,
+      cell: (person) => {
+        const roles = rolesOf(org, person.id);
+        const words = [
+          ...roles.leads.map((stream) => `Leads ${stream.name}`),
+          ...roles.scrumMaster.map((squad) => `Scrum master of ${squad.name}`),
+          ...(roles.resource.length ? [`On ${plural(new Set(roles.resource.map((item) => item.systemId)).size, "system")} in squads`] : []),
+        ];
+        return words.length ? words.join("; ") : <span className="own-none">No role</span>;
+      },
+    },
+    { id: "state", header: "State", width: "8rem", cell: (person) => (person.active ? "Active" : <Status tone="stopped">Inactive</Status>) },
+    {
+      id: "actions",
+      header: <span className="ds-visually-hidden">Actions</span>,
+      width: "6rem",
+      cell: (person) => (
+        <Button variant="quiet" icon={<Pencil size={14} />} aria-label={`Edit ${person.name}`} onClick={(event) => start({ person }, event)}>
+          Edit
+        </Button>
+      ),
+    },
+  ];
+
   return (
-    <section className="govsection catalogue__first" aria-labelledby="people-title">
-      <h2 id="people-title" className="govsection__title">People</h2>
-      <p className="govsection__lead">
-        Leads, scrum masters and the people on each squad's systems. Someone who holds no role can be marked inactive; nobody is deleted, so history keeps their name.
-      </p>
-      <div className="filters">
-        <p className="govsection__actions">
-          <EditButton expanded={editing !== null && !editing.person} onClick={() => setEditing(editing && !editing.person ? null : {})}>
+    <div className="own-stack">
+      <Section
+        title="People"
+        count={org.people.length}
+        actions={
+          <Button icon={<Plus size={14} />} aria-expanded={Boolean(editing && !editing.person)} onClick={(event) => start({}, event)}>
             Add a person
-          </EditButton>
+          </Button>
+        }
+      >
+        <p className="own-quiet own-measure">
+          Leads, scrum masters and the people on each squad's systems. Someone who holds no role can be marked inactive; nobody is deleted, so history keeps their name.
         </p>
-        <label className="field field--inline">
-          <span className="field__label">Find a person</span>
-          <input type="search" className="field__input" value={find} onChange={(event) => setFind(event.target.value)} />
-        </label>
-      </div>
-      {editing && !editing.person && <PersonEdit onDone={done} />}
-      {shown.length ? (
-        <table className="govtable">
-          <caption className="visually-hidden">People and the roles they hold</caption>
-          <thead>
-            <tr>
-              <th scope="col">Person</th>
-              <th scope="col" className="people__roles">Roles</th>
-            </tr>
-          </thead>
-          <tbody>
-            {shown.map((person) => {
-              const roles = rolesOf(org, person.id);
-              const words = [
-                ...roles.leads.map((stream) => `Leads ${stream.name}`),
-                ...roles.scrumMaster.map((squad) => `Scrum master of ${squad.name}`),
-                ...(roles.resource.length ? [`On ${count(new Set(roles.resource.map((item) => item.systemId)).size, "system")} in squads`] : []),
-              ];
-              const open = editing?.person?.id === person.id;
-              return (
-                <Fragment key={person.id}>
-                  <tr className={`row${person.active ? "" : " row--past"}${open ? " is-open" : ""}`}>
-                    <th scope="row">
-                      <span dir="auto">{person.name}</span>
-                      <span className="secondary govtable__by people__meta" dir="auto">
-                        {[person.active ? null : "Inactive", person.team, person.email]
-                          .filter((item): item is string => !!item)
-                          .map((item, index) => (
-                            <span key={item}>
-                              {index > 0 && " · "}
-                              {item.includes("@") ? <>{item.split("@")[0]}@<wbr />{item.split("@").slice(1).join("@")}</> : item}
-                            </span>
-                          ))}
-                        {!person.team && !person.email && person.active && "No team or email recorded"}
-                      </span>
-                      <span className="secondary govtable__by people__roles-phone" dir="auto">{words.length ? words.join("; ") : "No role"}</span>
-                      <span className="sheet__row-actions">
-                        <EditButton onClick={() => setEditing({ person })}>
-                          Edit<span className="visually-hidden"> {person.name}</span>
-                        </EditButton>
-                      </span>
-                    </th>
-                    <td dir="auto" className="people__roles">{words.length ? words.join("; ") : <span className="secondary">No role</span>}</td>
-                  </tr>
-                  {open && (
-                    <tr className="runs__detail">
-                      <td colSpan={2}>
-                        <PersonEdit person={person} onDone={done} />
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              );
-            })}
-          </tbody>
-        </table>
-      ) : (
-        <p className="timetable__quiet">{find ? "No one matches." : "No one yet."}</p>
-      )}
-    </section>
+        {editing && <PersonEdit key={editing.person?.id ?? "new"} person={editing.person} panelRef={editor.panel} onDone={done} />}
+        <FilterStrip
+          label="Show people"
+          filters={[
+            { id: "all", label: "All", count: all.length },
+            { id: "active", label: "Active", count: active },
+            { id: "inactive", label: "Inactive", count: all.length - active },
+          ]}
+          active={show}
+          onChange={(id) => setShow(id as Show)}
+          find={{ label: "Find a person by name, team or email", value: find, onChange: setFind, placeholder: "A name, team or email…" }}
+          onClear={show !== "all" || find ? () => { setShow("all"); setFind(""); } : undefined}
+        />
+        <DataTable
+          caption={rows.length === all.length ? `People · ${all.length}` : `People · ${rows.length} of ${all.length} shown`}
+          captionHidden
+          columns={columns}
+          rows={rows}
+          rowId={(person) => person.id}
+          emptyText={all.length ? "No one matches. Clear filters to see everyone." : "No one yet. Add the people who lead, run squads or hold seats."}
+        />
+      </Section>
+    </div>
   );
 }

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { Organisation, ReferenceFlag, Release } from "../api/client";
 import {
-  conceptsOf, freeId, gaps, historyLine, holdsRoles, productLinks, rolesOf, runBy, seatsLine, seatsOn, squadChecks, streamSections, unnamedSystems,
+  conceptsOf, freeId, gaps, giveSystems, ownershipRows, suggestSquad, historyLine, holdsRoles, productLinks, rolesOf, runBy, seatsLine, seatsOn, squadChecks, streamSections, unnamedSystems,
 } from "./organisation";
 
 const release = {
@@ -151,5 +151,34 @@ describe("seats scoped to a capability", () => {
       "BSCS › Charging: no capability of the system links to it any more.",
     ]);
     expect(squadChecks(undefined, billing)).toEqual([]);
+  });
+});
+
+describe("the ownership grid", () => {
+  it("lists every system in service, then the lapsed links, by name, with the products naming each", () => {
+    const rows = ownershipRows(org, release);
+    expect(rows.map((row) => [row.name, row.lapsed, row.products.map((product) => product.name)])).toEqual([
+      ["BCRM", false, ["Fibre"]],
+      ["CWOM", false, []],
+      ["EIDA", false, []],
+      ["legacy", true, ["Fibre"]],
+      ["WFM", false, []],
+    ]);
+  });
+
+  it("suggests the squad running other systems in the same product, and none when nothing is related", () => {
+    const withCwom = { ...org, products: [{ ...org.products[0]!, system_ids: ["bcrm", "cwom"] }] };
+    expect(suggestSquad(withCwom, ["cwom"])).toEqual({ squad: org.squads[0], reason: "it runs 1 other system in Fibre" });
+    expect(suggestSquad(org, ["wfm"])).toBeNull();
+  });
+
+  it("gives a squad a seat on each system it doesn't already run, in one record", () => {
+    const given = giveSystems(org.squads[0]!, ["bcrm", "cwom", "wfm"], "developer", null);
+    expect(given.revision).toBe(org.squads[0]!.revision);
+    expect(given.resources.map((item) => item.system_id)).toEqual(["bcrm", "cwom", "wfm"]);
+    expect(given.resources.slice(1)).toEqual([
+      { system_id: "cwom", role: "developer", person_id: null, capability_id: null },
+      { system_id: "wfm", role: "developer", person_id: null, capability_id: null },
+    ]);
   });
 });

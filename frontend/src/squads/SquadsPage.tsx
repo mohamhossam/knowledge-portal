@@ -1,72 +1,59 @@
-import { RotateCw } from "lucide-react";
-import { type ReactNode, useEffect } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import "./squads.css";
+
+import type { ReactNode } from "react";
+import { Outlet, useLocation } from "react-router-dom";
 
 import { errorMessage } from "../api/errors";
 import { useActorNames } from "../catalogue/useCatalogue";
-import { count, formatDay } from "../home/format";
+import { Button, EmptyState, Facts, PageHeader, Skeleton, SubNav } from "../design/components";
+import { formatDay } from "../home/format";
+import { plural } from "../library/where";
+import { RouterLink } from "../shell/links";
 import { gaps, historyLine } from "./organisation";
 import { type OrgContext, useHistory, useOrganisation } from "./useOrganisation";
 
-/** Table 3, the squad catalogue: what the organisation sells, who runs each system, and the people. */
+/**
+ * The Ownership area (redesign area 4): who runs each system in service. The
+ * head counts the gaps, each count a way into the grid; the pages under it
+ * are the systems grid, then products, squads, people and history.
+ */
 export function SquadsPage() {
   const hook = useOrganisation();
   const { organisation, active } = hook;
-  useEffect(() => {
-    document.title = "Squad catalogue · Knowledge portal";
-  }, []);
-  const head = (body: ReactNode) => (
-    <header className="docpage__head">
-      <p className="docpage__number" aria-hidden="true">3</p>
-      <div className="docpage__heading">
-        <h1 id="squads-title" className="docpage__title">
-          <span className="visually-hidden">Table 3:</span> Squad catalogue
-        </h1>
-        {body}
-      </div>
-    </header>
+  const head = (meta?: ReactNode, nav = true) => (
+    <PageHeader
+      title="Ownership"
+      lead="Who runs each system in service: value streams, their products and squads, and the people on each system."
+      meta={meta}
+    >
+      {nav && <SubIndex />}
+    </PageHeader>
   );
+
+  let body;
   if (organisation.isPending || active.isPending) {
-    return (
-      <section className="docpage" aria-labelledby="squads-title" aria-busy="true">
-        {head(<p className="docpage__edition">Opening the squad catalogue…</p>)}
-      </section>
+    body = <>{head(undefined, false)}<Skeleton label="Reading who runs what" rows={8} /></>;
+  } else if (organisation.isError) {
+    body = (
+      <>
+        {head(undefined, false)}
+        <EmptyState title="Couldn't read who runs what." action={<Button onClick={() => void organisation.refetch()}>Try again</Button>}>
+          <p>The knowledge service didn't answer: {errorMessage(organisation.error)}</p>
+        </EmptyState>
+      </>
+    );
+  } else {
+    const org = organisation.data;
+    const release = active.data ?? null;
+    const context: OrgContext = { org, release, flags: hook.references.data ?? [], hook };
+    body = (
+      <>
+        {head(<><Counts context={context} /><LastChange /></>)}
+        <Outlet context={context} />
+      </>
     );
   }
-  if (organisation.isError) {
-    return (
-      <section className="docpage" aria-labelledby="squads-title">
-        {head(
-          <p className="docpage__failure" role="alert">
-            {errorMessage(organisation.error)}
-            <button type="button" className="text-button" onClick={() => void organisation.refetch()}>
-              <RotateCw size={14} aria-hidden="true" />
-              Try again
-            </button>
-          </p>,
-        )}
-      </section>
-    );
-  }
-  const org = organisation.data;
-  const release = active.data ?? null;
-  const context: OrgContext = { org, release, flags: hook.references.data ?? [], hook };
-  return (
-    <section className="docpage squads" aria-labelledby="squads-title">
-      {head(
-        <>
-          <p className="docpage__edition">
-            Kept current in place: {count(org.value_streams.length, "value stream")}, {count(org.squads.length, "squad")},{" "}
-            {count(org.products.length, "product")}, {count(org.people.filter((person) => person.active).length, "active person", "active people")}.
-          </p>
-          <LastChange />
-          <Gaps context={context} />
-          <SubIndex />
-        </>,
-      )}
-      <Outlet context={context} />
-    </section>
-  );
+  return <div className="own">{body}</div>;
 }
 
 function LastChange() {
@@ -76,58 +63,50 @@ function LastChange() {
   const last = history.data?.[0];
   if (!last || !organisation.data) return null;
   return (
-    <p className="docpage__version">
-      Last change: {historyLine(last, organisation.data)}, by {actorName(last.actor_id)} on {formatDay(last.created_at)}.
+    <p className="own-quiet">
+      Last change: {historyLine(last, organisation.data)}, by <bdi>{actorName(last.actor_id)}</bdi> on {formatDay(last.created_at)}.
     </p>
   );
 }
 
-/** Ownership across the version in service, counted first, like a timetable's list of changes. */
-function Gaps({ context }: { context: OrgContext }) {
-  const { org, release } = context;
+/** Ownership across the version in service, counted first; each gap count opens the grid on it. */
+function Counts({ context }: { context: OrgContext }) {
+  const { org, release, flags } = context;
   if (!release) {
-    return <p className="docpage__notice">No architecture version is in service, so ownership cannot be counted and systems cannot be linked yet.</p>;
+    return <p className="own-quiet">No architecture version is in service, so ownership can't be counted and systems can't be linked yet.</p>;
   }
   const counted = gaps(org, release);
-  const toCheck = context.flags.filter((flag) => flag.subject === "product").length;
-  const squadsToCheck = context.flags.filter((flag) => flag.subject === "squad").length;
+  const productsToCheck = flags.filter((flag) => flag.subject === "product").length;
+  const squadsToCheck = flags.filter((flag) => flag.subject === "squad").length;
+  const items: [string, ReactNode][] = [
+    ["Systems in service", counted.inService.toLocaleString("en")],
+    ["Run by a squad", counted.run.toLocaleString("en")],
+    ["No squad", counted.noSquad ? <RouterLink href="/squads?show=none">{plural(counted.noSquad, "system")}</RouterLink> : "None"],
+    ...(counted.lapsed > 0 ? [["No longer in service", <RouterLink key="lapsed" href="/squads?show=lapsed">{plural(counted.lapsed, "link")}</RouterLink>] as [string, ReactNode]] : []),
+    ...(productsToCheck > 0 ? [["Products to check", <RouterLink key="products" href="/squads/products">{productsToCheck.toLocaleString("en")}</RouterLink>] as [string, ReactNode]] : []),
+    ...(squadsToCheck > 0 ? [["Squads to check", <RouterLink key="squads" href="/squads/squads">{squadsToCheck.toLocaleString("en")}</RouterLink>] as [string, ReactNode]] : []),
+  ];
   return (
-    <div className="notice-table squads__gaps" role="status" aria-label="Ownership of the systems in service">
-      <p className="notice-table__title">Who runs the systems in service</p>
-      <dl className="notice-table__grid">
-        <div className="notice-table__item"><dt>Systems in service</dt><dd>{counted.inService}</dd></div>
-        <div className="notice-table__item"><dt>Run by a squad</dt><dd>{counted.run}</dd></div>
-        <div className="notice-table__item"><dt>No squad</dt><dd>{counted.noSquad}</dd></div>
-        {counted.lapsed > 0 && <div className="notice-table__item"><dt>Links no longer in service</dt><dd>{counted.lapsed}</dd></div>}
-        {toCheck > 0 && <div className="notice-table__item"><dt>Products to check</dt><dd>{toCheck}</dd></div>}
-        {squadsToCheck > 0 && <div className="notice-table__item"><dt>Squads to check</dt><dd>{squadsToCheck}</dd></div>}
-      </dl>
-      <p className="notice-table__total">
-        {counted.noSquad
-          ? `${counted.noSquad} of ${counted.inService} systems in service ${counted.noSquad === 1 ? "has" : "have"} no squad.`
-          : `Every one of the ${counted.inService} systems in service has a squad.`}
-      </p>
+    <div className="own-counts" role="group" aria-label="Who runs the systems in service">
+      <Facts items={items} />
     </div>
   );
 }
 
 function SubIndex() {
   const { pathname } = useLocation();
-  const pages = [
-    { label: "Products", to: "/squads", current: pathname === "/squads" || pathname === "/squads/" },
-    { label: "Squads", to: "/squads/squads", current: pathname.startsWith("/squads/squads") },
-    { label: "People", to: "/squads/people", current: pathname.startsWith("/squads/people") },
-    { label: "History", to: "/squads/history", current: pathname.startsWith("/squads/history") },
-  ];
+  const at = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
   return (
-    <nav className="subindex" aria-label="This catalogue">
-      <ul className="subindex__list">
-        {pages.map((page) => (
-          <li key={page.label}>
-            <Link to={page.to} className="subindex__link" aria-current={page.current ? "page" : undefined}>{page.label}</Link>
-          </li>
-        ))}
-      </ul>
-    </nav>
+    <SubNav
+      label="Ownership"
+      link={RouterLink}
+      items={[
+        { label: "Systems", href: "/squads", current: pathname === "/squads" || pathname === "/squads/" },
+        { label: "Products", href: "/squads/products", current: at("/squads/products") },
+        { label: "Squads", href: "/squads/squads", current: at("/squads/squads") },
+        { label: "People", href: "/squads/people", current: at("/squads/people") },
+        { label: "History", href: "/squads/history", current: at("/squads/history") },
+      ]}
+    />
   );
 }

@@ -1,270 +1,192 @@
-import { ArrowRight } from "lucide-react";
-import { Fragment, useState } from "react";
-import { Link } from "react-router-dom";
+import { Pencil, Plus, Trash2 } from "lucide-react";
+import type { RefObject } from "react";
 
 import type { OrgProduct, ValueStream } from "../api/client";
-import { EditButton } from "../catalogue/DraftEdits";
-import { count } from "../home/format";
-import { GiveSystem, OrgRemove, ProductEdit, StreamEdit } from "./OrgEdits";
+import { ActionGroup, Button, type Column, DataTable, EmptyState, Section, Status } from "../design/components";
+import { plural } from "../library/where";
+import { ButtonLink, RouterLink } from "../shell/links";
+import { OrgRemove, ProductEdit, StreamEdit } from "./OrgEdits";
 import { productLinks, seatsLine, type SystemRow, streamSections, unnamedSystems } from "./organisation";
+import { useEditor } from "./useEditor";
 import { useOrgContext } from "./useOrganisation";
 
 type Editing =
   | { what: "add-stream" }
   | { what: "stream" | "remove-stream"; stream: ValueStream }
   | { what: "add-product"; stream: ValueStream }
-  | { what: "product" | "remove-product"; product: OrgProduct }
-  | null;
+  | { what: "product" | "remove-product"; product: OrgProduct };
 
 /**
- * The organisation read through what it sells: each value stream, its products,
- * each product's systems and who runs each; then the systems no product names.
+ * The organisation read through what it sells: each value stream, its products
+ * and each product's systems with who runs them. Giving systems to a squad
+ * happens in the systems grid, opened on the product's gaps.
  */
 export function ProductsPage() {
-  const { org, release } = useOrgContext();
-  const [editing, setEditing] = useState<Editing>(null);
-  const [giving, setGivingState] = useState<string | null>(null);
-  // The row a reader just gave to a squad stays lit until they act again.
-  const [lit, setLit] = useState<string | null>(null);
-  const setGiving = (key: string | null) => {
-    setLit(null);
-    setGivingState(key);
-  };
+  const { org, release, hook } = useOrgContext();
+  const editor = useEditor<Editing>();
+  const editing = editor.editing;
   const sections = streamSections(org, release);
-  const unnamed = unnamedSystems(org, release);
-  const done = () => setEditing(null);
-  const firstGap = [
-    ...sections.flatMap((section) => section.products.flatMap((item) => item.rows.map((row) => ({ key: `${item.product.id}:${row.systemId}`, row })))),
-    ...unnamed.flatMap((group) => group.rows.map((row) => ({ key: `unnamed:${row.systemId}`, row }))),
-  ].find(({ row }) => !row.lapsed && row.runBy.length === 0);
+  const unnamed = unnamedSystems(org, release).reduce((total, group) => total + group.rows.length, 0);
+  const start = (value: Editing, event: { currentTarget: EventTarget | null }) => {
+    hook.save.reset();
+    hook.remove.reset();
+    editor.open(value, event);
+  };
+  const done = () => editor.close(() => document.getElementById("ds-page-title"));
+  const panel = { panelRef: editor.panel, onDone: done };
 
   return (
-    <>
-      {sections.length === 0 && editing?.what !== "add-stream" && (
-        <p className="timetable__quiet catalogue__first">No value stream yet. Add the people first, then a value stream with its lead.</p>
-      )}
-      <p className="govsection__actions catalogue__first">
-        <EditButton expanded={editing?.what === "add-stream"} onClick={() => setEditing(editing?.what === "add-stream" ? null : { what: "add-stream" })}>
-          Add a value stream
-        </EditButton>
-      </p>
-      {editing?.what === "add-stream" && <StreamEdit onDone={done} />}
-
-      {sections.map(({ stream, lead, products, squads }) => (
-        <section key={stream.id} className="govsection stream" aria-labelledby={`stream-${stream.id}`}>
-          <h2 id={`stream-${stream.id}`} className="govsection__title" dir="auto">{stream.name}</h2>
-          <p className="govsection__lead">
-            {lead ? <>Led by <strong dir="auto">{lead.name}</strong></> : <strong>No lead named</strong>} ·{" "}
-            <Link to="/squads/squads">{count(squads.length, "squad")}</Link> · {count(products.length, "product")}
+    <div className="own-stack">
+      <Section
+        title="Value streams and products"
+        count={org.products.length}
+        actions={
+          <Button icon={<Plus size={14} />} aria-expanded={editing?.what === "add-stream"} onClick={(event) => start({ what: "add-stream" }, event)}>
+            Add a value stream
+          </Button>
+        }
+      >
+        {editing?.what === "add-stream" && <StreamEdit {...panel} />}
+        {sections.length === 0 && editing?.what !== "add-stream" && (
+          <EmptyState title="No value stream yet.">
+            <p>Add the people first, then a value stream with its lead. Each product and squad belongs to one.</p>
+          </EmptyState>
+        )}
+        {release && unnamed > 0 && (
+          <p className="own-quiet">
+            {plural(unnamed, "system in service is", "systems in service are")} in no product.{" "}
+            <RouterLink href="/squads?product=none">See them in the systems grid</RouterLink>
           </p>
-          <p className="govsection__actions">
-            <EditButton expanded={editing?.what === "add-product" && editing.stream.id === stream.id} onClick={() => setEditing({ what: "add-product", stream })}>
-              Add a product<span className="visually-hidden"> to {stream.name}</span>
-            </EditButton>
-            <EditButton onClick={() => setEditing({ what: "stream", stream })}>
-              Edit the value stream<span className="visually-hidden"> {stream.name}</span>
-            </EditButton>
-            <EditButton onClick={() => setEditing({ what: "remove-stream", stream })}>
-              Remove it<span className="visually-hidden"> ({stream.name})</span>
-            </EditButton>
-          </p>
-          {editing?.what === "stream" && editing.stream.id === stream.id && <StreamEdit stream={stream} onDone={done} />}
-          {editing?.what === "remove-stream" && editing.stream.id === stream.id && <OrgRemove kind="value-streams" record={stream} onDone={done} />}
-          {editing?.what === "add-product" && editing.stream.id === stream.id && <ProductEdit streamId={stream.id} onDone={done} />}
+        )}
+      </Section>
 
-          {products.length === 0 ? (
-            <p className="timetable__quiet">No product yet.</p>
-          ) : (
-            products.map(({ product, rows }) => (
-              <div key={product.id} className="product">
-                <h3 className="product__title" dir="auto">{product.name}</h3>
-                {product.description && <p className="product__description" dir="auto">{product.description}</p>}
-                <ProductLinks product={product} />
-                <p className="sheet__row-actions">
-                  <EditButton onClick={() => setEditing({ what: "product", product })}>
-                    Edit the product<span className="visually-hidden"> {product.name}</span>
-                  </EditButton>
-                  <EditButton onClick={() => setEditing({ what: "remove-product", product })}>
-                    Remove it<span className="visually-hidden"> ({product.name})</span>
-                  </EditButton>
-                </p>
-                {editing?.what === "product" && editing.product.id === product.id && <ProductEdit product={product} onDone={done} />}
-                {editing?.what === "remove-product" && editing.product.id === product.id && (
-                  <OrgRemove kind="products" record={product} onDone={done} />
-                )}
-                <SystemRows
-                  caption={`Systems ${product.name} rests on, and who runs each`}
-                  rows={rows}
-                  keyOf={(row) => `${product.id}:${row.systemId}`}
-                  giving={giving}
-                  setGiving={setGiving}
-                  lit={lit}
-                  setLit={setLit}
-                  empty="It names no system yet."
-                />
-              </div>
-            ))
-          )}
-        </section>
-      ))}
-
-      {release && (
-        <section className="govsection" aria-labelledby="unnamed-title">
-          <h2 id="unnamed-title" className="govsection__title">Systems no product names</h2>
-          <p className="govsection__lead">Systems in service that no product rests on, by where they sit, and who runs each.</p>
-          {unnamed.length ? (
-            <table className="govtable runs">
-              <caption className="visually-hidden">Systems in service that no product names, by where they sit, and who runs each</caption>
-              <thead>
-                <tr>
-                  <th scope="col" className="runs__system">System</th>
-                  <th scope="col">Run by</th>
-                </tr>
-              </thead>
-              {unnamed.map((group) => (
-                <tbody key={group.place}>
-                  <tr className="steps__phase runs__place">
-                    <th scope="colgroup" colSpan={2} dir="auto">{group.place}</th>
-                  </tr>
-                  <RowsBody rows={group.rows} keyOf={(row) => `unnamed:${row.systemId}`} giving={giving} setGiving={setGiving} lit={lit} setLit={setLit} hidePlace />
-                </tbody>
-              ))}
-            </table>
-          ) : (
-            <p className="timetable__quiet">Every system in service is named by a product.</p>
-          )}
-        </section>
-      )}
-
-      {firstGap ? (
-        <p className="timetable__next">
-          <button type="button" className="next-button" onClick={() => setGiving(firstGap.key)}>
-            Give {firstGap.row.name} to a squad
-            <ArrowRight size={16} aria-hidden="true" />
-          </button>
-        </p>
-      ) : release ? (
-        <p className="timetable__next timetable__next--quiet">Every system in service is run by a squad.</p>
-      ) : null}
-    </>
+      {sections.map(({ stream, lead, products, squads }) => {
+        const holding = products.length + squads.length;
+        return (
+          <Section
+            key={stream.id}
+            title={<bdi>{stream.name}</bdi>}
+            actions={
+              <ActionGroup label={`${stream.name}: actions`}>
+                <Button icon={<Plus size={14} />} onClick={(event) => start({ what: "add-product", stream }, event)}>
+                  Add a product
+                </Button>
+                <Button variant="quiet" icon={<Pencil size={14} />} aria-label={`Edit the value stream ${stream.name}`} onClick={(event) => start({ what: "stream", stream }, event)}>
+                  Edit
+                </Button>
+                <Button
+                  variant="quiet"
+                  icon={<Trash2 size={14} />}
+                  aria-label={`Remove the value stream ${stream.name}`}
+                  unavailableReason={holding ? "Move or remove its products and squads first." : null}
+                  onClick={(event) => start({ what: "remove-stream", stream }, event)}
+                >
+                  Remove
+                </Button>
+              </ActionGroup>
+            }
+          >
+            <p className="own-quiet">
+              {lead ? <>Led by <bdi className="own-strong">{lead.name}</bdi></> : <Status tone="attention">No lead named</Status>} ·{" "}
+              <RouterLink href="/squads/squads">{plural(squads.length, "squad")}</RouterLink> · {plural(products.length, "product")}
+            </p>
+            {editing?.what === "stream" && editing.stream.id === stream.id && <StreamEdit stream={stream} {...panel} />}
+            {editing?.what === "remove-stream" && editing.stream.id === stream.id && <OrgRemove kind="value-streams" record={stream} {...panel} />}
+            {editing?.what === "add-product" && editing.stream.id === stream.id && <ProductEdit streamId={stream.id} {...panel} />}
+            {products.length === 0 ? (
+              <p className="own-quiet">No product yet.</p>
+            ) : (
+              products.map(({ product, rows }) => (
+                <Product key={product.id} product={product} rows={rows} editing={editing} start={start} panel={panel} />
+              ))
+            )}
+          </Section>
+        );
+      })}
+    </div>
   );
 }
 
-/** What a product sells and where it sits in the portfolio, then what to check in its links. */
-function ProductLinks({ product }: { product: OrgProduct }) {
+const columns: Column<SystemRow>[] = [
+  {
+    id: "system",
+    header: "System",
+    rowHeader: true,
+    bidi: true,
+    width: "40%",
+    cell: (row) => (
+      <>
+        {row.lapsed ? <span>{row.name}</span> : <RouterLink href={`/architecture/systems/${encodeURIComponent(row.systemId)}`}>{row.name}</RouterLink>}
+        {row.lapsed && <span className="own-detail">Not in the version in service</span>}
+      </>
+    ),
+  },
+  {
+    id: "runs",
+    header: "Run by",
+    cell: (row) =>
+      row.runBy.length ? (
+        row.runBy.map(({ squad, seats }) => (
+          <span key={squad.id} className="own-squad">
+            <bdi>{squad.name}</bdi>
+            <span className="own-detail own-detail--plain"><bdi>{seatsLine(seats)}</bdi></span>
+          </span>
+        ))
+      ) : row.lapsed ? (
+        <Status tone="stopped">Link to check</Status>
+      ) : (
+        <Status tone="attention">No squad</Status>
+      ),
+  },
+];
+
+/** A product: what it is and sells, what to check in its links, then its systems and who runs each. */
+function Product({ product, rows, editing, start, panel }: {
+  product: OrgProduct;
+  rows: SystemRow[];
+  editing: Editing | null;
+  start: (value: Editing, event: { currentTarget: EventTarget | null }) => void;
+  panel: { panelRef: RefObject<HTMLElement | null>; onDone: () => void };
+}) {
   const { release, flags } = useOrgContext();
   const flag = flags.find((item) => item.subject === "product" && item.subject_id === product.id);
   const { sells, portfolio, checks } = productLinks(product, release, flag);
-  const facts = [
-    ...(sells.length ? [`Sells ${sells.join(", ")}`] : []),
-    ...(portfolio ? [`Portfolio: ${portfolio}`] : []),
-  ];
+  const facts = [...(sells.length ? [`Sells ${sells.join(", ")}`] : []), ...(portfolio ? [`Portfolio: ${portfolio}`] : [])];
+  const gaps = rows.filter((row) => !row.lapsed && row.runBy.length === 0).length;
   return (
-    <>
-      {facts.length > 0 && <p className="product__links" dir="auto">{facts.join(" · ")}</p>}
+    <article className="own-product" aria-labelledby={`own-product-${product.id}`}>
+      <div className="own-product__head">
+        <h3 id={`own-product-${product.id}`} className="own-product__title"><bdi>{product.name}</bdi></h3>
+        <ActionGroup label={`${product.name}: actions`}>
+          <Button variant="quiet" icon={<Pencil size={14} />} aria-label={`Edit the product ${product.name}`} onClick={(event) => start({ what: "product", product }, event)}>
+            Edit
+          </Button>
+          <Button variant="quiet" icon={<Trash2 size={14} />} aria-label={`Remove the product ${product.name}`} onClick={(event) => start({ what: "remove-product", product }, event)}>
+            Remove
+          </Button>
+        </ActionGroup>
+      </div>
+      {product.description && <p className="own-measure" dir="auto">{product.description}</p>}
+      {facts.length > 0 && <p className="own-quiet own-measure" dir="auto">{facts.join(" · ")}</p>}
       {checks.length > 0 && (
-        <ul className="product__checks" aria-label={`To check in ${product.name}`}>
-          {checks.map((check) => <li key={check} dir="auto">{check}</li>)}
+        <ul className="own-checks" aria-label={`To check in ${product.name}`}>
+          {checks.map((check) => <li key={check} dir="auto"><Status tone="attention">{check}</Status></li>)}
         </ul>
       )}
-    </>
-  );
-}
-
-/** A product's systems, each with the squads that run it and their seats on it. */
-function SystemRows({ caption, rows, keyOf, giving, setGiving, lit, setLit, empty }: {
-  caption: string;
-  rows: SystemRow[];
-  keyOf: (row: SystemRow) => string;
-  giving: string | null;
-  setGiving: (key: string | null) => void;
-  lit: string | null;
-  setLit: (key: string | null) => void;
-  empty: string;
-}) {
-  if (!rows.length) return empty ? <p className="timetable__quiet">{empty}</p> : null;
-  return (
-    <table className="govtable runs">
-      <caption className="visually-hidden">{caption}</caption>
-      <thead>
-        <tr>
-          <th scope="col" className="runs__system">System</th>
-          <th scope="col">Run by</th>
-        </tr>
-      </thead>
-      <tbody>
-        <RowsBody rows={rows} keyOf={keyOf} giving={giving} setGiving={setGiving} lit={lit} setLit={setLit} />
-      </tbody>
-    </table>
-  );
-}
-
-/** The rows themselves: a system, who runs it, and giving it to a squad in place when nobody does. */
-function RowsBody({ rows, keyOf, giving, setGiving, lit, setLit, hidePlace }: {
-  rows: SystemRow[];
-  keyOf: (row: SystemRow) => string;
-  giving: string | null;
-  setGiving: (key: string | null) => void;
-  lit: string | null;
-  setLit: (key: string | null) => void;
-  hidePlace?: boolean;
-}) {
-  // Closing the panel hands focus back to the system it was about.
-  const close = (key: string, given: boolean) => {
-    setGiving(null);
-    if (given) setLit(key);
-    setTimeout(() => document.querySelector<HTMLElement>(`[data-row="${CSS.escape(key)}"] th a, [data-row="${CSS.escape(key)}"] th span`)?.focus(), 0);
-  };
-  return (
-    <>
-        {rows.map((row) => {
-          const key = keyOf(row);
-          const open = giving === key;
-          const due = !row.lapsed && row.runBy.length === 0;
-          return (
-            <Fragment key={key}>
-              <tr data-row={key} className={`row${row.lapsed ? " row--past" : due ? " row--due" : ""}${open ? " is-open" : ""}${lit === key ? " is-lit" : ""}`}>
-                <th scope="row">
-                  {row.lapsed ? (
-                    <span dir="auto">{row.name}</span>
-                  ) : (
-                    <Link to={`/architecture/systems/${encodeURIComponent(row.systemId)}`} dir="auto">{row.name}</Link>
-                  )}
-                  {row.lapsed && <span className="secondary govtable__by">Not in the catalogue in service</span>}
-                  {!hidePlace && !row.lapsed && row.place.length > 0 && (
-                    <span className="secondary govtable__by" dir="auto">{row.place.join(" › ")}</span>
-                  )}
-                </th>
-                <td>
-                  {row.runBy.length ? (
-                    row.runBy.map(({ squad, seats }) => (
-                      <span key={squad.id} className="runs__squad">
-                        <Link to="/squads/squads" dir="auto">{squad.name}</Link>
-                        <span className="secondary govtable__by" dir="auto">{seatsLine(seats)}</span>
-                      </span>
-                    ))
-                  ) : (
-                    <span className="status">{row.lapsed ? "—" : "No squad"}</span>
-                  )}
-                  {due && (
-                    <span className="runs__give">
-                      <EditButton expanded={open} onClick={() => setGiving(open ? null : key)}>
-                        Give it to a squad<span className="visually-hidden"> ({row.name})</span>
-                      </EditButton>
-                    </span>
-                  )}
-                </td>
-              </tr>
-              {open && (
-                <tr className="runs__detail">
-                  <td colSpan={2}>
-                    <GiveSystem systemId={row.systemId} systemName={row.name} onDone={(given) => close(key, given)} />
-                  </td>
-                </tr>
-              )}
-            </Fragment>
-          );
-        })}
-    </>
+      {editing?.what === "product" && editing.product.id === product.id && <ProductEdit product={product} {...panel} />}
+      {editing?.what === "remove-product" && editing.product.id === product.id && <OrgRemove kind="products" record={product} {...panel} />}
+      {rows.length ? (
+        <DataTable caption={`Systems ${product.name} rests on, and who runs each`} captionHidden columns={columns} rows={rows} rowId={(row) => row.systemId} />
+      ) : (
+        <p className="own-quiet">It names no system yet.</p>
+      )}
+      {gaps > 0 && (
+        <div>
+          <ButtonLink to={`/squads?show=none&product=${encodeURIComponent(product.id)}`}>
+            Give {gaps === 1 ? "the system" : `the ${gaps} systems`} with no squad to a squad<span className="ds-visually-hidden">, in <bdi>{product.name}</bdi></span>
+          </ButtonLink>
+        </div>
+      )}
+    </article>
   );
 }
