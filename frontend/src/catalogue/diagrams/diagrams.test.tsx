@@ -75,6 +75,13 @@ describe("systemContext", () => {
     });
     expect(systemContext(loop, "cwom").nodes.map((node) => node.id)).toEqual(["cwom", "in:rtf", "out:rtf"]);
   });
+
+  it("says so on a side with nothing on it, rather than leave the column blank", () => {
+    const one = release({
+      relationships: [{ source_system_id: "cwom", target_system_id: "rtf", kind: "calls_api", description: "" }] as Release["relationships"],
+    });
+    expect(systemContext(one, "cwom").nodes.find((node) => node.lane === "callers")).toMatchObject({ label: "Nothing depends on it", tone: "muted" });
+  });
 });
 
 describe("capabilityMap", () => {

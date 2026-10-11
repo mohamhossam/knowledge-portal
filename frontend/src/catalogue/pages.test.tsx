@@ -26,9 +26,10 @@ const release = (id: string, extra: Partial<Release> = {}) => ({
   ...extra,
 }) as unknown as Release;
 
-function renderAt(path: string, routes: React.ReactNode, active = release("live")) {
-  vi.spyOn(api, "systemOwnership").mockResolvedValue({ system_id: "x", squads: [], products: [], value_streams: [] } as never);
-  vi.spyOn(api, "organisation").mockResolvedValue({ people: [], squads: [], products: [], value_streams: [] } as never);
+function renderAt(path: string, routes: React.ReactNode, active = release("live"), squads: object[] = []) {
+  vi.spyOn(api, "systemOwnership").mockImplementation(async (id) =>
+    ({ system_id: id, squads: squads.filter((squad) => (squad as { resources: { system_id: string }[] }).resources.some((seat) => seat.system_id === id)), products: [], value_streams: [] }) as never);
+  vi.spyOn(api, "organisation").mockResolvedValue({ people: [], squads, products: [], value_streams: [] } as never);
   const context: CatalogueContext = { book: catalogue(active), base: "/architecture", inService: true, actorName: () => "Amina Owner" };
   render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
@@ -74,6 +75,22 @@ describe("SystemsPage", () => {
     expect(within(within(screen.getByRole("table", { name: "Used by: WFM" })).getByRole("link", { name: "CWOM" }).closest("tr")!).getByText("Where you came from")).toBeInTheDocument();
     expect(within(screen.getByRole("region", { name: "Systems" })).getByRole("link", { name: /^WFM/ })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("button", { name: "Back to CWOM" })).toBeInTheDocument();
+  });
+});
+
+describe("SystemsPage gaps and owners", () => {
+  const fulfilment = { id: "fulfilment", name: "Fulfilment squad", value_stream_id: "vs", resources: [{ system_id: "cwom", role: "system_contact", person_id: "p1" }] };
+
+  it("says a gap most systems share once, above the list, instead of on every row", async () => {
+    renderAt("/architecture", systemRoutes, release("live"), [fulfilment]);
+    expect(await screen.findByText("Missing on most systems: concept (all), interfaces (all), squad (2), source (all).")).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "Systems" })).queryByText(/gaps?$/)).toBeNull();
+  });
+
+  it("names the squad that runs a system in the record's head, as Ownership does", async () => {
+    renderAt("/architecture/systems/cwom", systemRoutes, release("live"), [fulfilment]);
+    const runBy = screen.getByText("Run by").nextElementSibling as HTMLElement;
+    await waitFor(() => expect(runBy).toHaveTextContent("Fulfilment squad"));
   });
 });
 

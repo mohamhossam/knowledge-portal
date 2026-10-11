@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { CWOM_EDGES, CWOM_LANES, CWOM_NODES, OWNERSHIP_EDGES, OWNERSHIP_NODES } from "../../design-lab/gallery/diagramExamples";
-import { DIAGRAM, diagramRows, fit, layered, longestPathLevels, nearest, readingOrder, textWidth, tree } from "./layout";
+import { DIAGRAM, diagramRows, fit, layered, longestPathLevels, nearest, nodeHeightFor, readingOrder, textWidth, tree, wrap } from "./layout";
 import type { DiagramLayout, DiagramNode, PlacedNode } from "./types";
 
 const nodes = (...ids: string[]): DiagramNode[] => ids.map((id) => ({ id, label: id.toUpperCase() }));
@@ -252,3 +252,71 @@ describe("layered, aligned to the start", () => {
   });
 });
 
+
+describe("fitting a layout to the screen", () => {
+  const chain = (count: number) => {
+    const ids = Array.from({ length: count }, (_, at) => `n${at}`);
+    return { nodes: nodes(...ids), edges: ids.slice(1).map((id, at) => ({ from: ids[at]!, to: id })) };
+  };
+
+  it("closes its gaps to fit the width it has, and keeps them as they were without one", () => {
+    const { nodes: four, edges } = chain(4);
+    expect(layered(four, edges).width).toBeGreaterThan(800);
+    const fitted = layered(four, edges, { fitWidth: 800 });
+    expect(fitted.width).toBeLessThanOrEqual(800);
+    noOverlaps(fitted);
+    inside(fitted);
+  });
+
+  it("never closes a gap past the label on its edge", () => {
+    const label = "orchestrates";
+    const fitted = layered(nodes("a", "b", "c"), [{ from: "a", to: "b", label }, { from: "b", to: "c" }], { fitWidth: 480 });
+    const gapAB = at(fitted, "b").x - (at(fitted, "a").x + at(fitted, "a").width);
+    const gapBC = at(fitted, "c").x - (at(fitted, "b").x + at(fitted, "b").width);
+    expect(gapAB).toBeGreaterThanOrEqual(textWidth(label, 14));
+    expect(gapBC).toBeLessThan(gapAB);
+  });
+
+  it("narrows its nodes and wraps their words when that makes it fit", () => {
+    const wide: DiagramNode[] = [
+      { id: "a", label: "Business fibre bundle (sample)", detail: "Fixed broadband" },
+      { id: "b", label: "B" },
+      { id: "c", label: "C" },
+    ];
+    const fitted = layered(wide, [{ from: "a", to: "b" }, { from: "b", to: "c" }], { fitWidth: 520 });
+    expect(fitted.width).toBeLessThanOrEqual(520);
+    expect(at(fitted, "a").width).toBeLessThan(DIAGRAM.nodeWidth);
+    expect(at(fitted, "a").height).toBe(nodeHeightFor(3));
+  });
+
+  it("keeps its nodes' width when even the narrowest would not fit: it scrolls instead", () => {
+    const { nodes: nine, edges } = chain(9);
+    const fitted = layered(nine, edges, { fitWidth: 600 });
+    expect(fitted.width).toBeGreaterThan(600);
+    expect(at(fitted, "n0").width).toBe(DIAGRAM.nodeWidth);
+  });
+
+  it("widens its nodes into room to spare until their words fit on one line", () => {
+    const long: DiagramNode[] = [{ id: "a", label: "A", detail: "Customer channels (sample)" }, { id: "b", label: "B" }];
+    const natural = layered(long, [{ from: "a", to: "b" }], { nodeWidth: 148 });
+    const fitted = layered(long, [{ from: "a", to: "b" }], { nodeWidth: 148, fitWidth: 1200 });
+    expect(natural.nodes[0]!.height).toBe(nodeHeightFor(3));
+    expect(at(fitted, "a").width).toBeGreaterThan(148);
+    expect(at(fitted, "a").height).toBe(nodeHeightFor(2));
+  });
+
+  it("fits a tree too, its gaps kept even", () => {
+    const fitted = tree(OWNERSHIP_NODES, OWNERSHIP_EDGES, { fitWidth: 640 });
+    expect(fitted.width).toBeLessThanOrEqual(Math.max(640, tree(OWNERSHIP_NODES, OWNERSHIP_EDGES).width));
+    noOverlaps(fitted);
+  });
+});
+
+describe("wrap", () => {
+  it("breaks between words onto two lines, and ends the second in an ellipsis past that", () => {
+    expect(wrap("Short", 200, 14)).toEqual(["Short"]);
+    const lines = wrap("Customer channels (sample) › Digital channels › Web", 140, 14);
+    expect(lines).toHaveLength(2);
+    expect(lines[1]!.endsWith("…")).toBe(true);
+  });
+});

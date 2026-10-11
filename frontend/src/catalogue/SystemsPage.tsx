@@ -1,8 +1,9 @@
+import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
 
-import type { CatalogueSystem, Release } from "../api/client";
+import { api, type CatalogueSystem, type Release } from "../api/client";
 import {
   Button, EmptyState, GapBadge, ListFilter, ListFind, ListTools, RecordList, type RecordGroup,
   RecordPlaceholder, Status, Workbench,
@@ -70,6 +71,13 @@ function SystemsList({ index, current, onAdd }: { index: ConceptIndex; current?:
   const [params, setParams] = useSearchParams();
   const area = params.get("area") ?? ALL;
   const [find, setFind] = useFindParam();
+  // Who runs a system is Ownership's word, as the record says: the squads of today.
+  const organisation = useQuery({ queryKey: ["organisation"], queryFn: api.organisation });
+  const run = useMemo(
+    () => (organisation.data ? new Set(organisation.data.squads.flatMap((squad) => squad.resources.map((seat) => seat.system_id))) : undefined),
+    [organisation.data],
+  );
+  const gaps = useMemo(() => versionGaps(release, index, run), [release, index, run]);
 
   const rows = useMemo<Row[]>(() => {
     const found = findSystems(book, find);
@@ -104,10 +112,10 @@ function SystemsList({ index, current, onAdd }: { index: ConceptIndex; current?:
             name: system.name,
             bidi: true,
             detail: why ?? (place.split(" › ").slice(1).join(" › ") || undefined),
-            meta: <GapBadge gaps={systemGaps(release, system, index)} />,
+            meta: <GapBadge gaps={(gaps.bySystem.get(system.id) ?? []).filter((gap) => !gaps.common.has(gap))} />,
           })),
       }));
-  }, [rows, params, base, release, index]);
+  }, [rows, params, base, gaps]);
 
   const areas = release.capability_domains ?? [];
   const filters = [
@@ -124,7 +132,10 @@ function SystemsList({ index, current, onAdd }: { index: ConceptIndex; current?:
 
   return (
     <>
-      <ListTools count={area === ALL && !find.trim() ? count(release.systems.length, "system") : `${count(rows.length, "system")} of ${release.systems.length}`}>
+      <ListTools
+        count={area === ALL && !find.trim() ? count(release.systems.length, "system") : `${count(rows.length, "system")} of ${release.systems.length}`}
+        note={gaps.note}
+      >
         <ListFind label="Find a system" value={find} onChange={setFind} placeholder="Name, alias or capability" />
         <ListFilter label="Capability domain" value={area} options={filters} onChange={set} />
         {onAdd && <Button variant="tertiary" icon={<Plus size={16} />} onClick={onAdd}>Add a system</Button>}
@@ -140,15 +151,38 @@ function SystemsList({ index, current, onAdd }: { index: ConceptIndex; current?:
   );
 }
 
-/** The facts a system's record is missing, in the words its record uses. */
-function systemGaps(release: Release, system: CatalogueSystem, index: ConceptIndex): string[] {
-  const { exposes, uses } = interfacesOf(release, system.id);
-  const gaps: string[] = [];
-  if (!systemConcepts(system, index).length && !system.capabilities.some((item) => item.unlinked_reason)) gaps.push("concept");
-  if (!exposes.length && !uses.length) gaps.push("interfaces");
-  if (!system.owner) gaps.push("owner");
-  if (!system.confidence) gaps.push("source");
-  return gaps;
+type Gap = "concept" | "interfaces" | "squad" | "source";
+
+/** A gap in the words the row's badge uses ("Missing: …"). */
+const GAP_WORD: Record<Gap, string> = { concept: "concept", interfaces: "interfaces", squad: "squad", source: "source" };
+
+/**
+ * The facts each system's record is missing, in the words its record uses.
+ * A gap more than half the systems share is `common`: the list says it once,
+ * in `note`, and a row's badge shows only what sets that system apart.
+ * Squads (`run`) are left out until Ownership has answered.
+ */
+function versionGaps(release: Release, index: ConceptIndex, run: Set<string> | undefined) {
+  const bySystem = new Map<string, Gap[]>();
+  const tally = new Map<Gap, number>();
+  for (const system of release.systems) {
+    const { exposes, uses } = interfacesOf(release, system.id);
+    const gaps: Gap[] = [];
+    if (!systemConcepts(system, index).length && !system.capabilities.some((item) => item.unlinked_reason)) gaps.push("concept");
+    if (!exposes.length && !uses.length) gaps.push("interfaces");
+    if (run && !run.has(system.id)) gaps.push("squad");
+    if (!system.confidence) gaps.push("source");
+    bySystem.set(system.id, gaps);
+    for (const gap of gaps) tally.set(gap, (tally.get(gap) ?? 0) + 1);
+  }
+  const total = release.systems.length;
+  const common = new Set([...tally].filter(([, many]) => total > 1 && many * 2 > total).map(([gap]) => gap));
+  const said = [...common].map((gap) => {
+    const many = tally.get(gap)!;
+    return `${GAP_WORD[gap]} (${many === total ? "all" : many})`;
+  });
+  const note = said.length ? `Missing on most systems: ${said.join(", ")}.` : undefined;
+  return { bySystem, common, note };
 }
 
 /** The concepts a system's capabilities name; "None fits" when a capability was looked at and none did. */

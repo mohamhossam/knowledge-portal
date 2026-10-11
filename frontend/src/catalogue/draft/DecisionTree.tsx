@@ -1,4 +1,4 @@
-import { type ReactNode, useMemo } from "react";
+import { type ReactNode, useCallback, useMemo } from "react";
 
 import type { Suggestion } from "../../api/client";
 import { Diagram, DiagramLegend, layered } from "../../design/diagram";
@@ -21,7 +21,7 @@ export function DecisionTree({ suggestions, words, onChoose, keep, current, mark
   mark?: (suggestion: Suggestion) => NodeMark | undefined;
 }) {
   const graph = useMemo(() => decisionTree(suggestions, words, { keep, current, mark }), [suggestions, words, keep, current, mark]);
-  const layout = useMemo(() => layered(graph.nodes, graph.edges, { nodeWidth: 200, columnGap: 64, rowGap: 12 }), [graph]);
+  const layout = useCallback((fitWidth?: number) => layered(graph.nodes, graph.edges, { nodeWidth: 200, columnGap: 64, rowGap: 12, fitWidth }), [graph]);
   if (!graph.nodes.length) return <p className="draft-quiet">No suggestion waits for another, and none needs your decision.</p>;
   return (
     <Diagram

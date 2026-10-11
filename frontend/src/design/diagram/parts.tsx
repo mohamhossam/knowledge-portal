@@ -8,10 +8,9 @@
  */
 import type { KeyboardEvent, MouseEvent } from "react";
 
-import { fit, nodeName } from "./layout";
+import { fit, LINE, nodeLines, nodeName } from "./layout";
 import type { PlacedContainer, PlacedLane, PlacedNode, RoutedEdge } from "./types";
 
-const LABEL_PX = 15;
 const DETAIL_PX = 14;
 
 /** The arrowhead every edge ends in, filled like its line. Put it once in the svg's `<defs>`. */
@@ -71,7 +70,8 @@ export type NodeAction = {
 
 /**
  * A node: a box (or a pill) with its label and, under it, its detail and state.
- * Labels too long for the box end in "…"; the whole label is its tooltip and
+ * A label and its second line each wrap onto two lines as the layout left
+ * room for, and end in "…" past that; the whole label is its tooltip and
  * its accessible name. With an action it is a link or a button in the
  * diagram's roving focus, and shows the focus ring around the box.
  */
@@ -81,22 +81,30 @@ export function DiagramNodeShape({ node, action, nodeRef }: {
   /** With an action: a callback ref, so the diagram can move focus to the node. */
   nodeRef?: (element: Element | null) => void;
 }) {
-  const second = [node.detail, node.status].filter(Boolean).join(" · ");
-  const inner = node.width - 16;
   const radius = node.shape === "pill" ? node.height / 2 : 4;
+  // As many lines as the box has room for (the layout made it tall enough), the label's first.
+  const room = Math.max(1, Math.round((node.height - 20) / LINE));
+  const lines = nodeLines(node, node.width);
+  const label = lines.label.slice(0, Math.max(1, room - Math.min(1, lines.second.length)));
+  const second = lines.second.slice(0, room - label.length);
+  if (label.length < lines.label.length) label[label.length - 1] = fit(`${label[label.length - 1]} ${lines.label.slice(label.length).join(" ")}`, node.width - 16, 15);
+  if (second.length && second.length < lines.second.length) second[second.length - 1] = fit(`${second[second.length - 1]} ${lines.second.slice(second.length).join(" ")}`, node.width - 16, DETAIL_PX);
+  const first = (node.height - LINE * (label.length + second.length)) / 2 + 13;
   const drawing = (
     <>
       <title>{nodeName(node)}</title>
       {action && <rect className="ds-diagram__ring" x={-4} y={-4} width={node.width + 8} height={node.height + 8} rx={radius + 4} />}
       <rect className="ds-diagram__box" width={node.width} height={node.height} rx={radius} />
-      <text x={node.width / 2} y={second ? 23 : node.height / 2 + 5} textAnchor="middle" className="ds-diagram__label">
-        {fit(node.label, inner, LABEL_PX)}
-      </text>
-      {second && (
-        <text x={node.width / 2} y={41} textAnchor="middle" className="ds-diagram__detail">
-          {fit(second, inner, DETAIL_PX)}
+      {label.map((line, at) => (
+        <text key={`l${at}`} x={node.width / 2} y={first + at * LINE} textAnchor="middle" className="ds-diagram__label">
+          {line}
         </text>
-      )}
+      ))}
+      {second.map((line, at) => (
+        <text key={`d${at}`} x={node.width / 2} y={first + (label.length + at) * LINE} textAnchor="middle" className="ds-diagram__detail">
+          {line}
+        </text>
+      ))}
     </>
   );
   const common = {

@@ -346,6 +346,11 @@ Diagrams section with two seed-shaped examples (CWOM in context, the ownership t
 - **`Diagram`:** draws a layout at its natural size in a scrolling region, with a **Show as
   table** switch (`aria-pressed`) that swaps the drawing for a table of every node with what it
   links to and from.
+- **Fitting:** pass `layout` as a function of width, `(fitWidth) => layered(…, { fitWidth })`,
+  and the diagram lays out again whenever its width changes. Too wide, the gaps close first (each
+  no narrower than its edge label), then the nodes narrow to `nodeMin` if that makes it fit; with
+  room to spare, the nodes widen until their words sit on one line. A drawing that still doesn't
+  fit keeps its node widths, scrolls, and says so under it.
 - **Tones:** `plain`, `subject` (maroon, what the page is about), `ready`, `decide`, `gap`
   (dashed) and `muted` (dotted). Each differs by its frame as well as its colour, and every state
   tone carries its words in `status`. Red is never drawn. Colours come from the `--diagram-*`
@@ -354,8 +359,9 @@ Diagrams section with two seed-shaped examples (CWOM in context, the ownership t
   `label`). Once nodes open something (an `href`, or `onActivate`), it is a named group
   (`aria-roledescription="diagram"`), because an image hides its children: Tab enters once,
   arrows move to the nearest node that way, Home and End jump, Enter (and Space on buttons)
-  opens. Labels too long for a box end in "…"; the whole label is the accessible name and the
-  tooltip. No text is under 14px.
+  opens. A label and its second line each wrap onto two lines, and every node of a layout grows
+  to hold the most lines any needs; past that, text ends in "…". The whole label is the
+  accessible name and the tooltip. No text is under 14px.
 
 ### Hooks (`hooks.ts`)
 

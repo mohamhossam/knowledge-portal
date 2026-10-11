@@ -58,7 +58,9 @@ export function SystemRecord({ system, index }: { system: CatalogueSystem; index
           items={[
             ...(system.aliases.length ? [["Also called", <bdi key="aliases">{system.aliases.join(", ")}</bdi>] as [string, ReactNode]] : []),
             ["Sits in", place.length ? <RouterLink href={`${base}/domains`}><bdi>{place.join(" › ")}</bdi></RouterLink> : <span className="cat-quiet">Not placed in the landscape</span>],
-            ["Owner", system.owner ? <bdi>{system.owner}</bdi> : <span className="cat-quiet">Not stated</span>],
+            ["Run by", <RunBy key="run-by" system={system} />],
+            // The catalogue's own owner field, kept when its source names one: Ownership decides who runs it.
+            ...(system.owner ? [["Owner in the source", <bdi key="owner">{system.owner}</bdi>] as [string, ReactNode]] : []),
             ...(system.roadmap ? [["Roadmap", <bdi key="roadmap">{system.roadmap}</bdi>] as [string, ReactNode]] : []),
             [
               "Source",
@@ -297,13 +299,28 @@ function ConnectionTable({ title, rows, other, how, from, system, empty, editabl
   );
 }
 
+/** Who runs a system: the squad catalogue as it is today, whichever version is being read. */
+function useOwnership(systemId: string) {
+  return useQuery({
+    queryKey: ["organisation", "systems", systemId, "ownership"],
+    queryFn: () => api.systemOwnership(systemId),
+  });
+}
+
+/** The record's head says who runs the system in Ownership's words, as "Owned by" below does. */
+function RunBy({ system }: { system: CatalogueSystem }) {
+  const ownership = useOwnership(system.id);
+  if (ownership.isPending) return <span className="cat-quiet">Reading the squad catalogue…</span>;
+  if (ownership.isError) return <span className="cat-quiet">Not known: the squad catalogue didn't answer</span>;
+  const squads = ownership.data.squads;
+  if (!squads.length) return <span className="cat-quiet">No squad</span>;
+  return <bdi>{squads.map((squad) => squad.name).join(", ")}</bdi>;
+}
+
 /** Owners come from the squad catalogue as it is today, whichever version is being read. */
 function Owners({ system }: { system: CatalogueSystem }) {
   const { book, inService } = useCatalogueContext();
-  const ownership = useQuery({
-    queryKey: ["organisation", "systems", system.id, "ownership"],
-    queryFn: () => api.systemOwnership(system.id),
-  });
+  const ownership = useOwnership(system.id);
   const organisation = useQuery({ queryKey: ["organisation"], queryFn: api.organisation });
   const org = organisation.data ?? { people: [], value_streams: [], products: [], squads: [] };
   const streams = new Map((ownership.data?.value_streams ?? []).map((stream) => [stream.id, stream.name]));
