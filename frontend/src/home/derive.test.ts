@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import type { LibraryDocument, Organisation, Release, ReleasePrecedents, RequirementCorpus } from "../api/client";
+import type { LibraryDocument, Organisation, Release, ReleaseDeliveries, ReleasePrecedents, RequirementCorpus } from "../api/client";
 import {
   architectureOverview,
+  deliveryHits,
   libraryOverview,
   nameDirectory,
   requirementOverview,
@@ -225,6 +226,40 @@ describe("architectureOverview", () => {
     expect(verdictDecisions(decisions({ accepted: 4, overridden: 0, unknown: 0, override_rate: 0, concepts: [], last_decided_at: null }))?.note).toBe(
       "Requirement owners had decided 4 verdicts suggested against this edition and changed none.",
     );
+  });
+
+  const closures = (overrides: Partial<ReleaseDeliveries> = {}): ReleaseDeliveries => ({
+    release_id: "seed", deliveries: 3, delivered: 7, predicted: 5, unpredicted: 2, undelivered: 2,
+    last_closed_at: "2026-10-20T15:30:00Z",
+    ...overrides,
+  });
+
+  it("compares the systems closed Epics delivered with those predicted against the edition in force", () => {
+    const active = release({ id: "seed", name: "Initial catalogue", status: "published", published_by: "fake-owner", published_at: "2026-01-01T00:00:00Z" });
+
+    const overview = architectureOverview([active], active, new Map(), nameDirectory([amina]), null, null, decisions(), closures());
+
+    expect(overview.totals.slice(6)).toEqual([
+      { key: "delivered-predicted", label: "Delivered systems predicted", value: "5 of 7" },
+      { key: "predicted-undelivered", label: "Predicted systems not delivered", value: "2 of 7" },
+    ]);
+    expect(overview.notes[0]?.text).toContain(
+      "1 other was marked unknown. By 20 Oct 2026, 3 closed Epics assessed against this edition delivered 7 systems, 5 of them predicted. 2 systems predicted were not delivered.",
+    );
+  });
+
+  it("gives a rate once enough systems were delivered, and ignores closures on another release", () => {
+    const many = deliveryHits(closures({ deliveries: 6, delivered: 12, predicted: 12, unpredicted: 0, undelivered: 0 }));
+    expect(many?.totals[0]?.value).toBe("12 of 12 (100%)");
+    expect(many?.note).toBe("By 20 Oct 2026, 6 closed Epics assessed against this edition delivered 12 systems, all of them predicted. Every system predicted was delivered.");
+    expect(deliveryHits(closures({ deliveries: 1, delivered: 0, predicted: 0, unpredicted: 0, undelivered: 0 }))?.note).toBe(
+      "By 20 Oct 2026, 1 closed Epic assessed against this edition named no system it changed.",
+    );
+    expect(deliveryHits(closures({ deliveries: 0 }))).toBeNull();
+
+    const active = release({ id: "seed", status: "published", published_by: "fake-owner", published_at: "2026-01-01T00:00:00Z" });
+    const other = architectureOverview([active], active, new Map(), nameDirectory([]), null, null, null, closures({ release_id: "older" }));
+    expect(other.totals.map((item) => item.key)).toEqual(["systems", "relationships", "domains", "journeys"]);
   });
 
   it("says plainly when no edition is in force", () => {

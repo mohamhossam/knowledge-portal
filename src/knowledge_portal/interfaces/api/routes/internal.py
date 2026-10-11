@@ -3,7 +3,7 @@
 Every route needs the `requirements` service token. The request and response
 bodies are the shared contract values themselves: `ArchitectureQuery`,
 `ArchitectureKnowledgeMatch`, `AssessmentQuery`, `ArchitectureAssessment`,
-`PrecedentReceipt`, `ReferenceEvidence` and `KnowledgeEvent`, plus
+`PrecedentReceipt`, `ReferenceEvidence`, `DeliveryReceipt` and `KnowledgeEvent`, plus
 the read-only viewers' `CitedPassage` and `EvidenceChunk`, and a published historic
 requirement's content, read a page at a time (ADR-0102, amendment 1).
 `contracts/knowledge-internal.openapi.json` is the committed contract.
@@ -34,6 +34,9 @@ from knowledge_portal.interfaces.api.dependencies import ContainerDep, require_s
 from knowledge_portal.interfaces.api.schemas.change_requests import (
     ApprovedBacklogRequest,
     ChangeRequestReceipt,
+    DeliveryReceipt,
+    DeliveryRequest,
+    DeliveryState,
 )
 from knowledge_portal.interfaces.api.schemas.historic import (
     HistoricItemEntry,
@@ -139,6 +142,32 @@ def receive_change_request(
     return ChangeRequestReceipt(
         change_request_id=item.id, approval_id=item.approval_id, created=created
     )
+
+
+@router.post(
+    "/change-requests/deliveries",
+    status_code=201,
+    responses={
+        200: {"description": "The same closure was delivered before, or the Epic was removed."}
+    },
+)
+def receive_delivery(
+    body: DeliveryRequest, response: Response, container: ContainerDep
+) -> DeliveryReceipt:
+    """A published Epic closed or removed in the work-item tracker (ontology plan Phase 7).
+
+    A closure is kept once per delivery id as a catalogue change, for a knowledge admin to
+    read into a draft; it replaces one of the same Epic still waiting. A removal withdraws
+    the Epic's catalogue changes still waiting and answers 200 with their ids. The same
+    delivery id for another body is a 409."""
+    if body.state is DeliveryState.REMOVED:
+        withdrawn = container.receive_delivery.removed(body.requirement_id, body.epic.external_id)
+        response.status_code = 200
+        return DeliveryReceipt(change_request_id=None, created=False, withdrawn=list(withdrawn))
+    item, created = container.receive_delivery.closed(body.to_delivery())
+    if not created:
+        response.status_code = 200
+    return DeliveryReceipt(change_request_id=item.id, created=created, withdrawn=[])
 
 
 @router.get("/architecture/releases/{release_id}/evidence/{chunk_id}")

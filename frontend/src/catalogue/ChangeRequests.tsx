@@ -6,15 +6,67 @@ import { Link, useNavigate } from "react-router-dom";
 import { api, type ChangeRequest, type ExtractionRun, type Release, type Suggestion } from "../api/client";
 import { errorMessage } from "../api/errors";
 import { count, formatDay } from "../home/format";
-import { CHANGE_REQUESTS_KEY, traceLine, useChangeRequests } from "./inbox";
+import { CHANGE_REQUESTS_KEY, closedLine, type Delivery, deliveredChangeSentence, hitLine, traceLine, useChangeRequests } from "./inbox";
 import { warningInWords } from "./suggestions";
 
 /** The offerings a change request's features name, as the requirement named them. */
 function offeringsNamed(item: ChangeRequest): string[] {
+  if (item.delivery) return item.delivery.offering_name ? [item.delivery.offering_name] : [];
   return [...new Set(item.features.flatMap((feature) => feature.contexts.map((context) => context.product_name ?? context.product_id ?? "")))].filter(Boolean);
 }
 
 const RANK: Record<ChangeRequest["status"], string> = { waiting: "row row--due", read: "row", dismissed: "row row--past" };
+
+/** A system named by the id the hit rate compares, as the closure named it. */
+function systemNamer(item: ChangeRequest, delivery: Delivery): (id: string) => string {
+  const names = new Map<string, string>();
+  for (const system of delivery.predicted) names.set(system.id.toLowerCase(), system.name);
+  for (const feature of item.features) for (const system of feature.systems) names.set((system.id ?? system.name).toLowerCase(), system.name);
+  return (id) => names.get(id) ?? id;
+}
+
+/** What a closed Epic delivered: its Features, those it did not, what it suggests, and the hit. */
+function DeliveryFacts({ item, delivery }: { item: ChangeRequest; delivery: Delivery }) {
+  const name = systemNamer(item, delivery);
+  return (
+    <>
+      <span className="secondary govtable__by">
+        {delivery.epic_url ? (
+          <a href={delivery.epic_url} target="_blank" rel="noreferrer" className="changerequests__link">
+            {closedLine(delivery)}
+            <span className="visually-hidden"> (opens the work-item tracker)</span>
+          </a>
+        ) : (
+          closedLine(delivery)
+        )}
+      </span>
+      <ol className="changerequests__features" aria-label={`Delivered by ${item.id}`}>
+        {item.features.map((feature) => (
+          <li key={feature.id}>
+            <span className="governance__id">{feature.id}</span> <span dir="auto">{feature.name}</span>
+          </li>
+        ))}
+      </ol>
+      {delivery.not_delivered.length > 0 && (
+        <p className="changerequests__note">
+          Not delivered:{" "}
+          {delivery.not_delivered.map((feature, index) => (
+            <span key={feature.id}>
+              {index > 0 && "; "}
+              <span className="governance__id">{feature.id}</span> <span dir="auto">{feature.name}</span> ({feature.state})
+            </span>
+          ))}
+        </p>
+      )}
+      <p className="changerequests__note">
+        {delivery.changes.length
+          ? `Suggests: ${delivery.changes.map(deliveredChangeSentence).join("; ")}.`
+          : "Suggests no catalogue change: none of the capabilities the product impact found missing came with it."}
+      </p>
+      <p className="changerequests__note">{hitLine(delivery, name)}</p>
+    </>
+  );
+}
 
 /**
  * The approved backlogs requirement-portal sent (requirement-portal ADR-0101, step 7), on the
@@ -44,11 +96,12 @@ export function ChangeRequestInbox({ releases, actorName }: {
     onSuccess: (reading) => {
       void queryClient.invalidateQueries({ queryKey: ["architecture"] });
       const asked = reading.run.candidate_count;
+      const what = reading.change_request.delivery ? "suggestion" : "suggested question";
       navigate(`/architecture/versions/${encodeURIComponent(reading.release.id)}/sources`, {
         state: {
           notice: `${reading.change_request.id} is read into ${
             reading.release.name === reading.change_request.id ? "a new draft named after it" : `‘${reading.release.name || "the draft"}’`
-          }: ${count(asked, "suggested question")}${asked ? " below" : ""}.`,
+          }: ${count(asked, what)}${asked ? " below" : ""}.`,
         },
       });
     },
@@ -61,9 +114,10 @@ export function ChangeRequestInbox({ releases, actorName }: {
         Change requests from Requirement AI {waiting > 0 && <span className="govsection__count">{waiting} waiting</span>}
       </h2>
       <p className="govsection__lead">
-        Requirement AI sends a requirement’s approved backlog here when its final approval is recorded. Reading one into the
-        draft turns each approved feature into a suggested question for the offering it names; nothing reaches the catalogue
-        until it is accepted.
+        Requirement AI sends a requirement’s approved backlog here when its final approval is recorded, and what its Epic
+        delivered once the Epic is closed. Reading an approved backlog into the draft turns each approved feature into a
+        suggested question for the offering it names; reading a closed Epic suggests the capabilities it delivered. Nothing
+        reaches the catalogue until it is accepted.
       </p>
       {inbox.isPending ? (
         <p className="timetable__quiet">Reading the change requests…</p>
@@ -108,19 +162,24 @@ export function ChangeRequestInbox({ releases, actorName }: {
                     <span className="governance__id">{item.id}</span>
                     <span className="changerequests__title" dir="auto">{item.title}</span>
                     <span className="secondary govtable__by">
-                      {count(item.features.length, "approved feature")}
+                      {item.delivery ? "Epic closed: " : ""}
+                      {count(item.features.length, item.delivery ? "delivered Feature" : "approved feature")}
                       {offerings.length > 0 && <> for {offerings.join(", ")}</>} · received {formatDay(item.received_at)}
                     </span>
                   </th>
                   <td role="cell" data-head="From Requirement AI">
                     <span dir="auto">{traceLine(item.trace)}</span>
-                    <ol className="changerequests__features">
-                      {item.features.map((feature) => (
-                        <li key={feature.id}>
-                          <span className="governance__id">{feature.id}</span> <span dir="auto">{feature.name}</span>
-                        </li>
-                      ))}
-                    </ol>
+                    {item.delivery ? (
+                      <DeliveryFacts item={item} delivery={item.delivery} />
+                    ) : (
+                      <ol className="changerequests__features">
+                        {item.features.map((feature) => (
+                          <li key={feature.id}>
+                            <span className="governance__id">{feature.id}</span> <span dir="auto">{feature.name}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    )}
                   </td>
                   <td role="cell" data-head="State">
                     {item.status === "dismissed" ? (
@@ -273,8 +332,8 @@ export function DraftChangeRequests({ release, runs, suggestions }: {
     <section className="govsection" aria-labelledby={`${id}-title`}>
       <h2 id={`${id}-title`} className="govsection__title">Change requests</h2>
       <p className="govsection__lead">
-        Approved backlogs from Requirement AI, read with fixed rules: each approved feature asks a question of the offering it
-        names.
+        Approved backlogs and closed Epics from Requirement AI, read with fixed rules: each approved feature asks a question of
+        the offering it names, and each closed Epic suggests the capabilities it delivered.
       </p>
       {read.isError && <p className="docpage__failure" role="alert">{errorMessage(read.error)}</p>}
       <table className="govtable governance__table changerequests" role="table">

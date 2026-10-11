@@ -12,11 +12,17 @@ from smb_kernel.persistence.connector import DirectPostgresConnector
 
 from knowledge_portal.application.ports.change_requests import ChangeRequestConflictError
 from knowledge_portal.domain.architecture.change_requests import (
+    ChangeRequestKind,
+    DeliveredChange,
+    DeliveredChangeKind,
+    DeliveryTrace,
     IncomingChangeRequest,
     IncomingContext,
     IncomingFeature,
     IncomingStatus,
+    PredictedSystem,
     RequirementTrace,
+    UndeliveredFeature,
 )
 from knowledge_portal.infrastructure.persistence.migration_runner import run_migrations
 from knowledge_portal.infrastructure.persistence.postgres_change_requests import (
@@ -65,3 +71,43 @@ def test_a_change_request_is_kept_once_per_approval_and_read_or_dismissed_once()
     assert inbox.get(item.id) == read
     with pytest.raises(ChangeRequestConflictError, match="changed"):
         inbox.save(read.dismiss("Done.", "amina", NOW), IncomingStatus.WAITING)
+
+
+def test_a_catalogue_change_round_trips_with_what_was_delivered() -> None:
+    assert DATABASE_URL is not None
+    run_migrations(DATABASE_URL)
+    inbox = PostgresChangeRequests(DirectPostgresConnector(DATABASE_URL))
+    delivery_id = f"REQ-1:4711:{uuid4().hex}"
+    item = replace(
+        _incoming(),
+        approval_id=f"delivery:{delivery_id}",
+        kind=ChangeRequestKind.CATALOGUE_CHANGE,
+        delivery=DeliveryTrace(
+            delivery_id=delivery_id,
+            epic_external_id="4711",
+            closed_at=NOW,
+            release_id="smb-source-reference-v1",
+            impact_version="ANA-1@7",
+            decision="accepted",
+            verdict="change_existing_offering",
+            offering_id="PO-BPP",
+            predicted=(PredictedSystem("bcrm", "BCRM", "primary", "modify"),),
+            not_delivered=(UndeliveredFeature("FT-2", "Bill it", "Removed"),),
+            changes=(
+                DeliveredChange(
+                    DeliveredChangeKind.REALISE_CONCEPT,
+                    "cap:static-ip",
+                    "Static IP",
+                    ("FT-1",),
+                    system_id="bcrm",
+                ),
+            ),
+        ),
+    )
+
+    kept, created = inbox.receive(item)
+
+    assert created and inbox.get(item.id) == kept == item
+    withdrawn = item.withdraw(NOW)
+    inbox.save(withdrawn, IncomingStatus.WAITING)
+    assert inbox.get(item.id) == withdrawn

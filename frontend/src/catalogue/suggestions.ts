@@ -161,7 +161,9 @@ export function changeSentence(suggestion: Suggestion, words: Lexicon): string {
       return `Adds the component ${content.name}${content.technology ? `, built with ${content.technology}` : ""}`;
     case "capability": {
       const within = content.component_id ? `, in ${words.component(content.system_id, content.component_id)}` : "";
-      return `Adds the capability ${content.name}${within}, matched by ${quoted(content.triggers)}`;
+      const concept = content.concept_ids?.[0];
+      const realises = concept ? `, realising the concept ${concept}` : "";
+      return `Adds the capability ${content.name}${within}${realises}, matched by ${quoted(content.triggers)}`;
     }
     case "constraint":
       return `Adds the constraint “${content.text}”`;

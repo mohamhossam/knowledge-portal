@@ -22,6 +22,8 @@ const TRACE = {
 };
 const item = (patch: Partial<ChangeRequest> = {}): ChangeRequest => ({
   id: "CR-20261003-Business_Pro_Plus",
+  kind: "approved_backlog",
+  delivery: null,
   title: "Microsoft 365 for Business Pro Plus",
   reason: "Customers ask for it.",
   trace: TRACE,
@@ -64,6 +66,69 @@ function open(items: ChangeRequest[], releases: Release[] = [VERSION]) {
     </QueryClientProvider>,
   );
 }
+
+const CLOSED = item({
+  id: "CR-20261020-Business_Fiber",
+  kind: "catalogue_change",
+  title: "Static IP quota",
+  trace: { ...TRACE, requirement_id: "REQ-42", breakdown_revision: 2, approved_by: null, approved_at: null },
+  features: [
+    { id: "FT-1", sequence: 1, name: "Order a static IP", outcome: null, contexts: [], systems: [{ id: "bcrm", name: "BCRM" }, { id: "prov", name: "Provisioning" }] },
+  ],
+  delivery: {
+    delivery_id: "REQ-42:4711:evt-1",
+    epic_external_id: "4711",
+    epic_url: "https://dev.azure.com/acme/smb/_workitems/edit/4711",
+    closed_at: "2026-10-20T15:30:00Z",
+    release_id: "seed",
+    impact_version: "ANA-1@7",
+    decision: "accepted",
+    suggested_verdict: "change_existing_offering",
+    verdict: "change_existing_offering",
+    offering_id: "offering:business-fiber",
+    offering_name: "Business Fiber",
+    predicted: [
+      { id: "bcrm", name: "BCRM", role: "primary", change_type: "modify" },
+      { id: "cim", name: "CIM", role: "supporting", change_type: "configure" },
+    ],
+    not_delivered: [{ id: "FT-2", name: "Show the IP on the bill", state: "Removed" }],
+    changes: [
+      { op: "realise_concept", concept_id: "cap:static-ip", concept_label: "Static IP", system_id: "bcrm", system_name: "BCRM", offering_id: null, offering_name: null, feature_ids: ["FT-1"] },
+      { op: "offer_concept", concept_id: "cap:static-ip", concept_label: "Static IP", system_id: null, system_name: null, offering_id: "offering:business-fiber", offering_name: "Business Fiber", feature_ids: ["FT-1"] },
+    ],
+    hits: { predicted: ["bcrm"], unpredicted: ["prov"], undelivered: ["cim"] },
+  },
+});
+
+describe("a closed Epic in the inbox", () => {
+  it("says what it delivered, what it suggests, and how that compares with the prediction", async () => {
+    open([CLOSED]);
+
+    const row = within(await screen.findByRole("table", { name: /Change requests from Requirement AI/ })).getAllByRole("row")[1]!;
+    expect(row).toHaveTextContent("Epic closed: 1 delivered Feature for Business Fiber");
+    expect(within(row).getByRole("link", { name: /Epic 4711 closed on 20 Oct 2026/ })).toHaveAttribute(
+      "href",
+      "https://dev.azure.com/acme/smb/_workitems/edit/4711",
+    );
+    expect(within(row).getByRole("list", { name: "Delivered by CR-20261020-Business_Fiber" })).toHaveTextContent("FT-1 Order a static IP");
+    expect(row).toHaveTextContent("Not delivered: FT-2 Show the IP on the bill (Removed)");
+    expect(row).toHaveTextContent("Suggests: BCRM realises Static IP; Business Fiber offers Static IP.");
+    expect(row).toHaveTextContent("Delivered 1 of the 2 systems predicted (CIM was not), and 1 not predicted (Provisioning).");
+  });
+
+  it("names what it delivered as suggestions when read into the draft", async () => {
+    vi.spyOn(api, "readChangeRequest").mockResolvedValue({
+      release: { ...VERSION, id: "draft-1", status: "draft", name: "October" },
+      run: { id: "r", document_version_id: CLOSED.id, model: "requirement-ai-export", prompt_version: "export-1", candidate_count: 2, warnings: [], created_at: "", match_model: null, match_prompt_version: null, change_request_id: CLOSED.id },
+      change_request: { ...CLOSED, status: "read", read_into: "draft-1" },
+    } as never);
+    open([CLOSED]);
+
+    fireEvent.click(await screen.findByRole("button", { name: /Read it into a new draft/ }));
+
+    await waitFor(() => expect(screen.getByTestId("where")).toHaveTextContent("CR-20261020-Business_Fiber is read into ‘October’: 2 suggestions below."));
+  });
+});
 
 describe("the inbox of change requests from Requirement AI", () => {
   it("says what each asks and where it comes from, and reads one into a new draft", async () => {

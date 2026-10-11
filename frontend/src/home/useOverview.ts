@@ -75,9 +75,15 @@ export function useOverview(): OverviewState {
     queryFn: api.precedentSummary,
     enabled: maintainer && Boolean(active.data),
   });
-  // Left out for anyone else, so a refresh never asks for what they may not read. It never
-  // holds Table 2 back: until it answers, or if it fails, the table shows no decision counts.
-  const precedentQueries = maintainer ? [precedents] : [];
+  // What closed Epics delivered against what was predicted (ontology plan Phase 7): the same.
+  const deliveries = useQuery({
+    queryKey: ["architecture", "deliveries", "summary"],
+    queryFn: api.deliverySummary,
+    enabled: maintainer && Boolean(active.data),
+  });
+  // Left out for anyone else, so a refresh never asks for what they may not read. They never
+  // hold Table 2 back: until they answer, or if they fail, the table shows no such counts.
+  const precedentQueries = maintainer ? [precedents, deliveries] : [];
 
   const all = [documents, releases, active, organisation, audit, actors, corpus, historic, standings, ...precedentQueries, ...suggestions, ...builds, ...readings];
   const fetchedAt = all.map((query) => query.dataUpdatedAt).filter((at) => at > 0);
@@ -111,6 +117,7 @@ export function useOverview(): OverviewState {
             jobs,
             standings.data ?? null,
             precedents.data?.releases.find((item) => item.release_id === active.data?.id) ?? null,
+            deliveries.data?.releases.find((item) => item.release_id === active.data?.id) ?? null,
           ),
         }
       : { status: "loading" };

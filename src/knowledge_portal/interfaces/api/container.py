@@ -81,7 +81,9 @@ from knowledge_portal.application.use_cases.change_requests import (
     DismissChangeRequest,
     ListChangeRequests,
     ReadChangeRequestIntoDraft,
+    ReadDeliverySummaries,
     ReceiveChangeRequest,
+    ReceiveDelivery,
 )
 from knowledge_portal.application.use_cases.cited_passages import CitedPassages
 from knowledge_portal.application.use_cases.document_library import DocumentLibrary
@@ -235,6 +237,8 @@ class Container:
     suggest_component_capabilities: SuggestComponentCapabilities
     # Change requests from Requirement AI (requirement-portal ADR-0101, step 7).
     receive_change_request: ReceiveChangeRequest
+    receive_delivery: ReceiveDelivery
+    delivery_summaries: ReadDeliverySummaries
     list_change_requests: ListChangeRequests
     read_change_request: ReadChangeRequestIntoDraft
     dismiss_change_request: DismissChangeRequest
@@ -436,6 +440,8 @@ def _build_container(
         clean_up_vocabulary=architecture.clean_up_vocabulary,
         suggest_component_capabilities=architecture.suggest_component_links,
         receive_change_request=architecture.receive_change_request,
+        receive_delivery=architecture.receive_delivery,
+        delivery_summaries=architecture.delivery_summaries,
         list_change_requests=architecture.list_change_requests,
         read_change_request=architecture.read_change_request,
         dismiss_change_request=architecture.dismiss_change_request,

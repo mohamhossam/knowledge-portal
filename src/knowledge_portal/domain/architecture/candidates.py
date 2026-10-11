@@ -172,8 +172,9 @@ class CandidateContent:
       ``description`` (what the system is for)
     - component: ``system_id``, ``component_id``, ``name``, optional ``name_ar``,
       ``aliases``, ``description`` and ``technology``
-    - capability: ``system_id``, ``capability_id``, ``name``, ``triggers``, and
-      ``component_id`` when the source says which component delivers it
+    - capability: ``system_id``, ``capability_id``, ``name``, ``triggers``,
+      ``component_id`` when the source says which component delivers it, and one of
+      ``concept_ids`` when it is known to realise that concept (a delivered change)
     - constraint: ``system_id``, ``text``
     - relationship: ``system_id`` (source), ``target_system_id``, ``text``, and
       ``relationship_kind`` when the source says how the systems interact
@@ -276,8 +277,13 @@ class CandidateContent:
         object.__setattr__(
             self, "concept_ids", tuple(_required(item, "Concept") for item in self.concept_ids)
         )
-        if self.concept_ids and self.kind is not CandidateKind.COMPONENT_LINK:
-            raise InvalidKnowledgeError("Only a component link names concepts.")
+        if self.concept_ids and self.kind not in {
+            CandidateKind.COMPONENT_LINK,
+            CandidateKind.CAPABILITY,
+        }:
+            raise InvalidKnowledgeError("Only a component link or a capability names concepts.")
+        if self.kind is CandidateKind.CAPABILITY and len(self.concept_ids) > 1:
+            raise InvalidKnowledgeError("A capability realises one concept.")
         if len(set(self.concept_ids)) != len(self.concept_ids):
             raise InvalidKnowledgeError("A component link names a concept more than once.")
         if (self.term is not None) != (self.kind is CandidateKind.VOCABULARY_TERM):
@@ -1109,17 +1115,27 @@ def classify(content: CandidateContent, release: ArchitectureKnowledge) -> Candi
             named = find_component(system, content.component_id)
             if named is None:
                 return CandidateMatch.NEEDS_COMPONENT
+        concept = None
+        if content.concept_ids:
+            concept = find_concept(release, content.concept_ids[0])
+            if concept is None:
+                return CandidateMatch.NEEDS_CONCEPT
+            # The system realising the concept already is all a delivered change says.
+            if any(item.concept_id == concept.id for item in system.capabilities):
+                return CandidateMatch.ALREADY_PRESENT
         current = next(
             (item for item in system.capabilities if item.id == content.capability_id), None
         )
         if current is None:
             return CandidateMatch.NEW
         places = named is not None and current.component_id is None
+        linking = concept is not None and current.concept_id is None
         return (
             CandidateMatch.ALREADY_PRESENT
             if set(content.triggers) <= set(current.triggers)
             and current.name == content.name
             and not places
+            and not linking
             else CandidateMatch.UPDATES_EXISTING
         )
     if content.kind is CandidateKind.CONSTRAINT:
@@ -1774,6 +1790,15 @@ def apply_candidate(
                     f"Accept or add component {content.component_id!r} of {system.name} before "
                     "the capabilities it delivers."
                 )
+        concept = None
+        if content.concept_ids:
+            concept = find_concept(release, content.concept_ids[0])
+            if concept is None:
+                raise CandidateDependencyError(
+                    f"Accept or add concept {content.concept_ids[0]!r} before the capabilities "
+                    "that realise it."
+                )
+        held = current.concept_id if current else None
         capability = KnowledgeCapability(
             capability_id,
             content.name.strip(),
@@ -1782,6 +1807,12 @@ def apply_candidate(
             current.domain_id if current else None,
             # nor out of its component; it only places one that has none.
             (current.component_id if current else None) or (named.id if named else None),
+            # It links a capability no one has linked, and never relinks one.
+            held or (concept.id if concept else None),
+            # Accepting a link is a maintainer saying a concept fits after all.
+            None
+            if held is None and concept is not None
+            else (current.unlinked_reason if current else None),
         )
         capabilities = (
             tuple(capability if item.id == capability_id else item for item in system.capabilities)

@@ -2203,6 +2203,14 @@
         "title": "ChangeRequestDismissalRequest",
         "type": "object"
       },
+      "ChangeRequestKind": {
+        "enum": [
+          "approved_backlog",
+          "catalogue_change"
+        ],
+        "title": "ChangeRequestKind",
+        "type": "string"
+      },
       "ChangeRequestReadingResponse": {
         "properties": {
           "change_request": {
@@ -2364,6 +2372,16 @@
       "ChangeRequestResponse": {
         "description": "A change request in the inbox, as a knowledge admin sees it.",
         "properties": {
+          "delivery": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DeliveryResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "dismissal_reason": {
             "anyOf": [
               {
@@ -2408,6 +2426,9 @@
           "id": {
             "title": "Id",
             "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ChangeRequestKind"
           },
           "read_at": {
             "anyOf": [
@@ -2472,6 +2493,7 @@
         },
         "required": [
           "id",
+          "kind",
           "title",
           "reason",
           "trace",
@@ -2483,7 +2505,8 @@
           "read_at",
           "dismissed_by",
           "dismissed_at",
-          "dismissal_reason"
+          "dismissal_reason",
+          "delivery"
         ],
         "title": "ChangeRequestResponse",
         "type": "object"
@@ -3309,6 +3332,271 @@
           "name"
         ],
         "title": "CreateVersionRequest",
+        "type": "object"
+      },
+      "DeliveredChangeKind": {
+        "description": "A change to the catalogue a delivered requirement implies.",
+        "enum": [
+          "realise_concept",
+          "offer_concept"
+        ],
+        "title": "DeliveredChangeKind",
+        "type": "string"
+      },
+      "DeliveredChangeResponse": {
+        "properties": {
+          "concept_id": {
+            "title": "Concept Id",
+            "type": "string"
+          },
+          "concept_label": {
+            "title": "Concept Label",
+            "type": "string"
+          },
+          "feature_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Feature Ids",
+            "type": "array"
+          },
+          "offering_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offering Id"
+          },
+          "offering_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offering Name"
+          },
+          "op": {
+            "$ref": "#/components/schemas/DeliveredChangeKind"
+          },
+          "system_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System Id"
+          },
+          "system_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System Name"
+          }
+        },
+        "required": [
+          "op",
+          "concept_id",
+          "concept_label",
+          "system_id",
+          "system_name",
+          "offering_id",
+          "offering_name",
+          "feature_ids"
+        ],
+        "title": "DeliveredChangeResponse",
+        "type": "object"
+      },
+      "DeliveryHitsResponse": {
+        "description": "Delivered systems that were predicted and that were not, and predicted systems not\ndelivered: ids as the mapping wrote them, case set aside.",
+        "properties": {
+          "predicted": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Predicted",
+            "type": "array"
+          },
+          "undelivered": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Undelivered",
+            "type": "array"
+          },
+          "unpredicted": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Unpredicted",
+            "type": "array"
+          }
+        },
+        "required": [
+          "predicted",
+          "unpredicted",
+          "undelivered"
+        ],
+        "title": "DeliveryHitsResponse",
+        "type": "object"
+      },
+      "DeliveryResponse": {
+        "description": "What a closed Epic delivered, set against the product impact decided for it.",
+        "properties": {
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/DeliveredChangeResponse"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "closed_at": {
+            "format": "date-time",
+            "title": "Closed At",
+            "type": "string"
+          },
+          "decision": {
+            "title": "Decision",
+            "type": "string"
+          },
+          "delivery_id": {
+            "title": "Delivery Id",
+            "type": "string"
+          },
+          "epic_external_id": {
+            "title": "Epic External Id",
+            "type": "string"
+          },
+          "epic_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Epic Url"
+          },
+          "hits": {
+            "$ref": "#/components/schemas/DeliveryHitsResponse"
+          },
+          "impact_version": {
+            "title": "Impact Version",
+            "type": "string"
+          },
+          "not_delivered": {
+            "items": {
+              "$ref": "#/components/schemas/UndeliveredFeatureResponse"
+            },
+            "title": "Not Delivered",
+            "type": "array"
+          },
+          "offering_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offering Id"
+          },
+          "offering_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offering Name"
+          },
+          "predicted": {
+            "items": {
+              "$ref": "#/components/schemas/PredictedSystemResponse"
+            },
+            "title": "Predicted",
+            "type": "array"
+          },
+          "release_id": {
+            "title": "Release Id",
+            "type": "string"
+          },
+          "suggested_verdict": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested Verdict"
+          },
+          "verdict": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verdict"
+          }
+        },
+        "required": [
+          "delivery_id",
+          "epic_external_id",
+          "epic_url",
+          "closed_at",
+          "release_id",
+          "impact_version",
+          "decision",
+          "suggested_verdict",
+          "verdict",
+          "offering_id",
+          "offering_name",
+          "predicted",
+          "not_delivered",
+          "changes",
+          "hits"
+        ],
+        "title": "DeliveryResponse",
+        "type": "object"
+      },
+      "DeliverySummariesResponse": {
+        "description": "The delivery hit rate per release, newest closure first.",
+        "properties": {
+          "releases": {
+            "items": {
+              "$ref": "#/components/schemas/ReleaseDeliveriesResponse"
+            },
+            "title": "Releases",
+            "type": "array"
+          }
+        },
+        "required": [
+          "releases"
+        ],
+        "title": "DeliverySummariesResponse",
         "type": "object"
       },
       "DependencyImpact": {
@@ -8125,6 +8413,48 @@
         "title": "PrecedentSummariesResponse",
         "type": "object"
       },
+      "PredictedSystemResponse": {
+        "properties": {
+          "change_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Type"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "role",
+          "change_type"
+        ],
+        "title": "PredictedSystemResponse",
+        "type": "object"
+      },
       "PreviewRequest": {
         "properties": {
           "query": {
@@ -9326,6 +9656,50 @@
         ],
         "title": "RelationshipKind",
         "type": "string"
+      },
+      "ReleaseDeliveriesResponse": {
+        "properties": {
+          "delivered": {
+            "title": "Delivered",
+            "type": "integer"
+          },
+          "deliveries": {
+            "title": "Deliveries",
+            "type": "integer"
+          },
+          "last_closed_at": {
+            "format": "date-time",
+            "title": "Last Closed At",
+            "type": "string"
+          },
+          "predicted": {
+            "title": "Predicted",
+            "type": "integer"
+          },
+          "release_id": {
+            "title": "Release Id",
+            "type": "string"
+          },
+          "undelivered": {
+            "title": "Undelivered",
+            "type": "integer"
+          },
+          "unpredicted": {
+            "title": "Unpredicted",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "release_id",
+          "deliveries",
+          "delivered",
+          "predicted",
+          "unpredicted",
+          "undelivered",
+          "last_closed_at"
+        ],
+        "title": "ReleaseDeliveriesResponse",
+        "type": "object"
       },
       "ReleasePrecedentsResponse": {
         "properties": {
@@ -11230,6 +11604,29 @@
         "title": "TypeCount",
         "type": "object"
       },
+      "UndeliveredFeatureResponse": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "state"
+        ],
+        "title": "UndeliveredFeatureResponse",
+        "type": "object"
+      },
       "UnlinkedConceptSchema": {
         "properties": {
           "id": {
@@ -11977,6 +12374,61 @@
           }
         ],
         "summary": "Read Change Request",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
+    "/architecture-knowledge/deliveries/summary": {
+      "get": {
+        "description": "How the systems assessments predicted compare with what closed Epics delivered, per\nrelease: delivered and predicted, delivered but not predicted, predicted but not\ndelivered (ontology plan Phase 7). Counts only.",
+        "operationId": "delivery_summaries_architecture_knowledge_deliveries_summary_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliverySummariesResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delivery Summaries",
         "tags": [
           "architecture knowledge"
         ]

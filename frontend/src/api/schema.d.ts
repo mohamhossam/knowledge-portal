@@ -79,6 +79,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/architecture-knowledge/deliveries/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Delivery Summaries
+         * @description How the systems assessments predicted compare with what closed Epics delivered, per
+         *     release: delivered and predicted, delivered but not predicted, predicted but not
+         *     delivered (ontology plan Phase 7). Counts only.
+         */
+        get: operations["delivery_summaries_architecture_knowledge_deliveries_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/architecture-knowledge/documents": {
         parameters: {
             query?: never;
@@ -2718,6 +2740,11 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /**
+         * ChangeRequestKind
+         * @enum {string}
+         */
+        ChangeRequestKind: "approved_backlog" | "catalogue_change";
         /** ChangeRequestReadingResponse */
         ChangeRequestReadingResponse: {
             change_request: components["schemas"]["ChangeRequestResponse"];
@@ -2766,6 +2793,7 @@ export interface components {
          * @description A change request in the inbox, as a knowledge admin sees it.
          */
         ChangeRequestResponse: {
+            delivery: components["schemas"]["DeliveryResponse"] | null;
             /** Dismissal Reason */
             dismissal_reason: string | null;
             /** Dismissed At */
@@ -2776,6 +2804,7 @@ export interface components {
             features: components["schemas"]["IncomingFeatureResponse"][];
             /** Id */
             id: string;
+            kind: components["schemas"]["ChangeRequestKind"];
             /** Read At */
             read_at: string | null;
             /** Read By */
@@ -3065,6 +3094,89 @@ export interface components {
         CreateVersionRequest: {
             /** Name */
             name: string;
+        };
+        /**
+         * DeliveredChangeKind
+         * @description A change to the catalogue a delivered requirement implies.
+         * @enum {string}
+         */
+        DeliveredChangeKind: "realise_concept" | "offer_concept";
+        /** DeliveredChangeResponse */
+        DeliveredChangeResponse: {
+            /** Concept Id */
+            concept_id: string;
+            /** Concept Label */
+            concept_label: string;
+            /** Feature Ids */
+            feature_ids: string[];
+            /** Offering Id */
+            offering_id: string | null;
+            /** Offering Name */
+            offering_name: string | null;
+            op: components["schemas"]["DeliveredChangeKind"];
+            /** System Id */
+            system_id: string | null;
+            /** System Name */
+            system_name: string | null;
+        };
+        /**
+         * DeliveryHitsResponse
+         * @description Delivered systems that were predicted and that were not, and predicted systems not
+         *     delivered: ids as the mapping wrote them, case set aside.
+         */
+        DeliveryHitsResponse: {
+            /** Predicted */
+            predicted: string[];
+            /** Undelivered */
+            undelivered: string[];
+            /** Unpredicted */
+            unpredicted: string[];
+        };
+        /**
+         * DeliveryResponse
+         * @description What a closed Epic delivered, set against the product impact decided for it.
+         */
+        DeliveryResponse: {
+            /** Changes */
+            changes: components["schemas"]["DeliveredChangeResponse"][];
+            /**
+             * Closed At
+             * Format: date-time
+             */
+            closed_at: string;
+            /** Decision */
+            decision: string;
+            /** Delivery Id */
+            delivery_id: string;
+            /** Epic External Id */
+            epic_external_id: string;
+            /** Epic Url */
+            epic_url: string | null;
+            hits: components["schemas"]["DeliveryHitsResponse"];
+            /** Impact Version */
+            impact_version: string;
+            /** Not Delivered */
+            not_delivered: components["schemas"]["UndeliveredFeatureResponse"][];
+            /** Offering Id */
+            offering_id: string | null;
+            /** Offering Name */
+            offering_name: string | null;
+            /** Predicted */
+            predicted: components["schemas"]["PredictedSystemResponse"][];
+            /** Release Id */
+            release_id: string;
+            /** Suggested Verdict */
+            suggested_verdict: string | null;
+            /** Verdict */
+            verdict: string | null;
+        };
+        /**
+         * DeliverySummariesResponse
+         * @description The delivery hit rate per release, newest closure first.
+         */
+        DeliverySummariesResponse: {
+            /** Releases */
+            releases: components["schemas"]["ReleaseDeliveriesResponse"][];
         };
         /** DependencyImpact */
         DependencyImpact: {
@@ -4588,6 +4700,17 @@ export interface components {
             /** Releases */
             releases: components["schemas"]["ReleasePrecedentsResponse"][];
         };
+        /** PredictedSystemResponse */
+        PredictedSystemResponse: {
+            /** Change Type */
+            change_type: string | null;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Role */
+            role: string | null;
+        };
         /** PreviewRequest */
         PreviewRequest: {
             /** Query */
@@ -5035,6 +5158,26 @@ export interface components {
          * @enum {string}
          */
         RelationshipKind: "calls_api" | "publishes_events_to" | "transfers_data_to" | "orchestrates" | "unspecified";
+        /** ReleaseDeliveriesResponse */
+        ReleaseDeliveriesResponse: {
+            /** Delivered */
+            delivered: number;
+            /** Deliveries */
+            deliveries: number;
+            /**
+             * Last Closed At
+             * Format: date-time
+             */
+            last_closed_at: string;
+            /** Predicted */
+            predicted: number;
+            /** Release Id */
+            release_id: string;
+            /** Undelivered */
+            undelivered: number;
+            /** Unpredicted */
+            unpredicted: number;
+        };
         /** ReleasePrecedentsResponse */
         ReleasePrecedentsResponse: {
             /** Accepted */
@@ -5668,6 +5811,15 @@ export interface components {
             /** Type */
             type: string;
         };
+        /** UndeliveredFeatureResponse */
+        UndeliveredFeatureResponse: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** State */
+            state: string;
+        };
         /** UnlinkedConceptSchema */
         UnlinkedConceptSchema: {
             /** Id */
@@ -5967,6 +6119,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChangeRequestReadingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delivery_summaries_architecture_knowledge_deliveries_summary_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliverySummariesResponse"];
                 };
             };
             /** @description Validation Error */
