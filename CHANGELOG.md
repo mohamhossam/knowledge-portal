@@ -5,6 +5,12 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ## Unreleased
 
+## 0.6.0 — 2026-10-11
+
+Phase 9: a new-offering verdict comes with a drafted offering and journey, which come back
+with the approved backlog as suggestions. requirement-portal's export schema 1.6 needs this
+release.
+
 ### Added
 
 - New-offering drafts (ontology plan, Phase 9): for a `new_offering_in_family` or
