@@ -1,4 +1,4 @@
-import { BellRing, BookOpen, CircleHelp, Compass, FileText, Inbox, Layers, ListChecks, UserRound, UsersRound, WifiOff } from "lucide-react";
+import { BookOpen, CircleHelp, Compass, FileText, Inbox, Layers, ListChecks, UserRound, UsersRound, WifiOff } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Outlet, useLocation, useSearchParams } from "react-router-dom";
 
@@ -17,8 +17,8 @@ import { useWorkQueue } from "../work/queue";
 
 type Panel = "jobs" | "help" | "account";
 
-/** Every area's address; the legacy ones (Re-confirmations, Requirements) keep their island. */
-const AREAS = ["/library", "/architecture", "/explorer", "/squads", "/reminders", "/requirement-knowledge"];
+/** Every area's address; the legacy one (Requirements) keeps its island. */
+const AREAS = ["/library", "/architecture", "/explorer", "/squads", "/requirement-knowledge"];
 
 /**
  * Routes rebuilt on the design system (redesign Phase 8). Any other route
@@ -126,10 +126,9 @@ export function Shell() {
     { href: "/squads", label: "Ownership", current: under("/squads"), icon: <UsersRound />, group: "Look up" },
     { href: "/requirement-knowledge", label: "Requirements", current: under("/requirement-knowledge"), icon: <FileText />, group: "Look up" },
   ];
+  // Re-confirmations are To do's now (UX rebuild, phase 2): "/reminders" leads there.
   const secondary: NavItem[] = [
     { href: "/explorer", label: "Explorer", current: under("/explorer"), icon: <Compass /> },
-    // Joins To do in phase 2.
-    { href: "/reminders", label: "Re-confirmations", current: under("/reminders"), icon: <BellRing /> },
   ];
 
   const actor = auth?.actor ?? null;
@@ -142,6 +141,8 @@ export function Shell() {
   ) : null;
 
   const redesigned = REDESIGNED.some((match) => match(path));
+  // Focus mode (UX rebuild, phase 2): one question at a time, without the sidebar.
+  const focus = /\/focus\/?$/.test(path);
   const busy = activeJobs(jobs.jobs);
 
   return (
@@ -155,6 +156,7 @@ export function Shell() {
         locationKey={location.pathname}
         navigation={navigation}
         secondaryNavigation={secondary}
+        reader={focus}
         banner={online ? undefined : <><WifiOff size={16} aria-hidden="true" /> You're offline. Your unsaved work stays here; the portal carries on when your connection returns.</>}
         utilities={
           <>

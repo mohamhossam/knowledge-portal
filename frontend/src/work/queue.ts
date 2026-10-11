@@ -9,12 +9,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
-import { api, type LibraryDocument, type Organisation, type Release, type Reminders, type Suggestion } from "../api/client";
-import { suggestionState } from "../catalogue/suggestions";
+import { api, type LibraryDocument, type Organisation, type Release, type Reminder, type Reminders, type Suggestion } from "../api/client";
+import { decideQuestions } from "../catalogue/draft/questions";
+import { lexicon } from "../catalogue/suggestions";
 import { formatDay } from "../home/format";
 import { docState } from "../library/docState";
-import { newestState, newestVersion, standing } from "../library/model";
-import { REMINDERS_KEY } from "../reviews/review";
+import { firstAsked, questionLine, reviewQuestions } from "../library/focus";
+import { initialDrafts, newestState, newestVersion, standing } from "../library/model";
+import { REMINDERS_KEY, sameMoment } from "../reviews/review";
 import { gaps } from "../squads/gaps";
 
 /**
@@ -23,9 +25,12 @@ import { gaps } from "../squads/gaps";
  */
 const WORK_ROUTES = {
   document: (id: string) => `/library/${id}`,
-  decide: (releaseId: string) => `/architecture/versions/${releaseId}/decide`,
-  reConfirmations: "/reminders",
-  gaps: "/squads",
+  /** A review and a draft's decisions open in focus mode (UX rebuild, phase 2); Leave comes back here. */
+  review: (id: string) => `/library/${id}/focus?from=todo`,
+  decide: (releaseId: string) => `/architecture/versions/${releaseId}/decide/focus?from=todo`,
+  dueDocument: (id: string) => `/library/${encodeURIComponent(id)}`,
+  dueSystem: (id: string) => `/architecture/systems/${encodeURIComponent(id)}`,
+  gaps: "/squads?show=none",
 };
 
 /** What a document row can say about its newest version (all from the list read). */
@@ -43,9 +48,14 @@ export type Entry =
   /** A read that failed or is held; `document` carries what the row's own retry and upload need. */
   | { kind: "unreadable"; id: string; mine: boolean; subject: string; cause: string | null; held: boolean; sinceAt: string; fileType: string; to: string; document: LibraryDocument }
   | { kind: "unsearchable"; id: string; mine: boolean; subject: string; sinceAt: string; to: string; document: LibraryDocument }
-  | { kind: "review"; id: string; mine: boolean; subject: string; owner: string; since: string; sinceAt: string; facts: VersionFacts; to: string }
-  | { kind: "suggestions"; id: string; mine: boolean; subject: string; count: number; to: string }
-  | { kind: "due"; id: string; mine: boolean; subject: string; what: "document" | "system"; overdue: boolean; when: string; to: string }
+  /** `questions` and `first`: what focus mode will ask, and the first of it, so you know what you start on. */
+  | { kind: "review"; id: string; mine: boolean; subject: string; owner: string; since: string; sinceAt: string; facts: VersionFacts; questions: number; first: string | null; to: string; record: string }
+  | { kind: "suggestions"; id: string; mine: boolean; subject: string; count: number; first: string | null; to: string; record: string }
+  /**
+   * Re-confirmations, confirmed from To do itself: a document on its own; systems that fall due
+   * on the same day, from the same kind of last review, together (any maintainer may confirm them).
+   */
+  | { kind: "due"; id: string; mine: boolean; subject: string; what: "document" | "system"; overdue: boolean; when: string; fromPublication: boolean; items: Reminder[]; to: string }
   /** A standing backlog: listed, but not counted in the rail's "need you" (it rarely empties). */
   | { kind: "gaps"; id: string; mine: boolean; subject: string; count: number; to: string };
 
@@ -103,14 +113,21 @@ export function workQueue(input: QueueInput): Sections {
     });
 
   const draft = input.releases.find((release) => release.status === "draft");
-  const toDecide = input.suggestions.filter((item) => item.status === "proposed" && suggestionState(item) === "decide").length;
+  const toDecide = draft ? decideQuestions(input.suggestions, lexicon(draft, input.suggestions)) : [];
   const decisions: Entry[] = [
     // Most urgent first: what blocks approval, then what is flagged, then the longest wait.
     ...input.documents
       .filter((doc) => docState(doc) === "review")
       .map((doc): Entry => {
         const sinceAt = newestVersion(doc)?.uploaded_at ?? "";
-        return { kind: "review", id: `rev-${doc.id}`, mine: doc.is_owner, subject: doc.title, owner: doc.owner.display_name, since: formatDay(sinceAt), sinceAt, facts: facts(doc), to: WORK_ROUTES.document(doc.id) };
+        const version = newestVersion(doc);
+        // An admin who doesn't own it may see only its outline: focus mode then says so.
+        const questions = version?.blocks ? reviewQuestions(doc, version, initialDrafts(version)) : [];
+        const first = firstAsked(questions);
+        return {
+          kind: "review", id: `rev-${doc.id}`, mine: doc.is_owner, subject: doc.title, owner: doc.owner.display_name, since: formatDay(sinceAt), sinceAt, facts: facts(doc),
+          questions: questions.length, first: first ? questionLine(first) : null, to: WORK_ROUTES.review(doc.id), record: WORK_ROUTES.document(doc.id),
+        };
       })
       .sort((a, b) => {
         if (a.kind !== "review" || b.kind !== "review") return 0;
@@ -118,26 +135,42 @@ export function workQueue(input: QueueInput): Sections {
           || Number(b.facts.flagged > 0) - Number(a.facts.flagged > 0)
           || a.sinceAt.localeCompare(b.sinceAt);
       }),
-    ...(draft && toDecide > 0
-      ? [{ kind: "suggestions", id: `draft-${draft.id}`, mine: true, subject: draft.name ?? "the draft", count: toDecide, to: WORK_ROUTES.decide(draft.id) } satisfies Entry]
+    ...(draft && toDecide.length > 0
+      ? [{
+        kind: "suggestions", id: `draft-${draft.id}`, mine: true, subject: draft.name ?? "the draft", count: toDecide.length, first: toDecide[0]!.prompt,
+        to: WORK_ROUTES.decide(draft.id), record: `/architecture/versions/${draft.id}/decide`,
+      } satisfies Entry]
       : []),
   ];
 
   // The reminders read lists what the signed-in person answers for: all of it is theirs.
-  // Overdue first, then by due date.
-  const due: Entry[] = [...(input.reminders?.items ?? [])]
-    .filter((item) => item.standing.state !== "current")
-    .sort((a, b) => Number(b.standing.state === "overdue") - Number(a.standing.state === "overdue") || a.standing.due_at.localeCompare(b.standing.due_at))
-    .map((item) => ({
-      kind: "due",
-      id: `due-${item.kind}-${item.id}`,
-      mine: true,
-      subject: item.title,
-      what: item.kind,
-      overdue: item.standing.state === "overdue",
-      when: formatDay(item.standing.due_at),
-      to: WORK_ROUTES.reConfirmations,
-    }));
+  // Overdue first, then by due date; systems due together are one entry.
+  const due: Entry[] = [];
+  const together = new Map<string, Extract<Entry, { kind: "due" }>>();
+  const publishedAt = input.active?.published_at;
+  for (const item of [...(input.reminders?.items ?? [])]
+    .filter((each) => each.standing.state !== "current")
+    .sort((a, b) => Number(b.standing.state === "overdue") - Number(a.standing.state === "overdue") || a.standing.due_at.localeCompare(b.standing.due_at))) {
+    const overdue = item.standing.state === "overdue";
+    const when = formatDay(item.standing.due_at);
+    const fromPublication = sameMoment(item.standing.last_reviewed_at, publishedAt);
+    if (item.kind === "system") {
+      const key = `${overdue}|${when}|${fromPublication}`;
+      const group = together.get(key);
+      if (group) {
+        group.items.push(item);
+        group.subject = `${group.items.length} systems`;
+        continue;
+      }
+      const entry: Extract<Entry, { kind: "due" }> = {
+        kind: "due", id: `due-system-${key}`, mine: true, subject: item.title, what: "system", overdue, when, fromPublication, items: [item], to: WORK_ROUTES.dueSystem(item.id),
+      };
+      together.set(key, entry);
+      due.push(entry);
+      continue;
+    }
+    due.push({ kind: "due", id: `due-document-${item.id}`, mine: true, subject: item.title, what: "document", overdue, when, fromPublication, items: [item], to: WORK_ROUTES.dueDocument(item.id) });
+  }
 
   const gapList = gaps(input.active, input.organisation);
   const gapEntries: Entry[] = gapList.length

@@ -1,4 +1,4 @@
-import type { Suggestion } from "../../api/client";
+import type { Suggestion, SuggestionContent } from "../../api/client";
 import type { StatusTone } from "../../design/components";
 import { STATE_LABEL, draftedForRequirement, suggestionState } from "../suggestions";
 
@@ -20,4 +20,19 @@ export function stateWords(suggestion: Suggestion): string {
 /** The part of a change request a suggestion comes from: an approved feature, or the decided product impact. */
 export function citedPart(suggestion: Suggestion): string {
   return draftedForRequirement(suggestion) ? "the decided product impact" : `Feature ${suggestion.change_request?.feature_id ?? ""}`;
+}
+
+/** A possible match's answer that keeps the name as written: a new system, or the name the document used. */
+export const NEW = "__new__";
+
+/** The content to accept once the matches are chosen: unchanged unless a match was taken. */
+export function linked(suggestion: Suggestion, choice: Record<string, string>): SuggestionContent | null {
+  let content: SuggestionContent | null = null;
+  for (const [role, systemId] of Object.entries(choice)) {
+    if (systemId === NEW) continue;
+    content = content ?? { ...suggestion.content };
+    if (role === "target") content.target_system_id = systemId;
+    else content.system_id = systemId;
+  }
+  return content;
 }

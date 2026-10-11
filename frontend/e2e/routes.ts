@@ -32,12 +32,13 @@ const at = (path: string) => () => path;
 
 export const ROUTES: RouteDef[] = [
   { key: "home", path: at("") },
-  { key: "reminders", path: at("reminders") },
   // Dates are the seed's day: masked, so the screenshots hold on any later day.
   { key: "library", path: at("library"), mask: ["tbody td:last-child"] },
   // The offline search orders tied results differently from seed to seed: the list is masked.
   { key: "library-search", path: at("library/search?q=coverage"), mask: [".lib-results"] },
   { key: "library-review", path: (s) => s.reviewDocument && `library/${s.reviewDocument}`, viewOnly: true },
+  // Focus mode (UX rebuild, phase 2): the same review, one question at a time.
+  { key: "library-review-focus", path: (s) => s.reviewDocument && `library/${s.reviewDocument}/focus` },
   { key: "library-document", path: (s) => s.serviceDocument && `library/${s.serviceDocument}`, mask: [".ds-provenance", ".lib-reconfirm__line", ".ds-facts dd:first-of-type"] },
   { key: "library-versions", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/versions`, mask: [".ds-provenance", ".lib-reconfirm__line", "tbody td:nth-child(3)", "tbody th"] },
   { key: "library-cited-by", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/cited-by`, mask: [".ds-provenance", ".lib-reconfirm__line"] },
@@ -66,6 +67,7 @@ export const ROUTES: RouteDef[] = [
   // The draft's steps (area 3: rebuilt on the design system).
   { key: "architecture-draft-sources", path: (s) => s.draft && `architecture/versions/${s.draft}/sources` },
   { key: "architecture-draft-decide", path: (s) => s.draft && `architecture/versions/${s.draft}/decide`, viewOnly: true },
+  { key: "architecture-draft-decide-focus", path: (s) => s.draft && `architecture/versions/${s.draft}/decide/focus` },
   { key: "architecture-draft-changes", path: (s) => s.draft && `architecture/versions/${s.draft}/changes` },
   { key: "architecture-draft-check", path: (s) => s.draft && `architecture/versions/${s.draft}/check` },
   { key: "architecture-draft-publish", path: (s) => s.draft && `architecture/versions/${s.draft}/publish` },
@@ -91,6 +93,7 @@ export const REDESIGNED: string[] = [
   "library",
   "library-search",
   "library-review",
+  "library-review-focus",
   "library-document",
   "library-versions",
   "library-cited-by",
@@ -99,6 +102,7 @@ export const REDESIGNED: string[] = [
   // Area 3: the draft release workflow.
   "architecture-draft-sources",
   "architecture-draft-decide",
+  "architecture-draft-decide-focus",
   "architecture-draft-changes",
   "architecture-draft-check",
   "architecture-draft-publish",

@@ -16,10 +16,12 @@
 |---|---|---|---|---|
 | `/` (four tables) | `/` **Your work** | Content replaced: a ranked queue | Queue | — |
 | — | `/?scope=everyone` | New scope | Queue | — |
-| `/reminders` | `/re-confirmations` | Renamed | Queue | `/reminders` → `/re-confirmations` |
+| `/reminders` | `/` (To do) | Merged into To do (UX rebuild phase 2) | Queue | `/reminders` → `/` |
 | `/library` | `/library` | Filters and sort in the URL | Browse | — |
 | `/library/search` | `/library/search?q=…` | The query is kept in the URL | Browse | — |
 | `/library/:id` | `/library/:id` (Review tab when a version awaits review, else Overview) | Same URL | Review desk / Record | — |
+| — | `/library/:id/focus` | New (UX rebuild phase 2): the review one question at a time | Focus | — |
+| — | `/architecture/versions/:id/decide/focus` | New (UX rebuild phase 2): a draft's decisions one at a time | Focus | — |
 | `/library/:id/versions` | `/library/:id/versions` | Same | Record | — |
 | `/library/:id/citations` | `/library/:id/cited-by` | Renamed to match its label | Record | `/citations` → `/cited-by` |
 | `/library/:id/ownership` | `/library/:id/ownership` | Same | Record | — |

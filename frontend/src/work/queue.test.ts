@@ -18,7 +18,7 @@ function document(id: string, title: string, { stage = "ready_for_review", mine 
 
 const release = (id: string, status: string, systems: { id: string; name: string }[] = []) => ({ id, name: `Version ${id}`, status, systems }) as unknown as Release;
 // Inferred, so a person must decide it (suggestions.ts needsOneByOne).
-const suggestion = (id: string) => ({ id, status: "proposed", basis: "inferred", match: "new", possible_matches: [], content: { kind: "system" } }) as unknown as Suggestion;
+const suggestion = (id: string) => ({ id, status: "proposed", basis: "inferred", match: "new", possible_matches: [], citations: [], content: { kind: "system", name: "Billing", aliases: [], system_id: "billing" } }) as unknown as Suggestion;
 const reminder = (id: string, state: "current" | "due_soon" | "overdue", due: string) =>
   ({ id, kind: "document", title: `Doc ${id}`, standing: { state, due_at: due, last_reviewed_at: due, reviewer: amina } }) as unknown as Reminders["items"][number];
 
@@ -45,8 +45,9 @@ describe("workQueue", () => {
     }));
     expect(sections.attention).toEqual([expect.objectContaining({ kind: "unreadable", subject: "Broken", cause: "Row 2 is short.", to: "/library/f" })]);
     expect(sections.decisions.map((entry) => entry.kind)).toEqual(["review", "suggestions"]);
-    expect(sections.decisions[1]).toEqual(expect.objectContaining({ count: 1, to: "/architecture/versions/draft-1/decide" }));
-    expect(sections.due).toEqual([expect.objectContaining({ kind: "due", overdue: true, to: "/reminders" })]);
+    expect(sections.decisions[1]).toEqual(expect.objectContaining({ count: 1, to: "/architecture/versions/draft-1/decide/focus?from=todo", record: "/architecture/versions/draft-1/decide" }));
+    expect(sections.decisions[0]).toEqual(expect.objectContaining({ to: "/library/r/focus?from=todo", record: "/library/r" }));
+    expect(sections.due).toEqual([expect.objectContaining({ kind: "due", overdue: true, what: "document", to: "/library/a" })]);
     expect(sections.gaps).toEqual([expect.objectContaining({ kind: "gaps", count: 1, subject: "CRM" })]);
   });
 

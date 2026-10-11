@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { type ReactNode, useMemo } from "react";
 
 import type { Suggestion } from "../../api/client";
 import { Diagram, DiagramLegend, layered } from "../../design/diagram";
@@ -7,13 +7,15 @@ import { decisionTree, type NodeMark } from "./decisionTree";
 
 /**
  * The Decide step's chains beside its list (UX rebuild plan, phase 2): press a
- * suggestion to open it in the pane. A screen that works one question at a
- * time passes `keep`, `current` and `mark` (see `decisionTree`).
+ * suggestion to open it in the pane. Focus mode, one question at a time,
+ * passes `keep`, `current` and `mark` (see `decisionTree`) and no `onChoose`.
  */
-export function DecisionTree({ suggestions, words, onChoose, keep, current, mark }: {
+export function DecisionTree({ suggestions, words, onChoose, keep, current, mark, caption, legend }: {
   suggestions: Suggestion[];
   words: Lexicon;
-  onChoose: (suggestionId: string) => void;
+  onChoose?: (suggestionId: string) => void;
+  caption?: string;
+  legend?: ReactNode;
   keep?: ReadonlySet<string>;
   current?: string;
   mark?: (suggestion: Suggestion) => NodeMark | undefined;
@@ -24,11 +26,11 @@ export function DecisionTree({ suggestions, words, onChoose, keep, current, mark
   return (
     <Diagram
       label="What waits for what"
-      caption="Suggestions that wait for another, from what they wait for on the left. Deciding one settles what hangs on it."
+      caption={caption ?? "Suggestions that wait for another, from what they wait for on the left. Deciding one settles what hangs on it."}
       layout={layout}
-      onActivate={(node) => onChoose(node.id)}
+      onActivate={onChoose && ((node) => onChoose(node.id))}
       headers={{ to: "Lets in", from: "Waits for" }}
-      legend={<DiagramLegend items={[["decide", "Needs your decision"], ["ready", "Ready to accept"]]} />}
+      legend={legend ?? <DiagramLegend items={[["decide", "Needs your decision"], ["ready", "Ready to accept"]]} />}
     />
   );
 }
