@@ -3,8 +3,8 @@ import "./workbench.css";
 import { Search } from "lucide-react";
 import { type KeyboardEvent, type ReactNode, useEffect, useId, useRef } from "react";
 
-import { rovingKeyDown } from "../hooks";
-import { type LinkLike, useFillHeight } from "./layout";
+import { rovingKeyDown, useFillHeight } from "../hooks";
+import type { LinkLike } from "./layout";
 
 const Anchor: LinkLike = ({ href, children, ...rest }) => <a href={href} {...rest}>{children}</a>;
 
