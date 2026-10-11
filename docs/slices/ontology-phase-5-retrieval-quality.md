@@ -256,6 +256,26 @@ verdicts" and "changed", and name who decided.
 
 ## Validation Evidence
 
+Run on 2026-10-11 on `claude/ontology-main-sequence-sart0h`, based on main (`be22bea`).
+
+```text
+$ TEST_DATABASE_URL=… pytest      # whole suite, PostgreSQL 16 with pgvector
+1114 passed
+$ ruff check . && ruff format --check .
+All checks passed!
+$ mypy src tests
+Success: no issues found in 349 source files
+$ lint-imports
+Contracts: 10 kept, 0 broken.
+$ cd frontend && npm run typecheck && npm run lint && npx vitest run && npm run build && npm run api:check
+Tests 291 passed (291); built
+```
+
+The front page was critiqued on a live seeded page (fake models, 19 decisions seeded through
+the internal route), at 1440px and 390px: the detector found nothing, the new rows match the
+others (17.15:1 contrast, no overflow at 390px, six term and definition pairs), and the
+wording findings are fixed as described under UI.
+
 `LLM_PROVIDER=fake python -m knowledge_portal.interfaces.evaluate`, golden set v2, 59 cases:
 
 | Measure | Phase 3 (53 cases) | Phase 8 | Phase 5, no precedents | Phase 5, leave-one-out |
