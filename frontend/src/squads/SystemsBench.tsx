@@ -131,7 +131,7 @@ function SystemsList({ rows, current }: { rows: OwnershipRow[]; current?: string
         groups={groups}
         currentId={current}
         link={RouterLink}
-        empty={find.trim() ? `No system is called “${find.trim()}”.` : "No system matches these filters."}
+        empty={<>{find.trim() ? `No system is called “${find.trim()}”${show !== ALL || squadId || productId ? " with these filters" : ""}.` : "No system matches these filters."} <RouterLink href="/squads">Show every system</RouterLink></>}
       />
     </>
   );
