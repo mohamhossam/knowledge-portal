@@ -4,7 +4,7 @@ import { AlertTriangle, ChevronRight } from "lucide-react";
 import { type ReactNode, type RefObject, useEffect, useId, useState } from "react";
 
 import { Button } from "./actions";
-import { Status } from "./feedback";
+import { Status, type StatusTone } from "./feedback";
 import type { LinkLike } from "./layout";
 
 /**
@@ -224,5 +224,51 @@ export function EvidenceQuote({ text, quote, source }: { text: string; quote?: s
       </blockquote>
       <figcaption className="ds-quote__source">{source}</figcaption>
     </figure>
+  );
+}
+
+export type CheckItem = {
+  id: string;
+  /** done: ready · attention: blocks the action · held: worth a look first · neutral: for information. */
+  tone: StatusTone;
+  /** The state in words beside its icon ("Ready", "Blocks publishing"). */
+  word: string;
+  title: ReactNode;
+  detail?: ReactNode;
+  /** The way to settle it: a link to the step, or the button that does it. */
+  action?: ReactNode;
+};
+
+/**
+ * A pre-flight checklist before a consequential action (publishing a draft):
+ * one line per check, its state as a Status (icon and words), what it means,
+ * and the way to settle it. The summary says first how many block and how
+ * many are worth a look, so the reader knows before reading every line.
+ */
+export function Checklist({ label, items }: { label: string; items: CheckItem[] }) {
+  const id = useId();
+  const blocking = items.filter((item) => item.tone === "attention").length;
+  const held = items.filter((item) => item.tone === "held").length;
+  const summary = blocking
+    ? `${blocking} ${blocking === 1 ? "check blocks" : "checks block"} it${held ? `; ${held} worth a look` : ""}.`
+    : held
+      ? `Nothing blocks it; ${held} ${held === 1 ? "check is" : "checks are"} worth a look.`
+      : "Every check is ready.";
+  return (
+    <div className="ds-checklist">
+      <p id={`${id}-sum`} className="ds-checklist__summary">{summary}</p>
+      <ul className="ds-checklist__list" aria-label={label} aria-describedby={`${id}-sum`}>
+        {items.map((item) => (
+          <li key={item.id} className="ds-checklist__item">
+            <span className="ds-checklist__state"><Status tone={item.tone}>{item.word}</Status></span>
+            <span className="ds-checklist__body">
+              <span className="ds-checklist__title">{item.title}</span>
+              {item.detail && <span className="ds-checklist__detail">{item.detail}</span>}
+            </span>
+            {item.action && <span className="ds-checklist__action">{item.action}</span>}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

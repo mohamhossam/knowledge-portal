@@ -19,7 +19,7 @@ review findings here (step 7).
 | O-4 | The evidence quote marks the whole citation; the API gives `quote`, so highlight the line only (`EvidenceQuote quote=`). | Low | 3 Catalogue curation | Planned |
 | O-5 | The origin of a change is a heuristic in the lab; it needs `change_history` per item. | Medium | 3 Catalogue curation | Planned (uses the release change history the API already returns; confirm in the plan) |
 | O-6 | No suggested squad for systems in no product. The prototype says "No squad runs a related system yet"; keep that. | Low | 7 Squads | Planned |
-| O-7 | "Accept with edits" is not built (it announces only). | High | 3 Catalogue curation | Planned |
+| O-7 | "Accept with edits" is not built (it announces only). | High | 3 Catalogue curation | Done (area 3: "Edit, then accept" in the Decide pane; edits are kept per suggestion) |
 
 ## From building and measuring the prototype (Phase 6)
 
@@ -95,3 +95,8 @@ Filled in by `/redesign-area` step 7 (MEDIUM and LOW findings), one row per find
 | Area 2 | critique run 2 (P2, Your work) — no resume signal for a half-done review ("Saved review · 120 of 800 seen"); in-progress reviews could rank first in their tier | Medium | Open |
 | Area 2 | `frontend/src/library/library.css` (desk + side panel) — LOW — on the desk the Help/Jobs drawer now overlays the right edge (so the split stays); while it is open it covers the pane and part of the save bar (focus there is partly, not wholly, hidden: 2.4.11 AA holds) — make the page beside it inert, or dock the drawer over the pane only | Low | Open |
 | Area 2 | `frontend/e2e/` — LOW — under full parallel load on a busy local machine, axe over the 200-row desk can exceed 90 s and one full-page screenshot (cited-by 1920) caught a 2% transient; both pass when run alone (CI uses 2 workers) — watch in CI | Low | Open |
+| Area 3 | `frontend/src/catalogue/draft/SuggestionPane.tsx` — MEDIUM — "Edit, then accept" still renders the legacy `SuggestionEditor` inside a `ds-legacy` island in the pane, because its fields come from the catalogue's hand-edit forms (`catalogue/forms.tsx`) — move it onto the kit when area 5 (catalogue hand edits) rebuilds those forms | Medium | Planned (area 5) |
+| Area 3 | `frontend/src/catalogue/draft/DecideStep.tsx` — MEDIUM — at 390 px the split pane stacks below all the listed suggestions, so a tapped row's detail is far down the page (Enter moves focus there; a tap only marks the row current) — on narrow screens open the pane over the list, or scroll to it on tap | Medium | Open |
+| Area 3 | `frontend/src/catalogue/draft/SuggestionPane.tsx` (`Citation`) — LOW — K2 for the catalogue: draft documents carry `language`, but the quoted passage isn't marked with `lang` yet; `EvidenceQuote` needs a `lang` prop for the quote alone (not its English source line) | Low | Open (design system) |
+| Area 3 | `frontend/src/catalogue/draft/DraftFrame.tsx` — LOW — the stepper's rule stops at the page header's text column, short of the actions column, at 1440 px | Low | Open |
+| Area 3 | `frontend/src/catalogue/draft/progress.ts` (`useSampleResults`) — LOW — sample comparison results live in memory for the tab, keyed by draft revision, so Publish's "compared" check resets on reload; the API keeps no comparison runs | Low | Open |

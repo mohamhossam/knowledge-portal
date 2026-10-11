@@ -382,19 +382,8 @@
   margin-top: var(--s1);
 }
 
-.documents__confirm {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s1) var(--s3);
-}
-
 .documents__remove {
   font-weight: var(--w-bold);
-}
-
-.documents__notes {
-  margin-top: var(--s3);
 }
 
 .add.documents__add {
@@ -403,124 +392,15 @@
 }
 
 /* The galley: one table, grouped under the systems the suggestions would change. */
-.galley {
-  margin-top: var(--s2);
-}
-
-.galley__state {
-  width: 15rem;
-}
-
-.govtable .galley__head th {
-  padding: var(--s5) 0 var(--s2);
-  border-bottom: 2px solid var(--tt-rule-heavy);
-  font-weight: var(--w-regular);
-}
-
-.galley__title {
-  margin-right: var(--s4);
-  font-stretch: 88%;
-  font-weight: var(--w-bold);
-}
-
-.galley__new {
-  font-weight: var(--w-bold);
-}
-
-.galley__new::after {
-  content: " ·";
-  font-weight: var(--w-regular);
-}
-
-.galley__tally {
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-}
-
-.galley__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s1) var(--s4);
-  margin-top: var(--s1);
-}
-
-.galley__confirm {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s1) var(--s3);
-  font-size: var(--t-meta);
-}
-
-.galley__reject {
-  font-weight: var(--w-bold);
-}
 
 /* A suggestion row: the change in words, its state; rank by weight, the row opening in place on the band. */
-.suggestion {
-  cursor: pointer;
-  transition: background-color 180ms var(--ease-out);
-}
-
-.suggestion:hover,
-.suggestion.is-open,
-.govtable .suggestion-detail td {
-  background: var(--stock-band);
-}
 
 /* The change is the row's disclosure button, set as the sentence it holds; its focus rings the whole row. */
-.suggestion__toggle {
-  display: block;
-  width: 100%;
-  min-height: 1.5rem;
-  padding: 0;
-  border: 0;
-  background: none;
-  font-weight: inherit;
-  text-align: start;
-  cursor: pointer;
-}
-
-.suggestion__toggle:focus-visible {
-  outline: none;
-}
-
-.suggestion:has(.suggestion__toggle:focus-visible) {
-  outline: var(--tt-focus-ring);
-  outline-offset: -2px;
-}
 
 /* An opened row brings its detail into view clear of the window's foot. */
-html:has(.galley) {
-  scroll-padding-bottom: var(--s6);
-}
-
-.govtable .row--due .suggestion__sentence {
-  font-weight: var(--w-bold);
-}
 
 .govtable .row--running .status {
   color: var(--ink-2);
-}
-
-.govtable .suggestion-detail td {
-  padding: var(--s2) var(--s4) var(--s4) 0;
-  border-bottom: 2px solid var(--tt-rule-heavy);
-}
-
-.suggestion-detail__body {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
-  gap: var(--s5);
-}
-
-.suggestion-detail__source,
-.suggestion-detail__decision {
-  display: grid;
-  gap: var(--s3);
-  align-content: start;
-  min-width: 0;
 }
 
 /* The detail's parts sit on the label-over-rule grammar of the world's sections. */
@@ -535,95 +415,9 @@ html:has(.galley) {
 }
 
 /* What an offering suggestion holds beyond its parts: a hairlined definition list, label above text. */
-.suggestion-holds {
-  display: grid;
-  gap: var(--s1);
-  max-width: 64ch;
-}
-
-.suggestion-holds dl {
-  margin: 0;
-}
-
-.suggestion-holds__line {
-  display: grid;
-  grid-template-columns: minmax(8rem, 12rem) 1fr;
-  gap: var(--s1) var(--s3);
-  padding: var(--s1) 0;
-  border-bottom: 1px solid var(--rule);
-}
-
-.suggestion-holds__line dt {
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-}
-
-.suggestion-holds__line dd {
-  margin: 0;
-  overflow-wrap: anywhere;
-}
-
-.suggestion-holds__line--due dt,
-.suggestion-holds__line--due dd {
-  color: var(--ink);
-  font-weight: 680;
-}
-
-@media (max-width: 45rem) {
-  .suggestion-holds__line {
-    grid-template-columns: 1fr;
-  }
-}
-
-.suggestion-detail__rationale {
-  display: grid;
-  gap: var(--s1);
-  max-width: 64ch;
-}
-
-.citation {
-  display: grid;
-  gap: var(--s1);
-}
-
-.citation__quote {
-  max-width: 64ch;
-}
-
-.citation__where {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s1) var(--s3);
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-}
 
 /* On the band already, the passage takes the stock instead, so it reads as the document's own page. */
-.citation__passage.searchresults__context {
-  background: var(--stock);
-}
 
-.citation__passage [dir] {
-  white-space: pre-line;
-}
-
-.citation__image {
-  max-width: 100%;
-  max-height: 28rem;
-  border: 1px solid var(--rule);
-}
-
-.decision {
-  display: grid;
-  gap: var(--s3);
-}
-
-.decision__matches .check {
-  align-items: start;
-}
-
-.decision__actions,
 .suggestion-editor__actions {
   display: flex;
   flex-wrap: wrap;
@@ -642,20 +436,12 @@ html:has(.galley) {
   background: var(--stock-band);
 }
 
-.decision__why,
 .suggestion-editor__why {
   color: var(--ink-2);
   font-size: var(--t-meta);
 }
 
 /* Kept edits are said in ink above the decision's buttons, so Accept is read knowing them. */
-.decision__kept {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s1) var(--s3);
-  font-size: var(--t-meta);
-}
 
 .suggestion-editor {
   display: grid;
@@ -753,41 +539,8 @@ html:has(.galley) {
 }
 
 /* A draft's inline steps sit under its head, in the head's text column. */
-.draft-step {
-  margin-top: var(--s3);
-}
-
-@media (max-width: 60rem) {
-  .suggestion-detail__body {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-@media (max-width: 45rem) {
-  .galley__state {
-    width: 9rem;
-  }
-}
 
 /* The galley's cells keep a gutter, so the band has a margin and the focus ring clears the first glyph. */
-.galley .suggestion > th,
-.galley .suggestion > td,
-.govtable.galley .suggestion-detail td,
-.govtable .galley__head th {
-  padding-inline: var(--s2);
-}
-
-.galley thead th {
-  padding-inline: var(--s2);
-}
-
-.documents__more {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s2) var(--s4);
-  margin-top: var(--s3);
-}
 
 /* The next decision as an action: the world's next-decision link, as a button. */
 .next-button {
@@ -868,8 +621,7 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
   background-color: var(--stock);
 }
 
-.sheet__row-actions,
-.samples__actions {
+.sheet__row-actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--s1) var(--s4);
@@ -890,82 +642,15 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
 }
 
 /* Check: the build's state on one line, then the samples. */
-.build-state {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 var(--s1);
-  align-items: baseline;
-}
-
-.build-state .status {
-  font-weight: var(--w-bold);
-}
-
-.build-state--failed .status {
-  color: var(--disruption);
-}
-
-.samples__result {
-  width: 45%;
-}
-
-.samples .is-open th,
-.samples .is-open td,
-.govtable .samples__detail td {
-  background: var(--stock-band);
-}
-
-.govtable .samples__detail td {
-  padding: var(--s2) var(--s4) var(--s4);
-  border-bottom: 2px solid var(--tt-rule-heavy);
-}
-
-.evidence-list {
-  display: grid;
-  gap: var(--s3);
-}
-
-.evidence-list__items {
-  display: grid;
-  gap: var(--s2);
-  max-width: 72ch;
-  margin-top: var(--s2);
-}
 
 .evidence__text {
   max-width: 72ch;
   white-space: pre-line;
 }
 
-.tryone {
-  margin-top: var(--s5);
-}
-
-.tryone__result {
-  flex-basis: 100%;
-}
-
 /* Publish: the consequence first, in words, then the reason and the action. */
-.publish__consequence {
-  display: grid;
-  gap: var(--s2);
-  max-width: 72ch;
-}
-
-.publish__reason {
-  max-width: 44rem;
-}
-
-.publish__reason .field__input {
-  width: 100%;
-}
-
-.catalogue-file__preview {
-  max-width: none;
-}
 
 @media (max-width: 45rem) {
-  .samples__result,
   .diff__change {
     width: auto;
   }
@@ -1475,24 +1160,6 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
 }
 
 /* What a reading could not match: ink 2 lines under its state, each its own sentence. */
-.changerequests__warnings {
-  display: grid;
-  gap: 0.125rem;
-  margin: var(--s1) 0 0;
-  padding: 0;
-  list-style: none;
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-  max-width: 72ch;
-}
-
-.changerequests__col-reading {
-  width: 56%;
-}
-
-.changerequests__col-waiting {
-  width: 12%;
-}
 
 /* "Its suggestions": as tall as the buttons beside it. */
 .changerequests__link {
@@ -1502,11 +1169,6 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
 }
 
 /* A warning a reading left on one feature, shown again on that feature's suggestion. */
-.suggestion__warning {
-  display: block;
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-}
 
 .changerequests__dismiss {
   display: grid;
@@ -1539,11 +1201,6 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
 }
 
 /* Knowledge Center C: what became of each file of a multi-file upload. */
-.add__chosen {
-  align-self: end;
-  margin: 0;
-  color: var(--ink-2);
-}
 
 .uploads {
   margin-block: var(--s3) 0;

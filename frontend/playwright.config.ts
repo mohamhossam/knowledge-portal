@@ -31,9 +31,9 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   projects: [
-    { name: "chromium", testIgnore: /library-journey\.spec\.ts/, use: { ...devices["Desktop Chrome"], channel: process.env.E2E_CHANNEL } },
+    { name: "chromium", testIgnore: /(library|draft)-journey\.spec\.ts/, use: { ...devices["Desktop Chrome"], channel: process.env.E2E_CHANNEL } },
     // Journeys that change the seed run last, after every route has been checked as seeded.
-    { name: "journeys", testMatch: /library-journey\.spec\.ts/, dependencies: ["chromium"], use: { ...devices["Desktop Chrome"], channel: process.env.E2E_CHANNEL } },
+    { name: "journeys", testMatch: /(library|draft)-journey\.spec\.ts/, dependencies: ["chromium"], use: { ...devices["Desktop Chrome"], channel: process.env.E2E_CHANNEL } },
   ],
   webServer: [
     {

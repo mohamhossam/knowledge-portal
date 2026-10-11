@@ -683,3 +683,78 @@
     min-block-size: 2.625rem;
   }
 }
+
+/* A guided workflow's steps: numbered links in a row, the current one underlined in maroon. */
+.ds-stepper ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: none;
+}
+
+.ds-stepper__step {
+  display: flex;
+  min-inline-size: 0;
+}
+
+.ds-stepper__link {
+  display: inline-flex;
+  align-items: start;
+  gap: var(--space-2);
+  min-block-size: var(--target-min);
+  padding: var(--space-2) var(--space-3);
+  border-block-end: var(--rule-heavy) solid transparent;
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+.ds-stepper__link:hover .ds-stepper__label {
+  text-decoration: underline;
+  text-underline-offset: 0.3em;
+}
+
+.ds-stepper__link[aria-current="page"] {
+  border-block-end-color: var(--color-action);
+  color: var(--color-action);
+}
+
+.ds-stepper__number {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  border: var(--rule-hair) solid var(--color-rule-strong);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-meta);
+  font-stretch: var(--stretch-numeral);
+  font-variant-numeric: tabular-nums;
+}
+
+.ds-stepper__link[aria-current="page"] .ds-stepper__number {
+  border-color: var(--color-action-fill);
+  background: var(--color-action-fill);
+  color: var(--color-on-action-fill);
+}
+
+.ds-stepper__text {
+  display: grid;
+  gap: 0;
+}
+
+.ds-stepper__label {
+  font-weight: var(--weight-strong);
+  font-stretch: var(--stretch-label);
+}
+
+.ds-stepper__status {
+  font-size: var(--text-meta);
+  font-weight: var(--weight-body);
+}
+
+.ds-pagehead .ds-stepper {
+  margin-block-end: calc(-1 * var(--space-4));
+}

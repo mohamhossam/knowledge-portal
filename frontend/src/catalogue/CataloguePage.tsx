@@ -7,7 +7,8 @@ import { api, type Release } from "../api/client";
 import { ApiError, errorMessage } from "../api/errors";
 import { count, formatDay } from "../home/format";
 import { changeSentence, contents } from "./catalogue";
-import { DraftActions } from "./DraftActions";
+import { DraftBanner, DraftFrame } from "./draft/DraftFrame";
+import { draftStepOf } from "./draft/progress";
 import { useChangeRequests } from "./inbox";
 import { SourcesContext } from "./governance";
 import { type CatalogueContext, useActorNames, useMappingImpact, useRelease } from "./useCatalogue";
@@ -22,11 +23,16 @@ export function CataloguePage() {
   const actorName = useActorNames();
   const base = releaseId === undefined ? "/architecture" : `/architecture/versions/${encodeURIComponent(releaseId)}`;
   const inService = releaseId === undefined || (activeId !== undefined && releaseId === activeId);
+  // A draft's steps (Sources, Decide, Changes, Check, Publish) are rebuilt on the design system.
+  const step = draftStepOf(useLocation().pathname, base);
 
   useEffect(() => {
+    if (step) return;
     const name = releaseId !== undefined && query.data?.name ? `${query.data.name} · ` : "";
     document.title = `${name}Architecture catalogue · Knowledge portal`;
-  }, [releaseId, query.data?.name]);
+  }, [releaseId, query.data?.name, step]);
+
+  if (step) return <DraftFrame step={step} query={query} book={book} base={base} inService={inService} actorName={actorName} />;
 
   const head = (edition: ReactNode, pages = false) => (
     <header className="docpage__head">
@@ -36,7 +42,7 @@ export function CataloguePage() {
           <span className="visually-hidden">Table 2:</span> Architecture catalogue
         </h1>
         {edition}
-        {pages && book && <SubIndex base={base} inService={inService} draft={book.release.status === "draft"} />}
+        {pages && book && <SubIndex base={base} inService={inService} />}
       </div>
     </header>
   );
@@ -84,7 +90,7 @@ export function CataloguePage() {
             <Edition release={book.release} inService={inService} actorName={actorName} />
           </p>
           {inService ? <MappedEarlier /> : <Consequence release={book.release} />}
-          {book.release.status === "draft" && <DraftActions key={book.release.id} release={book.release} />}
+          <DraftBanner readingDraft={book.release.status === "draft" ? book.release : undefined} />
         </>,
         true,
       )}
@@ -151,7 +157,7 @@ function Consequence({ release }: { release: Release }) {
   );
 }
 
-function SubIndex({ base, inService, draft }: { base: string; inService: boolean; draft: boolean }) {
+function SubIndex({ base, inService }: { base: string; inService: boolean }) {
   const { pathname } = useLocation();
   // Change requests from Requirement AI wait on Versions; the count is seen from every page.
   const waiting = (useChangeRequests().data ?? []).filter((item) => item.status === "waiting").length;
@@ -164,14 +170,6 @@ function SubIndex({ base, inService, draft }: { base: string; inService: boolean
     { label: "Journeys", to: `${base}/journeys`, current: pathname.startsWith(`${base}/journeys`) },
     // The explorer reads the version in service only.
     ...(inService ? [{ label: "Explorer", to: "/explorer", current: false }] : []),
-    ...(draft
-      ? [
-          { label: "Sources", to: `${base}/sources`, current: pathname.startsWith(`${base}/sources`) },
-          { label: "Changes", to: `${base}/changes`, current: pathname.startsWith(`${base}/changes`) },
-          { label: "Check", to: `${base}/check`, current: pathname.startsWith(`${base}/check`) || pathname.startsWith(`${base}/evidence`) },
-          { label: "Publish", to: `${base}/publish`, current: pathname.startsWith(`${base}/publish`) },
-        ]
-      : []),
     {
       label: inService ? "Versions" : "All versions",
       to: "/architecture/versions",
