@@ -76,3 +76,23 @@ ships, with the fake models in CI and with the configured models by hand
   is not evidence about a particular system.
 - **An LLM-extracted knowledge graph.** Rejected in the gap review: links nobody reviewed would
   select systems.
+
+## Amendment 1 — Decided verdicts as precedents (Phase 5)
+
+Proposed 2026-10-11 with ontology plan Phase 5
+(`docs/slices/ontology-phase-5-retrieval-quality.md`), for the owner's acceptance in review.
+
+- **Requirement text is kept here.** When a Requirement Owner accepts, overrides or leaves
+  unknown a suggested verdict, requirement-portal sends the decision with the requirement's
+  text (at most 4,000 characters), its concepts, offering and systems. This service keeps it
+  as a precedent, embedded with the evidence index's model, one per requirement analysis.
+  Only requirement work's service token writes it. Knowledge admins read counts per release
+  and per concept, never the text.
+- **A precedent may offer a system, never select one.** When at least two of the three
+  nearest decided requirements are for the same offering, share a needed concept, and changed
+  the same system, that system becomes a supporting candidate with the path "Decided
+  requirement … › system". The reasoner selects it only with evidence, as for any candidate.
+- **Precedents are examples, never citations.** The reasoner sees the nearest decisions as
+  worked examples, and every quote still comes from the release's evidence.
+- **A requirement never sees its own decision.** The assessment names the requirement, and its
+  own precedents are left out.

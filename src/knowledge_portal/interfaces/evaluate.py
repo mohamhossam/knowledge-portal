@@ -1,7 +1,9 @@
 """Score the impact mapper on the golden set: ``python -m knowledge_portal.interfaces.evaluate``.
 
 ``--mapper assess`` (the default) scores the requirement assessment; ``--mapper match``
-today's per-item mapping, the Phase 0 baseline.
+today's per-item mapping, the Phase 0 baseline. ``--precedents loo`` first keeps every
+other labelled case as an accepted verdict, so the assessment's precedent lane is scored
+too (Phase 5); without it, no precedent is known.
 
 It publishes the catalogue the golden set was labelled against into an in-memory release,
 maps every case with the models the settings configure (``LLM_PROVIDER``), and prints the
@@ -101,6 +103,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         default="assess",
         help="The requirement assessment (default), or today's per-item match.",
     )
+    parser.add_argument(
+        "--precedents",
+        choices=("none", "loo"),
+        default="none",
+        help="No precedents (default), or every other labelled case as an accepted verdict.",
+    )
     arguments = parser.parse_args(argv)
     try:
         settings = Settings.from_env()
@@ -116,6 +124,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         if missing := unknown_ids(golden, release):
             print("[evaluate] The catalogue lacks: " + "; ".join(missing), file=sys.stderr)
             return 2
+        if arguments.precedents == "loo":
+            evaluation.seed_precedents.execute(golden, release.id)
         evaluate = (
             evaluation.evaluate if arguments.mapper == "assess" else evaluation.evaluate_match
         )

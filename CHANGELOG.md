@@ -5,6 +5,28 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ## Unreleased
 
+### Added
+
+- Retrieval quality and monitoring (ontology plan, Phase 5):
+  - an assessment's passages are reranked per facet and kept within budgets per facet, per
+    document and in all; the reranker is lexical by default, or a cross-encoder over HTTP
+    (`RERANKER_PROVIDER=http`, Text Embeddings Inference or a `/rerank` API);
+  - `POST /internal/architecture/precedents` receives each verdict a Requirement Owner
+    accepted, overrode or left unknown; the next assessment shows the nearest decided
+    requirements to the reasoner as worked examples, and offers the systems two of them
+    agree on as supporting candidates;
+  - `POST /internal/architecture/assess` takes the optional `requirement_id`, and answers with
+    `precedents` and `reranker_model`. All three changes are additive;
+  - `GET /architecture-knowledge/precedents/summary` and the front page show, per release,
+    how many suggested verdicts reviewers decided and overrode, and for which concepts;
+  - the evaluation command's `--precedents loo` scores the precedent lane with every other
+    golden case kept as an accepted verdict.
+
+### Changed
+
+- The assessment's prompt version is `requirement-assessment-v3`.
+- A migration adds the `architecture_precedents` table.
+
 ## 0.3.0 — 2026-10-10
 
 The ontology and impact plan's knowledge side: capability concepts, a concept-aware index and

@@ -76,14 +76,20 @@ PHASE_8 = {
     # Exit: data and API requirements reach their owners and consumers.
     "owner_consumer_reach": 1.0,
 }
+# The assessment with every other case kept as an accepted verdict (leave-one-out), recorded
+# in docs/slices/ontology-phase-5-retrieval-quality.md.
+PHASE_5 = {**PHASE_8, "system_precision": 0.74, "system_recall": 0.339}
 
 
-def _report(mapper: str = "assess") -> EvaluationReport:
+def _report(mapper: str = "assess", *, precedents: bool = False) -> EvaluationReport:
     evaluation = build_mapping_evaluation(Settings(llm_provider=LLMProvider.FAKE), FixedClock(NOW))
+    golden = read_golden_set(GOLDEN.read_bytes())
     try:
         release = evaluation.publish.execute(CATALOGUE.name, CATALOGUE.read_bytes())
+        if precedents:
+            evaluation.seed_precedents.execute(golden, release.id)
         run = evaluation.evaluate if mapper == "assess" else evaluation.evaluate_match
-        return run.execute(read_golden_set(GOLDEN.read_bytes()), release.id)
+        return run.execute(golden, release.id)
     finally:
         evaluation.close()
 
@@ -135,6 +141,21 @@ def test_the_assessment_beats_the_baseline_and_never_falls_below_phase_3() -> No
     # Every requirement too vague to place gets questions, not a verdict.
     vague = [item for item in report.results if item.case.verdict is None]
     assert vague and all(item.verdict_correct for item in vague)
+
+
+def test_precedents_raise_recall_without_costing_precision() -> None:
+    without = evaluate.scores(_report())
+    report = _report(precedents=True)
+    measured = evaluate.scores(report)
+
+    assert report.failures == 0
+    for name, floor in PHASE_5.items():
+        value = measured[name]
+        assert value is not None and value >= floor, name
+    recall, precision = measured["system_recall"], measured["system_precision"]
+    assert recall is not None and recall > (without["system_recall"] or 0.0)
+    assert precision is not None and precision >= (without["system_precision"] or 0.0)
+    assert report.false_changes <= PHASE_3_FALSE_CHANGES
 
 
 def _file(**case: Any) -> bytes:
@@ -215,7 +236,9 @@ class _Mapper:
     def name(self) -> str:
         return "stub"
 
-    def predict(self, text: str, release_id: str) -> MappingPrediction:
+    def predict(
+        self, text: str, release_id: str, requirement_id: str | None = None
+    ) -> MappingPrediction:
         answer = self._answers[text]
         if isinstance(answer, Exception):
             raise answer

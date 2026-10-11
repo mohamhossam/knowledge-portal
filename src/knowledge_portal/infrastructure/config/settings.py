@@ -58,6 +58,7 @@ from knowledge_portal.infrastructure.config.options import (
     DEFAULT_PRODUCT_CATALOG_CACHE_SECONDS,
     DEFAULT_PROVIDER_RATE_LIMIT_PER_MINUTE,
     DEFAULT_REQUEST_MAX_BODY_BYTES,
+    DEFAULT_RERANKER_TIMEOUT_SECONDS,
     AdoProvider,
     ConfigurationError,
     IdentityProvider,
@@ -65,6 +66,8 @@ from knowledge_portal.infrastructure.config.options import (
     LogFormat,
     PersistenceProvider,
     ProductCatalogProvider,
+    RerankerApi,
+    RerankerProvider,
 )
 from knowledge_portal.infrastructure.config.settings_validation import validate_settings
 
@@ -210,6 +213,13 @@ class Settings:
     # Where historic Requirements' breakdowns are read from, read-only (ADR-0102).
     ado_provider: AdoProvider = AdoProvider.NONE
     ado_import_max_items: int = DEFAULT_ADO_IMPORT_MAX_ITEMS
+    # What reorders an assessment's passages per facet (ontology plan Phase 5).
+    reranker_provider: RerankerProvider = RerankerProvider.LEXICAL
+    reranker_url: str | None = None
+    reranker_model: str | None = None
+    reranker_api: RerankerApi = RerankerApi.RERANK
+    reranker_api_key: str | None = field(default=None, repr=False)
+    reranker_timeout_seconds: float = DEFAULT_RERANKER_TIMEOUT_SECONDS
 
     def __post_init__(self) -> None:
         validate_settings(self)
@@ -568,6 +578,34 @@ def _operability_from_env() -> dict[str, Any]:
         **_product_catalog_from_env(),
         "knowledge_review_cycle_days": _review_cycle_from_env(),
         **_ado_from_env(),
+        **_reranker_from_env(),
+    }
+
+
+def _reranker_from_env() -> dict[str, Any]:
+    """The reranker of an assessment's passages (ontology plan Phase 5)."""
+    raw_provider = os.getenv("RERANKER_PROVIDER", "lexical").strip().lower() or "lexical"
+    raw_api = os.getenv("RERANKER_API", "rerank").strip().lower() or "rerank"
+    raw_timeout = os.getenv("RERANKER_TIMEOUT_SECONDS", "").strip()
+    try:
+        provider = RerankerProvider(raw_provider)
+    except ValueError as exc:
+        raise ConfigurationError("RERANKER_PROVIDER must be lexical, none or http.") from exc
+    try:
+        api = RerankerApi(raw_api)
+    except ValueError as exc:
+        raise ConfigurationError("RERANKER_API must be rerank or tei.") from exc
+    try:
+        timeout = float(raw_timeout) if raw_timeout else DEFAULT_RERANKER_TIMEOUT_SECONDS
+    except ValueError as exc:
+        raise ConfigurationError("RERANKER_TIMEOUT_SECONDS must be a number.") from exc
+    return {
+        "reranker_provider": provider,
+        "reranker_url": os.getenv("RERANKER_URL", "").strip() or None,
+        "reranker_model": os.getenv("RERANKER_MODEL", "").strip() or None,
+        "reranker_api": api,
+        "reranker_api_key": os.getenv("RERANKER_API_KEY", "").strip() or None,
+        "reranker_timeout_seconds": timeout,
     }
 
 

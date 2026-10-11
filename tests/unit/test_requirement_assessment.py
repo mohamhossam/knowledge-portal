@@ -8,6 +8,7 @@ model answer passes before it is used.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterator
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
@@ -25,6 +26,7 @@ from knowledge_portal.application.ports.architecture_rag import (
     ArchitectureEvidenceError,
     EvidenceChunk,
 )
+from knowledge_portal.application.ports.precedents import PrecedentMatch
 from knowledge_portal.application.ports.requirement_assessment import (
     ArchitectureAssessment,
     AssessmentQuery,
@@ -33,6 +35,7 @@ from knowledge_portal.application.ports.requirement_assessment import (
     ConceptBasis,
     ConceptOption,
     GapKind,
+    LinkedFacet,
     SystemCandidate,
     VerdictContext,
     VerdictDecision,
@@ -43,6 +46,11 @@ from knowledge_portal.application.use_cases.architecture_knowledge import (
     ManageArchitectureKnowledge,
 )
 from knowledge_portal.application.use_cases.assess_requirement import AssessRequirement
+from knowledge_portal.application.use_cases.assessment_lanes import (
+    PASSAGE_BUDGET,
+    RECORD_BUDGET,
+    passage_lane,
+)
 from knowledge_portal.application.use_cases.mapping_evaluation import (
     PublishCatalogueForEvaluation,
 )
@@ -61,6 +69,11 @@ from knowledge_portal.domain.architecture.assessment import (
 )
 from knowledge_portal.domain.architecture.impact_graph import realisers
 from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge
+from knowledge_portal.domain.architecture.precedents import (
+    Precedent,
+    PrecedentDecision,
+    PrecedentSystem,
+)
 from knowledge_portal.domain.architecture.verdicts import (
     OfferingFit,
     ProductVerdict,
@@ -83,6 +96,10 @@ from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_kno
 from knowledge_portal.infrastructure.architecture.located_extractor import (
     LocatedDocumentExtractor,
 )
+from knowledge_portal.infrastructure.architecture.passage_reranking import (
+    IndexOrder,
+    LexicalPassageReranker,
+)
 from knowledge_portal.infrastructure.architecture.reasoning import FakeArchitectureReasoner
 from knowledge_portal.infrastructure.architecture.requirement_reading import (
     FakeRequirementReader,
@@ -90,6 +107,7 @@ from knowledge_portal.infrastructure.architecture.requirement_reading import (
 )
 from knowledge_portal.infrastructure.architecture.tokenizer import FakeWordTokenizer
 from knowledge_portal.infrastructure.architecture.verdict_reasoning import (
+    EXAMPLE_LIMIT,
     FakeVerdictReasoner,
     StructuredVerdictReasoner,
 )
@@ -104,6 +122,7 @@ from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledg
 from knowledge_portal.infrastructure.persistence.in_memory_organisation import (
     InMemoryOrganisationRepository,
 )
+from knowledge_portal.infrastructure.persistence.in_memory_precedents import InMemoryPrecedents
 from knowledge_portal.interfaces.api.container import Container, build_container
 from knowledge_portal.interfaces.api.main import create_app
 from tests.conftest import FAKE_PROVIDER_SETTINGS
@@ -121,13 +140,15 @@ class _World:
     repository: InMemoryArchitectureKnowledgeRepository
     organisation: InMemoryOrganisationRepository
 
-    def assessor(self, reasoner: Any = None) -> AssessRequirement:
+    def assessor(self, reasoner: Any = None, precedents: Any = None) -> AssessRequirement:
         return AssessRequirement(
             self.repository,
             self.index,
             FakeRequirementReader(),
             reasoner or FakeVerdictReasoner(),
             self.organisation,
+            LexicalPassageReranker(),
+            precedents or InMemoryPrecedents(),
         )
 
     def assess(self, text: str, reasoner: Any = None) -> ArchitectureAssessment:
@@ -553,3 +574,184 @@ def test_requirement_work_assesses_through_the_internal_route(
         fixed.answer, mode="json"
     )
     assert answered.json()["verdict"] == "change_existing_offering"
+
+
+class _Passages:
+    """An evidence index with a record per system and, per facet, its own documents."""
+
+    def __init__(self, pools: dict[str, tuple[EvidenceChunk, ...]]) -> None:
+        self.pools = pools
+
+    def system_chunk(self, index_id: str, system_id: str) -> EvidenceChunk:
+        return EvidenceChunk(f"record-{system_id}", system_id, f"system {system_id}", system_id)
+
+    def retrieve(self, index_id: str, query: str, limit: int) -> tuple[EvidenceChunk, ...]:
+        return self.pools.get(query, ())[:limit]
+
+    def concept_chunks(
+        self, index_id: str, query: str, concept_ids: tuple[str, ...], limit: int
+    ) -> tuple[EvidenceChunk, ...]:
+        return self.pools.get(query, ())[:limit]
+
+    def links(self, index_id: str, chunk_ids: tuple[str, ...]) -> tuple[tuple[()], tuple[()]]:
+        return (), ()
+
+
+def _pool(facet: str, *documents: str) -> tuple[EvidenceChunk, ...]:
+    return tuple(
+        EvidenceChunk(f"{facet}-{document}-{n}", document, f"section {n}", f"{facet} {n}", document)
+        for document in documents
+        for n in range(3)
+    )
+
+
+def _need(text: str) -> LinkedFacet:
+    return LinkedFacet(FacetKind.NEED, text, text)
+
+
+def test_the_passage_lane_keeps_each_facet_and_each_document_to_its_budget() -> None:
+    index = _Passages({"billing": _pool("billing", "d1", "d2")})
+
+    chunks = passage_lane(index, IndexOrder(), "i", (_need("billing"),), ())  # type: ignore[arg-type]
+
+    # Three for the facet, at most two from one document.
+    assert [item.id for item in chunks] == ["billing-d1-0", "billing-d1-1", "billing-d2-0"]
+
+
+def test_facets_take_turns_so_one_need_cannot_crowd_out_the_others() -> None:
+    needs = tuple(f"need{n}" for n in range(PASSAGE_BUDGET // 2))
+    index = _Passages({need: _pool(need, f"{need}-a", f"{need}-b") for need in needs})
+
+    chunks = passage_lane(
+        index,  # type: ignore[arg-type]
+        IndexOrder(),
+        "i",
+        tuple(_need(need) for need in needs),
+        (),
+    )
+
+    assert len(chunks) == PASSAGE_BUDGET
+    # Every need has its best two passages before any has its third.
+    assert {item.id for item in chunks} == {
+        f"{need}-{need}-a-{n}" for need in needs for n in range(2)
+    }
+
+
+def test_the_records_come_first_by_role_within_their_budget() -> None:
+    candidates = (
+        *(SystemCandidate(f"consumer{n}", "C", SystemRole.CONSUMER) for n in range(RECORD_BUDGET)),
+        SystemCandidate("primary", "P", SystemRole.PRIMARY),
+    )
+
+    chunks = passage_lane(_Passages({}), IndexOrder(), "i", (), candidates)  # type: ignore[arg-type]
+
+    assert len(chunks) == RECORD_BUDGET
+    assert chunks[0].id == "record-primary"
+
+
+def _decided(
+    world: _World, number: int, text: str, systems: tuple[str, ...], **changes: Any
+) -> Precedent:
+    item: dict[str, Any] = {
+        "id": f"ana-{number}",
+        "requirement_id": f"REQ-{number}",
+        "version": f"ana-{number}@1",
+        "release_id": world.release.id,
+        "text": text,
+        "suggested_verdict": ProductVerdict.CHANGE_EXISTING_OFFERING,
+        "verdict": ProductVerdict.CHANGE_EXISTING_OFFERING,
+        "decision": PrecedentDecision.ACCEPTED,
+        "offering_id": BPP,
+        "concept_ids": ("cap-wifi-access",),
+        "systems": tuple(PrecedentSystem(item) for item in systems),
+        "decided_at": NOW,
+        "received_at": NOW,
+    }
+    return Precedent(**{**item, **changes})
+
+
+def _store(world: _World, *precedents: Precedent) -> InMemoryPrecedents:
+    store = InMemoryPrecedents()
+    for item in precedents:
+        store.record(item, world.index.embedding_model, world.index.vectors((item.text,))[0])
+    return store
+
+
+WIFI = "Let Business Pro Plus customers add a second Wi-Fi access point."
+
+
+def test_decided_requirements_nearby_are_shown_and_lend_the_systems_they_agree_on(
+    world: _World,
+) -> None:
+    store = _store(
+        world,
+        _decided(world, 1, WIFI, ("psm", "caf")),
+        _decided(world, 2, f"{WIFI} At no extra charge.", ("psm",)),
+        # Its own decision is never shown back to a requirement.
+        _decided(world, 9, WIFI, ("psm", "caf"), requirement_id="REQ-SELF"),
+    )
+    plain = world.assess(WIFI)
+    assert "psm" not in {item.id for item in plain.systems}
+
+    assessed = world.assessor(precedents=store).assess(
+        AssessmentQuery((WIFI,), release_id=world.release.id, requirement_id="REQ-SELF")
+    )
+
+    assert [item.precedent_id for item in assessed.precedents] == ["ana-1", "ana-2"]
+    first = assessed.precedents[0]
+    assert first.shared_concept_ids == ("cap-wifi-access",)
+    assert first.decision is PrecedentDecision.ACCEPTED and first.score >= 0.5
+    assert assessed.reranker_model == "lexical-bm25-v1"
+    # Two precedents agree on PSM: it is a supporting candidate, reached through them.
+    psm = _system(assessed, "psm")
+    assert psm.role is SystemRole.SUPPORTING
+    assert [step.kind for step in psm.paths[0]] == [PathKind.PRECEDENT, PathKind.SYSTEM]
+    # Only one names CAF: an example, not a candidate.
+    assert "caf" not in {item.id for item in assessed.systems}
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"offering_id": "business-pro"},
+        {"concept_ids": ("cap-billing",)},
+    ],
+)
+def test_a_precedent_for_another_offering_or_need_lends_no_system(
+    world: _World, changes: dict[str, Any]
+) -> None:
+    store = _store(
+        world,
+        _decided(world, 1, WIFI, ("psm",), **changes),
+        _decided(world, 2, WIFI, ("psm",), **changes),
+    )
+
+    assessed = world.assessor(precedents=store).assess(
+        AssessmentQuery((WIFI,), release_id=world.release.id)
+    )
+
+    assert "psm" not in {item.id for item in assessed.systems}
+
+
+def test_the_reasoner_sees_precedents_as_worked_examples(world: _World) -> None:
+    context = _context(world)
+    precedent = _decided(world, 1, "x" * 700, ("cwom",))
+    chunk = context.evidence[0]
+    client = _Client(_decision(chunk))
+    sent: list[dict[str, Any]] = []
+    parse = client.parse
+
+    def capture(**arguments: Any) -> Any:
+        sent.append(arguments)
+        return parse(**arguments)
+
+    client.parse = capture  # type: ignore[method-assign]
+    reasoner = StructuredVerdictReasoner(client, max_input_tokens=None)
+
+    reasoner.decide(replace(context, precedents=(PrecedentMatch(precedent, 0.9),)))
+
+    (example,) = json.loads(sent[0]["user_prompt"])["worked_examples"]
+    assert example["verdict"] == "change_existing_offering"
+    assert example["systems"] == [{"id": "cwom", "change_type": None}]
+    assert len(example["requirement"]) == EXAMPLE_LIMIT
+    assert "never cite them" in sent[0]["system_prompt"]

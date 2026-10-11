@@ -23,6 +23,7 @@ from knowledge_portal.infrastructure.config.options import (
     LLMProvider,
     PersistenceProvider,
     ProductCatalogProvider,
+    RerankerProvider,
 )
 
 if TYPE_CHECKING:
@@ -68,6 +69,15 @@ def validate_settings(settings: Settings) -> None:
         and not settings.requirement_api_base_url.startswith(("http://", "https://"))
     ):
         raise ConfigurationError("REQUIREMENT_API_BASE_URL must be an http(s) URL.")
+    if settings.reranker_provider is RerankerProvider.HTTP and (
+        not (settings.reranker_url or "").startswith(("http://", "https://"))
+        or not settings.reranker_model
+    ):
+        raise ConfigurationError(
+            "RERANKER_PROVIDER=http needs RERANKER_URL (an http(s) URL) and RERANKER_MODEL."
+        )
+    if settings.reranker_timeout_seconds <= 0:
+        raise ConfigurationError("RERANKER_TIMEOUT_SECONDS must be positive.")
     if settings.product_catalog_provider is ProductCatalogProvider.TMF620:
         url = settings.product_catalog_url or ""
         if not url.startswith(("http://", "https://")) or not settings.product_catalog_token:

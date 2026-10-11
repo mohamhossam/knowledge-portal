@@ -24,7 +24,9 @@ from knowledge_portal.application.use_cases.mapping_evaluation import (
     EvaluateImpactMapping,
     MatchedImpact,
     PublishCatalogueForEvaluation,
+    SeedGoldenPrecedents,
 )
+from knowledge_portal.application.use_cases.precedents import RecordPrecedent
 from knowledge_portal.application.use_cases.resolve_architecture_knowledge import (
     ResolveArchitectureKnowledge,
 )
@@ -46,6 +48,7 @@ from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledg
 from knowledge_portal.infrastructure.persistence.in_memory_organisation import (
     InMemoryOrganisationRepository,
 )
+from knowledge_portal.infrastructure.persistence.in_memory_precedents import InMemoryPrecedents
 from knowledge_portal.interfaces.api.composition.architecture import (
     build_architecture_retrieval,
 )
@@ -58,6 +61,8 @@ class MappingEvaluation:
     # The assessment (Phase 3) by default; today's per-item match on request.
     evaluate: EvaluateImpactMapping
     evaluate_match: EvaluateImpactMapping
+    # Keeps the golden cases as accepted verdicts, for the leave-one-out run (Phase 5).
+    seed_precedents: SeedGoldenPrecedents
     # Releases the model clients the run shares.
     close: Callable[[], None]
 
@@ -85,8 +90,15 @@ def build_mapping_evaluation(settings: Settings, clock: ClockPort) -> MappingEva
         YamlArchitectureKnowledge(default_knowledge_path()),
         organisation,
     )
+    precedents = InMemoryPrecedents()
     assessment = AssessRequirement(
-        repository, index, llm.requirement_reader, llm.verdict_reasoner, organisation
+        repository,
+        index,
+        llm.requirement_reader,
+        llm.verdict_reasoner,
+        organisation,
+        llm.passage_reranker,
+        precedents,
     )
     return MappingEvaluation(
         publish=PublishCatalogueForEvaluation(manage, build_index, clock),
@@ -95,6 +107,9 @@ def build_mapping_evaluation(settings: Settings, clock: ClockPort) -> MappingEva
         ),
         evaluate_match=EvaluateImpactMapping(
             MatchedImpact(knowledge), manage, llm.architecture_reasoner.model
+        ),
+        seed_precedents=SeedGoldenPrecedents(
+            RecordPrecedent(repository, index, precedents, clock), clock
         ),
         close=llm.close,
     )

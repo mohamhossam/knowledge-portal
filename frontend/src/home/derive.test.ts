@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import type { LibraryDocument, Organisation, Release, RequirementCorpus } from "../api/client";
+import type { LibraryDocument, Organisation, Release, ReleasePrecedents, RequirementCorpus } from "../api/client";
 import {
   architectureOverview,
   libraryOverview,
   nameDirectory,
   requirementOverview,
   squadOverview,
+  verdictDecisions,
   type DraftJobs,
 } from "./derive";
 
@@ -168,6 +169,62 @@ describe("architectureOverview", () => {
 
   it("names the packaged initial catalogue rather than its actor id", () => {
     expect(nameDirectory([])("packaged-seed")).toBe("the packaged initial catalogue");
+  });
+
+  const decisions = (overrides: Partial<ReleasePrecedents> = {}): ReleasePrecedents => ({
+    release_id: "seed", release_name: "Initial catalogue", accepted: 17, overridden: 3, unknown: 1,
+    override_rate: 0.15, last_decided_at: "2026-10-10T09:00:00Z",
+    concepts: [
+      { concept_id: "cap-fixed-access", label: "Fixed broadband access", decided: 4, overridden: 2 },
+      { concept_id: "cap-billing", label: "Billing", decided: 6, overridden: 1 },
+    ],
+    ...overrides,
+  });
+
+  it("counts the verdicts requirement owners decided against the edition in force, and names the capability changed most", () => {
+    const active = release({ id: "seed", name: "Initial catalogue", status: "published", published_by: "fake-owner", published_at: "2026-01-01T00:00:00Z" });
+
+    const overview = architectureOverview([active], active, new Map(), nameDirectory([amina]), null, null, decisions());
+
+    expect(overview.totals.slice(4)).toEqual([
+      { key: "verdicts", label: "Suggested verdicts decided", value: "20" },
+      { key: "overrides", label: "Of them changed", value: "3 (15%)" },
+    ]);
+    expect(overview.notes[0]?.text).toContain(
+      "By 10 Oct 2026, requirement owners had decided 20 verdicts suggested against this edition and changed 3, most often for requirements needing ‘Fixed broadband access’ (2 of 4). 1 other was marked unknown.",
+    );
+  });
+
+  it("names every capability tied for the most changes, and gives no rate on a handful of decisions", () => {
+    const tied = verdictDecisions(decisions({
+      accepted: 2, overridden: 2, unknown: 0, override_rate: 0.5,
+      concepts: [
+        { concept_id: "a", label: "Order fulfilment", decided: 3, overridden: 2 },
+        { concept_id: "b", label: "Order tracking", decided: 4, overridden: 2 },
+      ],
+    }));
+
+    expect(tied?.totals[1]).toEqual({ key: "overrides", label: "Of them changed", value: "2" });
+    expect(tied?.note).toContain("changed 2, as often for requirements needing ‘Order fulfilment’ (2 of 3) as for ‘Order tracking’ (2 of 4).");
+  });
+
+  it("ignores decisions on another release, and says nothing before any decision", () => {
+    const active = release({ id: "seed", status: "published", published_by: "fake-owner", published_at: "2026-01-01T00:00:00Z" });
+
+    const other = architectureOverview([active], active, new Map(), nameDirectory([]), null, null, decisions({ release_id: "older" }));
+
+    expect(other.totals.map((item) => item.key)).toEqual(["systems", "relationships", "domains", "journeys"]);
+    expect(verdictDecisions(decisions({ accepted: 0, overridden: 0, unknown: 0, override_rate: null, concepts: [] }))).toBeNull();
+  });
+
+  it("shows one row when every suggestion was marked unknown, and says none were changed", () => {
+    expect(verdictDecisions(decisions({ accepted: 0, overridden: 0, unknown: 2, override_rate: null, concepts: [] }))).toEqual({
+      totals: [{ key: "verdicts-unknown", label: "Suggested verdicts marked unknown", value: "2" }],
+      note: "By 10 Oct 2026, requirement owners had marked 2 verdicts suggested against this edition unknown, and decided none.",
+    });
+    expect(verdictDecisions(decisions({ accepted: 4, overridden: 0, unknown: 0, override_rate: 0, concepts: [], last_decided_at: null }))?.note).toBe(
+      "Requirement owners had decided 4 verdicts suggested against this edition and changed none.",
+    );
   });
 
   it("says plainly when no edition is in force", () => {

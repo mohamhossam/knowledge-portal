@@ -12,8 +12,11 @@ from dataclasses import dataclass, field
 
 from knowledge_portal.application.ports.architecture_rag import (
     ArchitectureEvidenceIndexPort,
+    EntityRole,
     EvidenceChunk,
 )
+from knowledge_portal.application.ports.passage_reranker import PassageRerankerPort
+from knowledge_portal.application.ports.precedents import PrecedentMatch, PrecedentStorePort
 from knowledge_portal.application.ports.requirement_assessment import (
     CatalogueTerm,
     CatalogueTerms,
@@ -57,8 +60,21 @@ from knowledge_portal.domain.architecture.verdicts import OfferingFit, ProductVe
 from knowledge_portal.domain.architecture.vocabularies import VocabularyScheme
 
 SHORTLIST_LIMIT = 10
+# The passage lane's budgets (ontology plan Phase 5): passages fetched per facet before
+# reranking, kept per facet and per entity, and in all; records of candidates in all.
+POOL_PER_FACET = 12
 PASSAGES_PER_FACET = 3
-EVIDENCE_LIMIT = 24
+PASSAGES_PER_ENTITY = 2
+PASSAGE_BUDGET = 12
+RECORD_BUDGET = 16
+SEARCHED_FACETS = frozenset({FacetKind.NEED, FacetKind.DATA, FacetKind.INTERFACE})
+# The precedent lane: how many decided requirements to weigh, how near they must be, and
+# how many must agree before a system they changed becomes a candidate.
+PRECEDENTS = 3
+PRECEDENT_POOL = 12
+CONCEPT_WEIGHT = 0.2
+MIN_PRECEDENT_SCORE = 0.5
+PRECEDENT_AGREEMENT = 2
 
 
 def component_labels(part: OfferingComponent) -> tuple[str, ...]:
@@ -302,6 +318,7 @@ _ROLE_RANK = {
     SystemRole.CHANNEL: 2,
     SystemRole.NAMED: 3,
     SystemRole.CONSUMER: 4,
+    SystemRole.SUPPORTING: 5,
 }
 
 
@@ -440,31 +457,156 @@ def _data_lane(
                 add(reach.system_id, SystemRole.CONSUMER, (step, *reach.steps))
 
 
+def _by_role(candidates: tuple[SystemCandidate, ...]) -> tuple[SystemCandidate, ...]:
+    """Primary systems first, then owners, channels, named systems, consumers and the rest."""
+    return tuple(sorted(candidates, key=lambda item: _ROLE_RANK[item.role]))
+
+
+def _entity(chunk: EvidenceChunk, records: dict[str, str]) -> str:
+    """What a passage is about, for the per-entity cap: the catalogue record it is, else
+    the document it comes from."""
+    return records.get(chunk.id) or chunk.document_version_id or chunk.source_label
+
+
 def passage_lane(
     index: ArchitectureEvidenceIndexPort,
+    reranker: PassageRerankerPort,
     index_id: str,
     facets: tuple[LinkedFacet, ...],
     candidates: tuple[SystemCandidate, ...],
 ) -> tuple[EvidenceChunk, ...]:
-    """The candidates' own records, then for each need the passages about its concepts (any
-    passage when it links to none), each passage once."""
+    """The candidates' own records, then the best passages for each searchable facet.
+
+    Each lane has a budget (ontology plan Phase 5). Records: one per candidate, primary
+    systems first, up to `RECORD_BUDGET`. Passages: for each need, the passages about its
+    concepts (any passage when it links to none); for each data or interface facet, the
+    passages about its words. A facet's pool is reranked against the facet's own words,
+    and keeps at most `PASSAGES_PER_FACET`, at most `PASSAGES_PER_ENTITY` about one entity.
+    The facets then take turns, best passage first, until `PASSAGE_BUDGET` is spent, so one
+    wordy need cannot crowd out the others. Each passage is kept once.
+    """
     chunks: dict[str, EvidenceChunk] = {}
-    for candidate in candidates:
+    for candidate in _by_role(candidates):
+        if len(chunks) >= RECORD_BUDGET:
+            break
         record = index.system_chunk(index_id, candidate.system_id)
         if record is not None:
             chunks.setdefault(record.id, record)
+    per_facet: list[list[EvidenceChunk]] = []
     for facet in facets:
-        if facet.kind is not FacetKind.NEED:
+        if facet.kind not in SEARCHED_FACETS:
             continue
         ids = tuple(item.concept_id for item in facet.concepts)
-        found = (
-            index.concept_chunks(index_id, facet.text, ids, PASSAGES_PER_FACET)
+        pool = (
+            index.concept_chunks(index_id, facet.text, ids, POOL_PER_FACET)
             if ids
-            else index.retrieve(index_id, facet.text, PASSAGES_PER_FACET)
+            else index.retrieve(index_id, facet.text, POOL_PER_FACET)
         )
-        for chunk in found:
-            chunks.setdefault(chunk.id, chunk)
-    return tuple(chunks.values())[:EVIDENCE_LIMIT]
+        pool = tuple(item for item in pool if item.id not in chunks)
+        if not pool:
+            continue
+        entities, _ = index.links(index_id, tuple(item.id for item in pool))
+        records = {
+            link.chunk_id: f"{link.entity.value}:{link.entity_id}"
+            for link in entities
+            if link.role is EntityRole.RECORD
+        }
+        kept: list[EvidenceChunk] = []
+        about: dict[str, int] = {}
+        for ranked in reranker.rerank(facet.text, pool):
+            entity = _entity(ranked.chunk, records)
+            if about.get(entity, 0) >= PASSAGES_PER_ENTITY:
+                continue
+            about[entity] = about.get(entity, 0) + 1
+            kept.append(ranked.chunk)
+            if len(kept) >= PASSAGES_PER_FACET:
+                break
+        per_facet.append(kept)
+    spent = 0
+    for turn in range(PASSAGES_PER_FACET):
+        for kept in per_facet:
+            if spent >= PASSAGE_BUDGET:
+                break
+            if turn < len(kept) and kept[turn].id not in chunks:
+                chunks[kept[turn].id] = kept[turn]
+                spent += 1
+    return tuple(chunks.values())
+
+
+def _overlap(left: Iterable[str], right: Iterable[str]) -> float:
+    first, second = set(left), set(right)
+    return len(first & second) / len(first | second) if first | second else 0.0
+
+
+def precedent_lane(
+    store: PrecedentStorePort,
+    index: ArchitectureEvidenceIndexPort,
+    text: str,
+    needed: frozenset[str],
+    requirement_id: str | None,
+) -> tuple[tuple[PrecedentMatch, float], ...]:
+    """The nearest decided requirements, by text similarity and the concepts both need.
+
+    Each is scored by its text's similarity, plus `CONCEPT_WEIGHT` times the overlap of the
+    concepts both needed; those under `MIN_PRECEDENT_SCORE` are left out. The requirement's
+    own decisions never come back to it.
+    """
+    if not text.strip():
+        return ()
+    vector = index.vectors((text,))[0]
+    pool = store.nearest(
+        index.embedding_model, vector, PRECEDENT_POOL, exclude_requirement=requirement_id
+    )
+    scored = [
+        (match, match.similarity + CONCEPT_WEIGHT * _overlap(needed, match.precedent.concept_ids))
+        for match in pool
+    ]
+    scored = [item for item in scored if item[1] >= MIN_PRECEDENT_SCORE]
+    scored.sort(key=lambda item: (-item[1], item[0].precedent.id))
+    return tuple(scored[:PRECEDENTS])
+
+
+def precedent_candidates(
+    release: ArchitectureKnowledge,
+    precedents: tuple[PrecedentMatch, ...],
+    offering_id: str | None,
+    needed: frozenset[str],
+    known: tuple[SystemCandidate, ...],
+) -> tuple[SystemCandidate, ...]:
+    """The systems decided precedents changed that nothing else reached, when at least
+    `PRECEDENT_AGREEMENT` precedents agree on the system.
+
+    Only a precedent for the same offering that needed one of the same concepts lends its
+    systems; any other is an example only, since its systems served another product or
+    another capability. Measured on the golden set, the shared concept is what keeps
+    precision: without it, nearby text alone carried systems another need had changed.
+    """
+    if offering_id is None:
+        return ()
+    names = {item.id: item.name for item in release.systems}
+    reached = {item.system_id for item in known}
+    paths: dict[str, list[tuple[PathStep, ...]]] = {}
+    for match in precedents:
+        precedent = match.precedent
+        if precedent.offering_id != offering_id or not needed & set(precedent.concept_ids):
+            continue
+        for system in precedent.systems:
+            if system.system_id in names and system.system_id not in reached:
+                paths.setdefault(system.system_id, []).append(
+                    (
+                        PathStep(
+                            PathKind.PRECEDENT,
+                            precedent.id,
+                            f"Decided requirement {precedent.requirement_id}",
+                        ),
+                        PathStep(PathKind.SYSTEM, system.system_id, names[system.system_id]),
+                    )
+                )
+    return tuple(
+        SystemCandidate(system_id, names[system_id], SystemRole.SUPPORTING, tuple(found))
+        for system_id, found in paths.items()
+        if len(found) >= PRECEDENT_AGREEMENT
+    )
 
 
 def suggested_change_type(

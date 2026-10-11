@@ -17,6 +17,7 @@ import type {
   Organisation,
   OrganisationAuditEvent,
   Release,
+  ReleasePrecedents,
   RequirementCorpus,
   SystemStanding,
 } from "../api/client";
@@ -299,13 +300,17 @@ export function architectureOverview(
   jobs: Map<string, DraftJobs> | null = null,
   /** Where each system in service stands for review (Knowledge Center D), once read. */
   standings: SystemStanding[] | null = null,
+  /** How reviewers decided the verdicts suggested on the edition in force, when the reader may see it. */
+  precedents: ReleasePrecedents | null = null,
 ): Overview {
   const drafts = releases.filter((release) => release.status === "draft");
   const notes: DerivedNote[] = [];
+  const decisions = active && precedents?.release_id === active.id ? verdictDecisions(precedents) : null;
   if (active) {
     notes.push({
       id: "edition",
-      text: `Published by ${nameOf(active.published_by)} on ${formatDay(active.published_at)}, revision ${active.revision}. Requirement work maps new requirements against this edition.`,
+      text: `Published by ${nameOf(active.published_by)} on ${formatDay(active.published_at)}, revision ${active.revision}. Requirement work maps new requirements against this edition.${
+        decisions ? ` ${decisions.note}` : ""}`,
     });
   }
   let pendingTotal = 0;
@@ -403,6 +408,7 @@ export function architectureOverview(
           { key: "relationships", label: "Relationships", value: String(active.relationships.length) },
           { key: "domains", label: "Capability domains", value: String(active.capability_domains?.length ?? 0) },
           { key: "journeys", label: "Journeys", value: String(active.journeys?.length ?? 0) },
+          ...(decisions?.totals ?? []),
         ]
       : [],
     edition: active
@@ -452,6 +458,57 @@ export function architectureOverview(
         dueSystems.length > 0 ? `${count(dueSystems.length, "re-confirmation")} due` : "",
       ]),
     ),
+  };
+}
+
+/** Below this many decided verdicts a rate says more about chance than about the matcher. */
+const RATE_FROM = 10;
+
+/**
+ * What Requirement Owners did with the verdicts the assessment suggested against one release:
+ * its totals, and a sentence for the edition's note naming the capabilities overridden most.
+ */
+export function verdictDecisions(summary: ReleasePrecedents): {
+  totals: { key: string; label: string; value: string }[];
+  note: string;
+} | null {
+  const decided = summary.accepted + summary.overridden;
+  if (decided + summary.unknown === 0) return null;
+  // The figures are as of the latest decision.
+  const owners = summary.last_decided_at
+    ? `By ${formatDay(summary.last_decided_at)}, requirement owners had`
+    : "Requirement owners had";
+  if (decided === 0) {
+    return {
+      totals: [{ key: "verdicts-unknown", label: "Suggested verdicts marked unknown", value: String(summary.unknown) }],
+      note: `${owners} marked ${count(summary.unknown, "verdict")} suggested against this edition unknown, and decided none.`,
+    };
+  }
+  const rate = summary.override_rate ?? null;
+  const top = summary.concepts[0]?.overridden ?? 0;
+  const worst = top > 0 ? summary.concepts.filter((item) => item.overridden === top) : [];
+  const named = worst.map((item) => `‘${item.label}’ (${item.overridden} of ${item.decided})`);
+  const where = named.length === 0
+    ? ""
+    : named.length === 1
+      ? `, most often for requirements needing ${named[0]}`
+      : `, as often for requirements needing ${named.slice(0, -1).join(", ")} as for ${named[named.length - 1]}`;
+  const unknown = summary.unknown > 0
+    ? ` ${count(summary.unknown, "other was", "others were")} marked unknown.`
+    : "";
+  return {
+    totals: [
+      { key: "verdicts", label: "Suggested verdicts decided", value: String(decided) },
+      {
+        key: "overrides",
+        label: "Of them changed",
+        value: rate !== null && decided >= RATE_FROM
+          ? `${summary.overridden} (${Math.round(rate * 100)}%)`
+          : String(summary.overridden),
+      },
+    ],
+    note: `${owners} decided ${count(decided, "verdict")} suggested against this edition and changed ${
+      summary.overridden === 0 ? "none" : summary.overridden}${where}.${unknown}`,
   };
 }
 

@@ -150,6 +150,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/architecture-knowledge/precedents/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Precedent Summaries
+         * @description How reviewers decided suggested verdicts, per release: accepted, overridden, unknown,
+         *     and the concepts most overridden (ontology plan Phase 5). Counts only, no text.
+         */
+        get: operations["precedent_summaries_architecture_knowledge_precedents_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/architecture-knowledge/releases": {
         parameters: {
             query?: never;
@@ -2911,6 +2932,17 @@ export interface components {
             /** System Id */
             system_id: string;
         };
+        /** ConceptOverridesResponse */
+        ConceptOverridesResponse: {
+            /** Concept Id */
+            concept_id: string;
+            /** Decided */
+            decided: number;
+            /** Label */
+            label: string;
+            /** Overridden */
+            overridden: number;
+        };
         /** ConflictScopeSchema */
         ConflictScopeSchema: {
             /**
@@ -4544,6 +4576,14 @@ export interface components {
             /** Written As */
             written_as: string;
         };
+        /**
+         * PrecedentSummariesResponse
+         * @description How reviewers decided suggested verdicts, per release, newest decision first.
+         */
+        PrecedentSummariesResponse: {
+            /** Releases */
+            releases: components["schemas"]["ReleasePrecedentsResponse"][];
+        };
         /** PreviewRequest */
         PreviewRequest: {
             /** Query */
@@ -4958,6 +4998,25 @@ export interface components {
          * @enum {string}
          */
         RelationshipKind: "calls_api" | "publishes_events_to" | "transfers_data_to" | "orchestrates" | "unspecified";
+        /** ReleasePrecedentsResponse */
+        ReleasePrecedentsResponse: {
+            /** Accepted */
+            accepted: number;
+            /** Concepts */
+            concepts: components["schemas"]["ConceptOverridesResponse"][];
+            /** Last Decided At */
+            last_decided_at: string | null;
+            /** Overridden */
+            overridden: number;
+            /** Override Rate */
+            override_rate: number | null;
+            /** Release Id */
+            release_id: string;
+            /** Release Name */
+            release_name: string | null;
+            /** Unknown */
+            unknown: number;
+        };
         /** Reminder */
         Reminder: {
             /** Id */
@@ -5999,6 +6058,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MappingImpactResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    precedent_summaries_architecture_knowledge_precedents_summary_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrecedentSummariesResponse"];
                 };
             };
             /** @description Validation Error */

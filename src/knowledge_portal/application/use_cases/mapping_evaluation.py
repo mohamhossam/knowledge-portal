@@ -17,6 +17,10 @@ What is scored:
 - owner and consumer reach (Phase 8): of the owners and consumers the data and interface
   cases label, the share the mapper names.
 
+With leave-one-out precedents (Phase 5), every other labelled case is first kept as an
+accepted verdict, so each case is assessed with the decided requirements nearest to it,
+never its own.
+
 The catalogue the golden set was labelled against is published into a throwaway release first,
 so the scores never depend on what a live portal holds.
 """
@@ -39,6 +43,10 @@ from knowledge_portal.application.ports.architecture_rag import (
     EvidenceChunk,
 )
 from knowledge_portal.application.ports.identity import Actor
+from knowledge_portal.application.ports.precedents import (
+    PrecedentRequest,
+    PrecedentSystemRequest,
+)
 from knowledge_portal.application.ports.requirement_assessment import (
     AssessmentQuery,
     RequirementAssessmentPort,
@@ -48,8 +56,10 @@ from knowledge_portal.application.use_cases.architecture_knowledge import (
     KnowledgeNotFoundError,
     ManageArchitectureKnowledge,
 )
+from knowledge_portal.application.use_cases.precedents import RecordPrecedent
 from knowledge_portal.domain.architecture.entities import ArchitectureCitation
 from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge
+from knowledge_portal.domain.architecture.precedents import PrecedentDecision
 from knowledge_portal.domain.architecture.verdicts import ProductVerdict
 
 EVALUATOR = Actor("golden-set-evaluation", frozenset({"knowledge_maintainer"}))
@@ -99,7 +109,11 @@ class ImpactMapperPort(Protocol):
     @property
     def name(self) -> str: ...
 
-    def predict(self, text: str, release_id: str) -> MappingPrediction: ...
+    def predict(
+        self, text: str, release_id: str, requirement_id: str | None = None
+    ) -> MappingPrediction:
+        """`requirement_id` names the case, so its own precedent is never shown back."""
+        ...
 
 
 class PublishedEvidencePort(Protocol):
@@ -121,7 +135,9 @@ class MatchedImpact(ImpactMapperPort):
     def name(self) -> str:
         return "match"
 
-    def predict(self, text: str, release_id: str) -> MappingPrediction:
+    def predict(
+        self, text: str, release_id: str, requirement_id: str | None = None
+    ) -> MappingPrediction:
         match = self._knowledge.match(ArchitectureQuery((text,), release_id=release_id))
         offering = match.product_contexts[0].product_id if match.product_contexts else None
         return MappingPrediction(
@@ -147,8 +163,12 @@ class AssessedImpact(ImpactMapperPort):
     def name(self) -> str:
         return "assess"
 
-    def predict(self, text: str, release_id: str) -> MappingPrediction:
-        result = self._assessment.assess(AssessmentQuery((text,), release_id=release_id))
+    def predict(
+        self, text: str, release_id: str, requirement_id: str | None = None
+    ) -> MappingPrediction:
+        result = self._assessment.assess(
+            AssessmentQuery((text,), release_id=release_id, requirement_id=requirement_id)
+        )
         verdict = result.verdict
         return MappingPrediction(
             system_ids=frozenset(item.id for item in result.systems),
@@ -325,7 +345,7 @@ class EvaluateImpactMapping:
 
     def _evaluate(self, case: GoldenCase, release_id: str) -> CaseResult:
         try:
-            prediction = self._mapper.predict(case.text, release_id)
+            prediction = self._mapper.predict(case.text, release_id, case.id)
         except ArchitectureEvidenceError as exc:
             # A provider that answers unusably fails this case, not the whole run; the
             # report counts it as a case with no answer.
@@ -368,6 +388,40 @@ class PublishCatalogueForEvaluation:
         return self._knowledge.publish(
             built.id, built.revision, EVALUATOR, self._clock.now(), "Golden set evaluation"
         )
+
+
+class SeedGoldenPrecedents:
+    """Keep every golden case with a verdict as a reviewer's accepted verdict, for the
+    leave-one-out run: the assessment excludes a case's own by its requirement id."""
+
+    def __init__(self, record: RecordPrecedent, clock: ClockPort) -> None:
+        self._record = record
+        self._clock = clock
+
+    def execute(self, golden: GoldenSet, release_id: str) -> int:
+        decided_at = self._clock.now()
+        kept = 0
+        for case in golden.cases:
+            if case.verdict is None:
+                continue
+            receipt = self._record.execute(
+                PrecedentRequest(
+                    precedent_id=f"golden-{case.id}",
+                    requirement_id=case.id,
+                    version=f"golden-{case.id}@{golden.version}",
+                    release_id=release_id,
+                    text=(case.text,),
+                    decision=PrecedentDecision.ACCEPTED,
+                    decided_at=decided_at,
+                    suggested_verdict=case.verdict,
+                    verdict=case.verdict,
+                    offering_id=case.offering_id,
+                    concept_ids=tuple(sorted(case.concept_ids)),
+                    systems=tuple(PrecedentSystemRequest(item) for item in sorted(case.system_ids)),
+                )
+            )
+            kept += receipt.recorded
+        return kept
 
 
 def unknown_ids(golden: GoldenSet, release: ArchitectureKnowledge) -> Sequence[str]:
