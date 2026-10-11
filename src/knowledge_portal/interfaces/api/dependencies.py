@@ -42,6 +42,7 @@ from knowledge_portal.application.use_cases.catalog_plans import ReadCatalogPlan
 from knowledge_portal.application.use_cases.catalogue_candidates import (
     DecideCatalogueCandidate,
 )
+from knowledge_portal.application.use_cases.change_requests import ReadDeliverySummaries
 from knowledge_portal.application.use_cases.document_library import DocumentLibrary
 from knowledge_portal.application.use_cases.historic_requirements import HistoricImports
 from knowledge_portal.application.use_cases.identity_access import SearchKnownActors
@@ -260,6 +261,10 @@ def get_compare_architecture_impact(container: ContainerDep) -> CompareArchitect
 
 def get_precedent_summaries(container: ContainerDep) -> ReadPrecedentSummaries:
     return container.precedent_summaries
+
+
+def get_delivery_summaries(container: ContainerDep) -> ReadDeliverySummaries:
+    return container.delivery_summaries
 
 
 def get_report_mapping_impact(container: ContainerDep) -> ReportMappingImpact:

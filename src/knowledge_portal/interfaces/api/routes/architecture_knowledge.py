@@ -39,6 +39,7 @@ from knowledge_portal.application.use_cases.architecture_preview import (
 from knowledge_portal.application.use_cases.catalogue_candidates import (
     DecideCatalogueCandidate,
 )
+from knowledge_portal.application.use_cases.change_requests import ReadDeliverySummaries
 from knowledge_portal.application.use_cases.precedents import ReadPrecedentSummaries
 from knowledge_portal.domain.architecture.knowledge import InvalidKnowledgeError
 from knowledge_portal.interfaces.api.dependencies import (
@@ -48,6 +49,7 @@ from knowledge_portal.interfaces.api.dependencies import (
     get_clock,
     get_compare_architecture_impact,
     get_decide_catalogue_candidates,
+    get_delivery_summaries,
     get_manage_architecture_knowledge,
     get_manage_sample_requirements,
     get_precedent_summaries,
@@ -95,6 +97,7 @@ from knowledge_portal.interfaces.api.schemas.change_requests import (
     ChangeRequestReadingResponse,
     ChangeRequestResponse,
     ChangeRequestsResponse,
+    DeliverySummariesResponse,
 )
 from knowledge_portal.interfaces.api.schemas.precedents import PrecedentSummariesResponse
 
@@ -578,6 +581,17 @@ def precedent_summaries(
     """How reviewers decided suggested verdicts, per release: accepted, overridden, unknown,
     and the concepts most overridden (ontology plan Phase 5). Counts only, no text."""
     return PrecedentSummariesResponse.from_domain(summaries.execute(actor))
+
+
+@router.get("/deliveries/summary", response_model=DeliverySummariesResponse)
+def delivery_summaries(
+    actor: KnowledgeActorDep,
+    summaries: Annotated[ReadDeliverySummaries, Depends(get_delivery_summaries)],
+) -> DeliverySummariesResponse:
+    """How the systems assessments predicted compare with what closed Epics delivered, per
+    release: delivered and predicted, delivered but not predicted, predicted but not
+    delivered (ontology plan Phase 7). Counts only."""
+    return DeliverySummariesResponse.from_domain(summaries.execute(actor))
 
 
 @router.get("/sample-requirements", response_model=SampleRequirementsResponse)

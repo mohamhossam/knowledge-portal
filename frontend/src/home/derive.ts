@@ -17,6 +17,7 @@ import type {
   Organisation,
   OrganisationAuditEvent,
   Release,
+  ReleaseDeliveries,
   ReleasePrecedents,
   RequirementCorpus,
   SystemStanding,
@@ -302,15 +303,18 @@ export function architectureOverview(
   standings: SystemStanding[] | null = null,
   /** How reviewers decided the verdicts suggested on the edition in force, when the reader may see it. */
   precedents: ReleasePrecedents | null = null,
+  /** What closed Epics assessed against the edition in force delivered, when the reader may see it. */
+  deliveries: ReleaseDeliveries | null = null,
 ): Overview {
   const drafts = releases.filter((release) => release.status === "draft");
   const notes: DerivedNote[] = [];
   const decisions = active && precedents?.release_id === active.id ? verdictDecisions(precedents) : null;
+  const delivered = active && deliveries?.release_id === active.id ? deliveryHits(deliveries) : null;
   if (active) {
     notes.push({
       id: "edition",
       text: `Published by ${nameOf(active.published_by)} on ${formatDay(active.published_at)}, revision ${active.revision}. Requirement work maps new requirements against this edition.${
-        decisions ? ` ${decisions.note}` : ""}`,
+        decisions ? ` ${decisions.note}` : ""}${delivered ? ` ${delivered.note}` : ""}`,
     });
   }
   let pendingTotal = 0;
@@ -409,6 +413,7 @@ export function architectureOverview(
           { key: "domains", label: "Capability domains", value: String(active.capability_domains?.length ?? 0) },
           { key: "journeys", label: "Journeys", value: String(active.journeys?.length ?? 0) },
           ...(decisions?.totals ?? []),
+          ...(delivered?.totals ?? []),
         ]
       : [],
     edition: active
@@ -509,6 +514,36 @@ export function verdictDecisions(summary: ReleasePrecedents): {
     ],
     note: `${owners} decided ${count(decided, "verdict")} suggested against this edition and changed ${
       summary.overridden === 0 ? "none" : summary.overridden}${where}.${unknown}`,
+  };
+}
+
+/** "5 of 7", with its share once there are enough systems for a rate to mean something. */
+function share(part: number, whole: number): string {
+  return whole >= RATE_FROM ? `${part} of ${whole} (${Math.round((part / whole) * 100)}%)` : `${part} of ${whole}`;
+}
+
+/**
+ * How the systems assessed against one release compare with what closed Epics delivered
+ * (ontology plan Phase 7): its totals, and a sentence for the edition's note.
+ */
+export function deliveryHits(summary: ReleaseDeliveries): {
+  totals: { key: string; label: string; value: string }[];
+  note: string;
+} | null {
+  if (summary.deliveries === 0) return null;
+  const predicted = summary.predicted + summary.undelivered;
+  const missed = summary.undelivered === 0
+    ? predicted > 0 ? " Every system predicted was delivered." : ""
+    : ` ${count(summary.undelivered, "system")} predicted ${summary.undelivered === 1 ? "was" : "were"} not delivered.`;
+  return {
+    totals: [
+      { key: "delivered-predicted", label: "Delivered systems predicted", value: share(summary.predicted, summary.delivered) },
+      { key: "predicted-undelivered", label: "Predicted systems not delivered", value: share(summary.undelivered, predicted) },
+    ],
+    note: `By ${formatDay(summary.last_closed_at)}, ${count(summary.deliveries, "closed Epic")} assessed against this edition ${
+      summary.delivered === 0
+        ? `named no system ${summary.deliveries === 1 ? "it" : "they"} changed`
+        : `delivered ${count(summary.delivered, "system")}, ${summary.predicted === summary.delivered ? "all" : summary.predicted} of them predicted`}.${missed}`,
   };
 }
 

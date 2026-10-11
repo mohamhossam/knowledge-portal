@@ -313,7 +313,7 @@ def test_component_links_are_inferred_and_decided_one_by_one() -> None:
     assert needs_one_by_one(candidate, release)
     with pytest.raises(InvalidKnowledgeError, match="at least one concept"):
         CandidateContent(CandidateKind.COMPONENT_LINK, "bpp", component_id="ap")
-    with pytest.raises(InvalidKnowledgeError, match="Only a component link names concepts"):
+    with pytest.raises(InvalidKnowledgeError, match="Only a component link or a capability"):
         CandidateContent(CandidateKind.SYSTEM, "x", name="X", concept_ids=("cap-wifi",))
     with pytest.raises(InvalidKnowledgeError, match="Only a concept suggestion holds"):
         CandidateContent(CandidateKind.SYSTEM, "x", name="X", concept=WIFI)

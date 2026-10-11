@@ -5,6 +5,29 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ## Unreleased
 
+## 0.5.0 — 2026-10-11
+
+Phase 7: what a closed Epic delivered comes back as a catalogue change, and the front page
+shows how often the predicted systems were delivered. requirement-portal's Epic-closed hook
+needs this release.
+
+### Added
+
+- What a closed Epic delivered (ontology plan, Phase 7): `POST
+  /internal/change-requests/deliveries` keeps each closed Epic once as a catalogue change in
+  the change-request inbox, with the Features delivered and not, the systems predicted and the
+  catalogue changes the decided product impact implies; a removed Epic withdraws one still
+  waiting, and a later closure replaces it. Reading one suggests a capability linked to its
+  concept on each delivered system, and asks the offering which component delivers it. The
+  inbox shows what each delivered and how it compares with the prediction, and the front page
+  shows, per edition, the delivered systems predicted and the predicted systems not
+  delivered (`GET /architecture-knowledge/deliveries/summary`).
+
+### Fixed
+
+- Accepting a capability suggestion for a capability already in the draft dropped its concept
+  link and its "no concept fits" reason; it now keeps both.
+
 ## 0.4.0 — 2026-10-11
 
 Phase 8's data, interfaces and realisation records, and Phase 5's retrieval quality: verdicts

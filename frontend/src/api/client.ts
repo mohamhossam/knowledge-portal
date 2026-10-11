@@ -60,6 +60,8 @@ export type CatalogueDiff = Schemas["CatalogueDiffResponse"];
 export type MappingImpact = Schemas["MappingImpactResponse"];
 export type PrecedentSummaries = Schemas["PrecedentSummariesResponse"];
 export type ReleasePrecedents = Schemas["ReleasePrecedentsResponse"];
+export type DeliverySummaries = Schemas["DeliverySummariesResponse"];
+export type ReleaseDeliveries = Schemas["ReleaseDeliveriesResponse"];
 export type SystemOwnership = Schemas["SystemOwnershipResponse"];
 export type CatalogueFileFormat = Schemas["CatalogueFileFormat"];
 export type Suggestion = Schemas["CatalogueSuggestionResponse"];
@@ -345,6 +347,8 @@ export const api = {
   mappingImpact: () => apiRequest<MappingImpact>("/architecture-knowledge/mapping-impact"),
   /** How reviewers decided suggested verdicts, per release (ontology plan Phase 5). */
   precedentSummary: () => apiRequest<PrecedentSummaries>("/architecture-knowledge/precedents/summary"),
+  /** What closed Epics delivered against what was predicted, per release (ontology plan Phase 7). */
+  deliverySummary: () => apiRequest<DeliverySummaries>("/architecture-knowledge/deliveries/summary"),
   systemOwnership: (systemId: string) =>
     apiRequest<SystemOwnership>(`/organisation/systems/${encodeURIComponent(systemId)}/ownership`),
   organisation: () => apiRequest<Organisation>("/organisation"),

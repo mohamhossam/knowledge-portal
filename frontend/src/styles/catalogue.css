@@ -1471,6 +1471,13 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
   margin-inline-end: var(--s1);
 }
 
+/* What a closed Epic delivered, suggests and hit: one meta-sized sentence each. */
+.changerequests__note {
+  margin: var(--s1) 0 0;
+  font-size: var(--t-meta);
+  max-width: 72ch;
+}
+
 /* What a reading could not match: ink 2 lines under its state, each its own sentence. */
 .changerequests__warnings {
   display: grid;

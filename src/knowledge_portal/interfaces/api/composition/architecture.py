@@ -44,7 +44,9 @@ from knowledge_portal.application.use_cases.change_requests import (
     DismissChangeRequest,
     ListChangeRequests,
     ReadChangeRequestIntoDraft,
+    ReadDeliverySummaries,
     ReceiveChangeRequest,
+    ReceiveDelivery,
 )
 from knowledge_portal.application.use_cases.precedents import (
     ReadPrecedentSummaries,
@@ -105,6 +107,8 @@ class ArchitectureWiring:
     clean_up_vocabulary: CleanUpVocabulary
     # Change requests from Requirement AI (requirement-portal ADR-0101, step 7).
     receive_change_request: ReceiveChangeRequest
+    receive_delivery: ReceiveDelivery
+    delivery_summaries: ReadDeliverySummaries
     list_change_requests: ListChangeRequests
     read_change_request: ReadChangeRequestIntoDraft
     dismiss_change_request: DismissChangeRequest
@@ -224,6 +228,8 @@ def build_architecture(
             manage, persistence.catalogue_candidates, llm.capability_linker, clock
         ),
         receive_change_request=ReceiveChangeRequest(persistence.change_requests, clock),
+        receive_delivery=ReceiveDelivery(persistence.change_requests, clock),
+        delivery_summaries=ReadDeliverySummaries(persistence.change_requests),
         list_change_requests=ListChangeRequests(persistence.change_requests),
         read_change_request=ReadChangeRequestIntoDraft(
             persistence.change_requests,
