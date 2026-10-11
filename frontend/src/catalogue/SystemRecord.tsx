@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
-import { type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { type ReactNode, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { api, type CatalogueSystem, type Relationship } from "../api/client";
 import { errorMessage } from "../api/errors";
-import { ActionGroup, Button, type Column, DataTable, Facts, Lines, Section, Skeleton, Status } from "../design/components";
+import { ActionGroup, Button, type Column, DataTable, Facts, Lines, RecordView, Section, Skeleton, Status } from "../design/components";
 import { RouterLink } from "../shell/links";
 import { SystemReview } from "../reviews/SystemReview";
 import { seatsLine, seatsOn } from "../squads/organisation";
@@ -29,33 +29,35 @@ export function SystemRecord({ system, index }: { system: CatalogueSystem; index
   const location = useLocation();
   const navigate = useNavigate();
   const from = (location.state as Trail | null)?.from;
-  const id = useId();
-  const heading = useRef<HTMLHeadingElement>(null);
   const place = domainPath(book.landscape, system.landscape_domain_id);
 
-  // Choosing a system moves focus to its record; a fresh page load leaves it be.
-  useEffect(() => {
-    if (location.key === "default") return;
-    heading.current?.focus({ preventScroll: true });
-    heading.current?.scrollIntoView({ block: "nearest" });
-  }, [location.key]);
-
   return (
-    <article className="cat-record" data-takes-focus aria-labelledby={`${id}-name`}>
-      <header className="cat-record__head">
+    <RecordView
+      title={system.name}
+      // Choosing a system moves focus to its record; a fresh page load leaves it be.
+      takeFocus={location.key !== "default"}
+      meta={system.name_ar ? <span lang="ar" dir="rtl">{system.name_ar}</span> : undefined}
+      lead={system.description || undefined}
+      actions={
+        editable ? (
+          <ActionGroup label={`Edit ${system.name}`}>
+            <Button aria-expanded={editing === "system"} onClick={() => setEditing(editing === "system" ? null : "system")}>Edit this system</Button>
+            <Button variant="tertiary" aria-expanded={editing === "remove"} onClick={() => setEditing(editing === "remove" ? null : "remove")}>Remove this system…</Button>
+          </ActionGroup>
+        ) : undefined
+      }
+    >
+      <div className="cat-record__head">
         {from && book.systems.has(from) && (
           <Button variant="link" icon={<ArrowLeft size={16} />} onClick={() => navigate(-1)}>
             Back to <bdi>{systemName(book, from)}</bdi>
           </Button>
         )}
-        <h2 id={`${id}-name`} ref={heading} tabIndex={-1} className="cat-record__title" dir="auto">{system.name}</h2>
-        {system.name_ar && <p className="cat-record__arabic" lang="ar" dir="rtl">{system.name_ar}</p>}
-        {system.description && <p className="cat-record__lead" dir="auto">{system.description}</p>}
         {/* The review line moves onto the kit with re-confirmations (area 6; docs/ux/backlog.md). */}
         <div className="ds-legacy cat-legacy cat-legacy--inline"><SystemReview system={system} /></div>
         <Facts
           items={[
-            ["Also called", system.aliases.length ? <bdi>{system.aliases.join(", ")}</bdi> : <span className="cat-quiet">No other names</span>],
+            ...(system.aliases.length ? [["Also called", <bdi key="aliases">{system.aliases.join(", ")}</bdi>] as [string, ReactNode]] : []),
             ["Sits in", place.length ? <RouterLink href={`${base}/domains`}><bdi>{place.join(" › ")}</bdi></RouterLink> : <span className="cat-quiet">Not placed in the landscape</span>],
             ["Owner", system.owner ? <bdi>{system.owner}</bdi> : <span className="cat-quiet">Not stated</span>],
             ...(system.roadmap ? [["Roadmap", <bdi key="roadmap">{system.roadmap}</bdi>] as [string, ReactNode]] : []),
@@ -68,13 +70,7 @@ export function SystemRecord({ system, index }: { system: CatalogueSystem; index
             ],
           ]}
         />
-        {editable && (
-          <ActionGroup label={`Edit ${system.name}`}>
-            <Button aria-expanded={editing === "system"} onClick={() => setEditing(editing === "system" ? null : "system")}>Edit this system</Button>
-            <Button aria-expanded={editing === "remove"} onClick={() => setEditing(editing === "remove" ? null : "remove")}>Remove this system…</Button>
-          </ActionGroup>
-        )}
-      </header>
+      </div>
 
       {/* Hand edits move onto the kit with the catalogue's edit forms (area 5; docs/ux/backlog.md). */}
       {editing === "system" && <div className="ds-legacy cat-legacy"><SystemEdit system={system} onDone={() => setEditing(null)} /></div>}
@@ -104,7 +100,7 @@ export function SystemRecord({ system, index }: { system: CatalogueSystem; index
           </Section>
         </>
       )}
-    </article>
+    </RecordView>
   );
 }
 
@@ -344,7 +340,7 @@ function Owners({ system }: { system: CatalogueSystem }) {
         <DataTable caption={`Squads that own ${system.name}`} captionHidden columns={columns} rows={squads} rowId={(squad) => squad.id} />
       ) : (
         <p className="cat-quiet">
-          No squad owns it. <RouterLink href="/squads">Give it to a squad in Ownership</RouterLink>
+          No squad owns it. <RouterLink href={`/squads/systems/${encodeURIComponent(system.id)}`}>Give it to a squad in Ownership</RouterLink>
         </p>
       )}
       {products.length > 0 && (

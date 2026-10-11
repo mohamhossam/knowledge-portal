@@ -1,37 +1,44 @@
 import "./library.css";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Search, Upload as UploadIcon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { AlertTriangle, Search, Upload as UploadIcon } from "lucide-react";
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { api, type LibraryDocument } from "../api/client";
 import { ApiError, errorMessage } from "../api/errors";
 import { useAuth } from "../auth/authContext";
-import { ActionGroup, Button, type Column, DataTable, EmptyState, FilterStrip, PageHeader, Select, Skeleton, type Sort, Status } from "../design/components";
+import {
+  ActionGroup, Banner, Button, EmptyState, Facts, Lines, ListFilter, ListFind, ListTools, PageHeader, RecordList, type RecordGroup,
+  RecordPlaceholder, RecordView, Section, Skeleton, Status, Workbench,
+} from "../design/components";
 import { useDisclosure } from "../design/hooks";
 import { formatDay } from "../home/format";
 import { REVIEW_STATUS } from "../reviews/review";
-import { ButtonLink } from "../shell/links";
+import { ButtonLink, RouterLink } from "../shell/links";
 import { DOC_STATE_WORDS, DOC_TONE, type DocState, docState } from "./docState";
 import { LibraryRetry } from "./LibraryRetry";
 import { LifecycleDiagram } from "./LifecycleDiagram";
-import { newestState, standing } from "./model";
-import { DocumentLink, Outcome } from "./parts";
-import { plural } from "./where";
+import { newestState, newestVersion, standing } from "./model";
+import { Outcome } from "./parts";
+import { contentLang, plural } from "./where";
 import { UploadFlow } from "./UploadFlow";
 
-/** Sorting by state puts what needs someone first (§15), not the alphabet. */
-const URGENCY: Record<DocState, number> = { attention: 0, held: 1, stopped: 2, review: 3, reading: 4, indexing: 5, service: 6, none: 7, withdrawn: 8 };
+/** The filters always offered, then any other state only while a document is in it. */
+const FILTERS: DocState[] = ["review", "service", "reading", "attention", "withdrawn"];
+const OTHERS: DocState[] = ["held", "indexing", "stopped", "none"];
+
+/** The list groups by state, what needs someone first (§15), not the alphabet. */
+const URGENCY: DocState[] = ["attention", "held", "stopped", "review", "reading", "indexing", "service", "none", "withdrawn"];
 
 type Row = { doc: LibraryDocument; state: DocState; uploaded: string; inService: number | null };
 
-const SORTS = ["title", "state", "uploaded"];
-
 /**
- * Browse archetype (plan 02 §1): every document an admin may see, its state in
- * words and icon, with the filters, owner and sort in the URL. Upload is a flow
- * opened in place; stopped work across owners is retried from here.
+ * The library on the workbench (UX rebuild, phase 3): every document an admin
+ * may see in a narrow list, grouped by where it stands with what needs someone
+ * first, beside the chosen document's summary (`?doc=`) with the way into its
+ * review. Filters and find live in the address. Upload is a flow opened in
+ * place; stopped work across owners is retried from the summary.
  */
 export function LibraryPage() {
   const [params, setParams] = useSearchParams();
@@ -41,6 +48,8 @@ export function LibraryPage() {
   const navigate = useNavigate();
   // Said once (e.g. "… now belongs to …"), then cleared, so a reload or Back doesn't say it again.
   const [notice] = useState(() => (location.state as { notice?: string } | null)?.notice);
+  // Whether this address came from choosing a row (not a fresh load): the record then takes focus.
+  const [chosenHere] = useState(() => location.key !== "default");
   useEffect(() => {
     if (location.state) navigate({ search: location.search }, { replace: true, state: null });
   }, [location.state, location.search, navigate]);
@@ -50,6 +59,7 @@ export function LibraryPage() {
   const status = (params.get("status") ?? "all") as DocState | "all";
   const owner = params.get("owner") === "mine" ? "mine" : "everyone";
   const find = params.get("q") ?? "";
+  const chosenId = params.get("doc");
   // Typed here, written to the address a moment later: one history update per pause, not per key.
   const [findDraft, setFindDraft] = useState(find);
   const [findFor, setFindFor] = useState(find);
@@ -57,8 +67,6 @@ export function LibraryPage() {
     setFindFor(find);
     setFindDraft(find);
   }
-  const sortId = SORTS.includes(params.get("sort") ?? "") ? params.get("sort")! : "uploaded";
-  const sort: Sort = { id: sortId, direction: params.get("dir") === "asc" ? "ascending" : "descending" };
 
   const set = (changes: Record<string, string | null>) => {
     setParams((previous) => {
@@ -92,56 +100,50 @@ export function LibraryPage() {
 
   const rows = useMemo(() => {
     const needle = find.trim().toLocaleLowerCase();
-    const shown = all.filter((row) =>
+    return all.filter((row) =>
       (status === "all" || row.state === status)
       && (owner === "everyone" || row.doc.is_owner)
       && (!needle || row.doc.title.toLocaleLowerCase().includes(needle)));
-    const flip = sort.direction === "descending" ? -1 : 1;
-    const by = (a: Row, b: Row) =>
-      sort.id === "title" ? a.doc.title.localeCompare(b.doc.title)
-        : sort.id === "state" ? URGENCY[a.state] - URGENCY[b.state] || a.doc.title.localeCompare(b.doc.title)
-          : a.uploaded.localeCompare(b.uploaded);
-    return [...shown].sort((a, b) => by(a, b) * flip);
-  }, [all, status, owner, find, sort.id, sort.direction]);
+  }, [all, status, owner, find]);
+
+  // A row keeps the list's filters in its address, so the list stays as it was beside the record.
+  const hrefFor = useCallback((id: string) => {
+    const next = new URLSearchParams(params);
+    next.set("doc", id);
+    return `/library?${next}`;
+  }, [params]);
+
+  const groups = useMemo<RecordGroup[]>(() => URGENCY
+    .map((state) => {
+      const members = rows.filter((row) => row.state === state).sort((a, b) => b.uploaded.localeCompare(a.uploaded));
+      return {
+        id: state,
+        label: DOC_STATE_WORDS[state],
+        items: members.map((row) => ({
+          id: row.doc.id,
+          href: hrefFor(row.doc.id),
+          name: <span lang={contentLang(row.doc.title)}>{row.doc.title}</span>,
+          bidi: true,
+          detail: row.state === "attention" && newestState(row.doc)?.error
+            ? newestState(row.doc)?.error
+            : row.state === "service" && row.doc.review && row.doc.review.state !== "current"
+              ? REVIEW_STATUS[row.doc.review.state]
+              : <>{row.doc.is_owner ? "Yours" : <bdi>{row.doc.owner.display_name}</bdi>} · {row.uploaded ? `uploaded ${formatDay(row.uploaded)}` : "not uploaded"}</>,
+          meta: row.inService !== null ? <span className="lib-quiet">Version {row.inService}</span> : undefined,
+        })),
+      };
+    }), [rows, hrefFor]);
 
   // What a knowledge admin can retry in one go, whoever owns it.
   const stopped = {
     reading: all.filter((row) => row.state === "attention" && newestState(row.doc)?.stage === "failed").map((row) => row.doc.title),
     indexing: all.filter((row) => row.state === "attention" && standing(row.doc).kind === "indexing").map((row) => row.doc.title),
   };
-
-  const columns: Column<Row>[] = [
-    { id: "title", header: "Document", rowHeader: true, sortable: true, bidi: true, cell: (row) => <DocumentLink id={row.doc.id} title={row.doc.title} /> },
-    {
-      id: "state",
-      header: "State",
-      sortable: true,
-      width: "13rem",
-      cell: (row) => {
-        const newest = newestState(row.doc);
-        const review = row.doc.review;
-        return (
-          <>
-            <Status tone={DOC_TONE[row.state]}>{DOC_STATE_WORDS[row.state]}</Status>
-            {row.state === "attention" && newest?.error && <span className="lib-detail">{newest.error}</span>}
-            {row.state === "service" && review && review.state !== "current" && <span className="lib-detail">{REVIEW_STATUS[review.state]}</span>}
-          </>
-        );
-      },
-    },
-    { id: "service", header: "In service", numeric: true, width: "6.5rem", cell: (row) => (row.inService === null ? <None /> : `Version ${row.inService}`) },
-    {
-      id: "cited",
-      header: "Cited by",
-      numeric: true,
-      width: "7.5rem",
-      cell: (row) => (row.doc.citations === null || row.doc.citations === undefined ? <span title="Requirement AI didn't say">—<span className="ds-visually-hidden">unknown</span></span> : row.doc.citations === 0 ? "None" : plural(row.doc.citations, "requirement")),
-    },
-    { id: "owner", header: "Owner", width: "9rem", cell: (row) => (row.doc.is_owner ? "You" : <bdi>{row.doc.owner.display_name}</bdi>) },
-    { id: "uploaded", header: "Last upload", sortable: true, numeric: true, width: "8rem", cell: (row) => formatDay(row.uploaded) },
-  ];
+  const retried = () => void queryClient.invalidateQueries({ queryKey: ["library", "documents"] });
 
   const filtering = status !== "all" || owner !== "everyone" || find !== "";
+  const offered = [...FILTERS, ...OTHERS.filter((state) => (counts.get(state) ?? 0) > 0)];
+  const chosen = chosenId ? all.find((row) => row.doc.id === chosenId) : undefined;
 
   let body;
   if (documents.isPending) {
@@ -165,37 +167,42 @@ export function LibraryPage() {
       </EmptyState>
     );
   } else {
-    body = (
+    const list = (
       <>
-        <LibraryRetry stopped={stopped} onDone={() => void queryClient.invalidateQueries({ queryKey: ["library", "documents"] })} />
-        <LifecycleDiagram counts={counts} active={status} onChoose={(state) => set({ status: state === "all" ? null : state })} />
-        <div className="lib-toolbar">
-          <FilterStrip
-            label="Find documents"
-            filters={[]}
-            active={status}
-            onChange={() => {}}
-            find={{ label: "Find a document by title", value: findDraft, onChange: setFindDraft, placeholder: "A title…" }}
-            onClear={filtering ? () => setParams({}, { replace: true }) : undefined}
+        <ListTools count={filtering ? `${plural(rows.length, "document")} of ${all.length}` : plural(all.length, "document")}>
+          <ListFind label="Find a document by title" value={findDraft} onChange={setFindDraft} placeholder="Find a title" />
+          <ListFilter
+            label="State"
+            value={status}
+            options={[{ id: "all", label: "Any state", count: all.length }, ...offered.map((state) => ({ id: state, label: DOC_STATE_WORDS[state], count: counts.get(state) ?? 0 }))]}
+            onChange={(id) => set({ status: id === "all" ? null : id })}
           />
-          <div className="lib-toolbar__owner">
-            <Select label="Owner" value={owner} onChange={(event) => set({ owner: event.target.value === "mine" ? "mine" : null })}>
-              <option value="everyone">Everyone</option>
-              <option value="mine">Mine</option>
-            </Select>
-          </div>
-        </div>
-        <DataTable
-          caption={filtering ? `Documents · ${rows.length} of ${all.length} shown` : `Documents · ${all.length}`}
-          columns={columns}
-          rows={rows}
-          rowId={(row) => row.doc.id}
-          sort={sort}
-          onSort={(next) => set({ sort: next.id === "uploaded" ? null : next.id, dir: next.direction === "ascending" ? "asc" : null })}
-          emptyText="No document matches these filters. Clear filters to see every document."
+          <ListFilter
+            label="Owner"
+            value={owner}
+            options={[{ id: "everyone", label: "Everyone" }, { id: "mine", label: "Mine" }]}
+            onChange={(id) => set({ owner: id === "mine" ? "mine" : null })}
+          />
+          {filtering && <Button variant="link" onClick={() => setParams(chosenId ? { doc: chosenId } : {}, { replace: true })}>Clear filters</Button>}
+        </ListTools>
+        <RecordList
+          label="Documents"
+          groups={groups}
+          currentId={chosen?.doc.id}
+          link={RouterLink}
+          empty="No document matches these filters. Clear filters to see every document."
         />
       </>
     );
+    const record = chosen ? (
+      <DocumentSummary key={chosen.doc.id} row={chosen} takeFocus={chosenHere || location.key !== "default"} stopped={stopped} onRetried={retried} />
+    ) : (
+      <RecordPlaceholder title={chosenId ? "That document isn't in the library any more." : `${plural(all.length, "document")}. Choose one to see where it stands.`}>
+        <LifecycleDiagram counts={counts} active={status} onChoose={(state) => set({ status: state === "all" ? null : state })} />
+        <LibraryRetry stopped={stopped} onDone={retried} />
+      </RecordPlaceholder>
+    );
+    body = <Workbench listLabel="Documents" chosen={Boolean(chosen)} list={list} record={record} />;
   }
 
   return (
@@ -219,6 +226,81 @@ export function LibraryPage() {
   );
 }
 
-function None() {
-  return <span className="lib-none"><span aria-hidden="true">—</span><span className="ds-visually-hidden">none</span></span>;
+/**
+ * One document's summary beside the list: where it stands, what requirement
+ * work can cite from it today, its newest upload, and the way into its review,
+ * versions and citations.
+ */
+function DocumentSummary({ row, takeFocus, stopped, onRetried }: {
+  row: Row;
+  takeFocus: boolean;
+  stopped: Record<"reading" | "indexing", string[]>;
+  onRetried: () => void;
+}) {
+  const { doc, state } = row;
+  const href = `/library/${encodeURIComponent(doc.id)}`;
+  const newest = newestState(doc);
+  const version = newestVersion(doc);
+  const current = standing(doc);
+  const review = doc.review;
+  const open = state === "review"
+    ? <ButtonLink to={href} variant="primary">Open the review</ButtonLink>
+    : <ButtonLink to={href} variant="primary">Open the document</ButtonLink>;
+  const mine = (title: string) => title === doc.title;
+  return (
+    <RecordView
+      title={<span lang={contentLang(doc.title)}>{doc.title}</span>}
+      takeFocus={takeFocus}
+      meta={<Status tone={DOC_TONE[state]}>{DOC_STATE_WORDS[state]}</Status>}
+      actions={
+        <ActionGroup label={`Open ${doc.title}`}>
+          {open}
+          <ButtonLink to={`${href}/versions`}>Versions</ButtonLink>
+        </ActionGroup>
+      }
+    >
+      {state === "attention" && newest?.error && (
+        <Banner label="Why it needs attention" icon={<AlertTriangle size={16} aria-hidden="true" />}>{newest.error}</Banner>
+      )}
+      {(stopped.reading.some(mine) || stopped.indexing.some(mine)) && (
+        <LibraryRetry stopped={{ reading: stopped.reading.filter(mine), indexing: stopped.indexing.filter(mine) }} onDone={onRetried} />
+      )}
+      <Facts
+        items={[
+          [
+            "Requirement work",
+            current.kind === "service"
+              ? `Cites version ${current.versionNumber ?? "?"}${current.publication.activated_at ? ` since ${formatDay(current.publication.activated_at)}` : ""}`
+              : current.kind === "indexing"
+                ? current.stuck ? "Can't cite it yet: indexing stopped" : "Can cite it once indexing finishes"
+                : current.kind === "withdrawn" ? `Withdrawn ${current.publication.withdrawn_at ? formatDay(current.publication.withdrawn_at) : ""}`.trim() : "Can't cite it: nothing approved yet",
+          ],
+          ...(review && current.kind === "service"
+            ? [["Re-confirmation", review.state === "current" ? `Confirmed ${formatDay(review.last_reviewed_at)} · next due ${formatDay(review.due_at)}` : `${REVIEW_STATUS[review.state]} · due ${formatDay(review.due_at)}`] as [string, ReactNode]]
+            : []),
+          [
+            "Newest upload",
+            newest
+              ? <>Version {newest.number}{version?.filename ? <>, <bdi>{version.filename}</bdi></> : null} · {formatDay(newest.uploaded_at)} by <bdi>{newest.uploaded_by.display_name}</bdi></>
+              : "None",
+          ],
+          ...(version && version.blocks.length ? [["Passages read", plural(version.blocks.length, "passage")] as [string, ReactNode]] : []),
+          ["Cited by", doc.citations === null || doc.citations === undefined ? "Requirement AI didn't say" : doc.citations === 0 ? "No requirement yet" : <RouterLink href={`${href}/cited-by`}>{plural(doc.citations, "requirement")}</RouterLink>],
+          ["Owner", doc.is_owner ? "You" : <bdi>{doc.owner.display_name}</bdi>],
+        ]}
+      />
+      {doc.versions.length > 1 && (
+        <Section title="Versions" count={doc.versions.length} headingLevel={3}>
+          <Lines>
+            {[...doc.versions].reverse().slice(0, 5).map((item) => (
+              <li key={item.id}>
+                Version {item.number}: <bdi>{item.filename}</bdi>, {formatDay(item.uploaded_at)}
+                {current.kind === "service" && current.versionNumber === item.number && <> · <Status tone="done">In service</Status></>}
+              </li>
+            ))}
+          </Lines>
+        </Section>
+      )}
+    </RecordView>
+  );
 }

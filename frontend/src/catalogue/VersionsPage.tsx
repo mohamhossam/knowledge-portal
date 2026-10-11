@@ -1,14 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, Download, RotateCw } from "lucide-react";
-import { Fragment, useEffect, useId, useState, useSyncExternalStore } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Download, Plus } from "lucide-react";
+import { type ReactNode, useState } from "react";
+import { useLocation, useSearchParams } from "react-router-dom";
 
-import { api, type CatalogueFileFormat, type Release } from "../api/client";
+import { api, type CatalogueFileFormat, type Release, type ReleaseAuditEvent } from "../api/client";
 import { errorMessage } from "../api/errors";
+import {
+  ActionGroup, Button, ConsequencePanel, DataTable, EmptyState, Facts, ListTools, RecordList, RecordPlaceholder, RecordView, Section, Skeleton,
+  Status, type StatusTone, Workbench,
+} from "../design/components";
+import { useFocusAfterRender } from "../design/hooks";
 import { count, formatDay } from "../home/format";
+import { ButtonLink, RouterLink } from "../shell/links";
 import { auditLabel, changeSentence, contents } from "./catalogue";
 import { ChangeRequestInbox } from "./ChangeRequests";
+import { VersionsTimeline } from "./diagrams/CatalogueDiagrams";
 import { StartDraft } from "./DraftActions";
+import { CatalogueHeader } from "./frame/CatalogueHeader";
 import { useActivate, useCatalogueContext, useMappingImpact, useReleases } from "./useCatalogue";
 
 type State = "in-service" | "draft" | "replaced";
@@ -19,147 +27,119 @@ const STATE_LABEL: Record<State, string> = {
   replaced: "Replaced",
 };
 
-const RANK: Record<State, string> = { "in-service": "row", draft: "row row--due", replaced: "row row--past" };
+const STATE_TONE: Record<State, StatusTone> = { "in-service": "done", draft: "working", replaced: "stopped" };
 
-/** Every catalogue version, newest first: the draft, the one in service, and those it replaced. */
+const nameOf = (release: Release) => release.name || "Untitled version";
+/** A version's record on Versions: the address names it, as ?version=. */
+const recordHref = (release: Release) => `/architecture/versions?${new URLSearchParams({ version: release.id })}`;
+
+/**
+ * Every catalogue version on the workbench (UX rebuild, phase 3): the draft,
+ * the one in service and those it replaced, newest first, beside the record of
+ * the one chosen (its state, who published it when, what it changed, its
+ * history and files, and the way to open it, compare it or put it back). With
+ * none chosen, the change requests from Requirement AI waiting to be read.
+ */
 export function VersionsPage() {
   const { book, actorName } = useCatalogueContext();
   const releases = useReleases();
-  const [open, setOpen] = useState<string | null>(null);
-  // On a phone the state and the disclosure ride in the version cell, so its title keeps the width.
-  const phone = useNarrow();
+  const [params] = useSearchParams();
   const location = useLocation();
+  const focusLater = useFocusAfterRender();
   const [notice, setNotice] = useState<string | null>((location.state as { notice?: string } | null)?.notice ?? null);
+  const [starting, setStarting] = useState(false);
   const activeId = book.release.id;
-  const state = (release: Release): State =>
-    release.status === "draft" ? "draft" : release.id === activeId ? "in-service" : "replaced";
+  const state = (release: Release): State => (release.status === "draft" ? "draft" : release.id === activeId ? "in-service" : "replaced");
+  // The draft first, then by when each was published, newest first.
   const rows = [...(releases.data ?? [])].sort((a, b) => {
     if (a.status !== b.status) return a.status === "draft" ? -1 : 1;
     return (b.published_at ?? "").localeCompare(a.published_at ?? "");
   });
+  const draft = rows.find((release) => release.status === "draft");
+  const chosenId = params.get("version");
+  const chosen = chosenId ? rows.find((release) => release.id === chosenId) : undefined;
+  // The version published before the chosen one: what it changed is read against it.
+  const published = rows.filter((release) => release.status !== "draft");
+  const previous = chosen && chosen.status !== "draft" ? published[published.indexOf(chosen) + 1] : undefined;
+
+  const record = starting ? (
+    <StartDraft
+      onCancel={() => {
+        setStarting(false);
+        focusLater(() => document.getElementById("version-start"));
+      }}
+    />
+  ) : releases.isPending ? (
+    <Skeleton label="Reading the versions" rows={6} />
+  ) : releases.isError ? (
+    <EmptyState title={`The knowledge service didn't answer: ${errorMessage(releases.error)}`} action={<Button onClick={() => void releases.refetch()}>Try again</Button>} />
+  ) : chosen ? (
+    <VersionRecord
+      key={chosen.id}
+      release={chosen}
+      releases={rows}
+      state={state(chosen)}
+      previous={previous}
+      activeId={activeId}
+      onPutBack={() => setNotice(`‘${nameOf(chosen)}’ is in service again.`)}
+    />
+  ) : chosenId ? (
+    <EmptyState title={`There is no version “${chosenId}”.`} action={<RouterLink href="/architecture/versions">See every version</RouterLink>} />
+  ) : (
+    <RecordPlaceholder title={`${count(rows.length, "version")}. Choose one to read what it changed, its history and its files.`}>
+      <p className="cat-lead">
+        Requirement work maps against the version in service. Publishing a draft puts it in service; an earlier version can be put back,
+        with a reason.
+      </p>
+      <VersionsTimeline />
+      <div className="cat-actions ds-actions">
+        {draft && <ButtonLink to={`/architecture/versions/${encodeURIComponent(draft.id)}/sources`} variant="primary">Carry on with ‘<bdi>{nameOf(draft)}</bdi>’</ButtonLink>}
+        {rows.length > 1 && <ButtonLink to="/architecture/compare">Compare any two versions</ButtonLink>}
+      </div>
+      <ChangeRequestInbox releases={rows} actorName={actorName} />
+    </RecordPlaceholder>
+  );
 
   return (
     <>
-    <section className="govsection catalogue__first" aria-labelledby="versions-title">
-      <h2 id="versions-title" className="govsection__title">Versions</h2>
-      <p className="govsection__lead">
-        Requirement work maps against the version in service. Publishing a draft puts it in service; an earlier version can
-        be put back, with a reason.
-      </p>
-      {notice && <p className="toolbar__notice" role="status">{notice}</p>}
-      {(releases.data?.length ?? 0) > 1 && (
-        <p className="versions__compare">
-          <Link to="/architecture/compare">Compare any two versions</Link>
-        </p>
-      )}
-      {releases.isPending ? (
-        <p className="timetable__quiet">Reading the versions…</p>
-      ) : releases.isError ? (
-        <p className="docpage__failure" role="alert">
-          {errorMessage(releases.error)}
-          <button type="button" className="text-button" onClick={() => void releases.refetch()}>
-            <RotateCw size={14} aria-hidden="true" />
-            Try again
-          </button>
-        </p>
-      ) : (
-        <table className="govtable versions">
-          <caption className="visually-hidden">Catalogue versions, newest first</caption>
-          <thead>
-            <tr>
-              <th scope="col">Version</th>
-              {!phone && <th scope="col">State</th>}
-              {!phone && <th scope="col" className="cell--end"><span className="visually-hidden">Details</span></th>}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((release) => {
-              const current = state(release);
-              const holds = contents(release);
-              const isOpen = open === release.id;
-              const detailId = `version-${release.id}`;
-              const to = current === "in-service" ? "/architecture" : `/architecture/versions/${encodeURIComponent(release.id)}`;
-              const toggle = (
-                <button
-                  type="button"
-                  className="text-button"
-                  aria-expanded={isOpen}
-                  aria-controls={detailId}
-                  onClick={() => setOpen(isOpen ? null : release.id)}
-                >
-                  {isOpen ? <ChevronDown size={14} aria-hidden="true" /> : <ChevronRight size={14} aria-hidden="true" />}
-                  {current === "replaced" ? "History, files, put back" : "History and files"}
-                  <span className="visually-hidden"> of {release.name}</span>
-                </button>
-              );
-              const stated = (
-                <>
-                  <span className="status">{STATE_LABEL[current]}</span>
-                  <span className="secondary govtable__by">
-                    {release.status === "draft"
-                      ? `Started by ${actorName(release.created_by)}`
-                      : `Published ${formatDay(release.published_at)} by ${actorName(release.published_by)}`}
-                    {` · revision ${release.revision}`}
-                  </span>
-                </>
-              );
-              return (
-                <Fragment key={release.id}>
-                  <tr className={`${RANK[current]}${isOpen ? " is-open" : ""}`}>
-                    <th scope="row">
-                      <Link to={to} dir="auto">{release.name || "Untitled version"}</Link>
-                      <span className="secondary govtable__by">
-                        {count(holds.systems, "system")} · {count(holds.connections, "connection")} ·{" "}
-                        {count(holds.offerings, "offering")} · {count(holds.journeys, "journey")}
-                      </span>
-                      {phone && (
-                        <span className="versions__phone">
-                          {stated}
-                          <span className="govtable__by">{toggle}</span>
-                        </span>
-                      )}
-                    </th>
-                    {!phone && <td>{stated}</td>}
-                    {!phone && <td className="cell--end">{toggle}</td>}
-                  </tr>
-                  {isOpen && (
-                    <tr id={detailId} className="versions__detail">
-                      <td colSpan={phone ? 1 : 3}>
-                        <VersionDetail
-                          release={release}
-                          canPutBack={current === "replaced"}
-                          onPutBack={() => {
-                            setOpen(null);
-                            setNotice(`‘${release.name || "Untitled version"}’ is in service again.`);
-                          }}
-                          onKeep={() => setOpen(null)}
-                        />
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
-      {releases.data && <StartDraft draft={releases.data.find((release) => release.status === "draft")} />}
-    </section>
-    {releases.data && <ChangeRequestInbox releases={releases.data} actorName={actorName} />}
+      <CatalogueHeader page="versions" chosen={chosen ? nameOf(chosen) : undefined} />
+      <Workbench
+        listLabel="Versions"
+        chosen={Boolean(chosen) || starting}
+        list={
+          <>
+            <ListTools count={releases.data ? count(rows.length, "version") : undefined}>
+              {releases.data && !draft && !starting && (
+                <Button id="version-start" variant="tertiary" icon={<Plus size={16} />} onClick={() => setStarting(true)}>Start a new version</Button>
+              )}
+            </ListTools>
+            <RecordList
+              label="Catalogue versions, newest first"
+              currentId={chosen?.id}
+              link={RouterLink}
+              items={rows.map((release) => ({
+                id: release.id,
+                href: recordHref(release),
+                name: nameOf(release),
+                bidi: true,
+                detail:
+                  release.status === "draft"
+                    ? `Started by ${actorName(release.created_by)}`
+                    : `Published ${formatDay(release.published_at)} by ${actorName(release.published_by)}`,
+                meta: <Status tone={STATE_TONE[state(release)]}>{STATE_LABEL[state(release)]}</Status>,
+              }))}
+              empty={releases.isPending ? "Reading the versions…" : "No version yet."}
+            />
+          </>
+        }
+        record={
+          <>
+            {notice && <p role="status" className="cat-notice"><Status tone="done">{notice}</Status></p>}
+            {record}
+          </>
+        }
+      />
     </>
-  );
-}
-
-const NARROW = "(max-width: 45rem)";
-
-function useNarrow(): boolean {
-  return useSyncExternalStore(
-    (changed) => {
-      const query = window.matchMedia?.(NARROW);
-      query?.addEventListener("change", changed);
-      return () => query?.removeEventListener("change", changed);
-    },
-    () => window.matchMedia?.(NARROW).matches ?? false,
   );
 }
 
@@ -169,19 +149,120 @@ const FORMATS: { format: CatalogueFileFormat; label: string }[] = [
   { format: "json", label: "JSON" },
 ];
 
-function VersionDetail({ release, canPutBack, onPutBack, onKeep }: {
+function VersionRecord({ release, releases, state, previous, activeId, onPutBack }: {
   release: Release;
-  canPutBack: boolean;
+  /** Every version: the change requests name the draft they were read into. */
+  releases: Release[];
+  state: State;
+  /** The version published before it, if any. */
+  previous?: Release;
+  activeId: string;
   onPutBack: () => void;
-  onKeep: () => void;
 }) {
-  const { actorName, book } = useCatalogueContext();
-  const activeId = book.release.id;
-  const id = useId();
-  const audit = useQuery({
-    queryKey: ["architecture", "releases", release.id, "audit"],
-    queryFn: () => api.releaseAudit(release.id),
+  const { actorName } = useCatalogueContext();
+  const location = useLocation();
+  const [puttingBack, setPuttingBack] = useState(false);
+  const focusLater = useFocusAfterRender();
+  const name = nameOf(release);
+  const holds = contents(release);
+  const open = state === "in-service" ? "/architecture" : `/architecture/versions/${encodeURIComponent(release.id)}`;
+  const published = <>published by <bdi>{actorName(release.published_by)}</bdi> on {formatDay(release.published_at)}</>;
+  const lead: Record<State, ReactNode> = {
+    draft: <>A draft started by <bdi>{actorName(release.created_by)}</bdi>. Nothing in it reaches requirement work until it is published.</>,
+    "in-service": <>The version in service, {published}. Requirement work maps against it.</>,
+    replaced: <>Replaced: {published}, and no longer in service.</>,
+  };
+  const keep = () => {
+    setPuttingBack(false);
+    focusLater(() => document.getElementById("version-put-back"));
+  };
+
+  return (
+    <RecordView
+      title={name}
+      takeFocus={location.key !== "default"}
+      meta={
+        <>
+          <Status tone={STATE_TONE[state]}>{STATE_LABEL[state]}</Status>
+          <span>Revision {release.revision}</span>
+        </>
+      }
+      lead={lead[state]}
+      actions={
+        <ActionGroup label={`This version: ${name}`}>
+          {state === "draft" && <ButtonLink to={`/architecture/versions/${encodeURIComponent(release.id)}/sources`} variant="primary">Carry on with its steps</ButtonLink>}
+          <ButtonLink to={open}>Read its contents</ButtonLink>
+          {state === "replaced" && (
+            <Button id="version-put-back" variant="tertiary" aria-expanded={puttingBack} onClick={() => (puttingBack ? keep() : setPuttingBack(true))}>
+              Put it back in service…
+            </Button>
+          )}
+        </ActionGroup>
+      }
+    >
+      {puttingBack && <PutBack release={release} onDone={() => { setPuttingBack(false); onPutBack(); }} onKeep={keep} />}
+      <Section title="What it holds" headingLevel={3}>
+        <Facts
+          items={[
+            ["Systems", holds.systems.toLocaleString("en")],
+            ["Connections", holds.connections.toLocaleString("en")],
+            ["Offerings", holds.offerings.toLocaleString("en")],
+            ["Journeys", holds.journeys.toLocaleString("en")],
+          ]}
+        />
+      </Section>
+      <Changes release={release} state={state} previous={previous} activeId={activeId} />
+      <Files release={release} />
+      <History release={release} />
+      {/* Change requests are read into the draft, so the draft's record carries them. */}
+      {state === "draft" && <ChangeRequestInbox releases={releases} actorName={actorName} headingLevel={3} />}
+    </RecordView>
+  );
+}
+
+const PAST: Record<string, string> = { add: "added", change: "changed", remove: "removed" };
+/** A change sentence ("add 1 offering, and change 2 systems") told as done: "added 1 offering, and changed 2 systems". */
+const pastTense = (sentence: string) => sentence.replace(/(^|, (?:and )?)(add|change|remove) (?=\d)/g, (_, before: string, verb: string) => `${before}${PAST[verb]} `);
+
+/** What a version changed: a draft against the version in service, a published one against the one before it. */
+function Changes({ release, state, previous, activeId }: { release: Release; state: State; previous?: Release; activeId: string }) {
+  const base = state === "draft" ? undefined : previous?.id;
+  const changes = useQuery({
+    queryKey: ["architecture", "releases", release.id, "changes", release.revision, ...(base ? [base] : [])],
+    queryFn: () => api.releaseChanges(release.id, base),
+    enabled: state === "draft" || previous !== undefined,
   });
+  const sentence = changes.data ? changeSentence(changes.data) : null;
+  const against = state === "draft" ? activeId : previous?.id;
+  const every = against && <RouterLink href={`/architecture/compare?${new URLSearchParams({ from: against, to: release.id })}`}>See every difference</RouterLink>;
+  // A published version compares with the one in service too (the one in service, with the newest other one, which Compare picks).
+  const compare = state !== "draft" && (
+    <RouterLink href={`/architecture/compare?${new URLSearchParams(release.id === activeId ? { from: activeId } : { from: activeId, to: release.id })}`}>
+      {release.id === activeId ? "Compare it with another version" : "Compare it with the version in service"}
+    </RouterLink>
+  );
+  return (
+    <Section title="What it changed" headingLevel={3}>
+      {state !== "draft" && !previous ? (
+        <p className="cat-quiet">Nothing was published before it: it is the first version.</p>
+      ) : changes.isPending ? (
+        <Skeleton label="Comparing it" rows={1} />
+      ) : changes.isError ? (
+        <p role="alert"><Status tone="attention">{errorMessage(changes.error)}</Status></p>
+      ) : (
+        <p>
+          {state === "draft"
+            ? sentence ? `Publishing it would ${sentence}.` : "Its contents match the version in service."
+            : sentence ? <>Against ‘<bdi>{nameOf(previous!)}</bdi>’, the version before it, it {pastTense(sentence)}.</> : <>Its contents match ‘<bdi>{nameOf(previous!)}</bdi>’, the version before it.</>}
+          {sentence && every && <>{" "}{every}</>}
+        </p>
+      )}
+      {compare && <p>{compare}</p>}
+    </Section>
+  );
+}
+
+function Files({ release }: { release: Release }) {
   const [failure, setFailure] = useState<string | null>(null);
   const download = async (format: CatalogueFileFormat) => {
     setFailure(null);
@@ -197,126 +278,98 @@ function VersionDetail({ release, canPutBack, onPutBack, onKeep }: {
       setFailure(errorMessage(error));
     }
   };
-  const events = [...(audit.data ?? [])].reverse();
-
   return (
-    <div className="versions__body">
-      <p className="govsection__actions">
-        <span className="versions__label">Its catalogue file:</span>
+    <Section title="Its catalogue file" headingLevel={3}>
+      <ActionGroup label="Download its catalogue file">
         {FORMATS.map(({ format, label }) => (
-          <button key={format} type="button" className="text-button" onClick={() => void download(format)}>
-            <Download size={14} aria-hidden="true" />
+          <Button key={format} icon={<Download size={16} />} onClick={() => void download(format)}>
             {label}
-            <span className="visually-hidden"> file of {release.name}</span>
-          </button>
+            <span className="ds-visually-hidden"> file of {nameOf(release)}</span>
+          </Button>
         ))}
-      </p>
-      {failure && <p className="docpage__failure" role="alert">{failure}</p>}
-      <p className="govsection__actions">
-        <Link to={`/architecture/compare?${new URLSearchParams(
-          // The version in service compares with the newest other one, which the page picks.
-          release.id === activeId ? { from: activeId } : { from: activeId, to: release.id },
-        )}`}>
-          {release.id === activeId ? "Compare it with another version" : "Compare it with the version in service"}
-          <span className="visually-hidden">: {release.name}</span>
-        </Link>
-      </p>
-
-      <h3 id={`${id}-history`} className="govsection__title versions__title">What happened to it</h3>
-      {audit.isPending ? (
-        <p className="timetable__quiet">Reading its history…</p>
-      ) : audit.isError ? (
-        <p className="docpage__failure" role="alert">{errorMessage(audit.error)}</p>
-      ) : events.length ? (
-        <table className="govtable" aria-labelledby={`${id}-history`}>
-          <thead>
-            <tr>
-              <th scope="col">When</th>
-              <th scope="col">What</th>
-            </tr>
-          </thead>
-          <tbody>
-            {events.map((event, index) => (
-              <tr key={`${event.created_at}:${index}`} className="row">
-                <th scope="row" className="nowrap">{formatDay(event.created_at)}</th>
-                <td>
-                  {auditLabel(event)}, by {actorName(event.actor_id)}
-                  <span className="secondary"> · revision {event.revision}</span>
-                  {event.rationale && <span className="secondary govtable__by" dir="auto">“{event.rationale}”</span>}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : (
-        <p className="timetable__quiet">Nothing is recorded; it was loaded as the initial catalogue.</p>
-      )}
-
-      {canPutBack && <PutBack release={release} onDone={onPutBack} onKeep={onKeep} />}
-    </div>
+      </ActionGroup>
+      {failure && <p role="alert"><Status tone="attention">{failure}</Status></p>}
+    </Section>
   );
 }
 
-/** Putting a replaced version back in service: a reason, and the consequence first. */
+/** What happened to a version, newest first: a log, so a table. */
+function History({ release }: { release: Release }) {
+  const { actorName } = useCatalogueContext();
+  const audit = useQuery({
+    queryKey: ["architecture", "releases", release.id, "audit"],
+    queryFn: () => api.releaseAudit(release.id),
+  });
+  const events = [...(audit.data ?? [])].reverse();
+  return (
+    <Section title="What happened to it" count={audit.data ? events.length : undefined} headingLevel={3}>
+      {audit.isPending ? (
+        <Skeleton label="Reading its history" rows={3} />
+      ) : audit.isError ? (
+        <p role="alert"><Status tone="attention">{errorMessage(audit.error)}</Status></p>
+      ) : (
+        <DataTable<ReleaseAuditEvent>
+          caption={`What happened to ${nameOf(release)}`}
+          captionHidden
+          rows={events}
+          rowId={(event) => `${event.created_at}:${event.action}:${event.revision}`}
+          emptyText="Nothing is recorded; it was loaded as the initial catalogue."
+          columns={[
+            { id: "when", header: "When", rowHeader: true, width: "9rem", cell: (event) => formatDay(event.created_at) },
+            {
+              id: "what",
+              header: "What",
+              cell: (event) => (
+                <>
+                  {auditLabel(event)}, by <bdi>{actorName(event.actor_id)}</bdi>
+                  <span className="cat-quiet"> · revision {event.revision}</span>
+                  {event.rationale && <span className="cat-detail" dir="auto">“{event.rationale}”</span>}
+                </>
+              ),
+            },
+          ]}
+        />
+      )}
+    </Section>
+  );
+}
+
+/** Putting a replaced version back in service: the consequence first, then a reason. */
 function PutBack({ release, onDone, onKeep }: { release: Release; onDone: () => void; onKeep: () => void }) {
-  const id = useId();
-  const [reason, setReason] = useState("");
   const activate = useActivate();
   const impact = useMappingImpact();
   const changes = useQuery({
     queryKey: ["architecture", "releases", release.id, "changes", release.revision],
     queryFn: () => api.releaseChanges(release.id),
   });
-  useEffect(() => {
-    if (activate.isSuccess) onDone();
-  }, [activate.isSuccess, onDone]);
   const sentence = changes.data ? changeSentence(changes.data) : null;
   const mapped = impact.data ? impact.data.requirements - impact.data.outdated_requirements : null;
-  const name = release.name || "Untitled version";
-  const waits = !reason.trim() ? "Give a reason first; it is kept in the version's history." : null;
-
+  const name = nameOf(release);
   return (
-    <section className="withdraw versions__putback" aria-labelledby={`${id}-title`}>
-      <h3 id={`${id}-title`} className="withdraw__title">Put it back in service</h3>
-      <p>
-        Requirement work would map against ‘<span dir="auto">{name}</span>’ from its next look at the catalogue.
-        {sentence && <> Against the version in service, it would {sentence}.</>}
-        {mapped !== null && (
-          <>
-            {" "}
-            {mapped
-              ? `${count(mapped, "requirement")} mapped with the version in service would then show as mapped with an earlier version.`
-              : "No requirement has been mapped with the version in service yet."}
-          </>
-        )}
-      </p>
-      <label className="field" htmlFor={`${id}-reason`}>
-        <span className="field__label">Why it goes back</span>
-        <textarea
-          id={`${id}-reason`}
-          className="field__input field__input--text"
-          rows={2}
-          maxLength={2000}
-          value={reason}
-          onChange={(event) => setReason(event.target.value)}
-        />
-      </label>
-      {activate.isError && <p className="docpage__failure" role="alert">{errorMessage(activate.error)}</p>}
-      <p className="withdraw__actions">
-        <button
-          type="button"
-          className="action-button"
-          disabled={!!waits || activate.isPending}
-          aria-describedby={waits ? `${id}-waits` : undefined}
-          onClick={() => activate.mutate({ releaseId: release.id, rationale: reason.trim() })}
-        >
-          {activate.isPending ? "Putting it back…" : "Put it back in service"}
-        </button>
-        <button type="button" className="text-button" onClick={onKeep}>
-          Keep the version in service
-        </button>
-      </p>
-      {waits && <p id={`${id}-waits`} className="versions__waits">{waits}</p>}
-    </section>
+    <ConsequencePanel
+      title={<>Put ‘<bdi>{name}</bdi>’ back in service</>}
+      happens={
+        <>
+          Requirement work would map against ‘<bdi>{name}</bdi>’ from its next look at the catalogue.
+          {sentence && <> Against the version in service, it would {sentence}.</>}
+        </>
+      }
+      affects={
+        mapped === null
+          ? undefined
+          : mapped
+            ? `${count(mapped, "requirement")} mapped with the version in service would then show as mapped with an earlier version.`
+            : "No requirement has been mapped with the version in service yet."
+      }
+      reversibility="The version in service now can be put back the same way, with a reason."
+      reason={{ label: "Why it goes back", hint: "It is kept in the version's history.", maxLength: 2000 }}
+      confirmLabel="Put it back in service"
+      keepLabel="Keep the version in service"
+      busy={activate.isPending}
+      busyLabel="Putting it back…"
+      failure={activate.isError ? errorMessage(activate.error) : null}
+      onConfirm={(rationale) => activate.mutate({ releaseId: release.id, rationale }, { onSuccess: onDone })}
+      onKeep={onKeep}
+    />
   );
 }

@@ -175,6 +175,7 @@ a.cat-chip:hover {
 
 .cat-tally__list > div {
   display: grid;
+  align-content: start;
   gap: var(--space-1);
   padding: var(--space-3);
   border: var(--hair-rule);
@@ -263,4 +264,32 @@ a.cat-chip:hover {
   display: inline-flex;
   align-items: center;
   min-block-size: var(--target-min);
+}
+
+/* A row's actions in a narrow cell (a change request's state): one under another, read from the start. */
+.cat-cell-actions {
+  margin-block-start: var(--space-1);
+}
+
+.cat-cell-actions .ds-actions {
+  flex-direction: column;
+  align-items: start;
+  gap: 0;
+}
+
+.cat-cell-actions .ds-button {
+  text-align: start;
+}
+
+/* Dismissing a change request, in place of its actions. */
+.cat-dismiss {
+  display: grid;
+  gap: var(--space-2);
+  margin-block-start: var(--space-2);
+}
+
+/* A change request's features: one per line, by id and name. */
+.cat-features {
+  gap: var(--space-1);
+  margin-block-start: var(--space-1);
 }

@@ -17,7 +17,7 @@ import { useWorkQueue } from "../work/queue";
 
 type Panel = "jobs" | "help" | "account";
 
-/** Every area's address; the legacy one (Requirements) keeps its island. */
+/** Every area's address. */
 const AREAS = ["/library", "/architecture", "/explorer", "/squads", "/requirement-knowledge"];
 
 /**
@@ -34,6 +34,8 @@ const REDESIGNED: ((path: string) => boolean)[] = [
   (path) => path === "/explorer",
   // Area 4: ownership (the systems grid, products, squads, people and history).
   (path) => path === "/squads" || path.startsWith("/squads/"),
+  // Requirements: the corpus, its findings and historic requirements, on the workbench (UX rebuild, phase 3).
+  (path) => path === "/requirement-knowledge" || path.startsWith("/requirement-knowledge/"),
   // An address outside every area: the rebuilt "Page not found" (UX rebuild, phase 1).
   (path) => path !== "/" && !AREAS.some((area) => path === area || path.startsWith(`${area}/`)),
 ];

@@ -186,3 +186,29 @@ export function rovingKeyDown(
   items.forEach((item) => item.setAttribute("tabindex", item === next ? "0" : "-1"));
   next.focus();
 }
+
+/**
+ * Publishes where an element starts on the page (--split-top), so CSS can give
+ * it the rest of the window. Measured again whenever the page above it changes.
+ */
+export function useFillHeight(ref: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const element = ref.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    let last = "";
+    const measure = () => {
+      const top = `${Math.round(element.getBoundingClientRect().top + window.scrollY)}px`;
+      if (top === last) return;
+      last = top;
+      element.style.setProperty("--split-top", top);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(document.getElementById("ds-main") ?? document.body);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [ref]);
+}

@@ -87,7 +87,7 @@
   margin-block: var(--space-3);
 }
 
-/* Toolbars: filters with their find, and the owner beside them. */
+/* Toolbars: filters with their find beside them. */
 .lib-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -99,7 +99,6 @@
   flex: 1 1 32rem;
 }
 
-.lib-toolbar__owner > .ds-field,
 .lib-toolbar__find > .ds-field {
   margin: 0;
 }

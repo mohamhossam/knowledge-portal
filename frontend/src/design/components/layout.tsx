@@ -14,7 +14,7 @@ import {
 } from "react";
 
 import etisalatLogo from "../assets/etisalat-logo-white.svg";
-import { rovingKeyDown, useFocusAfterRender, useStickySize } from "../hooks";
+import { rovingKeyDown, useFillHeight, useFocusAfterRender, useStickySize } from "../hooks";
 import { Badge, Status, type StatusTone } from "./feedback";
 
 function useMediaQuery(query: string): boolean {
@@ -556,32 +556,6 @@ export function SplitPane({ list, pane, paneLabel }: { list: ReactNode; pane: Re
       </aside>
     </div>
   );
-}
-
-/**
- * Publishes where an element starts on the page (--split-top), so CSS can give
- * it the rest of the window. Measured again whenever the page above it changes.
- */
-function useFillHeight(ref: RefObject<HTMLElement | null>) {
-  useEffect(() => {
-    const element = ref.current;
-    if (!element || typeof ResizeObserver === "undefined") return;
-    let last = "";
-    const measure = () => {
-      const top = `${Math.round(element.getBoundingClientRect().top + window.scrollY)}px`;
-      if (top === last) return;
-      last = top;
-      element.style.setProperty("--split-top", top);
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(document.getElementById("ds-main") ?? document.body);
-    window.addEventListener("resize", measure);
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", measure);
-    };
-  }, [ref]);
 }
 
 /** Pages of a long list; the current page is marked and said. */

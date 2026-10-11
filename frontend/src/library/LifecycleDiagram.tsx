@@ -22,7 +22,7 @@ export function LifecycleDiagram({ counts, active, onChoose }: {
       layout={layout}
       onActivate={(node) => onChoose(node.id === active ? "all" : (node.id as DocState))}
       headers={{ detail: "Documents", to: "Goes on to", from: "Comes from" }}
-      legend={<DiagramLegend items={active === "all" ? [["dashed", "Dashed line: when something stops it"]] : [["subject", "Shown below"], ["dashed", "Dashed line: when something stops it"]]} />}
+      legend={<DiagramLegend items={active === "all" ? [["dashed", "Dashed line: when something stops it"]] : [["subject", "Shown in the list"], ["dashed", "Dashed line: when something stops it"]]} />}
     />
   );
 }

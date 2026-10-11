@@ -3,12 +3,13 @@ import { Fragment, type ReactNode, useState } from "react";
 import { Link } from "react-router-dom";
 
 import type { HistoricBreakdown, HistoricChange, HistoricSharedRoot, HistoricWorkItem, LineageNode } from "../api/client";
+import { Button, type Column, DataTable, Status } from "../design/components";
 import { count, formatMoment } from "../home/format";
 import { FIELD_WORDS, PROBLEM_WORDS, STATUS_WORDS, TYPE_WORDS, historicHref, itemsOf } from "./historic";
 
 type Row = { item: HistoricWorkItem; depth: number; number: string };
 
-/** The lineage as a timetable's numbered rows: 1 an Epic, 1.1 its Feature, 1.1.1 its Story. */
+/** The lineage as numbered rows: 1 an Epic, 1.1 its Feature, 1.1.1 its Story. */
 function rows(nodes: LineageNode[], depth = 0, prefix = ""): Row[] {
   return nodes.flatMap((node, index) => {
     const number = `${prefix}${index + 1}`;
@@ -20,9 +21,9 @@ function rows(nodes: LineageNode[], depth = 0, prefix = ""): Row[] {
 export function AdoLink({ id, url }: { id: number; url?: string | null }) {
   if (!url) return <>#{id}</>;
   return (
-    <a href={url} target="_blank" rel="noreferrer" className="historic__id">
-      #{id}
-      <span className="visually-hidden"> (opens Azure DevOps)</span>
+    <a href={url} target="_blank" rel="noreferrer" className="rk-ado">
+      #{id}{" "}
+      <span className="ds-visually-hidden">(opens Azure DevOps)</span>
       <ArrowUpRight size={12} aria-hidden="true" />
     </a>
   );
@@ -32,7 +33,7 @@ export function AdoLink({ id, url }: { id: number; url?: string | null }) {
 export function SharedRootNote({ holders }: { holders: HistoricSharedRoot[] | undefined }) {
   if (!holders || holders.length === 0) return null;
   return (
-    <span className="historic__shared">
+    <span className="rk-detail">
       Also the root of{" "}
       {holders.map((holder, index) => (
         <Fragment key={holder.historic_id}>
@@ -57,86 +58,63 @@ export function BreakdownTable({ breakdown, brds, shared, past = false, note }: 
   const [open, setOpen] = useState<number | null>(null);
   const lines = rows(breakdown.lineage);
   const others = breakdown.not_imported.map((item) => count(item.count, item.type)).join(", ");
+  const columns: Column<Row>[] = [
+    { id: "number", header: "No.", numeric: true, cell: (row) => row.number },
+    {
+      id: "item",
+      header: "Work item",
+      rowHeader: true,
+      cell: ({ item, depth }) => (
+        <span className={`rk-depth rk-depth--${Math.min(depth, 3)}`}>
+          <span className="rk-type">{TYPE_WORDS[item.type] ?? item.type}</span>{" "}
+          <AdoLink id={item.id} url={item.url} />{" "}
+          <bdi>{item.title}</bdi>
+          {depth === 0 && shared?.has(item.id) && <SharedRootNote holders={shared.get(item.id)} />}
+          {(item.description || item.acceptance_criteria) && (
+            <span className="rk-says">
+              <Button
+                variant="link"
+                aria-expanded={open === item.id}
+                aria-label={`${open === item.id ? "Hide" : "Show"} what #${item.id} says`}
+                onClick={() => setOpen(open === item.id ? null : item.id)}
+              >
+                {open === item.id ? "Hide what it says" : "What it says"}
+              </Button>
+            </span>
+          )}
+          {open === item.id && (
+            <dl className="rk-said-by">
+              {item.description && <div><dt>Description</dt><dd dir="auto">{item.description}</dd></div>}
+              {item.acceptance_criteria && <div><dt>Acceptance criteria</dt><dd dir="auto">{item.acceptance_criteria}</dd></div>}
+              <div><dt>Revision</dt><dd>{item.revision}{item.tags.length > 0 ? ` · tagged ${item.tags.join(", ")}` : ""}</dd></div>
+            </dl>
+          )}
+        </span>
+      ),
+    },
+    { id: "state", header: "State", cell: ({ item }) => (past ? <span className="rk-quiet">{item.state}</span> : item.state) },
+    { id: "iteration", header: "Iteration", bidi: true, cell: ({ item }) => item.iteration_path || "—" },
+    { id: "area", header: "Area", bidi: true, cell: ({ item }) => item.area_path || "—" },
+  ];
   return (
     <>
-      <p className="govsection__lead">
-        <span dir="auto">{brds.join(", ")}</span> was delivered as {count(breakdown.epics, "Epic")},{" "}
+      <p className="rk-lead">
+        <bdi>{brds.join(", ")}</bdi> was delivered as {count(breakdown.epics, "Epic")},{" "}
         {count(breakdown.features, "Feature")} and {count(breakdown.stories, "User Story", "User Stories")}, as read on{" "}
         {formatMoment(new Date(breakdown.fetched_at))}.
-        {others && <span className="secondary"> Beneath them, not imported: {others}.</span>}
+        {others && <> Beneath them, not imported: {others}.</>}
         {note && <> {note}</>}
       </p>
       {lines.length === 0 ? (
-        <p className="timetable__quiet">None of its top-level work items could be read.</p>
+        <p className="rk-quiet">None of its top-level work items could be read.</p>
       ) : (
-        <table className="govtable historic__lineage">
-          <caption className="visually-hidden">Its Epics, Features and User Stories, as numbered rows</caption>
-          <thead>
-            <tr>
-              <th scope="col" className="cell--end historic__no">No.</th>
-              <th scope="col">Work item</th>
-              <th scope="col">State</th>
-              <th scope="col" className="cell--p2">Iteration</th>
-              <th scope="col" className="cell--p3">Area</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lines.map(({ item, depth, number }) => {
-              const level = `historic__depth historic__depth--${Math.min(depth, 3)}`;
-              return (
-                <Fragment key={item.id}>
-                  <tr className={`row ${level}${past ? " row--past" : ""}${open === item.id ? " is-acting" : ""}`}>
-                    <td className="cell--end historic__no">{number}</td>
-                    <th scope="row">
-                      <span className="historic__type">{TYPE_WORDS[item.type] ?? item.type}</span>{" "}
-                      <AdoLink id={item.id} url={item.url} />{" "}
-                      <span dir="auto">{item.title}</span>
-                      {depth === 0 && shared?.has(item.id) && (
-                        <span className="secondary govtable__by"><SharedRootNote holders={shared.get(item.id)} /></span>
-                      )}
-                      {(item.description || item.acceptance_criteria) && (
-                        <span className="secondary govtable__by historic__says">
-                          <button
-                            type="button"
-                            className="text-button knowledge__act"
-                            aria-expanded={open === item.id}
-                            aria-label={`${open === item.id ? "Hide" : "Show"} what #${item.id} says`}
-                            onClick={() => setOpen(open === item.id ? null : item.id)}
-                          >
-                            {open === item.id ? "Hide what it says" : "What it says"}
-                          </button>
-                        </span>
-                      )}
-                    </th>
-                    <td className="historic__state">{item.state}</td>
-                    <td className="cell--p2" dir="auto">{item.iteration_path || "—"}</td>
-                    <td className="cell--p3" dir="auto">{item.area_path || "—"}</td>
-                  </tr>
-                  {open === item.id && (
-                    <tr className={`knowledge__act-row ${level}`}>
-                      <td className="historic__no" />
-                      {/* Set at the item's own indent, under its title. */}
-                      <td colSpan={4} className="historic__said-cell">
-                        <dl className="historic__said">
-                          {item.description && (
-                            <div><dt>Description</dt><dd dir="auto">{item.description}</dd></div>
-                          )}
-                          {item.acceptance_criteria && (
-                            <div><dt>Acceptance criteria</dt><dd dir="auto">{item.acceptance_criteria}</dd></div>
-                          )}
-                          <div>
-                            <dt>Revision</dt>
-                            <dd>{item.revision}{item.tags.length > 0 ? ` · tagged ${item.tags.join(", ")}` : ""}</dd>
-                          </div>
-                        </dl>
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              );
-            })}
-          </tbody>
-        </table>
+        <DataTable
+          caption="Its Epics, Features and User Stories, as numbered rows"
+          captionHidden
+          columns={columns}
+          rows={lines}
+          rowId={(row) => String(row.item.id)}
+        />
       )}
     </>
   );
@@ -144,28 +122,21 @@ export function BreakdownTable({ breakdown, brds, shared, past = false, note }: 
 
 /** Work items that could not be imported, and why. */
 export function ItemErrors({ errors }: { errors: { work_item_id: number; problem: string; detail: string }[] }) {
-  return (
-    <table className="govtable historic__errors">
-      <caption className="visually-hidden">Work items that could not be read</caption>
-      <thead>
-        <tr>
-          <th scope="col">Work item</th>
-          <th scope="col">Why</th>
-        </tr>
-      </thead>
-      <tbody>
-        {errors.map((error) => (
-          <tr key={error.work_item_id} className="row row--delayed">
-            <th scope="row">#{error.work_item_id}</th>
-            <td>
-              <span className="status">{PROBLEM_WORDS[error.problem] ?? error.problem}</span>
-              {error.detail && <span className="secondary govtable__by">{error.detail}</span>}
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
+  type Error = (typeof errors)[number];
+  const columns: Column<Error>[] = [
+    { id: "item", header: "Work item", rowHeader: true, cell: (error) => `#${error.work_item_id}` },
+    {
+      id: "why",
+      header: "Why",
+      cell: (error) => (
+        <>
+          <Status tone="attention">{PROBLEM_WORDS[error.problem] ?? error.problem}</Status>
+          {error.detail && <span className="rk-detail">{error.detail}</span>}
+        </>
+      ),
+    },
+  ];
+  return <DataTable caption="Work items that could not be read" captionHidden columns={columns} rows={errors} rowId={(error) => String(error.work_item_id)} />;
 }
 
 const CHANGE_WORDS: Record<string, string> = { added: "Added", removed: "Removed", changed: "Changed" };
@@ -188,12 +159,12 @@ function Delta({ field, before, after }: { field: string; before?: HistoricWorkI
   const word = FIELD_WORDS[field] ?? field;
   const was = before ? valueOf(before, field) : null;
   const now = after ? valueOf(after, field) : null;
-  if (was === null || now === null) return <li><span className="historic__field">{word}</span> changed</li>;
+  if (was === null || now === null) return <li><span className="rk-field">{word}</span> changed</li>;
   return (
     <li>
-      <span className="historic__field">{word}</span> <span dir="auto">{was || "none"}</span>
+      <span className="rk-field">{word}</span> <bdi>{was || "none"}</bdi>
       <span aria-hidden="true"> → </span>
-      <span className="visually-hidden"> became </span>
+      <span className="ds-visually-hidden">became</span>{" "}
       <strong dir="auto">{now || "none"}</strong>
     </li>
   );
@@ -207,41 +178,44 @@ export function ChangeTable({ changes, before, after }: {
 }) {
   const was = itemsOf(before);
   const now = itemsOf(after);
+  const columns: Column<HistoricChange>[] = [
+    {
+      id: "item",
+      header: "Work item",
+      rowHeader: true,
+      cell: (change) => (
+        <>
+          <AdoLink id={change.work_item_id} url={(now.get(change.work_item_id) ?? was.get(change.work_item_id))?.url} />{" "}
+          <bdi>{change.title}</bdi>
+        </>
+      ),
+    },
+    {
+      id: "change",
+      header: "Change",
+      cell: (change) => {
+        const later = now.get(change.work_item_id);
+        return (
+          <>
+            <span className="rk-kind">{CHANGE_WORDS[change.kind] ?? change.kind}</span>
+            {change.kind === "changed" && change.fields.length > 0 && (
+              <ul className="rk-deltas">
+                {change.fields.map((field) => <Delta key={field} field={field} before={was.get(change.work_item_id)} after={later} />)}
+              </ul>
+            )}
+            {change.kind === "added" && later && <span className="rk-detail">{TYPE_WORDS[later.type] ?? later.type} · {later.state}</span>}
+          </>
+        );
+      },
+    },
+  ];
   return (
-    <table className="govtable historic__changes">
-      <caption className="visually-hidden">What changed in Azure DevOps since it was published</caption>
-      <thead>
-        <tr>
-          <th scope="col">Work item</th>
-          <th scope="col">Change</th>
-        </tr>
-      </thead>
-      <tbody>
-        {changes.map((change) => {
-          const after = now.get(change.work_item_id);
-          return (
-            <tr key={`${change.kind}-${change.work_item_id}`} className={`row${change.kind === "removed" ? " row--past" : ""}`}>
-              <th scope="row">
-                <AdoLink id={change.work_item_id} url={(after ?? was.get(change.work_item_id))?.url} />{" "}
-                <span dir="auto">{change.title}</span>
-              </th>
-              <td>
-                <span className="historic__kind">{CHANGE_WORDS[change.kind] ?? change.kind}</span>
-                {change.kind === "changed" && change.fields.length > 0 && (
-                  <ul className="historic__deltas">
-                    {change.fields.map((field) => (
-                      <Delta key={field} field={field} before={was.get(change.work_item_id)} after={after} />
-                    ))}
-                  </ul>
-                )}
-                {change.kind === "added" && after && (
-                  <span className="secondary govtable__by">{TYPE_WORDS[after.type] ?? after.type} · {after.state}</span>
-                )}
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+    <DataTable
+      caption="What changed in Azure DevOps since it was published"
+      captionHidden
+      columns={columns}
+      rows={changes}
+      rowId={(change) => `${change.kind}-${change.work_item_id}`}
+    />
   );
 }

@@ -33,35 +33,6 @@
   resize: vertical;
 }
 
-.field__input--file {
-  padding: var(--s1);
-}
-
-.field__input--file::file-selector-button {
-  min-height: 1.75rem;
-  margin-right: var(--s3);
-  padding: 0 var(--s3);
-  border: 1px solid var(--ink);
-  border-radius: 2px;
-  background: var(--stock);
-  color: var(--ink);
-  font: inherit;
-  font-weight: var(--w-medium);
-  cursor: pointer;
-}
-
-.field__input--file::file-selector-button:hover {
-  background: var(--ink);
-  color: var(--stock);
-}
-
-.field--inline {
-  grid-auto-flow: column;
-  align-items: center;
-  justify-content: start;
-  gap: var(--s2);
-}
-
 .check {
   display: inline-flex;
   align-items: center;
@@ -106,15 +77,6 @@
   background: var(--stock-band);
   color: var(--ink-3);
   cursor: not-allowed;
-}
-
-.file-button {
-  cursor: pointer;
-}
-
-.file-button:focus-within {
-  outline: var(--tt-focus-ring);
-  outline-offset: 2px;
 }
 
 .timetable__toolbar {
@@ -201,15 +163,7 @@
   font-size: var(--t-meta);
 }
 
-.docpage__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s2) var(--s4);
-  margin-top: var(--s2);
-}
-
-.docpage__quiet,
-.docpage__notice {
+.docpage__quiet {
   max-width: 72ch;
   color: var(--ink-2);
 }
@@ -221,31 +175,6 @@
   gap: var(--s3);
   color: var(--disruption);
   font-weight: var(--w-medium);
-}
-
-.status--failed {
-  color: var(--disruption);
-  font-weight: var(--w-bold);
-}
-
-/* The working copy's processing state, one ruled line. */
-.processing {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s2) var(--s4);
-  padding-block: var(--s3);
-  border-block: 2px solid var(--tt-rule-heavy);
-  color: var(--ink-2);
-}
-
-.processing .status {
-  color: var(--ink);
-  font-weight: var(--w-bold);
-}
-
-.processing--failed .status {
-  color: var(--disruption);
 }
 
 /* Withdrawing: an inline, deliberate step under the head. */
@@ -320,12 +249,6 @@
   gap: var(--s3) var(--s5);
 }
 
-.filters__set {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s1) var(--s4);
-}
-
 .filter {
   min-height: 2rem;
   padding: 0 var(--s1);
@@ -344,11 +267,6 @@
   color: var(--ink);
   font-weight: var(--w-bold);
   box-shadow: inset 0 -3px 0 var(--ink);
-}
-
-.filter__count {
-  margin-left: var(--s1);
-  font-weight: var(--w-regular);
 }
 
 kbd {
@@ -391,16 +309,6 @@ kbd {
   text-align: end;
 }
 
-.passages__where {
-  width: 13rem;
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-}
-
-.passages--read .passages__where {
-  width: 14rem;
-}
-
 .passage {
   cursor: pointer;
   transition: background-color 180ms var(--ease-out);
@@ -413,17 +321,6 @@ kbd {
 .passage:focus-visible {
   outline: var(--tt-focus-ring);
   outline-offset: -2px;
-}
-
-.passage .clamp {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 4;
-}
-
-.passage.is-open .clamp {
-  display: block;
 }
 
 .passage.is-open {
@@ -464,47 +361,6 @@ kbd {
 
   .add {
     margin-left: 0;
-  }
-}
-
-/* The document's own pages: an index under its head, current page with the ink bar. */
-.subindex {
-  margin-top: var(--s3);
-  border-bottom: 1px solid var(--rule);
-}
-
-.subindex__list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 var(--s5);
-}
-
-.subindex__link {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2.25rem;
-  color: var(--ink-2);
-  font-weight: var(--w-medium);
-  text-decoration: none;
-}
-
-.subindex__link:hover {
-  color: var(--ink);
-}
-
-.subindex__link[aria-current="page"] {
-  color: var(--ink);
-  font-weight: var(--w-bold);
-  box-shadow: inset 0 -3px 0 var(--ink);
-}
-
-@media (max-width: 45rem) {
-  .subindex__list {
-    gap: 0 var(--s3);
-  }
-
-  .subindex__link {
-    font-size: var(--t-meta);
   }
 }
 
@@ -567,13 +423,6 @@ kbd {
   text-align: end;
 }
 
-.govtable .clamp {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 4;
-}
-
 .govtable__by {
   display: block;
   font-size: var(--t-meta);
@@ -609,29 +458,4 @@ kbd {
 .toolbar__notice {
   flex-basis: 100%;
   font-weight: var(--w-medium);
-}
-
-/* Search: one field, then exact passages. */
-
-/* Each place on its own line; the cited one in ink, its neighbours in ink 2. */
-
-.nowrap {
-  white-space: nowrap;
-}
-
-/* Knowledge Center C: an admin acting on a document they don't own. */
-
-/* While the grant lasts, a band above the head between heavy rules, as a confirmation is:
-   whose document, until when, why. */
-
-/* The reason, asked in place under the owner line: on the stock band, closed by a heavy rule. */
-
-/* Why the newest version could not be read, under its status. */
-
-/* Owner and Cited by, kept with the title once their columns leave the grid. */
-
-/* The library's bulk line runs the toolbar's full width, so opening it moves nothing else. */
-.timetable__toolbar > .knowledge__batch {
-  flex-basis: 100%;
-  order: 1;
 }

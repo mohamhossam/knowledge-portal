@@ -10,11 +10,9 @@ import { ConceptsPage } from "../catalogue/ConceptsPage";
 import { EvidencePage } from "../catalogue/EvidencePage";
 import { DomainsPage } from "../catalogue/DomainsPage";
 import { MapPage } from "../catalogue/MapPage";
-import { VersionsTimeline } from "../catalogue/diagrams/CatalogueDiagrams";
-import { JourneyPage, JourneysPage } from "../catalogue/JourneysPage";
-import { OfferingPage, OfferingsPage } from "../catalogue/OfferingsPage";
+import { JourneysPage } from "../catalogue/JourneysPage";
+import { OfferingsPage } from "../catalogue/OfferingsPage";
 import { SystemsPage } from "../catalogue/SystemsPage";
-import { CatalogueHeader } from "../catalogue/frame/CatalogueHeader";
 import { LegacyPage } from "../catalogue/frame/LegacyPage";
 import { ChangesStep } from "../catalogue/draft/ChangesStep";
 import { CheckStep } from "../catalogue/draft/CheckStep";
@@ -29,13 +27,12 @@ import { ProductsPage } from "../squads/ProductsPage";
 import { SquadListPage } from "../squads/SquadListPage";
 import { SquadsPage } from "../squads/SquadsPage";
 import { OwnershipGrid } from "../squads/OwnershipGrid";
+import { SystemsBench } from "../squads/SystemsBench";
 import { OwnershipTree } from "../squads/OwnershipTree";
 import { ExplorerPage } from "../explorer/ExplorerPage";
-import { CorpusFindingsPage } from "../requirements/CorpusFindingsPage";
-import { CorpusRequirementsPage } from "../requirements/CorpusRequirementsPage";
-import { RequirementKnowledgePage } from "../requirements/RequirementKnowledgePage";
-import { HistoricListPage } from "../historic/HistoricListPage";
-import { HistoricRecordPage } from "../historic/HistoricRecordPage";
+import { FindingsPage } from "../requirements/FindingsPage";
+import { RequirementKnowledgeIndex, RequirementsPage } from "../requirements/RequirementsPage";
+import { HistoricPage } from "../historic/HistoricPage";
 import { ActionGroup, EmptyState, PageHeader, Skeleton } from "../design/components";
 import { ButtonLink } from "../shell/links";
 import { HomePage } from "./HomePage";
@@ -64,11 +61,12 @@ const catalogueRoutes = (
     <Route path="concepts/:conceptId" element={<ConceptsPage />} />
     <Route path="domains" element={<LegacyPage page="domains"><DomainsPage /></LegacyPage>} />
     <Route path="channels" element={<LegacyPage page="channels"><ChannelsPage /></LegacyPage>} />
-    <Route path="governance" element={<><CatalogueHeader page="governance" /><GovernancePage /></>} />
+    <Route path="governance" element={<GovernancePage />} />
+    <Route path="governance/:register/:itemId" element={<GovernancePage />} />
     <Route path="offerings" element={<OfferingsPage />} />
-    <Route path="offerings/:offeringId" element={<OfferingPage />} />
+    <Route path="offerings/:offeringId" element={<OfferingsPage />} />
     <Route path="journeys" element={<JourneysPage />} />
-    <Route path="journeys/:journeyId" element={<JourneyPage />} />
+    <Route path="journeys/:journeyId" element={<JourneysPage />} />
     {/* A draft's steps, in order (redesign area 3). */}
     <Route path="sources" element={<SourcesStep />} />
     <Route path="decide" element={<DecideStep />} />
@@ -113,11 +111,14 @@ export function App() {
         <Route path="library" element={<Loading><LibraryPage /></Loading>} />
         {/* Re-confirmations are confirmed on To do now (UX rebuild, phase 2). */}
         <Route path="reminders" element={<Navigate to="/" replace />} />
-        <Route path="requirement-knowledge" element={<RequirementKnowledgePage />} />
-        <Route path="requirement-knowledge/requirements" element={<CorpusRequirementsPage />} />
-        <Route path="requirement-knowledge/findings" element={<CorpusFindingsPage />} />
-        <Route path="requirement-knowledge/historic" element={<HistoricListPage />} />
-        <Route path="requirement-knowledge/historic/:historicId" element={<HistoricRecordPage />} />
+        {/* The overview folded into Requirements (UX rebuild, phase 3); its address keeps working. */}
+        <Route path="requirement-knowledge" element={<RequirementKnowledgeIndex />} />
+        <Route path="requirement-knowledge/requirements" element={<RequirementsPage />} />
+        <Route path="requirement-knowledge/requirements/:requirementId" element={<RequirementsPage />} />
+        <Route path="requirement-knowledge/findings" element={<FindingsPage />} />
+        <Route path="requirement-knowledge/findings/:findingId" element={<FindingsPage />} />
+        <Route path="requirement-knowledge/historic" element={<HistoricPage />} />
+        <Route path="requirement-knowledge/historic/:historicId" element={<HistoricPage />} />
         <Route path="library/search" element={<Loading><SearchPage /></Loading>} />
         <Route path="library/:documentId" element={<Loading><DocumentPage /></Loading>}>
           <Route index element={<Loading><MainPage /></Loading>} />
@@ -131,7 +132,7 @@ export function App() {
         </Route>
         <Route path="architecture" element={<CataloguePage />}>
           {catalogueRoutes}
-          <Route path="versions" element={<LegacyPage page="versions" first={<VersionsTimeline />}><CatalogueVersionsPage /></LegacyPage>} />
+          <Route path="versions" element={<CatalogueVersionsPage />} />
           <Route path="compare" element={<LegacyPage page="compare"><ComparePage /></LegacyPage>} />
         </Route>
         <Route path="architecture/versions/:releaseId" element={<CataloguePage />}>
@@ -139,11 +140,17 @@ export function App() {
         </Route>
         <Route path="explorer" element={<ExplorerPage linkSystems />} />
         <Route path="squads" element={<SquadsPage />}>
-          <Route index element={<OwnershipGrid />} />
+          {/* Each list beside its chosen record (UX rebuild, phase 3); the grid is "Assign several". */}
+          <Route index element={<SystemsBench />} />
+          <Route path="systems/:systemId" element={<SystemsBench />} />
+          <Route path="assign" element={<OwnershipGrid />} />
           <Route path="tree" element={<OwnershipTree />} />
           <Route path="products" element={<ProductsPage />} />
+          <Route path="products/:productId" element={<ProductsPage />} />
           <Route path="squads" element={<SquadListPage />} />
+          <Route path="squads/:squadId" element={<SquadListPage />} />
           <Route path="people" element={<PeoplePage />} />
+          <Route path="people/:personId" element={<PeoplePage />} />
           <Route path="history" element={<HistoryPage />} />
         </Route>
         {/* Sign-in has already returned the admin to where they were going. */}

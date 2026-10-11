@@ -46,7 +46,7 @@ export const ROUTES: RouteDef[] = [
   { key: "library-citations", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/citations`, mask: [".ds-provenance", ".lib-reconfirm__line"] },
   { key: "library-ownership", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/ownership`, mask: [".ds-provenance", ".lib-reconfirm__line", "tbody th"] },
   // The architecture catalogue (area 5: rebuilt on the design system). Landscape, Channels,
-  // Versions and Compare keep their body in the legacy island under the new head.
+  // and Compare keep their body in the legacy island under the new head.
   { key: "architecture", path: at("architecture") },
   // The map (UX rebuild phase 4): how systems connect, one system in context, what systems do.
   { key: "architecture-map", path: at("architecture/map") },
@@ -63,6 +63,7 @@ export const ROUTES: RouteDef[] = [
   { key: "architecture-domains", path: at("architecture/domains") },
   { key: "architecture-channels", path: at("architecture/channels") },
   { key: "architecture-versions", path: at("architecture/versions") },
+  { key: "architecture-version", path: (s) => s.replaced && `architecture/versions?version=${s.replaced}` },
   { key: "architecture-draft", path: (s) => s.draft && `architecture/versions/${s.draft}` },
   // The draft's steps (area 3: rebuilt on the design system).
   { key: "architecture-draft-sources", path: (s) => s.draft && `architecture/versions/${s.draft}/sources` },
@@ -74,6 +75,12 @@ export const ROUTES: RouteDef[] = [
   { key: "explorer", path: at("explorer") },
   { key: "squads", path: at("squads") },
   { key: "squads-no-squad", path: at("squads?show=none") },
+  // Ownership on the workbench (UX rebuild, phase 3): a record of each kind, and Assign several.
+  { key: "squads-system", path: (s) => s.system && `squads/systems/${s.system}` },
+  { key: "squads-assign", path: at("squads/assign") },
+  { key: "squads-product", path: at("squads/products/fibre-ordering") },
+  { key: "squads-squad", path: at("squads/squads/sales") },
+  { key: "squads-person", path: at("squads/people/layla") },
   { key: "squads-tree", path: at("squads/tree") },
   { key: "squads-products", path: at("squads/products") },
   { key: "squads-squads", path: at("squads/squads") },
@@ -119,15 +126,28 @@ export const REDESIGNED: string[] = [
   "architecture-journeys",
   "architecture-journey",
   "architecture-governance",
+  // UX rebuild phase 3: Versions on the workbench.
+  "architecture-versions",
+  "architecture-version",
   "explorer",
   // Area 4: ownership.
   "squads",
   "squads-no-squad",
+  "squads-system",
+  "squads-assign",
+  "squads-product",
+  "squads-squad",
+  "squads-person",
   "squads-tree",
   "squads-products",
   "squads-squads",
   "squads-people",
   "squads-history",
+  // UX rebuild phase 3: requirements, findings and historic requirements.
+  "requirement-knowledge",
+  "requirement-knowledge-requirements",
+  "requirement-knowledge-findings",
+  "requirement-knowledge-historic",
   // UX rebuild phase 1: the page for an address outside every area.
   "not-found",
 ];

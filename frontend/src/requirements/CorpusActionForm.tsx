@@ -1,13 +1,24 @@
-import { useEffect, useId, useRef, useState } from "react";
+import type { RefObject } from "react";
 
 import type { CorpusRequirement } from "../api/client";
+import { ConsequencePanel } from "../design/components";
 import { count } from "../home/format";
 
 export type CorpusActionKind = "retire" | "reinstate";
 
-const WORDS: Record<CorpusActionKind, { title: string; commit: string; busy: string }> = {
-  retire: { title: "Retire it from the corpus", commit: "Retire it", busy: "Retiring…" },
-  reinstate: { title: "Return it to the corpus", commit: "Reinstate it", busy: "Reinstating…" },
+const WORDS: Record<CorpusActionKind, { title: string; commit: string; busy: string; reversibility: string }> = {
+  retire: {
+    title: "Retire it from the corpus",
+    commit: "Retire it",
+    busy: "Retiring…",
+    reversibility: "You can reinstate it later, with a reason; it is then screened afresh.",
+  },
+  reinstate: {
+    title: "Return it to the corpus",
+    commit: "Reinstate it",
+    busy: "Reinstating…",
+    reversibility: "You can retire it again later, with a reason.",
+  },
 };
 
 /** Who requirement work will tell, in words: the owner by name, "you", or nobody. */
@@ -28,10 +39,11 @@ function consequence(item: CorpusRequirement, kind: CorpusActionKind, me: string
 }
 
 /**
- * The reason for a corpus action, asked in place under the requirement's row. Requirement work
- * records it with the action and tells the owner, so it is required.
+ * Retiring a requirement or returning it, asked in place on its record: what follows, who is
+ * told, whether it can be undone, then the reason. Requirement work records the reason with
+ * the action and tells the owner, so it is required.
  */
-export function CorpusActionForm({ item, kind, me, busy, error, onSubmit, onCancel }: {
+export function CorpusActionForm({ item, kind, me, busy, error, onSubmit, onCancel, panelRef }: {
   item: CorpusRequirement;
   kind: CorpusActionKind;
   /** The signed-in admin, to say "you" when they own the requirement. */
@@ -40,71 +52,23 @@ export function CorpusActionForm({ item, kind, me, busy, error, onSubmit, onCanc
   error: string | null;
   onSubmit: (reason: string) => void;
   onCancel: () => void;
+  panelRef?: RefObject<HTMLElement | null>;
 }) {
-  const id = useId();
-  const form = useRef<HTMLFormElement>(null);
-  const field = useRef<HTMLTextAreaElement>(null);
-  const refusal = useRef<HTMLParagraphElement>(null);
-  const [reason, setReason] = useState("");
-  const [tried, setTried] = useState(false);
-  useEffect(() => {
-    form.current?.scrollIntoView?.({ block: "nearest" });
-    field.current?.focus();
-  }, []);
-  useEffect(() => {
-    // Requirement work's refusal takes focus, so the reader hears it and can go on from there.
-    if (error) refusal.current?.focus();
-  }, [error]);
   const words = WORDS[kind];
-  const missing = tried && !reason.trim();
   return (
-    <form
-      ref={form}
-      className="knowledge__act-form"
-      aria-labelledby={`${id}-title`}
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (busy) return;
-        setTried(true);
-        if (reason.trim()) onSubmit(reason.trim());
-        else field.current?.focus();
-      }}
-      onKeyDown={(event) => {
-        if (event.key === "Escape" && !busy) onCancel();
-      }}
-    >
-      <p id={`${id}-title`} className="knowledge__act-title">
-        {words.title}: <span dir="auto">‘{item.title}’</span>
-      </p>
-      <p className="secondary knowledge__act-lead">{consequence(item, kind, me)}</p>
-      <label className="field">
-        <span className="field__label">Why</span>
-        <textarea
-          ref={field}
-          className="field__input"
-          rows={2}
-          maxLength={500}
-          value={reason}
-          aria-required="true"
-          aria-invalid={missing || undefined}
-          aria-describedby={missing ? `${id}-missing` : undefined}
-          onChange={(event) => setReason(event.target.value)}
-        />
-      </label>
-      {missing && (
-        <p id={`${id}-missing`} className="docpage__failure">Say why: requirement work records it and tells the owner.</p>
-      )}
-      {error && (
-        <p ref={refusal} tabIndex={-1} className="docpage__failure" role="alert">{error}</p>
-      )}
-      <p className="govsection__actions">
-        <button type="submit" className="action-button" aria-disabled={busy || undefined}>
-          {busy ? words.busy : words.commit}
-        </button>
-        <button type="button" className="text-button" aria-disabled={busy || undefined} onClick={() => { if (!busy) onCancel(); }}>
-          Cancel
-        </button>
-      </p>
-    </form>
+    <ConsequencePanel
+      title={<>{words.title}: <bdi>‘{item.title}’</bdi></>}
+      happens={consequence(item, kind, me)}
+      reversibility={words.reversibility}
+      reason={{ label: "Why", hint: "Requirement work records it and tells the owner.", maxLength: 500 }}
+      confirmLabel={words.commit}
+      busyLabel={words.busy}
+      keepLabel="Cancel"
+      busy={busy}
+      failure={error}
+      onConfirm={onSubmit}
+      onKeep={onCancel}
+      panelRef={panelRef}
+    />
   );
 }
