@@ -10,13 +10,14 @@ import {
   type HistoricWorkItem,
   type LineageNode,
 } from "../api/client";
+import type { StatusTone } from "../design/components";
 import { count } from "../home/format";
 import { HISTORIC_PATH } from "../requirements/knowledge";
 import type { Rank } from "../timetable/TimetableTable";
 
 /** Historic Requirements live on Table 4, beside the corpus they will join (ADR-0102). */
 export { HISTORIC_PATH };
-export const historicHref = (id: string) => `${HISTORIC_PATH}/${encodeURIComponent(id)}`;
+export const historicHref = (id: string, search = "") => `${HISTORIC_PATH}/${encodeURIComponent(id)}${search}`;
 
 export const historicKey = (id: string) => ["historic", "record", id] as const;
 export const HISTORIC_LIST_KEY = ["historic", "list"] as const;
@@ -36,10 +37,11 @@ function busy(record: Pick<HistoricSummary, "brds_reading" | "run_status">): boo
 }
 
 /** One historic Requirement, kept current while its BRDs or breakdown are being read. */
-export function useHistoric(id: string) {
+export function useHistoric(id: string, enabled = true) {
   return useQuery({
     queryKey: historicKey(id),
     queryFn: () => api.historic(id),
+    enabled,
     refetchInterval: (state) => (state.state.data && busy(state.state.data) ? 1500 : false),
   });
 }
@@ -108,6 +110,15 @@ export function nextStep(record: HistoricDetail): { target: string; label: strin
 }
 
 export const STATUS_WORDS: Record<HistoricStatus, string> = { draft: "draft", published: "published", withdrawn: "withdrawn" };
+
+/** A standing's weight as a status pill: a disruption needs attention, a decision waits, reading works, published is done. */
+export const RANK_TONE: Record<Rank, StatusTone> = {
+  delayed: "attention",
+  due: "neutral",
+  running: "working",
+  service: "done",
+  past: "stopped",
+};
 
 /** A change to it: answered with the whole record, which replaces the cached one. */
 export function useHistoricChange<Input>(id: string, run: (input: Input) => Promise<HistoricDetail>) {

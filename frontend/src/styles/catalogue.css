@@ -30,38 +30,6 @@
   gap: var(--s2);
 }
 
-.sheet__trail {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s1) var(--s4);
-  margin-bottom: var(--s2);
-  font-size: var(--t-meta);
-}
-
-/* Trail links wrap onto lines of their own on a phone: each keeps a 24px target. */
-.sheet__trail > a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 1.5rem;
-}
-
-.sheet__title {
-  font-size: var(--t-title);
-  font-stretch: 88%;
-  font-weight: var(--w-bold);
-  line-height: 1.1;
-}
-
-.sheet__title:focus {
-  outline: none;
-}
-
-.sheet__title:focus-visible {
-  outline: 2px solid var(--reference);
-  outline-offset: 2px;
-}
-
 .versions__phone {
   display: block;
 }
@@ -315,34 +283,6 @@
   min-width: 1.5rem;
 }
 
-/* A draft's inline steps sit under its head, in the head's text column. */
-
-/* The galley's cells keep a gutter, so the band has a margin and the focus ring clears the first glyph. */
-
-/* The next decision as an action: the world's next-decision link, as a button. */
-.next-button {
-  display: inline;
-  padding: 0.15rem 0;
-  border: 0;
-  background: none;
-  color: var(--reference);
-  font: inherit;
-  text-align: start;
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 0.2em;
-  cursor: pointer;
-}
-
-.next-button:hover {
-  text-decoration-thickness: 2px;
-}
-
-.next-button svg {
-  margin-left: var(--s1);
-  vertical-align: -0.15em;
-}
-
 /* Hand edits open in place where the thing is read: on the stock band, closing on a heavy rule. */
 .edit-panel {
   display: grid;
@@ -570,53 +510,6 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
 .changerequests__dismiss .secondary {
   margin: 0;
   font-size: var(--t-meta);
-}
-
-/* Knowledge Center C: what became of each file of a multi-file upload. */
-
-.uploads {
-  margin-block: var(--s3) 0;
-  max-width: 72ch;
-}
-
-.uploads__summary {
-  margin: 0 0 var(--s2);
-  font-weight: var(--w-bold);
-}
-
-.uploads__list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  border-top: 1px solid var(--rule);
-}
-
-.uploads__item {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--s1) var(--s3);
-  padding-block: var(--s2);
-  border-bottom: 1px solid var(--rule-faint);
-}
-
-.uploads__name {
-  flex: 1 1 14rem;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.uploads__why {
-  flex-basis: 100%;
-}
-
-.uploads__summary:focus {
-  outline: none;
-}
-
-.uploads__summary:focus-visible {
-  outline: var(--tt-focus-ring);
-  outline-offset: 2px;
 }
 
 /* A plain way back, tall enough to hit. */
