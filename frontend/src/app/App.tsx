@@ -6,11 +6,14 @@ import { CataloguePage } from "../catalogue/CataloguePage";
 import { ChannelsPage } from "../catalogue/ChannelsPage";
 import { GovernancePage } from "../catalogue/GovernancePage";
 import { ComparePage } from "../catalogue/ComparePage";
+import { ConceptsPage } from "../catalogue/ConceptsPage";
 import { EvidencePage } from "../catalogue/EvidencePage";
 import { DomainsPage } from "../catalogue/DomainsPage";
 import { JourneyPage, JourneysPage } from "../catalogue/JourneysPage";
 import { OfferingPage, OfferingsPage } from "../catalogue/OfferingsPage";
 import { SystemsPage } from "../catalogue/SystemsPage";
+import { CatalogueHeader } from "../catalogue/frame/CatalogueHeader";
+import { LegacyPage } from "../catalogue/frame/LegacyPage";
 import { ChangesStep } from "../catalogue/draft/ChangesStep";
 import { CheckStep } from "../catalogue/draft/CheckStep";
 import { DecideStep } from "../catalogue/draft/DecideStep";
@@ -51,9 +54,11 @@ const catalogueRoutes = (
   <>
     <Route index element={<SystemsPage />} />
     <Route path="systems/:systemId" element={<SystemsPage />} />
-    <Route path="domains" element={<DomainsPage />} />
-    <Route path="channels" element={<ChannelsPage />} />
-    <Route path="governance" element={<GovernancePage />} />
+    <Route path="concepts" element={<ConceptsPage />} />
+    <Route path="concepts/:conceptId" element={<ConceptsPage />} />
+    <Route path="domains" element={<LegacyPage page="domains"><DomainsPage /></LegacyPage>} />
+    <Route path="channels" element={<LegacyPage page="channels"><ChannelsPage /></LegacyPage>} />
+    <Route path="governance" element={<><CatalogueHeader page="governance" /><GovernancePage /></>} />
     <Route path="offerings" element={<OfferingsPage />} />
     <Route path="offerings/:offeringId" element={<OfferingPage />} />
     <Route path="journeys" element={<JourneysPage />} />
@@ -65,7 +70,7 @@ const catalogueRoutes = (
     <Route path="changes" element={<ChangesStep />} />
     <Route path="check" element={<CheckStep />} />
     <Route path="publish" element={<PublishStep />} />
-    <Route path="evidence/:chunkId" element={<EvidencePage />} />
+    <Route path="evidence/:chunkId" element={<LegacyPage page="evidence"><EvidencePage /></LegacyPage>} />
   </>
 );
 
@@ -115,8 +120,8 @@ export function App() {
         </Route>
         <Route path="architecture" element={<CataloguePage />}>
           {catalogueRoutes}
-          <Route path="versions" element={<CatalogueVersionsPage />} />
-          <Route path="compare" element={<ComparePage />} />
+          <Route path="versions" element={<LegacyPage page="versions"><CatalogueVersionsPage /></LegacyPage>} />
+          <Route path="compare" element={<LegacyPage page="compare"><ComparePage /></LegacyPage>} />
         </Route>
         <Route path="architecture/versions/:releaseId" element={<CataloguePage />}>
           {catalogueRoutes}

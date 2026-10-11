@@ -6,7 +6,9 @@ import type { Offering } from "../api/client";
 import { EXPLORED } from "../explorer/fixtures";
 import { fieldsInWords } from "./drafting";
 import { offeringProblem } from "./editing";
+import { SourcesContext } from "./governance";
 import { OfferingEditor } from "./OfferingEditor";
+import { NfrSection, RealisationKey, RealisedAs } from "./Realisation";
 
 const OFFERING = EXPLORED.products![0]!;
 
@@ -49,5 +51,39 @@ describe("realisation and NFRs in the offering editor", () => {
 
   it("says a change to them in words", () => {
     expect(fieldsInWords(["realisation", "nfrs"])).toBe("how its parts are realised and non-functional requirements");
+  });
+});
+
+describe("realisation and NFRs read on a sheet", () => {
+  it("says how each part is realised, layer by layer, an inferred one marked and a part with none as due", () => {
+    const [broadband, firewall] = OFFERING.components;
+    const { unmount } = render(<><RealisedAs part={broadband!} /><RealisationKey offering={OFFERING} /></>);
+    expect(screen.getAllByRole("listitem").map((item) => item.textContent)).toEqual([
+      "CFS GPON internet CFSSuggested · inferred, not stated in the source",
+      "Resource GPON line",
+    ]);
+    const list = within(screen.getByRole("list"));
+    expect(list.getByText("CFS")).toHaveAttribute("title", "Customer-facing service");
+    expect(list.getByText("Resource").tagName).toBe("SPAN");
+    expect(screen.getByText(/what the customer is sold/)).toHaveTextContent("Realised as: CFS, what the customer is sold");
+    unmount();
+
+    render(<RealisedAs part={firewall!} />);
+    expect(screen.getByText("Not stated").closest(".ds-status--attention")).not.toBeNull();
+  });
+
+  it("lists the offering's non-functional requirements, an undefined one as due", () => {
+    render(
+      <SourcesContext.Provider value={EXPLORED.sources ?? []}>
+        <NfrSection offering={OFFERING} headingId="nfrs" level={2} />
+      </SourcesContext.Provider>,
+    );
+    expect(screen.getByRole("heading", { level: 2, name: "Non-functional requirements 2" })).toBeInTheDocument();
+    const table = within(screen.getByRole("table", { name: "Non-functional requirements of Business Pro Plus" }));
+    const availability = table.getByRole("row", { name: /Availability/ });
+    expect(within(availability).getByText("Not defined").closest(".ds-status--attention")).not.toBeNull();
+    expect(within(availability).getByText("Its source leaves gaps")).toBeInTheDocument();
+    expect(table.getByRole("row", { name: /Security/ }).querySelectorAll("td")[1]).toHaveTextContent("SAML SSO for the portal.SDD (L2) §11");
+    expect(screen.getByText(/1 quality is not defined/)).toBeInTheDocument();
   });
 });

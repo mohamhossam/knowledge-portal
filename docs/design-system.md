@@ -131,7 +131,9 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
     - an optional shell `banner`.
   - **Reader variant:** `reader` drops the rail.
   - **Behaviour:** when `locationKey` changes, it scrolls to the top and focuses `#ds-page-title`
-    (§1). The masthead publishes `--sticky-top`.
+    (§1). The masthead publishes `--sticky-top`. Three cases keep the focus the page placed
+    itself: an address with a `#target`, a legacy island, and a pane marked `data-takes-focus`
+    (a list-and-record page that focuses the chosen record's heading, as the catalogue does).
   - **ARIA:** `banner`, `navigation "Areas"`, `main`. The current item has
     `aria-current="page"` and the red marker.
   - **`search` and `overlay`:** `search` puts the way into global search first on the masthead's

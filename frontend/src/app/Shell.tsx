@@ -25,8 +25,10 @@ const REDESIGNED: ((path: string) => boolean)[] = [
   (path) => path === "/",
   // Area 2: the library, its search and every document's pages.
   (path) => path === "/library" || path.startsWith("/library/"),
-  // Area 3: a draft's steps (Sources, Decide, Changes, Check, Publish), of any catalogue version.
-  (path) => /^\/architecture(\/versions\/[^/]+)?\/(sources|decide|changes|check|publish)\/?$/.test(path),
+  // Areas 3 and 5: the architecture catalogue, every version's pages and a draft's steps. Pages not
+  // rebuilt yet (Landscape, Channels, Versions, Compare) keep their body in an island under the new head.
+  (path) => path === "/architecture" || path.startsWith("/architecture/"),
+  (path) => path === "/explorer",
   // Area 4: ownership (the systems grid, products, squads, people and history).
   (path) => path === "/squads" || path.startsWith("/squads/"),
 ];

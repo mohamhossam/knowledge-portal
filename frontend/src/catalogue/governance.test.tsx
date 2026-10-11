@@ -63,8 +63,8 @@ describe("GovernancePage", () => {
       "Business Pro Plus Solution Design",
       "Explorer v8.2",
     ]);
-    expect(sources[2]).toHaveClass("row--due");
-    expect(sources[2]).toHaveTextContent("Not supplied: carried forward unread");
+    // The unsupplied source is due: a status with its icon and words, never colour alone.
+    expect(within(sources[2]!).getByText("Not supplied: carried forward unread").closest(".ds-status--attention")).not.toBeNull();
     expect(sources[2]).toHaveTextContent("Cannot tell: Workflow images are not machine-readable.");
 
     const conflicts = within(screen.getByRole("table", { name: "Conflicts between sources" })).getAllByRole("row").slice(1);
@@ -122,7 +122,7 @@ describe("GovernancePage", () => {
 
 describe("an offering's governance", () => {
   it("shows the decisions it needs, its open questions with the conflict that raises one, and its sources", () => {
-    open(`/architecture/offerings/${OFFERING.id}`, false);
+    open(`/architecture/offerings/${OFFERING.id}?tab=governance`, false);
 
     const needed = within(screen.getByRole("heading", { name: /^Decisions needed/ }).closest("section")!);
     expect(needed.getAllByRole("row")).toHaveLength(3);
@@ -130,7 +130,8 @@ describe("an offering's governance", () => {
     // A question a conflict raises is said with it; the rest stand alone.
     const questions = within(screen.getByRole("heading", { name: /^Open questions/ }).closest("section")!);
     expect(questions.getByText("1 more is raised by the decisions needed, and named with them.")).toBeInTheDocument();
-    expect(questions.getAllByRole("listitem").map((item) => item.querySelector(".governance__id")!.textContent)).toEqual(["OQ-02"]);
+    expect(questions.getAllByRole("listitem").map((item) => item.id)).toEqual(["question-OQ-02"]);
+    expect(questions.getAllByRole("listitem")[0]).toHaveTextContent(/^OQ-02/);
     expect(questions.getAllByRole("listitem")[0]).toHaveTextContent("Asked for New Activation");
     const decisions = within(screen.getByRole("heading", { name: /^Architecture decisions/ }).closest("section")!);
     expect(decisions.getByText("BPP SDD (L2) §11.2")).toBeInTheDocument();
@@ -140,7 +141,7 @@ describe("an offering's governance", () => {
   });
 
   it("will not drop a question a conflict still raises", () => {
-    open(`/architecture/offerings/${OFFERING.id}`);
+    open(`/architecture/offerings/${OFFERING.id}?tab=governance`);
     fireEvent.click(screen.getByRole("button", { name: "Edit the open questions" }));
     const panel = screen.getByRole("form", { name: "Edit the open questions of Business Pro Plus" });
 
@@ -151,7 +152,7 @@ describe("an offering's governance", () => {
   });
 
   it("chooses its sources from the register, its primary one among them", () => {
-    open(`/architecture/offerings/${OFFERING.id}`);
+    open(`/architecture/offerings/${OFFERING.id}?tab=governance`);
     fireEvent.click(screen.getByRole("button", { name: "Edit the sources and boundaries" }));
     const panel = screen.getByRole("form", { name: "Edit the sources and boundaries of Business Pro Plus" });
 

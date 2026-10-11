@@ -1,100 +1,8 @@
-/* The architecture catalogue: station pages. An index of systems beside one system's sheet. */
 
-.catalogue__systems {
-  /* The sticky masthead's height, so the index never slides under it. */
-  --masthead-clear: 3.5rem;
-  display: grid;
-  grid-template-columns: 15rem minmax(0, 1fr);
-  column-gap: var(--s6);
-  align-items: start;
-}
-
-.catalogue__main {
-  min-width: 0;
-}
-
-.catalogue__due {
-  color: var(--ink);
-  font-weight: var(--w-bold);
-}
-
-/* The systems index: ruled, grouped under where each system sits, kept in view while the sheet scrolls. */
-.sysindex {
-  position: sticky;
-  top: var(--masthead-clear);
-  max-height: calc(100vh - var(--masthead-clear) - var(--s4));
-  overflow-y: auto;
-  padding: var(--s4) var(--s2) var(--s4) 0;
-  overscroll-behavior: contain;
-}
-
-.sysindex__find .field__input {
-  width: 100%;
-}
-
-.sysindex__count {
-  margin-top: var(--s2);
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-}
-
-.sysindex__group {
-  margin-top: var(--s4);
-}
-
-.sysindex__place {
-  padding-bottom: var(--s1);
-  border-bottom: 2px solid var(--tt-rule-heavy);
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-  font-stretch: var(--width-condensed);
-  font-weight: var(--w-medium);
-}
-
-.sysindex__list li {
-  border-bottom: 1px solid var(--rule-faint);
-}
-
-.sysindex__link {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-height: 2rem;
-  padding-block: var(--s1);
-  color: var(--ink);
-  text-decoration: none;
-  overflow-wrap: anywhere;
-}
-
-.sysindex__link:hover {
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
-}
-
-.sysindex__link[aria-current="page"] {
-  font-weight: var(--w-bold);
-  box-shadow: inset 0 -3px 0 var(--ink);
-}
-
-.sysindex__why {
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-  font-weight: var(--w-regular);
-}
 
 /* A governance section that opens a page sits level with the index's find field. */
 .catalogue__first {
   padding-top: var(--s4);
-}
-
-/* Connections read as sentences: the system, then how, on its own meta line. */
-.connections__from,
-.connections__to {
-  width: 30%;
-}
-
-.connections__system {
-  width: 42%;
 }
 
 /* A section's quiet line sits under the section title's own heavy rule, never a second one. */
@@ -107,8 +15,7 @@
 }
 
 /* Arabic secondary names keep their direction but sit under the name they belong to. */
-.catalogue [dir="rtl"].govtable__by,
-.sheet__arabic {
+.catalogue [dir="rtl"].govtable__by {
   text-align: left;
 }
 
@@ -123,12 +30,6 @@
   gap: var(--s2);
 }
 
-.sheet__head {
-  display: grid;
-  gap: var(--s1);
-  padding-top: var(--s4);
-}
-
 .sheet__trail {
   display: flex;
   flex-wrap: wrap;
@@ -140,12 +41,6 @@
 
 /* Trail links wrap onto lines of their own on a phone: each keeps a 24px target. */
 .sheet__trail > a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 1.5rem;
-}
-
-.sheet__all {
   display: inline-flex;
   align-items: center;
   min-height: 1.5rem;
@@ -167,65 +62,6 @@
   outline-offset: 2px;
 }
 
-.sheet__arabic {
-  color: var(--ink-2);
-}
-
-.sheet__meta {
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-}
-
-.sheet__description {
-  max-width: 72ch;
-  margin-top: var(--s2);
-}
-
-.sheet__facts {
-  display: grid;
-  margin-top: var(--s3);
-}
-
-.sheet__facts dd {
-  max-width: 72ch;
-}
-
-.sheet__facts > div {
-  display: grid;
-  grid-template-columns: 7rem minmax(0, 1fr);
-  gap: var(--s3);
-  padding-block: var(--s1);
-  border-bottom: 1px solid var(--rule-faint);
-}
-
-.sheet__facts > div:first-child {
-  border-top: 2px solid var(--tt-rule-heavy);
-}
-
-.sheet__facts dt {
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-  font-stretch: var(--width-condensed);
-  font-weight: var(--w-medium);
-}
-
-.sheet__list li {
-  padding-block: var(--s2);
-  border-bottom: 1px solid var(--rule-faint);
-}
-
-.sheet__list li > * {
-  max-width: 72ch;
-}
-
-.sheet__next {
-  margin-top: var(--s2);
-}
-
-.connections__inline {
-  display: none;
-}
-
 .versions__phone {
   display: block;
 }
@@ -238,20 +74,6 @@
 .sheet__roles {
   display: grid;
   gap: var(--s2);
-}
-
-/* Depends on, and Used by: a station's departures and arrivals, side by side when there is room. */
-.sheet__connections {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: var(--s6);
-  align-items: start;
-}
-
-@media (max-width: 80rem) {
-  .sheet__connections {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 
 /* Domain trees: depth is indent, the outermost domains in bold. */
@@ -272,21 +94,12 @@
   gap: var(--s1);
 }
 
-/* A journey's steps: a timetable's stops, grouped by phase. */
-.steps__no {
-  width: 3.5rem;
-}
-
 .govtable .steps__phase th {
   padding: var(--s4) 0 var(--s1);
   border-bottom: 1px solid var(--rule);
   color: var(--ink-2);
   font-size: var(--t-meta);
   font-stretch: var(--width-condensed);
-  font-weight: var(--w-medium);
-}
-
-.steps__name {
   font-weight: var(--w-medium);
 }
 
@@ -335,42 +148,6 @@
 .versions__waits {
   color: var(--ink-2);
   font-size: var(--t-meta);
-}
-
-@media (max-width: 45rem) {
-  .catalogue__systems {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .sysindex {
-    position: static;
-    max-height: none;
-    overflow: visible;
-    padding-right: 0;
-  }
-
-  /* On a phone a chosen sheet replaces the index; "All systems and connections" returns to it. */
-  .catalogue__systems.has-sheet .sysindex {
-    display: none;
-  }
-
-  .connections__from {
-    width: 55%;
-  }
-
-  .govtable .connections__to,
-  .connections__verb {
-    display: none;
-  }
-
-  .connections__inline {
-    display: block;
-  }
-
-  .sheet__facts > div {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0;
-  }
 }
 
 /* The draft's documents: reading state with its marks, actions on their own line, notes at the foot. */
@@ -611,25 +388,9 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
   scroll-padding-bottom: 9rem;
 }
 
-.govtable .cell--code {
-  overflow-wrap: normal;
-  white-space: nowrap;
-}
-
 /* On the band, fields keep the stock so they read as places to write. */
 .edit-panel .field__input {
   background-color: var(--stock);
-}
-
-.sheet__row-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s1) var(--s4);
-  margin-top: var(--s1);
-}
-
-.sysindex__add {
-  margin-top: var(--s2);
 }
 
 /* Changes: a timetable's list of alterations. */
@@ -669,269 +430,13 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
   grid-column: 2;
 }
 
-.realised__name {
-  overflow-wrap: break-word;
-}
-
-/* A part with no layer recorded, and a layer its source marks as a gap, are due. */
-.realised__missing,
-.realised__item--due .realised__name {
-  font-weight: var(--w-bold);
-}
-
-/* The layers in words, once under a Parts table, in the keys-line style. */
-.realised__key {
-  margin: var(--s2) 0 0;
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-}
-
-.realised__key strong {
-  color: var(--ink);
-  font-weight: var(--w-medium);
-}
-
-.realised__layer {
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-  font-stretch: var(--width-condensed);
-  font-weight: var(--w-medium);
-  text-decoration: none;
-}
-
-/* A quality no source defines is due (the Weight Is Rank Rule). */
-.govtable .nfr__missing {
-  font-weight: var(--w-bold);
-}
-
-.govtable .nfr__defined {
-  white-space: nowrap;
-}
-
-.nfr__defined-inline {
-  display: none;
-}
-
-/* On phones, how a part is realised rides in the part's cell rather than a third column. */
-.parts__realised-inline {
-  display: none;
-}
-
 @media (max-width: 45rem) {
-  .govtable .parts__realised {
-    display: none;
-  }
-
-  .parts__realised-inline {
-    display: block;
-    margin-top: var(--s2);
-    font-weight: var(--w-regular);
-  }
-
-  /* The Defined column rides under the quality (the Kept Column Rule). */
-  .govtable .nfr__defined {
-    display: none;
-  }
-
-  .govtable .nfr__defined-inline {
-    display: block;
-  }
 
   /* A quality's name keeps its words whole: the statement column gives way instead. */
   .govtable.nfrs th[scope="row"] {
     width: 9.5rem;
     overflow-wrap: normal;
     hyphens: auto;
-  }
-}
-
-/* A part of a governance section, such as Order tracking's tables: medium weight on a hairline. */
-.govsection__part {
-  margin: var(--s4) 0 0;
-  padding: 0 0 var(--s1);
-  border-bottom: 1px solid var(--rule);
-  font-size: var(--t-body);
-  font-weight: var(--w-medium);
-}
-
-/* What tracking leaves undefined is due (the Weight Is Rank Rule). */
-.tracking__missing {
-  font-weight: var(--w-bold);
-}
-
-/* Internal statuses are identifiers, kept as the source writes them. */
-.tracking__status {
-  font-stretch: var(--width-condensed);
-  overflow-wrap: anywhere;
-}
-
-/* System and channel names keep their words whole. */
-.govtable.tracking__flows th,
-.govtable.tracking__flows td,
-.govtable.tracking__channels th,
-.govtable.tracking__channels td {
-  overflow-wrap: break-word;
-}
-
-.tracking__inline {
-  display: none;
-}
-
-/* Milestones are a sequence: numbered in tabular, condensed figures, as steps are. */
-.tracking__milestones {
-  counter-reset: milestone;
-}
-
-.tracking__milestones > li {
-  display: grid;
-  grid-template-columns: 1.75rem minmax(0, 1fr);
-  counter-increment: milestone;
-}
-
-.tracking__milestones > li::before {
-  content: counter(milestone);
-  color: var(--ink-2);
-  font-stretch: var(--width-condensed);
-  font-variant-numeric: tabular-nums;
-}
-
-@media (max-width: 45rem) {
-  /* On phones the To and Correlation key columns ride under the row's first cell. */
-  .govtable .tracking__wide {
-    display: none;
-  }
-
-  .govtable .tracking__inline {
-    display: block;
-  }
-}
-
-/* Lifecycle notes: each a titled part of the section, its content as the source sets it out. */
-.lifecycle__note .govsection__part {
-  margin-top: var(--s3);
-}
-
-.lifecycle__meta {
-  max-width: 72ch;
-  margin: var(--s1) 0 0;
-  font-size: var(--t-meta);
-}
-
-/* A note's title opens it in place: the title itself is the button, its chevron before it. */
-.lifecycle__head {
-  padding: 0;
-}
-
-.lifecycle__toggle {
-  display: inline-flex;
-  align-items: baseline;
-  gap: var(--s1);
-  min-height: 1.5rem;
-  padding: 0 0 var(--s1);
-  border: 0;
-  background: none;
-  color: var(--ink);
-  font: inherit;
-  text-align: start;
-  cursor: pointer;
-}
-
-.lifecycle__toggle svg {
-  flex: none;
-  align-self: center;
-  color: var(--ink-2);
-}
-
-.lifecycle__toggle:hover span {
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
-}
-
-.lifecycle__toolbar {
-  margin: var(--s2) 0 0;
-}
-
-.lifecycle__text {
-  max-width: 72ch;
-  margin: var(--s2) 0 0;
-}
-
-.lifecycle__block {
-  margin-top: var(--s2);
-}
-
-/* A block's own heading, such as a carry-over from an older source. */
-.lifecycle__aside {
-  margin: var(--s3) 0 0;
-  font-size: var(--t-meta);
-  font-weight: var(--w-medium);
-}
-
-.lifecycle__provenance,
-.lifecycle__others {
-  max-width: 72ch;
-  margin: var(--s1) 0 0;
-  font-size: var(--t-meta);
-}
-
-.lifecycle__list {
-  max-width: 72ch;
-  margin-top: var(--s1);
-}
-
-/* The source's own caption sits under its table, in meta size. */
-.lifecycle__caption {
-  caption-side: bottom;
-  padding-top: var(--s1);
-  font-size: var(--t-meta);
-  text-align: start;
-}
-
-.govtable.lifecycle__table th,
-.govtable.lifecycle__table td {
-  overflow-wrap: break-word;
-}
-
-/* On phones each source row stacks under its row header, every value beside its column
-   head, so a wide table keeps its words whole and never scrolls sideways. */
-@media (max-width: 45rem) {
-  .govtable.lifecycle__table thead {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-  }
-
-  .govtable.lifecycle__table,
-  .govtable.lifecycle__table tbody,
-  .govtable.lifecycle__table tr,
-  .govtable.lifecycle__table th,
-  .govtable.lifecycle__table td {
-    display: block;
-  }
-
-  .govtable.lifecycle__table td[data-head]::before {
-    content: attr(data-head) ": " / "";
-    color: var(--ink-2);
-    font-size: var(--t-meta);
-  }
-
-  /* One record per row: a hairline between records, none between a record's values. */
-  .govtable.lifecycle__table tr {
-    padding: var(--s2) 0;
-    border-bottom: 1px solid var(--rule);
-  }
-
-  .govtable.lifecycle__table th,
-  .govtable.lifecycle__table td {
-    padding: 0.125rem 0;
-    border-bottom: 0;
-  }
-
-  .govtable.lifecycle__table .lifecycle__caption {
-    display: block;
-    width: 100%;
   }
 }
 
@@ -949,23 +454,6 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
   grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
 }
 
-/* Content carried over from another source is due until someone re-verifies it. */
-.lifecycle__due {
-  font-weight: var(--w-bold);
-}
-
-/* Governance (requirement-portal ADR-0101, step 5): the source register, conflicts between
-   sources, and an offering's questions, decisions and sources. */
-.governance__level {
-  white-space: nowrap;
-}
-
-.governance__level abbr {
-  font-stretch: var(--width-condensed);
-  font-weight: var(--w-bold);
-  text-decoration: none;
-}
-
 .governance__id {
   overflow-wrap: anywhere;
   color: var(--ink-2);
@@ -973,99 +461,6 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
   font-stretch: var(--width-condensed);
   font-weight: var(--w-medium);
   white-space: nowrap;
-}
-
-/* A source carried forward unread is due (the Weight Is Rank Rule). */
-.governance__due {
-  display: block;
-  font-weight: var(--w-bold);
-}
-
-/* The statements get the room: the conflict and its decision frame them. */
-.governance__col-conflict {
-  width: 28%;
-}
-
-.governance__col-sides {
-  width: 42%;
-}
-
-.governance__col-decision {
-  width: 30%;
-}
-
-.governance__sides {
-  display: grid;
-  gap: var(--s2);
-  margin: 0;
-}
-
-/* The second statement sits under the first on a hairline, read as one against the other. */
-.governance__sides > div + div {
-  padding-top: var(--s2);
-  border-top: 1px solid var(--rule-faint);
-}
-
-.governance__sides dt {
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-}
-
-.governance__sides dd {
-  margin: 0;
-}
-
-.governance__decision {
-  font-weight: var(--w-bold);
-}
-
-.governance__list {
-  display: grid;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.governance__list > li {
-  display: grid;
-  grid-template-columns: 7rem minmax(0, 1fr);
-  gap: var(--s1) var(--s3);
-  padding: var(--s2) 0;
-  border-bottom: 1px solid var(--rule-faint);
-}
-
-.governance__list p {
-  margin: 0;
-  max-width: 72ch;
-}
-
-.governance__title {
-  font-weight: var(--w-medium);
-}
-
-.governance__item--due p {
-  font-weight: var(--w-bold);
-}
-
-.governance__list--sources > li {
-  grid-template-columns: 9rem minmax(0, 1fr);
-}
-
-/* Up top in the explorer, one due line naming the decisions the order waits on. */
-.explorer__decisions {
-  max-width: 72ch;
-  margin: var(--s4) 0 0;
-  padding: var(--s2) 0;
-  border-top: 2px solid var(--tt-rule-heavy);
-  border-bottom: 1px solid var(--rule);
-}
-
-.governance__primary {
-  color: var(--ink-2);
-}
-
-.governance__not-used {
-  margin: var(--s2) 0 0;
 }
 
 /* A conflict's side: a borderless group, labelled like a field. */
@@ -1113,9 +508,6 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
     border-bottom: 0;
   }
 
-  .governance__list > li {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* Change requests from Requirement AI (requirement-portal ADR-0101, step 7): the inbox on
@@ -1137,8 +529,7 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
   font-weight: var(--w-medium);
 }
 
-.changerequests__features,
-.governance__changes {
+.changerequests__features {
   display: grid;
   gap: 0.125rem;
   margin: var(--s1) 0 0;
@@ -1147,8 +538,7 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
   font-size: var(--t-meta);
 }
 
-.changerequests__features .governance__id,
-.governance__changes .governance__id {
+.changerequests__features .governance__id {
   margin-inline-end: var(--s1);
 }
 
@@ -1180,24 +570,6 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
 .changerequests__dismiss .secondary {
   margin: 0;
   font-size: var(--t-meta);
-}
-
-.governance__col-request {
-  width: 36%;
-}
-
-.governance__col-applied {
-  width: 16%;
-}
-
-.governance__col-changed {
-  width: 48%;
-}
-
-/* "Versions · 2 waiting": change requests from Requirement AI, seen from every catalogue page. */
-.subindex__note {
-  color: var(--ink-2);
-  font-weight: var(--w-regular);
 }
 
 /* Knowledge Center C: what became of each file of a multi-file upload. */
@@ -1236,11 +608,6 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
 
 .uploads__why {
   flex-basis: 100%;
-}
-
-.uploads__item--refused .status {
-  color: var(--disruption);
-  font-weight: var(--w-bold);
 }
 
 .uploads__summary:focus {

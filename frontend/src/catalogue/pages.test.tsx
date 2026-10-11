@@ -51,26 +51,28 @@ const systemRoutes = (
 describe("SystemsPage", () => {
   it("lists every connection until a system is chosen", () => {
     renderAt("/architecture", systemRoutes);
-    expect(screen.getByRole("heading", { name: "All connections" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /^Connections/ })).toBeInTheDocument();
     expect(screen.getByText("2 connections between 3 systems.", { exact: false })).toBeInTheDocument();
   });
 
   it("finds a system by an alias and says so", () => {
     renderAt("/architecture", systemRoutes);
     fireEvent.change(screen.getByLabelText("Find a system"), { target: { value: "fixed order" } });
-    const index = screen.getByRole("navigation", { name: "Systems in this version" });
-    expect(within(index).getAllByRole("link")).toHaveLength(1);
+    const index = screen.getByRole("table", { name: "Systems in this version" });
+    expect(within(index).getAllByRole("rowheader")).toHaveLength(1);
     expect(within(index).getByText("Also called “fixed order orchestration”")).toBeInTheDocument();
+    expect(screen.getByText("1 system of 3")).toBeInTheDocument();
   });
 
-  it("follows a connection, lights the way back, and moves focus to the new sheet", async () => {
+  it("follows a connection, lights the way back, and moves focus to the new record", async () => {
     renderAt("/architecture/systems/cwom", systemRoutes);
     expect(screen.getByText("Orchestrated by CWOM")).toBeInTheDocument();
     expect(screen.getByText("Orchestrates CWOM")).toBeInTheDocument();
     fireEvent.click(within(screen.getByRole("article")).getByRole("link", { name: "WFM" }));
     const title = await screen.findByRole("heading", { level: 2, name: "WFM" });
     expect(title).toHaveFocus();
-    expect(within(screen.getByRole("article")).getByRole("link", { name: "CWOM" }).closest("tr")).toHaveClass("is-lit");
+    expect(within(within(screen.getByRole("article")).getByRole("link", { name: "CWOM" }).closest("tr")!).getByText("Where you came from")).toBeInTheDocument();
+    expect(within(screen.getByRole("table", { name: "Systems in this version" })).getByRole("link", { name: "WFM" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("button", { name: "Back to CWOM" })).toBeInTheDocument();
   });
 });
