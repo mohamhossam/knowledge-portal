@@ -9,6 +9,8 @@ import { ComparePage } from "../catalogue/ComparePage";
 import { ConceptsPage } from "../catalogue/ConceptsPage";
 import { EvidencePage } from "../catalogue/EvidencePage";
 import { DomainsPage } from "../catalogue/DomainsPage";
+import { MapPage } from "../catalogue/MapPage";
+import { VersionsTimeline } from "../catalogue/diagrams/CatalogueDiagrams";
 import { JourneyPage, JourneysPage } from "../catalogue/JourneysPage";
 import { OfferingPage, OfferingsPage } from "../catalogue/OfferingsPage";
 import { SystemsPage } from "../catalogue/SystemsPage";
@@ -26,6 +28,7 @@ import { ProductsPage } from "../squads/ProductsPage";
 import { SquadListPage } from "../squads/SquadListPage";
 import { SquadsPage } from "../squads/SquadsPage";
 import { OwnershipGrid } from "../squads/OwnershipGrid";
+import { OwnershipTree } from "../squads/OwnershipTree";
 import { ExplorerPage } from "../explorer/ExplorerPage";
 import { CorpusFindingsPage } from "../requirements/CorpusFindingsPage";
 import { CorpusRequirementsPage } from "../requirements/CorpusRequirementsPage";
@@ -55,6 +58,7 @@ const catalogueRoutes = (
   <>
     <Route index element={<SystemsPage />} />
     <Route path="systems/:systemId" element={<SystemsPage />} />
+    <Route path="map" element={<MapPage />} />
     <Route path="concepts" element={<ConceptsPage />} />
     <Route path="concepts/:conceptId" element={<ConceptsPage />} />
     <Route path="domains" element={<LegacyPage page="domains"><DomainsPage /></LegacyPage>} />
@@ -121,7 +125,7 @@ export function App() {
         </Route>
         <Route path="architecture" element={<CataloguePage />}>
           {catalogueRoutes}
-          <Route path="versions" element={<LegacyPage page="versions"><CatalogueVersionsPage /></LegacyPage>} />
+          <Route path="versions" element={<LegacyPage page="versions" first={<VersionsTimeline />}><CatalogueVersionsPage /></LegacyPage>} />
           <Route path="compare" element={<LegacyPage page="compare"><ComparePage /></LegacyPage>} />
         </Route>
         <Route path="architecture/versions/:releaseId" element={<CataloguePage />}>
@@ -130,6 +134,7 @@ export function App() {
         <Route path="explorer" element={<ExplorerPage linkSystems />} />
         <Route path="squads" element={<SquadsPage />}>
           <Route index element={<OwnershipGrid />} />
+          <Route path="tree" element={<OwnershipTree />} />
           <Route path="products" element={<ProductsPage />} />
           <Route path="squads" element={<SquadListPage />} />
           <Route path="people" element={<PeoplePage />} />

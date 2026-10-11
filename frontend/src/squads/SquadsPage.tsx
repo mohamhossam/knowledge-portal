@@ -102,6 +102,7 @@ function SubIndex() {
       link={RouterLink}
       items={[
         { label: "Systems", href: "/squads", current: pathname === "/squads" || pathname === "/squads/" },
+        { label: "Tree", href: "/squads/tree", current: at("/squads/tree") },
         { label: "Products", href: "/squads/products", current: at("/squads/products") },
         { label: "Squads", href: "/squads/squads", current: at("/squads/squads") },
         { label: "People", href: "/squads/people", current: at("/squads/people") },

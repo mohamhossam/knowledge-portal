@@ -10,6 +10,7 @@ import { RouterLink } from "../shell/links";
 import { SystemReview } from "../reviews/SystemReview";
 import { seatsLine, seatsOn } from "../squads/organisation";
 import { connections, dependsHow, domainPath, sentenceCase, systemName, systemRoles, usedHow } from "./catalogue";
+import { SystemContextDiagram } from "./diagrams/CatalogueDiagrams";
 import { ConnectionEdit, ConnectionRemove, SystemEdit, SystemRemove } from "./DraftEdits";
 import { type ConceptIndex, entityNames, INTERFACE_STYLE, type Interface, interfacesOf, SOURCE_TONE, SOURCE_WORD } from "./ontology";
 import { useCatalogueContext } from "./useCatalogue";
@@ -80,6 +81,13 @@ export function SystemRecord({ system, index }: { system: CatalogueSystem; index
       {editing === "remove" && <div className="ds-legacy cat-legacy"><SystemRemove system={system} onDone={() => setEditing(null)} /></div>}
       {editing !== "system" && (
         <>
+          <Section
+            title="In context"
+            headingLevel={3}
+            actions={<RouterLink href={`${base}/map?system=${encodeURIComponent(system.id)}`}>Open it full width</RouterLink>}
+          >
+            <SystemContextDiagram systemId={system.id} />
+          </Section>
           <Capabilities system={system} index={index} />
           <Interfaces system={system} />
           <Connections system={system} from={from} />

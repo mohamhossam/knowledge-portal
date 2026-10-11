@@ -457,7 +457,7 @@ export function bulkAcceptable(release: Release, suggestions: Suggestion[]): { r
   return { ready, lifted };
 }
 
-function provides(suggestion: Suggestion): string[] {
+export function provides(suggestion: Suggestion): string[] {
   const { content } = suggestion;
   switch (content.kind) {
     case "system":
@@ -516,7 +516,7 @@ function channelsNamed(suggestion: Suggestion): string[] {
   return [];
 }
 
-function requires(suggestion: Suggestion): string[] {
+export function requires(suggestion: Suggestion): string[] {
   const { content } = suggestion;
   const system = suggestion.system_name ? [] : [`system:${content.system_id}`];
   // An offering or a journey also waits for every channel it names, whatever it waits for first.

@@ -1,3 +1,4 @@
+import { Network } from "lucide-react";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 
@@ -19,6 +20,7 @@ import {
 import { useCatalogueContext } from "../useCatalogue";
 import { useDraft } from "../useDraft";
 import { STATE_TONE, citedPart, stateWords } from "./decide";
+import { DecisionTree } from "./DecisionTree";
 import { Said } from "./parts";
 import { SuggestionPane } from "./SuggestionPane";
 
@@ -78,6 +80,8 @@ function Decide() {
   const [currentId, setCurrentId] = useState<string | undefined>();
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [editing, setEditing] = useState(false);
+  // The chains of waiting suggestions, drawn on request: the desk keeps its rows on arrival.
+  const [chains, setChains] = useState(false);
   const [said, setSaid] = useState<{ text: string; failed?: boolean } | null>(null);
   // Edits made in a suggestion's editor and not yet accepted: moving on never loses them.
   const [edits, setEdits] = useState<Record<string, SuggestionContent>>({});
@@ -306,6 +310,21 @@ function Decide() {
           <span className="draft-quiet"> · {count(counts.all, "suggestion")} from {sourcesInWords(all)}</span>
         </p>
         <progress max={Math.max(counts.all, 1)} value={decided} aria-label="Suggestions decided" />
+      </section>
+      <section className="draft-chains" aria-label="What waits for what">
+        <Button variant="quiet" icon={<Network size={16} />} aria-expanded={chains} onClick={() => setChains((on) => !on)}>
+          {chains ? "Hide what waits for what" : "Show what waits for what"}
+        </Button>
+        {chains && (
+          <DecisionTree
+            suggestions={all}
+            words={words}
+            onChoose={(id) => {
+              move(id);
+              focusRow(id);
+            }}
+          />
+        )}
       </section>
 
       <div className="draft-toolbar">

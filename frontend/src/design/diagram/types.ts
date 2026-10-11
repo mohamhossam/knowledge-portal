@@ -24,6 +24,11 @@ export type DiagramNode = {
   tone?: DiagramTone;
   /** A pill for tags that hang off a node, such as the squad that runs a system. */
   shape?: "box" | "pill";
+  /**
+   * For a node that is a button (`Diagram`'s `onActivate`) and toggles something, such as a
+   * filter: whether it is on. Read out as a pressed button, in the drawing and the table.
+   */
+  pressed?: boolean;
   /** Where the node opens. A node with an href is a link; see `Diagram`'s `onActivate` for buttons. */
   href?: string;
   /** The layered layout's lane (column) this node sits in. */

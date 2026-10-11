@@ -10,6 +10,7 @@ import { useFocusAfterRender } from "../design/hooks";
 import { count } from "../home/format";
 import { RouterLink } from "../shell/links";
 import { roleLabel, systemName } from "./catalogue";
+import { OfferingStructureDiagram } from "./diagrams/CatalogueDiagrams";
 import { OfferingEdit, OfferingSectionEdit, WholeRemove } from "./DraftEdits";
 import { CatalogueHeader } from "./frame/CatalogueHeader";
 import { ArchitectureDecisions, ConflictList, OfferingSourceList, OpenQuestions } from "./GovernanceSections";
@@ -215,6 +216,7 @@ function OfferingRecord({ offering }: { offering: Offering }) {
           ]}
         />
       )}
+      <OfferingStructureDiagram offering={offering} />
       <Tabs label="This offering" tabs={TABS.map((id) => ({ id, label: TAB_LABEL[id] }))} selected={tab} onSelect={choose}>
         {tab === "components" && edited("parts", <Components offering={offering} action={offer("parts")} orderName={orderName} />)}
         {tab === "orders" && edited("orders", <OrderMatrix offering={offering} action={offer("orders")} channelName={channelName} />)}

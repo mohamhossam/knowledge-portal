@@ -151,6 +151,8 @@ a.ds-diagram__node,
 [role="button"].ds-diagram__node {
   cursor: pointer;
   outline: none;
+  /* A node is a box to press, not a run of text: no link underline on its words. */
+  text-decoration: none;
 }
 
 .ds-diagram__ring {
@@ -214,6 +216,25 @@ a.ds-diagram__node,
 .ds-diagram__legend {
   color: var(--color-ink-2);
   font-size: var(--text-meta);
+}
+
+.ds-diagram__key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ds-diagram__key li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ds-diagram__key-mark {
+  flex: none;
 }
 
 @media (forced-colors: active) {
