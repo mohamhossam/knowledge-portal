@@ -143,4 +143,20 @@
   --diagram-muted-bg: var(--color-surface-2);
   --diagram-muted-border: var(--color-rule-strong);
   --diagram-focus: var(--color-focus);
+
+  /* Focus mode (UX rebuild, phase 2): one question at a time */
+  --focus-measure: 46rem;
+  --focus-aside-max: 34rem;
+  --focus-aside-width: minmax(20rem, var(--focus-aside-max));
+  --focus-choice-bg: var(--color-surface);
+  --focus-choice-border: var(--color-rule-strong);
+  --focus-choice-hover-border: var(--color-action);
+  --focus-choice-chosen-bg: var(--color-selected);
+  --focus-choice-chosen-border: var(--color-action);
+  --focus-source-bg: var(--color-surface-1);
+  --focus-source-rule: var(--rule-heavy) solid var(--color-rule-strong);
+  --focus-step-open: var(--color-rule);
+  --focus-step-answered: var(--color-success);
+  --focus-step-skipped: var(--color-warning);
+  --focus-step-current: var(--color-action);
 }

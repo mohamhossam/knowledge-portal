@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import type { Release, Suggestion } from "../api/client";
+import { decideChoices, decideQuestions } from "./draft/questions";
 import {
-  bulkAcceptable, changeSentence, decideWhy, inWords, lexicon, needsOneByOne, reading, suggestionGroups, suggestionState, tally,
+  bulkAcceptable, changeSentence, decideWhy, dependencyEdges, inWords, lexicon, needsOneByOne, reading, suggestionGroups, suggestionState, tally,
   typedFile, offeringHolds, waitsFor, waitsForMany, warningInWords,
 } from "./suggestions";
 
@@ -289,5 +290,37 @@ describe("vocabulary suggestions", () => {
     expect(suggestionState(orders)).toBe("ready");
     expect(suggestionState(saml)).toBe("decide");
     expect(suggestionGroups(release, [orders, saml], termWords).map((group) => group.label)).toEqual(["Vocabulary terms"]);
+  });
+});
+
+describe("what waits on what (focus mode)", () => {
+  it("draws an edge from what a suggestion adds to each suggestion that needs it", () => {
+    const edges = dependencyEdges(all);
+    expect(edges).toContainEqual({ from: hub.id, to: api.id });
+    expect(edges).toContainEqual({ from: hub.id, to: inferred.id });
+    expect(edges.some((edge) => edge.to === hub.id)).toBe(false);
+  });
+
+  it("counts what a person said they accept as added, so what waits on it follows", () => {
+    const portal = suggestion({ kind: "component", system_id: "dynamics-crm", component_id: "portal", name: "Portal" }, { match: "needs_system" });
+    expect(bulkAcceptable(release, [crm, portal]).lifted).toEqual([]);
+    expect(bulkAcceptable(release, [crm, portal], [crm]).lifted).toEqual([portal]);
+  });
+
+  it("asks the decisions in the order accepting them works, each answer saying what it does", () => {
+    const questions = decideQuestions(all, words);
+    // The system first, then its placement, then the link that names a system it could be.
+    expect(questions.map((item) => item.id)).toEqual([crm.id, placement.id, inferred.id]);
+    expect(questions[1]!.prompt).toMatch(/^Replace what the draft has\? /);
+    const name = questions.find((item) => item.id === crm.id)!;
+    expect(name.prompt).toBe("Is “Dynamics CRM” a system the draft already has?");
+    expect(decideChoices(name).map((choice) => [choice.label, choice.answer.accept])).toEqual([
+      ["Yes, it is BCRM", true],
+      ["No, it is a new system", true],
+      ["Reject it", false],
+    ]);
+    expect(decideChoices(name)[0]!.consequence).toBe("Similar name to BCRM. Adds “Dynamics CRM” as another name of BCRM.");
+    const link = questions.find((item) => item.id === inferred.id)!;
+    expect(decideChoices(link)[0]!.consequence).toContain("The link was inferred, not stated.");
   });
 });

@@ -9,10 +9,9 @@ import { formatDay } from "../../home/format";
 import { traceLine, useChangeRequests } from "../inbox";
 import { SuggestionEditor } from "../SuggestionEditor";
 import { type Lexicon, changeSentence, decideWhy, offeringHolds, suggestionState, waitsFor, waitsForMany } from "../suggestions";
-import { STATE_TONE, citedPart, stateWords } from "./decide";
+import { NEW, STATE_TONE, citedPart, linked, stateWords } from "./decide";
 
 const TABLE_READER = "catalogue-table-reader";
-const NEW = "__new__";
 
 /**
  * The decide desk's pane: one suggestion in full. What it would change, the
@@ -182,18 +181,6 @@ function MatchChoices({ suggestion, matches, value, onChange }: {
       ]}
     />
   );
-}
-
-/** The content to accept once the matches are chosen: unchanged unless a match was taken. */
-function linked(suggestion: Suggestion, choice: Record<string, string>): SuggestionContent | null {
-  let content: SuggestionContent | null = null;
-  for (const [role, systemId] of Object.entries(choice)) {
-    if (systemId === NEW) continue;
-    content = content ?? { ...suggestion.content };
-    if (role === "target") content.target_system_id = systemId;
-    else content.system_id = systemId;
-  }
-  return content;
 }
 
 function ChangeRequestSource({ suggestion, notes }: { suggestion: Suggestion; notes?: string[] }) {

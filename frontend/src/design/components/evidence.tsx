@@ -38,7 +38,7 @@ export function ConsequencePanel({
    * When the API takes a reason: its label and who reads it. With `value` and `onChange` the
    * caller keeps the text, so it outlives the panel (a review summary written, then "Not yet").
    */
-  reason?: { label: string; hint: string; value?: string; onChange?: (text: string) => void; maxLength?: number };
+  reason?: { label: string; hint: string; value?: string; onChange?: (text: string) => void; maxLength?: number; /** A note the API takes but doesn't need. */ optional?: boolean };
   confirmLabel: ReactNode;
   keepLabel: string;
   onConfirm: (reason: string) => void;
@@ -55,7 +55,7 @@ export function ConsequencePanel({
   const text = reason?.value ?? own;
   const setText = reason?.onChange ?? setOwn;
   const [tried, setTried] = useState(false);
-  const missing = Boolean(reason) && text.trim() === "";
+  const missing = Boolean(reason) && !reason?.optional && text.trim() === "";
   useEffect(() => {
     (document.getElementById(`${id}-reason`) ?? document.getElementById(`${id}-title`))?.focus();
   }, [id]);
@@ -91,7 +91,7 @@ export function ConsequencePanel({
             rows={2}
             maxLength={reason.maxLength}
             value={text}
-            aria-required="true"
+            aria-required={reason.optional ? undefined : true}
             aria-invalid={tried && missing ? true : undefined}
             aria-describedby={`${id}-happens${affects ? ` ${id}-affects` : ""} ${id}-reversibility ${id}-hint${tried && missing ? ` ${id}-error` : ""}`}
             onChange={(event) => setText(event.target.value)}
