@@ -9,10 +9,9 @@ import { ComparePage } from "../catalogue/ComparePage";
 import { ConceptsPage } from "../catalogue/ConceptsPage";
 import { EvidencePage } from "../catalogue/EvidencePage";
 import { DomainsPage } from "../catalogue/DomainsPage";
-import { JourneyPage, JourneysPage } from "../catalogue/JourneysPage";
-import { OfferingPage, OfferingsPage } from "../catalogue/OfferingsPage";
+import { JourneysPage } from "../catalogue/JourneysPage";
+import { OfferingsPage } from "../catalogue/OfferingsPage";
 import { SystemsPage } from "../catalogue/SystemsPage";
-import { CatalogueHeader } from "../catalogue/frame/CatalogueHeader";
 import { LegacyPage } from "../catalogue/frame/LegacyPage";
 import { ChangesStep } from "../catalogue/draft/ChangesStep";
 import { CheckStep } from "../catalogue/draft/CheckStep";
@@ -58,11 +57,12 @@ const catalogueRoutes = (
     <Route path="concepts/:conceptId" element={<ConceptsPage />} />
     <Route path="domains" element={<LegacyPage page="domains"><DomainsPage /></LegacyPage>} />
     <Route path="channels" element={<LegacyPage page="channels"><ChannelsPage /></LegacyPage>} />
-    <Route path="governance" element={<><CatalogueHeader page="governance" /><GovernancePage /></>} />
+    <Route path="governance" element={<GovernancePage />} />
+    <Route path="governance/:register/:itemId" element={<GovernancePage />} />
     <Route path="offerings" element={<OfferingsPage />} />
-    <Route path="offerings/:offeringId" element={<OfferingPage />} />
+    <Route path="offerings/:offeringId" element={<OfferingsPage />} />
     <Route path="journeys" element={<JourneysPage />} />
-    <Route path="journeys/:journeyId" element={<JourneyPage />} />
+    <Route path="journeys/:journeyId" element={<JourneysPage />} />
     {/* A draft's steps, in order (redesign area 3). */}
     <Route path="sources" element={<SourcesStep />} />
     <Route path="decide" element={<DecideStep />} />
@@ -123,7 +123,7 @@ export function App() {
         </Route>
         <Route path="architecture" element={<CataloguePage />}>
           {catalogueRoutes}
-          <Route path="versions" element={<LegacyPage page="versions"><CatalogueVersionsPage /></LegacyPage>} />
+          <Route path="versions" element={<CatalogueVersionsPage />} />
           <Route path="compare" element={<LegacyPage page="compare"><ComparePage /></LegacyPage>} />
         </Route>
         <Route path="architecture/versions/:releaseId" element={<CataloguePage />}>

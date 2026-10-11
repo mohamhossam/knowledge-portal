@@ -2,12 +2,10 @@ import "./offering/offering.css";
 
 import type { ReactNode } from "react";
 
-import type { ChangeRecord, KnowledgeSource, Offering, SourceConflict } from "../api/client";
+import type { KnowledgeSource, Offering, SourceConflict } from "../api/client";
 import { type Column, DataTable, Lines, Section, Status, Suggested } from "../design/components";
-import { formatDay } from "../home/format";
 import { CONFIDENCE } from "./catalogue";
-import { traceLine } from "./inbox";
-import { byLevel, LEVEL, levelTag, questionOf, useSourceText } from "./governance";
+import { LEVEL, levelTag, questionOf, useSourceText } from "./governance";
 
 type Sourced = { confidence?: string | null; source?: string | null };
 
@@ -45,7 +43,7 @@ const sourceName = (source: KnowledgeSource) => source.short ?? source.title;
 const counted = (n: number) => (n > 0 ? n : undefined);
 
 /** A level as a tag with its word: "L2 Primary". */
-function Level({ level }: { level: KnowledgeSource["level"] }) {
+export function Level({ level }: { level: KnowledgeSource["level"] }) {
   return (
     <span className="offering-level">
       <abbr title={LEVEL[level].long}>{level}</abbr> {LEVEL[level].word}
@@ -53,63 +51,7 @@ function Level({ level }: { level: KnowledgeSource["level"] }) {
   );
 }
 
-const NOT_SUPPLIED = "Not supplied: carried forward unread";
-
-/**
- * The sources the catalogue's knowledge is read from (requirement-portal ADR-0101,
- * step 5), canonical first: each with its level, what it is the authority for, and
- * what it cannot tell. A source carried forward without being supplied is due.
- */
-export function SourceRegister({ sources, action, level = 2 }: {
-  sources: KnowledgeSource[];
-  /** Kept for callers; the section names its own heading. */
-  headingId: string;
-  action?: ReactNode;
-  level?: 2 | 3;
-}) {
-  const columns: Column<KnowledgeSource>[] = [
-    {
-      id: "source",
-      header: "Source",
-      rowHeader: true,
-      bidi: true,
-      cell: (source) => (
-        <>
-          {source.title}
-          <span className="offering-by" dir="auto">
-            {[source.short, source.version && `version ${source.version}`, source.file].filter(Boolean).join(" · ")}
-          </span>
-          {source.supplied === false && <span className="offering-by"><Status tone="attention">{NOT_SUPPLIED}</Status></span>}
-        </>
-      ),
-    },
-    { id: "level", header: "Level", width: "8rem", cell: (source) => <Level level={source.level} /> },
-    {
-      id: "authority",
-      header: "What it is the authority for",
-      bidi: true,
-      cell: (source) => (
-        <>
-          {source.authority ?? <span className="offering-quiet">Not stated</span>}
-          {source.scope && <span className="offering-by" dir="auto">Covers {source.scope}</span>}
-          {source.boundary && <span className="offering-by" dir="auto">Cannot tell: {source.boundary}</span>}
-        </>
-      ),
-    },
-  ];
-  return (
-    <Section title="Sources" count={counted(sources.length)} actions={action} headingLevel={level}>
-      <p className="offering-lead">
-        Where the catalogue’s knowledge is read from: L1 the canonical landscape, L2 a primary source for its scope, L3 a baseline carried forward.
-      </p>
-      {sources.length ? (
-        <DataTable caption="Sources, by level" captionHidden columns={columns} rows={byLevel(sources)} rowId={(source) => source.id} />
-      ) : (
-        <p className="offering-quiet">No source is registered.</p>
-      )}
-    </Section>
-  );
-}
+export const NOT_SUPPLIED = "Not supplied: carried forward unread";
 
 /**
  * Conflicts between sources, never reconciled by the catalogue: each a row needing
@@ -325,101 +267,6 @@ export function OfferingSourceList({ offering, sources, action, level = 3 }: {
         </>
       )}
       {notUsed.length > 0 && <p className="offering-quiet" dir="auto">No longer uses: {notUsed.join(", ")}</p>}
-    </Section>
-  );
-}
-
-const ITEM_STATUS: Record<ChangeRecord["items"][number]["status"] & string, string | null> = {
-  recorded: null,
-  inferred: "mapped automatically",
-  gap: "needs an architect's review",
-  conflict: "needs a decision",
-};
-
-/**
- * The change requests applied to this version (requirement-portal ADR-0101, step 7), newest
- * last as they were applied: who asked and why, and what each changed. History is written by
- * accepting from a change request, never edited by hand.
- */
-export function ChangeHistory({ history, offering, level = 2 }: {
-  history: ChangeRecord[];
-  /** The offering a record changed, linked to its sheet. */
-  offering: (id: string) => ReactNode;
-  /** Kept for callers; the section names its own heading. */
-  headingId: string;
-  level?: 2 | 3;
-}) {
-  const columns: Column<ChangeRecord>[] = [
-    {
-      id: "request",
-      header: "Change request",
-      rowHeader: true,
-      width: "40%",
-      cell: (record) => (
-        <>
-          <span className="offering-id">{record.id}</span>{" "}
-          <span className="offering-items__title" dir="auto">{record.title}</span>
-          <span className="offering-by" dir="auto">
-            {record.origin === "explorer" ? "Drafted in the original explorer" : "From Requirement AI"}
-            {record.requester && record.requester !== record.trace?.approved_by && `, asked by ${record.requester}`}
-            {record.priority && ` · ${record.priority} priority`}
-            {record.target_date && ` · wanted by ${formatDay(record.target_date)}`}
-          </span>
-          {record.trace && <span className="offering-by" dir="auto">{traceLine(record.trace)}</span>}
-          {record.reason && <span className="offering-by" dir="auto">Why: {record.reason}</span>}
-        </>
-      ),
-    },
-    {
-      id: "applied",
-      header: "Applied",
-      width: "10rem",
-      cell: (record) => (
-        <>
-          {record.applied_at ? formatDay(record.applied_at) : <span className="offering-quiet">Not recorded</span>}
-          {record.product_id && <span className="offering-by"><span>to {offering(record.product_id)}</span></span>}
-        </>
-      ),
-    },
-    {
-      id: "changed",
-      header: "What it changed",
-      cell: (record) => (
-        <>
-          {record.items.length ? (
-            <ul className="offering-changes">
-              {record.items.map((item, index) => {
-                const status = ITEM_STATUS[item.status ?? "recorded"];
-                const due = item.status === "gap" || item.status === "conflict";
-                return (
-                  <li key={`${item.kind}:${item.feature_id ?? index}`}>
-                    {item.feature_id && <span className="offering-id">{item.feature_id}</span>} <span dir="auto">{item.summary}</span>
-                    {status && (due ? <> <Status tone="attention">{status}</Status></> : <span className="offering-quiet"> ({status})</span>)}
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <span className="offering-quiet">Nothing recorded</span>
-          )}
-          {record.gaps.map((text) => (
-            <span key={text} className="offering-by"><Status tone="attention"><span dir="auto">Not mapped: {text}</span></Status></span>
-          ))}
-        </>
-      ),
-    },
-  ];
-  return (
-    <Section title="Change history" count={counted(history.length)} headingLevel={level}>
-      <p className="offering-lead">
-        The change requests applied to this version: those from Requirement AI as their questions are accepted, and those the
-        original explorer applied.
-      </p>
-      {history.length ? (
-        <DataTable caption="Change requests applied to this version" captionHidden columns={columns} rows={history} rowId={(record) => record.id} />
-      ) : (
-        <p className="offering-quiet">No change request has been applied to this version.</p>
-      )}
     </Section>
   );
 }

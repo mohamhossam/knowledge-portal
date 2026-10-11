@@ -464,6 +464,4 @@ kbd {
 
 /* Each place on its own line; the cited one in ink, its neighbours in ink 2. */
 
-.nowrap {
-  white-space: nowrap;
 }

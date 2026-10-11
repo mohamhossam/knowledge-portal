@@ -55,7 +55,7 @@ export function SystemsPage() {
 
   return (
     <>
-      <CatalogueHeader page="systems" />
+      <CatalogueHeader page="systems" chosen={chosen?.name} />
       <Workbench
         listLabel="Systems"
         chosen={Boolean(chosen) || adding}

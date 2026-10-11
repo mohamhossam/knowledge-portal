@@ -30,13 +30,6 @@
   gap: var(--s2);
 }
 
-.versions__phone {
-  display: block;
-}
-
-.versions__phone .status {
-  display: block;
-  margin-top: var(--s1);
 }
 
 .sheet__roles {
@@ -69,71 +62,6 @@
   font-size: var(--t-meta);
   font-stretch: var(--width-condensed);
   font-weight: var(--w-medium);
-}
-
-/* Versions: a row opens in place on the stock band, closing on a heavy rule. */
-.versions .is-open th,
-.versions .is-open td {
-  background: var(--stock-band);
-}
-
-.govtable .versions__detail td {
-  padding: var(--s2) var(--s4) var(--s4);
-  border-bottom: 2px solid var(--tt-rule-heavy);
-  background: var(--stock-band);
-}
-
-.versions__body {
-  display: grid;
-  gap: var(--s3);
-}
-
-.versions__label {
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-}
-
-.versions__title {
-  margin-top: var(--s2);
-}
-
-.versions__body .govtable {
-  max-width: 62rem;
-}
-
-.versions__putback {
-  margin-top: var(--s2);
-}
-
-.versions__putback.withdraw {
-  max-width: 62ch;
-}
-
-.versions__putback .field__input {
-  width: 100%;
-}
-
-.versions__waits {
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-}
-
-/* The draft's documents: reading state with its marks, actions on their own line, notes at the foot. */
-.documents__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s1) var(--s4);
-  margin-top: var(--s1);
-}
-
-.documents__remove {
-  font-weight: var(--w-bold);
-}
-
-.add.documents__add {
-  max-width: none;
-  margin: var(--s4) 0 0;
 }
 
 /* The galley: one table, grouped under the systems the suggestions would change. */
@@ -394,15 +322,6 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
   grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
 }
 
-.governance__id {
-  overflow-wrap: anywhere;
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-  font-stretch: var(--width-condensed);
-  font-weight: var(--w-medium);
-  white-space: nowrap;
-}
-
 /* A conflict's side: a borderless group, labelled like a field. */
 .form__group {
   display: grid;
@@ -412,104 +331,6 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
   border: 0;
 }
 
-@media (max-width: 45rem) {
-  .govtable.governance__table thead {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-  }
-
-  .govtable.governance__table,
-  .govtable.governance__table tbody,
-  .govtable.governance__table tr,
-  .govtable.governance__table th,
-  .govtable.governance__table td {
-    display: block;
-  }
-
-  .govtable.governance__table td[data-head]::before {
-    display: block;
-    /* The column head is already announced; the label is for the eye only. */
-    content: attr(data-head) / "";
-    color: var(--ink-2);
-    font-size: var(--t-meta);
-  }
-
-  .govtable.governance__table tr {
-    padding: var(--s2) 0;
-    border-bottom: 1px solid var(--rule);
-  }
-
-  .govtable.governance__table th,
-  .govtable.governance__table td {
-    padding: 0.125rem 0;
-    border-bottom: 0;
-  }
-
-}
-
-/* Change requests from Requirement AI (requirement-portal ADR-0101, step 7): the inbox on
-   Versions, and the change history on Governance. */
-.changerequests__col-request {
-  width: 32%;
-}
-
-.changerequests__col-from {
-  width: 40%;
-}
-
-.changerequests__col-state {
-  width: 28%;
-}
-
-.changerequests__title {
-  display: block;
-  font-weight: var(--w-medium);
-}
-
-.changerequests__features {
-  display: grid;
-  gap: 0.125rem;
-  margin: var(--s1) 0 0;
-  padding: 0;
-  list-style: none;
-  font-size: var(--t-meta);
-}
-
-.changerequests__features .governance__id {
-  margin-inline-end: var(--s1);
-}
-
-/* What a closed Epic delivered, suggests and hit: one meta-sized sentence each. */
-.changerequests__note {
-  margin: var(--s1) 0 0;
-  font-size: var(--t-meta);
-  max-width: 72ch;
-}
-
-/* What a reading could not match: ink 2 lines under its state, each its own sentence. */
-
-/* "Its suggestions": as tall as the buttons beside it. */
-.changerequests__link {
-  display: inline-flex;
-  align-items: center;
-  min-block-size: 1.5rem;
-}
-
-/* A warning a reading left on one feature, shown again on that feature's suggestion. */
-
-.changerequests__dismiss {
-  display: grid;
-  gap: var(--s1);
-  margin-top: var(--s2);
-  max-width: 40ch;
-}
-
-.changerequests__dismiss .secondary {
-  margin: 0;
-  font-size: var(--t-meta);
 }
 
 /* A plain way back, tall enough to hit. */
@@ -521,11 +342,6 @@ html:has(.suggestion-editor > .suggestion-editor__actions) {
   display: inline-flex;
   align-items: center;
   min-height: 1.5rem;
-}
-
-/* Knowledge Center C: any two versions, side by side. */
-.versions__compare {
-  margin: 0 0 var(--s3);
 }
 
 .compare__pick {

@@ -1,7 +1,10 @@
-import { type ReactNode, useEffect, useId, useMemo, useRef } from "react";
+import { type ReactNode, useMemo } from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
 
-import { type Column, DataTable, EmptyState, Facts, FilterStrip, Section, SplitPane, Status } from "../design/components";
+import {
+  DataTable, EmptyState, Facts, GapBadge, ListFilter, ListFind, ListTools, RecordList, type RecordGroup, RecordPlaceholder, RecordView,
+  Section, Status, Workbench,
+} from "../design/components";
 import { count } from "../home/format";
 import { RouterLink } from "../shell/links";
 import { CatalogueHeader } from "./frame/CatalogueHeader";
@@ -12,12 +15,14 @@ import {
 import { useCatalogueContext } from "./useCatalogue";
 
 const ALL = "all";
+const UNREALISED = "no-system";
 
 /**
- * Capability concepts (redesign phase 5): what the business needs done, in
- * the ontology's words. Requirements map to a concept first, then to the
- * systems and offering components that realise it. How much is mapped comes
- * first, then every concept beside the record of the one chosen.
+ * Capability concepts on the workbench (UX rebuild, phase 3): what the
+ * business needs done, in the ontology's words. Requirements map to a concept
+ * first, then to the systems and offering components that realise it. Every
+ * concept sits in a narrow list, grouped by capability domain, beside the
+ * record of the one chosen; with none chosen, how much is mapped.
  */
 export function ConceptsPage() {
   const { conceptId } = useParams();
@@ -25,27 +30,31 @@ export function ConceptsPage() {
   const index = useMemo(() => conceptIndex(book.release), [book.release]);
   const chosen = conceptId !== undefined ? index.byId.get(conceptId) : undefined;
 
-  const list = <ConceptsTable index={index} current={chosen?.id} />;
-  return (
-    <>
-      <CatalogueHeader page="concepts" />
-      {index.concepts.length === 0 ? (
+  if (index.concepts.length === 0) {
+    return (
+      <>
+        <CatalogueHeader page="concepts" />
         <EmptyState title="This version names no capability concept yet.">
           <p>Concepts arrive with a version built from the ontology. Requirement work maps by system capabilities and phrases until then.</p>
         </EmptyState>
-      ) : (
-        <>
-          <CoverageLine index={index} />
-          {conceptId !== undefined && !chosen && (
-            <EmptyState title={`This version has no concept “${conceptId}”.`} action={<RouterLink href={`${base}/concepts`}>See every concept</RouterLink>} />
-          )}
-          {chosen ? (
-            <SplitPane list={list} pane={<ConceptRecord key={chosen.id} concept={chosen} index={index} />} paneLabel={`Concept: ${chosen.pref_label}`} />
-          ) : (
-            list
-          )}
-        </>
-      )}
+      </>
+    );
+  }
+
+  const record = chosen ? (
+    <ConceptRecord key={chosen.id} concept={chosen} index={index} />
+  ) : conceptId !== undefined ? (
+    <EmptyState title={`This version has no concept “${conceptId}”.`} action={<RouterLink href={`${base}/concepts`}>See every concept</RouterLink>} />
+  ) : (
+    <RecordPlaceholder title={`${count(index.concepts.length, "concept")}. Choose one to read what realises it.`}>
+      <CoverageLine index={index} />
+    </RecordPlaceholder>
+  );
+
+  return (
+    <>
+      <CatalogueHeader page="concepts" chosen={chosen?.pref_label} />
+      <Workbench listLabel="Concepts" chosen={Boolean(chosen)} list={<ConceptsList index={index} current={chosen?.id} />} record={record} />
     </>
   );
 }
@@ -81,107 +90,78 @@ function CoverageLine({ index }: { index: ConceptIndex }) {
   );
 }
 
-type Row = { concept: Concept; why: string | null };
+const realised = (index: ConceptIndex, concept: Concept) => (index.systems.get(concept.id)?.length ?? 0) > 0;
 
-function ConceptsTable({ index, current }: { index: ConceptIndex; current?: string }) {
+function ConceptsList({ index, current }: { index: ConceptIndex; current?: string }) {
   const { base } = useCatalogueContext();
   const [params, setParams] = useSearchParams();
-  const area = params.get("area") ?? ALL;
+  const show = params.get("show") === UNREALISED ? UNREALISED : ALL;
   const [find, setFind] = useFindParam();
-  const set = (key: string, value: string, empty: string) =>
-    setParams((previous) => {
-      const next = new URLSearchParams(previous);
-      if (value === empty) next.delete(key);
-      else next.set(key, value);
-      return next;
-    }, { replace: true });
   const found = useMemo(() => findConcepts(index.concepts, find), [index.concepts, find]);
-  const rows: Row[] = index.concepts
-    .filter((concept) => area === ALL || concept.domain_id === area)
-    .filter((concept) => !find.trim() || found.has(concept.id))
-    .map((concept) => ({ concept, why: found.get(concept.id) ?? null }));
-  // Only domains that hold a concept are offered; with none, the find field stands alone.
-  const areas = [...index.domains.values()]
-    .map((domain) => ({ id: domain.id, label: domain.name, count: index.concepts.filter((concept) => concept.domain_id === domain.id).length }))
-    .filter((domain) => domain.count > 0 || domain.id === area);
-  const filters = areas.length ? [{ id: ALL, label: "All", count: index.concepts.length }, ...areas] : [];
-  const query = params.size ? `?${params}` : "";
-  const columns: Column<Row>[] = [
-    {
-      id: "concept",
-      header: "Concept",
-      rowHeader: true,
-      bidi: true,
-      cell: ({ concept, why }) => (
-        <>
-          <Link
-            to={`${base}/concepts/${encodeURIComponent(concept.id)}${query}`}
-            className="cat-name"
-            aria-current={concept.id === current ? "page" : undefined}
-          >
-            {concept.pref_label}
-          </Link>
-          {why ? (
-            <span className="cat-detail">Also called “<bdi>{why}</bdi>”</span>
-          ) : (
-            concept.alt_labels.length > 0 && <span className="cat-detail"><bdi>{concept.alt_labels.join(" · ")}</bdi></span>
-          )}
-        </>
-      ),
-    },
-    {
-      id: "systems",
-      header: "Systems",
-      bidi: true,
-      cell: ({ concept }) => {
-        const uses = index.systems.get(concept.id) ?? [];
-        return uses.length ? <bdi>{uses.map((use) => use.system.name).join(", ")}</bdi> : <span className="cat-quiet">None</span>;
-      },
-    },
-    { id: "components", header: "Components", numeric: true, cell: ({ concept }) => index.components.get(concept.id)?.length ?? 0 },
-    {
-      id: "source",
-      header: "Source",
-      cell: ({ concept }) => (concept.confidence ? <Status tone={SOURCE_TONE[concept.confidence]}>{SOURCE_WORD[concept.confidence]}</Status> : <span className="cat-quiet">Not stated</span>),
-    },
-  ];
+  const unrealised = index.concepts.filter((concept) => !realised(index, concept)).length;
+
+  // Grouped by capability domain, in the domains' order; concepts without one last.
+  const groups = useMemo<RecordGroup[]>(() => {
+    const query = params.size ? `?${params}` : "";
+    const shown = index.concepts
+      .filter((concept) => show === ALL || !realised(index, concept))
+      .filter((concept) => !find.trim() || found.has(concept.id));
+    const order = [...index.domains.keys(), ""];
+    return order.map((domainId) => ({
+      id: domainId || "none",
+      label: domainId ? <bdi>{index.domains.get(domainId)?.name}</bdi> : "No capability domain",
+      items: shown
+        .filter((concept) => (concept.domain_id && index.domains.has(concept.domain_id) ? concept.domain_id : "") === domainId)
+        .map((concept) => {
+          const why = found.get(concept.id);
+          return {
+            id: concept.id,
+            href: `${base}/concepts/${encodeURIComponent(concept.id)}${query}`,
+            name: concept.pref_label,
+            bidi: true,
+            detail: why ? <>Also called “<bdi>{why}</bdi>”</> : concept.alt_labels.join(" · ") || undefined,
+            meta: <GapBadge gaps={realised(index, concept) ? [] : ["a system that realises it"]} />,
+          };
+        }),
+    }));
+  }, [index, show, find, found, params, base]);
+  const shownCount = groups.reduce((sum, group) => sum + group.items.length, 0);
+
   return (
-    <div className="cat-list">
-      <FilterStrip
-        label="Concepts by capability domain"
-        filters={filters}
-        active={area}
-        onChange={(id) => set("area", id, ALL)}
-        find={{ label: "Find a concept by any label", value: find, onChange: setFind, placeholder: "Any label, e.g. GPON" }}
-        onClear={
-          area !== ALL || find
-            ? () => {
-                setFind("");
-                setParams({}, { replace: true });
-              }
-            : undefined
-        }
+    <>
+      <ListTools count={show === ALL && !find.trim() ? count(index.concepts.length, "concept") : `${count(shownCount, "concept")} of ${index.concepts.length}`}>
+        <ListFind label="Find a concept by any label" value={find} onChange={setFind} placeholder="Any label, e.g. GPON" />
+        <ListFilter
+          label="Realised by"
+          value={show}
+          options={[
+            { id: ALL, label: "Any concept", count: index.concepts.length },
+            { id: UNREALISED, label: "No system yet", count: unrealised },
+          ]}
+          onChange={(value) =>
+            setParams((previous) => {
+              const next = new URLSearchParams(previous);
+              if (value === ALL) next.delete("show");
+              else next.set("show", value);
+              return next;
+            }, { replace: true })
+          }
+        />
+      </ListTools>
+      <RecordList
+        label="Capability concepts in this version"
+        groups={groups}
+        currentId={current}
+        link={RouterLink}
+        empty={find.trim() ? `No concept is labelled “${find.trim()}”.` : "Every concept is realised by a system."}
       />
-      <p className="cat-count" aria-live="polite">
-        {area === ALL && !find.trim() ? count(index.concepts.length, "concept") : `${count(rows.length, "concept")} of ${index.concepts.length}`}
-      </p>
-      <DataTable
-        caption="Capability concepts in this version"
-        captionHidden
-        columns={columns}
-        rows={rows}
-        rowId={(row) => row.concept.id}
-        emptyText={find.trim() ? `No concept is labelled “${find.trim()}”.` : "No concept sits in this capability domain."}
-      />
-    </div>
+    </>
   );
 }
 
 function ConceptRecord({ concept, index }: { concept: Concept; index: ConceptIndex }) {
   const { book, base } = useCatalogueContext();
   const location = useLocation();
-  const id = useId();
-  const heading = useRef<HTMLHeadingElement>(null);
   const records = realisationRecords(book.release);
   const path = conceptPath(index, concept);
   const systems = index.systems.get(concept.id) ?? [];
@@ -190,21 +170,20 @@ function ConceptRecord({ concept, index }: { concept: Concept; index: ConceptInd
   const broader = concept.broader_id ? index.byId.get(concept.broader_id) : undefined;
   const conceptLink = (other: Concept) => <Link key={other.id} to={`${base}/concepts/${encodeURIComponent(other.id)}`} dir="auto">{other.pref_label}</Link>;
 
-  useEffect(() => {
-    if (location.key === "default") return;
-    heading.current?.focus({ preventScroll: true });
-    heading.current?.scrollIntoView({ block: "nearest" });
-  }, [location.key]);
-
   type Use = (typeof systems)[number];
   type Part = (typeof components)[number];
   return (
-    <article className="cat-record" data-takes-focus aria-labelledby={`${id}-name`}>
-      <header className="cat-record__head">
-        {path.length > 0 && <p className="cat-record__path"><bdi>{path.join(" › ")}</bdi></p>}
-        <h2 id={`${id}-name`} ref={heading} tabIndex={-1} className="cat-record__title" dir="auto">{concept.pref_label}</h2>
-        {concept.definition && <p className="cat-record__lead" dir="auto">{concept.definition}</p>}
-      </header>
+    <RecordView
+      title={concept.pref_label}
+      takeFocus={location.key !== "default"}
+      meta={
+        <>
+          {concept.confidence && <Status tone={SOURCE_TONE[concept.confidence]}>{SOURCE_WORD[concept.confidence]}</Status>}
+          {path.length > 0 && <bdi>{path.join(" › ")}</bdi>}
+        </>
+      }
+      lead={concept.definition || undefined}
+    >
       <Section title="Labels" count={1 + concept.alt_labels.length} headingLevel={3}>
         <ul className="cat-chips" aria-label={`Labels of ${concept.pref_label}`}>
           <li><span className="cat-chip cat-chip--preferred" dir="auto">{concept.pref_label}<span className="ds-visually-hidden"> (preferred)</span></span></li>
@@ -272,20 +251,10 @@ function ConceptRecord({ concept, index }: { concept: Concept; index: ConceptInd
             ["Broader concept", broader ? conceptLink(broader) : <span className="cat-quiet">None (a top concept)</span>],
             ...(narrower.length ? [["Narrower", <span key="narrower">{narrower.map((item, position) => <span key={item.id}>{position > 0 && ", "}{conceptLink(item)}</span>)}</span>] as [string, ReactNode]] : []),
             ["Outside match", concept.exact_match ? <bdi>{concept.exact_match}</bdi> : <span className="cat-quiet">None recorded</span>],
-            [
-              "Source",
-              concept.confidence || concept.source ? (
-                <span key="source" className="cat-inline">
-                  {concept.confidence && <Status tone={SOURCE_TONE[concept.confidence]}>{SOURCE_WORD[concept.confidence]}</Status>}
-                  {concept.source && <bdi>{concept.source}</bdi>}
-                </span>
-              ) : (
-                <span key="source" className="cat-quiet">Not stated</span>
-              ),
-            ],
+            ["Source", concept.source ? <bdi>{concept.source}</bdi> : <span className="cat-quiet">Not stated</span>],
           ]}
         />
       </Section>
-    </article>
+    </RecordView>
   );
 }
