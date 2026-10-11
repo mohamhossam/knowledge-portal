@@ -1,11 +1,10 @@
 {
   "base.css": 102,
-  "catalogue.css": 979,
-  "explorer.css": 35,
+  "catalogue.css": 489,
   "knowledge.css": 541,
   "legacy-island.css": 90,
   "library.css": 509,
-  "shell.css": 207,
+  "shell.css": 167,
   "timetable.css": 249,
   "tokens.css": 42
 }

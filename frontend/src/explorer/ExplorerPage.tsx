@@ -278,11 +278,13 @@ function ScenarioSheet({ release, scenario, linkSystems, view, onView }: {
               .join(", ")}
           </p>
         )}
-        <ActionGroup label="This scenario">
-          <DocumentDownload release={release} scenario={scenario} />
-          {linkSystems && <RouterLink href={`/architecture/offerings/${encodeURIComponent(offering.id)}`}>The offering in the catalogue</RouterLink>}
-          {linkSystems && journey && <RouterLink href={`/architecture/journeys/${encodeURIComponent(journey.id)}`}>The journey in the catalogue</RouterLink>}
-        </ActionGroup>
+        <DocumentDownload release={release} scenario={scenario} />
+        {linkSystems && (
+          <ActionGroup label="In the catalogue">
+            <RouterLink href={`/architecture/offerings/${encodeURIComponent(offering.id)}`}>The offering in the catalogue</RouterLink>
+            {journey && <RouterLink href={`/architecture/journeys/${encodeURIComponent(journey.id)}`}>The journey in the catalogue</RouterLink>}
+          </ActionGroup>
+        )}
       </header>
 
       {decisions.length > 0 && (

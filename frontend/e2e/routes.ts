@@ -14,6 +14,9 @@ export type Seeded = {
   draft?: string;
   replaced?: string;
   system?: string;
+  concept?: string;
+  offering?: string;
+  journey?: string;
 };
 
 export type RouteDef = {
@@ -41,11 +44,19 @@ export const ROUTES: RouteDef[] = [
   // The old address, kept working until area 10 makes it a redirect.
   { key: "library-citations", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/citations`, mask: [".ds-provenance", ".lib-reconfirm__line"] },
   { key: "library-ownership", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/ownership`, mask: [".ds-provenance", ".lib-reconfirm__line", "tbody th"] },
-  // The architecture catalogue (not yet rebuilt: it renders in the legacy island).
+  // The architecture catalogue (area 5: rebuilt on the design system). Landscape, Channels,
+  // Versions and Compare keep their body in the legacy island under the new head.
   { key: "architecture", path: at("architecture") },
   { key: "architecture-system", path: (s) => s.system && `architecture/systems/${s.system}` },
+  { key: "architecture-concepts", path: at("architecture/concepts") },
+  { key: "architecture-concept", path: (s) => s.concept && `architecture/concepts/${s.concept}` },
   { key: "architecture-offerings", path: at("architecture/offerings") },
+  { key: "architecture-offering", path: (s) => s.offering && `architecture/offerings/${s.offering}` },
   { key: "architecture-journeys", path: at("architecture/journeys") },
+  { key: "architecture-journey", path: (s) => s.journey && `architecture/journeys/${s.journey}` },
+  { key: "architecture-governance", path: at("architecture/governance") },
+  { key: "architecture-domains", path: at("architecture/domains") },
+  { key: "architecture-channels", path: at("architecture/channels") },
   { key: "architecture-versions", path: at("architecture/versions") },
   { key: "architecture-draft", path: (s) => s.draft && `architecture/versions/${s.draft}` },
   // The draft's steps (area 3: rebuilt on the design system).
@@ -86,6 +97,17 @@ export const REDESIGNED: string[] = [
   "architecture-draft-changes",
   "architecture-draft-check",
   "architecture-draft-publish",
+  // Area 5: the catalogue and the explorer.
+  "architecture",
+  "architecture-system",
+  "architecture-concepts",
+  "architecture-concept",
+  "architecture-offerings",
+  "architecture-offering",
+  "architecture-journeys",
+  "architecture-journey",
+  "architecture-governance",
+  "explorer",
   // Area 4: ownership.
   "squads",
   "squads-no-squad",
@@ -111,7 +133,9 @@ export function seeded(): Promise<Seeded> {
     const [documents, releases, active] = await Promise.all([
       read<Named[]>("/library/documents?offset=0&limit=100"),
       read<Named[]>("/architecture-knowledge/releases"),
-      read<(Named & { systems?: Named[] }) | null>("/architecture-knowledge/releases/active"),
+      read<(Named & { systems?: Named[]; business_capabilities?: Named[]; products?: Named[]; journeys?: Named[] }) | null>(
+        "/architecture-knowledge/releases/active",
+      ),
     ]);
     const byTitle = (word: string) => documents.find((document) => document.title?.includes(word))?.id;
     return {
@@ -120,6 +144,9 @@ export function seeded(): Promise<Seeded> {
       draft: releases.find((release) => release.status === "draft")?.id,
       replaced: releases.find((release) => release.status !== "draft" && release.id !== active?.id)?.id,
       system: active?.systems?.[0]?.id,
+      concept: active?.business_capabilities?.[0]?.id,
+      offering: active?.products?.[0]?.id,
+      journey: active?.journeys?.[0]?.id,
     };
   })();
   return cached;

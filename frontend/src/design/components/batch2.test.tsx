@@ -44,6 +44,21 @@ describe("AppShell", () => {
     scroll.mockRestore();
   });
 
+  it("leaves focus on a chosen record's heading in a data-takes-focus pane", () => {
+    const scroll = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+    function Record({ name }: { name: string }) {
+      return (
+        <article data-takes-focus>
+          <h2 tabIndex={-1} ref={(heading) => heading?.focus()}>{name}</h2>
+        </article>
+      );
+    }
+    const { rerender } = render(<AppShell homeHref="/" navigation={NAV} locationKey="/a"><PageHeader title="Systems">a</PageHeader><Record name="A" /></AppShell>);
+    rerender(<AppShell homeHref="/" navigation={NAV} locationKey="/b"><PageHeader title="Systems">b</PageHeader><Record key="b" name="B" /></AppShell>);
+    expect(screen.getByRole("heading", { level: 2, name: "B" })).toHaveFocus();
+    scroll.mockRestore();
+  });
+
   it("focuses the h1 when it arrives after the page has loaded (skeleton first)", async () => {
     const scroll = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
     const { rerender } = render(<AppShell homeHref="/" navigation={NAV} locationKey="/a"><PageHeader title="A">a</PageHeader></AppShell>);

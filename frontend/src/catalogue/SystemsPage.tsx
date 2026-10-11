@@ -11,6 +11,7 @@ import { RouterLink } from "../shell/links";
 import { LINK_VERB, allConnections, domainPath, findSystems, systemName } from "./catalogue";
 import { SystemEdit } from "./DraftEdits";
 import { CatalogueHeader } from "./frame/CatalogueHeader";
+import { useFindParam } from "./frame/useFindParam";
 import { type ConceptIndex, conceptIndex, interfacesOf, SOURCE_TONE, SOURCE_WORD, systemConcepts, systemDomains } from "./ontology";
 import { SystemRecord } from "./SystemRecord";
 import { useCatalogueContext } from "./useCatalogue";
@@ -78,7 +79,7 @@ function SystemsTable({ index, current }: { index: ConceptIndex; current?: strin
   const [params, setParams] = useSearchParams();
   const [sort, setSort] = useState<Sort>({ id: "place", direction: "ascending" });
   const area = params.get("area") ?? ALL;
-  const find = params.get("find") ?? "";
+  const [find, setFind] = useFindParam();
   const set = (key: string, value: string, empty: string) =>
     setParams((previous) => {
       const next = new URLSearchParams(previous);
@@ -153,6 +154,8 @@ function SystemsTable({ index, current }: { index: ConceptIndex; current?: strin
       cell: ({ system }) => (system.confidence ? <Status tone={SOURCE_TONE[system.confidence]}>{SOURCE_WORD[system.confidence]}</Status> : <span className="cat-quiet">Not stated</span>),
     },
   ];
+  // Beside a chosen system's record the list narrows to what finds a system; the record says the rest.
+  const shown = current ? columns.filter((column) => ["name", "place", "concepts"].includes(column.id)) : columns;
 
   return (
     <div className="cat-list">
@@ -161,8 +164,15 @@ function SystemsTable({ index, current }: { index: ConceptIndex; current?: strin
         filters={filters}
         active={area}
         onChange={(id) => set("area", id, ALL)}
-        find={{ label: "Find a system", value: find, onChange: (value) => set("find", value, ""), placeholder: "Name, alias, capability or phrase" }}
-        onClear={area !== ALL || find ? () => setParams({}, { replace: true }) : undefined}
+        find={{ label: "Find a system", value: find, onChange: setFind, placeholder: "Name, alias or capability" }}
+        onClear={
+          area !== ALL || find
+            ? () => {
+                setFind("");
+                setParams({}, { replace: true });
+              }
+            : undefined
+        }
       />
       <p className="cat-count" aria-live="polite">
         {area === ALL && !find.trim() ? count(release.systems.length, "system") : `${count(rows.length, "system")} of ${release.systems.length}`}
@@ -170,7 +180,7 @@ function SystemsTable({ index, current }: { index: ConceptIndex; current?: strin
       <DataTable
         caption="Systems in this version"
         captionHidden
-        columns={columns}
+        columns={shown}
         rows={sorted}
         rowId={(row) => row.system.id}
         sort={sort}

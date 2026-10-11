@@ -5,6 +5,7 @@ import { type Column, DataTable, EmptyState, Facts, FilterStrip, Section, SplitP
 import { count } from "../home/format";
 import { RouterLink } from "../shell/links";
 import { CatalogueHeader } from "./frame/CatalogueHeader";
+import { useFindParam } from "./frame/useFindParam";
 import {
   type Concept, type ConceptIndex, conceptIndex, conceptPath, coverage, findConcepts, realisationRecords, SOURCE_TONE, SOURCE_WORD,
 } from "./ontology";
@@ -72,8 +73,8 @@ function CoverageLine({ index }: { index: ConceptIndex }) {
           <dd><strong>{tally.withoutSystem}</strong><span>linked to components only, or to nothing</span></dd>
         </div>
         <div>
-          <dt>Capability domains</dt>
-          <dd><strong>{areas.length}</strong><span>{areas.map((area) => `${area.name} ${area.n}`).join(" · ")}</span></dd>
+          <dt>Capability domains with concepts</dt>
+          <dd><strong>{areas.length} of {index.domains.size}</strong><span>{areas.map((area) => `${area.name} ${area.n}`).join(" · ")}</span></dd>
         </div>
       </dl>
     </section>
@@ -86,7 +87,7 @@ function ConceptsTable({ index, current }: { index: ConceptIndex; current?: stri
   const { base } = useCatalogueContext();
   const [params, setParams] = useSearchParams();
   const area = params.get("area") ?? ALL;
-  const find = params.get("find") ?? "";
+  const [find, setFind] = useFindParam();
   const set = (key: string, value: string, empty: string) =>
     setParams((previous) => {
       const next = new URLSearchParams(previous);
@@ -99,14 +100,11 @@ function ConceptsTable({ index, current }: { index: ConceptIndex; current?: stri
     .filter((concept) => area === ALL || concept.domain_id === area)
     .filter((concept) => !find.trim() || found.has(concept.id))
     .map((concept) => ({ concept, why: found.get(concept.id) ?? null }));
-  const filters = [
-    { id: ALL, label: "All", count: index.concepts.length },
-    ...[...index.domains.values()].map((domain) => ({
-      id: domain.id,
-      label: domain.name,
-      count: index.concepts.filter((concept) => concept.domain_id === domain.id).length,
-    })),
-  ];
+  // Only domains that hold a concept are offered; with none, the find field stands alone.
+  const areas = [...index.domains.values()]
+    .map((domain) => ({ id: domain.id, label: domain.name, count: index.concepts.filter((concept) => concept.domain_id === domain.id).length }))
+    .filter((domain) => domain.count > 0 || domain.id === area);
+  const filters = areas.length ? [{ id: ALL, label: "All", count: index.concepts.length }, ...areas] : [];
   const query = params.size ? `?${params}` : "";
   const columns: Column<Row>[] = [
     {
@@ -154,8 +152,15 @@ function ConceptsTable({ index, current }: { index: ConceptIndex; current?: stri
         filters={filters}
         active={area}
         onChange={(id) => set("area", id, ALL)}
-        find={{ label: "Find a concept by any label", value: find, onChange: (value) => set("find", value, ""), placeholder: "Any label, e.g. GPON" }}
-        onClear={area !== ALL || find ? () => setParams({}, { replace: true }) : undefined}
+        find={{ label: "Find a concept by any label", value: find, onChange: setFind, placeholder: "Any label, e.g. GPON" }}
+        onClear={
+          area !== ALL || find
+            ? () => {
+                setFind("");
+                setParams({}, { replace: true });
+              }
+            : undefined
+        }
       />
       <p className="cat-count" aria-live="polite">
         {area === ALL && !find.trim() ? count(index.concepts.length, "concept") : `${count(rows.length, "concept")} of ${index.concepts.length}`}
@@ -269,10 +274,14 @@ function ConceptRecord({ concept, index }: { concept: Concept; index: ConceptInd
             ["Outside match", concept.exact_match ? <bdi>{concept.exact_match}</bdi> : <span className="cat-quiet">None recorded</span>],
             [
               "Source",
-              <span key="source" className="cat-inline">
-                {concept.confidence && <Status tone={SOURCE_TONE[concept.confidence]}>{SOURCE_WORD[concept.confidence]}</Status>}
-                {concept.source && <bdi>{concept.source}</bdi>}
-              </span>,
+              concept.confidence || concept.source ? (
+                <span key="source" className="cat-inline">
+                  {concept.confidence && <Status tone={SOURCE_TONE[concept.confidence]}>{SOURCE_WORD[concept.confidence]}</Status>}
+                  {concept.source && <bdi>{concept.source}</bdi>}
+                </span>
+              ) : (
+                <span key="source" className="cat-quiet">Not stated</span>
+              ),
             ],
           ]}
         />

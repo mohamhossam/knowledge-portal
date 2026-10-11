@@ -12,62 +12,14 @@
   background: var(--stock);
 }
 
-.masthead__title {
-  display: flex;
-  align-items: baseline;
-  gap: var(--s2);
-  margin-right: auto;
-  font-stretch: var(--width-condensed);
-}
-
-.masthead__title a {
-  color: var(--ink-2);
-  text-decoration-color: var(--rule);
-}
-
-.masthead__title .masthead__portal {
-  color: var(--ink);
-  font-size: var(--t-lead);
-  font-weight: var(--w-bold);
-  text-decoration: none;
-}
-
 .masthead__dot {
   color: var(--ink-3);
-}
-
-.masthead__valid {
-  display: flex;
-  align-items: center;
-  gap: var(--s3);
-  color: var(--ink-2);
-  font-size: var(--t-meta);
-}
-
-.masthead__valid time {
-  color: var(--ink);
-  font-weight: var(--w-medium);
-}
-
-.masthead__account {
-  display: flex;
-  align-items: center;
-  gap: var(--s3);
-  font-size: var(--t-meta);
-}
-
-.masthead__name {
-  font-weight: var(--w-medium);
 }
 
 .persona {
   display: flex;
   align-items: center;
   gap: var(--s2);
-}
-
-.persona__label {
-  color: var(--ink-2);
 }
 
 .persona select {
