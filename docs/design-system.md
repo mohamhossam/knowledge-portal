@@ -134,13 +134,18 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
     (§1). The masthead publishes `--sticky-top`.
   - **ARIA:** `banner`, `navigation "Areas"`, `main`. The current item has
     `aria-current="page"` and the red marker.
+  - **`search` and `overlay`:** `search` puts the way into global search first on the masthead's
+    end, in a `search` landmark; `overlay` renders a modal layer outside the page and the side
+    panel, so neither can make it inert.
 - **`MastheadButton`:** Jobs, Help or Account, with a text label, an icon and an optional count
   (`aria-expanded`).
 - **`PageHeader`:** the h1 has `tabindex=-1` and the document title is set first. It has slots for
-  `lead`, `meta` (status, owner), `provenance` and `actions`; `children` take tabs or a state line.
+  `breadcrumbs` (above the title), `lead`, `meta` (status, owner), `provenance` and `actions`;
+  `children` take tabs or a state line.
 - **`StateLine`:** `plain` or `proof` (a replaced version, on the beige tint). It is sticky,
   `role="status"`, and publishes `--sticky-state`.
-- **`Breadcrumbs`:** the last crumb is `aria-current="page"`.
+- **`Breadcrumbs`:** the last crumb is `aria-current="page"`. Record pages put them in
+  `PageHeader`'s `breadcrumbs` slot: "Library › the document › Versions".
 - **`SubNav`:** navigation that changes the URL (`aria-current`).
 - **`Tabs`:** ARIA tabs for the same URL. ← → move between tabs, Home/End jump, there is one tab
   stop, and focus follows the selection.
@@ -149,6 +154,21 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
   that. The pane is a labelled `complementary` region.
 - **`Pagination`:** `aria-current` on the current page; every page button is named "Page n".
 - **`Section`:** the ledger rule and an h2 with an optional count; a labelled `region`.
+
+### Global search (`search.tsx`)
+
+- **`SearchTrigger`:** a field-shaped masthead button ("Search", then its key, `Ctrl K` or `⌘K`).
+  `aria-haspopup="dialog"`, `aria-expanded`, `aria-keyshortcuts`.
+- **`SearchDialog`:** a modal `<dialog>` named by its field's label, holding one combobox.
+  - Results arrive grouped by kind (`SearchGroup`: label, hits, an optional state such as
+    "searching…"). Each group is a labelled `group` inside one `listbox`; each hit is an
+    `option` with a title and a detail line, bidi isolated, with `lang` where known.
+  - Focus stays in the field. ↓ ↑ move through every hit across the groups, wrapping
+    (`aria-activedescendant`); Enter opens the marked hit; a press opens one too.
+  - Esc, Close or a press on the backdrop closes it, and focus goes back to what opened it.
+  - One polite status line says what was found; before anything is typed, a hint says what can
+    be found.
+  - Below 480px it fills the screen.
 
 ### Actions and status (`actions.tsx`, `feedback.tsx`)
 

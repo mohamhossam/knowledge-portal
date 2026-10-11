@@ -6,7 +6,7 @@ import { Outlet, useLocation, useNavigate, useParams, useSearchParams } from "re
 
 import { api, type LibraryDocument, type LibraryVersion } from "../api/client";
 import { ApiError, errorMessage } from "../api/errors";
-import { ActionGroup, Button, type Column, DataTable, Dialog, EmptyState, Facts, PageHeader, Skeleton, Status, SubNav } from "../design/components";
+import { ActionGroup, Breadcrumbs, Button, type Column, DataTable, Dialog, EmptyState, Facts, PageHeader, Skeleton, Status, SubNav } from "../design/components";
 import { useDisclosure, useFocusAfterRender } from "../design/hooks";
 import { routerPath } from "../auth/paths";
 import { useAuth } from "../auth/authContext";
@@ -63,7 +63,7 @@ export function DocumentPage() {
     if (refused) return <NotAllowed />;
     return (
       <div className="lib">
-        <PageHeader title={missing ? "This document isn't in the library" : "Couldn't open this document"} />
+        <PageHeader breadcrumbs={<LibraryCrumbs />} title={missing ? "This document isn't in the library" : "Couldn't open this document"} />
         <EmptyState
           title={missing ? "It may have been handed to another owner while private, or the address is wrong." : `The knowledge service didn't answer: ${errorMessage(document.query.error)}`}
           action={
@@ -154,6 +154,7 @@ function Record({ document, hook }: { document: LibraryDocument; hook: Hook }) {
     <div className="lib lib-record">
       <ActingBanner document={document} onDone={announce} />
       <PageHeader
+        breadcrumbs={<LibraryCrumbs document={document.title} base={base} page={TAB_NAMES[tab]} />}
         title={<span lang={contentLang(document.title)}>{document.title}</span>}
         documentTitle={`${document.title} · Library`}
         meta={
@@ -452,12 +453,28 @@ function useLeaveGuard(documentId: string, dirty: number) {
   return { dialog };
 }
 
+const TAB_NAMES: Record<string, string | undefined> = { versions: "Versions", "cited-by": "Cited by", ownership: "Ownership" };
+
+/** Library › the document › its page: the way back up from any of a document's pages. */
+function LibraryCrumbs({ document, base, page }: { document?: string; base?: string; page?: string }) {
+  return (
+    <Breadcrumbs
+      link={RouterLink}
+      items={[
+        { href: "/library", label: "Library" },
+        { href: base, label: document ?? "This document" },
+        ...(page ? [{ label: page }] : []),
+      ]}
+    />
+  );
+}
+
 /** A refusal (403) is a permission state (§7), not a service that didn't answer. */
 function NotAllowed() {
   const auth = useAuth();
   return (
     <div className="lib">
-      <PageHeader title="You can't open this document" />
+      <PageHeader breadcrumbs={<LibraryCrumbs />} title="You can't open this document" />
       <EmptyState title="Opening library documents needs the Knowledge admin role." action={<RouterLink href="/library">Back to the library</RouterLink>}>
         <p>You're signed in as <bdi>{auth?.actor?.display_name ?? "someone else"}</bdi>. Ask your platform administrator to add the role.</p>
       </EmptyState>

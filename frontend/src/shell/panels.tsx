@@ -17,6 +17,7 @@ import {
   Skeleton,
   Status,
 } from "../design/components";
+import { searchShortcut } from "../design/words";
 import type { JobAction } from "../library/actions";
 import { helpFor, PAGE_KEYS } from "./help";
 import { ButtonLink, RouterLink } from "./links";
@@ -78,7 +79,11 @@ export function HelpPanel({ path, section, onClose, panelRef }: PanelProps & { p
         page={{ title: entry.title, body: entry.body.map((line) => <p key={line}>{line}</p>) }}
         shortcuts={
           <ShortcutHelp
-            widget={entry.keys.length ? [{ title: "On this page", shortcuts: entry.keys.map(([keys, does]) => ({ keys, does })) }] : []}
+            widget={[
+              ...(entry.keys.length ? [{ title: "On this page", shortcuts: entry.keys.map(([keys, does]) => ({ keys, does })) }] : []),
+              // Always on: a modifier key isn't a single-character shortcut (WCAG 2.1.4).
+              { title: "Anywhere", shortcuts: [{ keys: searchShortcut(), does: "Search the library and catalogue" }] },
+            ]}
             global={PAGE_KEYS.map(([keys, does]) => ({ keys, does }))}
             enabled={shortcuts}
             onToggle={setShortcuts}

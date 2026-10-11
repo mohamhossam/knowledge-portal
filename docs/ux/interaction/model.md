@@ -71,6 +71,8 @@ reader conflicts (theme T4).
 
 | Scope | Key | Action |
 |---|---|---|
+| Anywhere (always on) | `Ctrl+K` (`⌘K`) | Open or close global search: documents, the catalogue in service (systems, offerings, journeys), passages in service. A modifier key, not a single character, so it needs no off switch (WCAG 2.1.4); it works in fields too |
+| Global search | `↓` `↑` · `Enter` · `Esc` | Move through every result · open the marked one · close and return focus |
 | Global (when on) | `?` | Open Help › Shortcuts |
 | | `g` then `w` · `l` · `c` · `o` · `r` | Go to Your work · Library · Catalogue · Ownership · Requirements |
 | | `g` then `j` | Open the Jobs panel |
@@ -130,8 +132,10 @@ reader conflicts (theme T4).
 | **Final, consequential** | Publish, Put back in service, Withdraw, Return to service, Delete a draft, Replace the draft from a file, Remove a squad or product, Deactivate a person, Activate a search build, Publish or withdraw a historic requirement | A **consequence panel** in place (§5), with no modal. Its parts, in order: the consequence first, then the named affected items, then a reason where the API takes one, then the explicit verb button ("Withdraw 'XGPON coverage rules'") and a safe default ("Keep it in service"). |
 | **Final, trivial** | Rename a draft, change density | Saved on submit, with a confirmation line. No panel. |
 
-A modal dialog is used **only** for: unsaved changes on leaving, session expiry, and a
-blocking conflict (409) that needs a choice.
+A modal dialog is used **only** for: unsaved changes on leaving, session expiry, a
+blocking conflict (409) that needs a choice, and global search (`Ctrl+K`). Search is modal
+because it is a short excursion that ends by leaving the page, or by Esc back to where it
+started; it changes nothing.
 
 ---
 
