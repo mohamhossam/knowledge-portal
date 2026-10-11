@@ -54,6 +54,8 @@ export function AppShell({
   link: Link = Anchor,
   banner,
   panel,
+  search,
+  overlay,
   children,
 }: {
   product?: string;
@@ -74,6 +76,10 @@ export function AppShell({
   banner?: ReactNode;
   /** A non-modal side panel (Jobs, Help, Account) beside the page; the page stays usable. */
   panel?: ReactNode;
+  /** The way into global search, first on the masthead's end (e.g. a SearchTrigger). */
+  search?: ReactNode;
+  /** A modal layer outside the page and the panel (e.g. the search dialog), so neither can make it inert. */
+  overlay?: ReactNode;
   children: ReactNode;
 }) {
   const masthead = useRef<HTMLDivElement>(null);
@@ -152,6 +158,7 @@ export function AppShell({
             </Link>
           </div>
           <div className="ds-masthead__end">
+            {search && <div className="ds-masthead__search" role="search" aria-label="Portal">{search}</div>}
             {outbound && (
               <a className="ds-masthead__out" href={outbound.href}>
                 {outbound.label}{" "}
@@ -176,6 +183,7 @@ export function AppShell({
         </main>
         {panel}
       </div>
+      {overlay}
     </div>
   );
 }
@@ -203,6 +211,7 @@ export function PageHeader({
   meta,
   provenance,
   actions,
+  breadcrumbs,
   children,
 }: {
   title: ReactNode;
@@ -212,6 +221,8 @@ export function PageHeader({
   meta?: ReactNode;
   provenance?: ReactNode;
   actions?: ReactNode;
+  /** Where this page sits (a Breadcrumbs), above the title. */
+  breadcrumbs?: ReactNode;
   /** Tabs, sub-navigation or a state line under the head. */
   children?: ReactNode;
 }) {
@@ -221,6 +232,7 @@ export function PageHeader({
   }, [tabTitle]);
   return (
     <div className="ds-pagehead">
+      {breadcrumbs}
       <div className="ds-pagehead__top">
         <div className="ds-pagehead__titles">
           <h1 id="ds-page-title" tabIndex={-1} dir="auto">{title}</h1>

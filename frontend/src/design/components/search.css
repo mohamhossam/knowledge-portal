@@ -1,0 +1,189 @@
+/* Global search: a field-shaped trigger on the masthead, and the dialog it opens. */
+
+.ds-searchtrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-inline-size: 15rem;
+  min-block-size: 2.125rem;
+  padding-inline: var(--space-3) var(--space-2);
+  border: var(--rule-hair) solid var(--masthead-control-border);
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: inherit;
+  font-size: var(--text-meta);
+  cursor: pointer;
+}
+
+.ds-searchtrigger:hover,
+.ds-searchtrigger[aria-expanded="true"] {
+  border-color: var(--masthead-fg);
+}
+
+.ds-searchtrigger__label {
+  flex: 1;
+  text-align: start;
+  white-space: nowrap;
+}
+
+.ds-root .ds-searchtrigger__keys {
+  border-color: var(--masthead-control-border);
+  background: transparent;
+  color: inherit;
+}
+
+.ds-search {
+  inline-size: min(40rem, calc(100vw - 2 * var(--gutter)));
+  max-inline-size: none;
+  max-block-size: min(36rem, calc(100vh - 6rem));
+  margin-block-start: min(12vh, 6rem);
+  padding: 0;
+  border: var(--rule-hair) solid var(--color-rule-strong);
+  border-block-start: var(--ledger-rule);
+  border-radius: var(--overlay-radius);
+  background: var(--overlay-bg);
+  color: var(--color-ink);
+  box-shadow: var(--overlay-shadow);
+}
+
+.ds-search::backdrop {
+  background: var(--scrim);
+}
+
+.ds-search__box {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  max-block-size: inherit;
+}
+
+.ds-search__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-block-end: var(--rule-hair) solid var(--color-rule);
+}
+
+.ds-search__icon {
+  flex: none;
+  color: var(--color-ink-2);
+}
+
+.ds-search__field {
+  flex: 1;
+  min-inline-size: 0;
+  min-block-size: var(--field-height);
+  padding: 0 var(--space-2);
+  border: 0;
+  background: transparent;
+  color: var(--field-fg);
+  font: inherit;
+  font-size: var(--text-lead);
+}
+
+.ds-search__field::placeholder {
+  color: var(--field-placeholder);
+}
+
+.ds-search__results {
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding-block: var(--space-1);
+}
+
+.ds-search__results:empty {
+  display: none;
+}
+
+.ds-search__group + .ds-search__group {
+  margin-block-start: var(--space-2);
+}
+
+.ds-search__grouphead {
+  padding: var(--space-2) var(--space-4) var(--space-1);
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-emphasis);
+}
+
+.ds-search__note {
+  font-weight: var(--weight-body);
+}
+
+.ds-search__option {
+  display: grid;
+  gap: 0.125rem;
+  min-block-size: var(--target-min);
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+}
+
+.ds-search__option[aria-selected="true"] {
+  background: var(--color-selected);
+  color: var(--color-on-selected);
+  box-shadow: inset 3px 0 0 var(--color-action);
+}
+
+.ds-search__title {
+  overflow: hidden;
+  font-weight: var(--weight-emphasis);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ds-search__detail {
+  overflow: hidden;
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ds-search__option[aria-selected="true"] .ds-search__detail {
+  color: inherit;
+}
+
+.ds-search__hint {
+  padding: var(--space-4);
+  color: var(--color-ink-2);
+}
+
+.ds-search__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-4);
+  padding: var(--space-2) var(--space-4);
+  border-block-start: var(--rule-hair) solid var(--color-rule);
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.ds-search__status,
+.ds-search__keys {
+  margin: 0;
+}
+
+@media (max-width: 1023px) {
+  .ds-searchtrigger {
+    min-inline-size: 0;
+  }
+
+  .ds-searchtrigger__keys {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .ds-search {
+    inline-size: 100vw;
+    max-block-size: 100vh;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .ds-search__keys {
+    display: none;
+  }
+}

@@ -34,8 +34,11 @@ export function ConsequencePanel({
   happens: ReactNode;
   affects?: ReactNode;
   reversibility: ReactNode;
-  /** When the API takes a reason: its label and who reads it. */
-  reason?: { label: string; hint: string };
+  /**
+   * When the API takes a reason: its label and who reads it. With `value` and `onChange` the
+   * caller keeps the text, so it outlives the panel (a review summary written, then "Not yet").
+   */
+  reason?: { label: string; hint: string; value?: string; onChange?: (text: string) => void; maxLength?: number };
   confirmLabel: ReactNode;
   keepLabel: string;
   onConfirm: (reason: string) => void;
@@ -48,7 +51,9 @@ export function ConsequencePanel({
   panelRef?: RefObject<HTMLElement | null>;
 }) {
   const id = useId();
-  const [text, setText] = useState("");
+  const [own, setOwn] = useState("");
+  const text = reason?.value ?? own;
+  const setText = reason?.onChange ?? setOwn;
   const [tried, setTried] = useState(false);
   const missing = Boolean(reason) && text.trim() === "";
   useEffect(() => {
@@ -84,6 +89,7 @@ export function ConsequencePanel({
             className="ds-input ds-input--area"
             dir="auto"
             rows={2}
+            maxLength={reason.maxLength}
             value={text}
             aria-required="true"
             aria-invalid={tried && missing ? true : undefined}

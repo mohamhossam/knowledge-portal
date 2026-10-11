@@ -45,12 +45,15 @@ export function useDocument(documentId: string) {
     query,
     review: useChange(documentId, current, (document, input: { versionId: string; body: Parameters<typeof api.review>[2] }) =>
       api.review(document.id, input.versionId, input.body)),
-    approve: useChange(documentId, current, (document, input: { versionId: string; revisionId: string }) =>
-      api.approve(document.id, input.versionId, {
-        expected_version: document.version,
+    // `saved` is the document a review save just answered with, when publishing follows it at once.
+    approve: useChange(documentId, current, (document, input: { versionId: string; revisionId: string; saved?: LibraryDocument }) => {
+      const against = input.saved ?? document;
+      return api.approve(against.id, input.versionId, {
+        expected_version: against.version,
         revision_id: input.revisionId,
-        fingerprint: document.review_fingerprint ?? "",
-      })),
+        fingerprint: against.review_fingerprint ?? "",
+      });
+    }),
     withdraw: useChange(documentId, current, (document, reason: string) =>
       api.withdraw(document.id, { expected_version: document.version, reason })),
     retry: useChange(documentId, current, (document, versionId: string) =>

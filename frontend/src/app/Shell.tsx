@@ -8,6 +8,7 @@ import { AppShell, LiveMessage, MastheadButton, type NavItem } from "../design/c
 import { useDisclosure, useFocusAfterRender } from "../design/hooks";
 import { RouterLink } from "../shell/links";
 import { SHORTCUTS_EVENT } from "../shell/shortcuts";
+import { useGlobalSearch } from "../shell/GlobalSearch";
 import { AccountPanel, HelpPanel, JobsPanel } from "../shell/panels";
 import { densityFor, usePreferences } from "../shell/preferences";
 import { useGlobalShortcuts } from "../shell/useGlobalShortcuts";
@@ -56,6 +57,7 @@ export function Shell() {
   const online = useOnline();
   const needsYou = useWorkQueue().mine;
   const jobs = useJobs();
+  const search = useGlobalSearch();
   const openShortcuts = useCallback(() => {
     setParams((previous) => {
       const next = new URLSearchParams(previous);
@@ -151,6 +153,8 @@ export function Shell() {
           </>
         }
         panel={panel}
+        search={search.trigger}
+        overlay={search.overlay}
       >
         <LiveMessage message={jobs.announcement} />
         {redesigned ? (

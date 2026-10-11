@@ -43,7 +43,7 @@ const BLOCKS = [
 
 type Saved = { block_id: string; text: string; included: boolean; exclusion_reason: string | null };
 
-function matrix({ revisions = [] as { id: string; passages: Saved[] }[], extra = {} as Partial<LibraryDocument> } = {}): LibraryDocument {
+function matrix({ revisions = [] as { id: string; explanation?: string; passages: Saved[] }[], extra = {} as Partial<LibraryDocument> } = {}): LibraryDocument {
   return {
     id: "d", title: "Product matrix", owner: amina, version: 4, can_edit: true, is_owner: true,
     published_id: null, publications: [], review_fingerprint: revisions.length ? "f" : null, build_fingerprint: null, review: null, citations: 0,
@@ -55,7 +55,8 @@ function matrix({ revisions = [] as { id: string; passages: Saved[] }[], extra =
         { code: "check", severity: "warning", message: "Check this row.", block_id: "b3" },
         { code: "hidden_worksheet", severity: "warning", message: "Worksheet 2 is hidden.", block_id: "b4" },
       ],
-      warnings: ["Check this row.", "Worksheet 2 is hidden."], blocking_warnings: [], revisions,
+      warnings: ["Check this row.", "Worksheet 2 is hidden."], blocking_warnings: [],
+      revisions: revisions.map((revision) => ({ explanation: "Checked every row", ...revision })),
     }],
     ...extra,
   } as unknown as LibraryDocument;
@@ -175,7 +176,7 @@ describe("the review desk", { timeout: 20_000 }, () => {
     expect(screen.getByRole("region", { name: "Selection" })).toHaveTextContent("3 passages selected");
   });
 
-  it("saves with Ctrl+Enter from anywhere on the desk; then Approve is available and unsaved counts from that save (2.5)", async () => {
+  it("saves with Ctrl+Enter from anywhere on the desk, asking for the summary beside the list; unsaved counts from that save (2.5)", async () => {
     const saved = matrix({
       revisions: [{ id: "r1", passages: [
         { block_id: "b1", text: "A1=Product | B1=Segment", included: true, exclusion_reason: null },
@@ -187,14 +188,16 @@ describe("the review desk", { timeout: 20_000 }, () => {
     const review = vi.spyOn(api, "review").mockResolvedValue(saved);
     openDocument(matrix());
     await screen.findByRole("grid", { name: /Passages of version 1/ });
-    const approve = screen.getByRole("button", { name: "Approve and publish…" });
-    expect(approve).toHaveAttribute("aria-disabled", "true");
-    expect(approve).toHaveAccessibleDescription("Save your review first.");
+    // Unsaved decisions don't stop publishing: the publish panel saves them (design evaluation).
+    expect(screen.getByRole("button", { name: "Approve and publish…" })).not.toHaveAttribute("aria-disabled");
 
     await userEvent.click(cell("Sheet 1, row 2"));
     await userEvent.keyboard("x");
-    await userEvent.type(await screen.findByRole("textbox", { name: /Why exclude it\?/ }), "Duplicate row");
-    const summary = screen.getByRole("textbox", { name: /Review summary/ });
+    await userEvent.type(await screen.findByRole("textbox", { name: /Why exclude it\?/ }), "Duplicate row{Control>}{Enter}{/Control}");
+    const panel = await screen.findByRole("region", { name: "Save your review" });
+    const summary = within(panel).getByRole("textbox", { name: /Review summary/ });
+    await waitFor(() => expect(summary).toHaveFocus());
+    expect(review).not.toHaveBeenCalled();
     await userEvent.type(summary, "Checked every row{Control>}{Enter}{/Control}");
     await waitFor(() => expect(review).toHaveBeenCalledTimes(1));
     const body = review.mock.calls[0]![2];
@@ -202,27 +205,34 @@ describe("the review desk", { timeout: 20_000 }, () => {
     expect(body.passages.find((item) => item.block_id === "b2")).toMatchObject({ included: false, exclusion_reason: "Duplicate row" });
 
     expect(await screen.findByText(/^Saved at \d\d:\d\d\./)).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Save your review" })).not.toBeInTheDocument();
     expect(progress()).toHaveTextContent("0 unsaved changes");
-    await waitFor(() => expect(screen.getByRole("button", { name: "Approve and publish…" })).not.toHaveAttribute("aria-disabled"));
     // A change after the save is counted against the save, not against the first read.
     await userEvent.click(cell("Sheet 1, row 3"));
     await userEvent.keyboard("x");
     expect(progress()).toHaveTextContent("1 unsaved change");
-    expect(screen.getByRole("button", { name: "Approve and publish…" })).toHaveAccessibleDescription("Save your changes first.");
+    // The next save keeps the summary already written: no panel.
+    await userEvent.type(await screen.findByRole("textbox", { name: /Why exclude it\?/ }), "Old{Control>}{Enter}{/Control}");
+    await waitFor(() => expect(review).toHaveBeenCalledTimes(2));
+    expect(review.mock.calls[1]![2].explanation).toBe("Checked every row");
   });
 
   it("asks for what is missing instead of saving", async () => {
     const review = vi.spyOn(api, "review");
     openDocument(matrix());
     await screen.findByRole("grid", { name: /Passages of version 1/ });
+    await userEvent.click(cell("Sheet 1, row 2"));
+    await userEvent.keyboard("x");
     await userEvent.click(screen.getByRole("button", { name: "Save review" }));
     expect(review).not.toHaveBeenCalled();
-    expect(screen.getByRole("textbox", { name: /Review summary/ })).toHaveFocus();
-    expect(screen.getByText(/Not saved yet: Write a review summary\./)).toBeInTheDocument();
+    expect(screen.getByText(/Not saved yet: 1 excluded passage needs a reason\./)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("textbox", { name: /Why exclude it\?/ })).toHaveFocus());
+    expect(screen.getByRole("button", { name: "Approve and publish…" })).toHaveAccessibleDescription("1 excluded passage needs a reason.");
   });
 
-  it("publishes through its consequence panel: what becomes citable, then what you looked at, then the verb", async () => {
+  it("publishes through its consequence panel: what becomes citable, then what you looked at, the summary, then the verb", async () => {
     const saved = matrix({ revisions: [{ id: "r1", passages: BLOCKS.map((item) => ({ block_id: item.id, text: item.text, included: item.id !== "b4", exclusion_reason: item.id === "b4" ? "Hidden" : null })) }] });
+    const review = vi.spyOn(api, "review");
     const approve = vi.spyOn(api, "approve").mockResolvedValue({ ...saved, publications: [{ id: "p", version_id: "v1", revision_id: "r1", fingerprint: "f", withdrawn_at: null, activated_at: null, built_at: null, requires_activation: false, indexing_attempts: 0, approved_at: "2026-10-08T09:00:00Z", approved_by: amina }] } as unknown as LibraryDocument);
     openDocument(saved);
     await screen.findByRole("grid", { name: /Passages of version 1/ });
@@ -231,10 +241,55 @@ describe("the review desk", { timeout: 20_000 }, () => {
     const text = panel.textContent ?? "";
     expect(text).toContain("Requirement work can cite its 3 passages once they are indexed.");
     expect(text.indexOf("You looked at")).toBeLessThan(text.indexOf("Publish version 1", text.indexOf("You looked at")));
+    // The saved summary is there to read or change; unchanged, nothing is saved again.
+    expect(within(panel).getByRole("textbox", { name: /Review summary/ })).toHaveValue("Checked every row");
     await userEvent.click(within(panel).getByRole("button", { name: "Publish version 1" }));
     await waitFor(() => expect(approve).toHaveBeenCalledWith("d", "v1", { expected_version: 4, revision_id: "r1", fingerprint: "f" }));
+    expect(review).not.toHaveBeenCalled();
     const said = await screen.findByText("Published. Requirement work can cite it once it is indexed; Jobs shows the indexing.");
     await waitFor(() => expect(said).toHaveFocus());
+  });
+
+  it("approves in one step: the summary is written in the publish panel, the review saved, then published (design evaluation)", async () => {
+    const saved = { ...matrix({ revisions: [{ id: "r2", explanation: "Dropped the duplicate", passages: BLOCKS.map((item) => ({ block_id: item.id, text: item.text, included: item.id !== "b2", exclusion_reason: item.id === "b2" ? "Duplicate row" : null })) }] }), version: 5, review_fingerprint: "f2" } as LibraryDocument;
+    const review = vi.spyOn(api, "review").mockResolvedValue(saved);
+    const approve = vi.spyOn(api, "approve").mockResolvedValue(saved);
+    openDocument(matrix());
+    await screen.findByRole("grid", { name: /Passages of version 1/ });
+    await userEvent.click(cell("Sheet 1, row 2"));
+    await userEvent.keyboard("x");
+    await userEvent.type(await screen.findByRole("textbox", { name: /Why exclude it\?/ }), "Duplicate row");
+    await userEvent.click(screen.getByRole("button", { name: "Approve and publish…" }));
+    const panel = screen.getByRole("region", { name: "Publish version 1" });
+    const summary = within(panel).getByRole("textbox", { name: /Review summary/ });
+    await waitFor(() => expect(summary).toHaveFocus());
+    // No summary yet: publishing asks for it there, and sends nothing.
+    await userEvent.click(within(panel).getByRole("button", { name: "Publish version 1" }));
+    expect(review).not.toHaveBeenCalled();
+    await userEvent.type(summary, "Dropped the duplicate");
+    await userEvent.click(within(panel).getByRole("button", { name: "Publish version 1" }));
+    await waitFor(() => expect(approve).toHaveBeenCalledWith("d", "v1", { expected_version: 5, revision_id: "r2", fingerprint: "f2" }));
+    expect(review).toHaveBeenCalledTimes(1);
+    expect(review.mock.calls[0]![2]).toMatchObject({ expected_version: 4, explanation: "Dropped the duplicate" });
+  });
+
+  it("opens on \"Not seen yet\" while anything is unseen, and keeps a passage listed once looked at", async () => {
+    openDocument(matrix());
+    await screen.findByRole("grid", { name: /Passages of version 1/ });
+    expect(screen.getByRole("button", { name: /Not seen yet/ })).toHaveAttribute("aria-pressed", "true");
+    await userEvent.click(cell("Sheet 1, row 1"));
+    await waitFor(() => expect(progress()).toHaveTextContent("Seen 1 of 4"), { timeout: 3000 });
+    await userEvent.keyboard("j");
+    await waitFor(() => expect(cell("Sheet 1, row 2")).toHaveFocus());
+    expect(cell("Sheet 1, row 1")).toBeInTheDocument();
+  });
+
+  it("opens on every passage once all of them have been seen", async () => {
+    window.sessionStorage.setItem("knowledge-portal.seen.v1", JSON.stringify(["b1", "b2", "b3", "b4"]));
+    openDocument(matrix());
+    await screen.findByRole("grid", { name: /Passages of version 1/ });
+    expect(within(screen.getByRole("group", { name: "Show passages" })).getByRole("button", { name: /^All/ })).toHaveAttribute("aria-pressed", "true");
+    expect(within(grid()).getAllByRole("row")).toHaveLength(5);
   });
 
   it("marks the passages seen on their rows, and goes past the 200 rows shown with j and End (area 2 critique)", async () => {
