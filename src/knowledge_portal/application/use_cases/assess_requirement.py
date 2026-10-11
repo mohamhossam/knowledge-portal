@@ -70,6 +70,7 @@ from knowledge_portal.domain.architecture.assessment import (
     PathKind,
     SystemRole,
 )
+from knowledge_portal.domain.architecture.drafts import OfferingDraft
 from knowledge_portal.domain.architecture.entities import OrganisationReference
 from knowledge_portal.domain.architecture.impact_graph import realised_nowhere, realisers
 from knowledge_portal.domain.architecture.knowledge import (
@@ -77,6 +78,8 @@ from knowledge_portal.domain.architecture.knowledge import (
     KnowledgeConflictError,
     KnowledgeReleaseStatus,
 )
+from knowledge_portal.domain.architecture.offering_drafts import draft_name, draft_offering
+from knowledge_portal.domain.architecture.products import ProductOffering
 from knowledge_portal.domain.architecture.verdicts import (
     OfferingFit,
     ProductVerdict,
@@ -229,7 +232,15 @@ class AssessRequirement(RequirementAssessmentPort):
         return ArchitectureAssessment(
             verdict=decision.verdict,
             verdict_reason=decision.reason,
-            proposal=_proposal(release, decision.verdict, offering_id, fit, needed, facets),
+            proposal=_proposal(
+                release,
+                decision.verdict,
+                offering_id,
+                fit,
+                tuple(item.concept_id for item in coverage),
+                facets,
+                _drafting_source(text, query.requirement_id),
+            ),
             systems=systems,
             gaps=(*capability_gaps, *staffing),
             questions=(),
@@ -468,16 +479,26 @@ def _owners(
     return tuple(found)
 
 
+def _drafting_source(text: str, requirement_id: str | None) -> tuple[str, str]:
+    """The drafted offering's name, the requirement's title, and the source it cites."""
+    name = draft_name((text,))
+    return name, (
+        f"Drafted for requirement {requirement_id}" if requirement_id else f"Drafted for “{name}”"
+    )
+
+
 def _proposal(
     release: ArchitectureKnowledge,
     verdict: ProductVerdict | None,
     offering_id: str | None,
     fit: OfferingFit | None,
-    needed: frozenset[str],
+    ordered: tuple[str, ...],
     facets: tuple[Facet, ...],
+    drafting: tuple[str, str],
 ) -> AssessmentProposal | None:
     if verdict is None:
         return None
+    needed = frozenset(ordered)
     offering = next((item for item in release.products if item.id == offering_id), None)
     nearest = offering or next(
         (item for item in release.products if fit and item.id == fit.offering_id), None
@@ -519,9 +540,41 @@ def _proposal(
                 else "A new offering, from components that exist.",
                 portfolio_node_id=nearest.portfolio_node_id if nearest else None,
                 components=components,
+                draft=_draft(release, nearest, ordered, facets, drafting, in_family=True),
             )
         case _:
             return AssessmentProposal(
                 "A new product line: the capabilities it needs that nothing realises go to "
                 "architecture review.",
+                draft=_draft(release, nearest, ordered, facets, drafting, in_family=False),
             )
+
+
+def _draft(
+    release: ArchitectureKnowledge,
+    nearest: ProductOffering | None,
+    ordered: tuple[str, ...],
+    facets: tuple[Facet, ...],
+    drafting: tuple[str, str],
+    *,
+    in_family: bool,
+) -> OfferingDraft:
+    orders = {item.ref_id for item in facets if item.kind is FacetKind.ORDER_TYPE}
+    order_code = next(
+        (
+            item.code
+            for item in (nearest.order_types if nearest else ())
+            if nearest is not None and order_type_id(nearest, item.code) in orders
+        ),
+        None,
+    )
+    name, source = drafting
+    return draft_offering(
+        release,
+        name=name,
+        needed=ordered,
+        nearest=nearest,
+        in_family=in_family,
+        source=source,
+        order_code=order_code,
+    )

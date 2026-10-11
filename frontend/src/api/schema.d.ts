@@ -2800,6 +2800,7 @@ export interface components {
             dismissed_at: string | null;
             /** Dismissed By */
             dismissed_by: string | null;
+            draft?: components["schemas"]["OfferingDraftResponse"] | null;
             /** Features */
             features: components["schemas"]["IncomingFeatureResponse"][];
             /** Id */
@@ -3293,6 +3294,17 @@ export interface components {
             systems: components["schemas"]["SystemDefinitionSchema"][];
             /** Vocabulary */
             vocabulary?: components["schemas"]["VocabularyTermSchema"][] | null;
+        };
+        /** DraftedComponentResponse */
+        DraftedComponentResponse: {
+            /** Capability Ids */
+            capability_ids: string[];
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** System Ids */
+            system_ids: string[];
         };
         /**
          * EvidenceBlockKind
@@ -4382,6 +4394,28 @@ export interface components {
             technical_spec?: string | null;
             /** Unlinked Reason */
             unlinked_reason?: string | null;
+        };
+        /**
+         * OfferingDraftResponse
+         * @description The offering and journey drafted for a new-offering verdict, in brief (Phase 9).
+         */
+        OfferingDraftResponse: {
+            /** Based On */
+            based_on: string | null;
+            /** Components */
+            components: components["schemas"]["DraftedComponentResponse"][];
+            /** Journey Id */
+            journey_id: string | null;
+            /** Journey Name */
+            journey_name: string | null;
+            /** Offering Id */
+            offering_id: string;
+            /** Offering Name */
+            offering_name: string;
+            /** Questions */
+            questions: string[];
+            /** Steps */
+            steps: number;
         };
         /**
          * OfferingNfrSchema

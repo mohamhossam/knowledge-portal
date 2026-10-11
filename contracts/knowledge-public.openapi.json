@@ -2416,6 +2416,16 @@
             ],
             "title": "Dismissed By"
           },
+          "draft": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OfferingDraftResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "features": {
             "items": {
               "$ref": "#/components/schemas/IncomingFeatureResponse"
@@ -4072,6 +4082,40 @@
           "relationships"
         ],
         "title": "DraftUpdateRequest",
+        "type": "object"
+      },
+      "DraftedComponentResponse": {
+        "properties": {
+          "capability_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Capability Ids",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "system_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "System Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "capability_ids",
+          "system_ids"
+        ],
+        "title": "DraftedComponentResponse",
         "type": "object"
       },
       "EvidenceBlockKind": {
@@ -7471,6 +7515,82 @@
           "name"
         ],
         "title": "OfferingComponentSchema",
+        "type": "object"
+      },
+      "OfferingDraftResponse": {
+        "description": "The offering and journey drafted for a new-offering verdict, in brief (Phase 9).",
+        "properties": {
+          "based_on": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Based On"
+          },
+          "components": {
+            "items": {
+              "$ref": "#/components/schemas/DraftedComponentResponse"
+            },
+            "title": "Components",
+            "type": "array"
+          },
+          "journey_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Journey Id"
+          },
+          "journey_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Journey Name"
+          },
+          "offering_id": {
+            "title": "Offering Id",
+            "type": "string"
+          },
+          "offering_name": {
+            "title": "Offering Name",
+            "type": "string"
+          },
+          "questions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Questions",
+            "type": "array"
+          },
+          "steps": {
+            "title": "Steps",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "offering_id",
+          "offering_name",
+          "based_on",
+          "components",
+          "questions",
+          "journey_id",
+          "journey_name",
+          "steps"
+        ],
+        "title": "OfferingDraftResponse",
         "type": "object"
       },
       "OfferingNfrSchema": {

@@ -130,6 +130,53 @@ describe("a closed Epic in the inbox", () => {
   });
 });
 
+const DRAFTED = item({
+  id: "CR-20261011-Cloud_Voice",
+  title: "Cloud voice for clinics",
+  draft: {
+    offering_id: "cloud-voice",
+    offering_name: "Cloud Voice",
+    based_on: "business-pro-plus",
+    components: [
+      { id: "sip", name: "SIP trunk", capability_ids: ["cap-voice"], system_ids: ["cwom"] },
+      { id: "recording", name: "Call recording", capability_ids: ["cap-recording"], system_ids: [] },
+    ],
+    questions: ["Which system will realise Call recording?"],
+    journey_id: "cloud-voice-new",
+    journey_name: "New activation",
+    steps: 3,
+  },
+});
+
+describe("an approved backlog for a new offering", () => {
+  it("says what was drafted for it, naming systems and offerings as the catalogue does", async () => {
+    const named = {
+      ...VERSION,
+      systems: [{ id: "cwom", name: "CWOM" }],
+      products: [{ id: "business-pro-plus", name: "Business Pro Plus" }],
+    } as unknown as Release;
+    open([DRAFTED], [named]);
+
+    const row = within(await screen.findByRole("table", { name: /Change requests from Requirement AI/ })).getAllByRole("row")[1]!;
+    expect(row).toHaveTextContent("Drafts a new offering, ‘Cloud Voice’, from Business Pro Plus.");
+    expect(row).toHaveTextContent("Its components: SIP trunk, by CWOM; Call recording, with no system yet.");
+    expect(row).toHaveTextContent("Its journey: New activation, 3 steps. 1 question is left for architecture review.");
+  });
+
+  it("counts the drafted offering and journey among the suggestions it is read into", async () => {
+    vi.spyOn(api, "readChangeRequest").mockResolvedValue({
+      release: { ...VERSION, id: "draft-1", status: "draft", name: "October" },
+      run: { id: "r", document_version_id: DRAFTED.id, model: "requirement-ai-export", prompt_version: "export-1", candidate_count: 3, warnings: [], created_at: "", match_model: null, match_prompt_version: null, change_request_id: DRAFTED.id },
+      change_request: { ...DRAFTED, status: "read", read_into: "draft-1" },
+    } as never);
+    open([DRAFTED]);
+
+    fireEvent.click(await screen.findByRole("button", { name: /Read it into a new draft/ }));
+
+    await waitFor(() => expect(screen.getByTestId("where")).toHaveTextContent("CR-20261011-Cloud_Voice is read into ‘October’: 3 suggestions below."));
+  });
+});
+
 describe("the inbox of change requests from Requirement AI", () => {
   it("says what each asks and where it comes from, and reads one into a new draft", async () => {
     const read = vi.spyOn(api, "readChangeRequest").mockResolvedValue({

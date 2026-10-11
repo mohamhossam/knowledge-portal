@@ -5,6 +5,24 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ## Unreleased
 
+## 0.6.0 — 2026-10-11
+
+Phase 9: a new-offering verdict comes with a drafted offering and journey, which come back
+with the approved backlog as suggestions. requirement-portal's export schema 1.6 needs this
+release.
+
+### Added
+
+- New-offering drafts (ontology plan, Phase 9): for a `new_offering_in_family` or
+  `new_product_line` verdict, `POST /internal/architecture/assess` answers with
+  `proposal.draft`, an offering and the journey that fulfils it, drafted from the nearest
+  offering by fixed rules: its components that deliver a needed concept, a reused or new
+  component for each other one (with an open question when nothing realises it), and its
+  journey for the order named, with a step for each added component. The approved-backlog
+  export (schema 1.6) brings the draft back as `product_impact.draft`; the inbox says what was
+  drafted, and reading it suggests the offering and the journey, each reviewed alone. The
+  golden-set evaluation scores how many drafts apply cleanly (`drafts_applied`).
+
 ## 0.5.0 — 2026-10-11
 
 Phase 7: what a closed Epic delivered comes back as a catalogue change, and the front page

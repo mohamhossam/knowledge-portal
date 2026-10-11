@@ -24,6 +24,16 @@ from knowledge_portal.domain.architecture.change_requests import (
     RequirementTrace,
     UndeliveredFeature,
 )
+from knowledge_portal.domain.architecture.drafts import OfferingDraft
+from knowledge_portal.domain.architecture.governance import OpenQuestion
+from knowledge_portal.domain.architecture.journeys import Activity, Journey
+from knowledge_portal.domain.architecture.products import (
+    ComponentResponsibility,
+    OfferingComponent,
+    OrderType,
+    ProductOffering,
+    SourceConfidence,
+)
 from knowledge_portal.infrastructure.persistence.migration_runner import run_migrations
 from knowledge_portal.infrastructure.persistence.postgres_change_requests import (
     PostgresChangeRequests,
@@ -111,3 +121,38 @@ def test_a_catalogue_change_round_trips_with_what_was_delivered() -> None:
     withdrawn = item.withdraw(NOW)
     inbox.save(withdrawn, IncomingStatus.WAITING)
     assert inbox.get(item.id) == withdrawn
+
+
+def test_an_approved_backlog_round_trips_with_its_drafted_offering() -> None:
+    assert DATABASE_URL is not None
+    run_migrations(DATABASE_URL)
+    inbox = PostgresChangeRequests(DirectPostgresConnector(DATABASE_URL))
+    offering = ProductOffering(
+        "cloud-voice",
+        "Cloud Voice",
+        order_types=(OrderType("NEW", "New Activation"),),
+        components=(
+            OfferingComponent(
+                "sip",
+                "SIP trunk",
+                responsibilities=(ComponentResponsibility("cwom", "Delivers", "Trunks calls."),),
+                capability_ids=("cap-voice",),
+                confidence=SourceConfidence.INFERRED,
+            ),
+        ),
+        questions=(OpenQuestion("realise-recording", "Which system will record calls?"),),
+    )
+    journey = Journey(
+        "cloud-voice-new",
+        "New activation",
+        "cloud-voice",
+        "NEW",
+        activities=(
+            Activity("10", "SIP trunk", performing_system_id="cwom", component_ids=("sip",)),
+        ),
+    )
+    item = replace(_incoming(), draft=OfferingDraft(offering, journey, "business-pro-plus"))
+
+    kept, created = inbox.receive(item)
+
+    assert created and inbox.get(item.id) == kept == item

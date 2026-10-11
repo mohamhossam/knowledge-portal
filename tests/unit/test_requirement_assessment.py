@@ -67,12 +67,25 @@ from knowledge_portal.domain.architecture.assessment import (
     change_type_in,
     speeds_in,
 )
+from knowledge_portal.domain.architecture.candidates import draft_problems
 from knowledge_portal.domain.architecture.impact_graph import realisers
 from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge
+from knowledge_portal.domain.architecture.offering_drafts import (
+    NAME_LIMIT,
+    draft_name,
+    draft_offering,
+)
 from knowledge_portal.domain.architecture.precedents import (
     Precedent,
     PrecedentDecision,
     PrecedentSystem,
+)
+from knowledge_portal.domain.architecture.products import (
+    ComponentResponsibility,
+    OfferingComponent,
+    OrderType,
+    ProductOffering,
+    SourceConfidence,
 )
 from knowledge_portal.domain.architecture.verdicts import (
     OfferingFit,
@@ -755,3 +768,137 @@ def test_the_reasoner_sees_precedents_as_worked_examples(world: _World) -> None:
     assert example["systems"] == [{"id": "cwom", "change_type": None}]
     assert len(example["requirement"]) == EXAMPLE_LIMIT
     assert "never cite them" in sent[0]["system_prompt"]
+
+
+# Drafting a new offering and its journey (ontology plan Phase 9).
+
+LIGHTER = "A lighter bundle with a managed access point, without SD-WAN or the firewall."
+
+
+def test_a_new_offering_in_the_family_is_drafted_from_the_nearest_one(world: _World) -> None:
+    result = world.assess(LIGHTER)
+    assert result.proposal is not None and result.proposal.draft is not None
+    draft = result.proposal.draft
+    nearest = next(item for item in world.release.products if item.id == BPP)
+    offering = draft.offering
+
+    assert draft.based_on == BPP
+    assert offering.name == LIGHTER.rstrip(".")
+    assert offering.id == "a-lighter-bundle-with-a-managed-access-point"
+    assert (offering.family, offering.portfolio_node_id) == (nearest.family, "business-internet")
+    assert offering.confidence is SourceConfidence.INFERRED
+    # Only the component that delivers what it needs is kept; SD-WAN and the firewall go.
+    assert [item.id for item in offering.components] == ["ap"]
+    assert offering.order_types == tuple(
+        replace(item, confidence=SourceConfidence.INFERRED, source=offering.source)
+        for item in nearest.order_types
+    )
+    journey = draft.journey
+    assert journey is not None
+    base = next(item for item in world.release.journeys if item.id == "bpp-new-activation")
+    assert (journey.product_id, journey.order_type_code, journey.name) == (
+        offering.id,
+        "NEW",
+        base.name,
+    )
+    assert {item.number for item in journey.activities} <= {item.number for item in base.activities}
+    assert draft_problems(world.release, draft) == ()
+    # Fixed rules: the same requirement against the same release gives the same draft.
+    assert world.assess(LIGHTER).proposal == result.proposal
+
+
+def test_a_new_product_line_drafts_what_nothing_realises_with_a_question(world: _World) -> None:
+    result = world.assess("Cloud video surveillance for shops, with cameras installed on site.")
+    assert result.proposal is not None and result.proposal.draft is not None
+    draft = result.proposal.draft
+    offering = draft.offering
+
+    # A new line is placed by a curator: no family, no portfolio node.
+    assert (offering.family, offering.portfolio_node_id, draft.based_on) == (None, None, None)
+    (part,) = offering.components
+    assert (part.capability_ids, part.responsibilities, part.confidence) == (
+        ("cap-video-surveillance",),
+        (),
+        SourceConfidence.GAP,
+    )
+    (question,) = offering.questions
+    assert question.text == "Which system will realise Cloud video surveillance?"
+    assert draft.journey is not None
+    (step,) = draft.journey.activities
+    assert (step.number, step.performing_system_id, step.component_ids) == (
+        "10",
+        None,
+        (part.id,),
+    )
+    assert draft_problems(world.release, draft) == ()
+
+
+def test_a_change_or_a_new_plan_drafts_nothing(world: _World) -> None:
+    for text in (
+        "Launch a 2 Gbps Business Pro Plus speed tier.",
+        "For the 800 Mbps Business Pro Plus tier, suggest the Fortinet 120G.",
+    ):
+        result = world.assess(text)
+        assert result.proposal is not None and result.proposal.draft is None
+
+
+def test_a_draft_reuses_another_offering_s_component_and_adds_one_per_realising_system(
+    world: _World,
+) -> None:
+    pbx = ProductOffering(
+        "cloud-pbx",
+        "Cloud PBX",
+        order_types=(OrderType("NEW", "New"), OrderType("PBXMOVE", "Move")),
+        components=(
+            OfferingComponent(
+                "porting",
+                "Number porting",
+                capability_ids=("cap-number-portability",),
+                responsibilities=(
+                    ComponentResponsibility("npc", "Port", "Ports numbers.", ("NEW", "PBXMOVE")),
+                ),
+            ),
+        ),
+    )
+    release = replace(world.release, products=(*world.release.products, pbx))
+    nearest = next(item for item in release.products if item.id == BPP)
+
+    draft = draft_offering(
+        release,
+        name="Business Pro Plus",
+        needed=("cap-wifi-access", "cap-number-portability", "cap-billing"),
+        nearest=nearest,
+        in_family=True,
+        source="Drafted for requirement REQ-1",
+        order_code="MIGRATE",
+    )
+
+    offering = draft.offering
+    # Its name and id never take an offering's that exists.
+    assert (offering.name, offering.id) == ("Business Pro Plus (2)", "business-pro-plus-2")
+    assert [item.id for item in offering.components] == ["ap", "porting", "billing-and-charging"]
+    porting = offering.components[1]
+    # Reused as it is, kept to the draft's own order types.
+    assert porting.responsibilities[0].order_types == ("NEW",)
+    billing = offering.components[2]
+    assert [(item.system_id, item.role) for item in billing.responsibilities] == [
+        ("bscs", "DELIVERS")
+    ]
+    journey = draft.journey
+    assert journey is not None and journey.order_type_code == "MIGRATE"
+    added = [item for item in journey.activities if item.number in {"220", "230"}]
+    assert [(item.name, item.performing_system_id, item.component_ids) for item in added] == [
+        ("Number portability", "npc", ("porting",)),
+        ("Billing and charging", "bscs", ("billing-and-charging",)),
+    ]
+    assert draft_problems(release, draft) == ()
+
+
+def test_a_drafted_offering_is_named_after_the_requirement_s_title() -> None:
+    assert draft_name(("  Cloud voice for clinics.\nWith porting.", "More")) == (
+        "Cloud voice for clinics"
+    )
+    long = "Offer " + "managed " * 20 + "voice"
+    name = draft_name((long,))
+    assert len(name) <= NAME_LIMIT and name.endswith("managed…")
+    assert draft_name(("",)) == "New offering"

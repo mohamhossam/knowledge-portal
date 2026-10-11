@@ -52,6 +52,7 @@ def scores(report: EvaluationReport) -> dict[str, float | None]:
         "concept_recall": report.concept_recall,
         "citation_faithfulness": report.citation_faithfulness,
         "owner_consumer_reach": report.reach,
+        "drafts_applied": report.drafts_applied,
     }
 
 
@@ -72,6 +73,14 @@ def _case(result: CaseResult) -> dict[str, Any]:
             "systems": sorted(prediction.system_ids),
             "concepts": None if prediction.concept_ids is None else sorted(prediction.concept_ids),
         },
+        "draft": None
+        if prediction is None or prediction.draft is None
+        else {
+            "offering": prediction.draft.offering.id,
+            "components": [item.id for item in prediction.draft.offering.components],
+            "journey": prediction.draft.journey.id if prediction.draft.journey else None,
+            "problems": list(result.draft_problems or ()),
+        },
         "failure": result.failure,
         "citations": {"checked": result.citations_checked, "faithful": result.citations_faithful},
     }
@@ -88,6 +97,7 @@ def render(report: EvaluationReport) -> str:
             for name, value in scores(report).items()
         ),
         f"{'false changes':<24}{report.false_changes}",
+        f"{'new offerings drafted':<24}{report.new_offerings[1]} of {report.new_offerings[0]}",
     ]
     return "\n".join(lines)
 
@@ -139,6 +149,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                 {
                     "scores": scores(report),
                     "false_changes": report.false_changes,
+                    "new_offerings": dict(
+                        zip(("labelled", "drafted"), report.new_offerings, strict=True)
+                    ),
                     "cases": [_case(item) for item in report.results],
                 },
                 indent=2,

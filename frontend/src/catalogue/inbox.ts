@@ -2,6 +2,7 @@
  * The inbox of change requests from Requirement AI (requirement-portal ADR-0101, step 7):
  * reading it, and saying where a change request comes from. A closed Epic's catalogue change
  * (ontology plan Phase 7) says what it delivered and how that compares with the prediction.
+ * An approved backlog for a new offering (Phase 9) says what was drafted for it.
  */
 import { useQuery } from "@tanstack/react-query";
 
@@ -10,6 +11,7 @@ import { formatDay } from "../home/format";
 
 type Trace = ChangeRequest["trace"];
 export type Delivery = NonNullable<ChangeRequest["delivery"]>;
+export type OfferingDraft = NonNullable<ChangeRequest["draft"]>;
 
 export const CHANGE_REQUESTS_KEY = ["architecture", "change-requests"] as const;
 
@@ -53,4 +55,30 @@ export function hitLine(delivery: Delivery, systemName: (id: string) => string):
     : "";
   return `Delivered ${hits.predicted.length} of the ${predicted.length} system${predicted.length === 1 ? "" : "s"} predicted${missed}${
     besides ? `, and ${besides}` : ""}.`;
+}
+
+/**
+ * What was drafted for a new offering, a sentence each: "Drafts a new offering, ‘Cloud
+ * Voice’, from Business Pro Plus.", "Its components: SIP trunk, by CWOM; Call recording, with
+ * no system yet." and "Its journey: New activation, 3 steps. 1 question is left for
+ * architecture review."
+ */
+export function draftLines(
+  draft: OfferingDraft,
+  systemName: (id: string) => string,
+  offeringName: (id: string) => string,
+): string[] {
+  const from = draft.based_on ? `, from ${offeringName(draft.based_on)}` : "";
+  const parts = draft.components
+    .map((part) => `${part.name}, ${part.system_ids.length ? `by ${part.system_ids.map(systemName).join(", ")}` : "with no system yet"}`)
+    .join("; ");
+  const steps = `${draft.steps} step${draft.steps === 1 ? "" : "s"}`;
+  const asks = draft.questions.length
+    ? ` ${draft.questions.length} question${draft.questions.length === 1 ? " is" : "s are"} left for architecture review.`
+    : "";
+  return [
+    `Drafts a new offering, ‘${draft.offering_name}’${from}.`,
+    ...(parts ? [`Its components: ${parts}.`] : []),
+    `${draft.journey_name ? `Its journey: ${draft.journey_name}, ${steps}.` : "No journey is drafted."}${asks}`,
+  ];
 }

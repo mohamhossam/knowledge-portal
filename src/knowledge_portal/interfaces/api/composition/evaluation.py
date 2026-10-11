@@ -103,7 +103,7 @@ def build_mapping_evaluation(settings: Settings, clock: ClockPort) -> MappingEva
     return MappingEvaluation(
         publish=PublishCatalogueForEvaluation(manage, build_index, clock),
         evaluate=EvaluateImpactMapping(
-            AssessedImpact(assessment), manage, llm.verdict_reasoner.model
+            AssessedImpact(assessment), manage, llm.verdict_reasoner.model, manage
         ),
         evaluate_match=EvaluateImpactMapping(
             MatchedImpact(knowledge), manage, llm.architecture_reasoner.model

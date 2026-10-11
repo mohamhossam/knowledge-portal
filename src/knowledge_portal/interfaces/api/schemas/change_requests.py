@@ -5,6 +5,10 @@ is written, but declares only what a change request needs. Every other field is 
 so additions within 1.x pass, and what is not declared is never stored: the approver's
 email above all.
 
+From export schema 1.6, an approved backlog whose decided product impact is a new offering
+also carries the offering and journey the assessment drafted (ontology plan Phase 9), in the
+catalogue's own shapes, so they are checked as any catalogue edit is.
+
 A closed or removed Epic (ontology plan Phase 7) comes to its own internal route, as
 `DeliveryRequest`: what requirement-portal read from the work-item tracker and the
 decided product impact, with the catalogue changes it implies already worked out.
@@ -40,9 +44,12 @@ from knowledge_portal.domain.architecture.change_requests import (
     TracedFeature,
     UndeliveredFeature,
 )
+from knowledge_portal.domain.architecture.drafts import OfferingDraft
 from knowledge_portal.interfaces.api.schemas.architecture_knowledge import (
     ExtractionRunResponse,
+    JourneySchema,
     KnowledgeReleaseResponse,
+    ProductOfferingSchema,
     RequirementTraceSchema,
 )
 from knowledge_portal.interfaces.api.schemas.bounds import (
@@ -147,12 +154,45 @@ class ExportEpic(BaseModel):
     features: list[ExportFeature] = Field(min_length=1, max_length=MAX_CATALOGUE_ITEMS)
 
 
+class ExportOfferingDraft(BaseModel):
+    """The offering and journey `POST /internal/architecture/assess` drafted for a new-offering
+    verdict, as requirement-portal kept them (ontology plan Phase 9). Each is checked here as
+    the catalogue checks one; whether it fits the draft is the reading's question."""
+
+    offering: ProductOfferingSchema
+    journey: JourneySchema | None = None
+    based_on: Identifier | None = None
+
+    @model_validator(mode="after")
+    def _valid(self) -> ExportOfferingDraft:
+        self.to_domain()
+        return self
+
+    def to_domain(self) -> OfferingDraft:
+        return OfferingDraft(
+            self.offering.to_domain(),
+            self.journey.to_domain() if self.journey else None,
+            self.based_on or None,
+        )
+
+
+class ExportProductImpact(BaseModel):
+    """The decided product impact, export schema 1.6 on: only its draft is read here."""
+
+    verdict: Identifier | None = None
+    offering_id: Identifier | None = None
+    release_id: Identifier | None = None
+    draft: ExportOfferingDraft | None = None
+
+
 class ApprovedBacklogRequest(BaseModel):
     """requirement-portal's approved-backlog export, schema 1.x, as delivered."""
 
     schema_version: str = Field(min_length=1, max_length=20)
     manifest: ExportManifest
     epic: ExportEpic
+    # Export schema 1.6 on: the decided product impact, with the draft for a new offering.
+    product_impact: ExportProductImpact | None = None
 
     @field_validator("schema_version")
     @classmethod
@@ -176,12 +216,14 @@ class ApprovedBacklogRequest(BaseModel):
             ),
             None,
         )
+        draft = self.product_impact.draft if self.product_impact else None
         return DeliveredBacklog(
             approval_id=approval.id,
             subject_fingerprint=approval.subject_fingerprint,
             title=self.epic.name,
             reason=self.epic.business_case or self.epic.outcome or None,
             features=features,
+            draft=draft.to_domain() if draft else None,
             trace=RequirementTrace(
                 requirement_id=self.manifest.requirement_id,
                 breakdown_revision=self.manifest.breakdown_revision,
@@ -487,6 +529,55 @@ class DeliveryResponse(BaseModel):
         )
 
 
+class DraftedComponentResponse(BaseModel):
+    id: str
+    name: str
+    capability_ids: list[str]
+    # The systems responsible for it; none when nothing in the release realises it yet.
+    system_ids: list[str]
+
+
+class OfferingDraftResponse(BaseModel):
+    """The offering and journey drafted for a new-offering verdict, in brief (Phase 9)."""
+
+    offering_id: str
+    offering_name: str
+    # The offering it was drafted from.
+    based_on: str | None
+    components: list[DraftedComponentResponse]
+    # The open questions it asks, such as which system will realise a capability.
+    questions: list[str]
+    journey_id: str | None
+    journey_name: str | None
+    steps: int
+
+    @classmethod
+    def from_domain(cls, draft: OfferingDraft | None) -> OfferingDraftResponse | None:
+        if draft is None:
+            return None
+        offering, journey = draft.offering, draft.journey
+        return cls(
+            offering_id=offering.id,
+            offering_name=offering.name,
+            based_on=draft.based_on,
+            components=[
+                DraftedComponentResponse(
+                    id=part.id,
+                    name=part.name,
+                    capability_ids=list(part.capability_ids),
+                    system_ids=list(
+                        dict.fromkeys(duty.system_id for duty in part.responsibilities)
+                    ),
+                )
+                for part in offering.components
+            ],
+            questions=[item.text for item in offering.questions],
+            journey_id=journey.id if journey else None,
+            journey_name=journey.name if journey else None,
+            steps=len(journey.activities) if journey else 0,
+        )
+
+
 class ChangeRequestResponse(BaseModel):
     """A change request in the inbox, as a knowledge admin sees it."""
 
@@ -506,6 +597,8 @@ class ChangeRequestResponse(BaseModel):
     dismissal_reason: str | None
     # Only on a catalogue change.
     delivery: DeliveryResponse | None
+    # Only on an approved backlog whose decided product impact is a new offering.
+    draft: OfferingDraftResponse | None = None
 
     @classmethod
     def from_domain(cls, item: IncomingChangeRequest) -> ChangeRequestResponse:
@@ -545,6 +638,7 @@ class ChangeRequestResponse(BaseModel):
             dismissed_at=item.dismissed_at,
             dismissal_reason=item.dismissal_reason,
             delivery=DeliveryResponse.from_domain(item),
+            draft=OfferingDraftResponse.from_domain(item.draft),
         )
 
 
