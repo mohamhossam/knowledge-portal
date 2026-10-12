@@ -123,9 +123,45 @@ MAX_FIGURES = 40
 # A Word document's embedded Office files read with it, and the largest read unpacked.
 MAX_EMBEDDED = 20
 MAX_EMBEDDED_BYTES = 25 * 1024 * 1024
+# Read first: an embedded deck or document says more per character than a workbook.
+_EMBEDDED_ORDER = (
+    _DOCX,
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+)
+READING_VERSION = "document-reading-v2"
 MAX_MATCHES_PER_NAME = 3
 _FIGURE = re.compile(r"^image (\d+)\b", re.IGNORECASE)
 _JOURNEY = re.compile(r"\bjourneys?\b", re.IGNORECASE)
+
+
+def _new_sheets(
+    passages: tuple[LocatedText, ...], seen: set[tuple[str, int]]
+) -> tuple[tuple[LocatedText, ...], int]:
+    """A workbook's passages without the sheets an earlier embedded workbook had word for word,
+    and how many sheets were left out.
+
+    An SDD embedded five versions of one workflow book; read whole, they spent most of
+    the reading's budget on the same sheets. A sheet is its heading passage ("sheet 3")
+    and its rows; one is the same as another when its name and every row's text are.
+    Passages of other formats carry no sheets and are kept as they are.
+    """
+    sheets: dict[str, list[LocatedText]] = {}
+    for item in passages:
+        sheet = item.location.split(",", 1)[0]
+        if sheet.startswith("sheet "):
+            sheets.setdefault(sheet, []).append(item)
+    keep: set[str] = set()
+    for sheet, items in sheets.items():
+        key = (items[0].text, hash(tuple(item.text for item in items)))
+        if key not in seen:
+            seen.add(key)
+            keep.add(sheet)
+    kept = tuple(
+        item
+        for item in passages
+        if not item.location.startswith("sheet ") or item.location.split(",", 1)[0] in keep
+    )
+    return kept, len(sheets) - len(keep)
 
 
 def _figure_number(label: str) -> int | None:
@@ -786,7 +822,9 @@ class ProposeCatalogueChanges:
 
     @property
     def profile(self) -> str:
-        return f"{self._extractor.model}:{self._extractor.prompt_version}"
+        # How a document is cut into passages is part of its reading, as the prompt is:
+        # a change to it reads a document again rather than reusing the last reading.
+        return f"{self._extractor.model}:{self._extractor.prompt_version}+{READING_VERSION}"
 
     def document(self, release_id: str, version_id: str, actor: Actor) -> KnowledgeDocumentVersion:
         """The draft document to read, refused up front if the model cannot read it."""
@@ -812,7 +850,20 @@ class ProposeCatalogueChanges:
         found = self._located.embedded(_DOCX, stored, MAX_EMBEDDED_BYTES)
         passages: list[LocatedText] = []
         unread = found.others
-        for count, part in enumerate(found.parts):
+        # Word documents and decks before workbooks, each kind in document order, so
+        # the character budget is spent on what says most.
+        ordered = sorted(
+            found.parts,
+            key=lambda part: (
+                _EMBEDDED_ORDER.index(part.mime_type)
+                if part.mime_type in _EMBEDDED_ORDER
+                else len(_EMBEDDED_ORDER),
+                part.number,
+            ),
+        )
+        seen_sheets: set[tuple[str, int]] = set()
+        repeated = 0
+        for count, part in enumerate(ordered):
             if count == MAX_EMBEDDED:
                 unread += len(found.parts) - MAX_EMBEDDED
                 break
@@ -825,6 +876,8 @@ class ProposeCatalogueChanges:
             ):
                 unread += 1
                 continue
+            inner, skipped = _new_sheets(inner, seen_sheets)
+            repeated += skipped
             passages.extend(
                 replace(
                     item,
@@ -838,6 +891,11 @@ class ProposeCatalogueChanges:
             warnings.append(
                 f"{unread} embedded object(s) were not read: only Word, PowerPoint and Excel "
                 "files are, each within the upload limits."
+            )
+        if repeated:
+            warnings.append(
+                f"{repeated} embedded sheet(s) were left out: an embedded workbook read before "
+                "has the same sheet, word for word."
             )
         return tuple(passages)
 

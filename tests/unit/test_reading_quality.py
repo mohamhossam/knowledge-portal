@@ -364,11 +364,15 @@ def _with_embedded() -> bytes:
         + embedded("rId1")
         + embedded("rId2")
         + embedded("rId3")
+        + embedded("rId4")
+        + embedded("rId5")
     )
     relationships = (
         f'<Relationship Id="rId1" Type="{R}/package" Target="embeddings/flow.pptx"/>'
         f'<Relationship Id="rId2" Type="{R}/oleObject" Target="embeddings/oleObject1.bin"/>'
         f'<Relationship Id="rId3" Type="{R}/package" Target="embeddings/spec.docx"/>'
+        f'<Relationship Id="rId4" Type="{R}/package" Target="embeddings/flows.xlsx"/>'
+        f'<Relationship Id="rId5" Type="{R}/package" Target="embeddings/flows2.xlsx"/>'
     )
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as archive:
@@ -387,6 +391,9 @@ def _with_embedded() -> bytes:
         archive.writestr(
             "word/embeddings/spec.docx", _docx(_p("CWOM orchestrates the fulfilment."))
         )
+        # Two versions of one workflow book, the same word for word.
+        archive.writestr("word/embeddings/flows.xlsx", _workbook())
+        archive.writestr("word/embeddings/flows2.xlsx", _workbook())
     return buffer.getvalue()
 
 
@@ -401,18 +408,30 @@ def test_office_files_a_word_document_embeds_are_read_and_their_citations_open()
         for item in extractor.requests[-1].segments
         if item.location.startswith("embedded")
     ]
-    assert read == [
-        (
-            "embedded 1, slide 1",
-            ("Annexure", "Workflows", "flow.pptx"),
-            "Step 1: BCRM captures the order.",
-        ),
+    # Documents and decks first; the second workbook's sheet repeats the first's.
+    assert [location for location, _, _ in read] == [
+        "embedded 3, paragraph 1",
+        "embedded 1, slide 1",
+        "embedded 4, sheet 1",
+        "embedded 4, sheet 1, row 1",
+        "embedded 4, sheet 1, row 2",
+    ]
+    assert read[:2] == [
         (
             "embedded 3, paragraph 1",
             ("Annexure", "Workflows", "spec.docx"),
             "CWOM orchestrates the fulfilment.",
         ),
+        (
+            "embedded 1, slide 1",
+            ("Annexure", "Workflows", "flow.pptx"),
+            "Step 1: BCRM captures the order.",
+        ),
     ]
+    assert (
+        "1 embedded sheet(s) were left out: an embedded workbook read before has the same "
+        "sheet, word for word."
+    ) in run.warnings
     assert (
         "1 embedded object(s) were not read: only Word, PowerPoint and Excel files are, each "
         "within the upload limits."

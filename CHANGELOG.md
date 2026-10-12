@@ -72,6 +72,11 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 - A stated dependency the model gave no description is kept, described by its kind ("Calls the
   API of CRMGW"); the reading had left out 104. One with no target is left out rather than
   linked to a system called "item".
+- Embedded Word documents and decks are read before embedded workbooks, and a workbook's
+  sheet already read word for word in an earlier embedded workbook is left out, with a count:
+  five versions of one workflow book had spent the reading's budget. How a document is cut
+  into passages is now part of its reading profile (`document-reading-v2`), so a change to it
+  reads a document again.
 
 ## 0.6.0 — 2026-10-11
 
