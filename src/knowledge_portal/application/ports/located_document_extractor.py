@@ -25,3 +25,7 @@ class LocatedText:
 
 class LocatedDocumentExtractorPort(Protocol):
     def extract(self, mime_type: str, content: bytes) -> tuple[LocatedText, ...]: ...
+
+    def figure_headings(self, mime_type: str, content: bytes) -> dict[str, tuple[str, ...]]:
+        """The headings each embedded image first appears under, by its package path."""
+        ...

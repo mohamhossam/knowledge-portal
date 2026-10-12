@@ -8,6 +8,7 @@ merges it into the draft under the draft's revision check.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 from datetime import datetime
@@ -42,6 +43,7 @@ from knowledge_portal.application.ports.change_requests import ChangeRequestInbo
 from knowledge_portal.application.ports.identity import Actor, require_maintainer
 from knowledge_portal.application.ports.located_document_extractor import (
     LocatedDocumentExtractorPort,
+    LocatedText,
 )
 from knowledge_portal.application.ports.system_matcher import (
     MatchableSystem,
@@ -101,11 +103,48 @@ from knowledge_portal.domain.architecture.products import (
     merge_offerings,
     same_offering,
 )
-from knowledge_portal.domain.document.value_objects import DocumentVersionId
+from knowledge_portal.domain.document.value_objects import DocumentVersionId, EvidenceBlockKind
 
 IMAGE_TYPES = frozenset({"image/png", "image/jpeg"})
-MAX_SEGMENTS = 1200
+_DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+# How much of a document's text one reading covers. Passages vary from a word to
+# a page, so the budget counts characters: a cap on passages stopped a long
+# specification a tenth of the way in. The model reads it in calls of at most
+# 48,000 characters, so a full budget is some twenty calls.
+MAX_READ_CHARACTERS = 1_000_000
+# A Word document's figures are each read in a call of their own by a vision model.
+MAX_FIGURES = 40
 MAX_MATCHES_PER_NAME = 3
+_FIGURE = re.compile(r"^image (\d+)\b", re.IGNORECASE)
+
+
+def _figure_number(label: str) -> int | None:
+    """N in the extractor's "Image N" (or "Image N — cell") label."""
+    match = _FIGURE.match(label)
+    return int(match.group(1)) if match else None
+
+
+def _within_budget(
+    located: tuple[LocatedText, ...], warnings: list[str]
+) -> tuple[LocatedText, ...]:
+    """The passages a reading covers: all of them, unless the text runs past the budget."""
+    total = sum(len(item.text) for item in located)
+    if total <= MAX_READ_CHARACTERS:
+        return located
+    size = 0
+    for count, item in enumerate(located):
+        size += len(item.text)
+        if size > MAX_READ_CHARACTERS:
+            kept = located[:count]
+            last = kept[-1].location if kept else "the start"
+            warnings.append(
+                f"Only the first {size - len(item.text):,} of {total:,} characters were read, "
+                f"up to {last}."
+            )
+            return kept
+    return located
+
+
 # Accepted in this order, so what a suggestion refers to is in the draft first.
 _ORDER = (
     CandidateKind.LANDSCAPE_DOMAIN,
@@ -628,6 +667,53 @@ class ProposeCatalogueChanges:
             )
         return version
 
+    def _figures(
+        self, stored: bytes, numbered: int, warnings: list[str]
+    ) -> tuple[ExtractionSegment, ...]:
+        """A Word document's figures, for a vision model: diagrams often say what text does not.
+
+        The extractor sanitises each image and leaves out decorative ones (logos,
+        icons); a figure repeated on many pages is read once. Each figure keeps
+        the headings it sits under and is cited as "image N", its place among
+        the document's images.
+        """
+        extracted = self._documents.extract_structured(_DOCX, stored)
+        assets = {item.block_id: item for item in extracted.assets}
+        found = [
+            (number, assets[block.id])
+            for block in extracted.evidence_blocks
+            if block.kind is EvidenceBlockKind.IMAGE
+            and block.id in assets
+            and (number := _figure_number(block.label)) is not None
+        ]
+        if not found:
+            return ()
+        headings = self._located.figure_headings(_DOCX, stored)
+        if not self._extractor.supports_images:
+            warnings.append(
+                f"{len(found)} figure(s) were not read: the configured model cannot read images."
+            )
+            return ()
+        figures: list[ExtractionSegment] = []
+        seen: set[str] = set()
+        for number, asset in found:
+            if asset.checksum_sha256 in seen:
+                continue
+            seen.add(asset.checksum_sha256)
+            if len(figures) == MAX_FIGURES:
+                warnings.append(f"Only the first {MAX_FIGURES} figures were read.")
+                break
+            figures.append(
+                ExtractionSegment(
+                    numbered + len(figures) + 1,
+                    f"image {number}",
+                    image_mime_type=asset.mime_type,
+                    image=self._documents.extract_asset(_DOCX, stored, asset.package_path),
+                    section=headings.get(asset.package_path, ()),
+                )
+            )
+        return tuple(figures)
+
     def execute(
         self,
         release_id: str,
@@ -648,11 +734,7 @@ class ProposeCatalogueChanges:
                 ExtractionSegment(1, "image", image_mime_type=version.mime_type, image=image),
             )
         else:
-            located = self._located.extract(version.mime_type, stored)
-            if len(located) > MAX_SEGMENTS:
-                warnings.append(
-                    f"Only the first {MAX_SEGMENTS} of {len(located)} passages were read."
-                )
+            located = _within_budget(self._located.extract(version.mime_type, stored), warnings)
             segments = tuple(
                 ExtractionSegment(
                     number,
@@ -661,8 +743,10 @@ class ProposeCatalogueChanges:
                     section=item.heading_path,
                     cells=item.cells,
                 )
-                for number, item in enumerate(located[:MAX_SEGMENTS], start=1)
+                for number, item in enumerate(located, start=1)
             )
+            if version.mime_type == _DOCX:
+                segments += self._figures(stored, len(segments), warnings)
         known = tuple(
             KnownSystem(
                 item.id, item.name, item.aliases, tuple(part.name for part in item.components)

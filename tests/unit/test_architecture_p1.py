@@ -243,9 +243,10 @@ def test_reading_for_suggestions_keeps_every_passage_and_its_location() -> None:
         "paragraph 4",
         "paragraph 5",
         "paragraph 6",
-        "table 1, row 1, cell 1, paragraph 7",
-        "table 1, row 1, cell 2, paragraph 8",
+        # A table row is one passage, its cells joined.
+        "table 1, row 1",
     ]
+    assert located[-1].text == "BCRM | Sales CRM"
     assert [item.text for item in located if item.heading] == ["Ordering", "Catalogue", "Billing"]
     assert located[2].heading_path == ("Ordering", "Catalogue")
 

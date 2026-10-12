@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import posixpath
 import re
 import zipfile
 from xml.etree import ElementTree
@@ -55,51 +56,63 @@ class LocatedDocumentExtractor:
                 for start in range(0, len(lines), 40)
                 if "\n".join(lines[start : start + 40]).strip()
             )
-        with zipfile.ZipFile(io.BytesIO(content)) as archive:
-            root = ElementTree.fromstring(archive.read("word/document.xml"))
-            styles = (
-                _heading_styles(ElementTree.fromstring(archive.read("word/styles.xml")))
-                if "word/styles.xml" in archive.namelist()
-                else {}
-            )
-        body = root.find(f"{_W}body")
+        body, styles, _ = _word(content)
         if body is None:
             return ()
         segments: list[LocatedText] = []
         headings: list[str] = []
+        # Table paragraphs are counted too, so "paragraph N" names the same
+        # paragraph however the tables around it are read.
         paragraph_number = 0
-
-        def append_paragraph(
-            paragraph: ElementTree.Element, location: str, block: str | None = None
-        ) -> None:
-            nonlocal paragraph_number, headings
-            paragraph_number += 1
-            value = "".join(node.text or "" for node in paragraph.iter(f"{_W}t")).strip()
-            if not value:
-                return
-            level = None if block else _heading_level(paragraph, styles)
-            if level is None:
-                segments.append(LocatedText(location, value, tuple(headings), block=block))
-                return
-            headings = [*headings[: level - 1], value]
-            segments.append(LocatedText(location, value, tuple(headings[:-1]), heading=True))
-
         table_number = 0
         for element in body:
             if element.tag == f"{_W}p":
-                append_paragraph(element, f"paragraph {paragraph_number + 1}")
+                paragraph_number += 1
+                value = _text(element)
+                if not value:
+                    continue
+                level = _heading_level(element, styles)
+                location = f"paragraph {paragraph_number}"
+                if level is None:
+                    segments.append(LocatedText(location, value, tuple(headings)))
+                    continue
+                headings = [*headings[: level - 1], value]
+                segments.append(LocatedText(location, value, tuple(headings[:-1]), heading=True))
             elif element.tag == f"{_W}tbl":
                 table_number += 1
-                for row_number, row in enumerate(element.findall(f"{_W}tr"), 1):
-                    for cell_number, cell in enumerate(row.findall(f"{_W}tc"), 1):
-                        for paragraph in cell.iter(f"{_W}p"):
-                            append_paragraph(
-                                paragraph,
-                                f"table {table_number}, row {row_number}, "
-                                f"cell {cell_number}, paragraph {paragraph_number + 1}",
-                                f"table {table_number}, row {row_number}",
-                            )
+                rows: list[list[str]] = []
+                for row in element.findall(f"{_W}tr"):
+                    cells = []
+                    for cell in row.findall(f"{_W}tc"):
+                        paragraphs = list(cell.iter(f"{_W}p"))
+                        paragraph_number += len(paragraphs)
+                        cells.append("\n".join(filter(None, map(_text, paragraphs))))
+                    rows.append(cells)
+                segments.extend(_table_rows(table_number, rows, tuple(headings)))
         return tuple(segments)
+
+    def figure_headings(self, mime_type: str, content: bytes) -> dict[str, tuple[str, ...]]:
+        """For a Word document the validator has accepted: each image's headings, by package path.
+
+        The extractor's own figure labels name headings only by position, so the
+        headings a figure sits under are read here, as `extract` reads them.
+        """
+        if mime_type != _DOCX:
+            return {}
+        body, styles, targets = _word(content)
+        if body is None:
+            return {}
+        result: dict[str, tuple[str, ...]] = {}
+        headings: list[str] = []
+        for element in body:
+            if element.tag == f"{_W}p" and (level := _heading_level(element, styles)) is not None:
+                if value := _text(element):
+                    headings = [*headings[: level - 1], value]
+            for blip in element.iter(f"{_A}blip"):
+                target = targets.get(blip.get(f"{_R}embed") or "")
+                if target is not None:
+                    result.setdefault(target, tuple(headings))
+        return result
 
     def _worksheet_rows(self, content: bytes) -> tuple[LocatedText, ...]:
         """One passage per non-empty row, under its sheet's name.
@@ -129,7 +142,88 @@ class LocatedDocumentExtractor:
         return tuple(segments)
 
 
+def _word(
+    content: bytes,
+) -> tuple[ElementTree.Element | None, dict[str, int], dict[str, str]]:
+    """A Word document's body, heading styles, and internal relationship targets by id."""
+    with zipfile.ZipFile(io.BytesIO(content)) as archive:
+        names = set(archive.namelist())
+        root = ElementTree.fromstring(archive.read("word/document.xml"))
+        styles = (
+            _heading_styles(ElementTree.fromstring(archive.read("word/styles.xml")))
+            if "word/styles.xml" in names
+            else {}
+        )
+        relationships = (
+            ElementTree.fromstring(archive.read(_RELATIONSHIPS))
+            if _RELATIONSHIPS in names
+            else None
+        )
+    targets: dict[str, str] = {}
+    for item in relationships.iter(f"{_PR}Relationship") if relationships is not None else ():
+        target = item.get("Target") or ""
+        if item.get("Id") and target and item.get("TargetMode") != "External":
+            # As the extractor names an image's package part, so the two can be matched.
+            targets[item.get("Id", "")] = posixpath.normpath(posixpath.join("word", target)).lstrip(
+                "/"
+            )
+    return root.find(f"{_W}body"), styles, targets
+
+
+def _text(paragraph: ElementTree.Element) -> str:
+    return "".join(node.text or "" for node in paragraph.iter(f"{_W}t")).strip()
+
+
+def _table_rows(table: int, rows: list[list[str]], headings: tuple[str, ...]) -> list[LocatedText]:
+    """One passage per Word table row, as a spreadsheet row is read.
+
+    A cell per passage split one row across many passages, so neither a reader
+    nor a quote saw the row whole, and a long specification ran to thousands of
+    passages. A table of two or more columns and rows takes its first row as
+    the header: each later row carries its (column, value) cells, every column
+    included, and reads "Column: value | Column: value". The header row, and
+    every row of a one-column table (a boxed note), read as their cells joined.
+    """
+    width = max((len(cells) for cells in rows), default=0)
+    header = (
+        [cell.replace("\n", " ") or f"Column {number}" for number, cell in enumerate(rows[0], 1)]
+        if width > 1 and len(rows) > 1
+        else None
+    )
+    passages: list[LocatedText] = []
+    for row_number, values in enumerate(rows, 1):
+        location = f"table {table}, row {row_number}"
+        if header is None or row_number == 1:
+            text = " | ".join(value for value in values if value)
+            if text:
+                passages.append(LocatedText(location, text, headings, block=location))
+            continue
+        cells = tuple(
+            (
+                header[number] if number < len(header) else f"Column {number + 1}",
+                values[number] if number < len(values) else "",
+            )
+            for number in range(max(len(header), len(values)))
+        )
+        if any(value for _, value in cells):
+            passages.append(
+                LocatedText(
+                    location,
+                    " | ".join(f"{name}: {value}" for name, value in cells if value),
+                    headings,
+                    block=location,
+                    cells=cells,
+                )
+            )
+    return passages
+
+
 _XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+_DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+_RELATIONSHIPS = "word/_rels/document.xml.rels"
+_A = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
+_R = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
+_PR = "{http://schemas.openxmlformats.org/package/2006/relationships}"
 _HIDDEN = "Hidden worksheet: "
 _ROW = re.compile(r"^Worksheet (?P<sheet>\d+)!(?P<row>\d+):(?P=row)$")
 _W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"

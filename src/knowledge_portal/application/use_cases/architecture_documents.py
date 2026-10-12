@@ -264,6 +264,8 @@ class DocumentPassage:
 _PART = re.compile(r" \(part \d+ of \d+\)$")
 _IMAGES = frozenset({"image/png", "image/jpeg"})
 _LINE_RANGE = re.compile(r"^lines? (?P<start>\d+)(?:-(?P<end>\d+))?$")
+_CELL = re.compile(r"^(table \d+, row \d+), cell \d+, paragraph \d+$")
+_FIGURE = re.compile(r"^image \d+$")
 
 
 def _line_range(location: str) -> tuple[int, int] | None:
@@ -307,6 +309,15 @@ class ReadKnowledgeDocument:
             version.mime_type, self._storage.get(DocumentVersionId(version.storage_key))
         )
         wanted = _PART.sub("", location.strip())
+        if _FIGURE.match(wanted):
+            # A Word document's figure, read by a vision model; it has no text around it.
+            figure = LocatedText(
+                wanted,
+                "A figure in the document, read from the image. Open the document to see it.",
+            )
+            return DocumentPassage(version.mime_type, figure, (), ())
+        # Suggestions read before a Word table row became one passage cite a cell of it.
+        wanted = _CELL.sub(r"\1", wanted)
         index = next((i for i, item in enumerate(segments) if item.location == wanted), None)
         if index is None and (lines := _line_range(wanted)) is not None:
             # Suggestions read before a document's passages changed shape cite line

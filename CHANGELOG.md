@@ -32,6 +32,18 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   pages, extracted characters, spreadsheet cells, image pixels, XML nodes), as library
   documents are. They were held to the library defaults, so a large DOCX was refused ("more
   than 250000 XML nodes") whatever `DOCUMENT_MAX_XML_NODES` said.
+- A long document is read whole. A reading stopped after 1,200 passages, about a tenth of a
+  long Word specification; it now covers up to 1,000,000 characters and says where it stopped
+  if a document runs past that.
+- A Word table row is one passage, its cells under their column names ("System: CWOM |
+  Change: …"), as a spreadsheet row is. A cell per passage split each row apart, so a quote
+  across cells failed its check and the suggestion was dropped. Older citations of a cell still
+  open its row.
+- A Word document's figures (diagrams, journeys, sequence charts) are read by a vision model,
+  each once, under the headings they sit in, and cited as "image N"; decorative images are
+  left out. A model that cannot read images says how many figures went unread.
+- A requirements or feasibility table, or a row naming several systems, is no longer read as
+  a system inventory (table reader `catalogue-tables-v7`).
 
 ## 0.6.0 — 2026-10-11
 

@@ -1365,8 +1365,9 @@ class FakeCatalogueExtractor:
     three for the last system named; the technology and component are optional),
     ``A depends on B for reason`` and ``A calls B for reason`` lines (the second
     as an API call), and reads ``A sends X to B`` as an inferred data transfer.
-    An image yields one system named after the document so the review flow can
-    be exercised without a vision model. Only prose is read: a table row arrives
+    An uploaded image yields one system named after the document so the review
+    flow can be exercised without a vision model; a Word document's figures yield
+    nothing. Only prose is read: a table row arrives
     as ``Column: value | Column: value`` and would otherwise match a label, so a
     segment with cells, or a line holding `` | ``, is skipped.
     """
@@ -1409,6 +1410,8 @@ class FakeCatalogueExtractor:
         for segment in request.segments:
             request.checkpoint()
             if segment.image_mime_type:
+                if segment.location != "image":
+                    continue  # A Word document's figure; only an uploaded image stands alone.
                 name = request.document_title.strip()
                 changes.append(
                     ProposedChange(

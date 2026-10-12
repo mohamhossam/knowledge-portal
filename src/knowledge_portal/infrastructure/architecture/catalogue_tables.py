@@ -76,7 +76,7 @@ from knowledge_portal.domain.architecture.tracking import (
 from knowledge_portal.infrastructure.llm.catalogue_extraction import plain_name, slug
 
 READER = "catalogue-table-reader"
-READER_VERSION = "catalogue-tables-v6"
+READER_VERSION = "catalogue-tables-v7"
 # An Integrations entry longer than this is a phrase ("Same service context as
 # B2B Web"), not the name of a system.
 _MAX_ENTRY_WORDS = 4
@@ -98,6 +98,11 @@ _INTERACTION = frozenset({"interaction", "interaction type"})
 _INTERFACE = frozenset({"interface", "interface api event"})
 _PAYLOAD = frozenset({"payload"})
 _DOMAIN = frozenset({"domain", "domain name", "landscape domain"})
+# A requirements or feasibility table lists the systems a requirement touches; it
+# is not a system inventory, though it has "ID" and "System" columns.
+_REQUIREMENT = frozenset(
+    {"requirement", "requirement details", "requirement description", "feasibility"}
+)
 _CODE = frozenset({"code"})
 _SUBDOMAIN = frozenset({"sub domain", "subdomain"})
 # Channels (requirement-portal ADR-0101): a Channels table, and the channels an order type
@@ -142,7 +147,13 @@ class _Row:
             and not columns & (_FUNCTION | _INTEGRATIONS | _ALIASES)
         ):
             return "channel"
-        if columns & _SYSTEM and columns & (_ID | _FUNCTION | _INTEGRATIONS | _ALIASES):
+        if (
+            columns & _SYSTEM
+            and columns & (_ID | _FUNCTION | _INTEGRATIONS | _ALIASES)
+            and not columns & _REQUIREMENT
+            # An inventory names one system a row, never "ECM, CWOM, WFMS".
+            and len(_entries(self.get(_SYSTEM))) < 2
+        ):
             return "system"
         if columns & _DOMAIN and columns & (_ID | _CODE):
             return "domain"
