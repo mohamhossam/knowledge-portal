@@ -191,10 +191,17 @@ class LocatedDocumentExtractor:
         """
         segments: list[LocatedText] = []
         sheet_name = ""
+        rows: list[tuple[str, int, dict[str, str]]] = []
+
+        def flush() -> None:
+            segments.extend(_sheet_rows(sheet_name, rows))
+            rows.clear()
+
         for block in self._validator.extract_structured(_XLSX, content).evidence_blocks:
             if not block.text or (block.section_path and block.section_path[0].startswith(_HIDDEN)):
                 continue
             if block.kind is EvidenceBlockKind.HEADING:
+                flush()
                 sheet_name = block.text
                 location = f"sheet {block.label.removeprefix('Worksheet ')}"
                 segments.append(LocatedText(location, sheet_name, heading=True))
@@ -203,12 +210,104 @@ class LocatedDocumentExtractor:
                 if row is None:  # A chart: its title and the ranges it plots.
                     segments.append(LocatedText(block.label.lower(), block.text))
                 else:
-                    segments.append(
-                        LocatedText(
-                            f"sheet {row['sheet']}, row {row['row']}", block.text, (sheet_name,)
-                        )
-                    )
+                    rows.append((row["sheet"], int(row["row"]), _cells(block.text)))
+        flush()
         return tuple(segments)
+
+
+def _cells(text: str) -> dict[str, str]:
+    """A worksheet row's values by column letter, merged cells holding their anchor's value.
+
+    The extractor writes a row "A3=1 | B3=CPE platform Selection", a merged range's
+    first cell "A2=1 [merged A2:A7 anchor]" and its others "A3=[merged A2:A7
+    continuation; anchor A2]"; a continuation is given the anchor's value later, by
+    ``_sheet_rows``, which has seen the anchor's row.
+    """
+    values: dict[str, str] = {}
+    for part in _CELL_SPLIT.split(text):
+        match = _CELL.match(part)
+        if match is None:
+            continue
+        value = match["value"]
+        if continued := _CONTINUATION.fullmatch(value.strip()):
+            value = f"\0{continued['anchor']}"
+        else:
+            value = _ANCHOR.sub("", value).strip()
+        values[match["column"]] = value
+    return values
+
+
+def _header_like(values: dict[str, str]) -> bool:
+    """A row naming columns: three or more short labels, none a number or a date."""
+    labels = [value for value in values.values() if value and not value.startswith("\0")]
+    return len(labels) >= 3 and all(
+        len(label) <= _MAX_LABEL and "\n" not in label and not _NUMBER_LIKE.match(label)
+        for label in labels
+    )
+
+
+def _sheet_rows(sheet: str, rows: list[tuple[str, int, dict[str, str]]]) -> list[LocatedText]:
+    """A sheet's rows as passages, under their column names where the sheet has a header row.
+
+    A header row is three or more short labels ("Seq. | Description | System")
+    that starts a table: first in the sheet, after a blank row or after a title.
+    A row of one or two values just above a header is that table's title ("WF-1 |
+    Order fulfillment"), and the tables below sit under it until the next title. A row
+    under a header reads "Seq.: 1 | System: OM" and carries its (column, value)
+    cells, every header column included, as a Word or Markdown table row does, so
+    the table reader can read it. A sheet with no header row reads as the
+    extractor wrote it.
+    """
+    passages: list[LocatedText] = []
+    seen: dict[str, str] = {}
+    header: dict[str, str] | None = None
+    title: str | None = None
+    previous: int | None = None
+    for index, (number, row, values) in enumerate(rows):
+        for column, value in list(values.items()):
+            if value.startswith("\0"):
+                # Merged down, a cell holds the value above; merged across, it is said once.
+                anchor = value[1:]
+                same_row = anchor.lstrip("ABCDEFGHIJKLMNOPQRSTUVWXYZ") == str(row)
+                values[column] = "" if same_row else seen.get(anchor, "")
+            seen[f"{column}{row}"] = values[column]
+        filled = {column: value for column, value in values.items() if value}
+        location = f"sheet {number}, row {row}"
+        gap = previous is None or row > previous + 1
+        previous = row
+        following = rows[index + 1][2] if index + 1 < len(rows) else {}
+        if gap:
+            # A blank row ends a header; the title stands until the next one, so a table
+            # broken by a blank row and its header repeated stays under its title.
+            header = None
+        if len(filled) <= 2 and _header_like(following):
+            title = " ".join(" ".join(filled.values()).split())[:_MAX_TITLE].rstrip()
+            header = None
+            passages.append(LocatedText(location, title, (sheet,), heading=True))
+            continue
+        if _header_like(filled) and header is None:
+            header = {column: " ".join(value.split()) for column, value in filled.items()}
+            text = " | ".join(header.values())
+            passages.append(LocatedText(location, text, _under(sheet, title), block=location))
+            continue
+        if header is None:
+            text = " | ".join(f"{column}{row}={value}" for column, value in filled.items())
+            passages.append(LocatedText(location, text, (sheet,)))
+            continue
+        columns = [*header, *(column for column in values if column not in header)]
+        cells = tuple(
+            (header.get(column, f"Column {column}"), values.get(column, "")) for column in columns
+        )
+        text = " | ".join(f"{name}: {value}" for name, value in cells if value)
+        if text:
+            passages.append(
+                LocatedText(location, text, _under(sheet, title), block=location, cells=cells)
+            )
+    return passages
+
+
+def _under(sheet: str, title: str | None) -> tuple[str, ...]:
+    return (sheet, title) if title else (sheet,)
 
 
 def _word(
@@ -369,6 +468,17 @@ _R = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
 _PR = "{http://schemas.openxmlformats.org/package/2006/relationships}"
 _HIDDEN = "Hidden worksheet: "
 _ROW = re.compile(r"^Worksheet (?P<sheet>\d+)!(?P<row>\d+):(?P=row)$")
+# A row's cells: "A3=1 | B3=CPE platform Selection"; a value may itself hold " | ".
+_CELL_SPLIT = re.compile(r" \| (?=[A-Z]{1,3}\d+=)")
+_CELL = re.compile(r"^(?P<column>[A-Z]{1,3})\d+=(?P<value>.*)$", re.DOTALL)
+_ANCHOR = re.compile(r"\s*\[merged [A-Z]+\d+:[A-Z]+\d+ anchor\]\s*$")
+_CONTINUATION = re.compile(
+    r"\[merged [A-Z]+\d+:[A-Z]+\d+ continuation; anchor (?P<anchor>[A-Z]+\d+)\]"
+)
+_NUMBER_LIKE = re.compile(r"^[\d\s.,:/%-]+$")
+# A column label is short; a table's title is kept to a heading's length.
+_MAX_LABEL = 40
+_MAX_TITLE = 120
 _W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 _HEADING_NAME = re.compile(r"^heading\s*([1-9])$")
 

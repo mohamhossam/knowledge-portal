@@ -115,9 +115,10 @@ IMAGE_TYPES = frozenset({"image/png", "image/jpeg"})
 _DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 # How much of a document's text one reading covers. Passages vary from a word to
 # a page, so the budget counts characters: a cap on passages stopped a long
-# specification a tenth of the way in. The model reads it in calls of at most
-# 48,000 characters, so a full budget is some twenty calls.
-MAX_READ_CHARACTERS = 1_000_000
+# specification a tenth of the way in. It covers a long SDD with its embedded
+# documents, decks and workflow books (1.9 million characters); the model reads it
+# in calls of at most 48,000 characters, so a full budget is some forty calls.
+MAX_READ_CHARACTERS = 2_000_000
 # A Word document's figures are each read in a call of their own by a vision model.
 MAX_FIGURES = 40
 # A Word document's embedded Office files read with it, and the largest read unpacked.

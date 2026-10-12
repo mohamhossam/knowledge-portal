@@ -34,6 +34,7 @@ from knowledge_portal.domain.architecture.products import (
     PlanCharacteristic,
     ProductOffering,
 )
+from knowledge_portal.infrastructure.architecture.catalogue_tables import CatalogueTableReader
 from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.architecture.located_extractor import (
     LocatedDocumentExtractor,
@@ -501,3 +502,70 @@ def test_a_dependency_the_model_gave_no_words_for_is_said_by_its_kind() -> None:
         "Depends on TIBCO",
     ]
     assert proposal.warnings == ("Incomplete suggestions were left out: 1 relationship.",)
+
+
+# Workflow books ----------------------------------------------------------------------------
+
+
+def _workflow_book() -> bytes:
+    """An SDD's workflow sheet: a title merged across, a header, numbered stages, a note."""
+    book = Workbook()
+    sheet = book.active
+    assert sheet is not None
+    sheet.title = "Provisioning WF-P1"
+    sheet.append(["WF-1", "Order fulfillment | Business Pro Plus New Request"])
+    sheet.merge_cells("B1:E1")
+    sheet.append(["Seq.", "Description", "Section", "System", "OLA"])
+    sheet.append(["1", "CPE platform selection", "System", "BCRM", "3 Min"])
+    sheet.append(["2", "Domain name provisioning", "System", "CWOM", None])
+    sheet.append(["3", "Customer appointment", "Field", "WFMS", None])
+    sheet.append(["Note: 1", "Templates are shown in the portal", None, None, None])
+    sheet.append([None])
+    sheet.append(["Version", "Owner"])
+    sheet.append(["1.0", "OM team"])
+    buffer = io.BytesIO()
+    book.save(buffer)
+    return buffer.getvalue()
+
+
+def test_a_workbooks_rows_are_read_under_their_header_and_title() -> None:
+    located = LocatedDocumentExtractor(SafeDocumentTextExtractor()).extract(XLSX, _workflow_book())
+
+    by_place = {item.location: item for item in located}
+    title = by_place["sheet 1, row 1"]
+    assert (title.heading, title.text) == (
+        True,
+        "WF-1 Order fulfillment | Business Pro Plus New Request",
+    )
+    stage = by_place["sheet 1, row 3"]
+    assert stage.text == (
+        "Seq.: 1 | Description: CPE platform selection | Section: System | System: BCRM | "
+        "OLA: 3 Min"
+    )
+    assert stage.heading_path == ("Provisioning WF-P1", title.text)
+    assert ("System", "BCRM") in stage.cells
+    # Two labels are not a header: that table reads as the extractor wrote it.
+    assert by_place["sheet 1, row 9"].text == "A9=1.0 | B9=OM team"
+
+
+def test_a_workflow_table_is_read_as_a_journey_without_the_model() -> None:
+    located = LocatedDocumentExtractor(SafeDocumentTextExtractor()).extract(XLSX, _workflow_book())
+    segments = tuple(
+        ExtractionSegment(
+            number, item.location, item.text, section=item.heading_path, cells=item.cells
+        )
+        for number, item in enumerate(located, start=1)
+    )
+
+    reading = CatalogueTableReader().read(ExtractionRequest("SDD", segments, ()))
+
+    (change,) = reading.changes
+    journey = change.content.journey
+    assert journey is not None
+    assert journey.name == "WF-1 Order fulfillment — Business Pro Plus New Request"
+    assert [(item.number, item.name, item.performing_system_id) for item in journey.activities] == [
+        ("1", "CPE platform selection", "bcrm"),
+        ("2", "Domain name provisioning", "cwom"),
+        ("3", "Customer appointment", "wfms"),
+    ]
+    assert change.reader is not None and change.reader[1] == "catalogue-tables-v8"

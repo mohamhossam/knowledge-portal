@@ -77,6 +77,14 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   five versions of one workflow book had spent the reading's budget. How a document is cut
   into passages is now part of its reading profile (`document-reading-v2`), so a change to it
   reads a document again.
+- A workbook's rows are read under their column names when a sheet has a header row ("Seq.: 1
+  | Description: CPE platform selection | System: OM"), with a title row above the header ("WF-1
+  Order fulfillment | ...") as their heading; merged cells hold their value once.
+- A workflow table (a numbered step, a description or activity, and a system column) is read
+  as a journey without the model, one per titled workflow: an SDD's provisioning book gives
+  ten (table reader `catalogue-tables-v8`).
+- A reading covers up to 2,000,000 characters, enough for a long SDD with its embedded
+  documents, decks and workflow books.
 
 ## 0.6.0 — 2026-10-11
 
