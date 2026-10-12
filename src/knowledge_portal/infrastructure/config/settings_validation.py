@@ -14,6 +14,7 @@ from urllib.parse import urlsplit
 from knowledge_portal.infrastructure.config.options import (
     ADO_IMPORT_MAX_ITEMS_CEILING,
     LOG_LEVELS,
+    MAX_CATALOGUE_READING_CONCURRENCY,
     SUPPORTED_LOCAL_REASONING_EFFORTS,
     SUPPORTED_OIDC_ALGORITHMS,
     SUPPORTED_OPENROUTER_DATA_COLLECTION,
@@ -211,6 +212,11 @@ def validate_settings(settings: Settings) -> None:
     )
     if any(value <= 0 for value in extraction_values):
         raise ConfigurationError("Document extraction limits must all be positive.")
+    if not 1 <= settings.catalogue_reading_concurrency <= MAX_CATALOGUE_READING_CONCURRENCY:
+        raise ConfigurationError(
+            f"CATALOGUE_READING_CONCURRENCY must be between 1 and "
+            f"{MAX_CATALOGUE_READING_CONCURRENCY}."
+        )
     if not settings.document_storage_path.strip():
         raise ConfigurationError("DOCUMENT_STORAGE_PATH must not be blank.")
     if settings.identity_provider is IdentityProvider.OIDC:

@@ -162,6 +162,7 @@ def _build_llm_adapters(settings: Settings, resources: ExitStack, metrics: Metri
             models.catalogue,
             supports_images=models.catalogue_images,
             max_input_tokens=models.catalogue_input_tokens,
+            concurrency=settings.catalogue_reading_concurrency,
             **(
                 {"max_output_tokens": models.catalogue_output_tokens}
                 if models.catalogue_output_tokens is not None

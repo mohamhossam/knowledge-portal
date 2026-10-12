@@ -108,6 +108,10 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 - A model provider's refusal (no credit, a rejected key, an unknown model) ends a reading at
   once with that reason (`model_payment`, `model_authentication`, `model_configuration`); one
   arriving as a plain HTTP status (OpenRouter's 402) was asked again for each of 300 parts.
+- A catalogue reading sends several parts of a document to the model at once
+  (`CATALOGUE_READING_CONCURRENCY`, 1-16, default 4) and puts what they give back in document
+  order, so the reading is the same however the calls finish. A call waits mostly on the model
+  writing its answer: a long SDD read on GPT 5.1 one part at a time was set to take an hour.
 
 ## 0.6.0 — 2026-10-11
 

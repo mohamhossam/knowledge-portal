@@ -5,9 +5,11 @@ from __future__ import annotations
 import json
 import logging
 import re
+import threading
 import unicodedata
 from collections import Counter, deque
 from collections.abc import Callable, Sequence
+from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from dataclasses import dataclass, field, replace
 from typing import Any, ClassVar, Literal, get_args
 
@@ -1315,6 +1317,54 @@ class _Answer:
         return "uncited" if self.uncited else "invalid"
 
 
+class _Budget:
+    """The calls a reading may still make, shared by the parts read at once."""
+
+    def __init__(self, calls: int) -> None:
+        self._lock = threading.Lock()
+        self._left = calls
+        # Parts not yet started, which the calls left must still cover.
+        self.waiting = 0
+
+    @property
+    def left(self) -> int:
+        with self._lock:
+            return self._left
+
+    def take(self) -> bool:
+        with self._lock:
+            if self._left < 1:
+                return False
+            self._left -= 1
+            return True
+
+    def spare(self) -> bool:
+        """Whether a call can go to asking again, leaving one for each part still waiting."""
+        with self._lock:
+            return self._left > self.waiting
+
+
+@dataclass(frozen=True)
+class _Part:
+    """A part of the document for one call; ``path`` orders it, its halves after it."""
+
+    path: tuple[int, ...]
+    batch: list[ExtractionSegment]
+    depth: int
+
+
+@dataclass(frozen=True)
+class _Outcome:
+    """What reading one part gave: its answer, or why it gave none."""
+
+    batch: list[ExtractionSegment]
+    answer: _Answer | None
+    reason: str
+    error: Exception | None
+    refused: ModelTransportError | None
+    full: bool
+
+
 class StructuredCatalogueExtractor:
     def __init__(
         self,
@@ -1323,12 +1373,15 @@ class StructuredCatalogueExtractor:
         supports_images: bool,
         max_input_tokens: int | None = None,
         max_output_tokens: int | None = None,
+        concurrency: int = 1,
     ) -> None:
         """``max_input_tokens`` is the prompt room the client allows; None means ample.
 
         ``max_output_tokens`` is how long one answer may be; None means the
-        client does not say, and a common hosted limit is assumed.
+        client does not say, and a common hosted limit is assumed. ``concurrency``
+        is how many parts are read at once.
         """
+        self._concurrency = max(1, concurrency)
         self._client = client
         self._supports_images = supports_images
         self._max_input_tokens = max_input_tokens
@@ -1455,104 +1508,111 @@ class StructuredCatalogueExtractor:
         last_error: Exception | None = None
         read_any = False
         batches = self._batches(request.segments, text_characters)
-        pending = deque((batch, 0) for batch in batches)
+        queue = deque(_Part((index,), batch, 0) for index, batch in enumerate(batches))
         # Splitting is bounded, so a document that every model answer overflows
         # still finishes in a predictable number of calls.
-        calls_left = 3 * len(batches) + 4
-        started = 0
+        calls = _Budget(3 * len(batches) + 4)
         # The provider's refusal (no credit, bad key, unknown model) ends the reading:
         # every part would be refused the same way.
         refused: ModelTransportError | None = None
-        while pending:
-            batch, depth = pending.popleft()
-            request.progress(started, started + len(pending) + 1)
-            started += 1
-            if calls_left < 1:
-                failures.append(
-                    ("budget", f"{_span(batch)} could not be read: {_REASONS['budget']}")
-                )
-                continue
-            request.checkpoint()
-            numbered = tuple(
-                replace(item, number=number) for number, item in enumerate(batch, start=1)
-            )
-            images = tuple(
-                (item.image_mime_type, item.image) for item in numbered if item.image_mime_type
-            )
-            if images and room - known_cost < _IMAGE_TOKENS * len(images):
-                failures.append(
-                    ("image", f"{_span(batch)} is too large an image for the configured model.")
-                )
-                continue
-            answer: _Answer | None = None
-            reason = ""
-            # Answers vary between calls, so a rejected one is asked for once more,
-            # unless the parts still waiting need the calls left.
-            for attempt in range(_ATTEMPTS):
-                if attempt:
-                    if calls_left <= len(pending):
-                        break
+        refused_at: _Part | None = None
+        outcomes: dict[tuple[int, ...], _Outcome] = {}
+        skipped: dict[tuple[int, ...], tuple[str, str]] = {}
+        done = 0
+        # Parts are read several at a time (a call waits mostly on the model writing its
+        # answer); what they give is put back in document order, so the reading is the
+        # same however the calls finish.
+        with ThreadPoolExecutor(max_workers=self._concurrency) as pool:
+            running: dict[Future[_Outcome], _Part] = {}
+            while queue or running:
+                while queue and len(running) < self._concurrency and refused is None:
+                    part = queue.popleft()
+                    if calls.left < 1:
+                        skipped[part.path] = (
+                            "budget",
+                            f"{_span(part.batch)} could not be read: {_REASONS['budget']}",
+                        )
+                        continue
                     request.checkpoint()
-                calls_left -= 1
-                try:
-                    got = self._read(request, numbered, known, images, reading)
-                except (StructuredOutputError, ValidationError, ModelTransportError) as exc:
-                    last_error, answer = exc, None
-                    _LOG.warning("Catalogue reading of %s failed: %s", _span(batch), _why(exc))
-                    if truncated(exc):
-                        # Asking for the same part again would be cut off again.
-                        reason = "truncated"
-                        break
-                    reason = "unusable"
-                    refused = _refusal(exc)
-                    if refused is not None:
-                        break
-                    continue
-                answer = got
-                if got.failed is None:
+                    numbered = tuple(
+                        replace(item, number=number)
+                        for number, item in enumerate(part.batch, start=1)
+                    )
+                    images = tuple(
+                        (item.image_mime_type, item.image)
+                        for item in numbered
+                        if item.image_mime_type
+                    )
+                    if images and room - known_cost < _IMAGE_TOKENS * len(images):
+                        skipped[part.path] = (
+                            "image",
+                            f"{_span(part.batch)} is too large an image for the configured model.",
+                        )
+                        continue
+                    calls.waiting = len(queue)
+                    future = pool.submit(
+                        self._attempt, request, part, numbered, known, images, reading, calls
+                    )
+                    running[future] = part
+                if not running:
                     break
-                reason = got.failed
-                _LOG.warning(
-                    "Catalogue reading of %s gave no usable suggestion: %d uncited, invalid %s",
-                    _span(batch),
-                    got.uncited,
-                    dict(got.invalid),
-                )
+                request.progress(done, done + len(running) + len(queue))
+                finished, _ = wait(running, return_when=FIRST_COMPLETED)
+                for future in finished:
+                    part = running.pop(future)
+                    outcome = future.result()
+                    done += 1
+                    if outcome.error is not None:
+                        last_error = outcome.error
+                    if outcome.refused is not None and refused is None:
+                        refused, refused_at = outcome.refused, part
+                    halves = (
+                        _halves(part.batch)
+                        if outcome.full and part.depth < _MAX_SPLIT_DEPTH
+                        else None
+                    )
+                    if halves and refused is None and calls.left >= len(queue) + len(halves):
+                        # A smaller part gets the whole answer to itself; the full answer
+                        # is set aside so its parts are not suggested twice.
+                        for number, half in reversed(list(enumerate(halves))):
+                            queue.appendleft(_Part((*part.path, number), half, part.depth + 1))
+                        continue
+                    outcomes[part.path] = outcome
+        for path in sorted({*outcomes, *skipped}):
+            if path in skipped:
+                failures.append(skipped[path])
+                continue
+            outcome = outcomes[path]
+            answer = outcome.answer
             if answer is not None:
                 uncited += answer.uncited
                 invalid.update(answer.invalid)
-            usable = answer is not None and answer.failed is None
-            full = reason == "truncated" or (
-                usable and answer is not None and answer.given >= self._capacity
-            )
-            halves = _halves(batch) if full and depth < _MAX_SPLIT_DEPTH else None
-            if halves and calls_left >= len(pending) + len(halves):
-                # A smaller part gets the whole answer to itself; the full answer
-                # is set aside so its parts are not suggested twice.
-                for half in reversed(halves):
-                    pending.appendleft((half, depth + 1))
+            if outcome.refused is not None:
                 continue
-            if refused is not None:
-                unread = 1 + len(pending)
-                pending.clear()
+            if answer is None or answer.failed is not None:
                 failures.append(
                     (
-                        "refused",
-                        f"The model provider refused the reading ({refused.kind}): {unread} "
-                        f"part(s) from {_span(batch)} on were not read.",
+                        outcome.reason,
+                        f"{_span(outcome.batch)} could not be read: {_REASONS[outcome.reason]}",
                     )
                 )
-                break
-            if answer is None or answer.failed is not None:
-                failures.append((reason, f"{_span(batch)} could not be read: {_REASONS[reason]}"))
                 continue
             read_any = True
-            if full:
+            if outcome.full:
                 warnings.append(
-                    f"{_span(batch)} may not be read completely: the model's answer reached "
-                    "its limit."
+                    f"{_span(outcome.batch)} may not be read completely: the model's answer "
+                    "reached its limit."
                 )
             changes.extend(answer.changes)
+        if refused is not None and refused_at is not None:
+            unread = len(queue) + sum(1 for item in outcomes.values() if item.refused is not None)
+            failures.append(
+                (
+                    "refused",
+                    f"The model provider refused the reading ({refused.kind}): {unread} "
+                    f"part(s) from {_span(refused_at.batch)} on were not read.",
+                )
+            )
         warnings.extend(message for _, message in failures)
         if failures and not read_any:
             message = f"No part of the document could be read by the model. {failures[-1][1]}"
@@ -1576,6 +1636,57 @@ class StructuredCatalogueExtractor:
         return CatalogueProposal(
             tuple(changes), self._client.model, PROMPT_VERSION, tuple(warnings)
         )
+
+    def _attempt(
+        self,
+        request: ExtractionRequest,
+        part: _Part,
+        numbered: tuple[ExtractionSegment, ...],
+        known: tuple[KnownSystem, ...],
+        images: tuple[tuple[str, bytes], ...],
+        reading: _Reading,
+        budget: _Budget,
+    ) -> _Outcome:
+        """One part read, asked once more when its answer is rejected and calls are spare."""
+        answer: _Answer | None = None
+        reason = "budget"
+        error: Exception | None = None
+        refused: ModelTransportError | None = None
+        span = _span(part.batch)
+        # Answers vary between calls, so a rejected one is asked for once more,
+        # unless the parts still waiting need the calls left.
+        for attempt in range(_ATTEMPTS):
+            if (attempt and not budget.spare()) or not budget.take():
+                break
+            try:
+                got = self._read(request, numbered, known, images, reading)
+            except (StructuredOutputError, ValidationError, ModelTransportError) as exc:
+                error, answer = exc, None
+                _LOG.warning("Catalogue reading of %s failed: %s", span, _why(exc))
+                if truncated(exc):
+                    # Asking for the same part again would be cut off again.
+                    reason = "truncated"
+                    break
+                reason = "unusable"
+                refused = _refusal(exc)
+                if refused is not None:
+                    break
+                continue
+            answer = got
+            if got.failed is None:
+                break
+            reason = got.failed
+            _LOG.warning(
+                "Catalogue reading of %s gave no usable suggestion: %d uncited, invalid %s",
+                span,
+                got.uncited,
+                dict(got.invalid),
+            )
+        usable = answer is not None and answer.failed is None
+        full = reason == "truncated" or (
+            usable and answer is not None and answer.given >= self._capacity
+        )
+        return _Outcome(part.batch, answer, reason, error, refused, full)
 
     def _read(
         self,
