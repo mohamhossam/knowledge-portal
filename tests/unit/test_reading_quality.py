@@ -806,6 +806,18 @@ def test_a_name_spelled_almost_like_a_draft_system_is_asked_about_never_merged()
     assert asked("FortiManager 7.4") == []
     assert asked("CWOX") == []
     assert classify(_system_reading("FortiGaurd").content, release) is CandidateMatch.NEW
+    # Asked once, on the system's own suggestion: a capability naming it is not asked again.
+    capability = replace(
+        _system_reading("FortiGaurd"),
+        content=CandidateContent(
+            CandidateKind.CAPABILITY,
+            "fortigaurd",
+            capability_id="licence-check",
+            name="Licence check",
+            triggers=("check licence",),
+        ),
+    )
+    assert open_matches(capability, release) == ()
 
 
 def test_workflow_titles_match_however_their_parts_are_separated() -> None:

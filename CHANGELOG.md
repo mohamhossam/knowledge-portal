@@ -122,7 +122,9 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   review as a possible match: "Spelled almost like FortiGuard: confirm it is the same system".
   The check runs against the draft as it is, so a variant of a system accepted later is asked
   about too; a confirmed one becomes an alias that later readings resolve. A different version
-  number ("FortiManager 7.4") or a name under five letters is never asked about.
+  number ("FortiManager 7.4") or a name under five letters is never asked about. It is asked
+  once, on the system's own suggestion; asked on every capability naming it, one name was
+  asked about 71 times.
 - Workflow titles are compared whatever separates their parts ("—", "|", ":" or " - "), so a
   model's "WF-3A Order fulfillment | ..." merges with the reader's "WF-3A Order fulfillment —".
 

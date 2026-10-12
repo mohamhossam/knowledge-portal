@@ -1228,18 +1228,14 @@ def open_matches(
         MatchRole.SYSTEM: content.system_id,
         MatchRole.TARGET: content.target_system_id or "",
     }
-    stored = tuple(
+    # A spelling is asked about once, on the system's own suggestion: answered there, the name
+    # becomes that system's alias and every capability or link naming it resolves. Asked on
+    # each of them, one name was asked about 71 times.
+    return tuple(
         match
         for match in candidate.possible_matches
         if find_system(release, references[match.role]) is None
     )
-    spelled = tuple(
-        match
-        for role, reference in references.items()
-        if reference and find_system(release, reference) is None
-        for match in _spelling_matches(role, reference, release)
-    )
-    return _with_spellings(stored, spelled)
 
 
 def _compact(value: str) -> str:
