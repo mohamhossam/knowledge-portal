@@ -17,6 +17,11 @@ from smb_kernel.documents.ports import DocumentExtractorPort, DocumentStoragePor
 from smb_kernel.time.clock import ClockPort
 
 from knowledge_portal.application.errors import PersistenceError
+from knowledge_portal.application.ports.architecture_jobs import (
+    JobProgress,
+    ProgressReport,
+    no_report,
+)
 from knowledge_portal.application.ports.architecture_knowledge_repository import (
     ArchitectureKnowledgeRepositoryPort,
 )
@@ -575,7 +580,14 @@ class ProposeCatalogueChanges:
             )
         return version
 
-    def execute(self, release_id: str, version_id: str, fence: CommitFence) -> ExtractionRun:
+    def execute(
+        self,
+        release_id: str,
+        version_id: str,
+        fence: CommitFence,
+        report: ProgressReport = no_report,
+    ) -> ExtractionRun:
+        report(JobProgress("opening"))
         release = _draft(self._knowledge, release_id)
         version = next((item for item in release.documents if item.id == version_id), None)
         if version is None:
@@ -618,8 +630,11 @@ class ProposeCatalogueChanges:
             ):
                 raise KnowledgeConflictError("This document is no longer part of the draft.")
 
+        def reading(done: int, total: int) -> None:
+            report(JobProgress("reading", done, total))
+
         proposal = self._extractor.propose(
-            ExtractionRequest(version.title, segments, known, still_in_draft)
+            ExtractionRequest(version.title, segments, known, still_in_draft, reading)
         )
         model, prompt_version = proposal.model, proposal.prompt_version
         warnings.extend(proposal.warnings)
@@ -665,6 +680,7 @@ class ProposeCatalogueChanges:
                 linked += 1
             else:
                 kept[content] = item
+        report(JobProgress("matching"))
         matches, matched = self._matches(kept, release, warnings)
         now = self._clock.now()
         candidates = [
@@ -717,6 +733,7 @@ class ProposeCatalogueChanges:
             self._matcher.model if matched else None,
             self._matcher.prompt_version if matched else None,
         )
+        report(JobProgress("saving"))
         fence()
         self._candidates.replace_proposals(run, tuple(candidates))
         return run

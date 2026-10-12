@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
@@ -68,6 +69,23 @@ class ExtractionJobInput:
 
 
 @dataclass(frozen=True)
+class JobProgress:
+    """Where a running attempt has got: a stage, and the part of it when it has parts."""
+
+    stage: str
+    done: int | None = None
+    total: int | None = None
+
+
+# Told how far an attempt has got; it never fails the attempt.
+ProgressReport = Callable[[JobProgress], None]
+
+
+def no_report(progress: JobProgress) -> None:
+    return None
+
+
+@dataclass(frozen=True)
 class ArchitectureJob:
     id: str
     kind: ArchitectureJobKind
@@ -79,6 +97,10 @@ class ArchitectureJob:
     attempts: int = 0
     error_category: str | None = None
     lease_until: datetime | None = None
+    # When it was last asked for, when its current attempt started, and how far that got.
+    queued_at: datetime | None = None
+    started_at: datetime | None = None
+    progress: JobProgress | None = None
 
 
 class ArchitectureJobRepositoryPort(Protocol):
@@ -95,6 +117,10 @@ class ArchitectureJobRepositoryPort(Protocol):
     def claim(self, now: datetime) -> ArchitectureJob | None: ...
 
     def heartbeat(self, job_id: str, attempt: int, now: datetime) -> bool: ...
+
+    def report(self, job_id: str, attempt: int, progress: JobProgress) -> None:
+        """Record how far a running attempt has got; ignored once the attempt lost the job."""
+        ...
 
     def finish(
         self,

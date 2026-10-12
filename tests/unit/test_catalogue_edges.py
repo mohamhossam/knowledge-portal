@@ -335,9 +335,11 @@ def test_extraction_guards_and_empty_documents() -> None:
     with pytest.raises(CatalogueExtractionUnsupportedError):
         proposer.document(draft.id, "img", MAINTAINER)
 
-    run = proposer.execute(draft.id, "doc", lambda: None)
+    stages: list[str] = []
+    run = proposer.execute(draft.id, "doc", lambda: None, lambda step: stages.append(step.stage))
 
     assert run.warnings == ("No catalogue content was found in this document.",)
+    assert stages == ["opening", "matching", "saving"]
     assert decide.overview(draft.id, MAINTAINER).runs == (run,)
     with pytest.raises(KnowledgeNotFoundError):
         proposer.execute(draft.id, "gone", lambda: None)
