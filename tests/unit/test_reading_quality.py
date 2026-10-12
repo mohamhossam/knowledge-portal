@@ -10,6 +10,7 @@ from __future__ import annotations
 import io
 import zipfile
 from dataclasses import replace
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Any
 
@@ -22,13 +23,22 @@ from knowledge_portal.application.ports.catalogue_extractor import (
     ExtractionSegment,
     ProposedChange,
 )
+from knowledge_portal.application.use_cases.catalogue_candidates import _same_workflow
 from knowledge_portal.domain.architecture.candidates import (
+    CandidateCitation,
     CandidateContent,
     CandidateKind,
+    CandidateMatch,
+    CatalogueCandidate,
     apply_candidate,
+    classify,
+    open_matches,
 )
 from knowledge_portal.domain.architecture.journeys import Activity, Journey
-from knowledge_portal.domain.architecture.knowledge import KnowledgeReleaseStatus
+from knowledge_portal.domain.architecture.knowledge import (
+    KnowledgeReleaseStatus,
+    SystemDefinition,
+)
 from knowledge_portal.domain.architecture.products import (
     OfferingPlan,
     OrderType,
@@ -699,3 +709,121 @@ def test_only_a_reading_with_room_asks_for_every_offering_and_prose_journeys() -
         assert rule not in LEAN_SYSTEM_PROMPT
     # Asked to propose every name, a small model proposed tickets and phases as systems.
     assert "Propose every system the passages name" not in DETAILED_SYSTEM_PROMPT
+
+
+# Cleaning what is read ---------------------------------------------------------------------
+
+COPIED = (
+    "Backup GSM Bandwidth offers are defined per GPON speed profile and provisioned by CWOM "
+    "through E2ESO once the order is validated."
+)
+
+
+class _Quoting(_Recording):
+    """Records what it is asked to read, and reads one system from the first copy."""
+
+    def propose(self, request: ExtractionRequest) -> CatalogueProposal:
+        self.requests.append(request)
+        copy = next(item for item in request.segments if item.text == COPIED)
+        return CatalogueProposal(
+            (
+                ProposedChange(
+                    CandidateContent(
+                        CandidateKind.SYSTEM, "bundle-orchestrator", name="Bundle Orchestrator"
+                    ),
+                    (copy.location,),
+                    "provisioned by CWOM through E2ESO",
+                    source_name="Bundle Orchestrator",
+                ),
+            ),
+            "quoting",
+            "quoting-v1",
+        )
+
+
+def test_copied_blocks_are_read_once_and_cited_at_every_copy_and_history_is_left_out() -> None:
+    body = (
+        _p("Revision History", "Heading1")
+        + _p("Version 1.2 updated the CPE table and the exit charges for the bundle.")
+        + _p("PSM", "Heading1")
+        + _p(COPIED)
+        + _p("ECM", "Heading1")
+        + _p(COPIED)
+        + _p(
+            '{"orderId": "1", "items": [{"spec": "CFSS_INTERNET_CPE_HE", "action": "add"}], '
+            '"state": "acknowledged", "channel": "B2B", "notes": [], "relatedParty": '
+            '[{"id": "2", "role": "customer"}], "billingAccount": {"id": "3"}}'
+        )
+    )
+    extractor = _Quoting()
+    proposer, draft, _ = _setup(_docx(body), extractor)
+
+    run = proposer.execute(draft.id, "doc", lambda: None)
+
+    read = [item.text for item in extractor.requests[-1].segments]
+    assert read.count(COPIED) == 1
+    assert not any("Version 1.2" in text or text.startswith("{") for text in read)
+    (system,) = [
+        item
+        for item in proposer._candidates.list(draft.id)
+        if item.content.kind is CandidateKind.SYSTEM
+    ]
+    assert [citation.location for citation in system.citations] == ["paragraph 4", "paragraph 6"]
+    assert "1 repeated passage(s) were read once and cited wherever they appear." in run.warnings
+    assert any(warning.startswith("3 passage(s) with no architecture") for warning in run.warnings)
+
+
+def _system_reading(name: str) -> CatalogueCandidate:
+    return CatalogueCandidate(
+        "s1",
+        "draft",
+        "doc",
+        CandidateContent(CandidateKind.SYSTEM, slug(name), name=name),
+        (CandidateCitation("row 1", name),),
+        "model",
+        "v1",
+        datetime(2026, 10, 12, tzinfo=UTC),
+    )
+
+
+def test_a_name_spelled_almost_like_a_draft_system_is_asked_about_never_merged() -> None:
+    systems = (
+        SystemDefinition("fortiguard", "FortiGuard", ()),
+        SystemDefinition("e2eso", "E2ESO", ()),
+        SystemDefinition("fortimanager-7-2", "FortiManager 7.2", ()),
+        SystemDefinition("cwom", "CWOM", ()),
+    )
+    release = replace(
+        seed_knowledge(), status=KnowledgeReleaseStatus.DRAFT, systems=systems, relationships=()
+    )
+
+    def asked(name: str) -> list[str]:
+        return [match.system_id for match in open_matches(_system_reading(name), release)]
+
+    assert asked("FortiGaurd") == ["fortiguard"]
+    assert asked("ESESO") == ["e2eso"]
+    # Another version, not a slip; and too short a name to tell.
+    assert asked("FortiManager 7.4") == []
+    assert asked("CWOX") == []
+    assert classify(_system_reading("FortiGaurd").content, release) is CandidateMatch.NEW
+
+
+def test_workflow_titles_match_however_their_parts_are_separated() -> None:
+    def journey(name: str) -> Journey:
+        return Journey(
+            slug(name),
+            name,
+            activities=(Activity("1", "Waiter clearance"), Activity("2", "ONT configuration")),
+        )
+
+    assert _same_workflow(
+        journey("WF-3A Order fulfillment — Business Pro/ PRO+ with 5G Backup"),
+        journey("WF-3A Order fulfillment | Business Pro/ PRO+ with 5G Backup New Request"),
+    )
+    assert _same_workflow(
+        journey("WF-2-A Up/Downgrade Change plan (upgrade) from Office Presence"),
+        journey("WF-2-A Up/Downgrade - Change plan (upgrade) from Office Presence"),
+    )
+    assert not _same_workflow(
+        journey("WF-1 Order fulfillment — GPON"), journey("WF-1 Up/Downgrade — GPON")
+    )

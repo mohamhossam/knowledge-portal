@@ -1218,17 +1218,111 @@ def open_matches(
     ):
         return ()
     if content.kind is CandidateKind.SYSTEM:
-        still_new = classify(content, release) is CandidateMatch.NEW
-        return candidate.possible_matches if still_new else ()
+        if classify(content, release) is not CandidateMatch.NEW:
+            return ()
+        return _with_spellings(
+            candidate.possible_matches,
+            _spelling_matches(MatchRole.SYSTEM, content.name or content.system_id, release),
+        )
     references = {
         MatchRole.SYSTEM: content.system_id,
         MatchRole.TARGET: content.target_system_id or "",
     }
-    return tuple(
+    stored = tuple(
         match
         for match in candidate.possible_matches
         if find_system(release, references[match.role]) is None
     )
+    spelled = tuple(
+        match
+        for role, reference in references.items()
+        if reference and find_system(release, reference) is None
+        for match in _spelling_matches(role, reference, release)
+    )
+    return _with_spellings(stored, spelled)
+
+
+def _compact(value: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", value.casefold())
+
+
+def _close(first: str, second: str, most: int) -> bool:
+    """Whether two spellings are at most ``most`` single-letter edits apart."""
+    if abs(len(first) - len(second)) > most:
+        return False
+    previous = list(range(len(second) + 1))
+    for row, left in enumerate(first, start=1):
+        current = [row]
+        for column, right in enumerate(second, start=1):
+            current.append(
+                min(
+                    previous[column] + 1,
+                    current[column - 1] + 1,
+                    previous[column - 1] + (left != right),
+                )
+            )
+        if min(current) > most:
+            return False
+        previous = current
+    return previous[-1] <= most
+
+
+def _spelling_matches(
+    role: MatchRole, written: str, release: ArchitectureKnowledge
+) -> tuple[PossibleMatch, ...]:
+    """The draft systems a name is spelled almost like, for a person to confirm or not.
+
+    A document writes one system several ways ("FortiGaurd", "Fortimanger", "ESESO");
+    once a person confirms "FortiGaurd" is FortiGuard, it is FortiGuard's alias and
+    every later reading resolves it. Only a slip of a letter or two counts, never a
+    different number ("FortiManager 7.2" is not "FortiManager 7.4"), and the check
+    runs against the draft as it is now, so a variant of a system accepted after the
+    reading is asked about too. Nothing is merged without that confirmation.
+    """
+    key = _compact(written)
+    if len(key) < _MIN_SPELLED:
+        return ()
+    found: list[PossibleMatch] = []
+    for system in release.systems:
+        for label in (system.id, system.name, *system.aliases):
+            other = _compact(label)
+            if (
+                len(other) >= _MIN_SPELLED
+                and other != key
+                and not _versions_differ(key, other)
+                and _close(key, other, 1 if max(len(key), len(other)) < _LONG_NAME else 2)
+            ):
+                found.append(
+                    PossibleMatch(
+                        role,
+                        written,
+                        system.id,
+                        f"Spelled almost like {system.name}: confirm it is the same system.",
+                    )
+                )
+                break
+    return tuple(found[:_MAX_SPELLED])
+
+
+def _versions_differ(first: str, second: str) -> bool:
+    """Whether both names carry a number and the numbers differ: two versions, not a slip."""
+    one, other = re.sub(r"\D", "", first), re.sub(r"\D", "", second)
+    return bool(one and other and one != other)
+
+
+def _with_spellings(
+    stored: tuple[PossibleMatch, ...], spelled: tuple[PossibleMatch, ...]
+) -> tuple[PossibleMatch, ...]:
+    """The matches found when the document was read, then spellings they do not name."""
+    named = {(match.role, match.system_id) for match in stored}
+    return (*stored, *(match for match in spelled if (match.role, match.system_id) not in named))
+
+
+# A name this short ("IN", "OM", "NEC") is too short to tell a slip from another system;
+# a longer one may be two slips off.
+_MIN_SPELLED = 5
+_LONG_NAME = 9
+_MAX_SPELLED = 3
 
 
 def needs_one_by_one(candidate: CatalogueCandidate, release: ArchitectureKnowledge) -> bool:

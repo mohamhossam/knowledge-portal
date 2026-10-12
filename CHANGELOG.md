@@ -112,6 +112,19 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   (`CATALOGUE_READING_CONCURRENCY`, 1-16, default 4) and puts what they give back in document
   order, so the reading is the same however the calls finish. A call waits mostly on the model
   writing its answer: a long SDD read on GPT 5.1 one part at a time was set to take an hour.
+- A passage a document repeats word for word is read once and cited at every copy: a long SDD
+  copies whole blocks under each impacted system, and 3,341 copies (28% of its text) were read
+  again. Spreadsheet rows, and what sits under a "Product:" or "Journey:" heading, are always
+  read where they are (`document-reading-v5`).
+- Contents, lists of figures and tables, revision and version history, sign-off and
+  distribution tables, and pasted JSON or XML payloads are left out of a reading, with a count.
+- A system name spelled almost like a draft system ("FortiGaurd", "ESESO") is asked about in
+  review as a possible match: "Spelled almost like FortiGuard: confirm it is the same system".
+  The check runs against the draft as it is, so a variant of a system accepted later is asked
+  about too; a confirmed one becomes an alias that later readings resolve. A different version
+  number ("FortiManager 7.4") or a name under five letters is never asked about.
+- Workflow titles are compared whatever separates their parts ("—", "|", ":" or " - "), so a
+  model's "WF-3A Order fulfillment | ..." merges with the reader's "WF-3A Order fulfillment —".
 
 ## 0.6.0 — 2026-10-11
 

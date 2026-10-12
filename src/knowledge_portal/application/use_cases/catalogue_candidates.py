@@ -129,7 +129,7 @@ _EMBEDDED_ORDER = (
     _DOCX,
     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 )
-READING_VERSION = "document-reading-v4"
+READING_VERSION = "document-reading-v5"
 MAX_MATCHES_PER_NAME = 3
 _FIGURE = re.compile(r"^image (\d+)\b", re.IGNORECASE)
 _JOURNEY = re.compile(r"\bjourneys?\b", re.IGNORECASE)
@@ -137,6 +137,23 @@ _JOURNEY = re.compile(r"\bjourneys?\b", re.IGNORECASE)
 _WORKFLOW = re.compile(r"^[Ww][Ff][\s_-]*(?P<number>\d+)(?:[\s_-]*(?P<variant>[A-Z])\b)?")
 # How much of the shorter workflow's steps the other must share to be the same workflow.
 _SAME_STEPS = 0.5
+# Headings over text with nothing architectural in it, after any numbering ("1.2 ").
+_NO_ARCHITECTURE = re.compile(
+    r"(?i)^(?:document |table of )?contents$|^(?:list of )?(?:figures|tables)$"
+    r"|^(?:revision|version|document|change|amendment) history$"
+    r"|^sign[- ]?offs?$|^approvals?$|^distribution(?: list)?$"
+)
+_NUMBERING = re.compile(r"^[\d.\s]+(?=\D)")
+# A pasted payload is long and mostly braces, quotes and separators.
+_MIN_PAYLOAD = 200
+_PAYLOAD_SHARE = 0.12
+_PAYLOAD_MARKS = frozenset('{}[]<>":,=/')
+# A passage this short ("Yes", "N/A", a code) repeats without being a copied block.
+_MIN_REPEATED = 80
+_OWN_SECTION = re.compile(r"(?i)^\s*(?:product|journey)\s*:")
+_SHEET_ROW = re.compile(r"(?:^|, )sheet \d+")
+_CITED_PART = re.compile(r"^(?P<place>.*?)(?P<part> \(part \d+ of \d+\))?$")
+_TITLE_SEPARATOR = re.compile(r"\s*[|—–:]\s*|\s+-\s+|^\s*-\s*")
 # A combined system name ("OM-E2ESO") is split only into parts this short, like acronyms;
 # "b2b-portal" is one name.
 _MAX_ACRONYM = 5
@@ -170,6 +187,97 @@ def _new_sheets(
         if not item.location.startswith("sheet ") or item.location.split(",", 1)[0] in keep
     )
     return kept, len(sheets) - len(keep)
+
+
+def _not_architecture(heading: str) -> bool:
+    """A heading over text with no architecture in it: contents, history, sign-off."""
+    return bool(_NO_ARCHITECTURE.match(" ".join(_NUMBERING.sub("", heading).split())))
+
+
+def _payload(text: str) -> bool:
+    """A sample message pasted into the document: JSON or XML, mostly punctuation."""
+    stripped = text.strip()
+    if len(stripped) < _MIN_PAYLOAD or stripped[0] not in "{[<":
+        return False
+    marks = sum(1 for character in stripped if character in _PAYLOAD_MARKS)
+    return marks / len(stripped) >= _PAYLOAD_SHARE
+
+
+def _architectural(
+    passages: tuple[LocatedText, ...], warnings: list[str]
+) -> tuple[LocatedText, ...]:
+    """The passages with something architectural to say.
+
+    A document's table of contents, lists of figures and tables, revision history,
+    sign-off and distribution tables, and the sample payloads pasted into an
+    interface section cost the reading's budget and gave it names to mistake for
+    systems ("P4", "ADO"); they are left out. Nothing a heading does not mark so,
+    and no payload shorter than a few lines, is.
+    """
+    kept = tuple(
+        item
+        for item in passages
+        if not any(_not_architecture(heading) for heading in item.heading_path)
+        and not (item.heading and _not_architecture(item.text))
+        and not _payload(item.text)
+    )
+    if left := len(passages) - len(kept):
+        warnings.append(
+            f"{left} passage(s) with no architecture in them were left out: contents, "
+            "revision history, sign-off and sample payloads."
+        )
+    return kept
+
+
+def _once_each(
+    passages: tuple[LocatedText, ...], warnings: list[str]
+) -> tuple[tuple[LocatedText, ...], dict[str, tuple[str, ...]]]:
+    """Each passage a document repeats word for word, read once, and where else it appears.
+
+    An SDD copies whole blocks under each impacted system (the Backup GSM tables
+    four times, the exit charges, the faulty device replacement); read every time,
+    they cost calls and gave the same suggestions again. A suggestion read from the
+    first is cited at every copy (``_cited_where_repeated``). Headings, short
+    passages, spreadsheet rows and what sits under a "Product: X" or "Journey: X"
+    heading are always kept: a row means something in its own table, which may be
+    another workflow's, and the table reader reads such a section as its own.
+    """
+    first: dict[str, str] = {}
+    repeats: dict[str, list[str]] = {}
+    kept: list[LocatedText] = []
+    for item in passages:
+        if (
+            item.heading
+            or len(item.text) < _MIN_REPEATED
+            or _SHEET_ROW.search(item.location)
+            or any(_OWN_SECTION.match(heading) for heading in item.heading_path)
+        ):
+            kept.append(item)
+            continue
+        key = " ".join(item.text.casefold().split())
+        if key in first:
+            repeats.setdefault(first[key], []).append(item.location)
+            continue
+        first[key] = item.location
+        kept.append(item)
+    if repeated := sum(len(places) for places in repeats.values()):
+        warnings.append(
+            f"{repeated} repeated passage(s) were read once and cited wherever they appear."
+        )
+    return tuple(kept), {place: tuple(others) for place, others in repeats.items()}
+
+
+def _cited_where_repeated(
+    change: ProposedChange, repeats: dict[str, tuple[str, ...]]
+) -> ProposedChange:
+    """The change cited at every copy of the passages it was read from, with the same quote."""
+    extra = tuple(
+        (f"{other}{part['part'] or ''}", quote)
+        for location, quote in change.citations
+        if (part := _CITED_PART.match(location)) is not None
+        for other in repeats.get(part["place"], ())
+    )
+    return replace(change, also_cited=(*change.also_cited, *extra)) if extra else change
 
 
 def _figure_number(label: str) -> int | None:
@@ -537,7 +645,10 @@ def _workflow(name: str) -> tuple[str, str] | None:
     match = _WORKFLOW.match(name.strip())
     if match is None:
         return None
-    rest = name.strip()[match.end() :].strip(" -—–:|")
+    rest = name.strip()[match.end() :]
+    # "—", "|", ":" and a spaced "-" separate a title's parts however it was written: the
+    # reader writes "WF-3A Order fulfillment — Business Pro", a model "... | Business Pro".
+    rest = _TITLE_SEPARATOR.sub(" ", rest)
     return f"{match['number']}{match['variant'] or ''}", " ".join(rest.casefold().split())
 
 
@@ -1021,6 +1132,8 @@ class ProposeCatalogueChanges:
             raise KnowledgeNotFoundError("This document is no longer part of the draft.")
         stored = self._storage.get(DocumentVersionId(version.storage_key))
         warnings: list[str] = []
+        # Where each passage read once also appears, word for word.
+        repeats: dict[str, tuple[str, ...]] = {}
         if version.mime_type in IMAGE_TYPES:
             image = self._documents.extract_asset(version.mime_type, stored, "image")
             segments: tuple[ExtractionSegment, ...] = (
@@ -1030,6 +1143,8 @@ class ProposeCatalogueChanges:
             located = self._located.extract(version.mime_type, stored)
             if version.mime_type == _DOCX:
                 located += self._embedded(stored, warnings)
+            located = _architectural(located, warnings)
+            located, repeats = _once_each(located, warnings)
             located = _within_budget(located, warnings)
             segments = tuple(
                 ExtractionSegment(
@@ -1069,7 +1184,8 @@ class ProposeCatalogueChanges:
         proposed: dict[CandidateContent, _Proposal] = {}
         kinds: dict[CandidateContent, list[tuple[bool, RelationshipKind | None]]] = {}
         self_linked = 0
-        canonical = _canonical(proposal.changes, release)
+        read = tuple(_cited_where_repeated(change, repeats) for change in proposal.changes)
+        canonical = _canonical(read, release)
         for change in _one_journey_each(_one_offering_each(_one_channel_each(canonical))):
             if _self_dependency(change.content):
                 # A table row naming one system twice is not a dependency, and
