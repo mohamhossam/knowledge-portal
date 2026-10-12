@@ -129,6 +129,12 @@
   border-color: var(--masthead-control-border);
 }
 
+/* A count's room, held while there is none, so the bar doesn't shift when one arrives. */
+.ds-masthead__count-slot {
+  display: inline-block;
+  min-inline-size: var(--target-min);
+}
+
 .ds-masthead__icon {
   display: inline-flex;
 }
@@ -792,6 +798,32 @@
 
   .ds-shell--panel.ds-shell--reader .ds-shell__body {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/*
+ * A narrow window (up to 800px): everything on the bar stays on one line. The portal's name
+ * leaves the bar (the home link still says it) and a long name (the account button) ends in
+ * an ellipsis; its accessible name is whole.
+ */
+@media (max-width: 800px) {
+  .ds-masthead__product {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .ds-masthead__divider {
+    display: none;
+  }
+
+  .ds-masthead__label {
+    max-inline-size: 8rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 

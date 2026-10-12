@@ -74,6 +74,7 @@
   --table-row-hover: var(--color-surface-2);
   --table-row-current: var(--color-selected);
   --table-row-current-bar: var(--color-action);
+  --table-row-selected: var(--color-selected-row);
   --table-numeral-stretch: var(--stretch-numeral);
 
   /* Status and badges */

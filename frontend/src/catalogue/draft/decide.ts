@@ -36,3 +36,11 @@ export function linked(suggestion: Suggestion, choice: Record<string, string>): 
   }
   return content;
 }
+
+/**
+ * A cited document's language as `lang` for its quoted passages (K2): "ar" or "en", never
+ * "mixed" (a mixed document's passage is left to the page's language and `dir="auto"`).
+ */
+export function documentLang(document: { language: string } | undefined): "ar" | "en" | undefined {
+  return document?.language === "ar" || document?.language === "en" ? document.language : undefined;
+}

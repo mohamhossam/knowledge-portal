@@ -7,7 +7,11 @@ type HelpEntry = { title: string; body: string[]; terms: [string, string][]; key
 
 export const PAGE_KEYS: [string, string][] = [
   ["?", "Open this help"],
-  ["g w / l / c / o / r", "Go to To do, Library, Catalogue, Ownership or Requirements"],
+  ["g w", "Go to To do"],
+  ["g l", "Go to the library"],
+  ["g c", "Go to the catalogue"],
+  ["g o", "Go to Ownership"],
+  ["g r", "Go to Requirements"],
   ["g j", "Open Jobs"],
   ["/", "Find on this page, where the page has a find field"],
   ["Esc", "Close a panel and go back to what opened it"],
@@ -201,7 +205,7 @@ const PAGES: { match: (path: string) => boolean; entry: HelpEntry }[] = [
     entry: {
       title: "To do",
       body: [
-        "Everything that needs you, most urgent first. Switch to Everyone's to see the whole team's.",
+        "Everything that needs you, most urgent first. Switch to Everyone's to see the whole team's. Order lists each kind by how long it has waited instead; Find narrows them by name.",
         "Start opens a review or a draft's decisions in focus mode, one question at a time. Re-confirmations are confirmed here, on their card.",
       ],
       terms: [
@@ -209,8 +213,9 @@ const PAGES: { match: (path: string) => boolean; entry: HelpEntry }[] = [
         ["Job", "Background work: reading, indexing, building, checking."],
         ["Re-confirmation", "Confirming a document or system is still right, when due."],
         ["Gap", "A system in service with no squad, or no contact. Gaps are listed, not counted in To do's number."],
+        ["New", "Began waiting after your last visit to To do, in this browser."],
       ],
-      keys: [],
+      keys: [["/", "Find in To do (with page-wide shortcuts on)"]],
     },
   },
 ];

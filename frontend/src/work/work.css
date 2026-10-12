@@ -140,3 +140,16 @@
     grid-column: 1 / -1;
   }
 }
+
+/* The order control on the head's line: its label beside the select. */
+.work__order .ds-field {
+  grid-auto-flow: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.work__order .ds-field__label {
+  font-size: var(--text-meta);
+  font-weight: var(--weight-body);
+  color: var(--color-ink-2);
+}

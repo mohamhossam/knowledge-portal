@@ -1,7 +1,9 @@
 /*
  * The design system's entry: the three token layers, then base element styles.
  * Element styles are scoped to .ds-root (the shell, the front door, overlays);
- * the page itself only loses the browser's margin.
+ * the page itself only loses the browser's margin. The element defaults weigh
+ * nothing (`:where`), so any component's class wins over them whichever order
+ * the stylesheets load in (route chunks split the CSS).
  */
 @import "./primitive.css";
 @import "./semantic.css";
@@ -33,33 +35,33 @@ body {
   box-sizing: border-box;
 }
 
-.ds-root :where(h1, h2, h3, h4, p, ul, ol, dl, dd, figure, blockquote, fieldset) {
+:where(.ds-root) :where(h1, h2, h3, h4, p, ul, ol, dl, dd, figure, blockquote, fieldset) {
   margin: 0;
 }
 
 /* Lists are ledgers here, not bullets: a component that wants markers sets them. */
-.ds-root :where(ul, ol) {
+:where(.ds-root) :where(ul, ol) {
   padding: 0;
   list-style: none;
 }
 
-.ds-root :where(a):hover {
+:where(.ds-root) :where(a):hover {
   text-decoration-thickness: 2px;
 }
 
-.ds-root :where(h1, h2, h3, h4) {
+:where(.ds-root) :where(h1, h2, h3, h4) {
   font-weight: var(--weight-heading);
   font-stretch: var(--stretch-title);
   line-height: var(--leading-tight);
   text-wrap: balance;
 }
 
-.ds-root :where(button, input, select, textarea) {
+:where(.ds-root) :where(button, input, select, textarea) {
   font: inherit;
   color: inherit;
 }
 
-.ds-root :where(a) {
+:where(.ds-root) :where(a) {
   color: var(--color-link);
   text-decoration-thickness: 1px;
   text-underline-offset: 0.2em;
@@ -84,19 +86,19 @@ body {
   color: var(--color-on-selected);
 }
 
-.ds-root :where(table, .ds-num, time, data) {
+:where(.ds-root) :where(table, .ds-num, time, data) {
   font-variant-numeric: tabular-nums lining-nums;
 }
 
 /* §13: Arabic and other RTL content gets air and its own face; the UI chrome never mirrors. */
-.ds-root :where(:lang(ar), [dir="rtl"]),
-.ds-root :where(p, span, a, td, th, li, dd, [role="gridcell"]):dir(rtl) {
+:where(.ds-root) :where(:lang(ar), [dir="rtl"]),
+:where(.ds-root) :where(p, span, a, td, th, li, dd, [role="gridcell"]):dir(rtl) {
   font-family: var(--font-arabic);
   line-height: var(--leading-arabic);
   text-underline-offset: 0.4em;
 }
 
-.ds-root :where(kbd) {
+:where(.ds-root) :where(kbd) {
   font: inherit;
   font-size: var(--text-meta);
   padding-inline: 0.35em;

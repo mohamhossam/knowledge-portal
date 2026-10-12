@@ -1,5 +1,6 @@
 import { keepPreviousData, useInfiniteQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { api, type Dependency, type Impact } from "../api/client";
 import { errorMessage } from "../api/errors";
@@ -52,7 +53,7 @@ function Unknown({ error, onRetry }: { error: unknown; onRetry: () => void }) {
 }
 
 /**
- * Cited by (plan 02 §2): the requirement proposals that cite the document, and
+ * Cited by (plan 02 §2): the requirements whose proposals cite the document, and
  * the requirement content whose source changed. Read-only here; each
  * requirement's owner decides in Requirement AI.
  */
@@ -112,7 +113,7 @@ function Proposals() {
     { id: "cites", header: "Cites", width: "12rem", cell: (item) => <>Version {item.citation.version_number} · <bdi>{humanWhere(item.citation.location)}</bdi><span className="lib-detail lib-detail--plain">{item.publication_current ? "Current" : "Replaced since"}</span></> },
   ];
   return (
-    <Section title="Requirement proposals citing it" count={pages.isSuccess && !pages.hasNextPage ? items.length : undefined}>
+    <Section title="Requirements citing it" count={pages.isSuccess && !pages.hasNextPage ? items.length : undefined}>
       <p className="lib-quiet">Proposals in requirements you can see, with the version of this document each one cites.</p>
       {pages.isError ? (
         <Unknown error={pages.error} onRetry={() => void pages.refetch()} />
@@ -123,7 +124,7 @@ function Proposals() {
           <p>Requirement work cites passages in service; citations appear here as they are made.</p>
         </EmptyState>
       ) : (
-        <DataTable caption="Requirement proposals citing this document" captionHidden columns={columns} rows={items} rowId={(item) => item.proposal_id} />
+        <DataTable caption="Requirements citing this document" captionHidden columns={columns} rows={items} rowId={(item) => item.proposal_id} />
       )}
       {pages.hasNextPage && (
         <p className="lib-more">
@@ -136,9 +137,18 @@ function Proposals() {
 
 function SourceImpact() {
   const { document } = useDocumentContext();
-  const [activeOnly, setActiveOnly] = useState(true);
-  const [find, setFind] = useState("");
-  const [query, setQuery] = useState("");
+  // The filters live in the address (§3), as the desk's and the list's do: "?show=all&find=…".
+  const [params, setParams] = useSearchParams();
+  const activeOnly = params.get("show") !== "all";
+  const find = params.get("find") ?? "";
+  const setFilter = (name: "show" | "find", value: string | null) =>
+    setParams((previous) => {
+      const next = new URLSearchParams(previous);
+      if (value) next.set(name, value);
+      else next.delete(name);
+      return next;
+    }, { replace: true });
+  const [query, setQuery] = useState(() => find.trim());
   useEffect(() => {
     const timer = window.setTimeout(() => setQuery(find.trim()), 300);
     return () => window.clearTimeout(timer);
@@ -211,9 +221,9 @@ function SourceImpact() {
         what they wrote or revise it.{waiting > 0 && <strong> {plural(waiting, "item waits", "items wait")} for that decision.</strong>}
       </p>
       <div className="lib-toolbar">
-        <Checkbox label="Content still in use only" checked={activeOnly} onChange={(event) => setActiveOnly(event.target.checked)} />
+        <Checkbox label="Content still in use only" checked={activeOnly} onChange={(event) => setFilter("show", event.target.checked ? null : "all")} />
         <div className="lib-toolbar__find">
-          <TextField label="Find in requirements" type="search" maxLength={200} value={find} onChange={(event) => setFind(event.target.value)} />
+          <TextField label="Find in requirements" type="search" maxLength={200} value={find} onChange={(event) => setFilter("find", event.target.value)} />
         </div>
       </div>
       {pages.isError ? (

@@ -119,6 +119,8 @@ describe("the review desk", { timeout: 20_000 }, () => {
     await held(3);
     await userEvent.keyboard("n");
     await waitFor(() => expect(cell("Sheet 1, row 2")).toHaveFocus());
+    // Going round past the last row is said, never silent (model §1).
+    expect(screen.getByText("Back round to the top of the list: passage 2, Sheet 1, row 2.")).toBeInTheDocument();
     await held(4);
     await userEvent.keyboard("n");
     expect(await screen.findByText("Every flagged passage and every other passage has been seen.")).toBeInTheDocument();
@@ -135,19 +137,35 @@ describe("the review desk", { timeout: 20_000 }, () => {
     expect(cell("Sheet 1, row 2")).toHaveTextContent("not seen");
   });
 
-  it("excludes with x, takes the reason, and goes back to the row with Enter", async () => {
+  it("excludes with x, takes the reason, and goes on with Enter to the next row that needs a decision (model §1)", async () => {
     openDocument(matrix());
     await screen.findByRole("grid", { name: /Passages of version 1/ });
     await userEvent.click(cell("Sheet 1, row 2"));
     await userEvent.keyboard("x");
     const reason = await screen.findByRole("textbox", { name: /Why exclude it\?/ });
     await waitFor(() => expect(reason).toHaveFocus());
-    await userEvent.type(reason, "Duplicate row{Enter}");
+    // Enter without a reason isn't a decision yet: back to the row.
+    await userEvent.keyboard("{Enter}");
     await waitFor(() => expect(cell("Sheet 1, row 2")).toHaveFocus());
+    await userEvent.keyboard("x");
+    await waitFor(() => expect(screen.getByRole("textbox", { name: /Why exclude it\?/ })).toHaveFocus());
+    await userEvent.type(screen.getByRole("textbox", { name: /Why exclude it\?/ }), "Duplicate row{Enter}");
+    // The flagged row 3 is the next to check.
+    await waitFor(() => expect(cell("Sheet 1, row 3")).toHaveFocus());
     expect(cell("Sheet 1, row 2").closest("tr")).toHaveTextContent("Excluded: Duplicate row");
     expect(progress()).toHaveTextContent("1 unsaved change");
+    await userEvent.click(cell("Sheet 1, row 2"));
     await userEvent.keyboard("i");
     expect(progress()).toHaveTextContent("0 unsaved changes");
+  });
+
+  it("goes back to the same row with Esc from the reason", async () => {
+    openDocument(matrix());
+    await screen.findByRole("grid", { name: /Passages of version 1/ });
+    await userEvent.click(cell("Sheet 1, row 2"));
+    await userEvent.keyboard("x");
+    await userEvent.type(await screen.findByRole("textbox", { name: /Why exclude it\?/ }), "Duplicate row{Escape}");
+    await waitFor(() => expect(cell("Sheet 1, row 2")).toHaveFocus());
   });
 
   it("selects with Space and Shift+↓, then excludes the set with one reason, shown before it commits", async () => {
@@ -205,6 +223,8 @@ describe("the review desk", { timeout: 20_000 }, () => {
     expect(body.passages.find((item) => item.block_id === "b2")).toMatchObject({ included: false, exclusion_reason: "Duplicate row" });
 
     expect(await screen.findByText(/^Saved at \d\d:\d\d\./)).toBeInTheDocument();
+    // Saved: the copy the tab kept goes.
+    await waitFor(() => expect(window.sessionStorage.getItem("knowledge-portal.review.d")).toBeNull());
     expect(screen.queryByRole("region", { name: "Save your review" })).not.toBeInTheDocument();
     expect(progress()).toHaveTextContent("0 unsaved changes");
     // A change after the save is counted against the save, not against the first read.
@@ -324,6 +344,80 @@ describe("the review desk", { timeout: 20_000 }, () => {
     await screen.findByRole("grid", { name: /Passages of version 1/ });
     await waitFor(() => expect(cell("Sheet 1, row 3")).toHaveFocus());
     expect(screen.getByRole("complementary", { name: "Passage 3" })).toHaveTextContent("seen");
+  });
+});
+
+describe("unsaved decisions kept in the tab (critique run 2, P1)", { timeout: 20_000 }, () => {
+  const kept = (drafts: Record<string, unknown>, key = "v1:none") =>
+    window.sessionStorage.setItem("knowledge-portal.review.d", JSON.stringify({ key, drafts, summary: null }));
+
+  it("keeps each decision in session storage as it is made", async () => {
+    openDocument(matrix());
+    await screen.findByRole("grid", { name: /Passages of version 1/ });
+    await userEvent.click(cell("Sheet 1, row 2"));
+    await userEvent.keyboard("x");
+    await userEvent.type(await screen.findByRole("textbox", { name: /Why exclude it\?/ }), "Duplicate row");
+    await waitFor(() => expect(JSON.parse(window.sessionStorage.getItem("knowledge-portal.review.d") ?? "{}")).toEqual({
+      key: "v1:none",
+      drafts: { b2: { text: "A2=Bundle 1 | B2=SMB", included: false, reason: "Duplicate row" } },
+      summary: null,
+    }));
+    await userEvent.click(cell("Sheet 1, row 2"));
+    await userEvent.keyboard("i");
+    // Nothing unsaved: nothing kept.
+    await waitFor(() => expect(window.sessionStorage.getItem("knowledge-portal.review.d")).toBeNull());
+  });
+
+  it("offers them back when the desk reopens, and restores them", async () => {
+    kept({ b2: { text: "A2=Bundle 1 | B2=SMB", included: false, reason: "Duplicate row" } });
+    openDocument(matrix());
+    await screen.findByRole("grid", { name: /Passages of version 1/ });
+    const offer = screen.getByRole("region", { name: "Unsaved review decisions" });
+    expect(offer).toHaveTextContent("Restore 1 unsaved decision?");
+    // Offered, not applied unasked.
+    expect(progress()).toHaveTextContent("0 unsaved changes");
+    await userEvent.click(within(offer).getByRole("button", { name: "Restore" }));
+    expect(progress()).toHaveTextContent("1 unsaved change");
+    expect(cell("Sheet 1, row 2").closest("tr")).toHaveTextContent("Excluded: Duplicate row");
+    await waitFor(() => expect(screen.getByText("Restored 1 unsaved decision. Save the review to keep it.")).toHaveFocus());
+    expect(screen.queryByRole("region", { name: "Unsaved review decisions" })).not.toBeInTheDocument();
+  });
+
+  it("discards them on request", async () => {
+    kept({ b2: { text: "A2=Bundle 1 | B2=SMB", included: false, reason: "Duplicate row" } });
+    openDocument(matrix());
+    await screen.findByRole("grid", { name: /Passages of version 1/ });
+    await userEvent.click(within(screen.getByRole("region", { name: "Unsaved review decisions" })).getByRole("button", { name: "Discard" }));
+    expect(window.sessionStorage.getItem("knowledge-portal.review.d")).toBeNull();
+    expect(progress()).toHaveTextContent("0 unsaved changes");
+    expect(screen.queryByRole("region", { name: "Unsaved review decisions" })).not.toBeInTheDocument();
+  });
+
+  it("doesn't offer decisions kept against another saved revision", async () => {
+    kept({ b2: { text: "A2=Bundle 1 | B2=SMB", included: false, reason: "Duplicate row" } }, "v1:r0");
+    openDocument(matrix());
+    await screen.findByRole("grid", { name: /Passages of version 1/ });
+    expect(screen.queryByRole("region", { name: "Unsaved review decisions" })).not.toBeInTheDocument();
+  });
+
+  it("works without storage", async () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("blocked"); });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("blocked"); });
+    openDocument(matrix());
+    await screen.findByRole("grid", { name: /Passages of version 1/ });
+    await userEvent.click(cell("Sheet 1, row 2"));
+    await userEvent.keyboard("x");
+    expect(progress()).toHaveTextContent("1 unsaved change");
+  });
+});
+
+describe("the document's tabs", { timeout: 20_000 }, () => {
+  it("focuses the tab panel's heading on a tab change, not the record's h1 (model §1)", async () => {
+    vi.spyOn(api, "sourceImpact").mockResolvedValue({ items: [], next_offset: null } as never);
+    openDocument(matrix());
+    await screen.findByRole("grid", { name: /Passages of version 1/ });
+    await userEvent.click(within(screen.getByRole("navigation", { name: "This document" })).getByRole("link", { name: "Cited by" }));
+    await waitFor(() => expect(screen.getByRole("heading", { level: 2, name: /Requirements citing it/ })).toHaveFocus());
   });
 });
 

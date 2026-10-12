@@ -6,6 +6,7 @@ import { ApiError, errorMessage } from "../api/errors";
 import {
   ActionGroup, Button, EmptyState, FocusFrame, type FocusChoice, FocusQuestion, type FocusStep, FocusTitle, Lines, Status, TextArea, TextField,
 } from "../design/components";
+import { formatClock } from "../home/format";
 import { RouterLink } from "../shell/links";
 import { useDocumentContext } from "./documentContext";
 import { FileButton } from "./FileButton";
@@ -44,7 +45,7 @@ export function ReviewFocus() {
       <FocusFrame work={<bdi lang={contentLang(document.title)}>{document.title}</bdi>} place="Nothing to review" steps={[]} onLeave={() => leaveTo(back)} documentTitle={`Review · ${document.title}`}>
         <FocusTitle>Nothing here waits for your review</FocusTitle>
         <EmptyState
-          title={document.can_edit ? "Its newest version isn't ready for review." : "Only its owner and the knowledge admins review it."}
+          title={document.can_edit ? "Its newest version isn't ready for review." : "Only its owner and the Knowledge admins review it."}
           action={<RouterLink href={base}>Open the document</RouterLink>}
         />
       </FocusFrame>
@@ -175,7 +176,7 @@ function Run({ document, version, back, base }: { document: LibraryDocument; ver
         <div className="ds-focus__source">
           <Lines label={blocking ? "Blocks approval, about the whole file" : "Notes about the whole file"}>
             {item.messages.map((message, at) => (
-              <li key={at}>{blocking ? <Status tone="attention">Blocks approval</Status> : <Status tone="held">Note</Status>} {message}</li>
+              <li key={at}>{blocking ? <Status tone="attention">Blocks approval</Status> : <Status tone="warning">Note</Status>} {message}</li>
             ))}
           </Lines>
         </div>
@@ -250,7 +251,7 @@ function Run({ document, version, back, base }: { document: LibraryDocument; ver
       <>
         <Lines>
           {item.warnings.map((warning, at) => (
-            <li key={at}><Status tone={warning.severity === "blocking" ? "attention" : "held"}>{warning.severity === "blocking" ? "Blocks approval" : "Flagged"}</Status> {unplaced(warning.message, item.row.where)}</li>
+            <li key={at}><Status tone={warning.severity === "blocking" ? "attention" : "warning"}>{warning.severity === "blocking" ? "Blocks approval" : "Flagged"}</Status> {unplaced(warning.message, item.row.where)}</li>
           ))}
         </Lines>
         <div className="lib-passage" dir="auto" lang={contentLang(item.row.draft?.text)}><PassageText row={item.row} headings={headings} /></div>
@@ -294,8 +295,6 @@ function Run({ document, version, back, base }: { document: LibraryDocument; ver
     </FocusQuestion>,
   );
 }
-
-const clock = (at: Date) => at.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 
 /** The summary a run proposes for the review, from the answers given. The reviewer edits it. */
 function proposedSummary(questions: ReviewQuestion[], answers: Record<string, Answer>): string {
@@ -456,7 +455,7 @@ function Summary({ document, version, questions, answers, onBack, said, onSaid, 
         <Button variant="tertiary" onClick={() => onBack(Math.max(0, questions.length - 1))}>Back to the questions</Button>
         <Button
           busy={hook.review.isPending && !hook.approve.isPending}
-          onClick={() => void save().then((saved) => saved && onSaid({ text: `Saved at ${clock(new Date())}. Nothing is published yet.` }))}
+          onClick={() => void save().then((saved) => saved && onSaid({ text: `Saved at ${formatClock(new Date())}. Nothing is published yet.` }))}
         >
           Save without publishing
         </Button>

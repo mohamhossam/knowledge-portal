@@ -16,7 +16,7 @@ import {
 } from "../suggestions";
 import { useCatalogueContext } from "../useCatalogue";
 import { useDraft } from "../useDraft";
-import { stateWords } from "./decide";
+import { documentLang, stateWords } from "./decide";
 import { DecisionTree } from "./DecisionTree";
 import { type NodeMark, touching } from "./decisionTree";
 import { type DecideAnswer, type DecideQuestion, decideChoices, decideQuestions } from "./questions";
@@ -193,6 +193,7 @@ function Run({ release, base, back }: { release: Release; base: string; back: st
           {citation?.quote ? (
             <EvidenceQuote
               text={citation.quote}
+              lang={suggestion.change_request ? undefined : documentLang(document)}
               source={suggestion.change_request ? <bdi>{suggestion.change_request.change_request_id}</bdi> : <><bdi>{document?.title ?? "A document no longer in the draft"}</bdi> · {citation.location}</>}
             />
           ) : (

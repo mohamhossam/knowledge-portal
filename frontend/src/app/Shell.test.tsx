@@ -225,4 +225,56 @@ describe("the shell", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "A library document" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Search" })).toHaveAttribute("aria-expanded", "false");
   });
+
+  it("names the panel a masthead button opens, while it is open", async () => {
+    open("/");
+    await screen.findByRole("heading", { level: 1, name: "To do" });
+    const help = screen.getByRole("button", { name: "Help" });
+    expect(help).not.toHaveAttribute("aria-controls");
+    await userEvent.click(help);
+    const id = help.getAttribute("aria-controls");
+    expect(id).toBeTruthy();
+    expect(document.getElementById(id!)).toHaveAccessibleName("Help");
+  });
+
+  it("says a job's press is in progress, and ignores a second press (area 2)", async () => {
+    const retry = vi.spyOn(api, "retry").mockReturnValue(new Promise<never>(() => {}));
+    open("/");
+    await screen.findByRole("heading", { level: 1, name: "To do" });
+    await userEvent.click(screen.getByRole("button", { name: /Jobs/ }));
+    const jobs = screen.getByRole("list", { name: "Jobs" });
+    await userEvent.click(within(jobs).getByRole("button", { name: "Try reading again: Reading Site survey checklist" }));
+    const busy = await within(jobs).findByRole("button", { name: "Trying again…: Reading Site survey checklist" });
+    expect(busy).toHaveAttribute("aria-busy", "true");
+    await userEvent.click(busy);
+    expect(retry).toHaveBeenCalledTimes(1);
+  });
+
+  it("marks what began waiting since the last visit as new, in words, and keeps this visit for the next", async () => {
+    window.localStorage.setItem("knowledge-portal.todo.last-visit", String(Date.parse("2026-09-15T00:00:00Z")));
+    open("/");
+    const attention = await screen.findByRole("region", { name: /Needs attention/ });
+    // Uploaded on 1 October, after the last visit.
+    expect(within(attention).getByText("New")).toHaveTextContent("New since your last visit");
+    expect(screen.getByText(/1 new since your last visit\./)).toBeInTheDocument();
+    expect(Number(window.localStorage.getItem("knowledge-portal.todo.last-visit"))).toBeGreaterThan(Date.parse("2026-10-01T00:00:00Z"));
+  });
+
+  it("finds in To do and orders it by waiting time, in the address", async () => {
+    const other = { ...failed, id: "g", title: "Gateway runbook", versions: [{ ...failed.versions[0]!, id: "g-v1", uploaded_at: "2026-09-01T09:00:00Z" }] } as LibraryDocument;
+    vi.spyOn(api, "libraryDocuments").mockResolvedValue([failed, other]);
+    open("/");
+    const attention = await screen.findByRole("region", { name: /Needs attention/ });
+    const titles = () => within(attention).getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent);
+    await waitFor(() => expect(titles()).toHaveLength(2));
+    await userEvent.selectOptions(screen.getByRole("combobox", { name: "Order" }), "newest");
+    expect(titles()).toEqual(["Site survey checklist", "Gateway runbook"]);
+    await userEvent.selectOptions(screen.getByRole("combobox", { name: "Order" }), "oldest");
+    expect(titles()).toEqual(["Gateway runbook", "Site survey checklist"]);
+    await userEvent.type(screen.getByRole("searchbox", { name: "Find in To do" }), "survey");
+    expect(titles()).toEqual(["Site survey checklist"]);
+    await userEvent.clear(screen.getByRole("searchbox", { name: "Find in To do" }));
+    await userEvent.type(screen.getByRole("searchbox", { name: "Find in To do" }), "nothing like it");
+    expect(within(attention).getByText(/None of these match/)).toBeInTheDocument();
+  });
 });

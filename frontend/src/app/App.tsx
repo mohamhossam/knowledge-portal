@@ -1,55 +1,137 @@
-import { type ComponentType, lazy, type ReactNode, Suspense, useEffect } from "react";
+import { type ComponentProps, type ComponentType, lazy, type ReactNode, Suspense, use, useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { CALLBACK_PATH, SILENT_CALLBACK_PATH } from "../auth/paths";
-import { CataloguePage } from "../catalogue/CataloguePage";
-import { ChannelsPage } from "../catalogue/ChannelsPage";
-import { GovernancePage } from "../catalogue/GovernancePage";
-import { ComparePage } from "../catalogue/ComparePage";
-import { ConceptsPage } from "../catalogue/ConceptsPage";
-import { EvidencePage } from "../catalogue/EvidencePage";
-import { DomainsPage } from "../catalogue/DomainsPage";
-import { MapPage } from "../catalogue/MapPage";
-import { JourneysPage } from "../catalogue/JourneysPage";
-import { OfferingsPage } from "../catalogue/OfferingsPage";
-import { SystemsPage } from "../catalogue/SystemsPage";
-import { HeadedPage } from "../catalogue/frame/HeadedPage";
-import { ChangesStep } from "../catalogue/draft/ChangesStep";
-import { CheckStep } from "../catalogue/draft/CheckStep";
-import { DecideFocus } from "../catalogue/draft/DecideFocus";
-import { DecideStep } from "../catalogue/draft/DecideStep";
-import { PublishStep } from "../catalogue/draft/PublishStep";
-import { SourcesStep } from "../catalogue/draft/SourcesStep";
-import { VersionsPage as CatalogueVersionsPage } from "../catalogue/VersionsPage";
-import { HistoryPage } from "../squads/HistoryPage";
-import { PeoplePage } from "../squads/PeoplePage";
-import { ProductsPage } from "../squads/ProductsPage";
-import { SquadListPage } from "../squads/SquadListPage";
-import { SquadsPage } from "../squads/SquadsPage";
-import { OwnershipGrid } from "../squads/OwnershipGrid";
-import { SystemsBench } from "../squads/SystemsBench";
-import { OwnershipTree } from "../squads/OwnershipTree";
 import { ExplorerPage } from "../explorer/ExplorerPage";
-import { FindingsPage } from "../requirements/FindingsPage";
-import { RequirementKnowledgeIndex, RequirementsPage } from "../requirements/RequirementsPage";
-import { HistoricPage } from "../historic/HistoricPage";
 import { ActionGroup, EmptyState, PageHeader, Skeleton } from "../design/components";
 import { ButtonLink } from "../shell/links";
 import { HomePage } from "./HomePage";
 import { Shell } from "./Shell";
 
+/**
+ * A group of route pages in its own chunk, fetched on the first page of the group opened.
+ * Once it has arrived, every page of the group renders at once (no second suspend on the
+ * next page of the same area); until then the shell's content slot shows the skeleton.
+ */
+function routeGroup<M extends Record<string, unknown>>(load: () => Promise<M>) {
+  let loaded: M | undefined;
+  let pending: Promise<M> | undefined;
+  const fetch = () =>
+    (pending ??= load().then(
+      (pages) => (loaded = pages),
+      (error: unknown) => {
+        // A failed fetch (a deploy, a dropped connection) is tried again on the next visit.
+        pending = undefined;
+        throw error;
+      },
+    ));
+  const page = <K extends keyof M>(name: K) => {
+    function GroupPage(props: ComponentProps<M[K] & ComponentType>) {
+      const Page = (loaded ?? use(fetch()))[name] as ComponentType<typeof props>;
+      return <Page {...props} />;
+    }
+    GroupPage.displayName = String(name);
+    return GroupPage;
+  };
+  return { page, preload: fetch };
+}
+
 /** The library's pages load as one chunk, on the first library route opened. */
-const library = () => import("../library/pages");
-const fromLibrary = <K extends keyof Awaited<ReturnType<typeof library>>>(name: K) =>
-  lazy(() => library().then((pages) => ({ default: pages[name] as ComponentType })));
-const LibraryPage = fromLibrary("LibraryPage");
-const SearchPage = fromLibrary("SearchPage");
-const DocumentPage = fromLibrary("DocumentPage");
-const MainPage = fromLibrary("MainPage");
-const VersionsPage = fromLibrary("VersionsPage");
-const CitationsPage = fromLibrary("CitationsPage");
-const OwnershipPage = fromLibrary("OwnershipPage");
-const ReviewFocus = fromLibrary("ReviewFocus");
+const library = routeGroup(() => import("../library/pages"));
+const LibraryPage = library.page("LibraryPage");
+const SearchPage = library.page("SearchPage");
+const DocumentPage = library.page("DocumentPage");
+const MainPage = library.page("MainPage");
+const VersionsPage = library.page("VersionsPage");
+const CitationsPage = library.page("CitationsPage");
+const OwnershipPage = library.page("OwnershipPage");
+const ReviewFocus = library.page("ReviewFocus");
+
+/** The catalogue: a version's pages, its draft's steps, versions and compare. */
+const catalogue = routeGroup(async () => {
+  const [frame, systems, map, concepts, domains, channels, governance, offerings, journeys, evidence, compare, versions, sources, decide, decideFocus, changes, check, publish, headed] = await Promise.all([
+    import("../catalogue/CataloguePage"),
+    import("../catalogue/SystemsPage"),
+    import("../catalogue/MapPage"),
+    import("../catalogue/ConceptsPage"),
+    import("../catalogue/DomainsPage"),
+    import("../catalogue/ChannelsPage"),
+    import("../catalogue/GovernancePage"),
+    import("../catalogue/OfferingsPage"),
+    import("../catalogue/JourneysPage"),
+    import("../catalogue/EvidencePage"),
+    import("../catalogue/ComparePage"),
+    import("../catalogue/VersionsPage"),
+    import("../catalogue/draft/SourcesStep"),
+    import("../catalogue/draft/DecideStep"),
+    import("../catalogue/draft/DecideFocus"),
+    import("../catalogue/draft/ChangesStep"),
+    import("../catalogue/draft/CheckStep"),
+    import("../catalogue/draft/PublishStep"),
+    import("../catalogue/frame/HeadedPage"),
+  ]);
+  return {
+    ...frame, ...systems, ...map, ...concepts, ...domains, ...channels, ...governance, ...offerings, ...journeys, ...evidence, ...compare,
+    CatalogueVersionsPage: versions.VersionsPage,
+    ...sources, ...decide, ...decideFocus, ...changes, ...check, ...publish, ...headed,
+  };
+});
+const CataloguePage = catalogue.page("CataloguePage");
+const SystemsPage = catalogue.page("SystemsPage");
+const MapPage = catalogue.page("MapPage");
+const ConceptsPage = catalogue.page("ConceptsPage");
+const DomainsPage = catalogue.page("DomainsPage");
+const ChannelsPage = catalogue.page("ChannelsPage");
+const GovernancePage = catalogue.page("GovernancePage");
+const OfferingsPage = catalogue.page("OfferingsPage");
+const JourneysPage = catalogue.page("JourneysPage");
+const EvidencePage = catalogue.page("EvidencePage");
+const ComparePage = catalogue.page("ComparePage");
+const CatalogueVersionsPage = catalogue.page("CatalogueVersionsPage");
+const SourcesStep = catalogue.page("SourcesStep");
+const DecideStep = catalogue.page("DecideStep");
+const DecideFocus = catalogue.page("DecideFocus");
+const ChangesStep = catalogue.page("ChangesStep");
+const CheckStep = catalogue.page("CheckStep");
+const PublishStep = catalogue.page("PublishStep");
+const HeadedPage = catalogue.page("HeadedPage");
+
+/** Ownership: who runs each system, squads, people, products and the history. */
+const ownership = routeGroup(async () => {
+  const [squads, bench, grid, tree, products, list, people, history] = await Promise.all([
+    import("../squads/SquadsPage"),
+    import("../squads/SystemsBench"),
+    import("../squads/OwnershipGrid"),
+    import("../squads/OwnershipTree"),
+    import("../squads/ProductsPage"),
+    import("../squads/SquadListPage"),
+    import("../squads/PeoplePage"),
+    import("../squads/HistoryPage"),
+  ]);
+  return { ...squads, ...bench, ...grid, ...tree, ...products, ...list, ...people, ...history };
+});
+const SquadsPage = ownership.page("SquadsPage");
+const SystemsBench = ownership.page("SystemsBench");
+const OwnershipGrid = ownership.page("OwnershipGrid");
+const OwnershipTree = ownership.page("OwnershipTree");
+const ProductsPage = ownership.page("ProductsPage");
+const SquadListPage = ownership.page("SquadListPage");
+const PeoplePage = ownership.page("PeoplePage");
+const HistoryPage = ownership.page("HistoryPage");
+
+/** Requirements: what requirement work holds, its findings and the historic requirements. */
+const requirements = routeGroup(async () => {
+  const [index, findings, historic] = await Promise.all([
+    import("../requirements/RequirementsPage"),
+    import("../requirements/FindingsPage"),
+    import("../historic/HistoricPage"),
+  ]);
+  return { ...index, ...findings, ...historic };
+});
+const RequirementKnowledgeIndex = requirements.page("RequirementKnowledgeIndex");
+const RequirementsPage = requirements.page("RequirementsPage");
+const FindingsPage = requirements.page("FindingsPage");
+const HistoricPage = requirements.page("HistoricPage");
 
 /** A catalogue version's pages, the same for the version in service and any other. */
 const catalogueRoutes = (
@@ -95,7 +177,7 @@ const DesignGallery = import.meta.env.DEV ? lazy(() => import("../design-lab/gal
 export function App() {
   // The library is the area people open most: fetch its chunk once the first page has painted.
   useEffect(() => {
-    const later = window.setTimeout(() => void library(), 1500);
+    const later = window.setTimeout(() => void library.preload().catch(() => {}), 1500);
     return () => window.clearTimeout(later);
   }, []);
   return (

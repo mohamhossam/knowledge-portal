@@ -51,13 +51,14 @@ function ReaderShell() {
             label={actor.display_name}
             hiddenPrefix="Account:"
             expanded={account.open}
+            controls="reader-panel"
             onClick={(event) => (account.open ? account.close() : account.show(event))}
           />
         ) : undefined
       }
       panel={
         account.open && actor ? (
-          <Drawer title="Account" onClose={account.close} panelRef={account.panel}>
+          <Drawer id="reader-panel" title="Account" onClose={account.close} panelRef={account.panel}>
             <p>Signed in as <strong><bdi>{actor.display_name}</bdi></strong>. Reading only: curating is for knowledge admins.</p>
             {offline && auth?.config ? (
               <Select label="Persona" hint="Offline sign-in: switch who you act as." value={actor.id} onChange={(event) => void auth.switchFakeActor(event.target.value)}>

@@ -251,6 +251,26 @@ describe("overlays", () => {
     expect(onToggle).toHaveBeenCalledWith(false);
   });
 
+  it("gives each key its own <kbd> and names each group once, by its heading", () => {
+    const { container } = render(
+      <ShortcutHelp
+        enabled
+        widget={[{ title: "Review", shortcuts: [{ keys: "x / i", does: "Exclude / include" }, { keys: "Ctrl+Enter", does: "Save" }] }]}
+        global={[{ keys: "g w", does: "Go to To do" }]}
+        onToggle={() => {}}
+      />,
+    );
+    const keys = (does: string) => screen.getByText(does).closest("div")!.querySelector("dt")!;
+    expect([...keys("Exclude / include").querySelectorAll("kbd")].map((kbd) => kbd.textContent)).toEqual(["x", "i"]);
+    expect(keys("Exclude / include")).toHaveTextContent("x or i");
+    expect([...keys("Go to To do").querySelectorAll("kbd")].map((kbd) => kbd.textContent)).toEqual(["g", "w"]);
+    // Held together: one <kbd> around a <kbd> per key.
+    expect(keys("Save").querySelector(":scope > kbd")!.querySelectorAll("kbd")).toHaveLength(2);
+    expect(screen.queryAllByRole("region")).toHaveLength(0);
+    expect(container.querySelectorAll("[aria-label]")).toHaveLength(0);
+    expect(screen.getAllByRole("heading", { level: 4 }).map((h) => h.textContent)).toEqual(["Review", "Page-wide"]);
+  });
+
   it("keeps help in four parts, in order", () => {
     render(<HelpContent page={{ title: "Reviewing a document", body: "Move through the passages." }} terms={[{ term: "Passage", meaning: "One reviewed unit." }]} contact={<p>Contact to be configured.</p>} />);
     const headings = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);

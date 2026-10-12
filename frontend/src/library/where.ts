@@ -63,8 +63,12 @@ export function labelledCells(text: string, where: string, headings: Map<string,
   return cells.map((cell) => ({ label: names?.get(cell.column) || `Column ${cell.column}`, value: cell.value }));
 }
 
-const ARABIC = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFC]/gu;
-const LATIN = /[A-Za-z\u00C0-\u024F]/gu;
+/** Arabic letters: the Arabic, Arabic Supplement and Extended-A blocks, and the presentation forms. */
+const isArabic = (code: number) =>
+  (code >= 0x0600 && code <= 0x06ff) || (code >= 0x0750 && code <= 0x077f) || (code >= 0x08a0 && code <= 0x08ff)
+  || (code >= 0xfb50 && code <= 0xfdff) || (code >= 0xfe70 && code <= 0xfefc);
+/** Latin letters, with the accented ones of Latin-1 and Latin Extended-A and B. */
+const isLatin = (code: number) => (code >= 0x41 && code <= 0x5a) || (code >= 0x61 && code <= 0x7a) || (code >= 0xc0 && code <= 0x24f);
 
 /**
  * The language of a piece of content, for `lang` (backlog K2), so a screen
@@ -72,11 +76,23 @@ const LATIN = /[A-Za-z\u00C0-\u024F]/gu;
  * this is a HYPOTHESIS heuristic: Arabic when most of its letters are Arabic,
  * otherwise unknown (it inherits the page's English). A search result's own
  * `language` is used instead where the API gives one.
+ *
+ * It runs for every passage the desk renders: a loop that counts, with no array of
+ * matches, and stops once what is left can't change the answer (area 2 backlog).
  */
 export function contentLang(text: string | null | undefined): "ar" | undefined {
   if (!text) return undefined;
-  const arabic = text.match(ARABIC)?.length ?? 0;
-  const latin = text.match(LATIN)?.length ?? 0;
+  let arabic = 0;
+  let latin = 0;
+  for (let index = 0; index < text.length; index += 1) {
+    const code = text.charCodeAt(index);
+    if (isArabic(code)) arabic += 1;
+    else if (isLatin(code)) latin += 1;
+    else continue;
+    const left = text.length - index - 1;
+    if (arabic > latin + left) return "ar";
+    if (latin >= arabic + left) return undefined;
+  }
   return arabic > latin ? "ar" : undefined;
 }
 

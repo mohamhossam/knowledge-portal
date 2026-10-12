@@ -35,7 +35,8 @@ export function Swimlane({ journey, systemName, system, channelName, entry }: Vi
         className="journey-lanes"
         dir="ltr"
         style={{
-          gridTemplateColumns: `${LANE.labelWidth}px ${width}px`,
+          // The names column narrows on a small screen (journey.css), so the steps start sooner.
+          gridTemplateColumns: `var(--journey-lane-names, ${LANE.labelWidth}px) ${width}px`,
           gridTemplateRows: layout.hasPhases ? `${LANE.phaseHeight}px ${height}px` : `${height}px`,
         }}
       >

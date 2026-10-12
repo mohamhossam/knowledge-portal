@@ -65,6 +65,7 @@ const TEXT: [string, string][] = [
   ["--color-ink-3", "--color-surface"], ["--color-ink-3", "--color-surface-1"], ["--color-ink-3", "--color-surface-2"],
   ["--color-on-action-fill", "--color-action-fill"], ["--color-on-action-fill", "--color-action-fill-hover"],
   ["--color-on-selected", "--color-selected"], ["--color-ink", "--color-selected"],
+  ["--color-on-selected", "--color-selected-row"], ["--color-ink", "--color-selected-row"], ["--color-ink-2", "--color-selected-row"],
   ["--color-link", "--color-surface"], ["--color-link", "--color-surface-2"],
   ["--color-action", "--color-surface"],
   ["--color-on-masthead", "--color-masthead"],
@@ -78,7 +79,7 @@ const TEXT: [string, string][] = [
 
 const NON_TEXT: [string, string][] = [
   ["--color-rule-strong", "--color-surface"], ["--color-rule-strong", "--color-surface-2"],
-  ["--color-focus", "--color-surface"], ["--color-focus", "--color-surface-2"], ["--color-focus", "--color-selected"],
+  ["--color-focus", "--color-surface"], ["--color-focus", "--color-surface-2"], ["--color-focus", "--color-selected"], ["--color-focus", "--color-selected-row"],
   ["--color-brand-accent", "--color-surface"], ["--color-brand-accent", "--color-selected"], ["--color-brand-accent", "--color-masthead"],
   ["--color-rule-heavy", "--color-surface"],
   ["--color-chart-1", "--color-surface"], ["--color-chart-2", "--color-surface"], ["--color-chart-3", "--color-surface"],

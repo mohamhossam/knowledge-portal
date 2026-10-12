@@ -42,6 +42,29 @@
   color: inherit;
 }
 
+/* Many chips fold into one select on a narrow main area (FilterStrip's FOLD_AFTER). */
+.ds-filters__fold {
+  display: none;
+  gap: var(--space-1);
+  min-inline-size: 0;
+  flex: 1 1 12rem;
+}
+
+.ds-filters__fold-label {
+  font-size: var(--text-meta);
+  color: var(--color-ink-2);
+}
+
+@container main (max-width: 39.99rem) {
+  .ds-filters[data-foldable] .ds-filters__fold {
+    display: grid;
+  }
+
+  .ds-filters[data-foldable] .ds-filters__button {
+    display: none;
+  }
+}
+
 .ds-filters__find {
   min-inline-size: 10rem;
 }
@@ -134,8 +157,9 @@
   box-shadow: inset 3px 0 0 var(--table-row-current-bar);
 }
 
+/* A row ticked for a bulk action: its own tint, so it never reads as the current row (which keeps its bar). */
 .ds-table tbody tr[aria-selected="true"] {
-  background: var(--table-row-current);
+  background: var(--table-row-selected);
 }
 
 .ds-table__num {

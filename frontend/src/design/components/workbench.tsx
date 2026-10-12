@@ -13,7 +13,8 @@ const Anchor: LinkLike = ({ href, children, ...rest }) => <a href={href} {...res
  * and full-height, on the left; the chosen record, wide, on the right. Each
  * scrolls on its own and the address names the record, so a row is a link.
  * Narrower than 60rem they stack, and with a record chosen the list keeps to
- * a short scrolling box so the record follows close under it.
+ * a short scrolling box so the record follows close under it; a `RecordView`
+ * then scrolls itself into view, so a shared link opens on the record.
  */
 export function Workbench({ list, listLabel, record, chosen }: {
   /** A `ListTools` head, then a `RecordList`. */
@@ -214,6 +215,9 @@ export function RecordView({ title, meta, actions, lead, takeFocus, children }: 
     const side = heading.current?.closest<HTMLElement>(".ds-bench__record");
     if (side) side.scrollTop = 0;
     if (takeFocus) heading.current?.focus({ preventScroll: true });
+    // Stacked (a narrow screen), the record sits under the list: bring it into view, whether it was
+    // chosen from the list or opened from a shared link. A fresh load scrolls but leaves focus be.
+    if (side && heading.current && stacked(side)) heading.current.scrollIntoView({ block: "start" });
   }, [takeFocus]);
   return (
     <article className="ds-record" data-takes-focus aria-labelledby={`${id}-title`}>
@@ -228,6 +232,13 @@ export function RecordView({ title, meta, actions, lead, takeFocus, children }: 
       {children}
     </article>
   );
+}
+
+/** Whether the workbench stacks the record under its list (below 60rem) rather than beside it. */
+function stacked(side: HTMLElement): boolean {
+  const list = side.parentElement?.querySelector<HTMLElement>(".ds-bench__list")?.getBoundingClientRect();
+  // Not laid out (no height yet, or a test's DOM): nothing to scroll to.
+  return Boolean(list && list.height > 0) && side.getBoundingClientRect().top >= list!.bottom - 1;
 }
 
 /** The record side with nothing chosen: what the list holds, and how to open one. */

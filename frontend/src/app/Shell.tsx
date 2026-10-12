@@ -1,10 +1,10 @@
 import { BookOpen, CircleHelp, Compass, FileText, Inbox, Layers, ListChecks, UserRound, UsersRound, WifiOff } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { Outlet, useLocation, useSearchParams } from "react-router-dom";
 
 import { useAuth } from "../auth/authContext";
 import { REQUIREMENT_APP_URL } from "../auth/paths";
-import { AppShell, LiveMessage, MastheadButton, type NavItem } from "../design/components";
+import { AppShell, LiveMessage, MastheadButton, type NavItem, Skeleton } from "../design/components";
 import { useDisclosure, useFocusAfterRender } from "../design/hooks";
 import { RouterLink } from "../shell/links";
 import { SHORTCUTS_EVENT } from "../shell/shortcuts";
@@ -17,18 +17,18 @@ import { useWorkQueue } from "../work/queue";
 
 type Panel = "jobs" | "help" | "account";
 
+function subscribeOnline(onChange: () => void) {
+  window.addEventListener("online", onChange);
+  window.addEventListener("offline", onChange);
+  return () => {
+    window.removeEventListener("online", onChange);
+    window.removeEventListener("offline", onChange);
+  };
+}
+
+/** The browser's own signal, read where it lives (no copy in state). */
 function useOnline() {
-  const [online, setOnline] = useState(() => navigator.onLine);
-  useEffect(() => {
-    const update = () => setOnline(navigator.onLine);
-    window.addEventListener("online", update);
-    window.addEventListener("offline", update);
-    return () => {
-      window.removeEventListener("online", update);
-      window.removeEventListener("offline", update);
-    };
-  }, []);
-  return online;
+  return useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true);
 }
 
 /**
@@ -112,11 +112,11 @@ export function Shell() {
 
   const actor = auth?.actor ?? null;
   const panel = isOpen("jobs") ? (
-    <JobsPanel jobs={jobs.jobs} state={jobs.state} onRetry={jobs.retry} onAct={jobs.act} said={jobs.said} onClose={close} panelRef={sidePanel} />
+    <JobsPanel id="shell-panel" jobs={jobs.jobs} state={jobs.state} onRetry={jobs.retry} onAct={jobs.act} busy={jobs.busy} said={jobs.said} onClose={close} panelRef={sidePanel} />
   ) : isOpen("help") ? (
-    <HelpPanel path={path} section={helpParam} onClose={close} panelRef={sidePanel} />
+    <HelpPanel id="shell-panel" path={path} section={helpParam} onClose={close} panelRef={sidePanel} />
   ) : isOpen("account") && actor ? (
-    <AccountPanel actor={actor} onClose={close} panelRef={sidePanel} />
+    <AccountPanel id="shell-panel" actor={actor} onClose={close} panelRef={sidePanel} />
   ) : null;
 
   // Focus mode (UX rebuild, phase 2): one question at a time, without the sidebar.
@@ -137,9 +137,10 @@ export function Shell() {
         banner={online ? undefined : <><WifiOff size={16} aria-hidden="true" /> You're offline. Your unsaved work stays here; the portal carries on when your connection returns.</>}
         utilities={
           <>
-            <MastheadButton id="shell-jobs" icon={<ListChecks size={16} />} label="Jobs" count={busy} countLabel="active or needing attention" expanded={isOpen("jobs")} onClick={toggle("jobs")} />
-            <MastheadButton id="shell-help" icon={<CircleHelp size={16} />} label="Help" expanded={isOpen("help")} onClick={toggle("help")} />
-            <MastheadButton id="shell-account" icon={<UserRound size={16} />} label={actor?.display_name ?? "Account"} hiddenPrefix={actor ? "Account:" : undefined} expanded={isOpen("account")} onClick={toggle("account")} />
+            {/* Jobs keeps its count's room: the count arrives with the documents, and the bar doesn't shift. */}
+            <MastheadButton id="shell-jobs" icon={<ListChecks size={16} />} label="Jobs" count={busy} countLabel="active or needing attention" reserveCount expanded={isOpen("jobs")} controls="shell-panel" onClick={toggle("jobs")} />
+            <MastheadButton id="shell-help" icon={<CircleHelp size={16} />} label="Help" expanded={isOpen("help")} controls="shell-panel" onClick={toggle("help")} />
+            <MastheadButton id="shell-account" icon={<UserRound size={16} />} label={actor?.display_name ?? "Account"} hiddenPrefix={actor ? "Account:" : undefined} expanded={isOpen("account")} controls="shell-panel" onClick={toggle("account")} />
           </>
         }
         panel={panel}
@@ -147,7 +148,10 @@ export function Shell() {
         overlay={search.overlay}
       >
         <LiveMessage message={jobs.announcement} />
-        <Outlet />
+        {/* An area's pages arrive in their own chunk: the skeleton until then, never a blank page (§8). */}
+        <Suspense fallback={<Skeleton label="Opening the page" rows={6} />}>
+          <Outlet />
+        </Suspense>
       </AppShell>
     </div>
   );

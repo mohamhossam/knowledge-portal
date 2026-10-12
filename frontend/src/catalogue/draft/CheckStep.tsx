@@ -280,7 +280,7 @@ function EvidenceFor({ release, text }: { release: Release; text: string }) {
                 {citations.map((citation) => (
                   <li key={citation.chunk_id}>
                     <span dir="auto">“{brief(citation.quote)}”</span>{" "}
-                    <RouterLink href={`${base}/evidence/${encodeURIComponent(citation.chunk_id)}`}>The passage</RouterLink>
+                    <RouterLink href={`${base}/evidence/${encodeURIComponent(citation.chunk_id)}?quote=${encodeURIComponent(citation.quote)}`}>The passage</RouterLink>
                   </li>
                 ))}
               </Lines>

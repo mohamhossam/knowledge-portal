@@ -36,6 +36,8 @@
   --color-link: var(--maroon-700);
   --color-selected: var(--maroon-tint);
   --color-on-selected: var(--eand-maroon);
+  /* A row ticked for a bulk action: deeper than the current row's tint, so the two never read alike. */
+  --color-selected-row: var(--maroon-mist);
   --color-focus: var(--eand-maroon);
 
   /* Brand accent (red): logo + active-nav marker + ≤ 1 focal accent per view. Never status. */
@@ -103,6 +105,7 @@
     --color-link: var(--maroon-link-dark);
     --color-selected: var(--maroon-night);
     --color-on-selected: var(--maroon-mist);
+    --color-selected-row: var(--maroon-masthead-dark);
     --color-focus: var(--maroon-pink);
     --color-brand-accent: var(--red-on-dark);
     --color-on-brand-accent: var(--eand-white);
@@ -150,6 +153,7 @@
   --color-link: var(--maroon-link-dark);
   --color-selected: var(--maroon-night);
   --color-on-selected: var(--maroon-mist);
+  --color-selected-row: var(--maroon-masthead-dark);
   --color-focus: var(--maroon-pink);
   --color-brand-accent: var(--red-on-dark);
   --color-on-brand-accent: var(--eand-white);

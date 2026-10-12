@@ -8,7 +8,7 @@ import { Link, useSearchParams } from "react-router-dom";
 
 import { api, type ExplorerRelease } from "../api/client";
 import { errorMessage } from "../api/errors";
-import { roleLabel, sentenceCase } from "../catalogue/catalogue";
+import { concerns, roleLabel, sentenceCase } from "../catalogue/catalogue";
 import { ConnectionsFlowDiagram } from "../catalogue/diagrams/CatalogueDiagrams";
 import type { JourneyView } from "../catalogue/journey/JourneyViews";
 import { NfrSection, RealisationKey, RealisedAs } from "../catalogue/Realisation";
@@ -183,9 +183,31 @@ function ScenarioSheet({ release, scenario, linkSystems, view, onView }: {
   const taking = involvement(scenario);
   const highlight = useMemo(() => new Set(involvement(scenario).map((item) => item.systemId)), [scenario]);
   const parts = partsFor(scenario);
-  const missing = gaps(scenario);
   const tracked = trackingFor(scenario);
   const decisions = scenario.conflicts ?? [];
+  const notes = (offering.lifecycle_notes ?? []).filter((note) => concerns(note, orderType.code, channel?.id ?? null));
+  // A section with nothing recorded is not drawn: it is one line in "What the catalogue does not say
+  // yet" instead, so a scenario with little recorded doesn't read as a run of empty sections. Tracking
+  // and NFRs already have their lines there (gaps()).
+  const empty = {
+    systems: taking.length === 0,
+    tracking: !offering.tracking,
+    lifecycle: notes.length === 0,
+    parts: parts.length === 0,
+    nfrs: !(offering.nfrs ?? []).length,
+    questions: !(offering.questions ?? []).length,
+    decisions: !(offering.decisions ?? []).length,
+    sources: !(offering.sources ?? []).length && !(offering.boundaries ?? []).length && !(offering.not_used ?? []).length,
+  };
+  const missing = [
+    ...gaps(scenario),
+    ...(empty.systems ? [`No system is named for ${orderType.name} yet.`] : []),
+    ...(empty.lifecycle ? [`No lifecycle note concerns ${orderType.name}${channel ? ` through ${channel.name}` : ""}.`] : []),
+    ...(empty.parts ? [`No part of ${offering.name} is recorded.`] : []),
+    ...(empty.questions ? [`No open question is recorded for ${offering.name}.`] : []),
+    ...(empty.decisions ? [`No architecture decision is recorded for ${offering.name}.`] : []),
+    ...(empty.sources ? [`No source is named for ${offering.name}.`] : []),
+  ];
   const readFrom = [...(offering.sources ?? [])]
     .sort((a, b) => Number(b === offering.primary_source) - Number(a === offering.primary_source))
     .map((sourceId) => (release.sources ?? []).find((item) => item.id === sourceId))
@@ -320,8 +342,8 @@ function ScenarioSheet({ release, scenario, linkSystems, view, onView }: {
           </Suspense>
         </Section>
       )}
-      <Section title="Systems in this order" count={taking.length} headingLevel={3}>
-        {taking.length ? (
+      {!empty.systems && (
+        <Section title="Systems in this order" count={taking.length} headingLevel={3}>
           <DataTable
             caption={`Systems that take part in ${orderType.name} of ${offering.name}`}
             captionHidden
@@ -329,45 +351,46 @@ function ScenarioSheet({ release, scenario, linkSystems, view, onView }: {
             rows={taking}
             rowId={(item) => item.systemId}
           />
-        ) : (
-          <p className="cat-quiet">No system is named for this order yet.</p>
-        )}
-        {taking.length > 0 && release.relationships.length > 0 && (
-          <ConnectionsFlowDiagram
-            landscape={release}
-            highlight={highlight}
-            href={linkSystems ? systemHref : undefined}
-            caption="This order's systems among every connection in the catalogue."
-          />
-        )}
-      </Section>
+          {release.relationships.length > 0 && (
+            <ConnectionsFlowDiagram
+              landscape={release}
+              highlight={highlight}
+              href={linkSystems ? systemHref : undefined}
+              caption="This order's systems among every connection in the catalogue."
+            />
+          )}
+        </Section>
+      )}
 
+      {!empty.tracking && (
+        <TrackingSection
+          offering={offering}
+          headingId={`${id}-tracking`}
+          system={system}
+          channelName={channelName}
+          orderName={orderName}
+          focus={tracked ? {
+            orderName: orderType.name,
+            applies: tracked.applies,
+            channel: channel ? { id: channel.id, name: channel.name } : null,
+            entry: tracked.entry,
+            flows: tracked.flows,
+          } : undefined}
+        />
+      )}
 
-      <TrackingSection
-        offering={offering}
-        headingId={`${id}-tracking`}
-        system={system}
-        channelName={channelName}
-        orderName={orderName}
-        focus={tracked ? {
-          orderName: orderType.name,
-          applies: tracked.applies,
-          channel: channel ? { id: channel.id, name: channel.name } : null,
-          entry: tracked.entry,
-          flows: tracked.flows,
-        } : undefined}
-      />
+      {!empty.lifecycle && (
+        <LifecycleSection
+          offering={offering}
+          headingId={`${id}-lifecycle`}
+          orderName={orderName}
+          channelName={channelName}
+          focus={{ orderCode: orderType.code, orderName: orderType.name, channelId: channel?.id ?? null }}
+        />
+      )}
 
-      <LifecycleSection
-        offering={offering}
-        headingId={`${id}-lifecycle`}
-        orderName={orderName}
-        channelName={channelName}
-        focus={{ orderCode: orderType.code, orderName: orderType.name, channelId: channel?.id ?? null }}
-      />
-
-      <Section title="Parts, and who is responsible in this order" count={parts.length} headingLevel={3}>
-        {parts.length ? (
+      {!empty.parts && (
+        <Section title="Parts, and who is responsible in this order" count={parts.length} headingLevel={3}>
           <DataTable
             caption={`Parts of ${offering.name} and the systems responsible for them in ${orderType.name}`}
             captionHidden
@@ -375,13 +398,11 @@ function ScenarioSheet({ release, scenario, linkSystems, view, onView }: {
             rows={parts}
             rowId={({ part }) => part.id}
           />
-        ) : (
-          <p className="cat-quiet">No part is recorded.</p>
-        )}
-        <RealisationKey offering={offering} />
-      </Section>
+          <RealisationKey offering={offering} />
+        </Section>
+      )}
 
-      <NfrSection offering={offering} headingId={`${id}-nfrs`} />
+      {!empty.nfrs && <NfrSection offering={offering} headingId={`${id}-nfrs`} />}
 
       <PlansAndPrices offering={offering} headingId={`${id}-plans`} />
 
@@ -397,16 +418,18 @@ function ScenarioSheet({ release, scenario, linkSystems, view, onView }: {
         />
       )}
 
-      <OpenQuestions
-        offering={offering}
-        conflicts={conflictsFor(release.conflicts ?? [], offering.id)}
-        beside={decisions}
-        headingId={`${id}-questions`}
-      />
+      {!empty.questions && (
+        <OpenQuestions
+          offering={offering}
+          conflicts={conflictsFor(release.conflicts ?? [], offering.id)}
+          beside={decisions}
+          headingId={`${id}-questions`}
+        />
+      )}
 
-      <ArchitectureDecisions offering={offering} headingId={`${id}-decisions`} />
+      {!empty.decisions && <ArchitectureDecisions offering={offering} headingId={`${id}-decisions`} />}
 
-      <OfferingSourceList offering={offering} sources={release.sources ?? []} headingId={`${id}-sources`} />
+      {!empty.sources && <OfferingSourceList offering={offering} sources={release.sources ?? []} headingId={`${id}-sources`} />}
 
       <Section title="What the catalogue does not say yet" count={missing.length} headingLevel={3}>
         <p className="cat-lead">{NOT_YET}</p>
