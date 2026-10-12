@@ -64,3 +64,9 @@ class CatalogueCandidateRepositoryPort(Protocol):
     def reopen(self, candidate_id: str) -> None:
         """Undo a decision whose draft change could not be saved."""
         ...
+
+    def revise(self, candidates: tuple[CatalogueCandidate, ...]) -> None:
+        """Store undecided candidates as a person retyped them: new ones are added, and
+        existing ones replaced while undecided; raises CandidateDecisionConflictError if
+        one was decided meanwhile."""
+        ...

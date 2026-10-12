@@ -7,6 +7,14 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- Decide always says what to do next: answer the questions, accept the ready ones, or settle
+  a wait nothing on the page can lift. A name that waiting suggestions need and nothing adds
+  can be suggested as a system or made a product offering on the spot
+  (`POST /architecture-knowledge/releases/{id}/suggestions/subject`), or what waits for it
+  rejected. A new system, or a constraint of a system the draft lacks, can be made a product
+  offering from its pane without rejecting and retyping it.
+- Offering rules (`offering_rule` suggestions): a rule or limitation of a product offering,
+  accepted into the offering's rules.
 - A document's reading says how it stands (draft Sources step): the stage it is at (opening
   the file, reading part 3 of 12 with a progress bar, matching names, saving), when it
   started, roughly how long is left, and when the reader has stopped responding. The step
@@ -15,6 +23,10 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Fixed
 
+- Reading a document no longer takes a product, bundle or plan for a system (prompt
+  `catalogue-extraction-v13`): its rules are proposed as offering rules, and a "system" named
+  like an offering the draft has or the document suggests is left out, with its constraints
+  turned into that offering's rules.
 - A draft's page head no longer widens the page past a 1280px window.
 
 ## 0.6.0 — 2026-10-11

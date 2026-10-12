@@ -37,6 +37,7 @@ from knowledge_portal.application.use_cases.catalog_plans import CatalogPlans, C
 from knowledge_portal.application.use_cases.catalogue_candidates import (
     CandidateOverview,
     CandidateView,
+    SubjectKind,
 )
 from knowledge_portal.domain.architecture.candidates import (
     CandidateBasis,
@@ -2573,6 +2574,20 @@ class RejectSuggestionsRequest(RevisionRequest):
 
 class RejectSuggestionsResponse(BaseModel):
     rejected: int
+
+
+class SettleSubjectRequest(BaseModel):
+    """What a name waiting suggestions name really is: a system or a product offering."""
+
+    system_id: Identifier = Field(min_length=1)
+    # The name the documents give it, for the suggestion of it.
+    name: Name = ""
+    kind: SubjectKind
+
+
+class SettleSubjectResponse(BaseModel):
+    retyped: int
+    added: int
 
 
 class PassageResponse(BaseModel):

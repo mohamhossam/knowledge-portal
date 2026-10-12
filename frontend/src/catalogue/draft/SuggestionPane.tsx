@@ -19,7 +19,7 @@ const TABLE_READER = "catalogue-table-reader";
  * the decision: accept, edit then accept, or reject.
  */
 export function SuggestionPane({
-  suggestion, release, words, document, actorName, busy, kept, notes, editing, headingRef, onEdit, onKeep, onDecide,
+  suggestion, release, words, document, actorName, busy, kept, notes, editing, headingRef, onEdit, onKeep, onDecide, settling = false, onSettle,
 }: {
   suggestion: Suggestion;
   release: Release;
@@ -36,6 +36,9 @@ export function SuggestionPane({
   onEdit: (editing: boolean) => void;
   onKeep: (content: SuggestionContent | null) => void;
   onDecide: (accept: boolean, content?: SuggestionContent | null) => void;
+  settling?: boolean;
+  /** Says what the name it is about really is: a system, or a product offering. */
+  onSettle?: (reference: string, name: string, kind: "system" | "offering") => void;
 }) {
   const state = suggestionState(suggestion);
   const proposed = suggestion.status === "proposed";
@@ -101,7 +104,10 @@ export function SuggestionPane({
             onCancel={() => onEdit(false)}
           />
         ) : (
-          <Decision key={suggestion.id} suggestion={suggestion} words={words} busy={busy} kept={kept !== undefined} onEdit={() => onEdit(true)} onDrop={() => onKeep(null)} onDecide={onDecide} />
+          <>
+            <Decision key={suggestion.id} suggestion={suggestion} words={words} busy={busy} kept={kept !== undefined} onEdit={() => onEdit(true)} onDrop={() => onKeep(null)} onDecide={onDecide} />
+            {onSettle && <Retype suggestion={suggestion} words={words} busy={settling} onSettle={onSettle} />}
+          </>
         )}
       </section>
     </div>
@@ -154,6 +160,34 @@ function Decision({ suggestion, words, busy, kept, onEdit, onDrop, onDecide }: {
         <Button icon={<X size={14} />} aria-keyshortcuts="r" busy={busy} onClick={() => onDecide(false)}>Reject</Button>
       </ActionGroup>
     </div>
+  );
+}
+
+/**
+ * A product read as a system: the suggestion of a new system, or a constraint of a system
+ * the draft lacks, said to be about a product offering instead, without rejecting and retyping
+ * it. The system becomes an offering and its constraints the offering's rules.
+ */
+function Retype({ suggestion, words, busy, onSettle }: {
+  suggestion: Suggestion;
+  words: Lexicon;
+  busy: boolean;
+  onSettle: (reference: string, name: string, kind: "system" | "offering") => void;
+}) {
+  const { content } = suggestion;
+  const newSystem = content.kind === "system" && !suggestion.system_name && suggestion.possible_matches.length === 0;
+  const homeless = content.kind === "constraint" && suggestion.match === "needs_system";
+  if (!newSystem && !homeless) return null;
+  const name = newSystem ? content.name : words.system(content.system_id);
+  return (
+    <p className="draft-retype">
+      <span>
+        Not a system? If <bdi>{name}</bdi> is a product, bundle or plan, {newSystem ? "this becomes an offering and its constraints the offering's rules" : "its constraints become the offering's rules"}.
+      </span>{" "}
+      <Button variant="link" busy={busy} onClick={() => onSettle(content.system_id, name, "offering")}>
+        Make <bdi>{name}</bdi> a product offering
+      </Button>
+    </p>
   );
 }
 

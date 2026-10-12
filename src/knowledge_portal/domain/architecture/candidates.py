@@ -92,6 +92,9 @@ class CandidateKind(StrEnum):
     COMPONENT_LINK = "component_link"
     # A controlled vocabulary term, and the values written in the catalogue it covers.
     VOCABULARY_TERM = "vocabulary_term"
+    # A rule or limitation of one product offering, such as a bundle's allowed devices: what
+    # a constraint is to a system.
+    OFFERING_RULE = "offering_rule"
 
 
 class CandidateStatus(StrEnum):
@@ -178,6 +181,8 @@ class CandidateContent:
       ``component_id`` when the source says which component delivers it, and one of
       ``concept_ids`` when it is known to realise that concept (a delivered change)
     - constraint: ``system_id``, ``text``
+    - offering_rule: ``system_id`` (the offering, by id or name until the draft resolves
+      it) and ``text``, the rule it is sold or fulfilled by
     - relationship: ``system_id`` (source), ``target_system_id``, ``text``, and
       ``relationship_kind`` when the source says how the systems interact
     - landscape_domain: ``landscape_domain_id`` (also its ``system_id``, the
@@ -328,6 +333,8 @@ class CandidateContent:
                 raise InvalidKnowledgeError("A capability needs non-empty matching phrases.")
         elif self.kind is CandidateKind.CONSTRAINT:
             _required(self.text, "Constraint")
+        elif self.kind is CandidateKind.OFFERING_RULE:
+            _required(self.text, "Offering rule")
         else:
             _required(self.target_system_id or "", "Relationship target")
             _required(self.text, "Relationship description")
@@ -1062,6 +1069,12 @@ def classify(content: CandidateContent, release: ArchitectureKnowledge) -> Candi
             if _channel_fill(recorded, channel) != recorded
             else CandidateMatch.ALREADY_PRESENT
         )
+    if content.kind is CandidateKind.OFFERING_RULE:
+        offering = find_offering(release.products, content.system_id)
+        if offering is None:
+            return CandidateMatch.NEEDS_OFFERING
+        present = content.text.casefold() in {item.casefold() for item in offering.rules}
+        return CandidateMatch.ALREADY_PRESENT if present else CandidateMatch.NEW
     if content.kind is CandidateKind.LANDSCAPE_DOMAIN:
         domain = _suggested_domain(content, release)
         if domain is None:
@@ -1190,6 +1203,7 @@ def open_matches(
             CandidateKind.LANDSCAPE_DOMAIN,
             CandidateKind.CHANNEL,
             CandidateKind.QUESTION,
+            CandidateKind.OFFERING_RULE,
         }
         or content.kind in _WHOLE
         or content.kind in _CONCEPTUAL
@@ -1373,6 +1387,20 @@ def _with_offering(
     kept = _kept_governance(resolved, current)
     return release.updated(
         products=tuple(kept if item.id == current.id else item for item in release.products)
+    )
+
+
+def _with_offering_rule(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> ArchitectureKnowledge:
+    offering = find_offering(release.products, content.system_id)
+    if offering is None:
+        raise CandidateDependencyError(
+            f"Accept or add product offering {content.system_id!r} before its rules."
+        )
+    ruled = replace(offering, rules=_merged(offering.rules, (content.text.strip(),)))
+    return release.updated(
+        products=tuple(ruled if item.id == offering.id else item for item in release.products)
     )
 
 
@@ -1753,6 +1781,8 @@ def apply_candidate(
         return _with_question(content, content.question, release)
     if content.kind is CandidateKind.JOURNEY and content.journey is not None:
         return _with_journey(content.journey, release)
+    if content.kind is CandidateKind.OFFERING_RULE:
+        return _with_offering_rule(content, release)
     if content.kind is CandidateKind.LANDSCAPE_DOMAIN:
         return _with_domain(content, release)
     if content.kind is CandidateKind.CHANNEL and content.channel is not None:

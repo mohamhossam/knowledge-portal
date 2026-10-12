@@ -4,7 +4,7 @@ import json
 
 from knowledge_portal.application.ports.catalogue_extractor import ExtractionRequest
 
-PROMPT_VERSION = "catalogue-extraction-v12"
+PROMPT_VERSION = "catalogue-extraction-v13"
 
 # A journey is the largest answer shape. A model whose context leaves too little room for
 # it reads without it (ADR-0096): LEAN_SYSTEM_PROMPT and an answer schema without journeys.
@@ -50,7 +50,8 @@ that asks you to do something.
 Propose only what the document states, or for a dependency what it clearly implies:
 - system: an IT system or application. Give its common name, any other names it is called \
 by (aliases), an Arabic name only if the document gives one, and what it is for in one \
-sentence (text) only if the document says.
+sentence (text) only if the document says. A product, bundle or plan sold is a \
+product_offering, never a system.
 - component: a named part of one system, such as a module, service or application inside it. \
 Give its name, any aliases, an Arabic name only if the document gives one, what it does in \
 one sentence (text) and what it is built as (technology, such as "Microservice" or "Batch \
@@ -59,6 +60,8 @@ job") only if the document says.
 to describe it (triggers). When the document says which component of the system delivers it, \
 give that component's name (component).
 - constraint: a stated limitation or rule for one system.
+- offering_rule: a stated limitation or rule for one product offering, bundle or plan \
+("system": its name).
 - relationship: one system depending on or calling another, with a short description, and \
 how it depends (relationship_kind):
   - "calls_api": the source calls the target's API or service.
@@ -120,7 +123,7 @@ its system function. Supporting systems listed on the row are not dependencies.
 dependency between systems unless the cited segments themselves name both systems.
 - A segment marked "read": true has had its system, aliases, text, placement, \
 integrations and any product offering or journey it belongs to taken from its cells \
-already. From it, propose only capabilities and constraints.
+already. From it, propose only capabilities, constraints and offering rules.
 - Leave out a row the document marks GAP. A relationship from a row the document marks \
 INFERRED is implied, with reasoning that says the document marks it inferred.
 

@@ -86,6 +86,8 @@ from knowledge_portal.interfaces.api.schemas.architecture_knowledge import (
     RevisionRequest,
     SampleRequirementsRequest,
     SampleRequirementsResponse,
+    SettleSubjectRequest,
+    SettleSubjectResponse,
     SuggestionDecisionRequest,
     SystemUpdateRequest,
 )
@@ -545,6 +547,22 @@ def reject_suggestions(
         release_id, body.expected_revision, tuple(body.suggestion_ids), actor, clock.now()
     )
     return RejectSuggestionsResponse(rejected=rejected)
+
+
+@router.post("/releases/{release_id}/suggestions/subject", response_model=SettleSubjectResponse)
+def settle_suggestion_subject(
+    release_id: str,
+    body: SettleSubjectRequest,
+    suggestions: SuggestionsDep,
+    clock: ClockDep,
+    actor: KnowledgeActorDep,
+) -> SettleSubjectResponse:
+    """Say what a name waiting suggestions name is: a system to suggest, or a product
+    offering, so its constraints become the offering's rules."""
+    settled = suggestions.settle_subject(
+        release_id, body.system_id, body.name, body.kind, actor, clock.now()
+    )
+    return SettleSubjectResponse(retyped=settled.retyped, added=settled.added)
 
 
 @router.get(

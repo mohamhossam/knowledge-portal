@@ -304,6 +304,9 @@ export const api = {
       expected_revision: expectedRevision,
       suggestion_ids: suggestionIds,
     }),
+  /** Says what a name waiting suggestions name is: a system to suggest, or a product offering. */
+  settleSubject: (releaseId: string, body: Schemas["SettleSubjectRequest"]) =>
+    post<Schemas["SettleSubjectResponse"]>(`${releasePath(releaseId)}/suggestions/subject`, body),
   /** Change requests requirement-portal delivered, newest first (ADR-0101, step 7). */
   changeRequests: async () => (await apiRequest<Schemas["ChangeRequestsResponse"]>("/architecture-knowledge/change-requests")).change_requests,
   /** Reads one into the draft in progress, or a new draft named after it. */

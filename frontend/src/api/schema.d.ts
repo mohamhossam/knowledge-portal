@@ -679,6 +679,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/architecture-knowledge/releases/{release_id}/suggestions/subject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Settle Suggestion Subject
+         * @description Say what a name waiting suggestions name is: a system to suggest, or a product
+         *     offering, so its constraints become the offering's rules.
+         */
+        post: operations["settle_suggestion_subject_architecture_knowledge_releases__release_id__suggestions_subject_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/architecture-knowledge/releases/{release_id}/suggestions/{suggestion_id}/decision": {
         parameters: {
             query?: never;
@@ -2542,7 +2563,7 @@ export interface components {
          * CandidateKind
          * @enum {string}
          */
-        CandidateKind: "system" | "component" | "capability" | "constraint" | "relationship" | "landscape_domain" | "placement" | "product" | "journey" | "channel" | "question" | "concept" | "component_link" | "vocabulary_term";
+        CandidateKind: "system" | "component" | "capability" | "constraint" | "relationship" | "landscape_domain" | "placement" | "product" | "journey" | "channel" | "question" | "concept" | "component_link" | "vocabulary_term" | "offering_rule";
         /**
          * CandidateMatch
          * @description How a candidate relates to the draft as it stands now.
@@ -5484,6 +5505,27 @@ export interface components {
             updated_by: string | null;
         };
         /**
+         * SettleSubjectRequest
+         * @description What a name waiting suggestions name really is: a system or a product offering.
+         */
+        SettleSubjectRequest: {
+            kind: components["schemas"]["SubjectKind"];
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /** System Id */
+            system_id: string;
+        };
+        /** SettleSubjectResponse */
+        SettleSubjectResponse: {
+            /** Added */
+            added: number;
+            /** Retyped */
+            retyped: number;
+        };
+        /**
          * SharedRootView
          * @description A work item that is also the root of another historic requirement.
          */
@@ -5595,6 +5637,12 @@ export interface components {
             /** Value Stream Id */
             value_stream_id: string;
         };
+        /**
+         * SubjectKind
+         * @description What a name suggestions wait for really is, as a person says it on Decide.
+         * @enum {string}
+         */
+        SubjectKind: "system" | "offering";
         /** SuggestionDecisionRequest */
         SuggestionDecisionRequest: {
             /** Accept */
@@ -7484,6 +7532,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RejectSuggestionsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    settle_suggestion_subject_architecture_knowledge_releases__release_id__suggestions_subject_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettleSubjectRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettleSubjectResponse"];
                 };
             };
             /** @description Validation Error */

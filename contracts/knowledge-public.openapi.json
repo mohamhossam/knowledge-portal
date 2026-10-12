@@ -1632,7 +1632,8 @@
           "question",
           "concept",
           "component_link",
-          "vocabulary_term"
+          "vocabulary_term",
+          "offering_rule"
         ],
         "title": "CandidateKind",
         "type": "string"
@@ -10585,6 +10586,50 @@
         "title": "SampleRequirementsResponse",
         "type": "object"
       },
+      "SettleSubjectRequest": {
+        "description": "What a name waiting suggestions name really is: a system or a product offering.",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/SubjectKind"
+          },
+          "name": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Name",
+            "type": "string"
+          },
+          "system_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "System Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "system_id",
+          "kind"
+        ],
+        "title": "SettleSubjectRequest",
+        "type": "object"
+      },
+      "SettleSubjectResponse": {
+        "properties": {
+          "added": {
+            "title": "Added",
+            "type": "integer"
+          },
+          "retyped": {
+            "title": "Retyped",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "retyped",
+          "added"
+        ],
+        "title": "SettleSubjectResponse",
+        "type": "object"
+      },
       "SharedRootView": {
         "description": "A work item that is also the root of another historic requirement.",
         "properties": {
@@ -10897,6 +10942,15 @@
         ],
         "title": "SquadSchema",
         "type": "object"
+      },
+      "SubjectKind": {
+        "description": "What a name suggestions wait for really is, as a person says it on Decide.",
+        "enum": [
+          "system",
+          "offering"
+        ],
+        "title": "SubjectKind",
+        "type": "string"
       },
       "SuggestionDecisionRequest": {
         "properties": {
@@ -15141,6 +15195,80 @@
           }
         ],
         "summary": "Reject Suggestions",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
+    "/architecture-knowledge/releases/{release_id}/suggestions/subject": {
+      "post": {
+        "description": "Say what a name waiting suggestions name is: a system to suggest, or a product\noffering, so its constraints become the offering's rules.",
+        "operationId": "settle_suggestion_subject_architecture_knowledge_releases__release_id__suggestions_subject_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettleSubjectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettleSubjectResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Settle Suggestion Subject",
         "tags": [
           "architecture knowledge"
         ]

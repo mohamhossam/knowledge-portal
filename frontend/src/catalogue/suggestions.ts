@@ -22,7 +22,7 @@ export const STATE_LABEL: Record<SuggestionState, string> = {
 
 /** The order accepting-all walks, and the order rows sit inside a system. */
 const KIND_ORDER: SuggestionKind[] = [
-  "landscape_domain", "system", "placement", "component", "capability", "constraint", "relationship", "channel", "product", "question", "journey",
+  "landscape_domain", "system", "placement", "component", "capability", "constraint", "relationship", "channel", "product", "offering_rule", "question", "journey",
 ];
 
 /**
@@ -160,6 +160,8 @@ export function changeSentence(suggestion: Suggestion, words: Lexicon): string {
     }
     case "constraint":
       return `Adds the constraint “${content.text}”`;
+    case "offering_rule":
+      return `Adds the rule “${content.text}” to the offering ${words.offering(content.system_id)}`;
     case "relationship":
       return `${VERB[content.relationship_kind ?? "unspecified"]} ${targetName(suggestion, words)}`;
     case "placement":
@@ -249,6 +251,7 @@ export function waitsFor(suggestion: Suggestion, words: Lexicon): string {
     case "needs_domain":
       return `Waits for the landscape domain ${words.domain(content.landscape_domain_id ?? content.parent_domain_id ?? "")}`;
     case "needs_offering":
+      if (content.kind === "offering_rule") return `Waits for the offering ${words.offering(content.system_id)}`;
       if (content.kind === "question") {
         const missing = (content.question?.order_types ?? []).filter((code) => words.orderType(content.system_id, code) === code);
         return words.hasOffering(content.system_id) && missing.length
@@ -378,7 +381,7 @@ export function suggestionGroups(release: Release, suggestions: Suggestion[], wo
     } else if (content.kind === "channel") {
       key = "section:channels";
       group = { key, isNew: false, label: SECTION.channels };
-    } else if (content.kind === "product") {
+    } else if (content.kind === "product" || content.kind === "offering_rule") {
       key = "section:offerings";
       group = { key, isNew: false, label: SECTION.offerings };
     } else if (content.kind === "question") {
@@ -429,14 +432,7 @@ function bySuggestionOrder(a: Suggestion, b: Suggestion): number {
  * suggestions about to be accepted by a person's answer: what they add lifts waits too.
  */
 export function bulkAcceptable(release: Release, suggestions: Suggestion[], given: Suggestion[] = []): { ready: Suggestion[]; lifted: Suggestion[] } {
-  const known = new Set<string>();
-  for (const system of release.systems) {
-    known.add(`system:${system.id}`);
-    for (const component of system.components) known.add(`component:${system.id}/${component.id}`);
-  }
-  for (const domain of release.landscape_domains ?? []) known.add(`domain:${domain.id}`);
-  for (const offering of release.products ?? []) known.add(`offering:${offering.id}`);
-  for (const channel of release.channels ?? []) channelKeys(channel.id, channel.name).forEach((key) => known.add(key));
+  const known = knownKeys(release);
   const open = suggestions.filter((item) => item.status === "proposed" && !needsOneByOne(item));
   const ready = open.filter((item) => !item.match.startsWith("needs_"));
   const provided = new Set(known);
@@ -459,6 +455,80 @@ export function bulkAcceptable(release: Release, suggestions: Suggestion[], give
     waiting = still;
   }
   return { ready, lifted };
+}
+
+/** What the draft already has, as the keys suggestions provide and require. */
+function knownKeys(release: Release): Set<string> {
+  const known = new Set<string>();
+  for (const system of release.systems) {
+    known.add(`system:${system.id}`);
+    for (const component of system.components) known.add(`component:${system.id}/${component.id}`);
+  }
+  for (const domain of release.landscape_domains ?? []) known.add(`domain:${domain.id}`);
+  for (const offering of release.products ?? []) [offering.id, offering.code ?? "", offering.name].forEach((reference) => reference && known.add(offeringKey(reference)));
+  for (const channel of release.channels ?? []) channelKeys(channel.id, channel.name).forEach((key) => known.add(key));
+  return known;
+}
+
+/** An offering's key: by id, code or name alike, without case, spaces or punctuation, as the service finds it. */
+const offeringKey = (reference: string) => `offering:${reference.toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, "")}`;
+
+/** Something waiting suggestions need that neither the draft nor any open suggestion adds. */
+export type Blocker = {
+  key: string;
+  /** What is missing: a system or an offering can be settled on the spot; the rest is edited or rejected. */
+  kind: "system" | "offering" | "other";
+  /** How the suggestions name it, for the service. */
+  reference: string;
+  /** Its name in the documents' words. */
+  name: string;
+  /** What it is, in a sentence: "the system Business Pro Plus". */
+  label: string;
+  waiting: Suggestion[];
+};
+
+/**
+ * The dead ends: waiting suggestions whose wait no decision on this page lifts, by what they
+ * wait for, the most waited-for first. A suggestion a person must decide anyway is left out.
+ */
+export function blockers(release: Release, suggestions: Suggestion[], words: Lexicon): Blocker[] {
+  const known = knownKeys(release);
+  const open = suggestions.filter((item) => item.status === "proposed");
+  const provided = new Set(open.flatMap(provides));
+  const found = new Map<string, Blocker>();
+  for (const item of open) {
+    if (!item.match.startsWith("needs_") || needsOneByOne(item)) continue;
+    for (const key of new Set(requires(item))) {
+      if (known.has(key) || provided.has(key)) continue;
+      const blocker = found.get(key) ?? describeNeed(key, item, words);
+      blocker.waiting.push(item);
+      found.set(key, blocker);
+    }
+  }
+  return [...found.values()].sort((a, b) => b.waiting.length - a.waiting.length || a.name.localeCompare(b.name, "en"));
+}
+
+function describeNeed(key: string, item: Suggestion, words: Lexicon): Blocker {
+  const [prefix, ...rest] = key.split(":");
+  const reference = rest.join(":");
+  const { content } = item;
+  if (prefix === "system") {
+    const name = words.system(reference);
+    return { key, kind: "system", reference, name, label: `the system ${name}`, waiting: [] };
+  }
+  if (prefix === "offering") {
+    // Keys drop punctuation; the suggestion still says how it names the offering.
+    const named = content.kind === "journey" ? content.journey?.product_id ?? reference : content.system_id;
+    const name = words.offering(named);
+    return { key, kind: "offering", reference: named, name, label: `the offering ${name}`, waiting: [] };
+  }
+  const [systemId = "", componentId = ""] = reference.split("/");
+  const name = prefix === "component" ? words.component(systemId, componentId)
+    : prefix === "domain" ? words.domain(reference)
+      : prefix === "channel" ? words.channel(reference)
+        : reference;
+  const what = prefix === "domain" ? "landscape domain" : prefix;
+  return { key, kind: "other", reference, name, label: `the ${what} ${name}`, waiting: [] };
 }
 
 /**
@@ -494,7 +564,7 @@ function provides(suggestion: Suggestion): string[] {
     case "landscape_domain":
       return [`domain:${content.system_id}`];
     case "product":
-      return [`offering:${content.system_id}`];
+      return [offeringKey(content.system_id), ...(content.product ? [offeringKey(content.product.name)] : [])];
     case "channel":
       return channelKeys(content.system_id, content.channel?.name ?? content.name);
     default:
@@ -557,7 +627,7 @@ function requires(suggestion: Suggestion): string[] {
       // A domain waits for its parent; a placement for the domain it places the system in.
       return [`domain:${(content.kind === "landscape_domain" ? content.parent_domain_id : content.landscape_domain_id) ?? ""}`];
     case "needs_offering":
-      return [`offering:${content.kind === "question" ? content.system_id : content.journey?.product_id ?? ""}`];
+      return [offeringKey(content.kind === "question" || content.kind === "offering_rule" ? content.system_id : content.journey?.product_id ?? "")];
     case "needs_system":
       if (content.kind === "channel") return [`system:${content.channel?.entry_system_id ?? ""}`];
       if (content.kind === "product" || content.kind === "journey") {
