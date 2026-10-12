@@ -278,6 +278,19 @@ describe("offering detail suggestions", () => {
     ]);
   });
 
+  it("lists the plans a reading found, each with its stated facts", () => {
+    const words = lexicon(release, []);
+    const product = detailed("new").content.product!;
+    const planned = {
+      ...product,
+      plans: [
+        { name: "PO1", characteristics: [{ name: "Offer Description", value: "Unlimited 100Mbps" }, { name: "IN Offer ID", value: "860" }] },
+        { name: "PO2", characteristics: [] },
+      ],
+    };
+    expect(offeringHolds(planned, words)).toContainEqual({ label: "Plans", text: "PO1 (Offer Description Unlimited 100Mbps, IN Offer ID 860); PO2" });
+  });
+
   it("waits for the channels its order tracking and lifecycle notes name", () => {
     expect(waitsFor(detailed("needs_channel"), lexicon(release, []))).toBe("Waits for the channels Business Web, Shop");
   });

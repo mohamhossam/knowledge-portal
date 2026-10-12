@@ -136,6 +136,7 @@ function details(product: Offering | null | undefined): string[] {
     product.nfrs?.length ? count(product.nfrs.length, "NFR") : "",
     product.tracking ? "order tracking" : "",
     product.lifecycle_notes?.length ? count(product.lifecycle_notes.length, "lifecycle note") : "",
+    product.plans?.length ? count(product.plans.length, "plan") : "",
   ].filter(Boolean);
 }
 
@@ -296,6 +297,12 @@ export function offeringHolds(product: Offering | null | undefined, words: Lexic
       tracking.fallout.length ? count(tracking.fallout.length, "fallout case") : "",
     ].filter(Boolean);
     lines.push({ label: `Order tracking${scope}`, text: parts.join("; ") || "Its scope only" });
+  }
+  if (product.plans?.length) {
+    // A plan's stated facts beside its name: "PO1 (Offer Description Unlimited 100Mbps, IN Offer ID 860)".
+    const plan = (item: Offering["plans"][number]) =>
+      item.characteristics.length ? `${item.name} (${item.characteristics.map((fact) => `${fact.name} ${fact.value}`).join(", ")})` : item.name;
+    lines.push({ label: "Plans", text: product.plans.map(plan).join("; ") });
   }
   if (product.lifecycle_notes?.length) {
     lines.push({ label: "Lifecycle notes", text: product.lifecycle_notes.map((note) => note.title).join("; ") });

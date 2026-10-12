@@ -44,6 +44,29 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   left out. A model that cannot read images says how many figures went unread.
 - A requirements or feasibility table, or a row naming several systems, is no longer read as
   a system inventory (table reader `catalogue-tables-v7`).
+- One suggestion per system, component, capability, constraint and dependency: a long document
+  mentioned CWOM in 37 places and offered it 37 times. Readings of the same thing merge, every
+  citation kept with its own quote; the table reader's or the first stated reading leads.
+- A model's answer is checked item by item: one item over a limit (eleven evidence numbers, a
+  key left out) no longer loses the whole call. The schema the model is shown now lists every
+  field, a "description" or "title" field included; they were stripped from it while
+  validation still required them.
+- A quote is found despite curly quotes, dashes and ellipses, across two neighbouring passages,
+  or in another passage of the call, and is cited where it is; a citation pairs each place with
+  the quote found there. Warnings now say how many suggestions were left out because their
+  quote was not found, and how many were incomplete, by kind.
+- A Word table's merged cells keep their value in each row and their columns aligned.
+- An offering's plans, tiers and child POs are read as its plans, each with its stated facts,
+  not as offerings of their own, and the suggestion lists them. Accepting a reading that names
+  no plans keeps the offering's plans, business rules and portfolio place.
+- A channel an offering's order types name ("Applicable Channels: BCRM, B2B, SMB App") is
+  suggested as a channel when nothing else suggests it, entering through the system of that
+  name; the offering no longer waits for channels nobody can accept.
+- Journeys are read from a system's part in an order type too, and a reading says so when a
+  document mentions journeys but none was read (prompt `catalogue-extraction-v14`).
+- Office files a Word document embeds (Word, PowerPoint, Excel) are read with it, under the
+  headings they sit at, cited as "embedded N, slide 3"; legacy OLE objects are counted, not
+  read. Embedded files are not yet added to the evidence index, nor are their figures read.
 
 ## 0.6.0 — 2026-10-11
 

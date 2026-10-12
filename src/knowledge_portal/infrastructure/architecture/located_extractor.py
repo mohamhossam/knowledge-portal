@@ -6,12 +6,17 @@ import io
 import posixpath
 import re
 import zipfile
+from pathlib import PurePosixPath
 from xml.etree import ElementTree
 
 from pypdf import PdfReader
 from smb_kernel.documents.ports import DocumentExtractorPort
 
-from knowledge_portal.application.ports.located_document_extractor import LocatedText
+from knowledge_portal.application.ports.located_document_extractor import (
+    EmbeddedPart,
+    EmbeddedParts,
+    LocatedText,
+)
 from knowledge_portal.domain.document.value_objects import EvidenceBlockKind
 from knowledge_portal.infrastructure.architecture.markdown_passages import (
     markdown_passages,
@@ -32,6 +37,8 @@ class LocatedDocumentExtractor:
                 for block in self._validator.extract_structured(mime_type, content).evidence_blocks
                 if block.kind is EvidenceBlockKind.TABLE_ROW and block.text
             )
+        if mime_type == _PPTX:
+            return self._slides(content)
         self._validator.extract(mime_type, content)
         if mime_type in {"image/png", "image/jpeg"}:
             # Images carry no citable text; a vision model reads them for suggestions only.
@@ -82,14 +89,77 @@ class LocatedDocumentExtractor:
                 table_number += 1
                 rows: list[list[str]] = []
                 for row in element.findall(f"{_W}tr"):
-                    cells = []
+                    cells: list[str] = []
                     for cell in row.findall(f"{_W}tc"):
                         paragraphs = list(cell.iter(f"{_W}p"))
                         paragraph_number += len(paragraphs)
-                        cells.append("\n".join(filter(None, map(_text, paragraphs))))
+                        value = "\n".join(filter(None, map(_text, paragraphs)))
+                        merged = cell.find(f"{_W}tcPr/{_W}vMerge")
+                        above = rows[-1] if rows else []
+                        if merged is not None and merged.get(f"{_W}val", "continue") != "restart":
+                            # A cell merged down from the row above holds that row's value.
+                            value = above[len(cells)] if len(cells) < len(above) else value
+                        span = cell.find(f"{_W}tcPr/{_W}gridSpan")
+                        width = int(span.get(f"{_W}val", "1")) if span is not None else 1
+                        # A cell across several columns fills them all in the header, so
+                        # every column is named, and only the first in a later row.
+                        cells.extend([value] * width if not rows else [value] + [""] * (width - 1))
                     rows.append(cells)
                 segments.extend(_table_rows(table_number, rows, tuple(headings)))
         return tuple(segments)
+
+    def _slides(self, content: bytes) -> tuple[LocatedText, ...]:
+        """One passage per slide: its text, table rows and speaker notes, in order."""
+        slides: dict[str, list[str]] = {}
+        for block in self._validator.extract_structured(_PPTX, content).evidence_blocks:
+            # A chart or diagram is only a placeholder ("Graphic content unavailable").
+            if not block.text or block.kind is EvidenceBlockKind.EXTERNAL_REFERENCE:
+                continue
+            slide = block.section_path[0] if block.section_path else block.label
+            slides.setdefault(slide, []).append(block.text)
+        return tuple(
+            LocatedText(slide.casefold(), "\n".join(lines)) for slide, lines in slides.items()
+        )
+
+    def embedded(self, mime_type: str, content: bytes, max_bytes: int) -> EmbeddedParts:
+        """A Word document's embedded Word, PowerPoint and Excel files, in document order.
+
+        Each is an object in the body ("o:OLEObject") whose relationship names a part
+        under word/embeddings/. Legacy OLE packages (".bin") are counted, not read. A
+        part larger than ``max_bytes`` unpacked is left out and counted too; what a
+        part holds is checked by the validator when it is read.
+        """
+        if mime_type != _DOCX:
+            return EmbeddedParts()
+        body, styles, targets = _word(content)
+        if body is None:
+            return EmbeddedParts()
+        found: list[tuple[int, str, tuple[str, ...]]] = []
+        headings: list[str] = []
+        number = 0
+        for element in body:
+            if element.tag == f"{_W}p" and (level := _heading_level(element, styles)) is not None:
+                if value := _text(element):
+                    headings = [*headings[: level - 1], value]
+            for item in element.iter(f"{_O}OLEObject"):
+                number += 1
+                target = targets.get(item.get(f"{_R}id") or "")
+                found.append((number, target or "", tuple(headings)))
+        parts: list[EmbeddedPart] = []
+        others = 0
+        with zipfile.ZipFile(io.BytesIO(content)) as archive:
+            sizes = {info.filename: info.file_size for info in archive.infolist()}
+            for number, target, under in found:
+                kind = _EMBEDDED.get(PurePosixPath(target).suffix.casefold())
+                if kind is None or not 0 < sizes.get(target, 0) <= max_bytes:
+                    others += 1
+                    continue
+                parts.append(
+                    EmbeddedPart(
+                        number, PurePosixPath(target).name, kind, under, archive.read(target)
+                    )
+                )
+        return EmbeddedParts(tuple(parts), others)
 
     def figure_headings(self, mime_type: str, content: bytes) -> dict[str, tuple[str, ...]]:
         """For a Word document the validator has accepted: each image's headings, by package path.
@@ -220,6 +290,9 @@ def _table_rows(table: int, rows: list[list[str]], headings: tuple[str, ...]) ->
 
 _XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 _DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+_PPTX = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+_EMBEDDED = {".docx": _DOCX, ".pptx": _PPTX, ".xlsx": _XLSX}
+_O = "{urn:schemas-microsoft-com:office:office}"
 _RELATIONSHIPS = "word/_rels/document.xml.rels"
 _A = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
 _R = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"

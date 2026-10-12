@@ -9,7 +9,7 @@ merges it into the draft under the draft's revision check.
 from __future__ import annotations
 
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from datetime import datetime
 from enum import StrEnum
@@ -18,7 +18,12 @@ from uuid import uuid4
 from smb_kernel.documents.ports import DocumentExtractorPort, DocumentStoragePort
 from smb_kernel.time.clock import ClockPort
 
-from knowledge_portal.application.errors import PersistenceError
+from knowledge_portal.application.errors import (
+    DocumentExtractionError,
+    DocumentExtractionTimeoutError,
+    PersistenceError,
+    UnsupportedDocumentError,
+)
 from knowledge_portal.application.ports.architecture_jobs import (
     JobProgress,
     ProgressReport,
@@ -95,6 +100,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     KnowledgeReleaseStatus,
     RelationshipKind,
 )
+from knowledge_portal.domain.architecture.offering_drafts import slug
 from knowledge_portal.domain.architecture.products import (
     ProductOffering,
     find_offering,
@@ -114,8 +120,12 @@ _DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document
 MAX_READ_CHARACTERS = 1_000_000
 # A Word document's figures are each read in a call of their own by a vision model.
 MAX_FIGURES = 40
+# A Word document's embedded Office files read with it, and the largest read unpacked.
+MAX_EMBEDDED = 20
+MAX_EMBEDDED_BYTES = 25 * 1024 * 1024
 MAX_MATCHES_PER_NAME = 3
 _FIGURE = re.compile(r"^image (\d+)\b", re.IGNORECASE)
+_JOURNEY = re.compile(r"\bjourneys?\b", re.IGNORECASE)
 
 
 def _figure_number(label: str) -> int | None:
@@ -328,6 +338,10 @@ def _canonical(
         )
 
     result: list[ProposedChange] = []
+    # Channels an offering's order types name that nothing suggests: "Applicable Channels:
+    # BCRM, B2B, SMB App" read into the order types only left the offering waiting for
+    # channels nobody could accept.
+    named: dict[str, ProposedChange] = {}
     for change in changes:
         content = change.content
         if content.kind is CandidateKind.LANDSCAPE_DOMAIN:
@@ -365,6 +379,26 @@ def _canonical(
             orders = tuple(
                 replace(item, channels=channel_ids(item.channels)) for item in offering.order_types
             )
+            for reference in (name for item in offering.order_types for name in item.channels):
+                key = " ".join(reference.casefold().split())
+                if not key or key in named or find_channel_among(channels, reference):
+                    continue
+                enters = find_system(provisional, reference)
+                channel = Channel(
+                    slug(reference),
+                    reference.strip(),
+                    entry_system_id=enters.id if enters is not None else None,
+                )
+                named[key] = replace(
+                    change,
+                    content=CandidateContent(
+                        CandidateKind.CHANNEL, channel.id, name=channel.name, channel=channel
+                    ),
+                    source_name=channel.name,
+                    target_name="",
+                    rationale=None,
+                    reader=None,
+                )
             result.append(
                 replace(
                     change,
@@ -397,7 +431,7 @@ def _canonical(
                 ),
             )
         )
-    return tuple(result)
+    return (*result, *named.values())
 
 
 def _canonical_journey(
@@ -463,7 +497,7 @@ def _one_journey_each(changes: tuple[ProposedChange, ...]) -> tuple[ProposedChan
         result[index] = replace(
             first,
             content=replace(first.content, journey=merged),
-            locations=tuple(dict.fromkeys((*first.locations, *change.locations))),
+            also_cited=(*first.also_cited, *change.citations),
             basis=(
                 CandidateBasis.STATED
                 if CandidateBasis.STATED in {first.basis, change.basis}
@@ -499,7 +533,7 @@ def _one_channel_each(changes: tuple[ProposedChange, ...]) -> tuple[ProposedChan
         result[index] = replace(
             first,
             content=replace(first.content, channel=merged),
-            locations=tuple(dict.fromkeys((*first.locations, *change.locations))),
+            also_cited=(*first.also_cited, *change.citations),
             basis=(
                 CandidateBasis.STATED
                 if CandidateBasis.STATED in {first.basis, change.basis}
@@ -540,7 +574,7 @@ def _one_offering_each(changes: tuple[ProposedChange, ...]) -> tuple[ProposedCha
         result[index] = replace(
             first,
             content=replace(first.content, product=merged),
-            locations=tuple(dict.fromkeys((*first.locations, *change.locations))),
+            also_cited=(*first.also_cited, *change.citations),
             basis=(
                 CandidateBasis.STATED
                 if CandidateBasis.STATED in {first.basis, change.basis}
@@ -548,6 +582,106 @@ def _one_offering_each(changes: tuple[ProposedChange, ...]) -> tuple[ProposedCha
             ),
         )
     return tuple(result)
+
+
+def _subject(content: CandidateContent) -> tuple[object, ...] | None:
+    """What a suggestion is about, when one suggestion should say all of it; None otherwise.
+
+    A long document mentions CWOM in thirty places, each reading worded a little
+    differently; offered thirty times, the system buries the review. Offerings,
+    journeys and channels are merged whole as they are read (``_one_offering_each``).
+    """
+    kind = content.kind
+    if kind is CandidateKind.SYSTEM:
+        return (kind, content.system_id)
+    if kind is CandidateKind.COMPONENT:
+        return (kind, content.system_id, content.component_id)
+    if kind is CandidateKind.CAPABILITY:
+        return (kind, content.system_id, content.capability_id)
+    if kind in {CandidateKind.CONSTRAINT, CandidateKind.OFFERING_RULE}:
+        return (kind, content.system_id, " ".join(content.text.casefold().split()))
+    if kind is CandidateKind.RELATIONSHIP:
+        return (kind, content.system_id, content.target_system_id, content.relationship_kind)
+    return None
+
+
+def _labels(*groups: Sequence[str]) -> tuple[str, ...]:
+    """Names in order, each once whatever its case."""
+    seen: dict[str, str] = {}
+    for group in groups:
+        for label in group:
+            if label.strip():
+                seen.setdefault(label.strip().casefold(), label.strip())
+    return tuple(seen.values())
+
+
+def _first[T](values: Sequence[T | None]) -> T | None:
+    return next((value for value in values if value), None)
+
+
+def _merged_content(lead: CandidateContent, others: list[CandidateContent]) -> CandidateContent:
+    """One suggestion's content from several about the same thing: the lead's facts,
+    and what only the others say added, never replacing the lead's."""
+    every = [lead, *others]
+    if lead.kind in {CandidateKind.SYSTEM, CandidateKind.COMPONENT}:
+        names = _labels(*([item.name or "", *item.aliases] for item in every))
+        name = (lead.name or "").casefold()
+        return replace(
+            lead,
+            aliases=tuple(label for label in names if label.casefold() != name),
+            name_ar=_first([item.name_ar for item in every]),
+            description=_first([item.description for item in every]),
+            technology=_first([item.technology for item in every]),
+        )
+    if lead.kind is CandidateKind.CAPABILITY:
+        return replace(
+            lead,
+            triggers=_labels(*(item.triggers for item in every)),
+            concept_ids=tuple(dict.fromkeys(cid for item in every for cid in item.concept_ids)),
+            component_id=_first([item.component_id for item in every]),
+        )
+    return lead
+
+
+def _one_each(
+    proposed: dict[CandidateContent, _Proposal],
+) -> tuple[dict[CandidateContent, _Proposal], dict[CandidateKind, int]]:
+    """One suggestion per system, component, capability, constraint and dependency, and how
+    many were merged into others, by kind.
+
+    The lead is what the table reader read, else the first stated reading, else the
+    first; every reading's citations stay, each with its own quote. A stated
+    reading outweighs an inference.
+    """
+    groups: dict[object, list[tuple[CandidateContent, _Proposal]]] = {}
+    for content, item in proposed.items():
+        key = _subject(content)
+        groups.setdefault(content if key is None else key, []).append((content, item))
+    kept: dict[CandidateContent, _Proposal] = {}
+    merged: dict[CandidateKind, int] = {}
+    for group in groups.values():
+        if len(group) == 1:
+            kept[group[0][0]] = group[0][1]
+            continue
+        lead_content, lead = next(
+            (pair for pair in group if pair[1].reader is not None),
+            next((pair for pair in group if pair[1].basis is CandidateBasis.STATED), group[0]),
+        )
+        others = [pair for pair in group if pair[0] != lead_content]
+        stated = any(item.basis is CandidateBasis.STATED for _, item in group)
+        item = replace(
+            lead,
+            citations=[
+                *lead.citations,
+                *(cited for _, other in others for cited in other.citations),
+            ],
+            basis=CandidateBasis.STATED if stated else lead.basis,
+            rationale=None if stated else lead.rationale,
+        )
+        content = _merged_content(lead_content, [other for other, _ in others])
+        kept[content] = item
+        merged[content.kind] = merged.get(content.kind, 0) + len(others)
+    return kept, merged
 
 
 def _one_way(
@@ -667,6 +801,46 @@ class ProposeCatalogueChanges:
             )
         return version
 
+    def _embedded(self, stored: bytes, warnings: list[str]) -> tuple[LocatedText, ...]:
+        """The passages of the Office files a Word document embeds, after its own.
+
+        An annex's workflows or a solution deck often sit in embedded files. Each is
+        read with the same checks and limits as an upload, cited "embedded N, slide 3",
+        and sits under the headings it is embedded at and its file name. One that
+        cannot be read is counted, never fatal.
+        """
+        found = self._located.embedded(_DOCX, stored, MAX_EMBEDDED_BYTES)
+        passages: list[LocatedText] = []
+        unread = found.others
+        for count, part in enumerate(found.parts):
+            if count == MAX_EMBEDDED:
+                unread += len(found.parts) - MAX_EMBEDDED
+                break
+            try:
+                inner = self._located.extract(part.mime_type, part.content)
+            except (
+                DocumentExtractionError,
+                DocumentExtractionTimeoutError,
+                UnsupportedDocumentError,
+            ):
+                unread += 1
+                continue
+            passages.extend(
+                replace(
+                    item,
+                    location=f"embedded {part.number}, {item.location}",
+                    heading_path=(*part.headings, part.filename, *item.heading_path),
+                    block=f"embedded {part.number}, {item.block}" if item.block else None,
+                )
+                for item in inner
+            )
+        if unread:
+            warnings.append(
+                f"{unread} embedded object(s) were not read: only Word, PowerPoint and Excel "
+                "files are, each within the upload limits."
+            )
+        return tuple(passages)
+
     def _figures(
         self, stored: bytes, numbered: int, warnings: list[str]
     ) -> tuple[ExtractionSegment, ...]:
@@ -734,7 +908,10 @@ class ProposeCatalogueChanges:
                 ExtractionSegment(1, "image", image_mime_type=version.mime_type, image=image),
             )
         else:
-            located = _within_budget(self._located.extract(version.mime_type, stored), warnings)
+            located = self._located.extract(version.mime_type, stored)
+            if version.mime_type == _DOCX:
+                located += self._embedded(stored, warnings)
+            located = _within_budget(located, warnings)
             segments = tuple(
                 ExtractionSegment(
                     number,
@@ -780,7 +957,7 @@ class ProposeCatalogueChanges:
                 # accepting it would fail; it is left out rather than offered.
                 self_linked += 1
                 continue
-            citations = [CandidateCitation(location, change.quote) for location in change.locations]
+            citations = [CandidateCitation(location, quote) for location, quote in change.citations]
             key = _identity(change.content)
             kinds.setdefault(key, []).append(
                 (change.basis is CandidateBasis.STATED, change.content.relationship_kind)
@@ -800,9 +977,10 @@ class ProposeCatalogueChanges:
             current.citations.extend(citations)
             if change.basis is CandidateBasis.STATED:
                 current.basis, current.rationale = CandidateBasis.STATED, None
-        proposed, both_ways = _one_way(
+        proposed, same = _one_each(
             {_settled(key, kinds[key]): item for key, item in proposed.items()}
         )
+        proposed, both_ways = _one_way(proposed)
         skipped = linked = 0
         kept: dict[CandidateContent, _Proposal] = {}
         for content, item in proposed.items():
@@ -839,6 +1017,11 @@ class ProposeCatalogueChanges:
                 f"{self_linked} dependency suggestion(s) were left out because they linked a "
                 "system to itself."
             )
+        if same:
+            merged = ", ".join(
+                f"{count} {kind.value.replace('_', ' ')}" for kind, count in same.items()
+            )
+            warnings.append(f"Suggestions about the same thing were merged into one: {merged}.")
         if both_ways:
             warnings.append(
                 f"{both_ways} dependency suggestion(s) listed from both systems were merged "
@@ -853,6 +1036,13 @@ class ProposeCatalogueChanges:
             )
         if not proposed:
             warnings.append("No catalogue content was found in this document.")
+        elif not any(content.kind is CandidateKind.JOURNEY for content in proposed) and any(
+            _JOURNEY.search(" ".join((*item.section, item.text))) for item in segments
+        ):
+            warnings.append(
+                "The document mentions journeys, but none was read: a journey is read where "
+                "the document sets out the activities of an order type in order."
+            )
         run = ExtractionRun(
             uuid4().hex,
             release.id,

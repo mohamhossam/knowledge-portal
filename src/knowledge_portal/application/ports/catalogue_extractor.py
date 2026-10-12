@@ -90,7 +90,8 @@ class ProposedChange:
     writes them, kept because the content holds only ids. An inferred change
     carries the model's ``rationale`` for reading it from the passages.
     ``reader`` names what proposed it, as (name, version), when that was not
-    the proposal's model, such as the table reader.
+    the proposal's model, such as the table reader. ``also_cited`` holds where
+    readings merged into this one say it, each place with the quote found there.
     """
 
     content: CandidateContent
@@ -101,6 +102,17 @@ class ProposedChange:
     basis: CandidateBasis = CandidateBasis.STATED
     rationale: str | None = None
     reader: tuple[str, str] | None = None
+    # Where readings merged into this one say it, each with its own quote.
+    also_cited: tuple[tuple[str, str], ...] = ()
+
+    @property
+    def citations(self) -> tuple[tuple[str, str], ...]:
+        """Each (location, quote) the change rests on, its quote paired only with where it is."""
+        return tuple(
+            dict.fromkeys(
+                (*((location, self.quote) for location in self.locations), *self.also_cited)
+            )
+        )
 
 
 @dataclass(frozen=True)

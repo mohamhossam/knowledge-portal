@@ -118,6 +118,7 @@ _BY_CHANNEL = frozenset(
 )
 _NOTHING = frozenset({"", "-", "—", "–"})
 _VIA = re.compile(r"\s+via\s+", re.IGNORECASE)
+_PART = re.compile(r" \(part \d+ of \d+\)$")
 _QUALIFIER = re.compile(r"\s*\([^()]*\)\s*$")
 
 
@@ -1465,7 +1466,8 @@ class TableFirstCatalogueExtractor:
                     change
                     for change in proposal.changes
                     if change.content.kind not in _FROM_CELLS
-                    or not set(change.locations) <= read_rows
+                    # A long row read in parts is cited "row 4 (part 2 of 3)": still that row.
+                    or not {_PART.sub("", location) for location in change.locations} <= read_rows
                 ]
         return CatalogueProposal(
             (*reading.changes, *changes), self.model, self.prompt_version, tuple(warnings)

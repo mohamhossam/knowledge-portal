@@ -372,7 +372,8 @@ def test_implied_dependencies_are_inferred_with_their_reasoning_and_others_dropp
     assert change.rationale == "Order Hub hands invoices to Dynamics CRM, so it relies on it."
     assert (change.source_name, change.target_name) == ("Order Hub", "Dynamics CRM")
     assert change.content.target_system_id == "dynamics-crm"
-    assert "2 suggestion(s) were left out" in proposal.warnings[0]
+    # An implied item that is not a dependency, and one without its reasoning.
+    assert proposal.warnings[0] == "Incomplete suggestions were left out: 1 relationship, 1 system."
 
 
 # Use case ---------------------------------------------------------------------------------

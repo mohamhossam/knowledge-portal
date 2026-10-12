@@ -717,7 +717,15 @@ def _kept_links(offering: ProductOffering, current: ProductOffering) -> ProductO
         if kept is not None:
             item = kept_component_terms(item, kept)
         parts.append(item)
-    return replace(offering, components=tuple(parts))
+    # Plans, business rules and the portfolio place come from a catalogue file or a
+    # person far more often than from prose: a reading that names none keeps them.
+    return replace(
+        offering,
+        components=tuple(parts),
+        plans=offering.plans or current.plans,
+        business_rules=offering.business_rules or current.business_rules,
+        portfolio_node_id=offering.portfolio_node_id or current.portfolio_node_id,
+    )
 
 
 def _resolved_offering(

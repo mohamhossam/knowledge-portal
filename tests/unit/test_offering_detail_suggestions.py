@@ -279,7 +279,8 @@ class _Answer:
         self.asked: list[tuple[str, Any]] = []
 
     def parse(self, *, system_prompt: str, schema_type: Any, **_: Any) -> Any:
-        self.asked.append((system_prompt, schema_type))
+        # The schema the model is shown; its answer's items are then checked one by one.
+        self.asked.append((system_prompt, getattr(schema_type, "shape", schema_type)))
         return self.output
 
 
