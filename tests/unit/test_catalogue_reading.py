@@ -132,6 +132,31 @@ def test_a_long_document_is_split_so_every_call_fits_the_budget() -> None:
     assert proposal.warnings == ()
 
 
+def test_each_call_reports_how_many_parts_are_done_of_how_many() -> None:
+    client = _Recording()
+    heard: list[tuple[int, int]] = []
+
+    _extractor(client).propose(
+        replace(_document(40), progress=lambda done, total: heard.append((done, total)))
+    )
+
+    calls = len(client.prompts)
+    assert heard == [(done, calls) for done in range(calls)]
+
+
+def test_a_split_part_adds_to_the_parts_expected() -> None:
+    client = _Recording(
+        [_cut_off(), ExtractionOutput(changes=[_cited(1)]), ExtractionOutput(changes=[_cited(1)])]
+    )
+    heard: list[tuple[int, int]] = []
+
+    _extractor(client, budget=None).propose(
+        replace(_document(2), progress=lambda done, total: heard.append((done, total)))
+    )
+
+    assert heard == [(0, 1), (1, 3), (2, 3)]
+
+
 def test_an_oversized_passage_is_cut_into_parts_that_keep_its_location() -> None:
     client = _Recording()
     huge = ExtractionRequest("Doc", (ExtractionSegment(1, "page 3", PARAGRAPH * 40),), ())

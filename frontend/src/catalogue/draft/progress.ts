@@ -5,7 +5,7 @@ import { api, type ImpactComparison, type Release } from "../../api/client";
 import type { Step, StatusTone } from "../../design/components";
 import { count } from "../../home/format";
 import { buildState } from "../drafting";
-import { reading, tally } from "../suggestions";
+import { type Reading, reading, tally } from "../suggestions";
 import { useBuild } from "../useEditing";
 
 /** The draft workflow's steps, in the order the work goes (redesign phase 3). */
@@ -46,20 +46,35 @@ export function useDraftProgress(release: Release) {
   });
   const build = useBuild(release);
   const counts = tally(suggestions.data?.suggestions ?? []);
-  const readings = (extractions.data ?? []).map((item) => reading(item.job));
+  const readings = (extractions.data ?? []).map((item) => reading(item.job, extractions.dataUpdatedAt));
+  const busy = readings.filter((item) => item.busy);
   const requests = new Set((suggestions.data?.runs ?? []).flatMap((run) => (run.change_request_id ? [run.change_request_id] : []))).size;
   return {
     suggestions,
     changes,
     counts,
     sources: release.documents.length + requests,
-    reading: readings.filter((item) => item.busy).length,
+    reading: busy.length,
+    readingLabel: readingWords(busy),
+    stalled: busy.filter((item) => item.stalled).length,
     failed: readings.filter((item) => item.failed).length,
     build: buildState(release, build.job.data),
   };
 }
 
 export type DraftProgress = ReturnType<typeof useDraftProgress>;
+
+/**
+ * The readings under way in a few words: the one being read in its own words
+ * ("Reading part 3 of 12"), with how many wait behind it.
+ */
+function readingWords(busy: Reading[]): string | null {
+  const started = busy.filter((item) => !item.waiting);
+  const waiting = busy.length - started.length;
+  const lead = started.length === 1 ? started[0]?.label : started.length ? `${started.length} being read` : null;
+  if (!lead) return waiting ? `${waiting} waiting to be read` : null;
+  return waiting ? `${lead}, ${waiting} waiting` : lead;
+}
 
 const status = (tone: StatusTone, text: string) => ({ tone, text });
 
@@ -69,9 +84,11 @@ export function draftSteps(base: string, current: DraftStep | null, progress: Dr
   const said: Record<DraftStep, Step["status"]> = {
     sources: progress.failed
       ? status("attention", `${progress.failed} not read`)
-      : progress.reading
-        ? status("working", `${progress.reading} being read`)
-        : status("neutral", progress.sources ? count(progress.sources, "source") : "No source yet"),
+      : progress.stalled
+        ? status("warning", `${progress.stalled} stopped responding`)
+        : progress.reading
+          ? status("working", progress.readingLabel ?? `${progress.reading} being read`)
+          : status("neutral", progress.sources ? count(progress.sources, "source") : "No source yet"),
     decide: !progress.suggestions.data
       ? undefined
       : counts.waiting

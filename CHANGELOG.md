@@ -5,6 +5,18 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ## Unreleased
 
+### Added
+
+- A document's reading says how it stands (draft Sources step): the stage it is at (opening
+  the file, reading part 3 of 12 with a progress bar, matching names, saving), when it
+  started, roughly how long is left, and when the reader has stopped responding. The step
+  header says the same in a few words. Catalogue jobs now report `queued_at`, `started_at`,
+  `stage`, `progress_done` and `progress_total` (additive; migration `202610120900`).
+
+### Fixed
+
+- A draft's page head no longer widens the page past a 1280px window.
+
 ## 0.6.0 — 2026-10-11
 
 Phase 9: a new-offering verdict comes with a drafted offering and journey, which come back

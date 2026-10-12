@@ -12,8 +12,23 @@ from knowledge_portal.application.ports.architecture_jobs import (
     ArchitectureJob,
     ArchitectureJobKind,
     ArchitectureJobStatus,
+    JobProgress,
 )
 from knowledge_portal.domain.architecture.knowledge import KnowledgeConflictError
+
+_COLUMNS = (
+    "job_id, kind, subject_id, fingerprint, actor_id, status, attempts, error_category, "
+    "lease_until, queued_at, started_at, stage, progress_done, progress_total"
+)
+# Asked for afresh: waiting again, with nothing yet to say about an attempt.
+_REQUEUED_VALUES = (
+    ("queued_at", "now()"),
+    ("started_at", "NULL"),
+    ("stage", "NULL"),
+    ("progress_done", "NULL"),
+    ("progress_total", "NULL"),
+)
+_REQUEUED = ", ".join(f"{column} = {value}" for column, value in _REQUEUED_VALUES)
 
 # Each queue has its own table: `claim` takes any kind, so queues must never share one.
 QUEUE_TABLES = frozenset({"architecture_jobs", "historic_import_jobs"})
@@ -45,6 +60,15 @@ class PostgresArchitectureJobs:
             row[6],
             str(row[7]) if row[7] is not None else None,
             row[8] if isinstance(row[8], datetime) else None,
+            row[9] if isinstance(row[9], datetime) else None,
+            row[10] if isinstance(row[10], datetime) else None,
+            JobProgress(
+                str(row[11]),
+                row[12] if isinstance(row[12], int) else None,
+                row[13] if isinstance(row[13], int) else None,
+            )
+            if row[11] is not None
+            else None,
         )
 
     def enqueue(self, job: ArchitectureJob) -> ArchitectureJob:
@@ -63,9 +87,13 @@ class PostgresArchitectureJobs:
                     f"('failed', 'cancelled') THEN NULL ELSE {self._table}.error_category END, "
                     f"status = CASE WHEN {self._table}.status IN ('failed', 'cancelled') "
                     f"THEN 'queued' ELSE {self._table}.status END, "
-                    "updated_at = now() "
-                    "RETURNING job_id, kind, subject_id, fingerprint, actor_id, status, "
-                    "attempts, error_category, lease_until",
+                    + "".join(
+                        f"{column} = CASE WHEN {self._table}.status IN ('failed', 'cancelled') "
+                        f"THEN {value} ELSE {self._table}.{column} END, "
+                        for column, value in _REQUEUED_VALUES
+                    )
+                    + "updated_at = now() "
+                    f"RETURNING {_COLUMNS}",
                     (job.id, job.kind.value, job.subject_id, job.fingerprint, job.actor_id),
                 ).fetchone()
             if row is None:
@@ -80,8 +108,7 @@ class PostgresArchitectureJobs:
         try:
             with self._connector.connection() as connection:
                 rows = connection.execute(
-                    "SELECT job_id, kind, subject_id, fingerprint, actor_id, status, attempts, "
-                    f"error_category, lease_until FROM {self._table} "
+                    f"SELECT {_COLUMNS} FROM {self._table} "
                     "WHERE kind = %s AND subject_id = %s ORDER BY updated_at, created_at",
                     (kind.value, subject_id),
                 ).fetchall()
@@ -93,8 +120,7 @@ class PostgresArchitectureJobs:
         try:
             with self._connector.connection() as connection:
                 row = connection.execute(
-                    "SELECT job_id, kind, subject_id, fingerprint, actor_id, status, attempts, "
-                    f"error_category, lease_until FROM {self._table} WHERE job_id = %s",
+                    f"SELECT {_COLUMNS} FROM {self._table} WHERE job_id = %s",
                     (job_id,),
                 ).fetchone()
             return self._job(row) if row else None
@@ -114,12 +140,13 @@ class PostgresArchitectureJobs:
                     )
                     UPDATE {self._table} j
                     SET status = 'running', attempts = attempts + 1,
-                        lease_until = %s + interval '5 minutes', updated_at = now()
+                        lease_until = %s + interval '5 minutes', started_at = %s,
+                        stage = NULL, progress_done = NULL, progress_total = NULL,
+                        updated_at = now()
                     FROM candidate WHERE j.job_id = candidate.job_id
-                    RETURNING j.job_id, j.kind, j.subject_id, j.fingerprint, j.actor_id,
-                              j.status, j.attempts, j.error_category, j.lease_until
+                    RETURNING {", ".join(f"j.{column}" for column in _COLUMNS.split(", "))}
                     """,
-                    (now, now),
+                    (now, now, now),
                 ).fetchone()
                 if row is None:
                     connection.execute(
@@ -145,6 +172,18 @@ class PostgresArchitectureJobs:
             return row is not None
         except psycopg.Error as exc:
             raise PersistenceError("Architecture job heartbeat failed.") from exc
+
+    def report(self, job_id: str, attempt: int, progress: JobProgress) -> None:
+        try:
+            with self._connector.connection() as connection:
+                connection.execute(
+                    f"UPDATE {self._table} SET stage = %s, progress_done = %s, "
+                    "progress_total = %s WHERE job_id = %s AND attempts = %s "
+                    "AND status = 'running'",
+                    (progress.stage, progress.done, progress.total, job_id, attempt),
+                )
+        except psycopg.Error as exc:
+            raise PersistenceError("Architecture job progress could not be recorded.") from exc
 
     def finish(
         self,
@@ -182,10 +221,10 @@ class PostgresArchitectureJobs:
             with self._connector.connection() as connection:
                 row = connection.execute(
                     f"UPDATE {self._table} SET status = %s, attempts = 0, "
-                    "error_category = NULL, lease_until = NULL, updated_at = now() "
-                    "WHERE job_id = %s AND status = %s "
-                    "RETURNING job_id, kind, subject_id, fingerprint, actor_id, status, "
-                    "attempts, error_category, lease_until",
+                    "error_category = NULL, lease_until = NULL, updated_at = now()"
+                    + (f", {_REQUEUED} " if to_status is ArchitectureJobStatus.QUEUED else " ")
+                    + "WHERE job_id = %s AND status = %s "
+                    f"RETURNING {_COLUMNS}",
                     (to_status.value, job_id, from_status.value),
                 ).fetchone()
             if row is None:
