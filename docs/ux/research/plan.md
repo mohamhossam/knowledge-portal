@@ -1,7 +1,8 @@
 # Research plan — knowledge portal redesign (Phase 1)
 
 This is a **research kit, not research results.** Nothing below is a finding. Every question,
-task and target is a plan to be run by the user. Results go in `docs/ux/research/raw/`, and the
+task and target is a plan to be run by the user. Results go in `docs/ux/research/raw/` (created
+when the research runs), and the
 synthesis happens only after GATE 1a. If the user chooses "assumption mode", derived artefacts
 are labelled **HYPOTHESIS**.
 
@@ -211,8 +212,9 @@ rerun in round 1, round 2 and the final benchmark.**
 
 ### Data sheet
 
-`docs/ux/testing/benchmark-template.csv` has one row per participant × task. SUS and the
-session-level answers go on the row with `task_id = SESSION`.
+The benchmark sheet has one row per participant × task. SUS and the session-level answers go
+on the row with `task_id = SESSION`. The blank template was removed from the branch; it is in
+its history as `docs/ux/testing/benchmark-template.csv`.
 
 ## 8. Deliverables back to the redesign (after GATE 1a)
 

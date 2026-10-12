@@ -1,6 +1,7 @@
 # Manual accessibility kit (Phase 6)
 
-- **Phase:** 6, the second half of **GATE 6**, beside the round 2 usability test (`round-2/`).
+- **Phase:** 6, the second half of **GATE 6**, beside the round 2 usability test (not run; its kit is in the
+  branch's history as `docs/ux/testing/round-2/`).
 - **Target:** WCAG 2.2 AA, on the hi-fi prototype at `/knowledge/design-lab/prototype`.
 - **What automated checks miss.** Automated checks (vitest component tests now; axe in Phase 7)
   catch roughly a third of WCAG failures. This kit covers the rest by hand:
@@ -12,7 +13,7 @@
 - **Who.** One tester runs it, about 2½ hours in all. If possible, add a regular screen-reader
   user for the NVDA part (see "Who should run it").
 - **Results:**
-  - record them in `a11y-results.csv`;
+  - record them in `a11y-results.csv`, created beside this file when the kit runs;
   - one row per check;
   - **Pass**, **Fail** or **Blocked**;
   - plus a note and a severity for each failure.

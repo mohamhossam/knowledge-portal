@@ -134,7 +134,8 @@ the tree splits are flagged.
 
 ## 5. Analysis template
 
-`docs/ux/testing/tree-test-results.csv`, one row per participant × task:
+A results sheet, `docs/ux/testing/tree-test-results.csv` (created when the test runs), one row
+per participant × task:
 
 ```
 participant_id,role,task,success,direct,first_click_path,final_path,time_s,confidence_1to7,notes

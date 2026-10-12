@@ -36,7 +36,7 @@ Pipeline — in order, never skip:
       rule; no gradients/glass/saturated fills; motion ≤ 200 ms)
    d. ui-ux-pro-max pre-delivery checklist (contrast, focus, reduced motion, 24px targets, SVG icons)
 7. Fix all CRITICAL/HIGH; log MEDIUM/LOW in docs/redesign/backlog.md.
-8. Verify: npm run lint, typecheck, test, api:check, build; component axe tests; Playwright a11y and
-   visual specs for this area on the seeded stack; bundle budget; acceptance criteria from the plan.
+8. Verify: npm run lint, typecheck, test, api:check, build; component axe tests; Playwright a11y
+   specs for this area on the seeded stack; bundle budget; acceptance criteria from the plan.
 9. /impeccable:impeccable critique the area on the live seeded stack (CLAUDE.md); fix findings.
 10. Report in AGENTS.md §20 format with before/after screenshots. Do NOT commit — wait.
