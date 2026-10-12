@@ -13,6 +13,7 @@ from dataclasses import replace
 from types import SimpleNamespace
 from typing import Any
 
+from openpyxl import Workbook
 from smb_kernel.documents.text_extractor import SafeDocumentTextExtractor
 
 from knowledge_portal.application.ports.catalogue_extractor import (
@@ -36,6 +37,7 @@ from knowledge_portal.domain.architecture.products import (
 from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.architecture.located_extractor import (
     LocatedDocumentExtractor,
+    _without_hidden_sheets,
 )
 from knowledge_portal.infrastructure.llm.catalogue_extraction import StructuredCatalogueExtractor
 from tests.unit.test_document_reading_coverage import (
@@ -47,6 +49,7 @@ from tests.unit.test_document_reading_coverage import (
 )
 
 DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 
 
@@ -417,3 +420,65 @@ def test_office_files_a_word_document_embeds_are_read_and_their_citations_open()
 
     passage = reader.passage(draft.id, "doc", "embedded 3, paragraph 1", MAINTAINER)
     assert passage.passage.text == "CWOM orchestrates the fulfilment."
+
+
+def _workbook() -> bytes:
+    book = Workbook()
+    flows = book.active
+    assert flows is not None
+    flows.title = "Provisioning WF"
+    flows.append(["Step", "System"])
+    flows.append(["1", "BCRM captures the order"])
+    filler = book.create_sheet("Sheet1")
+    filler.sheet_state = "hidden"
+    for row in range(1, 50):
+        filler.cell(row, 7, "filler")
+    buffer = io.BytesIO()
+    book.save(buffer)
+    return buffer.getvalue()
+
+
+def _sheets(content: bytes) -> list[str]:
+    with zipfile.ZipFile(io.BytesIO(content)) as archive:
+        return sorted(name for name in archive.namelist() if name.startswith("xl/worksheets/"))
+
+
+def test_an_embedded_workbook_is_read_without_its_hidden_sheets() -> None:
+    """Each embedded workflow book hid a sheet filled to row 1,048,576 that refused the book."""
+    slim = _without_hidden_sheets(_workbook())
+
+    assert _sheets(slim) == ["xl/worksheets/sheet1.xml"]
+    located = LocatedDocumentExtractor(SafeDocumentTextExtractor()).extract(XLSX, slim)
+    assert [item.text for item in located if item.heading] == ["Provisioning WF"]
+    assert any("BCRM captures the order" in item.text for item in located)
+    assert _without_hidden_sheets(b"not a workbook") == b"not a workbook"
+
+
+def test_a_dependency_the_model_gave_no_words_for_is_said_by_its_kind() -> None:
+    """The reported reading left out 104 stated dependencies whose description was null."""
+    proposal = _read(
+        ["SMB App calls CRMGW APIs. B2B uses TIBCO."],
+        _item(
+            kind="relationship",
+            system="SMB App",
+            name=None,
+            target_system="CRMGW",
+            relationship_kind="calls_api",
+            quote="SMB App calls CRMGW APIs",
+        ),
+        _item(
+            kind="relationship",
+            system="B2B",
+            name=None,
+            target_system="TIBCO",
+            quote="B2B uses TIBCO",
+        ),
+        # No target: never a dependency on a system called "item".
+        _item(kind="relationship", system="B2B", name=None, quote="B2B uses TIBCO"),
+    )
+
+    assert [change.content.text for change in proposal.changes] == [
+        "Calls the API of CRMGW",
+        "Depends on TIBCO",
+    ]
+    assert proposal.warnings == ("Incomplete suggestions were left out: 1 relationship.",)

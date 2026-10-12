@@ -1075,13 +1075,29 @@ def _content(item: DetailedChangeOutput, names: _SystemNames) -> CandidateConten
     if kind is CandidateKind.OFFERING_RULE:
         # Its subject is an offering, by name until the draft resolves it.
         return CandidateContent(kind, slug(item.system), text=(item.text or "").strip())
+    target = (item.target_system or "").strip()
+    if not target:
+        # Resolved, a blank name would become a system called "item".
+        raise InvalidKnowledgeError("A dependency needs the system it depends on.")
+    relationship = RelationshipKind(item.relationship_kind or "unspecified")
     return CandidateContent(
         kind,
         system_id,
-        target_system_id=names.resolve(item.target_system or ""),
-        text=(item.text or "").strip(),
-        relationship_kind=RelationshipKind(item.relationship_kind or "unspecified"),
+        target_system_id=names.resolve(target),
+        # A stated dependency the model gave no words for is still one: said by its kind,
+        # as the table reader says "Integrates with" (the reported reading lost 104).
+        text=(item.text or "").strip() or f"{_LINKED[relationship]} {target}",
+        relationship_kind=relationship,
     )
+
+
+_LINKED = {
+    RelationshipKind.CALLS_API: "Calls the API of",
+    RelationshipKind.PUBLISHES_EVENTS_TO: "Publishes events to",
+    RelationshipKind.TRANSFERS_DATA_TO: "Transfers data to",
+    RelationshipKind.ORCHESTRATES: "Orchestrates",
+    RelationshipKind.UNSPECIFIED: "Depends on",
+}
 
 
 _QUOTE_OVERLAP = 0.6

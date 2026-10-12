@@ -67,6 +67,11 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 - Office files a Word document embeds (Word, PowerPoint, Excel) are read with it, under the
   headings they sit at, cited as "embedded N, slide 3"; legacy OLE objects are counted, not
   read. Embedded files are not yet added to the evidence index, nor are their figures read.
+- An embedded workbook is read without its hidden sheets: an SDD's workflow books each hid a
+  sheet filled down to row 1,048,576 that refused the whole book.
+- A stated dependency the model gave no description is kept, described by its kind ("Calls the
+  API of CRMGW"); the reading had left out 104. One with no target is left out rather than
+  linked to a system called "item".
 
 ## 0.6.0 — 2026-10-11
 

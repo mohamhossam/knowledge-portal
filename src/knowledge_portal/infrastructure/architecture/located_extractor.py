@@ -154,11 +154,10 @@ class LocatedDocumentExtractor:
                 if kind is None or not 0 < sizes.get(target, 0) <= max_bytes:
                     others += 1
                     continue
-                parts.append(
-                    EmbeddedPart(
-                        number, PurePosixPath(target).name, kind, under, archive.read(target)
-                    )
-                )
+                part = archive.read(target)
+                if kind == _XLSX:
+                    part = _without_hidden_sheets(part)
+                parts.append(EmbeddedPart(number, PurePosixPath(target).name, kind, under, part))
         return EmbeddedParts(tuple(parts), others)
 
     def figure_headings(self, mime_type: str, content: bytes) -> dict[str, tuple[str, ...]]:
@@ -240,6 +239,70 @@ def _word(
     return root.find(f"{_W}body"), styles, targets
 
 
+def _without_hidden_sheets(content: bytes) -> bytes:
+    """A workbook without its hidden sheets, or the workbook as it is when that is unsafe.
+
+    Hidden sheets are never read (``_worksheet_rows``), but they are still extracted
+    first: an SDD's embedded workflow books each hid a "Sheet1" filled down to row
+    1,048,576, a hundred megabytes of XML that refused the whole book. Only the
+    workbook's index parts are read, each small; the sheets, their relationships and
+    the calculation chain (which names sheets by position) are dropped by name, and
+    the index text is edited in place, so nothing else is rewritten. What remains is
+    checked by the validator when it is read.
+    """
+    try:
+        with zipfile.ZipFile(io.BytesIO(content)) as archive:
+            sizes = {info.filename: info.file_size for info in archive.infolist()}
+            index = (_WORKBOOK, _WORKBOOK_RELS, _TYPES)
+            if any(not 0 < sizes.get(name, 0) <= _MAX_INDEX_BYTES for name in index):
+                return content
+            workbook, relationships, types = (archive.read(name).decode() for name in index)
+            sheets = ElementTree.fromstring(workbook).iter(f"{_S}sheet")
+            states = [(sheet.get("state"), sheet.get(f"{_R}id") or "") for sheet in sheets]
+            hidden = {rel for state, rel in states if state in {"hidden", "veryHidden"}}
+            if not hidden or len(hidden) == len(states):
+                return content
+            targets = {
+                item.get("Id"): posixpath.normpath(
+                    posixpath.join("xl", item.get("Target", ""))
+                ).lstrip("/")
+                for item in ElementTree.fromstring(relationships).iter(f"{_PR}Relationship")
+            }
+            dropped = {targets[rel] for rel in hidden if rel in targets}
+            dropped |= {_CALC_CHAIN} | {
+                posixpath.join(posixpath.dirname(name), "_rels", posixpath.basename(name) + ".rels")
+                for name in tuple(dropped)
+            }
+            for rel in hidden:
+                workbook = re.sub(rf'<sheet\b[^>]*\br:id="{re.escape(rel)}"[^>]*/>', "", workbook)
+            # Defined names point at sheets by position; the reader needs none of them.
+            workbook = re.sub(r"<definedNames>.*?</definedNames>", "", workbook, flags=re.S)
+            for rel_id, name in targets.items():
+                if name in dropped or name == _CALC_CHAIN:
+                    relationships = re.sub(
+                        rf'<Relationship\b[^>]*\bId="{re.escape(rel_id or "")}"[^>]*/>',
+                        "",
+                        relationships,
+                    )
+            for name in dropped:
+                types = re.sub(
+                    rf'<Override\b[^>]*\bPartName="/{re.escape(name)}"[^>]*/>', "", types
+                )
+            buffer = io.BytesIO()
+            with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as kept:
+                edited = dict(zip(index, (workbook, relationships, types), strict=True))
+                for info in archive.infolist():
+                    if info.filename in dropped:
+                        continue
+                    if info.filename in edited:
+                        kept.writestr(info.filename, edited[info.filename])
+                    else:
+                        kept.writestr(info, archive.read(info.filename))
+            return buffer.getvalue()
+    except (zipfile.BadZipFile, ElementTree.ParseError, UnicodeDecodeError, KeyError):
+        return content
+
+
 def _text(paragraph: ElementTree.Element) -> str:
     return "".join(node.text or "" for node in paragraph.iter(f"{_W}t")).strip()
 
@@ -293,6 +356,13 @@ _DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document
 _PPTX = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
 _EMBEDDED = {".docx": _DOCX, ".pptx": _PPTX, ".xlsx": _XLSX}
 _O = "{urn:schemas-microsoft-com:office:office}"
+_S = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+_WORKBOOK = "xl/workbook.xml"
+_WORKBOOK_RELS = "xl/_rels/workbook.xml.rels"
+_TYPES = "[Content_Types].xml"
+_CALC_CHAIN = "xl/calcChain.xml"
+# A workbook's index parts are small; larger ones are left to the validator to refuse.
+_MAX_INDEX_BYTES = 2 * 1024 * 1024
 _RELATIONSHIPS = "word/_rels/document.xml.rels"
 _A = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
 _R = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
