@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Release, Suggestion } from "../api/client";
+import { formatClock } from "../home/format";
 import { decideChoices, decideQuestions } from "./draft/questions";
 import {
   bulkAcceptable, changeSentence, decideWhy, dependencyEdges, inWords, lexicon, needsOneByOne, reading, suggestionGroups, suggestionState, tally,
@@ -131,6 +132,44 @@ describe("in words", () => {
     expect(reading({ status: "running" } as never)).toMatchObject({ label: "Being read", busy: true });
     expect(reading({ status: "failed", error_category: "attempts_exhausted" } as never)).toMatchObject({
       label: "Reading failed: it stopped after three attempts", failed: true,
+    });
+  });
+
+  describe("a reading under way", () => {
+    const started = "2026-10-12T06:00:00Z";
+    const at = (minutes: number) => Date.parse(started) + minutes * 60_000;
+    const running = (values: object) =>
+      ({ status: "running", attempts: 1, started_at: started, lease_until: new Date(at(30)).toISOString(), ...values }) as never;
+
+    it("names the part it is on, when it started and roughly how long is left", () => {
+      const state = reading(running({ stage: "reading", progress_done: 3, progress_total: 12 }), at(6));
+      expect(state).toMatchObject({ label: "Reading part 4 of 12", busy: true, stalled: false, part: { done: 3, total: 12 } });
+      expect(state.details).toEqual([`Started ${formatClock(started)}, 6 min 0 s so far; about 18 min left.`]);
+    });
+
+    it("says each stage before and after the parts", () => {
+      expect(reading(running({ stage: "opening" }), at(0)).label).toBe("Opening the file");
+      expect(reading(running({ stage: "matching" }), at(9)).label).toBe("Matching names to the catalogue");
+      expect(reading(running({ stage: "saving" }), at(9)).label).toBe("Saving its suggestions");
+      expect(reading(running({ stage: "reading", progress_done: 0, progress_total: 5 }), at(1)).details[0]).not.toMatch(/left/);
+    });
+
+    it("says when an attempt is a repeat", () => {
+      expect(reading(running({ attempts: 2 }), at(1)).details).toContain("Attempt 2 of 3: the last one stopped before it finished.");
+    });
+
+    it("says the reader stopped responding once its lease lapsed", () => {
+      const state = reading(running({ attempts: 1, lease_until: new Date(at(10)).toISOString() }), at(12));
+      expect(state).toMatchObject({ label: "Stopped responding", busy: true, stalled: true });
+      expect(state.details[0]).toBe(`No word from the reader since ${formatClock(new Date(at(5)))} (7 min 0 s ago).`);
+      expect(state.details[1]).toMatch(/again by itself, as attempt 2 of 3/);
+      expect(reading(running({ attempts: 3, lease_until: new Date(at(10)).toISOString() }), at(12)).details[1]).toMatch(/last of 3 attempts/);
+    });
+
+    it("says how long a document has waited for the reader", () => {
+      const state = reading({ status: "queued", attempts: 0, queued_at: started } as never, at(2));
+      expect(state).toMatchObject({ label: "Waiting to be read", busy: true, stalled: false });
+      expect(state.details[0]).toBe(`Waiting since ${formatClock(started)} (2 min 0 s).`);
     });
   });
 

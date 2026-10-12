@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { api, type Release, type Suggestion } from "../../api/client";
+import { api, type DocumentExtraction, type Release, type Suggestion } from "../../api/client";
 import { CataloguePage } from "../CataloguePage";
 import { ChangesStep } from "./ChangesStep";
 import { CheckStep } from "./CheckStep";
@@ -41,14 +41,17 @@ const SUGGESTIONS = [
 ];
 
 /** A draft's step, inside the catalogue's own frame, as the app routes it. */
-function renderStep(step: string, { release = draft(), suggestions = SUGGESTIONS }: { release?: Release; suggestions?: Suggestion[] } = {}) {
+function renderStep(
+  step: string,
+  { release = draft(), suggestions = SUGGESTIONS, extractions = [] }: { release?: Release; suggestions?: Suggestion[]; extractions?: DocumentExtraction[] } = {},
+) {
   vi.spyOn(api, "activeRelease").mockResolvedValue(null);
   vi.spyOn(api, "release").mockResolvedValue(release);
   vi.spyOn(api, "releases").mockResolvedValue([release]);
   vi.spyOn(api, "knownActors").mockResolvedValue([{ id: "fake-owner", display_name: "Amina Owner" }] as never);
   vi.spyOn(api, "changeRequests").mockResolvedValue([]);
   vi.spyOn(api, "suggestions").mockResolvedValue({ release_id: "d", release_revision: release.revision, suggestions, runs: [] } as never);
-  vi.spyOn(api, "extractions").mockResolvedValue([]);
+  vi.spyOn(api, "extractions").mockResolvedValue(extractions);
   vi.spyOn(api, "buildJob").mockResolvedValue(null);
   vi.spyOn(api, "releaseChanges").mockResolvedValue({
     base_release_id: "live", draft_release_id: "d",
@@ -266,6 +269,28 @@ describe("Sources", () => {
     const table = await screen.findByRole("table", { name: "The draft's documents and how their reading stands" });
     expect(within(table).getByText("Not read yet")).toBeInTheDocument();
     expect(await screen.findByRole("link", { name: "Next: decide 4 suggestions" })).toHaveAttribute("href", "/architecture/versions/d/decide");
+  });
+
+  it("says which part a document's reading is on, when it started and what comes next", async () => {
+    const started = new Date(Date.now() - 4 * 60_000).toISOString();
+    renderStep("sources", {
+      suggestions: [],
+      extractions: [{
+        document_version_id: "v1",
+        job: {
+          id: "j1", kind: "extraction", subject_id: "d", fingerprint: "v1|p", actor_id: "fake-owner", status: "running", attempts: 1,
+          lease_until: new Date(Date.now() + 4 * 60_000).toISOString(), started_at: started, stage: "reading", progress_done: 2, progress_total: 8,
+        },
+      }],
+    });
+    const table = await screen.findByRole("table", { name: "The draft's documents and how their reading stands" });
+    expect(await within(table).findByText("Reading part 3 of 8")).toBeInTheDocument();
+    expect(within(table).getByRole("progressbar", { name: "Parts of Integration design read" })).toHaveAttribute("aria-valuetext", "2 of 8 parts read");
+    expect(within(table).getByText(/^Started \d\d:\d\d, 4 min \d+ s so far; about 12 min left\.$/)).toBeInTheDocument();
+    expect(within(table).getByText("Its suggestions arrive on Decide when the reading ends.")).toBeInTheDocument();
+    expect(within(table).getByText("Not yet")).toBeInTheDocument();
+    const steps = screen.getByRole("navigation", { name: "Steps of this draft" });
+    expect(within(steps).getByText("Reading part 3 of 8")).toBeInTheDocument();
   });
 });
 

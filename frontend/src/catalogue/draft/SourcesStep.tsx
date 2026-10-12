@@ -12,7 +12,7 @@ import { useDisclosure } from "../../design/hooks";
 import { count } from "../../home/format";
 import { ButtonLink } from "../../shell/links";
 import { traceLine, useChangeRequests } from "../inbox";
-import { ACCEPTED_FILES, documentWarnings, reading, warningInWords } from "../suggestions";
+import { ACCEPTED_FILES, documentWarnings, type Reading, reading, warningInWords } from "../suggestions";
 import { useCatalogueContext } from "../useCatalogue";
 import { type DraftHook, type UploadLine, useDraft } from "../useDraft";
 import { saveBlob, useCatalogueFile } from "../useEditing";
@@ -48,27 +48,29 @@ export function SourcesStep() {
   );
 }
 
-type DocumentRow = { document: CatalogueDocument; tone: StatusTone; label: string; busy: boolean; notes: string[]; found: number | null; waiting: number };
+type DocumentRow = { document: CatalogueDocument; tone: StatusTone; state: Reading; notes: string[]; found: number | null; waiting: number };
 
 function Documents({ release, draft, actorName }: { release: Release; draft: DraftHook; actorName: (id: string | null | undefined) => string }) {
   const removing = useDisclosure();
   const [chosen, setChosen] = useState<CatalogueDocument | null>(null);
   const jobs = new Map((draft.extractions.data ?? []).map((item) => [item.document_version_id, item.job]));
+  // Each answer is read against the moment it arrived, so elapsed times move with the polling.
+  const now = draft.extractions.dataUpdatedAt;
   const runs = draft.suggestions.data?.runs ?? [];
   const waiting = new Map<string, number>();
   for (const suggestion of draft.suggestions.data?.suggestions ?? []) {
     if (suggestion.status === "proposed") waiting.set(suggestion.document_version_id, (waiting.get(suggestion.document_version_id) ?? 0) + 1);
   }
   const rows: DocumentRow[] = release.documents.map((document) => {
-    const state = reading(jobs.get(document.id));
+    const state = reading(jobs.get(document.id), now);
     const last = runs.filter((run) => run.document_version_id === document.id).at(-1);
     return {
       document,
-      tone: state.failed ? "attention" : state.busy ? "working" : state.label === "Read" ? "done" : "neutral",
-      label: state.label,
-      busy: state.busy,
-      notes: documentWarnings(runs, document.id).map(warningInWords),
-      found: last && state.label === "Read" ? last.candidate_count : null,
+      tone: state.failed ? "attention" : state.stalled ? "warning" : state.busy ? "working" : state.label === "Read" ? "done" : "neutral",
+      state,
+      // The last reading's notes; a reading under way has its own lines to say.
+      notes: state.busy ? [] : documentWarnings(runs, document.id).map(warningInWords),
+      found: last && !state.busy && state.label === "Read" ? last.candidate_count : null,
       waiting: waiting.get(document.id) ?? 0,
     };
   });
@@ -92,10 +94,21 @@ function Documents({ release, draft, actorName }: { release: Release; draft: Dra
     {
       id: "reading",
       header: "Reading",
-      width: "18rem",
+      width: "20rem",
       cell: (row) => (
         <>
-          <Status tone={row.tone}>{row.label}</Status>
+          <Status tone={row.tone}>{row.state.label}</Status>
+          {row.state.part && (
+            <progress
+              className="draft-parts"
+              max={row.state.part.total}
+              value={row.state.part.done}
+              aria-label={`Parts of ${row.document.title} read`}
+              aria-valuetext={`${row.state.part.done} of ${row.state.part.total} parts read`}
+            />
+          )}
+          {row.state.details.map((line) => <span key={line} className="draft-detail">{line}</span>)}
+          {row.state.busy && !row.state.stalled && <span className="draft-detail">Its suggestions arrive on Decide when the reading ends.</span>}
           {row.found !== null && <span className="draft-detail">{count(row.found, "suggestion")} on its last reading</span>}
           {row.notes.length > 0 && (
             <Lines label={`What the reading of ${row.document.title} noted`}>
@@ -105,7 +118,14 @@ function Documents({ release, draft, actorName }: { release: Release; draft: Dra
         </>
       ),
     },
-    { id: "waiting", header: "Waiting", numeric: true, width: "6rem", cell: (row) => row.waiting.toLocaleString("en") },
+    {
+      id: "waiting",
+      header: "Waiting",
+      numeric: true,
+      width: "6rem",
+      // Nothing can wait on Decide before the reading ends; a 0 would read as "it found nothing".
+      cell: (row) => (row.state.busy && !row.waiting ? <span className="draft-detail">Not yet</span> : row.waiting.toLocaleString("en")),
+    },
     {
       id: "actions",
       header: <span className="ds-visually-hidden">Actions</span>,

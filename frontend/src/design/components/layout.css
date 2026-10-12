@@ -374,6 +374,8 @@
 /* Page head: one line (title, status and facts, actions), tabs on a slim row under it. */
 .ds-pagehead {
   display: grid;
+  /* A one-line head may not widen its column: its facts and name give way instead. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 0;
   margin-block-end: var(--space-2);
   /* Edge to edge of the main area, over its gutters. */

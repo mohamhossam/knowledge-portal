@@ -16,6 +16,7 @@ from knowledge_portal.application.ports.architecture_jobs import (
     ArchitectureJobKind,
     ArchitectureJobStatus,
     IndexJobInput,
+    JobProgress,
 )
 from knowledge_portal.application.use_cases.architecture_jobs import (
     ArchitectureJobExecution,
@@ -187,6 +188,23 @@ def test_an_attempt_holding_its_lease_writes_and_succeeds() -> None:
 
     assert indexer.stored is True
     assert finished.status is SUCCEEDED
+
+
+def test_a_reporter_records_progress_and_a_lost_record_never_stops_the_work() -> None:
+    jobs, repository, _, clock = _index_jobs()
+    claimed = jobs.claim_next()
+    assert claimed is not None and claimed.started_at == clock.now()
+
+    jobs.reporter(claimed)(JobProgress("reading", 1, 5))
+
+    current = repository.get(claimed.id)
+    assert current is not None and current.progress == JobProgress("reading", 1, 5)
+
+    def unavailable(*_: object) -> None:
+        raise PersistenceError("database unavailable")
+
+    repository.report = unavailable  # type: ignore[method-assign, assignment]
+    jobs.reporter(claimed)(JobProgress("saving"))
 
 
 @pytest.mark.parametrize(

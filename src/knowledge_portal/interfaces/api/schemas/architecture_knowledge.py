@@ -2081,6 +2081,14 @@ class ArchitectureJobResponse(BaseModel):
     attempts: int = 0
     error_category: str | None = None
     lease_until: datetime | None = None
+    # When it was last asked for, when its current attempt started, and how far that
+    # got: a stage (an extraction's are opening, reading, matching and saving), and for
+    # reading, the calls done of those expected.
+    queued_at: datetime | None = None
+    started_at: datetime | None = None
+    stage: str | None = None
+    progress_done: int | None = None
+    progress_total: int | None = None
 
     @classmethod
     def from_domain(cls, job: ArchitectureJob) -> ArchitectureJobResponse:
@@ -2094,6 +2102,11 @@ class ArchitectureJobResponse(BaseModel):
             attempts=job.attempts,
             error_category=job.error_category,
             lease_until=job.lease_until,
+            queued_at=job.queued_at,
+            started_at=job.started_at,
+            stage=job.progress.stage if job.progress else None,
+            progress_done=job.progress.done if job.progress else None,
+            progress_total=job.progress.total if job.progress else None,
         )
 
 

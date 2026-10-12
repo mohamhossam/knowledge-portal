@@ -2306,6 +2306,16 @@ export interface components {
             kind: components["schemas"]["ArchitectureJobKind"];
             /** Lease Until */
             lease_until?: string | null;
+            /** Progress Done */
+            progress_done?: number | null;
+            /** Progress Total */
+            progress_total?: number | null;
+            /** Queued At */
+            queued_at?: string | null;
+            /** Stage */
+            stage?: string | null;
+            /** Started At */
+            started_at?: string | null;
             status: components["schemas"]["ArchitectureJobStatus"];
             /** Subject Id */
             subject_id: string;

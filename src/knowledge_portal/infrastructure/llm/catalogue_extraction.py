@@ -1210,8 +1210,11 @@ class StructuredCatalogueExtractor:
         # Splitting is bounded, so a document that every model answer overflows
         # still finishes in a predictable number of calls.
         calls_left = 3 * len(batches) + 4
+        started = 0
         while pending:
             batch, depth = pending.popleft()
+            request.progress(started, started + len(pending) + 1)
+            started += 1
             if calls_left < 1:
                 failures.append(
                     ("budget", f"{_span(batch)} could not be read: {_REASONS['budget']}")

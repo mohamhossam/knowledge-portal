@@ -13,11 +13,13 @@ from enum import Enum
 
 from smb_kernel.time.clock import ClockPort
 
-from knowledge_portal.application.errors import ArchitectureJobNotFoundError
+from knowledge_portal.application.errors import ArchitectureJobNotFoundError, PersistenceError
 from knowledge_portal.application.ports.architecture_jobs import (
     ArchitectureJob,
     ArchitectureJobRepositoryPort,
     ArchitectureJobStatus,
+    JobProgress,
+    ProgressReport,
 )
 from knowledge_portal.application.ports.identity import Actor, require_maintainer
 from knowledge_portal.application.public_errors import describe_public_error
@@ -94,6 +96,17 @@ class LeasedJobs:
     def renew_lease(self, job: ArchitectureJob) -> bool:
         """Extend this attempt's lease; False once another attempt owns the job."""
         return self._jobs.heartbeat(job.id, job.attempts, self._clock.now())
+
+    def reporter(self, job: ArchitectureJob) -> ProgressReport:
+        """Records how far this attempt has got; a lost record never stops the work."""
+
+        def report(progress: JobProgress) -> None:
+            try:
+                self._jobs.report(job.id, job.attempts, progress)
+            except PersistenceError:
+                _LOGGER.warning("Architecture job %s progress was not recorded", job.id)
+
+        return report
 
     def run_once(self) -> ArchitectureJob | None:
         """Claim and run one job in the caller's thread (the inline execution mode)."""

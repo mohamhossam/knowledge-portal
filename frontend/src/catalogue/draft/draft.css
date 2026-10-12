@@ -355,4 +355,30 @@
   margin: 0;
   color: var(--color-ink-2);
   font-size: var(--text-meta);
+
+/* How many parts of a document the model has read, under its reading status. */
+.draft-parts {
+  display: block;
+  inline-size: 100%;
+  max-inline-size: 16rem;
+  block-size: var(--space-1);
+  margin-block-start: var(--space-1);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-rule);
+  color: var(--color-info);
+  appearance: none;
+  overflow: hidden;
+}
+
+.draft-parts::-webkit-progress-bar {
+  background: var(--color-rule);
+}
+
+.draft-parts::-webkit-progress-value {
+  background: var(--color-info);
+}
+
+.draft-parts::-moz-progress-bar {
+  background: var(--color-info);
 }

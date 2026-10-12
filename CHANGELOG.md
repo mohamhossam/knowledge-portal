@@ -15,6 +15,11 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   offering from its pane without rejecting and retyping it.
 - Offering rules (`offering_rule` suggestions): a rule or limitation of a product offering,
   accepted into the offering's rules.
+- A document's reading says how it stands (draft Sources step): the stage it is at (opening
+  the file, reading part 3 of 12 with a progress bar, matching names, saving), when it
+  started, roughly how long is left, and when the reader has stopped responding. The step
+  header says the same in a few words. Catalogue jobs now report `queued_at`, `started_at`,
+  `stage`, `progress_done` and `progress_total` (additive; migration `202610120900`).
 
 ### Fixed
 
@@ -22,6 +27,7 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   `catalogue-extraction-v13`): its rules are proposed as offering rules, and a "system" named
   like an offering the draft has or the document suggests is left out, with its constraints
   turned into that offering's rules.
+- A draft's page head no longer widens the page past a 1280px window.
 
 ## 0.6.0 — 2026-10-11
 
