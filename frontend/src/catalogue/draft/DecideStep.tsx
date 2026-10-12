@@ -5,7 +5,7 @@ import { useLocation, useSearchParams } from "react-router-dom";
 import type { Suggestion, SuggestionContent } from "../../api/client";
 import { ApiError, errorMessage } from "../../api/errors";
 import {
-  ActionGroup, BulkActionBar, Button, type Column, ConsequencePanel, DataTable, EmptyState, FilterStrip, KeysHint, Lines, Skeleton,
+  BulkActionBar, Button, type Column, ConsequencePanel, DataTable, EmptyState, FilterStrip, KeysHint, Lines, Skeleton,
   SplitPane, Status,
 } from "../../design/components";
 import { useDisclosure, useFocusAfterRender } from "../../design/hooks";
@@ -14,13 +14,14 @@ import { densityFor, usePreferences } from "../../shell/preferences";
 import { ButtonLink } from "../../shell/links";
 import { openShortcuts } from "../../shell/shortcuts";
 import {
-  type Filter, type SuggestionGroup, bulkAcceptable, changeSentence, decideWhy, draftedForRequirement, featureWarnings, inWords, lexicon,
+  type Blocker, type Filter, type SuggestionGroup, blockers as deadEnds, bulkAcceptable, changeSentence, decideWhy, draftedForRequirement, featureWarnings, inWords, lexicon,
   matchesFind, shown as inFilter, suggestionGroups, suggestionState, tally, waitsFor,
 } from "../suggestions";
 import { useCatalogueContext } from "../useCatalogue";
 import { useDraft } from "../useDraft";
 import { STATE_TONE, citedPart, stateWords } from "./decide";
 import { DecisionTree } from "./DecisionTree";
+import { NextStep } from "./NextStep";
 import { Said } from "./parts";
 import { SuggestionPane } from "./SuggestionPane";
 
@@ -100,6 +101,7 @@ function Decide() {
   const counts = tally(all);
   const bulk = useMemo(() => bulkAcceptable(release, all), [release, all]);
   const bulkCount = bulk.ready.length + bulk.lifted.length;
+  const stuck = useMemo(() => deadEnds(release, all, words), [release, all, words]);
   const notes = useMemo(() => featureWarnings(draft.suggestions.data?.runs ?? []), [draft.suggestions.data]);
   const documents = useMemo(() => new Map(release.documents.map((item) => [item.id, item])), [release.documents]);
 
@@ -221,6 +223,34 @@ function Decide() {
   const onGridKey = useCallback((row: Row, key: string) => handlers.current.onRowKey(row, key), []);
   const onActivate = useCallback(() => handlers.current.toPane(), []);
 
+  const acceptReady = () =>
+    draft.acceptReady.mutate(undefined, {
+      onSuccess: (result) =>
+        say(`Accepted ${count(counts.waiting - result.remaining, "suggestion")}. ${result.remaining ? `${result.remaining} still wait for you.` : "Nothing is left waiting."}`),
+    });
+  /** Says what a name suggestions wait for is: a system to suggest, or a product offering. */
+  const settle = (reference: string, name: string, kind: "system" | "offering") =>
+    draft.settleSubject.mutate({ system_id: reference, name, kind }, {
+      onSuccess: (result) => {
+        if (kind === "system") say(result.added ? `Suggested the system ${name}. Accept it to free what waits for it.` : `The system ${name} is already suggested.`);
+        else if (result.added) say(`Suggested the offering ${name}${result.retyped ? `; ${count(result.retyped, "rule")} of it ${result.retyped === 1 ? "waits" : "wait"} for it` : ""}. Accept it to free what waits for it.`);
+        else say(`${name} is now a product offering${result.retyped ? `: ${count(result.retyped, "suggestion")} changed with it` : ""}.`);
+      },
+      onError: (error) => say(errorMessage(error), true),
+    });
+  const showWaiting = (blocker: Blocker) => {
+    setView("waits", blocker.name);
+    const first = blocker.waiting[0];
+    if (first) {
+      move(first.id);
+      focusRow(first.id);
+    }
+  };
+  const rejectWaiting = (blocker: Blocker) => {
+    setSelected(new Set(blocker.waiting.map((item) => item.id)));
+    rejecting.show();
+  };
+
   const chosen = rows.filter((row) => selected.has(row.suggestion.id) && row.suggestion.status === "proposed");
   const chosenReady = chosen.filter((row) => suggestionState(row.suggestion) === "ready");
   const failure = draft.failure ?? draft.acceptReady.error ?? draft.rejectMany.error;
@@ -293,6 +323,8 @@ function Decide() {
         if (!content) say("Your edits are dropped.");
       }}
       onDecide={(accept, content) => decide(current, accept, content, "pane")}
+      settling={draft.settleSubject.isPending}
+      onSettle={settle}
     />
   ) : (
     <p className="draft-quiet">Choose a suggestion to see it in full.</p>
@@ -325,6 +357,21 @@ function Decide() {
         </p>
         <progress max={Math.max(counts.all, 1)} value={decided} aria-label="Suggestions decided" />
       </section>
+      <NextStep
+        questions={counts.decide}
+        bulk={bulkCount}
+        bulkLabel={draft.acceptReady.isPending ? "Accepting…" : bulkLabel(bulk.ready.length, bulk.lifted.length)}
+        waiting={counts.waiting}
+        blockers={stuck}
+        focusTo={`${base}/decide/focus`}
+        changesTo={`${base}/changes`}
+        busy={busy}
+        settling={draft.settleSubject.isPending}
+        onAcceptReady={acceptReady}
+        onSettle={(blocker, kind) => settle(blocker.reference, blocker.name, kind)}
+        onShow={showWaiting}
+        onReject={rejectWaiting}
+      />
       <section className="draft-chains" aria-label="What waits for what">
         <Button variant="quiet" icon={<Network size={16} />} aria-expanded={chains} onClick={() => setChains((on) => !on)}>
           {chains ? "Hide what waits for what" : "Show what waits for what"}
@@ -350,23 +397,7 @@ function Decide() {
           find={{ label: "Find in the suggestions", value: find, onChange: (value) => setView(filter, value), placeholder: "A system, a word or a document…" }}
           onClear={filter !== "waiting" || find ? () => setView("waiting", "") : undefined}
         />
-        <ActionGroup>
-          {counts.decide > 0 && <ButtonLink to={`${base}/decide/focus`} variant="primary">Answer the {count(counts.decide, "question")}</ButtonLink>}
-          <Button
-            busy={draft.acceptReady.isPending}
-            unavailableReason={bulkCount === 0 ? "Nothing is ready to accept without a decision." : null}
-            onClick={() =>
-              draft.acceptReady.mutate(undefined, {
-                onSuccess: (result) =>
-                  say(`Accepted ${count(counts.waiting - result.remaining, "suggestion")}. ${result.remaining ? `${result.remaining} still wait for you.` : "Nothing is left waiting."}`),
-              })
-            }
-          >
-            {draft.acceptReady.isPending ? "Accepting…" : bulkLabel(bulk.ready.length, bulk.lifted.length)}
-          </Button>
-        </ActionGroup>
       </div>
-      <p className="draft-quiet">Accepting the ready ones leaves matches, inferred links and replacements for you; domains go first, then systems, then what hangs on them.</p>
       <KeysHint
         onMore={openShortcuts}
         keys={[

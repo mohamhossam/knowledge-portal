@@ -64,3 +64,11 @@ class InMemoryCatalogueCandidates:
                 decided_by=None,
                 decided_at=None,
             )
+
+    def revise(self, candidates: tuple[CatalogueCandidate, ...]) -> None:
+        with self._lock:
+            for item in candidates:
+                current = self._candidates.get(item.id)
+                if current is not None and current.status is not CandidateStatus.PROPOSED:
+                    raise CandidateDecisionConflictError("This suggestion was already decided.")
+            self._candidates.update({item.id: item for item in candidates})

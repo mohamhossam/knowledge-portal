@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 from datetime import datetime
+from enum import StrEnum
 from uuid import uuid4
 
 from smb_kernel.documents.ports import DocumentExtractorPort, DocumentStoragePort
@@ -113,6 +114,8 @@ _ORDER = (
     CandidateKind.CHANNEL,
     # then an offering names systems and channels that must be in the draft first,
     CandidateKind.PRODUCT,
+    # its rules belong to it,
+    CandidateKind.OFFERING_RULE,
     # a question is asked of an offering,
     CandidateKind.QUESTION,
     # and a journey names systems and the offering it fulfils.
@@ -160,6 +163,20 @@ def _view(candidate: CatalogueCandidate, release: ArchitectureKnowledge) -> Cand
     )
 
 
+class SubjectKind(StrEnum):
+    """What a name suggestions wait for really is, as a person says it on Decide."""
+
+    SYSTEM = "system"
+    OFFERING = "offering"
+
+
+@dataclass(frozen=True)
+class SettledSubject:
+    # Waiting suggestions now said of it as what it is, and suggestions added for it.
+    retyped: int
+    added: int
+
+
 @dataclass(frozen=True)
 class CandidateOverview:
     release: ArchitectureKnowledge
@@ -188,6 +205,7 @@ def _references(
     if content.kind in {
         CandidateKind.LANDSCAPE_DOMAIN,
         CandidateKind.PRODUCT,
+        CandidateKind.OFFERING_RULE,
         CandidateKind.JOURNEY,
         CandidateKind.CHANNEL,
     }:
@@ -213,7 +231,31 @@ def _canonical(
     in its own row and "CRM GW" in another system's integrations. Against the
     draft with the suggested systems added, each name resolves to one id, so the
     same dependency is suggested once and never as a system linked to itself.
+
+    A product is not a system: a "system" the draft does not have, named like an
+    offering the draft has or the document suggests, is left out, and the
+    constraints said of it become that offering's rules.
     """
+    # The draft's offerings and those suggested beside it, which a journey may name.
+    offerings = (
+        *release.products,
+        *(item.content.product for item in changes if item.content.product is not None),
+    )
+
+    def offering_named(*references: str) -> ProductOffering | None:
+        if any(find_system(release, item) is not None for item in references if item):
+            return None
+        return next(
+            (found for item in references if item and (found := find_offering(offerings, item))),
+            None,
+        )
+
+    changes = tuple(
+        change
+        for change in changes
+        if change.content.kind is not CandidateKind.SYSTEM
+        or offering_named(change.content.system_id, change.content.name) is None
+    )
     provisional = release
     for change in changes:
         if change.content.kind is CandidateKind.SYSTEM:
@@ -226,11 +268,6 @@ def _canonical(
         found = find_system(provisional, reference)
         return found.id if found is not None else reference
 
-    # The draft's offerings and those suggested beside it, which a journey may name.
-    offerings = (
-        *release.products,
-        *(item.content.product for item in changes if item.content.product is not None),
-    )
     # Likewise the channels an order type or a step may name.
     channels = (
         *release.channels,
@@ -252,6 +289,17 @@ def _canonical(
         if content.kind is CandidateKind.LANDSCAPE_DOMAIN:
             # Its subject is a domain, not a system.
             result.append(change)
+            continue
+        ruled = (
+            offering_named(content.system_id, change.source_name)
+            if content.kind in {CandidateKind.OFFERING_RULE, CandidateKind.CONSTRAINT}
+            and find_system(provisional, content.system_id) is None
+            else None
+        )
+        if ruled is not None or content.kind is CandidateKind.OFFERING_RULE:
+            subject = ruled.id if ruled is not None else content.system_id
+            rule = CandidateContent(CandidateKind.OFFERING_RULE, subject, text=content.text)
+            result.append(replace(change, content=rule))
             continue
         if content.kind is CandidateKind.CHANNEL and content.channel is not None:
             entry = content.channel.entry_system_id
@@ -906,6 +954,115 @@ class DecideCatalogueCandidate:
                 continue
             rejected += 1
         return rejected
+
+    def settle_subject(
+        self,
+        release_id: str,
+        reference: str,
+        name: str,
+        kind: SubjectKind,
+        actor: Actor,
+        at: datetime,
+    ) -> SettledSubject:
+        """Say what a name that suggestions wait for is, so they can be decided.
+
+        A reading can name a system no suggestion adds, or take a product for a
+        system. As a system, it is suggested, citing what waits for it. As an
+        offering, the suggestion of it as a system becomes one of an offering (or
+        is rejected when the draft or a suggestion already has the offering), its
+        constraints become the offering's rules, and the offering is suggested
+        when nothing has it yet.
+        """
+        require_maintainer(actor)
+        release = _draft(self._knowledge, release_id)
+        name = name.strip() or reference
+        if find_system(release, reference) is not None:
+            raise InvalidKnowledgeError(f"The draft already has the system {name}.")
+        wanted = reference.casefold().strip()
+        pending = [
+            item
+            for item in self._candidates.list(release_id)
+            if item.status is CandidateStatus.PROPOSED
+        ]
+        about = [item for item in pending if item.content.system_id.casefold() == wanted]
+        waiting = [
+            item
+            for item in pending
+            if item.content.kind is not CandidateKind.SYSTEM
+            and wanted
+            in {item.content.system_id.casefold(), (item.content.target_system_id or "").casefold()}
+        ]
+        if not about and not waiting:
+            raise CandidateNotFoundError(f"No suggestion waiting in the draft names {name}.")
+
+        def suggested(content: CandidateContent) -> CatalogueCandidate:
+            cited = waiting or about
+            first = cited[0]
+            return CatalogueCandidate(
+                uuid4().hex,
+                release.id,
+                first.document_version_id,
+                content,
+                tuple(dict.fromkeys(c for item in cited for c in item.citations))[:10],
+                first.model,
+                first.prompt_version,
+                at,
+            )
+
+        if kind is SubjectKind.SYSTEM:
+            if any(item.content.kind is CandidateKind.SYSTEM for item in about):
+                return SettledSubject(0, 0)
+            system = suggested(CandidateContent(CandidateKind.SYSTEM, reference, name=name))
+            self._candidates.revise((system,))
+            return SettledSubject(0, 1)
+
+        offerings = (
+            *release.products,
+            *(item.content.product for item in pending if item.content.product is not None),
+        )
+        held = find_offering(offerings, reference) or find_offering(offerings, name)
+        revised: list[CatalogueCandidate] = []
+        rejected: list[CatalogueCandidate] = []
+        subject = held.id if held is not None else reference
+        for item in about:
+            if item.content.kind is not CandidateKind.SYSTEM:
+                continue
+            if held is not None:
+                rejected.append(item.decide(False, actor.id, at))
+                continue
+            offering = ProductOffering(reference, item.content.name or name)
+            held = offering
+            revised.append(
+                replace(
+                    item,
+                    content=CandidateContent(
+                        CandidateKind.PRODUCT, offering.id, name=offering.name, product=offering
+                    ),
+                    possible_matches=(),
+                )
+            )
+        for item in waiting:
+            if item.content.kind is CandidateKind.CONSTRAINT and (
+                item.content.system_id.casefold() == wanted
+            ):
+                text = item.content.text
+                rule = CandidateContent(CandidateKind.OFFERING_RULE, subject, text=text)
+                revised.append(replace(item, content=rule, possible_matches=()))
+        added = 0
+        if held is None:
+            offering = ProductOffering(reference, name)
+            revised.append(
+                suggested(
+                    CandidateContent(
+                        CandidateKind.PRODUCT, offering.id, name=offering.name, product=offering
+                    )
+                )
+            )
+            added = 1
+        self._candidates.revise(tuple(revised))
+        for item in rejected:
+            self._candidates.save_decision(item)
+        return SettledSubject(len(revised) - added + len(rejected), added)
 
     def _save(
         self,
