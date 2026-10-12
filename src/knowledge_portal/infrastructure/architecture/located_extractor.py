@@ -280,9 +280,18 @@ def _sheet_rows(sheet: str, rows: list[tuple[str, int, dict[str, str]]]) -> list
             # A blank row ends a header; the title stands until the next one, so a table
             # broken by a blank row and its header repeated stays under its title.
             header = None
-        if len(filled) <= 2 and _header_like(following):
+        heads_a_table = _header_like(following) and len(filled) <= max(
+            2, sum(1 for value in following.values() if value) // 2
+        )
+        # A workflow book also starts a table under the header above it with a coded title
+        # row ("WF-3 | Migration of Legacy product ... | Oder Type : Migrate").
+        coded = len(filled) <= _MAX_TITLE_CELLS and bool(
+            _CODED_TITLE.match(next(iter(filled.values()), ""))
+        )
+        if heads_a_table or coded:
             title = " ".join(" ".join(filled.values()).split())[:_MAX_TITLE].rstrip()
-            header = None
+            if heads_a_table:
+                header = None
             passages.append(LocatedText(location, title, (sheet,), heading=True))
             continue
         if _header_like(filled) and header is None:
@@ -479,6 +488,9 @@ _NUMBER_LIKE = re.compile(r"^[\d\s.,:/%-]+$")
 # A column label is short; a table's title is kept to a heading's length.
 _MAX_LABEL = 40
 _MAX_TITLE = 120
+# A workflow's coded title: "WF-3", "WF 3C", "WF-8-A" first in the row, beside a few cells.
+_CODED_TITLE = re.compile(r"^WF[\s_-]*\d", re.IGNORECASE)
+_MAX_TITLE_CELLS = 4
 _W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 _HEADING_NAME = re.compile(r"^heading\s*([1-9])$")
 

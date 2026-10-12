@@ -45,6 +45,10 @@ from knowledge_portal.infrastructure.llm.catalogue_extraction import (
     StructuredCatalogueExtractor,
     slug,
 )
+from knowledge_portal.infrastructure.llm.prompts.catalogue_extraction_prompt import (
+    DETAILED_SYSTEM_PROMPT,
+    LEAN_SYSTEM_PROMPT,
+)
 from tests.unit.test_document_reading_coverage import (
     MAINTAINER,
     _docx,
@@ -572,7 +576,7 @@ def test_a_workflow_table_is_read_as_a_journey_without_the_model() -> None:
         ("2", "Domain name provisioning", "cwom"),
         ("3", "Customer appointment", "wfms"),
     ]
-    assert change.reader is not None and change.reader[1] == "catalogue-tables-v8"
+    assert change.reader is not None and change.reader[1] == "catalogue-tables-v9"
 
 
 # One workflow read twice; combined system names ------------------------------------------
@@ -641,3 +645,57 @@ def test_one_workflow_read_twice_is_one_journey_and_two_workflows_stay_two() -> 
         ("service-activation", ()),
         ("b2b-portal", ()),
     ]
+
+
+def _coded_book() -> bytes:
+    """A workflow sheet as the SDD's later book version writes it: a title across three
+    cells above a header, and a coded title row whose stages reuse the header above."""
+    book = Workbook()
+    sheet = book.active
+    assert sheet is not None
+    sheet.title = "P3"
+    sheet.append(["WF-3A", "Order fulfillment", "PORT IN Shift, Main Order"])
+    sheet.append(["Seq.", "Description", "Section", "System", "Remarks"])
+    sheet.append(["1", "Number portability check", "System", "NPS", "WFMS will send to OM"])
+    sheet.append(["2", "Order capture", "System", "CWOM", None])
+    sheet.append(["3", "Line installation", "Field", "WFMS", None])
+    sheet.append(["WF-3", "Migration of Legacy product DEL, PBX", "Oder Type : Migrate"])
+    sheet.append(["1", "Cease legacy line", "System", "CWOM", None])
+    sheet.append(["2", "Provision new line", "System", "E2ESO", None])
+    sheet.append(["3", "Notify customer", "System", "CWOM", None])
+    buffer = io.BytesIO()
+    book.save(buffer)
+    return buffer.getvalue()
+
+
+def test_coded_workflow_titles_each_head_their_journey_and_rows_stay_open() -> None:
+    located = LocatedDocumentExtractor(SafeDocumentTextExtractor()).extract(XLSX, _coded_book())
+    segments = tuple(
+        ExtractionSegment(
+            number, item.location, item.text, section=item.heading_path, cells=item.cells
+        )
+        for number, item in enumerate(located, start=1)
+    )
+
+    reading = CatalogueTableReader().read(ExtractionRequest("SDD", segments, ()))
+
+    journeys = [change.content.journey for change in reading.changes]
+    assert [(journey.name, len(journey.activities)) for journey in journeys if journey] == [
+        ("WF-3A Order fulfillment PORT IN Shift, Main Order", 3),
+        ("WF-3 Migration of Legacy product DEL, PBX Oder Type : Migrate", 3),
+    ]
+    # Their stages still go to the model, which reads the flows their remarks state.
+    assert reading.read == set()
+    assert reading.consumed == set()
+
+
+def test_only_a_reading_with_room_asks_for_named_systems_offerings_and_prose_journeys() -> None:
+    for rule in (
+        "Propose every system the passages name",
+        "is not \na system" if False else "is not",
+        "Every offering the document names",
+        "A process the document describes step by step",
+    ):
+        assert rule in DETAILED_SYSTEM_PROMPT
+    assert "Propose every system the passages name" not in LEAN_SYSTEM_PROMPT
+    assert "Every offering the document names" not in LEAN_SYSTEM_PROMPT

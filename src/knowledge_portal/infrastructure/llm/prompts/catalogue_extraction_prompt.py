@@ -4,7 +4,7 @@ import json
 
 from knowledge_portal.application.ports.catalogue_extractor import ExtractionRequest
 
-PROMPT_VERSION = "catalogue-extraction-v14"
+PROMPT_VERSION = "catalogue-extraction-v15"
 
 # A journey is the largest answer shape. A model whose context leaves too little room for
 # it reads without it (ADR-0096): LEAN_SYSTEM_PROMPT and an answer schema without journeys.
@@ -18,7 +18,9 @@ performs it rather than a named system) and only the rules that leave the main o
 decision, a loop back, or a parallel track with the activity where it rejoins. When the \
 document gives only a system's part in an order type, such as an "Applicable SRs: New \
 Activation" line in that system's section, propose the journey with the activities it states; \
-the parts of one journey read in different places are merged."""
+the parts of one journey read in different places are merged. A process the document \
+describes step by step for one kind of order, in prose or in a list (a migration, a port-in, \
+dunning, a device replacement), is a journey too, its steps in the order the document gives."""
 
 # An offering's details (ADR-0101, step 4) cost the most room of all: only a context with
 # ample room asks for them (DETAILED_SYSTEM_PROMPT); tables still give them.
@@ -156,10 +158,15 @@ SYSTEM_RULE = """ The text says what the system is, never a requirement on it: "
 support ..." is a capability or a constraint of X. Propose each system once per answer. A \
 product or bundle sold is a product_offering, never a system; a plan, tier, speed profile, \
 rate plan or child PO or RP of an offering is one of that offering's plans, never a system or \
-an offering of its own."""
+an offering of its own. Propose every system the passages name, including one named only as \
+the source or target of a dependency or in a remark ("WFMS will send to OM"). A team, group or \
+function named in a System column, such as QA, Security Planning or a design authority, is not \
+a system."""
 LEAN_SYSTEM_RULE = """ A product, bundle or plan sold is a product_offering, never a system."""
 PLANS_RULE = """, and its plans (each plan's name, and each fact the document states about it, \
-such as its speed, offer ID or code, as a characteristic)"""
+such as its speed, offer ID or code, as a characteristic). Every offering the document names \
+is one product_offering, including one an order migrates or changes from or to (such as an \
+older bundle upgraded to the new one), with what the document says of it"""
 PLAN_TABLE_RULE = """- A table of an offering's variants, tiers or POs, under that offering's \
 section, gives the offering's plans: one plan per row, each stated value a characteristic.
 """

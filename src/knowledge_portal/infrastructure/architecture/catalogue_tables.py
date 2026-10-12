@@ -76,7 +76,7 @@ from knowledge_portal.domain.architecture.tracking import (
 from knowledge_portal.infrastructure.llm.catalogue_extraction import plain_name, slug
 
 READER = "catalogue-table-reader"
-READER_VERSION = "catalogue-tables-v8"
+READER_VERSION = "catalogue-tables-v9"
 # An Integrations entry longer than this is a phrase ("Same service context as
 # B2B Web"), not the name of a system.
 _MAX_ENTRY_WORDS = 4
@@ -1250,6 +1250,10 @@ class _JourneySection:
     product: str | None = None
     heading: ExtractionSegment | None = None
     segments: list[ExtractionSegment] = field(default_factory=list)
+    # Whether its activity rows are marked read, so the model takes only their
+    # capabilities. A workflow book's stages are not: the flows between systems are
+    # stated in their remark columns ("WFMS will send to OM and OM will send to NEC").
+    rows_read: bool = True
 
     def read_into(
         self, reading: TableReading, names: _Names, offering: ProductOffering | None
@@ -1311,7 +1315,8 @@ class _JourneySection:
             reading.notes.append(f"The journey {self.name} could not be read: {exc}")
             return
         reading.consumed |= consumed
-        reading.read |= read - consumed
+        if self.rows_read:
+            reading.read |= read - consumed
         cited = self.heading or self.segments[0]
         reading.changes.append(
             ProposedChange(
@@ -1466,7 +1471,7 @@ def _workflow_sections(segments: tuple[ExtractionSegment, ...]) -> list[_Journey
             if _STEP_NUMBER.match(step):
                 sections.setdefault(segment.section, []).append(replace(segment, cells=cells))
     return [
-        _JourneySection(_workflow_name(section), segments=rows)
+        _JourneySection(_workflow_name(section), segments=rows, rows_read=False)
         for section, rows in sections.items()
         if len(rows) >= _MIN_WORKFLOW_STEPS
     ]

@@ -92,6 +92,16 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 - A step's combined system name ("OM-E2ESO") nothing answers to is matched part by part, when
   its parts are short like acronyms: the systems found perform and support the step
   (`document-reading-v3`).
+- A workflow table's title is found when it spans several cells, or is a coded row ("WF-3 |
+  Migration of Legacy product ... | Oder Type : Migrate") whose stages reuse the header above;
+  their stages were filed under the workflow before (`document-reading-v4`).
+- A workflow's stages stay open to the model, which reads the flows their remarks state
+  ("WFMS will send to OM and OM will send to NEC"); they were marked read, and those
+  dependencies were left out (`catalogue-tables-v9`).
+- A reading with room proposes every system the document names, including one named only in a
+  dependency or a remark, and not a team named in a System column; every offering, including
+  one an order migrates from or to; and a process described step by step in prose as a journey
+  (prompt `catalogue-extraction-v15`). An Opus 5.5 reading of the same SDD found these gaps.
 
 ## 0.6.0 — 2026-10-11
 

@@ -129,7 +129,7 @@ _EMBEDDED_ORDER = (
     _DOCX,
     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 )
-READING_VERSION = "document-reading-v3"
+READING_VERSION = "document-reading-v4"
 MAX_MATCHES_PER_NAME = 3
 _FIGURE = re.compile(r"^image (\d+)\b", re.IGNORECASE)
 _JOURNEY = re.compile(r"\bjourneys?\b", re.IGNORECASE)
