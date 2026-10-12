@@ -85,6 +85,13 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   ten (table reader `catalogue-tables-v8`).
 - A reading covers up to 2,000,000 characters, enough for a long SDD with its embedded
   documents, decks and workflow books.
+- One workflow read twice is one journey: the same WF number ("WF-3-B", "WF-3B"), one name the
+  start of the other, and most of the shorter one's steps shared, as embedded versions of one
+  workflow book and a model's reading of its table give it. Other workflows of the same number
+  stay apart.
+- A step's combined system name ("OM-E2ESO") nothing answers to is matched part by part, when
+  its parts are short like acronyms: the systems found perform and support the step
+  (`document-reading-v3`).
 
 ## 0.6.0 — 2026-10-11
 

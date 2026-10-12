@@ -27,6 +27,7 @@ from knowledge_portal.domain.architecture.candidates import (
     CandidateKind,
     apply_candidate,
 )
+from knowledge_portal.domain.architecture.journeys import Activity, Journey
 from knowledge_portal.domain.architecture.knowledge import KnowledgeReleaseStatus
 from knowledge_portal.domain.architecture.products import (
     OfferingPlan,
@@ -40,7 +41,10 @@ from knowledge_portal.infrastructure.architecture.located_extractor import (
     LocatedDocumentExtractor,
     _without_hidden_sheets,
 )
-from knowledge_portal.infrastructure.llm.catalogue_extraction import StructuredCatalogueExtractor
+from knowledge_portal.infrastructure.llm.catalogue_extraction import (
+    StructuredCatalogueExtractor,
+    slug,
+)
 from tests.unit.test_document_reading_coverage import (
     MAINTAINER,
     _docx,
@@ -569,3 +573,71 @@ def test_a_workflow_table_is_read_as_a_journey_without_the_model() -> None:
         ("3", "Customer appointment", "wfms"),
     ]
     assert change.reader is not None and change.reader[1] == "catalogue-tables-v8"
+
+
+# One workflow read twice; combined system names ------------------------------------------
+
+
+def _journey_reading(name: str, *steps: tuple[str, str]) -> ProposedChange:
+    journey = Journey(
+        slug(name),
+        name,
+        activities=tuple(
+            Activity(str(number), step, performing_system_id=performer)
+            for number, (step, performer) in enumerate(steps, start=1)
+        ),
+    )
+    return ProposedChange(
+        CandidateContent(CandidateKind.JOURNEY, journey.id, name=name, journey=journey),
+        ("paragraph 2",),
+        "Workflows",
+        source_name=name,
+    )
+
+
+STAGES = (
+    ("Waiter clearance", "wfms"),
+    ("ONT/OLT configuration", "om-e2eso"),
+    ("HSI configuration", "b2b-portal"),
+)
+
+
+def test_one_workflow_read_twice_is_one_journey_and_two_workflows_stay_two() -> None:
+    proposer, draft, _ = _setup(_docx(_p("Workflows")), _Recording())
+    proposer._extractor = _Scripted(
+        ProposedChange(
+            CandidateContent(CandidateKind.SYSTEM, "e2eso", name="E2ESO"),
+            ("paragraph 1",),
+            "Workflows",
+            source_name="E2ESO",
+        ),
+        _journey_reading("WF-3-B Order fulfillment — GPON Provisioning order", *STAGES),
+        # Another version of the book writes it "WF-3B".
+        _journey_reading("WF-3B Order fulfillment — GPON Provisioning order", *STAGES[:2]),
+        # The model names only its start, from fewer steps.
+        _journey_reading("WF-3B Order fulfillment", STAGES[0]),
+        # The same number, another workflow.
+        _journey_reading("WF-3B Up/Downgrade", ("Cease service", "wfms")),
+    )
+
+    proposer.execute(draft.id, "doc", lambda: None)
+
+    journeys = [
+        item.content.journey
+        for item in proposer._candidates.list(draft.id)
+        if item.content.journey is not None
+    ]
+    assert [journey.name for journey in journeys] == [
+        "WF-3-B Order fulfillment — GPON Provisioning order",
+        "WF-3B Up/Downgrade",
+    ]
+    first = journeys[0]
+    # "OM-E2ESO" is E2ESO, which the catalogue knows as an alias of its activation
+    # systems; "B2B-PORTAL" is one name, its parts too long to be acronyms.
+    assert [
+        (step.performing_system_id, step.supporting_system_ids) for step in first.activities
+    ] == [
+        ("wfms", ()),
+        ("service-activation", ()),
+        ("b2b-portal", ()),
+    ]

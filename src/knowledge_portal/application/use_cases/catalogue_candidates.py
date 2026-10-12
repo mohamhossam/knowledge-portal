@@ -129,10 +129,17 @@ _EMBEDDED_ORDER = (
     _DOCX,
     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 )
-READING_VERSION = "document-reading-v2"
+READING_VERSION = "document-reading-v3"
 MAX_MATCHES_PER_NAME = 3
 _FIGURE = re.compile(r"^image (\d+)\b", re.IGNORECASE)
 _JOURNEY = re.compile(r"\bjourneys?\b", re.IGNORECASE)
+# "WF-3-B", "WF 3C", "WF-12": a workflow's number and variant letter.
+_WORKFLOW = re.compile(r"^[Ww][Ff][\s_-]*(?P<number>\d+)(?:[\s_-]*(?P<variant>[A-Z])\b)?")
+# How much of the shorter workflow's steps the other must share to be the same workflow.
+_SAME_STEPS = 0.5
+# A combined system name ("OM-E2ESO") is split only into parts this short, like acronyms;
+# "b2b-portal" is one name.
+_MAX_ACRONYM = 5
 
 
 def _new_sheets(
@@ -485,31 +492,82 @@ def _canonical_journey(
         found = find_offering_component(offering, reference) if offering else None
         return found.id if found is not None else reference
 
+    def systems(reference: str) -> tuple[str, ...]:
+        """A system a step names, or the systems a combined name joins: a workflow book
+        writes "OM-E2ESO" for a stage more than one system takes part in. A name
+        nothing answers to is split at its hyphens when each part is short, like an
+        acronym; the parts that are systems stand for it, the first performing the
+        step and the others supporting it. Otherwise it stays as written."""
+        found = resolved(reference)
+        if found != reference:
+            return (found,)
+        parts = [part for part in re.split(r"[-–]", reference) if part]
+        if len(parts) < 2 or any(len(part) > _MAX_ACRONYM for part in parts):
+            return (reference,)
+        known = [resolved(part) for part in parts if resolved(part) != part]
+        return tuple(dict.fromkeys(known)) or (reference,)
+
+    activities = []
+    for item in journey.activities:
+        performers = systems(item.performing_system_id) if item.performing_system_id else ()
+        supporting = [name for ref in item.supporting_system_ids for name in systems(ref)]
+        activities.append(
+            replace(
+                item,
+                performing_system_id=performers[0] if performers else None,
+                supporting_system_ids=tuple(
+                    name
+                    for name in dict.fromkeys((*performers[1:], *supporting))
+                    if name != (performers[0] if performers else None)
+                ),
+                component_ids=tuple(dict.fromkeys(component(name) for name in item.component_ids)),
+            )
+        )
     return replace(
         journey,
         product_id=offering.id if offering is not None else journey.product_id,
         order_type_code=order.code if order is not None else journey.order_type_code,
-        activities=tuple(
-            replace(
-                item,
-                performing_system_id=(
-                    resolved(item.performing_system_id) if item.performing_system_id else None
-                ),
-                supporting_system_ids=tuple(
-                    dict.fromkeys(resolved(name) for name in item.supporting_system_ids)
-                ),
-                component_ids=tuple(dict.fromkeys(component(name) for name in item.component_ids)),
-            )
-            for item in journey.activities
-        ),
+        activities=tuple(activities),
     )
+
+
+def _workflow(name: str) -> tuple[str, str] | None:
+    """A workflow journey's number and what its name says after it: "WF-3-B Order
+    fulfillment — GPON" gives ("3B", "order fulfillment — gpon"); None for other names."""
+    match = _WORKFLOW.match(name.strip())
+    if match is None:
+        return None
+    rest = name.strip()[match.end() :].strip(" -—–:|")
+    return f"{match['number']}{match['variant'] or ''}", " ".join(rest.casefold().split())
+
+
+def _same_workflow(first: Journey, second: Journey) -> bool:
+    """Whether two journeys are one workflow read twice: the same WF number, one name the
+    start of the other, and most of the shorter one's steps in the longer one.
+
+    An SDD embeds versions of one workflow book: "WF-3-B" in one and "WF-3B" in
+    another, or a model naming only "WF-3A Order fulfillment" from a table the
+    reader read whole. "WF-1 Order fulfillment" and "WF-1 Up/Downgrade" are two.
+    """
+    one, other = _workflow(first.name), _workflow(second.name)
+    if one is None or other is None or one[0] != other[0]:
+        return False
+    if not (one[1].startswith(other[1]) or other[1].startswith(one[1])):
+        return False
+    steps = [
+        {" ".join(item.name.casefold().split()) for item in journey.activities}
+        for journey in (first, second)
+    ]
+    shorter = min(len(steps[0]), len(steps[1]))
+    return shorter > 0 and len(steps[0] & steps[1]) / shorter >= _SAME_STEPS
 
 
 def _one_journey_each(changes: tuple[ProposedChange, ...]) -> tuple[ProposedChange, ...]:
     """Every reading of one journey as one suggestion (ADR-0096).
 
     A journey section read in several calls, or by the table reader and the
-    model, gives one journey in parts; they merge as offerings do.
+    model, gives one journey in parts; they merge as offerings do. So do two
+    readings of one workflow (``_same_workflow``).
     """
     result: list[ProposedChange] = []
     journeys: list[Journey | None] = []
@@ -519,7 +577,9 @@ def _one_journey_each(changes: tuple[ProposedChange, ...]) -> tuple[ProposedChan
             (
                 number
                 for number, kept in enumerate(journeys)
-                if journey is not None and kept is not None and same_journey(kept, journey)
+                if journey is not None
+                and kept is not None
+                and (same_journey(kept, journey) or _same_workflow(kept, journey))
             ),
             None,
         )
