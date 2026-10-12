@@ -95,8 +95,8 @@ jobs:
 
   e2e:
     # Route accessibility (axe, WCAG 2.x A/AA, a ratchet on a11y-baseline.json)
-    # and visual checks of redesigned routes, on the offline fake stack: the
-    # API in memory with fake identity and LLM, seeded, and `vite preview`.
+    # and journeys, on the offline fake stack: the API in memory with fake
+    # identity and LLM, seeded, and `vite preview`.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -134,7 +134,7 @@ jobs:
         working-directory: frontend
         run: npm run build
 
-      - name: Playwright (a11y + visual) on the fake stack
+      - name: Playwright (a11y + journeys) on the fake stack
         working-directory: frontend
         run: npm run e2e
 

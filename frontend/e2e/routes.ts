@@ -3,8 +3,8 @@
  * the seed's own titles, so the keys stay stable across reseeds.
  *
  * `REDESIGNED` lists the route keys rebuilt on the design system. Each Phase 8
- * area adds its keys here, which brings them under the visual spec, and drops
- * them from `a11y-baseline.json` (they must have no serious or critical issues).
+ * area adds its keys here, which drops them from `a11y-baseline.json` (they
+ * must have no serious or critical issues).
  */
 import { apiUrl, OWNER } from "./env";
 

@@ -79,6 +79,7 @@
 | 2026-10-09 | **Catalogue IA:** the Landscape becomes a TAM **hero page** with no product bar (the architecture itself, attractive and visual); each **product page** gets an **Architecture tab** with the same map, its journey's systems highlighted; **Products** becomes a main section (the offering page, customer value included, existed but had no navigation to it). Mock-ups cover four screens: Landscape hero, Product, Product › Architecture, Journey flow. | User |
 | 2026-10-09 | **Catalogue palette: e& branding colours in calm mode.** The poster's notation tints (yellow, blue, green, lilac) are replaced by soft tones of the e& family only (beige, red blush, stone, sand, maroon mist, light grey) with a deeper 2px top edge per layer, and an e& maroon integration spine; red stays the one focal accent. No official e& palette was found publicly, so the values derive from the brief's primitives (unverified). | User |
 | 2026-10-08 | **GATE 8.1 approved.** Chrome share is measured by height (6%). The critique stands at 27–28/40, with acting from the queue deferred to area 2 and a re-critique after it. Queues use one tab stop per item (interaction model §2.2 amended). | User |
+| 2026-10-12 | **No screenshots in git; unused kits removed.** The visual spec and its 72 baselines (36 win32 + 36 linux, ~11 MB) are gone, as on `main`; light/dark and both widths are checked in the critique instead. The blank research and test kits (round 1/2, benchmark, tree-test and a11y result sheets, `research/raw/`) and the Phase 0 capture tools and log are removed too. All remain in the branch's history. | User (developer concern about PNGs) |
 
 ## Brand source
 
@@ -124,8 +125,7 @@ Answered on 2026-10-08:
 
 Still open:
 
-1. **Screenshots in git.** 106 JPEGs (16 MB) in `docs/redesign/before/` are committed, and later
-   phases add more. Keep them in git, or move them to an ignored folder or an artifact store?
+1. **Screenshots in git.** Answered 2026-10-12: none are kept in git (see the decisions table).
 2. **The timezone-dependent test failure:** fix it separately (a task chip has been offered) or
    inside the epic?
 3. **Phase 1 critique coverage.** Historic records, catalogue evidence and requirement-knowledge
@@ -179,7 +179,7 @@ review only. Every user-facing claim in them stays HYPOTHESIS until a benchmark 
 | Gate | Command | Where |
 |---|---|---|
 | Component a11y | `npm test` (axe after every design-system component test) | `src/test/axe.ts` |
-| Route a11y + visual | `npm run build && npm run e2e`, with `E2E_CHANNEL=msedge` locally; refresh the baseline with `A11Y_UPDATE_BASELINE=1 npx playwright test a11y --workers=1` | `frontend/e2e/` |
+| Route a11y + journeys | `npm run build && npm run e2e`, with `E2E_CHANNEL=msedge` locally; refresh the baseline with `A11Y_UPDATE_BASELINE=1 npx playwright test a11y --workers=1` | `frontend/e2e/` |
 | Brand | `npm run lint:brand` (`--update` rewrites the legacy list; counts may only fall) | `scripts/brand-lint.mjs` |
 | Bundle | `npm run budget`, after a build | `scripts/bundle-budget.mjs` |
 | CI | the `frontend` job (+ brand, budget) and the `e2e` job | `.github/workflows/ci.yml` |

@@ -22,6 +22,8 @@ frontend/playwright-report/
 frontend/test-results/
 frontend/e2e/.results/
 frontend/e2e/.report/
+# Screenshot baselines are not kept in git.
+frontend/e2e/__screenshots__/
 # The Impeccable design hook's cache (repo-level .impeccable/ stays tracked).
 frontend/.impeccable/
 frontend/*.tsbuildinfo

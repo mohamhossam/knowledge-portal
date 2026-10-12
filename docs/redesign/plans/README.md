@@ -69,8 +69,8 @@ own criteria; it never removes these.
   never as status, error, destructive action or a diff's "removed".
 - **B3** Motion is 200ms or less, opacity and transform only, and instant under reduced motion.
   There are no gradients, glass or saturated full-bleed fills.
-- **B4** Light and dark, comfortable and compact all render (the visual spec covers 1280 and
-  1920 × light and dark).
+- **B4** Light and dark, comfortable and compact all render at 1280 and 1920 (checked in the
+  critique on the live seeded stack).
 
 **Behaviour and content:**
 
@@ -88,8 +88,8 @@ own criteria; it never removes these.
 - **D2** The bundle budget holds: the main chunk is at most 990.87 kB (`npm run budget`).
 - **D3** Legacy CSS the area no longer uses is removed in the area's merge commit, along with
   its selectors from the shared files.
-- **D4** The visual spec has screenshots for the area's routes at 1280 and 1920, in light and
-  dark (`frontend/e2e/visual.spec.ts`, `REDESIGNED_ROUTES`).
+- **D4** The area's route keys are in `REDESIGNED` (`frontend/e2e/routes.ts`), so the a11y
+  spec allows them no baseline. Screenshot baselines are not kept in git.
 - **D5** The Impeccable critique of the area on the live seeded stack scores **≥ 30/40**, with
   H7 (accelerators) and H10 (help) at 3 or more each.
 

@@ -1,5 +1,5 @@
 /**
- * Route accessibility and visual checks (redesign Phase 7), against the
+ * Route accessibility checks and journeys (redesign Phase 7), against the
  * offline fake stack: the API in memory with fake identity and LLM, seeded by
  * scripts/seed_demo.py, and the production build served by `vite preview`.
  *
@@ -18,16 +18,12 @@ const ci = Boolean(process.env.CI);
 export default defineConfig({
   testDir: "./e2e",
   outputDir: "./e2e/.results",
-  snapshotPathTemplate: "{testDir}/__screenshots__/{testFilePath}/{arg}-{platform}{ext}",
   fullyParallel: true,
   forbidOnly: ci,
   retries: ci ? 1 : 0,
   workers: ci ? 2 : undefined,
   reporter: ci ? [["list"], ["html", { open: "never", outputFolder: "e2e/.report" }]] : "list",
   globalSetup: "./e2e/global-setup.ts",
-  expect: {
-    toHaveScreenshot: { maxDiffPixelRatio: 0.01, animations: "disabled", caret: "hide" },
-  },
   use: {
     baseURL: `http://127.0.0.1:${webPort}/knowledge/`,
     channel: process.env.E2E_CHANNEL,

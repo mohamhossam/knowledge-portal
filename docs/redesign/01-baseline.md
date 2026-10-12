@@ -47,14 +47,10 @@ touch `src/`, and the deny list blocks editing it.
 
 ## "Before" screenshots
 
-`docs/redesign/before/` holds full-page JPEG (q80) captures, named `<route>@<width>.jpg`, 106
-files and 16 MB in all.
-
-- `capture-log.json` records the route, title, page height, load time and console errors of
-  each capture.
-- `library-doc2-review` and `library-doc5-review` are clipped to their first 4,000 px. Their full
-  heights are in the log.
-- Reproduce the captures with `docs/redesign/tools/capture-routes.mjs`.
+Phase 0 took full-page JPEG (q80) captures, named `<route>@<width>.jpg`, 106 files and 16 MB in
+all, with a capture log (route, title, page height, load time, console errors) and the script
+that took them. They were removed from the branch to keep screenshots out of git; they remain in
+its history (`docs/redesign/before/`, `docs/redesign/tools/capture-routes.mjs`).
 
 | Set | Persona | Widths | Captures |
 |---|---|---|---|

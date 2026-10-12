@@ -1,8 +1,8 @@
 # Research synthesis — knowledge portal redesign
 
 > **HYPOTHESIS: assumption mode (user decision, GATE 1a, 2026-10-08).** No interviews,
-> contextual inquiry, survey or benchmark were run. `docs/ux/research/raw/` holds no
-> participant data. Everything below is derived from:
+> contextual inquiry, survey or benchmark were run. There is no participant data.
+> Everything below is derived from:
 >
 > - **[E] Expert review:** `01-heuristic-review.md`, five isolated design reviews plus a
 >   detector run on the seeded fake stack;
@@ -199,7 +199,7 @@ measured", never as met.
 |---|---|---|
 | Heuristic score | each surface ≥ 30 / 40, mean ≥ 32 / 40; H10 Help ≥ 3 and H7 Accelerators ≥ 3 everywhere | Impeccable critique, Phase 9 |
 | Tab stops before primary content | ≤ 3 on every page (skip links) | Playwright |
-| Passage review, 1440×900 | ≥ 10 rows visible in compact density | Visual spec |
+| Passage review, 1440×900 | ≥ 10 rows visible in compact density | Impeccable critique on the live seeded stack |
 | Bundle | main chunk ≤ 990.87 kB | Bundle budget |
 
 ## 9. What changes when real research arrives
