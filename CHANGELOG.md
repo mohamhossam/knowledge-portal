@@ -102,6 +102,9 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   dependency or a remark, and not a team named in a System column; every offering, including
   one an order migrates from or to; and a process described step by step in prose as a journey
   (prompt `catalogue-extraction-v15`). An Opus 5.5 reading of the same SDD found these gaps.
+- A reading is no longer asked to propose every system name it meets (prompt
+  `catalogue-extraction-v16`): a small model then proposed tickets, phases and features (ADO,
+  P4, TOSS) as systems, and fewer capabilities.
 
 ## 0.6.0 — 2026-10-11
 

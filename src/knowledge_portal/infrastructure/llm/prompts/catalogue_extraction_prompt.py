@@ -4,7 +4,7 @@ import json
 
 from knowledge_portal.application.ports.catalogue_extractor import ExtractionRequest
 
-PROMPT_VERSION = "catalogue-extraction-v15"
+PROMPT_VERSION = "catalogue-extraction-v16"
 
 # A journey is the largest answer shape. A model whose context leaves too little room for
 # it reads without it (ADR-0096): LEAN_SYSTEM_PROMPT and an answer schema without journeys.
@@ -158,10 +158,8 @@ SYSTEM_RULE = """ The text says what the system is, never a requirement on it: "
 support ..." is a capability or a constraint of X. Propose each system once per answer. A \
 product or bundle sold is a product_offering, never a system; a plan, tier, speed profile, \
 rate plan or child PO or RP of an offering is one of that offering's plans, never a system or \
-an offering of its own. Propose every system the passages name, including one named only as \
-the source or target of a dependency or in a remark ("WFMS will send to OM"). A team, group or \
-function named in a System column, such as QA, Security Planning or a design authority, is not \
-a system."""
+an offering of its own. A team, group or function named in a System column, such as QA, \
+Security Planning or a design authority, is not a system."""
 LEAN_SYSTEM_RULE = """ A product, bundle or plan sold is a product_offering, never a system."""
 PLANS_RULE = """, and its plans (each plan's name, and each fact the document states about it, \
 such as its speed, offer ID or code, as a characteristic). Every offering the document names \

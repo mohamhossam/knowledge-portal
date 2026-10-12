@@ -689,13 +689,13 @@ def test_coded_workflow_titles_each_head_their_journey_and_rows_stay_open() -> N
     assert reading.consumed == set()
 
 
-def test_only_a_reading_with_room_asks_for_named_systems_offerings_and_prose_journeys() -> None:
+def test_only_a_reading_with_room_asks_for_every_offering_and_prose_journeys() -> None:
     for rule in (
-        "Propose every system the passages name",
-        "is not \na system" if False else "is not",
         "Every offering the document names",
         "A process the document describes step by step",
+        "A team, group or function named in a System column",
     ):
         assert rule in DETAILED_SYSTEM_PROMPT
-    assert "Propose every system the passages name" not in LEAN_SYSTEM_PROMPT
-    assert "Every offering the document names" not in LEAN_SYSTEM_PROMPT
+        assert rule not in LEAN_SYSTEM_PROMPT
+    # Asked to propose every name, a small model proposed tickets and phases as systems.
+    assert "Propose every system the passages name" not in DETAILED_SYSTEM_PROMPT
