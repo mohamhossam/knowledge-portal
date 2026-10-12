@@ -535,3 +535,22 @@ def test_reading_status_is_listed_per_document_and_retry_runs(client: TestClient
     assert started["status"] == "succeeded"
     reader = {"X-Fake-Actor-Id": "fake-reviewer"}
     assert client.get(f"{base}/extractions", headers=reader).status_code == 403
+
+
+def test_a_provider_refusal_ends_the_reading_at_once() -> None:
+    """The reported run: OpenRouter refused a model without credit (HTTP 402), wrapped in a
+    plain status error, and each of 300 parts was asked twice and refused."""
+    request = httpx.Request("POST", "https://openrouter.ai/api/v1/chat/completions")
+    status = httpx.HTTPStatusError(
+        "402 Payment Required", request=request, response=httpx.Response(402, request=request)
+    )
+    refused = StructuredOutputError("OpenRouter request failed")
+    refused.__cause__ = status
+    client = _Recording([refused] * 50)
+
+    with pytest.raises(CatalogueAnswerUnusableError) as raised:
+        _extractor(client).propose(_document(40))
+
+    assert len(client.prompts) == 1
+    assert describe_public_error(raised.value).code == "model_payment"
+    assert "The model provider refused the reading (payment)" in str(raised.value)

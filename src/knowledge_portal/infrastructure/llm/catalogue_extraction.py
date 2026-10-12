@@ -1148,6 +1148,8 @@ _REASONS = {
 }
 # Provider failures that asking again cannot fix.
 _PERMANENT_KINDS = {"authentication", "configuration", "payment"}
+# HTTP statuses that mean the same, from a transport that does not classify them.
+_REFUSED = {401: "authentication", 402: "payment", 403: "authentication", 404: "configuration"}
 
 
 def _why(error: BaseException) -> str:
@@ -1163,13 +1165,26 @@ def _why(error: BaseException) -> str:
     return type(error).__name__
 
 
-def _permanent(error: BaseException) -> bool:
+def _refusal(error: BaseException) -> ModelTransportError | None:
+    """The provider's refusal behind a failed call, when asking again cannot fix it.
+
+    A transport may raise the app's own classification, or only wrap the HTTP
+    response: OpenRouter's 402 (no credit for the model) arrived as a plain status
+    error, so each of 300 parts was asked twice and every one refused.
+    """
     current: BaseException | None = error
     while current is not None:
         if isinstance(current, ModelTransportError):
-            return current.kind in _PERMANENT_KINDS
+            return current if current.kind in _PERMANENT_KINDS else None
+        status = getattr(getattr(current, "response", None), "status_code", None)
+        if status in _REFUSED:
+            return ModelTransportError(_REFUSED[status])
         current = current.__cause__
-    return False
+    return None
+
+
+def _permanent(error: BaseException) -> bool:
+    return _refusal(error) is not None
 
 
 def _tokens(text: str) -> int:
@@ -1445,6 +1460,9 @@ class StructuredCatalogueExtractor:
         # still finishes in a predictable number of calls.
         calls_left = 3 * len(batches) + 4
         started = 0
+        # The provider's refusal (no credit, bad key, unknown model) ends the reading:
+        # every part would be refused the same way.
+        refused: ModelTransportError | None = None
         while pending:
             batch, depth = pending.popleft()
             request.progress(started, started + len(pending) + 1)
@@ -1486,7 +1504,8 @@ class StructuredCatalogueExtractor:
                         reason = "truncated"
                         break
                     reason = "unusable"
-                    if _permanent(exc):
+                    refused = _refusal(exc)
+                    if refused is not None:
                         break
                     continue
                 answer = got
@@ -1513,6 +1532,17 @@ class StructuredCatalogueExtractor:
                 for half in reversed(halves):
                     pending.appendleft((half, depth + 1))
                 continue
+            if refused is not None:
+                unread = 1 + len(pending)
+                pending.clear()
+                failures.append(
+                    (
+                        "refused",
+                        f"The model provider refused the reading ({refused.kind}): {unread} "
+                        f"part(s) from {_span(batch)} on were not read.",
+                    )
+                )
+                break
             if answer is None or answer.failed is not None:
                 failures.append((reason, f"{_span(batch)} could not be read: {_REASONS[reason]}"))
                 continue
@@ -1528,6 +1558,8 @@ class StructuredCatalogueExtractor:
             message = f"No part of the document could be read by the model. {failures[-1][1]}"
             if all(reason == "uncited" for reason, _ in failures):
                 raise CatalogueCitationError(message)
+            if refused is not None:
+                raise CatalogueAnswerUnusableError(message) from refused
             if last_error is not None:
                 raise CatalogueAnswerUnusableError(message) from last_error
             raise CatalogueExtractionError(message)

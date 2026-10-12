@@ -105,6 +105,9 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 - A reading is no longer asked to propose every system name it meets (prompt
   `catalogue-extraction-v16`): a small model then proposed tickets, phases and features (ADO,
   P4, TOSS) as systems, and fewer capabilities.
+- A model provider's refusal (no credit, a rejected key, an unknown model) ends a reading at
+  once with that reason (`model_payment`, `model_authentication`, `model_configuration`); one
+  arriving as a plain HTTP status (OpenRouter's 402) was asked again for each of 300 parts.
 
 ## 0.6.0 — 2026-10-11
 
