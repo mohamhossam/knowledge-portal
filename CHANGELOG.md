@@ -28,6 +28,10 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   like an offering the draft has or the document suggests is left out, with its constraints
   turned into that offering's rules.
 - A draft's page head no longer widens the page past a 1280px window.
+- Architecture documents are read within the operator's `DOCUMENT_*` extraction limits (PDF
+  pages, extracted characters, spreadsheet cells, image pixels, XML nodes), as library
+  documents are. They were held to the library defaults, so a large DOCX was refused ("more
+  than 250000 XML nodes") whatever `DOCUMENT_MAX_XML_NODES` said.
 
 ## 0.6.0 — 2026-10-11
 
