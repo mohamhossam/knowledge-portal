@@ -2,7 +2,7 @@ import { useCallback, useMemo } from "react";
 
 import { DiagramLegend, tree } from "../design/diagram";
 import { RoutedDiagram } from "../shell/RoutedDiagram";
-import { ownershipTree } from "./ownershipTree";
+import { ownershipTree } from "./ownershipTreeModel";
 import { useOrgContext } from "./useOrganisation";
 
 /** The ownership area as a tree: one glance at which systems have no squad. */

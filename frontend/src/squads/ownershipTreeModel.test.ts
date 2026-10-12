@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Organisation, Release } from "../api/client";
-import { ownershipTree } from "./ownershipTree";
+import { ownershipTree } from "./ownershipTreeModel";
 
 const org = {
   people: [],
