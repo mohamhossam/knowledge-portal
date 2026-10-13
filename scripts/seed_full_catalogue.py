@@ -17,25 +17,22 @@ On a server with real sign-in, import the same file from Versions in the portal 
 from __future__ import annotations
 
 import argparse
-import time
+import sys
 from pathlib import Path
 from typing import Any
 
 import httpx
 
-ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_FILE = ROOT / "catalogues" / "smb-architecture.yaml"
-OWNER = {"X-Fake-Actor-Id": "fake-owner"}
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from scripts._catalogue_seed import (  # noqa: E402
+    FULL_CATALOGUE_FILE,
+    FULL_CATALOGUE_NAME,
+    OWNER,
+    one_draft_at_a_time,
+    wait_for,
+)
+
 RELEASES = "/architecture-knowledge/releases"
-
-
-def wait_for(client: httpx.Client, path: str, ready: Any) -> dict[str, Any]:
-    for _ in range(600):
-        view = client.get(path, headers=OWNER).json()
-        if ready(view):
-            return dict(view)
-        time.sleep(0.1)
-    raise RuntimeError(f"{path} never reached the expected state.")
 
 
 def load(client: httpx.Client, file: Path, name: str, *, publish: bool) -> dict[str, Any]:
@@ -55,7 +52,10 @@ def load(client: httpx.Client, file: Path, name: str, *, publish: bool) -> dict[
         f"{base}/build", json={"expected_revision": revision}, headers=OWNER
     ).raise_for_status()
     job = wait_for(
-        client, f"{base}/build", lambda job: job and job["status"] in {"succeeded", "failed"}
+        client,
+        f"{base}/build",
+        OWNER,
+        lambda job: job and job["status"] in {"succeeded", "failed"},
     )
     if job["status"] != "succeeded":
         raise RuntimeError(f"The build of {name!r} failed: {job}")
@@ -76,20 +76,14 @@ def load(client: httpx.Client, file: Path, name: str, *, publish: bool) -> dict[
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--api", default="http://127.0.0.1:8100")
-    parser.add_argument("--file", type=Path, default=DEFAULT_FILE)
-    parser.add_argument("--name", default="Business Pro Plus (SDD v2.3)")
+    parser.add_argument("--file", type=Path, default=FULL_CATALOGUE_FILE)
+    parser.add_argument("--name", default=FULL_CATALOGUE_NAME)
     parser.add_argument(
         "--draft-only", action="store_true", help="build the version but leave it a draft"
     )
     arguments = parser.parse_args()
-    with httpx.Client(base_url=arguments.api, timeout=120) as client:
-        try:
-            release = load(client, arguments.file, arguments.name, publish=not arguments.draft_only)
-        except httpx.HTTPStatusError as error:
-            # One draft at a time: another one in progress says whose it is.
-            if error.response.status_code != 409:
-                raise
-            raise SystemExit(f"Nothing loaded: {error.response.json()['message']}") from None
+    with httpx.Client(base_url=arguments.api, timeout=120) as client, one_draft_at_a_time():
+        release = load(client, arguments.file, arguments.name, publish=not arguments.draft_only)
     print(
         f"{release['name']}: {release['status']}, {len(release['systems'])} systems, "
         f"{len(release['journeys'])} journeys, {len(release['products'])} products."

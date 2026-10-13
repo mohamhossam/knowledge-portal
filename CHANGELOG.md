@@ -38,7 +38,10 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   `catalogues/smb-architecture.yaml` into a running offline API as a maintainer would (draft,
   file import, build, publish), and `seed_demo.py --full-catalogue` puts it in service after
   the sample version, before the sample draft. The sample squads are now seeded before the
-  draft, while the sample version whose systems they own is in service.
+  draft, while the sample version whose systems they own is in service. Both scripts share
+  `scripts/_catalogue_seed.py`: the personas, the full catalogue's file and name, one wait
+  that stops on a failed read or after 120 s, and the service's refusal (409, such as a
+  draft already in progress) reported in one line instead of a traceback.
 
 ### Fixed
 
