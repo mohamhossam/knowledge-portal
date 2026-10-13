@@ -23,12 +23,13 @@
 import { type KeyboardEvent, type ReactNode, useEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
-import { type CatalogueData, journeyView } from "../../architecture/adapter";
-import type { JourneyView, Offering, PortfolioNode } from "../../architecture/model";
+import { journeyView } from "../../architecture/adapter";
+import { type Catalogue, type JourneyView, type Lane, laneKey, type Offering, type PortfolioNode, systemOf } from "../../architecture/model";
 import { AreaTabs } from "./CatalogueLab";
 import { journeyHref, LAB, useLabData } from "./labData";
 import { monogram, plural, useTitle } from "./labUtil";
 import { STAGES, stageOfCode } from "./stages";
+import { laneName } from "./words";
 
 /** The portfolio path the page opens on, by name from the top: Fixed, then SMB. */
 const DEFAULT_SCOPE = ["Fixed", "SMB"];
@@ -143,15 +144,19 @@ function withView(href: string): string {
 }
 
 /** A journey's shape, for the preview. */
-function shapeOf(data: CatalogueData, view: JourneyView | null) {
+function shapeOf(data: Catalogue, view: JourneyView | null) {
   if (!view) return null;
   const known = new Set(data.systems.map((system) => system.id));
-  const route: string[] = [];
-  for (const step of view.steps) if (step.kind === "task" && !route.includes(step.lane)) route.push(step.lane);
+  const route: Lane[] = [];
+  for (const step of view.steps) if (step.kind === "task" && !route.some((lane) => laneKey(lane) === laneKey(step.lane))) route.push(step.lane);
   const systems = new Set<string>();
-  for (const id of route) if (known.has(id)) systems.add(id);
-  for (const call of view.integrations) for (const id of [call.from, call.to, call.via]) if (id && known.has(id)) systems.add(id);
-  const decisions = [...new Set(view.steps.filter((step) => step.kind === "exclusive" && step.name !== "Decision").map((step) => step.name))];
+  for (const lane of route) {
+    const id = systemOf(lane);
+    if (id && known.has(id)) systems.add(id);
+  }
+  for (const call of view.integrations) for (const id of [systemOf(call.from), systemOf(call.to), call.via]) if (id && known.has(id)) systems.add(id);
+  // The questions decided along the way, where the source states them.
+  const decisions = [...new Set(view.steps.flatMap((step) => (step.kind === "exclusive" && step.question !== undefined ? [step.question] : [])))];
   return { route, systems, decisions, steps: view.steps.filter((step) => step.kind === "task").length, calls: view.integrations.length };
 }
 
@@ -216,7 +221,8 @@ export function JourneysIndex() {
   const offered = product?.orderTypes.length ?? 0;
   const modelled = (product?.orderTypes ?? []).filter((type) => journeyOf(type.code)).length;
   const viaLens = lens ? (product?.orderTypes ?? []).filter((type) => type.channels.includes(lens.id)).length : 0;
-  const systemName = (id: string) => data.systems.find((system) => system.id === id)?.name ?? (id.startsWith("team:") ? id.slice(5) : id === "channel" ? "Ordering channel" : id);
+  const laneTitle = (lane: Lane) => laneName(data, lane);
+  const laneTone = (lane: Lane) => systemTone(systemOf(lane) ?? "");
   const systemTone = (id: string) => data.systems.find((system) => system.id === id)?.domain;
 
   const tile = (key: string, name: string, steps: number | undefined) => {
@@ -412,11 +418,11 @@ export function JourneysIndex() {
                     </div>
                   </dl>
                   <h3>Route through the systems</h3>
-                  <ol className="jx-route" aria-label={`Route: ${shape.route.map(systemName).join(", then ")}`}>
+                  <ol className="jx-route" aria-label={`Route: ${shape.route.map(laneTitle).join(", then ")}`}>
                     {shape.route.slice(0, 12).map((lane) => (
-                      <li key={lane} title={systemName(lane)}>
-                        <span className={`am-mono cl-systile${systemTone(lane) ? ` tone--${systemTone(lane)}` : " is-party"} am-mono--${monogram(systemName(lane)).length}`} translate="no">
-                          {monogram(systemName(lane))}
+                      <li key={laneKey(lane)} title={laneTitle(lane)}>
+                        <span className={`am-mono cl-systile${laneTone(lane) ? ` tone--${laneTone(lane)}` : " is-party"} am-mono--${monogram(laneTitle(lane)).length}`} translate="no">
+                          {monogram(laneTitle(lane))}
                         </span>
                       </li>
                     ))}

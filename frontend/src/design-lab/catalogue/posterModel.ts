@@ -3,22 +3,22 @@
  * channel, each integration once, the system-to-system links and how each
  * system takes part in the calls.
  */
-import { type CatalogueData, journeyView } from "../../architecture/adapter";
-import type { Integration, JourneyView } from "../../architecture/model";
+import { journeyView } from "../../architecture/adapter";
+import { type Catalogue, type Integration, type JourneyView, laneKey, systemOf } from "../../architecture/model";
 
 /** Every journey seen through every channel it serves. */
-export function allViews(data: CatalogueData): JourneyView[] {
+export function allViews(data: Catalogue): JourneyView[] {
   return data.journeys.flatMap((journey) =>
     (journey.channels.length ? journey.channels : [null]).map((channel) => journeyView(data, journey.id, channel)).filter((view): view is JourneyView => view !== null),
   );
 }
 
 /** Each integration once, whichever channel's view it was read from (each view numbers its own). */
-export function allIntegrations(data: CatalogueData): Integration[] {
+export function allIntegrations(data: Catalogue): Integration[] {
   const seen = new Map<string, Integration>();
   for (const view of allViews(data))
     for (const integration of view.integrations) {
-      const key = [view.id, integration.from, integration.via ?? "", integration.to, integration.operation, integration.purpose].join("|");
+      const key = [view.id, laneKey(integration.from), integration.via ?? "", laneKey(integration.to), integration.operation ?? "handover", integration.purpose].join("|");
       if (!seen.has(key)) seen.set(key, integration);
     }
   return [...seen.values()];
@@ -33,34 +33,45 @@ export function allIntegrations(data: CatalogueData): Integration[] {
 export function distinctInterfaces(integrations: Integration[]): Integration[] {
   const seen = new Map<string, Integration>();
   for (const call of integrations) {
-    const key = [call.from, call.via ?? "", call.to, call.operation || call.purpose].join("|");
+    const key = [laneKey(call.from), call.via ?? "", laneKey(call.to), (call.operation ?? "handover") || call.purpose].join("|");
     if (!seen.has(key)) seen.set(key, call);
   }
   return [...seen.values()];
 }
 
-/** System-to-system links: a call through the integration layer counts as two hops. */
-export function links(data: CatalogueData, integrations: Integration[]): Map<string, number> {
-  const known = new Set(data.systems.map((system) => system.id));
-  const counts = new Map<string, number>();
-  const add = (a?: string, b?: string) => {
-    if (!a || !b || a === b || !known.has(a) || !known.has(b)) return;
-    const key = [a, b].sort().join("~");
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  };
-  for (const call of integrations) {
-    if (call.via) {
-      add(call.from, call.via);
-      add(call.via, call.to);
-    } else add(call.from, call.to);
-  }
-  return counts;
+/** Two linked systems, either way round: their ids in order, and how many hops link them. */
+export type SystemLink = { a: string; b: string; count: number };
+
+/** The key of the link between two systems, the same either way round. */
+export function linkKey(a: string, b: string): string {
+  return JSON.stringify(a < b ? [a, b] : [b, a]);
 }
 
-export function partnersOf(systemId: string, linkCounts: Map<string, number>): { id: string; count: number }[] {
+/** System-to-system links, by `linkKey`: a call through the integration layer counts as two hops. */
+export function links(data: Catalogue, integrations: Integration[]): Map<string, SystemLink> {
+  const known = new Set(data.systems.map((system) => system.id));
+  const found = new Map<string, SystemLink>();
+  const add = (a?: string, b?: string) => {
+    if (!a || !b || a === b || !known.has(a) || !known.has(b)) return;
+    const key = linkKey(a, b);
+    const link = found.get(key) ?? { a: a < b ? a : b, b: a < b ? b : a, count: 0 };
+    link.count += 1;
+    found.set(key, link);
+  };
+  for (const call of integrations) {
+    const from = systemOf(call.from);
+    const to = systemOf(call.to);
+    if (call.via) {
+      add(from, call.via);
+      add(call.via, to);
+    } else add(from, to);
+  }
+  return found;
+}
+
+export function partnersOf(systemId: string, systemLinks: Map<string, SystemLink>): { id: string; count: number }[] {
   const found: { id: string; count: number }[] = [];
-  for (const [key, count] of linkCounts) {
-    const [a = "", b = ""] = key.split("~");
+  for (const { a, b, count } of systemLinks.values()) {
     if (a === systemId) found.push({ id: b, count });
     else if (b === systemId) found.push({ id: a, count });
   }
@@ -75,7 +86,7 @@ export function domainRank(id: string): number {
 }
 
 /** For one offering: which of its journeys reach each system, by a step it performs or a call it takes part in. */
-export function reachOf(data: CatalogueData, offeringId: string): Map<string, Set<string>> {
+export function reachOf(data: Catalogue, offeringId: string): Map<string, Set<string>> {
   const known = new Set(data.systems.map((system) => system.id));
   const reach = new Map<string, Set<string>>();
   const add = (id: string | undefined, journey: string) => {
@@ -84,8 +95,8 @@ export function reachOf(data: CatalogueData, offeringId: string): Map<string, Se
   };
   for (const view of allViews(data)) {
     if (view.offeringId !== offeringId) continue;
-    for (const step of view.steps) if (step.kind === "task") add(step.lane, view.id);
-    for (const call of view.integrations) for (const id of [call.from, call.to, call.via]) add(id, view.id);
+    for (const step of view.steps) if (step.kind === "task") add(systemOf(step.lane), view.id);
+    for (const call of view.integrations) for (const id of [systemOf(call.from), systemOf(call.to), call.via]) add(id, view.id);
   }
   return reach;
 }

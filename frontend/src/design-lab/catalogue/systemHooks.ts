@@ -2,7 +2,7 @@
 import { useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 
-import type { CatalogueData } from "../../architecture/adapter";
+import type { Catalogue } from "../../architecture/model";
 import { allIntegrations, distinctInterfaces, links } from "./posterModel";
 
 /** The picked system, from `?system=`, and a setter that keeps the rest of the URL. */
@@ -21,7 +21,7 @@ export function useSystemParam(): [string | null, (id: string | null) => void] {
 }
 
 /** The links between systems, for the boards and the drawer: distinct interfaces by pair, so they hold for any product. */
-export function useLinkCounts(data: CatalogueData) {
+export function useLinkCounts(data: Catalogue) {
   const interfaces = useMemo(() => distinctInterfaces(allIntegrations(data)), [data]);
   const linkCounts = useMemo(() => links(data, interfaces), [data, interfaces]);
   return { interfaces, linkCounts };

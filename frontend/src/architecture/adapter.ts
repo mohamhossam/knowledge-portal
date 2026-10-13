@@ -1,20 +1,29 @@
 /**
- * A catalogue version from the API, as the views read it. Journeys are kept as
- * the catalogue holds them (ADR-0096: numbered activities on tracks, flow rules,
- * integrations) and seen one channel at a time: the steps of other channels
- * drop out, the flow is the one the service derived for that view
- * (`channel_edges`, `shared_edges`, `edges`), and BPMN gateways and events are
- * placed where the rules branch, split and join.
+ * A catalogue version from the API, mapped once into the view model. Journeys are
+ * kept as the catalogue holds them (ADR-0096: numbered activities on tracks, the
+ * flow the service derives, integrations) and seen one channel at a time: the
+ * steps of other channels drop out, the flow is the one the service derived for
+ * that view (`channel_edges`, `shared_edges`, `edges`), and BPMN gateways and
+ * events are placed where the flow branches, splits and joins. The model carries
+ * kinds, never English: the lab's words.ts names them.
  */
 import type { Release } from "../api/client";
+import { BAND_DOMAINS, parseDrop, parseProposition, parseQuestion, trackKind } from "./conventions";
 import {
+  type Activity,
+  type ActivityStep,
+  type ActivityCall,
   type Catalogue,
   type Evidence,
   type Finding,
+  type FlowEdge,
   type Integration,
-  type JourneyDef,
+  type IntegrationMode,
+  type Journey,
   type JourneyView,
+  type Lane,
   type Offering,
+  type Performer,
   type Point,
   ROLE_WORDS,
   type Source,
@@ -23,15 +32,7 @@ import {
 } from "./model";
 
 type ApiJourney = NonNullable<Release["journeys"]>[number];
-type ApiActivity = ApiJourney["activities"][number];
-type ApiIntegration = ApiJourney["integrations"][number];
-
-/** A catalogue version and the release it was read from (for journeys and saving). */
-export type CatalogueData = Catalogue & { release: Release };
-
-/** TAM draws the enterprise domain and the integration layer as bands under the domain columns. */
-const BANDS = new Set(["enterprise", "integration"]);
-const MAIN = "main";
+type ApiEdge = ApiJourney["edges"][number];
 
 /** Evidence from a fact's confidence and its source line ("SDD v2.3 · §P1 · a note"). */
 export function parseEvidence(confidence: string | null | undefined, source: string | null | undefined, sources: Source[]): Evidence {
@@ -44,17 +45,83 @@ export function parseEvidence(confidence: string | null | undefined, source: str
   return { status, source: named.id, ...(where ? { where } : {}), ...(rest.length ? { note: rest.join(" · ") } : {}) };
 }
 
-function splitTitle(text: string): { title: string; detail: string } {
-  const at = text.indexOf(": ");
-  return at > 0 ? { title: text.slice(0, at), detail: text.slice(at + 2) } : { title: text, detail: "" };
-}
-
 function role(code: string | null | undefined): StepRole | undefined {
   const value = code?.toLowerCase().replace(/_/g, "-");
   return value && value in ROLE_WORDS ? (value as StepRole) : undefined;
 }
 
-export function fromRelease(release: Release): CatalogueData {
+/** Whether a call waits for its answer, as the source's timing says (any case). */
+export function modeOf(timing: string | null | undefined): IntegrationMode {
+  const value = timing?.toLowerCase();
+  return value === "sync" || value === "async" ? value : "not-stated";
+}
+
+function flowEdges(edges: ApiEdge[]): FlowEdge[] {
+  return edges.map((edge) => ({ from: edge.from_activity, to: edge.to_activity, kind: edge.kind, ...(edge.label ? { label: edge.label } : {}) }));
+}
+
+function performer(activity: ApiJourney["activities"][number]): Performer {
+  if (activity.performing_system_id) return { kind: "system", systemId: activity.performing_system_id };
+  if (activity.channel_entry) return { kind: "entry" };
+  if (activity.performer) return { kind: "team", name: activity.performer };
+  return { kind: "channel" };
+}
+
+/** A journey's activities, flow and calls, mapped once. A call's id is stable across the channels' views. */
+function journeyOf(journey: ApiJourney, channels: string[], evidence: (item: { confidence?: string | null; source?: string | null }) => Evidence): Journey {
+  const activities: Activity[] = journey.activities.map((item) => ({
+    number: item.number,
+    name: item.name,
+    performer: performer(item),
+    channels: item.channels,
+    track: trackKind(item.track),
+    role: role(item.role),
+    etom: item.etom ?? undefined,
+    detail: item.description ?? undefined,
+    ponr: item.point_of_no_return ?? undefined,
+    output: item.output ?? undefined,
+    evidence: evidence(item),
+  }));
+  const seen = new Map<string, number>();
+  const calls: ActivityCall[] = journey.integrations.map((call) => {
+    const operation = call.interface ?? call.interaction ?? undefined;
+    const base = `${call.from_activity}>${call.to_activity}:${call.to_system_id ?? ""}:${operation ?? "handover"}`;
+    const count = (seen.get(base) ?? 0) + 1;
+    seen.set(base, count);
+    return {
+      id: count > 1 ? `${base}#${count}` : base,
+      fromActivity: call.from_activity,
+      toActivity: call.to_activity,
+      ...(call.from_system_id != null ? { fromSystem: call.from_system_id } : {}),
+      ...(call.to_system_id != null ? { toSystem: call.to_system_id } : {}),
+      ...(call.via_system_id ? { via: call.via_system_id } : {}),
+      ...(operation !== undefined ? { operation } : {}),
+      purpose: call.purpose ?? "",
+      ...(call.style != null ? { style: call.style } : {}),
+      mode: modeOf(call.timing),
+      ...(call.payload ? { payload: call.payload } : {}),
+      ...(call.tmf_equivalent ? { tmf: call.tmf_equivalent } : {}),
+      evidence: evidence(call),
+    };
+  });
+  return {
+    id: journey.id,
+    offeringId: journey.product_id ?? null,
+    orderType: journey.order_type_code ?? null,
+    name: journey.name,
+    summary: journey.description ?? "",
+    channels,
+    activities,
+    flow: {
+      all: flowEdges(journey.edges),
+      byChannel: Object.fromEntries(journey.channel_edges.map((item) => [item.channel_id, flowEdges(item.edges)])),
+      shared: flowEdges(journey.shared_edges),
+    },
+    calls,
+  };
+}
+
+export function fromRelease(release: Release): Catalogue {
   const sources: Source[] = (release.sources ?? []).map((item) => ({
     id: item.id,
     title: item.title,
@@ -74,7 +141,7 @@ export function fromRelease(release: Release): CatalogueData {
     name: top.name,
     scope: top.description ?? "",
     groups: landscape.filter((item) => item.parent_id === top.id).map((item) => ({ id: item.id, name: item.name })),
-    band: BANDS.has(top.id),
+    band: BAND_DOMAINS.includes(top.id),
   }));
   const place = (id: string | null | undefined) => {
     const node = landscape.find((item) => item.id === id);
@@ -99,7 +166,7 @@ export function fromRelease(release: Release): CatalogueData {
 
   const products = release.products ?? [];
   const offerings: Offering[] = products.map((product) => {
-    const [summary = "", ...purpose] = (product.proposition ?? "").split("\n\n");
+    const { summary, purpose } = parseProposition(product.proposition);
     const point = (item: { name: string; description?: string | null; confidence?: string | null; source?: string | null }): Point => ({
       title: item.name,
       detail: item.description ?? "",
@@ -112,7 +179,7 @@ export function fromRelease(release: Release): CatalogueData {
       name: product.name,
       shortName: product.code ?? undefined,
       summary,
-      purpose: purpose.join("\n\n"),
+      purpose,
       values: product.values.map(point),
       eligibility: product.audiences.map(point),
       plans: product.plans.map((plan) => ({ name: plan.name, characteristics: plan.characteristics, evidence: evidence(plan) })),
@@ -128,13 +195,13 @@ export function fromRelease(release: Release): CatalogueData {
         evidence: evidence(part),
       })),
       orderTypes: product.order_types.map((type) => {
-        const drop = /Delivered in drop ([^.]+)\./.exec(type.description ?? "");
+        const { drop, note } = parseDrop(type.description);
         return {
           code: type.code,
           name: type.name,
           channels: type.channels,
-          priority: drop?.[1],
-          note: (type.description ?? "").replace(/\s*Delivered in drop [^.]+\./, "") || undefined,
+          priority: drop,
+          note: note || undefined,
           evidence: evidence(type),
         };
       }),
@@ -157,19 +224,12 @@ export function fromRelease(release: Release): CatalogueData {
   const orderTypes = products
     .flatMap((product) => product.order_types)
     .filter((type, index, all) => all.findIndex((other) => other.code === type.code) === index)
-    .map((type) => ({ code: type.code, name: type.name, description: (type.description ?? "").replace(/\s*Delivered in drop [^.]+\./, "") }));
+    .map((type) => ({ code: type.code, name: type.name, description: parseDrop(type.description).note }));
 
-  const journeys: JourneyDef[] = (release.journeys ?? []).map((journey) => {
+  const journeys: Journey[] = (release.journeys ?? []).map((journey) => {
     const offering = offerings.find((item) => item.id === journey.product_id);
     const support = offering?.orderTypes.find((type) => type.code === journey.order_type_code);
-    return {
-      id: journey.id,
-      offeringId: journey.product_id ?? null,
-      orderType: journey.order_type_code ?? null,
-      name: journey.name,
-      summary: journey.description ?? "",
-      channels: support?.channels ?? [],
-    };
+    return journeyOf(journey, support?.channels ?? [], evidence);
   });
 
   const findings: Finding[] = [
@@ -186,14 +246,13 @@ export function fromRelease(release: Release): CatalogueData {
     })),
     ...products.flatMap((product) =>
       product.questions.map((question) => {
-        const { title, detail } = splitTitle(question.text);
+        const { title, detail } = parseQuestion(question.text);
         return { id: question.id, kind: "gap" as const, title, detail, sources: [evidence(question)] };
       }),
     ),
   ];
 
   return {
-    release,
     releaseId: release.id,
     revision: release.revision,
     status: release.status,
@@ -210,67 +269,56 @@ export function fromRelease(release: Release): CatalogueData {
   };
 }
 
-/** A lane's name: a system, a team or party, the channel's entry system, or the ordering channel. */
-export function laneName(data: Catalogue, lane: string): string {
-  if (lane === "channel") return "Ordering channel";
-  if (lane.startsWith("team:")) return lane.slice(5);
-  return data.systems.find((system) => system.id === lane)?.name ?? lane;
-}
-
-/** One arrow of a journey's flow, as the service sends it. */
-type Edge = { from: string; to: string; kind: string; label?: string };
-
-/**
- * The flow the chosen channel sees, as the service derives it (journey_edges): every step
- * with no channel chosen, that channel's flow when its steps name it, and otherwise the
- * flow of the steps no channel is named for.
- */
-export function edgesFor(journey: ApiJourney, chosen: string | null): Edge[] {
-  const flow = chosen === null ? journey.edges : (journey.channel_edges.find((item) => item.channel_id === chosen)?.edges ?? journey.shared_edges);
-  return flow.map((edge) => ({ from: edge.from_activity, to: edge.to_activity, kind: edge.kind, ...(edge.label ? { label: edge.label } : {}) }));
+/** The edges the chosen channel sees (journey_edges): every step with no channel chosen, that channel's flow when its steps name it, and otherwise the shared flow. */
+export function edgesFor(journey: Journey, chosen: string | null): FlowEdge[] {
+  return chosen === null ? journey.flow.all : (journey.flow.byChannel[chosen] ?? journey.flow.shared);
 }
 
 /** The activities a channel sees: its own and the shared ones (none named means every channel). */
-function inView(activity: ApiActivity, channel: string | null): boolean {
+function inView(activity: Activity, channel: string | null): boolean {
   return !channel || activity.channels.length === 0 || activity.channels.includes(channel);
 }
 
-export function journeyView(data: CatalogueData, journeyId: string, channel: string | null): JourneyView | null {
-  const def = data.journeys.find((item) => item.id === journeyId);
-  const journey = (data.release.journeys ?? []).find((item) => item.id === journeyId);
-  if (!def || !journey) return null;
-  const chosen = channel && def.channels.includes(channel) ? channel : def.channels[0] ?? null;
-  const entry = data.channels.find((item) => item.id === chosen)?.systemId;
-  const sources = data.sources;
-  const evidence = (item: { confidence?: string | null; source?: string | null }) => parseEvidence(item.confidence, item.source, sources);
-  const all = new Map(journey.activities.map((item) => [item.number, item]));
-  const laneOf = (activity: ApiActivity | undefined): string => {
-    if (!activity) return "channel";
-    if (activity.performing_system_id) return activity.performing_system_id;
-    if (activity.channel_entry) return entry ?? "channel";
-    if (activity.performer) return `team:${activity.performer}`;
-    return "channel";
+/**
+ * A journey seen through a channel. A journey offered through channels is always seen through
+ * one: the one asked for, or else its first, and then `channelMissing` names the one asked for.
+ * A shared journey (no channels of its own) is the same through every channel.
+ */
+export function journeyView(data: Catalogue, journeyId: string, channel: string | null): JourneyView | null {
+  const journey = data.journeys.find((item) => item.id === journeyId);
+  if (!journey) return null;
+  const { id, offeringId, orderType, name, summary, channels, activities: every, calls } = journey;
+  const def = { id, offeringId, orderType, name, summary, channels };
+  const chosen = channel && def.channels.includes(channel) ? channel : (def.channels[0] ?? null);
+  const missing = channel && def.channels.length > 0 && !def.channels.includes(channel) ? channel : undefined;
+  const entry = data.channels.find((item) => item.id === chosen)?.systemId || undefined;
+  const all = new Map(every.map((item) => [item.number, item]));
+  const laneOf = (activity: Activity | undefined): Lane => {
+    const who: Performer = activity?.performer ?? { kind: "channel" };
+    if (who.kind !== "entry") return who;
+    return entry ? { kind: "system", systemId: entry } : { kind: "channel" };
   };
-  const activities = journey.activities.filter((item) => inView(item, chosen));
+  const activities = every.filter((item) => inView(item, chosen));
   const edges = edgesFor(journey, chosen);
   const out = (number: string) => edges.filter((edge) => edge.from === number);
   const into = (number: string) => edges.filter((edge) => edge.to === number);
+  const inferred: Evidence = { status: "inferred" };
 
   const steps: Step[] = [];
-  const nodes = new Map<string, Step>();
+  const nodes = new Map<string, ActivityStep>();
   for (const item of activities) {
     const terminal = out(item.number).length === 0;
-    const step: Step = {
+    const step: ActivityStep = {
       id: item.number,
-      kind: terminal && (item.track ?? "").toUpperCase() === "CORRECTION" ? "error-end" : "task",
+      kind: terminal && item.track === "error" ? "error-end" : "task",
       name: item.name,
       lane: laneOf(item),
-      role: role(item.role),
-      etom: item.etom ?? undefined,
-      detail: item.description ?? undefined,
-      ponr: item.point_of_no_return ?? undefined,
+      role: item.role,
+      etom: item.etom,
+      detail: item.detail,
+      ponr: item.ponr,
       next: [],
-      evidence: evidence(item),
+      evidence: item.evidence,
     };
     nodes.set(step.id, step);
     steps.push(step);
@@ -280,14 +328,15 @@ export function journeyView(data: CatalogueData, journeyId: string, channel: str
   for (const item of activities) {
     const rejoining = into(item.number).filter((edge) => edge.kind === "rejoin");
     if (rejoining.length > 1) {
-      const join: Step = { id: `${item.number}~join`, kind: "parallel", name: "All tracks done", lane: laneOf(item), next: [{ to: item.number }], evidence: { status: "inferred" } };
+      const join: Step = { id: `${item.number}~join`, kind: "parallel", gateway: "join", lane: laneOf(item), next: [{ to: item.number }], evidence: inferred };
       joins.set(item.number, join);
       steps.push(join);
     }
   }
-  const target = (to: string, kind: string) => (kind === "rejoin" && joins.has(to) ? joins.get(to)!.id : to);
+  const target = (to: string, kind: string) => (kind === "rejoin" ? (joins.get(to)?.id ?? to) : to);
   for (const item of activities) {
-    const step = nodes.get(item.number)!;
+    const step = nodes.get(item.number);
+    if (!step) continue;
     const leaving = out(item.number);
     const decisions = leaving.filter((edge) => edge.kind === "decision" && edge.label !== "rejoin");
     const parallels = leaving.filter((edge) => edge.kind === "parallel");
@@ -296,7 +345,7 @@ export function journeyView(data: CatalogueData, journeyId: string, channel: str
       const gateway: Step = {
         id: `${item.number}~decision`,
         kind: "exclusive",
-        name: item.output ?? "Decision",
+        ...(item.output !== undefined ? { question: item.output } : {}),
         lane: step.lane,
         next: decisions.map((edge) => ({ to: target(edge.to, edge.kind), label: edge.label })),
         evidence: step.evidence,
@@ -307,62 +356,47 @@ export function journeyView(data: CatalogueData, journeyId: string, channel: str
       rest.push(...decisions);
     }
     if (parallels.length) {
-      const split: Step = { id: `${item.number}~split`, kind: "parallel", name: "In parallel", lane: step.lane, next: parallels.map((edge) => ({ to: edge.to })), evidence: { status: "inferred" } };
+      const split: Step = { id: `${item.number}~split`, kind: "parallel", gateway: "split", lane: step.lane, next: parallels.map((edge) => ({ to: edge.to })), evidence: inferred };
       steps.push(split);
       step.next.push({ to: split.id });
     }
     for (const edge of rest) step.next.push({ to: target(edge.to, edge.kind), ...(edge.label && edge.label !== "rejoin" && edge.kind !== "rejoin" ? { label: edge.label } : {}), ...(edge.kind === "loop" ? { loop: true } : {}) });
   }
   // Events: the flow starts before the first step nothing leads to, and ends after each step that leads nowhere.
-  const first = activities.filter((item) => into(item.number).length === 0 && (!item.track || item.track.toLowerCase() === MAIN));
+  const first = activities.filter((item) => into(item.number).length === 0 && item.track === "main");
   if (first.length) {
-    steps.unshift({ id: "start", kind: "start", name: "Start", lane: laneOf(first[0]), next: first.map((item) => ({ to: item.number })), evidence: { status: "inferred" } });
+    steps.unshift({ id: "start", kind: "start", lane: laneOf(first[0]), next: first.map((item) => ({ to: item.number })), evidence: inferred });
   }
   for (const step of [...nodes.values()]) {
     if (step.kind === "task" && step.next.length === 0) {
-      const end: Step = { id: `${step.id}~end`, kind: "end", name: "End", lane: step.lane, next: [], evidence: { status: "inferred" } };
+      const end: Step = { id: `${step.id}~end`, kind: "end", lane: step.lane, next: [], evidence: inferred };
       steps.push(end);
       step.next.push({ to: end.id });
     }
   }
 
   const present = new Set(activities.map((item) => item.number));
-  const integrations: Integration[] = journey.integrations
-    .filter((call) => present.has(call.from_activity))
-    .map((call: ApiIntegration, index) => {
-      const fromActivity = all.get(call.from_activity);
-      const toActivity = all.get(call.to_activity);
-      const from = call.from_system_id ?? laneOf(fromActivity);
-      const to = call.to_system_id ?? laneOf(call.to_activity !== call.from_activity ? toActivity : fromActivity);
-      return {
-        id: `${call.from_activity}-${index}`,
-        step: call.from_activity,
-        from,
-        to,
-        ...(call.via_system_id ? { via: call.via_system_id } : {}),
-        operation: call.interface ?? call.interaction ?? "Hand-over",
-        purpose: call.purpose ?? "",
-        style: call.style ?? "Not stated",
-        mode: call.timing === "Sync" ? "sync" : call.timing === "Async" ? "async" : "not stated",
-        ...(call.payload ? { payload: call.payload } : {}),
-        ...(call.tmf_equivalent ? { tmf: call.tmf_equivalent } : {}),
-        evidence: evidence(call),
-      };
-    });
+  const integrations: Integration[] = calls
+    .filter((call) => present.has(call.fromActivity))
+    .map(({ fromActivity, toActivity, fromSystem, toSystem, ...call }) => ({
+      ...call,
+      step: fromActivity,
+      from: fromSystem !== undefined ? { kind: "system", systemId: fromSystem } : laneOf(all.get(fromActivity)),
+      to: toSystem !== undefined ? { kind: "system", systemId: toSystem } : laneOf(all.get(toActivity !== fromActivity ? toActivity : fromActivity)),
+    }));
 
-  const channelName = data.channels.find((item) => item.id === chosen)?.name;
   return {
     ...def,
-    name: channelName ? `${def.name} · ${channelName}` : def.name,
     channel: chosen,
+    ...(missing ? { channelMissing: missing } : {}),
+    ...(entry ? { entry } : {}),
     steps,
     integrations,
-    laneLabels: entry && channelName ? { [entry]: laneName(data, entry) } : {},
   };
 }
 
 /** The journeys of an offering for an order type and channel: one view per channel it serves. */
-export function journeyViews(data: CatalogueData, offeringId: string, orderType?: string | null, channel?: string | null): JourneyView[] {
+export function journeyViews(data: Catalogue, offeringId: string, orderType?: string | null, channel?: string | null): JourneyView[] {
   return data.journeys
     .filter((journey) => journey.offeringId === offeringId && (orderType ? journey.orderType === orderType : true))
     .flatMap((journey) => {

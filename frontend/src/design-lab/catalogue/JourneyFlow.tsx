@@ -6,15 +6,16 @@
 import { type CSSProperties, type KeyboardEvent, type ReactNode, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
-import { journeyView, laneName } from "../../architecture/adapter";
+import { journeyView } from "../../architecture/adapter";
 import { download, toBpmn, toCsv, toMermaid, toPlantUml } from "../../architecture/exports";
-import { GEOMETRY, layoutFlow } from "../../architecture/flowLayout";
-import { type Integration, type JourneyView, ROLE_WORDS, type Step } from "../../architecture/model";
+import { GEOMETRY, layoutFlow, type Placed } from "../../architecture/flowLayout";
+import { type ActivityStep, type Integration, type JourneyView, type Lane, laneKey, ROLE_WORDS, type Step, systemOf } from "../../architecture/model";
 import { AreaTabs, EvidenceTag, PathBar } from "./CatalogueLab";
 import { JourneyPicker } from "./JourneyPicker";
 import { journeyHref, LAB, useLabData } from "./labData";
 import { monogram, plural, useTitle } from "./labUtil";
 import { ProductHeader } from "./ProductPage";
+import { channelMissingText, laneKindName, laneName, MODE_WORDS, NOT_STATED, operationName, styleName, systemName, viewTitle } from "./words";
 
 const LAYER: Record<string, string> = {
   "market-sales": "market",
@@ -48,8 +49,16 @@ function wrap(text: string, width: number, lines: number): string[] {
   return out;
 }
 
+/** A call's end: a lane, or the integration layer it goes through (a system id). */
+type End = Lane | string;
+
+const endKey = (end: End) => (typeof end === "string" ? end : laneKey(end));
+
+const isActivity = (step: Step | undefined): step is ActivityStep => step?.kind === "task" || step?.kind === "error-end";
+
 function ExportMenu({ file, view }: { file: string; view: JourneyView }) {
   const data = useLabData();
+  const title = viewTitle(data, view);
   return (
     <details className="cl-menu">
       <summary className="cl-btn">Export</summary>
@@ -60,12 +69,12 @@ function ExportMenu({ file, view }: { file: string; view: JourneyView }) {
           </button>
         </li>
         <li>
-          <button type="button" onClick={() => download(`${file}.puml`, toPlantUml(data, view.name, view.integrations), "text/plain")}>
+          <button type="button" onClick={() => download(`${file}.puml`, toPlantUml(data, title, view.integrations), "text/plain")}>
             Download PlantUML <small>sequence diagram</small>
           </button>
         </li>
         <li>
-          <button type="button" onClick={() => download(`${file}.mmd`, toMermaid(data, view.name, view.integrations), "text/plain")}>
+          <button type="button" onClick={() => download(`${file}.mmd`, toMermaid(data, title, view.integrations), "text/plain")}>
             Download Mermaid <small>sequence diagram</small>
           </button>
         </li>
@@ -93,34 +102,48 @@ function IntegrationRegister({ view }: { view: JourneyView }) {
   const [mode, setMode] = useState<"sequence" | "table">("sequence");
   const [system, setSystem] = useState<string | null>(null);
   const [picked, setPicked] = useState(0);
-  const name = (id?: string) => (id ? laneName(data, id) : "");
-  const tone = (id: string) => data.systems.find((item) => item.id === id)?.domain;
+  const name = (end?: End) => (end === undefined ? "" : typeof end === "string" ? systemName(data, end) : laneName(data, end));
+  const tone = (end: End) => {
+    const id = typeof end === "string" ? end : systemOf(end);
+    return data.systems.find((item) => item.id === id)?.domain;
+  };
   const step = (id: string) => view.steps.find((item) => item.id === id);
+  const activityName = (id: string) => {
+    const found = step(id);
+    return isActivity(found) ? found.name : "";
+  };
   const calls = view.integrations;
-  // The lifelines, in the order the journey first reaches them.
+  const ends = (call: Integration): End[] => [call.from, ...(call.via ? [call.via] : []), call.to];
+  // The lifelines, in the order the journey first reaches them, by key.
   const lanes = useMemo(() => {
-    const order: string[] = [];
-    for (const call of view.integrations) for (const id of [call.from, call.via, call.to]) if (id && !order.includes(id)) order.push(id);
+    const order = new Map<string, End>();
+    for (const call of view.integrations) for (const end of ends(call)) if (!order.has(endKey(end))) order.set(endKey(end), end);
     return order;
   }, [view]);
+  const keys = [...lanes.keys()];
   const involved = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const call of view.integrations) for (const id of new Set([call.from, call.to, call.via])) if (id) counts.set(id, (counts.get(id) ?? 0) + 1);
-    return [...counts.entries()].sort((a, b) => b[1] - a[1]);
+    const counts = new Map<string, { end: End; count: number }>();
+    for (const call of view.integrations) {
+      // Each system or party once per call, the caller first.
+      const once = new Map<string, End>();
+      for (const end of [call.from, call.to, ...(call.via ? [call.via] : [])]) if (!once.has(endKey(end))) once.set(endKey(end), end);
+      for (const [key, end] of once) counts.set(key, { end, count: (counts.get(key)?.count ?? 0) + 1 });
+    }
+    return [...counts.entries()].sort((a, b) => b[1].count - a[1].count);
   }, [view]);
   const styles = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const call of view.integrations) counts.set(call.style || "Not stated", (counts.get(call.style || "Not stated") ?? 0) + 1);
-    const stated = [...counts.entries()].filter(([style]) => style !== "Not stated").sort((a, b) => b[1] - a[1]);
-    const unstated = counts.get("Not stated");
-    return [...stated.map(([style, count], index) => ({ style, count, shade: `s${Math.min(index + 1, 4)}` })), ...(unstated ? [{ style: "Not stated", count: unstated, shade: "none" }] : [])];
+    for (const call of view.integrations) counts.set(styleName(call) || NOT_STATED, (counts.get(styleName(call) || NOT_STATED) ?? 0) + 1);
+    const stated = [...counts.entries()].filter(([style]) => style !== NOT_STATED).sort((a, b) => b[1] - a[1]);
+    const unstated = counts.get(NOT_STATED);
+    return [...stated.map(([style, count], index) => ({ style, count, shade: `s${Math.min(index + 1, 4)}` })), ...(unstated ? [{ style: NOT_STATED, count: unstated, shade: "none" }] : [])];
   }, [view]);
-  const touches = (call: Integration) => !system || [call.from, call.to, call.via].includes(system);
+  const touches = (call: Integration) => !system || ends(call).some((end) => endKey(end) === system);
   const call = calls[Math.min(picked, calls.length - 1)];
-  const center = (id?: string) => (id ? ((lanes.indexOf(id) + 0.5) / lanes.length) * 100 : 0);
-  const tile = (id: string) => (
-    <span className={`am-mono cl-systile${tone(id) ? ` tone--${tone(id)}` : " is-party"} am-mono--${monogram(name(id)).length}`} aria-hidden="true" translate="no">
-      {monogram(name(id))}
+  const center = (end?: End) => (end === undefined ? 0 : ((keys.indexOf(endKey(end)) + 0.5) / keys.length) * 100);
+  const tile = (end: End) => (
+    <span className={`am-mono cl-systile${tone(end) ? ` tone--${tone(end)}` : " is-party"} am-mono--${monogram(name(end)).length}`} aria-hidden="true" translate="no">
+      {monogram(name(end))}
     </span>
   );
 
@@ -153,9 +176,9 @@ function IntegrationRegister({ view }: { view: JourneyView }) {
             <span>System</span>
             <select className="cl-field" value={system ?? ""} onChange={(event) => setSystem(event.target.value || null)}>
               <option value="">Every system</option>
-              {involved.map(([id, count]) => (
-                <option key={id} value={id}>
-                  {name(id)} ({count})
+              {involved.map(([key, { end, count }]) => (
+                <option key={key} value={key}>
+                  {name(end)} ({count})
                 </option>
               ))}
             </select>
@@ -173,14 +196,14 @@ function IntegrationRegister({ view }: { view: JourneyView }) {
 
       {mode === "sequence" ? (
         <div className="ir-seqwrap">
-          <div className="ir-seq" style={{ "--ir-lanes": lanes.length } as CSSProperties}>
+          <div className="ir-seq" style={{ "--ir-lanes": keys.length } as CSSProperties}>
             <div className="ir-heads" aria-hidden="true">
               <span className="ir-headgap" />
               <span className="ir-lanes">
-                {lanes.map((id) => (
-                  <button key={id} type="button" tabIndex={-1} className={`ir-head${system === id ? " is-on" : ""}`} onClick={() => setSystem(system === id ? null : id)} title={name(id)}>
-                    {tile(id)}
-                    <span>{name(id)}</span>
+                {[...lanes].map(([key, end]) => (
+                  <button key={key} type="button" tabIndex={-1} className={`ir-head${system === key ? " is-on" : ""}`} onClick={() => setSystem(system === key ? null : key)} title={name(end)}>
+                    {tile(end)}
+                    <span>{name(end)}</span>
                   </button>
                 ))}
               </span>
@@ -189,14 +212,14 @@ function IntegrationRegister({ view }: { view: JourneyView }) {
               {calls.map((item, index) => {
                 const a = center(item.from);
                 const b = center(item.to);
-                const self = item.from === item.to;
-                const label = `${index + 1}. ${name(item.from)} to ${name(item.to)}${item.via ? ` via ${name(item.via)}` : ""}: ${item.operation || "interface not stated"}`;
+                const self = laneKey(item.from) === laneKey(item.to);
+                const label = `${index + 1}. ${name(item.from)} to ${name(item.to)}${item.via ? ` via ${name(item.via)}` : ""}: ${operationName(item) || "interface not stated"}`;
                 return (
                   <li key={item.id} className={touches(item) ? undefined : "is-quiet"}>
                     <button type="button" className="ir-call" aria-pressed={index === picked} aria-label={label} onClick={() => setPicked(index)}>
                       <span className="ir-num">{index + 1}</span>
                       <span className="ir-op" translate="no">
-                        {item.operation || "Not stated"}
+                        {operationName(item) || NOT_STATED}
                       </span>
                       <span className="ir-lanes ir-track" aria-hidden="true">
                         {self ? (
@@ -228,13 +251,13 @@ function IntegrationRegister({ view }: { view: JourneyView }) {
               <dl className="ir-facts">
                 <div>
                   <dt>Interface</dt>
-                  <dd translate="no">{call.operation || <span className="gap">Not stated</span>}</dd>
+                  <dd translate="no">{operationName(call) || <span className="gap">{NOT_STATED}</span>}</dd>
                 </div>
                 <div>
                   <dt>Style</dt>
                   <dd>
-                    {call.style}
-                    {call.mode !== "not stated" ? ` · ${call.mode}` : ""}
+                    {styleName(call)}
+                    {call.mode !== "not-stated" ? ` · ${MODE_WORDS[call.mode]}` : ""}
                   </dd>
                 </div>
                 <div>
@@ -243,7 +266,7 @@ function IntegrationRegister({ view }: { view: JourneyView }) {
                 </div>
                 <div>
                   <dt>Step</dt>
-                  <dd>{step(call.step)?.name ?? ""}</dd>
+                  <dd>{activityName(call.step)}</dd>
                 </div>
               </dl>
               <p className="ir-purpose">{call.purpose}</p>
@@ -287,14 +310,14 @@ function IntegrationRegister({ view }: { view: JourneyView }) {
                       {name(item.from)} → {name(item.to)}
                       {item.via && <small> via {name(item.via)}</small>}
                     </th>
-                    <td translate="no">{item.operation || <span className="gap">Not stated</span>}</td>
+                    <td translate="no">{operationName(item) || <span className="gap">{NOT_STATED}</span>}</td>
                     <td>
-                      {item.style}
-                      {item.mode !== "not stated" ? <small> · {item.mode}</small> : null}
+                      {styleName(item)}
+                      {item.mode !== "not-stated" ? <small> · {MODE_WORDS[item.mode]}</small> : null}
                     </td>
                     <td translate="no">{item.tmf ?? <span className="gap">None</span>}</td>
                     <td>{item.purpose}</td>
-                    <td>{step(item.step)?.name ?? ""}</td>
+                    <td>{activityName(item.step)}</td>
                     <td>
                       <EvidenceTag evidence={item.evidence} />
                     </td>
@@ -315,11 +338,15 @@ export function JourneyFlow() {
   const [params, setParams] = useSearchParams();
   const def = data.journeys.find((journey) => journey.id === journeyId);
   const wanted = params.get("channel");
-  const channel = def && wanted && def.channels.includes(wanted) ? wanted : (def?.channels[0] ?? null);
   const tab = params.get("view") === "integrations" ? "integrations" : "flow";
-  const view = useMemo(() => (def ? journeyView(data, def.id, channel) : null), [data, def, channel]);
+  // The channel asked for, or the journey's first when it isn't offered through that one (the view says so).
+  const view = useMemo(() => (def ? journeyView(data, def.id, wanted) : null), [data, def, wanted]);
+  const channel = view?.channel ?? null;
   const layout = useMemo(() => (view ? layoutFlow(view) : null), [view]);
-  const tasks = useMemo(() => (layout ? [...layout.placed.values()].filter((item) => item.step.kind === "task").sort((a, b) => a.column - b.column || a.lane - b.lane) : []), [layout]);
+  const tasks = useMemo(
+    () => (layout ? [...layout.placed.values()].filter((item): item is Placed & { step: ActivityStep } => item.step.kind === "task").sort((a, b) => a.column - b.column || a.lane - b.lane) : []),
+    [layout],
+  );
   const callsByStep = useMemo(() => {
     const counts = new Map<string, number>();
     for (const call of view?.integrations ?? []) counts.set(call.step, (counts.get(call.step) ?? 0) + 1);
@@ -359,14 +386,14 @@ export function JourneyFlow() {
   }
   const offering = data.offerings.find((item) => item.id === def.offeringId);
   const number = new Map(tasks.map((item, index) => [item.step.id, index + 1]));
-  const step: Step | undefined = view.steps.find((item) => item.id === selected);
+  const step = tasks.find((item) => item.step.id === selected)?.step;
   const stepCalls = step ? view.integrations.filter((call) => call.step === step.id) : [];
-  const laneTitle = (lane: string) => view.laneLabels[lane] ?? laneName(data, lane);
-  const laneDomain = (lane: string) => {
-    const system = data.systems.find((item) => item.id === lane);
+  const laneTitle = (lane: Lane) => laneName(data, lane);
+  const laneDomain = (lane: Lane) => {
+    const system = data.systems.find((item) => item.id === systemOf(lane));
     return system ? data.domains.find((domain) => domain.id === system.domain) : undefined;
   };
-  const tint = (lane: string) => {
+  const tint = (lane: Lane) => {
     const domain = laneDomain(lane);
     return domain ? `var(--cl-${LAYER[domain.id] ?? "enterprise"}-lane)` : "var(--cl-sand)";
   };
@@ -433,6 +460,11 @@ export function JourneyFlow() {
           </div>
         )}
       </div>
+      {view.channelMissing && (
+        <p className="cl-note cl-channel-missing" role="status">
+          {channelMissingText(def.name, channelName(view.channelMissing), channelName(channel ?? ""))}
+        </p>
+      )}
       <header className="cl-jhead">
         <div>
           <Heading className="cl-jtitle">
@@ -490,9 +522,9 @@ export function JourneyFlow() {
                 {layout.lanes.map((lane) => {
                   const domain = laneDomain(lane);
                   return (
-                    <div key={lane} className="cl-lane-name" style={{ height: LANE * scale, background: tint(lane) }}>
+                    <div key={laneKey(lane)} className="cl-lane-name" style={{ height: LANE * scale, background: tint(lane) }}>
                       <strong translate="no">{laneTitle(lane)}</strong>
-                      <span>{domain ? domain.name : lane.startsWith("team:") ? "Team or party" : "Channel"}</span>
+                      <span>{domain ? domain.name : laneKindName(lane)}</span>
                     </div>
                   );
                 })}
@@ -504,7 +536,7 @@ export function JourneyFlow() {
                   </marker>
                 </defs>
                 {layout.lanes.map((lane, index) => (
-                  <g key={lane} aria-hidden="true">
+                  <g key={laneKey(lane)} aria-hidden="true">
                     <rect x={0} y={index * LANE} width={W} height={LANE} fill={index % 2 ? "var(--cl-paper)" : "var(--cl-page)"} />
                     <line x1={0} x2={W} y1={(index + 1) * LANE} y2={(index + 1) * LANE} stroke="var(--cl-hairline)" />
                   </g>
@@ -548,7 +580,7 @@ export function JourneyFlow() {
                   const x = rawX - shift;
                   const h = item.kind === "task" ? TASK_H : rawHeight;
                   const y = laneY(rawY + rawHeight / 2) - h / 2;
-                  if (item.kind === "task") {
+                  if (isActivity(item) && item.kind === "task") {
                     const calls = callsByStep.get(item.id) ?? 0;
                     const on = item.id === selected;
                     return (
@@ -631,10 +663,10 @@ export function JourneyFlow() {
                       <li key={call.id}>
                         <strong translate="no">
                           {laneName(data, call.from)} → {laneName(data, call.to)}
-                          {call.via ? ` (via ${laneName(data, call.via)})` : ""}
+                          {call.via ? ` (via ${systemName(data, call.via)})` : ""}
                         </strong>
                         <p>{call.purpose}</p>
-                        <span translate="no">{[call.operation, call.style, call.mode !== "not stated" ? call.mode : "", call.tmf].filter(Boolean).join(" · ")}</span>
+                        <span translate="no">{[operationName(call), styleName(call), call.mode !== "not-stated" ? MODE_WORDS[call.mode] : "", call.tmf].filter(Boolean).join(" · ")}</span>
                       </li>
                     ))}
                   </ul>

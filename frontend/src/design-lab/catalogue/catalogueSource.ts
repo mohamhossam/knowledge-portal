@@ -11,7 +11,8 @@ import { createContext, useContext, useMemo } from "react";
 
 import { api } from "../../api/client";
 import { catalogueSourceSetting } from "../../app/features";
-import { type CatalogueData, fromRelease } from "../../architecture/adapter";
+import { fromRelease } from "../../architecture/adapter";
+import type { Catalogue } from "../../architecture/model";
 import { loadSampleRelease } from "../../architecture/sample";
 
 export type CatalogueSource = "api" | "sample";
@@ -32,7 +33,7 @@ export type LabCatalogue =
   | { state: "loading" }
   | { state: "error"; error: unknown; retry: () => void }
   | { state: "empty" }
-  | { state: "ready"; data: CatalogueData; source: CatalogueSource };
+  | { state: "ready"; data: Catalogue; source: CatalogueSource };
 
 export function useLabCatalogue(source: CatalogueSource): LabCatalogue {
   const live = useQuery({ queryKey: ["architecture", "active"], queryFn: api.activeRelease, enabled: source === "api" });

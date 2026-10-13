@@ -239,6 +239,7 @@
 .cl-sub { font-size: 0.8125rem; color: var(--cl-ink-2); }
 .cl-body { color: var(--cl-ink-2); line-height: 1.5; }
 .cl-note { padding: 8px 12px; background: #f6efd9; border-radius: 3px; color: var(--cl-ink); font-size: 0.8125rem; }
+.cl-channel-missing { margin: 0 0 8px; }
 .cl-close { border: 1px solid var(--cl-rule); background: var(--cl-page); border-radius: 3px; min-height: 28px; padding: 0 10px; cursor: pointer; font-weight: 600; font-size: 0.8125rem; }
 .cl-close:hover { border-color: var(--cl-maroon); }
 .cl-stats { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--cl-hairline); border-radius: 4px; margin-top: 4px; }

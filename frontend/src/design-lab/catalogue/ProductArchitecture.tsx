@@ -11,7 +11,7 @@ import { Link, useSearchParams } from "react-router-dom";
 
 import { journeyView } from "../../architecture/adapter";
 import { impactOf } from "../../architecture/impact";
-import { ROLE_WORDS } from "../../architecture/model";
+import { type Integration, type Lane, ROLE_WORDS, systemOf } from "../../architecture/model";
 import { ArchitectureMap, type Foot } from "./ArchitectureMap";
 import { EvidenceTag } from "./CatalogueLab";
 import { JourneyPicker } from "./JourneyPicker";
@@ -19,6 +19,10 @@ import { journeyHref, useLabData, useOffering } from "./labData";
 import { plural, useTitle } from "./labUtil";
 import { allViews, links } from "./posterModel";
 import { Missing, ProductHeader } from "./ProductPage";
+import { channelMissingText, laneName, MODE_WORDS, NOT_STATED, operationName, styleName, systemName } from "./words";
+
+/** The systems a call reaches: its ends that are systems, and the integration layer it goes through. */
+const systemsOf = (call: Integration) => [systemOf(call.from), systemOf(call.to), call.via];
 
 export function ProductArchitecture() {
   const data = useLabData();
@@ -39,8 +43,8 @@ export function ProductArchitecture() {
       reach.set(id, (reach.get(id) ?? new Set()).add(journey));
     };
     for (const view of views) {
-      for (const step of view.steps) if (step.kind === "task") add(step.lane, view.id);
-      for (const call of view.integrations) for (const id of [call.from, call.to, call.via]) add(id, view.id);
+      for (const step of view.steps) if (step.kind === "task") add(systemOf(step.lane), view.id);
+      for (const call of view.integrations) for (const id of systemsOf(call)) add(id, view.id);
     }
     const core = Math.max(2, Math.ceil(journeys.length / 2));
     const out = new Map<string, Foot>();
@@ -57,8 +61,9 @@ export function ProductArchitecture() {
   // One journey: the journey, its channel, its calls and the current one.
   const def = journeys.find((journey) => journey.id === params.get("journey")) ?? journeys[0];
   const wanted = params.get("channel");
-  const channel = def && wanted && def.channels.includes(wanted) ? wanted : (def?.channels[0] ?? null);
-  const view = useMemo(() => (def ? journeyView(data, def.id, channel) : null), [data, def, channel]);
+  // The channel asked for, or the journey's first when it isn't offered through that one (the view says so).
+  const view = useMemo(() => (def ? journeyView(data, def.id, wanted) : null), [data, def, wanted]);
+  const channel = view?.channel ?? null;
   const calls = useMemo(() => view?.integrations ?? [], [view]);
   const scopeKey = `${view?.id ?? ""}:${view?.channel ?? ""}`;
   const [position, setPosition] = useState({ key: scopeKey, index: 0 });
@@ -66,11 +71,14 @@ export function ProductArchitecture() {
   const go = (index: number) => setPosition({ key: scopeKey, index: Math.max(0, Math.min(calls.length - 1, index)) });
   const journeyLinks = useMemo(() => links(data, calls), [data, calls]);
   const roles = useMemo(() => (offering && def ? impactOf(data, { offeringId: offering.id, orderType: def.orderType, channel }) : null), [data, offering, def, channel]);
-  const entry = Object.keys(view?.laneLabels ?? {})[0];
+  const entry = view?.entry;
   const lit = useMemo(() => {
     const ids = new Set<string>();
-    for (const call of calls) for (const id of [call.from, call.to, call.via]) if (id && systemById.has(id)) ids.add(id);
-    for (const step of view?.steps ?? []) if (systemById.has(step.lane)) ids.add(step.lane);
+    for (const call of calls) for (const id of systemsOf(call)) if (id && systemById.has(id)) ids.add(id);
+    for (const step of view?.steps ?? []) {
+      const id = systemOf(step.lane);
+      if (id && systemById.has(id)) ids.add(id);
+    }
     if (entry && systemById.has(entry)) ids.add(entry);
     return ids;
   }, [calls, view, systemById, entry]);
@@ -110,7 +118,7 @@ export function ProductArchitecture() {
     }
     setParams(next, { replace: true });
   };
-  const name = (id?: string) => (id ? (systemById.get(id)?.name ?? (id.startsWith("team:") ? id.slice(5) : id === "channel" ? "Ordering channel" : id)) : "");
+  const name = (end?: Lane | string) => (end === undefined ? "" : typeof end === "string" ? systemName(data, end) : laneName(data, end));
   const channelName = (id: string) => data.channels.find((item) => item.id === id)?.name ?? id;
   const layers = data.domains
     .map((domain) => {
@@ -123,7 +131,7 @@ export function ProductArchitecture() {
   const coreSystems = [...footprint.entries()].filter(([, foot]) => foot.tier === "core").sort((a, b) => b[1].journeys - a[1].journeys);
   const pickedSystem = picked ? systemById.get(picked) : undefined;
   const pickedFoot = picked ? footprint.get(picked) : undefined;
-  const pickedJourneys = picked ? journeys.filter((journey) => views.some((item) => item.id === journey.id && (item.steps.some((step) => step.lane === picked) || item.integrations.some((call) => [call.from, call.to, call.via].includes(picked))))) : [];
+  const pickedJourneys = picked ? journeys.filter((journey) => views.some((item) => item.id === journey.id && (item.steps.some((step) => systemOf(step.lane) === picked) || item.integrations.some((call) => systemsOf(call).includes(picked))))) : [];
 
   const switcher = (
     <div className="cl-seg" role="group" aria-label="What to show">
@@ -281,10 +289,10 @@ export function ProductArchitecture() {
 
   const call = calls[current];
   const step = call ? view.steps.find((item) => item.id === call.step) : undefined;
-  const callRoles = (id: string) => roles?.systems.get(id)?.roles ?? [];
+  const callRoles = (lane: Lane) => roles?.systems.get(systemOf(lane) ?? "")?.roles ?? [];
   const pick = (id: string | null) => {
     if (!id) return;
-    const index = calls.findIndex((item) => [item.from, item.to, item.via].includes(id));
+    const index = calls.findIndex((item) => systemsOf(item).includes(id));
     if (index >= 0) go(index);
   };
 
@@ -325,6 +333,11 @@ export function ProductArchitecture() {
           </button>
         </div>
       </div>
+      {view.channelMissing && (
+        <p className="cl-note cl-channel-missing" role="status">
+          {channelMissingText(def.name, channelName(view.channelMissing), channelName(channel ?? ""))}
+        </p>
+      )}
       <p className="cl-hint">
         {plural(lit.size, "system")} of {data.systems.length} in {def.name}
         {channel ? ` through ${channelName(channel)}` : ""} · {plural(calls.length, "call")}. Click a system to jump to its first call; ← and → step.
@@ -342,19 +355,19 @@ export function ProductArchitecture() {
               </h2>
               <p className="cl-sub">
                 {call.via ? `Through ${name(call.via)}. ` : ""}
-                {step ? `During “${step.name}”.` : ""}
+                {step && (step.kind === "task" || step.kind === "error-end") ? `During “${step.name}”.` : ""}
               </p>
               <p className="cl-body">{call.purpose}</p>
               <dl className="cl-pairs">
                 <div>
                   <dt>Interface</dt>
-                  <dd translate="no">{call.operation || "Not stated"}</dd>
+                  <dd translate="no">{operationName(call) || NOT_STATED}</dd>
                 </div>
                 <div>
                   <dt>Style</dt>
                   <dd>
-                    {call.style}
-                    {call.mode !== "not stated" ? ` · ${call.mode}` : ""}
+                    {styleName(call)}
+                    {call.mode !== "not-stated" ? ` · ${MODE_WORDS[call.mode]}` : ""}
                   </dd>
                 </div>
                 <div>
@@ -387,7 +400,7 @@ export function ProductArchitecture() {
                   <strong>
                     <span translate="no">{name(item.from)}</span> → <span translate="no">{name(item.to)}</span>
                   </strong>
-                  <span translate="no">{item.operation || item.purpose}</span>
+                  <span translate="no">{operationName(item) || item.purpose}</span>
                 </button>
               </li>
             ))}

@@ -7,12 +7,12 @@
  * components of that kind it delivers, with how many, and names them (and
  * their product, when more than one product is catalogued).
  */
-import type { CatalogueData } from "../../architecture/adapter";
+import type { Catalogue } from "../../architecture/model";
 import { PART_KINDS, type Part, systemParts } from "./capabilities";
 import { monogram, plural } from "./labUtil";
 import { domainRank } from "./posterModel";
 
-export function CapabilityMatrix({ data, selected, onSelect }: { data: CatalogueData; selected: string | null; onSelect: (id: string | null) => void }) {
+export function CapabilityMatrix({ data, selected, onSelect }: { data: Catalogue; selected: string | null; onSelect: (id: string | null) => void }) {
   const parts = systemParts(data);
   const kinds = PART_KINDS.filter((kind) => [...parts.values()].some((byKind) => byKind.has(kind.id)));
   const systems = data.systems.filter((system) => parts.has(system.id)).sort((a, b) => domainRank(a.domain) - domainRank(b.domain) || (parts.get(b.id)?.size ?? 0) - (parts.get(a.id)?.size ?? 0));
