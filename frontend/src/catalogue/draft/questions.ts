@@ -4,7 +4,7 @@
  * does. Pure, shared by the focus page and To do (which shows the first).
  */
 import type { PossibleMatch, Suggestion, SuggestionContent } from "../../api/client";
-import { type Lexicon, draftedForRequirement, inDependencyOrder, standaloneSentence, suggestionState, waitsFor } from "../suggestions";
+import { type Lexicon, draftedForRequirement, inDependencyOrder, standaloneSentence, suggestionState, systemsFirst, waitsFor } from "../suggestions";
 import { NEW, linked } from "./decide";
 
 export type DecideQuestion = {
@@ -14,6 +14,11 @@ export type DecideQuestion = {
   sentence: string;
   /** What it still waits for once accepted, as a sentence ("Waits for the system RTF"), if anything. */
   waits?: string;
+  /**
+   * The missing systems accepting it adds first: suggested ones no one need decide, and by id
+   * those nothing suggests. The service refuses a link to a system the draft lacks.
+   */
+  first?: { accept: Suggestion[]; add: { id: string; name: string }[] };
   /** The question, in a line. */
   prompt: string;
   /** For a name that may be a system the draft has: the role it plays, and the candidates. */
@@ -27,7 +32,14 @@ export function decideQuestions(suggestions: Suggestion[], words: Lexicon): Deci
   const open = suggestions.filter((item) => item.status === "proposed" && suggestionState(item) === "decide");
   return inDependencyOrder(open).map((suggestion) => {
     const sentence = standaloneSentence(suggestion, words);
-    const waits = suggestion.match.startsWith("needs_") ? waitsFor(suggestion, words) : undefined;
+    const needed = systemsFirst(suggestion, suggestions);
+    // A system suggestion that is a question of its own is answered there, not taken for granted.
+    const accept = needed.suggested.filter((item) => suggestionState(item) !== "decide");
+    const add = needed.unsuggested.map((id) => ({ id, name: words.system(id) }));
+    const first = accept.length || add.length ? { accept, add } : undefined;
+    // With every system it waits for added first, a link or a part waits for nothing more.
+    const settled = first && accept.length === needed.suggested.length && !["product", "journey", "channel"].includes(suggestion.content.kind);
+    const waits = suggestion.match.startsWith("needs_") && !settled ? waitsFor(suggestion, words) : undefined;
     const role = suggestion.possible_matches[0]?.role;
     if (role) {
       const candidates = suggestion.possible_matches.filter((item) => item.role === role);
@@ -36,14 +48,14 @@ export function decideQuestions(suggestions: Suggestion[], words: Lexicon): Deci
       const prompt = suggestion.content.kind === "system"
         ? `Is “${writtenAs}” a system the draft already has?`
         : `Which system does “${writtenAs}” mean here?`;
-      return { id: suggestion.id, suggestion, sentence, waits, prompt, match: { role, writtenAs, candidates } };
+      return { id: suggestion.id, suggestion, sentence, waits, first, prompt, match: { role, writtenAs, candidates } };
     }
     const prompt = suggestion.basis === "inferred"
       ? `Accept a link the reading inferred? ${sentence}`
       : draftedForRequirement(suggestion) && suggestion.match !== "updates_existing"
         ? `Accept what was drafted for a new offering? ${sentence}`
         : `Replace what the draft has? ${sentence}`;
-    return { id: suggestion.id, suggestion, sentence, waits, prompt };
+    return { id: suggestion.id, suggestion, sentence, waits, first, prompt };
   });
 }
 
@@ -80,14 +92,26 @@ export function decideChoices(question: DecideQuestion): { value: string; label:
       reject,
     ];
   }
+  const systems = firstSystems(question);
   return [
     {
       value: "accept",
-      label: inferred ? "Accept the link" : suggestion.match === "updates_existing" ? "Replace what the draft has" : "Accept it as drafted",
-      // What accepting adds, and what it then still waits for before it reaches the draft.
-      consequence: `Adds: ${question.sentence}.${question.waits ? ` ${question.waits.replace(/^Waits/, "Then it waits")}, and reaches the draft with it.` : ""}`,
+      label: `${inferred ? "Accept the link" : suggestion.match === "updates_existing" ? "Replace what the draft has" : "Accept it as drafted"}${systems ? `, adding ${systems}` : ""}`,
+      // What accepting adds, the systems it needs first included, and what it then still waits for.
+      consequence: `${systems ? `Adds ${systems} first, then: ` : "Adds: "}${question.sentence}.${question.waits ? ` ${question.waits.replace(/^Waits/, "Then it waits")}, and reaches the draft with it.` : ""}`,
       answer: { choice: "accept", accept: true, content: null },
     },
     reject,
   ];
+}
+
+/** The systems an accepted answer adds first, in a phrase: "the system Generic AP PO". */
+export function firstSystems(question: DecideQuestion): string {
+  const names = [
+    ...(question.first?.accept ?? []).map((item) => item.content.name || item.content.system_id),
+    ...(question.first?.add ?? []).map((item) => item.name),
+  ];
+  if (!names.length) return "";
+  const joined = names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : names[0];
+  return `the system${names.length > 1 ? "s" : ""} ${joined}`;
 }

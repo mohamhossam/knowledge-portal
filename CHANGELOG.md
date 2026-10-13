@@ -20,6 +20,10 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   started, roughly how long is left, and when the reader has stopped responding. The step
   header says the same in a few words. Catalogue jobs now report `queued_at`, `started_at`,
   `stage`, `progress_done` and `progress_total` (additive; migration `202610120900`).
+- A web image can carry the catalogue redesign lab: built with `VITE_CATALOGUE_LAB=true`
+  (`deploy/web/Dockerfile`), the lab and its "Catalogue" link are in the production build, as
+  under the dev server. Published images leave it out, as before (the argument defaults to
+  `false`).
 
 ### Fixed
 
@@ -145,6 +149,10 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   placeholder ("Unknown", "N/A") or an offering's name is not suggested; an inferred link
   suggests nothing (`document-reading-v7`).
 - An item about no system is left out as incomplete, not given a system called "item".
+- Accepting a link in Decide's focus mode adds the systems it needs first, and says so
+  ("Accept the link, adding the system Generic AP PO"): a system nothing suggests is suggested
+  and accepted, and one already suggested is accepted, before the link. Promised to "wait" for a
+  system nothing added, the service refused every such answer and the same questions came back.
 - Workflow titles are compared whatever separates their parts ("—", "|", ":" or " - "), so a
   model's "WF-3A Order fulfillment | ..." merges with the reader's "WF-3A Order fulfillment —".
 

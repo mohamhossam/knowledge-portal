@@ -102,7 +102,7 @@ export function Shell() {
     { href: "/", label: "To do", current: path === "/", count: needsYou, countLabel: "need you", icon: <Inbox /> },
     { href: "/library", label: "Library", current: under("/library"), icon: <BookOpen />, group: "Look up" },
     // In development the catalogue opens on its redesign (a development-only lab, like its route); production keeps /architecture.
-    { href: import.meta.env.DEV ? "/design-lab/catalogue" : "/architecture", label: "Catalogue", current: under("/architecture") || under("/design-lab/catalogue"), icon: <Layers />, group: "Look up" },
+    { href: import.meta.env.DEV || import.meta.env.VITE_CATALOGUE_LAB === "true" ? "/design-lab/catalogue" : "/architecture", label: "Catalogue", current: under("/architecture") || under("/design-lab/catalogue"), icon: <Layers />, group: "Look up" },
     { href: "/squads", label: "Ownership", current: under("/squads"), icon: <UsersRound />, group: "Look up" },
     { href: "/requirement-knowledge", label: "Requirements", current: under("/requirement-knowledge"), icon: <FileText />, group: "Look up" },
   ];
