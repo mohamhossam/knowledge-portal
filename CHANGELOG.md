@@ -7,6 +7,16 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- The catalogue says three things it left to prose and naming before, additively in both
+  contracts. An order type's `delivery_drop` ("P2 / P3"), set in the catalogue file
+  (YAML, JSON, or the workbook's new `OrderTypes` column); `catalogues/smb-architecture.yaml`
+  moves its 19 "Delivered in drop …" sentences there. A landscape domain's `cross_cutting`
+  (TAM's enterprise domain and the integration layer), in the file and the workbook's
+  `LandscapeDomains` sheet, and named in a version diff. Each activity's `main_track`,
+  derived from its track on the way out and ignored on the way in. The catalogue lab reads
+  them, and reads the old prose only for a version saved before them. The internal contract
+  gains `delivery_drop` and `main_track`: requirement-portal should review it.
+
 - Each journey's flow per channel, read-only beside `edges`: `channel_edges` (for each
   channel its steps name, the flow that channel sees: its own steps and the shared ones) and
   `shared_edges` (what a channel no step names sees). A rule counts in a view only when both
@@ -68,6 +78,12 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 - The lab draws the flow the service derives (`channel_edges`, `shared_edges`, `edges`)
   instead of its own copy of the rules: the two matched in all 46 views of the Business Pro
   Plus catalogue (20 journeys, each channel), so the copy is gone.
+- A journey's flow in the catalogue lab no longer ends in a BPMN error end event, which only
+  a subprocess's boundary event can catch and these flows have none. The last step of a
+  side track (New activation's "Order returned for correction") is drawn as a step, like a
+  rejected order's, and is followed by a plain end; in the flow it is now a numbered step
+  with its own details, in the BPMN export a task, and in the impact lens one of its
+  system's steps.
 - A journey opened in the catalogue lab through a channel it isn't offered through (an old
   link, or a channel that no longer sells its order type) says so: "… isn't offered through
   “X”; it is shown through Y instead.", on the journey's flow and on the product's

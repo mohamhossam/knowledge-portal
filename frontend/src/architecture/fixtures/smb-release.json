@@ -1744,196 +1744,224 @@
    "name": "Market & Sales",
    "name_ar": null,
    "parent_id": null,
-   "description": "Leads, opportunities, quotes, discounts and sales recommendations."
+   "description": "Leads, opportunities, quotes, discounts and sales recommendations.",
+   "cross_cutting": false
   },
   {
    "id": "market-sales.sales",
    "name": "Sales management",
    "name_ar": null,
    "parent_id": "market-sales",
-   "description": null
+   "description": null,
+   "cross_cutting": false
   },
   {
    "id": "market-sales.recommendation",
    "name": "Recommendation",
    "name_ar": null,
    "parent_id": "market-sales",
-   "description": null
+   "description": null,
+   "cross_cutting": false
   },
   {
    "id": "product",
    "name": "Product",
    "name_ar": null,
    "parent_id": null,
-   "description": "Product catalogues, offer design and catalogue automation."
+   "description": "Product catalogues, offer design and catalogue automation.",
+   "cross_cutting": false
   },
   {
    "id": "product.catalogue",
    "name": "Product catalogues",
    "name_ar": null,
    "parent_id": "product",
-   "description": null
+   "description": null,
+   "cross_cutting": false
   },
   {
    "id": "product.design",
    "name": "Offer design & automation",
    "name_ar": null,
    "parent_id": "product",
-   "description": null
+   "description": null,
+   "cross_cutting": false
   },
   {
    "id": "customer",
    "name": "Customer",
    "name_ar": null,
    "parent_id": null,
-   "description": "Engagement channels, customer data, customer orders, order tracking, problems and bills."
+   "description": "Engagement channels, customer data, customer orders, order tracking, problems and bills.",
+   "cross_cutting": false
   },
   {
    "id": "customer.self-service",
    "name": "Self-service channels",
    "name_ar": null,
    "parent_id": "customer",
-   "description": null
+   "description": null,
+   "cross_cutting": false
   },
   {
    "id": "customer.assisted",
    "name": "Assisted channels",
    "name_ar": null,
    "parent_id": "customer",
-   "description": null
+   "description": null,
+   "cross_cutting": false
   },
   {
    "id": "customer.customer-data",
    "name": "Customer information",
    "name_ar": null,
    "parent_id": "customer",
-   "description": null
+   "description": null,
+   "cross_cutting": false
   },
   {
    "id": "customer.order",
    "name": "Customer order management",
    "name_ar": null,
    "parent_id": "customer",
-   "description": null
+   "description": null,
+   "cross_cutting": false
   },
   {
    "id": "customer.problem",
    "name": "Customer problems",
    "name_ar": null,
    "parent_id": "customer",
-   "description": null
+   "description": null,
+   "cross_cutting": false
   },
   {
    "id": "customer.bill",
    "name": "Billing",
    "name_ar": null,
    "parent_id": "customer",
-   "description": null
+   "description": null,
+   "cross_cutting": false
   },
   {
    "id": "service",
    "name": "Service",
    "name_ar": null,
    "parent_id": null,
-   "description": "Service order management, service activation and service quality."
+   "description": "Service order management, service activation and service quality.",
+   "cross_cutting": false
   },
   {
    "id": "service.order",
    "name": "Service order management",
    "name_ar": null,
    "parent_id": "service",
-   "description": null
+   "description": null,
+   "cross_cutting": false
   },
   {
    "id": "service.activation",
    "name": "Service activation",
    "name_ar": null,
    "parent_id": "service",
-   "description": null
+   "description": null,
+   "cross_cutting": false
   },
   {
    "id": "service.quality",
    "name": "Service quality & SLA",
    "name_ar": null,
    "parent_id": "service",
-   "description": null
+   "description": null,
+   "cross_cutting": false
   },
   {
    "id": "resource",
    "name": "Resource",
    "name_ar": null,
    "parent_id": null,
-   "description": "Network activation, inventory, numbers, feasibility and field work."
+   "description": "Network activation, inventory, numbers, feasibility and field work.",
+   "cross_cutting": false
   },
   {
    "id": "resource.activation",
    "name": "Resource activation",
    "name_ar": null,
    "parent_id": "resource",
-   "description": null
+   "description": null,
+   "cross_cutting": false
   },
   {
    "id": "resource.inventory",
    "name": "Inventory & numbers",
    "name_ar": null,
    "parent_id": "resource",
-   "description": null
+   "description": null,
+   "cross_cutting": false
   },
   {
    "id": "resource.field",
    "name": "Workforce & trouble",
    "name_ar": null,
    "parent_id": "resource",
-   "description": null
+   "description": null,
+   "cross_cutting": false
   },
   {
    "id": "engaged-party",
    "name": "Engaged Party",
    "name_ar": null,
    "parent_id": null,
-   "description": "Government bodies, identity and document services, partners and vendors."
+   "description": "Government bodies, identity and document services, partners and vendors.",
+   "cross_cutting": false
   },
   {
    "id": "engaged-party.government",
    "name": "Government & identity",
    "name_ar": null,
    "parent_id": "engaged-party",
-   "description": null
+   "description": null,
+   "cross_cutting": false
   },
   {
    "id": "engaged-party.partner",
    "name": "Partners & vendors",
    "name_ar": null,
    "parent_id": "engaged-party",
-   "description": null
+   "description": null,
+   "cross_cutting": false
   },
   {
    "id": "enterprise",
    "name": "Enterprise",
    "name_ar": null,
    "parent_id": null,
-   "description": "Cross-cutting: notification, documents, IT service management, single sign-on."
+   "description": "Cross-cutting: notification, documents, IT service management, single sign-on.",
+   "cross_cutting": true
   },
   {
    "id": "enterprise.common",
    "name": "Common services",
    "name_ar": null,
    "parent_id": "enterprise",
-   "description": null
+   "description": null,
+   "cross_cutting": false
   },
   {
    "id": "integration",
    "name": "Integration layer",
    "name_ar": null,
    "parent_id": null,
-   "description": "The bus and gateways every domain talks through."
+   "description": "The bus and gateways every domain talks through.",
+   "cross_cutting": true
   },
   {
    "id": "integration.bus",
    "name": "Integration",
    "name_ar": null,
    "parent_id": "integration",
-   "description": null
+   "description": null,
+   "cross_cutting": false
   }
  ],
  "products": [
@@ -1951,32 +1979,34 @@
      "code": "NEW",
      "name": "New activation",
      "enabled": true,
-     "description": "A new Business Pro Plus subscription on a new or existing account. Delivered in drop P1.",
+     "description": "A new Business Pro Plus subscription on a new or existing account.",
      "confidence": "confirmed",
      "source": "SDD v2.3 · Scope; §P1",
      "channels": [
       "bcrm",
       "b2b-web",
       "smb-app"
-     ]
+     ],
+     "delivery_drop": "P1"
     },
     {
      "code": "MIGRATE",
      "name": "Migration to Business Pro Plus",
      "enabled": true,
-     "description": "From a legacy product (DEL, PBX, BQS…) or from Business Edge (BFV2). Legacy through BCRM (P1); Business Edge through BCRM and the SMB App (P3). Delivered in drop P1 / P3.",
+     "description": "From a legacy product (DEL, PBX, BQS…) or from Business Edge (BFV2). Legacy through BCRM (P1); Business Edge through BCRM and the SMB App (P3).",
      "confidence": "confirmed",
      "source": "SDD v2.3 · Scope; §P1 Legacy Migration; §P3 ADO 202824",
      "channels": [
       "bcrm",
       "smb-app"
-     ]
+     ],
+     "delivery_drop": "P1 / P3"
     },
     {
      "code": "PORTIN",
      "name": "Port in",
      "enabled": true,
-     "description": "A new activation that brings the customer's number from another operator. Delivered in drop P3.",
+     "description": "A new activation that brings the customer's number from another operator.",
      "confidence": "confirmed",
      "source": "SDD v2.3 · §NPS Port In & Port Out",
      "channels": [
@@ -1984,203 +2014,220 @@
       "b2b-web",
       "smb-app",
       "nps"
-     ]
+     ],
+     "delivery_drop": "P3"
     },
     {
      "code": "UPDOWNGRD",
      "name": "Upgrade / downgrade",
      "enabled": true,
-     "description": "Change of plan between Business Pro Plus, Office Presence, Business ON and Business Pro, with or without a device change. 28 from/to paths across Business Pro Plus, Office Presence, Business ON and Business Pro; P3 adds device change. Delivered in drop P2 / P3.",
+     "description": "Change of plan between Business Pro Plus, Office Presence, Business ON and Business Pro, with or without a device change. 28 from/to paths across Business Pro Plus, Office Presence, Business ON and Business Pro; P3 adds device change.",
      "confidence": "confirmed",
      "source": "SDD v2.3 · Scope; §P2 ADO 81197; §P3 ADO 81961",
      "channels": [
       "bcrm",
       "smb-app"
-     ]
+     ],
+     "delivery_drop": "P2 / P3"
     },
     {
      "code": "ADDDELETE",
      "name": "Add / delete add-on",
      "enabled": true,
-     "description": "Static IP, Speed Booster, VSaaS, voice, SaaS, managed-device and other add-ons. VSaaS and static IP (P2); Speed Booster and add-ons while on 5G backup (P4). Delivered in drop P2 / P4.",
+     "description": "Static IP, Speed Booster, VSaaS, voice, SaaS, managed-device and other add-ons. VSaaS and static IP (P2); Speed Booster and add-ons while on 5G backup (P4).",
      "confidence": "confirmed",
      "source": "SDD v2.3 · Scope",
      "channels": [
       "bcrm",
       "b2b-web",
       "smb-app"
-     ]
+     ],
+     "delivery_drop": "P2 / P4"
     },
     {
      "code": "MODSUBS",
      "name": "Modify subscription",
      "enabled": true,
-     "description": "SaaS service activation from the digital channel. Delivered in drop P4.",
+     "description": "SaaS service activation from the digital channel.",
      "confidence": "confirmed",
      "source": "SDD v2.3 · Scope, P4 SaaS activation (MODSUBS)",
      "channels": [
       "b2b-web",
       "smb-app"
-     ]
+     ],
+     "delivery_drop": "P4"
     },
     {
      "code": "CHINTUSRN",
      "name": "Change internet username",
      "enabled": true,
-     "description": "Delivered in drop P2 / P4.",
+     "description": null,
      "confidence": "confirmed",
      "source": "SDD v2.3 · Scope",
      "channels": [
       "bcrm",
       "b2b-web",
       "smb-app"
-     ]
+     ],
+     "delivery_drop": "P2 / P4"
     },
     {
      "code": "CHGPSWD",
      "name": "Change password",
      "enabled": true,
-     "description": "Delivered in drop P2 / P4.",
+     "description": null,
      "confidence": "confirmed",
      "source": "SDD v2.3 · Scope",
      "channels": [
       "bcrm",
       "b2b-web",
       "smb-app"
-     ]
+     ],
+     "delivery_drop": "P2 / P4"
     },
     {
      "code": "CHGDOMN",
      "name": "Change domain",
      "enabled": true,
-     "description": "Delivered in drop P4.",
+     "description": null,
      "confidence": "confirmed",
      "source": "SDD v2.3 · Scope",
      "channels": [
       "bcrm",
       "b2b-web",
       "smb-app"
-     ]
+     ],
+     "delivery_drop": "P4"
     },
     {
      "code": "CHGSUBDOMN",
      "name": "Change sub-domain",
      "enabled": true,
-     "description": "Delivered in drop P4.",
+     "description": null,
      "confidence": "confirmed",
      "source": "SDD v2.3 · Scope",
      "channels": [
       "bcrm",
       "b2b-web",
       "smb-app"
-     ]
+     ],
+     "delivery_drop": "P4"
     },
     {
      "code": "CHNUMBER",
      "name": "Change number",
      "enabled": true,
-     "description": "Delivered in drop P4.",
+     "description": null,
      "confidence": "confirmed",
      "source": "SDD v2.3 · Scope",
      "channels": [
       "bcrm",
       "b2b-web",
       "smb-app"
-     ]
+     ],
+     "delivery_drop": "P4"
     },
     {
      "code": "FLEXIMINMOV",
      "name": "Flexi minute movement",
      "enabled": true,
-     "description": "Delivered in drop P4.",
+     "description": null,
      "confidence": "confirmed",
      "source": "SDD v2.3 · Scope",
      "channels": [
       "bcrm",
       "b2b-web",
       "smb-app"
-     ]
+     ],
+     "delivery_drop": "P4"
     },
     {
      "code": "TECHVISIT",
      "name": "Technician visit",
      "enabled": true,
-     "description": "Delivered in drop P4.",
+     "description": null,
      "confidence": "confirmed",
      "source": "SDD v2.3 · Scope",
      "channels": [
       "bcrm",
       "b2b-web",
       "smb-app"
-     ]
+     ],
+     "delivery_drop": "P4"
     },
     {
      "code": "DVCREP",
      "name": "Faulty device replacement",
      "enabled": true,
-     "description": "Raised as a complaint; CPE or FortiAP replaced, with exit charges when out of warranty. Delivered in drop P3 / P4.",
+     "description": "Raised as a complaint; CPE or FortiAP replaced, with exit charges when out of warranty.",
      "confidence": "confirmed",
      "source": "SDD v2.3 · §P4 ADO 289225",
      "channels": [
       "cim"
-     ]
+     ],
+     "delivery_drop": "P3 / P4"
     },
     {
      "code": "EXTSHIFTSITE",
      "name": "External shift of site",
      "enabled": true,
-     "description": "Moves the service to another site within the Etisalat area. Delivered in drop P3.",
+     "description": "Moves the service to another site within the Etisalat area.",
      "confidence": "confirmed",
      "source": "SDD v2.3 · §P3 ADO 202826",
      "channels": [
       "bcrm",
       "b2b-web",
       "smb-app"
-     ]
+     ],
+     "delivery_drop": "P3"
     },
     {
      "code": "RENEWAL",
      "name": "Renewal",
      "enabled": true,
-     "description": "Contract renewal; EHS can trigger a move to the non-commitment package. Delivered in drop P4.",
+     "description": "Contract renewal; EHS can trigger a move to the non-commitment package.",
      "confidence": "confirmed",
      "source": "SDD v2.3 · §EHS ADO 420619",
      "channels": [
       "ehs"
-     ]
+     ],
+     "delivery_drop": "P4"
     },
     {
      "code": "CESSREQ",
      "name": "Cessation",
      "enabled": true,
-     "description": "Direct, with retention, within the trial period, or bulk. Delivered in drop P2.",
+     "description": "Direct, with retention, within the trial period, or bulk.",
      "confidence": "confirmed",
      "source": "SDD v2.3 · §P2 ADO 259161",
      "channels": [
       "bcrm",
       "b2b-web",
       "smb-app"
-     ]
+     ],
+     "delivery_drop": "P2"
     },
     {
      "code": "PORTOUT",
      "name": "Port out",
      "enabled": true,
-     "description": "A cessation started by a port-out request from NPC. Delivered in drop P3.",
+     "description": "A cessation started by a port-out request from NPC.",
      "confidence": "confirmed",
      "source": "SDD v2.3 · §NPS Portout",
      "channels": [
       "nps"
-     ]
+     ],
+     "delivery_drop": "P3"
     },
     {
      "code": "DUNNING",
      "name": "Dunning (TOSS, reconnect, non-payment cessation)",
      "enabled": true,
-     "description": "Throttle or suspend for non-payment, reconnect, or cease (CESSNP). The source that starts dunning isn't named in the SDD. Delivered in drop P3.",
+     "description": "Throttle or suspend for non-payment, reconnect, or cease (CESSNP). The source that starts dunning isn't named in the SDD.",
      "confidence": "confirmed",
      "source": "SDD v2.3 · §P3 ADO 259162",
-     "channels": []
+     "channels": [],
+     "delivery_drop": "P3"
     }
    ],
    "components": [
@@ -3218,7 +3265,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "20",
@@ -3246,7 +3294,8 @@
      "point_of_no_return": null,
      "role": "CATALOG",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "30",
@@ -3274,7 +3323,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "40",
@@ -3302,7 +3352,8 @@
      "point_of_no_return": null,
      "role": "CUSTOMER_DATA",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "50",
@@ -3330,7 +3381,8 @@
      "point_of_no_return": null,
      "role": "CUSTOMER_DATA",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "200",
@@ -3357,7 +3409,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "210",
@@ -3384,7 +3437,8 @@
      "point_of_no_return": null,
      "role": "CUSTOMER_DATA",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "300",
@@ -3409,7 +3463,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "310",
@@ -3434,7 +3489,8 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "320",
@@ -3459,7 +3515,8 @@
      "point_of_no_return": null,
      "role": "VALIDATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "330",
@@ -3484,7 +3541,8 @@
      "point_of_no_return": null,
      "role": null,
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "340",
@@ -3509,7 +3567,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "350",
@@ -3534,7 +3593,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "360",
@@ -3559,7 +3619,8 @@
      "point_of_no_return": null,
      "role": "CATALOG",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "370",
@@ -3584,7 +3645,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "380",
@@ -3609,7 +3671,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "390",
@@ -3634,7 +3697,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "400",
@@ -3659,7 +3723,8 @@
      "point_of_no_return": null,
      "role": "FIELD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "405",
@@ -3684,7 +3749,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "410",
@@ -3709,7 +3775,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "420",
@@ -3734,7 +3801,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "430",
@@ -3759,7 +3827,8 @@
      "point_of_no_return": "The XaaS callback is the point of no return for the asynchronous SaaS order.",
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "440",
@@ -3784,7 +3853,8 @@
      "point_of_no_return": "For managed devices, the MDVC callback from HPSM is the point of no return.",
      "role": "LOGISTICS",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "450",
@@ -3809,7 +3879,8 @@
      "point_of_no_return": null,
      "role": "FIELD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "460",
@@ -3834,7 +3905,8 @@
      "point_of_no_return": null,
      "role": "BILL",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "470",
@@ -3859,7 +3931,8 @@
      "point_of_no_return": null,
      "role": "NOTIFY",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "480",
@@ -3884,7 +3957,8 @@
      "point_of_no_return": null,
      "role": "RECORD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     }
    ],
    "flow_rules": [
@@ -5528,7 +5602,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "20",
@@ -5553,7 +5628,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "30",
@@ -5578,7 +5654,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "35",
@@ -5603,7 +5680,8 @@
      "point_of_no_return": null,
      "role": "VALIDATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "38",
@@ -5628,7 +5706,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "40",
@@ -5653,7 +5732,8 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "50",
@@ -5678,7 +5758,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "60",
@@ -5703,7 +5784,8 @@
      "point_of_no_return": null,
      "role": "VALIDATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "70",
@@ -5728,7 +5810,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "80",
@@ -5753,7 +5836,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "90",
@@ -5778,7 +5862,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "100",
@@ -5803,7 +5888,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "105",
@@ -5828,7 +5914,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "110",
@@ -5853,7 +5940,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "115",
@@ -5878,7 +5966,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "120",
@@ -5903,7 +5992,8 @@
      "point_of_no_return": null,
      "role": "CATALOG",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "130",
@@ -5928,7 +6018,8 @@
      "point_of_no_return": null,
      "role": "FIELD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "140",
@@ -5953,7 +6044,8 @@
      "point_of_no_return": null,
      "role": "BILL",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "150",
@@ -5978,7 +6070,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "160",
@@ -6003,7 +6096,8 @@
      "point_of_no_return": null,
      "role": "NOTIFY",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     }
    ],
    "flow_rules": [
@@ -6816,7 +6910,8 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "20",
@@ -6841,7 +6936,8 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "30",
@@ -6866,7 +6962,8 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "40",
@@ -6891,7 +6988,8 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "50",
@@ -6916,7 +7014,8 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "60",
@@ -6941,7 +7040,8 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "70",
@@ -6966,7 +7066,8 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "80",
@@ -6991,7 +7092,8 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "90",
@@ -7016,7 +7118,8 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "100",
@@ -7041,7 +7144,8 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "110",
@@ -7066,7 +7170,8 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "120",
@@ -7091,7 +7196,8 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     }
    ],
    "flow_rules": [],
@@ -7483,7 +7589,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "20",
@@ -7508,7 +7615,8 @@
      "point_of_no_return": null,
      "role": "CUSTOMER_DATA",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "30",
@@ -7533,7 +7641,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "40",
@@ -7558,7 +7667,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "50",
@@ -7583,7 +7693,8 @@
      "point_of_no_return": null,
      "role": "VALIDATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "55",
@@ -7608,7 +7719,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "60",
@@ -7633,7 +7745,8 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "70",
@@ -7658,7 +7771,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "80",
@@ -7683,7 +7797,8 @@
      "point_of_no_return": null,
      "role": "VALIDATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "90",
@@ -7708,7 +7823,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "100",
@@ -7733,7 +7849,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "110",
@@ -7758,7 +7875,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "120",
@@ -7783,7 +7901,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "130",
@@ -7808,7 +7927,8 @@
      "point_of_no_return": null,
      "role": "CATALOG",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "140",
@@ -7833,7 +7953,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "150",
@@ -7858,7 +7979,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "160",
@@ -7883,7 +8005,8 @@
      "point_of_no_return": null,
      "role": "FIELD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "170",
@@ -7908,7 +8031,8 @@
      "point_of_no_return": null,
      "role": "LOGISTICS",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "180",
@@ -7933,7 +8057,8 @@
      "point_of_no_return": null,
      "role": "BILL",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "185",
@@ -7958,7 +8083,8 @@
      "point_of_no_return": null,
      "role": "BILL",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "190",
@@ -7983,7 +8109,8 @@
      "point_of_no_return": null,
      "role": "BILL",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "200",
@@ -8008,7 +8135,8 @@
      "point_of_no_return": null,
      "role": "NOTIFY",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "210",
@@ -8033,7 +8161,8 @@
      "point_of_no_return": null,
      "role": "RECORD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     }
    ],
    "flow_rules": [
@@ -8742,7 +8871,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "20",
@@ -8767,7 +8897,8 @@
      "point_of_no_return": null,
      "role": "CUSTOMER_DATA",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "30",
@@ -8792,7 +8923,8 @@
      "point_of_no_return": null,
      "role": "VALIDATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "40",
@@ -8817,7 +8949,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "45",
@@ -8842,7 +8975,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "48",
@@ -8867,7 +9001,8 @@
      "point_of_no_return": null,
      "role": "RECORD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "50",
@@ -8892,7 +9027,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "60",
@@ -8917,7 +9053,8 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "70",
@@ -8942,7 +9079,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "80",
@@ -8967,7 +9105,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "90",
@@ -8992,7 +9131,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "100",
@@ -9017,7 +9157,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "110",
@@ -9042,7 +9183,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "120",
@@ -9067,7 +9209,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "130",
@@ -9092,7 +9235,8 @@
      "point_of_no_return": null,
      "role": "FIELD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "140",
@@ -9117,7 +9261,8 @@
      "point_of_no_return": null,
      "role": "BILL",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "150",
@@ -9142,7 +9287,8 @@
      "point_of_no_return": null,
      "role": "BILL",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "160",
@@ -9167,7 +9313,8 @@
      "point_of_no_return": null,
      "role": "BILL",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "170",
@@ -9192,7 +9339,8 @@
      "point_of_no_return": null,
      "role": "RECORD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     }
    ],
    "flow_rules": [
@@ -9822,7 +9970,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "20",
@@ -9847,7 +9996,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "30",
@@ -9872,7 +10022,8 @@
      "point_of_no_return": null,
      "role": "VALIDATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "35",
@@ -9897,7 +10048,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "40",
@@ -9922,7 +10074,8 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "50",
@@ -9947,7 +10100,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "60",
@@ -9972,7 +10126,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "70",
@@ -9997,7 +10152,8 @@
      "point_of_no_return": null,
      "role": "FIELD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "80",
@@ -10022,7 +10178,8 @@
      "point_of_no_return": null,
      "role": "FIELD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "90",
@@ -10047,7 +10204,8 @@
      "point_of_no_return": null,
      "role": "FIELD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "100",
@@ -10072,7 +10230,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "110",
@@ -10097,7 +10256,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "120",
@@ -10122,7 +10282,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "130",
@@ -10147,7 +10308,8 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "140",
@@ -10172,7 +10334,8 @@
      "point_of_no_return": null,
      "role": "NOTIFY",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "150",
@@ -10197,7 +10360,8 @@
      "point_of_no_return": null,
      "role": "RECORD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     }
    ],
    "flow_rules": [
@@ -10779,7 +10943,8 @@
      "point_of_no_return": null,
      "role": "BILL",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "20",
@@ -10804,7 +10969,8 @@
      "point_of_no_return": null,
      "role": "VALIDATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "30",
@@ -10829,7 +10995,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "40",
@@ -10854,7 +11021,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "45",
@@ -10879,7 +11047,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "50",
@@ -10904,7 +11073,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "55",
@@ -10929,7 +11099,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "60",
@@ -10954,7 +11125,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "65",
@@ -10979,7 +11151,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "70",
@@ -11004,7 +11177,8 @@
      "point_of_no_return": null,
      "role": "RECORD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     }
    ],
    "flow_rules": [
@@ -11461,7 +11635,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "20",
@@ -11486,7 +11661,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "30",
@@ -11511,7 +11687,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "40",
@@ -11536,7 +11713,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "50",
@@ -11561,7 +11739,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "60",
@@ -11586,7 +11765,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "65",
@@ -11611,7 +11791,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "70",
@@ -11636,7 +11817,8 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "80",
@@ -11661,7 +11843,8 @@
      "point_of_no_return": null,
      "role": "RECORD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     }
    ],
    "flow_rules": [
@@ -12174,7 +12357,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "20",
@@ -12199,7 +12383,8 @@
      "point_of_no_return": null,
      "role": "VALIDATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "30",
@@ -12224,7 +12409,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "40",
@@ -12249,7 +12435,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "50",
@@ -12274,7 +12461,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "60",
@@ -12299,7 +12487,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "70",
@@ -12324,7 +12513,8 @@
      "point_of_no_return": null,
      "role": "RECORD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     }
    ],
    "flow_rules": [
@@ -12612,7 +12802,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "20",
@@ -12637,7 +12828,8 @@
      "point_of_no_return": null,
      "role": "FIELD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "30",
@@ -12662,7 +12854,8 @@
      "point_of_no_return": null,
      "role": "CATALOG",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "40",
@@ -12687,7 +12880,8 @@
      "point_of_no_return": null,
      "role": "FIELD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "50",
@@ -12712,7 +12906,8 @@
      "point_of_no_return": null,
      "role": "FIELD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "60",
@@ -12737,7 +12932,8 @@
      "point_of_no_return": null,
      "role": "FIELD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "70",
@@ -12762,7 +12958,8 @@
      "point_of_no_return": null,
      "role": "FIELD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "80",
@@ -12787,7 +12984,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "90",
@@ -12812,7 +13010,8 @@
      "point_of_no_return": null,
      "role": "VALIDATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "95",
@@ -12837,7 +13036,8 @@
      "point_of_no_return": null,
      "role": "FIELD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "100",
@@ -12862,7 +13062,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "110",
@@ -12887,7 +13088,8 @@
      "point_of_no_return": null,
      "role": "BILL",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "120",
@@ -12912,7 +13114,8 @@
      "point_of_no_return": null,
      "role": "RECORD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     }
    ],
    "flow_rules": [
@@ -13303,7 +13506,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "20",
@@ -13328,7 +13532,8 @@
      "point_of_no_return": null,
      "role": "CATALOG",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "30",
@@ -13353,7 +13558,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "40",
@@ -13378,7 +13584,8 @@
      "point_of_no_return": null,
      "role": "VALIDATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "45",
@@ -13403,7 +13610,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "50",
@@ -13428,7 +13636,8 @@
      "point_of_no_return": null,
      "role": "VALIDATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "55",
@@ -13453,7 +13662,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "60",
@@ -13478,7 +13688,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "70",
@@ -13503,7 +13714,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "80",
@@ -13528,7 +13740,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "90",
@@ -13553,7 +13766,8 @@
      "point_of_no_return": null,
      "role": "BILL",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "100",
@@ -13578,7 +13792,8 @@
      "point_of_no_return": null,
      "role": "RECORD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     }
    ],
    "flow_rules": [
@@ -13912,7 +14127,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "20",
@@ -13937,7 +14153,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "30",
@@ -13962,7 +14179,8 @@
      "point_of_no_return": null,
      "role": "VALIDATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "35",
@@ -13987,7 +14205,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "40",
@@ -14012,7 +14231,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "50",
@@ -14037,7 +14257,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "55",
@@ -14062,7 +14283,8 @@
      "point_of_no_return": null,
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "60",
@@ -14087,7 +14309,8 @@
      "point_of_no_return": null,
      "role": "BILL",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "70",
@@ -14112,7 +14335,8 @@
      "point_of_no_return": null,
      "role": "RECORD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     }
    ],
    "flow_rules": [
@@ -14392,7 +14616,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "20",
@@ -14417,7 +14642,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "30",
@@ -14442,7 +14668,8 @@
      "point_of_no_return": null,
      "role": "VALIDATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "35",
@@ -14467,7 +14694,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "40",
@@ -14492,7 +14720,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "50",
@@ -14517,7 +14746,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "60",
@@ -14542,7 +14772,8 @@
      "point_of_no_return": null,
      "role": "RECORD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     }
    ],
    "flow_rules": [
@@ -14735,7 +14966,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "20",
@@ -14760,7 +14992,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "30",
@@ -14785,7 +15018,8 @@
      "point_of_no_return": null,
      "role": "VALIDATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "35",
@@ -14810,7 +15044,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "40",
@@ -14835,7 +15070,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "50",
@@ -14860,7 +15096,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "60",
@@ -14885,7 +15122,8 @@
      "point_of_no_return": null,
      "role": "RECORD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     }
    ],
    "flow_rules": [
@@ -15078,7 +15316,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "20",
@@ -15103,7 +15342,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "30",
@@ -15128,7 +15368,8 @@
      "point_of_no_return": null,
      "role": "VALIDATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "35",
@@ -15153,7 +15394,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "40",
@@ -15178,7 +15420,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "50",
@@ -15203,7 +15446,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "60",
@@ -15228,7 +15472,8 @@
      "point_of_no_return": null,
      "role": "RECORD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     }
    ],
    "flow_rules": [
@@ -15421,7 +15666,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "20",
@@ -15446,7 +15692,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "30",
@@ -15471,7 +15718,8 @@
      "point_of_no_return": null,
      "role": "VALIDATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "35",
@@ -15496,7 +15744,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "40",
@@ -15521,7 +15770,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "50",
@@ -15546,7 +15796,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "60",
@@ -15571,7 +15822,8 @@
      "point_of_no_return": null,
      "role": "RECORD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     }
    ],
    "flow_rules": [
@@ -15764,7 +16016,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "20",
@@ -15789,7 +16042,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "30",
@@ -15814,7 +16068,8 @@
      "point_of_no_return": null,
      "role": "VALIDATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "35",
@@ -15839,7 +16094,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "40",
@@ -15864,7 +16120,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "50",
@@ -15889,7 +16146,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "60",
@@ -15914,7 +16172,8 @@
      "point_of_no_return": null,
      "role": "RECORD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     }
    ],
    "flow_rules": [
@@ -16107,7 +16366,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "20",
@@ -16132,7 +16392,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "30",
@@ -16157,7 +16418,8 @@
      "point_of_no_return": null,
      "role": "VALIDATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "35",
@@ -16182,7 +16444,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "40",
@@ -16207,7 +16470,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "50",
@@ -16232,7 +16496,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "60",
@@ -16257,7 +16522,8 @@
      "point_of_no_return": null,
      "role": "RECORD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     }
    ],
    "flow_rules": [
@@ -16450,7 +16716,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "20",
@@ -16475,7 +16742,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "30",
@@ -16500,7 +16768,8 @@
      "point_of_no_return": null,
      "role": "VALIDATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "35",
@@ -16525,7 +16794,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "40",
@@ -16550,7 +16820,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "50",
@@ -16575,7 +16846,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "60",
@@ -16600,7 +16872,8 @@
      "point_of_no_return": null,
      "role": "RECORD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     }
    ],
    "flow_rules": [
@@ -16793,7 +17066,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "20",
@@ -16818,7 +17092,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "30",
@@ -16843,7 +17118,8 @@
      "point_of_no_return": null,
      "role": "VALIDATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "35",
@@ -16868,7 +17144,8 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": false
     },
     {
      "number": "40",
@@ -16893,7 +17170,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "50",
@@ -16918,7 +17196,8 @@
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "55",
@@ -16943,7 +17222,8 @@
      "point_of_no_return": "The XaaS callback is the point of no return for the asynchronous SaaS order.",
      "role": "ACTIVATE",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     },
     {
      "number": "60",
@@ -16968,7 +17248,8 @@
      "point_of_no_return": null,
      "role": "RECORD",
      "etom_id": null,
-     "role_id": null
+     "role_id": null,
+     "main_track": true
     }
    ],
    "flow_rules": [

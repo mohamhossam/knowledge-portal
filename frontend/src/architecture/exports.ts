@@ -28,7 +28,7 @@ function documentation(data: Catalogue, journey: JourneyView, step: Step): strin
   const calls = journey.integrations
     .filter((integration) => integration.step === step.id)
     .map((integration) => `Integration: ${laneName(data, integration.from)} → ${laneName(data, integration.to)}${integration.via ? ` via ${systemName(data, integration.via)}` : ""}: ${operationName(integration)} (${styleName(integration)}, ${MODE_WORDS[integration.mode]})`);
-  const facts = step.kind === "task" || step.kind === "error-end" ? [step.detail, step.etom && `eTOM: ${step.etom}`, step.ponr && `Point of no return: ${step.ponr}`] : [];
+  const facts = step.kind === "task" ? [step.detail, step.etom && `eTOM: ${step.etom}`, step.ponr && `Point of no return: ${step.ponr}`] : [];
   return [...facts, ...calls, `Evidence: ${evidenceText(data, step.evidence)}`]
     .filter(Boolean)
     .join("\n");
@@ -38,7 +38,6 @@ function element(data: Catalogue, journey: JourneyView, step: Step): string {
   const tag = {
     start: "startEvent",
     end: "endEvent",
-    "error-end": "endEvent",
     exclusive: "exclusiveGateway",
     parallel: "parallelGateway",
     task: step.lane.kind === "system" ? "serviceTask" : "userTask",
@@ -48,8 +47,7 @@ function element(data: Catalogue, journey: JourneyView, step: Step): string {
     .filter((flow) => flow.from === step.id || flow.to === step.id)
     .map((flow) => (flow.to === step.id ? `<bpmn:incoming>Flow_${id(flow.from)}_${id(flow.to)}</bpmn:incoming>` : `<bpmn:outgoing>Flow_${id(flow.from)}_${id(flow.to)}</bpmn:outgoing>`))
     .join("");
-  const error = step.kind === "error-end" ? "<bpmn:errorEventDefinition />" : "";
-  return `    <bpmn:${tag} id="${id(step.id)}" name="${xml(stepName(step))}"><bpmn:documentation>${xml(documentation(data, journey, step))}</bpmn:documentation>${flows}${error}</bpmn:${tag}>`;
+  return `    <bpmn:${tag} id="${id(step.id)}" name="${xml(stepName(step))}"><bpmn:documentation>${xml(documentation(data, journey, step))}</bpmn:documentation>${flows}</bpmn:${tag}>`;
 }
 
 export function toBpmn(data: Catalogue, journey: JourneyView): string {

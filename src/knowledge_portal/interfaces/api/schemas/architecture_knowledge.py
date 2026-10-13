@@ -399,6 +399,8 @@ class LandscapeDomainSchema(BaseModel):
     name_ar: Name | None = None
     parent_id: Identifier | None = None
     description: Text | None = None
+    # It serves every other domain (the enterprise domain, the integration layer).
+    cross_cutting: bool = False
 
     @classmethod
     def from_domain(cls, domain: LandscapeDomain) -> LandscapeDomainSchema:
@@ -408,10 +410,18 @@ class LandscapeDomainSchema(BaseModel):
             name_ar=domain.name_ar,
             parent_id=domain.parent_id,
             description=domain.description,
+            cross_cutting=domain.cross_cutting,
         )
 
     def to_domain(self) -> LandscapeDomain:
-        return LandscapeDomain(self.id, self.name, self.name_ar, self.parent_id, self.description)
+        return LandscapeDomain(
+            self.id,
+            self.name,
+            self.name_ar,
+            self.parent_id,
+            self.description,
+            cross_cutting=self.cross_cutting,
+        )
 
 
 class PortfolioNodeSchema(BaseModel):
@@ -1154,6 +1164,8 @@ class OrderTypeSchema(BaseModel):
     source: Text | None = None
     # The channels it can be ordered through, by id; empty when the source does not say.
     channels: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    # The delivery drop it comes in, as its source names it, such as "P2 / P3".
+    delivery_drop: Name | None = None
 
     @classmethod
     def from_domain(cls, order: OrderType) -> OrderTypeSchema:
@@ -1165,6 +1177,7 @@ class OrderTypeSchema(BaseModel):
             confidence=order.confidence,
             source=order.source,
             channels=list(order.channels),
+            delivery_drop=order.delivery_drop,
         )
 
     def to_domain(self) -> OrderType:
@@ -1176,6 +1189,7 @@ class OrderTypeSchema(BaseModel):
             self.confidence,
             self.source,
             tuple(self.channels),
+            delivery_drop=self.delivery_drop,
         )
 
 
@@ -1485,6 +1499,9 @@ class ActivitySchema(BaseModel):
     # The eTOM process and role terms ``etom`` and ``role`` mean.
     etom_id: Identifier | None = None
     role_id: Identifier | None = None
+    # Derived on the way out and ignored on the way in: on the main track, which is also
+    # where it is when ``track`` names none.
+    main_track: bool = False
 
     @classmethod
     def from_domain(cls, item: Activity) -> ActivitySchema:
@@ -1512,6 +1529,7 @@ class ActivitySchema(BaseModel):
             role=item.role,
             etom_id=item.etom_id,
             role_id=item.role_id,
+            main_track=item.main,
         )
 
     def to_domain(self) -> Activity:

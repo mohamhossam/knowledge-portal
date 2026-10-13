@@ -355,7 +355,7 @@ export function ProductArchitecture() {
               </h2>
               <p className="cl-sub">
                 {call.via ? `Through ${name(call.via)}. ` : ""}
-                {step && (step.kind === "task" || step.kind === "error-end") ? `During “${step.name}”.` : ""}
+                {step?.kind === "task" ? `During “${step.name}”.` : ""}
               </p>
               <p className="cl-body">{call.purpose}</p>
               <dl className="cl-pairs">

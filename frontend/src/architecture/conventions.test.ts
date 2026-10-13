@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { BAND_DOMAINS, ERROR_END_TRACKS, MAIN_TRACK, parseDrop, parseProposition, parseQuestion, trackKind } from "./conventions";
+import { BAND_DOMAINS, parseDrop, parseProposition, parseQuestion } from "./conventions";
 
-describe("the delivery drop in an order type's description", () => {
+describe("the delivery drop in an older version's order type description", () => {
   it("takes the drop out of the description", () => {
     expect(parseDrop("A new subscription on a new or existing account. Delivered in drop P1.")).toEqual({ drop: "P1", note: "A new subscription on a new or existing account." });
     expect(parseDrop("Change of plan. Delivered in drop P2 / P3.")).toEqual({ drop: "P2 / P3", note: "Change of plan." });
@@ -40,22 +40,8 @@ describe("a question's title", () => {
   });
 });
 
-describe("the named conventions", () => {
-  it("draws the enterprise domain and the integration layer as bands", () => {
+describe("the cross-cutting domains of an older version", () => {
+  it("are the enterprise domain and the integration layer", () => {
     expect(BAND_DOMAINS).toEqual(["enterprise", "integration"]);
-  });
-
-  it("ends the flow in error only on the correction track", () => {
-    expect(ERROR_END_TRACKS).toEqual(["CORRECTION"]);
-    expect(trackKind("CORRECTION")).toBe("error");
-    expect(trackKind("correction")).toBe("error");
-    // A rejected order ends on its own track, drawn as a step (not an error end) until the service says otherwise.
-    expect(trackKind("REJECTED")).toBe("side");
-  });
-
-  it("reads no track, or the main one in any case, as the main track", () => {
-    expect(MAIN_TRACK).toBe("MAIN");
-    expect([null, undefined, "", "MAIN", "main"].map(trackKind)).toEqual(["main", "main", "main", "main", "main"]);
-    expect(trackKind("BRANCH-BACKUP")).toBe("side");
   });
 });

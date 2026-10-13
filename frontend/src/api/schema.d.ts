@@ -2166,6 +2166,11 @@ export interface components {
             etom_id?: string | null;
             /** Input */
             input?: string | null;
+            /**
+             * Main Track
+             * @default false
+             */
+            main_track: boolean;
             /** Mode */
             mode?: string | null;
             /** Name */
@@ -4020,6 +4025,11 @@ export interface components {
          * @description Where systems sit in the landscape; a sub-domain names its parent (ADR-0094).
          */
         LandscapeDomainSchema: {
+            /**
+             * Cross Cutting
+             * @default false
+             */
+            cross_cutting: boolean;
             /** Description */
             description?: string | null;
             /** Id */
@@ -4600,6 +4610,8 @@ export interface components {
             /** Code */
             code: string;
             confidence?: components["schemas"]["SourceConfidence"] | null;
+            /** Delivery Drop */
+            delivery_drop?: string | null;
             /** Description */
             description?: string | null;
             /**

@@ -353,7 +353,14 @@ def test_a_draft_saves_journeys_and_sends_their_flow(client: TestClient) -> None
         "activities": [
             {"number": "10", "name": "Select offer", "performing_system_id": "b2b-web"},
             {"number": "20", "name": "Validate", "performing_system_id": "bcrm"},
-            {"number": "25", "name": "Fix", "track": "CORRECTION", "performing_system_id": "cim"},
+            # A sent main_track is ignored: it is derived from the track.
+            {
+                "number": "25",
+                "name": "Fix",
+                "track": "CORRECTION",
+                "performing_system_id": "cim",
+                "main_track": True,
+            },
         ],
         "flow_rules": [
             {"kind": "decision", "from_activity": "20", "to_activity": "25", "condition": "FAIL"}
@@ -377,6 +384,8 @@ def test_a_draft_saves_journeys_and_sends_their_flow(client: TestClient) -> None
     )
     assert saved.status_code == 200, saved.text
     sent = saved.json()["journeys"][0]
+    # Each activity says whether it is on the main track (none named is the main one).
+    assert [item["main_track"] for item in sent["activities"]] == [True, True, False]
     # No step names a channel: no flow per channel, and the shared flow is the journey's.
     assert sent["channel_edges"] == []
     assert sent["shared_edges"] == sent["edges"]

@@ -1,23 +1,15 @@
 /**
- * What the adapter reads from prose and naming conventions, because the service
- * has no field for it yet. Each one is parsed here, once, and tested; a field
- * from the service would replace it:
- * - the delivery drop, from "Delivered in drop …" in an order type's description;
+ * What the adapter reads from prose and naming conventions, parsed here, once, and tested:
  * - a proposition's summary and purpose, from its paragraphs;
  * - a question's title and detail, from "title: detail";
- * - the bands under the TAM map, from the domain ids in `BAND_DOMAINS`;
- * - the main track and the error tracks a flow ends on, from activity track names.
+ * - for a catalogue version saved before the service sent them, the delivery drop (from
+ *   "Delivered in drop …" in an order type's description) and the cross-cutting domains
+ *   (from their ids in `BAND_DOMAINS`). Newer versions carry `delivery_drop` and
+ *   `cross_cutting`, and the adapter reads those.
  */
-import type { TrackKind } from "./model";
 
-/** The TAM domains drawn as bands beneath the domain columns (cross-cutting). */
+/** The cross-cutting TAM domains, for a catalogue version that marks none. */
 export const BAND_DOMAINS: readonly string[] = ["enterprise", "integration"];
-
-/** The track an activity is on when its source names none. */
-export const MAIN_TRACK = "MAIN";
-
-/** Tracks whose last step ends the flow in error (BPMN error end event). */
-export const ERROR_END_TRACKS: readonly string[] = ["CORRECTION"];
 
 const DROP = /\s*Delivered in drop ([^.]+)\./;
 
@@ -38,11 +30,4 @@ export function parseProposition(text: string | null | undefined): { summary: st
 export function parseQuestion(text: string): { title: string; detail: string } {
   const at = text.indexOf(": ");
   return at > 0 ? { title: text.slice(0, at), detail: text.slice(at + 2) } : { title: text, detail: "" };
-}
-
-/** What a track is: the main one (also when none is named), an error track, or another side track. */
-export function trackKind(track: string | null | undefined): TrackKind {
-  const name = (track ?? "").toUpperCase();
-  if (!name || name === MAIN_TRACK) return "main";
-  return ERROR_END_TRACKS.includes(name) ? "error" : "side";
 }

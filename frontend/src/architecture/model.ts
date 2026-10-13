@@ -172,9 +172,9 @@ type StepBase = {
   evidence: Evidence;
 };
 
-/** An activity, as its source names it; on an error track, its last step ends the flow in error. */
+/** An activity, as its source names it. */
 export type ActivityStep = StepBase & {
-  kind: "task" | "error-end";
+  kind: "task";
   name: string;
   role?: StepRole;
   /** eTOM process this step belongs to (process area · process). */
@@ -236,16 +236,14 @@ export type JourneyDef = {
 /** Who performs an activity: a lane, or the entry system of whichever channel the order came through. */
 export type Performer = Lane | { kind: "entry" };
 
-/** The track an activity is on: the main one, an error track (its end is an error end), or another side track. */
-export type TrackKind = "main" | "error" | "side";
-
 /** A numbered activity of a journey (ADR-0096), for the channels it names (none means every channel). */
 export type Activity = {
   number: string;
   name: string;
   performer: Performer;
   channels: string[];
-  track: TrackKind;
+  /** On the main track (where the flow starts), not a side track such as a correction or a rejection. */
+  mainTrack: boolean;
   role?: StepRole;
   etom?: string;
   detail?: string;

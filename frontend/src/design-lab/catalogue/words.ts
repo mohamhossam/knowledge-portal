@@ -45,7 +45,6 @@ export function laneKindName(lane: Lane): string {
 export function stepName(step: Step): string {
   switch (step.kind) {
     case "task":
-    case "error-end":
       return step.name;
     case "exclusive":
       return step.question ?? "Decision";
