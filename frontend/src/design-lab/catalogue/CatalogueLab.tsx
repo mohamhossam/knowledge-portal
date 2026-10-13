@@ -86,17 +86,17 @@ const ICONS: Record<string, ReactNode> = {
 /**
  * The catalogue's own bar, the same on every screen: which catalogue this is,
  * then its sections, each with an icon and no count (counts belong to the
- * pages, not the navigation). The sections not in these mock-ups are shown,
- * but say so.
+ * pages, not the navigation). Governance and Versions open the portal's
+ * catalogue pages, on the live API, until the lab draws its own.
  */
 export function AreaTabs({ current }: { current: "landscape" | "products" | "journeys" | "systems" }) {
-  const items: { id: string; label: string; to?: string }[] = [
+  const items: { id: string; label: string; to: string }[] = [
     { id: "landscape", label: "Landscape", to: LAB },
     { id: "products", label: "Products", to: `${LAB}/products` },
     { id: "journeys", label: "Journeys", to: `${LAB}/journeys` },
     { id: "systems", label: "Systems", to: `${LAB}/systems` },
-    { id: "governance", label: "Governance" },
-    { id: "versions", label: "Versions" },
+    { id: "governance", label: "Governance", to: "/architecture/governance" },
+    { id: "versions", label: "Versions", to: "/architecture/versions" },
   ];
   const icon = (id: string) => (
     <svg className="cl-area-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -117,20 +117,12 @@ export function AreaTabs({ current }: { current: "landscape" | "products" | "jou
         </span>
       </div>
       <nav className="cl-area-nav" aria-label="Catalogue sections">
-        {items.map((item) =>
-          item.to ? (
-            <Link key={item.id} to={item.to} aria-current={item.id === current ? "page" : undefined}>
-              {icon(item.id)}
-              {item.label}
-            </Link>
-          ) : (
-            <span key={item.id} className="cl-area-off" title="Not in these mock-ups">
-              {icon(item.id)}
-              {item.label}
-              <span className="ds-visually-hidden"> (not in these mock-ups)</span>
-            </span>
-          ),
-        )}
+        {items.map((item) => (
+          <Link key={item.id} to={item.to} aria-current={item.id === current ? "page" : undefined}>
+            {icon(item.id)}
+            {item.label}
+          </Link>
+        ))}
       </nav>
     </div>
   );
