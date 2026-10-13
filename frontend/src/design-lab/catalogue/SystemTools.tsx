@@ -8,13 +8,13 @@
 import { type FormEvent, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
-import type { CatalogueData } from "../../architecture/adapter";
+import { type Catalogue, systemOf } from "../../architecture/model";
 import { journeyHref, LAB } from "./labData";
 import { plural } from "./labUtil";
-import { allViews, partnersOf, reachOf } from "./posterModel";
+import { allViews, partnersOf, reachOf, type SystemLink } from "./posterModel";
 
 /** "Find a system": an exact name picks it as you type; Enter takes the first name that starts with, then contains, the text. */
-export function FindSystem({ data, onFound }: { data: CatalogueData; onFound: (id: string) => void }) {
+export function FindSystem({ data, onFound }: { data: Catalogue; onFound: (id: string) => void }) {
   const [query, setQuery] = useState("");
   const [notFound, setNotFound] = useState<string | null>(null);
   const find = (event: FormEvent) => {
@@ -75,7 +75,7 @@ export function FindSystem({ data, onFound }: { data: CatalogueData; onFound: (i
 }
 
 /** The picked system's details, in a drawer over the board's right side. Close or Escape lets it go. */
-export function SystemDrawer({ data, systemId, linkCounts, onSelect }: { data: CatalogueData; systemId: string | null; linkCounts: Map<string, number>; onSelect: (id: string | null) => void }) {
+export function SystemDrawer({ data, systemId, linkCounts, onSelect }: { data: Catalogue; systemId: string | null; linkCounts: Map<string, SystemLink>; onSelect: (id: string | null) => void }) {
   const views = useMemo(() => allViews(data), [data]);
   const reach = useMemo(() => new Map(data.offerings.map((offering) => [offering.id, reachOf(data, offering.id)])), [data]);
   const systemById = useMemo(() => new Map(data.systems.map((system) => [system.id, system])), [data]);
@@ -84,7 +84,7 @@ export function SystemDrawer({ data, systemId, linkCounts, onSelect }: { data: C
   const live = <p className="ds-visually-hidden" aria-live="polite">{system ? `${system.name} selected: ${plural(partners.length, "linked system")}.` : ""}</p>;
   if (!system) return live;
 
-  const journeysThrough = data.journeys.filter((journey) => views.some((item) => item.id === journey.id && (item.steps.some((step) => step.lane === system.id) || item.integrations.some((call) => [call.from, call.to, call.via].includes(system.id)))));
+  const journeysThrough = data.journeys.filter((journey) => views.some((item) => item.id === journey.id && (item.steps.some((step) => systemOf(step.lane) === system.id) || item.integrations.some((call) => [systemOf(call.from), systemOf(call.to), call.via].includes(system.id)))));
   // Which products use the picked system, and how centrally.
   const productUse = data.offerings
     .map((offering) => {
@@ -93,7 +93,7 @@ export function SystemDrawer({ data, systemId, linkCounts, onSelect }: { data: C
       return { offering, count: set?.size ?? 0, total, core: (set?.size ?? 0) >= Math.max(2, Math.ceil(total / 2)) };
     })
     .filter((item) => item.count > 0);
-  const steps = new Set(views.flatMap((item) => item.steps.filter((step) => step.kind === "task" && step.lane === system.id).map((step) => `${item.id}:${step.id}`))).size;
+  const steps = new Set(views.flatMap((item) => item.steps.filter((step) => step.kind === "task" && systemOf(step.lane) === system.id).map((step) => `${item.id}:${step.id}`))).size;
   const domain = data.domains.find((item) => item.id === system.domain);
   const group = domain?.groups.find((item) => item.id === system.group);
   // The linked systems, in map order: layer by layer.

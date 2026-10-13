@@ -308,6 +308,15 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
     expect(steps.length).toBeGreaterThan(10);
     await userEvent.click(steps[1] as HTMLElement);
     expect(screen.getByText(/Step 2 of/)).toBeInTheDocument();
+    expect(screen.queryByText(/isn't offered through/)).not.toBeInTheDocument();
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("says when a journey isn't offered through the channel asked for, and shows its first", async () => {
+    const { container } = await open("/journeys/bpp-new-activation?channel=no-such-channel");
+    expect(screen.getByText("New activation isn't offered through “no-such-channel”; it is shown through BCRM instead.")).toHaveAttribute("role", "status");
+    expect(screen.getByRole("heading", { level: 2, name: /New activation · BCRM/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "BCRM" })).toHaveAttribute("aria-pressed", "true");
     expect(await axe(container)).toHaveNoViolations();
   });
 

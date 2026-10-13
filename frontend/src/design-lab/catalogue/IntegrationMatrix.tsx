@@ -11,9 +11,9 @@
  */
 import { Fragment, useMemo, useState } from "react";
 
-import type { CatalogueData } from "../../architecture/adapter";
-import type { Integration } from "../../architecture/model";
+import { type Catalogue, type Integration, systemOf } from "../../architecture/model";
 import { plural } from "./labUtil";
+import { NOT_STATED, operationName } from "./words";
 
 /** One slate ramp, light to dark, for 1, 2, 3–4 and 5+ interfaces. */
 function shade(count: number): string {
@@ -23,7 +23,7 @@ function shade(count: number): string {
   return "ix-1";
 }
 
-export function IntegrationMatrix({ data, interfaces, selected, onSelect }: { data: CatalogueData; interfaces: Integration[]; selected: string | null; onSelect: (id: string | null) => void }) {
+export function IntegrationMatrix({ data, interfaces, selected, onSelect }: { data: Catalogue; interfaces: Integration[]; selected: string | null; onSelect: (id: string | null) => void }) {
   const [hover, setHover] = useState<{ row: string; col: string } | null>(null);
   // Directed hops, caller to callee, with the operations each carries; each system's partners, either way; the linked systems in layer order.
   const { hops, partners, linked } = useMemo(() => {
@@ -43,11 +43,13 @@ export function IntegrationMatrix({ data, interfaces, selected, onSelect }: { da
       meet(to, from);
     };
     for (const call of interfaces) {
-      const operation = call.operation || call.purpose || "Not stated";
+      const operation = operationName(call) || call.purpose || NOT_STATED;
+      const from = systemOf(call.from);
+      const to = systemOf(call.to);
       if (call.via) {
-        add(call.from, call.via, operation);
-        add(call.via, call.to, operation);
-      } else add(call.from, call.to, operation);
+        add(from, call.via, operation);
+        add(call.via, to, operation);
+      } else add(from, to, operation);
     }
     const order = new Map(data.domains.map((domain, index) => [domain.id, index]));
     const linked = data.systems

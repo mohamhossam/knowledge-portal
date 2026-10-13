@@ -1,16 +1,19 @@
 import { describe, expect, it } from "vitest";
 
 import type { Release } from "../api/client";
-import { edgesFor, fromRelease, journeyView, journeyViews, laneName, parseEvidence } from "./adapter";
+import { laneName, viewTitle } from "../design-lab/catalogue/words";
+import { edgesFor, fromRelease, journeyView, journeyViews, modeOf, parseEvidence } from "./adapter";
 import { toBpmn, toCsv, toMermaid, toPlantUml } from "./exports";
 import { GEOMETRY, layoutFlow, waysBack } from "./flowLayout";
-import type { Step } from "./model";
+import { type ActivityStep, type JourneyView, laneKey, type Step } from "./model";
 import { impactOf } from "./impact";
 import release from "./fixtures/smb-release.json";
 import { asRelease } from "./sample";
 
 // The draft seeded from catalogues/smb-architecture.yaml, as the API returns it.
 const data = fromRelease(asRelease(release));
+
+const tasks = (view: JourneyView) => view.steps.filter((step): step is ActivityStep => step.kind === "task");
 
 describe("a catalogue version as the views read it", () => {
   it("places every system in a TAM domain and group, with the bands below the columns", () => {
@@ -38,32 +41,62 @@ describe("a catalogue version as the views read it", () => {
     expect(offering.plans.flatMap((plan) => plan.characteristics).some((item) => /price/i.test(item.name))).toBe(false);
     expect(offering.orderTypes.find((type) => type.code === "UPDOWNGRD")?.priority).toBe("P2 / P3");
   });
+
+  it("holds the journeys' activities, flow and calls, and not the release it was read from", () => {
+    expect("release" in data).toBe(false);
+    const journey = data.journeys.find((item) => item.id === "bpp-new-activation")!;
+    expect(journey.activities.length).toBeGreaterThan(0);
+    expect(journey.flow.all.length).toBeGreaterThan(0);
+    expect(Object.keys(journey.flow.byChannel).sort()).toEqual(["b2b-web", "bcrm", "smb-app"]);
+    expect(journey.calls.length).toBeGreaterThan(0);
+    expect(journey.activities.find((item) => item.number === "330")?.track).toBe("error");
+  });
 });
 
 describe("a journey seen through one channel", () => {
   it("keeps the channel's own steps and the shared ones, and drops the other channels'", () => {
     const digital = journeyView(data, "bpp-new-activation", "b2b-web")!;
     const assisted = journeyView(data, "bpp-new-activation", "bcrm")!;
-    const names = (view: typeof digital) => view.steps.filter((step) => step.kind === "task").map((step) => step.name);
+    const names = (view: typeof digital) => tasks(view).map((step) => step.name);
     expect(names(digital)).toContain("Browse and configure the bundle");
     expect(names(digital)).not.toContain("Capture the order from the bundle definition");
     expect(names(assisted)).toContain("Capture the order from the bundle definition");
     expect(names(assisted)).not.toContain("Browse and configure the bundle");
     // The channel's entry system performs its entry steps.
-    expect(digital.steps.find((step) => step.name === "Submit the order with the summary-order flags")?.lane).toBe("b2b-web");
-    expect(journeyView(data, "bpp-new-activation", "smb-app")!.steps.find((step) => step.name === "Submit the order with the summary-order flags")?.lane).toBe("smb-app");
+    expect(tasks(digital).find((step) => step.name === "Submit the order with the summary-order flags")?.lane).toEqual({ kind: "system", systemId: "b2b-web" });
+    expect(tasks(journeyView(data, "bpp-new-activation", "smb-app")!).find((step) => step.name === "Submit the order with the summary-order flags")?.lane).toEqual({ kind: "system", systemId: "smb-app" });
+    expect(digital.entry).toBe("b2b-web");
+  });
+
+  it("names the journey alone; the view composes it with the channel", () => {
+    const view = journeyView(data, "bpp-new-activation", "b2b-web")!;
+    expect(view.name).toBe("New activation");
+    expect(viewTitle(data, view)).toBe("New activation · B2B Web");
+  });
+
+  it("says when the journey isn't offered through the channel asked for, and shows its first", () => {
+    const view = journeyView(data, "bpp-new-activation", "no-such-channel")!;
+    expect(view.channelMissing).toBe("no-such-channel");
+    expect(view.channel).toBe("bcrm");
+    expect(journeyView(data, "bpp-new-activation", "bcrm")!.channelMissing).toBeUndefined();
+    expect(journeyView(data, "bpp-new-activation", null)!.channelMissing).toBeUndefined();
+    // A shared journey is the same through every channel, so no channel is missing from it.
+    const shared = data.journeys.find((journey) => journey.channels.length === 0)!;
+    expect(journeyView(data, shared.id, "bcrm")!.channelMissing).toBeUndefined();
   });
 
   it("draws decisions, the parallel split and join, and start and end events", () => {
     const view = journeyView(data, "bpp-new-activation", "b2b-web")!;
-    const decision = view.steps.find((step) => step.kind === "exclusive" && step.name === "Business rules passed?");
+    const decision = view.steps.find((step) => step.kind === "exclusive" && step.question === "Business rules passed?");
     expect(decision?.next.map((next) => next.label).sort()).toEqual(["No", "Yes"]);
-    const split = view.steps.find((step) => step.id.endsWith("~split"));
+    const split = view.steps.find((step) => step.kind === "parallel" && step.gateway === "split");
     expect(split?.next).toHaveLength(6);
-    const join = view.steps.find((step) => step.id.endsWith("~join"));
+    const join = view.steps.find((step) => step.kind === "parallel" && step.gateway === "join");
     expect(view.steps.filter((step) => step.next.some((next) => next.to === join?.id))).toHaveLength(6);
     expect(view.steps.filter((step) => step.kind === "start")).toHaveLength(1);
     expect(view.steps.some((step) => step.kind === "error-end" && step.name === "Order returned for correction")).toBe(true);
+    // Events and gateways carry kinds, not words.
+    for (const step of view.steps) if (step.kind !== "task" && step.kind !== "error-end") expect("name" in step, step.id).toBe(false);
     // Every arrow leads to a step of the view.
     const ids = new Set(view.steps.map((step) => step.id));
     for (const step of view.steps) for (const next of step.next) expect(ids.has(next.to), `${step.id} → ${next.to}`).toBe(true);
@@ -71,13 +104,27 @@ describe("a journey seen through one channel", () => {
 
   it("names who calls whom, through which layer, in the register", () => {
     const view = journeyView(data, "bpp-new-activation", "b2b-web")!;
-    const evaluate = view.integrations.find((call) => call.operation === "evaluateOrder" && call.to === "cbcm");
-    expect(evaluate).toMatchObject({ from: "rtf", style: "API", tmf: "TMF679 Product Offering Qualification" });
+    const evaluate = view.integrations.find((call) => call.operation === "evaluateOrder" && laneKey(call.to) === "cbcm");
+    expect(evaluate).toMatchObject({ from: { kind: "system", systemId: "rtf" }, style: "API", tmf: "TMF679 Product Offering Qualification" });
     const notify = view.integrations.find((call) => call.operation === "NotifyOrderCreationRequest");
-    expect(notify).toMatchObject({ from: "rtf", to: "ibm-bpm", via: "tibco" });
+    expect(notify).toMatchObject({ from: { kind: "system", systemId: "rtf" }, to: { kind: "system", systemId: "ibm-bpm" }, via: "tibco" });
     const ticket = view.integrations.find((call) => call.operation === "Service onboarding ticket");
-    expect(ticket?.to).toBe("team:MSS team");
-    expect(laneName(data, "team:MSS team")).toBe("MSS team");
+    expect(ticket?.to).toEqual({ kind: "team", name: "MSS team" });
+    expect(laneName(data, ticket!.to)).toBe("MSS team");
+    expect(laneName(data, { kind: "channel" })).toBe("Ordering channel");
+  });
+
+  it("gives each call an id that is the same in every channel's view", () => {
+    const ids = (channel: string) => journeyView(data, "bpp-new-activation", channel)!.integrations.filter((call) => call.step === "320").map((call) => call.id);
+    expect(ids("bcrm").length).toBeGreaterThan(1);
+    expect(new Set(ids("bcrm")).size).toBe(ids("bcrm").length);
+    expect(ids("b2b-web")).toEqual(ids("bcrm"));
+  });
+
+  it("reads a call's timing in any case", () => {
+    expect(["Sync", "sync", "SYNC"].map(modeOf)).toEqual(["sync", "sync", "sync"]);
+    expect(["Async", "async"].map(modeOf)).toEqual(["async", "async"]);
+    expect([null, undefined, "", "Batch"].map(modeOf)).toEqual(["not-stated", "not-stated", "not-stated", "not-stated"]);
   });
 
   it("offers one view per channel its order type is sold through", () => {
@@ -122,7 +169,7 @@ describe("the BPMN layout and exports", () => {
       const flows = view.steps.reduce((sum, step) => sum + step.next.length, 0);
       expect(doc.getElementsByTagName("bpmn:sequenceFlow")).toHaveLength(flows);
       expect(doc.getElementsByTagName("bpmndi:BPMNEdge")).toHaveLength(flows);
-      const lanes = new Set(view.steps.map((step) => step.lane)).size;
+      const lanes = new Set(view.steps.map((step) => laneKey(step.lane))).size;
       expect(doc.getElementsByTagName("bpmndi:BPMNShape")).toHaveLength(view.steps.length + lanes + 1);
     }
   });
@@ -152,12 +199,12 @@ describe("the BPMN layout and exports", () => {
     expect(doc.getElementsByTagName("parsererror")).toHaveLength(0);
     const flow = [...doc.getElementsByTagName("bpmn:sequenceFlow")].find((item) => item.getAttribute("sourceRef")?.endsWith("330") && item.getAttribute("targetRef")?.endsWith("300"));
     expect(flow?.getAttribute("name")).toBe("Correct & resubmit");
-    const lanes = new Set(view.steps.map((step) => step.lane)).size;
+    const lanes = new Set(view.steps.map((step) => laneKey(step.lane))).size;
     expect(doc.getElementsByTagName("bpmndi:BPMNShape")).toHaveLength(view.steps.length + lanes + 1);
   });
 
   it("finds a way back that closes a cycle even when it isn't marked as a loop", () => {
-    const step = (id: string, next: Step["next"]): Step => ({ id, kind: "task", name: id, lane: "a", next, evidence: { status: "inferred" } });
+    const step = (id: string, next: Step["next"]): Step => ({ id, kind: "task", name: id, lane: { kind: "team", name: "a" }, next, evidence: { status: "inferred" } });
     const steps = [step("start", [{ to: "1" }]), step("1", [{ to: "2" }]), step("2", [{ to: "3" }, { to: "1" }]), step("3", [])];
     expect([...waysBack(steps)]).toEqual(["2>1"]);
     const layout = layoutFlow({ ...journeyView(data, "bpp-new-activation", "bcrm")!, steps });
@@ -165,21 +212,22 @@ describe("the BPMN layout and exports", () => {
   });
 
   it("takes the service's flow for the channel chosen, the shared one for a channel no step names", () => {
-    const journey = asRelease(release).journeys!.find((item) => item.id === "bpp-new-activation")! as NonNullable<Release["journeys"]>[number];
+    const api = asRelease(release).journeys!.find((item) => item.id === "bpp-new-activation")! as NonNullable<Release["journeys"]>[number];
+    const journey = data.journeys.find((item) => item.id === api.id)!;
     const key = (edges: { from: string; to: string }[]) => edges.map((edge) => `${edge.from}>${edge.to}`).sort();
     const shape = (edges: { from_activity: string; to_activity: string }[]) => edges.map((edge) => `${edge.from_activity}>${edge.to_activity}`).sort();
-    expect(key(edgesFor(journey, null))).toEqual(shape(journey.edges));
-    expect(key(edgesFor(journey, "bcrm"))).toEqual(shape(journey.channel_edges.find((item) => item.channel_id === "bcrm")!.edges));
-    expect(key(edgesFor(journey, "no-step-names-this"))).toEqual(shape(journey.shared_edges));
+    expect(key(edgesFor(journey, null))).toEqual(shape(api.edges));
+    expect(key(edgesFor(journey, "bcrm"))).toEqual(shape(api.channel_edges.find((item) => item.channel_id === "bcrm")!.edges));
+    expect(key(edgesFor(journey, "no-step-names-this"))).toEqual(shape(api.shared_edges));
     expect(key(edgesFor(journey, "bcrm"))).not.toEqual(key(edgesFor(journey, "b2b-web")));
   });
 
   it("writes the integrations as PlantUML, Mermaid and a CSV register", () => {
     const view = journeyView(data, "bpp-new-activation", "b2b-web")!;
-    const plantuml = toPlantUml(data, view.name, view.integrations);
+    const plantuml = toPlantUml(data, viewTitle(data, view), view.integrations);
     expect(plantuml.startsWith("@startuml")).toBe(true);
     expect(plantuml).toContain("rtf -> cwom : createShoppingCart");
-    expect(toMermaid(data, view.name, view.integrations).startsWith("sequenceDiagram")).toBe(true);
+    expect(toMermaid(data, viewTitle(data, view), view.integrations).startsWith("sequenceDiagram")).toBe(true);
     const csv = toCsv(data, view.integrations).replace(/^\uFEFF/, "").split("\r\n");
     expect(csv).toHaveLength(view.integrations.length + 1);
     expect(csv[0]).toContain("TMF equivalent (hypothesis)");

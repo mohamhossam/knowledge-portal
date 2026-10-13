@@ -3,14 +3,13 @@ import { createContext, useContext } from "react";
 import { useParams } from "react-router-dom";
 
 import { LAB } from "../../app/features";
-import type { CatalogueData } from "../../architecture/adapter";
-import type { Offering } from "../../architecture/model";
+import type { Catalogue, Offering } from "../../architecture/model";
 
 export { LAB };
 
-export const LabData = createContext<CatalogueData | null>(null);
+export const LabData = createContext<Catalogue | null>(null);
 
-export function useLabData(): CatalogueData {
+export function useLabData(): Catalogue {
   const data = useContext(LabData);
   if (!data) throw new Error("useLabData outside the catalogue lab");
   return data;
@@ -23,7 +22,7 @@ export function journeyHref(journeyId: string, channel?: string | null): string 
 }
 
 /** The first modelled journey of the first product: where "Journeys" and the lab bar lead. */
-export function firstJourneyHref(data: CatalogueData, offeringId?: string): string {
+export function firstJourneyHref(data: Catalogue, offeringId?: string): string {
   const journey = data.journeys.find((item) => !offeringId || item.offeringId === offeringId) ?? data.journeys[0];
   return journey ? journeyHref(journey.id, journey.channels[0]) : LAB;
 }

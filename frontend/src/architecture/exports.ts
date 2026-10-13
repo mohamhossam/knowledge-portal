@@ -6,11 +6,11 @@
  *   laid out as it is shown;
  * - integrations as a UML sequence diagram in PlantUML or Mermaid text;
  * - the integration register as CSV.
- * Everything is generated in the browser from the model.
+ * Everything is generated in the browser from the model, named in the lab's words.
  */
-import { laneName } from "./adapter";
+import { laneName, MODE_WORDS, operationName, stepName, styleName, systemName, viewTitle } from "../design-lab/catalogue/words";
 import { GEOMETRY, layoutFlow } from "./flowLayout";
-import { type Catalogue, EVIDENCE_WORDS, type Evidence, type Integration, type JourneyView, type Step } from "./model";
+import { type Catalogue, EVIDENCE_WORDS, type Evidence, type Integration, type JourneyView, laneKey, type Step } from "./model";
 
 const xml = (text: string) =>
   text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -24,15 +24,12 @@ export function evidenceText(data: Catalogue, evidence: Evidence): string {
     .join(" · ");
 }
 
-function laneLabel(data: Catalogue, journey: JourneyView, lane: string) {
-  return journey.laneLabels[lane] ?? laneName(data, lane);
-}
-
 function documentation(data: Catalogue, journey: JourneyView, step: Step): string {
   const calls = journey.integrations
     .filter((integration) => integration.step === step.id)
-    .map((integration) => `Integration: ${laneName(data, integration.from)} → ${laneName(data, integration.to)}${integration.via ? ` via ${laneName(data, integration.via)}` : ""}: ${integration.operation} (${integration.style}, ${integration.mode})`);
-  return [step.detail, step.etom && `eTOM: ${step.etom}`, step.ponr && `Point of no return: ${step.ponr}`, ...calls, `Evidence: ${evidenceText(data, step.evidence)}`]
+    .map((integration) => `Integration: ${laneName(data, integration.from)} → ${laneName(data, integration.to)}${integration.via ? ` via ${systemName(data, integration.via)}` : ""}: ${operationName(integration)} (${styleName(integration)}, ${MODE_WORDS[integration.mode]})`);
+  const facts = step.kind === "task" || step.kind === "error-end" ? [step.detail, step.etom && `eTOM: ${step.etom}`, step.ponr && `Point of no return: ${step.ponr}`] : [];
+  return [...facts, ...calls, `Evidence: ${evidenceText(data, step.evidence)}`]
     .filter(Boolean)
     .join("\n");
 }
@@ -44,7 +41,7 @@ function element(data: Catalogue, journey: JourneyView, step: Step): string {
     "error-end": "endEvent",
     exclusive: "exclusiveGateway",
     parallel: "parallelGateway",
-    task: step.lane.startsWith("team:") || step.lane === "channel" ? "userTask" : "serviceTask",
+    task: step.lane.kind === "system" ? "serviceTask" : "userTask",
   }[step.kind];
   const flows = journey.steps
     .flatMap((from) => from.next.map((next) => ({ from: from.id, to: next.to })))
@@ -52,16 +49,17 @@ function element(data: Catalogue, journey: JourneyView, step: Step): string {
     .map((flow) => (flow.to === step.id ? `<bpmn:incoming>Flow_${id(flow.from)}_${id(flow.to)}</bpmn:incoming>` : `<bpmn:outgoing>Flow_${id(flow.from)}_${id(flow.to)}</bpmn:outgoing>`))
     .join("");
   const error = step.kind === "error-end" ? "<bpmn:errorEventDefinition />" : "";
-  return `    <bpmn:${tag} id="${id(step.id)}" name="${xml(step.name)}"><bpmn:documentation>${xml(documentation(data, journey, step))}</bpmn:documentation>${flows}${error}</bpmn:${tag}>`;
+  return `    <bpmn:${tag} id="${id(step.id)}" name="${xml(stepName(step))}"><bpmn:documentation>${xml(documentation(data, journey, step))}</bpmn:documentation>${flows}${error}</bpmn:${tag}>`;
 }
 
 export function toBpmn(data: Catalogue, journey: JourneyView): string {
   const layout = layoutFlow(journey);
   const process = `Process_${id(journey.id)}`;
+  const title = viewTitle(data, journey);
   const lanes = layout.lanes
     .map((lane) => {
-      const refs = journey.steps.filter((step) => step.lane === lane).map((step) => `<bpmn:flowNodeRef>${id(step.id)}</bpmn:flowNodeRef>`).join("");
-      return `      <bpmn:lane id="Lane_${id(lane)}" name="${xml(laneLabel(data, journey, lane))}">${refs}</bpmn:lane>`;
+      const refs = journey.steps.filter((step) => laneKey(step.lane) === laneKey(lane)).map((step) => `<bpmn:flowNodeRef>${id(step.id)}</bpmn:flowNodeRef>`).join("");
+      return `      <bpmn:lane id="Lane_${id(laneKey(lane))}" name="${xml(laneName(data, lane))}">${refs}</bpmn:lane>`;
     })
     .join("\n");
   const flows = journey.steps
@@ -69,16 +67,16 @@ export function toBpmn(data: Catalogue, journey: JourneyView): string {
     .join("\n");
   const shapes = [
     `      <bpmndi:BPMNShape id="Participant_${id(journey.id)}_di" bpmnElement="Participant_${id(journey.id)}" isHorizontal="true"><dc:Bounds x="0" y="0" width="${layout.width}" height="${layout.height}" /></bpmndi:BPMNShape>`,
-    ...layout.lanes.map((lane, index) => `      <bpmndi:BPMNShape id="Lane_${id(lane)}_di" bpmnElement="Lane_${id(lane)}" isHorizontal="true"><dc:Bounds x="30" y="${index * GEOMETRY.laneHeight}" width="${layout.width - 30}" height="${GEOMETRY.laneHeight}" /></bpmndi:BPMNShape>`),
+    ...layout.lanes.map((lane, index) => `      <bpmndi:BPMNShape id="Lane_${id(laneKey(lane))}_di" bpmnElement="Lane_${id(laneKey(lane))}" isHorizontal="true"><dc:Bounds x="30" y="${index * GEOMETRY.laneHeight}" width="${layout.width - 30}" height="${GEOMETRY.laneHeight}" /></bpmndi:BPMNShape>`),
     ...[...layout.placed.values()].map((place) => `      <bpmndi:BPMNShape id="${id(place.step.id)}_di" bpmnElement="${id(place.step.id)}"><dc:Bounds x="${Math.round(place.x)}" y="${Math.round(place.y)}" width="${place.width}" height="${place.height}" /></bpmndi:BPMNShape>`),
     ...layout.edges.map((edge) => `      <bpmndi:BPMNEdge id="Flow_${id(edge.from)}_${id(edge.to)}_di" bpmnElement="Flow_${id(edge.from)}_${id(edge.to)}">${edge.points.map(([x, y]) => `<di:waypoint x="${Math.round(x)}" y="${Math.round(y)}" />`).join("")}</bpmndi:BPMNEdge>`),
   ].join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_${id(journey.id)}" targetNamespace="https://knowledge-portal/architecture" exporter="Knowledge portal architecture catalogue" exporterVersion="1">
   <bpmn:collaboration id="Collaboration_${id(journey.id)}">
-    <bpmn:participant id="Participant_${id(journey.id)}" name="${xml(journey.name)}" processRef="${process}" />
+    <bpmn:participant id="Participant_${id(journey.id)}" name="${xml(title)}" processRef="${process}" />
   </bpmn:collaboration>
-  <bpmn:process id="${process}" name="${xml(journey.name)}" isExecutable="false">
+  <bpmn:process id="${process}" name="${xml(title)}" isExecutable="false">
     <bpmn:documentation>${xml(journey.summary)}</bpmn:documentation>
     <bpmn:laneSet id="LaneSet_${id(journey.id)}">
 ${lanes}
@@ -95,20 +93,25 @@ ${shapes}
 `;
 }
 
-/** The order participants appear in, from the first message. */
-function participants(messages: Integration[]): string[] {
-  const seen: string[] = [];
-  for (const message of messages) for (const lane of [message.from, message.via, message.to]) if (lane && !seen.includes(lane)) seen.push(lane);
-  return seen;
+/** The participants, in the order they appear from the first message: each one's key and name. */
+function participants(data: Catalogue, messages: Integration[]): { key: string; name: string }[] {
+  const seen = new Map<string, string>();
+  for (const message of messages) {
+    const ends: [string, string][] = [[laneKey(message.from), laneName(data, message.from)]];
+    if (message.via) ends.push([message.via, systemName(data, message.via)]);
+    ends.push([laneKey(message.to), laneName(data, message.to)]);
+    for (const [key, name] of ends) if (!seen.has(key)) seen.set(key, name);
+  }
+  return [...seen].map(([key, name]) => ({ key, name }));
 }
 
 export function toPlantUml(data: Catalogue, name: string, messages: Integration[]): string {
   const lines = ["@startuml", `title ${name}`, "autonumber"];
-  for (const lane of participants(messages)) lines.push(`participant "${laneName(data, lane)}" as ${id(lane)}`);
+  for (const lane of participants(data, messages)) lines.push(`participant "${lane.name}" as ${id(lane.key)}`);
   for (const message of messages) {
     const arrow = message.style === "Callback" ? "-->" : message.mode === "async" ? "->>" : "->";
-    const label = `${message.operation}${message.via ? ` (via ${laneName(data, message.via)})` : ""} [${message.style}, ${message.mode}]`;
-    lines.push(`${id(message.from)} ${arrow} ${id(message.to)} : ${label}`);
+    const label = `${operationName(message)}${message.via ? ` (via ${systemName(data, message.via)})` : ""} [${styleName(message)}, ${MODE_WORDS[message.mode]}]`;
+    lines.push(`${id(laneKey(message.from))} ${arrow} ${id(laneKey(message.to))} : ${label}`);
   }
   lines.push("@enduml");
   return lines.join("\n");
@@ -116,10 +119,10 @@ export function toPlantUml(data: Catalogue, name: string, messages: Integration[
 
 export function toMermaid(data: Catalogue, name: string, messages: Integration[]): string {
   const lines = ["sequenceDiagram", `    title ${name}`, "    autonumber"];
-  for (const lane of participants(messages)) lines.push(`    participant ${id(lane)} as ${laneName(data, lane)}`);
+  for (const lane of participants(data, messages)) lines.push(`    participant ${id(lane.key)} as ${lane.name}`);
   for (const message of messages) {
     const arrow = message.style === "Callback" ? "-->>" : message.mode === "async" ? "-)" : "->>";
-    lines.push(`    ${id(message.from)}${arrow}${id(message.to)}: ${message.operation}${message.via ? ` (via ${laneName(data, message.via)})` : ""}`);
+    lines.push(`    ${id(laneKey(message.from))}${arrow}${id(laneKey(message.to))}: ${operationName(message)}${message.via ? ` (via ${systemName(data, message.via)})` : ""}`);
   }
   return lines.join("\n");
 }
@@ -132,11 +135,11 @@ export function toCsv(data: Catalogue, messages: Integration[]): string {
     String(index + 1),
     laneName(data, message.from),
     laneName(data, message.to),
-    message.via ? laneName(data, message.via) : "",
-    message.operation,
+    message.via ? systemName(data, message.via) : "",
+    operationName(message),
     message.purpose,
-    message.style,
-    message.mode,
+    styleName(message),
+    MODE_WORDS[message.mode],
     message.payload ?? "",
     message.tmf ?? "",
     evidenceText(data, message.evidence),

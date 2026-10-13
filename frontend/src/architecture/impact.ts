@@ -3,8 +3,8 @@
  * and why. Computed from the journeys' steps and integrations, so it can never
  * disagree with the flow.
  */
-import { type CatalogueData, journeyViews } from "./adapter";
-import { type Integration, type JourneyView, ROLE_RANK, type Step, type StepRole } from "./model";
+import { journeyViews } from "./adapter";
+import { type Catalogue, type Integration, type JourneyView, ROLE_RANK, type Step, type StepRole, systemOf } from "./model";
 
 export type Impacted = {
   systemId: string;
@@ -18,7 +18,7 @@ export type Impacted = {
 
 export type ImpactScope = { offeringId: string; orderType?: string | null; channel?: string | null };
 
-export function impactOf(data: CatalogueData, scope: ImpactScope): { journeys: JourneyView[]; systems: Map<string, Impacted> } {
+export function impactOf(data: Catalogue, scope: ImpactScope): { journeys: JourneyView[]; systems: Map<string, Impacted> } {
   const journeys = journeyViews(data, scope.offeringId, scope.orderType, scope.channel);
   const known = new Set(data.systems.map((system) => system.id));
   const systems = new Map<string, Impacted>();
@@ -32,13 +32,14 @@ export function impactOf(data: CatalogueData, scope: ImpactScope): { journeys: J
   };
   for (const journey of journeys) {
     for (const step of journey.steps) {
-      if (step.kind !== "task" || !known.has(step.lane)) continue;
-      const item = entry(step.lane);
+      const id = systemOf(step.lane);
+      if (step.kind !== "task" || !id || !known.has(id)) continue;
+      const item = entry(id);
       item.steps.push({ journey, step });
       if (step.role && !item.roles.includes(step.role)) item.roles.push(step.role);
     }
     for (const integration of journey.integrations) {
-      for (const id of [integration.from, integration.to, integration.via]) {
+      for (const id of [systemOf(integration.from), systemOf(integration.to), integration.via]) {
         if (!id || !known.has(id)) continue;
         entry(id).integrations.push({ journey, integration });
       }

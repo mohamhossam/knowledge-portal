@@ -141,41 +141,80 @@ export type StepRole =
   | "bill"
   | "record";
 
-export type StepKind = "start" | "end" | "task" | "exclusive" | "parallel" | "error-end";
+/**
+ * A lane of a journey's flow: a catalogued system, a team or party that performs a step
+ * (the customer, the MSS team), or the ordering channel when the source names no performer.
+ */
+export type Lane = { kind: "system"; systemId: string } | { kind: "team"; name: string } | { kind: "channel" };
 
-/** A node of a journey's BPMN view, derived from its activities and flow rules. */
-export type Step = {
+/** A lane's key, one per lane of a journey: the system's id, "team:<name>", or "channel". */
+export function laneKey(lane: Lane): string {
+  switch (lane.kind) {
+    case "system":
+      return lane.systemId;
+    case "team":
+      return `team:${lane.name}`;
+    case "channel":
+      return "channel";
+  }
+}
+
+/** The system a lane stands for, when it is one. */
+export function systemOf(lane: Lane): string | undefined {
+  return lane.kind === "system" ? lane.systemId : undefined;
+}
+
+type StepBase = {
   id: string;
-  kind: StepKind;
+  lane: Lane;
+  /** Where the flow goes on; `loop` marks a way back to an earlier step. */
+  next: { to: string; label?: string; loop?: boolean }[];
+  evidence: Evidence;
+};
+
+/** An activity, as its source names it; on an error track, its last step ends the flow in error. */
+export type ActivityStep = StepBase & {
+  kind: "task" | "error-end";
   name: string;
-  /** The lane: a system id, "team:<name>" for a team or party, or "channel" for the ordering channel. */
-  lane: string;
   role?: StepRole;
   /** eTOM process this step belongs to (process area · process). */
   etom?: string;
   detail?: string;
   /** Point of no return: once passed, the order can no longer be cancelled. */
   ponr?: string;
-  /** Where the flow goes on; `loop` marks a way back to an earlier step. */
-  next: { to: string; label?: string; loop?: boolean }[];
-  evidence: Evidence;
 };
 
-export type IntegrationMode = "sync" | "async" | "not stated";
+/** A decision between the ways on; `question` is what is decided, when the source states it. */
+export type DecisionStep = StepBase & { kind: "exclusive"; question?: string };
+
+/** Where the flow splits into parallel tracks, or where the tracks join again. */
+export type ParallelStep = StepBase & { kind: "parallel"; gateway: "split" | "join" };
+
+/** Where the flow starts, or one of the places it ends. */
+export type EventStep = StepBase & { kind: "start" | "end" };
+
+/** A node of a journey's BPMN view, derived from its activities and flow rules. */
+export type Step = ActivityStep | DecisionStep | ParallelStep | EventStep;
+
+export type StepKind = Step["kind"];
+
+/** Whether a call waits for its answer; "not-stated" when the source doesn't say. */
+export type IntegrationMode = "sync" | "async" | "not-stated";
 
 export type Integration = {
+  /** Stable across the channels' views of a journey. */
   id: string;
   /** The step that makes the call. */
   step: string;
-  /** Lanes: a system id, "team:<name>" or "channel". */
-  from: string;
-  to: string;
-  /** Through the integration layer, when the call goes via it (e.g. TIBCO). */
+  from: Lane;
+  to: Lane;
+  /** Through the integration layer, when the call goes via it (e.g. TIBCO): a system id. */
   via?: string;
-  operation: string;
+  /** The interface or interaction the source names; none means a hand-over. */
+  operation?: string;
   purpose: string;
-  /** How it is made, as the source says; "Not stated" when it doesn't. */
-  style: string;
+  /** How it is made, as the source says, when it does. */
+  style?: string;
   mode: IntegrationMode;
   payload?: string;
   /** TM Forum Open API that does the same job. A hypothesis until the integration team confirms. */
@@ -194,13 +233,57 @@ export type JourneyDef = {
   channels: string[];
 };
 
+/** Who performs an activity: a lane, or the entry system of whichever channel the order came through. */
+export type Performer = Lane | { kind: "entry" };
+
+/** The track an activity is on: the main one, an error track (its end is an error end), or another side track. */
+export type TrackKind = "main" | "error" | "side";
+
+/** A numbered activity of a journey (ADR-0096), for the channels it names (none means every channel). */
+export type Activity = {
+  number: string;
+  name: string;
+  performer: Performer;
+  channels: string[];
+  track: TrackKind;
+  role?: StepRole;
+  etom?: string;
+  detail?: string;
+  ponr?: string;
+  /** What it yields, when the source says; it names the decision that follows it. */
+  output?: string;
+  evidence: Evidence;
+};
+
+/** One arrow of a journey's flow, as the service derives it from the order and the flow rules. */
+export type FlowEdge = { from: string; to: string; kind: string; label?: string };
+
+/**
+ * A journey's flow as the service derives it: with every step (no channel chosen), for each
+ * channel its steps name, and for the steps no channel is named for.
+ */
+export type Flow = { all: FlowEdge[]; byChannel: Record<string, FlowEdge[]>; shared: FlowEdge[] };
+
+/** A call an activity makes; an end the source leaves open is its activity's performer. */
+export type ActivityCall = Omit<Integration, "step" | "from" | "to"> & {
+  fromActivity: string;
+  toActivity: string;
+  fromSystem?: string;
+  toSystem?: string;
+};
+
+/** A journey with its activities, its flow and its calls, as the views derive each channel's view from. */
+export type Journey = JourneyDef & { activities: Activity[]; flow: Flow; calls: ActivityCall[] };
+
 /** One journey seen through one channel: its BPMN steps and its calls, in order. */
 export type JourneyView = JourneyDef & {
   channel: string | null;
+  /** The channel asked for, when the journey isn't offered through it; the view is then its first channel's. */
+  channelMissing?: string;
+  /** The channel's entry system, when a lane stands for it. */
+  entry?: string;
   steps: Step[];
   integrations: Integration[];
-  /** Lane labels where a lane stands for the channel's entry system. */
-  laneLabels: Record<string, string>;
 };
 
 export type Milestone = { name: string; producer: string | null; detail: string; evidence: Evidence };
@@ -234,7 +317,7 @@ export type Catalogue = {
   channels: Channel[];
   orderTypes: OrderType[];
   offerings: Offering[];
-  journeys: JourneyDef[];
+  journeys: Journey[];
   findings: Finding[];
 };
 

@@ -37,7 +37,7 @@ export function SystemsPage() {
   const name = (id: string) => data.systems.find((system) => system.id === id)?.name ?? id;
   const figures = useMemo(() => {
     const partners = new Map<string, number>();
-    for (const key of linkCounts.keys()) for (const id of key.split("~")) partners.set(id, (partners.get(id) ?? 0) + 1);
+    for (const { a, b } of linkCounts.values()) for (const id of [a, b]) partners.set(id, (partners.get(id) ?? 0) + 1);
     const most = [...partners.entries()].sort((a, b) => b[1] - a[1])[0];
     return { linked: partners.size, pairs: linkCounts.size, interfaces: interfaces.length, layered: interfaces.filter((call) => call.via).length, most };
   }, [linkCounts, interfaces]);

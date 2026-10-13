@@ -8,7 +8,7 @@
  * the BPMN 2.0 export's diagram interchange, so the exported file opens laid
  * out as it is shown.
  */
-import type { JourneyView, Step } from "./model";
+import { type JourneyView, type Lane, laneKey, type Step } from "./model";
 
 export const GEOMETRY = {
   laneHeader: 168,
@@ -28,7 +28,7 @@ export type Placed = { step: Step; lane: number; column: number; x: number; y: n
 export type Edge = { from: string; to: string; label?: string; points: [number, number][]; back?: boolean };
 
 export type FlowLayout = {
-  lanes: string[];
+  lanes: Lane[];
   placed: Map<string, Placed>;
   edges: Edge[];
   width: number;
@@ -91,21 +91,28 @@ export function layoutFlow(journey: JourneyView): FlowLayout {
   const ordered = new Set(order);
   for (const step of journey.steps) if (!ordered.has(step)) order.push(step);
 
-  const lanes: string[] = [];
-  for (const step of order) if (!lanes.includes(step.lane)) lanes.push(step.lane);
+  const lanes: Lane[] = [];
+  const laneIndex = new Map<string, number>();
+  for (const step of order) {
+    const key = laneKey(step.lane);
+    if (!laneIndex.has(key)) {
+      laneIndex.set(key, lanes.length);
+      lanes.push(step.lane);
+    }
+  }
 
   const column = new Map<string, number>();
   const taken = new Set<string>();
   for (const step of order) {
     let at = Math.max(-1, ...(incoming.get(step.id) ?? []).map((id) => column.get(id) ?? 0)) + 1;
-    while (taken.has(`${step.lane}:${at}`)) at += 1;
+    while (taken.has(`${laneKey(step.lane)}:${at}`)) at += 1;
     column.set(step.id, at);
-    taken.add(`${step.lane}:${at}`);
+    taken.add(`${laneKey(step.lane)}:${at}`);
   }
 
   const placed = new Map<string, Placed>();
   for (const step of order) {
-    const lane = lanes.indexOf(step.lane);
+    const lane = laneIndex.get(laneKey(step.lane)) ?? 0;
     const col = column.get(step.id) ?? 0;
     const { width, height } = size(step);
     const cx = GEOMETRY.laneHeader + GEOMETRY.pad + col * GEOMETRY.column + GEOMETRY.task.width / 2;

@@ -15,9 +15,9 @@
  */
 import { type CSSProperties, type KeyboardEvent, type ReactNode, memo, useCallback, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 
-import type { CatalogueData } from "../../architecture/adapter";
-import type { Integration, StepRole, System, TamDomain } from "../../architecture/model";
+import { type Catalogue, type Integration, type StepRole, type System, systemOf, type TamDomain } from "../../architecture/model";
 import { monogram, plural, shortFunction } from "./labUtil";
+import type { SystemLink } from "./posterModel";
 
 /** Which layers share a row, top to bottom; the integration layer runs between them as a bus. */
 const SIDE_LAYERS = ["engaged-party", "enterprise"];
@@ -148,9 +148,9 @@ function neighbour(rects: [string, Rect][], from: Rect, key: string): string | u
 }
 
 type Props = {
-  data: CatalogueData;
+  data: Catalogue;
   label: string;
-  linkCounts: Map<string, number>;
+  linkCounts: Map<string, SystemLink>;
   selected: string | null;
   onSelect: (id: string | null) => void;
   /** Draw every link, not only the selected system's. */
@@ -219,8 +219,7 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
   const partners = useMemo(() => {
     const found = new Map<string, number>();
     if (!selected || journey) return found;
-    for (const [key, count] of linkCounts) {
-      const [a = "", b = ""] = key.split("~");
+    for (const { a, b, count } of linkCounts.values()) {
       if (a === selected) found.set(b, count);
       else if (b === selected) found.set(a, count);
     }
@@ -232,7 +231,9 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
     const at = (id?: string) => (id ? rects.get(id) : undefined);
     if (journey) {
       journey.calls.slice(0, journey.current + 1).forEach((call, index) => {
-        const hops: [string | undefined, string | undefined][] = call.via ? [[call.from, call.via], [call.via, call.to]] : [[call.from, call.to]];
+        const from = systemOf(call.from);
+        const to = systemOf(call.to);
+        const hops: [string | undefined, string | undefined][] = call.via ? [[from, call.via], [call.via, to]] : [[from, to]];
         const now = index === journey.current;
         for (const [a, b] of hops) {
           const from = at(a);
@@ -244,8 +245,7 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
       });
       return out;
     }
-    for (const key of linkCounts.keys()) {
-      const [a = "", b = ""] = key.split("~");
+    for (const [key, { a, b }] of linkCounts) {
       const mine = selected !== null && (a === selected || b === selected);
       if (!mine && !showLinks) continue;
       const from = at(mine && b === selected ? b : a);
@@ -258,7 +258,7 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
   const now = journey ? lines.filter((line) => line.kind === "now").at(-1) : undefined;
 
   const call = journey?.calls[journey.current];
-  const involved = new Set(call ? [call.from, call.to, call.via].filter((id): id is string => Boolean(id)) : []);
+  const involved = new Set(call ? [systemOf(call.from), systemOf(call.to), call.via].filter((id): id is string => Boolean(id)) : []);
   const known = (id: string | null) => id !== null && order.some((system) => system.id === id);
   const tabStop = known(focusId) ? focusId : known(selected) ? selected : (order[0]?.id ?? null);
 

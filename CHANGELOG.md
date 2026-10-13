@@ -68,6 +68,21 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 - The lab draws the flow the service derives (`channel_edges`, `shared_edges`, `edges`)
   instead of its own copy of the rules: the two matched in all 46 views of the Business Pro
   Plus catalogue (20 journeys, each channel), so the copy is gone.
+- A journey opened in the catalogue lab through a channel it isn't offered through (an old
+  link, or a channel that no longer sells its order type) says so: "… isn't offered through
+  “X”; it is shown through Y instead.", on the journey's flow and on the product's
+  Architecture tab, one journey at a time. Before, the lab silently showed the first channel.
+- The catalogue lab's view model no longer carries the API's release. `fromRelease` maps
+  each journey's activities, flow (`edges`, `channel_edges`, `shared_edges`) and calls once,
+  and `journeyView`, `journeyViews` and `impactOf` read only the model. The prose the service
+  has no field for yet (the delivery drop, a proposition's summary and purpose, a question's
+  title, the band domains, the main and error-end tracks) is parsed in one tested place,
+  `frontend/src/architecture/conventions.ts`. The model carries kinds (a lane is a system, a
+  team or the ordering channel; events, gateways, hand-overs, unstated styles and timings),
+  and the lab's `words.ts` names them; a call's id is the same in every channel's view, and
+  its timing is read in any case. Nothing else on screen changes: every journey × channel
+  view, its layout and exports, the impact lens and the systems' links matched the previous
+  model, and the lab's pages matched pixel for pixel.
 - Sending Decide's answers no longer hides failures. Adding the systems the answers need,
   and accepting what is ready, pass over only the service's "already done" refusals: the
   draft has the system (422 `invalid_architecture_knowledge`), nothing waits for it any more

@@ -6,7 +6,7 @@
 import { type ReactNode, useMemo } from "react";
 import { Link } from "react-router-dom";
 
-import { type Component, type Offering } from "../../architecture/model";
+import { type Component, type Offering, systemOf } from "../../architecture/model";
 import { AreaTabs, EvidenceTag, PathBar } from "./CatalogueLab";
 import { firstJourneyHref, journeyHref, LAB, useLabData, useOffering } from "./labData";
 import { leadingNumber, listOf, monogram, plural, useTitle } from "./labUtil";
@@ -70,7 +70,7 @@ export function ProductHeader({ offering, current, actions, compact = false }: {
   const views = useMemo(() => allViews(data).filter((view) => view.offeringId === offering.id), [data, offering]);
   const systems = new Set(
     views
-      .flatMap((view) => [...view.steps.map((step) => step.lane), ...view.integrations.flatMap((call) => [call.from, call.to, call.via])])
+      .flatMap((view) => [...view.steps.map((step) => systemOf(step.lane)), ...view.integrations.flatMap((call) => [systemOf(call.from), systemOf(call.to), call.via])])
       .filter((id): id is string => typeof id === "string" && data.systems.some((system) => system.id === id)),
   );
   const journeys = data.journeys.filter((journey) => journey.offeringId === offering.id);

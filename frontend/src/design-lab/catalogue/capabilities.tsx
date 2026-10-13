@@ -6,7 +6,7 @@
  */
 import type { ReactNode } from "react";
 
-import type { CatalogueData } from "../../architecture/adapter";
+import type { Catalogue } from "../../architecture/model";
 
 export const CAPABILITIES: { id: string; name: string; blurb: string; test: RegExp; icon: ReactNode }[] = [
   {
@@ -98,7 +98,7 @@ function partKind(name: string): string {
 export type Part = { component: string; product: string; responsibility: string };
 
 /** Every system's parts, by kind, across all products. */
-export function systemParts(data: CatalogueData): Map<string, Map<string, Part[]>> {
+export function systemParts(data: Catalogue): Map<string, Map<string, Part[]>> {
   const result = new Map<string, Map<string, Part[]>>();
   for (const offering of data.offerings)
     for (const component of offering.components)
