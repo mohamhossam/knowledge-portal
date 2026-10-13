@@ -176,7 +176,7 @@ def test_a_name_written_apart_finds_the_system_whose_alias_runs_it_together() ->
 
 
 def test_the_prompt_reads_tables_as_records_and_integrations_as_stated() -> None:
-    assert PROMPT_VERSION == "catalogue-extraction-v13"
+    assert PROMPT_VERSION == "catalogue-extraction-v16"
     for rule in (
         "Read each row as one record",
         "the ID value",
@@ -317,3 +317,64 @@ def test_a_link_listed_from_both_systems_is_one_suggestion_unless_each_says_how(
         _link("flow-engine", "order-gateway", "line 9"),
     )
     assert len(_links(typed, typed_draft.id)) == 2
+
+
+def test_every_reading_of_one_system_is_one_suggestion_with_all_its_citations() -> None:
+    """A long specification mentioned CWOM in 37 places: offered 37 times, each worded apart."""
+
+    def mention(line: int, description: str | None, *aliases: str) -> ProposedChange:
+        return ProposedChange(
+            CandidateContent(
+                CandidateKind.SYSTEM,
+                "cwom",
+                name="CWOM",
+                aliases=aliases,
+                description=description,
+            ),
+            (f"line {line}",),
+            f"CWOM quote {line}",
+            source_name="CWOM",
+        )
+
+    def capability(line: int, *triggers: str) -> ProposedChange:
+        return ProposedChange(
+            CandidateContent(
+                CandidateKind.CAPABILITY,
+                "cwom",
+                capability_id="order-fulfilment",
+                name="Order fulfilment",
+                triggers=triggers,
+            ),
+            (f"line {line}",),
+            f"fulfils {line}",
+            source_name="CWOM",
+        )
+
+    run, draft, candidates = _propose(
+        mention(1, "Fixed order orchestration."),
+        mention(2, "CWOM should support provisioning the Generic FortiAP PO.", "Order Manager"),
+        mention(3, None),
+        mention(4, "CWOM processes the order fulfillment.", "order manager"),
+        capability(5, "fulfil order"),
+        capability(6, "fulfil order", "orchestrate order"),
+    )
+
+    systems = [
+        item
+        for item in candidates.list(draft.id)
+        if item.content.kind is CandidateKind.SYSTEM and item.content.system_id == "cwom"
+    ]
+    (system,) = systems
+    assert system.content.description == "Fixed order orchestration."
+    assert system.content.aliases == ("Order Manager",)
+    assert [(item.location, item.quote) for item in system.citations] == [
+        (f"line {line}", f"CWOM quote {line}") for line in (1, 2, 3, 4)
+    ]
+    (fulfilment,) = [
+        item for item in candidates.list(draft.id) if item.content.kind is CandidateKind.CAPABILITY
+    ]
+    assert fulfilment.content.triggers == ("fulfil order", "orchestrate order")
+    assert (
+        "Suggestions about the same thing were merged into one: 3 system, 1 capability."
+        in run.warnings
+    )

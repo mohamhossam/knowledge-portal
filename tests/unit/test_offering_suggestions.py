@@ -67,8 +67,8 @@ from knowledge_portal.infrastructure.llm.catalogue_extraction import (
     ChangeOutput,
     ComponentOutput,
     ExtractionOutput,
-    OfferingOutput,
     OrderTypeOutput,
+    PlannedOfferingOutput,
     ResponsibilityOutput,
     StructuredCatalogueExtractor,
 )
@@ -291,7 +291,7 @@ class _Answer:
         return self.output
 
 
-def _offering_change(offering: OfferingOutput) -> ChangeOutput:
+def _offering_change(offering: PlannedOfferingOutput) -> ChangeOutput:
     return ChangeOutput(
         kind="product_offering",
         system="",
@@ -324,7 +324,7 @@ def _duty(system: str, role: str, orders: list[str]) -> ResponsibilityOutput:
 
 def test_the_models_offering_is_made_valid_before_anyone_sees_it() -> None:
     passage = "Office Connect is a fixed connection; CWOM orchestrates its fibre for new orders."
-    read = OfferingOutput(
+    read = PlannedOfferingOutput(
         code="OFFICE_CONNECT",
         family=None,
         version=None,

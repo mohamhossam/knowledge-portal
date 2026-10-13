@@ -9,6 +9,8 @@ the job waiting forever once its attempts ran out.
 from __future__ import annotations
 
 import json
+import threading
+import time
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -535,3 +537,81 @@ def test_reading_status_is_listed_per_document_and_retry_runs(client: TestClient
     assert started["status"] == "succeeded"
     reader = {"X-Fake-Actor-Id": "fake-reviewer"}
     assert client.get(f"{base}/extractions", headers=reader).status_code == 403
+
+
+def test_a_provider_refusal_ends_the_reading_at_once() -> None:
+    """The reported run: OpenRouter refused a model without credit (HTTP 402), wrapped in a
+    plain status error, and each of 300 parts was asked twice and refused."""
+    request = httpx.Request("POST", "https://openrouter.ai/api/v1/chat/completions")
+    status = httpx.HTTPStatusError(
+        "402 Payment Required", request=request, response=httpx.Response(402, request=request)
+    )
+    refused = StructuredOutputError("OpenRouter request failed")
+    refused.__cause__ = status
+    client = _Recording([refused] * 50)
+
+    with pytest.raises(CatalogueAnswerUnusableError) as raised:
+        _extractor(client).propose(_document(40))
+
+    assert len(client.prompts) == 1
+    assert describe_public_error(raised.value).code == "model_payment"
+    assert "The model provider refused the reading (payment)" in str(raised.value)
+
+
+class _Concurrent:
+    """A client that answers each call from its own passages, slowly, counting calls at once."""
+
+    model = "concurrent"
+
+    def __init__(self) -> None:
+        self.lock = threading.Lock()
+        self.now = 0
+        self.most = 0
+
+    def parse(self, *, user_prompt: str, **_: Any) -> ExtractionOutput:
+        with self.lock:
+            self.now += 1
+            self.most = max(self.most, self.now)
+        time.sleep(0.05)
+        segment = json.loads(user_prompt)["segments"][0]
+        name = segment["text"].split(" runs")[0]
+        with self.lock:
+            self.now -= 1
+        return ExtractionOutput(
+            changes=[_change(name=name, system=name, quote=f"{name} runs the ledger")]
+        )
+
+
+def test_parts_read_at_once_give_the_reading_one_at_a_time_gives() -> None:
+    request = ExtractionRequest(
+        "Ledger systems",
+        tuple(
+            # Each long enough to be read in a call of its own.
+            ExtractionSegment(
+                number,
+                f"paragraph {number}",
+                f"System {number} runs the ledger. " + "It closes the books nightly. " * 35,
+            )
+            for number in range(1, 13)
+        ),
+        (),
+    )
+
+    def read(concurrency: int) -> tuple[Any, _Concurrent]:
+        client = _Concurrent()
+        typed: Any = client
+        extractor = StructuredCatalogueExtractor(
+            typed, supports_images=False, max_output_tokens=1600, concurrency=concurrency
+        )
+        return extractor.propose(request), client
+
+    one, sequential = read(1)
+    many, parallel = read(4)
+
+    assert sequential.most == 1
+    assert parallel.most > 1
+    # The same suggestions in document order, however the calls finished.
+    assert [change.content.name for change in many.changes] == [
+        change.content.name for change in one.changes
+    ]
+    assert many.warnings == one.warnings

@@ -591,7 +591,9 @@ def test_extraction_adapter_builds_every_kind_and_skips_unusable_items() -> None
     assert (capability.system_id, capability.capability_id) == ("hub", "order-taking")
     assert constraint.text == "Nightly only"
     assert proposal.warnings == (
-        "2 suggestion(s) were left out because their citation could not be checked.",
+        "1 suggestion(s) were left out: what they quote was not found in the document.",
+        # A capability with no phrases cannot be suggested.
+        "Incomplete suggestions were left out: 1 capability.",
     )
 
 

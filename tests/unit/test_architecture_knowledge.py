@@ -487,7 +487,7 @@ def test_chunk_windows_preserve_exact_text_and_75_token_overlap() -> None:
     assert windows[0][1].split()[-75:] == windows[1][1].split()[:75]
 
 
-def test_docx_evidence_retains_table_cell_location() -> None:
+def test_docx_evidence_retains_table_row_location() -> None:
     xml = (
         '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
         "<w:body><w:p><w:r><w:t>Overview</w:t></w:r></w:p>"
@@ -504,7 +504,7 @@ def test_docx_evidence_retains_table_cell_location() -> None:
     )
     assert [(item.location, item.text) for item in located] == [
         ("paragraph 1", "Overview"),
-        ("table 1, row 1, cell 1, paragraph 2", "Owner unknown"),
+        ("table 1, row 1", "Owner unknown"),
     ]
 
 

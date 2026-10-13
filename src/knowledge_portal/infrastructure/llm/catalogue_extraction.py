@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
+import threading
 import unicodedata
-from collections import deque
+from collections import Counter, deque
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass, replace
-from typing import Any, Literal
+from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
+from dataclasses import dataclass, field, replace
+from typing import Any, ClassVar, Literal, get_args
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from smb_kernel.llm.structured_output import (
@@ -57,8 +60,10 @@ from knowledge_portal.domain.architecture.products import (
     ComponentResponsibility,
     OfferingComponent,
     OfferingNfr,
+    OfferingPlan,
     OfferingPoint,
     OrderType,
+    PlanCharacteristic,
     ProductOffering,
     Realisation,
     SourceConfidence,
@@ -79,24 +84,40 @@ from knowledge_portal.infrastructure.llm.prompts.catalogue_extraction_prompt imp
     build_user_prompt,
 )
 
+_LOG = logging.getLogger(__name__)
 _MAX_NAME = 200
 _MAX_TEXT = 1000
 _MAX_REASONING = 300
 
 
 _Confidence = Literal["confirmed", "inferred", "gap"] | None
-# Schema words the model never needs: titles, class descriptions, and the size limits, which
-# validation still enforces. Left out, the schema costs a small model far less room.
-_NOISE = ("title", "description", "maxLength", "maxItems")
+# Schema keywords the model never needs: titles, class descriptions, defaults, and the size
+# limits, which validation still enforces (and mends, ``_mended``). Left out, the schema costs
+# a small model far less room.
+_NOISE = ("title", "description", "maxLength", "maxItems", "default")
 
 
 def _compact(schema: dict[str, Any]) -> None:
+    """Strip schema keywords the model never needs, never a field's own name.
+
+    A field called "description" or "title" is a property, not the keyword: it
+    once went missing from the schema the model was shown while validation still
+    required it, and an answer leaving it out was refused whole. Every property is
+    required, so the model writes each key, null when it has no value.
+    """
+
     def strip(node: object) -> None:
         if isinstance(node, dict):
             for key in _NOISE:
                 node.pop(key, None)
-            for value in node.values():
-                strip(value)
+            properties = node.get("properties")
+            if isinstance(properties, dict):
+                node["required"] = list(properties)
+                for value in properties.values():
+                    strip(value)
+            for key, value in node.items():
+                if key != "properties":
+                    strip(value)
         elif isinstance(node, list):
             for value in node:
                 strip(value)
@@ -144,6 +165,19 @@ class PointOutput(_Output):
     description: str | None = Field(max_length=_MAX_TEXT)
 
 
+class CharacteristicOutput(_Output):
+    name: str = Field(max_length=_MAX_NAME)
+    value: str = Field(max_length=_MAX_NAME)
+
+
+class PlanOutput(_Output):
+    """A plan, tier or child PO of the offering: its name and each stated fact of it."""
+
+    name: str = Field(max_length=_MAX_NAME)
+    characteristics: list[CharacteristicOutput] = Field(max_length=20)
+    description: str | None = Field(max_length=_MAX_TEXT)
+
+
 class OfferingOutput(_Output):
     """A product offering as the model read it; tidied into a valid one before use."""
 
@@ -158,6 +192,14 @@ class OfferingOutput(_Output):
     values: list[PointOutput] = Field(max_length=20)
     audiences: list[PointOutput] = Field(max_length=20)
     confidence: _Confidence
+
+
+class PlannedOfferingOutput(OfferingOutput):
+    """An offering with its plans, in every reading but the lean one, which has no room."""
+
+    # Its plans, tiers or child POs (PO1 100 Mbps, PO2 200 Mbps), never offerings of their
+    # own; empty when the document names none. The schema still asks for the key.
+    plans: list[PlanOutput] = Field(default_factory=list, max_length=40)
 
 
 # An offering's details (ADR-0101, step 4): asked for only in the full reading.
@@ -240,7 +282,7 @@ class LifecycleNoteOutput(_Output):
     confidence: _Confidence
 
 
-class DetailedOfferingOutput(OfferingOutput):
+class DetailedOfferingOutput(PlannedOfferingOutput):
     """An offering with what it is made of and what happens to it, in the full reading."""
 
     components: list[DetailedComponentOutput] = Field(max_length=40)  # type: ignore[assignment]
@@ -343,6 +385,7 @@ class ChangeOutput(LeanChangeOutput):
     # A small context reads without journeys and channels; tables still give both.
     kind: _LeanKind | Literal["journey", "channel"]  # type: ignore[assignment]
     # The whole journey, for a journey; null for other kinds (ADR-0096).
+    offering: PlannedOfferingOutput | None
     journey: JourneyOutput | None
     # A channel's kind, such as Digital or Assisted; null for other kinds (ADR-0101).
     channel_kind: str | None = Field(max_length=_MAX_NAME)
@@ -369,7 +412,105 @@ class DetailedExtractionOutput(_Output):
     changes: list[DetailedChangeOutput] = Field(max_length=200)
 
 
+class _Answers(BaseModel):
+    """An answer's suggestions, each checked on its own (``_mended``) rather than together.
+
+    The model is shown the full schema; one item that breaks it (a key left
+    out, eleven evidence numbers) would otherwise lose every suggestion of the call.
+    """
+
+    shape: ClassVar[type[_Output]]
+    changes: list[Any]
+
+    @classmethod
+    def model_json_schema(cls, *args: Any, **kwargs: Any) -> dict[str, Any]:
+        return cls.shape.model_json_schema(*args, **kwargs)
+
+
+class _DetailedAnswers(_Answers):
+    shape = DetailedExtractionOutput
+
+
+class _StandardAnswers(_Answers):
+    shape = ExtractionOutput
+
+
+class _LeanAnswers(_Answers):
+    shape = LeanExtractionOutput
+
+
+# Transports name the schema after the class they are given.
+_DetailedAnswers.__name__ = DetailedExtractionOutput.__name__
+_StandardAnswers.__name__ = ExtractionOutput.__name__
+_LeanAnswers.__name__ = LeanExtractionOutput.__name__
+# How many times one item is mended before it is left out.
+_MEND_ROUNDS = 6
+_EMPTY_FOR_TYPE = {"list_type": [], "bool_type": False, "string_type": ""}
+
+
+def _mended(shape: type[LeanChangeOutput], raw: object) -> LeanChangeOutput | None:
+    """One answered item in its shape, mended where the model only overstepped a limit.
+
+    A key left out reads as null; a value over its limit is cut to it (eleven
+    evidence numbers become the first ten, a long quote its first 1,000
+    characters); null where a list, a flag or a table cell belongs reads as empty;
+    "inferred" reads as "implied". Anything else leaves the item out.
+    """
+    data = raw.model_dump() if isinstance(raw, BaseModel) else raw
+    if not isinstance(data, dict):
+        return None
+    for _ in range(_MEND_ROUNDS):
+        try:
+            return shape.model_validate(data)
+        except ValidationError as error:
+            if not all(_mend(data, problem) for problem in error.errors()):
+                return None
+    return None
+
+
+def _mend(data: dict[str, Any], problem: Any) -> bool:
+    """Mend one validation problem in place; False when it cannot be mended."""
+    *path, key = problem["loc"]
+    parent: Any = data
+    for step in path:
+        try:
+            parent = parent[step]
+        except (KeyError, IndexError, TypeError):
+            return False
+    kind, value = problem["type"], problem.get("input")
+    limit = (problem.get("ctx") or {}).get("max_length")
+    if kind == "missing" and isinstance(parent, dict):
+        parent[key] = None
+    elif kind in _EMPTY_FOR_TYPE and value is None:
+        parent[key] = _EMPTY_FOR_TYPE[kind]
+    elif kind == "too_long" and isinstance(value, list) and limit is not None:
+        parent[key] = value[:limit]
+    elif kind == "string_too_long" and isinstance(value, str) and limit is not None:
+        parent[key] = value[:limit]
+    elif kind == "literal_error" and key == "basis" and str(value).casefold() == "inferred":
+        parent[key] = "implied"
+    else:
+        return False
+    return True
+
+
 _Reading = Literal["detailed", "standard", "lean"]
+
+
+def _kind_of(raw: object) -> str:
+    """The kind an item it could not use says it is, for counting what was left out."""
+    data = raw.model_dump() if isinstance(raw, BaseModel) else raw
+    kind = data.get("kind") if isinstance(data, dict) else None
+    return kind if isinstance(kind, str) and kind in _KINDS else "item"
+
+
+_KINDS = frozenset((*get_args(_LeanKind), "journey", "channel"))
+# What each reading asks with: its prompt, the answer it parses, and each item's shape.
+_ASKED: dict[_Reading, tuple[str, type[_Answers], type[LeanChangeOutput]]] = {
+    "detailed": (DETAILED_SYSTEM_PROMPT, _DetailedAnswers, DetailedChangeOutput),
+    "standard": (SYSTEM_PROMPT, _StandardAnswers, ChangeOutput),
+    "lean": (LEAN_SYSTEM_PROMPT, _LeanAnswers, LeanChangeOutput),
+}
 
 
 def _detailed(item: LeanChangeOutput) -> DetailedChangeOutput:
@@ -395,8 +536,22 @@ def slug(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", value.casefold()).strip("-")[:80] or "item"
 
 
+# Typography a model rewrites when it quotes: curly quotes, dashes, ellipses,
+# non-breaking and zero-width spaces read as their plain forms.
+_TYPOGRAPHY = str.maketrans(
+    {
+        **dict.fromkeys("‘’‚‛", "'"),
+        **dict.fromkeys("“”„", '"'),
+        **dict.fromkeys("‐‑‒–—−", "-"),
+        "…": "...",
+        **dict.fromkeys("  ", " "),
+        **dict.fromkeys("​‌‍﻿", ""),
+    }
+)
+
+
 def _normalise(value: str) -> str:
-    return " ".join(value.casefold().split())
+    return " ".join(value.translate(_TYPOGRAPHY).casefold().split())
 
 
 def _clean(values: list[str]) -> tuple[str, ...]:
@@ -738,6 +893,18 @@ def _offering(item: DetailedChangeOutput, names: _SystemNames) -> ProductOfferin
             OfferingPoint(item.name.strip(), _text(item.description)) for item in found.values()
         )
 
+    plans: dict[str, OfferingPlan] = {}
+    for plan in read.plans:
+        facts: dict[str, PlanCharacteristic] = {}
+        for fact in plan.characteristics:
+            stated = _built(PlanCharacteristic, fact.name.strip(), fact.value.strip())
+            if stated is not None:
+                facts.setdefault(stated.name.casefold(), stated)
+        made = _built(
+            OfferingPlan, plan.name.strip(), tuple(facts.values()), _text(plan.description)
+        )
+        if made is not None:
+            plans.setdefault(made.name.casefold(), made)
     offering_code = _text(read.code)
     return ProductOffering(
         id=slug(offering_code or name),
@@ -756,6 +923,7 @@ def _offering(item: DetailedChangeOutput, names: _SystemNames) -> ProductOfferin
         nfrs=_nfrs(read.nfrs),
         tracking=_tracking(read.tracking, names, keys),
         lifecycle_notes=_lifecycle_notes(read.lifecycle_notes, keys),
+        plans=tuple(plans.values()),
     )
 
 
@@ -858,8 +1026,12 @@ def _content(item: DetailedChangeOutput, names: _SystemNames) -> CandidateConten
             parent_domain_id=slug(parent) if parent else None,
             description=(item.text or "").strip() or None,
         )
+    subject = item.system.strip()
+    if not (subject or (kind is CandidateKind.SYSTEM and name)):
+        # Resolved, a blank name would become a system called "item" that nothing adds.
+        raise InvalidKnowledgeError(f"A {kind.value} needs the system it is about.")
     if kind is CandidateKind.SYSTEM:
-        name = name or item.system.strip()
+        name = name or subject
         return CandidateContent(
             kind,
             names.resolve(item.system or name),
@@ -909,13 +1081,41 @@ def _content(item: DetailedChangeOutput, names: _SystemNames) -> CandidateConten
     if kind is CandidateKind.OFFERING_RULE:
         # Its subject is an offering, by name until the draft resolves it.
         return CandidateContent(kind, slug(item.system), text=(item.text or "").strip())
+    target = (item.target_system or "").strip()
+    if not target:
+        # Resolved, a blank name would become a system called "item".
+        raise InvalidKnowledgeError("A dependency needs the system it depends on.")
+    if _GROUP.match(item.system.strip()) or _GROUP.match(target):
+        # "Channels submit the request to RTF" names no system: offered, it waited for a
+        # system called "Channels" that nothing could add.
+        raise InvalidKnowledgeError("A dependency is between named systems, not a group of them.")
+    relationship = RelationshipKind(item.relationship_kind or "unspecified")
     return CandidateContent(
         kind,
         system_id,
-        target_system_id=names.resolve(item.target_system or ""),
-        text=(item.text or "").strip(),
-        relationship_kind=RelationshipKind(item.relationship_kind or "unspecified"),
+        target_system_id=names.resolve(target),
+        # A stated dependency the model gave no words for is still one: said by its kind,
+        # as the table reader says "Integrates with" (the reported reading lost 104).
+        text=(item.text or "").strip() or f"{_LINKED[relationship]} {target}",
+        relationship_kind=relationship,
     )
+
+
+# A group of systems or channels a document names as a whole: "Channels", "Digital Channels",
+# "the fulfilment systems". Never one end of a dependency.
+_GROUP = re.compile(
+    r"(?i)^(?:all |the |other |digital |sales |ordering |order |fulfil?ment |downstream "
+    r"|upstream |front[- ]end |back[- ]end |b2b |internal |external )*"
+    r"(?:channels?|systems?|applications?|platforms?)$"
+)
+
+_LINKED = {
+    RelationshipKind.CALLS_API: "Calls the API of",
+    RelationshipKind.PUBLISHES_EVENTS_TO: "Publishes events to",
+    RelationshipKind.TRANSFERS_DATA_TO: "Transfers data to",
+    RelationshipKind.ORCHESTRATES: "Orchestrates",
+    RelationshipKind.UNSPECIFIED: "Depends on",
+}
 
 
 _QUOTE_OVERLAP = 0.6
@@ -926,9 +1126,12 @@ MAX_TEXT_CHARACTERS_PER_CALL = 48_000
 # Below this much room for document text, reading is not worth attempting.
 _MIN_TEXT_TOKENS = 400
 _IMAGE_TOKENS = 1024
-_SCHEMA_TEXT = json.dumps(ExtractionOutput.model_json_schema())
-_DETAILED_SCHEMA_TEXT = json.dumps(DetailedExtractionOutput.model_json_schema())
-_LEAN_SCHEMA_TEXT = json.dumps(LeanExtractionOutput.model_json_schema())
+# Measured as the transports send them: without spaces.
+_SCHEMA_TEXT = json.dumps(ExtractionOutput.model_json_schema(), separators=(",", ":"))
+_DETAILED_SCHEMA_TEXT = json.dumps(
+    DetailedExtractionOutput.model_json_schema(), separators=(",", ":")
+)
+_LEAN_SCHEMA_TEXT = json.dumps(LeanExtractionOutput.model_json_schema(), separators=(",", ":"))
 # With less room than this for document text, a reading leaves journeys out (ADR-0096).
 _JOURNEY_ROOM = 4 * _MIN_TEXT_TOKENS
 _JOURNEY_WORD = re.compile(r"\bjourneys?\b", re.IGNORECASE)
@@ -957,20 +1160,49 @@ _MIN_SPLIT_CHARACTERS = 400
 _REASONS = {
     "unusable": "the model's answer was unusable.",
     "uncited": "no suggestion cited the text correctly.",
+    "invalid": "every suggestion the model gave was incomplete.",
     "truncated": "the model's answer was too long, even for a small part.",
     "budget": "the reading reached its limit on model calls.",
 }
 # Provider failures that asking again cannot fix.
 _PERMANENT_KINDS = {"authentication", "configuration", "payment"}
+# HTTP statuses that mean the same, from a transport that does not classify them.
+_REFUSED = {401: "authentication", 402: "payment", 403: "authentication", 404: "configuration"}
 
 
-def _permanent(error: BaseException) -> bool:
+def _why(error: BaseException) -> str:
+    """What went wrong with an answer, by error type only: never the document's text."""
+    current: BaseException | None = error
+    while current is not None:
+        if isinstance(current, ValidationError):
+            problems = sorted({str(problem["type"]) for problem in current.errors()})
+            return f"{current.error_count()} schema problem(s): {', '.join(problems)}"
+        if current.__cause__ is None:
+            return type(current).__name__
+        current = current.__cause__
+    return type(error).__name__
+
+
+def _refusal(error: BaseException) -> ModelTransportError | None:
+    """The provider's refusal behind a failed call, when asking again cannot fix it.
+
+    A transport may raise the app's own classification, or only wrap the HTTP
+    response: OpenRouter's 402 (no credit for the model) arrived as a plain status
+    error, so each of 300 parts was asked twice and every one refused.
+    """
     current: BaseException | None = error
     while current is not None:
         if isinstance(current, ModelTransportError):
-            return current.kind in _PERMANENT_KINDS
+            return current if current.kind in _PERMANENT_KINDS else None
+        status = getattr(getattr(current, "response", None), "status_code", None)
+        if status in _REFUSED:
+            return ModelTransportError(_REFUSED[status])
         current = current.__cause__
-    return False
+    return None
+
+
+def _permanent(error: BaseException) -> bool:
+    return _refusal(error) is not None
 
 
 def _tokens(text: str) -> int:
@@ -982,33 +1214,57 @@ def _words(value: str) -> set[str]:
     return {word for word in re.findall(r"\w+", value.casefold()) if len(word) > 2}
 
 
-def _evidence_quote(quote: str, cited: list[ExtractionSegment]) -> str | None:
-    """The verbatim text supporting a quote, or None when the segments do not say it.
+# A sentence ends at ". ", "! " or "? ", but not after one letter ("B. Pro+", "e.g. ").
+_SENTENCE = re.compile(r"(?<=[.!?])(?<!\b\w\.)\s+|\n+")
 
-    Small models often paraphrase. An exact quote is kept; a close paraphrase
-    is replaced by the cited sentence it best matches, so what a person reads
-    is always the document's own words.
+
+def _evidence_quote(
+    quote: str, cited: list[ExtractionSegment], batch: Sequence[ExtractionSegment] = ()
+) -> tuple[str, tuple[ExtractionSegment, ...]] | None:
+    """The verbatim text supporting a quote and the passages that hold it; None when
+    no passage says it.
+
+    Small models often paraphrase, and cite the wrong passage. An exact quote is
+    kept: from a cited passage, from two cited neighbours read together (a sentence
+    across a page or a row break), or else from wherever in the call's text it is,
+    and it is cited there. A close paraphrase is replaced by the sentence it best
+    matches, so what a person reads is always the document's own words, cited
+    where they are.
     """
     normalised = _normalise(quote)
     if not normalised:
         return None
-    if any(segment.image_mime_type for segment in cited):
+    images = tuple(segment for segment in cited if segment.image_mime_type)
+    if images:
         # A vision model reads an image; there is no text to match the quote against.
-        return quote.strip()
-    if any(normalised in _normalise(segment.text) for segment in cited):
-        return quote.strip()
-    wanted = _words(quote)
+        return quote.strip(), images
+    for segment in cited:
+        if normalised in _normalise(segment.text):
+            return quote.strip(), (segment,)
+    ordered = sorted(cited, key=lambda segment: segment.number)
+    for first, second in zip(ordered, ordered[1:], strict=False):
+        if second.number == first.number + 1 and normalised in _normalise(
+            f"{first.text} {second.text}"
+        ):
+            return quote.strip(), (first, second)
+    others = [segment for segment in batch if segment not in cited and not segment.image_mime_type]
+    for segment in others:
+        if normalised in _normalise(segment.text):
+            return quote.strip(), (segment,)
+    wanted = _words(quote.translate(_TYPOGRAPHY))
     if not wanted:
         return None
-    best, best_overlap = None, 0.0
-    for segment in cited:
-        for sentence in re.split(r"(?<=[.!?])\s+|\n+", segment.text):
-            overlap = len(wanted & _words(sentence)) / len(wanted)
-            if overlap > best_overlap and sentence.strip():
-                best, best_overlap = sentence.strip(), overlap
-    if best is None or best_overlap < _QUOTE_OVERLAP:
-        return None
-    return best if len(best) <= _MAX_QUOTE else best[: _MAX_QUOTE - 1].rstrip() + "…"
+    for candidates in (cited, others):
+        best, best_overlap, where = None, 0.0, None
+        for segment in candidates:
+            for sentence in _SENTENCE.split(segment.text):
+                overlap = len(wanted & _words(sentence)) / len(wanted)
+                if overlap > best_overlap and sentence.strip():
+                    best, best_overlap, where = sentence.strip(), overlap, segment
+        if best is not None and where is not None and best_overlap >= _QUOTE_OVERLAP:
+            shown = best if len(best) <= _MAX_QUOTE else best[: _MAX_QUOTE - 1].rstrip() + "…"
+            return shown, (where,)
+    return None
 
 
 def _parts(segment: ExtractionSegment, limit: int) -> list[ExtractionSegment]:
@@ -1027,13 +1283,10 @@ def _parts(segment: ExtractionSegment, limit: int) -> list[ExtractionSegment]:
         remaining = remaining[cut:]
     pieces.append(remaining.strip())
     pieces = [piece for piece in pieces if piece]
+    # A part keeps its row's cells and whether its systems were read from them, so a
+    # long row read in parts is still known for one.
     return [
-        ExtractionSegment(
-            0,
-            f"{segment.location} (part {index} of {len(pieces)})",
-            piece,
-            section=segment.section,
-        )
+        replace(segment, location=f"{segment.location} (part {index} of {len(pieces)})", text=piece)
         for index, piece in enumerate(pieces, start=1)
     ]
 
@@ -1060,11 +1313,72 @@ def _halves(batch: list[ExtractionSegment]) -> list[list[ExtractionSegment]] | N
 
 @dataclass
 class _Answer:
-    """One call's checked changes, how many were dropped, and how many the model gave."""
+    """One call's checked changes, and what was left out of what the model gave.
+
+    ``uncited`` items quoted nothing the text says; ``invalid`` ones, by kind,
+    could not be made a suggestion (a key it had no value for, an implied item
+    that is not a dependency).
+    """
 
     changes: list[ProposedChange]
-    dropped: int
     given: int
+    uncited: int = 0
+    invalid: Counter[str] = field(default_factory=Counter)
+
+    @property
+    def failed(self) -> str | None:
+        """Why a call that gave suggestions yielded none, or None when it yielded some."""
+        if self.changes or not self.given:
+            return None
+        return "uncited" if self.uncited else "invalid"
+
+
+class _Budget:
+    """The calls a reading may still make, shared by the parts read at once."""
+
+    def __init__(self, calls: int) -> None:
+        self._lock = threading.Lock()
+        self._left = calls
+        # Parts not yet started, which the calls left must still cover.
+        self.waiting = 0
+
+    @property
+    def left(self) -> int:
+        with self._lock:
+            return self._left
+
+    def take(self) -> bool:
+        with self._lock:
+            if self._left < 1:
+                return False
+            self._left -= 1
+            return True
+
+    def spare(self) -> bool:
+        """Whether a call can go to asking again, leaving one for each part still waiting."""
+        with self._lock:
+            return self._left > self.waiting
+
+
+@dataclass(frozen=True)
+class _Part:
+    """A part of the document for one call; ``path`` orders it, its halves after it."""
+
+    path: tuple[int, ...]
+    batch: list[ExtractionSegment]
+    depth: int
+
+
+@dataclass(frozen=True)
+class _Outcome:
+    """What reading one part gave: its answer, or why it gave none."""
+
+    batch: list[ExtractionSegment]
+    answer: _Answer | None
+    reason: str
+    error: Exception | None
+    refused: ModelTransportError | None
+    full: bool
 
 
 class StructuredCatalogueExtractor:
@@ -1075,12 +1389,15 @@ class StructuredCatalogueExtractor:
         supports_images: bool,
         max_input_tokens: int | None = None,
         max_output_tokens: int | None = None,
+        concurrency: int = 1,
     ) -> None:
         """``max_input_tokens`` is the prompt room the client allows; None means ample.
 
         ``max_output_tokens`` is how long one answer may be; None means the
-        client does not say, and a common hosted limit is assumed.
+        client does not say, and a common hosted limit is assumed. ``concurrency``
+        is how many parts are read at once.
         """
+        self._concurrency = max(1, concurrency)
         self._client = client
         self._supports_images = supports_images
         self._max_input_tokens = max_input_tokens
@@ -1201,97 +1518,191 @@ class StructuredCatalogueExtractor:
             max(_MIN_TEXT_TOKENS * 4, int(self._output_tokens * _CHARACTERS_PER_OUTPUT_TOKEN)),
         )
         changes: list[ProposedChange] = []
-        dropped = 0
+        uncited = 0
+        invalid: Counter[str] = Counter()
         failures: list[tuple[str, str]] = []
         last_error: Exception | None = None
         read_any = False
         batches = self._batches(request.segments, text_characters)
-        pending = deque((batch, 0) for batch in batches)
+        queue = deque(_Part((index,), batch, 0) for index, batch in enumerate(batches))
         # Splitting is bounded, so a document that every model answer overflows
         # still finishes in a predictable number of calls.
-        calls_left = 3 * len(batches) + 4
-        started = 0
-        while pending:
-            batch, depth = pending.popleft()
-            request.progress(started, started + len(pending) + 1)
-            started += 1
-            if calls_left < 1:
-                failures.append(
-                    ("budget", f"{_span(batch)} could not be read: {_REASONS['budget']}")
-                )
-                continue
-            request.checkpoint()
-            numbered = tuple(
-                replace(item, number=number) for number, item in enumerate(batch, start=1)
-            )
-            images = tuple(
-                (item.image_mime_type, item.image) for item in numbered if item.image_mime_type
-            )
-            if images and room - known_cost < _IMAGE_TOKENS * len(images):
-                failures.append(
-                    ("image", f"{_span(batch)} is too large an image for the configured model.")
-                )
-                continue
-            answer: _Answer | None = None
-            reason = ""
-            # Answers vary between calls, so a rejected one is asked for once more,
-            # unless the parts still waiting need the calls left.
-            for attempt in range(_ATTEMPTS):
-                if attempt:
-                    if calls_left <= len(pending):
-                        break
+        calls = _Budget(3 * len(batches) + 4)
+        # The provider's refusal (no credit, bad key, unknown model) ends the reading:
+        # every part would be refused the same way.
+        refused: ModelTransportError | None = None
+        refused_at: _Part | None = None
+        outcomes: dict[tuple[int, ...], _Outcome] = {}
+        skipped: dict[tuple[int, ...], tuple[str, str]] = {}
+        done = 0
+        # Parts are read several at a time (a call waits mostly on the model writing its
+        # answer); what they give is put back in document order, so the reading is the
+        # same however the calls finish.
+        with ThreadPoolExecutor(max_workers=self._concurrency) as pool:
+            running: dict[Future[_Outcome], _Part] = {}
+            while queue or running:
+                while queue and len(running) < self._concurrency and refused is None:
+                    part = queue.popleft()
+                    if calls.left < 1:
+                        skipped[part.path] = (
+                            "budget",
+                            f"{_span(part.batch)} could not be read: {_REASONS['budget']}",
+                        )
+                        continue
                     request.checkpoint()
-                calls_left -= 1
-                try:
-                    answer = self._read(request, numbered, known, images, reading)
-                except (StructuredOutputError, ValidationError, ModelTransportError) as exc:
-                    last_error = exc
-                    if truncated(exc):
-                        # Asking for the same part again would be cut off again.
-                        reason = "truncated"
-                        break
-                    reason = "unusable"
-                    if _permanent(exc):
-                        break
-                    continue
-                if answer is not None:
+                    numbered = tuple(
+                        replace(item, number=number)
+                        for number, item in enumerate(part.batch, start=1)
+                    )
+                    images = tuple(
+                        (item.image_mime_type, item.image)
+                        for item in numbered
+                        if item.image_mime_type
+                    )
+                    if images and room - known_cost < _IMAGE_TOKENS * len(images):
+                        skipped[part.path] = (
+                            "image",
+                            f"{_span(part.batch)} is too large an image for the configured model.",
+                        )
+                        continue
+                    calls.waiting = len(queue)
+                    future = pool.submit(
+                        self._attempt, request, part, numbered, known, images, reading, calls
+                    )
+                    running[future] = part
+                if not running:
                     break
-                reason = "uncited"
-            full = reason == "truncated" or (answer is not None and answer.given >= self._capacity)
-            halves = _halves(batch) if full and depth < _MAX_SPLIT_DEPTH else None
-            if halves and calls_left >= len(pending) + len(halves):
-                # A smaller part gets the whole answer to itself; the full answer
-                # is set aside so its parts are not suggested twice.
-                for half in reversed(halves):
-                    pending.appendleft((half, depth + 1))
+                request.progress(done, done + len(running) + len(queue))
+                finished, _ = wait(running, return_when=FIRST_COMPLETED)
+                for future in finished:
+                    part = running.pop(future)
+                    outcome = future.result()
+                    done += 1
+                    if outcome.error is not None:
+                        last_error = outcome.error
+                    if outcome.refused is not None and refused is None:
+                        refused, refused_at = outcome.refused, part
+                    halves = (
+                        _halves(part.batch)
+                        if outcome.full and part.depth < _MAX_SPLIT_DEPTH
+                        else None
+                    )
+                    if halves and refused is None and calls.left >= len(queue) + len(halves):
+                        # A smaller part gets the whole answer to itself; the full answer
+                        # is set aside so its parts are not suggested twice.
+                        for number, half in reversed(list(enumerate(halves))):
+                            queue.appendleft(_Part((*part.path, number), half, part.depth + 1))
+                        continue
+                    outcomes[part.path] = outcome
+        for path in sorted({*outcomes, *skipped}):
+            if path in skipped:
+                failures.append(skipped[path])
                 continue
-            if answer is None:
-                failures.append((reason, f"{_span(batch)} could not be read: {_REASONS[reason]}"))
+            outcome = outcomes[path]
+            answer = outcome.answer
+            if answer is not None:
+                uncited += answer.uncited
+                invalid.update(answer.invalid)
+            if outcome.refused is not None:
+                continue
+            if answer is None or answer.failed is not None:
+                failures.append(
+                    (
+                        outcome.reason,
+                        f"{_span(outcome.batch)} could not be read: {_REASONS[outcome.reason]}",
+                    )
+                )
                 continue
             read_any = True
-            if full:
+            if outcome.full:
                 warnings.append(
-                    f"{_span(batch)} may not be read completely: the model's answer reached "
-                    "its limit."
+                    f"{_span(outcome.batch)} may not be read completely: the model's answer "
+                    "reached its limit."
                 )
             changes.extend(answer.changes)
-            dropped += answer.dropped
+        if refused is not None and refused_at is not None:
+            unread = len(queue) + sum(1 for item in outcomes.values() if item.refused is not None)
+            failures.append(
+                (
+                    "refused",
+                    f"The model provider refused the reading ({refused.kind}): {unread} "
+                    f"part(s) from {_span(refused_at.batch)} on were not read.",
+                )
+            )
         warnings.extend(message for _, message in failures)
         if failures and not read_any:
             message = f"No part of the document could be read by the model. {failures[-1][1]}"
             if all(reason == "uncited" for reason, _ in failures):
                 raise CatalogueCitationError(message)
+            if refused is not None:
+                raise CatalogueAnswerUnusableError(message) from refused
             if last_error is not None:
                 raise CatalogueAnswerUnusableError(message) from last_error
             raise CatalogueExtractionError(message)
-        if dropped:
+        if uncited:
             warnings.append(
-                f"{dropped} suggestion(s) were left out because their citation "
-                "could not be checked."
+                f"{uncited} suggestion(s) were left out: what they quote was not found in "
+                "the document."
             )
+        if invalid:
+            kinds = ", ".join(
+                f"{count} {kind.replace('_', ' ')}" for kind, count in sorted(invalid.items())
+            )
+            warnings.append(f"Incomplete suggestions were left out: {kinds}.")
         return CatalogueProposal(
             tuple(changes), self._client.model, PROMPT_VERSION, tuple(warnings)
         )
+
+    def _attempt(
+        self,
+        request: ExtractionRequest,
+        part: _Part,
+        numbered: tuple[ExtractionSegment, ...],
+        known: tuple[KnownSystem, ...],
+        images: tuple[tuple[str, bytes], ...],
+        reading: _Reading,
+        budget: _Budget,
+    ) -> _Outcome:
+        """One part read, asked once more when its answer is rejected and calls are spare."""
+        answer: _Answer | None = None
+        reason = "budget"
+        error: Exception | None = None
+        refused: ModelTransportError | None = None
+        span = _span(part.batch)
+        # Answers vary between calls, so a rejected one is asked for once more,
+        # unless the parts still waiting need the calls left.
+        for attempt in range(_ATTEMPTS):
+            if (attempt and not budget.spare()) or not budget.take():
+                break
+            try:
+                got = self._read(request, numbered, known, images, reading)
+            except (StructuredOutputError, ValidationError, ModelTransportError) as exc:
+                error, answer = exc, None
+                _LOG.warning("Catalogue reading of %s failed: %s", span, _why(exc))
+                if truncated(exc):
+                    # Asking for the same part again would be cut off again.
+                    reason = "truncated"
+                    break
+                reason = "unusable"
+                refused = _refusal(exc)
+                if refused is not None:
+                    break
+                continue
+            answer = got
+            if got.failed is None:
+                break
+            reason = got.failed
+            _LOG.warning(
+                "Catalogue reading of %s gave no usable suggestion: %d uncited, invalid %s",
+                span,
+                got.uncited,
+                dict(got.invalid),
+            )
+        usable = answer is not None and answer.failed is None
+        full = reason == "truncated" or (
+            usable and answer is not None and answer.given >= self._capacity
+        )
+        return _Outcome(part.batch, answer, reason, error, refused, full)
 
     def _read(
         self,
@@ -1300,61 +1711,49 @@ class StructuredCatalogueExtractor:
         known: tuple[KnownSystem, ...],
         images: tuple[tuple[str, bytes], ...],
         reading: _Reading = "detailed",
-    ) -> _Answer | None:
-        """One call's checked changes and how many were dropped.
+    ) -> _Answer:
+        """One call's checked changes, and what was left out and why.
 
-        None when the model suggested something but none of it cited the text
-        correctly: that part of the document was not read. A ``standard`` call asks
-        without an offering's details, and a ``lean`` one without journeys and channels
-        too, for a model whose context has no room for them.
+        Each answered item is checked on its own, so one the model got wrong costs
+        only itself. A ``standard`` call asks without an offering's details, and a
+        ``lean`` one without journeys and channels too, for a model whose context has
+        no room for them.
         """
         prompt = build_user_prompt(ExtractionRequest(request.document_title, numbered, known))
-        answered: Sequence[LeanChangeOutput]
-        if reading == "detailed":
-            answered = self._client.parse(
-                system_prompt=DETAILED_SYSTEM_PROMPT,
-                user_prompt=prompt,
-                schema_type=DetailedExtractionOutput,
-                images=images,
-            ).changes
-        elif reading == "standard":
-            answered = self._client.parse(
-                system_prompt=SYSTEM_PROMPT,
-                user_prompt=prompt,
-                schema_type=ExtractionOutput,
-                images=images,
-            ).changes
-        else:
-            answered = self._client.parse(
-                system_prompt=LEAN_SYSTEM_PROMPT,
-                user_prompt=prompt,
-                schema_type=LeanExtractionOutput,
-                images=images,
-            ).changes
+        system_prompt, answers, shape = _ASKED[reading]
+        answered = self._client.parse(
+            system_prompt=system_prompt,
+            user_prompt=prompt,
+            schema_type=answers,
+            images=images,
+        ).changes
+        answer = _Answer([], len(answered))
+        given: list[DetailedChangeOutput] = []
+        for raw in answered:
+            item = _mended(shape, raw)
+            if item is None:
+                answer.invalid[_kind_of(raw)] += 1
+                continue
+            given.append(_plain(_detailed(item)))
         segments = {item.number: item for item in numbered}
-        given = [_plain(_detailed(item)) for item in answered]
         names = _SystemNames(request.known_systems, given)
-        changes: list[ProposedChange] = []
-        dropped = 0
         for item in given:
+            # A number outside this call's passages is a slip; the others still say where.
             cited = [segments[n] for n in dict.fromkeys(item.evidence_numbers) if n in segments]
-            quote = (
-                _evidence_quote(item.quote, cited)
-                if len(cited) == len(set(item.evidence_numbers))
-                else None
-            )
-            if quote is None:
-                dropped += 1
+            found = _evidence_quote(item.quote, cited, numbered)
+            if found is None:
+                answer.uncited += 1
                 continue
+            quote, holding = found
             try:
-                change = _proposed(item, names, tuple(segment.location for segment in cited), quote)
+                change = _proposed(
+                    item, names, tuple(segment.location for segment in holding), quote
+                )
             except InvalidKnowledgeError:
-                dropped += 1
+                answer.invalid[item.kind] += 1
                 continue
-            changes.append(change)
-        if answered and not changes:
-            return None
-        return _Answer(changes, dropped, len(answered))
+            answer.changes.append(change)
+        return answer
 
 
 class FakeCatalogueExtractor:
@@ -1365,8 +1764,9 @@ class FakeCatalogueExtractor:
     three for the last system named; the technology and component are optional),
     ``A depends on B for reason`` and ``A calls B for reason`` lines (the second
     as an API call), and reads ``A sends X to B`` as an inferred data transfer.
-    An image yields one system named after the document so the review flow can
-    be exercised without a vision model. Only prose is read: a table row arrives
+    An uploaded image yields one system named after the document so the review
+    flow can be exercised without a vision model; a Word document's figures yield
+    nothing. Only prose is read: a table row arrives
     as ``Column: value | Column: value`` and would otherwise match a label, so a
     segment with cells, or a line holding `` | ``, is skipped.
     """
@@ -1409,6 +1809,8 @@ class FakeCatalogueExtractor:
         for segment in request.segments:
             request.checkpoint()
             if segment.image_mime_type:
+                if segment.location != "image":
+                    continue  # A Word document's figure; only an uploaded image stands alone.
                 name = request.document_title.strip()
                 changes.append(
                     ProposedChange(

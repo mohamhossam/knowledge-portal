@@ -717,7 +717,15 @@ def _kept_links(offering: ProductOffering, current: ProductOffering) -> ProductO
         if kept is not None:
             item = kept_component_terms(item, kept)
         parts.append(item)
-    return replace(offering, components=tuple(parts))
+    # Plans, business rules and the portfolio place come from a catalogue file or a
+    # person far more often than from prose: a reading that names none keeps them.
+    return replace(
+        offering,
+        components=tuple(parts),
+        plans=offering.plans or current.plans,
+        business_rules=offering.business_rules or current.business_rules,
+        portfolio_node_id=offering.portfolio_node_id or current.portfolio_node_id,
+    )
 
 
 def _resolved_offering(
@@ -1210,16 +1218,158 @@ def open_matches(
     ):
         return ()
     if content.kind is CandidateKind.SYSTEM:
-        still_new = classify(content, release) is CandidateMatch.NEW
-        return candidate.possible_matches if still_new else ()
+        if classify(content, release) is not CandidateMatch.NEW:
+            return ()
+        return _with_spellings(
+            candidate.possible_matches,
+            _spelling_matches(MatchRole.SYSTEM, content.name or content.system_id, release),
+        )
     references = {
         MatchRole.SYSTEM: content.system_id,
         MatchRole.TARGET: content.target_system_id or "",
     }
+    # A spelling is asked about once, on the system's own suggestion: answered there, the name
+    # becomes that system's alias and every capability or link naming it resolves. Asked on
+    # each of them, one name was asked about 71 times.
     return tuple(
         match
         for match in candidate.possible_matches
         if find_system(release, references[match.role]) is None
+    )
+
+
+def _compact(value: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", value.casefold())
+
+
+def _close(first: str, second: str, most: int) -> bool:
+    """Whether two spellings are at most ``most`` single-letter edits apart."""
+    if abs(len(first) - len(second)) > most:
+        return False
+    previous = list(range(len(second) + 1))
+    for row, left in enumerate(first, start=1):
+        current = [row]
+        for column, right in enumerate(second, start=1):
+            current.append(
+                min(
+                    previous[column] + 1,
+                    current[column - 1] + 1,
+                    previous[column - 1] + (left != right),
+                )
+            )
+        if min(current) > most:
+            return False
+        previous = current
+    return previous[-1] <= most
+
+
+def _spelling_matches(
+    role: MatchRole, written: str, release: ArchitectureKnowledge
+) -> tuple[PossibleMatch, ...]:
+    """The draft systems a name is spelled almost like, for a person to confirm or not.
+
+    A document writes one system several ways ("FortiGaurd", "Fortimanger", "ESESO");
+    once a person confirms "FortiGaurd" is FortiGuard, it is FortiGuard's alias and
+    every later reading resolves it. Only a slip of a letter or two counts, never a
+    different number ("FortiManager 7.2" is not "FortiManager 7.4"), and the check
+    runs against the draft as it is now, so a variant of a system accepted after the
+    reading is asked about too. Nothing is merged without that confirmation.
+    """
+    key = _compact(written)
+    if len(key) < _MIN_SPELLED:
+        return ()
+    found: list[PossibleMatch] = []
+    for system in release.systems:
+        for label in (system.id, system.name, *system.aliases):
+            other = _compact(label)
+            if (
+                len(other) >= _MIN_SPELLED
+                and other != key
+                and not _versions_differ(key, other)
+                and _close(key, other, 1 if max(len(key), len(other)) < _LONG_NAME else 2)
+            ):
+                found.append(
+                    PossibleMatch(
+                        role,
+                        written,
+                        system.id,
+                        f"Spelled almost like {system.name}: confirm it is the same system.",
+                    )
+                )
+                break
+    return tuple(found[:_MAX_SPELLED])
+
+
+def _versions_differ(first: str, second: str) -> bool:
+    """Whether both names carry a number and the numbers differ: two versions, not a slip."""
+    one, other = re.sub(r"\D", "", first), re.sub(r"\D", "", second)
+    return bool(one and other and one != other)
+
+
+def _with_spellings(
+    stored: tuple[PossibleMatch, ...], spelled: tuple[PossibleMatch, ...]
+) -> tuple[PossibleMatch, ...]:
+    """The matches found when the document was read, then spellings they do not name."""
+    named = {(match.role, match.system_id) for match in stored}
+    return (*stored, *(match for match in spelled if (match.role, match.system_id) not in named))
+
+
+# A name this short ("IN", "OM", "NEC") is too short to tell a slip from another system;
+# a longer one may be two slips off.
+_MIN_SPELLED = 5
+_LONG_NAME = 9
+_MAX_SPELLED = 3
+
+
+def missing_systems(content: CandidateContent, release: ArchitectureKnowledge) -> tuple[str, ...]:
+    """The system references a suggestion makes that no draft system answers to, as written.
+
+    A system is found by id, name, alias or the words of its name (``find_system``),
+    so a name a person confirmed as another system's alias is never missing. The
+    review shows what waits for what from this, rather than matching ids itself:
+    matching ids alone, it kept 24 suggestions waiting for "OM-E2ESO" after a
+    person had answered that OM-E2ESO is ESESO.
+    """
+    kind = content.kind
+    references: list[str] = []
+    if kind is CandidateKind.JOURNEY and content.journey is not None:
+        for step in content.journey.activities:
+            references.extend((step.performing_system_id or "", *step.supporting_system_ids))
+    elif kind is CandidateKind.PRODUCT and content.product is not None:
+        offering = content.product
+        references.extend(
+            duty.system_id for part in offering.components for duty in part.responsibilities
+        )
+        tracking = offering.tracking
+        if tracking is not None:
+            references.extend(
+                name for flow in tracking.flows for name in (flow.from_system_id, flow.to_system_id)
+            )
+            references.extend(
+                name
+                for item in tracking.channels
+                for name in (item.ui_system_id or "", item.read_system_id or "")
+            )
+            references.extend(item.system_id or "" for item in tracking.milestones)
+    elif kind is CandidateKind.CHANNEL and content.channel is not None:
+        references.append(content.channel.entry_system_id or "")
+    elif kind is CandidateKind.CONCEPT:
+        references.extend(ref.system_id for ref in content.capability_refs)
+    elif kind not in {
+        CandidateKind.SYSTEM,
+        CandidateKind.LANDSCAPE_DOMAIN,
+        CandidateKind.OFFERING_RULE,
+        CandidateKind.QUESTION,
+        CandidateKind.COMPONENT_LINK,
+        CandidateKind.VOCABULARY_TERM,
+    }:
+        references.extend((content.system_id, content.target_system_id or ""))
+    return tuple(
+        dict.fromkeys(
+            reference
+            for reference in references
+            if reference and find_system(release, reference) is None
+        )
     )
 
 

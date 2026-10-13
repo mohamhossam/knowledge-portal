@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { Release, Suggestion } from "../../api/client";
 import { blockers, bulkAcceptable, changeSentence, lexicon, waitsFor } from "../suggestions";
 import { NextStep } from "./NextStep";
+import { decideChoices, decideQuestions } from "./questions";
 
 const suggestion = (id: string, content: object, extra: object = {}) =>
   ({ id, status: "proposed", match: "new", basis: "stated", possible_matches: [], system_name: null, content: { name: "", text: "", ...content }, ...extra }) as unknown as Suggestion;
@@ -28,6 +29,39 @@ describe("blockers", () => {
     expect(found).toHaveLength(1);
     expect(found[0]).toMatchObject({ kind: "system", reference: "business-pro-plus", name: "Business Pro Plus", label: "the system Business Pro Plus" });
     expect(found[0]?.waiting.map((item) => item.id)).toEqual(["a", "b"]);
+  });
+
+  it("waits only for the systems the service says are missing, not for a name the draft answers to", () => {
+    // The reported draft: OM-E2ESO was confirmed as ESESO, but matched by id alone it stayed waited for.
+    const journey = (id: string, missing: string[]) =>
+      suggestion(id, {
+        kind: "journey",
+        system_id: id,
+        name: id,
+        journey: { id, name: id, activities: [{ number: "1", name: "Configure", performing_system_id: "om-e2eso", supporting_system_ids: ["om-enrm"] }], flow_rules: [], integrations: [] },
+      }, { match: "needs_system", missing_systems: missing });
+    const suggestions = [journey("wf-1", ["om-enrm"]), journey("wf-2", ["om-enrm"])];
+    const words = lexicon(draft, suggestions);
+
+    const found = blockers(draft, suggestions, words);
+
+    expect(found.map((item) => [item.reference, item.name, item.waiting.length])).toEqual([["om-enrm", "OM Enrm", 2]]);
+    expect(waitsFor(suggestions[0]!, words)).toBe("Waits for the system OM Enrm");
+  });
+
+  it("says which system an inferred link is from when it is asked on its own", () => {
+    const link = suggestion(
+      "link",
+      { kind: "relationship", system_id: "nps", target_system_id: "rtf", relationship_kind: "transfers_data_to", text: "Sends requests" },
+      { basis: "inferred", match: "needs_system", missing_systems: ["rtf"], system_name: "NPS", rationale: "Channels submit requests to RTF." },
+    );
+    const words = lexicon(draft, [link]);
+
+    const [question] = decideQuestions([link], words);
+    const accept = decideChoices(question!).find((item) => item.value === "accept");
+
+    expect(question!.prompt).toBe("Accept a link the reading inferred? NPS sends data to RTF");
+    expect(accept?.consequence).toBe("Adds: NPS sends data to RTF. Then it waits for the system RTF, and reaches the draft with it.");
   });
 
   it("lets an offering rule wait for an offering suggested by another spelling of its name", () => {

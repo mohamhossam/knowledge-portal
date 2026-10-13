@@ -1,6 +1,6 @@
 import type { Suggestion } from "../../api/client";
 import type { DiagramEdge, DiagramNode } from "../../design/diagram";
-import { dependencyEdges, type Lexicon, STATE_LABEL, suggestionState } from "../suggestions";
+import { dependencyEdges, type Lexicon, STATE_LABEL, suggestionState, waitsFor } from "../suggestions";
 
 /** A suggestion on a node, short: what it names, then what kind of change it is. */
 function named(suggestion: Suggestion, words: Lexicon): { label: string; detail: string } {
@@ -64,7 +64,8 @@ export function decisionTree(
       return {
         id: item.id,
         ...named(item, words),
-        status: STATE_LABEL[state],
+        // A waiting card says what it waits for, not only that it waits.
+        status: state === "waits" ? waitsFor(item, words) : STATE_LABEL[state],
         tone: state === "decide" ? "decide" : state === "ready" ? "ready" : "plain",
         ...marked,
         ...(item.id === current ? { tone: "subject" as const, status: marked?.status ?? "This question" } : {}),

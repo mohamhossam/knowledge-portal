@@ -22,7 +22,7 @@ describe("decisionTree", () => {
     expect(edges).toEqual([{ from: "hub", to: "api" }]);
     // In a chain, or needing a person; a ready one on its own and a decided one stay in the list.
     expect(nodes.map((node) => node.id)).toEqual(["hub", "api", "crm"]);
-    expect(nodes.find((node) => node.id === "api")).toMatchObject({ label: "Order API", detail: "Component of Order Hub", status: "Waits for another" });
+    expect(nodes.find((node) => node.id === "api")).toMatchObject({ label: "Order API", detail: "Component of Order Hub", status: "Waits for the system Order Hub" });
     expect(nodes.find((node) => node.id === "crm")).toMatchObject({ tone: "decide", status: "Needs your decision" });
     expect(nodes.find((node) => node.id === "hub")).toMatchObject({ tone: "ready" });
   });
