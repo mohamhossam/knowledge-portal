@@ -18,7 +18,7 @@ import { useCatalogueContext } from "../useCatalogue";
 import { useDraft } from "../useDraft";
 import { documentLang, stateWords } from "./decide";
 import { DecisionTree } from "./DecisionTree";
-import { type NodeMark, touching } from "./decisionTree";
+import { type NodeMark, touching } from "./decisionTreeModel";
 import { type DecideAnswer, type DecideQuestion, decideChoices, decideQuestions } from "./questions";
 
 /** How many suggestions the summary names before "and N more". */

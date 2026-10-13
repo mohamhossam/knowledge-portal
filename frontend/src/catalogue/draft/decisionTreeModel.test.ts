@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { Release, Suggestion } from "../../api/client";
 import { lexicon } from "../suggestions";
-import { decisionTree, touching } from "./decisionTree";
+import { decisionTree, touching } from "./decisionTreeModel";
 
 const suggestion = (id: string, content: object, extra: object = {}) =>
   ({ id, status: "proposed", match: "new", basis: "stated", possible_matches: [], system_name: null, content: { name: "", text: "", ...content }, ...extra }) as unknown as Suggestion;
