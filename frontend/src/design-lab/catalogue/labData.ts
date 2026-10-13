@@ -1,11 +1,12 @@
-/** The lab's catalogue: one version, read once, shared by the four mock-ups. */
+/** The lab's catalogue: one version, read once, shared by every page of the lab. */
 import { createContext, useContext } from "react";
 import { useParams } from "react-router-dom";
 
+import { LAB } from "../../app/features";
 import type { CatalogueData } from "../../architecture/adapter";
 import type { Offering } from "../../architecture/model";
 
-export const LAB = "/design-lab/catalogue";
+export { LAB };
 
 export const LabData = createContext<CatalogueData | null>(null);
 

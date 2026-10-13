@@ -29,6 +29,11 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   Business Pro Plus sample and back, to compare the two; the sample says so under the bar and
   loads only when chosen. `VITE_CATALOGUE_SOURCE=sample` makes the sample the default.
   Governance and Versions open the portal's catalogue pages.
+- An address under the catalogue redesign lab that no page has says "Page not found", with
+  the lab's sections and the way back to the landscape. The lab's switches
+  (`VITE_CATALOGUE_LAB`, `VITE_CATALOGUE_SOURCE`) and its address are read in one place,
+  `frontend/src/app/features.ts`, which also holds the lab's loader: where the lab is off,
+  as in a published image, its code is still left out of the bundle.
 - Seed tooling for the full catalogue: `scripts/seed_full_catalogue.py` imports
   `catalogues/smb-architecture.yaml` into a running offline API as a maintainer would (draft,
   file import, build, publish), and `seed_demo.py --full-catalogue` puts it in service after

@@ -88,6 +88,15 @@ describe("where the catalogue lab reads its catalogue", { timeout: 30_000 }, () 
     expect(await screen.findByRole("heading", { level: 1, name: "SMB architecture" })).toBeInTheDocument();
   });
 
+  it("says when an address under the lab has no page, with the lab's sections and the way back", async () => {
+    const { container } = await open("/no-such-page");
+    expect(screen.getByRole("heading", { level: 1, name: "Page not found" })).toBeInTheDocument();
+    expect(document.title).toMatch(/^Page not found · Catalogue/);
+    expect(screen.getByRole("navigation", { name: "Catalogue sections" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Back to the landscape" })).toHaveAttribute("href", "/design-lab/catalogue");
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
   it("says so when no version is in service yet", async () => {
     vi.spyOn(api, "activeRelease").mockResolvedValue(null);
     await open("", "api");

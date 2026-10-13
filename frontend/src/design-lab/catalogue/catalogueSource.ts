@@ -10,12 +10,13 @@ import { useQuery } from "@tanstack/react-query";
 import { createContext, useContext, useMemo } from "react";
 
 import { api, type Release } from "../../api/client";
+import { catalogueSourceSetting } from "../../app/features";
 import { type CatalogueData, fromRelease } from "../../architecture/adapter";
 
 export type CatalogueSource = "api" | "sample";
 
-/** The configured source: "sample" only when asked for by name; anything else reads the API. */
-export function catalogueSource(value: unknown = import.meta.env.VITE_CATALOGUE_SOURCE): CatalogueSource {
+/** The configured source (features.ts): "sample" only when asked for by name; anything else reads the API. */
+export function catalogueSource(value: unknown = catalogueSourceSetting): CatalogueSource {
   return value === "sample" ? "sample" : "api";
 }
 
