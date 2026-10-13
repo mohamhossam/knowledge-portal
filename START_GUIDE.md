@@ -141,6 +141,19 @@ and `LIBRARY_SCAN_MODE=offline`. Run it again after each API restart, because a 
 the in-memory store. Run it only once per API start: a second run adds its documents again,
 then stops with `409 Conflict` because a draft catalogue release already exists.
 
+To read the full Business Pro Plus catalogue (`catalogues/smb-architecture.yaml`) instead of
+the small sample, add `--full-catalogue`:
+
+```bash
+uv run python scripts/seed_demo.py --api http://127.0.0.1:8100 --full-catalogue
+```
+
+It imports that file into a new version and publishes it, so it is in service; the sample draft
+then builds on it. Without the sample work, `scripts/seed_full_catalogue.py --api …` loads the
+full catalogue on its own. The service holds one draft at a time, so either fails with a clear
+message while another draft is in progress. On a server with real sign-in, import the same file
+from **Catalogue › Versions** instead.
+
 ## 4. Start the browser app
 
 In a third terminal:
@@ -168,6 +181,19 @@ With fake sign-in, the top bar has a **Persona** switch:
 
 The explorer at `http://localhost:5174/knowledge/explorer` shows the catalogue version in
 service to any signed-in reader.
+
+In development, **Catalogue** opens the catalogue redesign (`/knowledge/design-lab/catalogue`).
+It reads the catalogue version in service from the API. The **Data** switch at the end of its
+section bar turns to the bundled Business Pro Plus sample (**Sample JSON**) and back (**Live
+API**), to compare the two; a note under the bar says when the sample is shown, and a page reload
+returns to the API. To start on the sample, with no API needed, set `VITE_CATALOGUE_SOURCE=sample`:
+
+```bash
+# Windows PowerShell
+$env:VITE_CATALOGUE_SOURCE = "sample"; npm run dev
+# macOS / Linux
+VITE_CATALOGUE_SOURCE=sample npm run dev
+```
 
 ## 5. Stop and start again
 

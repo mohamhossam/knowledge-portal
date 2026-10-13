@@ -8,6 +8,10 @@ suggestions; squads that own some systems and leave others without an owner.
 
     uv run python -m knowledge_portal.interfaces.api.serve --port 8100   # fake, in memory
     uv run python scripts/seed_demo.py --api http://127.0.0.1:8100
+    uv run python scripts/seed_demo.py --api http://127.0.0.1:8100 --full-catalogue
+
+`--full-catalogue` puts the full Business Pro Plus catalogue (seed_full_catalogue.py)
+in service after the sample version, so the sample draft builds on it.
 
 Requires LLM_PROVIDER=fake, IDENTITY_PROVIDER=fake and LIBRARY_SCAN_MODE=offline.
 The review material (a deck, a workbook) is built with the test suite's file
@@ -28,7 +32,13 @@ import httpx
 from openpyxl import Workbook
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from scripts.seed_full_catalogue import (  # noqa: E402
+    DEFAULT_FILE as DEFAULT_CATALOGUE_FILE,
+)
+from scripts.seed_full_catalogue import load as load_full_catalogue  # noqa: E402
 from tests.presentation_fixtures import PPTX_MIME, drawing_paragraph, presentation  # noqa: E402
+
+FULL_CATALOGUE_NAME = "Business Pro Plus (SDD v2.3)"
 
 XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
@@ -807,6 +817,11 @@ def seed_squads(client: httpx.Client) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--api", default="http://127.0.0.1:8100")
+    parser.add_argument(
+        "--full-catalogue",
+        action="store_true",
+        help="put the full Business Pro Plus catalogue in service before the sample draft",
+    )
     arguments = parser.parse_args()
     with httpx.Client(base_url=arguments.api, timeout=30) as client:
         # Both admins sign in once, so the portal can name them.
@@ -816,8 +831,11 @@ def main() -> None:
         seed_review_material(client)
         seed_governance(client)
         seed_published_catalogue(client)
-        seed_catalogue(client)
+        # The squads own systems of the sample version, so they are placed while it is in service.
         seed_squads(client)
+        if arguments.full_catalogue:
+            load_full_catalogue(client, DEFAULT_CATALOGUE_FILE, FULL_CATALOGUE_NAME, publish=True)
+        seed_catalogue(client)
     print("Seeded sample curation work.")
 
 
