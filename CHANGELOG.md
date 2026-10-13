@@ -145,6 +145,10 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   placeholder ("Unknown", "N/A") or an offering's name is not suggested; an inferred link
   suggests nothing (`document-reading-v7`).
 - An item about no system is left out as incomplete, not given a system called "item".
+- Accepting a link in Decide's focus mode adds the systems it needs first, and says so
+  ("Accept the link, adding the system Generic AP PO"): a system nothing suggests is suggested
+  and accepted, and one already suggested is accepted, before the link. Promised to "wait" for a
+  system nothing added, the service refused every such answer and the same questions came back.
 - Workflow titles are compared whatever separates their parts ("—", "|", ":" or " - "), so a
   model's "WF-3A Order fulfillment | ..." merges with the reader's "WF-3A Order fulfillment —".
 

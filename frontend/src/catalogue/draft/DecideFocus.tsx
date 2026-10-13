@@ -19,7 +19,7 @@ import { useDraft } from "../useDraft";
 import { documentLang, stateWords } from "./decide";
 import { DecisionTree } from "./DecisionTree";
 import { type NodeMark, touching } from "./decisionTreeModel";
-import { type DecideAnswer, type DecideQuestion, decideChoices, decideQuestions } from "./questions";
+import { type DecideAnswer, type DecideQuestion, decideChoices, decideQuestions, firstSystems } from "./questions";
 
 /** How many suggestions the summary names before "and N more". */
 const NAMED = 8;
@@ -280,11 +280,28 @@ function Summary({ release, all, words, questions, answers, draft, onBack, onDon
         }
       };
       if (withFollowing) await acceptReady();
+      // The systems the accepted answers need first: those nothing suggests are suggested, then
+      // each is accepted, as the service refuses a link to a system the draft lacks.
+      const add = new Map(accepted.flatMap((item) => item.first?.add ?? []).map((item) => [item.id, item.name]));
+      for (const [systemId, name] of add) {
+        try {
+          await draft.settleSubject.mutateAsync({ system_id: systemId, name, kind: "system" });
+        } catch {
+          // Suggested meanwhile, or added to the draft: what is still open is accepted below.
+        }
+      }
+      const wanted = new Set(accepted.flatMap((item) => item.first?.accept ?? []).map((item) => item.id));
+      let systems = 0;
+      if (add.size || wanted.size) {
+        const now = (await draft.suggestions.refetch()).data?.suggestions ?? [];
+        const needed = now.filter((item) => item.status === "proposed" && item.content.kind === "system" && (wanted.has(item.id) || add.has(item.content.system_id)));
+        for (const system of needed) if (await draft.decide({ suggestionId: system.id, accept: true })) systems += 1;
+      }
       const order = inDependencyOrder(accepted.map((item) => item.suggestion)).map((suggestion) => accepted.find((item) => item.id === suggestion.id)!);
       for (const question of order) await decide(question);
       if (withFollowing) await acceptReady();
       const parts = [
-        `${count(done, "answer")} sent${withFollowing ? ", and what followed accepted" : ""}`,
+        `${count(done, "answer")} sent${systems ? `, with ${count(systems, "system")} they need` : ""}${withFollowing ? ", and what followed accepted" : ""}`,
         refused ? `${count(refused, "answer")} couldn't be taken: decide ${refused === 1 ? "it" : "them"} here` : "",
         last.remaining ? `${count(last.remaining, "suggestion")} still ${last.remaining === 1 ? "waits" : "wait"} for you` : "",
       ].filter(Boolean);
@@ -315,7 +332,14 @@ function Summary({ release, all, words, questions, answers, draft, onBack, onDon
           {listed(accepted.map((item) => item.suggestion), "You accept", (item) => {
             const choice = answers[item.id]!.choice;
             const match = item.possible_matches.find((candidate) => choice === `match:${candidate.system_id}`);
-            return <>{sentence(item)}{match ? <span className="draft-quiet"> · “{match.written_as}” is {match.system_name}</span> : null}</>;
+            const systems = choice === "accept" ? firstSystems(questions.find((question) => question.id === item.id)!) : "";
+            return (
+              <>
+                {sentence(item)}
+                {match ? <span className="draft-quiet"> · “{match.written_as}” is {match.system_name}</span> : null}
+                {systems ? <span className="draft-quiet"> · adds {systems} first</span> : null}
+              </>
+            );
           })}
         </section>
       )}

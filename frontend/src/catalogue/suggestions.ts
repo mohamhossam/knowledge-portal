@@ -582,6 +582,24 @@ export function dependencyEdges(suggestions: Suggestion[]): { from: string; to: 
   return edges;
 }
 
+/**
+ * The missing systems accepting a suggestion needs first: the open system suggestions that
+ * add them, and by id those nothing suggests. The service refuses a link to a system the
+ * draft lacks, so an answer accepting it adds these first.
+ */
+export function systemsFirst(suggestion: Suggestion, suggestions: Suggestion[]): { suggested: Suggestion[]; unsuggested: string[] } {
+  const systems = suggestions.filter((item) => item.status === "proposed" && item.id !== suggestion.id && item.content.kind === "system");
+  const suggested: Suggestion[] = [];
+  const unsuggested: string[] = [];
+  for (const key of new Set(requires(suggestion))) {
+    if (!key.startsWith("system:")) continue;
+    const found = systems.find((item) => provides(item).includes(key));
+    if (!found) unsuggested.push(key.slice("system:".length));
+    else if (!suggested.includes(found)) suggested.push(found);
+  }
+  return { suggested, unsuggested };
+}
+
 /** Suggestions in the order accepting them works: domains, then systems, then what hangs on them. */
 export function inDependencyOrder(suggestions: Suggestion[]): Suggestion[] {
   return [...suggestions].sort((a, b) => KIND_ORDER.indexOf(a.content.kind) - KIND_ORDER.indexOf(b.content.kind));
