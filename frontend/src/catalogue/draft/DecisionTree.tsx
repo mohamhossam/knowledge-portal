@@ -3,7 +3,7 @@ import { type ReactNode, useCallback, useMemo } from "react";
 import type { Suggestion } from "../../api/client";
 import { Diagram, DiagramLegend, layered } from "../../design/diagram";
 import type { Lexicon } from "../suggestions";
-import { decisionTree, type NodeMark } from "./decisionTree";
+import { decisionTree, type NodeMark } from "./decisionTreeModel";
 
 /**
  * The Decide step's chains beside its list (UX rebuild plan, phase 2): press a
