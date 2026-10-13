@@ -24,6 +24,16 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   (`deploy/web/Dockerfile`), the lab and its "Catalogue" link are in the production build, as
   under the dev server. Published images leave it out, as before (the argument defaults to
   `false`).
+- The catalogue redesign lab reads the catalogue version in service from the API, with a
+  loading, error and nothing-in-service state. Its "Data" switch turns to the bundled
+  Business Pro Plus sample and back, to compare the two; the sample says so under the bar and
+  loads only when chosen. `VITE_CATALOGUE_SOURCE=sample` makes the sample the default.
+  Governance and Versions open the portal's catalogue pages.
+- Seed tooling for the full catalogue: `scripts/seed_full_catalogue.py` imports
+  `catalogues/smb-architecture.yaml` into a running offline API as a maintainer would (draft,
+  file import, build, publish), and `seed_demo.py --full-catalogue` puts it in service after
+  the sample version, before the sample draft. The sample squads are now seeded before the
+  draft, while the sample version whose systems they own is in service.
 
 ### Fixed
 

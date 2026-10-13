@@ -25,7 +25,7 @@ export function Missing({ what }: { what: string }) {
   );
 }
 
-export type ProductSection = "overview" | "hierarchy" | "plans" | "rules" | "components" | "journeys" | "architecture";
+type ProductSection = "overview" | "hierarchy" | "plans" | "rules" | "components" | "journeys" | "architecture";
 
 /** The product's mark and the icons of its figures, drawn like the catalogue's other icons. */
 const HEAD_ICONS: Record<string, ReactNode> = {

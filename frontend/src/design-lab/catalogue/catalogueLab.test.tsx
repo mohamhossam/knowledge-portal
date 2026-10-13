@@ -29,7 +29,8 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("where the catalogue lab reads its catalogue", () => {
+// These render the whole poster too, and one runs axe on it: slow on a busy machine.
+describe("where the catalogue lab reads its catalogue", { timeout: 30_000 }, () => {
   it("reads the API unless the bundled sample is asked for by name", () => {
     expect(catalogueSource(undefined)).toBe("api");
     expect(catalogueSource("api")).toBe("api");

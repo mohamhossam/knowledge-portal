@@ -57,28 +57,6 @@ export function links(data: CatalogueData, integrations: Integration[]): Map<str
   return counts;
 }
 
-/** How each system takes part in the calls: makes them, receives them, or carries them between others. */
-export type Degree = { made: number; received: number; carried: number; total: number };
-
-export function degrees(integrations: Integration[]): Map<string, Degree> {
-  const result = new Map<string, Degree>();
-  const of = (id: string) => {
-    let found = result.get(id);
-    if (!found) {
-      found = { made: 0, received: 0, carried: 0, total: 0 };
-      result.set(id, found);
-    }
-    return found;
-  };
-  for (const call of integrations) {
-    of(call.from).made += 1;
-    of(call.to).received += 1;
-    if (call.via) of(call.via).carried += 1;
-    for (const id of new Set([call.from, call.to, call.via])) if (id) of(id).total += 1;
-  }
-  return result;
-}
-
 export function partnersOf(systemId: string, linkCounts: Map<string, number>): { id: string; count: number }[] {
   const found: { id: string; count: number }[] = [];
   for (const [key, count] of linkCounts) {
@@ -90,15 +68,10 @@ export function partnersOf(systemId: string, linkCounts: Map<string, number>): {
 }
 
 /** The TAM domains in the map's reading order, top to bottom; any other domain comes after. */
-export const DOMAIN_ORDER = ["market-sales", "product", "customer", "integration", "service", "resource", "engaged-party", "enterprise"];
+const DOMAIN_ORDER = ["market-sales", "product", "customer", "integration", "service", "resource", "engaged-party", "enterprise"];
 
 export function domainRank(id: string): number {
   return DOMAIN_ORDER.includes(id) ? DOMAIN_ORDER.indexOf(id) : DOMAIN_ORDER.length;
-}
-
-/** Every system, in the map's domain order. */
-export function systemsInMapOrder(data: CatalogueData): CatalogueData["systems"] {
-  return [...data.systems].sort((a, b) => domainRank(a.domain) - domainRank(b.domain));
 }
 
 /** For one offering: which of its journeys reach each system, by a step it performs or a call it takes part in. */

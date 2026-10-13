@@ -91,7 +91,7 @@ export const PART_KINDS: { id: string; name: string; icon: ReactNode }[] = [
 ];
 
 /** A component's kind: the device by its name, else its capability, else "More". */
-export function partKind(name: string): string {
+function partKind(name: string): string {
   return /device|router/i.test(name) ? "device" : (capabilityOf(name)?.id ?? "more");
 }
 
