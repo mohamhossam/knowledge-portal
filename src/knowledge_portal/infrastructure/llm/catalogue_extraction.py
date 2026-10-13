@@ -1081,6 +1081,10 @@ def _content(item: DetailedChangeOutput, names: _SystemNames) -> CandidateConten
     if not target:
         # Resolved, a blank name would become a system called "item".
         raise InvalidKnowledgeError("A dependency needs the system it depends on.")
+    if _GROUP.match(item.system.strip()) or _GROUP.match(target):
+        # "Channels submit the request to RTF" names no system: offered, it waited for a
+        # system called "Channels" that nothing could add.
+        raise InvalidKnowledgeError("A dependency is between named systems, not a group of them.")
     relationship = RelationshipKind(item.relationship_kind or "unspecified")
     return CandidateContent(
         kind,
@@ -1092,6 +1096,14 @@ def _content(item: DetailedChangeOutput, names: _SystemNames) -> CandidateConten
         relationship_kind=relationship,
     )
 
+
+# A group of systems or channels a document names as a whole: "Channels", "Digital Channels",
+# "the fulfilment systems". Never one end of a dependency.
+_GROUP = re.compile(
+    r"(?i)^(?:all |the |other |digital |sales |ordering |order |fulfil?ment |downstream "
+    r"|upstream |front[- ]end |back[- ]end |b2b |internal |external )*"
+    r"(?:channels?|systems?|applications?|platforms?)$"
+)
 
 _LINKED = {
     RelationshipKind.CALLS_API: "Calls the API of",

@@ -4,14 +4,16 @@
  * does. Pure, shared by the focus page and To do (which shows the first).
  */
 import type { PossibleMatch, Suggestion, SuggestionContent } from "../../api/client";
-import { type Lexicon, changeSentence, draftedForRequirement, inDependencyOrder, suggestionState } from "../suggestions";
+import { type Lexicon, draftedForRequirement, inDependencyOrder, standaloneSentence, suggestionState, waitsFor } from "../suggestions";
 import { NEW, linked } from "./decide";
 
 export type DecideQuestion = {
   id: string;
   suggestion: Suggestion;
-  /** The change it would make, as a sentence. */
+  /** The change it would make, as a sentence that names the system it is about. */
   sentence: string;
+  /** What it still waits for once accepted, as a sentence ("Waits for the system RTF"), if anything. */
+  waits?: string;
   /** The question, in a line. */
   prompt: string;
   /** For a name that may be a system the draft has: the role it plays, and the candidates. */
@@ -24,7 +26,8 @@ export type DecideAnswer = { choice: string; accept: boolean; content: Suggestio
 export function decideQuestions(suggestions: Suggestion[], words: Lexicon): DecideQuestion[] {
   const open = suggestions.filter((item) => item.status === "proposed" && suggestionState(item) === "decide");
   return inDependencyOrder(open).map((suggestion) => {
-    const sentence = changeSentence(suggestion, words);
+    const sentence = standaloneSentence(suggestion, words);
+    const waits = suggestion.match.startsWith("needs_") ? waitsFor(suggestion, words) : undefined;
     const role = suggestion.possible_matches[0]?.role;
     if (role) {
       const candidates = suggestion.possible_matches.filter((item) => item.role === role);
@@ -33,14 +36,14 @@ export function decideQuestions(suggestions: Suggestion[], words: Lexicon): Deci
       const prompt = suggestion.content.kind === "system"
         ? `Is “${writtenAs}” a system the draft already has?`
         : `Which system does “${writtenAs}” mean here?`;
-      return { id: suggestion.id, suggestion, sentence, prompt, match: { role, writtenAs, candidates } };
+      return { id: suggestion.id, suggestion, sentence, waits, prompt, match: { role, writtenAs, candidates } };
     }
     const prompt = suggestion.basis === "inferred"
       ? `Accept a link the reading inferred? ${sentence}`
       : draftedForRequirement(suggestion) && suggestion.match !== "updates_existing"
         ? `Accept what was drafted for a new offering? ${sentence}`
         : `Replace what the draft has? ${sentence}`;
-    return { id: suggestion.id, suggestion, sentence, prompt };
+    return { id: suggestion.id, suggestion, sentence, waits, prompt };
   });
 }
 
@@ -81,7 +84,8 @@ export function decideChoices(question: DecideQuestion): { value: string; label:
     {
       value: "accept",
       label: inferred ? "Accept the link" : suggestion.match === "updates_existing" ? "Replace what the draft has" : "Accept it as drafted",
-      consequence: `${question.sentence}.`,
+      // What accepting adds, and what it then still waits for before it reaches the draft.
+      consequence: `Adds: ${question.sentence}.${question.waits ? ` ${question.waits.replace(/^Waits/, "Then it waits")}, and reaches the draft with it.` : ""}`,
       answer: { choice: "accept", accept: true, content: null },
     },
     reject,

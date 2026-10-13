@@ -2055,6 +2055,14 @@
           "match": {
             "$ref": "#/components/schemas/CandidateMatch"
           },
+          "missing_systems": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Systems",
+            "type": "array"
+          },
           "model": {
             "title": "Model",
             "type": "string"

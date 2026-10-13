@@ -129,7 +129,7 @@ function Run({ release, base, back }: { release: Release; base: string; back: st
       keep={kept}
       current={atSummary ? undefined : current?.suggestion.id}
       mark={mark}
-      caption="What your answers settle: each one settles what is to its right."
+      caption="Decided here, these follow: each card waits for the one to its left."
       legend={<DiagramLegend items={[["subject", "This question"], ["decide", "Needs your decision"], ["ready", "You accept it"], ["muted", "Dotted frame: you reject it"]]} />}
     />
   );
@@ -183,7 +183,9 @@ function Run({ release, base, back }: { release: Release; base: string; back: st
       title={question.prompt}
       lead={
         <>
-          <Suggested basis={suggestion.basis === "inferred" ? "inferred" : "stated"} /> {decideWhy(suggestion)}.
+          <Suggested basis={suggestion.basis === "inferred" ? "inferred" : "stated"} />
+          {/* The tag already says a link was inferred; the line says only what else to know. */}
+          {suggestion.basis === "inferred" && !suggestion.possible_matches.length ? null : <> {decideWhy(suggestion)}.</>}
           {echoed && !answers[question.id] && !choice && <> Chosen from your earlier answer about “{question.match?.writtenAs}”.</>}
         </>
       }

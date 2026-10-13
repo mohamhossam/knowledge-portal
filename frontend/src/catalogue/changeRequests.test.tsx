@@ -255,7 +255,7 @@ describe("a question suggested by a change request", () => {
     id: system_id, document_version_id: "CR-1", change_request: { change_request_id: "CR-1", feature_id: "FT-1" },
     citations: [{ location: "Feature FT-1", quote: "Offer Microsoft 365" }], match, status: "proposed", edited: false,
     model: "requirement-ai-export", prompt_version: "export-1", created_at: "", decided_by: null, decided_at: null,
-    basis: "stated", rationale: null, possible_matches: [], system_name: null, target_system_name: null,
+    basis: "stated", rationale: null, possible_matches: [], system_name: null, target_system_name: null, missing_systems: [],
     content: { kind: "question", system_id, name: "", aliases: [], triggers: [], text: "", capability_refs: [], concept_ids: [], value_refs: [], question: { id: "REQ-1/FT-1", text: "Offer Microsoft 365", order_types } },
   }) as Suggestion;
 

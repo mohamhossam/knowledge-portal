@@ -78,6 +78,7 @@ from knowledge_portal.domain.architecture.candidates import (
     apply_candidate,
     classify,
     find_system,
+    missing_systems,
     needs_one_by_one,
     open_matches,
 )
@@ -129,7 +130,7 @@ _EMBEDDED_ORDER = (
     _DOCX,
     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 )
-READING_VERSION = "document-reading-v5"
+READING_VERSION = "document-reading-v6"
 MAX_MATCHES_PER_NAME = 3
 _FIGURE = re.compile(r"^image (\d+)\b", re.IGNORECASE)
 _JOURNEY = re.compile(r"\bjourneys?\b", re.IGNORECASE)
@@ -346,6 +347,8 @@ class CandidateView:
     # The draft systems its references resolve to now, by name; None when not in the draft.
     system_name: str | None = None
     target_name: str | None = None
+    # The system references it makes that no draft system answers to yet.
+    missing_systems: tuple[str, ...] = ()
 
 
 def _view(candidate: CatalogueCandidate, release: ArchitectureKnowledge) -> CandidateView:
@@ -366,6 +369,7 @@ def _view(candidate: CatalogueCandidate, release: ArchitectureKnowledge) -> Cand
         open_matches(candidate, release),
         source.name if source else None,
         target.name if target else None,
+        missing_systems(candidate.content, release),
     )
 
 

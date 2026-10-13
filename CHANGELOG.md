@@ -125,6 +125,21 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   number ("FortiManager 7.4") or a name under five letters is never asked about. It is asked
   once, on the system's own suggestion; asked on every capability naming it, one name was
   asked about 71 times.
+- Decide waits for a system only when the service cannot find it by id, name, alias or the
+  words of its name: a suggestion now carries `missing_systems` (additive), and the page reads
+  waits from it. Matched by id alone, 24 suggestions kept waiting for "OM-E2ESO" after a person
+  had answered that it is ESESO.
+- A waiting name no suggestion spells out reads as an acronym where it looks like one ("OM
+  E2ESO", "RTF"), not "Om E2eso"; cards in "what waits for what" say what each waits for.
+- A question asked on its own names the system it is about ("NPS sends data to RTF", not
+  "Sends data to RTF", which fourteen links shared); accepting says what it adds and what it
+  then waits for; an inferred link is said to be inferred once.
+- A workflow stage's performer is read whole ("E2ESO-ASAP ENG/UCAAS"), as a workflow book
+  writes it, and a cell reading only "System", "N/A" or "TBD" names no performer: cut at "/"
+  before any system was known, it named systems nothing suggested and kept 35 journeys
+  waiting (`catalogue-tables-v10`).
+- A dependency from or to a group ("Channels", "Digital Channels", "the fulfilment systems")
+  is left out (`document-reading-v6`).
 - Workflow titles are compared whatever separates their parts ("—", "|", ":" or " - "), so a
   model's "WF-3A Order fulfillment | ..." merges with the reader's "WF-3A Order fulfillment —".
 

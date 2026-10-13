@@ -98,7 +98,13 @@ export function lexicon(release: Release, suggestions: Suggestion[]): Lexicon {
     ...release.systems.map((system) => `system:${system.id}`),
     ...(release.channels ?? []).flatMap((channel) => channelKeys(channel.id, channel.name)),
   ]);
-  const humane = (id: string) => id.split(/[-_]+/).filter(Boolean).map((word) => word.charAt(0).toLocaleUpperCase() + word.slice(1)).join(" ");
+  // A name no suggestion spells out, from its id: a part with a digit, without a vowel or of two
+  // letters reads as an acronym ("om-e2eso" is "OM E2ESO", "rtf" is "RTF"), a word is capitalised
+  // ("business-pro-plus" is "Business Pro Plus").
+  const humane = (id: string) =>
+    id.split(/[-_]+/).filter(Boolean)
+      .map((word) => (/[0-9]/.test(word) || !/[aeiou]/.test(word) || word.length <= 2 ? word.toLocaleUpperCase() : word.charAt(0).toLocaleUpperCase() + word.slice(1)))
+      .join(" ");
   const offeringBy = (reference: string) =>
     (release.products ?? []).find((item) => item.id === reference || item.name.toLocaleLowerCase() === reference.toLocaleLowerCase());
   return {
@@ -222,6 +228,24 @@ const SCHEME: Record<NonNullable<Suggestion["content"]["term"]>["scheme"], strin
   information_entity: "information entity",
 };
 
+/** Kinds whose sentence is said about a system ("Sends data to RTF"), which a list shows it under. */
+const ABOUT_A_SYSTEM = new Set(["relationship", "capability", "component", "constraint", "placement"]);
+
+/**
+ * The change as a sentence that stands on its own, naming the system it is about: a
+ * question asked one at a time has no system heading above it, so "Sends data to RTF"
+ * alone did not say which of fourteen systems sends it.
+ */
+export function standaloneSentence(suggestion: Suggestion, words: Lexicon): string {
+  const sentence = changeSentence(suggestion, words);
+  const { content } = suggestion;
+  if (!ABOUT_A_SYSTEM.has(content.kind)) return sentence;
+  const subject = suggestion.system_name ?? words.system(content.system_id);
+  return content.kind === "relationship"
+    ? `${subject} ${sentence.charAt(0).toLocaleLowerCase()}${sentence.slice(1)}`
+    : `${subject}: ${sentence}`;
+}
+
 function targetName(suggestion: Suggestion, words: Lexicon): string {
   return suggestion.target_system_name ?? words.system(suggestion.content.target_system_id ?? "");
 }
@@ -319,7 +343,7 @@ const few = (names: string[]) => (names.length > 4 ? `${names.slice(0, 3).join("
 
 /** The systems and channels an offering or journey names that the draft lacks, in the documents' names. */
 function awaited(suggestion: Suggestion, words: Lexicon): { systems: string[]; channels: string[] } {
-  const systems = [...new Set(systemsNamed(suggestion))].filter((id) => !words.inDraft(`system:${id}`)).map(words.system);
+  const systems = [...new Set(systemsNamed(suggestion))].filter((id) => stillMissing(suggestion, id, words)).map(words.system);
   const channels = [...new Set(channelsNamed(suggestion))].filter((id) => !words.inDraft(`channel:${id}`)).map(words.channel);
   return { systems: [...new Set(systems)], channels: [...new Set(channels)] };
 }
@@ -620,7 +644,22 @@ function channelsNamed(suggestion: Suggestion): string[] {
   return [];
 }
 
+/**
+ * Whether a system a suggestion names is still missing. The service says so by id, name,
+ * alias or the words of a name (`missing_systems`); a draft answering to the name some
+ * other way than by id is never waited for. Without that list, the id alone decides.
+ */
+function stillMissing(suggestion: Suggestion, reference: string, words?: Lexicon): boolean {
+  const missing = suggestion.missing_systems as string[] | undefined;
+  if (missing) return missing.includes(reference);
+  return words ? !words.inDraft(`system:${reference}`) : true;
+}
+
 function requires(suggestion: Suggestion): string[] {
+  return requiredKeys(suggestion).filter((key) => !key.startsWith("system:") || stillMissing(suggestion, key.slice("system:".length)));
+}
+
+function requiredKeys(suggestion: Suggestion): string[] {
   const { content } = suggestion;
   const system = suggestion.system_name ? [] : [`system:${content.system_id}`];
   // An offering or a journey also waits for every channel it names, whatever it waits for first.

@@ -1321,6 +1321,58 @@ _LONG_NAME = 9
 _MAX_SPELLED = 3
 
 
+def missing_systems(content: CandidateContent, release: ArchitectureKnowledge) -> tuple[str, ...]:
+    """The system references a suggestion makes that no draft system answers to, as written.
+
+    A system is found by id, name, alias or the words of its name (``find_system``),
+    so a name a person confirmed as another system's alias is never missing. The
+    review shows what waits for what from this, rather than matching ids itself:
+    matching ids alone, it kept 24 suggestions waiting for "OM-E2ESO" after a
+    person had answered that OM-E2ESO is ESESO.
+    """
+    kind = content.kind
+    references: list[str] = []
+    if kind is CandidateKind.JOURNEY and content.journey is not None:
+        for step in content.journey.activities:
+            references.extend((step.performing_system_id or "", *step.supporting_system_ids))
+    elif kind is CandidateKind.PRODUCT and content.product is not None:
+        offering = content.product
+        references.extend(
+            duty.system_id for part in offering.components for duty in part.responsibilities
+        )
+        tracking = offering.tracking
+        if tracking is not None:
+            references.extend(
+                name for flow in tracking.flows for name in (flow.from_system_id, flow.to_system_id)
+            )
+            references.extend(
+                name
+                for item in tracking.channels
+                for name in (item.ui_system_id or "", item.read_system_id or "")
+            )
+            references.extend(item.system_id or "" for item in tracking.milestones)
+    elif kind is CandidateKind.CHANNEL and content.channel is not None:
+        references.append(content.channel.entry_system_id or "")
+    elif kind is CandidateKind.CONCEPT:
+        references.extend(ref.system_id for ref in content.capability_refs)
+    elif kind not in {
+        CandidateKind.SYSTEM,
+        CandidateKind.LANDSCAPE_DOMAIN,
+        CandidateKind.OFFERING_RULE,
+        CandidateKind.QUESTION,
+        CandidateKind.COMPONENT_LINK,
+        CandidateKind.VOCABULARY_TERM,
+    }:
+        references.extend((content.system_id, content.target_system_id or ""))
+    return tuple(
+        dict.fromkeys(
+            reference
+            for reference in references
+            if reference and find_system(release, reference) is None
+        )
+    )
+
+
 def needs_one_by_one(candidate: CatalogueCandidate, release: ArchitectureKnowledge) -> bool:
     """Inferred, perhaps an existing system, or moving a placed system: never accepted in bulk."""
     # Moving a placed system, or replacing an offering or journey, changes what a person chose.

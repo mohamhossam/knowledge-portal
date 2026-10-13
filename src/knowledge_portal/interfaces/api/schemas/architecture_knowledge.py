@@ -2377,6 +2377,9 @@ class CatalogueSuggestionResponse(BaseModel):
     # names; null when the system is not in the draft yet.
     system_name: str | None
     target_system_name: str | None
+    # The system references no draft system answers to yet, by id, name or alias: what it
+    # waits for. The review reads waits from this rather than matching ids itself.
+    missing_systems: list[str] = []
 
     @classmethod
     def from_domain(cls, view: CandidateView, names: dict[str, str]) -> CatalogueSuggestionResponse:
@@ -2414,6 +2417,7 @@ class CatalogueSuggestionResponse(BaseModel):
             ],
             system_name=view.system_name,
             target_system_name=view.target_name,
+            missing_systems=list(view.missing_systems),
         )
 
 

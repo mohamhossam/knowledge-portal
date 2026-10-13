@@ -2706,6 +2706,11 @@ export interface components {
             /** Id */
             id: string;
             match: components["schemas"]["CandidateMatch"];
+            /**
+             * Missing Systems
+             * @default []
+             */
+            missing_systems: string[];
             /** Model */
             model: string;
             /** Possible Matches */

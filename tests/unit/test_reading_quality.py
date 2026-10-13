@@ -32,6 +32,7 @@ from knowledge_portal.domain.architecture.candidates import (
     CatalogueCandidate,
     apply_candidate,
     classify,
+    missing_systems,
     open_matches,
 )
 from knowledge_portal.domain.architecture.journeys import Activity, Journey
@@ -586,7 +587,7 @@ def test_a_workflow_table_is_read_as_a_journey_without_the_model() -> None:
         ("2", "Domain name provisioning", "cwom"),
         ("3", "Customer appointment", "wfms"),
     ]
-    assert change.reader is not None and change.reader[1] == "catalogue-tables-v9"
+    assert change.reader is not None and change.reader[1] == "catalogue-tables-v10"
 
 
 # One workflow read twice; combined system names ------------------------------------------
@@ -839,3 +840,90 @@ def test_workflow_titles_match_however_their_parts_are_separated() -> None:
     assert not _same_workflow(
         journey("WF-1 Order fulfillment — GPON"), journey("WF-1 Up/Downgrade — GPON")
     )
+
+
+# What waits for what ------------------------------------------------------------------------
+
+
+def test_a_name_confirmed_as_an_alias_is_never_waited_for() -> None:
+    """The reported draft: OM-E2ESO, confirmed as ESESO, still kept 24 suggestions waiting."""
+    systems = (SystemDefinition("eseso", "ESESO", ("OM-E2ESO",)),)
+    release = replace(
+        seed_knowledge(), status=KnowledgeReleaseStatus.DRAFT, systems=systems, relationships=()
+    )
+    journey = Journey(
+        "wf-1",
+        "WF-1 Order fulfillment",
+        activities=(
+            Activity("1", "Configure CPE", performing_system_id="om-e2eso"),
+            Activity("2", "Configure ONT", performing_system_id="om-enrm-asap"),
+        ),
+    )
+    link = CandidateContent(
+        CandidateKind.RELATIONSHIP, "eseso", target_system_id="rtf", text="Sends orders"
+    )
+
+    assert missing_systems(
+        CandidateContent(CandidateKind.JOURNEY, "wf-1", name=journey.name, journey=journey), release
+    ) == ("om-enrm-asap",)
+    assert missing_systems(link, release) == ("rtf",)
+    assert missing_systems(CandidateContent(CandidateKind.SYSTEM, "nec", name="NEC"), release) == ()
+
+
+def _performer_book(*performers: str) -> bytes:
+    book = Workbook()
+    sheet = book.active
+    assert sheet is not None
+    sheet.title = "Provisioning WF-P1"
+    sheet.append(["WF-1", "Order fulfillment"])
+    sheet.append(["Seq.", "Description", "Section", "System"])
+    for number, performer in enumerate(performers, start=1):
+        sheet.append([str(number), f"Stage {number}", "System", performer])
+    buffer = io.BytesIO()
+    book.save(buffer)
+    return buffer.getvalue()
+
+
+def test_a_workflow_stage_names_its_performer_whole_and_a_bare_system_cell_names_none() -> None:
+    located = LocatedDocumentExtractor(SafeDocumentTextExtractor()).extract(
+        XLSX, _performer_book("E2ESO-ASAP ENG/UCAAS", "System", "WFMS")
+    )
+    segments = tuple(
+        ExtractionSegment(
+            number, item.location, item.text, section=item.heading_path, cells=item.cells
+        )
+        for number, item in enumerate(located, start=1)
+    )
+
+    (change,) = CatalogueTableReader().read(ExtractionRequest("SDD", segments, ())).changes
+
+    journey = change.content.journey
+    assert journey is not None
+    assert [step.performing_system_id for step in journey.activities] == [
+        "e2eso-asap-eng-ucaas",
+        None,
+        "wfms",
+    ]
+
+
+def test_a_link_from_a_group_of_channels_or_systems_is_left_out() -> None:
+    proposal = _read(
+        ["Channels submit the request to RTF. NPS sends the request to RTF."],
+        _item(
+            kind="relationship",
+            system="Channels",
+            name=None,
+            target_system="RTF",
+            quote="Channels submit the request to RTF",
+        ),
+        _item(
+            kind="relationship",
+            system="NPS",
+            name=None,
+            target_system="RTF",
+            quote="NPS sends the request to RTF",
+        ),
+    )
+
+    assert [change.source_name for change in proposal.changes] == ["NPS"]
+    assert proposal.warnings == ("Incomplete suggestions were left out: 1 relationship.",)

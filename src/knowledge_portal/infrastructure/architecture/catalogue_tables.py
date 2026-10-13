@@ -76,7 +76,7 @@ from knowledge_portal.domain.architecture.tracking import (
 from knowledge_portal.infrastructure.llm.catalogue_extraction import plain_name, slug
 
 READER = "catalogue-table-reader"
-READER_VERSION = "catalogue-tables-v9"
+READER_VERSION = "catalogue-tables-v10"
 # An Integrations entry longer than this is a phrase ("Same service context as
 # B2B Web"), not the name of a system.
 _MAX_ENTRY_WORDS = 4
@@ -1188,6 +1188,21 @@ def _systems(cell: str, names: _Names) -> tuple[str, ...]:
     return tuple(dict.fromkeys(found))
 
 
+def _performer(cell: str, names: _Names) -> tuple[str, ...]:
+    """A step's performer as one name; none when the cell names no system ("System", "TBD").
+
+    A combined name is resolved part by part later, against the systems the reading
+    suggests (``_canonical_journey``), when it is known which parts are systems.
+    """
+    name = plain_name(cell.strip())
+    if not name or name.casefold() in _NO_PERFORMER:
+        return ()
+    return (names.resolve(name),)
+
+
+_NO_PERFORMER = frozenset({"system", "systems", "n/a", "na", "tbd", "tbc", "none", "-", "—", "–"})
+
+
 def _value(text: str) -> str | None:
     cleaned = text.replace("\\|", "|").strip()
     return None if cleaned in _NOTHING else cleaned
@@ -1254,6 +1269,10 @@ class _JourneySection:
     # capabilities. A workflow book's stages are not: the flows between systems are
     # stated in their remark columns ("WFMS will send to OM and OM will send to NEC").
     rows_read: bool = True
+    # Whether a step's performer cell is one name, as a workflow book writes it ("E2ESO-ASAP
+    # ENG/UCAAS"), rather than a list to split at "/": split before any system is known, it
+    # named systems nothing suggests and kept 35 journeys waiting.
+    whole_performer: bool = False
 
     def read_into(
         self, reading: TableReading, names: _Names, offering: ProductOffering | None
@@ -1269,7 +1288,16 @@ class _JourneySection:
         try:
             for segment in self.segments:
                 if segment.cells:
-                    self._row(_row(segment), steps, rules, links, consumed, read, names)
+                    self._row(
+                        _row(segment),
+                        steps,
+                        rules,
+                        links,
+                        consumed,
+                        read,
+                        names,
+                        whole_performer=self.whole_performer,
+                    )
                     continue
                 text = segment.text.strip()
                 if plain_name(text) in titles and _STEP_HEADING.match(plain_name(text)):
@@ -1339,6 +1367,8 @@ class _JourneySection:
         consumed: set[int],
         read: set[int],
         names: _Names,
+        *,
+        whole_performer: bool = False,
     ) -> None:
         """One table row of the journey: an activity, a flow rule or an integration."""
         columns = frozenset(row.values)
@@ -1352,7 +1382,13 @@ class _JourneySection:
                     _column(row.get(_PERFORMER)) in _BY_CHANNEL
                     or _yes(row.get(_CHANNEL_ENTRY)) is True
                 )
-                performers = () if by_channel else _systems(row.get(_PERFORMER), names)
+                performers = (
+                    ()
+                    if by_channel
+                    else _performer(row.get(_PERFORMER), names)
+                    if whole_performer
+                    else _systems(row.get(_PERFORMER), names)
+                )
                 steps[step] = Activity(
                     step,
                     name,
@@ -1471,7 +1507,9 @@ def _workflow_sections(segments: tuple[ExtractionSegment, ...]) -> list[_Journey
             if _STEP_NUMBER.match(step):
                 sections.setdefault(segment.section, []).append(replace(segment, cells=cells))
     return [
-        _JourneySection(_workflow_name(section), segments=rows, rows_read=False)
+        _JourneySection(
+            _workflow_name(section), segments=rows, rows_read=False, whole_performer=True
+        )
         for section, rows in sections.items()
         if len(rows) >= _MIN_WORKFLOW_STEPS
     ]
