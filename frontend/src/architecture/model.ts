@@ -1,6 +1,6 @@
 /**
- * The architecture catalogue's view model, generic for any telecom product
- * (docs/redesign/plans/03-architecture-catalogue.md). The adapter builds it
+ * The architecture catalogue's view model, generic for any telecom product,
+ * drawn by the catalogue redesign (design-lab/catalogue). The adapter builds it
  * from a catalogue version read from the API; every view is a lens on it: the
  * TAM landscape, the portfolio, each offering, its journeys per channel, their
  * integrations and the order-tracking flow. Impact is computed from journeys,
