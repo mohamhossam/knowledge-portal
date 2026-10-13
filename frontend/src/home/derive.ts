@@ -17,14 +17,18 @@ import type {
   Organisation,
   OrganisationAuditEvent,
   Release,
+  ReleaseDeliveries,
+  ReleasePrecedents,
   RequirementCorpus,
   SystemStanding,
 } from "../api/client";
 import { jobReason, reading } from "../catalogue/suggestions";
 import { REVIEW_STATUS, reviewSince } from "../reviews/review";
 import { newestState } from "../library/model";
-import type { Rank } from "../timetable/TimetableTable";
 import { count, formatDay } from "./format";
+
+/** How much a line needs someone: a line that needs someone ranks first, one in the past last. */
+export type Rank = "due" | "delayed" | "running" | "service" | "past";
 
 export type Line = {
   key: string;
@@ -95,7 +99,7 @@ function alertOf(delayed: string | null, due: string | null): Overview["alert"] 
   return delayed ? { rank: "delayed", text: delayed } : due ? { rank: "due", text: due } : undefined;
 }
 
-export type NameOf = (actorId: string | null | undefined) => string;
+type NameOf = (actorId: string | null | undefined) => string;
 
 /** Who did something, by name. The packaged initial catalogue has no person behind it. */
 export function nameDirectory(actors: Actor[] | undefined): NameOf {
@@ -299,13 +303,20 @@ export function architectureOverview(
   jobs: Map<string, DraftJobs> | null = null,
   /** Where each system in service stands for review (Knowledge Center D), once read. */
   standings: SystemStanding[] | null = null,
+  /** How reviewers decided the verdicts suggested on the edition in force, when the reader may see it. */
+  precedents: ReleasePrecedents | null = null,
+  /** What closed Epics assessed against the edition in force delivered, when the reader may see it. */
+  deliveries: ReleaseDeliveries | null = null,
 ): Overview {
   const drafts = releases.filter((release) => release.status === "draft");
   const notes: DerivedNote[] = [];
+  const decisions = active && precedents?.release_id === active.id ? verdictDecisions(precedents) : null;
+  const delivered = active && deliveries?.release_id === active.id ? deliveryHits(deliveries) : null;
   if (active) {
     notes.push({
       id: "edition",
-      text: `Published by ${nameOf(active.published_by)} on ${formatDay(active.published_at)}, revision ${active.revision}. Requirement work maps new requirements against this edition.`,
+      text: `Published by ${nameOf(active.published_by)} on ${formatDay(active.published_at)}, revision ${active.revision}. Requirement work maps new requirements against this edition.${
+        decisions ? ` ${decisions.note}` : ""}${delivered ? ` ${delivered.note}` : ""}`,
     });
   }
   let pendingTotal = 0;
@@ -403,6 +414,8 @@ export function architectureOverview(
           { key: "relationships", label: "Relationships", value: String(active.relationships.length) },
           { key: "domains", label: "Capability domains", value: String(active.capability_domains?.length ?? 0) },
           { key: "journeys", label: "Journeys", value: String(active.journeys?.length ?? 0) },
+          ...(decisions?.totals ?? []),
+          ...(delivered?.totals ?? []),
         ]
       : [],
     edition: active
@@ -417,7 +430,7 @@ export function architectureOverview(
         : firstFailure.failedReadings > 0
           ? {
               // Readings are redone on Sources, where their documents are; a build waits for them.
-              to: draftSuggestions(firstFailed.key),
+              to: draftSources(firstFailed.key),
               label: `Read ${count(firstFailure.failedReadings, "document")} again in ‘${firstFailed.name}’${firstFailure.build ? ", then rebuild" : ""}`,
             }
           : { to: draftCheck(firstFailed.key), label: `Rebuild the evidence index of ‘${firstFailed.name}’` }
@@ -435,7 +448,7 @@ export function architectureOverview(
             }
           : overdueSystems.length + dueSystems.length > 0
             ? {
-                to: "/reminders",
+                to: "/",
                 label: overdueSystems.length > 0
                   ? `${count(overdueSystems.length, "system")} overdue for re-confirmation`
                   : `${count(dueSystems.length, "system")} due for re-confirmation within two weeks`,
@@ -455,8 +468,91 @@ export function architectureOverview(
   };
 }
 
-/** Where a draft is worked on: its sources, documents and suggestions. */
-const draftSuggestions = (releaseId: string) => `/architecture/versions/${encodeURIComponent(releaseId)}/sources`;
+/** Below this many decided verdicts a rate says more about chance than about the matcher. */
+const RATE_FROM = 10;
+
+/**
+ * What Requirement Owners did with the verdicts the assessment suggested against one release:
+ * its totals, and a sentence for the edition's note naming the capabilities overridden most.
+ */
+export function verdictDecisions(summary: ReleasePrecedents): {
+  totals: { key: string; label: string; value: string }[];
+  note: string;
+} | null {
+  const decided = summary.accepted + summary.overridden;
+  if (decided + summary.unknown === 0) return null;
+  // The figures are as of the latest decision.
+  const owners = summary.last_decided_at
+    ? `By ${formatDay(summary.last_decided_at)}, requirement owners had`
+    : "Requirement owners had";
+  if (decided === 0) {
+    return {
+      totals: [{ key: "verdicts-unknown", label: "Suggested verdicts marked unknown", value: String(summary.unknown) }],
+      note: `${owners} marked ${count(summary.unknown, "verdict")} suggested against this edition unknown, and decided none.`,
+    };
+  }
+  const rate = summary.override_rate ?? null;
+  const top = summary.concepts[0]?.overridden ?? 0;
+  const worst = top > 0 ? summary.concepts.filter((item) => item.overridden === top) : [];
+  const named = worst.map((item) => `‘${item.label}’ (${item.overridden} of ${item.decided})`);
+  const where = named.length === 0
+    ? ""
+    : named.length === 1
+      ? `, most often for requirements needing ${named[0]}`
+      : `, as often for requirements needing ${named.slice(0, -1).join(", ")} as for ${named[named.length - 1]}`;
+  const unknown = summary.unknown > 0
+    ? ` ${count(summary.unknown, "other was", "others were")} marked unknown.`
+    : "";
+  return {
+    totals: [
+      { key: "verdicts", label: "Suggested verdicts decided", value: String(decided) },
+      {
+        key: "overrides",
+        label: "Of them changed",
+        value: rate !== null && decided >= RATE_FROM
+          ? `${summary.overridden} (${Math.round(rate * 100)}%)`
+          : String(summary.overridden),
+      },
+    ],
+    note: `${owners} decided ${count(decided, "verdict")} suggested against this edition and changed ${
+      summary.overridden === 0 ? "none" : summary.overridden}${where}.${unknown}`,
+  };
+}
+
+/** "5 of 7", with its share once there are enough systems for a rate to mean something. */
+function share(part: number, whole: number): string {
+  return whole >= RATE_FROM ? `${part} of ${whole} (${Math.round((part / whole) * 100)}%)` : `${part} of ${whole}`;
+}
+
+/**
+ * How the systems assessed against one release compare with what closed Epics delivered
+ * (ontology plan Phase 7): its totals, and a sentence for the edition's note.
+ */
+export function deliveryHits(summary: ReleaseDeliveries): {
+  totals: { key: string; label: string; value: string }[];
+  note: string;
+} | null {
+  if (summary.deliveries === 0) return null;
+  const predicted = summary.predicted + summary.undelivered;
+  const missed = summary.undelivered === 0
+    ? predicted > 0 ? " Every system predicted was delivered." : ""
+    : ` ${count(summary.undelivered, "system")} predicted ${summary.undelivered === 1 ? "was" : "were"} not delivered.`;
+  return {
+    totals: [
+      { key: "delivered-predicted", label: "Delivered systems predicted", value: share(summary.predicted, summary.delivered) },
+      { key: "predicted-undelivered", label: "Predicted systems not delivered", value: share(summary.undelivered, predicted) },
+    ],
+    note: `By ${formatDay(summary.last_closed_at)}, ${count(summary.deliveries, "closed Epic")} assessed against this edition ${
+      summary.delivered === 0
+        ? `named no system ${summary.deliveries === 1 ? "it" : "they"} changed`
+        : `delivered ${count(summary.delivered, "system")}, ${summary.predicted === summary.delivered ? "all" : summary.predicted} of them predicted`}.${missed}`,
+  };
+}
+
+/** Where a draft's documents are added and read. */
+const draftSources = (releaseId: string) => `/architecture/versions/${encodeURIComponent(releaseId)}/sources`;
+/** Where a draft's suggestions are decided. */
+const draftSuggestions = (releaseId: string) => `/architecture/versions/${encodeURIComponent(releaseId)}/decide`;
 /** Where a draft's evidence index is built and checked. */
 const draftCheck = (releaseId: string) => `/architecture/versions/${encodeURIComponent(releaseId)}/check`;
 
@@ -472,7 +568,7 @@ export function squadOverview(
 ): Overview {
   const owner = new Map<string, string>();
   for (const squad of organisation.squads) {
-    for (const held of squad.systems) owner.set(held.system_id, squad.name);
+    for (const held of squad.resources) owner.set(held.system_id, squad.name);
   }
   const systems = active?.systems ?? [];
   const lines: Line[] = [];
@@ -521,7 +617,7 @@ export function squadOverview(
 // Table 4 ----------------------------------------------------------------------
 
 /** Requirement work, where its owners act on what Table 4 reports. */
-export const REQUIREMENT_WORK_LEAVES = "opens requirement work";
+const REQUIREMENT_WORK_LEAVES = "opens requirement work";
 
 // Table 4's own pages, filtered to what a row counts.
 const REQUIREMENTS = "/requirement-knowledge/requirements";
@@ -532,7 +628,7 @@ const AWAITING = `${FINDINGS}?age=from_7_to_30_days`;
 const HISTORIC = "/requirement-knowledge/historic";
 
 /** How many historic Requirements stand in each state (Knowledge Center E). */
-export type HistoricTally = { draft: number; published: number; withdrawn: number; refresh_waiting: number };
+type HistoricTally = { draft: number; published: number; withdrawn: number; refresh_waiting: number };
 
 /**
  * Requirement work's corpus, in counts (requirement-portal ADR-0099, Amendment 1). Its teams

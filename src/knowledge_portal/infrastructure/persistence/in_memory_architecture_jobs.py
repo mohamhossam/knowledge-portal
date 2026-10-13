@@ -1,12 +1,13 @@
 """Deterministic offline architecture queue."""
 
 from dataclasses import replace
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from knowledge_portal.application.ports.architecture_jobs import (
     ArchitectureJob,
     ArchitectureJobKind,
     ArchitectureJobStatus,
+    JobProgress,
 )
 from knowledge_portal.domain.architecture.knowledge import KnowledgeConflictError
 
@@ -26,6 +27,7 @@ class InMemoryArchitectureJobs:
             None,
         )
         if existing is None:
+            job = replace(job, queued_at=job.queued_at or datetime.now(UTC))
             self._jobs[job.id] = job
             return job
         if existing.status in {ArchitectureJobStatus.FAILED, ArchitectureJobStatus.CANCELLED}:
@@ -36,6 +38,9 @@ class InMemoryArchitectureJobs:
                 attempts=0,
                 error_category=None,
                 lease_until=None,
+                queued_at=datetime.now(UTC),
+                started_at=None,
+                progress=None,
             )
             # Re-inserted so listings see it as the most recently changed job.
             del self._jobs[existing.id]
@@ -69,6 +74,8 @@ class InMemoryArchitectureJobs:
                     status=ArchitectureJobStatus.RUNNING,
                     attempts=job.attempts + 1,
                     lease_until=now + timedelta(minutes=5),
+                    started_at=now,
+                    progress=None,
                 )
                 self._jobs[job.id] = claimed
                 return claimed
@@ -80,6 +87,11 @@ class InMemoryArchitectureJobs:
             return False
         self._jobs[job_id] = replace(job, lease_until=now + timedelta(minutes=5))
         return True
+
+    def report(self, job_id: str, attempt: int, progress: JobProgress) -> None:
+        job = self._jobs[job_id]
+        if job.status is ArchitectureJobStatus.RUNNING and job.attempts == attempt:
+            self._jobs[job_id] = replace(job, progress=progress)
 
     def finish(
         self,
@@ -106,6 +118,14 @@ class InMemoryArchitectureJobs:
         job = self._jobs[job_id]
         if job.status is not ArchitectureJobStatus.FAILED:
             raise KnowledgeConflictError("Only a failed job can be retried.")
-        retried = replace(job, status=ArchitectureJobStatus.QUEUED, attempts=0, error_category=None)
+        retried = replace(
+            job,
+            status=ArchitectureJobStatus.QUEUED,
+            attempts=0,
+            error_category=None,
+            queued_at=datetime.now(UTC),
+            started_at=None,
+            progress=None,
+        )
         self._jobs[job_id] = retried
         return retried

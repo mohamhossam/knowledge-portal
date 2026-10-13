@@ -36,6 +36,8 @@ import {
   Pagination,
   ProvenanceTrail,
   RadioGroup,
+  SearchDialog,
+  SearchTrigger,
   Section,
   Select,
   ShortcutHelp,
@@ -55,6 +57,7 @@ import {
   Upload,
 } from "../../design/components";
 import { useDisclosure } from "../../design/hooks";
+import { DiagramSection } from "./DiagramSection";
 
 type Row = { id: string; title: string; state: "review" | "service" | "attention"; passages: number; owner: string };
 
@@ -74,6 +77,7 @@ const SECTIONS = [
   ["data", "Data table and review"],
   ["compare", "Compare, impact, provenance"],
   ["overlays", "Overlays and help"],
+  ["diagrams", "Diagrams"],
   ["red", "Red: right and wrong"],
 ] as const;
 
@@ -113,6 +117,7 @@ export default function Gallery() {
           <DataAndReview />
           <CompareAndProvenance />
           <OverlaysAndHelp />
+          <DiagramSection />
           <RedUsage />
         </div>
         {help.open && (
@@ -338,6 +343,8 @@ function CompareAndProvenance() {
 function OverlaysAndHelp() {
   const [dialog, setDialog] = useState(false);
   const [on, setOn] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [query, setQuery] = useState("xgpon");
   return (
     <Section title="Overlays and help">
       <div id="overlays" className="gallery-stack">
@@ -346,6 +353,22 @@ function OverlaysAndHelp() {
         <Dialog open={dialog} title="Someone changed this draft" onClose={() => setDialog(false)} actions={<><Button variant="primary" onClick={() => setDialog(false)}>Reload</Button><Button onClick={() => setDialog(false)}>Review their change</Button></>}>
           Reload to see their change; your unsaved decisions stay listed.
         </Dialog>
+        <div className="ds-masthead"><SearchTrigger label="Search" expanded={searching} onClick={() => setSearching(true)} /></div>
+        <SearchDialog
+          open={searching}
+          onClose={() => setSearching(false)}
+          label="Search the library and catalogue"
+          query={query}
+          onQuery={setQuery}
+          status={query ? "3 matches for 'xgpon' (sample)." : ""}
+          hint="Find a document, a system, offering or journey, or a passage in service."
+          onOpen={() => setSearching(false)}
+          groups={query ? [
+            { id: "documents", label: "Documents", hits: [{ id: "d", href: "#", title: "XGPON coverage rules (sample)", detail: "Document · owner you · version 2" }] },
+            { id: "systems", label: "Systems", hits: [{ id: "s", href: "#", title: "سياسة التحقق من العنوان (sample)", lang: "ar", detail: "System" }] },
+            { id: "passages", label: "Passages in service", note: "searching…", hits: [{ id: "p", href: "#", title: "High-speed bundles require XGPON coverage at the address.", detail: "Passage in XGPON coverage rules (sample) · Line 1" }] },
+          ] : []}
+        />
         <ShortcutHelp
           enabled={on}
           onToggle={setOn}

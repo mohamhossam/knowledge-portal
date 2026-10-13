@@ -137,6 +137,8 @@ class ArchitectureJobs(LeasedJobs):
             extraction = ExtractionJobInput.from_key(job.fingerprint)
             if extraction.extraction_profile != self._proposer.profile:
                 raise KnowledgeConflictError("The configured extraction model changed.")
-            self._proposer.execute(job.subject_id, extraction.document_version_id, fence)
+            self._proposer.execute(
+                job.subject_id, extraction.document_version_id, fence, self.reporter(job)
+            )
             return
         raise KnowledgeConflictError(f"Catalogue jobs do not run {job.kind} work.")

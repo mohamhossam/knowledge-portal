@@ -9,6 +9,8 @@ the job waiting forever once its attempts ran out.
 from __future__ import annotations
 
 import json
+import threading
+import time
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -130,6 +132,31 @@ def test_a_long_document_is_split_so_every_call_fits_the_budget() -> None:
     # Every call's answer is kept, each citing its own passage.
     assert {change.locations for change in proposal.changes} >= {("paragraph 1",)}
     assert proposal.warnings == ()
+
+
+def test_each_call_reports_how_many_parts_are_done_of_how_many() -> None:
+    client = _Recording()
+    heard: list[tuple[int, int]] = []
+
+    _extractor(client).propose(
+        replace(_document(40), progress=lambda done, total: heard.append((done, total)))
+    )
+
+    calls = len(client.prompts)
+    assert heard == [(done, calls) for done in range(calls)]
+
+
+def test_a_split_part_adds_to_the_parts_expected() -> None:
+    client = _Recording(
+        [_cut_off(), ExtractionOutput(changes=[_cited(1)]), ExtractionOutput(changes=[_cited(1)])]
+    )
+    heard: list[tuple[int, int]] = []
+
+    _extractor(client, budget=None).propose(
+        replace(_document(2), progress=lambda done, total: heard.append((done, total)))
+    )
+
+    assert heard == [(0, 1), (1, 3), (2, 3)]
 
 
 def test_an_oversized_passage_is_cut_into_parts_that_keep_its_location() -> None:
@@ -510,3 +537,81 @@ def test_reading_status_is_listed_per_document_and_retry_runs(client: TestClient
     assert started["status"] == "succeeded"
     reader = {"X-Fake-Actor-Id": "fake-reviewer"}
     assert client.get(f"{base}/extractions", headers=reader).status_code == 403
+
+
+def test_a_provider_refusal_ends_the_reading_at_once() -> None:
+    """The reported run: OpenRouter refused a model without credit (HTTP 402), wrapped in a
+    plain status error, and each of 300 parts was asked twice and refused."""
+    request = httpx.Request("POST", "https://openrouter.ai/api/v1/chat/completions")
+    status = httpx.HTTPStatusError(
+        "402 Payment Required", request=request, response=httpx.Response(402, request=request)
+    )
+    refused = StructuredOutputError("OpenRouter request failed")
+    refused.__cause__ = status
+    client = _Recording([refused] * 50)
+
+    with pytest.raises(CatalogueAnswerUnusableError) as raised:
+        _extractor(client).propose(_document(40))
+
+    assert len(client.prompts) == 1
+    assert describe_public_error(raised.value).code == "model_payment"
+    assert "The model provider refused the reading (payment)" in str(raised.value)
+
+
+class _Concurrent:
+    """A client that answers each call from its own passages, slowly, counting calls at once."""
+
+    model = "concurrent"
+
+    def __init__(self) -> None:
+        self.lock = threading.Lock()
+        self.now = 0
+        self.most = 0
+
+    def parse(self, *, user_prompt: str, **_: Any) -> ExtractionOutput:
+        with self.lock:
+            self.now += 1
+            self.most = max(self.most, self.now)
+        time.sleep(0.05)
+        segment = json.loads(user_prompt)["segments"][0]
+        name = segment["text"].split(" runs")[0]
+        with self.lock:
+            self.now -= 1
+        return ExtractionOutput(
+            changes=[_change(name=name, system=name, quote=f"{name} runs the ledger")]
+        )
+
+
+def test_parts_read_at_once_give_the_reading_one_at_a_time_gives() -> None:
+    request = ExtractionRequest(
+        "Ledger systems",
+        tuple(
+            # Each long enough to be read in a call of its own.
+            ExtractionSegment(
+                number,
+                f"paragraph {number}",
+                f"System {number} runs the ledger. " + "It closes the books nightly. " * 35,
+            )
+            for number in range(1, 13)
+        ),
+        (),
+    )
+
+    def read(concurrency: int) -> tuple[Any, _Concurrent]:
+        client = _Concurrent()
+        typed: Any = client
+        extractor = StructuredCatalogueExtractor(
+            typed, supports_images=False, max_output_tokens=1600, concurrency=concurrency
+        )
+        return extractor.propose(request), client
+
+    one, sequential = read(1)
+    many, parallel = read(4)
+
+    assert sequential.most == 1
+    assert parallel.most > 1
+    # The same suggestions in document order, however the calls finished.
+    assert [change.content.name for change in many.changes] == [
+        change.content.name for change in one.changes
+    ]
+    assert many.warnings == one.warnings

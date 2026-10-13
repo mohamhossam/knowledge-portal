@@ -1,0 +1,263 @@
+/*
+ * The diagram kit, on the Calm Ledger. Reads only the --diagram-* component
+ * tokens and the type and space scales. Tones differ by frame as well as by
+ * colour (subject heavier, gap dashed, muted dotted), and each carries its
+ * state in words. Red is never drawn. Nothing moves.
+ */
+
+.ds-diagram {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  min-inline-size: 0;
+}
+
+.ds-diagram__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+}
+
+.ds-diagram__caption {
+  max-inline-size: 72ch;
+  color: var(--color-ink-2);
+}
+
+/* Drawn at its natural size; wider than the page, it scrolls in place. */
+.ds-diagram__scroll {
+  max-inline-size: 100%;
+  max-block-size: max(24rem, 75vh);
+  overflow: auto;
+  overscroll-behavior-inline: contain;
+  border-block-start: var(--ledger-rule);
+  border-block-end: var(--hair-rule);
+  background: var(--diagram-bg);
+}
+
+.ds-diagram__svg {
+  display: block;
+  font-family: var(--font-ui);
+}
+
+.ds-diagram__head {
+  fill: var(--diagram-line);
+}
+
+.ds-diagram__line {
+  fill: none;
+  stroke: var(--diagram-line);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.ds-diagram__edge[data-dashed] .ds-diagram__line {
+  stroke-dasharray: 6 4;
+}
+
+/* Labels read over other lines: a halo in the background colour, painted under the glyphs. */
+.ds-diagram__edge-label {
+  fill: var(--diagram-detail-fg);
+  font-size: var(--text-meta);
+  paint-order: stroke;
+  stroke: var(--diagram-bg);
+  stroke-width: 4;
+  stroke-linejoin: round;
+}
+
+.ds-diagram__lane rect {
+  fill: var(--diagram-lane-bg);
+}
+
+.ds-diagram__lane-label,
+.ds-diagram__container-label {
+  font-size: var(--text-meta);
+  font-weight: var(--weight-strong);
+  font-stretch: var(--stretch-label);
+}
+
+.ds-diagram__lane-label {
+  fill: var(--diagram-lane-fg);
+}
+
+.ds-diagram__container rect {
+  fill: var(--diagram-container-bg);
+  stroke: var(--diagram-container-border);
+  stroke-width: 1;
+}
+
+.ds-diagram__container-label {
+  fill: var(--diagram-container-fg);
+}
+
+/* Nodes */
+
+.ds-diagram__box {
+  fill: var(--diagram-node-bg);
+  stroke: var(--diagram-node-border);
+  stroke-width: 1;
+}
+
+.ds-diagram__label {
+  fill: var(--diagram-label-fg);
+  font-size: var(--text-body);
+  font-weight: var(--weight-emphasis);
+}
+
+.ds-diagram__detail {
+  fill: var(--diagram-detail-fg);
+  font-size: var(--text-meta);
+}
+
+.ds-diagram__node[data-tone="subject"] .ds-diagram__box {
+  fill: var(--diagram-subject-bg);
+  stroke: var(--diagram-subject-border);
+  stroke-width: 2;
+}
+
+.ds-diagram__node[data-tone="ready"] .ds-diagram__box {
+  fill: var(--diagram-ready-bg);
+  stroke: var(--diagram-ready-border);
+}
+
+.ds-diagram__node[data-tone="decide"] .ds-diagram__box {
+  fill: var(--diagram-decide-bg);
+  stroke: var(--diagram-decide-border);
+  stroke-width: 2;
+}
+
+.ds-diagram__node[data-tone="gap"] .ds-diagram__box {
+  fill: var(--diagram-decide-bg);
+  stroke: var(--diagram-decide-border);
+  stroke-dasharray: 5 4;
+}
+
+.ds-diagram__node[data-tone="muted"] .ds-diagram__box {
+  fill: var(--diagram-muted-bg);
+  stroke: var(--diagram-muted-border);
+  stroke-dasharray: 2 3;
+}
+
+.ds-diagram__node[data-tone="muted"] .ds-diagram__label {
+  fill: var(--diagram-detail-fg);
+}
+
+/*
+ * Nodes that open something: pointer, hover frame, and a ring drawn around the
+ * box on keyboard focus (browsers draw outlines on SVG unevenly).
+ */
+a.ds-diagram__node,
+[role="button"].ds-diagram__node {
+  cursor: pointer;
+  outline: none;
+  /* A node is a box to press, not a run of text: no link underline on its words. */
+  text-decoration: none;
+}
+
+.ds-diagram__ring {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 2;
+}
+
+.ds-diagram__node:hover .ds-diagram__box {
+  stroke: var(--diagram-node-hover-border);
+}
+
+.ds-diagram__node:focus-visible .ds-diagram__ring {
+  stroke: var(--diagram-focus);
+}
+
+/* The table view */
+
+.ds-diagram__table-wrap {
+  max-inline-size: 100%;
+  overflow-x: auto;
+}
+
+/* The wrapper scrolls sideways, so a page-sticky head would stick inside it, mid-table. */
+.ds-diagram__table thead th {
+  position: static;
+}
+
+.ds-diagram__table th,
+.ds-diagram__table td {
+  vertical-align: top;
+}
+
+.ds-diagram__links {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ds-diagram__quiet {
+  color: var(--color-ink-2);
+}
+
+.ds-diagram__name-button {
+  min-block-size: var(--target-min);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-link);
+  font-weight: inherit;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.ds-diagram__name-button:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* Said once, under a drawing that doesn't fit: there is more to the side. */
+.ds-diagram__more {
+  margin: var(--space-2) 0 0;
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.ds-diagram__legend {
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.ds-diagram__key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ds-diagram__key li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ds-diagram__key-mark {
+  flex: none;
+}
+
+@media (forced-colors: active) {
+  .ds-diagram__box,
+  .ds-diagram__line {
+    stroke: CanvasText;
+  }
+
+  .ds-diagram__head,
+  .ds-diagram__label,
+  .ds-diagram__detail,
+  .ds-diagram__edge-label {
+    fill: CanvasText;
+  }
+
+  .ds-diagram__node:focus-visible .ds-diagram__ring {
+    stroke: Highlight;
+  }
+}

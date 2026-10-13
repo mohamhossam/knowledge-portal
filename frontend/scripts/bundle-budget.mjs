@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * Bundle budget (redesign Phase 7): the main chunk may grow at most 10% over
- * the Phase 0 baseline (docs/redesign/01-baseline.md: 900.79 kB minified, as
- * Vite reports it, 1 kB = 1000 bytes). Run after `npm run build`.
+ * Bundle budget: the main chunk may grow at most 10% over the pre-redesign
+ * baseline (900.79 kB minified, as Vite reports it, 1 kB = 1000 bytes).
+ * Run after `npm run build`.
  */
 import { readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";

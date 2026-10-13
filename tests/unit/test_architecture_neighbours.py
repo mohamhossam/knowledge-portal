@@ -16,7 +16,8 @@ from knowledge_portal.domain.architecture.neighbours import adjacent
 from knowledge_portal.domain.organisation.catalogue import (
     OrganisationCatalogue,
     Squad,
-    SquadSystemResource,
+    SquadResource,
+    SquadRole,
     ValueStream,
 )
 from knowledge_portal.infrastructure.architecture.embeddings import FakeEmbeddings
@@ -99,7 +100,13 @@ def test_resolver_lists_connected_systems_with_their_owners() -> None:
         lambda _: OrganisationCatalogue(
             value_streams=(ValueStream("retail", "Retail"),),
             squads=(
-                Squad("care", "Care squad", "retail", None, (SquadSystemResource("cbcm-crmgw"),)),
+                Squad(
+                    "care",
+                    "Care squad",
+                    "retail",
+                    None,
+                    (SquadResource("cbcm-crmgw", SquadRole.SYSTEM_CONTACT),),
+                ),
             ),
         ),
         "amina",

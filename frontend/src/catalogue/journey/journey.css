@@ -1,0 +1,477 @@
+/*
+ * A journey's diagrams (swimlane, flowchart, stage timeline) and its steps
+ * table, on the Calm Ledger. Layout only, from semantic and component tokens;
+ * logical properties only. Lines take the muted chart palette, each kind also
+ * told apart by its dash, so no line is colour alone; red is never drawn.
+ * Nothing moves.
+ */
+
+.journey {
+  display: grid;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+
+.journey-figure {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  min-inline-size: 0;
+}
+
+.journey-figure__caption {
+  max-inline-size: 72ch;
+  color: var(--color-ink-2);
+}
+
+/* The drawing is wider (and, with many systems, taller) than the page: it scrolls in place. */
+.journey-scroll {
+  max-inline-size: 100%;
+  max-block-size: max(24rem, 75vh);
+  overflow: auto;
+  overscroll-behavior-inline: contain;
+  border-block-start: var(--ledger-rule);
+  border-block-end: var(--hair-rule);
+  background: var(--color-surface);
+}
+
+.journey-quiet {
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.journey-num {
+  font-stretch: var(--stretch-numeral);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-weight: var(--weight-emphasis);
+}
+
+/* A second line in a cell, a box or a stage: a mark, a channel, a track. */
+.journey-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-block-start: var(--space-1);
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+  overflow-wrap: anywhere;
+}
+
+.journey-mark {
+  display: inline-flex;
+  align-items: center;
+}
+
+.journey-mark--seen {
+  flex: none;
+  color: var(--color-chart-1);
+}
+
+.journey-mark--noreturn {
+  flex: none;
+  color: var(--color-warning);
+}
+
+.journey-tag {
+  padding-inline: var(--space-1);
+  border: var(--rule-hair) dashed var(--color-rule-strong);
+  border-radius: var(--radius-control);
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+  line-height: var(--leading-tight);
+}
+
+/* ── Lines (shared by the drawings and the key) ─────────────────────────── */
+
+.journey-svg {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  overflow: visible;
+}
+
+.journey-arrow {
+  fill: none;
+  stroke: var(--color-ink-2);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.journey-head {
+  fill: var(--color-ink-2);
+}
+
+.journey-arrow--decision {
+  stroke: var(--color-chart-1);
+}
+
+.journey-head--decision {
+  fill: var(--color-chart-1);
+}
+
+.journey-arrow--parallel {
+  stroke: var(--color-chart-2);
+  stroke-width: 2;
+}
+
+.journey-head--parallel,
+.journey-head--rejoin {
+  fill: var(--color-chart-2);
+}
+
+.journey-arrow--rejoin {
+  stroke: var(--color-chart-2);
+  stroke-dasharray: 8 4;
+}
+
+.journey-arrow--loop {
+  stroke: var(--color-chart-3);
+  stroke-dasharray: 5 4;
+}
+
+.journey-head--loop {
+  fill: var(--color-chart-3);
+}
+
+.journey-arrow--handover {
+  stroke: var(--color-chart-4);
+  stroke-dasharray: 2 4;
+  stroke-linecap: round;
+}
+
+.journey-head--handover {
+  fill: var(--color-chart-4);
+}
+
+.journey-bar {
+  stroke: var(--color-chart-2);
+  stroke-width: 4;
+}
+
+.journey-diamond {
+  fill: var(--color-surface);
+  stroke: var(--color-chart-1);
+  stroke-width: 1.5;
+}
+
+.journey-label {
+  fill: var(--color-ink-2);
+  font-size: var(--text-meta);
+  paint-order: stroke;
+  stroke: var(--color-surface);
+  stroke-width: 4;
+  stroke-linejoin: round;
+}
+
+.journey-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.journey-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.journey-swatch {
+  flex: none;
+}
+
+/* ── Step boxes (swimlane and flowchart) ─────────────────────────────────── */
+
+.journey-canvas {
+  position: relative;
+}
+
+.journey-boxes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.journey-box {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  box-sizing: border-box;
+  padding: var(--space-2);
+  overflow: hidden;
+  border: var(--rule-hair) solid var(--color-rule-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  font-size: var(--text-meta);
+  line-height: var(--leading-tight);
+}
+
+.journey-box[data-confidence="inferred"],
+.journey-box[data-confidence="gap"],
+.journey-stage__step[data-confidence="inferred"],
+.journey-stage__step[data-confidence="gap"] {
+  border-style: dashed;
+}
+
+.journey-box__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-inline-size: 0;
+  color: var(--color-ink-2);
+}
+
+.journey-box__who {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.journey-box__name {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  color: var(--color-ink);
+  font-weight: var(--weight-strong);
+  overflow-wrap: anywhere;
+}
+
+.journey-box__with,
+.journey-box__next {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  color: var(--color-ink-2);
+  overflow-wrap: anywhere;
+}
+
+.journey-box__next {
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+/* ── Swimlane ───────────────────────────────────────────────────────────── */
+
+.journey-lanes {
+  display: grid;
+  inline-size: max-content;
+}
+
+.journey-lanes__corner,
+.journey-lanes__phases {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 1;
+  background: var(--color-surface);
+}
+
+.journey-lanes__corner {
+  inset-inline-start: 0;
+  z-index: 3;
+}
+
+.journey-lanes__phases {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.journey-lanes__phase {
+  position: absolute;
+  inset-block: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: end;
+  padding-inline: var(--space-2);
+  padding-block-end: var(--space-1);
+  border-block-end: var(--ledger-rule);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--text-meta);
+  font-weight: var(--weight-strong);
+  font-stretch: var(--stretch-label);
+}
+
+.journey-lanes__names {
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-inline-end: var(--rule-hair) solid var(--color-rule);
+  background: var(--color-surface);
+}
+
+.journey-lanes__name {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  box-sizing: border-box;
+  padding: var(--space-3);
+  overflow: hidden;
+  border-block-end: var(--hair-rule);
+  font-size: var(--text-meta);
+}
+
+/* On a small screen the names take a narrower column (the steps scroll under them), so the
+   drawing doesn't start half a screen in. */
+@container main (max-width: 36rem) {
+  .journey-lanes {
+    --journey-lane-names: 7.5rem;
+  }
+
+  .journey-lanes__name {
+    padding: var(--space-2);
+  }
+}
+
+.journey-lanes__name:nth-child(odd) {
+  background: var(--color-surface-1);
+}
+
+.journey-lanes__system {
+  font-weight: var(--weight-strong);
+  overflow-wrap: anywhere;
+}
+
+.journey-band {
+  stroke: var(--color-rule-soft);
+  stroke-width: 1;
+}
+
+.journey-band--odd {
+  fill: var(--color-surface-1);
+}
+
+.journey-band--even {
+  fill: var(--color-surface);
+}
+
+/* ── Stage timeline ─────────────────────────────────────────────────────── */
+
+.journey-stages {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: var(--space-4) 0 var(--space-2);
+  list-style: none;
+}
+
+.journey-stage {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: var(--space-1);
+  padding-block-start: var(--space-5);
+  padding-inline: var(--space-3);
+  border-block-start: var(--ledger-rule);
+  min-inline-size: 0;
+}
+
+.journey-stage__dot {
+  position: absolute;
+  inset-block-start: calc(-1 * var(--space-2) - 1px);
+  inset-inline-start: var(--space-3);
+  box-sizing: border-box;
+  inline-size: var(--space-4);
+  block-size: var(--space-4);
+  border: var(--rule-heavy) solid var(--color-rule-heavy);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+}
+
+.journey-stage__name {
+  margin: 0;
+  font-weight: var(--weight-heading);
+  font-stretch: var(--stretch-title);
+  overflow-wrap: anywhere;
+}
+
+.journey-stage > .journey-quiet {
+  margin: 0;
+}
+
+.journey-stage__steps {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.journey-stage__step {
+  display: grid;
+  grid-template-columns: 3.5rem minmax(0, 1fr);
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: var(--rule-hair) solid var(--color-rule);
+  border-radius: var(--radius-control);
+  font-size: var(--text-meta);
+}
+
+.journey-stage__step > .journey-num {
+  text-align: end;
+  color: var(--color-ink-2);
+}
+
+.journey-stage__body {
+  display: grid;
+  min-inline-size: 0;
+}
+
+.journey-stage__body > .journey-box__name {
+  -webkit-line-clamp: unset;
+  line-clamp: none;
+  display: block;
+}
+
+/* ── The steps as a table ───────────────────────────────────────────────── */
+
+.journey-table {
+  min-inline-size: 0;
+}
+
+.journey-table__summary {
+  /* A list item keeps the disclosure triangle; the padding keeps the target over 24px. */
+  display: list-item;
+  min-block-size: var(--target-min);
+  inline-size: fit-content;
+  padding-block: var(--space-1);
+  cursor: pointer;
+  font-weight: var(--weight-strong);
+}
+
+.journey-table[open] > .journey-table__summary {
+  margin-block-end: var(--space-2);
+}
+
+.journey-table .journey-line {
+  display: flex;
+}
+
+@media (forced-colors: active) {
+  .journey-arrow,
+  .journey-bar,
+  .journey-diamond {
+    stroke: CanvasText;
+  }
+
+  .journey-head {
+    fill: CanvasText;
+  }
+
+  .journey-band {
+    fill: Canvas;
+  }
+}

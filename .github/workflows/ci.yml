@@ -88,15 +88,17 @@ jobs:
       - run: npm run build
       - name: Brand lint (colours only in the token layers)
         run: npm run lint:brand
-      - name: Bundle budget (main chunk ≤ 110% of the Phase 0 baseline)
+      - name: Legacy CSS may only shrink
+        run: npm run lint:legacy-css
+      - name: Bundle budget (main chunk ≤ 110% of the pre-redesign baseline)
         run: npm run budget
       - name: npm dependency audit
         run: npm audit --omit=dev --audit-level=high
 
   e2e:
-    # Route accessibility (axe, WCAG 2.x A/AA, a ratchet on a11y-baseline.json)
-    # and journeys, on the offline fake stack: the API in memory with fake
-    # identity and LLM, seeded, and `vite preview`.
+    # Route accessibility (axe, WCAG 2.x A/AA, no serious or critical issue on any route)
+    # and the keyboard journeys, on the offline fake stack: the
+    # API in memory with fake identity and LLM, seeded, and `vite preview`.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -105,15 +107,6 @@ jobs:
         with:
           python-version: "3.12"
           enable-cache: true
-
-      - name: Read access to platform-kernel
-        # The same read-only token as the quality gates (requirement-portal ADR-0100).
-        env:
-          KERNEL_READ_TOKEN: ${{ secrets.KERNEL_READ_TOKEN }}
-        run: |
-          test -n "$KERNEL_READ_TOKEN" || { echo "KERNEL_READ_TOKEN secret is not set"; exit 1; }
-          kernel="github.com/mohamhossam/platform-kernel"
-          git config --global "url.https://x-access-token:${KERNEL_READ_TOKEN}@${kernel}.insteadOf" "https://${kernel}"
 
       - name: Install locked project
         run: uv sync --locked --extra dev

@@ -21,7 +21,7 @@ export function requirementPortalUrl(configured: string | undefined): string | n
 }
 
 /** Replaced by the web image's nginx at start-up with the container's `REQUIREMENT_PORTAL_URL`. */
-export const RUNTIME_REQUIREMENT_PORTAL_URL = "__REQUIREMENT_PORTAL_URL__";
+const RUNTIME_REQUIREMENT_PORTAL_URL = "__REQUIREMENT_PORTAL_URL__";
 
 /**
  * Requirement work's address as the page that loaded the app gives it, or undefined when the

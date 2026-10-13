@@ -34,6 +34,22 @@ function Grid({ onActivate = vi.fn(), onRowKey }: { onActivate?: (d: Doc) => voi
 }
 
 describe("DataTable", () => {
+  it("opens a row's named link with a press anywhere on the row, but not on the row's own controls", async () => {
+    const opened = vi.fn((event: Event) => event.preventDefault());
+    const pressed = vi.fn();
+    const columns: Column<Doc>[] = [
+      { id: "title", header: "Document", rowHeader: true, cell: (d) => <a href={`/library/${d.id}`} onClick={(event) => opened(event.nativeEvent)}>{d.title}</a> },
+      { id: "count", header: "Passages", numeric: true, cell: (d) => d.count },
+      { id: "act", header: "Act", cell: (d) => <Button onClick={pressed}>Retry {d.title}</Button> },
+    ];
+    render(<DataTable caption="Documents" columns={columns} rows={DOCS} rowId={(d) => d.id} />);
+    await userEvent.click(screen.getByRole("cell", { name: "404" }));
+    expect(opened).toHaveBeenCalledOnce();
+    await userEvent.click(screen.getByRole("button", { name: "Retry XGPON coverage rules" }));
+    expect(pressed).toHaveBeenCalledOnce();
+    expect(opened).toHaveBeenCalledOnce();
+  });
+
   it("is a captioned table with sortable headers that say their order", async () => {
     render(<Grid />);
     const table = screen.getByRole("grid", { name: "Documents" });
@@ -109,10 +125,28 @@ describe("filters, decisions and bulk", () => {
     const onClear = vi.fn();
     render(<FilterStrip label="Show passages" filters={[{ id: "all", label: "All", count: 404 }, { id: "flagged", label: "Flagged", count: 3 }]} active="all" onChange={onChange} onClear={onClear} />);
     expect(screen.getByRole("button", { name: "All 404" })).toHaveAttribute("aria-pressed", "true");
+    // The filter that is on shows a check as well as its tint: state never by colour alone.
+    expect(screen.getByRole("button", { name: "All 404" }).querySelector("svg")).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Flagged 3" }).querySelector("svg")).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Flagged 3" }));
     expect(onChange).toHaveBeenCalledWith("flagged");
     await userEvent.click(screen.getByRole("button", { name: "Clear filters" }));
     expect(onClear).toHaveBeenCalledOnce();
+  });
+
+  it("folds many filters into a labelled select as well (shown instead of the chips when narrow)", async () => {
+    const onChange = vi.fn();
+    const many = ["All", "Billing", "CRM", "Fulfilment", "Network"].map((name) => ({ id: name.toLowerCase(), label: name, count: 2 }));
+    const { rerender } = render(<FilterStrip label="Capability domain" filters={many} active="all" onChange={onChange} />);
+    // Hidden by a container query until the main area is narrow, so found by its label.
+    const select = screen.getByLabelText("Capability domain", { selector: "select" });
+    expect(select).toHaveValue("all");
+    expect(screen.getByRole("option", { name: "CRM (2)", hidden: true })).toBeInTheDocument();
+    await userEvent.selectOptions(select, "crm");
+    expect(onChange).toHaveBeenCalledWith("crm");
+    // A short strip stays chips at any width.
+    rerender(<FilterStrip label="Capability domain" filters={many.slice(0, 4)} active="all" onChange={onChange} />);
+    expect(document.querySelector("select")).toBeNull();
   });
 
   it("names decision buttons for their row and declares their keys", async () => {
@@ -217,5 +251,11 @@ describe("compare and evidence", () => {
     render(<EvidenceQuote text={"System: Order Hub\nCaptures business orders."} quote="System: Order Hub" source="Integration design · lines 1–12" />);
     expect(screen.getByText("System: Order Hub").tagName).toBe("MARK");
     expect(document.querySelector("blockquote")).toHaveAttribute("dir", "auto");
+  });
+
+  it("marks the passage's language on the quote alone, not its source line", () => {
+    render(<EvidenceQuote text="نظام الطلبات" source="Integration design · lines 1–12" lang="ar" />);
+    expect(document.querySelector("blockquote")).toHaveAttribute("lang", "ar");
+    expect(document.querySelector("figcaption")).not.toHaveAttribute("lang");
   });
 });

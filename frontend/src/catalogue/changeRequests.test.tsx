@@ -22,6 +22,8 @@ const TRACE = {
 };
 const item = (patch: Partial<ChangeRequest> = {}): ChangeRequest => ({
   id: "CR-20261003-Business_Pro_Plus",
+  kind: "approved_backlog",
+  delivery: null,
   title: "Microsoft 365 for Business Pro Plus",
   reason: "Customers ask for it.",
   trace: TRACE,
@@ -65,6 +67,116 @@ function open(items: ChangeRequest[], releases: Release[] = [VERSION]) {
   );
 }
 
+const CLOSED = item({
+  id: "CR-20261020-Business_Fiber",
+  kind: "catalogue_change",
+  title: "Static IP quota",
+  trace: { ...TRACE, requirement_id: "REQ-42", breakdown_revision: 2, approved_by: null, approved_at: null },
+  features: [
+    { id: "FT-1", sequence: 1, name: "Order a static IP", outcome: null, contexts: [], systems: [{ id: "bcrm", name: "BCRM" }, { id: "prov", name: "Provisioning" }] },
+  ],
+  delivery: {
+    delivery_id: "REQ-42:4711:evt-1",
+    epic_external_id: "4711",
+    epic_url: "https://dev.azure.com/acme/smb/_workitems/edit/4711",
+    closed_at: "2026-10-20T15:30:00Z",
+    release_id: "seed",
+    impact_version: "ANA-1@7",
+    decision: "accepted",
+    suggested_verdict: "change_existing_offering",
+    verdict: "change_existing_offering",
+    offering_id: "offering:business-fiber",
+    offering_name: "Business Fiber",
+    predicted: [
+      { id: "bcrm", name: "BCRM", role: "primary", change_type: "modify" },
+      { id: "cim", name: "CIM", role: "supporting", change_type: "configure" },
+    ],
+    not_delivered: [{ id: "FT-2", name: "Show the IP on the bill", state: "Removed" }],
+    changes: [
+      { op: "realise_concept", concept_id: "cap:static-ip", concept_label: "Static IP", system_id: "bcrm", system_name: "BCRM", offering_id: null, offering_name: null, feature_ids: ["FT-1"] },
+      { op: "offer_concept", concept_id: "cap:static-ip", concept_label: "Static IP", system_id: null, system_name: null, offering_id: "offering:business-fiber", offering_name: "Business Fiber", feature_ids: ["FT-1"] },
+    ],
+    hits: { predicted: ["bcrm"], unpredicted: ["prov"], undelivered: ["cim"] },
+  },
+});
+
+describe("a closed Epic in the inbox", () => {
+  it("says what it delivered, what it suggests, and how that compares with the prediction", async () => {
+    open([CLOSED]);
+
+    const row = within(await screen.findByRole("table", { name: /Change requests from Requirement AI/ })).getAllByRole("row")[1]!;
+    expect(row).toHaveTextContent("Epic closed: 1 delivered Feature for Business Fiber");
+    expect(within(row).getByRole("link", { name: /Epic 4711 closed on 20 Oct 2026/ })).toHaveAttribute(
+      "href",
+      "https://dev.azure.com/acme/smb/_workitems/edit/4711",
+    );
+    expect(within(row).getByRole("list", { name: "Delivered by CR-20261020-Business_Fiber" })).toHaveTextContent("FT-1 Order a static IP");
+    expect(row).toHaveTextContent("Not delivered: FT-2 Show the IP on the bill (Removed)");
+    expect(row).toHaveTextContent("Suggests: BCRM realises Static IP; Business Fiber offers Static IP.");
+    expect(row).toHaveTextContent("Delivered 1 of the 2 systems predicted (CIM was not), and 1 not predicted (Provisioning).");
+  });
+
+  it("names what it delivered as suggestions when read into the draft", async () => {
+    vi.spyOn(api, "readChangeRequest").mockResolvedValue({
+      release: { ...VERSION, id: "draft-1", status: "draft", name: "October" },
+      run: { id: "r", document_version_id: CLOSED.id, model: "requirement-ai-export", prompt_version: "export-1", candidate_count: 2, warnings: [], created_at: "", match_model: null, match_prompt_version: null, change_request_id: CLOSED.id },
+      change_request: { ...CLOSED, status: "read", read_into: "draft-1" },
+    } as never);
+    open([CLOSED]);
+
+    fireEvent.click(await screen.findByRole("button", { name: /Read it into a new draft/ }));
+
+    await waitFor(() => expect(screen.getByTestId("where")).toHaveTextContent("CR-20261020-Business_Fiber is read into ‘October’: 2 suggestions below."));
+  });
+});
+
+const DRAFTED = item({
+  id: "CR-20261011-Cloud_Voice",
+  title: "Cloud voice for clinics",
+  draft: {
+    offering_id: "cloud-voice",
+    offering_name: "Cloud Voice",
+    based_on: "business-pro-plus",
+    components: [
+      { id: "sip", name: "SIP trunk", capability_ids: ["cap-voice"], system_ids: ["cwom"] },
+      { id: "recording", name: "Call recording", capability_ids: ["cap-recording"], system_ids: [] },
+    ],
+    questions: ["Which system will realise Call recording?"],
+    journey_id: "cloud-voice-new",
+    journey_name: "New activation",
+    steps: 3,
+  },
+});
+
+describe("an approved backlog for a new offering", () => {
+  it("says what was drafted for it, naming systems and offerings as the catalogue does", async () => {
+    const named = {
+      ...VERSION,
+      systems: [{ id: "cwom", name: "CWOM" }],
+      products: [{ id: "business-pro-plus", name: "Business Pro Plus" }],
+    } as unknown as Release;
+    open([DRAFTED], [named]);
+
+    const row = within(await screen.findByRole("table", { name: /Change requests from Requirement AI/ })).getAllByRole("row")[1]!;
+    expect(row).toHaveTextContent("Drafts a new offering, ‘Cloud Voice’, from Business Pro Plus.");
+    expect(row).toHaveTextContent("Its components: SIP trunk, by CWOM; Call recording, with no system yet.");
+    expect(row).toHaveTextContent("Its journey: New activation, 3 steps. 1 question is left for architecture review.");
+  });
+
+  it("counts the drafted offering and journey among the suggestions it is read into", async () => {
+    vi.spyOn(api, "readChangeRequest").mockResolvedValue({
+      release: { ...VERSION, id: "draft-1", status: "draft", name: "October" },
+      run: { id: "r", document_version_id: DRAFTED.id, model: "requirement-ai-export", prompt_version: "export-1", candidate_count: 3, warnings: [], created_at: "", match_model: null, match_prompt_version: null, change_request_id: DRAFTED.id },
+      change_request: { ...DRAFTED, status: "read", read_into: "draft-1" },
+    } as never);
+    open([DRAFTED]);
+
+    fireEvent.click(await screen.findByRole("button", { name: /Read it into a new draft/ }));
+
+    await waitFor(() => expect(screen.getByTestId("where")).toHaveTextContent("CR-20261011-Cloud_Voice is read into ‘October’: 3 suggestions below."));
+  });
+});
+
 describe("the inbox of change requests from Requirement AI", () => {
   it("says what each asks and where it comes from, and reads one into a new draft", async () => {
     const read = vi.spyOn(api, "readChangeRequest").mockResolvedValue({
@@ -85,7 +197,7 @@ describe("the inbox of change requests from Requirement AI", () => {
 
     await waitFor(() => expect(read).toHaveBeenCalledWith("CR-20261003-Business_Pro_Plus"));
     expect(await screen.findByTestId("where")).toHaveTextContent(
-      "/architecture/versions/draft-1/sources CR-20261003-Business_Pro_Plus is read into a new draft named after it: 1 suggested question below.",
+      "/architecture/versions/draft-1/decide CR-20261003-Business_Pro_Plus is read into a new draft named after it: 1 suggested question below.",
     );
   });
 
@@ -104,10 +216,10 @@ describe("the inbox of change requests from Requirement AI", () => {
 
     expect(within(rows[0]!).getByRole("button", { name: /^Read it into ‘November’ ?\(CR-20261003-Business_Pro_Plus\)$/ })).toBeInTheDocument();
     expect(rows[1]).toHaveTextContent("Read into ‘November’by Amina on 4 Oct 2026");
-    expect(within(rows[1]!).getByRole("link", { name: /^Its suggestions ?\(CR-2\)$/ })).toHaveAttribute("href", "/architecture/versions/draft-9/sources");
+    expect(within(rows[1]!).getByRole("link", { name: /^Its suggestions ?\(CR-2\)$/ })).toHaveAttribute("href", "/architecture/versions/draft-9/decide");
     // Read into a draft still in preparation, it is settled there: no dismissing it.
     expect(within(rows[1]!).queryByRole("button", { name: /^Dismiss it/ })).not.toBeInTheDocument();
-    expect(rows[2]).toHaveClass("row--past");
+    expect(within(rows[2]!).getByText("Dismissed").closest(".ds-status--stopped")).not.toBeNull();
     expect(rows[2]).toHaveTextContent("Dismissedby Amina on 4 Oct 2026: Covered by CR-2.");
 
     const dismissButton = () => within(rows[0]!).getByRole("button", { name: /^Dismiss it ?\(CR-20261003-Business_Pro_Plus\)$/ });
@@ -143,8 +255,8 @@ describe("a question suggested by a change request", () => {
     id: system_id, document_version_id: "CR-1", change_request: { change_request_id: "CR-1", feature_id: "FT-1" },
     citations: [{ location: "Feature FT-1", quote: "Offer Microsoft 365" }], match, status: "proposed", edited: false,
     model: "requirement-ai-export", prompt_version: "export-1", created_at: "", decided_by: null, decided_at: null,
-    basis: "stated", rationale: null, possible_matches: [], system_name: null, target_system_name: null,
-    content: { kind: "question", system_id, name: "", aliases: [], triggers: [], text: "", question: { id: "REQ-1/FT-1", text: "Offer Microsoft 365", order_types } },
+    basis: "stated", rationale: null, possible_matches: [], system_name: null, target_system_name: null, missing_systems: [],
+    content: { kind: "question", system_id, name: "", aliases: [], triggers: [], text: "", capability_refs: [], concept_ids: [], value_refs: [], question: { id: "REQ-1/FT-1", text: "Offer Microsoft 365", order_types } },
   }) as Suggestion;
 
   it("says what it asks of which offering and order type, and what it waits for", () => {

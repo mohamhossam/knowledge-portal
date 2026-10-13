@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import type { LibraryDocument, Organisation, Release, RequirementCorpus } from "../api/client";
+import type { LibraryDocument, Organisation, Release, ReleaseDeliveries, ReleasePrecedents, RequirementCorpus } from "../api/client";
 import {
   architectureOverview,
+  deliveryHits,
   libraryOverview,
   nameDirectory,
   requirementOverview,
   squadOverview,
+  verdictDecisions,
   type DraftJobs,
 } from "./derive";
 
@@ -108,7 +110,7 @@ describe("architectureOverview", () => {
     const overview = architectureOverview([active, draft], active, suggestions, nameDirectory([{ ...amina, roles: [] }]));
 
     expect(overview.lines).toMatchObject([{ rank: "due", name: "October update", cells: { status: "2 suggestions to decide", preparedBy: "Amina Owner" } }]);
-    expect(overview.next).toEqual({ to: "/architecture/versions/oct/sources", label: "2 suggestions to decide in ‘October update’" });
+    expect(overview.next).toEqual({ to: "/architecture/versions/oct/decide", label: "2 suggestions to decide in ‘October update’" });
     expect(overview.notes[0]?.text).toContain("Published by Amina Owner on 1 Jan 2026, revision 1.");
     expect(overview.lines[0]?.note).toBe("draft-oct");
     expect(overview.notes[1]?.text).toBe(
@@ -170,6 +172,96 @@ describe("architectureOverview", () => {
     expect(nameDirectory([])("packaged-seed")).toBe("the packaged initial catalogue");
   });
 
+  const decisions = (overrides: Partial<ReleasePrecedents> = {}): ReleasePrecedents => ({
+    release_id: "seed", release_name: "Initial catalogue", accepted: 17, overridden: 3, unknown: 1,
+    override_rate: 0.15, last_decided_at: "2026-10-10T09:00:00Z",
+    concepts: [
+      { concept_id: "cap-fixed-access", label: "Fixed broadband access", decided: 4, overridden: 2 },
+      { concept_id: "cap-billing", label: "Billing", decided: 6, overridden: 1 },
+    ],
+    ...overrides,
+  });
+
+  it("counts the verdicts requirement owners decided against the edition in force, and names the capability changed most", () => {
+    const active = release({ id: "seed", name: "Initial catalogue", status: "published", published_by: "fake-owner", published_at: "2026-01-01T00:00:00Z" });
+
+    const overview = architectureOverview([active], active, new Map(), nameDirectory([amina]), null, null, decisions());
+
+    expect(overview.totals.slice(4)).toEqual([
+      { key: "verdicts", label: "Suggested verdicts decided", value: "20" },
+      { key: "overrides", label: "Of them changed", value: "3 (15%)" },
+    ]);
+    expect(overview.notes[0]?.text).toContain(
+      "By 10 Oct 2026, requirement owners had decided 20 verdicts suggested against this edition and changed 3, most often for requirements needing ‘Fixed broadband access’ (2 of 4). 1 other was marked unknown.",
+    );
+  });
+
+  it("names every capability tied for the most changes, and gives no rate on a handful of decisions", () => {
+    const tied = verdictDecisions(decisions({
+      accepted: 2, overridden: 2, unknown: 0, override_rate: 0.5,
+      concepts: [
+        { concept_id: "a", label: "Order fulfilment", decided: 3, overridden: 2 },
+        { concept_id: "b", label: "Order tracking", decided: 4, overridden: 2 },
+      ],
+    }));
+
+    expect(tied?.totals[1]).toEqual({ key: "overrides", label: "Of them changed", value: "2" });
+    expect(tied?.note).toContain("changed 2, as often for requirements needing ‘Order fulfilment’ (2 of 3) as for ‘Order tracking’ (2 of 4).");
+  });
+
+  it("ignores decisions on another release, and says nothing before any decision", () => {
+    const active = release({ id: "seed", status: "published", published_by: "fake-owner", published_at: "2026-01-01T00:00:00Z" });
+
+    const other = architectureOverview([active], active, new Map(), nameDirectory([]), null, null, decisions({ release_id: "older" }));
+
+    expect(other.totals.map((item) => item.key)).toEqual(["systems", "relationships", "domains", "journeys"]);
+    expect(verdictDecisions(decisions({ accepted: 0, overridden: 0, unknown: 0, override_rate: null, concepts: [] }))).toBeNull();
+  });
+
+  it("shows one row when every suggestion was marked unknown, and says none were changed", () => {
+    expect(verdictDecisions(decisions({ accepted: 0, overridden: 0, unknown: 2, override_rate: null, concepts: [] }))).toEqual({
+      totals: [{ key: "verdicts-unknown", label: "Suggested verdicts marked unknown", value: "2" }],
+      note: "By 10 Oct 2026, requirement owners had marked 2 verdicts suggested against this edition unknown, and decided none.",
+    });
+    expect(verdictDecisions(decisions({ accepted: 4, overridden: 0, unknown: 0, override_rate: 0, concepts: [], last_decided_at: null }))?.note).toBe(
+      "Requirement owners had decided 4 verdicts suggested against this edition and changed none.",
+    );
+  });
+
+  const closures = (overrides: Partial<ReleaseDeliveries> = {}): ReleaseDeliveries => ({
+    release_id: "seed", deliveries: 3, delivered: 7, predicted: 5, unpredicted: 2, undelivered: 2,
+    last_closed_at: "2026-10-20T15:30:00Z",
+    ...overrides,
+  });
+
+  it("compares the systems closed Epics delivered with those predicted against the edition in force", () => {
+    const active = release({ id: "seed", name: "Initial catalogue", status: "published", published_by: "fake-owner", published_at: "2026-01-01T00:00:00Z" });
+
+    const overview = architectureOverview([active], active, new Map(), nameDirectory([amina]), null, null, decisions(), closures());
+
+    expect(overview.totals.slice(6)).toEqual([
+      { key: "delivered-predicted", label: "Delivered systems predicted", value: "5 of 7" },
+      { key: "predicted-undelivered", label: "Predicted systems not delivered", value: "2 of 7" },
+    ]);
+    expect(overview.notes[0]?.text).toContain(
+      "1 other was marked unknown. By 20 Oct 2026, 3 closed Epics assessed against this edition delivered 7 systems, 5 of them predicted. 2 systems predicted were not delivered.",
+    );
+  });
+
+  it("gives a rate once enough systems were delivered, and ignores closures on another release", () => {
+    const many = deliveryHits(closures({ deliveries: 6, delivered: 12, predicted: 12, unpredicted: 0, undelivered: 0 }));
+    expect(many?.totals[0]?.value).toBe("12 of 12 (100%)");
+    expect(many?.note).toBe("By 20 Oct 2026, 6 closed Epics assessed against this edition delivered 12 systems, all of them predicted. Every system predicted was delivered.");
+    expect(deliveryHits(closures({ deliveries: 1, delivered: 0, predicted: 0, unpredicted: 0, undelivered: 0 }))?.note).toBe(
+      "By 20 Oct 2026, 1 closed Epic assessed against this edition named no system it changed.",
+    );
+    expect(deliveryHits(closures({ deliveries: 0 }))).toBeNull();
+
+    const active = release({ id: "seed", status: "published", published_by: "fake-owner", published_at: "2026-01-01T00:00:00Z" });
+    const other = architectureOverview([active], active, new Map(), nameDirectory([]), null, null, null, closures({ release_id: "older" }));
+    expect(other.totals.map((item) => item.key)).toEqual(["systems", "relationships", "domains", "journeys"]);
+  });
+
   it("says plainly when no edition is in force", () => {
     const overview = architectureOverview([], null, new Map(), nameDirectory([]));
 
@@ -183,7 +275,7 @@ describe("squadOverview", () => {
     people: [{ id: "layla", name: "Layla", active: true }],
     value_streams: [{ id: "retail", name: "Retail" }],
     products: [],
-    squads: [{ id: "sales", name: "Sales", systems: [{ system_id: "bcrm", person_id: "layla" }] }],
+    squads: [{ id: "sales", name: "Sales", resources: [{ system_id: "bcrm", role: "system_contact", person_id: "layla" }] }],
   } as unknown as Organisation;
 
   it("lists the systems in force that no squad owns, keeping their Arabic names", () => {

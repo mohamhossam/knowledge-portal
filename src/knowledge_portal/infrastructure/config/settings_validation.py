@@ -14,6 +14,7 @@ from urllib.parse import urlsplit
 from knowledge_portal.infrastructure.config.options import (
     ADO_IMPORT_MAX_ITEMS_CEILING,
     LOG_LEVELS,
+    MAX_CATALOGUE_READING_CONCURRENCY,
     SUPPORTED_LOCAL_REASONING_EFFORTS,
     SUPPORTED_OIDC_ALGORITHMS,
     SUPPORTED_OPENROUTER_DATA_COLLECTION,
@@ -23,6 +24,7 @@ from knowledge_portal.infrastructure.config.options import (
     LLMProvider,
     PersistenceProvider,
     ProductCatalogProvider,
+    RerankerProvider,
 )
 
 if TYPE_CHECKING:
@@ -68,6 +70,15 @@ def validate_settings(settings: Settings) -> None:
         and not settings.requirement_api_base_url.startswith(("http://", "https://"))
     ):
         raise ConfigurationError("REQUIREMENT_API_BASE_URL must be an http(s) URL.")
+    if settings.reranker_provider is RerankerProvider.HTTP and (
+        not (settings.reranker_url or "").startswith(("http://", "https://"))
+        or not settings.reranker_model
+    ):
+        raise ConfigurationError(
+            "RERANKER_PROVIDER=http needs RERANKER_URL (an http(s) URL) and RERANKER_MODEL."
+        )
+    if settings.reranker_timeout_seconds <= 0:
+        raise ConfigurationError("RERANKER_TIMEOUT_SECONDS must be positive.")
     if settings.product_catalog_provider is ProductCatalogProvider.TMF620:
         url = settings.product_catalog_url or ""
         if not url.startswith(("http://", "https://")) or not settings.product_catalog_token:
@@ -201,6 +212,11 @@ def validate_settings(settings: Settings) -> None:
     )
     if any(value <= 0 for value in extraction_values):
         raise ConfigurationError("Document extraction limits must all be positive.")
+    if not 1 <= settings.catalogue_reading_concurrency <= MAX_CATALOGUE_READING_CONCURRENCY:
+        raise ConfigurationError(
+            f"CATALOGUE_READING_CONCURRENCY must be between 1 and "
+            f"{MAX_CATALOGUE_READING_CONCURRENCY}."
+        )
     if not settings.document_storage_path.strip():
         raise ConfigurationError("DOCUMENT_STORAGE_PATH must not be blank.")
     if settings.identity_provider is IdentityProvider.OIDC:

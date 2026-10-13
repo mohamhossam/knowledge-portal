@@ -6,15 +6,7 @@ import type { Job } from "../design/components";
 import { type JobAction, useJobActions } from "../library/actions";
 import { newestState, settling } from "../library/model";
 import { ATTEMPT_LIMIT } from "../library/publications";
-
-function elapsed(from: number, to: number): string {
-  const seconds = Math.max(0, Math.round((to - from) / 1000));
-  if (seconds < 60) return `${seconds} s`;
-  const minutes = Math.floor(seconds / 60);
-  return minutes < 60 ? `${minutes} min ${seconds % 60} s` : `${Math.floor(minutes / 60)} h ${minutes % 60} min`;
-}
-
-const clock = (at: number) => new Date(at).toTimeString().slice(0, 5);
+import { formatClock, formatElapsed as elapsed } from "../home/format";
 
 /** A job as the shell lists it: the design system's job, and the library action behind its buttons. */
 export type ShellJob = Omit<Job, "fix" | "onRetry" | "onCancel"> & {
@@ -131,7 +123,7 @@ export function useJobs() {
   }, [runningIds, listedIds]);
   const done: ShellJob[] = finished
     .filter((job) => now - job.at < DONE_FOR && !jobs.some((item) => item.id === job.id))
-    .map((job) => ({ id: `done-${job.id}`, kind: job.kind, subject: job.subject, subjectHref: job.subjectHref, state: "done", timing: `Done at ${clock(job.at)}` }));
+    .map((job) => ({ id: `done-${job.id}`, kind: job.kind, subject: job.subject, subjectHref: job.subjectHref, state: "done", timing: `Done at ${formatClock(new Date(job.at))}` }));
 
   return {
     jobs: [...jobs, ...done],

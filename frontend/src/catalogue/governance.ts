@@ -5,7 +5,7 @@
  */
 import { createContext, useContext } from "react";
 
-import type { KnowledgeSource, Offering, SourceConflict, SourceLevel } from "../api/client";
+import type { ChangeRecord, KnowledgeSource, Offering, SourceConflict, SourceLevel } from "../api/client";
 
 /** A level as the original explorer ranked its sources. */
 export const LEVEL: Record<SourceLevel, { short: string; word: string; long: string }> = {
@@ -115,3 +115,11 @@ export function withIds<T extends { id: string }>(items: T[], name: (item: T, in
   const taken = new Set(items.map((item) => item.id.trim().toLocaleLowerCase()).filter(Boolean));
   return items.map((item, index) => (item.id.trim() ? { ...item, id: item.id.trim() } : { ...item, id: freeId(name(item, index), taken) }));
 }
+
+/** What became of a change request's item, in words; nothing when it was simply recorded. */
+export const ITEM_STATUS: Record<ChangeRecord["items"][number]["status"] & string, string | null> = {
+  recorded: null,
+  inferred: "mapped automatically",
+  gap: "needs an architect's review",
+  conflict: "needs a decision",
+};

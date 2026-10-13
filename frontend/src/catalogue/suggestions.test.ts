@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import type { Release, Suggestion } from "../api/client";
+import { formatClock } from "../home/format";
+import { decideChoices, decideQuestions } from "./draft/questions";
 import {
-  bulkAcceptable, changeSentence, inWords, lexicon, needsOneByOne, reading, suggestionGroups, suggestionState, tally, typedFile,
-  offeringHolds, waitsFor, waitsForMany, warningInWords,
+  bulkAcceptable, changeSentence, decideWhy, dependencyEdges, inWords, lexicon, needsOneByOne, reading, suggestionGroups, suggestionState, tally,
+  typedFile, offeringHolds, waitsFor, waitsForMany, warningInWords,
 } from "./suggestions";
 
 const release = {
@@ -59,6 +61,18 @@ describe("suggestion state", () => {
     expect(needsOneByOne(placement)).toBe(true);
     expect(suggestionState(accepted)).toBe("accepted");
     expect(tally(all)).toMatchObject({ waiting: 7, ready: 2, decide: 3, waits: 2, accepted: 1, all: 8 });
+  });
+
+  it("keeps an offering and journey drafted for a requirement to be decided alone, once it can be", () => {
+    const cited = { change_request: { change_request_id: "CR-1", feature_id: "FT-1" } } as Partial<Suggestion>;
+    const offering = suggestion({ kind: "product", system_id: "cloud-voice", name: "Cloud Voice" }, cited);
+    const journey = suggestion({ kind: "journey", system_id: "cloud-voice-new", name: "New activation" }, { ...cited, match: "needs_offering" });
+    const question = suggestion({ kind: "question", system_id: "cloud-voice" }, cited);
+
+    expect(suggestionState(offering)).toBe("decide");
+    expect(decideWhy(offering)).toBe("Drafted for a new offering: review what it holds");
+    expect(suggestionState(journey)).toBe("waits");
+    expect(suggestionState(question)).toBe("ready");
   });
 
   it("says what each would change, and what a waiting one waits for, in the documents' names", () => {
@@ -118,6 +132,44 @@ describe("in words", () => {
     expect(reading({ status: "running" } as never)).toMatchObject({ label: "Being read", busy: true });
     expect(reading({ status: "failed", error_category: "attempts_exhausted" } as never)).toMatchObject({
       label: "Reading failed: it stopped after three attempts", failed: true,
+    });
+  });
+
+  describe("a reading under way", () => {
+    const started = "2026-10-12T06:00:00Z";
+    const at = (minutes: number) => Date.parse(started) + minutes * 60_000;
+    const running = (values: object) =>
+      ({ status: "running", attempts: 1, started_at: started, lease_until: new Date(at(30)).toISOString(), ...values }) as never;
+
+    it("names the part it is on, when it started and roughly how long is left", () => {
+      const state = reading(running({ stage: "reading", progress_done: 3, progress_total: 12 }), at(6));
+      expect(state).toMatchObject({ label: "Reading part 4 of 12", busy: true, stalled: false, part: { done: 3, total: 12 } });
+      expect(state.details).toEqual([`Started ${formatClock(started)}, 6 min 0 s so far; about 18 min left.`]);
+    });
+
+    it("says each stage before and after the parts", () => {
+      expect(reading(running({ stage: "opening" }), at(0)).label).toBe("Opening the file");
+      expect(reading(running({ stage: "matching" }), at(9)).label).toBe("Matching names to the catalogue");
+      expect(reading(running({ stage: "saving" }), at(9)).label).toBe("Saving its suggestions");
+      expect(reading(running({ stage: "reading", progress_done: 0, progress_total: 5 }), at(1)).details[0]).not.toMatch(/left/);
+    });
+
+    it("says when an attempt is a repeat", () => {
+      expect(reading(running({ attempts: 2 }), at(1)).details).toContain("Attempt 2 of 3: the last one stopped before it finished.");
+    });
+
+    it("says the reader stopped responding once its lease lapsed", () => {
+      const state = reading(running({ attempts: 1, lease_until: new Date(at(10)).toISOString() }), at(12));
+      expect(state).toMatchObject({ label: "Stopped responding", busy: true, stalled: true });
+      expect(state.details[0]).toBe(`No word from the reader since ${formatClock(new Date(at(5)))} (7 min 0 s ago).`);
+      expect(state.details[1]).toMatch(/again by itself, as attempt 2 of 3/);
+      expect(reading(running({ attempts: 3, lease_until: new Date(at(10)).toISOString() }), at(12)).details[1]).toMatch(/last of 3 attempts/);
+    });
+
+    it("says how long a document has waited for the reader", () => {
+      const state = reading({ status: "queued", attempts: 0, queued_at: started } as never, at(2));
+      expect(state).toMatchObject({ label: "Waiting to be read", busy: true, stalled: false });
+      expect(state.details[0]).toBe(`Waiting since ${formatClock(started)} (2 min 0 s).`);
     });
   });
 
@@ -188,7 +240,7 @@ describe("offering detail suggestions", () => {
           id: "office", name: "Office Connect", rules: [], values: [], audiences: [],
           sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [],
           order_types: [{ code: "NEW", name: "New", enabled: true, channels: [] }],
-          components: [{ id: "fibre", name: "Fibre", responsibilities: [], realisation: [{ layer: "cfs", name: "Fibre CFS" }] }],
+          components: [{ id: "fibre", name: "Fibre", responsibilities: [], realisation: [{ layer: "cfs", name: "Fibre CFS" }], capability_ids: [] }],
           nfrs: [{ quality: "Availability", coverage: "defined" }, { quality: "Security", coverage: "missing" }],
           tracking: tracking
             ? {
@@ -226,6 +278,19 @@ describe("offering detail suggestions", () => {
     ]);
   });
 
+  it("lists the plans a reading found, each with its stated facts", () => {
+    const words = lexicon(release, []);
+    const product = detailed("new").content.product!;
+    const planned = {
+      ...product,
+      plans: [
+        { name: "PO1", characteristics: [{ name: "Offer Description", value: "Unlimited 100Mbps" }, { name: "IN Offer ID", value: "860" }] },
+        { name: "PO2", characteristics: [] },
+      ],
+    };
+    expect(offeringHolds(planned, words)).toContainEqual({ label: "Plans", text: "PO1 (Offer Description Unlimited 100Mbps, IN Offer ID 860); PO2" });
+  });
+
   it("waits for the channels its order tracking and lifecycle notes name", () => {
     expect(waitsFor(detailed("needs_channel"), lexicon(release, []))).toBe("Waits for the channels Business Web, Shop");
   });
@@ -240,5 +305,74 @@ describe("offering detail suggestions", () => {
     ];
     expect(bulkAcceptable(release, [store, ...channels, offering]).lifted).toEqual([]);
     expect(bulkAcceptable(release, [store, portal, ...channels, offering]).lifted).toEqual([offering]);
+  });
+});
+
+describe("vocabulary suggestions", () => {
+  const ref = { field: "activity_etom", owner_id: "bpp-new", value: "Fulfillment · Order Handling", item: "10" } as const;
+  const orders = suggestion(
+    {
+      kind: "vocabulary_term", system_id: "etom-order-handling",
+      term: { id: "etom-order-handling", scheme: "etom_process", pref_label: "Order Handling", alt_labels: [] },
+      value_refs: [ref, { ...ref, item: "20" }],
+    },
+    { match: "updates_existing" },
+  );
+  const saml = suggestion(
+    {
+      kind: "vocabulary_term", system_id: "role-saml",
+      term: { id: "role-saml", scheme: "responsibility_role", pref_label: "SAML", alt_labels: [] },
+      value_refs: [{ field: "responsibility_role", owner_id: "bpp", value: "SAML", item: "selfservice", part: "b2b-web" }],
+    },
+  );
+  const api = suggestion({
+    kind: "vocabulary_term", system_id: "api-tmf681",
+    term: { id: "api-tmf681", scheme: "open_api", pref_label: "Communication", notation: "TMF681", alt_labels: [] },
+    value_refs: [],
+  });
+  const termWords = lexicon(release, [orders, saml, api]);
+
+  it("says which term it adds or links, and how many values", () => {
+    expect(changeSentence(orders, termWords)).toBe("Links 2 values to the eTOM process Order Handling");
+    expect(changeSentence(saml, termWords)).toBe("Adds the role SAML, linking 1 value");
+    expect(changeSentence(api, termWords)).toBe("Adds the Open API Communication (TMF681)");
+  });
+
+  it("leaves a new term, a flagged value, for a person to decide alone", () => {
+    expect(suggestionState(orders)).toBe("ready");
+    expect(suggestionState(saml)).toBe("decide");
+    expect(suggestionGroups(release, [orders, saml], termWords).map((group) => group.label)).toEqual(["Vocabulary terms"]);
+  });
+});
+
+describe("what waits on what (focus mode)", () => {
+  it("draws an edge from what a suggestion adds to each suggestion that needs it", () => {
+    const edges = dependencyEdges(all);
+    expect(edges).toContainEqual({ from: hub.id, to: api.id });
+    expect(edges).toContainEqual({ from: hub.id, to: inferred.id });
+    expect(edges.some((edge) => edge.to === hub.id)).toBe(false);
+  });
+
+  it("counts what a person said they accept as added, so what waits on it follows", () => {
+    const portal = suggestion({ kind: "component", system_id: "dynamics-crm", component_id: "portal", name: "Portal" }, { match: "needs_system" });
+    expect(bulkAcceptable(release, [crm, portal]).lifted).toEqual([]);
+    expect(bulkAcceptable(release, [crm, portal], [crm]).lifted).toEqual([portal]);
+  });
+
+  it("asks the decisions in the order accepting them works, each answer saying what it does", () => {
+    const questions = decideQuestions(all, words);
+    // The system first, then its placement, then the link that names a system it could be.
+    expect(questions.map((item) => item.id)).toEqual([crm.id, placement.id, inferred.id]);
+    expect(questions[1]!.prompt).toMatch(/^Replace what the draft has\? /);
+    const name = questions.find((item) => item.id === crm.id)!;
+    expect(name.prompt).toBe("Is “Dynamics CRM” a system the draft already has?");
+    expect(decideChoices(name).map((choice) => [choice.label, choice.answer.accept])).toEqual([
+      ["Yes, it is BCRM", true],
+      ["No, it is a new system", true],
+      ["Reject it", false],
+    ]);
+    expect(decideChoices(name)[0]!.consequence).toBe("Similar name to BCRM. Adds “Dynamics CRM” as another name of BCRM.");
+    const link = questions.find((item) => item.id === inferred.id)!;
+    expect(decideChoices(link)[0]!.consequence).toContain("The link was inferred, not stated.");
   });
 });

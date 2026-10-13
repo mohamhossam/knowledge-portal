@@ -40,13 +40,15 @@
   --focus-ring: var(--focus-ring-width) solid var(--color-focus);
   --focus-halo: 0 0 0 var(--focus-ring-halo) var(--color-surface);
 
-  /* Masthead and rail (app shell) */
-  --masthead-height: 3.5rem;
+  /* Brand bar and sidebar (app shell) */
+  --masthead-height: 2.25rem;
   --masthead-bg: var(--color-masthead);
   --masthead-fg: var(--color-on-masthead);
   --masthead-control-border: var(--color-masthead-rule);
   --rail-width: 13rem;
-  --rail-bg: var(--color-surface);
+  --rail-width-collapsed: 3.5rem;
+  --rail-item-height: 2.25rem;
+  --rail-bg: var(--color-surface-1);
   --rail-fg: var(--color-ink);
   --rail-current-bg: var(--color-selected);
   --rail-current-fg: var(--color-on-selected);
@@ -57,7 +59,7 @@
 
   /* Page and ledger rules */
   --page-max: 90rem;
-  --ledger-rule: var(--rule-heavy) solid var(--color-rule-heavy);
+  --ledger-rule: var(--rule-hair) solid var(--color-rule-strong);
   --hair-rule: var(--rule-hair) solid var(--color-rule-soft);
 
   /* Data table */
@@ -72,6 +74,7 @@
   --table-row-hover: var(--color-surface-2);
   --table-row-current: var(--color-selected);
   --table-row-current-bar: var(--color-action);
+  --table-row-selected: var(--color-selected-row);
   --table-numeral-stretch: var(--stretch-numeral);
 
   /* Status and badges */
@@ -101,6 +104,11 @@
   --split-pane-bg: var(--color-surface-1);
   --split-pane-rule: var(--rule-hair) solid var(--color-rule-strong);
 
+  /* Workbench: a look-up area's narrow list beside its record (UX rebuild, phase 3) */
+  --bench-list-width: clamp(18rem, 26vw, 24rem);
+  --bench-list-bg: var(--color-surface);
+  --bench-rule: var(--rule-hair) solid var(--color-rule-strong);
+
   /* Overlays */
   --drawer-width: min(26rem, 92vw);
   --overlay-bg: var(--color-surface);
@@ -118,4 +126,43 @@
   /* Evidence quote */
   --quote-rule: var(--rule-hair) solid var(--color-rule-strong);
   --quote-highlight: var(--color-highlight);
+
+  /* Diagram kit (design/diagram): tones say their state in words too; red is never drawn */
+  --diagram-bg: var(--color-surface);
+  --diagram-lane-bg: var(--color-surface-1);
+  --diagram-lane-fg: var(--color-ink-2);
+  --diagram-container-bg: var(--color-surface-1);
+  --diagram-container-border: var(--color-rule);
+  --diagram-container-fg: var(--color-ink-2);
+  --diagram-line: var(--color-ink-2);
+  --diagram-label-fg: var(--color-ink);
+  --diagram-detail-fg: var(--color-ink-2);
+  --diagram-node-bg: var(--color-surface);
+  --diagram-node-border: var(--color-rule-strong);
+  --diagram-node-hover-border: var(--color-action);
+  --diagram-subject-bg: var(--color-selected);
+  --diagram-subject-border: var(--color-action);
+  --diagram-ready-bg: var(--color-success-bg);
+  --diagram-ready-border: var(--color-success);
+  --diagram-decide-bg: var(--color-warning-bg);
+  --diagram-decide-border: var(--color-warning);
+  --diagram-muted-bg: var(--color-surface-2);
+  --diagram-muted-border: var(--color-rule-strong);
+  --diagram-focus: var(--color-focus);
+
+  /* Focus mode (UX rebuild, phase 2): one question at a time */
+  --focus-measure: 46rem;
+  --focus-aside-max: 34rem;
+  --focus-aside-width: minmax(20rem, var(--focus-aside-max));
+  --focus-choice-bg: var(--color-surface);
+  --focus-choice-border: var(--color-rule-strong);
+  --focus-choice-hover-border: var(--color-action);
+  --focus-choice-chosen-bg: var(--color-selected);
+  --focus-choice-chosen-border: var(--color-action);
+  --focus-source-bg: var(--color-surface-1);
+  --focus-source-rule: var(--rule-heavy) solid var(--color-rule-strong);
+  --focus-step-open: var(--color-rule);
+  --focus-step-answered: var(--color-success);
+  --focus-step-skipped: var(--color-warning);
+  --focus-step-current: var(--color-action);
 }

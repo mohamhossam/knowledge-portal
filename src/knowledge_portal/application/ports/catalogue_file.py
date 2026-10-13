@@ -8,7 +8,9 @@ from typing import Protocol
 
 from knowledge_portal.domain.architecture.change_requests import ChangeRequestRecord
 from knowledge_portal.domain.architecture.channels import Channel
+from knowledge_portal.domain.architecture.concepts import BusinessCapability
 from knowledge_portal.domain.architecture.governance import KnowledgeSource, SourceConflict
+from knowledge_portal.domain.architecture.interfaces import SystemInterface
 from knowledge_portal.domain.architecture.journeys import Journey
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
@@ -20,6 +22,8 @@ from knowledge_portal.domain.architecture.knowledge import (
 )
 from knowledge_portal.domain.architecture.portfolio import PortfolioNode
 from knowledge_portal.domain.architecture.products import ProductOffering
+from knowledge_portal.domain.architecture.realisations import RealisationRecord
+from knowledge_portal.domain.architecture.vocabularies import VocabularyTerm
 
 
 class CatalogueFileFormat(StrEnum):
@@ -66,6 +70,14 @@ class CatalogueContent:
     change_history: tuple[ChangeRequestRecord, ...] | None = None
     # The product portfolio its offerings sit in.
     portfolio: tuple[PortfolioNode, ...] = ()
+    # The business capability concepts capabilities and components are linked to (ADR-0114).
+    business_capabilities: tuple[BusinessCapability, ...] = ()
+    # The controlled vocabularies written values are linked to.
+    vocabulary: tuple[VocabularyTerm, ...] = ()
+    # The contracts systems expose and consume (ontology plan Phase 8).
+    interfaces: tuple[SystemInterface, ...] = ()
+    # The CFSs, RFSs and resources components are realised as.
+    realisations: tuple[RealisationRecord, ...] = ()
 
 
 class CatalogueFilePort(Protocol):

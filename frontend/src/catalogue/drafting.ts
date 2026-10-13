@@ -75,9 +75,9 @@ export function withoutSystem(release: Release, systemId: string): DraftUpdate {
 }
 
 /** A new system's starting shape. */
-export const blankSystem = (): CatalogueSystem => ({ id: "", name: "", aliases: [], capabilities: [], components: [], constraints: [], external: false });
+export const blankSystem = (): CatalogueSystem => ({ id: "", name: "", aliases: [], capabilities: [], components: [], constraints: [], external: false, masters: [], reads: [] });
 
-export type BuildState = "built" | "building" | "failed" | "stale" | "never";
+type BuildState = "built" | "building" | "failed" | "stale" | "never";
 
 /** How far the draft's build for matching has got, at its current revision. */
 export function buildState(release: Release, job: ArchitectureJob | null | undefined): BuildState {
@@ -131,6 +131,8 @@ export const DIFF_ORDER: { item: Item; one: string; many: string }[] = [
   { item: "change_request", one: "Change request", many: "Change requests" },
   { item: "product", one: "Offering", many: "Offerings" },
   { item: "journey", one: "Journey", many: "Journeys" },
+  { item: "concept", one: "Capability concept", many: "Capability concepts" },
+  { item: "vocabulary_term", one: "Vocabulary term", many: "Vocabulary terms" },
   { item: "document", one: "Document", many: "Documents" },
 ];
 
@@ -158,6 +160,16 @@ const FIELD: Record<string, string> = {
   channel_kind: "kind of channel",
   entry_system_id: "entry system",
   realisation: "how its parts are realised",
+  concept: "capability concept",
+  capability_links: "capability concepts of its parts",
+  vocabulary_links: "vocabulary terms",
+  scheme: "vocabulary",
+  notation: "code",
+  pref_label: "label",
+  alt_labels: "other labels",
+  definition: "definition",
+  broader_id: "broader concept",
+  exact_match: "outside match",
   nfrs: "non-functional requirements",
   tracking: "order tracking",
   lifecycle_notes: "lifecycle notes",
@@ -228,7 +240,7 @@ export function connectionSentence(change: CatalogueDiff["changes"][number], rel
   return { sentence: `${name(source, labelSource)} ${lead} ${name(target, labelTarget)}`, forWhat };
 }
 
-export type DiffSection = { item: Item; label: string; changes: CatalogueDiff["changes"] };
+type DiffSection = { item: Item; label: string; changes: CatalogueDiff["changes"] };
 
 /** The diff's changes by kind, in the timetable's order, each kind's changes added, then changed, then removed. */
 export function diffSections(diff: CatalogueDiff): DiffSection[] {

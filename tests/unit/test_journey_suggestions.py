@@ -391,7 +391,8 @@ class _Answer:
         self.asked: list[tuple[str, type[Any]]] = []
 
     def parse(self, *, system_prompt: str, schema_type: type[Any], **_: Any) -> Any:
-        self.asked.append((system_prompt, schema_type))
+        # The schema the model is shown; its answer's items are then checked one by one.
+        self.asked.append((system_prompt, getattr(schema_type, "shape", schema_type)))
         if schema_type is LeanExtractionOutput:
             return LeanExtractionOutput.model_validate(
                 {"changes": [item.model_dump(exclude={"journey"}) for item in self.output.changes]}

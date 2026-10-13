@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from dataclasses import replace
 from datetime import UTC, datetime
 from uuid import uuid4
 
@@ -69,3 +70,28 @@ def test_suggestions_round_trip_replace_undecided_ones_and_decide_once() -> None
     assert [item.warnings for item in reloaded.runs(release_id)] == [("note",), ()]
     reloaded.reopen(first.id)
     assert reloaded.get(first.id) == first
+
+
+def test_a_revision_retypes_undecided_suggestions_adds_new_ones_and_spares_decided_ones() -> None:
+    assert DATABASE_URL is not None
+    run_migrations(DATABASE_URL)
+    store = PostgresCatalogueCandidates(DirectPostgresConnector(DATABASE_URL))
+    release_id = f"draft-{uuid4().hex}"
+    first, second = _candidate(release_id, "Alpha"), _candidate(release_id, "Beta")
+    store.replace_proposals(
+        ExtractionRun(uuid4().hex, release_id, "doc-1", "model", "v1", 2, (), NOW),
+        (first, second),
+    )
+    rule = CandidateContent(CandidateKind.OFFERING_RULE, "alpha", text="Up to 300 users")
+    retyped = replace(first, content=rule)
+    added = _candidate(release_id, "Gamma")
+
+    store.revise((retyped, added))
+
+    stored = {item.id: item for item in store.list(release_id)}
+    assert stored == {first.id: retyped, second.id: second, added.id: added}
+    store.save_decision(second.decide(False, "amina", NOW))
+    with pytest.raises(CandidateDecisionConflictError):
+        store.revise((replace(added, content=rule), replace(second, content=rule)))
+    # Nothing of a refused revision is kept.
+    assert store.get(added.id) == added

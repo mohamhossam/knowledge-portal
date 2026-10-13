@@ -102,14 +102,15 @@ export function VersionsPage() {
         )}
       </Section>
 
-      <Section title="Published" count={published.length}>
-        <p className="lib-quiet">Each approval is indexed for search. Requirement work cites the one in service.</p>
+      {/* Each row is an index: an approval's, or a search index for tables built from it, so the count says indexes. */}
+      <Section title="Published indexes" count={published.length}>
+        <p className="lib-quiet">Each approval is indexed for search, and a search index for tables built from it is listed as its own row. Requirement work cites the one in service.</p>
         {published.length === 0 ? (
           <EmptyState title="Nothing has been published yet.">
             <p>Publish a saved review from the document's Review page.</p>
           </EmptyState>
         ) : (
-          <DataTable caption="Published versions, newest first" captionHidden columns={publishedColumns} rows={published} rowId={(item) => item.id} />
+          <DataTable caption="Published indexes, newest first" captionHidden columns={publishedColumns} rows={published} rowId={(item) => item.id} />
         )}
         {canRetryIndexing(document) && document.is_owner && (
           <p>
@@ -268,7 +269,7 @@ function SavedPassages() {
   );
 }
 
-export function ChunkTable({ chunks, caption }: { chunks: ReferenceChunk[]; caption: string }) {
+function ChunkTable({ chunks, caption }: { chunks: ReferenceChunk[]; caption: string }) {
   const columns: Column<ReferenceChunk>[] = [
     { id: "where", header: "Where", rowHeader: true, width: "12rem", cell: (chunk) => <>{humanWhere(chunk.location)}{chunk.field_context && <span className="lib-detail lib-detail--plain"><bdi>{chunk.field_context}</bdi></span>}</> },
     { id: "text", header: "Passage", bidi: true, cell: (chunk) => <span className="lib-clamp" lang={contentLang(chunk.original_text)}>{chunk.original_text}</span> },

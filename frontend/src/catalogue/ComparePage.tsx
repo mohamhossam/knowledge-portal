@@ -1,12 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeftRight, RotateCw } from "lucide-react";
-import { useEffect, useId } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { api, type Release } from "../api/client";
 import { errorMessage } from "../api/errors";
+import { Button, Section, Select, Skeleton, Status } from "../design/components";
 import { formatDay } from "../home/format";
-import { DiffTable } from "./DiffTable";
+import { RouterLink } from "../shell/links";
+import { ChangeTable } from "./draft/ChangeTable";
 import { useCatalogueContext, useReleases } from "./useCatalogue";
 
 /** Newest first: the draft, then published versions by when they were published. */
@@ -15,6 +17,16 @@ function newestFirst(releases: Release[]): Release[] {
     if (a.status !== b.status) return a.status === "draft" ? -1 : 1;
     return (b.published_at ?? "").localeCompare(a.published_at ?? "");
   });
+}
+
+/** A failure said with the way to try again beside it. */
+function Failure({ error, onRetry }: { error: unknown; onRetry: () => void }) {
+  return (
+    <p className="cat-inline" role="alert">
+      <Status tone="attention">{errorMessage(error)}</Status>
+      <Button variant="tertiary" icon={<RotateCw size={14} />} onClick={onRetry}>Try again</Button>
+    </p>
+  );
 }
 
 /**
@@ -26,7 +38,6 @@ export function ComparePage() {
   const { book } = useCatalogueContext();
   const releases = useReleases();
   const [params, setParams] = useSearchParams();
-  const id = useId();
   const activeId = book.release.id;
   const ordered = newestFirst(releases.data ?? []);
   const from = params.get("from") ?? activeId;
@@ -49,66 +60,37 @@ export function ComparePage() {
       ? `${name(release)} (in preparation)`
       : `${name(release)} (${release.id === activeId ? "in service" : "replaced"}, ${formatDay(release.published_at)})`;
   const choose = (key: "from" | "to", value: string) => setParams({ from, to, [key]: value }, { replace: true });
+  const options = ordered.map((release) => <option key={release.id} value={release.id}>{describe(release)}</option>);
 
   return (
-    <section className="govsection catalogue__first" aria-labelledby={`${id}-title`}>
-      <h2 id={`${id}-title`} className="govsection__title">Compare two versions</h2>
-      <p className="govsection__lead">
+    <Section title="Compare two versions">
+      <p className="cat-lead">
         What the second version adds, changes and removes against the first: systems, connections, domains, offerings,
         journeys, channels, sources and documents.
       </p>
       {releases.isError ? (
-        <p className="docpage__failure" role="alert">
-          {errorMessage(releases.error)}
-          <button type="button" className="text-button" onClick={() => void releases.refetch()}>
-            <RotateCw size={14} aria-hidden="true" />
-            Try again
-          </button>
-        </p>
+        <Failure error={releases.error} onRetry={() => void releases.refetch()} />
       ) : releases.isPending ? (
-        <p className="timetable__quiet">Reading the versions…</p>
+        <Skeleton label="Reading the versions" rows={3} />
       ) : (
         <>
-          <div className="compare__pick">
-            <label className="field" htmlFor={`${id}-from`}>
-              <span className="field__label">From</span>
-              <select id={`${id}-from`} className="field__input form__select" value={from}
-                onChange={(event) => choose("from", event.target.value)}>
-                {ordered.map((release) => <option key={release.id} value={release.id}>{describe(release)}</option>)}
-              </select>
-            </label>
-            <button
-              type="button"
-              className="text-button compare__swap"
-              onClick={() => setParams({ from: to, to: from }, { replace: true })}
-            >
-              <ArrowLeftRight size={14} aria-hidden="true" />
+          <div className="cat-compare">
+            <Select label="From" value={from} onChange={(event) => choose("from", event.target.value)}>{options}</Select>
+            <Button variant="tertiary" icon={<ArrowLeftRight size={14} />} onClick={() => setParams({ from: to, to: from }, { replace: true })}>
               Swap
-            </button>
-            <label className="field" htmlFor={`${id}-to`}>
-              <span className="field__label">To</span>
-              <select id={`${id}-to`} className="field__input form__select" value={to}
-                onChange={(event) => choose("to", event.target.value)}>
-                {ordered.map((release) => <option key={release.id} value={release.id}>{describe(release)}</option>)}
-              </select>
-            </label>
+            </Button>
+            <Select label="To" value={to} onChange={(event) => choose("to", event.target.value)}>{options}</Select>
           </div>
           {from === to ? (
-            <p className="timetable__quiet">Choose two different versions.</p>
+            <p className="cat-quiet">Choose two different versions.</p>
           ) : !toRelease || !fromRelease ? (
-            <p className="timetable__quiet">One of these versions no longer exists. Choose another.</p>
+            <p className="cat-quiet">One of these versions no longer exists. Choose another.</p>
           ) : diff.isPending ? (
-            <p className="timetable__quiet" role="status">Comparing…</p>
+            <Skeleton label="Comparing" rows={4} />
           ) : diff.isError ? (
-            <p className="docpage__failure" role="alert">
-              {errorMessage(diff.error)}
-              <button type="button" className="text-button" onClick={() => void diff.refetch()}>
-                <RotateCw size={14} aria-hidden="true" />
-                Try again
-              </button>
-            </p>
+            <Failure error={diff.error} onRetry={() => void diff.refetch()} />
           ) : (
-            <DiffTable
+            <ChangeTable
               diff={diff.data}
               caption={`What ‘${name(toRelease)}’ changes against ‘${name(fromRelease)}’`}
               release={toRelease}
@@ -120,9 +102,9 @@ export function ComparePage() {
           )}
         </>
       )}
-      <p className="compare__back">
-        <Link to="/architecture/versions">Back to every version</Link>
+      <p className="cat-lead">
+        <RouterLink href="/architecture/versions">Back to every version</RouterLink>
       </p>
-    </section>
+    </Section>
   );
 }

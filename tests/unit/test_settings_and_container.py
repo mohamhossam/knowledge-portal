@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import replace
 
 import pytest
+from smb_kernel.documents.text_extractor import SafeDocumentTextExtractor
 
 from knowledge_portal.infrastructure.config.options import (
     ConfigurationError,
@@ -161,6 +162,30 @@ def test_fake_models_finish_catalogue_jobs_inside_the_request() -> None:
     try:
         # Historic imports always queue: reading a BRD never runs inside a request.
         assert set(container.background_workers) == {"document_worker", "historic_import_worker"}
+    finally:
+        container.close_resources()
+
+
+def test_architecture_documents_are_read_within_the_operator_limits() -> None:
+    settings = replace(
+        FAKE_PROVIDER_SETTINGS,
+        document_max_pdf_pages=11,
+        document_max_extracted_characters=22,
+        document_max_spreadsheet_cells=33,
+        document_max_image_pixels=44,
+        document_max_xml_nodes=55,
+    )
+    container = build_container(settings)
+    try:
+        extractor = container.upload_knowledge_document._extractor
+        assert isinstance(extractor, SafeDocumentTextExtractor)
+        assert (
+            extractor._max_pdf_pages,
+            extractor._max_extracted_characters,
+            extractor._max_visited_spreadsheet_cells,
+            extractor._max_decoded_image_pixels,
+            extractor._max_xml_nodes,
+        ) == (11, 22, 33, 44, 55)
     finally:
         container.close_resources()
 

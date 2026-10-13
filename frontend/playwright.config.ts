@@ -1,6 +1,6 @@
 /**
- * Route accessibility checks and journeys (redesign Phase 7), against the
- * offline fake stack: the API in memory with fake identity and LLM, seeded by
+ * Route accessibility checks and keyboard journeys, against the offline fake
+ * stack: the API in memory with fake identity and LLM, seeded by
  * scripts/seed_demo.py, and the production build served by `vite preview`.
  *
  *   npm run build && npm run e2e
@@ -31,9 +31,9 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   projects: [
-    { name: "chromium", testIgnore: /library-journey\.spec\.ts/, use: { ...devices["Desktop Chrome"], channel: process.env.E2E_CHANNEL } },
+    { name: "chromium", testIgnore: /-journey\.spec\.ts/, use: { ...devices["Desktop Chrome"], channel: process.env.E2E_CHANNEL } },
     // Journeys that change the seed run last, after every route has been checked as seeded.
-    { name: "journeys", testMatch: /library-journey\.spec\.ts/, dependencies: ["chromium"], use: { ...devices["Desktop Chrome"], channel: process.env.E2E_CHANNEL } },
+    { name: "journeys", testMatch: /-journey\.spec\.ts/, dependencies: ["chromium"], use: { ...devices["Desktop Chrome"], channel: process.env.E2E_CHANNEL } },
   ],
   webServer: [
     {

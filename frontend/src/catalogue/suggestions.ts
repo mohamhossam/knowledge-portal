@@ -6,9 +6,10 @@
 import type {
   ArchitectureJob, CatalogueSystem, ExtractionRun, Offering, RelationshipKind, Release, Suggestion, SuggestionKind,
 } from "../api/client";
+import { formatClock, formatElapsed } from "../home/format";
 import { COVERAGE, LAYERS } from "./catalogue";
 
-export type SuggestionState = "ready" | "decide" | "waits" | "present" | "accepted" | "rejected";
+type SuggestionState = "ready" | "decide" | "waits" | "present" | "accepted" | "rejected";
 
 export const STATE_LABEL: Record<SuggestionState, string> = {
   ready: "Ready",
@@ -19,19 +20,9 @@ export const STATE_LABEL: Record<SuggestionState, string> = {
   rejected: "Rejected",
 };
 
-/** Rank by weight: a decision due is bold, a wait is set back, a decided row is past. */
-export const STATE_RANK: Record<SuggestionState, "due" | "service" | "running" | "past"> = {
-  decide: "due",
-  ready: "service",
-  waits: "running",
-  present: "running",
-  accepted: "past",
-  rejected: "past",
-};
-
 /** The order accepting-all walks, and the order rows sit inside a system. */
-export const KIND_ORDER: SuggestionKind[] = [
-  "landscape_domain", "system", "placement", "component", "capability", "constraint", "relationship", "channel", "product", "question", "journey",
+const KIND_ORDER: SuggestionKind[] = [
+  "landscape_domain", "system", "placement", "component", "capability", "constraint", "relationship", "channel", "product", "offering_rule", "question", "journey",
 ];
 
 /**
@@ -42,7 +33,11 @@ export function needsOneByOne(suggestion: Suggestion): boolean {
   const kind = suggestion.content.kind;
   return suggestion.basis === "inferred"
     || suggestion.possible_matches.length > 0
-    || ((kind === "placement" || kind === "product" || kind === "journey") && suggestion.match === "updates_existing");
+    || ((kind === "placement" || kind === "product" || kind === "journey") && suggestion.match === "updates_existing")
+    // A value no term names is flagged as a new term, decided alone.
+    || (kind === "vocabulary_term" && suggestion.match === "new")
+    // An offering or journey drafted for a new offering is reviewed alone once it can be.
+    || (draftedForRequirement(suggestion) && !suggestion.match.startsWith("needs_"));
 }
 
 export function suggestionState(suggestion: Suggestion): SuggestionState {
@@ -103,7 +98,15 @@ export function lexicon(release: Release, suggestions: Suggestion[]): Lexicon {
     ...release.systems.map((system) => `system:${system.id}`),
     ...(release.channels ?? []).flatMap((channel) => channelKeys(channel.id, channel.name)),
   ]);
-  const humane = (id: string) => id.split(/[-_]+/).filter(Boolean).map((word) => word.charAt(0).toLocaleUpperCase() + word.slice(1)).join(" ");
+  // A name no suggestion spells out, from its id: a part with a digit, without a vowel or of two
+  // letters reads as an acronym ("om-e2eso" is "OM E2ESO", "rtf" is "RTF"), a word is capitalised
+  // ("business-pro-plus" is "Business Pro Plus").
+  // A reference that is not an id ("Business Pro/ PRO+ with 5G Backup") is the document's own
+  // spelling, and is shown as written.
+  const humane = (id: string) =>
+    !/^[a-z0-9_-]+$/.test(id) ? id : id.split(/[-_]+/).filter(Boolean)
+      .map((word) => (/[0-9]/.test(word) || !/[aeiou]/.test(word) || word.length <= 2 ? word.toLocaleUpperCase() : word.charAt(0).toLocaleUpperCase() + word.slice(1)))
+      .join(" ");
   const offeringBy = (reference: string) =>
     (release.products ?? []).find((item) => item.id === reference || item.name.toLocaleLowerCase() === reference.toLocaleLowerCase());
   return {
@@ -141,6 +144,7 @@ function details(product: Offering | null | undefined): string[] {
     product.nfrs?.length ? count(product.nfrs.length, "NFR") : "",
     product.tracking ? "order tracking" : "",
     product.lifecycle_notes?.length ? count(product.lifecycle_notes.length, "lifecycle note") : "",
+    product.plans?.length ? count(product.plans.length, "plan") : "",
   ].filter(Boolean);
 }
 
@@ -159,10 +163,14 @@ export function changeSentence(suggestion: Suggestion, words: Lexicon): string {
       return `Adds the component ${content.name}${content.technology ? `, built with ${content.technology}` : ""}`;
     case "capability": {
       const within = content.component_id ? `, in ${words.component(content.system_id, content.component_id)}` : "";
-      return `Adds the capability ${content.name}${within}, matched by ${quoted(content.triggers)}`;
+      const concept = content.concept_ids?.[0];
+      const realises = concept ? `, realising the concept ${concept}` : "";
+      return `Adds the capability ${content.name}${within}${realises}, matched by ${quoted(content.triggers)}`;
     }
     case "constraint":
       return `Adds the constraint “${content.text}”`;
+    case "offering_rule":
+      return `Adds the rule “${content.text}” to the offering ${words.offering(content.system_id)}`;
     case "relationship":
       return `${VERB[content.relationship_kind ?? "unspecified"]} ${targetName(suggestion, words)}`;
     case "placement":
@@ -192,10 +200,55 @@ export function changeSentence(suggestion: Suggestion, words: Lexicon): string {
         ? `Adds what the document says about the channel ${content.name}${through}`
         : `Adds the channel ${content.name}${through}`;
     }
+    case "concept": {
+      const label = content.concept?.pref_label ?? content.system_id;
+      const covered = content.capability_refs.length;
+      const linking = covered ? `, linking ${covered === 1 ? "1 capability" : `${covered} capabilities`}` : "";
+      return replaces ? `Adds to the capability concept ${label}${linking}` : `Adds the capability concept ${label}${linking}`;
+    }
+    case "component_link":
+      return `Links ${words.offering(content.system_id)} › ${content.component_id ?? ""} to ${listed(content.concept_ids)}`;
+    case "vocabulary_term": {
+      const term = content.term;
+      const scheme = term ? SCHEME[term.scheme] : "term";
+      const label = term ? `${term.pref_label}${term.notation ? ` (${term.notation})` : ""}` : content.system_id;
+      const covered = content.value_refs.length;
+      const values = covered === 1 ? "1 value" : `${covered} values`;
+      if (replaces) return `Links ${values} to the ${scheme} ${label}`;
+      return `Adds the ${scheme} ${label}${covered ? `, linking ${values}` : ""}`;
+    }
   }
 }
 
-export function targetName(suggestion: Suggestion, words: Lexicon): string {
+/** What each controlled vocabulary is called in a sentence. */
+const SCHEME: Record<NonNullable<Suggestion["content"]["term"]>["scheme"], string> = {
+  etom_process: "eTOM process",
+  channel_kind: "channel kind",
+  component_kind: "component kind",
+  responsibility_role: "role",
+  open_api: "Open API",
+  information_entity: "information entity",
+};
+
+/** Kinds whose sentence is said about a system ("Sends data to RTF"), which a list shows it under. */
+const ABOUT_A_SYSTEM = new Set(["relationship", "capability", "component", "constraint", "placement"]);
+
+/**
+ * The change as a sentence that stands on its own, naming the system it is about: a
+ * question asked one at a time has no system heading above it, so "Sends data to RTF"
+ * alone did not say which of fourteen systems sends it.
+ */
+export function standaloneSentence(suggestion: Suggestion, words: Lexicon): string {
+  const sentence = changeSentence(suggestion, words);
+  const { content } = suggestion;
+  if (!ABOUT_A_SYSTEM.has(content.kind)) return sentence;
+  const subject = suggestion.system_name ?? words.system(content.system_id);
+  return content.kind === "relationship"
+    ? `${subject} ${sentence.charAt(0).toLocaleLowerCase()}${sentence.slice(1)}`
+    : `${subject}: ${sentence}`;
+}
+
+function targetName(suggestion: Suggestion, words: Lexicon): string {
   return suggestion.target_system_name ?? words.system(suggestion.content.target_system_id ?? "");
 }
 
@@ -225,6 +278,7 @@ export function waitsFor(suggestion: Suggestion, words: Lexicon): string {
     case "needs_domain":
       return `Waits for the landscape domain ${words.domain(content.landscape_domain_id ?? content.parent_domain_id ?? "")}`;
     case "needs_offering":
+      if (content.kind === "offering_rule") return `Waits for the offering ${words.offering(content.system_id)}`;
       if (content.kind === "question") {
         const missing = (content.question?.order_types ?? []).filter((code) => words.orderType(content.system_id, code) === code);
         return words.hasOffering(content.system_id) && missing.length
@@ -270,6 +324,12 @@ export function offeringHolds(product: Offering | null | undefined, words: Lexic
     ].filter(Boolean);
     lines.push({ label: `Order tracking${scope}`, text: parts.join("; ") || "Its scope only" });
   }
+  if (product.plans?.length) {
+    // A plan's stated facts beside its name: "PO1 (Offer Description Unlimited 100Mbps, IN Offer ID 860)".
+    const plan = (item: Offering["plans"][number]) =>
+      item.characteristics.length ? `${item.name} (${item.characteristics.map((fact) => `${fact.name} ${fact.value}`).join(", ")})` : item.name;
+    lines.push({ label: "Plans", text: product.plans.map(plan).join("; ") });
+  }
   if (product.lifecycle_notes?.length) {
     lines.push({ label: "Lifecycle notes", text: product.lifecycle_notes.map((note) => note.title).join("; ") });
     const carried = product.lifecycle_notes.filter((note) => note.blocks.some((block) => block.to_verify));
@@ -285,7 +345,7 @@ const few = (names: string[]) => (names.length > 4 ? `${names.slice(0, 3).join("
 
 /** The systems and channels an offering or journey names that the draft lacks, in the documents' names. */
 function awaited(suggestion: Suggestion, words: Lexicon): { systems: string[]; channels: string[] } {
-  const systems = [...new Set(systemsNamed(suggestion))].filter((id) => !words.inDraft(`system:${id}`)).map(words.system);
+  const systems = [...new Set(systemsNamed(suggestion))].filter((id) => stillMissing(suggestion, id, words)).map(words.system);
   const channels = [...new Set(channelsNamed(suggestion))].filter((id) => !words.inDraft(`channel:${id}`)).map(words.channel);
   return { systems: [...new Set(systems)], channels: [...new Set(channels)] };
 }
@@ -299,6 +359,15 @@ export function waitsForMany(suggestion: Suggestion, words: Lexicon): boolean {
   return systems.length + channels.length !== 1;
 }
 
+/**
+ * An offering or journey a change request carries was drafted for a new offering (ontology
+ * plan Phase 9): it comes from the decided product impact, not from one of its features.
+ */
+export function draftedForRequirement(suggestion: Suggestion): boolean {
+  const { kind } = suggestion.content;
+  return suggestion.change_request != null && (kind === "product" || kind === "journey");
+}
+
 /** Why a person must decide, in words. */
 export function decideWhy(suggestion: Suggestion): string {
   if (suggestion.possible_matches.length) {
@@ -306,6 +375,9 @@ export function decideWhy(suggestion: Suggestion): string {
     return `“${[...new Set(names)].join("”, “")}” may be a system the draft already has`;
   }
   if (suggestion.basis === "inferred") return "Inferred, not stated in the document";
+  if (draftedForRequirement(suggestion) && suggestion.match !== "updates_existing") {
+    return "Drafted for a new offering: review what it holds";
+  }
   return "Would replace what the draft has";
 }
 
@@ -325,6 +397,7 @@ const SECTION = {
   offerings: "Offerings",
   questions: "Questions for offerings",
   journeys: "Journeys",
+  vocabulary: "Vocabulary terms",
 } as const;
 
 /** The galley's groups: new systems first, then the systems the draft has, then domains, offerings and journeys. */
@@ -341,7 +414,7 @@ export function suggestionGroups(release: Release, suggestions: Suggestion[], wo
     } else if (content.kind === "channel") {
       key = "section:channels";
       group = { key, isNew: false, label: SECTION.channels };
-    } else if (content.kind === "product") {
+    } else if (content.kind === "product" || content.kind === "offering_rule") {
       key = "section:offerings";
       group = { key, isNew: false, label: SECTION.offerings };
     } else if (content.kind === "question") {
@@ -350,6 +423,9 @@ export function suggestionGroups(release: Release, suggestions: Suggestion[], wo
     } else if (content.kind === "journey") {
       key = "section:journeys";
       group = { key, isNew: false, label: SECTION.journeys };
+    } else if (content.kind === "vocabulary_term") {
+      key = "section:vocabulary";
+      group = { key, isNew: false, label: SECTION.vocabulary };
     } else {
       // Keyed by the system's name, so a new system keeps its group once accepted into the draft.
       const label = suggestion.system_name ?? words.system(content.system_id);
@@ -385,21 +461,17 @@ function bySuggestionOrder(a: Suggestion, b: Suggestion): number {
 /**
  * What "accept everything that needs no decision" would accept: the ready ones,
  * then, again and again, the waiting ones whose wait one of those would lift.
- * A suggestion waiting on something no suggestion adds stays out.
+ * A suggestion waiting on something no suggestion adds stays out. `given` are
+ * suggestions about to be accepted by a person's answer: what they add lifts waits too.
  */
-export function bulkAcceptable(release: Release, suggestions: Suggestion[]): { ready: Suggestion[]; lifted: Suggestion[] } {
-  const known = new Set<string>();
-  for (const system of release.systems) {
-    known.add(`system:${system.id}`);
-    for (const component of system.components) known.add(`component:${system.id}/${component.id}`);
-  }
-  for (const domain of release.landscape_domains ?? []) known.add(`domain:${domain.id}`);
-  for (const offering of release.products ?? []) known.add(`offering:${offering.id}`);
-  for (const channel of release.channels ?? []) channelKeys(channel.id, channel.name).forEach((key) => known.add(key));
+export function bulkAcceptable(release: Release, suggestions: Suggestion[], given: Suggestion[] = []): { ready: Suggestion[]; lifted: Suggestion[] } {
+  const known = knownKeys(release);
   const open = suggestions.filter((item) => item.status === "proposed" && !needsOneByOne(item));
   const ready = open.filter((item) => !item.match.startsWith("needs_"));
   const provided = new Set(known);
   const add = (item: Suggestion) => provides(item).forEach((key) => provided.add(key));
+  // Suggestions a person has said they accept (focus mode's answers) provide what they add, too.
+  given.forEach(add);
   ready.forEach(add);
   const lifted: Suggestion[] = [];
   let waiting = open.filter((item) => item.match.startsWith("needs_"));
@@ -418,6 +490,103 @@ export function bulkAcceptable(release: Release, suggestions: Suggestion[]): { r
   return { ready, lifted };
 }
 
+/** What the draft already has, as the keys suggestions provide and require. */
+function knownKeys(release: Release): Set<string> {
+  const known = new Set<string>();
+  for (const system of release.systems) {
+    known.add(`system:${system.id}`);
+    for (const component of system.components) known.add(`component:${system.id}/${component.id}`);
+  }
+  for (const domain of release.landscape_domains ?? []) known.add(`domain:${domain.id}`);
+  for (const offering of release.products ?? []) [offering.id, offering.code ?? "", offering.name].forEach((reference) => reference && known.add(offeringKey(reference)));
+  for (const channel of release.channels ?? []) channelKeys(channel.id, channel.name).forEach((key) => known.add(key));
+  return known;
+}
+
+/** An offering's key: by id, code or name alike, without case, spaces or punctuation, as the service finds it. */
+const offeringKey = (reference: string) => `offering:${reference.toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, "")}`;
+
+/** Something waiting suggestions need that neither the draft nor any open suggestion adds. */
+export type Blocker = {
+  key: string;
+  /** What is missing: a system or an offering can be settled on the spot; the rest is edited or rejected. */
+  kind: "system" | "offering" | "other";
+  /** How the suggestions name it, for the service. */
+  reference: string;
+  /** Its name in the documents' words. */
+  name: string;
+  /** What it is, in a sentence: "the system Business Pro Plus". */
+  label: string;
+  waiting: Suggestion[];
+};
+
+/**
+ * The dead ends: waiting suggestions whose wait no decision on this page lifts, by what they
+ * wait for, the most waited-for first. A suggestion a person must decide anyway is left out.
+ */
+export function blockers(release: Release, suggestions: Suggestion[], words: Lexicon): Blocker[] {
+  const known = knownKeys(release);
+  const open = suggestions.filter((item) => item.status === "proposed");
+  const provided = new Set(open.flatMap(provides));
+  const found = new Map<string, Blocker>();
+  for (const item of open) {
+    if (!item.match.startsWith("needs_") || needsOneByOne(item)) continue;
+    for (const key of new Set(requires(item))) {
+      if (known.has(key) || provided.has(key)) continue;
+      const blocker = found.get(key) ?? describeNeed(key, item, words);
+      blocker.waiting.push(item);
+      found.set(key, blocker);
+    }
+  }
+  return [...found.values()].sort((a, b) => b.waiting.length - a.waiting.length || a.name.localeCompare(b.name, "en"));
+}
+
+function describeNeed(key: string, item: Suggestion, words: Lexicon): Blocker {
+  const [prefix, ...rest] = key.split(":");
+  const reference = rest.join(":");
+  const { content } = item;
+  if (prefix === "system") {
+    const name = words.system(reference);
+    return { key, kind: "system", reference, name, label: `the system ${name}`, waiting: [] };
+  }
+  if (prefix === "offering") {
+    // Keys drop punctuation; the suggestion still says how it names the offering.
+    const named = content.kind === "journey" ? content.journey?.product_id ?? reference : content.system_id;
+    const name = words.offering(named);
+    return { key, kind: "offering", reference: named, name, label: `the offering ${name}`, waiting: [] };
+  }
+  const [systemId = "", componentId = ""] = reference.split("/");
+  const name = prefix === "component" ? words.component(systemId, componentId)
+    : prefix === "domain" ? words.domain(reference)
+      : prefix === "channel" ? words.channel(reference)
+        : reference;
+  const what = prefix === "domain" ? "landscape domain" : prefix;
+  return { key, kind: "other", reference, name, label: `the ${what} ${name}`, waiting: [] };
+}
+
+/**
+ * Which suggestion waits on which: an edge from each open suggestion to every
+ * open one that needs what it adds (the draft decision tree, UX rebuild phase 2).
+ */
+export function dependencyEdges(suggestions: Suggestion[]): { from: string; to: string }[] {
+  const open = suggestions.filter((item) => item.status === "proposed");
+  const providers = new Map<string, string[]>();
+  for (const item of open) for (const key of provides(item)) providers.set(key, [...(providers.get(key) ?? []), item.id]);
+  const edges: { from: string; to: string }[] = [];
+  for (const item of open) {
+    if (!item.match.startsWith("needs_")) continue;
+    for (const key of new Set(requires(item))) {
+      for (const from of providers.get(key) ?? []) if (from !== item.id) edges.push({ from, to: item.id });
+    }
+  }
+  return edges;
+}
+
+/** Suggestions in the order accepting them works: domains, then systems, then what hangs on them. */
+export function inDependencyOrder(suggestions: Suggestion[]): Suggestion[] {
+  return [...suggestions].sort((a, b) => KIND_ORDER.indexOf(a.content.kind) - KIND_ORDER.indexOf(b.content.kind));
+}
+
 function provides(suggestion: Suggestion): string[] {
   const { content } = suggestion;
   switch (content.kind) {
@@ -428,7 +597,7 @@ function provides(suggestion: Suggestion): string[] {
     case "landscape_domain":
       return [`domain:${content.system_id}`];
     case "product":
-      return [`offering:${content.system_id}`];
+      return [offeringKey(content.system_id), ...(content.product ? [offeringKey(content.product.name)] : [])];
     case "channel":
       return channelKeys(content.system_id, content.channel?.name ?? content.name);
     default:
@@ -477,7 +646,22 @@ function channelsNamed(suggestion: Suggestion): string[] {
   return [];
 }
 
+/**
+ * Whether a system a suggestion names is still missing. The service says so by id, name,
+ * alias or the words of a name (`missing_systems`); a draft answering to the name some
+ * other way than by id is never waited for. Without that list, the id alone decides.
+ */
+function stillMissing(suggestion: Suggestion, reference: string, words?: Lexicon): boolean {
+  const missing = suggestion.missing_systems as string[] | undefined;
+  if (missing) return missing.includes(reference);
+  return words ? !words.inDraft(`system:${reference}`) : true;
+}
+
 function requires(suggestion: Suggestion): string[] {
+  return requiredKeys(suggestion).filter((key) => !key.startsWith("system:") || stillMissing(suggestion, key.slice("system:".length)));
+}
+
+function requiredKeys(suggestion: Suggestion): string[] {
   const { content } = suggestion;
   const system = suggestion.system_name ? [] : [`system:${content.system_id}`];
   // An offering or a journey also waits for every channel it names, whatever it waits for first.
@@ -491,7 +675,7 @@ function requires(suggestion: Suggestion): string[] {
       // A domain waits for its parent; a placement for the domain it places the system in.
       return [`domain:${(content.kind === "landscape_domain" ? content.parent_domain_id : content.landscape_domain_id) ?? ""}`];
     case "needs_offering":
-      return [`offering:${content.kind === "question" ? content.system_id : content.journey?.product_id ?? ""}`];
+      return [offeringKey(content.kind === "question" || content.kind === "offering_rule" ? content.system_id : content.journey?.product_id ?? "")];
     case "needs_system":
       if (content.kind === "channel") return [`system:${content.channel?.entry_system_id ?? ""}`];
       if (content.kind === "product" || content.kind === "journey") {
@@ -529,7 +713,7 @@ export function warningInWords(text: string): string {
     .replace(/\b1 ([^.]*?)\bwere\b/g, "1 $1was");
 }
 
-export type Tally = Record<SuggestionState, number> & { waiting: number; all: number };
+type Tally = Record<SuggestionState, number> & { waiting: number; all: number };
 
 export function tally(suggestions: Suggestion[]): Tally {
   const counts: Tally = { ready: 0, decide: 0, waits: 0, present: 0, accepted: 0, rejected: 0, waiting: 0, all: suggestions.length };
@@ -570,7 +754,19 @@ export function inWords(message: string, words: Lexicon): string {
 }
 
 /** How the reading of one document stands. */
-export type Reading = { label: string; failed: boolean; busy: boolean };
+export type Reading = {
+  label: string;
+  failed: boolean;
+  busy: boolean;
+  /** Queued: no reader has started on it yet. */
+  waiting: boolean;
+  /** The reader has stopped reporting: the attempt died, and is picked up again or fails. */
+  stalled: boolean;
+  /** Parts done of those expected, while the model reads the document part by part. */
+  part: { done: number; total: number } | null;
+  /** Further lines in words: when it started, how long it has taken, what comes next. */
+  details: string[];
+};
 
 const JOB_ERROR: Record<string, string> = {
   attempts_exhausted: "it stopped after three attempts",
@@ -585,20 +781,92 @@ export function jobReason(category: string | null | undefined): string {
   return category ? JOB_ERROR[category] ?? category.replace(/_/g, " ") : "the reason was not recorded";
 }
 
-export function reading(job: ArchitectureJob | undefined): Reading {
-  if (!job) return { label: "Not read yet", failed: false, busy: false };
+/** The service's attempts per job, and how long a lease outlives the reader's last word. */
+const ATTEMPTS = 3;
+const LEASE_MS = 5 * 60_000;
+
+const STAGE: Record<string, string> = {
+  opening: "Opening the file",
+  reading: "Reading",
+  matching: "Matching names to the catalogue",
+  saving: "Saving its suggestions",
+};
+
+const time = (iso: string | null | undefined) => (iso ? new Date(iso).getTime() : Number.NaN);
+
+/** "about 12 min left", from the time the parts done took; nothing before a part is done. */
+function remaining(started: number, done: number, total: number, now: number): string | null {
+  if (!(done > 0) || total <= done || Number.isNaN(started)) return null;
+  const minutes = Math.round(((now - started) / done) * (total - done) / 60_000);
+  return minutes <= 1 ? "about a minute left" : `about ${minutes} min left`;
+}
+
+/**
+ * How a document's reading stands, in words: the stage it is at, the part it is
+ * on, when it started, and whether the reader has gone quiet. `now` is epoch ms.
+ */
+export function reading(job: ArchitectureJob | undefined, now: number = Date.now()): Reading {
+  const base: Reading = { label: "", failed: false, busy: false, waiting: false, stalled: false, part: null, details: [] };
+  if (!job) return { ...base, label: "Not read yet" };
   switch (job.status) {
-    case "queued":
-      return { label: "Waiting to be read", failed: false, busy: true };
-    case "running":
-      return { label: "Being read", failed: false, busy: true };
+    case "queued": {
+      const queued = time(job.queued_at);
+      return {
+        ...base,
+        label: "Waiting to be read",
+        busy: true,
+        waiting: true,
+        details: [
+          Number.isNaN(queued) ? "Waiting for the reader." : `Waiting since ${formatClock(new Date(queued))} (${formatElapsed(queued, now)}).`,
+          "Documents are read one at a time; it starts when the reader is free.",
+        ],
+      };
+    }
+    case "running": {
+      const started = time(job.started_at);
+      const lease = time(job.lease_until);
+      const attempt = job.attempts ?? 1;
+      if (!Number.isNaN(lease) && lease < now) {
+        const heard = new Date(lease - LEASE_MS);
+        return {
+          ...base,
+          label: "Stopped responding",
+          busy: true,
+          stalled: true,
+          details: [
+            `No word from the reader since ${formatClock(heard)} (${formatElapsed(heard.getTime(), now)} ago).`,
+            attempt < ATTEMPTS
+              ? `The reading service starts it again by itself, as attempt ${attempt + 1} of ${ATTEMPTS}. If nothing changes, the service may be stopped.`
+              : `This was the last of ${ATTEMPTS} attempts: the reading service marks it failed, and you can then read it again.`,
+          ],
+        };
+      }
+      const done = job.progress_done ?? null;
+      const total = job.progress_total ?? null;
+      const part = job.stage === "reading" && done !== null && total ? { done, total } : null;
+      const label = part
+        ? `Reading part ${Math.min(part.done + 1, part.total)} of ${part.total}`
+        : (job.stage && STAGE[job.stage]) || "Being read";
+      const timing = Number.isNaN(started) ? null : `Started ${formatClock(new Date(started))}, ${formatElapsed(started, now)} so far`;
+      const left = part ? remaining(started, part.done, part.total, now) : null;
+      return {
+        ...base,
+        label,
+        busy: true,
+        part,
+        details: [
+          ...(timing ? [left ? `${timing}; ${left}.` : `${timing}.`] : []),
+          ...(attempt > 1 ? [`Attempt ${attempt} of ${ATTEMPTS}: the last one stopped before it finished.`] : []),
+        ],
+      };
+    }
     case "succeeded":
-      return { label: "Read", failed: false, busy: false };
+      return { ...base, label: "Read" };
     case "cancelled":
-      return { label: "Reading cancelled", failed: false, busy: false };
+      return { ...base, label: "Reading cancelled" };
     case "failed": {
       const why = job.error_category ? JOB_ERROR[job.error_category] ?? job.error_category.replace(/_/g, " ") : null;
-      return { label: why ? `Reading failed: ${why}` : "Reading failed", failed: true, busy: false };
+      return { ...base, label: why ? `Reading failed: ${why}` : "Reading failed", failed: true };
     }
   }
 }

@@ -12,11 +12,21 @@ from knowledge_portal.domain.architecture.change_requests import (
     check_change_history,
 )
 from knowledge_portal.domain.architecture.channels import Channel, check_channels
+from knowledge_portal.domain.architecture.concepts import (
+    BusinessCapability,
+    check_concepts,
+    check_link,
+)
 from knowledge_portal.domain.architecture.governance import (
     KnowledgeSource,
     OfferingFacts,
     SourceConflict,
     check_governance,
+)
+from knowledge_portal.domain.architecture.interfaces import (
+    SystemInterface,
+    check_data_roles,
+    check_interfaces,
 )
 
 # Re-exported: the rest of the codebase imports the error from here.
@@ -27,7 +37,13 @@ from knowledge_portal.domain.architecture.invariants import required
 from knowledge_portal.domain.architecture.journeys import Journey, check_journeys
 from knowledge_portal.domain.architecture.portfolio import PortfolioNode, check_portfolio
 from knowledge_portal.domain.architecture.products import ProductOffering, check_offerings
+from knowledge_portal.domain.architecture.realisations import (
+    RealisationRecord,
+    check_realisations,
+)
 from knowledge_portal.domain.architecture.sources import SourceConfidence, check_source
+from knowledge_portal.domain.architecture.vocabularies import VocabularyTerm, check_vocabulary
+from knowledge_portal.domain.architecture.vocabulary_links import check_vocabulary_links
 
 
 class KnowledgeReleaseStatus(StrEnum):
@@ -167,12 +183,21 @@ class KnowledgeCapability:
     # The component of its system that delivers it (ADR-0092); None when the
     # system has no components or nobody has placed it.
     component_id: str | None = None
+    # The business capability concept it delivers (ADR-0114); None while unlinked.
+    concept_id: str | None = None
+    # Why no concept fits, when a maintainer has said so; None while undecided.
+    unlinked_reason: str | None = None
 
     def __post_init__(self) -> None:
         if self.domain_id is not None:
             _required(self.domain_id, "Capability domain")
         if self.component_id is not None:
             _required(self.component_id, "Capability component")
+        if self.concept_id is not None:
+            _required(self.concept_id, "Capability concept")
+        if self.unlinked_reason is not None:
+            _required(self.unlinked_reason, "Why no concept fits")
+        check_link((self.concept_id,) if self.concept_id else (), self.unlinked_reason, self.name)
         _required(self.id, "Capability id")
         _required(self.name, "Capability name")
         if not self.triggers or any(not item.strip() for item in self.triggers):
@@ -239,6 +264,10 @@ class SystemDefinition:
     placement_reason: str | None = None
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # The information entities it is the system of record for, and those it reads, by
+    # term id (ontology plan Phase 8).
+    masters: tuple[str, ...] = ()
+    reads: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         _required(self.id, "System id")
@@ -401,6 +430,17 @@ class ArchitectureKnowledge:
     change_history: tuple[ChangeRequestRecord, ...] = ()
     # The product portfolio its offerings sit in, such as Enterprise › Fixed › SMB.
     portfolio: tuple[PortfolioNode, ...] = ()
+    # The business capability concepts systems and offering components are linked to
+    # (ADR-0114); the capability domains are the scheme's top levels.
+    business_capabilities: tuple[BusinessCapability, ...] = ()
+    # The controlled vocabularies behind eTOM process, channel kind, component kind,
+    # role and Open API values, each beside the text it covers (ADR-0114).
+    vocabulary: tuple[VocabularyTerm, ...] = ()
+    # The contracts systems expose and consume (ontology plan Phase 8); with the
+    # information entities systems master or read, what a data change ripples through.
+    interfaces: tuple[SystemInterface, ...] = ()
+    # The CFSs, RFSs and resources components are realised as (ontology plan Phase 8).
+    realisations: tuple[RealisationRecord, ...] = ()
 
     def __post_init__(self) -> None:
         _required(self.id, "Knowledge id")
@@ -448,8 +488,24 @@ class ArchitectureKnowledge:
                         f"{system.name}: {capability.name} is placed in a domain that is not "
                         "in the catalogue."
                     )
+        concepts = check_concepts(self.business_capabilities, domains)
+        for system in self.systems:
+            for capability in system.capabilities:
+                if capability.concept_id is not None and capability.concept_id not in concepts:
+                    raise InvalidKnowledgeError(
+                        f"{system.name}: {capability.name} is linked to concept "
+                        f"{capability.concept_id!r}, which is not in the catalogue."
+                    )
         channel_ids = check_channels(self.channels, system_ids)
         check_offerings(self.products, system_ids, channel_ids)
+        for product in self.products:
+            for component in product.components:
+                unknown = [item for item in component.capability_ids if item not in concepts]
+                if unknown:
+                    raise InvalidKnowledgeError(
+                        f"{product.name} › {component.name} is linked to concept "
+                        f"{unknown[0]!r}, which is not in the catalogue."
+                    )
         nodes = check_portfolio(self.portfolio)
         for product in self.products:
             if product.portfolio_node_id is not None and product.portfolio_node_id not in nodes:
@@ -458,6 +514,12 @@ class ArchitectureKnowledge:
                     "which is not in the portfolio."
                 )
         check_journeys(self.journeys, system_ids, self.products, channel_ids)
+        terms = check_vocabulary(self.vocabulary)
+        check_vocabulary_links(terms, self.products, self.journeys, self.channels)
+        for system in self.systems:
+            check_data_roles(system.name, system.masters, system.reads, terms)
+        check_interfaces(self.interfaces, system_ids, terms)
+        check_realisations(self.realisations, system_ids, self.products)
         check_governance(
             self.sources,
             self.conflicts,
@@ -502,6 +564,10 @@ class ArchitectureKnowledge:
         conflicts: tuple[SourceConflict, ...] | None = None,
         change_history: tuple[ChangeRequestRecord, ...] | None = None,
         portfolio: tuple[PortfolioNode, ...] | None = None,
+        business_capabilities: tuple[BusinessCapability, ...] | None = None,
+        vocabulary: tuple[VocabularyTerm, ...] | None = None,
+        interfaces: tuple[SystemInterface, ...] | None = None,
+        realisations: tuple[RealisationRecord, ...] | None = None,
     ) -> ArchitectureKnowledge:
         if self.status is not KnowledgeReleaseStatus.DRAFT:
             raise KnowledgeConflictError("Published knowledge is immutable.")
@@ -528,6 +594,14 @@ class ArchitectureKnowledge:
             conflicts=self.conflicts if conflicts is None else conflicts,
             change_history=self.change_history if change_history is None else change_history,
             portfolio=self.portfolio if portfolio is None else portfolio,
+            business_capabilities=(
+                self.business_capabilities
+                if business_capabilities is None
+                else business_capabilities
+            ),
+            vocabulary=self.vocabulary if vocabulary is None else vocabulary,
+            interfaces=self.interfaces if interfaces is None else interfaces,
+            realisations=self.realisations if realisations is None else realisations,
         )
 
     def domain_path(self, domain_id: str | None) -> tuple[CapabilityDomain, ...]:
@@ -549,3 +623,19 @@ class ArchitectureKnowledge:
             path.insert(0, current)
             current = by_id.get(current.parent_id or "")
         return tuple(path)
+
+    def concept_path(self, concept_id: str | None) -> tuple[BusinessCapability, ...]:
+        """A concept and its broader concepts, from the top concept down; empty when unknown."""
+        by_id = {item.id: item for item in self.business_capabilities}
+        path: list[BusinessCapability] = []
+        current = by_id.get(concept_id or "")
+        while current is not None:
+            path.insert(0, current)
+            current = by_id.get(current.broader_id or "")
+        return tuple(path)
+
+    def concept_domain(self, concept_id: str | None) -> CapabilityDomain | None:
+        """The capability domain a concept sits in, through its top concept."""
+        path = self.concept_path(concept_id)
+        domain_id = path[0].domain_id if path else None
+        return next((item for item in self.capability_domains if item.id == domain_id), None)

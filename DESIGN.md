@@ -122,7 +122,7 @@ components:
   masthead:
     backgroundColor: "{colors.e-and-maroon}"
     textColor: "{colors.page-white}"
-    height: "48px"
+    height: "36px"
   rail-item-current:
     backgroundColor: "{colors.maroon-tint}"
     textColor: "{colors.e-and-maroon}"
@@ -168,7 +168,8 @@ until their area migrates.
 **Key Characteristics:**
 
 - White page, warm near-black ink, beige-derived tints for bands, never cream.
-- The 2px ledger rule under every head; hairlines between rows.
+- The ledger rule (a firm hairline in the strong rule colour) under every head; soft hairlines
+  between rows.
 - Maroon carries action, selection, focus and the masthead (≈ 7% of a view). Red is ≤ 0.2%: the
   logo and the active marker.
 - States are their own low-saturation hues, always with an icon and words.
@@ -188,12 +189,12 @@ A white ledger with warm ink, bound in maroon, sealed in red, with four quiet st
   - the focus ring;
   - the selected row's bar and text;
   - the current tab's underline;
-  - the pressed filter's border.
+  - the pressed filter chip's border (with Maroon Mist and a check).
 
   Its hover is **Deep Claret** (#6a1a2d), which is also the link colour. Selection washes in
   **Maroon Mist** (#f4eaec).
 - **e& Red** (#e00800): the seal. It is used for the logo tile and the 3px marker on the active
-  area in the rail. Nothing else.
+  area in the sidebar. Nothing else.
 
 ### Secondary
 
@@ -270,13 +271,25 @@ to the end. Weight never shouts a date.
 ## Layout
 
 - **The frame:**
-  - a sticky 48px masthead;
-  - a 13rem rail of five areas, with Explorer apart;
-  - the page, capped at 90rem with a fluid gutter (16–40px).
-- **Below 1024px:** the rail folds into a wrapping row and drawers become full-height overlays.
+  - a slim, sticky 36px brand bar: logo and product, search in the middle, Requirement AI and the
+    utilities at the end;
+  - a collapsible sidebar on Paper: To do first, then the "Look up" areas (Library, Catalogue,
+    Ownership, Requirements), then Explorer and Re-confirmations apart. 13rem with labels from
+    1440px, 3.5rem with icons below that, and the person's own choice wins once made;
+  - the page, with a fluid gutter (16–40px);
+  - a one-line page head: the record's own name, its status pill and facts, the actions at the
+    end, and the page's tabs on a slim row under it. Where the page sits and what it is for
+    sit behind "About this page".
+- **Below 640px:** the sidebar becomes a scrolling row of labelled links and drawers become
+  full-height overlays.
 - **Phone width:** the Explorer reader works at 390px. Admin screens are desktop-first.
-- **Review desk:** the list beside a sticky, full-height detail pane (clamp 22–34rem) from
-  1200px. Below that, the pane stacks after the list.
+- **List and record:** the list beside the record pane once the main area is 60rem wide, filling
+  the window down to the save bar, each scrolling on its own. Below that, the pane stacks after
+  the list. At 1280×720 the review desk shows at least 15 rows (an e2e gate).
+- **Control weight:** filled maroon for the one primary action, outlined for secondary, text
+  only for tertiary. Filters are toggle chips. A record's missing facts show as one "N gaps"
+  badge, not a column per fact. A list row opens on a press anywhere; its name is not
+  underlined.
 - **Spacing:** a 4px grid (4, 8, 12, 16, 20, 24, 32, 48), with 24px between sections.
 - **Density:** comfortable (44px rows, 15px text) or compact (32px rows, 14px text), set per
   person. Automatic is compact on review desks.
@@ -369,8 +382,8 @@ and tints, never by shadow.
 
 ### Split Review Desk
 
-The list on white, with a Paper pane beside it behind a single strong rule, full height and
-sticky, so the original and the decision sit together.
+The list on white, with a Paper pane beside it behind a single strong rule, filling the window
+with each side scrolling on its own, so the original and the decision sit together.
 
 ## Do's and Don'ts
 
@@ -382,7 +395,7 @@ sticky, so the original and the decision sit together.
   a view).
 - **Do** pair every state with an icon and a word, in its own hue (rust, ochre, sage, slate
   teal).
-- **Do** put the 2px ledger rule under every table head, section head and consequence panel.
+- **Do** put the ledger rule under every table head, section head and consequence panel.
 - **Do** write numbers in tables condensed, tabular and end-aligned at weight 500.
 - **Do** give Arabic its own face, direction and 1.75 leading. Isolate names inside sentences.
 - **Do** read only semantic and component tokens in components. e& values live in

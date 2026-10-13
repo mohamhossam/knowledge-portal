@@ -7,7 +7,7 @@ import { useSearchParams } from "react-router-dom";
 
 import { api, type ReferenceChunk } from "../api/client";
 import { ApiError, errorMessage } from "../api/errors";
-import { Button, EmptyState, PageHeader, Skeleton, Status, TextField } from "../design/components";
+import { Breadcrumbs, Button, EmptyState, PageHeader, Skeleton, Status, TextField } from "../design/components";
 import { RouterLink } from "../shell/links";
 import { Content } from "./parts";
 import { contextPlaces } from "./searchContext";
@@ -42,6 +42,7 @@ export function SearchPage() {
   return (
     <div className="lib">
       <PageHeader
+        breadcrumbs={<Breadcrumbs link={RouterLink} items={[{ href: "/library", label: "Library" }, { label: "Search passages" }]} />}
         title="Search passages"
         documentTitle={query ? `'${query}' · Search passages` : "Search passages"}
         lead="Every passage in service, across all owners: what requirement work can cite today."

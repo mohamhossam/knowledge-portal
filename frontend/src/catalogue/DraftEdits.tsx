@@ -1,10 +1,11 @@
-import { type FormEvent, type ReactNode, type Ref, useEffect, useId, useRef, useState } from "react";
+import { type FormEvent, type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import type { CatalogueSystem, Channel, Journey, Offering, Relationship, RelationshipKind } from "../api/client";
 import { ApiError, errorMessage } from "../api/errors";
 import { blankSystem, channelUses, draftBody, systemUses } from "./drafting";
 import { finishedOffering, finishedSystem, journeyOrderProblem, journeyProblem, offeringProblem, slug, systemProblem } from "./editing";
+import { ActionGroup, Button, Status } from "../design/components";
 import { AreaField, Rows, SelectField, SystemField, TextField } from "./forms";
 import { JourneyEditor } from "./JourneyEditor";
 import { OfferingFacts } from "./OfferingEditor";
@@ -15,8 +16,10 @@ import { useCatalogueContext } from "./useCatalogue";
 import { useEditing } from "./useEditing";
 
 /**
- * An edit opened in place where the thing is read: on the stock band, closing
- * on a heavy rule, never a modal. It says why its action waits and what failed.
+ * An edit opened in place where the thing is read, never a modal: its fields,
+ * then the verb and Cancel on a foot that stays in reach while a long form
+ * scrolls. The verb stays focusable while it can't be sent, with the reason
+ * beside it (§1.2); a failure is said in a line mounted from the start.
  */
 export function EditPanel({ title, children, action, busy, problem, error, onSubmit, onCancel, danger, conflictMessage, focusOnOpen, level = 3 }: {
   title: string;
@@ -48,8 +51,9 @@ export function EditPanel({ title, children, action, busy, problem, error, onSub
   };
   return (
     <form
-      className={danger ? "edit-panel edit-panel--remove" : "edit-panel"}
+      className={danger ? "cat-edit cat-edit--danger" : "cat-edit"}
       aria-labelledby={`${id}-title`}
+      noValidate
       onSubmit={submit}
       onKeyDown={(event) => {
         if (event.key === "Escape") {
@@ -58,23 +62,25 @@ export function EditPanel({ title, children, action, busy, problem, error, onSub
         }
       }}
     >
-      <Heading id={`${id}-title`} ref={heading} tabIndex={focusOnOpen ? -1 : undefined} className="edit-panel__title">{title}</Heading>
+      <Heading id={`${id}-title`} ref={heading} tabIndex={focusOnOpen ? -1 : undefined} className="cat-edit__title">{title}</Heading>
       {children}
-      {error ? (
-        <p className="docpage__failure" role="alert">
-          {conflict
-            ? conflictMessage ?? "The draft changed while you edited (someone else, or a document's reading). Reload the page; your edit was not saved."
-            : errorMessage(error)}
-        </p>
-      ) : null}
-      <div className="edit-panel__foot">
-        <p className="edit-panel__actions">
-          <button type="submit" className="action-button" disabled={!!problem || busy} aria-describedby={problem ? `${id}-why` : undefined}>
+      {/* Mounted before it has anything to say, so a failure is announced. */}
+      <p className="cat-edit__failure" role="alert">
+        {error ? (
+          <Status tone="attention">
+            {conflict
+              ? conflictMessage ?? "The draft changed while you edited (someone else, or a document's reading). Reload the page; your edit was not saved."
+              : errorMessage(error)}
+          </Status>
+        ) : null}
+      </p>
+      <div className="cat-edit__foot">
+        <ActionGroup>
+          <Button type="submit" variant={danger ? "danger" : "primary"} busy={busy} unavailableReason={busy ? null : problem}>
             {busy ? "Saving…" : action}
-          </button>
-          <button type="button" className="text-button" onClick={onCancel}>Cancel</button>
-        </p>
-        {problem && <p id={`${id}-why`} className="versions__waits">{problem}</p>}
+          </Button>
+          <Button variant="tertiary" onClick={onCancel}>Cancel</Button>
+        </ActionGroup>
       </div>
     </form>
   );
@@ -135,7 +141,7 @@ export function SystemRemove({ system, onDone }: { system: CatalogueSystem; onDo
           .catch(() => undefined)
       }
     >
-      <p className="edit-panel__lead">
+      <p className="cat-edit__lead">
         {links
           ? `Its ${links === 1 ? "connection goes" : `${links} connections go`} with it. `
           : ""}
@@ -184,7 +190,7 @@ export function ConnectionEdit({ system, connection, onDone }: { system: Catalog
       onCancel={onDone}
       onSubmit={() => saveDraft.mutate(draftBody(release, { relationships }), { onSuccess: onDone })}
     >
-      <div className="form__grid">
+      <div className="cat-form__grid">
         <SystemField label="Depends on" value={target} systems={others} allowNone onChange={setTarget} />
         <SelectField label="How" value={kind} options={HOW} onChange={(value) => setKind(value as RelationshipKind)} />
       </div>
@@ -254,6 +260,7 @@ export function DomainsEdit({ tree, onDone }: { tree: "landscape" | "areas"; onD
   return (
     <EditPanel
       title={tree === "landscape" ? "Edit where systems sit" : "Edit the business areas"}
+      focusOnOpen
       action="Save the domains"
       busy={saveDraft.isPending}
       problem={problem}
@@ -320,6 +327,7 @@ export function ChannelsEdit({ onDone }: { onDone: () => void }) {
   return (
     <EditPanel
       title="Edit the channels"
+      focusOnOpen
       action="Save the channels"
       busy={saveDraft.isPending}
       problem={problem}
@@ -380,8 +388,8 @@ export function OfferingEdit({ onDone }: { onDone: (saved?: string) => void }) {
         saveDraft.mutate(draftBody(release, { products: [...products, finished] }), { onSuccess: () => onDone(finished.id) });
       }}
     >
-      <p className="govsection__lead">Say what it is; its order types, parts and the rest are added on its sheet, one section at a time.</p>
-      <div className="form">
+      <p className="cat-edit__lead">Say what it is; its order types, parts and the rest are added on its sheet, one section at a time.</p>
+      <div className="cat-form">
         <OfferingFacts value={value} onChange={setValue} systems={release.systems} channels={release.channels ?? []} />
       </div>
     </EditPanel>
@@ -420,8 +428,8 @@ export function OfferingSectionEdit({ offering, section, onDone }: { offering: O
         saveDraft.mutate(draftBody(release, { products: next }), { onSuccess: onDone });
       }}
     >
-      <p className="govsection__lead">The other sections can be edited once this one is saved or cancelled.</p>
-      <div className="form">
+      <p className="cat-edit__lead">The other sections can be edited once this one is saved or cancelled.</p>
+      <div className="cat-form">
         <Fields value={value} onChange={setValue} systems={release.systems} channels={release.channels ?? []} register={release.sources ?? []} />
       </div>
     </EditPanel>
@@ -494,19 +502,3 @@ export function WholeRemove({ kind, item, onDone }: { kind: "offering" | "journe
     />
   );
 }
-
-/** A draft-only text button that opens an edit, styled like the rest. */
-export function EditButton({ children, onClick, expanded, id, ref }: {
-  children: ReactNode;
-  onClick: () => void;
-  expanded?: boolean;
-  id?: string;
-  ref?: Ref<HTMLButtonElement>;
-}) {
-  return (
-    <button type="button" ref={ref} id={id} className="text-button" aria-expanded={expanded} onClick={onClick}>
-      {children}
-    </button>
-  );
-}
-

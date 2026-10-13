@@ -15,7 +15,7 @@ const releaseKey = (releaseId: string) => ["architecture", "releases", releaseId
 const suggestionsKey = (releaseId: string) => ["architecture", "releases", releaseId, "suggestions"] as const;
 const extractionsKey = (releaseId: string) => ["architecture", "releases", releaseId, "extractions"] as const;
 
-export type Decision = { suggestionId: string; accept: boolean; content?: SuggestionContent | null };
+type Decision = { suggestionId: string; accept: boolean; content?: SuggestionContent | null };
 
 /**
  * A draft's documents and suggestions, and every change to them.
@@ -90,6 +90,11 @@ export function useDraft(release: Release) {
   const rejectMany = useMutation({
     mutationFn: (ids: string[]) => api.rejectMany(releaseId, revision.current, ids),
     onSuccess: () => settle(),
+  });
+  // Saying what a name suggestions wait for is: it changes suggestions, never the draft.
+  const settleSubject = useMutation({
+    mutationFn: (subject: { system_id: string; name: string; kind: "system" | "offering" }) => api.settleSubject(releaseId, subject),
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: suggestionsKey(releaseId) }),
   });
 
   const addDocument = useMutation({
@@ -168,7 +173,7 @@ export function useDraft(release: Release) {
   }, [queryClient]);
 
   return {
-    suggestions, extractions, decide, pending, failure, acceptReady, rejectMany, addDocument, addDocuments, removeDocument, read, cancel, retry, reload,
+    suggestions, extractions, decide, pending, failure, acceptReady, rejectMany, settleSubject, addDocument, addDocuments, removeDocument, read, cancel, retry, reload,
   };
 }
 

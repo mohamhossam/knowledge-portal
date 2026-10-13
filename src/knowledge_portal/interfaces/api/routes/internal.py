@@ -2,7 +2,8 @@
 
 Every route needs the `requirements` service token. The request and response
 bodies are the shared contract values themselves: `ArchitectureQuery`,
-`ArchitectureKnowledgeMatch`, `ReferenceEvidence` and `KnowledgeEvent`, plus
+`ArchitectureKnowledgeMatch`, `AssessmentQuery`, `ArchitectureAssessment`,
+`PrecedentReceipt`, `ReferenceEvidence`, `DeliveryReceipt` and `KnowledgeEvent`, plus
 the read-only viewers' `CitedPassage` and `EvidenceChunk`, and a published historic
 requirement's content, read a page at a time (ADR-0102, amendment 1).
 `contracts/knowledge-internal.openapi.json` is the committed contract.
@@ -21,13 +22,21 @@ from knowledge_portal.application.ports.architecture_knowledge import (
 )
 from knowledge_portal.application.ports.architecture_rag import EvidenceChunk
 from knowledge_portal.application.ports.knowledge_events import KnowledgeEvent
+from knowledge_portal.application.ports.precedents import PrecedentReceipt
 from knowledge_portal.application.ports.reference_grounding import ReferenceEvidence
+from knowledge_portal.application.ports.requirement_assessment import (
+    ArchitectureAssessment,
+    AssessmentQuery,
+)
 from knowledge_portal.application.use_cases.cited_passages import CitedPassage, PassageCitation
 from knowledge_portal.domain.historic.historic_requirement import CONTENT_PAGE_MAX, ContentPart
 from knowledge_portal.interfaces.api.dependencies import ContainerDep, require_service_caller
 from knowledge_portal.interfaces.api.schemas.change_requests import (
     ApprovedBacklogRequest,
     ChangeRequestReceipt,
+    DeliveryReceipt,
+    DeliveryRequest,
+    DeliveryState,
 )
 from knowledge_portal.interfaces.api.schemas.historic import (
     HistoricItemEntry,
@@ -35,6 +44,7 @@ from knowledge_portal.interfaces.api.schemas.historic import (
     HistoricPassageEntry,
     HistoricPassagesPage,
 )
+from knowledge_portal.interfaces.api.schemas.precedents import PrecedentBody
 
 router = APIRouter(prefix="/internal", dependencies=[Depends(require_service_caller)])
 
@@ -50,6 +60,36 @@ class PublishedResponse(BaseModel):
 @router.post("/architecture/match")
 def match(query: ArchitectureQuery, container: ContainerDep) -> ArchitectureKnowledgeMatch:
     return container.architecture_knowledge.match(query)
+
+
+@router.post("/architecture/assess")
+def assess(query: AssessmentQuery, container: ContainerDep) -> ArchitectureAssessment:
+    """A whole requirement's product verdict, systems, gaps and owners (ontology plan Phase 3).
+
+    With no verdict yet, the answer carries the questions to ask instead.
+    """
+    return container.requirement_assessment.assess(query)
+
+
+@router.post(
+    "/architecture/precedents",
+    status_code=201,
+    responses={200: {"description": "The same decision, or a later one, is already kept."}},
+)
+def record_precedent(
+    body: PrecedentBody, response: Response, container: ContainerDep
+) -> PrecedentReceipt:
+    """A Requirement Owner's decision on the suggested verdict (ontology plan Phase 5).
+
+    Kept once per analysis: a later decision replaces it, and the same one delivered again,
+    or an older one arriving late, answers 200 and changes nothing. The release must be
+    published (404 otherwise); systems and concepts it does not hold are left out, and the
+    systems are named in the receipt.
+    """
+    receipt = container.record_precedent.execute(body.to_request())
+    if not receipt.recorded:
+        response.status_code = 200
+    return receipt
 
 
 @router.get("/library/published")
@@ -102,6 +142,32 @@ def receive_change_request(
     return ChangeRequestReceipt(
         change_request_id=item.id, approval_id=item.approval_id, created=created
     )
+
+
+@router.post(
+    "/change-requests/deliveries",
+    status_code=201,
+    responses={
+        200: {"description": "The same closure was delivered before, or the Epic was removed."}
+    },
+)
+def receive_delivery(
+    body: DeliveryRequest, response: Response, container: ContainerDep
+) -> DeliveryReceipt:
+    """A published Epic closed or removed in the work-item tracker (ontology plan Phase 7).
+
+    A closure is kept once per delivery id as a catalogue change, for a knowledge admin to
+    read into a draft; it replaces one of the same Epic still waiting. A removal withdraws
+    the Epic's catalogue changes still waiting and answers 200 with their ids. The same
+    delivery id for another body is a 409."""
+    if body.state is DeliveryState.REMOVED:
+        withdrawn = container.receive_delivery.removed(body.requirement_id, body.epic.external_id)
+        response.status_code = 200
+        return DeliveryReceipt(change_request_id=None, created=False, withdrawn=list(withdrawn))
+    item, created = container.receive_delivery.closed(body.to_delivery())
+    if not created:
+        response.status_code = 200
+    return DeliveryReceipt(change_request_id=item.id, created=created, withdrawn=[])
 
 
 @router.get("/architecture/releases/{release_id}/evidence/{chunk_id}")

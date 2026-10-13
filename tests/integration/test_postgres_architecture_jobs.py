@@ -23,6 +23,7 @@ from knowledge_portal.application.ports.architecture_jobs import (
     ArchitectureJob,
     ArchitectureJobKind,
     ArchitectureJobStatus,
+    JobProgress,
 )
 from knowledge_portal.domain.architecture.knowledge import KnowledgeConflictError
 from knowledge_portal.infrastructure.persistence.migration_runner import run_migrations
@@ -161,3 +162,32 @@ def test_asking_again_for_an_exhausted_job_resets_its_attempts(
     claimed = jobs.claim(now)
     assert claimed is not None and claimed.id == job.id
     assert jobs.for_subject(job.kind, job.subject_id) == (jobs.get(job.id),)
+
+
+def test_an_attempt_records_when_it_started_and_how_far_it_got(
+    jobs: PostgresArchitectureJobs,
+) -> None:
+    job = _enqueue(jobs)
+    assert job.queued_at is not None and job.started_at is None and job.progress is None
+    now = datetime.now(UTC)
+    claimed = jobs.claim(now)
+    assert claimed is not None and claimed.started_at == now
+
+    jobs.report(job.id, claimed.attempts, JobProgress("reading", 3, 12))
+    # A stale attempt's report is ignored.
+    jobs.report(job.id, claimed.attempts + 1, JobProgress("saving"))
+
+    running = jobs.get(job.id)
+    assert running is not None and running.progress == JobProgress("reading", 3, 12)
+
+    # The lease lapses: the next attempt starts afresh.
+    reclaimed = jobs.claim(now + timedelta(minutes=6))
+    assert reclaimed is not None and reclaimed.attempts == 2
+    assert reclaimed.started_at == now + timedelta(minutes=6) and reclaimed.progress is None
+
+    jobs.finish(job.id, reclaimed.attempts, ArchitectureJobStatus.FAILED, "provider_rate_limited")
+    retried = jobs.retry(job.id)
+    assert retried.started_at is None and retried.progress is None
+    assert retried.queued_at is not None and retried.queued_at >= job.queued_at
+    # Leave nothing claimable for the next test's worker.
+    jobs.cancel(job.id)

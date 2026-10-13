@@ -4,12 +4,90 @@
  * systems no product names. Pure functions over the organisation and the
  * architecture version in service.
  */
-import type { Organisation, OrganisationAuditEvent, OrgProduct, Person, Release, Squad, ValueStream } from "../api/client";
+import type {
+  Organisation,
+  OrganisationAuditEvent,
+  OrgProduct,
+  Person,
+  ReferenceFlag,
+  Release,
+  Squad,
+  SquadResource,
+  SquadRole,
+  ValueStream,
+} from "../api/client";
 import { domainPath } from "../catalogue/catalogue";
 
 const byName = <T extends { name: string }>(a: T, b: T) => a.name.localeCompare(b.name, "en", { sensitivity: "base" });
 
-export type RunBy = { squad: Squad; contact: Person | null };
+/** The roles a squad resource can hold, in the order a squad lists them. */
+export const ROLES: { value: SquadRole; label: string }[] = [
+  { value: "system_contact", label: "Contact" },
+  { value: "solution_architect", label: "Solution architect" },
+  { value: "business_analyst", label: "Business analyst" },
+  { value: "developer", label: "Developer" },
+  { value: "tester", label: "Tester" },
+];
+
+export const roleLabel = (role: SquadRole) => ROLES.find((item) => item.value === role)?.label ?? role;
+
+/**
+ * A seat in a squad on a system: its role, who holds it (or nobody yet), and the
+ * capability concept it is scoped to, named, or null on the whole system. `lapsed`
+ * marks a scope the system's capabilities no longer link to in the version in service.
+ */
+type Seat = { role: SquadRole; person: Person | null; capability: string | null; lapsed: boolean };
+
+export type RunBy = { squad: Squad; seats: Seat[] };
+
+/** The systems a squad staffs, each once, in the order first named. */
+export const systemIdsOf = (squad: Squad) => [...new Set(squad.resources.map((item) => item.system_id))];
+
+/** A capability concept's preferred label in the version in service, or its id. */
+export const conceptName = (release: Release | null, conceptId: string) =>
+  release?.business_capabilities?.find((item) => item.id === conceptId)?.pref_label ?? conceptId;
+
+/** The capability concepts a system's capabilities link to, by name: the scopes a seat on it can take. */
+export function conceptsOf(release: Release | null, systemId: string): { id: string; name: string }[] {
+  const system = release?.systems.find((item) => item.id === systemId);
+  const ids = new Set((system?.capabilities ?? []).flatMap((item) => (item.concept_id ? [item.concept_id] : [])));
+  return [...ids].map((id) => ({ id, name: conceptName(release, id) })).sort(byName);
+}
+
+function seat(resource: SquadResource, release: Release | null, directory: Map<string, Person>): Seat {
+  const scope = resource.capability_id ?? null;
+  return {
+    role: resource.role,
+    person: resource.person_id ? directory.get(resource.person_id) ?? null : null,
+    capability: scope ? conceptName(release, scope) : null,
+    lapsed: Boolean(scope && release?.systems.some((item) => item.id === resource.system_id)
+      && !conceptsOf(release, resource.system_id).some((item) => item.id === scope)),
+  };
+}
+
+/** A squad's seats on one system, by role, whole-system seats before scoped ones, then name. */
+export function seatsOn(org: Organisation, squad: Squad, systemId: string, release: Release | null = null): Seat[] {
+  const directory = people(org);
+  const order = (role: SquadRole) => ROLES.findIndex((item) => item.value === role);
+  return squad.resources
+    .filter((item) => item.system_id === systemId)
+    .map((item) => seat(item, release, directory))
+    .sort(
+      (a, b) =>
+        order(a.role) - order(b.role)
+        || (a.capability ?? "").localeCompare(b.capability ?? "")
+        || (a.person?.name ?? "\uffff").localeCompare(b.person?.name ?? "\uffff"),
+    );
+}
+
+/** One seat in words: "Developer for Billing: Bea", or "Contact: open seat". */
+const seatText = (seat: Seat) => {
+  const scope = seat.capability ? ` for ${seat.capability}${seat.lapsed ? " (no longer linked)" : ""}` : "";
+  return `${roleLabel(seat.role)}${scope}: ${seat.person?.name ?? "open seat"}`;
+};
+
+/** Seats in words: "Contact: Layla · Developer for Billing: open seat". */
+export const seatsLine = (seats: Seat[]) => seats.map(seatText).join(" · ");
 
 export type SystemRow = {
   systemId: string;
@@ -21,23 +99,19 @@ export type SystemRow = {
   runBy: RunBy[];
 };
 
-export type ProductSection = { product: OrgProduct; rows: SystemRow[] };
-export type StreamSection = { stream: ValueStream; lead: Person | null; products: ProductSection[]; squads: Squad[] };
+type ProductSection = { product: OrgProduct; rows: SystemRow[] };
+type StreamSection = { stream: ValueStream; lead: Person | null; products: ProductSection[]; squads: Squad[] };
 
-export function people(org: Organisation): Map<string, Person> {
+function people(org: Organisation): Map<string, Person> {
   return new Map(org.people.map((person) => [person.id, person]));
 }
 
-/** The squads that run a system, each with its contact for it. */
-export function runBy(org: Organisation, systemId: string): RunBy[] {
-  const directory = people(org);
+/** The squads that run a system, each with its seats on it. */
+export function runBy(org: Organisation, systemId: string, release: Release | null = null): RunBy[] {
   return org.squads
-    .filter((squad) => squad.systems.some((item) => item.system_id === systemId))
+    .filter((squad) => squad.resources.some((item) => item.system_id === systemId))
     .sort(byName)
-    .map((squad) => {
-      const contact = squad.systems.find((item) => item.system_id === systemId)?.person_id;
-      return { squad, contact: contact ? directory.get(contact) ?? null : null };
-    });
+    .map((squad) => ({ squad, seats: seatsOn(org, squad, systemId, release) }));
 }
 
 function row(org: Organisation, release: Release | null, systemId: string): SystemRow {
@@ -48,7 +122,7 @@ function row(org: Organisation, release: Release | null, systemId: string): Syst
     name: system?.name ?? systemId,
     place: system ? domainPath(landscape, system.landscape_domain_id) : [],
     lapsed: release !== null && !system,
-    runBy: runBy(org, systemId),
+    runBy: runBy(org, systemId, release),
   };
 }
 
@@ -82,11 +156,11 @@ export function unnamedSystems(org: Organisation, release: Release | null): { pl
     .map(([place, rows]) => ({ place: place || "Not placed in the landscape", rows }));
 }
 
-export type Gaps = { inService: number; run: number; noSquad: number; lapsed: number };
+type Gaps = { inService: number; run: number; noSquad: number; lapsed: number };
 
 /** How far ownership reaches across the version in service. */
 export function gaps(org: Organisation, release: Release | null): Gaps {
-  const owned = new Set(org.squads.flatMap((squad) => squad.systems.map((item) => item.system_id)));
+  const owned = new Set(org.squads.flatMap(systemIdsOf));
   const inService = new Set((release?.systems ?? []).map((system) => system.id));
   const linked = new Set([...owned, ...org.products.flatMap((product) => product.system_ids)]);
   const run = [...inService].filter((id) => owned.has(id)).length;
@@ -98,7 +172,7 @@ export function gaps(org: Organisation, release: Release | null): Gaps {
   };
 }
 
-export type Roles = { leads: ValueStream[]; scrumMaster: Squad[]; resource: { squad: Squad; systemId: string }[] };
+type Roles = { leads: ValueStream[]; scrumMaster: Squad[]; resource: { squad: Squad; systemId: string; role: SquadRole }[] };
 
 /** What a person holds; a person holding anything cannot be made inactive. */
 export function rolesOf(org: Organisation, personId: string): Roles {
@@ -106,12 +180,54 @@ export function rolesOf(org: Organisation, personId: string): Roles {
     leads: org.value_streams.filter((stream) => stream.lead_person_id === personId),
     scrumMaster: org.squads.filter((squad) => squad.scrum_master_person_id === personId),
     resource: org.squads.flatMap((squad) =>
-      squad.systems.filter((item) => item.person_id === personId).map((item) => ({ squad, systemId: item.system_id })),
+      squad.resources
+        .filter((item) => item.person_id === personId)
+        .map((item) => ({ squad, systemId: item.system_id, role: item.role })),
     ),
   };
 }
 
 export const holdsRoles = (roles: Roles) => roles.leads.length + roles.scrumMaster.length + roles.resource.length > 0;
+
+/**
+ * What a product's links say against the version in service, in words: what it sells
+ * and where it sits, then each thing to check. Names come from the version in service,
+ * ids where it no longer has them.
+ */
+export function productLinks(product: OrgProduct, release: Release | null, flag: ReferenceFlag | undefined) {
+  const offeringName = (id: string) => release?.products?.find((item) => item.id === id)?.name ?? id;
+  const systemName = (id: string) => release?.systems.find((item) => item.id === id)?.name ?? id;
+  const node = product.portfolio_node_id ? release?.portfolio?.find((item) => item.id === product.portfolio_node_id) : undefined;
+  const list = (ids: string[], name: (id: string) => string) => ids.map(name).join(", ");
+  const checks: string[] = [];
+  if (flag?.unlinked) checks.push("Not linked to an offering or a portfolio node.");
+  if (flag?.retired_offering_ids.length) {
+    checks.push(`${list(flag.retired_offering_ids, offeringName)}: no longer an offering in service.`);
+  }
+  if (flag?.retired_portfolio_node_id) checks.push(`${flag.retired_portfolio_node_id}: no longer a portfolio node in service.`);
+  if (flag?.systems_missing.length) {
+    checks.push(`Its offerings also name ${list(flag.systems_missing, systemName)}, which it does not list.`);
+  }
+  if (flag?.systems_unexplained.length) {
+    checks.push(`It lists ${list(flag.systems_unexplained, systemName)}, which none of its offerings name.`);
+  }
+  return {
+    sells: product.offering_ids.map(offeringName),
+    portfolio: node ? `${node.name} (${node.level})` : product.portfolio_node_id,
+    checks,
+  };
+}
+
+/** What a squad's seats name that the version in service no longer has, in words. */
+export function squadChecks(flag: ReferenceFlag | undefined, release: Release | null): string[] {
+  const systemName = (id: string) => release?.systems.find((item) => item.id === id)?.name ?? id;
+  return [
+    ...(flag?.retired_system_ids ?? []).map((id) => `${id}: no longer a system in service.`),
+    ...(flag?.retired_capabilities ?? []).map(
+      (scope) => `${systemName(scope.system_id)} › ${conceptName(release, scope.capability_id)}: no capability of the system links to it any more.`,
+    ),
+  ];
+}
 
 /** An id not yet taken: a slug of the name, then -2, -3. */
 export function freeId(name: string, taken: Iterable<string>): string {
@@ -142,3 +258,53 @@ export function historyLine(event: OrganisationAuditEvent, org: Organisation): s
 
 /** Active people, by name: the only ones who can hold a role. */
 export const activePeople = (org: Organisation) => org.people.filter((person) => person.active).sort(byName);
+
+/** A row of the ownership grid: a system, where it sits, the products that name it and who runs it. */
+export type OwnershipRow = SystemRow & { products: OrgProduct[] };
+
+/**
+ * Every system in service, then every system a product or squad still names that the
+ * version in service no longer has (lapsed), by name: the ownership grid's rows.
+ */
+export function ownershipRows(org: Organisation, release: Release | null): OwnershipRow[] {
+  const ids = [
+    ...(release?.systems ?? []).map((system) => system.id),
+    ...org.products.flatMap((product) => product.system_ids),
+    ...org.squads.flatMap(systemIdsOf),
+  ];
+  return [...new Set(ids)]
+    .map((id) => ({ ...row(org, release, id), products: org.products.filter((product) => product.system_ids.includes(id)).sort(byName) }))
+    .sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base" }));
+}
+
+/**
+ * The squad to offer first for some systems: the one that runs the most other systems
+ * in the products naming them (a tie goes to the products' own value stream), with that reason in words. Null when no squad runs a
+ * related system yet (backlog O-6), or the systems are in no product.
+ */
+export function suggestSquad(org: Organisation, systemIds: string[]): { squad: Squad; reason: string } | null {
+  const chosen = new Set(systemIds);
+  const products = org.products.filter((product) => product.system_ids.some((id) => chosen.has(id)));
+  const related = new Set(products.flatMap((product) => product.system_ids).filter((id) => !chosen.has(id)));
+  // Most related systems first; on a tie, a squad of the products' own value stream, then by name.
+  const streams = new Set(products.map((product) => product.value_stream_id));
+  const best = org.squads
+    .map((squad) => ({ squad, runs: systemIdsOf(squad).filter((id) => related.has(id)).length }))
+    .filter((item) => item.runs > 0)
+    .sort((a, b) => b.runs - a.runs || Number(streams.has(b.squad.value_stream_id)) - Number(streams.has(a.squad.value_stream_id)) || byName(a.squad, b.squad))[0];
+  if (!best) return null;
+  const where = products
+    .filter((product) => product.system_ids.some((id) => related.has(id) && systemIdsOf(best.squad).includes(id)))
+    .map((product) => product.name);
+  return {
+    squad: best.squad,
+    reason: `it runs ${best.runs === 1 ? "1 other system" : `${best.runs} other systems`} in ${where.join(", ")}`,
+  };
+}
+
+/** A squad given some systems: one seat each, in a role, for a person or open; systems it already runs are left as they are. */
+export function giveSystems(squad: Squad, systemIds: string[], role: SquadRole, personId: string | null): Squad {
+  const runs = new Set(systemIdsOf(squad));
+  const added = systemIds.filter((id) => !runs.has(id)).map((system_id) => ({ system_id, role, person_id: personId, capability_id: null }));
+  return { ...squad, resources: [...squad.resources, ...added] };
+}

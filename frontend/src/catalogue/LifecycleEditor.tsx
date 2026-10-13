@@ -89,8 +89,8 @@ export function LifecycleEditor({ value, onChange, channels, orderTypes, names }
           <TextField label="Source" value={note.source} onChange={(source) => change({ source: source || null })} />
           <AreaField label="Summary" value={note.summary} onChange={(summary) => change({ summary: summary || null })} />
           {orderTypes.length > 0 && (
-            <fieldset className="choices form__field--wide">
-              <legend className="field__label">For order types (none means all)</legend>
+            <fieldset className="cat-form__choices cat-form__wide">
+              <legend className="ds-field__label">For order types (none means all)</legend>
               {orderTypes.map((type) => (
                 <CheckField
                   key={type.code}

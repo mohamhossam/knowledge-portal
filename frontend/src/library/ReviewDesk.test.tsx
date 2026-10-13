@@ -43,7 +43,7 @@ const BLOCKS = [
 
 type Saved = { block_id: string; text: string; included: boolean; exclusion_reason: string | null };
 
-function matrix({ revisions = [] as { id: string; passages: Saved[] }[], extra = {} as Partial<LibraryDocument> } = {}): LibraryDocument {
+function matrix({ revisions = [] as { id: string; explanation?: string; passages: Saved[] }[], extra = {} as Partial<LibraryDocument> } = {}): LibraryDocument {
   return {
     id: "d", title: "Product matrix", owner: amina, version: 4, can_edit: true, is_owner: true,
     published_id: null, publications: [], review_fingerprint: revisions.length ? "f" : null, build_fingerprint: null, review: null, citations: 0,
@@ -55,7 +55,8 @@ function matrix({ revisions = [] as { id: string; passages: Saved[] }[], extra =
         { code: "check", severity: "warning", message: "Check this row.", block_id: "b3" },
         { code: "hidden_worksheet", severity: "warning", message: "Worksheet 2 is hidden.", block_id: "b4" },
       ],
-      warnings: ["Check this row.", "Worksheet 2 is hidden."], blocking_warnings: [], revisions,
+      warnings: ["Check this row.", "Worksheet 2 is hidden."], blocking_warnings: [],
+      revisions: revisions.map((revision) => ({ explanation: "Checked every row", ...revision })),
     }],
     ...extra,
   } as unknown as LibraryDocument;
@@ -118,6 +119,8 @@ describe("the review desk", { timeout: 20_000 }, () => {
     await held(3);
     await userEvent.keyboard("n");
     await waitFor(() => expect(cell("Sheet 1, row 2")).toHaveFocus());
+    // Going round past the last row is said, never silent (model §1).
+    expect(screen.getByText("Back round to the top of the list: passage 2, Sheet 1, row 2.")).toBeInTheDocument();
     await held(4);
     await userEvent.keyboard("n");
     expect(await screen.findByText("Every flagged passage and every other passage has been seen.")).toBeInTheDocument();
@@ -134,19 +137,35 @@ describe("the review desk", { timeout: 20_000 }, () => {
     expect(cell("Sheet 1, row 2")).toHaveTextContent("not seen");
   });
 
-  it("excludes with x, takes the reason, and goes back to the row with Enter", async () => {
+  it("excludes with x, takes the reason, and goes on with Enter to the next row that needs a decision (model §1)", async () => {
     openDocument(matrix());
     await screen.findByRole("grid", { name: /Passages of version 1/ });
     await userEvent.click(cell("Sheet 1, row 2"));
     await userEvent.keyboard("x");
     const reason = await screen.findByRole("textbox", { name: /Why exclude it\?/ });
     await waitFor(() => expect(reason).toHaveFocus());
-    await userEvent.type(reason, "Duplicate row{Enter}");
+    // Enter without a reason isn't a decision yet: back to the row.
+    await userEvent.keyboard("{Enter}");
     await waitFor(() => expect(cell("Sheet 1, row 2")).toHaveFocus());
+    await userEvent.keyboard("x");
+    await waitFor(() => expect(screen.getByRole("textbox", { name: /Why exclude it\?/ })).toHaveFocus());
+    await userEvent.type(screen.getByRole("textbox", { name: /Why exclude it\?/ }), "Duplicate row{Enter}");
+    // The flagged row 3 is the next to check.
+    await waitFor(() => expect(cell("Sheet 1, row 3")).toHaveFocus());
     expect(cell("Sheet 1, row 2").closest("tr")).toHaveTextContent("Excluded: Duplicate row");
     expect(progress()).toHaveTextContent("1 unsaved change");
+    await userEvent.click(cell("Sheet 1, row 2"));
     await userEvent.keyboard("i");
     expect(progress()).toHaveTextContent("0 unsaved changes");
+  });
+
+  it("goes back to the same row with Esc from the reason", async () => {
+    openDocument(matrix());
+    await screen.findByRole("grid", { name: /Passages of version 1/ });
+    await userEvent.click(cell("Sheet 1, row 2"));
+    await userEvent.keyboard("x");
+    await userEvent.type(await screen.findByRole("textbox", { name: /Why exclude it\?/ }), "Duplicate row{Escape}");
+    await waitFor(() => expect(cell("Sheet 1, row 2")).toHaveFocus());
   });
 
   it("selects with Space and Shift+↓, then excludes the set with one reason, shown before it commits", async () => {
@@ -175,7 +194,7 @@ describe("the review desk", { timeout: 20_000 }, () => {
     expect(screen.getByRole("region", { name: "Selection" })).toHaveTextContent("3 passages selected");
   });
 
-  it("saves with Ctrl+Enter from anywhere on the desk; then Approve is available and unsaved counts from that save (2.5)", async () => {
+  it("saves with Ctrl+Enter from anywhere on the desk, asking for the summary beside the list; unsaved counts from that save (2.5)", async () => {
     const saved = matrix({
       revisions: [{ id: "r1", passages: [
         { block_id: "b1", text: "A1=Product | B1=Segment", included: true, exclusion_reason: null },
@@ -187,14 +206,16 @@ describe("the review desk", { timeout: 20_000 }, () => {
     const review = vi.spyOn(api, "review").mockResolvedValue(saved);
     openDocument(matrix());
     await screen.findByRole("grid", { name: /Passages of version 1/ });
-    const approve = screen.getByRole("button", { name: "Approve and publish…" });
-    expect(approve).toHaveAttribute("aria-disabled", "true");
-    expect(approve).toHaveAccessibleDescription("Save your review first.");
+    // Unsaved decisions don't stop publishing: the publish panel saves them (design evaluation).
+    expect(screen.getByRole("button", { name: "Approve and publish…" })).not.toHaveAttribute("aria-disabled");
 
     await userEvent.click(cell("Sheet 1, row 2"));
     await userEvent.keyboard("x");
-    await userEvent.type(await screen.findByRole("textbox", { name: /Why exclude it\?/ }), "Duplicate row");
-    const summary = screen.getByRole("textbox", { name: /Review summary/ });
+    await userEvent.type(await screen.findByRole("textbox", { name: /Why exclude it\?/ }), "Duplicate row{Control>}{Enter}{/Control}");
+    const panel = await screen.findByRole("region", { name: "Save your review" });
+    const summary = within(panel).getByRole("textbox", { name: /Review summary/ });
+    await waitFor(() => expect(summary).toHaveFocus());
+    expect(review).not.toHaveBeenCalled();
     await userEvent.type(summary, "Checked every row{Control>}{Enter}{/Control}");
     await waitFor(() => expect(review).toHaveBeenCalledTimes(1));
     const body = review.mock.calls[0]![2];
@@ -202,27 +223,36 @@ describe("the review desk", { timeout: 20_000 }, () => {
     expect(body.passages.find((item) => item.block_id === "b2")).toMatchObject({ included: false, exclusion_reason: "Duplicate row" });
 
     expect(await screen.findByText(/^Saved at \d\d:\d\d\./)).toBeInTheDocument();
+    // Saved: the copy the tab kept goes.
+    await waitFor(() => expect(window.sessionStorage.getItem("knowledge-portal.review.d")).toBeNull());
+    expect(screen.queryByRole("region", { name: "Save your review" })).not.toBeInTheDocument();
     expect(progress()).toHaveTextContent("0 unsaved changes");
-    await waitFor(() => expect(screen.getByRole("button", { name: "Approve and publish…" })).not.toHaveAttribute("aria-disabled"));
     // A change after the save is counted against the save, not against the first read.
     await userEvent.click(cell("Sheet 1, row 3"));
     await userEvent.keyboard("x");
     expect(progress()).toHaveTextContent("1 unsaved change");
-    expect(screen.getByRole("button", { name: "Approve and publish…" })).toHaveAccessibleDescription("Save your changes first.");
+    // The next save keeps the summary already written: no panel.
+    await userEvent.type(await screen.findByRole("textbox", { name: /Why exclude it\?/ }), "Old{Control>}{Enter}{/Control}");
+    await waitFor(() => expect(review).toHaveBeenCalledTimes(2));
+    expect(review.mock.calls[1]![2].explanation).toBe("Checked every row");
   });
 
   it("asks for what is missing instead of saving", async () => {
     const review = vi.spyOn(api, "review");
     openDocument(matrix());
     await screen.findByRole("grid", { name: /Passages of version 1/ });
+    await userEvent.click(cell("Sheet 1, row 2"));
+    await userEvent.keyboard("x");
     await userEvent.click(screen.getByRole("button", { name: "Save review" }));
     expect(review).not.toHaveBeenCalled();
-    expect(screen.getByRole("textbox", { name: /Review summary/ })).toHaveFocus();
-    expect(screen.getByText(/Not saved yet: Write a review summary\./)).toBeInTheDocument();
+    expect(screen.getByText(/Not saved yet: 1 excluded passage needs a reason\./)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("textbox", { name: /Why exclude it\?/ })).toHaveFocus());
+    expect(screen.getByRole("button", { name: "Approve and publish…" })).toHaveAccessibleDescription("1 excluded passage needs a reason.");
   });
 
-  it("publishes through its consequence panel: what becomes citable, then what you looked at, then the verb", async () => {
+  it("publishes through its consequence panel: what becomes citable, then what you looked at, the summary, then the verb", async () => {
     const saved = matrix({ revisions: [{ id: "r1", passages: BLOCKS.map((item) => ({ block_id: item.id, text: item.text, included: item.id !== "b4", exclusion_reason: item.id === "b4" ? "Hidden" : null })) }] });
+    const review = vi.spyOn(api, "review");
     const approve = vi.spyOn(api, "approve").mockResolvedValue({ ...saved, publications: [{ id: "p", version_id: "v1", revision_id: "r1", fingerprint: "f", withdrawn_at: null, activated_at: null, built_at: null, requires_activation: false, indexing_attempts: 0, approved_at: "2026-10-08T09:00:00Z", approved_by: amina }] } as unknown as LibraryDocument);
     openDocument(saved);
     await screen.findByRole("grid", { name: /Passages of version 1/ });
@@ -231,10 +261,55 @@ describe("the review desk", { timeout: 20_000 }, () => {
     const text = panel.textContent ?? "";
     expect(text).toContain("Requirement work can cite its 3 passages once they are indexed.");
     expect(text.indexOf("You looked at")).toBeLessThan(text.indexOf("Publish version 1", text.indexOf("You looked at")));
+    // The saved summary is there to read or change; unchanged, nothing is saved again.
+    expect(within(panel).getByRole("textbox", { name: /Review summary/ })).toHaveValue("Checked every row");
     await userEvent.click(within(panel).getByRole("button", { name: "Publish version 1" }));
     await waitFor(() => expect(approve).toHaveBeenCalledWith("d", "v1", { expected_version: 4, revision_id: "r1", fingerprint: "f" }));
+    expect(review).not.toHaveBeenCalled();
     const said = await screen.findByText("Published. Requirement work can cite it once it is indexed; Jobs shows the indexing.");
     await waitFor(() => expect(said).toHaveFocus());
+  });
+
+  it("approves in one step: the summary is written in the publish panel, the review saved, then published (design evaluation)", async () => {
+    const saved = { ...matrix({ revisions: [{ id: "r2", explanation: "Dropped the duplicate", passages: BLOCKS.map((item) => ({ block_id: item.id, text: item.text, included: item.id !== "b2", exclusion_reason: item.id === "b2" ? "Duplicate row" : null })) }] }), version: 5, review_fingerprint: "f2" } as LibraryDocument;
+    const review = vi.spyOn(api, "review").mockResolvedValue(saved);
+    const approve = vi.spyOn(api, "approve").mockResolvedValue(saved);
+    openDocument(matrix());
+    await screen.findByRole("grid", { name: /Passages of version 1/ });
+    await userEvent.click(cell("Sheet 1, row 2"));
+    await userEvent.keyboard("x");
+    await userEvent.type(await screen.findByRole("textbox", { name: /Why exclude it\?/ }), "Duplicate row");
+    await userEvent.click(screen.getByRole("button", { name: "Approve and publish…" }));
+    const panel = screen.getByRole("region", { name: "Publish version 1" });
+    const summary = within(panel).getByRole("textbox", { name: /Review summary/ });
+    await waitFor(() => expect(summary).toHaveFocus());
+    // No summary yet: publishing asks for it there, and sends nothing.
+    await userEvent.click(within(panel).getByRole("button", { name: "Publish version 1" }));
+    expect(review).not.toHaveBeenCalled();
+    await userEvent.type(summary, "Dropped the duplicate");
+    await userEvent.click(within(panel).getByRole("button", { name: "Publish version 1" }));
+    await waitFor(() => expect(approve).toHaveBeenCalledWith("d", "v1", { expected_version: 5, revision_id: "r2", fingerprint: "f2" }));
+    expect(review).toHaveBeenCalledTimes(1);
+    expect(review.mock.calls[0]![2]).toMatchObject({ expected_version: 4, explanation: "Dropped the duplicate" });
+  });
+
+  it("opens on \"Not seen yet\" while anything is unseen, and keeps a passage listed once looked at", async () => {
+    openDocument(matrix());
+    await screen.findByRole("grid", { name: /Passages of version 1/ });
+    expect(screen.getByRole("button", { name: /Not seen yet/ })).toHaveAttribute("aria-pressed", "true");
+    await userEvent.click(cell("Sheet 1, row 1"));
+    await waitFor(() => expect(progress()).toHaveTextContent("Seen 1 of 4"), { timeout: 3000 });
+    await userEvent.keyboard("j");
+    await waitFor(() => expect(cell("Sheet 1, row 2")).toHaveFocus());
+    expect(cell("Sheet 1, row 1")).toBeInTheDocument();
+  });
+
+  it("opens on every passage once all of them have been seen", async () => {
+    window.sessionStorage.setItem("knowledge-portal.seen.v1", JSON.stringify(["b1", "b2", "b3", "b4"]));
+    openDocument(matrix());
+    await screen.findByRole("grid", { name: /Passages of version 1/ });
+    expect(within(screen.getByRole("group", { name: "Show passages" })).getByRole("button", { name: /^All/ })).toHaveAttribute("aria-pressed", "true");
+    expect(within(grid()).getAllByRole("row")).toHaveLength(5);
   });
 
   it("marks the passages seen on their rows, and goes past the 200 rows shown with j and End (area 2 critique)", async () => {
@@ -269,6 +344,80 @@ describe("the review desk", { timeout: 20_000 }, () => {
     await screen.findByRole("grid", { name: /Passages of version 1/ });
     await waitFor(() => expect(cell("Sheet 1, row 3")).toHaveFocus());
     expect(screen.getByRole("complementary", { name: "Passage 3" })).toHaveTextContent("seen");
+  });
+});
+
+describe("unsaved decisions kept in the tab (critique run 2, P1)", { timeout: 20_000 }, () => {
+  const kept = (drafts: Record<string, unknown>, key = "v1:none") =>
+    window.sessionStorage.setItem("knowledge-portal.review.d", JSON.stringify({ key, drafts, summary: null }));
+
+  it("keeps each decision in session storage as it is made", async () => {
+    openDocument(matrix());
+    await screen.findByRole("grid", { name: /Passages of version 1/ });
+    await userEvent.click(cell("Sheet 1, row 2"));
+    await userEvent.keyboard("x");
+    await userEvent.type(await screen.findByRole("textbox", { name: /Why exclude it\?/ }), "Duplicate row");
+    await waitFor(() => expect(JSON.parse(window.sessionStorage.getItem("knowledge-portal.review.d") ?? "{}")).toEqual({
+      key: "v1:none",
+      drafts: { b2: { text: "A2=Bundle 1 | B2=SMB", included: false, reason: "Duplicate row" } },
+      summary: null,
+    }));
+    await userEvent.click(cell("Sheet 1, row 2"));
+    await userEvent.keyboard("i");
+    // Nothing unsaved: nothing kept.
+    await waitFor(() => expect(window.sessionStorage.getItem("knowledge-portal.review.d")).toBeNull());
+  });
+
+  it("offers them back when the desk reopens, and restores them", async () => {
+    kept({ b2: { text: "A2=Bundle 1 | B2=SMB", included: false, reason: "Duplicate row" } });
+    openDocument(matrix());
+    await screen.findByRole("grid", { name: /Passages of version 1/ });
+    const offer = screen.getByRole("region", { name: "Unsaved review decisions" });
+    expect(offer).toHaveTextContent("Restore 1 unsaved decision?");
+    // Offered, not applied unasked.
+    expect(progress()).toHaveTextContent("0 unsaved changes");
+    await userEvent.click(within(offer).getByRole("button", { name: "Restore" }));
+    expect(progress()).toHaveTextContent("1 unsaved change");
+    expect(cell("Sheet 1, row 2").closest("tr")).toHaveTextContent("Excluded: Duplicate row");
+    await waitFor(() => expect(screen.getByText("Restored 1 unsaved decision. Save the review to keep it.")).toHaveFocus());
+    expect(screen.queryByRole("region", { name: "Unsaved review decisions" })).not.toBeInTheDocument();
+  });
+
+  it("discards them on request", async () => {
+    kept({ b2: { text: "A2=Bundle 1 | B2=SMB", included: false, reason: "Duplicate row" } });
+    openDocument(matrix());
+    await screen.findByRole("grid", { name: /Passages of version 1/ });
+    await userEvent.click(within(screen.getByRole("region", { name: "Unsaved review decisions" })).getByRole("button", { name: "Discard" }));
+    expect(window.sessionStorage.getItem("knowledge-portal.review.d")).toBeNull();
+    expect(progress()).toHaveTextContent("0 unsaved changes");
+    expect(screen.queryByRole("region", { name: "Unsaved review decisions" })).not.toBeInTheDocument();
+  });
+
+  it("doesn't offer decisions kept against another saved revision", async () => {
+    kept({ b2: { text: "A2=Bundle 1 | B2=SMB", included: false, reason: "Duplicate row" } }, "v1:r0");
+    openDocument(matrix());
+    await screen.findByRole("grid", { name: /Passages of version 1/ });
+    expect(screen.queryByRole("region", { name: "Unsaved review decisions" })).not.toBeInTheDocument();
+  });
+
+  it("works without storage", async () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("blocked"); });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("blocked"); });
+    openDocument(matrix());
+    await screen.findByRole("grid", { name: /Passages of version 1/ });
+    await userEvent.click(cell("Sheet 1, row 2"));
+    await userEvent.keyboard("x");
+    expect(progress()).toHaveTextContent("1 unsaved change");
+  });
+});
+
+describe("the document's tabs", { timeout: 20_000 }, () => {
+  it("focuses the tab panel's heading on a tab change, not the record's h1 (model §1)", async () => {
+    vi.spyOn(api, "sourceImpact").mockResolvedValue({ items: [], next_offset: null } as never);
+    openDocument(matrix());
+    await screen.findByRole("grid", { name: /Passages of version 1/ });
+    await userEvent.click(within(screen.getByRole("navigation", { name: "This document" })).getByRole("link", { name: "Cited by" }));
+    await waitFor(() => expect(screen.getByRole("heading", { level: 2, name: /Requirements citing it/ })).toHaveFocus());
   });
 });
 

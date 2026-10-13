@@ -11,3 +11,9 @@ export const JOB_WORDS: Record<JobState, string> = {
   stopped: "Stopped",
   held: "Held",
 };
+
+/** The platform's own modifier: ⌘ on Apple keyboards, Ctrl elsewhere. */
+export function searchShortcut(): string {
+  const platform = typeof navigator === "undefined" ? "" : navigator.platform;
+  return /Mac|iPhone|iPad/.test(platform) ? "⌘K" : "Ctrl K";
+}

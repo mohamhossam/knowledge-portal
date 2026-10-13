@@ -2,8 +2,10 @@ import "./forms.css";
 
 import { Upload as UploadIcon } from "lucide-react";
 import {
+  type FormEvent,
   type InputHTMLAttributes,
   type ReactNode,
+  type RefObject,
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
   useId,
@@ -11,7 +13,8 @@ import {
 } from "react";
 
 import type { JobState } from "../words";
-import { JobStatus } from "./feedback";
+import { ActionGroup, Button } from "./actions";
+import { JobStatus, Status } from "./feedback";
 
 /** The props a control needs to be labelled, described and validated. */
 export type ControlProps = {
@@ -283,5 +286,73 @@ export function Upload({
         </ul>
       )}
     </div>
+  );
+}
+
+/**
+ * An edit opened in place (§1): a labelled form with its heading, its fields,
+ * then the verb and Cancel. The verb stays focusable while the form can't be
+ * sent, with the reason beside it (§1.2). A failure is announced in a line
+ * mounted from the start. Esc cancels. Pair with `useDisclosure` (pass its
+ * `panel` as `panelRef`) so focus moves into the first field and back after.
+ */
+export function FormPanel({
+  title,
+  headingLevel = 2,
+  submitLabel,
+  busyLabel = "Saving…",
+  busy,
+  problem,
+  failure,
+  onSubmit,
+  onCancel,
+  panelRef,
+  children,
+}: {
+  /** May hold a name (wrap it in <bdi>). */
+  title: ReactNode;
+  headingLevel?: 2 | 3;
+  submitLabel: ReactNode;
+  busyLabel?: string;
+  busy?: boolean;
+  /** Why it can't be sent yet; null when it can. */
+  problem?: string | null;
+  failure?: ReactNode;
+  onSubmit: () => void;
+  onCancel: () => void;
+  panelRef?: RefObject<HTMLElement | null>;
+  children?: ReactNode;
+}) {
+  const id = useId();
+  const Heading = headingLevel === 2 ? "h2" : "h3";
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    if (!problem && !busy) onSubmit();
+  };
+  return (
+    <form
+      ref={panelRef as RefObject<HTMLFormElement>}
+      className="ds-formpanel"
+      aria-labelledby={`${id}-title`}
+      noValidate
+      onSubmit={submit}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          event.stopPropagation();
+          onCancel();
+        }
+      }}
+    >
+      <Heading id={`${id}-title`} tabIndex={-1} className="ds-formpanel__title">{title}</Heading>
+      {children}
+      {/* Mounted before it has anything to say, so a failure is announced. */}
+      <p className="ds-formpanel__failure" role="status">{failure ? <Status tone="attention">{failure}</Status> : null}</p>
+      <ActionGroup>
+        <Button type="submit" variant="primary" busy={busy} unavailableReason={busy ? null : problem}>
+          {busy ? busyLabel : submitLabel}
+        </Button>
+        <Button onClick={onCancel}>Cancel</Button>
+      </ActionGroup>
+    </form>
   );
 }

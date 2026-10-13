@@ -1,0 +1,182 @@
+/*
+ * The catalogue's hand edits (UX rebuild, legacy removal): fields on a
+ * wrapping grid, repeating rows ruled rather than boxed, and an edit panel
+ * whose action and "why it waits" line stay in reach while a long form
+ * scrolls. Layout only, from semantic and component tokens.
+ */
+
+.cat-form {
+  display: grid;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+
+.cat-form__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: var(--space-3) var(--space-4);
+  align-items: end;
+  min-inline-size: 0;
+}
+
+.cat-form__cell {
+  min-inline-size: 0;
+}
+
+.cat-form__cell > .ds-field {
+  max-inline-size: none;
+}
+
+.cat-form__wide,
+.cat-form__grid > .cat-form__rows {
+  grid-column: 1 / -1;
+}
+
+.cat-form__rows {
+  display: grid;
+  gap: var(--space-2);
+  min-inline-size: 0;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.cat-form__legend {
+  inline-size: 100%;
+  padding: 0 0 var(--space-1);
+  border-block-end: var(--rule-heavy) solid var(--color-rule-heavy);
+  font-weight: var(--weight-strong);
+}
+
+.cat-form__row {
+  display: grid;
+  gap: var(--space-2);
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0 0 var(--space-3);
+  border: 0;
+  border-block-end: var(--rule-hair) solid var(--color-rule);
+}
+
+.cat-form__row .cat-form__rows .cat-form__legend {
+  border-block-end-width: var(--rule-hair);
+  font-weight: var(--weight-emphasis);
+}
+
+/* A repeating row named on its own rule, for long groups such as lifecycle notes. */
+.cat-form__row-title {
+  inline-size: 100%;
+  margin-block-end: var(--space-2);
+  padding: var(--space-1) 0;
+  border-block-end: var(--rule-heavy) solid var(--color-rule-heavy);
+  font-weight: var(--weight-strong);
+}
+
+.cat-form__remove {
+  justify-self: start;
+}
+
+/* A group of checkboxes: long ones set in columns rather than one tall run. */
+.cat-form__choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: var(--space-1) var(--space-4);
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.cat-form__choices > legend {
+  margin-block-end: var(--space-1);
+  padding: 0;
+}
+
+.cat-form__all {
+  grid-column: 1 / -1;
+}
+
+/* A conflict's side: a borderless group, labelled like a field. */
+.cat-form__group {
+  display: grid;
+  gap: var(--space-2);
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.cat-form__group > legend {
+  padding: 0;
+  margin-block-end: var(--space-1);
+}
+
+/* Chosen items (a journey's systems), each with its own remove. */
+.cat-form__chosen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  margin: var(--space-1) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cat-form__chosen > li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* An edit opened in place where the thing is read: a panel, never a modal. */
+.cat-edit {
+  display: grid;
+  gap: var(--space-3);
+  min-inline-size: 0;
+  margin-block-start: var(--space-3);
+  padding: var(--panel-pad) var(--panel-pad) 0;
+  background: var(--panel-bg);
+  border: var(--panel-border);
+  border-block-start: var(--panel-top);
+}
+
+.cat-edit--danger {
+  border-color: var(--panel-danger-border);
+}
+
+.cat-edit__title {
+  margin: 0;
+  font-size: var(--text-h3);
+}
+
+.cat-edit__lead {
+  max-inline-size: 62ch;
+  color: var(--color-ink-2);
+}
+
+.cat-edit__failure {
+  margin: 0;
+}
+
+/* A long panel (an offering's parts or tracking) keeps its action and its reason in reach. */
+.cat-edit__foot {
+  position: sticky;
+  inset-block-end: var(--sticky-bottom, 0px);
+  z-index: 1;
+  display: grid;
+  gap: var(--space-2);
+  margin-inline: calc(-1 * var(--panel-pad));
+  padding: var(--space-3) var(--panel-pad);
+  border-block-start: var(--rule-hair) solid var(--color-rule-strong);
+  background: var(--panel-bg);
+}
+
+/* In a pane with no padding of its own (a suggestion's "Edit, then accept"). */
+.cat-edit__foot--flush {
+  margin-inline: 0;
+  padding-inline: 0;
+}
+
+/* A focused field is never hidden under a pinned panel foot: tabbing scrolls it clear. */
+html:has(.cat-edit__foot) {
+  scroll-padding-block-end: 9rem;
+}

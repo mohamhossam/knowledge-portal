@@ -106,6 +106,12 @@
   margin-block-end: var(--space-2);
 }
 
+/* Keys held together ("Ctrl+Enter"): one outer <kbd> around a box per key. */
+.ds-keylist kbd:has(kbd) {
+  padding: 0;
+  border: 0;
+}
+
 .ds-shortcuts__state {
   font-size: var(--text-meta);
   color: var(--color-ink-2);

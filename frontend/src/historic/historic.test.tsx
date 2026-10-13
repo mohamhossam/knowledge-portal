@@ -6,8 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api, type HistoricDetail, type HistoricSummary, type RequirementCorpus } from "../api/client";
 import { requirementOverview } from "../home/derive";
-import { HistoricListPage } from "./HistoricListPage";
-import { HistoricRecordPage } from "./HistoricRecordPage";
+import { HistoricPage } from "./HistoricPage";
 import { nextStep, parseIds, standing } from "./historic";
 
 afterEach(() => vi.restoreAllMocks());
@@ -20,6 +19,7 @@ const CORPUS = {
 
 beforeEach(() => {
   vi.spyOn(api, "requirementCorpus").mockResolvedValue(CORPUS);
+  vi.spyOn(api, "historicList").mockResolvedValue({ items: [summary()], next_offset: null, counts: { draft: 1, published: 0, withdrawn: 0, refresh_waiting: 0 } });
   vi.spyOn(api, "historicSharedRoots").mockResolvedValue({ items: [] });
   vi.spyOn(api, "historicCitedBy").mockResolvedValue({ total: 0, items: [], next_offset: null });
 });
@@ -131,15 +131,15 @@ describe("historic wording", () => {
 });
 
 describe("the historic list", () => {
-  it("lists records by state and imports BRDs with a result for each", async () => {
+  it("lists records grouped by state, says where each stands, and imports BRDs with a result for each", async () => {
     vi.spyOn(api, "historicList").mockResolvedValue({
       items: [
         summary(),
         summary({ id: "h2", title: "Gulf roaming", status: "published", published_at: "2026-10-05T09:00:00Z", work_items: 4, citations: 2 }),
-        summary({ id: "h3", title: "Old tariffs", status: "published", published_at: "2026-10-04T09:00:00Z", work_items: 1, citations: null }),
+        summary({ id: "h3", title: "Old tariffs", status: "published", published_at: "2026-10-04T09:00:00Z", work_items: 1, citations: null, refresh_waiting: true }),
       ],
       next_offset: null,
-      counts: { draft: 1, published: 1, withdrawn: 0, refresh_waiting: 0 },
+      counts: { draft: 1, published: 2, withdrawn: 0, refresh_waiting: 1 },
     });
     const imported = vi.spyOn(api, "importHistoric").mockResolvedValue({
       results: [
@@ -147,19 +147,26 @@ describe("the historic list", () => {
         { filename: "b.doc", outcome: "refused", version_id: null, title: null, reason: "Save it as .docx." },
       ],
     } as never);
-    render(wrap(<HistoricListPage />, "/requirement-knowledge/historic"));
-    const draftRow = (await screen.findByRole("link", { name: "XGPON bundles" })).closest("tr")!;
-    expect(draftRow).toHaveClass("row--due");
-    expect(within(draftRow).getByText("Link its work items")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^Drafts/ })).toHaveAttribute("aria-pressed", "false");
-    // Cited by: a count, or a dash when requirement work could not say.
-    expect(screen.getByRole("columnheader", { name: "Cited by" })).toBeInTheDocument();
-    const cited = screen.getByRole("link", { name: "Gulf roaming" }).closest("tr")!;
-    expect(within(cited).getByText("2 requirements")).toBeInTheDocument();
-    expect(within(cited).getByText(/cited by 2 requirements/)).toBeInTheDocument();
-    const unknown = screen.getByRole("link", { name: "Old tariffs" }).closest("tr")!;
-    expect(within(unknown).getByText("—")).toBeInTheDocument();
+    render(wrap(<HistoricPage />, "/requirement-knowledge/historic?status=draft"));
+    const list = screen.getByRole("region", { name: "Historic requirements" });
+    const draft = await within(list).findByRole("link", { name: /^XGPON bundles/ });
+    expect(draft).toHaveAttribute("href", "/requirement-knowledge/historic/h1?status=draft");
+    expect(within(within(list).getByRole("list", { name: /^Drafts \d+$/ })).getByText("Link its work items")).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "State" })).toHaveValue("draft");
+    expect(screen.getByRole("option", { name: "Drafts (1)" })).toBeInTheDocument();
+    // Cited by: a count, or nothing said when requirement work could not say.
+    const cited = within(list).getByRole("link", { name: /^Gulf roaming/ });
+    expect(cited).toHaveTextContent("1 BRD · 4 work items · cited by 2 requirements");
+    // Published and quiet carries no pill; a refresh waiting says so.
+    expect(within(cited).queryByText("Published")).not.toBeInTheDocument();
+    const unknown = within(list).getByRole("link", { name: /^Old tariffs/ });
+    expect(unknown).not.toHaveTextContent("cited by");
+    expect(within(unknown).getByText("Refresh waiting")).toBeInTheDocument();
+    // With none chosen, the record side says what waits on a curator.
+    expect(await screen.findByRole("link", { name: "Accept or discard the newer reads" })).toHaveAttribute("href", "/requirement-knowledge/historic?status=published");
 
+    fireEvent.click(within(list).getByRole("button", { name: "Import BRDs" }));
+    expect(screen.getByRole("heading", { name: "Import old BRDs" })).toHaveFocus();
     const input = screen.getByLabelText("BRDs");
     fireEvent.change(input, { target: { files: [new File(["x"], "a.docx"), new File(["y"], "b.doc")] } });
     fireEvent.click(screen.getByRole("button", { name: "Import the 2 BRDs" }));
@@ -167,6 +174,26 @@ describe("the historic list", () => {
     const said = await screen.findByText("1 of 2 BRDs imported; each is being read.");
     await waitFor(() => expect(said).toHaveFocus());
     expect(screen.getByText("Save it as .docx.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "a.docx" })).toHaveAttribute("href", "/requirement-knowledge/historic/h3");
+  });
+
+  it("asks for the BRDs before importing, and keeps the button reachable", async () => {
+    const imported = vi.spyOn(api, "importHistoric");
+    render(wrap(<HistoricPage />, "/requirement-knowledge/historic"));
+    fireEvent.click(await screen.findByRole("button", { name: "Import BRDs" }));
+    const button = screen.getByRole("button", { name: "Import the BRDs" });
+    expect(button).toHaveAccessibleDescription("Choose the BRDs first.");
+    fireEvent.click(button);
+    expect(imported).not.toHaveBeenCalled();
+  });
+
+  it("says when there are none yet, and offers the import", async () => {
+    vi.spyOn(api, "historicList").mockResolvedValue({ items: [], next_offset: null, counts: { draft: 0, published: 0, withdrawn: 0, refresh_waiting: 0 } });
+    render(wrap(<HistoricPage />, "/requirement-knowledge/historic"));
+    expect(await screen.findByText("No historic requirements yet.")).toBeInTheDocument();
+    expect(screen.getByText("None yet. Import the first BRDs.")).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: "Import BRDs" }).at(-1)!);
+    expect(screen.getByRole("heading", { name: "Import old BRDs" })).toBeInTheDocument();
   });
 });
 
@@ -177,7 +204,7 @@ describe("a historic requirement", () => {
       items: [{ work_item_id: 48213, historic_id: "h9", title: "Billing statements", status: "withdrawn" }],
     });
     const link = vi.spyOn(api, "linkWorkItems").mockResolvedValue(detail({ root_ids: [48213], run_status: "queued" }));
-    render(wrap(<HistoricRecordPage />));
+    render(wrap(<HistoricPage />));
     expect(await screen.findByRole("heading", { name: "XGPON bundles" })).toBeInTheDocument();
     expect(screen.getByText("Delivered as Epic 48213.")).toBeInTheDocument();
     // The head says what it waits on; the link takes the reader to that section.
@@ -205,7 +232,7 @@ describe("a historic requirement", () => {
   it("asks no one who cites a draft", async () => {
     const cited = vi.mocked(api.historicCitedBy);
     vi.spyOn(api, "historic").mockResolvedValue(detail());
-    render(wrap(<HistoricRecordPage />));
+    render(wrap(<HistoricPage />));
     expect(await screen.findByRole("heading", { name: "XGPON bundles" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: /^Cited by/ })).not.toBeInTheDocument();
     expect(cited).not.toHaveBeenCalled();
@@ -217,7 +244,7 @@ describe("a historic requirement", () => {
       publications: [{ number: 1, published_at: "2026-10-06T09:10:00Z", published_by: ada, fingerprint: "f" }],
     } as never));
     const cited = vi.spyOn(api, "historicCitedBy").mockRejectedValueOnce(new Error("Requirement work is unavailable."));
-    render(wrap(<HistoricRecordPage />));
+    render(wrap(<HistoricPage />));
     expect(await screen.findByText(/Who cites it could not be read/)).toBeInTheDocument();
     cited.mockResolvedValueOnce({ total: 0, items: [], next_offset: null });
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
@@ -230,7 +257,7 @@ describe("a historic requirement", () => {
       publications: [{ number: 1, published_at: "2026-10-06T09:10:00Z", published_by: ada, fingerprint: "f" }],
     } as never));
     vi.spyOn(api, "historicCitedBy").mockRejectedValue(new Error("Requirement work is unavailable."));
-    render(wrap(<HistoricRecordPage />));
+    render(wrap(<HistoricPage />));
     expect(await screen.findByText(/Who cites it could not be read/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Withdraw from requirement work…" }));
     const warning = await screen.findByText((_, element) => element?.tagName === "P" && /could not say which Requirements cite it/.test(element.textContent ?? ""));
@@ -248,9 +275,10 @@ describe("a historic requirement", () => {
     vi.spyOn(api, "historicCitedBy")
       .mockResolvedValueOnce({ total: 2, items: [row("R-1", "Fibre bundles for clinics")], next_offset: 1 })
       .mockResolvedValueOnce({ total: 2, items: [row("R-2", "Branch fibre")], next_offset: null });
-    render(wrap(<HistoricRecordPage />));
+    render(wrap(<HistoricPage />));
     const first = await screen.findByText("Cited before it was withdrawn");
-    expect(first.closest("tr")).toHaveClass("row--past");
+    expect(first.closest(".ds-status")).toHaveClass("ds-status--stopped");
+    expect(first.closest("tr")).toHaveTextContent("It no longer shows it.");
     fireEvent.click(screen.getByRole("button", { name: "Show more" }));
     await waitFor(() => expect(screen.getByRole("link", { name: /^Branch fibre/ })).toHaveFocus());
   });
@@ -258,7 +286,7 @@ describe("a historic requirement", () => {
   it("shows its lineage as numbered rows and publishes it", async () => {
     vi.spyOn(api, "historic").mockResolvedValue(detail({ root_ids: [48213], work_items: 3, breakdown: BREAKDOWN, blockers: [] } as never));
     const publish = vi.spyOn(api, "publishHistoric").mockResolvedValue(detail({ status: "published" }));
-    render(wrap(<HistoricRecordPage />));
+    render(wrap(<HistoricPage />));
     const lineage = await screen.findByRole("table", { name: /Its Epics, Features and User Stories/ });
     const numbers = within(lineage).getAllByRole("row").slice(1).map((row) => (row as HTMLTableRowElement).cells[0]?.textContent);
     expect(numbers).toEqual(["1", "1.1", "1.1.1"]);
@@ -293,7 +321,7 @@ describe("a historic requirement", () => {
       ],
       next_offset: null,
     });
-    render(wrap(<HistoricRecordPage />));
+    render(wrap(<HistoricPage />));
     const changes = await screen.findByRole("table", { name: /What changed in Azure DevOps/ });
     // Who cites it, and whether that check still stands; each opens the Requirement's Knowledge step.
     expect(await screen.findByRole("heading", { name: /^Cited by\s*·\s*2 requirements$/ })).toBeInTheDocument();
@@ -301,9 +329,9 @@ describe("a historic requirement", () => {
     const first = within(citing).getByRole("link", { name: /^Fibre bundles for clinics\s*\(opens requirement work\)$/ });
     expect(first).toHaveAttribute("href", "/requirements/R-1/knowledge");
     expect(within(citing).getByRole("link", { name: /Branch fibre/ })).toHaveAttribute("href", "/requirements/R%2F2/knowledge");
-    expect(within(citing).getByText(/^Owned by Mona Adel/)).toBeInTheDocument();
+    expect(first.closest("th")).toHaveTextContent("Owned by Mona Adel");
     expect(within(citing).getByText(/^No owner/)).toBeInTheDocument();
-    expect(within(citing).getByText("Older check").closest("tr")).toHaveClass("row--due");
+    expect(within(citing).getByText("Older check").closest(".ds-status")).toHaveClass("ds-status--neutral");
     expect(within(citing).getByText("Checked again when its Knowledge step opens.")).toBeInTheDocument();
     // From the published read to the newer one, value by value; long fields are only named.
     const [state, description] = within(changes).getAllByRole("listitem");
@@ -316,13 +344,14 @@ describe("a historic requirement", () => {
 
     const open = screen.getByRole("button", { name: "Withdraw from requirement work…" });
     fireEvent.click(open);
-    const why = screen.getByLabelText("Why (required)");
+    const panel = screen.getByRole("region", { name: "Withdraw ‘XGPON bundles’ from requirement work?" });
+    const why = within(panel).getByRole("textbox", { name: "Why" });
     expect(why).toHaveFocus();
-    expect(screen.getByText(/Withdrawing cannot be undone/)).toBeInTheDocument();
-    expect(screen.getByText("the 2 requirements").closest("p")).toHaveTextContent(/the 2 requirements citing it stop showing it at once/);
-    expect(screen.getByRole("button", { name: "Withdraw it" })).toHaveAttribute("aria-disabled", "true");
-    fireEvent.click(screen.getByRole("button", { name: "Withdraw it" }));
-    expect(screen.getByText("Say why it is withdrawn.")).toBeInTheDocument();
+    // What follows is the field's description, so it is heard on arrival.
+    expect(why).toHaveAccessibleDescription(/the 2 requirements citing it stop showing it at once\. .*Withdrawing cannot be undone/);
+    fireEvent.click(within(panel).getByRole("button", { name: "Withdraw it" }));
+    expect(within(panel).getByText(/^Give a reason\./)).toBeInTheDocument();
+    expect(why).toHaveFocus();
     expect(withdraw).not.toHaveBeenCalled();
     fireEvent.keyDown(why, { key: "Escape" });
     await waitFor(() => expect(screen.getByRole("button", { name: "Withdraw from requirement work…" })).toHaveFocus());

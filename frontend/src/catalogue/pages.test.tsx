@@ -26,9 +26,10 @@ const release = (id: string, extra: Partial<Release> = {}) => ({
   ...extra,
 }) as unknown as Release;
 
-function renderAt(path: string, routes: React.ReactNode, active = release("live")) {
-  vi.spyOn(api, "systemOwnership").mockResolvedValue({ system_id: "x", squads: [], products: [], value_streams: [] } as never);
-  vi.spyOn(api, "organisation").mockResolvedValue({ people: [], squads: [], products: [], value_streams: [] } as never);
+function renderAt(path: string, routes: React.ReactNode, active = release("live"), squads: object[] = []) {
+  vi.spyOn(api, "systemOwnership").mockImplementation(async (id) =>
+    ({ system_id: id, squads: squads.filter((squad) => (squad as { resources: { system_id: string }[] }).resources.some((seat) => seat.system_id === id)), products: [], value_streams: [] }) as never);
+  vi.spyOn(api, "organisation").mockResolvedValue({ people: [], squads, products: [], value_streams: [] } as never);
   const context: CatalogueContext = { book: catalogue(active), base: "/architecture", inService: true, actorName: () => "Amina Owner" };
   render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
@@ -49,36 +50,55 @@ const systemRoutes = (
 );
 
 describe("SystemsPage", () => {
-  it("lists every connection until a system is chosen", () => {
+  it("counts the connections until a system is chosen, and points to the map", () => {
     renderAt("/architecture", systemRoutes);
-    expect(screen.getByRole("heading", { name: "All connections" })).toBeInTheDocument();
-    expect(screen.getByText("2 connections between 3 systems.", { exact: false })).toBeInTheDocument();
+    expect(screen.getByText("2 connections between systems in this version.", { exact: false })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /See the map/ })).toHaveAttribute("href", "/architecture/map");
   });
 
   it("finds a system by an alias and says so", () => {
     renderAt("/architecture", systemRoutes);
     fireEvent.change(screen.getByLabelText("Find a system"), { target: { value: "fixed order" } });
-    const index = screen.getByRole("navigation", { name: "Systems in this version" });
+    const index = screen.getByRole("region", { name: "Systems" });
     expect(within(index).getAllByRole("link")).toHaveLength(1);
     expect(within(index).getByText("Also called “fixed order orchestration”")).toBeInTheDocument();
+    expect(screen.getByText("1 system of 3")).toBeInTheDocument();
   });
 
-  it("follows a connection, lights the way back, and moves focus to the new sheet", async () => {
+  it("follows a connection, lights the way back, and moves focus to the new record", async () => {
     renderAt("/architecture/systems/cwom", systemRoutes);
     expect(screen.getByText("Orchestrated by CWOM")).toBeInTheDocument();
     expect(screen.getByText("Orchestrates CWOM")).toBeInTheDocument();
-    fireEvent.click(within(screen.getByRole("article")).getByRole("link", { name: "WFM" }));
+    fireEvent.click(within(screen.getByRole("table", { name: "Depends on: CWOM" })).getByRole("link", { name: "WFM" }));
     const title = await screen.findByRole("heading", { level: 2, name: "WFM" });
     expect(title).toHaveFocus();
-    expect(within(screen.getByRole("article")).getByRole("link", { name: "CWOM" }).closest("tr")).toHaveClass("is-lit");
+    expect(within(within(screen.getByRole("table", { name: "Used by: WFM" })).getByRole("link", { name: "CWOM" }).closest("tr")!).getByText("Where you came from")).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "Systems" })).getByRole("link", { name: /^WFM/ })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("button", { name: "Back to CWOM" })).toBeInTheDocument();
   });
 });
 
+describe("SystemsPage gaps and owners", () => {
+  const fulfilment = { id: "fulfilment", name: "Fulfilment squad", value_stream_id: "vs", resources: [{ system_id: "cwom", role: "system_contact", person_id: "p1" }] };
+
+  it("says a gap most systems share once, above the list, instead of on every row", async () => {
+    renderAt("/architecture", systemRoutes, release("live"), [fulfilment]);
+    expect(await screen.findByText("Missing on most systems: concept (all), interfaces (all), squad (2), source (all).")).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "Systems" })).queryByText(/gaps?$/)).toBeNull();
+  });
+
+  it("names the squad that runs a system in the record's head, as Ownership does", async () => {
+    renderAt("/architecture/systems/cwom", systemRoutes, release("live"), [fulfilment]);
+    const runBy = screen.getByText("Run by").nextElementSibling as HTMLElement;
+    await waitFor(() => expect(runBy).toHaveTextContent("Fulfilment squad"));
+  });
+});
+
 describe("VersionsPage", () => {
-  it("puts a replaced version back only with a reason, naming what it would change", async () => {
-    vi.spyOn(api, "releases").mockResolvedValue([release("live"), release("old")]);
+  const mockVersions = () => {
+    vi.spyOn(api, "releases").mockResolvedValue([release("old"), release("live")]);
     vi.spyOn(api, "releaseAudit").mockResolvedValue([]);
+    vi.spyOn(api, "changeRequests").mockResolvedValue([]);
     vi.spyOn(api, "mappingImpact").mockResolvedValue({
       active_release_id: "live", requirements: 5, features: 0, stories: 0, outdated_requirements: 2, outdated_features: 0, outdated_stories: 0,
     });
@@ -86,18 +106,48 @@ describe("VersionsPage", () => {
       base_release_id: "live", draft_release_id: "old",
       changes: [{ item: "relationship", change: "removed", key: "k", label: "K", fields: [] }],
     });
-    const activate = vi.spyOn(api, "activateRelease").mockResolvedValue(release("old"));
-    renderAt("/architecture/versions", <Route path="versions" element={<VersionsPage />} />);
+  };
 
-    expect(await screen.findByText("In service")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /History, files, put back/ }));
+  it("lists every version newest first, each with its state, and says what waits from Requirement AI", async () => {
+    mockVersions();
+    renderAt("/architecture/versions", <Route path="versions" element={<VersionsPage />} />);
+    const list = within(await screen.findByRole("list", { name: "Catalogue versions, newest first" }));
+    const rows = list.getAllByRole("link");
+    expect(rows.map((row) => row.querySelector(".ds-records__name")!.textContent)).toEqual(["September", "Initial"]);
+    expect(rows[0]).toHaveTextContent("In service");
+    expect(rows[1]).toHaveTextContent("Replaced");
+    expect(rows[1]).toHaveAttribute("href", "/architecture/versions?version=old");
+    expect(await screen.findByText("No change request has come from Requirement AI yet.")).toBeInTheDocument();
+  });
+
+  it("carries the change requests in the draft's record, where they are read into", async () => {
+    mockVersions();
+    vi.mocked(api.releases).mockResolvedValue([release("next", { status: "draft", name: "October" } as Partial<Release>), release("old"), release("live")]);
+    renderAt("/architecture/versions?version=next", <Route path="versions" element={<VersionsPage />} />);
+    const record = within(await screen.findByRole("article", { name: "October" }));
+    expect(record.getByRole("heading", { level: 3, name: "Change requests from Requirement AI" })).toBeInTheDocument();
+    expect(await record.findByText("No change request has come from Requirement AI yet.")).toBeInTheDocument();
+  });
+
+  it("puts a replaced version back only with a reason, naming what it would change", async () => {
+    mockVersions();
+    const activate = vi.spyOn(api, "activateRelease").mockResolvedValue(release("old"));
+    renderAt("/architecture/versions?version=old", <Route path="versions" element={<VersionsPage />} />);
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Initial" })).toBeInTheDocument();
+    expect(screen.getByText("Nothing was published before it: it is the first version.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Put it back in service…" }));
     expect(await screen.findByText(/it would remove 1 connection/)).toBeInTheDocument();
     expect(await screen.findByText(/3 requirements mapped with the version in service/)).toBeInTheDocument();
     const putBack = screen.getByRole("button", { name: "Put it back in service" });
-    expect(putBack).toBeDisabled();
+    // Without a reason nothing happens; the field says what it needs.
+    fireEvent.click(putBack);
+    expect(activate).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Why it goes back")).toHaveAttribute("aria-invalid", "true");
     fireEvent.change(screen.getByLabelText("Why it goes back"), { target: { value: "September broke billing mapping" } });
     fireEvent.click(putBack);
     await waitFor(() => expect(activate).toHaveBeenCalledWith("old", "September broke billing mapping"));
     expect(await screen.findByText("‘Initial’ is in service again.")).toBeInTheDocument();
   });
 });
+

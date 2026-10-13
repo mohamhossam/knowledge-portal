@@ -12,6 +12,7 @@ from knowledge_portal.application.ports.architecture_knowledge_repository import
 from knowledge_portal.application.ports.architecture_rag import (
     ArchitectureEvidenceIndexPort,
     EvidenceChunk,
+    IndexCoverage,
 )
 from knowledge_portal.application.ports.catalogue_file import (
     CatalogueFileFormat,
@@ -23,8 +24,10 @@ from knowledge_portal.application.ports.identity import (
     require_reader,
 )
 from knowledge_portal.domain.architecture.channels import Channel
+from knowledge_portal.domain.architecture.concepts import BusinessCapability
 from knowledge_portal.domain.architecture.diff import CatalogueDiff, diff_releases
 from knowledge_portal.domain.architecture.governance import KnowledgeSource, SourceConflict
+from knowledge_portal.domain.architecture.interfaces import SystemInterface
 from knowledge_portal.domain.architecture.journeys import Journey
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
@@ -41,6 +44,8 @@ from knowledge_portal.domain.architecture.knowledge import (
 )
 from knowledge_portal.domain.architecture.portfolio import PortfolioNode
 from knowledge_portal.domain.architecture.products import ProductOffering
+from knowledge_portal.domain.architecture.realisations import RealisationRecord
+from knowledge_portal.domain.architecture.vocabularies import VocabularyTerm
 
 
 class KnowledgeNotFoundError(Exception):
@@ -77,6 +82,15 @@ class ManageArchitectureKnowledge:
             require_maintainer(actor)
         return release
 
+    def index_coverage(self, release_id: str, actor: Actor) -> IndexCoverage | None:
+        """How much of the release's evidence index its links reach; None when the release
+        has no index yet, or its index predates links."""
+        require_maintainer(actor)
+        release = self.get(release_id)
+        if release.built_revision is None or not release.index_id:
+            return None
+        return self._index.coverage(release.index_id)
+
     def get(self, release_id: str) -> ArchitectureKnowledge:
         release = self._repository.get(release_id)
         if release is None:
@@ -110,9 +124,8 @@ class ManageArchitectureKnowledge:
     def preview(self, release_id: str, query: str, actor: Actor) -> tuple[EvidenceChunk, ...]:
         require_maintainer(actor)
         release = self.get(release_id)
-        if (
-            release.built_revision != release.revision
-            or release.index_profile != self._index.profile
+        if release.built_revision != release.revision or not self._index.reads(
+            release.index_profile
         ):
             raise KnowledgeConflictError("Build this release with the current embedding profile.")
         if not query.strip():
@@ -215,6 +228,10 @@ class ManageArchitectureKnowledge:
         sources: tuple[KnowledgeSource, ...] | None = None,
         conflicts: tuple[SourceConflict, ...] | None = None,
         portfolio: tuple[PortfolioNode, ...] | None = None,
+        business_capabilities: tuple[BusinessCapability, ...] | None = None,
+        vocabulary: tuple[VocabularyTerm, ...] | None = None,
+        interfaces: tuple[SystemInterface, ...] | None = None,
+        realisations: tuple[RealisationRecord, ...] | None = None,
     ) -> ArchitectureKnowledge:
         require_maintainer(actor)
         current = self.get(release_id)
@@ -231,6 +248,10 @@ class ManageArchitectureKnowledge:
             sources=sources,
             conflicts=conflicts,
             portfolio=portfolio,
+            business_capabilities=business_capabilities,
+            vocabulary=vocabulary,
+            interfaces=interfaces,
+            realisations=realisations,
         )
         self._repository.save(updated, expected_revision, actor.id, "edit_draft")
         return updated
@@ -317,7 +338,7 @@ class ManageArchitectureKnowledge:
         if not rationale.strip():
             raise InvalidKnowledgeError("Reactivation rationale is required.")
         release = self.get(release_id)
-        if release.id != "smb-source-reference-v1" and release.index_profile != self._index.profile:
+        if release.id != "smb-source-reference-v1" and not self._index.reads(release.index_profile):
             raise KnowledgeConflictError(
                 "This historical index uses a different embedding profile; create a new draft."
             )
@@ -351,6 +372,10 @@ class ManageArchitectureKnowledge:
                 else imported.change_history
             ),
             portfolio=imported.portfolio,
+            business_capabilities=imported.business_capabilities,
+            vocabulary=imported.vocabulary,
+            interfaces=imported.interfaces,
+            realisations=imported.realisations,
         )
 
     def preview_file_import(
@@ -385,6 +410,10 @@ class ManageArchitectureKnowledge:
             sources=imported.sources,
             conflicts=imported.conflicts,
             portfolio=imported.portfolio,
+            business_capabilities=imported.business_capabilities,
+            vocabulary=imported.vocabulary,
+            interfaces=imported.interfaces,
+            realisations=imported.realisations,
         )
 
     def export_file(self, release_id: str, file_format: CatalogueFileFormat, actor: Actor) -> bytes:

@@ -7,5 +7,6 @@ export { CitationsPage } from "./CitationsPage";
 export { DocumentPage, MainPage } from "./DocumentPage";
 export { LibraryPage } from "./LibraryPage";
 export { OwnershipPage } from "./OwnershipPage";
+export { ReviewFocus } from "./ReviewFocus";
 export { SearchPage } from "./SearchPage";
 export { VersionsPage } from "./VersionsPage";

@@ -97,6 +97,16 @@
             ],
             "title": "Interface"
           },
+          "open_api_ids": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Open Api Ids",
+            "type": "array"
+          },
           "payload": {
             "anyOf": [
               {
@@ -278,6 +288,18 @@
             ],
             "title": "Etom"
           },
+          "etom_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Etom Id"
+          },
           "input": {
             "anyOf": [
               {
@@ -383,6 +405,18 @@
               }
             ],
             "title": "Role"
+          },
+          "role_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role Id"
           },
           "source": {
             "anyOf": [
@@ -728,6 +762,63 @@
               }
             ],
             "title": "Lease Until"
+          },
+          "progress_done": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress Done"
+          },
+          "progress_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress Total"
+          },
+          "queued_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Queued At"
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
           },
           "status": {
             "$ref": "#/components/schemas/ArchitectureJobStatus"
@@ -1100,6 +1191,107 @@
         "title": "BreakdownView",
         "type": "object"
       },
+      "BusinessCapabilitySchema": {
+        "description": "A business capability concept; a top concept names its capability domain (ADR-0114).",
+        "properties": {
+          "alt_labels": {
+            "default": [],
+            "items": {
+              "maxLength": 300,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Alt Labels",
+            "type": "array"
+          },
+          "broader_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Broader Id"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "definition": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition"
+          },
+          "domain_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain Id"
+          },
+          "exact_match": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exact Match"
+          },
+          "id": {
+            "maxLength": 200,
+            "title": "Id",
+            "type": "string"
+          },
+          "pref_label": {
+            "maxLength": 300,
+            "title": "Pref Label",
+            "type": "string"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          }
+        },
+        "required": [
+          "id",
+          "pref_label"
+        ],
+        "title": "BusinessCapabilitySchema",
+        "type": "object"
+      },
       "BusinessRuleSchema": {
         "properties": {
           "confidence": {
@@ -1205,6 +1397,15 @@
             ],
             "title": "Capability Id"
           },
+          "capability_refs": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CapabilityRefSchema"
+            },
+            "maxItems": 5000,
+            "title": "Capability Refs",
+            "type": "array"
+          },
           "channel": {
             "anyOf": [
               {
@@ -1226,6 +1427,26 @@
               }
             ],
             "title": "Component Id"
+          },
+          "concept": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BusinessCapabilitySchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "concept_ids": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Concept Ids",
+            "type": "array"
           },
           "description": {
             "anyOf": [
@@ -1353,6 +1574,16 @@
             ],
             "title": "Technology"
           },
+          "term": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VocabularyTermSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "text": {
             "default": "",
             "maxLength": 10000,
@@ -1367,6 +1598,15 @@
             },
             "maxItems": 5000,
             "title": "Triggers",
+            "type": "array"
+          },
+          "value_refs": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/VocabularyRefSchema"
+            },
+            "maxItems": 5000,
+            "title": "Value Refs",
             "type": "array"
           }
         },
@@ -1389,7 +1629,11 @@
           "product",
           "journey",
           "channel",
-          "question"
+          "question",
+          "concept",
+          "component_link",
+          "vocabulary_term",
+          "offering_rule"
         ],
         "title": "CandidateKind",
         "type": "string"
@@ -1404,7 +1648,8 @@
           "needs_component",
           "needs_domain",
           "needs_offering",
-          "needs_channel"
+          "needs_channel",
+          "needs_concept"
         ],
         "title": "CandidateMatch",
         "type": "string"
@@ -1472,6 +1717,44 @@
           "name"
         ],
         "title": "CapabilityDomainSchema",
+        "type": "object"
+      },
+      "CapabilityRefSchema": {
+        "properties": {
+          "capability_id": {
+            "maxLength": 200,
+            "title": "Capability Id",
+            "type": "string"
+          },
+          "system_id": {
+            "maxLength": 200,
+            "title": "System Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "system_id",
+          "capability_id"
+        ],
+        "title": "CapabilityRefSchema",
+        "type": "object"
+      },
+      "CapabilityScopeResponse": {
+        "properties": {
+          "capability_id": {
+            "title": "Capability Id",
+            "type": "string"
+          },
+          "system_id": {
+            "title": "System Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "system_id",
+          "capability_id"
+        ],
+        "title": "CapabilityScopeResponse",
         "type": "object"
       },
       "CatalogPlanResponse": {
@@ -1694,6 +1977,16 @@
         "title": "CatalogueFileFormat",
         "type": "string"
       },
+      "CatalogueReading": {
+        "description": "A reading of the draft's own catalogue rather than of a document (ADR-0114).\n\nIts value stands in for the document version id, so a new reading replaces the\nundecided suggestions of the previous one.",
+        "enum": [
+          "concept_backfill",
+          "component_links",
+          "vocabulary_cleanup"
+        ],
+        "title": "CatalogueReading",
+        "type": "string"
+      },
       "CatalogueSuggestionResponse": {
         "properties": {
           "basis": {
@@ -1761,6 +2054,14 @@
           },
           "match": {
             "$ref": "#/components/schemas/CandidateMatch"
+          },
+          "missing_systems": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Systems",
+            "type": "array"
           },
           "model": {
             "title": "Model",
@@ -1968,6 +2269,14 @@
         "title": "ChangeRequestDismissalRequest",
         "type": "object"
       },
+      "ChangeRequestKind": {
+        "enum": [
+          "approved_backlog",
+          "catalogue_change"
+        ],
+        "title": "ChangeRequestKind",
+        "type": "string"
+      },
       "ChangeRequestReadingResponse": {
         "properties": {
           "change_request": {
@@ -2129,6 +2438,16 @@
       "ChangeRequestResponse": {
         "description": "A change request in the inbox, as a knowledge admin sees it.",
         "properties": {
+          "delivery": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DeliveryResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "dismissal_reason": {
             "anyOf": [
               {
@@ -2163,6 +2482,16 @@
             ],
             "title": "Dismissed By"
           },
+          "draft": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OfferingDraftResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "features": {
             "items": {
               "$ref": "#/components/schemas/IncomingFeatureResponse"
@@ -2173,6 +2502,9 @@
           "id": {
             "title": "Id",
             "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ChangeRequestKind"
           },
           "read_at": {
             "anyOf": [
@@ -2237,6 +2569,7 @@
         },
         "required": [
           "id",
+          "kind",
           "title",
           "reason",
           "trace",
@@ -2248,7 +2581,8 @@
           "read_at",
           "dismissed_by",
           "dismissed_at",
-          "dismissal_reason"
+          "dismissal_reason",
+          "delivery"
         ],
         "title": "ChangeRequestResponse",
         "type": "object"
@@ -2283,7 +2617,11 @@
           "channel",
           "source",
           "conflict",
-          "change_request"
+          "change_request",
+          "concept",
+          "vocabulary_term",
+          "interface",
+          "realisation"
         ],
         "title": "ChangedItem",
         "type": "string"
@@ -2341,6 +2679,18 @@
               }
             ],
             "title": "Kind"
+          },
+          "kind_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind Id"
           },
           "name": {
             "maxLength": 300,
@@ -2614,6 +2964,18 @@
             "title": "Role",
             "type": "string"
           },
+          "role_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role Id"
+          },
           "source": {
             "anyOf": [
               {
@@ -2638,6 +3000,34 @@
           "description"
         ],
         "title": "ComponentResponsibilitySchema",
+        "type": "object"
+      },
+      "ConceptOverridesResponse": {
+        "properties": {
+          "concept_id": {
+            "title": "Concept Id",
+            "type": "string"
+          },
+          "decided": {
+            "title": "Decided",
+            "type": "integer"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "overridden": {
+            "title": "Overridden",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "concept_id",
+          "label",
+          "decided",
+          "overridden"
+        ],
+        "title": "ConceptOverridesResponse",
         "type": "object"
       },
       "ConflictScopeSchema": {
@@ -3020,6 +3410,271 @@
         "title": "CreateVersionRequest",
         "type": "object"
       },
+      "DeliveredChangeKind": {
+        "description": "A change to the catalogue a delivered requirement implies.",
+        "enum": [
+          "realise_concept",
+          "offer_concept"
+        ],
+        "title": "DeliveredChangeKind",
+        "type": "string"
+      },
+      "DeliveredChangeResponse": {
+        "properties": {
+          "concept_id": {
+            "title": "Concept Id",
+            "type": "string"
+          },
+          "concept_label": {
+            "title": "Concept Label",
+            "type": "string"
+          },
+          "feature_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Feature Ids",
+            "type": "array"
+          },
+          "offering_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offering Id"
+          },
+          "offering_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offering Name"
+          },
+          "op": {
+            "$ref": "#/components/schemas/DeliveredChangeKind"
+          },
+          "system_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System Id"
+          },
+          "system_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System Name"
+          }
+        },
+        "required": [
+          "op",
+          "concept_id",
+          "concept_label",
+          "system_id",
+          "system_name",
+          "offering_id",
+          "offering_name",
+          "feature_ids"
+        ],
+        "title": "DeliveredChangeResponse",
+        "type": "object"
+      },
+      "DeliveryHitsResponse": {
+        "description": "Delivered systems that were predicted and that were not, and predicted systems not\ndelivered: ids as the mapping wrote them, case set aside.",
+        "properties": {
+          "predicted": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Predicted",
+            "type": "array"
+          },
+          "undelivered": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Undelivered",
+            "type": "array"
+          },
+          "unpredicted": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Unpredicted",
+            "type": "array"
+          }
+        },
+        "required": [
+          "predicted",
+          "unpredicted",
+          "undelivered"
+        ],
+        "title": "DeliveryHitsResponse",
+        "type": "object"
+      },
+      "DeliveryResponse": {
+        "description": "What a closed Epic delivered, set against the product impact decided for it.",
+        "properties": {
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/DeliveredChangeResponse"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "closed_at": {
+            "format": "date-time",
+            "title": "Closed At",
+            "type": "string"
+          },
+          "decision": {
+            "title": "Decision",
+            "type": "string"
+          },
+          "delivery_id": {
+            "title": "Delivery Id",
+            "type": "string"
+          },
+          "epic_external_id": {
+            "title": "Epic External Id",
+            "type": "string"
+          },
+          "epic_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Epic Url"
+          },
+          "hits": {
+            "$ref": "#/components/schemas/DeliveryHitsResponse"
+          },
+          "impact_version": {
+            "title": "Impact Version",
+            "type": "string"
+          },
+          "not_delivered": {
+            "items": {
+              "$ref": "#/components/schemas/UndeliveredFeatureResponse"
+            },
+            "title": "Not Delivered",
+            "type": "array"
+          },
+          "offering_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offering Id"
+          },
+          "offering_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offering Name"
+          },
+          "predicted": {
+            "items": {
+              "$ref": "#/components/schemas/PredictedSystemResponse"
+            },
+            "title": "Predicted",
+            "type": "array"
+          },
+          "release_id": {
+            "title": "Release Id",
+            "type": "string"
+          },
+          "suggested_verdict": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested Verdict"
+          },
+          "verdict": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verdict"
+          }
+        },
+        "required": [
+          "delivery_id",
+          "epic_external_id",
+          "epic_url",
+          "closed_at",
+          "release_id",
+          "impact_version",
+          "decision",
+          "suggested_verdict",
+          "verdict",
+          "offering_id",
+          "offering_name",
+          "predicted",
+          "not_delivered",
+          "changes",
+          "hits"
+        ],
+        "title": "DeliveryResponse",
+        "type": "object"
+      },
+      "DeliverySummariesResponse": {
+        "description": "The delivery hit rate per release, newest closure first.",
+        "properties": {
+          "releases": {
+            "items": {
+              "$ref": "#/components/schemas/ReleaseDeliveriesResponse"
+            },
+            "title": "Releases",
+            "type": "array"
+          }
+        },
+        "required": [
+          "releases"
+        ],
+        "title": "DeliverySummariesResponse",
+        "type": "object"
+      },
       "DependencyImpact": {
         "properties": {
           "decisions": {
@@ -3286,6 +3941,21 @@
       },
       "DraftUpdateRequest": {
         "properties": {
+          "business_capabilities": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/BusinessCapabilitySchema"
+                },
+                "maxItems": 5000,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Business Capabilities"
+          },
           "capability_domains": {
             "anyOf": [
               {
@@ -3334,6 +4004,21 @@
           "expected_revision": {
             "title": "Expected Revision",
             "type": "integer"
+          },
+          "interfaces": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SystemInterfaceSchema"
+                },
+                "maxItems": 5000,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interfaces"
           },
           "journeys": {
             "anyOf": [
@@ -3395,6 +4080,21 @@
             ],
             "title": "Products"
           },
+          "realisations": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/RealisationRecordSchema"
+                },
+                "maxItems": 5000,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Realisations"
+          },
           "relationships": {
             "items": {
               "$ref": "#/components/schemas/SystemRelationshipSchema"
@@ -3425,6 +4125,21 @@
             "maxItems": 5000,
             "title": "Systems",
             "type": "array"
+          },
+          "vocabulary": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/VocabularyTermSchema"
+                },
+                "maxItems": 5000,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vocabulary"
           }
         },
         "required": [
@@ -3433,6 +4148,40 @@
           "relationships"
         ],
         "title": "DraftUpdateRequest",
+        "type": "object"
+      },
+      "DraftedComponentResponse": {
+        "properties": {
+          "capability_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Capability Ids",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "system_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "System Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "capability_ids",
+          "system_ids"
+        ],
+        "title": "DraftedComponentResponse",
         "type": "object"
       },
       "EvidenceBlockKind": {
@@ -3672,6 +4421,16 @@
           "prompt_version": {
             "title": "Prompt Version",
             "type": "string"
+          },
+          "reading": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CatalogueReading"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "warnings": {
             "items": {
@@ -4668,6 +5427,42 @@
         "title": "IncomingSystemResponse",
         "type": "object"
       },
+      "IndexCoverageResponse": {
+        "description": "How far a release's evidence index links reach (ontology plan Phase 2).\n\n`linked` is false when the release has no index yet, or its index was built before\nlinks existed; rebuilding the draft links it.",
+        "properties": {
+          "chunks": {
+            "default": 0,
+            "title": "Chunks",
+            "type": "integer"
+          },
+          "chunks_without_concept": {
+            "default": 0,
+            "title": "Chunks Without Concept",
+            "type": "integer"
+          },
+          "concepts": {
+            "default": 0,
+            "title": "Concepts",
+            "type": "integer"
+          },
+          "concepts_without_chunk": {
+            "items": {
+              "$ref": "#/components/schemas/UnlinkedConceptSchema"
+            },
+            "title": "Concepts Without Chunk",
+            "type": "array"
+          },
+          "linked": {
+            "title": "Linked",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "linked"
+        ],
+        "title": "IndexCoverageResponse",
+        "type": "object"
+      },
       "IndexState": {
         "enum": [
           "current",
@@ -4689,6 +5484,17 @@
           "cancelled"
         ],
         "title": "IngestionStage",
+        "type": "string"
+      },
+      "InterfaceStyle": {
+        "description": "How an interface is called, when its sources say.",
+        "enum": [
+          "api",
+          "event",
+          "file",
+          "unspecified"
+        ],
+        "title": "InterfaceStyle",
         "type": "string"
       },
       "ItemChangeView": {
@@ -4966,6 +5772,18 @@
             ],
             "title": "Component Id"
           },
+          "concept_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Concept Id"
+          },
           "domain_id": {
             "anyOf": [
               {
@@ -4996,6 +5814,18 @@
             "maxItems": 5000,
             "title": "Triggers",
             "type": "array"
+          },
+          "unlinked_reason": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unlinked Reason"
           }
         },
         "required": [
@@ -5072,6 +5902,14 @@
               }
             ],
             "title": "Built Revision"
+          },
+          "business_capabilities": {
+            "items": {
+              "$ref": "#/components/schemas/BusinessCapabilitySchema"
+            },
+            "maxItems": 5000,
+            "title": "Business Capabilities",
+            "type": "array"
           },
           "capability_domains": {
             "items": {
@@ -5161,6 +5999,14 @@
             ],
             "title": "Index Profile"
           },
+          "interfaces": {
+            "items": {
+              "$ref": "#/components/schemas/SystemInterfaceSchema"
+            },
+            "maxItems": 5000,
+            "title": "Interfaces",
+            "type": "array"
+          },
           "journeys": {
             "items": {
               "$ref": "#/components/schemas/JourneySchema"
@@ -5227,6 +6073,14 @@
             ],
             "title": "Published By"
           },
+          "realisations": {
+            "items": {
+              "$ref": "#/components/schemas/RealisationRecordSchema"
+            },
+            "maxItems": 5000,
+            "title": "Realisations",
+            "type": "array"
+          },
           "relationships": {
             "items": {
               "$ref": "#/components/schemas/SystemRelationshipSchema"
@@ -5257,6 +6111,14 @@
             },
             "maxItems": 5000,
             "title": "Systems",
+            "type": "array"
+          },
+          "vocabulary": {
+            "items": {
+              "$ref": "#/components/schemas/VocabularyTermSchema"
+            },
+            "maxItems": 5000,
+            "title": "Vocabulary",
             "type": "array"
           }
         },
@@ -6535,6 +7397,16 @@
       },
       "OfferingComponentSchema": {
         "properties": {
+          "capability_ids": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Capability Ids",
+            "type": "array"
+          },
           "code": {
             "anyOf": [
               {
@@ -6609,6 +7481,18 @@
             ],
             "title": "Kind"
           },
+          "kind_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind Id"
+          },
           "mandatory": {
             "anyOf": [
               {
@@ -6678,6 +7562,18 @@
               }
             ],
             "title": "Technical Spec"
+          },
+          "unlinked_reason": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unlinked Reason"
           }
         },
         "required": [
@@ -6685,6 +7581,82 @@
           "name"
         ],
         "title": "OfferingComponentSchema",
+        "type": "object"
+      },
+      "OfferingDraftResponse": {
+        "description": "The offering and journey drafted for a new-offering verdict, in brief (Phase 9).",
+        "properties": {
+          "based_on": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Based On"
+          },
+          "components": {
+            "items": {
+              "$ref": "#/components/schemas/DraftedComponentResponse"
+            },
+            "title": "Components",
+            "type": "array"
+          },
+          "journey_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Journey Id"
+          },
+          "journey_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Journey Name"
+          },
+          "offering_id": {
+            "title": "Offering Id",
+            "type": "string"
+          },
+          "offering_name": {
+            "title": "Offering Name",
+            "type": "string"
+          },
+          "questions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Questions",
+            "type": "array"
+          },
+          "steps": {
+            "title": "Steps",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "offering_id",
+          "offering_name",
+          "based_on",
+          "components",
+          "questions",
+          "journey_id",
+          "journey_name",
+          "steps"
+        ],
+        "title": "OfferingDraftResponse",
         "type": "object"
       },
       "OfferingNfrSchema": {
@@ -7210,6 +8182,23 @@
         "title": "OriginalPreview",
         "type": "object"
       },
+      "OwnedSeatResponse": {
+        "properties": {
+          "resource": {
+            "$ref": "#/components/schemas/SquadResourceSchema"
+          },
+          "squad_id": {
+            "title": "Squad Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "squad_id",
+          "resource"
+        ],
+        "title": "OwnedSeatResponse",
+        "type": "object"
+      },
       "OwnershipTransfer": {
         "properties": {
           "new_owner": {
@@ -7593,6 +8582,65 @@
         "title": "PossibleMatchResponse",
         "type": "object"
       },
+      "PrecedentSummariesResponse": {
+        "description": "How reviewers decided suggested verdicts, per release, newest decision first.",
+        "properties": {
+          "releases": {
+            "items": {
+              "$ref": "#/components/schemas/ReleasePrecedentsResponse"
+            },
+            "title": "Releases",
+            "type": "array"
+          }
+        },
+        "required": [
+          "releases"
+        ],
+        "title": "PrecedentSummariesResponse",
+        "type": "object"
+      },
+      "PredictedSystemResponse": {
+        "properties": {
+          "change_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Type"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "role",
+          "change_type"
+        ],
+        "title": "PredictedSystemResponse",
+        "type": "object"
+      },
       "PreviewRequest": {
         "properties": {
           "query": {
@@ -7924,6 +8972,28 @@
             "maxLength": 300,
             "title": "Name",
             "type": "string"
+          },
+          "offering_ids": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Offering Ids",
+            "type": "array"
+          },
+          "portfolio_node_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Portfolio Node Id"
           },
           "revision": {
             "default": 1,
@@ -8321,6 +9391,95 @@
         "title": "RealisationLayer",
         "type": "string"
       },
+      "RealisationRecordSchema": {
+        "description": "A CFS, RFS or resource, the systems that deliver it, and what realises it below.",
+        "properties": {
+          "aliases": {
+            "default": [],
+            "items": {
+              "maxLength": 10000,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Aliases",
+            "type": "array"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "id": {
+            "maxLength": 200,
+            "title": "Id",
+            "type": "string"
+          },
+          "layer": {
+            "$ref": "#/components/schemas/RealisationLayer"
+          },
+          "name": {
+            "maxLength": 10000,
+            "title": "Name",
+            "type": "string"
+          },
+          "realised_by": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Realised By",
+            "type": "array"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "system_ids": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "System Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "layer",
+          "name"
+        ],
+        "title": "RealisationRecordSchema",
+        "type": "object"
+      },
       "RealisationSchema": {
         "description": "One thing a component is realised as: its CFS, an RFS behind it, or a resource.",
         "properties": {
@@ -8341,6 +9500,18 @@
             "maxLength": 10000,
             "title": "Name",
             "type": "string"
+          },
+          "record_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Record Id"
           },
           "source": {
             "anyOf": [
@@ -8501,6 +9672,86 @@
         "title": "ReferenceChunk",
         "type": "object"
       },
+      "ReferenceFlagResponse": {
+        "description": "A squad or product naming what the version in service no longer has, or a product\nwhose systems differ from what its offerings name, or that is linked to nothing.",
+        "properties": {
+          "retired_capabilities": {
+            "items": {
+              "$ref": "#/components/schemas/CapabilityScopeResponse"
+            },
+            "title": "Retired Capabilities",
+            "type": "array"
+          },
+          "retired_offering_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Retired Offering Ids",
+            "type": "array"
+          },
+          "retired_portfolio_node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retired Portfolio Node Id"
+          },
+          "retired_system_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Retired System Ids",
+            "type": "array"
+          },
+          "subject": {
+            "enum": [
+              "squad",
+              "product"
+            ],
+            "title": "Subject",
+            "type": "string"
+          },
+          "subject_id": {
+            "title": "Subject Id",
+            "type": "string"
+          },
+          "systems_missing": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Systems Missing",
+            "type": "array"
+          },
+          "systems_unexplained": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Systems Unexplained",
+            "type": "array"
+          },
+          "unlinked": {
+            "title": "Unlinked",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "subject",
+          "subject_id",
+          "retired_system_ids",
+          "retired_offering_ids",
+          "retired_portfolio_node_id",
+          "retired_capabilities",
+          "systems_missing",
+          "systems_unexplained",
+          "unlinked"
+        ],
+        "title": "ReferenceFlagResponse",
+        "type": "object"
+      },
       "ReindexRequest": {
         "properties": {
           "requirement_ids": {
@@ -8591,6 +9842,123 @@
         ],
         "title": "RelationshipKind",
         "type": "string"
+      },
+      "ReleaseDeliveriesResponse": {
+        "properties": {
+          "delivered": {
+            "title": "Delivered",
+            "type": "integer"
+          },
+          "deliveries": {
+            "title": "Deliveries",
+            "type": "integer"
+          },
+          "last_closed_at": {
+            "format": "date-time",
+            "title": "Last Closed At",
+            "type": "string"
+          },
+          "predicted": {
+            "title": "Predicted",
+            "type": "integer"
+          },
+          "release_id": {
+            "title": "Release Id",
+            "type": "string"
+          },
+          "undelivered": {
+            "title": "Undelivered",
+            "type": "integer"
+          },
+          "unpredicted": {
+            "title": "Unpredicted",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "release_id",
+          "deliveries",
+          "delivered",
+          "predicted",
+          "unpredicted",
+          "undelivered",
+          "last_closed_at"
+        ],
+        "title": "ReleaseDeliveriesResponse",
+        "type": "object"
+      },
+      "ReleasePrecedentsResponse": {
+        "properties": {
+          "accepted": {
+            "title": "Accepted",
+            "type": "integer"
+          },
+          "concepts": {
+            "items": {
+              "$ref": "#/components/schemas/ConceptOverridesResponse"
+            },
+            "title": "Concepts",
+            "type": "array"
+          },
+          "last_decided_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Decided At"
+          },
+          "overridden": {
+            "title": "Overridden",
+            "type": "integer"
+          },
+          "override_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override Rate"
+          },
+          "release_id": {
+            "title": "Release Id",
+            "type": "string"
+          },
+          "release_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Name"
+          },
+          "unknown": {
+            "title": "Unknown",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "release_id",
+          "release_name",
+          "accepted",
+          "overridden",
+          "unknown",
+          "override_rate",
+          "last_decided_at",
+          "concepts"
+        ],
+        "title": "ReleasePrecedentsResponse",
+        "type": "object"
       },
       "Reminder": {
         "properties": {
@@ -9226,6 +10594,50 @@
         "title": "SampleRequirementsResponse",
         "type": "object"
       },
+      "SettleSubjectRequest": {
+        "description": "What a name waiting suggestions name really is: a system or a product offering.",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/SubjectKind"
+          },
+          "name": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Name",
+            "type": "string"
+          },
+          "system_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "System Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "system_id",
+          "kind"
+        ],
+        "title": "SettleSubjectRequest",
+        "type": "object"
+      },
+      "SettleSubjectResponse": {
+        "properties": {
+          "added": {
+            "title": "Added",
+            "type": "integer"
+          },
+          "retyped": {
+            "title": "Retyped",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "retyped",
+          "added"
+        ],
+        "title": "SettleSubjectResponse",
+        "type": "object"
+      },
       "SharedRootView": {
         "description": "A work item that is also the root of another historic requirement.",
         "properties": {
@@ -9429,6 +10841,62 @@
         "title": "SquadRequest",
         "type": "object"
       },
+      "SquadResourceSchema": {
+        "description": "A seat on a system, or on one capability concept it realises, in a role; no person\nwhile the seat is open.",
+        "properties": {
+          "capability_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capability Id"
+          },
+          "person_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Person Id"
+          },
+          "role": {
+            "$ref": "#/components/schemas/SquadRole"
+          },
+          "system_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "System Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "system_id",
+          "role"
+        ],
+        "title": "SquadResourceSchema",
+        "type": "object"
+      },
+      "SquadRole": {
+        "description": "What a squad resource does on its system: a controlled list.",
+        "enum": [
+          "system_contact",
+          "developer",
+          "tester",
+          "solution_architect",
+          "business_analyst"
+        ],
+        "title": "SquadRole",
+        "type": "string"
+      },
       "SquadSchema": {
         "properties": {
           "id": {
@@ -9441,6 +10909,15 @@
             "maxLength": 300,
             "title": "Name",
             "type": "string"
+          },
+          "resources": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SquadResourceSchema"
+            },
+            "maxItems": 5000,
+            "title": "Resources",
+            "type": "array"
           },
           "revision": {
             "default": 1,
@@ -9459,15 +10936,6 @@
             ],
             "title": "Scrum Master Person Id"
           },
-          "systems": {
-            "default": [],
-            "items": {
-              "$ref": "#/components/schemas/SquadSystemSchema"
-            },
-            "maxItems": 5000,
-            "title": "Systems",
-            "type": "array"
-          },
           "value_stream_id": {
             "maxLength": 200,
             "minLength": 1,
@@ -9483,32 +10951,14 @@
         "title": "SquadSchema",
         "type": "object"
       },
-      "SquadSystemSchema": {
-        "properties": {
-          "person_id": {
-            "anyOf": [
-              {
-                "maxLength": 200,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Person Id"
-          },
-          "system_id": {
-            "maxLength": 200,
-            "minLength": 1,
-            "title": "System Id",
-            "type": "string"
-          }
-        },
-        "required": [
-          "system_id"
+      "SubjectKind": {
+        "description": "What a name suggestions wait for really is, as a person says it on Decide.",
+        "enum": [
+          "system",
+          "offering"
         ],
-        "title": "SquadSystemSchema",
-        "type": "object"
+        "title": "SubjectKind",
+        "type": "string"
       },
       "SuggestionDecisionRequest": {
         "properties": {
@@ -9716,6 +11166,16 @@
             ],
             "title": "Landscape Domain Id"
           },
+          "masters": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Masters",
+            "type": "array"
+          },
           "name": {
             "maxLength": 300,
             "title": "Name",
@@ -9769,6 +11229,16 @@
             ],
             "title": "Placement Reason"
           },
+          "reads": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Reads",
+            "type": "array"
+          },
           "roadmap": {
             "anyOf": [
               {
@@ -9801,13 +11271,137 @@
         "title": "SystemDefinitionSchema",
         "type": "object"
       },
-      "SystemOwnershipResponse": {
+      "SystemInterfaceSchema": {
+        "description": "An API, event or file contract one system exposes, and the systems that consume it.",
         "properties": {
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "consumer_ids": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Consumer Ids",
+            "type": "array"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "entity_ids": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Entity Ids",
+            "type": "array"
+          },
+          "id": {
+            "maxLength": 200,
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 300,
+            "title": "Name",
+            "type": "string"
+          },
+          "open_api_ids": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Open Api Ids",
+            "type": "array"
+          },
+          "relays": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Relays",
+            "type": "array"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "style": {
+            "$ref": "#/components/schemas/InterfaceStyle",
+            "default": "unspecified"
+          },
+          "system_id": {
+            "maxLength": 200,
+            "title": "System Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "system_id"
+        ],
+        "title": "SystemInterfaceSchema",
+        "type": "object"
+      },
+      "SystemOwnershipResponse": {
+        "description": "Asked about a capability, its squads and seats come first, then those on the whole\nsystem; seats on the system's other capabilities are left out.",
+        "properties": {
+          "capability_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capability Id"
+          },
           "products": {
             "items": {
               "$ref": "#/components/schemas/ProductSchema"
             },
             "title": "Products",
+            "type": "array"
+          },
+          "seats": {
+            "items": {
+              "$ref": "#/components/schemas/OwnedSeatResponse"
+            },
+            "title": "Seats",
             "type": "array"
           },
           "squads": {
@@ -9831,7 +11425,9 @@
         },
         "required": [
           "system_id",
+          "capability_id",
           "squads",
+          "seats",
           "products",
           "value_streams"
         ],
@@ -10247,6 +11843,47 @@
         "title": "TypeCount",
         "type": "object"
       },
+      "UndeliveredFeatureResponse": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "state"
+        ],
+        "title": "UndeliveredFeatureResponse",
+        "type": "object"
+      },
+      "UnlinkedConceptSchema": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "pref_label": {
+            "title": "Pref Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "pref_label"
+        ],
+        "title": "UnlinkedConceptSchema",
+        "type": "object"
+      },
       "UploadOutcome": {
         "enum": [
           "added",
@@ -10412,6 +12049,184 @@
           "expected_version"
         ],
         "title": "Versioned",
+        "type": "object"
+      },
+      "VocabularyField": {
+        "enum": [
+          "activity_etom",
+          "activity_role",
+          "channel_kind",
+          "component_kind",
+          "responsibility_role",
+          "integration_open_api"
+        ],
+        "title": "VocabularyField",
+        "type": "string"
+      },
+      "VocabularyRefSchema": {
+        "description": "One place a vocabulary value is written, and the value as it was read there.",
+        "properties": {
+          "field": {
+            "$ref": "#/components/schemas/VocabularyField"
+          },
+          "item": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item"
+          },
+          "owner_id": {
+            "maxLength": 200,
+            "title": "Owner Id",
+            "type": "string"
+          },
+          "part": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Part"
+          },
+          "value": {
+            "maxLength": 300,
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "field",
+          "owner_id",
+          "value"
+        ],
+        "title": "VocabularyRefSchema",
+        "type": "object"
+      },
+      "VocabularyScheme": {
+        "enum": [
+          "etom_process",
+          "channel_kind",
+          "component_kind",
+          "responsibility_role",
+          "open_api",
+          "information_entity"
+        ],
+        "title": "VocabularyScheme",
+        "type": "string"
+      },
+      "VocabularyTermSchema": {
+        "description": "A term of a controlled vocabulary: an eTOM process, a channel or component kind, a\nrole, an Open API or an information entity.",
+        "properties": {
+          "alt_labels": {
+            "default": [],
+            "items": {
+              "maxLength": 300,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Alt Labels",
+            "type": "array"
+          },
+          "broader_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Broader Id"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "definition": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition"
+          },
+          "exact_match": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exact Match"
+          },
+          "id": {
+            "maxLength": 200,
+            "title": "Id",
+            "type": "string"
+          },
+          "notation": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notation"
+          },
+          "pref_label": {
+            "maxLength": 300,
+            "title": "Pref Label",
+            "type": "string"
+          },
+          "scheme": {
+            "$ref": "#/components/schemas/VocabularyScheme"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          }
+        },
+        "required": [
+          "id",
+          "scheme",
+          "pref_label"
+        ],
+        "title": "VocabularyTermSchema",
         "type": "object"
       },
       "WithdrawRequest": {
@@ -10803,6 +12618,61 @@
         ]
       }
     },
+    "/architecture-knowledge/deliveries/summary": {
+      "get": {
+        "description": "How the systems assessments predicted compare with what closed Epics delivered, per\nrelease: delivered and predicted, delivered but not predicted, predicted but not\ndelivered (ontology plan Phase 7). Counts only.",
+        "operationId": "delivery_summaries_architecture_knowledge_deliveries_summary_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliverySummariesResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delivery Summaries",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
     "/architecture-knowledge/documents": {
       "get": {
         "operationId": "list_documents_architecture_knowledge_documents_get",
@@ -11035,6 +12905,61 @@
           }
         ],
         "summary": "Mapping Impact",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
+    "/architecture-knowledge/precedents/summary": {
+      "get": {
+        "description": "How reviewers decided suggested verdicts, per release: accepted, overridden, unknown,\nand the concepts most overridden (ontology plan Phase 5). Counts only, no text.",
+        "operationId": "precedent_summaries_architecture_knowledge_precedents_summary_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrecedentSummariesResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Precedent Summaries",
         "tags": [
           "architecture knowledge"
         ]
@@ -12067,6 +13992,134 @@
         ]
       }
     },
+    "/architecture-knowledge/releases/{release_id}/component-link-suggestions": {
+      "post": {
+        "description": "Ask the configured model which concepts each unlinked offering component delivers.\n\nThe suggestions replace the undecided ones of the previous request (ADR-0114).",
+        "operationId": "suggest_component_capabilities_architecture_knowledge_releases__release_id__component_link_suggestions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtractionRunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Suggest Component Capabilities",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
+    "/architecture-knowledge/releases/{release_id}/concept-proposals": {
+      "post": {
+        "description": "Suggest one concept per distinct capability name the draft lists (ADR-0114).\n\nThe suggestions replace the undecided ones of the previous backfill.",
+        "operationId": "propose_capability_concepts_architecture_knowledge_releases__release_id__concept_proposals_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtractionRunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Propose Capability Concepts",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
     "/architecture-knowledge/releases/{release_id}/documents": {
       "post": {
         "operationId": "upload_document_architecture_knowledge_releases__release_id__documents_post",
@@ -12582,6 +14635,70 @@
         ]
       }
     },
+    "/architecture-knowledge/releases/{release_id}/index-coverage": {
+      "get": {
+        "description": "How many evidence chunks link to no concept, and which concepts no chunk speaks of\n(ontology plan Phase 2). The counts are of the release's last build.",
+        "operationId": "index_coverage_architecture_knowledge_releases__release_id__index_coverage_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexCoverageResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Index Coverage",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
     "/architecture-knowledge/releases/{release_id}/name": {
       "put": {
         "operationId": "rename_draft_architecture_knowledge_releases__release_id__name_put",
@@ -13091,6 +15208,80 @@
         ]
       }
     },
+    "/architecture-knowledge/releases/{release_id}/suggestions/subject": {
+      "post": {
+        "description": "Say what a name waiting suggestions name is: a system to suggest, or a product\noffering, so its constraints become the offering's rules.",
+        "operationId": "settle_suggestion_subject_architecture_knowledge_releases__release_id__suggestions_subject_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettleSubjectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettleSubjectResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Settle Suggestion Subject",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
     "/architecture-knowledge/releases/{release_id}/suggestions/{suggestion_id}/decision": {
       "post": {
         "operationId": "decide_suggestion_architecture_knowledge_releases__release_id__suggestions__suggestion_id__decision_post",
@@ -13330,6 +15521,70 @@
           }
         ],
         "summary": "Put System",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
+    "/architecture-knowledge/releases/{release_id}/vocabulary-cleanup": {
+      "post": {
+        "description": "Suggest the term each eTOM process, channel kind, component kind, role and Open API\nvalue the draft writes means; a value no term names is suggested as a new term.\n\nThe suggestions replace the undecided ones of the previous clean-up.",
+        "operationId": "clean_up_vocabulary_architecture_knowledge_releases__release_id__vocabulary_cleanup_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtractionRunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Clean Up Vocabulary",
         "tags": [
           "architecture knowledge"
         ]
@@ -18399,6 +20654,64 @@
         ]
       }
     },
+    "/organisation/references": {
+      "get": {
+        "operationId": "references_organisation_references_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReferenceFlagResponse"
+                  },
+                  "title": "Response References Organisation References Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "References",
+        "tags": [
+          "organisation"
+        ]
+      }
+    },
     "/organisation/squads": {
       "post": {
         "operationId": "create_squad_organisation_squads_post",
@@ -18609,6 +20922,7 @@
     },
     "/organisation/systems/{system_id}/ownership": {
       "get": {
+        "description": "Who owns a system, or, with ``capability_id``, one business capability concept of it.",
         "operationId": "system_ownership_organisation_systems__system_id__ownership_get",
         "parameters": [
           {
@@ -18618,6 +20932,22 @@
             "schema": {
               "title": "System Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "capability_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Capability Id"
             }
           },
           {

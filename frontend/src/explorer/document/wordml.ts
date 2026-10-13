@@ -65,7 +65,7 @@ const ARABIC = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFE
 const LATIN = /[A-Za-z]/;
 
 /** Text safe inside an XML element or attribute. */
-export function xmlText(value: unknown): string {
+function xmlText(value: unknown): string {
   return String(value ?? "")
     .replace(FORBIDDEN, "")
     .replace(/&/g, "&amp;")

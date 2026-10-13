@@ -20,7 +20,7 @@ export type TableState =
   | { status: "error"; error: unknown; retry: () => void }
   | { status: "ready"; overview: Overview };
 
-export type OverviewState = {
+type OverviewState = {
   library: TableState;
   architecture: TableState;
   squads: TableState;
@@ -69,8 +69,23 @@ export function useOverview(): OverviewState {
   });
   // Where each system in service stands for review; nothing to read until a version is in service.
   const standings = useQuery({ queryKey: SYSTEM_REVIEWS_KEY, queryFn: api.systemReviews, enabled: Boolean(active.data) });
+  // How reviewers decided suggested verdicts (ontology plan Phase 5): a maintainer's to see.
+  const precedents = useQuery({
+    queryKey: ["architecture", "precedents", "summary"],
+    queryFn: api.precedentSummary,
+    enabled: maintainer && Boolean(active.data),
+  });
+  // What closed Epics delivered against what was predicted (ontology plan Phase 7): the same.
+  const deliveries = useQuery({
+    queryKey: ["architecture", "deliveries", "summary"],
+    queryFn: api.deliverySummary,
+    enabled: maintainer && Boolean(active.data),
+  });
+  // Left out for anyone else, so a refresh never asks for what they may not read. They never
+  // hold Table 2 back: until they answer, or if they fail, the table shows no such counts.
+  const precedentQueries = maintainer ? [precedents, deliveries] : [];
 
-  const all = [documents, releases, active, organisation, audit, actors, corpus, historic, standings, ...suggestions, ...builds, ...readings];
+  const all = [documents, releases, active, organisation, audit, actors, corpus, historic, standings, ...precedentQueries, ...suggestions, ...builds, ...readings];
   const fetchedAt = all.map((query) => query.dataUpdatedAt).filter((at) => at > 0);
   const nameOf = useMemo(() => nameDirectory(actors.data), [actors.data]);
 
@@ -101,6 +116,8 @@ export function useOverview(): OverviewState {
             nameOf,
             jobs,
             standings.data ?? null,
+            precedents.data?.releases.find((item) => item.release_id === active.data?.id) ?? null,
+            deliveries.data?.releases.find((item) => item.release_id === active.data?.id) ?? null,
           ),
         }
       : { status: "loading" };

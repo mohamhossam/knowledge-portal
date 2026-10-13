@@ -154,3 +154,32 @@
   padding-block: var(--space-1);
   border-block-end: var(--hair-rule);
 }
+
+/* An edit opened in place: the ledger rule on top and a hair frame, like the consequence panel. */
+.ds-formpanel {
+  display: grid;
+  gap: var(--space-3);
+  min-inline-size: 0;
+  padding: var(--panel-pad);
+  background: var(--panel-bg);
+  border: var(--panel-border);
+  border-block-start: var(--panel-top);
+}
+
+.ds-formpanel__title {
+  margin: 0;
+  font-size: var(--text-h3);
+}
+
+.ds-formpanel__title:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.ds-formpanel__failure {
+  margin: 0;
+}
+
+.ds-formpanel__failure:empty {
+  position: absolute;
+}

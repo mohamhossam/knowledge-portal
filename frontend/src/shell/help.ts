@@ -3,11 +3,15 @@
  * listed are the ones each page has today: an area that rebuilds a page
  * updates its entry in the same change. Wording follows docs/ux/content.
  */
-export type HelpEntry = { title: string; body: string[]; terms: [string, string][]; keys: [string, string][] };
+type HelpEntry = { title: string; body: string[]; terms: [string, string][]; keys: [string, string][] };
 
 export const PAGE_KEYS: [string, string][] = [
   ["?", "Open this help"],
-  ["g w / l / c / o / r", "Go to Your work, Library, Catalogue, Ownership or Requirements"],
+  ["g w", "Go to To do"],
+  ["g l", "Go to the library"],
+  ["g c", "Go to the catalogue"],
+  ["g o", "Go to Ownership"],
+  ["g r", "Go to Requirements"],
   ["g j", "Open Jobs"],
   ["/", "Find on this page, where the page has a find field"],
   ["Esc", "Close a panel and go back to what opened it"],
@@ -21,6 +25,26 @@ const NEUTRAL: HelpEntry = {
 };
 
 const PAGES: { match: (path: string) => boolean; entry: HelpEntry }[] = [
+  {
+    // Focus mode (UX rebuild, phase 2): a review or a draft's decisions, one question at a time.
+    match: (path) => /\/focus\/?$/.test(path),
+    entry: {
+      title: "Focus mode",
+      body: [
+        "One question at a time. What needs you comes first; the rest is asked a group at a time. Nothing is sent until the summary at the end, which you confirm.",
+        "Skip a question to come back to it. Leave keeps your answers here; the full page shows them too.",
+      ],
+      terms: [
+        ["Accept group", "Takes a sheet's or slide's passages as they stand. Change any one on the full page."],
+        ["What follows", "Suggestions that become ready once the ones you accept are in the draft."],
+      ],
+      keys: [
+        ["1–9", "Choose an answer"],
+        ["Enter", "Confirm and go to the next question"],
+        ["Esc", "Leave focus mode"],
+      ],
+    },
+  },
   {
     match: (path) => path === "/library/search",
     entry: {
@@ -177,26 +201,21 @@ const PAGES: { match: (path: string) => boolean; entry: HelpEntry }[] = [
     },
   },
   {
-    match: (path) => path.startsWith("/reminders"),
-    entry: {
-      title: "Re-confirmations",
-      body: ["Documents and systems you answer for that must be confirmed as still right, by their due date."],
-      terms: [["Re-confirmation", "Confirming a document or system is still right, when due."]],
-      keys: [],
-    },
-  },
-  {
     match: (path) => path === "/",
     entry: {
-      title: "Your work",
-      body: ["Everything that needs you, most urgent first. Switch to Everyone's to see the whole team's."],
+      title: "To do",
+      body: [
+        "Everything that needs you, most urgent first. Switch to Everyone's to see the whole team's. Order lists each kind by how long it has waited instead; Find narrows them by name.",
+        "Start opens a review or a draft's decisions in focus mode, one question at a time. Re-confirmations are confirmed here, on their card.",
+      ],
       terms: [
         ["Needs attention", "A failed job or blocked item someone must act on."],
         ["Job", "Background work: reading, indexing, building, checking."],
         ["Re-confirmation", "Confirming a document or system is still right, when due."],
-        ["Gap", "A system in service with no squad, or no contact. Gaps are listed, not counted in Your work's number."],
+        ["Gap", "A system in service with no squad, or no contact. Gaps are listed, not counted in To do's number."],
+        ["New", "Began waiting after your last visit to To do, in this browser."],
       ],
-      keys: [],
+      keys: [["/", "Find in To do (with page-wide shortcuts on)"]],
     },
   },
 ];

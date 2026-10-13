@@ -14,6 +14,7 @@ from knowledge_portal.application.ports.architecture_rag import (
 )
 from knowledge_portal.application.ports.architecture_tokenizer import ArchitectureTokenizerPort
 from knowledge_portal.application.ports.embedding import KnowledgeEmbeddingPort
+from knowledge_portal.application.ports.requirement_assessment import RequirementAssessmentPort
 from knowledge_portal.application.use_cases.architecture_documents import (
     ReadKnowledgeDocument,
     UploadArchitectureDocuments,
@@ -30,6 +31,11 @@ from knowledge_portal.application.use_cases.architecture_knowledge import (
 from knowledge_portal.application.use_cases.architecture_preview import (
     PreviewArchitectureImpact,
 )
+from knowledge_portal.application.use_cases.assess_requirement import AssessRequirement
+from knowledge_portal.application.use_cases.capability_concepts import (
+    ProposeCapabilityConcepts,
+    SuggestComponentCapabilities,
+)
 from knowledge_portal.application.use_cases.catalogue_candidates import (
     DecideCatalogueCandidate,
     ProposeCatalogueChanges,
@@ -38,11 +44,18 @@ from knowledge_portal.application.use_cases.change_requests import (
     DismissChangeRequest,
     ListChangeRequests,
     ReadChangeRequestIntoDraft,
+    ReadDeliverySummaries,
     ReceiveChangeRequest,
+    ReceiveDelivery,
+)
+from knowledge_portal.application.use_cases.precedents import (
+    ReadPrecedentSummaries,
+    RecordPrecedent,
 )
 from knowledge_portal.application.use_cases.resolve_architecture_knowledge import (
     ResolveArchitectureKnowledge,
 )
+from knowledge_portal.application.use_cases.vocabulary_cleanup import CleanUpVocabulary
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
 from knowledge_portal.infrastructure.architecture.catalogue_tables import (
     CatalogueTableReader,
@@ -75,6 +88,11 @@ class ArchitectureRetrieval:
 @dataclass(frozen=True)
 class ArchitectureWiring:
     knowledge: ArchitectureKnowledgePort
+    # A whole requirement's verdict, systems, gaps and owners (ontology plan Phase 3).
+    assess: RequirementAssessmentPort
+    # Decided verdicts from requirement work, and their counts (ontology plan Phase 5).
+    record_precedent: RecordPrecedent
+    precedent_summaries: ReadPrecedentSummaries
     manage: ManageArchitectureKnowledge
     build_index: BuildArchitectureIndex
     preview_impact: PreviewArchitectureImpact
@@ -82,8 +100,15 @@ class ArchitectureWiring:
     upload_documents: UploadArchitectureDocuments
     read_document: ReadKnowledgeDocument
     decide_candidates: DecideCatalogueCandidate
+    # The capability concept scheme and its links, as suggestions (ADR-0114).
+    propose_concepts: ProposeCapabilityConcepts
+    suggest_component_links: SuggestComponentCapabilities
+    # The clean-up mapping written values onto the controlled vocabularies.
+    clean_up_vocabulary: CleanUpVocabulary
     # Change requests from Requirement AI (requirement-portal ADR-0101, step 7).
     receive_change_request: ReceiveChangeRequest
+    receive_delivery: ReceiveDelivery
+    delivery_summaries: ReadDeliverySummaries
     list_change_requests: ListChangeRequests
     read_change_request: ReadChangeRequestIntoDraft
     dismiss_change_request: DismissChangeRequest
@@ -113,7 +138,14 @@ def build_architecture(
         persistence.architecture_evidence_index,
         settings.document_max_file_bytes,
     )
-    document_extractor = SafeDocumentTextExtractor()
+    # The operator's DOCUMENT_* limits, as the library's extractor uses them.
+    document_extractor = SafeDocumentTextExtractor(
+        max_pdf_pages=settings.document_max_pdf_pages,
+        max_extracted_characters=settings.document_max_extracted_characters,
+        max_visited_spreadsheet_cells=settings.document_max_spreadsheet_cells,
+        max_decoded_image_pixels=settings.document_max_image_pixels,
+        max_xml_nodes=settings.document_max_xml_nodes,
+    )
     located_extractor = LocatedDocumentExtractor(document_extractor)
     upload = UploadKnowledgeDocument(
         manage,
@@ -163,6 +195,24 @@ def build_architecture(
             YamlArchitectureKnowledge(default_knowledge_path()),
             persistence.organisation_repository,
         ),
+        assess=AssessRequirement(
+            persistence.architecture_repository,
+            persistence.architecture_evidence_index,
+            llm.requirement_reader,
+            llm.verdict_reasoner,
+            persistence.organisation_repository,
+            llm.passage_reranker,
+            persistence.precedents,
+        ),
+        record_precedent=RecordPrecedent(
+            persistence.architecture_repository,
+            persistence.architecture_evidence_index,
+            persistence.precedents,
+            clock,
+        ),
+        precedent_summaries=ReadPrecedentSummaries(
+            persistence.architecture_repository, persistence.precedents
+        ),
         manage=manage,
         build_index=build_index,
         preview_impact=PreviewArchitectureImpact(
@@ -179,7 +229,14 @@ def build_architecture(
             persistence.catalogue_candidates,
             persistence.change_requests,
         ),
+        propose_concepts=ProposeCapabilityConcepts(manage, persistence.catalogue_candidates, clock),
+        clean_up_vocabulary=CleanUpVocabulary(manage, persistence.catalogue_candidates, clock),
+        suggest_component_links=SuggestComponentCapabilities(
+            manage, persistence.catalogue_candidates, llm.capability_linker, clock
+        ),
         receive_change_request=ReceiveChangeRequest(persistence.change_requests, clock),
+        receive_delivery=ReceiveDelivery(persistence.change_requests, clock),
+        delivery_summaries=ReadDeliverySummaries(persistence.change_requests),
         list_change_requests=ListChangeRequests(persistence.change_requests),
         read_change_request=ReadChangeRequestIntoDraft(
             persistence.change_requests,

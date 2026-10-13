@@ -24,20 +24,23 @@ import {
 } from "../design/components";
 import { useDisclosure, useFocusAfterRender } from "../design/hooks";
 import { openShortcuts } from "../shell/shortcuts";
+import { formatClock } from "../home/format";
 import { densityFor, usePreferences } from "../shell/preferences";
+import { approveReason } from "./approval";
 import { useDocumentContext } from "./documentContext";
 import {
-  comparisonBasis,
   counts,
   type Draft,
   latestRevision,
   livePublication,
   matches,
+  matchRows,
   nextToReview,
+  wrapWords,
+  passageProblems,
   reviewBody,
   reviewRows,
   type Row,
-  saveProblems,
   whereOf,
 } from "./model";
 import { Outcome } from "./parts";
@@ -83,16 +86,6 @@ function passageOf(hash: string): string {
   }
 }
 
-/** Why the saved review can't be published now, short enough to sit beside the button (backlog K1). */
-function approveReason(document: LibraryDocument, version: LibraryVersion, dirty: number): string | null {
-  if (!latestRevision(version) || !document.review_fingerprint) return "Save your review first.";
-  if (dirty > 0) return "Save your changes first.";
-  if (version.blocking_warnings.length > 0) return `${plural(version.blocking_warnings.length, "warning blocks", "warnings block")} it.`;
-  if (document.publications.some((item) => !item.withdrawn_at && item.requires_activation && !item.activated_at)) return "A search index for tables waits; see Versions.";
-  if (document.publications.some((item) => !item.withdrawn_at && item.fingerprint === document.review_fingerprint)) return "Already published.";
-  return null;
-}
-
 const CHANGE_WORD: Record<Row["change"], string> = { same: "Kept", edited: "Edited", excluded: "Excluded", new: "New", removed: "Removed" };
 
 /**
@@ -112,13 +105,17 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
 
   // Typing the summary changes no passage: what the grid shows is memoized on the drafts and
   // "seen", so a keystroke there doesn't re-render 200 rows (area 2 reviews).
-  const basis = useMemo(() => comparisonBasis(document), [document]);
-  const rows = useMemo(() => reviewRows(document, version, drafts), [document, version, drafts]);
+  // The matching against the basis depends on the answer only; a decision re-runs the light pass.
+  const matching = useMemo(() => matchRows(document, version), [document, version]);
+  const basis = matching.basis;
+  const rows = useMemo(() => reviewRows(document, version, drafts, matching), [document, version, drafts, matching]);
   const headings = useMemo(() => sheetHeadings(version.blocks.map((block) => ({ where: whereOf(block), text: block.text ?? null }))), [version]);
   const tally = useMemo(() => counts(rows, basis.kind), [rows, basis.kind]);
-  const problems = saveProblems(version, drafts, summary);
   const revision = latestRevision(version);
   const fileWarnings = version.warning_details.filter((warning) => !warning.block_id);
+  // What publishing now would have to save first: no review saved yet, decisions since, or a new summary.
+  const unsavedReview = !revision || !document.review_fingerprint || dirty > 0;
+  const needsSave = (text: string) => unsavedReview || text.trim() !== revision?.explanation.trim();
 
   // A link "#passage-…" (from search) opens the desk at that passage, seen and focused.
   const [arrival] = useState(() => {
@@ -126,38 +123,44 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
     return wanted ? rows.find((row) => row.key === wanted || row.basisBlockId === wanted)?.key : undefined;
   });
   const { seen, add: markSeen } = useSeen(version.id);
+  // "Not seen yet" lists what was unseen when it was chosen: a passage looked at stays listed, so k
+  // goes back to it, until the filter is chosen again.
+  const [seenBefore, setSeenBefore] = useState<ReadonlySet<string>>(() => new Set(seen));
+  // The desk opens on what is left to look at while anything is (design evaluation, review desk
+  // fixes); once every passage has been seen it opens on all of them.
+  const [opening] = useState<Filter>(() => (rows.some((row) => !seen.has(row.key)) ? "unseen" : "all"));
   const [currentId, setCurrentId] = useState<string | undefined>(arrival);
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [editing, setEditing] = useState(false);
   const [original, setOriginal] = useState<string | null>(null);
   // What is shown lives in the address (§3), so a reload or a shared link keeps it.
   const show = params.get("show") ?? "";
-  const filter = (["unseen", "flagged", "changed", "excluded", "removed"].includes(show) ? show : "all") as Filter;
+  const filter = (["all", "unseen", "flagged", "changed", "excluded", "removed"].includes(show) ? show : opening) as Filter;
   const find = params.get("find") ?? "";
   const findDeferred = useDeferredValue(find);
   const setView = useCallback((next: Filter, text: string) => {
     setParams((previous) => {
       const query = new URLSearchParams(previous);
-      if (next === "all") query.delete("show");
+      if (next === opening) query.delete("show");
       else query.set("show", next);
       if (text) query.set("find", text);
       else query.delete("find");
       return query;
     }, { replace: true });
-  }, [setParams]);
+  }, [setParams, opening]);
   const [limit, setLimit] = useState(PAGE);
-  const [summaryTried, setSummaryTried] = useState(false);
   const [said, setSaid] = useState<{ text: string; failed?: boolean; conflict?: boolean } | null>(null);
   const [group, setGroup] = useState("");
   const [picking, setPicking] = useState(false);
   const desk = useRef<HTMLDivElement>(null);
   const bulk = useDisclosure(() => desk.current?.querySelector<HTMLElement>("tr.is-current [data-cell-focus]") ?? null);
   const approve = useDisclosure(() => window.document.getElementById("desk-approve"));
+  const asking = useDisclosure(() => window.document.getElementById("desk-save"));
 
   // The current row stays listed while it is reviewed, even once it no longer matches the filter.
   const shown = useMemo(() => rows.filter((row) =>
     row.key === currentId
-    || (filter === "unseen" ? matches(row, "all", findDeferred) && !seen.has(row.key) : matches(row, filter, findDeferred))), [rows, currentId, filter, findDeferred, seen]);
+    || (filter === "unseen" ? matches(row, "all", findDeferred) && !seenBefore.has(row.key) : matches(row, filter, findDeferred))), [rows, currentId, filter, findDeferred, seenBefore]);
   // The current row is always rendered: the list reaches it in steps of 200 (a jump past row 200).
   const currentIndex = shown.findIndex((row) => row.key === currentId);
   const reach = Math.max(limit, Math.ceil((currentIndex + 1) / PAGE) * PAGE);
@@ -214,14 +217,21 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
     focusLater(() => desk.current?.querySelector<HTMLElement>("[name='desk-edit']"));
   };
 
+  /**
+   * `n` (and a decision finished, §1): on to the next passage to check. Going round past the
+   * last row (or the first, with N) is said in the live outcome line: never a silent jump.
+   */
   const goNext = (from: Row, backward: boolean) => {
     const next = nextToReview(shown, from.key, seen, backward);
     if (!next) {
       setSaid({ text: tally.flagged > 0 ? "Every flagged passage and every other passage has been seen." : "Every passage has been seen." });
-      return;
+      return false;
     }
+    const round = wrapWords(shown, from.key, next, backward);
+    if (round) setSaid({ text: round });
     move(next.key);
     focusRow(next.key);
+    return true;
   };
 
   const onRowKey = (row: Row, key: string) => {
@@ -238,25 +248,33 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
     return true;
   };
 
+  /** Back to the first excluded passage without a reason, its field focused. */
+  function showMissingReason() {
+    const missing = rows.find((row) => row.draft && !row.draft.included && !row.draft.reason.trim());
+    if (!missing) return;
+    if (filter !== "all" || find) setView("all", "");
+    move(missing.key);
+    focusLater(() => desk.current?.querySelector<HTMLElement>("[name='desk-reason']"));
+  }
+
   function save() {
-    if (hook.review.isPending) return;
-    if (revision && dirty === 0) {
+    if (hook.review.isPending || hook.approve.isPending) return;
+    if (!needsSave(summary)) {
       setSaid({ text: "Nothing changed since your last save." });
       return;
     }
-    if (problems.length > 0) {
-      setSaid({ text: `Not saved yet: ${problems.join(" ")}`, failed: true });
-      if (!summary.trim()) {
-        setSummaryTried(true);
-        focusLater(() => window.document.querySelector<HTMLElement>("[name='desk-summary']"));
-      } else {
-        const missing = rows.find((row) => row.draft && !row.draft.included && !row.draft.reason.trim());
-        if (missing) {
-          if (filter !== "all" || find) setView("all", "");
-          move(missing.key);
-          focusLater(() => desk.current?.querySelector<HTMLElement>("[name='desk-reason']"));
-        }
-      }
+    const blocked = passageProblems(version, drafts);
+    if (blocked.length > 0) {
+      if (asking.open) asking.close();
+      setSaid({ text: `Not saved yet: ${blocked.join(" ")}`, failed: true });
+      showMissingReason();
+      return;
+    }
+    // The summary is asked for where it is needed, once: in a panel beside the list, not in the bar.
+    if (!summary.trim()) {
+      if (approve.open) return;
+      hook.review.reset();
+      if (!asking.open) asking.show();
       return;
     }
     setSaid({ text: "Saving…" });
@@ -264,11 +282,11 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
       { versionId: version.id, body: reviewBody(version, drafts, summary, document.version) },
       {
         onSuccess: (updated) => {
-          setSummaryTried(false);
+          if (asking.open) asking.close();
           // The saved document, not the one this closure saw before the save.
           const saved = newestVersion(updated);
-          const ready = saved !== undefined && approveReason(updated, saved, 0) === null;
-          setSaid({ text: `Saved at ${clock(new Date())}.${ready ? " You can publish it when you're ready." : ""}` });
+          const ready = saved !== undefined && approveReason(updated, saved, [], null) === null;
+          setSaid({ text: `Saved at ${formatClock(new Date())}.${ready ? " You can publish it when you're ready." : ""}` });
         },
         onError: (error) =>
           setSaid(
@@ -318,7 +336,8 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
   const unseen = useMemo(() => rows.filter((row) => !seen.has(row.key)).length, [rows, seen]);
   const live = livePublication(document);
   const liveNumber = live ? document.versions.find((item) => item.id === live.version_id)?.number : undefined;
-  const reason = approve.open ? null : approveReason(document, version, dirty);
+  const fileBlocking = fileWarnings.filter((warning) => warning.severity === "blocking").length;
+  const reason = approve.open ? null : approveReason(document, version, passageProblems(version, drafts), unsavedReview ? tally.blocking + fileBlocking : null);
 
   const behalf = !document.is_owner;
 
@@ -365,7 +384,45 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
         />
   ) : null;
 
-  const approvePanel = approve.open && revision ? (
+  /** Publishing in one step: what is unsaved is saved with the summary, then that review is published. */
+  async function publish(text: string) {
+    if (!needsSave(text) && revision) {
+      hook.approve.mutate({ versionId: version.id, revisionId: revision.id }, { onSuccess: published });
+      return;
+    }
+    let saved: LibraryDocument;
+    try {
+      saved = await hook.review.mutateAsync({ versionId: version.id, body: reviewBody(version, drafts, text, document.version) });
+    } catch {
+      return; // The panel says why.
+    }
+    const savedRevision = latestRevision(saved.versions.find((item) => item.id === version.id));
+    if (!savedRevision) return;
+    hook.approve.mutate({ versionId: version.id, revisionId: savedRevision.id, saved }, { onSuccess: published });
+  }
+  const published = () => announce("Published. Requirement work can cite it once it is indexed; Jobs shows the indexing.");
+  const changeFailure = (error: unknown, verb: string) =>
+    error instanceof ApiError && error.status === 409 ? `The document changed while you were deciding. Reload it, then ${verb} again.` : errorMessage(error);
+  const summaryField = { label: "Review summary", hint: "What you checked, and what you changed. The document's reviewers see it.", value: summary, onChange: setSummary, maxLength: 2000 };
+
+  const savePanel = asking.open ? (
+        <ConsequencePanel
+          panelRef={asking.panel}
+          title="Save your review"
+          happens={<>Your decisions on {plural(rows.filter((row) => row.draft).length, "passage")} are kept with version {version.number}, with what you write here.</>}
+          reversibility="Nothing is published until you approve it. You can change your decisions and save again."
+          reason={summaryField}
+          confirmLabel="Save review"
+          keepLabel="Not yet"
+          busy={hook.review.isPending}
+          busyLabel="Saving…"
+          failure={hook.review.isError ? changeFailure(hook.review.error, "save") : null}
+          onConfirm={save}
+          onKeep={asking.close}
+        />
+  ) : null;
+
+  const approvePanel = approve.open ? (
         <ConsequencePanel
           panelRef={approve.panel}
           title={`Publish version ${version.number}`}
@@ -385,20 +442,17 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
                 You looked at {seen.size.toLocaleString("en")} of {plural(rows.length, "passage")}
                 {tally.flagged > 0 ? `, and ${flaggedSeen.toLocaleString("en")} of the ${tally.flagged.toLocaleString("en")} flagged.` : "."}
               </p>
+              {unsavedReview && revision && dirty > 0 && <p>Your {plural(dirty, "unsaved change")} {dirty === 1 ? "is" : "are"} saved with it.</p>}
             </>
           }
+          reason={summaryField}
           reversibility="You can withdraw it later; withdrawing tells the requirements that cite it."
           confirmLabel={behalf ? `Publish version ${version.number} on ${document.owner.display_name}'s behalf` : `Publish version ${version.number}`}
           keepLabel="Not yet"
-          busy={hook.approve.isPending}
-          busyLabel="Publishing…"
-          failure={hook.approve.isError ? (hook.approve.error instanceof ApiError && hook.approve.error.status === 409 ? "The document changed while you were deciding. Reload it, then publish again." : errorMessage(hook.approve.error)) : null}
-          onConfirm={() =>
-            hook.approve.mutate(
-              { versionId: version.id, revisionId: revision.id },
-              { onSuccess: () => announce("Published. Requirement work can cite it once it is indexed; Jobs shows the indexing.") },
-            )
-          }
+          busy={hook.review.isPending || hook.approve.isPending}
+          busyLabel={hook.review.isPending ? "Saving your review…" : "Publishing…"}
+          failure={hook.review.isError ? `Not saved, so not published: ${changeFailure(hook.review.error, "publish")}` : hook.approve.isError ? changeFailure(hook.approve.error, "publish") : null}
+          onConfirm={(text) => void publish(text)}
           onKeep={approve.close}
         />
   ) : null;
@@ -418,7 +472,7 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
       <p className="lib-quiet">{humanWhere(current.where)}{seen.has(current.key) ? " · seen" : ""}{current.change !== "same" ? ` · ${CHANGE_WORD[current.change].toLocaleLowerCase()}` : ""}</p>
       {current.warnings.map((warning, index) => (
         <p key={`${warning.code}-${index}`} className="lib-warning">
-          <Status tone={warning.severity === "blocking" ? "attention" : "held"}>{warning.severity === "blocking" ? (current.blocking ? "Blocks approval" : "Blocked approval, now excluded") : "Flagged"}</Status>{" "}
+          <Status tone={warning.severity === "blocking" ? "attention" : "warning"}>{warning.severity === "blocking" ? (current.blocking ? "Blocks approval" : "Blocked approval, now excluded") : "Flagged"}</Status>{" "}
           {warning.message}
           {warning.severity === "blocking" && current.blocking && " Exclude this passage with a reason and save, or upload a new version."}
         </p>
@@ -466,56 +520,44 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
         <TextField
           name="desk-reason"
           label="Why exclude it?"
-          hint="The document's reviewers see this. Enter goes back to the list."
+          hint="The document's reviewers see this. Enter goes on to the next passage to check; Esc back to this one."
           required
           maxLength={10000}
           value={current.draft.reason}
           error={said?.failed && !current.draft.reason.trim() ? "Give a reason: the document's reviewers see it." : null}
           onChange={(event) => change(current.key, { reason: event.target.value })}
           onKeyDown={(event) => {
-            if (event.key === "Escape" || event.key === "Enter") {
-              event.preventDefault();
-              focusRow();
-            }
+            if (event.key !== "Escape" && event.key !== "Enter") return;
+            event.preventDefault();
+            // A decision with its reason is done: on to the next row that needs one (§1). Without
+            // a reason it isn't, so focus goes back to the row; Esc always does.
+            if (event.key === "Enter" && current.draft?.reason.trim() && goNext(current, false)) return;
+            focusRow();
           }}
         />
       )}
       {original === current.key && current.block && <OriginalPreview documentId={document.id} versionId={version.id} blockId={current.block.id} where={humanWhere(current.where)} />}
+      {/* The grid's keys, said once beside it in the record (§2.2), so the list keeps its rows. */}
+      <KeysHint
+        onMore={openShortcuts}
+        keys={[
+          { keys: ["↑", "↓", "j", "k"], does: "move" },
+          { keys: ["n"], does: "next to check" },
+          { keys: ["x", "i"], does: "exclude, include" },
+          { keys: ["e"], does: "edit" },
+          { keys: ["o"], does: "original" },
+          { keys: ["Space"], does: "select" },
+          { keys: ["Ctrl+Enter"], does: "save" },
+        ]}
+      />
     </>
   );
   // The bulk and publish panels open in the pane, beside the list and next to the bar that opened
   // them, not after 200 rows (area 2 reviews).
-  const pane: ReactNode = bulkPanel ?? approvePanel ?? passagePane;
+  const pane: ReactNode = bulkPanel ?? approvePanel ?? savePanel ?? passagePane;
 
   return (
     <div ref={desk} className="lib-desk" data-density={densityFor(density, "desk")} onKeyDownCapture={onDeskKey}>
-      {/* Progress and the notes about the whole file on one row: the grid starts higher (GATE 8.2). */}
-      <div className="lib-deskhead">
-      <section className="lib-progress" aria-label="Review progress">
-        <p>
-          Seen <strong className="ds-num">{seen.size.toLocaleString("en")}</strong> of {rows.length.toLocaleString("en")}
-          {" · "}{tally.flagged.toLocaleString("en")} flagged
-          {" · "}{tally.blocking.toLocaleString("en")} {tally.blocking === 1 ? "blocks" : "block"} approval
-          {" · "}<span className={dirty > 0 ? "lib-strong" : undefined}>{dirty.toLocaleString("en")} unsaved {dirty === 1 ? "change" : "changes"}</span>
-          <span className="lib-quiet">
-            {" · "}{basis.kind === "edition" ? `compared with version ${liveNumber ?? "?"} in service` : "compared with the text as read"}
-          </span>
-        </p>
-        <progress max={Math.max(rows.length, 1)} value={seen.size} aria-label="Passages seen" />
-      </section>
-        {fileWarnings.some((warning) => warning.severity !== "blocking") && (
-          <details className="lib-filenotes">
-            <summary>
-              <Status tone="held">Flagged, whole file</Status>{" "}
-              {plural(fileWarnings.filter((warning) => warning.severity !== "blocking").length, "note")} about reading it
-            </summary>
-            <Lines>
-              {fileWarnings.filter((warning) => warning.severity !== "blocking").map((warning, index) => <li key={`${warning.code}-${index}`}>{warning.message}</li>)}
-            </Lines>
-          </details>
-        )}
-      </div>
-
       {fileWarnings.filter((warning) => warning.severity === "blocking").length > 0 && (
         <Lines label="Blocks approval, about the whole file">
           {fileWarnings.filter((warning) => warning.severity === "blocking").map((warning, index) => (
@@ -539,11 +581,13 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
           ]}
           active={filter}
           onChange={(id) => {
+            if (id === "unseen") setSeenBefore(new Set(seen));
             setView(id as Filter, find);
             setLimit(PAGE);
           }}
           find={{ label: "Find in passages", value: find, onChange: (value) => { setView(filter, value); setLimit(PAGE); }, placeholder: "Words or a sheet…" }}
-          onClear={filter !== "all" || find ? () => setView("all", "") : undefined}
+          // Back to the view the desk opened on; that view needs no clearing.
+          onClear={filter !== opening || find ? () => setView(opening, "") : undefined}
         />
         {offerGroups && chosenGroup && !picking && (
           <Button variant="link" aria-expanded={false} onClick={() => setPicking(true)}>Select a location…</Button>
@@ -562,22 +606,21 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
             <Button variant="link" onClick={() => setPicking(false)}>Done</Button>
           </div>
         )}
+        {fileWarnings.some((warning) => warning.severity !== "blocking") && (
+          <details className="lib-filenotes">
+            <summary>
+              <Status tone="warning">Whole file flagged</Status>{" "}
+              <span className="lib-quiet">{plural(fileWarnings.filter((warning) => warning.severity !== "blocking").length, "note")}</span>
+            </summary>
+            <Lines>
+              {fileWarnings.filter((warning) => warning.severity !== "blocking").map((warning, index) => <li key={`${warning.code}-${index}`}>{warning.message}</li>)}
+            </Lines>
+          </details>
+        )}
       </div>
-      <KeysHint
-        onMore={openShortcuts}
-        keys={[
-          { keys: ["↑", "↓", "j", "k"], does: "move" },
-          { keys: ["n"], does: "next to check" },
-          { keys: ["x", "i"], does: "exclude, include" },
-          { keys: ["e"], does: "edit" },
-          { keys: ["o"], does: "original" },
-          { keys: ["Space"], does: "select" },
-          { keys: ["Ctrl+Enter"], does: "save" },
-        ]}
-      />
 
       <SplitPane
-        paneLabel={bulkPanel ? "Exclude the selected passages" : approvePanel ? "Publish" : current ? `Passage ${current.ordinal}` : "Passage"}
+        paneLabel={bulkPanel ? "Exclude the selected passages" : approvePanel ? "Publish" : savePanel ? "Save the review" : current ? `Passage ${current.ordinal}` : "Passage"}
         list={
           <>
             <PassageGrid
@@ -624,18 +667,20 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
         </BulkActionBar>
         <div className="lib-savebar">
           <div className="lib-savebar__row">
-            <TextField
-              name="desk-summary"
-              label="Review summary"
-              placeholder="What you checked, and what you changed"
-              required
-              maxLength={2000}
-              error={summaryTried && !summary.trim() ? "Write what you checked and what you changed." : null}
-              value={summary}
-              onChange={(event) => setSummary(event.target.value)}
-            />
+            <section className="lib-progress" aria-label="Review progress">
+              <p>
+                Seen <strong className="ds-num">{seen.size.toLocaleString("en")}</strong> of {rows.length.toLocaleString("en")}
+                {" · "}{tally.flagged.toLocaleString("en")} flagged
+                {" · "}{tally.blocking.toLocaleString("en")} {tally.blocking === 1 ? "blocks" : "block"} approval
+                {" · "}<span className={dirty > 0 ? "lib-strong" : undefined}>{dirty.toLocaleString("en")} unsaved {dirty === 1 ? "change" : "changes"}</span>
+                <span className="lib-quiet">
+                  {" · "}{basis.kind === "edition" ? `compared with version ${liveNumber ?? "?"} in service` : "compared with the text as read"}
+                </span>
+              </p>
+              <progress max={Math.max(rows.length, 1)} value={seen.size} aria-label="Passages seen" />
+            </section>
             <ActionGroup>
-              <Button busy={hook.review.isPending} onClick={save}>{hook.review.isPending ? "Saving…" : "Save review"}</Button>
+              <Button id="desk-save" busy={hook.review.isPending && !approve.open} aria-expanded={asking.open} onClick={save}>{hook.review.isPending && !approve.open ? "Saving…" : "Save review"}</Button>
               <Button
                 id="desk-approve"
                 variant="primary"
@@ -643,8 +688,12 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
                 aria-expanded={approve.open}
                 onClick={(event) => {
                   hook.approve.reset();
+                  hook.review.reset();
                   if (approve.open) approve.close();
-                  else approve.show(event);
+                  else {
+                    if (asking.open) asking.close();
+                    approve.show(event);
+                  }
                 }}
               >
                 Approve and publish…
@@ -686,10 +735,8 @@ function OriginalPreview({ documentId, versionId, blockId, where }: { documentId
   );
 }
 
-const clock = (at: Date) => at.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
-
 /** A passage's text: a worksheet row as labelled cells (backlog O-3), else as it reads. */
-function PassageText({ row, headings }: { row: Row; headings: Map<string, Map<string, string>> }) {
+export function PassageText({ row, headings }: { row: Row; headings: Map<string, Map<string, string>> }) {
   const value = row.draft?.text ?? row.basis ?? "";
   const cells = labelledCells(value, row.where, headings);
   if (cells) {
@@ -737,7 +784,7 @@ function passageColumns(seen: ReadonlySet<string>, headings: Map<string, Map<str
       width: "10rem",
       cell: (row) => (
         <span className="lib-state">
-          {row.blocking ? <Status tone="attention">Blocks approval</Status> : row.warnings.length ? <Status tone="held">Flagged</Status> : null}
+          {row.blocking ? <Status tone="attention">Blocks approval</Status> : row.warnings.length ? <Status tone="warning">Flagged</Status> : null}
           <span>{CHANGE_WORD[row.change]}</span>
         </span>
       ),

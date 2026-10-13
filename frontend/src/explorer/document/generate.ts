@@ -6,7 +6,7 @@ import { solutionDocument, type DocumentInput, type SolutionDocument } from "./m
 import { documentParts } from "./wordml";
 import { zip } from "./zip";
 
-export const DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+const DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
 /** "Business_Pro_Plus_New_Activation_B2B_Digital_Solution_Architecture.docx", as the original named it. */
 export function documentName(input: Pick<DocumentInput, "scenario">): string {
