@@ -138,7 +138,14 @@ def build_architecture(
         persistence.architecture_evidence_index,
         settings.document_max_file_bytes,
     )
-    document_extractor = SafeDocumentTextExtractor()
+    # The operator's DOCUMENT_* limits, as the library's extractor uses them.
+    document_extractor = SafeDocumentTextExtractor(
+        max_pdf_pages=settings.document_max_pdf_pages,
+        max_extracted_characters=settings.document_max_extracted_characters,
+        max_visited_spreadsheet_cells=settings.document_max_spreadsheet_cells,
+        max_decoded_image_pixels=settings.document_max_image_pixels,
+        max_xml_nodes=settings.document_max_xml_nodes,
+    )
     located_extractor = LocatedDocumentExtractor(document_extractor)
     upload = UploadKnowledgeDocument(
         manage,
