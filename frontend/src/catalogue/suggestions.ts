@@ -101,8 +101,10 @@ export function lexicon(release: Release, suggestions: Suggestion[]): Lexicon {
   // A name no suggestion spells out, from its id: a part with a digit, without a vowel or of two
   // letters reads as an acronym ("om-e2eso" is "OM E2ESO", "rtf" is "RTF"), a word is capitalised
   // ("business-pro-plus" is "Business Pro Plus").
+  // A reference that is not an id ("Business Pro/ PRO+ with 5G Backup") is the document's own
+  // spelling, and is shown as written.
   const humane = (id: string) =>
-    id.split(/[-_]+/).filter(Boolean)
+    !/^[a-z0-9_-]+$/.test(id) ? id : id.split(/[-_]+/).filter(Boolean)
       .map((word) => (/[0-9]/.test(word) || !/[aeiou]/.test(word) || word.length <= 2 ? word.toLocaleUpperCase() : word.charAt(0).toLocaleUpperCase() + word.slice(1)))
       .join(" ");
   const offeringBy = (reference: string) =>
