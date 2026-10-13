@@ -138,7 +138,7 @@ export function AreaTabs({ current }: { current: "landscape" | "products" | "jou
  * version in service or the bundled sample, to compare the two. The sample says
  * so under the bar, so it is never taken for the live catalogue.
  */
-export function SourceSwitch() {
+function SourceSwitch() {
   const lab = useLabSource();
   if (!lab) return null;
   const options: { id: CatalogueSource; label: string }[] = [
