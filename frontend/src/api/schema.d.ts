@@ -3784,6 +3784,19 @@ export interface components {
          * @enum {string}
          */
         ItemProblem: "not_found" | "not_permitted" | "unsupported_type" | "over_limit";
+        /**
+         * JourneyChannelFlowResponse
+         * @description The flow one channel sees: its own steps and those that name no channel.
+         */
+        JourneyChannelFlowResponse: {
+            /** Channel Id */
+            channel_id: string;
+            /**
+             * Edges
+             * @default []
+             */
+            edges: components["schemas"]["JourneyEdgeResponse"][];
+        };
         /** JourneyEdgeResponse */
         JourneyEdgeResponse: {
             /** From Activity */
@@ -3805,6 +3818,11 @@ export interface components {
              * @default []
              */
             activities: components["schemas"]["ActivitySchema"][];
+            /**
+             * Channel Edges
+             * @default []
+             */
+            channel_edges: components["schemas"]["JourneyChannelFlowResponse"][];
             confidence?: components["schemas"]["SourceConfidence"] | null;
             /** Description */
             description?: string | null;
@@ -3831,6 +3849,11 @@ export interface components {
             order_type_code?: string | null;
             /** Product Id */
             product_id?: string | null;
+            /**
+             * Shared Edges
+             * @default []
+             */
+            shared_edges: components["schemas"]["JourneyEdgeResponse"][];
             /** Source */
             source?: string | null;
         };

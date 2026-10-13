@@ -79,7 +79,10 @@ from knowledge_portal.domain.architecture.journeys import (
     FlowRule,
     FlowRuleKind,
     Journey,
+    JourneyEdge,
+    journey_channels,
     journey_edges,
+    shared_journey_edges,
 )
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
@@ -1649,6 +1652,25 @@ class JourneyEdgeResponse(BaseModel):
     label: Name | None = None
 
 
+class JourneyChannelFlowResponse(BaseModel):
+    """The flow one channel sees: its own steps and those that name no channel."""
+
+    channel_id: Identifier
+    edges: list[JourneyEdgeResponse] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS * 4)
+
+
+def _edge_responses(edges: tuple[JourneyEdge, ...]) -> list[JourneyEdgeResponse]:
+    return [
+        JourneyEdgeResponse.model_construct(
+            from_activity=edge.from_activity,
+            to_activity=edge.to_activity,
+            kind=edge.kind,
+            label=edge.label,
+        )
+        for edge in edges
+    ]
+
+
 class JourneySchema(BaseModel):
     """A journey and, read-only, the flow derived from its order and rules (ADR-0096)."""
 
@@ -1666,6 +1688,11 @@ class JourneySchema(BaseModel):
     source: Text | None = None
     # Derived on the way out and ignored on the way in: the flow is never stored.
     edges: list[JourneyEdgeResponse] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS * 4)
+    # The same, per channel the steps name, and for a channel no step names.
+    channel_edges: list[JourneyChannelFlowResponse] = Field(
+        default=[], max_length=MAX_CATALOGUE_ITEMS
+    )
+    shared_edges: list[JourneyEdgeResponse] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS * 4)
 
     @classmethod
     def from_domain(cls, journey: Journey) -> JourneySchema:
@@ -1682,15 +1709,14 @@ class JourneySchema(BaseModel):
             ],
             confidence=journey.confidence,
             source=journey.source,
-            edges=[
-                JourneyEdgeResponse.model_construct(
-                    from_activity=edge.from_activity,
-                    to_activity=edge.to_activity,
-                    kind=edge.kind,
-                    label=edge.label,
+            edges=_edge_responses(journey_edges(journey)),
+            channel_edges=[
+                JourneyChannelFlowResponse.model_construct(
+                    channel_id=channel, edges=_edge_responses(journey_edges(journey, channel))
                 )
-                for edge in journey_edges(journey)
+                for channel in journey_channels(journey)
             ],
+            shared_edges=_edge_responses(shared_journey_edges(journey)),
         )
 
     def to_domain(self) -> Journey:

@@ -5559,6 +5559,30 @@
         "title": "ItemProblem",
         "type": "string"
       },
+      "JourneyChannelFlowResponse": {
+        "description": "The flow one channel sees: its own steps and those that name no channel.",
+        "properties": {
+          "channel_id": {
+            "maxLength": 200,
+            "title": "Channel Id",
+            "type": "string"
+          },
+          "edges": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/JourneyEdgeResponse"
+            },
+            "maxItems": 20000,
+            "title": "Edges",
+            "type": "array"
+          }
+        },
+        "required": [
+          "channel_id"
+        ],
+        "title": "JourneyChannelFlowResponse",
+        "type": "object"
+      },
       "JourneyEdgeResponse": {
         "properties": {
           "from_activity": {
@@ -5607,6 +5631,15 @@
             },
             "maxItems": 5000,
             "title": "Activities",
+            "type": "array"
+          },
+          "channel_edges": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/JourneyChannelFlowResponse"
+            },
+            "maxItems": 5000,
+            "title": "Channel Edges",
             "type": "array"
           },
           "confidence": {
@@ -5691,6 +5724,15 @@
               }
             ],
             "title": "Product Id"
+          },
+          "shared_edges": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/JourneyEdgeResponse"
+            },
+            "maxItems": 20000,
+            "title": "Shared Edges",
+            "type": "array"
           },
           "source": {
             "anyOf": [

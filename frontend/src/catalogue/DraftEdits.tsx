@@ -442,7 +442,7 @@ export function JourneyEdit({ journey, onDone }: { journey?: Journey; onDone: (s
   const release = book.release;
   const { saveDraft } = useEditing(release);
   const [value, setValue] = useState<Journey>(
-    () => journey ?? { id: "", name: "", activities: [], flow_rules: [], integrations: [], edges: [] },
+    () => journey ?? { id: "", name: "", activities: [], flow_rules: [], integrations: [], edges: [], channel_edges: [], shared_edges: [] },
   );
   const journeys = release.journeys ?? [];
   return (
