@@ -1,0 +1,280 @@
+/* The workbench: a narrow list beside the chosen record (UX rebuild, phase 3). */
+.ds-bench {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@container main (min-width: 60rem) {
+  .ds-bench {
+    grid-template-columns: var(--bench-list-width) minmax(0, 1fr);
+    gap: 0;
+    block-size: max(20rem, calc(100vh - var(--split-top, 0px) - var(--sticky-bottom, 0px)));
+    border-block-start: var(--rule-hair) solid var(--color-rule);
+  }
+
+  .ds-bench__list,
+  .ds-bench__record {
+    min-block-size: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .ds-bench__list {
+    border-inline-end: var(--bench-rule);
+    /* A focused row stays clear of the list's sticky head (WCAG 2.4.11). */
+    scroll-padding-block: var(--bench-tools-height, 6rem) var(--space-2);
+  }
+
+  .ds-bench__record {
+    padding: var(--space-4) var(--space-6);
+  }
+}
+
+/* Stacked, with a record chosen: the rows keep to a short box (the find and filters stay above
+   it), so the record follows close under the list. */
+@container main (max-width: 59.99rem) {
+  .ds-bench[data-chosen] .ds-records {
+    max-block-size: 16rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-block-end: var(--bench-rule);
+  }
+
+  .ds-bench[data-chosen] .ds-records__label {
+    inset-block-start: 0;
+  }
+
+  .ds-listtools {
+    position: static;
+  }
+}
+
+.ds-bench__list {
+  min-inline-size: 0;
+  background: var(--bench-list-bg);
+}
+
+.ds-bench__record {
+  min-inline-size: 0;
+}
+
+/* The list's head: find, filters and the count, sticky at the list's top. */
+.ds-listtools {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 1;
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-3) var(--space-2);
+  background: var(--bench-list-bg);
+  border-block-end: var(--rule-hair) solid var(--color-rule);
+}
+
+.ds-listtools__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-2);
+}
+
+.ds-listtools__controls > * {
+  flex: 1 1 8rem;
+  min-inline-size: 0;
+}
+
+/* The find field takes its own line; filters share the next. */
+.ds-listtools__controls > .ds-listfind {
+  flex-basis: 100%;
+}
+
+/* A text action (Add, Clear filters) keeps its own width. */
+.ds-listtools__controls > .ds-button {
+  flex: 0 0 auto;
+}
+
+.ds-listfind {
+  position: relative;
+  display: block;
+}
+
+.ds-listfind__icon {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: var(--space-2);
+  color: var(--color-ink-2);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.ds-listfind .ds-input {
+  inline-size: 100%;
+  padding-inline-start: calc(var(--space-2) + 16px + var(--space-2));
+}
+
+.ds-listfilter {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.ds-listfilter__label {
+  font-size: var(--text-meta);
+  color: var(--color-ink-2);
+}
+
+.ds-listtools__count {
+  margin: 0;
+  font-size: var(--text-meta);
+  color: var(--color-ink-2);
+}
+
+/* The rows: a name, a quieter line under it, one status or badge at the end. */
+.ds-records ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ds-records__label {
+  position: sticky;
+  inset-block-start: var(--bench-tools-height, 0px);
+  margin: 0;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-strong);
+  color: var(--color-ink-2);
+  background: var(--color-surface-2);
+  border-block-end: var(--rule-hair) solid var(--color-rule);
+}
+
+.ds-records__count {
+  font-weight: var(--weight-body);
+}
+
+.ds-records__link {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0 var(--space-2);
+  min-block-size: 2.5rem;
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-ink);
+  text-decoration: none;
+  border-block-end: var(--rule-hair) solid var(--color-rule-soft);
+}
+
+.ds-records__link:hover {
+  background: var(--color-surface-2);
+}
+
+.ds-records__link:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: -3px;
+}
+
+/* The record shown: the selection tint and a maroon edge, never colour alone (the edge and aria-current). */
+.ds-records__link[aria-current] {
+  background: var(--color-selected);
+  box-shadow: inset 3px 0 0 var(--color-action);
+}
+
+.ds-records__name {
+  overflow: hidden;
+  font-weight: var(--weight-strong);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ds-records__link[aria-current] .ds-records__name {
+  color: var(--color-on-selected);
+}
+
+.ds-records__meta {
+  justify-self: end;
+  font-size: var(--text-meta);
+}
+
+.ds-records__detail {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  font-size: var(--text-meta);
+  color: var(--color-ink-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ds-records__empty {
+  margin: 0;
+  padding: var(--space-4) var(--space-3);
+  color: var(--color-ink-2);
+}
+
+/* A record: its name and facts on top, then its sections. */
+.ds-record {
+  display: grid;
+  align-content: start;
+  gap: var(--space-5);
+  min-inline-size: 0;
+  max-inline-size: 72rem;
+}
+
+.ds-record__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-2) var(--space-4);
+}
+
+.ds-record__titles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  min-inline-size: 0;
+}
+
+.ds-record__title {
+  margin: 0;
+  font-size: var(--text-h2);
+  font-weight: var(--weight-heading);
+  line-height: var(--leading-tight);
+  overflow-wrap: anywhere;
+}
+
+.ds-record__title:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.ds-record__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  font-size: var(--text-meta);
+  color: var(--color-ink-2);
+}
+
+.ds-record__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: end;
+  gap: var(--space-2);
+}
+
+.ds-record__lead {
+  grid-column: 1 / -1;
+  margin: 0;
+  max-inline-size: 68ch;
+  color: var(--color-ink-2);
+}
+
+.ds-record--none {
+  gap: var(--space-3);
+  padding-block: var(--space-4);
+}
+
+.ds-record__none-title {
+  margin: 0;
+  font-size: var(--text-lead);
+  font-weight: var(--weight-strong);
+}

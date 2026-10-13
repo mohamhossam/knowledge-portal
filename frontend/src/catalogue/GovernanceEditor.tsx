@@ -59,7 +59,7 @@ export function SourcesEdit({ onDone }: { onDone: () => void }) {
       onCancel={onDone}
       onSubmit={() => saveDraft.mutate(draftBody(release, { sources: finished }), { onSuccess: onDone })}
     >
-      <div className="form">
+      <div className="cat-form">
       <Rows<KnowledgeSource>
         legend="Sources"
         one="source"
@@ -92,9 +92,9 @@ export function SourcesEdit({ onDone }: { onDone: () => void }) {
 function SideFields({ legend, side, sources, onChange }: { legend: string; side: Side; sources: KnowledgeSource[]; onChange: (side: Side) => void }) {
   const known = sources.some((source) => source.id === side.source_id);
   return (
-    <fieldset className="form__group form__field--wide">
-      <legend className="field__label">{legend}</legend>
-      <div className="form__grid">
+    <fieldset className="cat-form__group cat-form__wide">
+      <legend className="ds-field__label">{legend}</legend>
+      <div className="cat-form__grid">
         <SelectField
           label="Source"
           value={side.source_id}
@@ -146,7 +146,7 @@ export function ConflictsEdit({ onDone }: { onDone: () => void }) {
       onCancel={onDone}
       onSubmit={() => saveDraft.mutate(draftBody(release, { conflicts: finished }), { onSuccess: onDone })}
     >
-      <div className="form">
+      <div className="cat-form">
       <Rows<SourceConflict>
         legend="Conflicts between sources"
         one="conflict"
@@ -198,8 +198,8 @@ export function ConflictsEdit({ onDone }: { onDone: () => void }) {
                       onChange={(question_id) => change({ question_id: question_id || null })}
                     />
                     {offering && offering.order_types.length > 0 && (
-                      <fieldset className="choices form__field--wide">
-                        <legend className="field__label">For order types (none means all)</legend>
+                      <fieldset className="cat-form__choices cat-form__wide">
+                        <legend className="ds-field__label">For order types (none means all)</legend>
                         {offering.order_types.map((type) => (
                           <CheckField
                             key={type.code}

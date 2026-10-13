@@ -62,18 +62,24 @@ def _no_checkpoint() -> None:
     return None
 
 
+def _no_progress(done: int, total: int) -> None:
+    return None
+
+
 @dataclass(frozen=True)
 class ExtractionRequest:
     """A whole document. The extractor reads it in as many calls as its model needs.
 
     ``checkpoint`` runs before each call and raises to stop reading, for example
-    when the document has left the draft meanwhile.
+    when the document has left the draft meanwhile. ``progress`` hears how many of
+    the reading's calls are done, of how many it expects (a part split in two adds one).
     """
 
     document_title: str
     segments: tuple[ExtractionSegment, ...]
     known_systems: tuple[KnownSystem, ...]
     checkpoint: Callable[[], None] = _no_checkpoint
+    progress: Callable[[int, int], None] = _no_progress
 
 
 @dataclass(frozen=True)
@@ -84,7 +90,8 @@ class ProposedChange:
     writes them, kept because the content holds only ids. An inferred change
     carries the model's ``rationale`` for reading it from the passages.
     ``reader`` names what proposed it, as (name, version), when that was not
-    the proposal's model, such as the table reader.
+    the proposal's model, such as the table reader. ``also_cited`` holds where
+    readings merged into this one say it, each place with the quote found there.
     """
 
     content: CandidateContent
@@ -95,6 +102,17 @@ class ProposedChange:
     basis: CandidateBasis = CandidateBasis.STATED
     rationale: str | None = None
     reader: tuple[str, str] | None = None
+    # Where readings merged into this one say it, each with its own quote.
+    also_cited: tuple[tuple[str, str], ...] = ()
+
+    @property
+    def citations(self) -> tuple[tuple[str, str], ...]:
+        """Each (location, quote) the change rests on, its quote paired only with where it is."""
+        return tuple(
+            dict.fromkeys(
+                (*((location, self.quote) for location in self.locations), *self.also_cited)
+            )
+        )
 
 
 @dataclass(frozen=True)

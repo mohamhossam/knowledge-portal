@@ -38,6 +38,7 @@ from knowledge_portal.application.ports.architecture_mapping_stats import (
 )
 from knowledge_portal.application.ports.knowledge_events import KnowledgeEventOutboxPort
 from knowledge_portal.application.ports.product_catalog import ProductCatalogPort
+from knowledge_portal.application.ports.requirement_assessment import RequirementAssessmentPort
 from knowledge_portal.application.ports.requirement_citations import (
     RequirementCitationCountsPort,
 )
@@ -68,6 +69,10 @@ from knowledge_portal.application.use_cases.architecture_mapping_impact import (
 from knowledge_portal.application.use_cases.architecture_preview import (
     PreviewArchitectureImpact,
 )
+from knowledge_portal.application.use_cases.capability_concepts import (
+    ProposeCapabilityConcepts,
+    SuggestComponentCapabilities,
+)
 from knowledge_portal.application.use_cases.catalog_plans import ReadCatalogPlans
 from knowledge_portal.application.use_cases.catalogue_candidates import (
     DecideCatalogueCandidate,
@@ -76,7 +81,9 @@ from knowledge_portal.application.use_cases.change_requests import (
     DismissChangeRequest,
     ListChangeRequests,
     ReadChangeRequestIntoDraft,
+    ReadDeliverySummaries,
     ReceiveChangeRequest,
+    ReceiveDelivery,
 )
 from knowledge_portal.application.use_cases.cited_passages import CitedPassages
 from knowledge_portal.application.use_cases.document_library import DocumentLibrary
@@ -103,6 +110,10 @@ from knowledge_portal.application.use_cases.library_governance import LibraryGov
 from knowledge_portal.application.use_cases.organisation_catalogue import (
     ManageOrganisationCatalogue,
 )
+from knowledge_portal.application.use_cases.precedents import (
+    ReadPrecedentSummaries,
+    RecordPrecedent,
+)
 from knowledge_portal.application.use_cases.provider_call_rate import ProviderCallRateLimit
 from knowledge_portal.application.use_cases.reference_knowledge import (
     ReferenceKnowledge,
@@ -114,6 +125,7 @@ from knowledge_portal.application.use_cases.requirement_corpus import (
     ReadRequirementCorpus,
 )
 from knowledge_portal.application.use_cases.source_impact import DocumentSourceImpact
+from knowledge_portal.application.use_cases.vocabulary_cleanup import CleanUpVocabulary
 from knowledge_portal.domain.identity.entities import ActorProfile
 from knowledge_portal.infrastructure.config.options import (
     DEFAULT_PRODUCT_CATALOG_TIMEOUT_SECONDS,
@@ -201,6 +213,10 @@ class Container:
     cited_passages: CitedPassages
     reference_knowledge: ReferenceKnowledge
     architecture_knowledge: ArchitectureKnowledgePort
+    requirement_assessment: RequirementAssessmentPort
+    # Decided verdicts from requirement work, and their counts (ontology plan Phase 5).
+    record_precedent: RecordPrecedent
+    precedent_summaries: ReadPrecedentSummaries
     manage_architecture_knowledge: ManageArchitectureKnowledge
     explore_architecture: ExploreArchitecture
     catalog_plans: ReadCatalogPlans
@@ -216,8 +232,13 @@ class Container:
     upload_architecture_documents: UploadArchitectureDocuments
     read_knowledge_document: ReadKnowledgeDocument
     decide_catalogue_candidates: DecideCatalogueCandidate
+    propose_capability_concepts: ProposeCapabilityConcepts
+    clean_up_vocabulary: CleanUpVocabulary
+    suggest_component_capabilities: SuggestComponentCapabilities
     # Change requests from Requirement AI (requirement-portal ADR-0101, step 7).
     receive_change_request: ReceiveChangeRequest
+    receive_delivery: ReceiveDelivery
+    delivery_summaries: ReadDeliverySummaries
     list_change_requests: ListChangeRequests
     read_change_request: ReadChangeRequestIntoDraft
     dismiss_change_request: DismissChangeRequest
@@ -388,6 +409,9 @@ def _build_container(
         cited_passages=CitedPassages(persistence.library_repository, review_cycle),
         reference_knowledge=reference_knowledge,
         architecture_knowledge=architecture.knowledge,
+        requirement_assessment=architecture.assess,
+        record_precedent=architecture.record_precedent,
+        precedent_summaries=architecture.precedent_summaries,
         manage_architecture_knowledge=architecture.manage,
         explore_architecture=ExploreArchitecture(persistence.architecture_repository),
         catalog_plans=ReadCatalogPlans(
@@ -412,7 +436,12 @@ def _build_container(
         upload_architecture_documents=architecture.upload_documents,
         read_knowledge_document=architecture.read_document,
         decide_catalogue_candidates=architecture.decide_candidates,
+        propose_capability_concepts=architecture.propose_concepts,
+        clean_up_vocabulary=architecture.clean_up_vocabulary,
+        suggest_component_capabilities=architecture.suggest_component_links,
         receive_change_request=architecture.receive_change_request,
+        receive_delivery=architecture.receive_delivery,
+        delivery_summaries=architecture.delivery_summaries,
         list_change_requests=architecture.list_change_requests,
         read_change_request=architecture.read_change_request,
         dismiss_change_request=architecture.dismiss_change_request,

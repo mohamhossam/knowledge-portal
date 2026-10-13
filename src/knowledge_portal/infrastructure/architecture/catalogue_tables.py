@@ -76,7 +76,7 @@ from knowledge_portal.domain.architecture.tracking import (
 from knowledge_portal.infrastructure.llm.catalogue_extraction import plain_name, slug
 
 READER = "catalogue-table-reader"
-READER_VERSION = "catalogue-tables-v6"
+READER_VERSION = "catalogue-tables-v10"
 # An Integrations entry longer than this is a phrase ("Same service context as
 # B2B Web"), not the name of a system.
 _MAX_ENTRY_WORDS = 4
@@ -98,6 +98,11 @@ _INTERACTION = frozenset({"interaction", "interaction type"})
 _INTERFACE = frozenset({"interface", "interface api event"})
 _PAYLOAD = frozenset({"payload"})
 _DOMAIN = frozenset({"domain", "domain name", "landscape domain"})
+# A requirements or feasibility table lists the systems a requirement touches; it
+# is not a system inventory, though it has "ID" and "System" columns.
+_REQUIREMENT = frozenset(
+    {"requirement", "requirement details", "requirement description", "feasibility"}
+)
 _CODE = frozenset({"code"})
 _SUBDOMAIN = frozenset({"sub domain", "subdomain"})
 # Channels (requirement-portal ADR-0101): a Channels table, and the channels an order type
@@ -113,6 +118,7 @@ _BY_CHANNEL = frozenset(
 )
 _NOTHING = frozenset({"", "-", "—", "–"})
 _VIA = re.compile(r"\s+via\s+", re.IGNORECASE)
+_PART = re.compile(r" \(part \d+ of \d+\)$")
 _QUALIFIER = re.compile(r"\s*\([^()]*\)\s*$")
 
 
@@ -142,7 +148,13 @@ class _Row:
             and not columns & (_FUNCTION | _INTEGRATIONS | _ALIASES)
         ):
             return "channel"
-        if columns & _SYSTEM and columns & (_ID | _FUNCTION | _INTEGRATIONS | _ALIASES):
+        if (
+            columns & _SYSTEM
+            and columns & (_ID | _FUNCTION | _INTEGRATIONS | _ALIASES)
+            and not columns & _REQUIREMENT
+            # An inventory names one system a row, never "ECM, CWOM, WFMS".
+            and len(_entries(self.get(_SYSTEM))) < 2
+        ):
             return "system"
         if columns & _DOMAIN and columns & (_ID | _CODE):
             return "domain"
@@ -330,6 +342,8 @@ class CatalogueTableReader:
                 offerings[section.name.casefold()] = offering
         for journey in _journey_sections(request.segments):
             journey.read_into(reading, names, offerings.get((journey.product or "").casefold()))
+        for workflow in _workflow_sections(request.segments):
+            workflow.read_into(reading, names, None)
         return reading
 
     def _channel(self, row: _Row, names: _Names) -> list[ProposedChange]:
@@ -1174,6 +1188,21 @@ def _systems(cell: str, names: _Names) -> tuple[str, ...]:
     return tuple(dict.fromkeys(found))
 
 
+def _performer(cell: str, names: _Names) -> tuple[str, ...]:
+    """A step's performer as one name; none when the cell names no system ("System", "TBD").
+
+    A combined name is resolved part by part later, against the systems the reading
+    suggests (``_canonical_journey``), when it is known which parts are systems.
+    """
+    name = plain_name(cell.strip())
+    if not name or name.casefold() in _NO_PERFORMER:
+        return ()
+    return (names.resolve(name),)
+
+
+_NO_PERFORMER = frozenset({"system", "systems", "n/a", "na", "tbd", "tbc", "none", "-", "—", "–"})
+
+
 def _value(text: str) -> str | None:
     cleaned = text.replace("\\|", "|").strip()
     return None if cleaned in _NOTHING else cleaned
@@ -1236,6 +1265,14 @@ class _JourneySection:
     product: str | None = None
     heading: ExtractionSegment | None = None
     segments: list[ExtractionSegment] = field(default_factory=list)
+    # Whether its activity rows are marked read, so the model takes only their
+    # capabilities. A workflow book's stages are not: the flows between systems are
+    # stated in their remark columns ("WFMS will send to OM and OM will send to NEC").
+    rows_read: bool = True
+    # Whether a step's performer cell is one name, as a workflow book writes it ("E2ESO-ASAP
+    # ENG/UCAAS"), rather than a list to split at "/": split before any system is known, it
+    # named systems nothing suggests and kept 35 journeys waiting.
+    whole_performer: bool = False
 
     def read_into(
         self, reading: TableReading, names: _Names, offering: ProductOffering | None
@@ -1251,7 +1288,16 @@ class _JourneySection:
         try:
             for segment in self.segments:
                 if segment.cells:
-                    self._row(_row(segment), steps, rules, links, consumed, read, names)
+                    self._row(
+                        _row(segment),
+                        steps,
+                        rules,
+                        links,
+                        consumed,
+                        read,
+                        names,
+                        whole_performer=self.whole_performer,
+                    )
                     continue
                 text = segment.text.strip()
                 if plain_name(text) in titles and _STEP_HEADING.match(plain_name(text)):
@@ -1297,7 +1343,8 @@ class _JourneySection:
             reading.notes.append(f"The journey {self.name} could not be read: {exc}")
             return
         reading.consumed |= consumed
-        reading.read |= read - consumed
+        if self.rows_read:
+            reading.read |= read - consumed
         cited = self.heading or self.segments[0]
         reading.changes.append(
             ProposedChange(
@@ -1320,6 +1367,8 @@ class _JourneySection:
         consumed: set[int],
         read: set[int],
         names: _Names,
+        *,
+        whole_performer: bool = False,
     ) -> None:
         """One table row of the journey: an activity, a flow rule or an integration."""
         columns = frozenset(row.values)
@@ -1333,7 +1382,13 @@ class _JourneySection:
                     _column(row.get(_PERFORMER)) in _BY_CHANNEL
                     or _yes(row.get(_CHANNEL_ENTRY)) is True
                 )
-                performers = () if by_channel else _systems(row.get(_PERFORMER), names)
+                performers = (
+                    ()
+                    if by_channel
+                    else _performer(row.get(_PERFORMER), names)
+                    if whole_performer
+                    else _systems(row.get(_PERFORMER), names)
+                )
                 steps[step] = Activity(
                     step,
                     name,
@@ -1404,6 +1459,66 @@ def _journey_sections(segments: tuple[ExtractionSegment, ...]) -> list[_JourneyS
     return [item for item in sections.values() if item.segments]
 
 
+# A workflow table (an SDD's "Seq. | Description | ... | System" stages): its columns, read as
+# a journey's step number, activity and performing system.
+_WORKFLOW_STEP = frozenset({"seq", "sequence", "#", "no", "step", "stage no"})
+_WORKFLOW_ACTIVITY = frozenset({"description", "activity", "stage", "task", "stage name"})
+_WORKFLOW_SYSTEM = frozenset({"system", "performing system", "performed by", "system name"})
+_AS_JOURNEY = {
+    "#": _WORKFLOW_STEP,
+    "activity": _WORKFLOW_ACTIVITY,
+    "performing system": _WORKFLOW_SYSTEM,
+}
+_MAX_JOURNEY_NAME = 100
+_STEP_NUMBER = re.compile(r"^\d+(?:\.\d+)*\.?$")
+
+
+def _workflow_name(section: tuple[str, ...]) -> str:
+    """A workflow's name from its table's title, "WF-1 Order fulfillment | Business Pro/ PRO+
+    New Request ...": its first two parts; the sheet's name when it has no title."""
+    title = section[-1]
+    parts = [part.strip() for part in title.split("|") if part.strip()]
+    return " — ".join(parts[:2])[:_MAX_JOURNEY_NAME].rstrip() or title
+
+
+def _workflow_sections(segments: tuple[ExtractionSegment, ...]) -> list[_JourneySection]:
+    """Each workflow table, as a journey whose activities are its stages.
+
+    A table whose rows have a step number, an activity (or description) and a
+    system column, and that no "Journey: X" heading already covers, is the steps of
+    one journey in order: an SDD's provisioning workflow book holds one per order
+    scenario under its title row. Its columns are read as a journey table's.
+    """
+    sections: dict[tuple[str, ...], list[ExtractionSegment]] = {}
+    for segment in segments:
+        if not segment.cells or not segment.section or _journey_name(segment) is not None:
+            continue
+        columns = {_column(name): name for name, _ in segment.cells}
+        renamed: dict[str, str] = {}
+        for role, labels in _AS_JOURNEY.items():
+            found = next((columns[label] for label in sorted(labels) if label in columns), None)
+            if found is None:
+                break
+            renamed[found] = role
+        else:
+            cells = tuple((renamed.get(name, name), value) for name, value in segment.cells)
+            step = dict(cells).get("#", "").strip()
+            # A stage is numbered ("3", "5.1"); a "Note: 1" row beside them is not one.
+            if _STEP_NUMBER.match(step):
+                sections.setdefault(segment.section, []).append(replace(segment, cells=cells))
+    return [
+        _JourneySection(
+            _workflow_name(section), segments=rows, rows_read=False, whole_performer=True
+        )
+        for section, rows in sections.items()
+        if len(rows) >= _MIN_WORKFLOW_STEPS
+    ]
+
+
+# Fewer stages than this is a small table that happens to have such columns, not a workflow.
+_MIN_WORKFLOW_STEPS = 3
+
+
 class TableFirstCatalogueExtractor:
     """Tables read exactly first; the model reads what is left (ADR-0093).
 
@@ -1454,7 +1569,8 @@ class TableFirstCatalogueExtractor:
                     change
                     for change in proposal.changes
                     if change.content.kind not in _FROM_CELLS
-                    or not set(change.locations) <= read_rows
+                    # A long row read in parts is cited "row 4 (part 2 of 3)": still that row.
+                    or not {_PART.sub("", location) for location in change.locations} <= read_rows
                 ]
         return CatalogueProposal(
             (*reading.changes, *changes), self.model, self.prompt_version, tuple(warnings)

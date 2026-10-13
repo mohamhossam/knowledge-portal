@@ -13,22 +13,20 @@
   inset-block-start: var(--space-2);
 }
 
-/* The maroon masthead: the binding */
-/* The two tiers, pinned together; their height is measured as one (--sticky-top). */
+/* The slim brand bar, pinned; its height is measured (--sticky-top). */
 .ds-topbar {
   position: sticky;
   inset-block-start: 0;
   z-index: var(--z-masthead);
 }
 
-/* Tier one, the maroon masthead: the Etisalat lockup, then the way out and the utilities. */
+/* The maroon brand bar: the Etisalat lockup, search in the middle, then the way out and the utilities. */
 .ds-masthead {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4) var(--space-6);
+  gap: var(--space-2) var(--space-5);
   min-block-size: var(--masthead-height);
-  padding-inline: var(--gutter);
+  padding-inline: var(--space-4);
   background: var(--masthead-bg);
   color: var(--masthead-fg);
 }
@@ -43,13 +41,13 @@
 .ds-masthead__home {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
 /* The Etisalat lockup: the white logo, a hairline, the portal's name. */
 .ds-masthead__logo {
   display: block;
-  block-size: 24px;
+  block-size: 20px;
   inline-size: auto;
   flex: none;
   transform: translateY(-1px);
@@ -57,20 +55,30 @@
 
 .ds-masthead__divider {
   inline-size: 1px;
-  block-size: 24px;
+  block-size: 20px;
   flex: none;
   background: var(--masthead-control-border);
+}
+
+.ds-masthead__search {
+  flex: 0 1 28rem;
+  margin-inline: auto;
+  min-inline-size: 0;
 }
 
 .ds-masthead__end {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-3);
   margin-inline-start: auto;
 }
 
+.ds-masthead__search + .ds-masthead__end {
+  margin-inline-start: 0;
+}
+
 .ds-masthead__home {
-  gap: var(--space-4);
+  gap: var(--space-3);
   align-self: stretch;
   color: inherit;
   text-decoration: none;
@@ -83,7 +91,7 @@
 }
 
 .ds-masthead__product {
-  font-size: var(--size-17);
+  font-size: var(--text-body);
   font-weight: var(--weight-600);
   letter-spacing: -0.005em;
   white-space: nowrap;
@@ -101,12 +109,13 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  min-block-size: 2.125rem;
+  min-block-size: 1.75rem;
   padding-inline: var(--space-3);
   border: var(--rule-hair) solid var(--masthead-control-border);
   border-radius: var(--radius-pill);
   background: transparent;
   color: inherit;
+  font-size: var(--text-meta);
   cursor: pointer;
 }
 
@@ -118,6 +127,12 @@
 .ds-masthead__button .ds-badge {
   color: inherit;
   border-color: var(--masthead-control-border);
+}
+
+/* A count's room, held while there is none, so the bar doesn't shift when one arrives. */
+.ds-masthead__count-slot {
+  display: inline-block;
+  min-inline-size: var(--target-min);
 }
 
 .ds-masthead__icon {
@@ -133,11 +148,10 @@
   border-block-end: var(--rule-hair) solid var(--color-rule);
 }
 
-/* Shell body: the rail beside the page */
-/* Shell body: the page, full width under the masthead (the areas live on the bar). */
+/* Shell body: the sidebar, the page, and a side panel (Jobs, Help, Account) when one is open. */
 .ds-shell__body {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
 }
 
@@ -145,155 +159,266 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
-/* A side panel (Jobs, Help, Account) takes the third column; below 1024px it overlays (overlays.css). */
+/* A side panel takes the last column; below 1024px it overlays (overlays.css). */
 .ds-shell--panel .ds-shell__body {
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
 }
 
 .ds-shell--panel.ds-shell--reader .ds-shell__body {
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
-/* The areas, along the masthead: each a quiet link, the current one bold with a white bar beneath. */
-/* Tier two, the white areas bar: each area an icon and a label, the current one underlined in maroon. */
-.ds-rail {
+/* The sidebar: the areas, top to bottom, full height under the brand bar; its foot collapses it. */
+.ds-sidebar {
+  position: sticky;
+  inset-block-start: var(--sticky-top);
   display: flex;
-  align-items: stretch;
-  gap: var(--space-2);
-  min-block-size: 3.25rem;
-  padding-inline: var(--gutter);
-  overflow-x: auto;
-  scrollbar-width: none;
-  background: var(--color-surface);
-  border-block-end: var(--rule-hair) solid var(--color-rule);
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-3);
+  inline-size: var(--rail-width);
+  block-size: calc(100vh - var(--sticky-top));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-3) var(--space-2);
+  background: var(--rail-bg);
+  border-inline-end: var(--rule-hair) solid var(--color-rule);
 }
 
-.ds-rail ul {
-  display: flex;
-  align-items: stretch;
+.ds-sidebar:focus {
+  outline: none;
+}
+
+.ds-sidebar__lists,
+.ds-sidebar__group {
+  display: grid;
   gap: var(--space-1);
+}
+
+.ds-sidebar__lists {
+  gap: var(--space-3);
+}
+
+.ds-sidebar ul {
+  display: grid;
+  gap: 2px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.ds-rail__secondary {
-  position: relative;
-  padding-inline-start: var(--space-3) !important;
+.ds-sidebar__heading {
+  padding-inline: var(--space-3);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-strong);
+  font-stretch: var(--stretch-label);
+  color: var(--color-ink-2);
 }
 
-.ds-rail__secondary::before {
-  content: "";
-  position: absolute;
-  inset-inline-start: 0;
-  inset-block: 30%;
-  inline-size: 1px;
-  background: var(--color-rule);
+.ds-sidebar__secondary {
+  padding-block-start: var(--space-3);
+  border-block-start: var(--rule-hair) solid var(--color-rule);
 }
 
-.ds-rail__link {
+.ds-sidebar__link {
   position: relative;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: var(--space-2);
-  block-size: 100%;
-  padding-inline: var(--space-3);
-  color: var(--color-ink-2);
-  font-weight: var(--weight-600);
+  min-block-size: var(--rail-item-height);
+  padding-inline: var(--space-3) var(--space-2);
+  border-radius: var(--radius-control);
+  color: var(--rail-fg);
   text-decoration: none;
   white-space: nowrap;
 }
 
-.ds-rail__icon {
+.ds-sidebar__link .ds-badge {
+  margin-inline-start: auto;
+}
+
+.ds-sidebar__icon {
   display: inline-flex;
+  flex: none;
   color: var(--color-ink-2);
 }
 
-.ds-rail__icon svg {
+.ds-sidebar__icon svg {
   inline-size: 16px;
   block-size: 16px;
 }
 
-.ds-rail__link::after {
-  content: "";
-  position: absolute;
-  inset-inline: var(--space-3);
-  inset-block-end: 0;
-  block-size: 3px;
-  border-radius: 3px 3px 0 0;
-  background: transparent;
+.ds-sidebar__link:hover {
+  background: var(--color-surface-2);
 }
 
-.ds-rail__link:hover {
+.ds-sidebar__link:focus-visible {
+  outline-offset: -2px;
+}
+
+/* The current area: Maroon Mist, a semibold label, and the red seal marker (the chrome's one red). */
+.ds-sidebar__link[aria-current="page"] {
+  background: var(--rail-current-bg);
+  color: var(--rail-current-fg);
+  font-weight: var(--weight-strong);
+  box-shadow: inset var(--rail-marker-width) 0 0 var(--rail-marker);
+}
+
+.ds-sidebar__link[aria-current="page"] .ds-sidebar__icon {
+  color: inherit;
+}
+
+.ds-sidebar__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--rail-item-height);
+  padding-inline: var(--space-3);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--color-ink-2);
+  font: inherit;
+  font-size: var(--text-meta);
+  cursor: pointer;
+}
+
+.ds-sidebar__toggle:hover {
+  background: var(--color-surface-2);
   color: var(--color-ink);
 }
 
-.ds-rail__link:hover::after {
-  background: var(--color-rule);
+/* Collapsed: icons only. Each name stays the link's accessible name and shows beside it on hover or focus. */
+.ds-shell--collapsed .ds-sidebar {
+  inline-size: var(--rail-width-collapsed);
+  padding-inline: var(--space-1);
 }
 
-.ds-rail__link:focus-visible {
-  outline-offset: -4px;
+.ds-shell--collapsed .ds-sidebar__heading,
+.ds-shell--collapsed .ds-sidebar__toggle-label {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
-/* The red active marker: the only brand red in the chrome besides the logo. */
-.ds-rail__link[aria-current="page"],
-.ds-rail__link[aria-current="page"] .ds-rail__icon {
-  color: var(--color-action);
+.ds-shell--collapsed .ds-sidebar__group + .ds-sidebar__group {
+  padding-block-start: var(--space-2);
+  border-block-start: var(--rule-hair) solid var(--color-rule);
 }
 
-.ds-rail__link[aria-current="page"]::after {
-  background: var(--color-action);
+.ds-shell--collapsed .ds-sidebar__link,
+.ds-shell--collapsed .ds-sidebar__toggle {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.ds-shell--collapsed .ds-sidebar__label {
+  position: absolute;
+  inset-inline-start: calc(100% + var(--space-2));
+  inset-block-start: 50%;
+  z-index: var(--z-drawer);
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The name beside a collapsed item, on hover or keyboard focus, until Esc (WCAG 1.4.13). */
+.ds-shell--collapsed .ds-sidebar:not(.ds-sidebar--quiet) .ds-sidebar__link:is(:hover, :focus-visible) .ds-sidebar__label {
+  inline-size: auto;
+  block-size: auto;
+  overflow: visible;
+  clip-path: none;
+  padding: var(--space-1) var(--space-2);
+  transform: translateY(-50%);
+  background: var(--overlay-bg);
+  color: var(--color-ink);
+  border: var(--rule-hair) solid var(--color-rule-strong);
+  border-radius: var(--overlay-radius);
+  box-shadow: var(--overlay-shadow);
+  font-weight: var(--weight-body);
+}
+
+.ds-shell--collapsed .ds-sidebar__link .ds-badge {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  min-inline-size: 1.125rem;
+  padding-inline: 2px;
+  background: var(--color-surface);
+  font-size: 0.6875rem;
+  line-height: 1.4;
 }
 
 .ds-main {
   min-inline-size: 0;
-  padding: var(--space-5) var(--gutter) var(--space-12);
+  padding: 0 var(--gutter) var(--space-8);
   /* Layouts inside the page follow the page's own width, not the viewport's: a side panel
      (Jobs, Help, Account) narrows it (area 2 reviews). */
   container: main / inline-size;
+}
+
+/* A list and its record fill the window: the page ends at its bottom bar. */
+.ds-main:has(.ds-split) {
+  padding-block-end: 0;
 }
 
 .ds-main:focus {
   outline: none;
 }
 
-/* Page head */
-/* Page head: the catalogue's soft band, as wide as the page, the tabs along its lower edge. */
+/* Page head: one line (title, status and facts, actions), tabs on a slim row under it. */
 .ds-pagehead {
   display: grid;
-  gap: var(--space-3);
-  margin-block: calc(-1 * var(--space-5)) var(--space-5);
-  /* As wide as the main area (a container: 100cqi), even when the page sits in a narrower column. */
-  margin-inline: calc(-1 * var(--gutter)) 0;
-  inline-size: 100cqi;
-  box-sizing: border-box;
-  padding: var(--space-4) var(--gutter);
-  background: linear-gradient(100deg, var(--color-surface-2) 0%, var(--color-surface-1) 55%, var(--color-surface) 100%);
-  border-block-end: var(--rule-hair) solid var(--color-rule-soft);
+  /* A one-line head may not widen its column: its facts and name give way instead. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  margin-block-end: var(--space-2);
+  /* Edge to edge of the main area, over its gutters. */
+  margin-inline: calc(-1 * var(--gutter));
+  padding: var(--space-1) var(--gutter) 0;
+  background: var(--color-surface);
+  border-block-end: var(--rule-hair) solid var(--color-rule);
 }
 
 .ds-pagehead > * {
   max-inline-size: var(--page-max);
 }
 
+/* Without tabs under it, the head's line keeps a little room below. */
+.ds-pagehead > .ds-pagehead__top:last-child {
+  padding-block-end: var(--space-1);
+}
+
 .ds-pagehead .ds-subnav ul,
 .ds-pagehead .ds-tabs__list {
-  margin-block-end: calc(-1 * var(--space-4));
   border-block-end: 0;
+}
+
+.ds-pagehead .ds-subnav__link,
+.ds-pagehead .ds-tabs__tab {
+  min-block-size: 1.75rem;
 }
 
 .ds-pagehead__top {
   display: flex;
   flex-wrap: wrap;
-  align-items: start;
+  align-items: center;
   justify-content: space-between;
-  gap: var(--space-4);
+  gap: var(--space-2) var(--space-4);
+  min-block-size: 2.25rem;
 }
 
 .ds-pagehead__titles {
-  display: grid;
-  gap: var(--space-2);
+  display: flex;
+  flex: 1 1 24rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
   min-inline-size: 0;
 }
 
@@ -301,6 +426,7 @@
   font-size: var(--text-h1);
   font-stretch: var(--stretch-87);
   letter-spacing: -0.01em;
+  line-height: 1.15;
 }
 
 .ds-pagehead__lead {
@@ -308,22 +434,145 @@
   max-inline-size: 70ch;
 }
 
+/* Facts on the title's line, a dot between each; a status reads as a pill. */
 .ds-pagehead__meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2) var(--space-3);
+  gap: var(--space-1) var(--space-2);
+  font-size: var(--text-meta);
+  color: var(--color-ink-2);
+}
+
+/* A fact that links meets the 24 px target by its own size (2.5.8). */
+.ds-pagehead__meta a {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-min);
+}
+
+/* Inline-block, so a link's underline doesn't run under the dot before it. */
+.ds-pagehead__meta > * + :not(.ds-status)::before {
+  content: "·";
+  display: inline-block;
+  margin-inline-end: var(--space-2);
+  color: var(--color-ink-3);
+}
+
+.ds-pagehead__meta .ds-status {
+  align-items: center;
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-2);
+}
+
+.ds-pagehead__meta .ds-status__icon {
+  margin-block-start: 0;
+}
+
+.ds-pagehead__meta .ds-status--done {
+  background: var(--color-success-bg);
+}
+
+.ds-pagehead__meta .ds-status--working {
+  background: var(--color-info-bg);
+}
+
+.ds-pagehead__meta .ds-status--attention {
+  background: var(--color-danger-bg);
+}
+
+.ds-pagehead__meta .ds-status--held {
+  background: var(--color-warning-bg);
 }
 
 .ds-pagehead__actions {
   display: flex;
+  flex: 0 1 auto;
   flex-wrap: wrap;
+  justify-content: end;
+  align-items: center;
   gap: var(--space-2);
+}
+
+/* "About this page": where it sits and what it is for, one press away. */
+.ds-pageabout {
+  position: relative;
+  display: inline-flex;
+}
+
+.ds-pageabout__button {
+  color: var(--color-ink-2);
+}
+
+.ds-pageabout__button[aria-expanded="true"] {
+  border-color: var(--color-rule-strong);
+  color: var(--color-ink);
+}
+
+.ds-pageabout__panel {
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-1));
+  inset-inline-start: 0;
+  z-index: var(--z-drawer);
+  display: grid;
+  gap: var(--space-2);
+  inline-size: max-content;
+  max-inline-size: min(36rem, 80vw);
+  padding: var(--space-3);
+  background: var(--overlay-bg);
+  color: var(--color-ink);
+  border: var(--rule-hair) solid var(--color-rule-strong);
+  border-radius: var(--overlay-radius);
+  box-shadow: var(--overlay-shadow);
+}
+
+.ds-pageabout__panel[hidden] {
+  display: none;
 }
 
 .ds-provenance {
   font-size: var(--text-meta);
   color: var(--color-ink-2);
+}
+
+/* Wide enough, the head stays one line whatever the name: the facts give way first, then the
+   name ends in an ellipsis (its whole text on hover, and always to screen readers). */
+@container main (min-width: 48rem) {
+  .ds-pagehead__top,
+  .ds-pagehead__titles,
+  .ds-pagehead__meta,
+  .ds-pagehead__actions {
+    flex-wrap: nowrap;
+  }
+
+  .ds-pagehead__titles {
+    flex: 1 1 auto;
+  }
+
+  .ds-pagehead h1 {
+    flex: 0 1 auto;
+    min-inline-size: min(12rem, 100%);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ds-pagehead__meta {
+    flex: 0 1000 auto;
+    min-inline-size: 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .ds-pageabout,
+  .ds-pagehead__actions {
+    flex: none;
+  }
+
+  .ds-pagehead__actions .ds-actions {
+    flex-wrap: nowrap;
+  }
 }
 
 .ds-stateline {
@@ -419,29 +668,40 @@
   gap: var(--space-2);
 }
 
-/* Split pane (direction C) */
+/* List and record */
 .ds-split {
   display: grid;
   gap: var(--space-4);
 }
 
-/* Beside the list once the page itself is wide enough (about a 1200 px window with the rail). */
+/* Beside the list once the page itself is wide enough (about a 1200 px window with the sidebar):
+   both fill the window down to the page's bottom bar (--sticky-bottom), and each scrolls. */
 @container main (min-width: 60rem) {
   .ds-split {
     grid-template-columns: minmax(0, 1fr) var(--split-pane-width);
     gap: 0;
+    block-size: max(20rem, calc(100vh - var(--split-top, 0px) - var(--sticky-bottom, 0px)));
+    border-block-start: var(--rule-hair) solid var(--color-rule);
   }
 
-  /* Sticky, and never taller than the room between the sticky bars: what it holds scrolls in
-     it, so a field focused in the pane is never under the save bar (WCAG 2.4.11). */
+  .ds-split__list,
   .ds-split__pane {
-    position: sticky;
-    inset-block-start: calc(var(--sticky-top) + var(--sticky-state));
-    align-self: start;
-    min-block-size: calc(100vh - var(--sticky-top) - var(--sticky-state) - var(--sticky-bottom));
-    max-block-size: calc(100vh - var(--sticky-top) - var(--sticky-state) - var(--sticky-bottom));
+    min-block-size: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
+  }
+
+  /* A focused row stays clear of the list's own sticky head (§1.1). */
+  .ds-split__list {
+    scroll-padding-block: calc(var(--sticky-head, 0px) + var(--space-2)) var(--space-2);
+  }
+
+  /* The list scrolls itself, so its table head sticks to the list's top, not under the brand bar. */
+  .ds-split__list .ds-table thead th {
+    inset-block-start: 0;
+  }
+
+  .ds-split__pane {
     border-inline-start: var(--split-pane-rule);
   }
 }
@@ -534,14 +794,38 @@
 }
 
 @media (max-width: 1023px) {
-  .ds-shell__body,
-  .ds-shell--panel .ds-shell__body,
+  .ds-shell--panel .ds-shell__body {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
   .ds-shell--panel.ds-shell--reader .ds-shell__body {
     grid-template-columns: minmax(0, 1fr);
   }
+}
 
-  .ds-rail {
-    min-block-size: 2.75rem;
+/*
+ * A narrow window (up to 800px): everything on the bar stays on one line. The portal's name
+ * leaves the bar (the home link still says it) and a long name (the account button) ends in
+ * an ellipsis; its accessible name is whole.
+ */
+@media (max-width: 800px) {
+  .ds-masthead__product {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .ds-masthead__divider {
+    display: none;
+  }
+
+  .ds-masthead__label {
+    max-inline-size: 8rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
@@ -570,7 +854,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-1) 0;
   background: var(--color-surface);
   border-block-start: var(--ledger-rule);
 }
@@ -581,6 +865,7 @@
  */
 @media (max-width: 40rem), (max-height: 30rem) {
   .ds-topbar,
+  .ds-sidebar,
   .ds-stateline,
   .ds-stickyfoot,
   .ds-bulkbar {
@@ -608,6 +893,12 @@
   margin: 0;
   min-inline-size: 0;
   overflow-wrap: anywhere;
+}
+
+.ds-facts dd a {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-min);
 }
 
 /* Narrow: each label above its value. */
@@ -638,7 +929,7 @@
   border-block-end: 0;
 }
 
-/* A phone: the lockup keeps the logo; the utilities keep their icons and their names for screen readers; the areas bar scrolls sideways. */
+/* A phone: the lockup keeps the logo; the utilities keep their icons and their names for screen readers; the areas scroll sideways. */
 @media (max-width: 640px) {
   .ds-masthead {
     gap: var(--space-2);
@@ -672,14 +963,133 @@
     white-space: nowrap;
   }
 
-  .ds-rail {
-    padding-inline: var(--space-2);
+  /* The sidebar becomes one row of areas under the brand bar, scrolling sideways, names shown. */
+  .ds-shell__body,
+  .ds-shell--panel .ds-shell__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ds-sidebar,
+  .ds-shell--collapsed .ds-sidebar {
+    position: static;
+    flex-direction: row;
+    inline-size: auto;
+    block-size: auto;
+    overflow-x: auto;
+    overflow-y: visible;
+    padding: var(--space-1) var(--space-2);
+    border-inline-end: 0;
+    border-block-end: var(--rule-hair) solid var(--color-rule);
+    scrollbar-width: none;
+  }
+
+  .ds-sidebar__lists,
+  .ds-sidebar ul {
+    display: flex;
+    gap: var(--space-1);
+  }
+
+  .ds-sidebar__heading,
+  .ds-sidebar__toggle {
+    display: none;
+  }
+
+  .ds-sidebar__secondary,
+  .ds-shell--collapsed .ds-sidebar__group + .ds-sidebar__group {
+    padding-block-start: 0;
+    padding-inline-start: var(--space-1);
+    border-block-start: 0;
+    border-inline-start: var(--rule-hair) solid var(--color-rule);
+  }
+
+  .ds-shell--collapsed .ds-sidebar__link {
+    padding-inline: var(--space-3) var(--space-2);
+  }
+
+  .ds-shell--collapsed .ds-sidebar__label {
+    position: static;
+    inline-size: auto;
+    block-size: auto;
+    overflow: visible;
+    clip-path: none;
+  }
+
+  .ds-shell--collapsed .ds-sidebar__link .ds-badge {
+    position: static;
   }
 }
 
-/* A short window keeps the areas bar slim, so pages that fit the screen still do. */
-@media (max-height: 760px) {
-  .ds-rail {
-    min-block-size: 2.625rem;
-  }
+/* A guided workflow's steps: numbered links in a row, the current one underlined in maroon. */
+.ds-stepper ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: none;
+}
+
+.ds-stepper__step {
+  display: flex;
+  min-inline-size: 0;
+}
+
+.ds-stepper__link {
+  display: inline-flex;
+  align-items: start;
+  gap: var(--space-2);
+  min-block-size: var(--target-min);
+  padding: var(--space-2) var(--space-3);
+  border-block-end: var(--rule-heavy) solid transparent;
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+.ds-stepper__link:hover .ds-stepper__label {
+  text-decoration: underline;
+  text-underline-offset: 0.3em;
+}
+
+.ds-stepper__link[aria-current="page"] {
+  border-block-end-color: var(--color-action);
+  color: var(--color-action);
+}
+
+.ds-stepper__number {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  border: var(--rule-hair) solid var(--color-rule-strong);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-meta);
+  font-stretch: var(--stretch-numeral);
+  font-variant-numeric: tabular-nums;
+}
+
+.ds-stepper__link[aria-current="page"] .ds-stepper__number {
+  border-color: var(--color-action-fill);
+  background: var(--color-action-fill);
+  color: var(--color-on-action-fill);
+}
+
+.ds-stepper__text {
+  display: grid;
+  gap: 0;
+}
+
+.ds-stepper__label {
+  font-weight: var(--weight-strong);
+  font-stretch: var(--stretch-label);
+}
+
+.ds-stepper__status {
+  font-size: var(--text-meta);
+  font-weight: var(--weight-body);
+}
+
+.ds-pagehead .ds-stepper {
+  margin-block-end: calc(-1 * var(--space-4));
 }

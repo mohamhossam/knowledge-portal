@@ -17,6 +17,16 @@
   margin-block-end: 0;
 }
 
+/* A document's record: its head sits close to the desk under it (UX rebuild phase 1 gate). */
+.lib-record {
+  gap: var(--space-2);
+}
+
+/* The record's tab panel adds no box: its pages stay items of the record's grid. */
+.lib-tabpanel {
+  display: contents;
+}
+
 .lib-stack {
   display: grid;
   gap: var(--space-6);
@@ -82,7 +92,7 @@
   margin-block: var(--space-3);
 }
 
-/* Toolbars: filters with their find, and the owner beside them. */
+/* Toolbars: filters with their find beside them. */
 .lib-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -94,7 +104,6 @@
   flex: 1 1 32rem;
 }
 
-.lib-toolbar__owner > .ds-field,
 .lib-toolbar__find > .ds-field {
   margin: 0;
 }
@@ -185,22 +194,6 @@
 }
 
 /* The record */
-.lib-reconfirm {
-  display: grid;
-  gap: var(--space-2);
-  margin-block-end: var(--space-2);
-}
-
-.lib-reconfirm__line {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--space-1) var(--space-2);
-  margin: 0;
-  font-size: var(--text-meta);
-  color: var(--color-ink-2);
-}
-
 .lib-admin {
   display: grid;
   gap: var(--space-2);
@@ -373,11 +366,14 @@
   border: var(--hair-rule);
 }
 
-/* The save bar: one line from 1200 px (backlog K1), the label beside its field. */
+/* The save bar: one line from 1200 px (backlog K1); the review summary is asked for in the pane. */
 .lib-savebar {
   display: grid;
-  gap: var(--space-1);
   inline-size: 100%;
+}
+
+.lib-savebar__said:has(.lib-outcome:not(:empty)) {
+  margin-block-start: var(--space-1);
 }
 
 .lib-savebar__row {
@@ -385,20 +381,6 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2) var(--space-3);
-}
-
-.lib-savebar__row > .ds-field {
-  flex: 1 1 20rem;
-  display: grid;
-  grid-template-columns: max-content minmax(12rem, 1fr);
-  align-items: center;
-  gap: var(--space-1) var(--space-2);
-  margin: 0;
-}
-
-.lib-savebar__row > .ds-field > .ds-field__error {
-  grid-column: 2;
-  margin: 0;
 }
 
 .lib-savebar__row > .ds-actions {
@@ -423,15 +405,6 @@
   }
 }
 
-@media (max-width: 1023px) {
-  .lib-savebar__row > .ds-field {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .lib-savebar__row > .ds-field > .ds-field__error {
-    grid-column: 1;
-  }
-}
 
 @media (forced-colors: active) {
   .lib-excluded > span:first-child {
@@ -547,27 +520,12 @@
 }
 
 /*
- * The passage pane stays clear of the masthead at the end of the list: the page ends at the
- * save bar (no extra padding under it), and the pane is one gap shorter than the room.
- */
-.ds-main:has(> .lib .lib-desk) {
-  padding-block-end: 0;
-}
-
-@container main (min-width: 60rem) {
-  .lib-desk .ds-split__pane {
-    min-block-size: calc(100vh - var(--sticky-top) - var(--sticky-state) - var(--sticky-bottom) - var(--space-2));
-    max-block-size: calc(100vh - var(--sticky-top) - var(--sticky-state) - var(--sticky-bottom) - var(--space-2));
-  }
-}
-
-/*
  * On the review desk a side panel (Help, Jobs, Account) overlays the passage pane instead of
  * narrowing the page: otherwise the split stacks and the pane drops below every row, exactly
  * while someone keeps Help open to learn the keys (area 2 re-critique). The list stays in view.
  */
 .ds-shell--panel:has(.lib-desk) .ds-shell__body {
-  grid-template-columns: var(--rail-width) minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
 }
 
 @media (min-width: 1024px) {
@@ -579,18 +537,39 @@
   }
 }
 
-/* The desk's head row: progress, then the notes about the whole file beside it (GATE 8.2). */
-.lib-deskhead {
+/* The bottom bar: progress first, then save and approve (UX rebuild phase 1: the list keeps its rows). */
+.lib-savebar__row > .lib-progress {
   display: flex;
+  flex: 1 1 24rem;
   flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--space-1) var(--space-4);
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  font-size: var(--text-meta);
 }
 
-.lib-deskhead > .lib-progress {
-  flex: 1 1 36rem;
+.lib-savebar__row > .lib-progress progress {
+  flex: 0 1 8rem;
+  inline-size: 8rem;
 }
 
-.lib-deskhead > .lib-filenotes {
+.lib-toolbar > .lib-filenotes {
   flex: 0 1 auto;
+  align-self: center;
+}
+
+/*
+ * Beside the record, a passage is one line in the list: the record shows it whole, so the
+ * list keeps fifteen rows or more in a 1280x720 window (UX rebuild phase 1 gate).
+ */
+@container main (min-width: 60rem) {
+  .lib-desk .ds-split__list .ds-table {
+    table-layout: fixed;
+  }
+
+  .lib-desk .ds-split__list .lib-cell-text > * {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }

@@ -6,7 +6,6 @@ Phase 2 · Define. The objects people curate, as the UI should present them.
 - `contracts/knowledge-public.openapi.json` (schemas named in brackets). The redesign does
   not change this contract.
 - PRODUCT.md.
-- `docs/ux/research/synthesis.md`.
 
 **Tags:**
 - **[contract]** means the field or state exists in the API today.

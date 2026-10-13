@@ -1,30 +1,41 @@
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, type ReactNode, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import type { CatalogueSystem } from "../api/client";
-import { domainTree } from "./catalogue";
-import { DomainsEdit, EditButton } from "./DraftEdits";
+import { Button, type Column, DataTable, Section } from "../design/components";
+import { type DomainRow, domainTree } from "./catalogue";
+import { DomainsEdit } from "./DraftEdits";
 import { useCatalogueContext } from "./useCatalogue";
+
+type Domain = { id: string; name: string; name_ar?: string | null; description?: string | null; parent_id?: string | null };
+
+/** A domain's name, set in by its depth, with its Arabic name and what it covers under it. */
+function DomainName({ row }: { row: DomainRow<Domain> }) {
+  const { domain, depth } = row;
+  return (
+    <span className={`cat-depth cat-depth--${Math.min(depth, 2)}`}>
+      <span className={depth === 0 ? "cat-name" : undefined}>{domain.name}</span>
+      {domain.name_ar && <span className="cat-detail" lang="ar" dir="rtl">{domain.name_ar}</span>}
+      {domain.description && <span className="cat-detail" dir="auto">{domain.description}</span>}
+    </span>
+  );
+}
 
 /** The two domain trees: where systems sit, and what they do by business area. */
 export function DomainsPage() {
   const { book, base, editable } = useCatalogueContext();
   const [editing, setEditing] = useState<"landscape" | "areas" | null>(null);
   const editButton = (tree: "landscape" | "areas", label: string) =>
-    editable && editing !== tree ? (
-      <p className="govsection__actions">
-        <EditButton onClick={() => setEditing(tree)}>{label}</EditButton>
-      </p>
-    ) : null;
-  const landscape = useMemo(() => domainTree(book.release.landscape_domains ?? []), [book]);
-  const areas = useMemo(() => domainTree(book.release.capability_domains ?? []), [book]);
+    editable && editing !== tree ? <Button onClick={() => setEditing(tree)}>{label}</Button> : undefined;
+  const landscape = useMemo(() => domainTree<Domain>(book.release.landscape_domains ?? []), [book]);
+  const areas = useMemo(() => domainTree<Domain>(book.release.capability_domains ?? []), [book]);
   const unplaced = book.release.systems.filter(
     (system) => !system.landscape_domain_id || !book.landscape.has(system.landscape_domain_id),
   );
   const systemLink = (system: CatalogueSystem) => (
     <Link to={`${base}/systems/${encodeURIComponent(system.id)}`} dir="auto">{system.name}</Link>
   );
-  const list = (systems: CatalogueSystem[]) =>
+  const list = (systems: CatalogueSystem[], none: string): ReactNode =>
     systems.length ? (
       systems.map((system, index) => (
         <Fragment key={system.id}>
@@ -33,100 +44,77 @@ export function DomainsPage() {
         </Fragment>
       ))
     ) : (
-      <span className="secondary">None directly</span>
+      <span className="cat-quiet">{none}</span>
     );
 
+  // The landscape's rows, then the systems placed nowhere as a last row.
+  type Place = { row: DomainRow<Domain> | null; systems: CatalogueSystem[] };
+  const places: Place[] = [
+    ...landscape.map((row) => ({ row, systems: book.release.systems.filter((system) => system.landscape_domain_id === row.domain.id) })),
+    ...(unplaced.length && landscape.length ? [{ row: null, systems: unplaced }] : []),
+  ];
+  const placeColumns: Column<Place>[] = [
+    { id: "domain", header: "Domain", rowHeader: true, bidi: true, cell: (place) => (place.row ? <DomainName row={place.row} /> : <span className="cat-quiet">Not placed</span>) },
+    { id: "systems", header: "Systems", cell: (place) => list(place.systems, "None directly") },
+  ];
+  const areaColumns: Column<DomainRow<Domain>>[] = [
+    { id: "area", header: "Business area", rowHeader: true, bidi: true, cell: (row) => <DomainName row={row} /> },
+    {
+      id: "capabilities",
+      header: "Capabilities",
+      cell: ({ domain }) => {
+        const filed = book.release.systems.flatMap((system) =>
+          system.capabilities.filter((item) => item.domain_id === domain.id).map((capability) => ({ system, capability })),
+        );
+        return filed.length ? (
+          <ul className="cat-plain cat-plain--tight">
+            {filed.map(({ system, capability }) => (
+              <li key={`${system.id}:${capability.id}`}>
+                <bdi>{capability.name}</bdi>
+                <span className="cat-quiet"> · {systemLink(system)}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <span className="cat-quiet">None filed</span>
+        );
+      },
+    },
+  ];
+
   return (
-    <>
-      <section className="govsection catalogue__first" aria-labelledby="landscape-title">
-        <h2 id="landscape-title" className="govsection__title">Where systems sit</h2>
-        <p className="govsection__lead">The landscape: each domain with the systems placed directly in it.</p>
-        {editButton("landscape", "Edit where systems sit")}
+    <div className="cat-stack">
+      <Section title="Where systems sit" actions={editButton("landscape", "Edit where systems sit")}>
+        <p className="cat-lead">The landscape: each domain with the systems placed directly in it.</p>
         {editing === "landscape" ? (
           <DomainsEdit tree="landscape" onDone={() => setEditing(null)} />
-        ) : landscape.length ? (
-          <table className="govtable">
-            <caption className="visually-hidden">Landscape domains and their systems</caption>
-            <thead>
-              <tr>
-                <th scope="col">Domain</th>
-                <th scope="col">Systems</th>
-              </tr>
-            </thead>
-            <tbody>
-              {landscape.map(({ domain, depth }) => (
-                <tr key={domain.id} className="row">
-                  <th scope="row" className={`domain domain--${Math.min(depth, 2)}`} dir="auto">
-                    {domain.name}
-                    {domain.name_ar && <span className="secondary govtable__by" lang="ar" dir="rtl">{domain.name_ar}</span>}
-                    {domain.description && <span className="secondary govtable__by" dir="auto">{domain.description}</span>}
-                  </th>
-                  <td>{list(book.release.systems.filter((system) => system.landscape_domain_id === domain.id))}</td>
-                </tr>
-              ))}
-              {unplaced.length > 0 && (
-                <tr className="row row--past">
-                  <th scope="row">Not placed</th>
-                  <td>{list(unplaced)}</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
         ) : (
-          <p className="timetable__quiet">This version places no system in a landscape.</p>
+          <DataTable
+            caption="Landscape domains and their systems"
+            captionHidden
+            columns={placeColumns}
+            rows={places}
+            rowId={(place) => place.row?.domain.id ?? "not-placed"}
+            emptyText="This version places no system in a landscape."
+          />
         )}
-      </section>
+      </Section>
 
-      <section className="govsection" aria-labelledby="areas-title">
-        <h2 id="areas-title" className="govsection__title">What systems do, by business area</h2>
-        <p className="govsection__lead">Each business area with the capabilities filed under it, and the system that has each.</p>
-        {editButton("areas", "Edit the business areas")}
+      <Section title="What systems do, by business area" actions={editButton("areas", "Edit the business areas")}>
+        <p className="cat-lead">Each business area with the capabilities filed under it, and the system that has each.</p>
         {editing === "areas" ? (
           <DomainsEdit tree="areas" onDone={() => setEditing(null)} />
-        ) : areas.length ? (
-          <table className="govtable">
-            <caption className="visually-hidden">Business areas and their capabilities</caption>
-            <thead>
-              <tr>
-                <th scope="col">Business area</th>
-                <th scope="col">Capabilities</th>
-              </tr>
-            </thead>
-            <tbody>
-              {areas.map(({ domain, depth }) => {
-                const filed = book.release.systems.flatMap((system) =>
-                  system.capabilities.filter((item) => item.domain_id === domain.id).map((capability) => ({ system, capability })),
-                );
-                return (
-                  <tr key={domain.id} className="row">
-                    <th scope="row" className={`domain domain--${Math.min(depth, 2)}`} dir="auto">
-                      {domain.name}
-                      {domain.name_ar && <span className="secondary govtable__by" lang="ar" dir="rtl">{domain.name_ar}</span>}
-                      {domain.description && <span className="secondary govtable__by" dir="auto">{domain.description}</span>}
-                    </th>
-                    <td>
-                      {filed.length ? (
-                        <ul className="domain__capabilities">
-                          {filed.map(({ system, capability }) => (
-                            <li key={`${system.id}:${capability.id}`}>
-                              <span dir="auto">{capability.name}</span>
-                              <span className="secondary"> · {systemLink(system)}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <span className="secondary">None filed</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
         ) : (
-          <p className="timetable__quiet">This version files no capability under a business area.</p>
+          <DataTable
+            caption="Business areas and their capabilities"
+            captionHidden
+            columns={areaColumns}
+            rows={areas}
+            rowId={(row) => row.domain.id}
+            emptyText="This version files no capability under a business area."
+          />
         )}
-      </section>
-    </>
+      </Section>
+    </div>
   );
 }

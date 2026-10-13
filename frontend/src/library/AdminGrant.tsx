@@ -5,12 +5,8 @@ import { api, type LibraryDocument } from "../api/client";
 import { errorMessage } from "../api/errors";
 import { Button, ConsequencePanel, Status } from "../design/components";
 import { useDisclosure } from "../design/hooks";
-import { formatDay } from "../home/format";
+import { formatClock, formatDay } from "../home/format";
 import { documentKey } from "./useDocument";
-
-function timeOf(value: string): string {
-  return new Date(value).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
-}
 
 function useRefresh(documentId: string) {
   const queryClient = useQueryClient();
@@ -33,7 +29,7 @@ export function ActAsAdmin({ document, onDone }: { document: LibraryDocument; on
     mutationFn: (reason: string) => api.openAdminGrant(document.id, reason),
     onSuccess: async (opened) => {
       await refresh();
-      onDone(`You're acting as admin on ${document.owner.display_name}'s behalf until ${timeOf(opened.expires_at)}.`);
+      onDone(`You're acting as admin on ${document.owner.display_name}'s behalf until ${formatClock(opened.expires_at)}.`);
     },
   });
   const owner = document.owner.display_name;
@@ -81,7 +77,7 @@ export function ActingBanner({ document, onDone }: { document: LibraryDocument; 
     <div className="lib-acting" role="region" aria-label="Acting as admin">
       <ShieldCheck size={16} aria-hidden="true" className="lib-acting__icon" />
       <p className="lib-acting__line">
-        <strong>Acting as admin on <bdi>{document.owner.display_name}</bdi>'s behalf</strong> until {timeOf(grant.expires_at)}, {formatDay(grant.expires_at)}:{" "}
+        <strong>Acting as admin on <bdi>{document.owner.display_name}</bdi>'s behalf</strong> until {formatClock(grant.expires_at)}, {formatDay(grant.expires_at)}:{" "}
         <q dir="auto">{grant.reason}</q>
       </p>
       <Button variant="link" busy={end.isPending} onClick={() => end.mutate()}>{end.isPending ? "Stopping…" : "Stop acting as admin"}</Button>

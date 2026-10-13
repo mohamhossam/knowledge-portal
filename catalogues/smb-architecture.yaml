@@ -12,18 +12,42 @@ systems:
   description: 'MS Dynamics sales CRM: leads, opportunities, quotes and discount approvals. Captures assisted
     SMB orders.'
   landscape_domain: market-sales.sales
-  capabilities: []
+  capabilities:
+  - id: assisted-order-capture
+    name: Assisted order capture
+    triggers:
+    - assisted SMB orders
+    domain: customer
+    concept: cap-assisted-order-capture
+  - id: sales-quoting
+    name: Opportunities, quotes and discount approvals
+    triggers:
+    - leads
+    - opportunities
+    - quotes
+    - discount approvals
+    domain: market-sales
+    concept: cap-sales-quoting
   owner: Sales
   roadmap: Replaced by Netcracker CSRD over time
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  reads:
+  - entity-customer
 - id: nc-csrd
   name: Netcracker CSRD
   aliases:
   - CSRD
   description: New sales and CRM screens replacing BCRM, including AI Studio.
   landscape_domain: market-sales.sales
-  capabilities: []
+  capabilities:
+  - id: sales-quoting
+    name: Sales and CRM screens
+    triggers:
+    - sales screens
+    - CRM screens
+    domain: market-sales
+    concept: cap-sales-quoting
   owner: Netcracker
   roadmap: Replaces BCRM
   confidence: confirmed
@@ -33,7 +57,13 @@ systems:
   aliases: []
   description: Recommendation engine; can trigger opportunities.
   landscape_domain: market-sales.recommendation
-  capabilities: []
+  capabilities:
+  - id: offer-recommendation
+    name: Offer recommendation
+    triggers:
+    - recommendation engine
+    domain: market-sales
+    concept: cap-offer-recommendation
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
 - id: sonic
@@ -41,7 +71,13 @@ systems:
   aliases: []
   description: In-house AI model for B2B discount recommendations.
   landscape_domain: market-sales.recommendation
-  capabilities: []
+  capabilities:
+  - id: discount-recommendation
+    name: Discount recommendation
+    triggers:
+    - B2B discount recommendations
+    domain: market-sales
+    concept: cap-offer-recommendation
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
 - id: bcc
@@ -52,10 +88,19 @@ systems:
   description: Digital product catalogue; offers uploaded by the business from Excel. Configured to accept
     the new Business Pro Plus POs.
   landscape_domain: product.catalogue
-  capabilities: []
+  capabilities:
+  - id: digital-catalogue
+    name: Digital product catalogue
+    triggers:
+    - digital product catalogue
+    - offers uploaded from Excel
+    domain: product
+    concept: cap-product-catalogue
   owner: Digital
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  reads:
+  - entity-product-offering
 - id: psm
   name: PSM
   aliases:
@@ -63,10 +108,20 @@ systems:
   description: 'Enterprise catalogue module: eligibility rules, pricing, GL mapping. The master reference
     for package codes.'
   landscape_domain: product.catalogue
-  capabilities: []
+  capabilities:
+  - id: eligibility-pricing
+    name: Eligibility rules and pricing
+    triggers:
+    - eligibility rules
+    - pricing
+    - package codes
+    domain: product
+    concept: cap-product-catalogue
   owner: CBCM team
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  masters:
+  - entity-product-offering
 - id: ecm
   name: ECM
   aliases:
@@ -74,16 +129,33 @@ systems:
   description: 'CWOM''s catalogue: CFS, allowances and prices for fixed products and bundles. Answers
     the CPE and access-point model inquiry by bandwidth.'
   landscape_domain: product.catalogue
-  capabilities: []
+  capabilities:
+  - id: fixed-catalogue
+    name: Fixed product catalogue
+    triggers:
+    - CFS
+    - allowances
+    - prices for fixed products
+    domain: product
+    concept: cap-product-catalogue
   owner: Ericsson / CWOM
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory; §6 ECM = system
+  reads:
+  - entity-product-offering
 - id: rtf-catalog
   name: RTF Catalog
   aliases: []
   description: RTF's own catalogue of customer-facing services, for mobile fulfilment.
   landscape_domain: product.catalogue
-  capabilities: []
+  capabilities:
+  - id: mobile-catalogue
+    name: Mobile customer-facing service catalogue
+    triggers:
+    - customer-facing services
+    - mobile fulfilment
+    domain: product
+    concept: cap-product-catalogue
   owner: RTF team
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
@@ -98,7 +170,14 @@ systems:
     CPP. Its Automation Portal holds the bundle building blocks (SD-WAN/FortiPortal, Firewall, Static
     IP, Proactive Monitoring).
   landscape_domain: product.design
-  capabilities: []
+  capabilities:
+  - id: product-design
+    name: Product design and configuration
+    triggers:
+    - designs new products
+    - bundle building blocks
+    domain: product
+    concept: cap-product-design
   owner: Enterprise Catalog (ECM) team
   confidence: inferred
   source: 'SDD v2.3 · §P1 Bundle Definition · The SDD''s “Automation Portal for BFM” is read as this framework''s
@@ -111,7 +190,21 @@ systems:
   description: Angular web channel for SMB sales and customer management; catalogue from BCC. Opens FortiPortal
     by SAML single sign-on.
   landscape_domain: customer.self-service
-  capabilities: []
+  capabilities:
+  - id: web-ordering
+    name: Web sales and ordering
+    triggers:
+    - SMB sales
+    - web channel
+    domain: customer
+    concept: cap-self-service-order-capture
+  - id: customer-management
+    name: Customer management
+    triggers:
+    - customer management
+    - FortiPortal single sign-on
+    domain: customer
+    concept: cap-customer-self-management
   owner: Digital
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
@@ -120,7 +213,19 @@ systems:
   aliases: []
   description: iOS and Android equivalent of B2B Web.
   landscape_domain: customer.self-service
-  capabilities: []
+  capabilities:
+  - id: app-ordering
+    name: App sales and ordering
+    triggers:
+    - iOS and Android sales
+    domain: customer
+    concept: cap-self-service-order-capture
+  - id: customer-management
+    name: Customer management
+    triggers:
+    - customer management in the app
+    domain: customer
+    concept: cap-customer-self-management
   owner: Digital
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
@@ -129,26 +234,49 @@ systems:
   aliases: []
   description: 'Retail kiosk: biometric capture, document verification, bill payment, Customer 360.'
   landscape_domain: customer.self-service
-  capabilities: []
+  capabilities:
+  - id: document-verification
+    name: Biometric and document verification
+    triggers:
+    - biometric capture
+    - document verification
+    domain: customer
+    concept: cap-identity-verification
   owner: Digital / Retail
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  reads:
+  - entity-customer
 - id: cim
   name: CIM
   aliases: []
   description: Agent screen for IVR, email and chat; complaint management APIs.
   landscape_domain: customer.assisted
-  capabilities: []
+  capabilities:
+  - id: complaints
+    name: Complaint management
+    triggers:
+    - complaint management APIs
+    domain: customer
+    concept: cap-complaint-management
   owner: Care
   roadmap: Replaced by Netcracker CPM over time
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  reads:
+  - entity-trouble-ticket
 - id: dcrm
   name: DCRM
   aliases: []
   description: Back-office order capture; the front end to CRMGW.
   landscape_domain: customer.assisted
-  capabilities: []
+  capabilities:
+  - id: back-office-orders
+    name: Back-office order capture
+    triggers:
+    - back-office order capture
+    domain: customer
+    concept: cap-assisted-order-capture
   owner: CBCM team
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
@@ -160,10 +288,22 @@ systems:
   description: Central customer, billing account, product inventory and order store; the registry RTF
     loads summary-order baskets from.
   landscape_domain: customer.customer-data
-  capabilities: []
+  capabilities:
+  - id: customer-store
+    name: Customer, account and product inventory
+    triggers:
+    - billing account
+    - product inventory
+    - order store
+    domain: customer
+    concept: cap-customer-data
   owner: Enterprise Data
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory; §6 CBCM = CRMGW
+  masters:
+  - entity-customer
+  - entity-billing-account
+  - entity-product
 - id: nc-crm
   name: Netcracker CRM (NC Digital)
   aliases:
@@ -171,10 +311,21 @@ systems:
   description: Customer, organisation, individual, contact and site data for customers migrated to NC
     Digital, read through TIBCO TMF APIs.
   landscape_domain: customer.customer-data
-  capabilities: []
+  capabilities:
+  - id: party-data
+    name: Customer and party data
+    triggers:
+    - organisation data
+    - contact data
+    - site data
+    domain: customer
+    concept: cap-customer-data
   owner: Netcracker
   confidence: confirmed
   source: SMB reference v1.0 · §3.1 step 4 branch
+  masters:
+  - entity-party
+  - entity-customer
 - id: rtf
   name: RTF
   aliases:
@@ -182,42 +333,80 @@ systems:
   description: Receives channel orders, validates business rules, builds the value order and hands fixed
     orders to CWOM; loads summary-order baskets from CRMGW.
   landscape_domain: customer.order
-  capabilities: []
+  capabilities:
+  - id: order-validation
+    name: Order validation and hand-off
+    triggers:
+    - channel orders
+    - business rule validation
+    - value order
+    domain: customer
+    concept: cap-order-orchestration
   owner: RTF team
   placement_from: Service
   placement_reason: 'RTF captures, validates and routes the customer''s order: TAM''s Customer Order Management.
     CWOM keeps the service-order role.'
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  masters:
+  - entity-product-order
+  reads:
+  - entity-customer
+  - entity-product
 - id: ibm-bpm
   name: IBM BPM
   aliases:
   - BPM
   description: Hosts orders and milestones for the order-tracking journey (isBFMOrder, mergeOrderItems).
   landscape_domain: customer.order
-  capabilities: []
+  capabilities:
+  - id: order-milestones
+    name: Order milestones
+    triggers:
+    - order tracking journey
+    - order milestones
+    domain: customer
+    concept: cap-order-tracking
   owner: Middleware
   placement_from: Service
   placement_reason: 'Order tracking shows the customer''s order status: Customer Order Management in TAM.'
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  reads:
+  - entity-order-milestone
 - id: felix
   name: Felix
   aliases: []
   description: Stores order milestones for RTF and CWOM; read through getRealTimeOrderDetails.
   landscape_domain: customer.order
-  capabilities: []
+  capabilities:
+  - id: milestone-store
+    name: Order milestone store
+    triggers:
+    - stored order milestones
+    - real-time order details
+    domain: customer
+    concept: cap-order-tracking
   owner: RTF / CWOM
   placement_from: Service
   placement_reason: Holds customer-order milestones for tracking (Customer Order Management).
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  masters:
+  - entity-order-milestone
 - id: ehs
   name: EHS
   aliases: []
   description: Raises contract events that start the renewal up/downgrade to a non-commitment package.
   landscape_domain: customer.order
-  capabilities: []
+  capabilities:
+  - id: contract-events
+    name: Contract events
+    triggers:
+    - contract events
+    - renewal up/downgrade
+    domain: customer
+    concept: cap-contract-lifecycle
   confidence: inferred
   source: SDD v2.3 · §EHS ADO 420619 · Not in the SMB reference; its full name and owner are not stated.
 - id: nc-cpm
@@ -226,21 +415,40 @@ systems:
   - CPM
   description: Complaint case management, replacing CIM and UCMS.
   landscape_domain: customer.problem
-  capabilities: []
+  capabilities:
+  - id: complaint-cases
+    name: Complaint case management
+    triggers:
+    - complaint cases
+    domain: customer
+    concept: cap-complaint-management
   owner: Netcracker
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  masters:
+  - entity-trouble-ticket
 - id: bscs
   name: BSCS
   aliases: []
   description: Billing system; billing starts when the order is fulfilled.
   landscape_domain: customer.bill
-  capabilities: []
+  capabilities:
+  - id: billing
+    name: Billing
+    triggers:
+    - billing
+    domain: customer
+    concept: cap-billing
   owner: Ericsson
   placement_from: Resource
   placement_reason: Billing is Customer Bill Management in TAM's Customer domain, not a resource.
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  masters:
+  - entity-bill
+  reads:
+  - entity-billing-account
+  - entity-product
 - id: cwom
   name: CWOM
   aliases:
@@ -248,7 +456,14 @@ systems:
   description: 'Order management for fixed products: validates against ECM, splits the order into sub-orders
     and orchestrates activation, field work, billing and notification.'
   landscape_domain: service.order
-  capabilities: []
+  capabilities:
+  - id: fixed-orders
+    name: Fixed order management
+    triggers:
+    - fixed product orders
+    - sub-orders
+    domain: service
+    concept: cap-fixed-order-management
   owner: Ericsson
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
@@ -258,15 +473,30 @@ systems:
   description: 'Service order management: provisions Fortinet HE CPEs in the dedicated ADOM cluster, SD-WAN
     and FortiPortal organisations.'
   landscape_domain: service.order
-  capabilities: []
+  capabilities:
+  - id: cpe-provisioning
+    name: CPE provisioning
+    triggers:
+    - Fortinet HE CPE provisioning
+    - ADOM cluster
+    domain: service
+    concept: cap-cpe-provisioning
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  masters:
+  - entity-service-order
 - id: xaas
   name: XaaS
   aliases: []
   description: SaaS activation layer (Microsoft, AWS and others); answers by callback.
   landscape_domain: service.activation
-  capabilities: []
+  capabilities:
+  - id: saas-activation
+    name: SaaS activation
+    triggers:
+    - SaaS activation
+    domain: service
+    concept: cap-saas-activation
   placement_from: Resource
   placement_reason: 'It activates customer-facing SaaS services: Service Configuration & Activation.'
   confidence: confirmed
@@ -276,7 +506,13 @@ systems:
   aliases: []
   description: SLA provisioning and activation.
   landscape_domain: service.quality
-  capabilities: []
+  capabilities:
+  - id: sla
+    name: SLA provisioning and activation
+    triggers:
+    - SLA provisioning
+    domain: service
+    unlinked_reason: No capability concept describes SLA management yet.
   placement_from: Resource
   placement_reason: 'SLAs are managed on the service: TAM''s Service Quality Management.'
   confidence: confirmed
@@ -289,7 +525,20 @@ systems:
   description: Mobile network activation (HLR, HSS); activates and removes the Backup 5G profile and commands
     IN and Alepo.
   landscape_domain: resource.activation
-  capabilities: []
+  capabilities:
+  - id: mobile-activation
+    name: Mobile network activation
+    triggers:
+    - HLR
+    - HSS
+    domain: resource
+    concept: cap-mobile-network-activation
+  - id: backup-profile
+    name: Backup 5G profile
+    triggers:
+    - Backup 5G profile
+    domain: service
+    concept: cap-mobile-backup-access
   owner: Ericsson
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
@@ -300,7 +549,26 @@ systems:
   description: Activates mobile SIM and data profiles; applies the Backup 5G speed offers (862–874) and
     the dunning throttle (854).
   landscape_domain: resource.activation
-  capabilities: []
+  capabilities:
+  - id: sim-data-profiles
+    name: SIM and data profiles
+    triggers:
+    - mobile SIM profiles
+    - data profiles
+    domain: resource
+    concept: cap-mobile-network-activation
+  - id: backup-speed
+    name: Backup 5G speed offers
+    triggers:
+    - Backup 5G speed offers
+    domain: service
+    concept: cap-mobile-backup-access
+  - id: dunning-throttle
+    name: Dunning throttle
+    triggers:
+    - dunning throttle
+    domain: customer
+    concept: cap-collections
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
 - id: alepo
@@ -308,7 +576,13 @@ systems:
   aliases: []
   description: Receives vEDA's commands for Backup 5G, as for DI/DPI.
   landscape_domain: resource.activation
-  capabilities: []
+  capabilities:
+  - id: backup-commands
+    name: Backup 5G commands
+    triggers:
+    - vEDA commands
+    domain: resource
+    concept: cap-mobile-network-activation
   confidence: inferred
   source: SDD v2.3 · §vEDA Cessation · Named once in the SDD; not in the SMB reference.
 - id: nrm
@@ -316,7 +590,14 @@ systems:
   aliases: []
   description: Port and network resource allocation.
   landscape_domain: resource.inventory
-  capabilities: []
+  capabilities:
+  - id: network-resources
+    name: Network resource allocation
+    triggers:
+    - port allocation
+    - network resource allocation
+    domain: resource
+    unlinked_reason: No capability concept describes network resource allocation yet.
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
 - id: inv-6d
@@ -325,24 +606,51 @@ systems:
   - SIM / Device / Number inventory
   description: Reserves, deducts and releases SIMs, devices and numbers.
   landscape_domain: resource.inventory
-  capabilities: []
+  capabilities:
+  - id: stock
+    name: SIM, device and number stock
+    triggers:
+    - SIM stock
+    - device stock
+    - number stock
+    domain: resource
+    concept: cap-device-logistics
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  masters:
+  - entity-resource
+  - entity-telephone-number
 - id: nps
   name: NPS
   aliases: []
   description: 'Number portability: takes port-in and port-out requests and submits them to RTF with the
     summary-order flags.'
   landscape_domain: resource.inventory
-  capabilities: []
+  capabilities:
+  - id: porting
+    name: Number portability
+    triggers:
+    - port-in requests
+    - port-out requests
+    domain: resource
+    concept: cap-number-portability
   confidence: inferred
   source: SDD v2.3 · §NPS Port In & Port Out · Not in the SMB reference; placed with numbers.
+  reads:
+  - entity-telephone-number
 - id: gis
   name: GIS
   aliases: []
   description: Network feasibility and availability check.
   landscape_domain: resource.inventory
-  capabilities: []
+  capabilities:
+  - id: feasibility
+    name: Network feasibility
+    triggers:
+    - feasibility check
+    - availability check
+    domain: resource
+    concept: cap-network-feasibility
   placement_from: Engaged Party
   placement_reason: 'Network feasibility reads the operator''s own network inventory: Resource domain.'
   confidence: confirmed
@@ -354,16 +662,32 @@ systems:
   description: 'Manual work orders: the technician installs the CPE and FortiAP, captures SIC codes and
     serials and updates CWOM.'
   landscape_domain: resource.field
-  capabilities: []
+  capabilities:
+  - id: work-orders
+    name: Field work orders
+    triggers:
+    - manual work orders
+    - technician installation
+    domain: resource
+    concept: cap-field-installation
   owner: Engineering
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory (WFM / Remedy)
+  masters:
+  - entity-work-order
 - id: remedy
   name: Remedy
   aliases: []
   description: Engineering ticketing and assurance.
   landscape_domain: resource.field
-  capabilities: []
+  capabilities:
+  - id: engineering-tickets
+    name: Engineering ticketing and assurance
+    triggers:
+    - engineering ticketing
+    - assurance
+    domain: service
+    concept: cap-trouble-ticketing
   owner: Engineering
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory (WFM / Remedy)
@@ -372,7 +696,14 @@ systems:
   aliases: []
   description: Trade licence and decree validation.
   landscape_domain: engaged-party.government
-  capabilities: []
+  capabilities:
+  - id: trade-licence
+    name: Trade licence validation
+    triggers:
+    - trade licence validation
+    - decree validation
+    domain: customer
+    concept: cap-identity-verification
   owner: External
   external: true
   confidence: confirmed
@@ -382,7 +713,13 @@ systems:
   aliases: []
   description: National ID reader device.
   landscape_domain: engaged-party.government
-  capabilities: []
+  capabilities:
+  - id: id-reader
+    name: National ID reading
+    triggers:
+    - national ID reader
+    domain: customer
+    concept: cap-identity-verification
   owner: External
   external: true
   confidence: confirmed
@@ -392,9 +729,19 @@ systems:
   aliases: []
   description: Reads trade licences, Emirates IDs and establishment cards.
   landscape_domain: engaged-party.government
-  capabilities: []
+  capabilities:
+  - id: document-reading
+    name: Licence and ID reading
+    triggers:
+    - trade licence reading
+    - Emirates ID reading
+    - establishment cards
+    domain: customer
+    concept: cap-identity-verification
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  reads:
+  - entity-customer-document
 - id: fortinet
   name: Fortinet (FortiManager / FortiPortal)
   aliases:
@@ -403,7 +750,19 @@ systems:
   description: 'Vendor platform: the dedicated ADOM FortiManager cluster for Business Pro Plus CPEs, and
     FortiPortal for customer self-management.'
   landscape_domain: engaged-party.partner
-  capabilities: []
+  capabilities:
+  - id: fortimanager
+    name: FortiManager CPE management
+    triggers:
+    - FortiManager cluster
+    domain: service
+    concept: cap-cpe-provisioning
+  - id: fortiportal
+    name: FortiPortal
+    triggers:
+    - FortiPortal
+    domain: customer
+    concept: cap-customer-self-management
   external: true
   confidence: confirmed
   source: SDD v2.3 · §P1 New Activation; §P3 ADO 194831
@@ -412,7 +771,13 @@ systems:
   aliases: []
   description: Sends port-out requests to NPS.
   landscape_domain: engaged-party.partner
-  capabilities: []
+  capabilities:
+  - id: port-out-requests
+    name: Port-out requests
+    triggers:
+    - port-out request sending
+    domain: resource
+    concept: cap-number-portability
   external: true
   confidence: inferred
   source: SDD v2.3 · §NPS Portout · Expanded nowhere in the sources.
@@ -422,7 +787,15 @@ systems:
   - Central Notification Service
   description: SMS and email with OTP; template-driven, English and Arabic.
   landscape_domain: enterprise.common
-  capabilities: []
+  capabilities:
+  - id: notifications
+    name: SMS and email
+    triggers:
+    - SMS
+    - email
+    - OTP
+    domain: customer
+    concept: cap-customer-notification
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
 - id: edms
@@ -430,9 +803,18 @@ systems:
   aliases: []
   description: Customer documents, technical templates and test results.
   landscape_domain: enterprise.common
-  capabilities: []
+  capabilities:
+  - id: documents
+    name: Customer documents
+    triggers:
+    - customer documents
+    - technical templates
+    domain: customer
+    concept: cap-document-management
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
+  masters:
+  - entity-customer-document
 - id: itsm
   name: ServiceNow / HPSM
   aliases:
@@ -440,7 +822,14 @@ systems:
   - ServiceNow
   description: IT ticketing; device-delivery shipment orders and confirmations (HPSM moving to ServiceNow).
   landscape_domain: enterprise.common
-  capabilities: []
+  capabilities:
+  - id: shipments
+    name: Device delivery shipments
+    triggers:
+    - shipment orders
+    - device delivery
+    domain: resource
+    concept: cap-device-logistics
   owner: IT
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
@@ -449,7 +838,12 @@ systems:
   aliases: []
   description: Single sign-on for CSRD and GIS screens.
   landscape_domain: enterprise.common
-  capabilities: []
+  capabilities:
+  - id: single-sign-on
+    name: Single sign-on
+    triggers:
+    - single sign-on
+    unlinked_reason: Single sign-on is a platform service, not a business capability.
   confidence: confirmed
   source: SMB reference v1.0 · §1 System Directory
 - id: tibco
@@ -458,7 +852,12 @@ systems:
   description: 'Integration bus: digital channels to government, vendors and NC CRM (TMF APIs); carries
     order-creation notices, milestones and order-tracking reads.'
   landscape_domain: integration.bus
-  capabilities: []
+  capabilities:
+  - id: integration-bus
+    name: Integration bus
+    triggers:
+    - integration bus
+    unlinked_reason: An integration bus realises no business capability of its own.
   owner: Middleware
   placement_from: Enterprise Management
   placement_reason: An integration bus is infrastructure every domain uses; it is drawn as the integration
@@ -471,7 +870,12 @@ systems:
   - BFF
   description: Backend for frontend of the digital channels.
   landscape_domain: integration.bus
-  capabilities: []
+  capabilities:
+  - id: channel-backend
+    name: Channel backend
+    triggers:
+    - backend for frontend
+    unlinked_reason: A channel backend realises no business capability of its own.
   confidence: inferred
   source: SMB reference v1.0 · §1 B2B Web integrations; §7 Glossary · Named as an integration, not described
     as a system.
@@ -771,8 +1175,16 @@ products:
     mandatory: true
     description: The broadband access, at the plan's speed profile.
     technical_spec: CFSS_INTERNET_CPE_ONPREM_HE
+    realisation:
+    - layer: cfs
+      name: CFSS_INTERNET_CPE_ONPREM_HE
+      confidence: inferred
+      source: Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)
+      record: cfs-internet-cpe-onprem-he
     confidence: confirmed
     source: SDD v2.3 · §P1 Catalog Modelling
+    capabilities:
+    - cap-fibre-access
     responsibilities:
     - system: cwom
       role: ORCHESTRATES
@@ -790,8 +1202,16 @@ products:
     description: Generic CPE offer with CPE_PLATFORM_TYPE “Fortinet HE”, SIC_CODE, MODEL and LIST_OF_MODELS;
       a new generic CPE rate plan for B. Pro+ (ADO 438907).
     technical_spec: RPCUSTONPREMEQPT
+    realisation:
+    - layer: resource
+      name: Fortinet HE CPE
+      confidence: inferred
+      source: Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)
+      record: res-fortinet-he-cpe
     confidence: confirmed
     source: SDD v2.3 · §P1 Catalog Modelling; §ADO 438907
+    capabilities:
+    - cap-cpe-provisioning
     responsibilities:
     - system: ecm
       role: SUGGESTS
@@ -809,8 +1229,16 @@ products:
     description: Default or non-default configuration from the bundle; UTP licence per the existing SMB
       FW implementation.
     technical_spec: CFSS_ONPREM_FIREWALL_HE
+    realisation:
+    - layer: cfs
+      name: CFSS_ONPREM_FIREWALL_HE
+      confidence: inferred
+      source: Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)
+      record: cfs-onprem-firewall-he
     confidence: confirmed
     source: SDD v2.3 · §P1 Firewall; §P1.1
+    capabilities:
+    - cap-firewall
     responsibilities:
     - system: cwom
       role: PROVISIONS
@@ -825,8 +1253,16 @@ products:
     description: FortiPortal access; shown in B2B as “Security & Services Portal” (rate plan RP_SELFSERVICE_PORTAL_ACCESS,
       component type SSPRTL).
     technical_spec: CFSS_SELFSERVICE_PORTAL_ACCESS
+    realisation:
+    - layer: cfs
+      name: CFSS_SELFSERVICE_PORTAL_ACCESS
+      confidence: inferred
+      source: Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)
+      record: cfs-selfservice-portal-access
     confidence: confirmed
     source: SDD v2.3 · §P1 Bundle Definition; §P3 ADO 194831
+    capabilities:
+    - cap-customer-self-management
     responsibilities:
     - system: e2eso
       role: CREATES
@@ -843,8 +1279,16 @@ products:
     mandatory: true
     description: 'SD-WAN service; its configuration is Day-N by MSS. MSS team: Day-N configuration.'
     technical_spec: CFSS_SDWAN_NEW
+    realisation:
+    - layer: cfs
+      name: CFSS_SDWAN_NEW
+      confidence: inferred
+      source: Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)
+      record: cfs-sdwan-new
     confidence: confirmed
     source: SDD v2.3 · §P1 Bundle Definition; General Highlights
+    capabilities:
+    - cap-sdwan
     responsibilities:
     - system: cwom
       role: PASSES
@@ -855,8 +1299,16 @@ products:
     mandatory: true
     description: Generic AP offer with SIC_CODE, MODEL, DEVICE_RECOVERY, LIST_OF_MODELS and CAPTURE_REQUIRED.
     technical_spec: PRS_ACCESS_POINT
+    realisation:
+    - layer: resource
+      name: FortiAP
+      confidence: inferred
+      source: Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)
+      record: res-fortiap
     confidence: confirmed
     source: SDD v2.3 · §P1.1 Generic FortiAP Offer
+    capabilities:
+    - cap-wifi-access
     responsibilities:
     - system: ecm
       role: SUGGESTS
@@ -873,6 +1325,8 @@ products:
     description: Mandatory in Business Pro Plus bundles.
     confidence: confirmed
     source: SDD v2.3 · §P1.1 Mandating Bundling Components
+    capabilities:
+    - cap-static-ip
     responsibilities:
     - system: cwom
       role: PROVISIONS
@@ -883,6 +1337,8 @@ products:
     description: Proactive monitoring for the Fortinet 90G/120G CPEs.
     confidence: confirmed
     source: SDD v2.3 · §P1.1; Solution Assumptions
+    capabilities:
+    - cap-proactive-monitoring
     responsibilities:
     - system: e2eso
       role: ENABLES
@@ -894,6 +1350,8 @@ products:
       is geo-locked to cell IDs and the dongle's IMEI.
     confidence: confirmed
     source: SDD v2.3 · §P2 IN; §vEDA; Solution Assumptions
+    capabilities:
+    - cap-mobile-backup-access
     responsibilities:
     - system: veda
       role: ACTIVATES
@@ -5636,3 +6094,1361 @@ portfolio:
   description: 'Bundles built on the Bundle Framework (BFM): broadband with business services.'
   confidence: inferred
   source: SMB reference v1.0 · title and scope; user, 2026-10-06
+capability_domains:
+- id: market-sales
+  name: Market and sales
+  description: 'Selling to business customers: opportunities, quotes, offers and discounts.'
+- id: product
+  name: Product
+  description: Designing offerings and keeping the product catalogue, its eligibility and prices.
+- id: customer
+  name: Customer
+  description: Taking, tracking and caring for customers' orders, accounts, documents, bills and problems.
+- id: service
+  name: Service
+  description: The services an offering delivers, their fulfilment, activation and assurance.
+- id: resource
+  name: Resource
+  description: The network, devices, numbers and field work the services run on.
+business_capabilities:
+- id: cap-assisted-order-capture
+  pref_label: Assisted order capture
+  alt_labels:
+  - assisted ordering
+  - sales agent order
+  - back-office order capture
+  definition: Taking a customer's order through a sales agent, a shop or the back office.
+  domain: customer
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-self-service-order-capture
+  pref_label: Self-service order capture
+  alt_labels:
+  - self-service ordering
+  - online ordering
+  - web ordering
+  definition: Customers placing and changing orders themselves in a digital channel.
+  domain: customer
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-sales-quoting
+  pref_label: Sales opportunities, quotes and discount approval
+  alt_labels:
+  - sales quote
+  - opportunity management
+  - discount approval
+  definition: Managing sales opportunities, preparing quotes and approving discounts before an order.
+  domain: market-sales
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-offer-recommendation
+  pref_label: Offer and discount recommendation
+  alt_labels:
+  - next best offer
+  - offer recommendation engine
+  - upsell recommendation
+  definition: Recommending the offer, add-ons or discount that fit a customer.
+  domain: market-sales
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-product-design
+  pref_label: Product design and bundle configuration
+  alt_labels:
+  - bundle configuration
+  - offer design
+  - bundle framework
+  definition: Defining an offering's components, bundles and rules so it can be sold and fulfilled.
+  domain: product
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-product-catalogue
+  pref_label: Product catalogue, eligibility and pricing
+  alt_labels:
+  - product catalogue
+  - eligibility rules
+  - price plan
+  - rate plan
+  definition: Keeping the sellable products, who may buy them and what they cost.
+  domain: product
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-order-orchestration
+  pref_label: Customer order orchestration and validation
+  alt_labels:
+  - order orchestration
+  - order validation
+  - order decomposition
+  definition: Validating a customer order and splitting it into the service orders that fulfil it.
+  domain: customer
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-fixed-order-management
+  pref_label: Fixed service order management
+  alt_labels:
+  - fixed fulfilment
+  - fixed service order
+  - service order management
+  definition: Running the service orders that deliver a fixed-line service end to end.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-cpe-provisioning
+  pref_label: Managed CPE and security service provisioning
+  alt_labels:
+  - CPE provisioning
+  - managed router
+  - customer premises equipment
+  definition: Configuring and activating the managed customer device and the security services on it.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-sdwan
+  pref_label: SD-WAN service
+  alt_labels:
+  - SD-WAN
+  - software-defined WAN
+  definition: Connecting a customer's sites over a managed software-defined WAN.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-firewall
+  pref_label: Managed firewall
+  alt_labels:
+  - firewall
+  - UTM licence
+  - network security policy
+  definition: Protecting the customer's network with a firewall the operator configures and runs.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-wifi-access
+  pref_label: Managed Wi-Fi access points
+  alt_labels:
+  - Wi-Fi
+  - access point
+  - wireless LAN
+  definition: Wireless access in the customer's premises through access points the operator manages.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-static-ip
+  pref_label: Static IP addressing
+  alt_labels:
+  - static IP
+  - fixed IP address
+  - public IP
+  definition: Giving the customer fixed public IP addresses with their connection.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-proactive-monitoring
+  pref_label: Proactive service monitoring
+  alt_labels:
+  - proactive monitoring
+  - service monitoring
+  - device monitoring
+  definition: Watching the customer's service and devices so faults are found before the customer reports them.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-customer-self-management
+  pref_label: Customer self-management portal
+  alt_labels:
+  - self-service portal
+  - customer portal
+  - FortiPortal
+  definition: Customers viewing and managing their services and settings themselves.
+  domain: customer
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-mobile-backup-access
+  pref_label: Mobile backup access
+  alt_labels:
+  - backup 5G
+  - 4G backup
+  - failover connectivity
+  - mobile failover
+  definition: Keeping the customer connected over the mobile network when the fixed line fails.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-mobile-network-activation
+  pref_label: Mobile network and SIM activation
+  alt_labels:
+  - SIM activation
+  - HSS profile
+  - mobile provisioning
+  definition: Activating SIMs and their network profiles on the mobile network.
+  domain: resource
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-field-installation
+  pref_label: Field installation and technician work
+  alt_labels:
+  - field installation
+  - technician visit
+  - work order
+  - site survey
+  definition: Sending technicians to install, change or recover equipment at the customer's site.
+  domain: resource
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-network-feasibility
+  pref_label: Network feasibility and availability
+  alt_labels:
+  - feasibility check
+  - coverage check
+  - service availability
+  definition: Checking whether the network can serve a customer's address before an order.
+  domain: resource
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-number-portability
+  pref_label: Number portability
+  alt_labels:
+  - number porting
+  - port-in
+  - port-out
+  definition: Moving a customer's numbers between operators.
+  domain: resource
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-identity-verification
+  pref_label: Customer identity and trade-licence verification
+  alt_labels:
+  - identity verification
+  - trade licence check
+  - KYC
+  definition: Checking who the customer is and that their business licence is valid.
+  domain: customer
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-customer-notification
+  pref_label: Customer notification
+  alt_labels:
+  - SMS notification
+  - email notification
+  - customer communication
+  definition: Telling customers about their orders, services and bills by SMS, email or app.
+  domain: customer
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-order-tracking
+  pref_label: Order tracking and milestones
+  alt_labels:
+  - order tracking
+  - order status
+  - order milestones
+  definition: Recording an order's progress and showing it to customers and agents.
+  domain: customer
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-complaint-management
+  pref_label: Complaint management
+  alt_labels:
+  - complaint
+  - customer complaint
+  definition: Recording and resolving customers' complaints.
+  domain: customer
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-trouble-ticketing
+  pref_label: Trouble ticketing and assurance
+  alt_labels:
+  - trouble ticket
+  - fault management
+  - service assurance
+  definition: Recording service faults and restoring the service.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-billing
+  pref_label: Billing and charging
+  alt_labels:
+  - billing
+  - charging
+  - invoice
+  definition: Charging customers for their services and producing their bills.
+  domain: customer
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-collections
+  pref_label: Dunning and collections
+  alt_labels:
+  - dunning
+  - collections
+  - non-payment suspension
+  definition: Chasing unpaid bills and restricting or ceasing services for non-payment.
+  domain: customer
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-saas-activation
+  pref_label: SaaS licence activation
+  alt_labels:
+  - SaaS licence
+  - software licence activation
+  - Microsoft 365 licence
+  definition: Activating and managing the software-as-a-service licences sold with an offering.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-device-logistics
+  pref_label: Device and SIM inventory and logistics
+  alt_labels:
+  - device inventory
+  - SIM stock
+  - device delivery
+  - logistics
+  definition: Keeping, reserving and delivering devices and SIMs.
+  domain: resource
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-customer-data
+  pref_label: Customer, account and product inventory data
+  alt_labels:
+  - customer account
+  - installed base
+  - product inventory
+  definition: Keeping customers, their accounts and the products they hold.
+  domain: customer
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-contract-lifecycle
+  pref_label: Contract renewal and lifecycle events
+  alt_labels:
+  - contract renewal
+  - contract term
+  - early termination
+  definition: Renewing, changing and ending customers' contracts.
+  domain: customer
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-document-management
+  pref_label: Customer document management
+  alt_labels:
+  - customer documents
+  - document upload
+  - contract documents
+  definition: Storing and retrieving the documents a customer provides or signs.
+  domain: customer
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-iot-connectivity-management
+  pref_label: IoT device and connectivity management
+  alt_labels:
+  - IoT
+  - M2M connectivity
+  - IoT platform
+  definition: Connecting and managing customers' IoT devices and their SIMs.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-vehicle-telematics
+  pref_label: Vehicle tracking and telematics
+  alt_labels:
+  - fleet tracking
+  - telematics
+  - vehicle tracking
+  definition: Tracking customers' vehicles and reporting their telemetry.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-video-surveillance
+  pref_label: Cloud video surveillance
+  alt_labels:
+  - CCTV
+  - video surveillance
+  - security cameras
+  definition: Recording and viewing customers' security cameras in the cloud.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-payment-acceptance
+  pref_label: Card payment acceptance
+  alt_labels:
+  - point of sale
+  - POS terminal
+  - card payments
+  definition: Letting customers' businesses take card payments.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-learning-content
+  pref_label: Training content delivery
+  alt_labels:
+  - e-learning
+  - training courses
+  - learning platform
+  definition: Delivering training content to customers' staff.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+- id: cap-fibre-access
+  pref_label: Fibre broadband access
+  alt_labels:
+  - GPON
+  - fibre internet
+  - broadband access
+  definition: Connecting the customer's premises to the internet over fibre at the plan's speed.
+  domain: service
+  confidence: inferred
+  source: Ontology plan Phase 1 · golden set v1 concept list
+vocabulary:
+- id: etom-fulfillment
+  scheme: etom_process
+  pref_label: Fulfillment
+  alt_labels:
+  - Fulfilment
+  definition: The end-to-end process of providing what a customer ordered, on time and correctly.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own eTOM values
+- id: etom-selling
+  scheme: etom_process
+  pref_label: Selling
+  definition: Taking the customer from interest to a feasible, agreed order.
+  broader: etom-fulfillment
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own eTOM values
+- id: etom-order-handling
+  scheme: etom_process
+  pref_label: Order Handling
+  definition: Accepting, validating, tracking and closing the customer's order.
+  broader: etom-fulfillment
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own eTOM values
+- id: etom-service-configuration-activation
+  scheme: etom_process
+  pref_label: Service Configuration & Activation
+  definition: Configuring and activating the services an order needs.
+  broader: etom-fulfillment
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own eTOM values
+- id: etom-resource-provisioning
+  scheme: etom_process
+  pref_label: Resource Provisioning
+  definition: Allocating, installing and configuring the resources services run on.
+  broader: etom-fulfillment
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own eTOM values
+- id: etom-supplier-partner-requisition-management
+  scheme: etom_process
+  pref_label: Supplier/Partner Requisition Management
+  definition: Ordering what an order needs from suppliers and partners, and tracking it.
+  broader: etom-fulfillment
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own eTOM values
+- id: etom-assurance
+  scheme: etom_process
+  pref_label: Assurance
+  definition: Keeping delivered services working as promised.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own eTOM values
+- id: etom-problem-handling
+  scheme: etom_process
+  pref_label: Problem Handling
+  definition: Receiving, tracking and resolving the problems a customer reports.
+  broader: etom-assurance
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own eTOM values
+- id: etom-billing-revenue-management
+  scheme: etom_process
+  pref_label: Billing & Revenue Management
+  alt_labels:
+  - Billing
+  definition: Rating, charging and billing what a customer uses, and collecting payment.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own eTOM values
+- id: etom-customer-relationship-management
+  scheme: etom_process
+  pref_label: Customer Relationship Management
+  alt_labels:
+  - CRM
+  definition: Knowing the customer and handling every interaction with them.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own eTOM values
+- id: etom-customer-interface-management
+  scheme: etom_process
+  pref_label: Customer Interface Management
+  definition: Managing the contacts between the customer and the operator, in any channel.
+  broader: etom-customer-relationship-management
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own eTOM values
+- id: channel-assisted
+  scheme: channel_kind
+  pref_label: Assisted
+  definition: An order a sales agent, a shop or the back office places for the customer.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own channel kinds
+- id: channel-self-service
+  scheme: channel_kind
+  pref_label: Self-service
+  alt_labels:
+  - Digital self-service
+  definition: An order the customer places themselves, on the web or in an app.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own channel kinds
+- id: channel-system
+  scheme: channel_kind
+  pref_label: System
+  alt_labels:
+  - System to system
+  definition: An order another system raises, such as a portability or contract event.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own channel kinds
+- id: role-capture
+  scheme: responsibility_role
+  pref_label: Capture
+  alt_labels:
+  - Captures
+  definition: Takes in the order, or facts the order needs, from the customer or the field.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: role-catalog
+  scheme: responsibility_role
+  pref_label: Catalog
+  definition: Supplies the offer, its rules and its eligibility from the product catalogue.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: role-customer-data
+  scheme: responsibility_role
+  pref_label: Customer data
+  definition: Keeps the customer's account and party record.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: role-validate
+  scheme: responsibility_role
+  pref_label: Validate
+  definition: Checks that the order, the customer or the site qualifies.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: role-orchestrate
+  scheme: responsibility_role
+  pref_label: Orchestrate
+  alt_labels:
+  - Orchestrates
+  definition: Splits the order into sub-orders and drives each to completion.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: role-activate
+  scheme: responsibility_role
+  pref_label: Activate
+  alt_labels:
+  - Activates
+  - Provision
+  - Provisions
+  definition: Configures and activates the service or resource on the network.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: role-field
+  scheme: responsibility_role
+  pref_label: Field
+  alt_labels:
+  - Installation
+  definition: Schedules and records the work done at the customer's site.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: role-logistics
+  scheme: responsibility_role
+  pref_label: Logistics
+  definition: Ships, delivers or collects equipment.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: role-bill
+  scheme: responsibility_role
+  pref_label: Bill
+  definition: Starts, changes or stops billing for what was delivered.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: role-track
+  scheme: responsibility_role
+  pref_label: Track
+  definition: Shows the order's progress to the customer and to the operator.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: role-notify
+  scheme: responsibility_role
+  pref_label: Notify
+  definition: Tells the customer, or another party, that something happened.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: role-record
+  scheme: responsibility_role
+  pref_label: Record
+  definition: Keeps the record of what was delivered, such as the inventory.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: api-tmf620
+  scheme: open_api
+  pref_label: Product Catalog Management
+  alt_labels:
+  - Product Catalog
+  notation: TMF620
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own TMF equivalents
+- id: api-tmf621
+  scheme: open_api
+  pref_label: Trouble Ticket
+  notation: TMF621
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own TMF equivalents
+- id: api-tmf622
+  scheme: open_api
+  pref_label: Product Ordering
+  notation: TMF622
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own TMF equivalents
+- id: api-tmf629
+  scheme: open_api
+  pref_label: Customer Management
+  alt_labels:
+  - Customer
+  notation: TMF629
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own TMF equivalents
+- id: api-tmf632
+  scheme: open_api
+  pref_label: Party Management
+  notation: TMF632
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own TMF equivalents
+- id: api-tmf637
+  scheme: open_api
+  pref_label: Product Inventory
+  alt_labels:
+  - Product Inventory Management
+  notation: TMF637
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own TMF equivalents
+- id: api-tmf641
+  scheme: open_api
+  pref_label: Service Ordering
+  notation: TMF641
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own TMF equivalents
+- id: api-tmf679
+  scheme: open_api
+  pref_label: Product Offering Qualification
+  notation: TMF679
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own TMF equivalents
+- id: api-tmf681
+  scheme: open_api
+  pref_label: Communication
+  notation: TMF681
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own TMF equivalents
+- id: entity-party
+  scheme: information_entity
+  pref_label: Party
+  alt_labels:
+  - Organisation
+  - Individual
+  - Contact
+  definition: A person or organisation the operator deals with, and how to reach them (SID Party).
+  exact_match: SID Party ABE
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+- id: entity-customer
+  scheme: information_entity
+  pref_label: Customer
+  alt_labels:
+  - Customer profile
+  definition: A party the operator sells to, with its segment and status (SID Customer).
+  exact_match: SID Customer ABE
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+- id: entity-billing-account
+  scheme: information_entity
+  pref_label: Billing account
+  alt_labels:
+  - Customer account
+  - Account
+  definition: The account a customer's products are billed to (SID Customer Account).
+  exact_match: SID Customer Bill ABE
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+- id: entity-bill
+  scheme: information_entity
+  pref_label: Bill
+  alt_labels:
+  - Invoice
+  definition: What a billing account is charged for a period (SID Customer Bill).
+  exact_match: SID Customer Bill ABE
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+- id: entity-product-offering
+  scheme: information_entity
+  pref_label: Product offering
+  alt_labels:
+  - Offer
+  - Package code
+  definition: 'What is sold: an offering with its prices, eligibility rules and package codes (SID Product
+    Offering).'
+  exact_match: SID Product Offering ABE
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+- id: entity-product
+  scheme: information_entity
+  pref_label: Product
+  alt_labels:
+  - Installed product
+  - Product inventory
+  - Subscription
+  definition: 'An offering as a customer has it: an instance in the product inventory (SID Product).'
+  exact_match: SID Product ABE
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+- id: entity-product-order
+  scheme: information_entity
+  pref_label: Product order
+  alt_labels:
+  - Customer order
+  - Order
+  definition: A customer's request to add, change or remove products (SID Customer Order).
+  exact_match: SID Customer Order ABE
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+- id: entity-order-milestone
+  scheme: information_entity
+  pref_label: Order milestone
+  alt_labels:
+  - Order status
+  - Milestone
+  definition: A step an order has reached, as tracked and shown to the customer.
+  broader: entity-product-order
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+- id: entity-service-order
+  scheme: information_entity
+  pref_label: Service order
+  definition: The order that provisions the services behind a product order (SID Service Order).
+  exact_match: SID Service Order ABE
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+- id: entity-resource
+  scheme: information_entity
+  pref_label: Resource
+  alt_labels:
+  - Device
+  - CPE
+  - SIM
+  definition: 'A physical or logical resource a service runs on: a CPE, a SIM, a number (SID Resource).'
+  exact_match: SID Resource ABE
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+- id: entity-telephone-number
+  scheme: information_entity
+  pref_label: Telephone number
+  alt_labels:
+  - Phone number
+  - MSISDN
+  definition: A number assigned to a customer, ported in or out.
+  broader: entity-resource
+  exact_match: SID Logical Resource ABE
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+- id: entity-work-order
+  scheme: information_entity
+  pref_label: Work order
+  alt_labels:
+  - Field work order
+  definition: 'Work a technician does on site: installing a CPE or an access point.'
+  exact_match: SID Work Order ABE
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+- id: entity-trouble-ticket
+  scheme: information_entity
+  pref_label: Trouble ticket
+  alt_labels:
+  - Complaint
+  - Ticket
+  definition: A customer's reported problem and its handling (SID Customer Problem).
+  exact_match: SID Customer Problem ABE
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+- id: entity-customer-document
+  scheme: information_entity
+  pref_label: Customer document
+  alt_labels:
+  - Trade licence
+  - Emirates ID
+  - Establishment card
+  definition: 'A document a customer gives as proof: a trade licence, an ID, an establishment card.'
+  confidence: inferred
+  source: Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions
+interfaces:
+- id: if-cbcm-crm-gw-api
+  name: CRM GW API
+  system: cbcm
+  style: api
+  consumers:
+  - b2b-web
+  - smb-app
+  - dcrm
+  - rtf
+  open_apis:
+  - api-tmf629
+  - api-tmf637
+  entities:
+  - entity-customer
+  - entity-billing-account
+  - entity-product
+  description: Customer, account and product data for the channels and RTF.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-cbcm-retrieve-account
+  name: retrieveAccount
+  system: cbcm
+  style: api
+  consumers:
+  - rtf
+  - nps
+  open_apis:
+  - api-tmf637
+  entities:
+  - entity-billing-account
+  - entity-product
+  description: An account and its installed products.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-cbcm-evaluate-order
+  name: evaluateOrder
+  system: cbcm
+  style: api
+  consumers:
+  - rtf
+  open_apis:
+  - api-tmf679
+  entities:
+  - entity-product-order
+  - entity-product-offering
+  description: Translates an order to the value order with PSM codes and checks business rules.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-cbcm-load-registry-basket
+  name: Load registry basket
+  system: cbcm
+  consumers:
+  - rtf
+  entities:
+  - entity-product-order
+  description: The summary-order basket RTF loads.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-cbcm-order-closure
+  name: Order closure
+  system: cbcm
+  consumers:
+  - cwom
+  open_apis:
+  - api-tmf637
+  entities:
+  - entity-product-order
+  - entity-product
+  description: Closes the order and updates the product inventory.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-bscs-billing
+  name: Billing
+  system: bscs
+  consumers:
+  - cwom
+  entities:
+  - entity-billing-account
+  - entity-product
+  description: Starts billing once the order is fulfilled.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-bcc-offer-catalogue
+  name: Offer catalogue
+  system: bcc
+  consumers:
+  - b2b-web
+  - smb-app
+  entities:
+  - entity-product-offering
+  description: The offers and components the digital channels show.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-psm-package-codes
+  name: Package codes
+  system: psm
+  consumers:
+  - bcc
+  entities:
+  - entity-product-offering
+  description: Maps an offer to PSM package codes.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-ecm-product-structure
+  name: Product structure
+  system: ecm
+  consumers:
+  - bcc
+  entities:
+  - entity-product-offering
+  description: Bundle and component detail.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-ecm-evaluate-order
+  name: evaluateOrder
+  system: ecm
+  style: api
+  consumers:
+  - rtf
+  entities:
+  - entity-product-order
+  description: Checks an order against the ECM product structure.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-ecm-catalogue-validation
+  name: Catalogue validation
+  system: ecm
+  consumers:
+  - cwom
+  entities:
+  - entity-product-order
+  - entity-product-offering
+  description: Validates an order against the ECM catalogue.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-ecm-cpe-model-inquiry
+  name: CPE Model Inquiry
+  system: ecm
+  style: api
+  consumers:
+  - cwom
+  - wfms
+  entities:
+  - entity-resource
+  description: The CPE and access-point model for a bandwidth.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-rtf-order-request
+  name: RTF order request
+  system: rtf
+  style: api
+  consumers:
+  - b2b-web
+  - smb-app
+  - bcrm
+  - nps
+  - wfms
+  open_apis:
+  - api-tmf622
+  entities:
+  - entity-product-order
+  description: Submits a channel order, with the summary-order flags, as XML.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-rtf-order-closure-notification
+  name: Order closure notification
+  system: rtf
+  style: api
+  consumers:
+  - cwom
+  entities:
+  - entity-product-order
+  description: Tells RTF the fixed order is closed.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-cwom-order
+  name: Order
+  system: cwom
+  style: api
+  consumers:
+  - rtf
+  open_apis:
+  - api-tmf622
+  entities:
+  - entity-product-order
+  description: The summary, cessation and dunning orders RTF hands to CWOM.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-cwom-create-shopping-cart
+  name: createShoppingCart
+  system: cwom
+  style: api
+  consumers:
+  - rtf
+  open_apis:
+  - api-tmf622
+  entities:
+  - entity-product-order
+  description: Hands a migration or up/downgrade order to CWOM.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-cwom-refresh-shopping-cart
+  name: refreshShoppingCart
+  system: cwom
+  style: api
+  consumers:
+  - rtf
+  open_apis:
+  - api-tmf622
+  entities:
+  - entity-product-order
+  description: Carries devices forward and overrides amounts on a changed order.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-cwom-callback
+  name: CWOM callback
+  system: cwom
+  style: api
+  consumers:
+  - xaas
+  - tibco
+  entities:
+  - entity-service-order
+  description: Activation and shipment results returned to CWOM.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-cwom-update-transaction
+  name: Update transaction
+  system: cwom
+  consumers:
+  - wfms
+  entities:
+  - entity-work-order
+  description: 'The technician''s results: SIC codes and serials.'
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-e2eso-service-order
+  name: Service order
+  system: e2eso
+  style: api
+  consumers:
+  - cwom
+  open_apis:
+  - api-tmf641
+  entities:
+  - entity-service-order
+  description: Provisions the Fortinet CPE, SD-WAN and FortiPortal services.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-e2eso-serials
+  name: PATCH (CPE and FEX serials)
+  system: e2eso
+  style: api
+  consumers:
+  - cwom
+  entities:
+  - entity-resource
+  description: Passes the installed CPE and FEX serials on.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-fortinet-api
+  name: Fortinet API
+  system: fortinet
+  style: api
+  consumers:
+  - e2eso
+  entities:
+  - entity-resource
+  description: Provisions the CPE in the ADOM and creates the FortiPortal organisation.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-in-update-offer
+  name: UpdateOffer
+  system: in
+  style: api
+  consumers:
+  - cwom
+  entities:
+  - entity-product
+  description: Applies a Backup 5G speed or the dunning offer.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-in-delete-offer
+  name: DeleteOffer
+  system: in
+  style: api
+  consumers:
+  - cwom
+  entities:
+  - entity-product
+  description: Removes a Backup 5G speed or the dunning offer.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-veda-hss-activation
+  name: HSS activation
+  system: veda
+  consumers:
+  - cwom
+  entities:
+  - entity-resource
+  description: Activates or removes the Backup 5G profile.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-alepo-commands
+  name: Alepo commands
+  system: alepo
+  consumers:
+  - veda
+  description: vEDA's Backup 5G commands.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-xaas-activate-saas
+  name: Activate SaaS
+  system: xaas
+  consumers:
+  - cwom
+  entities:
+  - entity-product
+  description: Activates a SaaS add-on.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-wfms-work-order
+  name: Work order
+  system: wfms
+  consumers:
+  - cwom
+  entities:
+  - entity-work-order
+  description: A manual work order for the technician.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-wfms-create-complaint-wo
+  name: CreateComplaintWO
+  system: wfms
+  style: api
+  consumers:
+  - tibco
+  open_apis:
+  - api-tmf621
+  entities:
+  - entity-trouble-ticket
+  - entity-work-order
+  description: A work order raised for a complaint.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-itsm-shipment-order
+  name: ShipmentOrder
+  system: itsm
+  style: api
+  consumers:
+  - cwom
+  entities:
+  - entity-resource
+  description: A device-delivery shipment order.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-cns-notification-api
+  name: CNS notification API
+  system: cns
+  style: api
+  consumers:
+  - cwom
+  - rtf
+  open_apis:
+  - api-tmf681
+  description: 'SMS and email to the customer: order submitted, completed, OTP.'
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-nc-crm-party-apis
+  name: TMF party APIs
+  system: nc-crm
+  style: api
+  consumers:
+  - tibco
+  open_apis:
+  - api-tmf632
+  - api-tmf629
+  entities:
+  - entity-party
+  - entity-customer
+  description: Customer, organisation, individual, contact and site data.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-tibco-party-apis
+  name: NC CRM party APIs
+  system: tibco
+  style: api
+  consumers:
+  - b2b-web
+  - smb-app
+  open_apis:
+  - api-tmf632
+  - api-tmf629
+  entities:
+  - entity-party
+  - entity-customer
+  description: NC CRM's party data, for the digital channels.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+  relays:
+  - if-nc-crm-party-apis
+- id: if-ibm-bpm-notify-order-creation
+  name: NotifyOrderCreationRequest
+  system: ibm-bpm
+  consumers:
+  - tibco
+  open_apis:
+  - api-tmf622
+  entities:
+  - entity-product-order
+  description: Opens the order tracker.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-tibco-notify-order-creation
+  name: NotifyOrderCreationRequest
+  system: tibco
+  consumers:
+  - rtf
+  open_apis:
+  - api-tmf622
+  entities:
+  - entity-product-order
+  description: RTF's order-creation notice, passed on to IBM BPM.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+  relays:
+  - if-ibm-bpm-notify-order-creation
+- id: if-ibm-bpm-update-milestones
+  name: Update milestones
+  system: ibm-bpm
+  style: event
+  consumers:
+  - tibco
+  entities:
+  - entity-order-milestone
+  description: Milestones per sub-order.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-tibco-milestones
+  name: Milestone (per sub-order)
+  system: tibco
+  style: event
+  consumers:
+  - cwom
+  entities:
+  - entity-order-milestone
+  description: CWOM's sub-order milestones, passed on to IBM BPM.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+  relays:
+  - if-ibm-bpm-update-milestones
+- id: if-felix-order-details
+  name: getRealTimeOrderDetails
+  system: felix
+  consumers:
+  - ibm-bpm
+  - tibco
+  entities:
+  - entity-order-milestone
+  - entity-product-order
+  description: Stored procedure reading an order and its milestones.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-tibco-order-details
+  name: getRealTimeOrderDetails
+  system: tibco
+  style: api
+  consumers:
+  - b2b-web
+  - smb-app
+  open_apis:
+  - api-tmf622
+  entities:
+  - entity-order-milestone
+  - entity-product-order
+  description: Order tracking for the digital channels.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+  relays:
+  - if-felix-order-details
+- id: if-nps-port-out-request
+  name: Port-out request
+  system: nps
+  consumers:
+  - npc
+  entities:
+  - entity-telephone-number
+  description: A number leaving for another operator.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-ocr-read-document
+  name: Document reading
+  system: ocr
+  style: api
+  consumers:
+  - b2b-web
+  - sas-portal
+  entities:
+  - entity-customer-document
+  description: Reads a trade licence, Emirates ID or establishment card.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+- id: if-gov-licence-validation
+  name: Trade licence validation
+  system: gov
+  style: api
+  consumers:
+  - tibco
+  entities:
+  - entity-customer-document
+  description: Validates a trade licence or decree.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the journeys' integrations
+realisations:
+- id: cfs-internet-cpe-onprem-he
+  layer: cfs
+  name: CFSS_INTERNET_CPE_ONPREM_HE
+  systems:
+  - cwom
+  - e2eso
+  realised_by:
+  - res-fortinet-he-cpe
+  description: 'Fibre internet on the on-premises CPE: the customer-facing service the GPON component
+    is sold as.'
+  confidence: inferred
+  source: Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)
+- id: cfs-onprem-firewall-he
+  layer: cfs
+  name: CFSS_ONPREM_FIREWALL_HE
+  systems:
+  - cwom
+  - e2eso
+  realised_by:
+  - res-fortinet-he-cpe
+  description: The firewall on the on-premises CPE, default or non-default configuration.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)
+- id: cfs-selfservice-portal-access
+  layer: cfs
+  name: CFSS_SELFSERVICE_PORTAL_ACCESS
+  systems:
+  - e2eso
+  description: FortiPortal access, shown in B2B as Security & Services Portal.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)
+- id: cfs-sdwan-new
+  layer: cfs
+  name: CFSS_SDWAN_NEW
+  systems:
+  - cwom
+  description: SD-WAN; its configuration is Day-N by MSS.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)
+- id: res-fortinet-he-cpe
+  layer: resource
+  name: Fortinet HE CPE
+  aliases:
+  - Fortinet 90G
+  - Fortinet 120G
+  systems:
+  - e2eso
+  description: The CPE device (CPE_PLATFORM_TYPE Fortinet HE, models 90G and 120G), provisioned in the
+    ADOM cluster.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)
+- id: res-fortiap
+  layer: resource
+  name: FortiAP
+  aliases:
+  - PRS_ACCESS_POINT
+  systems:
+  - cwom
+  description: The access point device, with its SIC code and model.
+  confidence: inferred
+  source: Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)

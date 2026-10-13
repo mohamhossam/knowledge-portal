@@ -9,23 +9,28 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
-import { api, type LibraryDocument, type Organisation, type Release, type Reminders, type Suggestion } from "../api/client";
-import { suggestionState } from "../catalogue/suggestions";
+import { api, type LibraryDocument, type Organisation, type Release, type Reminder, type Reminders, type Suggestion } from "../api/client";
+import { decideQuestions } from "../catalogue/draft/questions";
+import { lexicon } from "../catalogue/suggestions";
 import { formatDay } from "../home/format";
 import { docState } from "../library/docState";
-import { newestState, newestVersion, standing } from "../library/model";
-import { REMINDERS_KEY } from "../reviews/review";
+import { firstAsked, questionLine, reviewQuestions } from "../library/focus";
+import { initialDrafts, newestState, newestVersion, standing } from "../library/model";
+import { REMINDERS_KEY, sameMoment } from "../reviews/review";
 import { gaps } from "../squads/gaps";
 
 /**
  * Where each kind of entry is decided. The areas that move these pages
  * (3 catalogue curation, 6 re-confirmations, 7 ownership) update this map.
  */
-export const WORK_ROUTES = {
+const WORK_ROUTES = {
   document: (id: string) => `/library/${id}`,
-  decide: (releaseId: string) => `/architecture/versions/${releaseId}/sources`,
-  reConfirmations: "/reminders",
-  gaps: "/squads",
+  /** A review and a draft's decisions open in focus mode (UX rebuild, phase 2); Leave comes back here. */
+  review: (id: string) => `/library/${id}/focus?from=todo`,
+  decide: (releaseId: string) => `/architecture/versions/${releaseId}/decide/focus?from=todo`,
+  dueDocument: (id: string) => `/library/${encodeURIComponent(id)}`,
+  dueSystem: (id: string) => `/architecture/systems/${encodeURIComponent(id)}`,
+  gaps: "/squads?show=none",
 };
 
 /** What a document row can say about its newest version (all from the list read). */
@@ -43,14 +48,19 @@ export type Entry =
   /** A read that failed or is held; `document` carries what the row's own retry and upload need. */
   | { kind: "unreadable"; id: string; mine: boolean; subject: string; cause: string | null; held: boolean; sinceAt: string; fileType: string; to: string; document: LibraryDocument }
   | { kind: "unsearchable"; id: string; mine: boolean; subject: string; sinceAt: string; to: string; document: LibraryDocument }
-  | { kind: "review"; id: string; mine: boolean; subject: string; owner: string; since: string; sinceAt: string; facts: VersionFacts; to: string }
-  | { kind: "suggestions"; id: string; mine: boolean; subject: string; count: number; to: string }
-  | { kind: "due"; id: string; mine: boolean; subject: string; what: "document" | "system"; overdue: boolean; when: string; to: string }
+  /** `questions` and `first`: what focus mode will ask, and the first of it, so you know what you start on. */
+  | { kind: "review"; id: string; mine: boolean; subject: string; owner: string; since: string; sinceAt: string; facts: VersionFacts; questions: number; first: string | null; to: string; record: string }
+  | { kind: "suggestions"; id: string; mine: boolean; subject: string; count: number; first: string | null; to: string; record: string }
+  /**
+   * Re-confirmations, confirmed from To do itself: a document on its own; systems that fall due
+   * on the same day, from the same kind of last review, together (any maintainer may confirm them).
+   */
+  | { kind: "due"; id: string; mine: boolean; subject: string; what: "document" | "system"; overdue: boolean; when: string; fromPublication: boolean; items: Reminder[]; to: string }
   /** A standing backlog: listed, but not counted in the rail's "need you" (it rarely empties). */
   | { kind: "gaps"; id: string; mine: boolean; subject: string; count: number; to: string };
 
 export type SectionKey = "attention" | "decisions" | "due" | "gaps";
-export type Sections = Record<SectionKey, Entry[]>;
+type Sections = Record<SectionKey, Entry[]>;
 
 export type QueueInput = {
   documents: LibraryDocument[];
@@ -71,7 +81,7 @@ const FILE_TYPES: [RegExp, string][] = [
   [/^text\//, "Text"],
 ];
 
-export function fileType(mime: string | null | undefined): string {
+function fileType(mime: string | null | undefined): string {
   return FILE_TYPES.find(([pattern]) => pattern.test(mime ?? ""))?.[1] ?? "File";
 }
 
@@ -103,14 +113,21 @@ export function workQueue(input: QueueInput): Sections {
     });
 
   const draft = input.releases.find((release) => release.status === "draft");
-  const toDecide = input.suggestions.filter((item) => item.status === "proposed" && suggestionState(item) === "decide").length;
+  const toDecide = draft ? decideQuestions(input.suggestions, lexicon(draft, input.suggestions)) : [];
   const decisions: Entry[] = [
     // Most urgent first: what blocks approval, then what is flagged, then the longest wait.
     ...input.documents
       .filter((doc) => docState(doc) === "review")
       .map((doc): Entry => {
         const sinceAt = newestVersion(doc)?.uploaded_at ?? "";
-        return { kind: "review", id: `rev-${doc.id}`, mine: doc.is_owner, subject: doc.title, owner: doc.owner.display_name, since: formatDay(sinceAt), sinceAt, facts: facts(doc), to: WORK_ROUTES.document(doc.id) };
+        const version = newestVersion(doc);
+        // An admin who doesn't own it may see only its outline: focus mode then says so.
+        const questions = version?.blocks ? reviewQuestions(doc, version, initialDrafts(version)) : [];
+        const first = firstAsked(questions);
+        return {
+          kind: "review", id: `rev-${doc.id}`, mine: doc.is_owner, subject: doc.title, owner: doc.owner.display_name, since: formatDay(sinceAt), sinceAt, facts: facts(doc),
+          questions: questions.length, first: first ? questionLine(first) : null, to: WORK_ROUTES.review(doc.id), record: WORK_ROUTES.document(doc.id),
+        };
       })
       .sort((a, b) => {
         if (a.kind !== "review" || b.kind !== "review") return 0;
@@ -118,26 +135,42 @@ export function workQueue(input: QueueInput): Sections {
           || Number(b.facts.flagged > 0) - Number(a.facts.flagged > 0)
           || a.sinceAt.localeCompare(b.sinceAt);
       }),
-    ...(draft && toDecide > 0
-      ? [{ kind: "suggestions", id: `draft-${draft.id}`, mine: true, subject: draft.name ?? "the draft", count: toDecide, to: WORK_ROUTES.decide(draft.id) } satisfies Entry]
+    ...(draft && toDecide.length > 0
+      ? [{
+        kind: "suggestions", id: `draft-${draft.id}`, mine: true, subject: draft.name ?? "the draft", count: toDecide.length, first: toDecide[0]!.prompt,
+        to: WORK_ROUTES.decide(draft.id), record: `/architecture/versions/${draft.id}/decide`,
+      } satisfies Entry]
       : []),
   ];
 
   // The reminders read lists what the signed-in person answers for: all of it is theirs.
-  // Overdue first, then by due date.
-  const due: Entry[] = [...(input.reminders?.items ?? [])]
-    .filter((item) => item.standing.state !== "current")
-    .sort((a, b) => Number(b.standing.state === "overdue") - Number(a.standing.state === "overdue") || a.standing.due_at.localeCompare(b.standing.due_at))
-    .map((item) => ({
-      kind: "due",
-      id: `due-${item.kind}-${item.id}`,
-      mine: true,
-      subject: item.title,
-      what: item.kind,
-      overdue: item.standing.state === "overdue",
-      when: formatDay(item.standing.due_at),
-      to: WORK_ROUTES.reConfirmations,
-    }));
+  // Overdue first, then by due date; systems due together are one entry.
+  const due: Entry[] = [];
+  const together = new Map<string, Extract<Entry, { kind: "due" }>>();
+  const publishedAt = input.active?.published_at;
+  for (const item of [...(input.reminders?.items ?? [])]
+    .filter((each) => each.standing.state !== "current")
+    .sort((a, b) => Number(b.standing.state === "overdue") - Number(a.standing.state === "overdue") || a.standing.due_at.localeCompare(b.standing.due_at))) {
+    const overdue = item.standing.state === "overdue";
+    const when = formatDay(item.standing.due_at);
+    const fromPublication = sameMoment(item.standing.last_reviewed_at, publishedAt);
+    if (item.kind === "system") {
+      const key = `${overdue}|${when}|${fromPublication}`;
+      const group = together.get(key);
+      if (group) {
+        group.items.push(item);
+        group.subject = `${group.items.length} systems`;
+        continue;
+      }
+      const entry: Extract<Entry, { kind: "due" }> = {
+        kind: "due", id: `due-system-${key}`, mine: true, subject: item.title, what: "system", overdue, when, fromPublication, items: [item], to: WORK_ROUTES.dueSystem(item.id),
+      };
+      together.set(key, entry);
+      due.push(entry);
+      continue;
+    }
+    due.push({ kind: "due", id: `due-document-${item.id}`, mine: true, subject: item.title, what: "document", overdue, when, fromPublication, items: [item], to: WORK_ROUTES.dueDocument(item.id) });
+  }
 
   const gapList = gaps(input.active, input.organisation);
   const gapEntries: Entry[] = gapList.length
@@ -145,6 +178,63 @@ export function workQueue(input: QueueInput): Sections {
     : [];
 
   return { attention, decisions, due, gaps: gapEntries };
+}
+
+/** How To do can order each section: its ranking (the default), or by how long each has waited. */
+export type WorkOrder = "urgent" | "oldest" | "newest";
+
+/** When an entry began waiting, where the reads say: the version's upload, an overdue re-confirmation's due date. */
+export function waitingSince(entry: Entry): number | null {
+  const at = entry.kind === "unreadable" || entry.kind === "unsearchable" || entry.kind === "review"
+    ? entry.sinceAt
+    : entry.kind === "due" && entry.overdue ? entry.items[0]?.standing.due_at : undefined;
+  const time = Date.parse(at ?? "");
+  return Number.isNaN(time) ? null : time;
+}
+
+/** Pure: one section's entries in the chosen order. Entries without a time keep their rank, after the rest. */
+export function ordered(entries: Entry[], order: WorkOrder): Entry[] {
+  if (order === "urgent") return entries;
+  const timed = entries.map((entry, rank) => ({ entry, rank, at: waitingSince(entry) }));
+  timed.sort((a, b) => {
+    if (a.at === null || b.at === null) return Number(a.at === null) - Number(b.at === null) || a.rank - b.rank;
+    return (order === "oldest" ? a.at - b.at : b.at - a.at) || a.rank - b.rank;
+  });
+  return timed.map(({ entry }) => entry);
+}
+
+/** Began waiting after the last visit: new to this person. On a first visit (no last visit), nothing is. */
+export function isNew(entry: Entry, lastVisit: number | null): boolean {
+  const at = waitingSince(entry);
+  return lastVisit !== null && at !== null && at > lastVisit;
+}
+
+/** Whether an entry's name, owner or systems contain the text found, ignoring case. */
+export function matches(entry: Entry, find: string): boolean {
+  const text = find.trim().toLocaleLowerCase();
+  if (!text) return true;
+  const names = [entry.subject, ...(entry.kind === "review" ? [entry.owner] : []), ...(entry.kind === "due" ? entry.items.map((item) => item.title) : [])];
+  return names.some((name) => name.toLocaleLowerCase().includes(text));
+}
+
+const LAST_VISIT = "knowledge-portal.todo.last-visit";
+
+/** When this browser last opened To do; null on a first visit or with storage blocked. */
+export function readLastVisit(): number | null {
+  try {
+    const at = Number(window.localStorage.getItem(LAST_VISIT));
+    return Number.isFinite(at) && at > 0 ? at : null;
+  } catch {
+    return null;
+  }
+}
+
+export function writeLastVisit(at: number) {
+  try {
+    window.localStorage.setItem(LAST_VISIT, String(at));
+  } catch {
+    // Blocked storage: every visit is a first one, and nothing is marked new.
+  }
 }
 
 function nextDue(reminders: Reminders | undefined): string | null {
@@ -187,25 +277,36 @@ export function useWorkQueue() {
     [documents.data, releases.data, active.data, suggestions.data, organisation.data, reminders.data],
   );
   const reads = [documents, releases, active, organisation, reminders, suggestions];
+  // Each kept the same object until one of its flags changes, so an effect can depend on it.
+  const [attentionPending, decisionsPending, duePending, gapsPending] = [
+    documents.isPending,
+    documents.isPending || releases.isPending || (Boolean(draft) && suggestions.isPending),
+    reminders.isPending,
+    active.isPending || organisation.isPending,
+  ];
+  const pending = useMemo(
+    () => ({ attention: attentionPending, decisions: decisionsPending, due: duePending, gaps: gapsPending }) satisfies Record<SectionKey, boolean>,
+    [attentionPending, decisionsPending, duePending, gapsPending],
+  );
+  const [attentionFailed, decisionsFailed, dueFailed, gapsFailed] = [
+    documents.isError,
+    documents.isError || releases.isError || suggestions.isError,
+    reminders.isError,
+    active.isError || organisation.isError,
+  ];
+  const failed = useMemo(
+    () => ({ attention: attentionFailed, decisions: decisionsFailed, due: dueFailed, gaps: gapsFailed }) satisfies Record<SectionKey, boolean>,
+    [attentionFailed, decisionsFailed, dueFailed, gapsFailed],
+  );
   return {
     sections,
     mine: mineCount(sections),
     loading: documents.isPending || releases.isPending || organisation.isPending,
     retrying: reads.some((read) => read.isError && read.isFetching),
     /** Sections whose reads are still in flight: they show a skeleton, never "nothing". */
-    pending: {
-      attention: documents.isPending,
-      decisions: documents.isPending || releases.isPending || (Boolean(draft) && suggestions.isPending),
-      due: reminders.isPending,
-      gaps: active.isPending || organisation.isPending,
-    } satisfies Record<SectionKey, boolean>,
+    pending,
     /** Which sections' reads failed, so a section can say so instead of showing "nothing". */
-    failed: {
-      attention: documents.isError,
-      decisions: documents.isError || releases.isError || suggestions.isError,
-      due: reminders.isError,
-      gaps: active.isError || organisation.isError,
-    } satisfies Record<SectionKey, boolean>,
+    failed,
     retry: () => reads.forEach((read) => {
       if (read.isError) void read.refetch();
     }),

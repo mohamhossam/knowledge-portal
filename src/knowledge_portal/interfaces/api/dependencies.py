@@ -42,6 +42,7 @@ from knowledge_portal.application.use_cases.catalog_plans import ReadCatalogPlan
 from knowledge_portal.application.use_cases.catalogue_candidates import (
     DecideCatalogueCandidate,
 )
+from knowledge_portal.application.use_cases.change_requests import ReadDeliverySummaries
 from knowledge_portal.application.use_cases.document_library import DocumentLibrary
 from knowledge_portal.application.use_cases.historic_requirements import HistoricImports
 from knowledge_portal.application.use_cases.identity_access import SearchKnownActors
@@ -56,6 +57,7 @@ from knowledge_portal.application.use_cases.library_governance import LibraryGov
 from knowledge_portal.application.use_cases.organisation_catalogue import (
     ManageOrganisationCatalogue,
 )
+from knowledge_portal.application.use_cases.precedents import ReadPrecedentSummaries
 from knowledge_portal.application.use_cases.reference_knowledge import ReferenceKnowledge
 from knowledge_portal.application.use_cases.requirement_corpus import (
     ActOnRequirementCorpus,
@@ -255,6 +257,14 @@ def get_manage_sample_requirements(container: ContainerDep) -> ManageSampleRequi
 
 def get_compare_architecture_impact(container: ContainerDep) -> CompareArchitectureImpact:
     return container.compare_architecture_impact
+
+
+def get_precedent_summaries(container: ContainerDep) -> ReadPrecedentSummaries:
+    return container.precedent_summaries
+
+
+def get_delivery_summaries(container: ContainerDep) -> ReadDeliverySummaries:
+    return container.delivery_summaries
 
 
 def get_report_mapping_impact(container: ContainerDep) -> ReportMappingImpact:

@@ -1,0 +1,243 @@
+/*
+ * Focus mode (UX rebuild plan, phase 2): one question at a time, at a reading
+ * measure, with an optional aside (a diagram) beside it on a wide window.
+ * Flat surfaces, one rule for the source, the selection colour for the chosen
+ * answer. Tokens only (component.css › Focus mode).
+ */
+/* One column, centred: the page holds the question and nothing else (the aside, when there is one). */
+.ds-focus {
+  display: grid;
+  gap: var(--space-4);
+  inline-size: 100%;
+  max-inline-size: calc(var(--focus-measure) + 2 * var(--gutter));
+  margin-inline: auto;
+  padding-block: var(--space-4) var(--space-8);
+  padding-inline: var(--gutter);
+}
+
+.ds-focus--aside {
+  max-inline-size: calc(var(--focus-measure) + var(--focus-aside-max) + var(--space-6) + 2 * var(--gutter));
+}
+
+.ds-focus__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  padding-block-end: var(--space-2);
+  border-block-end: var(--hair-rule);
+}
+
+.ds-focus__work {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  color: var(--color-ink-2);
+}
+
+.ds-focus__name {
+  color: var(--color-ink);
+  font-weight: var(--weight-strong);
+}
+
+.ds-focus__key {
+  font-size: var(--text-meta);
+  color: var(--color-ink-2);
+}
+
+.ds-focus__progress {
+  display: grid;
+  gap: var(--space-1);
+  max-inline-size: var(--focus-measure);
+}
+
+.ds-focus__steps {
+  display: flex;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ds-focus__step {
+  flex: 1;
+  block-size: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--focus-step-open);
+}
+
+.ds-focus__step--answered { background: var(--focus-step-answered); }
+.ds-focus__step--skipped { background: var(--focus-step-skipped); }
+.ds-focus__step--current { background: var(--focus-step-current); }
+
+.ds-focus__count {
+  margin: 0;
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.ds-focus__body {
+  display: grid;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.ds-focus__main {
+  display: grid;
+  gap: var(--space-4);
+  max-inline-size: var(--focus-measure);
+  min-inline-size: 0;
+}
+
+@media (min-width: 72rem) {
+  .ds-focus--aside .ds-focus__body {
+    grid-template-columns: minmax(0, var(--focus-measure)) var(--focus-aside-width);
+  }
+
+  .ds-focus__aside {
+    position: sticky;
+    inset-block-start: calc(var(--sticky-top, 0px) + var(--space-4));
+  }
+}
+
+.ds-focus__aside {
+  min-inline-size: 0;
+}
+
+.ds-focus__title {
+  margin: 0;
+  font-size: var(--text-h2);
+  font-weight: var(--weight-heading);
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+.ds-focus__title:focus {
+  outline: none;
+}
+
+.ds-focus__title:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.ds-focus__question {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.ds-focus__lead {
+  margin: 0;
+  color: var(--color-ink-2);
+}
+
+/* Where the question comes from: one heavy rule at the start, never a coloured fill. */
+.ds-focus__source {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-inline-start: var(--focus-source-rule);
+  background: var(--focus-source-bg);
+}
+
+.ds-focus__source > * {
+  margin: 0;
+}
+
+.ds-focus__choices {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* A whole answer is the target: radio, key, answer, then what it does. */
+.ds-focus__choice {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--space-3);
+  row-gap: var(--space-1);
+  min-block-size: var(--target-min);
+  padding: var(--space-3);
+  border: var(--rule-hair) solid var(--focus-choice-border);
+  border-radius: var(--radius-control);
+  background: var(--focus-choice-bg);
+  cursor: pointer;
+  transition: border-color var(--motion-fast) var(--motion-ease);
+}
+
+.ds-focus__choice:hover {
+  border-color: var(--focus-choice-hover-border);
+}
+
+.ds-focus__choice.is-chosen {
+  border-color: var(--focus-choice-chosen-border);
+  background: var(--focus-choice-chosen-bg);
+}
+
+.ds-focus__choice:has(:focus-visible) {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.ds-focus__radio {
+  inline-size: var(--space-5);
+  block-size: var(--space-5);
+  margin: 0;
+  accent-color: var(--color-action);
+}
+
+.ds-focus__radio:focus-visible {
+  outline: none;
+}
+
+.ds-focus__answer {
+  font-weight: var(--weight-strong);
+}
+
+.ds-focus__does {
+  grid-column: 3;
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.ds-focus__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* The summary's parts: what follows, ruled apart. */
+.ds-focus__part {
+  display: grid;
+  gap: var(--space-2);
+  padding-block-start: var(--space-3);
+  border-block-start: var(--hair-rule);
+}
+
+.ds-focus__part > * {
+  margin: 0;
+}
+
+.ds-focus__part-title {
+  font-size: var(--text-h3);
+  font-weight: var(--weight-strong);
+}
+
+.ds-focus__open {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ds-focus__failure {
+  margin: 0;
+}

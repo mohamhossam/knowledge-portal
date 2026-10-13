@@ -39,19 +39,12 @@ Paper. Do not copy requirement-portal's tokens, primitives or shell.
 - `/internal/*` routes require a service token (`smb_kernel.http.InternalRouteGuard`), and are
   public API for requirement-portal (`AGENTS.md` §2.1).
 
-## Redesign epic (e& calm)
+## Design system (e& calm)
 
-A complete UX redesign runs on the integration branch `feat/kb-redesign`.
-
-- On this branch, `DESIGN.md` ("The Calm Ledger", direction A) and `docs/design-system.md`
-  describe the new design system in `frontend/src/design/`.
-- Screens not yet migrated still follow the archived Timetable Book,
-  `docs/design-history/timetable-book-DESIGN.md`, until their area is rebuilt (Phase 8).
-- On `main`, the Timetable Book `DESIGN.md` still describes what ships.
-
-- **Status first.** `docs/redesign/STATUS.md` holds the phase, decisions, scores, metrics and
-  the next exact action. Read it at session start; update it at the end of every phase, and
-  before stopping when context runs low. Work stops at every gate until the user approves.
+- `DESIGN.md` ("The Calm Ledger") and `docs/design-system.md` describe the design system in
+  `frontend/src/design/`. Every route is built on it; the legacy island and `src/styles/` are
+  gone, and the archived Timetable Book (`docs/design-history/timetable-book-DESIGN.md`) is history
+  only.
 - **Authority.**
   - Impeccable (`/impeccable:impeccable`) leads UX and judges design.
   - ui-ux-pro-max leads visual direction and the design system, only after the UX structure
@@ -77,19 +70,11 @@ A complete UX redesign runs on the integration branch `feat/kb-redesign`.
   - Dark mode is warm charcoal.
   - Charts use a muted palette; red is never a data colour.
 - **Token layering.** e& values live only in the primitive token layer. Components consume
-  semantic tokens. A brand-lint check enforces this once it exists.
+  semantic tokens. `npm run lint:brand` enforces it.
 - **Fonts are self-hosted only** (`@fontsource` or licensed files, CSP-safe), with Arabic
   coverage.
-- **Branching.**
-  - Areas are built on `feat/kb-redesign-<area>` (git cannot nest a branch under an existing
-    branch name) and merged back with `--no-ff` after their
-    gate.
-  - `main` stays shippable; one final PR goes into `main`.
-  - Never push, rebase or open a PR without asking.
-- **`/redesign-area`** (`.claude/skills/redesign-area/`) is the only way to build a production
-  area, from an approved plan in `docs/redesign/plans/`. It does not exist before Phase 7.
+- **Gates.** `npm run lint:brand`, `npm run lint:legacy-css` (`src/styles/` stays empty: styles
+  live in the design system or beside an area's components), `npm run budget` (after a build)
+  and `npm run e2e` (route axe checks and keyboard journeys) must stay green. Screenshot baselines are not kept in git.
 - **Evidence vs HYPOTHESIS.** Never invent research results, quotes, metrics or users.
   Anything not backed by evidence the user provided is labelled **HYPOTHESIS**.
-- **Data.** Use only the offline fake stack and its seeded data (`scripts/seed_demo.py`). In
-  this checkout, the launch configurations `redesign-api` (port 8110) and `redesign-web`
-  (port 5184) keep this work apart from other sessions' servers.

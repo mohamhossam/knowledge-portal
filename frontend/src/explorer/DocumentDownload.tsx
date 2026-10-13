@@ -1,9 +1,10 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { FileDown, RotateCw } from "lucide-react";
-import { useRef, useState } from "react";
+import { useState } from "react";
 
 import { api, type CatalogPlans, type ExplorerRelease } from "../api/client";
 import { errorMessage } from "../api/errors";
+import { Button, Status } from "../design/components";
 import { saveBlob } from "../catalogue/useEditing";
 import { overviewSvg, rasterise } from "./document/overview";
 import type { Scenario } from "./scenario";
@@ -17,12 +18,11 @@ import type { Scenario } from "./scenario";
 export function DocumentDownload({ release, scenario }: { release: ExplorerRelease; scenario: Scenario }) {
   const queryClient = useQueryClient();
   const [state, setState] = useState<{ busy: boolean; error: unknown }>({ busy: false, error: null });
-  const button = useRef<HTMLButtonElement>(null);
 
   const write = async () => {
     if (state.busy) return;
     // "Try again" goes away as the retry starts: focus moves to the download itself, never to the page.
-    button.current?.focus();
+    document.getElementById("explorer-document")?.focus();
     setState({ busy: true, error: null });
     try {
       let plans: CatalogPlans | null = null;
@@ -48,24 +48,24 @@ export function DocumentDownload({ release, scenario }: { release: ExplorerRelea
   };
 
   return (
-    <div className="explorer__document">
-      <p className="explorer__document-line">
-        <button ref={button} type="button" className="text-button" aria-disabled={state.busy || undefined} aria-describedby="explorer-document-what" onClick={() => void write()}>
-          <FileDown size={14} aria-hidden="true" />
-          {state.busy ? "Writing the document…" : "Download the Solution Architecture (.docx)"}
-        </button>
-        <span id="explorer-document-what" className="sheet__meta">
-          A Word document of this scenario in eighteen sections, for architecture review; what the catalogue does not hold is marked as a gap.
-        </span>
+    <div className="explorer-download">
+      <Button
+        id="explorer-document"
+        icon={<FileDown size={16} />}
+        busy={state.busy}
+        aria-describedby="explorer-document-what"
+        onClick={() => void write()}
+      >
+        {state.busy ? "Writing the document…" : "Download the Solution Architecture (.docx)"}
+      </Button>
+      <p id="explorer-document-what" className="explorer-download__what">
+        A Word document of this scenario in eighteen sections, for architecture review; what the catalogue does not hold is marked as a gap.
       </p>
-      <p className="visually-hidden" role="status">{state.busy ? "Writing the Solution Architecture document." : ""}</p>
+      <p className="ds-visually-hidden" role="status">{state.busy ? "Writing the Solution Architecture document." : ""}</p>
       {state.error !== null && (
-        <p className="timetable__quiet timetable__quiet--failed" role="alert">
-          <span className="status">The document could not be written: {errorMessage(state.error)}</span>
-          <button type="button" className="text-button" onClick={() => void write()}>
-            <RotateCw size={14} aria-hidden="true" />
-            Try again
-          </button>
+        <p role="alert" className="cat-inline">
+          <Status tone="attention">The document could not be written: {errorMessage(state.error)}</Status>
+          <Button icon={<RotateCw size={16} />} onClick={() => void write()}>Try again</Button>
         </p>
       )}
     </div>

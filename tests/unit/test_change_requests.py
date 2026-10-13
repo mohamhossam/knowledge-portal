@@ -11,6 +11,7 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+from pydantic import TypeAdapter
 
 from knowledge_portal.application.ports.catalogue_file import CatalogueFileFormat
 from knowledge_portal.application.use_cases.change_requests import read_change_request
@@ -19,13 +20,16 @@ from knowledge_portal.domain.architecture.candidates import (
     CandidateDependencyError,
     CandidateKind,
     CandidateMatch,
+    ChangeRequestCitation,
     accept_from_change_request,
     apply_candidate,
     classify,
+    needs_one_by_one,
 )
 from knowledge_portal.domain.architecture.change_requests import (
     ChangeItem,
     ChangeOrigin,
+    ChangeRequestKind,
     ChangeRequestRecord,
     ChangeRequestStateError,
     IncomingChangeRequest,
@@ -37,17 +41,26 @@ from knowledge_portal.domain.architecture.change_requests import (
     change_request_id,
 )
 from knowledge_portal.domain.architecture.diff import ChangedItem, diff_releases
+from knowledge_portal.domain.architecture.drafts import OfferingDraft
 from knowledge_portal.domain.architecture.governance import OpenQuestion
+from knowledge_portal.domain.architecture.journeys import Activity, Journey
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
     InvalidKnowledgeError,
     KnowledgeReleaseStatus,
 )
-from knowledge_portal.domain.architecture.products import OrderType, ProductOffering
+from knowledge_portal.domain.architecture.products import (
+    ComponentResponsibility,
+    OfferingComponent,
+    OrderType,
+    ProductOffering,
+    SourceConfidence,
+)
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
 from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.interfaces.api.container import Container, build_container
 from knowledge_portal.interfaces.api.main import create_app
+from knowledge_portal.interfaces.api.schemas.change_requests import ExportOfferingDraft
 from tests.conftest import FAKE_PROVIDER_SETTINGS
 
 EXPORT = Path(__file__).resolve().parents[1] / "fixtures" / "requirement_ai_backlog_export.json"
@@ -397,3 +410,157 @@ def test_a_dismissed_change_request_cannot_be_read(served: tuple[Container, Test
         ).status_code
         == 404
     )
+
+
+# A drafted offering and journey, sent with the approved backlog (ontology plan Phase 9).
+
+DRAFTED_JOURNEY = Journey(
+    "cloud-voice-new",
+    "New activation",
+    "cloud-voice",
+    "NEW",
+    activities=(
+        Activity("10", "Capture the order", performing_system_id="b2b-web"),
+        Activity("20", "SIP trunk", performing_system_id="cwom", component_ids=("sip",)),
+        Activity("30", "Call recording", component_ids=("recording",)),
+    ),
+)
+DRAFTED = OfferingDraft(
+    ProductOffering(
+        "cloud-voice",
+        "Cloud Voice",
+        order_types=(OrderType("NEW", "New Activation"),),
+        components=(
+            OfferingComponent(
+                "sip",
+                "SIP trunk",
+                responsibilities=(
+                    ComponentResponsibility("cwom", "Delivers", "Realises SIP trunking.", ("NEW",)),
+                ),
+                confidence=SourceConfidence.INFERRED,
+            ),
+            OfferingComponent("recording", "Call recording", confidence=SourceConfidence.GAP),
+        ),
+        confidence=SourceConfidence.INFERRED,
+        source="Drafted for requirement REQ-2026-0412",
+        questions=(OpenQuestion("realise-call-recording", "Which system will realise it?"),),
+    ),
+    DRAFTED_JOURNEY,
+)
+
+
+def test_a_drafted_offering_and_journey_are_suggested_first_and_accepted_alone() -> None:
+    incoming = _incoming(draft=DRAFTED)
+    candidates, warnings = read_change_request(incoming, _draft(), AT)
+
+    offering, journey, *questions = candidates
+    assert [offering.content.kind, journey.content.kind] == [
+        CandidateKind.PRODUCT,
+        CandidateKind.JOURNEY,
+    ]
+    assert all(item.content.kind is CandidateKind.QUESTION for item in questions)
+    assert offering.change_request == ChangeRequestCitation(incoming.id, "FT-1")
+    assert offering.citations[0].quote == "New offering for Microsoft 365 for Business Pro Plus"
+    assert not any("drafted" in item for item in warnings)
+    release = _draft()
+    # The journey waits for its offering; both are reviewed one by one.
+    assert classify(journey.content, release) is CandidateMatch.NEEDS_OFFERING
+    assert needs_one_by_one(offering, release) and needs_one_by_one(journey, release)
+
+    release = accept_from_change_request(release, offering.content, incoming, "FT-1", AT)
+    release = accept_from_change_request(release, journey.content, incoming, "FT-1", AT)
+    added = next(item for item in release.products if item.id == "cloud-voice")
+    assert added.sources == (incoming.id,)
+    assert [item.id for item in release.journeys] == ["cloud-voice-new"]
+    (record,) = release.change_history
+    assert [item.summary for item in record.items] == [
+        "Adds the offering Cloud Voice, drafted for the requirement",
+        "Adds the journey New activation, drafted for the requirement",
+    ]
+    assert record.product_id == "cloud-voice"
+
+
+def test_a_drafted_offering_the_draft_already_holds_is_flagged_or_left_out() -> None:
+    present = _draft(products=(OFFERING, DRAFTED.offering), journeys=(DRAFTED_JOURNEY,))
+    candidates, warnings = read_change_request(_incoming(draft=DRAFTED), present, AT)
+    assert not any(
+        item.content.kind in {CandidateKind.PRODUCT, CandidateKind.JOURNEY} for item in candidates
+    )
+    assert (
+        "The drafted offering Cloud Voice is already in the draft, so it is left out." in warnings
+    )
+
+    # The same name with another id and less in it: accepting it would replace that one.
+    renamed = replace(
+        DRAFTED.offering, id="cloud-voice-2", components=DRAFTED.offering.components[:1]
+    )
+    clash = OfferingDraft(
+        renamed,
+        replace(
+            DRAFTED_JOURNEY,
+            id="cloud-voice-2-new",
+            product_id="cloud-voice-2",
+            activities=DRAFTED_JOURNEY.activities[:2],
+        ),
+    )
+    candidates, warnings = read_change_request(_incoming(draft=clash), present, AT)
+    assert candidates[0].content.kind is CandidateKind.PRODUCT
+    assert any("accepting it replaces that one" in item for item in warnings)
+
+
+def test_only_an_approved_backlog_carries_a_draft() -> None:
+    with pytest.raises(InvalidKnowledgeError, match="drafted offering"):
+        _incoming(draft=DRAFTED, kind=ChangeRequestKind.CATALOGUE_CHANGE)
+    with pytest.raises(InvalidKnowledgeError, match="fulfils the drafted offering"):
+        OfferingDraft(DRAFTED.offering, replace(DRAFTED_JOURNEY, product_id="other"))
+
+
+def test_the_draft_assess_answers_with_is_the_draft_the_export_carries_back() -> None:
+    answered = TypeAdapter(OfferingDraft).dump_python(DRAFTED, mode="json")
+    assert ExportOfferingDraft.model_validate(answered).to_domain() == DRAFTED
+
+
+def test_requirement_portal_delivers_a_draft_with_the_approved_backlog(
+    served: tuple[Container, TestClient],
+) -> None:
+    _, client = served
+    export = _export()
+    export["schema_version"] = "1.6"
+    export["product_impact"] = {
+        "verdict": "new_product_line",
+        "release_id": "smb-source-reference-v1",
+        "draft": TypeAdapter(OfferingDraft).dump_python(DRAFTED, mode="json"),
+    }
+    broken = json.loads(json.dumps(export))
+    broken["product_impact"]["draft"]["journey"]["activities"][1]["number"] = "10"
+    refused = client.post("/internal/change-requests", json=broken, headers=REQUIREMENTS)
+    assert refused.status_code == 422 and "product_impact.draft" in refused.text
+
+    delivered = client.post("/internal/change-requests", json=export, headers=REQUIREMENTS)
+    assert delivered.status_code == 201, delivered.text
+    (item,) = client.get("/architecture-knowledge/change-requests", headers=OWNER).json()[
+        "change_requests"
+    ]
+    assert item["draft"] == {
+        "offering_id": "cloud-voice",
+        "offering_name": "Cloud Voice",
+        "based_on": None,
+        "components": [
+            {"id": "sip", "name": "SIP trunk", "capability_ids": [], "system_ids": ["cwom"]},
+            {"id": "recording", "name": "Call recording", "capability_ids": [], "system_ids": []},
+        ],
+        "questions": ["Which system will realise it?"],
+        "journey_id": "cloud-voice-new",
+        "journey_name": "New activation",
+        "steps": 3,
+    }
+    reading = client.post(
+        f"/architecture-knowledge/change-requests/{item['id']}/reading", headers=OWNER
+    )
+    assert reading.status_code == 200, reading.text
+    release = reading.json()["release"]
+    suggestions = client.get(
+        f"/architecture-knowledge/releases/{release['id']}/suggestions", headers=OWNER
+    ).json()["suggestions"]
+    kinds = {each["content"]["kind"]: each for each in suggestions}
+    assert (kinds["product"]["match"], kinds["journey"]["match"]) == ("new", "needs_offering")

@@ -12,7 +12,7 @@ import { checkAxeAfterEach } from "../../test/axe";
 checkAxeAfterEach();
 
 const NAV = [
-  { href: "/", label: "Your work", current: false, count: 6, countLabel: "need you" },
+  { href: "/", label: "To do", current: false, count: 6, countLabel: "need you" },
   { href: "/library", label: "Library", current: true },
   { href: "/architecture", label: "Catalogue" },
 ];
@@ -30,9 +30,30 @@ describe("AppShell", () => {
     expect(screen.getByRole("navigation", { name: "Areas" })).toBeInTheDocument();
     expect(screen.getByRole("main")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Library" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("link", { name: "Your work 6 need you" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "To do 6 need you" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Requirement AI (leaves the knowledge portal)" })).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Etisalat" })).toBeInTheDocument();
+  });
+
+  it("groups the sidebar's areas and collapses it to icons that keep their names, remembered", async () => {
+    window.localStorage.removeItem("knowledge-portal.sidebar");
+    const { container, unmount } = render(
+      <AppShell homeHref="/" navigation={[...NAV.slice(0, 1), ...NAV.slice(1).map((item) => ({ ...item, group: "Look up" }))]}>
+        <p>Page</p>
+      </AppShell>,
+    );
+    const areas = screen.getByRole("navigation", { name: "Areas" });
+    expect(screen.getByRole("list", { name: "Look up" })).toHaveTextContent("LibraryCatalogue");
+    // jsdom has no wide window: the sidebar starts collapsed, its names still the links' names.
+    expect(container.firstElementChild).toHaveClass("ds-shell--collapsed");
+    expect(areas).toContainElement(screen.getByRole("link", { name: "Library" }));
+    await userEvent.click(screen.getByRole("button", { name: "Expand the sidebar" }));
+    expect(container.firstElementChild).not.toHaveClass("ds-shell--collapsed");
+    expect(window.localStorage.getItem("knowledge-portal.sidebar")).toBe("expanded");
+    unmount();
+    render(<AppShell homeHref="/" navigation={NAV}><p>Page</p></AppShell>);
+    expect(screen.getByRole("button", { name: "Collapse the sidebar" })).toBeInTheDocument();
+    window.localStorage.removeItem("knowledge-portal.sidebar");
   });
 
   it("moves focus to the new page's h1 when the location changes (§1)", () => {
@@ -41,6 +62,21 @@ describe("AppShell", () => {
     rerender(<AppShell homeHref="/" navigation={NAV} locationKey="/b"><PageHeader title="B">b</PageHeader></AppShell>);
     expect(screen.getByRole("heading", { level: 1, name: "B" })).toHaveFocus();
     expect(scroll).toHaveBeenCalledWith(0, 0);
+    scroll.mockRestore();
+  });
+
+  it("leaves focus on a chosen record's heading in a data-takes-focus pane", () => {
+    const scroll = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+    function Record({ name }: { name: string }) {
+      return (
+        <article data-takes-focus>
+          <h2 tabIndex={-1} ref={(heading) => heading?.focus()}>{name}</h2>
+        </article>
+      );
+    }
+    const { rerender } = render(<AppShell homeHref="/" navigation={NAV} locationKey="/a"><PageHeader title="Systems">a</PageHeader><Record name="A" /></AppShell>);
+    rerender(<AppShell homeHref="/" navigation={NAV} locationKey="/b"><PageHeader title="Systems">b</PageHeader><Record key="b" name="B" /></AppShell>);
+    expect(screen.getByRole("heading", { level: 2, name: "B" })).toHaveFocus();
     scroll.mockRestore();
   });
 
@@ -76,6 +112,34 @@ describe("page structure", () => {
     render(<PageHeader title="Your work" lead="3 things need you." />);
     expect(document.title).toBe("Your work · Knowledge portal");
     expect(screen.getByRole("heading", { level: 1 })).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("keeps the head to one line: facts beside the title, where and why behind About this page", async () => {
+    render(
+      <PageHeader
+        title="Product eligibility matrix"
+        meta={<span>Version 1</span>}
+        lead="Reviewed reference documents."
+        breadcrumbs={<Breadcrumbs items={[{ href: "/library", label: "Library" }, { label: "Product eligibility matrix" }]} />}
+        actions={<Button>Upload a new version</Button>}
+      />,
+    );
+    const about = screen.getByRole("button", { name: "About this page" });
+    expect(about).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("navigation", { name: "Breadcrumb" })).not.toBeInTheDocument();
+    await userEvent.click(about);
+    expect(about).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("navigation", { name: "Breadcrumb" })).toBeInTheDocument();
+    expect(screen.getByText("Reviewed reference documents.")).toBeVisible();
+    await userEvent.keyboard("{Tab}");
+    await userEvent.keyboard("{Escape}");
+    expect(about).toHaveAttribute("aria-expanded", "false");
+    expect(about).toHaveFocus();
+  });
+
+  it("has no About button when there is nothing to say", () => {
+    render(<PageHeader title="Library" meta={<span>12 documents</span>} />);
+    expect(screen.queryByRole("button", { name: "About this page" })).not.toBeInTheDocument();
   });
 
   it("announces a state line as status", () => {
@@ -185,6 +249,26 @@ describe("overlays", () => {
     expect(screen.getByText("Exclude")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Turn them off" }));
     expect(onToggle).toHaveBeenCalledWith(false);
+  });
+
+  it("gives each key its own <kbd> and names each group once, by its heading", () => {
+    const { container } = render(
+      <ShortcutHelp
+        enabled
+        widget={[{ title: "Review", shortcuts: [{ keys: "x / i", does: "Exclude / include" }, { keys: "Ctrl+Enter", does: "Save" }] }]}
+        global={[{ keys: "g w", does: "Go to To do" }]}
+        onToggle={() => {}}
+      />,
+    );
+    const keys = (does: string) => screen.getByText(does).closest("div")!.querySelector("dt")!;
+    expect([...keys("Exclude / include").querySelectorAll("kbd")].map((kbd) => kbd.textContent)).toEqual(["x", "i"]);
+    expect(keys("Exclude / include")).toHaveTextContent("x or i");
+    expect([...keys("Go to To do").querySelectorAll("kbd")].map((kbd) => kbd.textContent)).toEqual(["g", "w"]);
+    // Held together: one <kbd> around a <kbd> per key.
+    expect(keys("Save").querySelector(":scope > kbd")!.querySelectorAll("kbd")).toHaveLength(2);
+    expect(screen.queryAllByRole("region")).toHaveLength(0);
+    expect(container.querySelectorAll("[aria-label]")).toHaveLength(0);
+    expect(screen.getAllByRole("heading", { level: 4 }).map((h) => h.textContent)).toEqual(["Review", "Page-wide"]);
   });
 
   it("keeps help in four parts, in order", () => {

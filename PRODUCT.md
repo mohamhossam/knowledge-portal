@@ -20,9 +20,6 @@ A mixed curation team, every member holding the `knowledge_admin` role:
 Everyone else in the organisation never opens this portal. They read citations and
 architecture evidence through read-only viewers in requirement-portal.
 
-Working proto-personas (hypotheses until research is run) and jobs to be done:
-`docs/ux/research/synthesis.md` §3–4.
-
 ## Product Purpose
 
 The knowledge portal is where the organisation's shared knowledge is curated before
@@ -133,8 +130,7 @@ existing architecture mappings.
 
 ## Success Signals
 
-How we know the curation desk is working. User metrics are hypotheses until measured; see
-`docs/ux/research/synthesis.md` §8 for targets and how each is checked.
+How we know the curation desk is working. User metrics are hypotheses until measured.
 
 - **Reviewed means seen.** Every approval records how much a person actually looked at, and
   nothing AI-proposed is accepted in bulk without the set being inspectable.
@@ -146,7 +142,7 @@ How we know the curation desk is working. User metrics are hypotheses until meas
   and which passage, document version and release it came from.
 - **Calm over long sessions.** A 60-minute review burst does not rely on colour alone, never
   loses the reviewer's place, and stays readable at 200% zoom.
-- **Usability targets** (to be measured with the benchmark in `docs/ux/research/plan.md`):
+- **Usability targets** (hypotheses, not yet measured):
   - task success of at least 90% on top tasks;
   - an SEQ of at least 5.5;
   - a SUS of at least 75.

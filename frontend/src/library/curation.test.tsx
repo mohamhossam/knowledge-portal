@@ -53,46 +53,65 @@ function wrap(children: ReactNode, path = "/library") {
 const overdue = { state: "overdue", due_at: "2026-10-01T09:00:00Z", last_reviewed_at: "2026-04-04T09:00:00Z", reviewer: amina } as unknown as ReviewStanding;
 
 describe("the library list", () => {
-  it("says where each document stands in words and icon, and how many requirements cite it", async () => {
+  it("groups the documents by where they stand, what needs someone first", async () => {
     vi.spyOn(api, "libraryDocuments").mockResolvedValue([
       outline(),
       outline({ id: "d2", title: "Billing rules", citations: null, newest: { ...outline().newest!, id: "v2", stage: "failed", error: "Row 2 is short." } }),
       outline({ id: "d3", title: "Old tariffs", citations: 0, newest: { ...outline().newest!, id: "v3", stage: "queued" } }),
     ]);
     render(wrap(<LibraryPage />));
-    const coverage = (await screen.findByRole("link", { name: "Coverage policy" })).closest("tr")!;
-    expect(within(coverage).getByText("Ready for review")).toBeInTheDocument();
-    expect(within(coverage).getByText("2 requirements")).toBeInTheDocument();
-    // Another owner's document: its owner's name, never "You".
-    expect(within(coverage).getByText("Amina Owner")).toBeInTheDocument();
-    const billing = screen.getByRole("link", { name: "Billing rules" }).closest("tr")!;
-    expect(within(billing).getByText("Needs attention")).toBeInTheDocument();
-    expect(within(billing).getByText("Row 2 is short.")).toBeInTheDocument();
-    // Requirement AI couldn't count: unknown, never "None".
-    expect(within(billing).getByText("unknown")).toBeInTheDocument();
-    const old = screen.getByRole("link", { name: "Old tariffs" }).closest("tr")!;
-    expect(within(old).getByText("Being read")).toBeInTheDocument();
-    expect(within(old).getByText("None")).toBeInTheDocument();
+    const ready = await screen.findByRole("list", { name: /^Ready for review/ });
+    // Another owner's document: its owner's name, never "Yours".
+    expect(within(ready).getByRole("link", { name: /^Coverage policy/ })).toHaveTextContent("Amina Owner");
+    const attention = screen.getByRole("list", { name: /^Needs attention/ });
+    expect(within(attention).getByRole("link", { name: /^Billing rules/ })).toHaveTextContent("Row 2 is short.");
+    expect(within(screen.getByRole("list", { name: /^Being read/ })).getByRole("link", { name: /^Old tariffs/ })).toBeInTheDocument();
+    // What needs someone comes first.
+    const groups = screen.getAllByRole("list").map((list) => list.getAttribute("aria-labelledby") && list.textContent);
+    expect(groups.findIndex((text) => text?.includes("Billing rules"))).toBeLessThan(groups.findIndex((text) => text?.includes("Coverage policy")));
     expect(screen.getByRole("button", { name: "Try reading it again…" })).toBeInTheDocument();
   });
 
-  it("filters by state and owner, and sorts, from the address", async () => {
+  it("shows the chosen document's summary, with how many requirements cite it and the way into its review", async () => {
+    vi.spyOn(api, "libraryDocuments").mockResolvedValue([
+      outline(),
+      outline({ id: "d2", title: "Billing rules", citations: null, newest: { ...outline().newest!, id: "v2", stage: "failed", error: "Row 2 is short." } }),
+    ]);
+    render(wrap(<LibraryPage />, "/library?doc=d1"));
+    const record = await screen.findByRole("article", { name: "Coverage policy" });
+    expect(within(record).getByRole("link", { name: "2 requirements" })).toHaveAttribute("href", "/library/d1/cited-by");
+    expect(within(record).getByRole("link", { name: "Open the review" })).toHaveAttribute("href", "/library/d1");
+    expect(screen.getByRole("link", { name: /^Coverage policy/ })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("says why a document needs attention, and that Requirement AI couldn't count its citations", async () => {
+    vi.spyOn(api, "libraryDocuments").mockResolvedValue([
+      outline({ id: "d2", title: "Billing rules", citations: null, newest: { ...outline().newest!, id: "v2", stage: "failed", error: "Row 2 is short." } }),
+    ]);
+    render(wrap(<LibraryPage />, "/library?doc=d2"));
+    const record = await screen.findByRole("article", { name: "Billing rules" });
+    expect(within(record).getByText("Row 2 is short.")).toBeInTheDocument();
+    // Unknown, never "None".
+    expect(within(record).getByText("Requirement AI didn't say")).toBeInTheDocument();
+  });
+
+  it("filters by state and owner from the address", async () => {
     vi.spyOn(api, "libraryDocuments").mockResolvedValue([
       outline(),
       outline({ id: "d2", title: "Billing rules", is_owner: true, can_edit: true, newest: { ...outline().newest!, id: "v2", stage: "failed" } }),
     ]);
     render(wrap(<LibraryPage />, "/library?status=attention"));
-    expect(await screen.findByRole("link", { name: "Billing rules" })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Coverage policy" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Needs attention/ })).toHaveAttribute("aria-pressed", "true");
+    expect(await screen.findByRole("link", { name: /^Billing rules/ })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /^Coverage policy/ })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("State")).toHaveValue("attention");
     await userEvent.click(screen.getByRole("button", { name: "Clear filters" }));
-    expect(screen.getByRole("link", { name: "Coverage policy" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^Coverage policy/ })).toBeInTheDocument();
     await userEvent.selectOptions(screen.getByLabelText("Owner"), "mine");
-    expect(screen.queryByRole("link", { name: "Coverage policy" })).not.toBeInTheDocument();
-    expect(screen.getByRole("cell", { name: "You" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /^Coverage policy/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^Billing rules/ })).toHaveTextContent("Yours");
   });
 
-  it("says a document in service is overdue for re-confirmation beside its state", async () => {
+  it("says a document in service is overdue for re-confirmation", async () => {
     vi.spyOn(api, "libraryDocuments").mockResolvedValue([
       outline({
         published_id: "p1", review: overdue,
@@ -101,9 +120,9 @@ describe("the library list", () => {
       } as unknown as Partial<LibraryDocument>),
     ]);
     render(wrap(<LibraryPage />));
-    const row = (await screen.findByRole("link", { name: "Coverage policy" })).closest("tr")!;
-    expect(within(row).getByText("In service")).toBeInTheDocument();
-    expect(within(row).getByText("Re-confirmation overdue")).toBeInTheDocument();
+    const row = await screen.findByRole("link", { name: /^Coverage policy/ });
+    expect(within(screen.getByRole("list", { name: /^In service/ })).getByRole("link", { name: /^Coverage policy/ })).toBe(row);
+    expect(row).toHaveTextContent("Re-confirmation overdue");
   });
 
   it("says when the library couldn't be read, and tries again", async () => {
@@ -112,7 +131,7 @@ describe("the library list", () => {
     expect(await screen.findByText("Couldn't read the library.")).toBeInTheDocument();
     read.mockResolvedValue([outline()]);
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
-    expect(await screen.findByRole("link", { name: "Coverage policy" })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: /^Coverage policy/ })).toBeInTheDocument();
   });
 });
 

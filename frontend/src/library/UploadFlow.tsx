@@ -7,9 +7,12 @@ import { ActionGroup, Button, TextField, Upload, type UploadItem } from "../desi
 import { DOC_STATE_WORDS, docState } from "./docState";
 import { ACCEPT } from "./FileButton";
 import { DocumentLink } from "./parts";
+import { settleInPool } from "./pool";
 
 /** The service refuses files over 10 MB; say so before the upload, not after. */
 const MAX_BYTES = 10 * 1024 * 1024;
+/** Files sent at once: several go faster than one by one, without flooding the service. */
+export const UPLOADS_AT_ONCE = 3;
 
 type Chosen = { key: string; file: File; title: string; documentId?: string; error?: string; sending?: boolean };
 
@@ -62,12 +65,13 @@ export function UploadFlow({ onClose, panelRef }: { onClose: () => void; panelRe
       return;
     }
     if (chosen.length === 0) return;
-    for (const item of chosen) {
-      if (item.documentId || item.error) continue;
-      if (item.file.size > MAX_BYTES) {
-        update(item.key, { error: "It's over 10 MB. Split it, or save a smaller copy." });
-        continue;
-      }
+    const waiting = chosen.filter((item) => !item.documentId && !item.error);
+    for (const item of waiting) {
+      if (item.file.size > MAX_BYTES) update(item.key, { error: "It's over 10 MB. Split it, or save a smaller copy." });
+    }
+    // A few at a time, in the order chosen; each file keeps its own state, and one that fails
+    // leaves the others going. The list keeps its order: each result lands on its own item.
+    await settleInPool(waiting.filter((item) => item.file.size <= MAX_BYTES), UPLOADS_AT_ONCE, async (item) => {
       update(item.key, { sending: true });
       try {
         const document = await api.upload({ file: item.file, title: item.title.trim() });
@@ -75,7 +79,7 @@ export function UploadFlow({ onClose, panelRef }: { onClose: () => void; panelRe
       } catch (error) {
         update(item.key, { sending: false, error: errorMessage(error) });
       }
-    }
+    });
     void queryClient.invalidateQueries({ queryKey: ["library", "documents"] });
   };
 

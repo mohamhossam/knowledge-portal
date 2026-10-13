@@ -372,7 +372,8 @@ def test_implied_dependencies_are_inferred_with_their_reasoning_and_others_dropp
     assert change.rationale == "Order Hub hands invoices to Dynamics CRM, so it relies on it."
     assert (change.source_name, change.target_name) == ("Order Hub", "Dynamics CRM")
     assert change.content.target_system_id == "dynamics-crm"
-    assert "2 suggestion(s) were left out" in proposal.warnings[0]
+    # An implied item that is not a dependency, and one without its reasoning.
+    assert proposal.warnings[0] == "Incomplete suggestions were left out: 1 relationship, 1 system."
 
 
 # Use case ---------------------------------------------------------------------------------
@@ -457,9 +458,9 @@ def test_unknown_or_repeated_matches_are_ignored_and_a_stated_copy_outweighs_an_
     run = proposer.execute(draft.id, "doc", lambda: None)
 
     items = {item.content.kind: item for item in candidates.list(draft.id)}
-    assert [(m.system_id, m.role) for m in items[CandidateKind.SYSTEM].possible_matches] == [
-        ("bcrm", MatchRole.SYSTEM)
-    ]
+    # Order Hub, named only by the dependency, is suggested beside Dynamics CRM.
+    crm = next(item for item in candidates.list(draft.id) if item.content.name == "Dynamics CRM")
+    assert [(m.system_id, m.role) for m in crm.possible_matches] == [("bcrm", MatchRole.SYSTEM)]
     assert items[CandidateKind.RELATIONSHIP].basis is CandidateBasis.STATED
     assert len(items[CandidateKind.RELATIONSHIP].citations) == 2
     assert "Looked by name only." in run.warnings

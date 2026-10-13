@@ -1,0 +1,384 @@
+/*
+ * A catalogue draft's workflow (redesign area 3): its frame and steps, the
+ * decide desk and the publish pre-flight, on the Calm Ledger. Layout only,
+ * from semantic and component tokens; logical properties only.
+ */
+
+.draft {
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+  min-inline-size: 0;
+  max-inline-size: var(--page-max);
+}
+
+.draft > .ds-pagehead {
+  margin-block-end: 0;
+}
+
+.draft-step {
+  display: grid;
+  gap: var(--space-6);
+  min-inline-size: 0;
+}
+
+.draft-lead {
+  margin: 0;
+  max-inline-size: 72ch;
+  color: var(--color-ink-2);
+}
+
+.draft-quiet {
+  margin: 0;
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+/* A second, quieter line inside a cell or a pane: the source, the reason, the who. */
+.draft-detail {
+  display: block;
+  margin-block-start: var(--space-1);
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+  overflow-wrap: anywhere;
+}
+
+.draft-code {
+  font-family: var(--font-code);
+  font-size: var(--text-meta);
+}
+
+.draft-clamp {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+
+/* An outcome line: in the page before it speaks, taking no room while empty. */
+.draft-said {
+  margin: 0;
+}
+
+.draft-said:empty {
+  position: absolute;
+}
+
+.draft-said-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.draft-next {
+  display: flex;
+  justify-content: end;
+  margin: 0;
+  padding-block-start: var(--space-3);
+  border-block-start: var(--hair-rule);
+}
+
+.draft-panel,
+.draft-form {
+  display: grid;
+  gap: var(--space-3);
+  max-inline-size: 48rem;
+}
+
+.draft-panel {
+  padding: var(--panel-pad);
+  background: var(--panel-bg);
+  border: var(--panel-border);
+  border-block-start: var(--panel-top);
+}
+
+.draft-form__row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.draft-form__row > * {
+  margin: 0;
+}
+
+.draft-preview {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.draft-preview__title {
+  margin: 0;
+  font-size: var(--text-h3);
+}
+
+.draft-changes {
+  display: grid;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+
+.draft-changes__summary {
+  margin: 0;
+}
+
+.draft-change {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* The decide desk, laid out like the library's review desk. */
+.draft-desk {
+  display: grid;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+
+.draft-desk .ds-keys {
+  margin-block: 0;
+}
+
+/* The chains of waiting suggestions: drawn on request, scrolling in place, never widening the desk. */
+.draft-chains {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+
+.draft-chains > .ds-diagram {
+  inline-size: 100%;
+}
+
+.draft-progress {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.draft-progress p {
+  margin: 0;
+}
+
+.draft-progress progress {
+  inline-size: 100%;
+  block-size: var(--space-2);
+  accent-color: var(--color-action);
+}
+
+.draft-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+}
+
+.draft-toolbar > .ds-filters {
+  flex: 1 1 32rem;
+}
+
+.draft-pane {
+  display: grid;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+
+.draft-pane__title {
+  margin: 0;
+  font-size: var(--text-h3);
+}
+
+.draft-pane__title:focus {
+  outline: none;
+}
+
+.draft-pane__title:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.draft-pane__marks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  margin: 0;
+}
+
+.draft-pane__part {
+  display: grid;
+  gap: var(--space-2);
+  padding-block-start: var(--space-3);
+  border-block-start: var(--hair-rule);
+}
+
+.draft-pane__part > * {
+  margin: 0;
+}
+
+.draft-pane__label {
+  margin: 0;
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-strong);
+}
+
+.draft-decision {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.draft-decision > p {
+  margin: 0;
+}
+
+/* The suggestion editor, until its forms move onto the kit (docs/ux/backlog.md). */
+.draft-legacy {
+  min-block-size: 0;
+  padding: var(--space-2);
+}
+
+.draft-citation {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
+}
+
+.draft-citation__image {
+  max-inline-size: 100%;
+  border: var(--hair-rule);
+}
+
+.draft-context {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.draft-context__place {
+  display: grid;
+  grid-template-columns: 6rem minmax(0, 1fr);
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  color: var(--color-ink-2);
+}
+
+.draft-context__place.is-cited {
+  background: var(--color-highlight);
+  color: var(--color-ink);
+}
+
+.draft-context__where {
+  font-size: var(--text-meta);
+  font-variant-numeric: tabular-nums;
+}
+
+.draft-evidence {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.draft-samples th[scope="row"] {
+  font-weight: var(--weight-body);
+}
+
+.draft-tryone {
+  padding-block-start: var(--space-3);
+  border-block-start: var(--hair-rule);
+}
+
+@media (max-width: 40rem) {
+  .draft-form__row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .draft-next {
+    justify-content: stretch;
+  }
+
+  .draft-context__place {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* The decide desk's first word: the one thing to do next, and the waits nothing here lifts. */
+.draft-next-step {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  max-inline-size: 72rem;
+  padding: var(--panel-pad);
+  background: var(--panel-bg);
+  border: var(--panel-border);
+  border-block-start: var(--panel-top);
+}
+
+.draft-next-step__title {
+  margin: 0;
+  font-size: var(--text-meta);
+  font-weight: 600;
+  color: var(--color-ink-2);
+}
+
+.draft-next-step__lead {
+  margin: 0;
+  font-weight: 600;
+}
+
+.draft-blockers {
+  display: grid;
+  gap: var(--space-3);
+  inline-size: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.draft-blocker {
+  display: grid;
+  gap: var(--space-2);
+  padding-block-start: var(--space-3);
+  border-block-start: var(--hair-rule);
+}
+
+.draft-blocker p {
+  margin: 0;
+}
+
+.draft-retype {
+  margin: 0;
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+
+/* How many parts of a document the model has read, under its reading status. */
+.draft-parts {
+  display: block;
+  inline-size: 100%;
+  max-inline-size: 16rem;
+  block-size: var(--space-1);
+  margin-block-start: var(--space-1);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-rule);
+  color: var(--color-info);
+  appearance: none;
+  overflow: hidden;
+}
+
+.draft-parts::-webkit-progress-bar {
+  background: var(--color-rule);
+}
+
+.draft-parts::-webkit-progress-value {
+  background: var(--color-info);
+}
+
+.draft-parts::-moz-progress-bar {
+  background: var(--color-info);
+}

@@ -4,7 +4,7 @@ Phase 2 · Define. Five journeys, each mapped **current → future**.
 
 ## Evidence tags
 
-- **[E]** expert review (`../research/01-heuristic-review.md`), observed on the seeded stack;
+- **[E]** expert review, observed on the seeded stack;
 - **[D]** discovery, code or contract;
 - **[P]** PRODUCT.md;
 - **HYPOTHESIS** for every thought, feeling or future step that research has not confirmed.

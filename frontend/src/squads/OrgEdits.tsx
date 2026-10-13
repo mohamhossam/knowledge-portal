@@ -1,30 +1,57 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { Plus, X } from "lucide-react";
+import { type RefObject, useId, useState } from "react";
 
-import type { OrgProduct, Person, Squad, ValueStream } from "../api/client";
-import { EditPanel } from "../catalogue/DraftEdits";
-import { AreaField, CheckField, Rows, SelectField, TextField } from "../catalogue/forms";
-import { activePeople, freeId, holdsRoles, rolesOf, runBy } from "./organisation";
-import { useOrgContext } from "./useOrganisation";
+import type { OrgProduct, Person, Release, Squad, SquadResource, SquadRole, ValueStream } from "../api/client";
+import { Button, Checkbox, ConsequencePanel, FormPanel, Select, TextArea, TextField } from "../design/components";
+import { plural } from "../library/where";
+import {
+  activePeople,
+  conceptName,
+  conceptsOf,
+  freeId,
+  giveSystems,
+  holdsRoles,
+  ROLES,
+  roleLabel,
+  rolesOf,
+  runBy,
+  suggestSquad,
+  systemIdsOf,
+} from "./organisation";
+import { failureOf, useOrgContext } from "./useOrganisation";
 
-const NO_RELEASE = "No architecture version is in service, so systems cannot be linked yet.";
-const CONFLICT = "The squad catalogue changed while you edited (someone else saved first). Reload the page; your edit was not saved.";
+const NO_RELEASE = "No architecture version is in service, so systems can't be linked yet.";
 const orNull = (text: string | null | undefined) => (text && text.trim() ? text.trim() : null);
 
+type Panel = { panelRef: RefObject<HTMLElement | null> };
+/** Called with the saved record's id once it is saved; `onDone` when not given. */
+type Saved = { onSaved?: (id: string) => void };
+
 /** The people who can hold a role, as options; the current one stays even if no longer active. */
-function personOptions(people: Person[], current: string | null | undefined, none: string) {
-  const list = [...people];
-  return [
-    { value: "", label: none },
-    ...list.map((person) => ({ value: person.id, label: person.name })),
-    ...(current && !list.some((person) => person.id === current) ? [{ value: current, label: `${current} (no longer active)` }] : []),
-  ];
+function PersonOptions({ people, current, none }: { people: Person[]; current: string | null | undefined; none: string }) {
+  return (
+    <>
+      <option value="">{none}</option>
+      {people.map((person) => <option key={person.id} value={person.id}>{person.name}</option>)}
+      {current && !people.some((person) => person.id === current) && <option value={current}>{current} (no longer active)</option>}
+    </>
+  );
 }
 
-export function PersonEdit({ person, onDone }: { person?: Person; onDone: () => void }) {
+function RoleOptions() {
+  return <>{ROLES.map((role) => <option key={role.value} value={role.value}>{role.label}</option>)}</>;
+}
+
+function StreamOptions() {
+  const { org } = useOrgContext();
+  return <>{org.value_streams.map((stream) => <option key={stream.id} value={stream.id}>{stream.name}</option>)}</>;
+}
+
+export function PersonEdit({ person, onDone, onSaved, panelRef }: { person?: Person; onDone: () => void } & Saved & Panel) {
   const { org, hook } = useOrgContext();
   const [value, setValue] = useState<Person>(() => person ?? { id: "", name: "", email: null, team: null, active: true, revision: 0 });
   const roles = person ? rolesOf(org, person.id) : null;
-  const locked = person?.active && roles !== null && holdsRoles(roles);
+  const locked = Boolean(person?.active && roles !== null && holdsRoles(roles));
   const email = value.email?.trim();
   const problem = !value.name.trim()
     ? "Give the person a name."
@@ -34,13 +61,14 @@ export function PersonEdit({ person, onDone }: { person?: Person; onDone: () => 
         ? "Someone else has that email address."
         : null;
   return (
-    <EditPanel
-      conflictMessage={CONFLICT}
-      title={person ? `Edit ${person.name}` : "Add a person"}
-      action={person ? "Save the person" : "Add the person"}
+    <FormPanel
+      panelRef={panelRef}
+      headingLevel={3}
+      title={person ? <>Edit <bdi>{person.name}</bdi></> : "Add a person"}
+      submitLabel={person ? "Save the person" : "Add the person"}
       busy={hook.save.isPending}
       problem={problem}
-      error={hook.save.error}
+      failure={failureOf(hook.save.error)}
       onCancel={onDone}
       onSubmit={() =>
         hook.save.mutate(
@@ -55,52 +83,43 @@ export function PersonEdit({ person, onDone }: { person?: Person; onDone: () => 
               team: orNull(value.team),
             },
           },
-          { onSuccess: onDone },
+          { onSuccess: (_, saved) => (onSaved ? onSaved(saved.record.id) : onDone()) },
         )
       }
     >
-      <div className="form__grid">
-        <TextField label="Name" value={value.name} required onChange={(name) => setValue({ ...value, name })} />
-        <TextField label="Email" value={value.email} dir="ltr" onChange={(next) => setValue({ ...value, email: next })} />
-        <TextField label="Team" value={value.team} onChange={(team) => setValue({ ...value, team })} />
+      <div className="own-form__grid">
+        <TextField label="Name" required value={value.name} onChange={(event) => setValue({ ...value, name: event.target.value })} />
+        <TextField label="Email" type="email" dir="ltr" value={value.email ?? ""} onChange={(event) => setValue({ ...value, email: event.target.value })} />
+        <TextField label="Team" value={value.team ?? ""} onChange={(event) => setValue({ ...value, team: event.target.value })} />
       </div>
       {person && (
-        <>
-          <label className="check form__check">
-            <input
-              type="checkbox"
-              checked={value.active}
-              disabled={!!locked}
-              aria-describedby={locked ? "person-locked" : undefined}
-              onChange={(event) => setValue({ ...value, active: event.target.checked })}
-            />
-            Active: can lead, be a scrum master or a contact
-          </label>
-          {locked && (
-            <p id="person-locked" className="versions__waits">
-              {person.name} still holds a role; hand it to someone else before marking them inactive.
-            </p>
-          )}
-        </>
+        <Checkbox
+          label="Active: can lead, be a scrum master or hold a seat"
+          hint={locked ? <><bdi>{person.name}</bdi> still holds a role. Hand it to someone else before marking them inactive.</> : undefined}
+          checked={value.active}
+          disabled={locked}
+          onChange={(event) => setValue({ ...value, active: event.target.checked })}
+        />
       )}
-    </EditPanel>
+    </FormPanel>
   );
 }
 
-export function StreamEdit({ stream, onDone }: { stream?: ValueStream; onDone: () => void }) {
+export function StreamEdit({ stream, onDone, panelRef }: { stream?: ValueStream; onDone: () => void } & Panel) {
   const { org, hook } = useOrgContext();
   const [value, setValue] = useState<ValueStream>(() => stream ?? { id: "", name: "", lead_person_id: null, revision: 0 });
   const clash = org.value_streams.some(
     (item) => item.id !== stream?.id && item.name.trim().toLocaleLowerCase() === value.name.trim().toLocaleLowerCase(),
   );
   return (
-    <EditPanel
-      conflictMessage={CONFLICT}
-      title={stream ? `Edit ${stream.name}` : "Add a value stream"}
-      action={stream ? "Save the value stream" : "Add the value stream"}
+    <FormPanel
+      panelRef={panelRef}
+      headingLevel={3}
+      title={stream ? <>Edit <bdi>{stream.name}</bdi></> : "Add a value stream"}
+      submitLabel={stream ? "Save the value stream" : "Add the value stream"}
       busy={hook.save.isPending}
       problem={!value.name.trim() ? "Give the value stream a name." : clash ? "Another value stream has that name." : null}
-      error={hook.save.error}
+      failure={failureOf(hook.save.error)}
       onCancel={onDone}
       onSubmit={() =>
         hook.save.mutate(
@@ -118,33 +137,92 @@ export function StreamEdit({ stream, onDone }: { stream?: ValueStream; onDone: (
         )
       }
     >
-      <div className="form__grid">
-        <TextField label="Name" value={value.name} required onChange={(name) => setValue({ ...value, name })} />
-        <SelectField
-          label="Led by"
-          value={value.lead_person_id ?? ""}
-          options={personOptions(activePeople(org), value.lead_person_id, "No lead named")}
-          onChange={(id) => setValue({ ...value, lead_person_id: id || null })}
-        />
+      <div className="own-form__grid">
+        <TextField label="Name" required value={value.name} onChange={(event) => setValue({ ...value, name: event.target.value })} />
+        <Select label="Led by" value={value.lead_person_id ?? ""} onChange={(event) => setValue({ ...value, lead_person_id: event.target.value || null })}>
+          <PersonOptions people={activePeople(org)} current={value.lead_person_id} none="No lead named" />
+        </Select>
       </div>
-    </EditPanel>
+    </FormPanel>
   );
 }
 
-/** A product: its value stream, what it is, and the systems it rests on. */
-export function ProductEdit({ product, streamId, onDone }: { product?: OrgProduct; streamId?: string; onDone: () => void }) {
-  const { org, release, hook } = useOrgContext();
-  const id = useId();
-  const [value, setValue] = useState<OrgProduct>(
-    () => product ?? { id: "", name: "", description: "", value_stream_id: streamId ?? org.value_streams[0]?.id ?? "", system_ids: [], revision: 0 },
+/** Each portfolio node in service by its path, "Enterprise › Fixed › SMB", in path order. */
+function portfolioOptions(release: Release | null, current: string | null | undefined) {
+  const nodes = release?.portfolio ?? [];
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const path = (id: string) => {
+    const names: string[] = [];
+    for (let node = byId.get(id); node && names.length <= nodes.length; node = node.parent_id ? byId.get(node.parent_id) : undefined) {
+      names.unshift(node.name);
+    }
+    return names.join(" › ");
+  };
+  return [
+    ...nodes.map((node) => ({ value: node.id, label: path(node.id) })).sort((a, b) => a.label.localeCompare(b.label)),
+    ...(current && !byId.has(current) ? [{ value: current, label: `${current} (not in the catalogue in service)` }] : []),
+  ];
+}
+
+/** A list of things to tick, with a find field when it is long; what is ticked always stays in view. */
+function Checklist({ legend, items, chosen, onChange, empty, findable }: {
+  legend: string;
+  items: { id: string; name: string }[];
+  chosen: string[];
+  onChange: (next: string[]) => void;
+  empty: string;
+  findable?: boolean;
+}) {
+  const [find, setFind] = useState("");
+  const wanted = find.trim().toLocaleLowerCase();
+  const shown = items.filter((item) => !wanted || item.name.toLocaleLowerCase().includes(wanted) || chosen.includes(item.id));
+  return (
+    <fieldset className="own-form__set">
+      <legend className="ds-field__label">{legend} ({chosen.length} chosen)</legend>
+      {items.length === 0 ? (
+        <p className="ds-field__hint">{empty}</p>
+      ) : (
+        <>
+          {findable && <TextField label="Find" type="search" autoComplete="off" value={find} onChange={(event) => setFind(event.target.value)} />}
+          <div className="own-form__checks">
+            {shown.map((item) => (
+              <Checkbox
+                key={item.id}
+                label={<bdi>{item.name}</bdi>}
+                checked={chosen.includes(item.id)}
+                onChange={(event) => onChange(event.target.checked ? [...chosen, item.id] : chosen.filter((id) => id !== item.id))}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </fieldset>
   );
-  const [filter, setFilter] = useState("");
+}
+
+/** A product: its value stream, what it is, the offerings it sells, where it sits, and the systems it rests on. */
+export function ProductEdit({ product, streamId, onDone, onSaved, panelRef }: { product?: OrgProduct; streamId?: string; onDone: () => void } & Saved & Panel) {
+  const { org, release, hook } = useOrgContext();
+  const [value, setValue] = useState<OrgProduct>(
+    () => product ?? {
+      id: "", name: "", description: "", value_stream_id: streamId ?? org.value_streams[0]?.id ?? "",
+      system_ids: [], offering_ids: [], portfolio_node_id: null, revision: 0,
+    },
+  );
+  const offerings = release?.products ?? [];
+  const offeringChoices = [
+    ...[...offerings].sort((a, b) => a.name.localeCompare(b.name)).map((offering) => ({ id: offering.id, name: offering.name })),
+    ...(product?.offering_ids ?? [])
+      .filter((offeringId) => !offerings.some((offering) => offering.id === offeringId))
+      .map((offeringId) => ({ id: offeringId, name: `${offeringId} (not in the catalogue in service)` })),
+  ];
   const inService = release?.systems ?? [];
-  const lapsed = (product?.system_ids ?? []).filter((systemId) => !inService.some((system) => system.id === systemId));
-  const choices = [
+  const systemChoices = [
     ...[...inService].sort((a, b) => a.name.localeCompare(b.name)).map((system) => ({ id: system.id, name: system.name })),
-    ...lapsed.map((systemId) => ({ id: systemId, name: `${systemId} (not in the catalogue in service)` })),
-  ].filter((item) => !filter.trim() || item.name.toLocaleLowerCase().includes(filter.trim().toLocaleLowerCase()) || value.system_ids.includes(item.id));
+    ...(product?.system_ids ?? [])
+      .filter((systemId) => !inService.some((system) => system.id === systemId))
+      .map((systemId) => ({ id: systemId, name: `${systemId} (not in the catalogue in service)` })),
+  ];
   const clash = org.products.some(
     (item) => item.id !== product?.id && item.value_stream_id === value.value_stream_id
       && item.name.trim().toLocaleLowerCase() === value.name.trim().toLocaleLowerCase(),
@@ -152,91 +230,109 @@ export function ProductEdit({ product, streamId, onDone }: { product?: OrgProduc
   const problem = !release
     ? NO_RELEASE
     : !value.name.trim() ? "Give the product a name." : clash ? "This value stream already has a product with that name." : null;
-  const toggle = (systemId: string, on: boolean) =>
-    setValue({ ...value, system_ids: on ? [...value.system_ids, systemId] : value.system_ids.filter((item) => item !== systemId) });
   return (
-    <EditPanel
-      conflictMessage={CONFLICT}
-      title={product ? `Edit ${product.name}` : "Add a product"}
-      action={product ? "Save the product" : "Add the product"}
+    <FormPanel
+      panelRef={panelRef}
+      headingLevel={3}
+      title={product ? <>Edit <bdi>{product.name}</bdi></> : "Add a product"}
+      submitLabel={product ? "Save the product" : "Add the product"}
       busy={hook.save.isPending}
       problem={problem}
-      error={hook.save.error}
+      failure={failureOf(hook.save.error)}
       onCancel={onDone}
       onSubmit={() =>
         hook.save.mutate(
           {
             kind: "products",
             isNew: !product,
-            record: { ...value, id: product?.id ?? freeId(value.name, org.products.map((item) => item.id)), name: value.name.trim() },
+            record: {
+              ...value,
+              id: product?.id ?? freeId(value.name, org.products.map((item) => item.id)),
+              name: value.name.trim(),
+              portfolio_node_id: value.portfolio_node_id || null,
+            },
           },
-          { onSuccess: onDone },
+          { onSuccess: (_, saved) => (onSaved ? onSaved(saved.record.id) : onDone()) },
         )
       }
     >
-      <div className="form__grid">
-        <TextField label="Name" value={value.name} required onChange={(name) => setValue({ ...value, name })} />
-        <SelectField
-          label="Value stream"
-          value={value.value_stream_id}
-          options={org.value_streams.map((stream) => ({ value: stream.id, label: stream.name }))}
-          onChange={(value_stream_id) => setValue({ ...value, value_stream_id })}
-        />
+      <div className="own-form__grid">
+        <TextField label="Name" required value={value.name} onChange={(event) => setValue({ ...value, name: event.target.value })} />
+        <Select label="Value stream" value={value.value_stream_id} onChange={(event) => setValue({ ...value, value_stream_id: event.target.value })}>
+          <StreamOptions />
+        </Select>
+        <Select
+          label="Where it sits in the portfolio"
+          value={value.portfolio_node_id ?? ""}
+          onChange={(event) => setValue({ ...value, portfolio_node_id: event.target.value || null })}
+        >
+          <option value="">Not placed in the portfolio</option>
+          {portfolioOptions(release, value.portfolio_node_id).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+        </Select>
       </div>
-      <AreaField label="What it is" value={value.description} onChange={(description) => setValue({ ...value, description })} />
-      <fieldset className="choices form__systems">
-        <legend className="field__label">Systems it rests on ({value.system_ids.length} chosen)</legend>
-        <label className="field field--inline" htmlFor={`${id}-filter`}>
-          <span className="field__label">Find</span>
-          <input id={`${id}-filter`} type="search" className="field__input" value={filter} onChange={(event) => setFilter(event.target.value)} />
-        </label>
-        <div className="form__checklist">
-          {choices.map((item) => (
-            <CheckField key={item.id} label={item.name} checked={value.system_ids.includes(item.id)} onChange={(on) => toggle(item.id, on)} />
-          ))}
-        </div>
-      </fieldset>
-    </EditPanel>
+      <TextArea label="What it is" value={value.description ?? ""} onChange={(event) => setValue({ ...value, description: event.target.value })} />
+      <Checklist
+        legend="Offerings it sells"
+        items={offeringChoices}
+        chosen={value.offering_ids}
+        onChange={(offering_ids) => setValue({ ...value, offering_ids })}
+        empty="The version in service has no offerings yet."
+      />
+      <Checklist
+        legend="Systems it rests on"
+        items={systemChoices}
+        chosen={value.system_ids}
+        onChange={(system_ids) => setValue({ ...value, system_ids })}
+        empty="The version in service has no systems yet."
+        findable
+      />
+    </FormPanel>
   );
 }
 
-type SquadSystem = Squad["systems"][number];
+const seatKey = (item: SquadResource) => `${item.system_id}|${item.capability_id ?? ""}|${item.person_id || `open:${item.role}`}`;
 
-/** A squad: its value stream, scrum master, and the systems it runs with a contact for each. */
-export function SquadEdit({ squad, streamId, onDone }: { squad?: Squad; streamId?: string; onDone: () => void }) {
+/** A squad: its value stream, scrum master, and its people on each system it runs, each in a role. */
+export function SquadEdit({ squad, onDone, onSaved, panelRef }: { squad?: Squad; onDone: () => void } & Saved & Panel) {
   const { org, release, hook } = useOrgContext();
+  const id = useId();
   const [value, setValue] = useState<Squad>(
-    () => squad ?? { id: "", name: "", value_stream_id: streamId ?? org.value_streams[0]?.id ?? "", scrum_master_person_id: null, systems: [], revision: 0 },
+    () => squad ?? { id: "", name: "", value_stream_id: org.value_streams[0]?.id ?? "", scrum_master_person_id: null, resources: [], revision: 0 },
   );
-  const inService = release?.systems ?? [];
-  const lapsed = (squad?.systems ?? []).map((item) => item.system_id).filter((systemId) => !inService.some((system) => system.id === systemId));
-  const systemOptions = (current: string) => [
-    ...(current ? [] : [{ value: "", label: "Choose a system" }]),
-    ...[...inService]
-      .filter((system) => system.id === current || !value.systems.some((item) => item.system_id === system.id))
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map((system) => ({ value: system.id, label: system.name })),
-    ...lapsed.filter((systemId) => systemId === current).map((systemId) => ({ value: systemId, label: `${systemId} (not in the catalogue in service)` })),
-  ];
+  const inService = [...(release?.systems ?? [])].sort((a, b) => a.name.localeCompare(b.name));
+  const lapsed = (squad ? systemIdsOf(squad) : []).filter((systemId) => !inService.some((system) => system.id === systemId));
+  const systemName = (systemId: string) => inService.find((system) => system.id === systemId)?.name ?? systemId;
   const clash = org.squads.some(
     (item) => item.id !== squad?.id && item.value_stream_id === value.value_stream_id
       && item.name.trim().toLocaleLowerCase() === value.name.trim().toLocaleLowerCase(),
   );
+  const seats = value.resources.filter((item) => item.system_id).map(seatKey);
   const problem = !release
     ? NO_RELEASE
     : !value.name.trim()
       ? "Give the squad a name."
       : clash
         ? "This value stream already has a squad with that name."
-        : value.systems.some((item) => !item.system_id) ? "Choose a system on every row, or remove the row." : null;
+        : value.resources.some((item) => !item.system_id)
+          ? "Choose a system on every seat, or remove the seat."
+          : new Set(seats).size !== seats.length
+            ? "Someone is on the same system and capability twice, or it has two open seats in one role; remove one."
+            : null;
+  const update = (index: number, patch: Partial<SquadResource>) =>
+    setValue({ ...value, resources: value.resources.map((item, at) => (at === index ? { ...item, ...patch } : item)) });
+  const seatName = (item: SquadResource, index: number) => {
+    const scope = item.capability_id ? ` › ${conceptName(release, item.capability_id)}` : "";
+    return item.system_id ? `${roleLabel(item.role).toLocaleLowerCase()} seat on ${systemName(item.system_id)}${scope}` : `seat ${index + 1}`;
+  };
   return (
-    <EditPanel
-      conflictMessage={CONFLICT}
-      title={squad ? `Edit ${squad.name}` : "Add a squad"}
-      action={squad ? "Save the squad" : "Add the squad"}
+    <FormPanel
+      panelRef={panelRef}
+      headingLevel={3}
+      title={squad ? <>Edit <bdi>{squad.name}</bdi></> : "Add a squad"}
+      submitLabel={squad ? "Save the squad" : "Add the squad"}
       busy={hook.save.isPending}
       problem={problem}
-      error={hook.save.error}
+      failure={failureOf(hook.save.error)}
       onCancel={onDone}
       onSubmit={() =>
         hook.save.mutate(
@@ -248,139 +344,207 @@ export function SquadEdit({ squad, streamId, onDone }: { squad?: Squad; streamId
               id: squad?.id ?? freeId(value.name, org.squads.map((item) => item.id)),
               name: value.name.trim(),
               scrum_master_person_id: value.scrum_master_person_id || null,
-              systems: value.systems.map((item) => ({ system_id: item.system_id, person_id: item.person_id || null })),
+              resources: value.resources.map((item) => ({
+                system_id: item.system_id,
+                role: item.role,
+                person_id: item.person_id || null,
+                capability_id: item.capability_id || null,
+              })),
             },
           },
-          { onSuccess: onDone },
+          { onSuccess: (_, saved) => (onSaved ? onSaved(saved.record.id) : onDone()) },
         )
       }
     >
-      <div className="form__grid">
-        <TextField label="Name" value={value.name} required onChange={(name) => setValue({ ...value, name })} />
-        <SelectField
-          label="Value stream"
-          value={value.value_stream_id}
-          options={org.value_streams.map((stream) => ({ value: stream.id, label: stream.name }))}
-          onChange={(value_stream_id) => setValue({ ...value, value_stream_id })}
-        />
-        <SelectField
-          label="Scrum master"
-          value={value.scrum_master_person_id ?? ""}
-          options={personOptions(activePeople(org), value.scrum_master_person_id, "No one named")}
-          onChange={(id) => setValue({ ...value, scrum_master_person_id: id || null })}
-        />
+      <div className="own-form__grid">
+        <TextField label="Name" required value={value.name} onChange={(event) => setValue({ ...value, name: event.target.value })} />
+        <Select label="Value stream" value={value.value_stream_id} onChange={(event) => setValue({ ...value, value_stream_id: event.target.value })}>
+          <StreamOptions />
+        </Select>
+        <Select label="Scrum master" value={value.scrum_master_person_id ?? ""} onChange={(event) => setValue({ ...value, scrum_master_person_id: event.target.value || null })}>
+          <PersonOptions people={activePeople(org)} current={value.scrum_master_person_id} none="No one named" />
+        </Select>
       </div>
-      <Rows<SquadSystem>
-        legend="Systems it runs"
-        one="system"
-        items={value.systems}
-        onChange={(systems) => setValue({ ...value, systems })}
-        blank={() => ({ system_id: "", person_id: null })}
-        itemLabel={(item, index) => `system ${inService.find((system) => system.id === item.system_id)?.name ?? index + 1}`}
-        render={(item, update) => (
-          <>
-            <SelectField label="System" value={item.system_id} options={systemOptions(item.system_id)} onChange={(system_id) => update({ system_id })} />
-            <SelectField
-              label="Contact for it"
-              value={item.person_id ?? ""}
-              options={personOptions(activePeople(org), item.person_id, "No one named")}
-              onChange={(id) => update({ person_id: id || null })}
-            />
-          </>
-        )}
-      />
-    </EditPanel>
+      <fieldset className="own-form__set">
+        <legend className="ds-field__label">Who works on the systems it runs ({plural(value.resources.length, "seat")})</legend>
+        {value.resources.length === 0 && <p className="ds-field__hint">No seat yet.</p>}
+        {value.resources.map((item, index) => {
+          // A seat covers the whole system, or one capability concept the system's capabilities link to.
+          const linked = conceptsOf(release, item.system_id);
+          return (
+            <fieldset key={index} className="own-form__seat">
+              <legend className="ds-visually-hidden">{seatName(item, index)}</legend>
+              <Select label="System" value={item.system_id} onChange={(event) => update(index, { system_id: event.target.value, capability_id: null })}>
+                {!item.system_id && <option value="">Choose a system</option>}
+                {inService.map((system) => <option key={system.id} value={system.id}>{system.name}</option>)}
+                {lapsed.filter((systemId) => systemId === item.system_id).map((systemId) => (
+                  <option key={systemId} value={systemId}>{systemId} (not in the catalogue in service)</option>
+                ))}
+              </Select>
+              <Select label="Capability" value={item.capability_id ?? ""} onChange={(event) => update(index, { capability_id: event.target.value || null })}>
+                <option value="">Whole system</option>
+                {linked.map((concept) => <option key={concept.id} value={concept.id}>{concept.name}</option>)}
+                {item.capability_id && !linked.some((concept) => concept.id === item.capability_id) && (
+                  <option value={item.capability_id}>{conceptName(release, item.capability_id)} (no longer linked)</option>
+                )}
+              </Select>
+              <Select label="Role" value={item.role} onChange={(event) => update(index, { role: event.target.value as SquadRole })}>
+                <RoleOptions />
+              </Select>
+              <Select label="Person" value={item.person_id ?? ""} onChange={(event) => update(index, { person_id: event.target.value || null })}>
+                <PersonOptions people={activePeople(org)} current={item.person_id} none="Open seat: no one yet" />
+              </Select>
+              <Button
+                variant="quiet"
+                icon={<X size={14} />}
+                className="own-form__remove"
+                aria-label={`Remove the ${seatName(item, index)}`}
+                onClick={() => setValue({ ...value, resources: value.resources.filter((_, at) => at !== index) })}
+              >
+                Remove
+              </Button>
+            </fieldset>
+          );
+        })}
+        <div>
+          <Button
+            id={`${id}-add-seat`}
+            icon={<Plus size={14} />}
+            onClick={() => setValue({ ...value, resources: [...value.resources, { system_id: "", role: "developer", person_id: null, capability_id: null }] })}
+          >
+            Add {value.resources.length ? "another" : "a"} seat
+          </Button>
+        </div>
+      </fieldset>
+    </FormPanel>
   );
 }
 
-/** Giving one system to a squad, with a contact for it: the catalogue's most common decision. */
-export function GiveSystem({ systemId, systemName, onDone }: { systemId: string; systemName: string; onDone: (given: boolean) => void }) {
+/**
+ * Giving systems to one squad in a single save: a seat on each, in a role,
+ * for a person or open. The squad that runs related systems is offered first.
+ */
+export function GiveSystems({ systemIds, onDone, onCancel, panelRef }: {
+  systemIds: string[];
+  onDone: (said: string) => void;
+  onCancel: () => void;
+} & Panel) {
   const { org, release, hook } = useOrgContext();
-  const [squadId, setSquadId] = useState("");
-  const [contact, setContact] = useState("");
+  const suggestion = suggestSquad(org, systemIds);
+  const [squadId, setSquadId] = useState(suggestion?.squad.id ?? "");
+  const [role, setRole] = useState<SquadRole>("system_contact");
+  const [personId, setPersonId] = useState("");
   const squad = org.squads.find((item) => item.id === squadId);
-  const options = [
-    { value: "", label: "Choose a squad" },
-    ...[...org.value_streams].sort((a, b) => a.name.localeCompare(b.name)).flatMap((stream) =>
-      org.squads
-        .filter((item) => item.value_stream_id === stream.id && !item.systems.some((system) => system.system_id === systemId))
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .map((item) => ({ value: item.id, label: item.name, group: stream.name })),
-    ),
-  ];
-  // Opening lands the reader in the panel: scrolled to the middle, on the squad.
-  const fields = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    fields.current?.scrollIntoView({ block: "center" });
-    fields.current?.querySelector("select")?.focus({ preventScroll: true });
-  }, []);
-  const problem = !release ? NO_RELEASE : !squad ? "Choose the squad that runs it." : null;
+  const name = (systemId: string) => release?.systems.find((system) => system.id === systemId)?.name ?? systemId;
+  const already = squad ? systemIds.filter((systemId) => systemIdsOf(squad).includes(systemId)) : [];
+  const given = systemIds.filter((systemId) => !already.includes(systemId));
+  const person = org.people.find((item) => item.id === personId);
+  const streams = [...org.value_streams].sort((a, b) => a.name.localeCompare(b.name));
+  const problem = !release
+    ? NO_RELEASE
+    : org.squads.length === 0
+      ? "There is no squad yet; add one on the Squads page."
+      : !squad
+        ? "Choose the squad that runs them."
+        : given.length === 0
+          ? "It already runs every system chosen."
+          : null;
+  const list = (ids: string[]) => ids.map((systemId, index) => <span key={systemId}>{index > 0 && ", "}<bdi>{name(systemId)}</bdi></span>);
   return (
-    <EditPanel
-      conflictMessage={CONFLICT}
-      title={`Give ${systemName} to a squad`}
-      action="Give it to the squad"
+    <FormPanel
+      panelRef={panelRef}
+      headingLevel={3}
+      title={`Give ${plural(systemIds.length, "system")} to a squad`}
+      submitLabel={squad && given.length ? `Give ${plural(given.length, "system")} to ${squad.name}` : "Give them to the squad"}
       busy={hook.save.isPending}
       problem={problem}
-      error={hook.save.error}
-      onCancel={() => onDone(false)}
+      failure={failureOf(hook.save.error)}
+      onCancel={onCancel}
       onSubmit={() =>
         squad &&
         hook.save.mutate(
-          {
-            kind: "squads",
-            isNew: false,
-            record: { ...squad, systems: [...squad.systems, { system_id: systemId, person_id: contact || null }] },
-          },
-          { onSuccess: () => onDone(true) },
+          { kind: "squads", isNew: false, record: giveSystems(squad, given, role, personId || null) },
+          { onSuccess: () => onDone(`Gave ${plural(given.length, "system")} to ${squad.name}.`) },
         )
       }
     >
-      {org.squads.length === 0 ? (
-        <p className="edit-panel__lead">There is no squad yet; add one on the Squads page.</p>
-      ) : (
-        <div className="form__grid" ref={fields}>
-          <SelectField label="Squad" value={squadId} options={options} onChange={setSquadId} />
-          <SelectField label="Contact for it" value={contact} options={personOptions(activePeople(org), null, "No one named yet")} onChange={setContact} />
-        </div>
-      )}
-    </EditPanel>
+      <div className="own-form__grid">
+        <Select
+          label="Squad"
+          value={squadId}
+          hint={suggestion ? `Suggested: ${suggestion.squad.name}, because ${suggestion.reason}.` : "No squad runs a related system yet."}
+          onChange={(event) => setSquadId(event.target.value)}
+        >
+          <option value="">Choose a squad</option>
+          {streams.map((stream) => {
+            const squads = org.squads.filter((item) => item.value_stream_id === stream.id).sort((a, b) => a.name.localeCompare(b.name));
+            return squads.length ? (
+              <optgroup key={stream.id} label={stream.name}>
+                {squads.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+              </optgroup>
+            ) : null;
+          })}
+        </Select>
+        <Select label={systemIds.length === 1 ? "Role" : "Role on each"} value={role} onChange={(event) => setRole(event.target.value as SquadRole)}>
+          <RoleOptions />
+        </Select>
+        <Select label="Person" value={personId} onChange={(event) => setPersonId(event.target.value)}>
+          <PersonOptions people={activePeople(org)} current={null} none="Open seat: no one yet" />
+        </Select>
+      </div>
+      <p className="own-form__says">
+        {squad ? (
+          <>
+            <bdi>{squad.name}</bdi> will run {given.length ? list(given) : "nothing new"}
+            {given.length > 0 && <>, with a {roleLabel(role).toLocaleLowerCase()} seat on {systemIds.length === 1 ? "it" : "each"} {person ? <>held by <bdi>{person.name}</bdi></> : "left open"}</>}.
+            {already.length > 0 && <> It already runs {list(already)}; {already.length === 1 ? "that one stays" : "those stay"} as {already.length === 1 ? "it is" : "they are"}.</>}
+          </>
+        ) : (
+          <>Chosen: {list(systemIds)}.</>
+        )}
+      </p>
+    </FormPanel>
   );
 }
 
-/** Removing a value stream (only when empty), a product, or a squad (saying which systems lose their only squad). */
-export function OrgRemove({ kind, record, onDone }: {
+/** Removing an empty value stream, a product, or a squad (naming the systems it leaves without one). */
+export function OrgRemove({ kind, record, onDone, onRemoved, panelRef }: {
   kind: "value-streams" | "products" | "squads";
   record: ValueStream | OrgProduct | Squad;
   onDone: () => void;
-}) {
-  const { org, hook } = useOrgContext();
-  const holding = kind === "value-streams"
-    ? [...org.products, ...org.squads].filter((item) => item.value_stream_id === record.id).length
-    : 0;
-  const orphaned = kind === "squads"
-    ? (record as Squad).systems.filter((item) => runBy(org, item.system_id).length === 1).length
-    : 0;
+  /** After the removal is saved (the record is gone); `onDone` when not given. */
+  onRemoved?: () => void;
+} & Panel) {
+  const { org, release, hook } = useOrgContext();
+  const name = (systemId: string) => release?.systems.find((system) => system.id === systemId)?.name ?? systemId;
+  const orphaned = kind === "squads" ? systemIdsOf(record as Squad).filter((systemId) => runBy(org, systemId).length === 1) : [];
+  const what = { "value-streams": "value stream", products: "product", squads: "squad" }[kind];
+  const happens = kind === "value-streams"
+    ? "The value stream leaves the catalogue. It holds no product or squad."
+    : kind === "products"
+      ? "The product leaves the catalogue. Its systems stay, with the squads that run them."
+      : "The squad leaves the catalogue, with its people's seats on the systems it runs.";
   return (
-    <EditPanel
-      conflictMessage={CONFLICT}
-      title={`Remove ${record.name}`}
-      action="Remove it"
-      danger
+    <ConsequencePanel
+      panelRef={panelRef}
+      tone="danger"
+      title={<>Remove <bdi>{record.name}</bdi>?</>}
+      happens={happens}
+      affects={kind === "squads" ? (
+        orphaned.length ? (
+          <p>{orphaned.length === 1 ? "This system" : `These ${orphaned.length} systems`} will have no squad: {orphaned.map((systemId, index) => <span key={systemId}>{index > 0 && ", "}<bdi>{name(systemId)}</bdi></span>)}.</p>
+        ) : (
+          <p>Every system it runs has another squad too.</p>
+        )
+      ) : undefined}
+      reversibility="It can't be undone here; History keeps a line saying it was removed."
+      confirmLabel={`Remove the ${what}`}
+      busyLabel="Removing…"
+      keepLabel="Cancel"
       busy={hook.remove.isPending}
-      problem={holding ? "Move or remove this value stream's products and squads first." : null}
-      error={hook.remove.error}
-      onCancel={onDone}
-      onSubmit={() => hook.remove.mutate({ kind, record }, { onSuccess: onDone })}
-    >
-      {kind === "squads" && (
-        <p className="edit-panel__lead">
-          {orphaned
-            ? `${orphaned === 1 ? "One system it runs has" : `${orphaned} systems it runs have`} no other squad and will show as without one.`
-            : "Every system it runs has another squad too."}
-        </p>
-      )}
-      {kind === "products" && <p className="edit-panel__lead">Its systems stay in the catalogue; only the product goes.</p>}
-    </EditPanel>
+      failure={failureOf(hook.remove.error)}
+      onKeep={onDone}
+      onConfirm={() => hook.remove.mutate({ kind, record }, { onSuccess: onRemoved ?? onDone })}
+    />
   );
 }

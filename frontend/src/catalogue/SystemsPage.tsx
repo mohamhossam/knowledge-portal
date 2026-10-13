@@ -1,16 +1,31 @@
+import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
 
+import { api, type CatalogueSystem, type Release } from "../api/client";
+import {
+  Button, EmptyState, GapBadge, ListFilter, ListFind, ListTools, RecordList, type RecordGroup,
+  RecordPlaceholder, Status, Workbench,
+} from "../design/components";
 import { count } from "../home/format";
-import { LINK_VERB, allConnections, findSystems, systemGroups, systemName, UNPLACED } from "./catalogue";
+import { RouterLink } from "../shell/links";
+import { domainPath, findSystems } from "./catalogue";
 import { SystemEdit } from "./DraftEdits";
-import { SystemSheet } from "./SystemSheet";
+import { CatalogueHeader } from "./frame/CatalogueHeader";
+import { useFindParam } from "./frame/useFindParam";
+import { type ConceptIndex, conceptIndex, interfacesOf, systemConcepts, systemDomains } from "./ontology";
+import { SystemRecord } from "./SystemRecord";
 import { useCatalogueContext } from "./useCatalogue";
 
+type Row = { system: CatalogueSystem; place: string; why: string | null };
+
+const ALL = "all";
+
 /**
- * The systems of a version: an index grouped by where each system sits, beside
- * either every connection or one system's sheet.
+ * The systems of a version on the workbench (UX rebuild, phase 3): every
+ * system in a narrow list, grouped by where it sits, beside the record of the
+ * one chosen. With none chosen, the record side shows every connection.
  */
 export function SystemsPage() {
   const { systemId } = useParams();
@@ -19,164 +34,184 @@ export function SystemsPage() {
   const notice = (location.state as { notice?: string } | null)?.notice;
   const [adding, setAdding] = useState(false);
   const chosen = systemId !== undefined ? book.systems.get(systemId) : undefined;
+  const index = useMemo(() => conceptIndex(book.release), [book.release]);
+
+  const record = adding ? (
+    <SystemEdit onDone={() => setAdding(false)} />
+  ) : chosen ? (
+    <SystemRecord key={chosen.id} system={chosen} index={index} />
+  ) : systemId !== undefined ? (
+    <EmptyState
+      title={`This version has no system “${systemId}”.`}
+      action={<RouterLink href={base}>See every system</RouterLink>}
+    />
+  ) : (
+    <RecordPlaceholder title={`${count(book.release.systems.length, "system")}. Choose one to read its record.`}>
+      {notice && <p role="status" className="cat-notice"><Status tone="done">{notice}</Status></p>}
+      <MapLine />
+    </RecordPlaceholder>
+  );
+
   return (
-    <div className={chosen || adding ? "catalogue__systems has-sheet" : "catalogue__systems"}>
-      <SystemsIndex current={chosen?.id} onAdd={editable && !adding ? () => setAdding(true) : undefined} />
-      <div className="catalogue__main">
-        {notice && !adding && <p className="toolbar__notice catalogue__first" role="status">{notice}</p>}
-        {adding ? (
-          <div className="catalogue__first">
-            <SystemEdit onDone={() => setAdding(false)} />
-          </div>
-        ) : systemId !== undefined && !chosen ? (
-          <p className="docpage__failure" role="alert">
-            This version has no system “{systemId}”. <Link to={base}>See every system</Link>
-          </p>
-        ) : chosen ? (
-          <SystemSheet key={chosen.id} system={chosen} />
-        ) : (
-          <AllConnections />
-        )}
-      </div>
-    </div>
+    <>
+      <CatalogueHeader page="systems" chosen={chosen?.name} />
+      <Workbench
+        listLabel="Systems"
+        chosen={Boolean(chosen) || adding}
+        list={<SystemsList index={index} current={chosen?.id} onAdd={editable && !adding ? () => setAdding(true) : undefined} />}
+        record={record}
+      />
+    </>
   );
 }
 
-function SystemsIndex({ current, onAdd }: { current?: string; onAdd?: () => void }) {
+function SystemsList({ index, current, onAdd }: { index: ConceptIndex; current?: string; onAdd?: () => void }) {
   const { book, base } = useCatalogueContext();
-  const [query, setQuery] = useState("");
-  const id = useId();
-  const groups = useMemo(() => systemGroups(book), [book]);
-  const found = useMemo(() => findSystems(book, query), [book, query]);
-  const finding = query.trim() !== "";
-  const shown = groups
-    .map((group) => ({ ...group, systems: finding ? group.systems.filter((system) => found.has(system.id)) : group.systems }))
-    .filter((group) => group.systems.length > 0);
-  const currentLink = useRef<HTMLAnchorElement>(null);
-  const nav = useRef<HTMLElement>(null);
+  const release = book.release;
+  const [params, setParams] = useSearchParams();
+  const area = params.get("area") ?? ALL;
+  const [find, setFind] = useFindParam();
+  // Who runs a system is Ownership's word, as the record says: the squads of today.
+  const organisation = useQuery({ queryKey: ["organisation"], queryFn: api.organisation });
+  const run = useMemo(
+    () => (organisation.data ? new Set(organisation.data.squads.flatMap((squad) => squad.resources.map((seat) => seat.system_id))) : undefined),
+    [organisation.data],
+  );
+  const gaps = useMemo(() => versionGaps(release, index, run), [release, index, run]);
 
-  // Following a connection keeps the new system's entry in view: the index scrolls itself, after the
-  // sheet has brought its own heading into view, so neither undoes the other.
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      const link = currentLink.current;
-      const box = nav.current;
-      if (!link || !box || box.scrollHeight <= box.clientHeight) return;
-      const masthead = document.querySelector(".masthead")?.getBoundingClientRect().bottom ?? 0;
-      const navRect = box.getBoundingClientRect();
-      const top = Math.max(navRect.top, masthead);
-      const bottom = Math.min(navRect.bottom, window.innerHeight);
-      const linkRect = link.getBoundingClientRect();
-      if (linkRect.top >= top && linkRect.bottom <= bottom) return;
-      box.scrollTop += linkRect.top + linkRect.height / 2 - (top + bottom) / 2;
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [current]);
+  const rows = useMemo<Row[]>(() => {
+    const found = findSystems(book, find);
+    return release.systems
+      .filter((system) => area === ALL || systemDomains(system).includes(area))
+      .filter((system) => !find.trim() || found.has(system.id))
+      .map((system) => ({
+        system,
+        place: domainPath(book.landscape, system.landscape_domain_id).join(" › "),
+        why: found.get(system.id) ?? null,
+      }));
+  }, [book, release.systems, area, find]);
+
+  // Grouped by the landscape's top level, the unplaced last; by name inside each.
+  const groups = useMemo<RecordGroup[]>(() => {
+    const byTop = new Map<string, Row[]>();
+    for (const row of rows) {
+      const top = row.place.split(" › ")[0] || "";
+      byTop.set(top, [...(byTop.get(top) ?? []), row]);
+    }
+    const query = params.size ? `?${params}` : "";
+    return [...byTop.entries()]
+      .sort(([a], [b]) => (a ? (b ? a.localeCompare(b, "en", { sensitivity: "base" }) : -1) : 1))
+      .map(([top, members]) => ({
+        id: top || "unplaced",
+        label: top ? <bdi>{top}</bdi> : "Not placed in the landscape",
+        items: members
+          .sort((a, b) => a.system.name.localeCompare(b.system.name, "en", { sensitivity: "base" }))
+          .map(({ system, place, why }) => ({
+            id: system.id,
+            href: `${base}/systems/${encodeURIComponent(system.id)}${query}`,
+            name: system.name,
+            bidi: true,
+            detail: why ?? (place.split(" › ").slice(1).join(" › ") || undefined),
+            meta: <GapBadge gaps={(gaps.bySystem.get(system.id) ?? []).filter((gap) => !gaps.common.has(gap))} />,
+          })),
+      }));
+  }, [rows, params, base, gaps]);
+
+  const areas = release.capability_domains ?? [];
+  const filters = [
+    { id: ALL, label: "Any capability", count: release.systems.length },
+    ...areas.map((domain) => ({ id: domain.id, label: domain.name, count: release.systems.filter((system) => systemDomains(system).includes(domain.id)).length })),
+  ];
+  const set = (value: string) =>
+    setParams((previous) => {
+      const next = new URLSearchParams(previous);
+      if (value === ALL) next.delete("area");
+      else next.set("area", value);
+      return next;
+    }, { replace: true });
 
   return (
-    <nav ref={nav} className="sysindex" aria-labelledby={`${id}-title`}>
-      <h2 id={`${id}-title`} className="visually-hidden">Systems in this version</h2>
-      <label className="field sysindex__find" htmlFor={`${id}-find`}>
-        <span className="field__label">Find a system</span>
-        <input
-          id={`${id}-find`}
-          type="search"
-          className="field__input"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Name, alias or phrase"
-          aria-describedby={`${id}-count`}
-        />
-      </label>
-      <p id={`${id}-count`} className="sysindex__count" aria-live="polite">
-        {finding
-          ? found.size
-            ? `${count(found.size, "system")} known by “${query.trim()}”`
-            : `No system is known by “${query.trim()}”.`
-          : count(book.release.systems.length, "system")}
-      </p>
-      {onAdd && (
-        <p className="sysindex__add">
-          <button type="button" className="text-button" onClick={onAdd}>
-            <Plus size={14} aria-hidden="true" />
-            Add a system
-          </button>
-        </p>
-      )}
-      {shown.map((group) => (
-        <section key={group.id} className="sysindex__group" aria-labelledby={`${id}-${group.id}`}>
-          <h3 id={`${id}-${group.id}`} className="sysindex__place" dir="auto">
-            {group.id === UNPLACED ? "Not placed in the landscape" : group.path.join(" › ")}
-          </h3>
-          <ul className="sysindex__list">
-            {group.systems.map((system) => {
-              const reason = found.get(system.id);
-              const isCurrent = system.id === current;
-              return (
-                <li key={system.id}>
-                  <Link
-                    ref={isCurrent ? currentLink : undefined}
-                    to={`${base}/systems/${encodeURIComponent(system.id)}`}
-                    className="sysindex__link"
-                    aria-current={isCurrent ? "page" : undefined}
-                  >
-                    <span dir="auto">{system.name}</span>
-                    {reason && <span className="sysindex__why" dir="auto">{reason}</span>}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ))}
-    </nav>
+    <>
+      <ListTools
+        count={area === ALL && !find.trim() ? count(release.systems.length, "system") : `${count(rows.length, "system")} of ${release.systems.length}`}
+        note={gaps.note}
+      >
+        <ListFind label="Find a system" value={find} onChange={setFind} placeholder="Name, alias or capability" />
+        <ListFilter label="Capability domain" value={area} options={filters} onChange={set} />
+        {onAdd && <Button variant="tertiary" icon={<Plus size={16} />} onClick={onAdd}>Add a system</Button>}
+      </ListTools>
+      <RecordList
+        label="Systems in this version"
+        groups={groups}
+        currentId={current}
+        link={RouterLink}
+        empty={find.trim() ? `No system is known by “${find.trim()}”.` : "No system works in this capability domain."}
+      />
+    </>
   );
 }
 
-/** With no system chosen: every connection in the version, read as a sentence. */
-function AllConnections() {
+type Gap = "concept" | "interfaces" | "squad" | "source";
+
+/** A gap in the words the row's badge uses ("Missing: …"). */
+const GAP_WORD: Record<Gap, string> = { concept: "concept", interfaces: "interfaces", squad: "squad", source: "source" };
+
+/**
+ * The facts each system's record is missing, in the words its record uses.
+ * A gap more than half the systems share is `common`: the list says it once,
+ * in `note`, and a row's badge shows only what sets that system apart.
+ * Squads (`run`) are left out until Ownership has answered.
+ */
+function versionGaps(release: Release, index: ConceptIndex, run: Set<string> | undefined) {
+  const bySystem = new Map<string, Gap[]>();
+  const tally = new Map<Gap, number>();
+  for (const system of release.systems) {
+    const { exposes, uses } = interfacesOf(release, system.id);
+    const gaps: Gap[] = [];
+    if (!systemConcepts(system, index).length && !system.capabilities.some((item) => item.unlinked_reason)) gaps.push("concept");
+    if (!exposes.length && !uses.length) gaps.push("interfaces");
+    if (run && !run.has(system.id)) gaps.push("squad");
+    if (!system.confidence) gaps.push("source");
+    bySystem.set(system.id, gaps);
+    for (const gap of gaps) tally.set(gap, (tally.get(gap) ?? 0) + 1);
+  }
+  const total = release.systems.length;
+  const common = new Set([...tally].filter(([, many]) => total > 1 && many * 2 > total).map(([gap]) => gap));
+  const said = [...common].map((gap) => {
+    const many = tally.get(gap)!;
+    return `${GAP_WORD[gap]} (${many === total ? "all" : many})`;
+  });
+  const note = said.length ? `Missing on most systems: ${said.join(", ")}.` : undefined;
+  return { bySystem, common, note };
+}
+
+/** The concepts a system's capabilities name; "None fits" when a capability was looked at and none did. */
+export function ConceptChips({ system, index }: { system: CatalogueSystem; index: ConceptIndex }) {
+  const { base } = useCatalogueContext();
+  const concepts = systemConcepts(system, index);
+  if (concepts.length) {
+    return (
+      <ul className="cat-chips">
+        {concepts.map((concept) => (
+          <li key={concept.id}>
+            <Link to={`${base}/concepts/${encodeURIComponent(concept.id)}`} className="cat-chip" dir="auto">{concept.pref_label}</Link>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+  if (system.capabilities.some((item) => item.unlinked_reason)) return <span className="cat-quiet">None fits</span>;
+  return <span className="cat-quiet">Not linked</span>;
+}
+
+/** With no system chosen: how many connections there are, and the way to see them drawn. */
+function MapLine() {
   const { book, base } = useCatalogueContext();
-  const rows = useMemo(() => allConnections(book), [book]);
-  const linked = new Set(rows.flatMap((row) => [row.source_system_id, row.target_system_id]));
-  const link = (systemId: string) => (
-    <Link to={`${base}/systems/${encodeURIComponent(systemId)}`} dir="auto">{systemName(book, systemId)}</Link>
-  );
+  const connections = book.release.relationships.length;
   return (
-    <section className="govsection catalogue__first" aria-labelledby="connections-title">
-      <h2 id="connections-title" className="govsection__title">All connections</h2>
-      <p className="govsection__lead">
-        {count(rows.length, "connection")} between {count(linked.size, "system")}. Each reads from the system that
-        depends to the one it depends on. Choose a system for its sheet.
-      </p>
-      {rows.length ? (
-        <table className="govtable">
-          <caption className="visually-hidden">Every connection between systems in this version</caption>
-          <thead>
-            <tr>
-              <th scope="col">From</th>
-              <th scope="col" className="connections__to">To</th>
-              <th scope="col">For what</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={`${row.source_system_id}>${row.target_system_id}`} className="row">
-                <th scope="row" className="connections__from">
-                  {link(row.source_system_id)}
-                  <span className="secondary govtable__by connections__verb">{LINK_VERB[row.kind]}</span>
-                  <span className="secondary govtable__by connections__inline">
-                    {LINK_VERB[row.kind]} {link(row.target_system_id)}
-                  </span>
-                </th>
-                <td className="connections__to">{link(row.target_system_id)}</td>
-                <td dir="auto">{row.description}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : (
-        <p className="timetable__quiet">No system depends on another in this version.</p>
-      )}
-    </section>
+    <p className="cat-lead">
+      {connections ? `${count(connections, "connection")} between systems in this version.` : "No system depends on another in this version."}{" "}
+      <RouterLink href={`${base}/map`}>See the map of how systems connect and what they do</RouterLink>
+    </p>
   );
 }

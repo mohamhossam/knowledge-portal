@@ -1,41 +1,110 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { RotateCw } from "lucide-react";
-import { type FormEvent, useId, useRef, useState } from "react";
+import { type FormEvent, useId, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-import { api, type ChangeRequest, type ExtractionRun, type Release, type Suggestion } from "../api/client";
+import { api, type ChangeRequest, type Release } from "../api/client";
 import { errorMessage } from "../api/errors";
+import { ActionGroup, Button, type Column, DataTable, Section, Skeleton, Status, TextField } from "../design/components";
 import { count, formatDay } from "../home/format";
-import { CHANGE_REQUESTS_KEY, traceLine, useChangeRequests } from "./inbox";
-import { warningInWords } from "./suggestions";
+import {
+  CHANGE_REQUESTS_KEY,
+  closedLine,
+  type Delivery,
+  deliveredChangeSentence,
+  draftLines,
+  hitLine,
+  traceLine,
+  useChangeRequests,
+} from "./inbox";
 
 /** The offerings a change request's features name, as the requirement named them. */
 function offeringsNamed(item: ChangeRequest): string[] {
+  if (item.delivery) return item.delivery.offering_name ? [item.delivery.offering_name] : [];
   return [...new Set(item.features.flatMap((feature) => feature.contexts.map((context) => context.product_name ?? context.product_id ?? "")))].filter(Boolean);
 }
 
-const RANK: Record<ChangeRequest["status"], string> = { waiting: "row row--due", read: "row", dismissed: "row row--past" };
+/** A system named by the id the hit rate compares, as the closure named it. */
+function systemNamer(item: ChangeRequest, delivery: Delivery): (id: string) => string {
+  const names = new Map<string, string>();
+  for (const system of delivery.predicted) names.set(system.id.toLowerCase(), system.name);
+  for (const feature of item.features) for (const system of feature.systems) names.set((system.id ?? system.name).toLowerCase(), system.name);
+  return (id) => names.get(id) ?? id;
+}
+
+/** Features as a plain list, each by its id and name. */
+function Features({ item, label }: { item: ChangeRequest; label?: string }) {
+  return (
+    <ol className="cat-plain cat-features" aria-label={label}>
+      {item.features.map((feature) => (
+        <li key={feature.id}>
+          <span className="offering-id">{feature.id}</span> <span dir="auto">{feature.name}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** What a closed Epic delivered: its Features, those it did not, what it suggests, and the hit. */
+function DeliveryFacts({ item, delivery }: { item: ChangeRequest; delivery: Delivery }) {
+  const name = systemNamer(item, delivery);
+  return (
+    <>
+      <span className="cat-detail">
+        {delivery.epic_url ? (
+          <a href={delivery.epic_url} target="_blank" rel="noreferrer">
+            {closedLine(delivery)}
+            <span className="ds-visually-hidden"> (opens the work-item tracker)</span>
+          </a>
+        ) : (
+          closedLine(delivery)
+        )}
+      </span>
+      <Features item={item} label={`Delivered by ${item.id}`} />
+      {delivery.not_delivered.length > 0 && (
+        <p className="cat-detail">
+          Not delivered:{" "}
+          {delivery.not_delivered.map((feature, index) => (
+            <span key={feature.id}>
+              {index > 0 && "; "}
+              <span className="offering-id">{feature.id}</span> <span dir="auto">{feature.name}</span> ({feature.state})
+            </span>
+          ))}
+        </p>
+      )}
+      <p className="cat-detail">
+        {delivery.changes.length
+          ? `Suggests: ${delivery.changes.map(deliveredChangeSentence).join("; ")}.`
+          : "Suggests no catalogue change: none of the capabilities the product impact found missing came with it."}
+      </p>
+      <p className="cat-detail">{hitLine(delivery, name)}</p>
+    </>
+  );
+}
+
+const STATE_TONE = { waiting: "attention", read: "done", dismissed: "stopped" } as const;
 
 /**
  * The approved backlogs requirement-portal sent (requirement-portal ADR-0101, step 7), on the
  * Versions page: what each asks, where it comes from, and reading it into the draft or
  * dismissing it.
  */
-export function ChangeRequestInbox({ releases, actorName }: {
+export function ChangeRequestInbox({ releases, actorName, headingLevel = 2 }: {
   releases: Release[];
   actorName: (id: string | null | undefined) => string;
+  /** 3 inside a version's record, under its name. */
+  headingLevel?: 2 | 3;
 }) {
-  const id = useId().replace(/:/g, "");
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const inbox = useChangeRequests();
   const [dismissing, setDismissing] = useState<string | null>(null);
   // Where focus goes back to when the dismiss form closes: the row's Dismiss button, or the
-  // row itself once the dismissal removed that button.
-  const returns = useRef(new Map<string, HTMLElement | null>());
+  // row's name once the dismissal removed that button.
+  const prefix = useId();
+  const target = (itemId: string, what: "row" | "dismiss") => `${prefix}-${what}-${itemId}`;
   const closeDismissal = (itemId: string, dismissed: boolean) => {
     setDismissing(null);
-    requestAnimationFrame(() => returns.current.get(dismissed ? `${itemId}:row` : `${itemId}:dismiss`)?.focus());
+    requestAnimationFrame(() => document.getElementById(target(itemId, dismissed ? "row" : "dismiss"))?.focus());
   };
   const draft = releases.find((release) => release.status === "draft");
   const named = (releaseId: string | null | undefined) => releases.find((release) => release.id === releaseId);
@@ -44,158 +113,165 @@ export function ChangeRequestInbox({ releases, actorName }: {
     onSuccess: (reading) => {
       void queryClient.invalidateQueries({ queryKey: ["architecture"] });
       const asked = reading.run.candidate_count;
-      navigate(`/architecture/versions/${encodeURIComponent(reading.release.id)}/sources`, {
+      const what = reading.change_request.delivery || reading.change_request.draft ? "suggestion" : "suggested question";
+      navigate(`/architecture/versions/${encodeURIComponent(reading.release.id)}/decide`, {
         state: {
           notice: `${reading.change_request.id} is read into ${
             reading.release.name === reading.change_request.id ? "a new draft named after it" : `‘${reading.release.name || "the draft"}’`
-          }: ${count(asked, "suggested question")}${asked ? " below" : ""}.`,
+          }: ${count(asked, what)}${asked ? " below" : ""}.`,
         },
       });
     },
   });
   const waiting = (inbox.data ?? []).filter((item) => item.status === "waiting").length;
+  // A drafted offering names systems and its nearest offering by id: named as the catalogue names them.
+  const names = new Map<string, string>();
+  for (const release of releases) {
+    for (const system of release.systems) names.set(system.id, system.name);
+    for (const offering of release.products ?? []) names.set(offering.id, offering.name);
+  }
+  const nameOf = (catalogueId: string) => names.get(catalogueId) ?? catalogueId;
+
+  const columns: Column<ChangeRequest>[] = [
+    {
+      id: "request",
+      header: "Change request",
+      rowHeader: true,
+      width: "34%",
+      cell: (item) => {
+        const offerings = offeringsNamed(item);
+        return (
+          <>
+            <span id={target(item.id, "row")} className="offering-id" tabIndex={-1}>{item.id}</span>{" "}
+            <span dir="auto">{item.title}</span>
+            <span className="cat-detail">
+              {item.delivery ? "Epic closed: " : ""}
+              {count(item.features.length, item.delivery ? "delivered Feature" : "approved feature")}
+              {offerings.length > 0 && <> for <bdi>{offerings.join(", ")}</bdi></>} · received {formatDay(item.received_at)}
+            </span>
+          </>
+        );
+      },
+    },
+    {
+      id: "from",
+      header: "From Requirement AI",
+      cell: (item) => (
+        <>
+          <span dir="auto">{traceLine(item.trace)}</span>
+          {item.delivery ? (
+            <DeliveryFacts item={item} delivery={item.delivery} />
+          ) : (
+            <>
+              <Features item={item} />
+              {item.draft && draftLines(item.draft, nameOf, nameOf).map((line) => <p key={line} className="cat-detail" dir="auto">{line}</p>)}
+            </>
+          )}
+        </>
+      ),
+    },
+    {
+      id: "state",
+      header: "State",
+      width: "30%",
+      cell: (item) => {
+        if (item.status === "dismissed") {
+          return (
+            <>
+              <Status tone={STATE_TONE.dismissed}>Dismissed</Status>
+              <span className="cat-detail">
+                by {actorName(item.dismissed_by)} on {formatDay(item.dismissed_at)}: <span dir="auto">{item.dismissal_reason}</span>
+              </span>
+            </>
+          );
+        }
+        const into = named(item.read_into);
+        const stillOpen = into?.status === "draft";
+        // A request read into a draft still in preparation is settled there; it is dismissed
+        // only while waiting, or once that draft is gone.
+        const dismissable = item.status === "waiting" || (item.status === "read" && !stillOpen);
+        const reading = read.isPending && read.variables === item.id;
+        return (
+          <>
+            <Status tone={STATE_TONE[item.status]}>{item.status === "waiting" ? "Waiting" : `Read into ‘${into?.name || "a draft"}’`}</Status>
+            {item.status === "read" && (
+              <span className="cat-detail">
+                by {actorName(item.read_by)} on {formatDay(item.read_at)}
+                {!stillOpen && "; that draft is no longer in preparation"}
+              </span>
+            )}
+            {read.isError && read.variables === item.id && <p role="alert"><Status tone="attention">{errorMessage(read.error)}</Status></p>}
+            {dismissing === item.id ? (
+              <Dismissal item={item} onDone={(dismissed) => closeDismissal(item.id, dismissed)} />
+            ) : (
+              <div className="cat-cell-actions">
+                <ActionGroup label={`What to do with ${item.id}`}>
+                  {item.status === "read" && stillOpen ? (
+                    <Link className="ds-button ds-button--quiet" to={`/architecture/versions/${encodeURIComponent(into.id)}/decide`}>
+                      <span>
+                        Its suggestions <span aria-hidden="true">→</span>
+                        <span className="ds-visually-hidden"> ({item.id})</span>
+                      </span>
+                    </Link>
+                  ) : (
+                    <Button variant="quiet" busy={reading} onClick={() => !read.isPending && read.mutate(item.id)}>
+                      {reading
+                        ? "Reading…"
+                        : item.status === "read"
+                          ? "Read it again"
+                          : draft
+                            ? <>Read it into ‘<bdi>{draft.name || "the draft"}</bdi>’</>
+                            : "Read it into a new draft"}
+                      <span className="ds-visually-hidden"> ({item.id})</span>
+                    </Button>
+                  )}
+                  {dismissable && (
+                    <Button id={target(item.id, "dismiss")} variant="quiet" onClick={() => setDismissing(item.id)}>
+                      Dismiss it<span className="ds-visually-hidden"> ({item.id})</span>
+                    </Button>
+                  )}
+                </ActionGroup>
+              </div>
+            )}
+          </>
+        );
+      },
+    },
+  ];
 
   return (
-    <section className="govsection" aria-labelledby={`${id}-title`}>
-      <h2 id={`${id}-title`} className="govsection__title">
-        Change requests from Requirement AI {waiting > 0 && <span className="govsection__count">{waiting} waiting</span>}
-      </h2>
-      <p className="govsection__lead">
-        Requirement AI sends a requirement’s approved backlog here when its final approval is recorded. Reading one into the
-        draft turns each approved feature into a suggested question for the offering it names; nothing reaches the catalogue
-        until it is accepted.
+    <Section
+      headingLevel={headingLevel}
+      title={<>Change requests from Requirement AI{waiting > 0 && <>{" "}<span className="ds-section__count">{waiting} waiting</span></>}</>}
+    >
+      <p className="cat-lead">
+        Requirement AI sends a requirement’s approved backlog here once it is approved, and what its Epic delivered once the Epic is
+        closed. Reading one into the draft turns it into suggestions: questions for the offerings it names, a drafted offering and
+        journey, or the capabilities delivered. Nothing reaches the catalogue until it is accepted.
       </p>
       {inbox.isPending ? (
-        <p className="timetable__quiet">Reading the change requests…</p>
+        <Skeleton label="Reading the change requests" rows={3} />
       ) : inbox.isError ? (
-        <p className="docpage__failure" role="alert">
-          {errorMessage(inbox.error)}
-          <button type="button" className="text-button" onClick={() => void inbox.refetch()}>
-            <RotateCw size={14} aria-hidden="true" />
-            Try again
-          </button>
+        <p role="alert">
+          <Status tone="attention">{errorMessage(inbox.error)}</Status>{" "}
+          <Button variant="quiet" onClick={() => void inbox.refetch()}>Try again</Button>
         </p>
-      ) : inbox.data.length === 0 ? (
-        <p className="timetable__quiet">No change request has come from Requirement AI yet.</p>
       ) : (
-        <table className="govtable governance__table changerequests" role="table">
-          <caption className="visually-hidden">Change requests from Requirement AI, newest first</caption>
-          <colgroup>
-            <col className="changerequests__col-request" />
-            <col className="changerequests__col-from" />
-            <col className="changerequests__col-state" />
-          </colgroup>
-          <thead role="rowgroup">
-            <tr role="row">
-              <th scope="col" role="columnheader">Change request</th>
-              <th scope="col" role="columnheader">From Requirement AI</th>
-              <th scope="col" role="columnheader">State</th>
-            </tr>
-          </thead>
-          <tbody role="rowgroup">
-            {inbox.data.map((item) => {
-              const into = named(item.read_into);
-              const stillOpen = into?.status === "draft";
-              const offerings = offeringsNamed(item);
-              const reading = read.isPending && read.variables === item.id;
-              const failed = read.isError && read.variables === item.id;
-              // A request read into a draft still in preparation is settled there; it is dismissed
-              // only while waiting, or once that draft is gone.
-              const dismissable = item.status === "waiting" || (item.status === "read" && !stillOpen);
-              return (
-                <tr key={item.id} role="row" className={RANK[item.status]}>
-                  <th scope="row" role="rowheader" tabIndex={-1} ref={(node) => void returns.current.set(`${item.id}:row`, node)}>
-                    <span className="governance__id">{item.id}</span>
-                    <span className="changerequests__title" dir="auto">{item.title}</span>
-                    <span className="secondary govtable__by">
-                      {count(item.features.length, "approved feature")}
-                      {offerings.length > 0 && <> for {offerings.join(", ")}</>} · received {formatDay(item.received_at)}
-                    </span>
-                  </th>
-                  <td role="cell" data-head="From Requirement AI">
-                    <span dir="auto">{traceLine(item.trace)}</span>
-                    <ol className="changerequests__features">
-                      {item.features.map((feature) => (
-                        <li key={feature.id}>
-                          <span className="governance__id">{feature.id}</span> <span dir="auto">{feature.name}</span>
-                        </li>
-                      ))}
-                    </ol>
-                  </td>
-                  <td role="cell" data-head="State">
-                    {item.status === "dismissed" ? (
-                      <>
-                        <span className="status">Dismissed</span>
-                        <span className="secondary govtable__by">
-                          by {actorName(item.dismissed_by)} on {formatDay(item.dismissed_at)}: <span dir="auto">{item.dismissal_reason}</span>
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="status">
-                          {item.status === "waiting" ? "Waiting" : `Read into ‘${into?.name || "a draft"}’`}
-                        </span>
-                        {item.status === "read" && (
-                          <span className="secondary govtable__by">
-                            by {actorName(item.read_by)} on {formatDay(item.read_at)}
-                            {!stillOpen && "; that draft is no longer in preparation"}
-                          </span>
-                        )}
-                        {failed && <p className="docpage__failure" role="alert">{errorMessage(read.error)}</p>}
-                        {dismissing === item.id ? (
-                          <Dismissal item={item} onDone={(dismissed) => closeDismissal(item.id, dismissed)} />
-                        ) : (
-                          <span className="documents__actions">
-                            {item.status === "read" && stillOpen ? (
-                              <Link className="changerequests__link" to={`/architecture/versions/${encodeURIComponent(into.id)}/sources`}>
-                                Its suggestions <span aria-hidden="true">→</span>
-                                <span className="visually-hidden"> ({item.id})</span>
-                              </Link>
-                            ) : (
-                              <button
-                                type="button"
-                                className="text-button"
-                                aria-disabled={read.isPending || undefined}
-                                onClick={() => !read.isPending && read.mutate(item.id)}
-                              >
-                                {reading
-                                  ? "Reading…"
-                                  : item.status === "read"
-                                    ? "Read it again"
-                                    : draft
-                                      ? `Read it into ‘${draft.name || "the draft"}’`
-                                      : "Read it into a new draft"}
-                                <span className="visually-hidden"> ({item.id})</span>
-                              </button>
-                            )}
-                            {dismissable && (
-                              <button
-                                type="button"
-                                className="text-button"
-                                ref={(node) => void returns.current.set(`${item.id}:dismiss`, node)}
-                                onClick={() => setDismissing(item.id)}
-                              >
-                                Dismiss it<span className="visually-hidden"> ({item.id})</span>
-                              </button>
-                            )}
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <DataTable
+          caption="Change requests from Requirement AI, newest first"
+          captionHidden
+          columns={columns}
+          rows={inbox.data}
+          rowId={(item) => item.id}
+          emptyText="No change request has come from Requirement AI yet."
+        />
       )}
-    </section>
+    </Section>
   );
 }
 
 /** Dismissing in place: a reason, then the choice. A dismissal stays. */
 function Dismissal({ item, onDone }: { item: ChangeRequest; onDone: (dismissed: boolean) => void }) {
-  const id = useId();
   const queryClient = useQueryClient();
   const [reason, setReason] = useState("");
   const dismiss = useMutation({
@@ -210,126 +286,26 @@ function Dismissal({ item, onDone }: { item: ChangeRequest; onDone: (dismissed: 
     if (reason.trim() && !dismiss.isPending) dismiss.mutate();
   };
   return (
-    <form className="changerequests__dismiss" aria-label={`Dismiss ${item.id}`} onSubmit={submit}>
-      <label className="field" htmlFor={`${id}-reason`}>
-        <span className="field__label">Why it is dismissed</span>
-        <input
-          id={`${id}-reason`}
-          className="field__input"
-          value={reason}
-          autoFocus
-          maxLength={1000}
-          aria-required="true"
-          aria-describedby={`${id}-stays`}
-          onChange={(event) => setReason(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Escape") onDone(false);
-          }}
-        />
-      </label>
-      <p id={`${id}-stays`} className="secondary">A dismissal stays: the change request cannot be read afterwards.</p>
-      {dismiss.isError && <p className="docpage__failure" role="alert">{errorMessage(dismiss.error)}</p>}
-      <span className="documents__actions">
-        <button
-          type="submit"
-          className="text-button documents__remove"
-          aria-disabled={!reason.trim() || dismiss.isPending || undefined}
-          aria-describedby={reason.trim() ? undefined : `${id}-first`}
-        >
+    <form className="cat-dismiss" aria-label={`Dismiss ${item.id}`} onSubmit={submit}>
+      <TextField
+        label="Why it is dismissed"
+        hint="A dismissal stays: the change request cannot be read afterwards."
+        value={reason}
+        // Opened by its own button, the field is where the person goes next.
+        autoFocus
+        maxLength={1000}
+        onChange={(event) => setReason(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") onDone(false);
+        }}
+      />
+      {dismiss.isError && <p role="alert"><Status tone="attention">{errorMessage(dismiss.error)}</Status></p>}
+      <ActionGroup>
+        <Button type="submit" busy={dismiss.isPending} unavailableReason={reason.trim() ? null : "Give a reason first."}>
           {dismiss.isPending ? "Dismissing…" : "Dismiss it"}
-        </button>
-        <button type="button" className="text-button" onClick={() => onDone(false)}>
-          Keep it
-        </button>
-      </span>
-      {!reason.trim() && <p id={`${id}-first`} className="secondary">Give a reason first.</p>}
+        </Button>
+        <Button variant="quiet" onClick={() => onDone(false)}>Keep it</Button>
+      </ActionGroup>
     </form>
-  );
-}
-
-/**
- * The change requests read into this draft, on its Sources page beside its documents: what
- * the reading could not match, and how many of their suggestions still wait.
- */
-export function DraftChangeRequests({ release, runs, suggestions }: {
-  release: Release;
-  runs: ExtractionRun[];
-  suggestions: Suggestion[];
-}) {
-  const id = useId().replace(/:/g, "");
-  const queryClient = useQueryClient();
-  const inbox = useChangeRequests();
-  const read = useMutation({
-    mutationFn: (changeRequestId: string) => api.readChangeRequest(changeRequestId),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["architecture"] }),
-  });
-  const readings = new Map<string, ExtractionRun>();
-  for (const run of runs) if (run.change_request_id) readings.set(run.change_request_id, run);
-  const items = (inbox.data ?? []).filter((item) => readings.has(item.id) || item.read_into === release.id);
-  if (!items.length) return null;
-  const waiting = (changeRequestId: string) =>
-    suggestions.filter((item) => item.change_request?.change_request_id === changeRequestId && item.status === "proposed").length;
-  return (
-    <section className="govsection" aria-labelledby={`${id}-title`}>
-      <h2 id={`${id}-title`} className="govsection__title">Change requests</h2>
-      <p className="govsection__lead">
-        Approved backlogs from Requirement AI, read with fixed rules: each approved feature asks a question of the offering it
-        names.
-      </p>
-      {read.isError && <p className="docpage__failure" role="alert">{errorMessage(read.error)}</p>}
-      <table className="govtable governance__table changerequests" role="table">
-        <caption className="visually-hidden">The change requests read into this draft</caption>
-        <colgroup>
-          <col className="changerequests__col-request" />
-          <col className="changerequests__col-reading" />
-          <col className="changerequests__col-waiting" />
-        </colgroup>
-        <thead role="rowgroup">
-          <tr role="row">
-            <th scope="col" role="columnheader">Change request</th>
-            <th scope="col" role="columnheader">Reading</th>
-            <th scope="col" role="columnheader" className="cell--end">Waiting</th>
-          </tr>
-        </thead>
-        <tbody role="rowgroup">
-          {items.map((item) => {
-            const run = readings.get(item.id);
-            return (
-              <tr key={item.id} role="row" className="row">
-                <th scope="row" role="rowheader">
-                  <span className="governance__id">{item.id}</span>
-                  <span className="changerequests__title" dir="auto">{item.title}</span>
-                  <span className="secondary govtable__by" dir="auto">{traceLine(item.trace)}</span>
-                </th>
-                <td role="cell" data-head="Reading">
-                  <span className="status">Read</span>
-                  {run && <span className="secondary govtable__by">{count(run.candidate_count, "suggestion")} on its last reading</span>}
-                  {run && run.warnings.length > 0 && (
-                    <ul className="changerequests__warnings" aria-label={`What the reading of ${item.id} could not match`}>
-                      {run.warnings.map((warning) => (
-                        <li key={warning} dir="auto">{warningInWords(warning)}</li>
-                      ))}
-                    </ul>
-                  )}
-                  <span className="documents__actions">
-                    <button
-                      type="button"
-                      className="text-button"
-                      aria-disabled={read.isPending || undefined}
-                      onClick={() => !read.isPending && read.mutate(item.id)}
-                    >
-                      <RotateCw size={14} aria-hidden="true" />
-                      {read.isPending && read.variables === item.id ? "Reading…" : "Read it again"}
-                      <span className="visually-hidden"> ({item.id})</span>
-                    </button>
-                  </span>
-                </td>
-                <td role="cell" data-head="Waiting" className="cell--end">{waiting(item.id)}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </section>
   );
 }

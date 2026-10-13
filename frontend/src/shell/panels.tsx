@@ -17,24 +17,30 @@ import {
   Skeleton,
   Status,
 } from "../design/components";
+import { searchShortcut } from "../design/words";
 import type { JobAction } from "../library/actions";
 import { helpFor, PAGE_KEYS } from "./help";
 import { ButtonLink, RouterLink } from "./links";
 import { type Density, usePreferences } from "./preferences";
 import type { ShellJob } from "./useJobs";
 
-type PanelProps = { onClose: () => void; panelRef: RefObject<HTMLElement | null> };
+/** `id`: the panel's, for the masthead button that opens it (aria-controls). */
+type PanelProps = { id?: string; onClose: () => void; panelRef: RefObject<HTMLElement | null> };
 
-/** §6: background work, by need, each with its cause, its attempts, and its fix: Try again, Stop, or the specific fix. */
-export function JobsPanel({ jobs, state, onRetry, onAct, said, onClose, panelRef }: PanelProps & {
+/**
+ * §6: background work, by need, each with its cause, its attempts, and its fix: Try again, Stop, or the specific fix.
+ * `busy`: the action in flight; its job shows "Trying again…" or "Stopping…" until it settles.
+ */
+export function JobsPanel({ id, jobs, state, onRetry, onAct, busy, said, onClose, panelRef }: PanelProps & {
   jobs: ShellJob[];
   state: "loading" | "failed" | "ready";
   onRetry: () => void;
   onAct: (document: LibraryDocument, action: JobAction) => void;
+  busy?: { document: LibraryDocument; action: JobAction };
   said: { text: string; failed: boolean } | null;
 }) {
   return (
-    <Drawer title="Jobs" onClose={onClose} panelRef={panelRef}>
+    <Drawer id={id} title="Jobs" onClose={onClose} panelRef={panelRef}>
       <p className="shell-panel__lead">Documents being read or indexed, what needs you, and what finished in the last 30 minutes.</p>
       <p className="shell-panel__said" role="status">{said ? said.failed ? <Status tone="attention">{said.text}</Status> : said.text : null}</p>
       {state === "loading" ? (
@@ -51,6 +57,9 @@ export function JobsPanel({ jobs, state, onRetry, onAct, said, onClose, panelRef
           onRetry: retry && document ? () => onAct(document, retry) : undefined,
           retryLabel: retry === "retry" ? "Try reading again" : retry === "retry-indexing" ? "Try indexing again" : undefined,
           onCancel: stop && document ? () => onAct(document, "cancel") : undefined,
+          busy: busy && document && busy.document.id === document.id
+            ? busy.action === "cancel" ? "cancel" as const : busy.action === retry ? "retry" as const : undefined
+            : undefined,
         }))}
       />
       )}
@@ -59,7 +68,7 @@ export function JobsPanel({ jobs, state, onRetry, onAct, said, onClose, panelRef
 }
 
 /** §14: the same four parts, in the same order, on every page (WCAG 3.2.6). */
-export function HelpPanel({ path, section, onClose, panelRef }: PanelProps & { path: string; section: string | null }) {
+export function HelpPanel({ id, path, section, onClose, panelRef }: PanelProps & { path: string; section: string | null }) {
   const { shortcuts, setShortcuts } = usePreferences();
   const entry = helpFor(path);
   // "?help=shortcuts" (the keys line under a grid, or "?") opens Help at its shortcuts.
@@ -73,12 +82,16 @@ export function HelpPanel({ path, section, onClose, panelRef }: PanelProps & { p
     if (drawer && heading) drawer.scrollTop = heading.offsetTop - drawer.offsetTop;
   }, [section]);
   return (
-    <Drawer title="Help" onClose={onClose} panelRef={panelRef}>
+    <Drawer id={id} title="Help" onClose={onClose} panelRef={panelRef}>
       <HelpContent
         page={{ title: entry.title, body: entry.body.map((line) => <p key={line}>{line}</p>) }}
         shortcuts={
           <ShortcutHelp
-            widget={entry.keys.length ? [{ title: "On this page", shortcuts: entry.keys.map(([keys, does]) => ({ keys, does })) }] : []}
+            widget={[
+              ...(entry.keys.length ? [{ title: "On this page", shortcuts: entry.keys.map(([keys, does]) => ({ keys, does })) }] : []),
+              // Always on: a modifier key isn't a single-character shortcut (WCAG 2.1.4).
+              { title: "Anywhere", shortcuts: [{ keys: searchShortcut(), does: "Search the library and catalogue" }] },
+            ]}
             global={PAGE_KEYS.map(([keys, does]) => ({ keys, does }))}
             enabled={shortcuts}
             onToggle={setShortcuts}
@@ -92,13 +105,13 @@ export function HelpPanel({ path, section, onClose, panelRef }: PanelProps & { p
 }
 
 /** Who is signed in, and their display preferences, saved as they change. */
-export function AccountPanel({ actor, onClose, panelRef }: PanelProps & { actor: Actor }) {
+export function AccountPanel({ id, actor, onClose, panelRef }: PanelProps & { actor: Actor }) {
   const auth = useAuth();
   const { density, setDensity, shortcuts, setShortcuts } = usePreferences();
   const [saved, setSaved] = useState("");
   const offline = auth?.config?.mode === "fake";
   return (
-    <Drawer title="Account" onClose={onClose} panelRef={panelRef}>
+    <Drawer id={id} title="Account" onClose={onClose} panelRef={panelRef}>
       <p>
         Signed in as <strong><bdi>{actor.display_name}</bdi></strong>, Knowledge admin.
       </p>

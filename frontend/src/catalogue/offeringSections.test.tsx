@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Outlet, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -7,24 +7,24 @@ import { api, type Release } from "../api/client";
 import { EXPLORED } from "../explorer/fixtures";
 import { catalogue } from "./catalogue";
 import { finishedOffering, journeyOrderProblem, offeringProblem } from "./editing";
-import { OfferingPage, OfferingsPage } from "./OfferingsPage";
+import { OfferingsPage } from "./OfferingsPage";
 import type { CatalogueContext } from "./useCatalogue";
 
 afterEach(() => vi.restoreAllMocks());
 
 const RELEASE = { ...EXPLORED, revision: 3, status: "draft", documents: [] } as unknown as Release;
 const OFFERING = RELEASE.products![0]!;
-const EDITS = [
-  "Edit what it is",
-  "Edit the order types",
-  "Edit the parts",
-  "Edit the non-functional requirements",
-  "Edit the order tracking",
-  "Edit the lifecycle notes",
-  "Edit the rules",
+/** Each tab of the offering, and the section edits it offers. */
+const TAB_EDITS: [string, string[]][] = [
+  ["", ["Edit what it is", "Edit the parts"]],
+  ["?tab=orders", ["Edit what it is", "Edit the order types"]],
+  ["?tab=service", ["Edit what it is", "Edit the non-functional requirements", "Edit the order tracking", "Edit the lifecycle notes"]],
+  ["?tab=governance", ["Edit what it is", "Edit the open questions", "Edit the architecture decisions", "Edit the sources and boundaries", "Edit the rules"]],
 ];
+const EDITS = [...new Set(TAB_EDITS.flatMap(([, names]) => names))];
 
 function open(editable: boolean, path = `/architecture/offerings/${OFFERING.id}`) {
+  cleanup();
   const context: CatalogueContext = { book: catalogue(RELEASE), base: "/architecture", inService: !editable, editable, actorName: () => "Amina" };
   render(
     <QueryClientProvider client={new QueryClient()}>
@@ -32,7 +32,7 @@ function open(editable: boolean, path = `/architecture/offerings/${OFFERING.id}`
         <Routes>
           <Route path="architecture" element={<Outlet context={context} />}>
             <Route path="offerings" element={<OfferingsPage />} />
-            <Route path="offerings/:offeringId" element={<OfferingPage />} />
+            <Route path="offerings/:offeringId" element={<OfferingsPage />} />
           </Route>
         </Routes>
       </MemoryRouter>
@@ -41,28 +41,32 @@ function open(editable: boolean, path = `/architecture/offerings/${OFFERING.id}`
 }
 
 describe("an offering edited one section at a time", () => {
-  it("offers each section its own edit on a draft, and none on a version in service", () => {
-    open(true);
-    expect(EDITS.map((name) => screen.getByRole("button", { name }))).toHaveLength(EDITS.length);
-    expect(screen.queryByRole("button", { name: "Edit this offering" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Remove this offering" })).toBeInTheDocument();
+  it("offers each section its own edit on a draft, tab by tab", () => {
+    for (const [tab, names] of TAB_EDITS) {
+      open(true, `/architecture/offerings/${OFFERING.id}${tab}`);
+      expect(names.map((name) => screen.getByRole("button", { name }))).toHaveLength(names.length);
+      expect(screen.queryByRole("button", { name: "Edit this offering" })).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /^Remove this offering/ })).toBeInTheDocument();
+    }
   });
 
   it("shows no edit on a version in service", () => {
-    open(false);
-    for (const name of [...EDITS, "Remove this offering"]) expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
+    for (const [tab] of TAB_EDITS) {
+      open(false, `/architecture/offerings/${OFFERING.id}${tab}`);
+      for (const name of EDITS) expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /^Remove this offering/ })).not.toBeInTheDocument();
+    }
   });
 
   it("opens one section in place, keeps the rest readable, and gives focus back on cancel", () => {
-    open(true);
+    open(true, `/architecture/offerings/${OFFERING.id}?tab=orders`);
     fireEvent.click(screen.getByRole("button", { name: "Edit the order types" }));
 
     const panel = screen.getByRole("form", { name: "Edit the order types of Business Pro Plus" });
     expect(within(panel).getByRole("heading", { name: "Edit the order types of Business Pro Plus" })).toHaveFocus();
     expect(within(panel).queryByLabelText("Quality")).not.toBeInTheDocument();
-    // The other sections still read as they are, with no second edit open.
-    expect(screen.getByRole("heading", { name: "Parts, and who is responsible" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /^Order tracking/ })).toBeInTheDocument();
+    // The other tabs still open as they are, with no second edit offered.
+    expect(screen.getByRole("tab", { name: "Components" })).toBeInTheDocument();
     for (const name of EDITS) expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
 
     fireEvent.click(within(panel).getByRole("button", { name: "Cancel" }));
@@ -72,7 +76,7 @@ describe("an offering edited one section at a time", () => {
 
   it("saves one section and sends the rest of the offering unchanged", async () => {
     const save = vi.spyOn(api, "saveDraft").mockResolvedValue(RELEASE);
-    open(true);
+    open(true, `/architecture/offerings/${OFFERING.id}?tab=governance`);
     fireEvent.click(screen.getByRole("button", { name: "Edit the rules" }));
     const panel = screen.getByRole("form", { name: "Edit the rules of Business Pro Plus" });
     fireEvent.change(within(panel).getByLabelText(/^Rules/), { target: { value: "One line per site\n  \nNo resale" } });
@@ -87,13 +91,13 @@ describe("an offering edited one section at a time", () => {
   });
 
   it("will not drop an order type its parts, tracking, notes or journeys still name", () => {
-    open(true);
+    open(true, `/architecture/offerings/${OFFERING.id}?tab=orders`);
     fireEvent.click(screen.getByRole("button", { name: "Edit the order types" }));
     const panel = screen.getByRole("form", { name: "Edit the order types of Business Pro Plus" });
     fireEvent.click(within(panel).getByRole("button", { name: /Remove order type Cease/ }));
 
     expect(within(panel).getByText(/Broadband’s responsibility FULFILMENT still names the order type ‘CEASE’/)).toBeInTheDocument();
-    expect(within(panel).getByRole("button", { name: "Save the order types" })).toBeDisabled();
+    expect(within(panel).getByRole("button", { name: "Save the order types" })).toHaveAttribute("aria-disabled", "true");
   });
 
   it("adds an offering with what it is, leaving the rest to its sheet", () => {
@@ -110,13 +114,13 @@ describe("an offering edited one section at a time", () => {
 
   it("asks before removing, from the panel it opens, and gives focus back when kept", () => {
     open(true);
-    fireEvent.click(screen.getByRole("button", { name: "Remove this offering" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Remove this offering/ }));
     const panel = screen.getByRole("form", { name: "Remove Business Pro Plus" });
     expect(within(panel).getByRole("heading", { name: "Remove Business Pro Plus" })).toHaveFocus();
 
     fireEvent.keyDown(panel, { key: "Escape" });
     expect(screen.queryByRole("form")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Remove this offering" })).toHaveFocus();
+    expect(screen.getByRole("button", { name: /^Remove this offering/ })).toHaveFocus();
   });
 });
 

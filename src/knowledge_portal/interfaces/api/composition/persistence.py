@@ -34,6 +34,7 @@ from knowledge_portal.application.ports.library_admin import (
     LibraryAdminRecordPort,
 )
 from knowledge_portal.application.ports.organisation_repository import OrganisationRepositoryPort
+from knowledge_portal.application.ports.precedents import PrecedentStorePort
 from knowledge_portal.application.ports.reference_index import ReferenceIndexPort
 from knowledge_portal.application.ports.sample_requirements import SampleRequirementsPort
 from knowledge_portal.application.ports.system_reviews import SystemReviewsPort
@@ -77,6 +78,7 @@ from knowledge_portal.infrastructure.persistence.in_memory_change_requests impor
 from knowledge_portal.infrastructure.persistence.in_memory_organisation import (
     InMemoryOrganisationRepository,
 )
+from knowledge_portal.infrastructure.persistence.in_memory_precedents import InMemoryPrecedents
 from knowledge_portal.infrastructure.persistence.in_memory_sample_requirements import (
     InMemorySampleRequirements,
 )
@@ -108,6 +110,7 @@ from knowledge_portal.infrastructure.persistence.postgres_change_requests import
 from knowledge_portal.infrastructure.persistence.postgres_organisation import (
     PostgresOrganisationRepository,
 )
+from knowledge_portal.infrastructure.persistence.postgres_precedents import PostgresPrecedents
 from knowledge_portal.infrastructure.persistence.postgres_sample_requirements import (
     PostgresSampleRequirements,
 )
@@ -132,6 +135,8 @@ class PersistenceAdapters:
     catalogue_candidates: CatalogueCandidateRepositoryPort
     # Change requests from Requirement AI, waiting for an admin (ADR-0101, step 7).
     change_requests: ChangeRequestInboxPort
+    # Verdicts a reviewer decided in requirement work (ontology plan Phase 5).
+    precedents: PrecedentStorePort
     architecture_evidence_index: ArchitectureEvidenceIndexPort
     architecture_job_repository: ArchitectureJobRepositoryPort
     library_repository: DocumentLibraryPort
@@ -200,6 +205,7 @@ def _postgres(
         sample_requirements=PostgresSampleRequirements(connector),
         catalogue_candidates=PostgresCatalogueCandidates(connector),
         change_requests=PostgresChangeRequests(connector),
+        precedents=PostgresPrecedents(connector),
         architecture_evidence_index=PostgresEvidenceIndex(
             connector, architecture_embeddings, architecture_tokenizer
         ),
@@ -248,6 +254,7 @@ def _memory(
         sample_requirements=InMemorySampleRequirements(),
         catalogue_candidates=InMemoryCatalogueCandidates(),
         change_requests=InMemoryChangeRequests(),
+        precedents=InMemoryPrecedents(),
         architecture_evidence_index=InMemoryEvidenceIndex(
             architecture_embeddings, architecture_tokenizer
         ),

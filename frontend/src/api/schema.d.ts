@@ -79,6 +79,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/architecture-knowledge/deliveries/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Delivery Summaries
+         * @description How the systems assessments predicted compare with what closed Epics delivered, per
+         *     release: delivered and predicted, delivered but not predicted, predicted but not
+         *     delivered (ontology plan Phase 7). Counts only.
+         */
+        get: operations["delivery_summaries_architecture_knowledge_deliveries_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/architecture-knowledge/documents": {
         parameters: {
             query?: never;
@@ -142,6 +164,27 @@ export interface paths {
          * @description Counts of mapped and outdated requirements, features and stories; no titles.
          */
         get: operations["mapping_impact_architecture_knowledge_mapping_impact_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/architecture-knowledge/precedents/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Precedent Summaries
+         * @description How reviewers decided suggested verdicts, per release: accepted, overridden, unknown,
+         *     and the concepts most overridden (ontology plan Phase 5). Counts only, no text.
+         */
+        get: operations["precedent_summaries_architecture_knowledge_precedents_summary_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -340,6 +383,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/architecture-knowledge/releases/{release_id}/component-link-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Suggest Component Capabilities
+         * @description Ask the configured model which concepts each unlinked offering component delivers.
+         *
+         *     The suggestions replace the undecided ones of the previous request (ADR-0114).
+         */
+        post: operations["suggest_component_capabilities_architecture_knowledge_releases__release_id__component_link_suggestions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/architecture-knowledge/releases/{release_id}/concept-proposals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Propose Capability Concepts
+         * @description Suggest one concept per distinct capability name the draft lists (ADR-0114).
+         *
+         *     The suggestions replace the undecided ones of the previous backfill.
+         */
+        post: operations["propose_capability_concepts_architecture_knowledge_releases__release_id__concept_proposals_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/architecture-knowledge/releases/{release_id}/documents": {
         parameters: {
             query?: never;
@@ -441,6 +528,27 @@ export interface paths {
         };
         /** List Extractions */
         get: operations["list_extractions_architecture_knowledge_releases__release_id__extractions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/architecture-knowledge/releases/{release_id}/index-coverage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Index Coverage
+         * @description How many evidence chunks link to no concept, and which concepts no chunk speaks of
+         *     (ontology plan Phase 2). The counts are of the release's last build.
+         */
+        get: operations["index_coverage_architecture_knowledge_releases__release_id__index_coverage_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -571,6 +679,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/architecture-knowledge/releases/{release_id}/suggestions/subject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Settle Suggestion Subject
+         * @description Say what a name waiting suggestions name is: a system to suggest, or a product
+         *     offering, so its constraints become the offering's rules.
+         */
+        post: operations["settle_suggestion_subject_architecture_knowledge_releases__release_id__suggestions_subject_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/architecture-knowledge/releases/{release_id}/suggestions/{suggestion_id}/decision": {
         parameters: {
             query?: never;
@@ -601,6 +730,29 @@ export interface paths {
         post?: never;
         /** Remove System */
         delete: operations["remove_system_architecture_knowledge_releases__release_id__systems__system_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/architecture-knowledge/releases/{release_id}/vocabulary-cleanup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Clean Up Vocabulary
+         * @description Suggest the term each eTOM process, channel kind, component kind, role and Open API
+         *     value the draft writes means; a value no term names is suggested as a new term.
+         *
+         *     The suggestions replace the undecided ones of the previous clean-up.
+         */
+        post: operations["clean_up_vocabulary_architecture_knowledge_releases__release_id__vocabulary_cleanup_post"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1790,6 +1942,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/organisation/references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** References */
+        get: operations["references_organisation_references_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/organisation/squads": {
         parameters: {
             query?: never;
@@ -1832,7 +2001,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** System Ownership */
+        /**
+         * System Ownership
+         * @description Who owns a system, or, with ``capability_id``, one business capability concept of it.
+         */
         get: operations["system_ownership_organisation_systems__system_id__ownership_get"];
         put?: never;
         post?: never;
@@ -1942,6 +2114,11 @@ export interface components {
             interaction?: string | null;
             /** Interface */
             interface?: string | null;
+            /**
+             * Open Api Ids
+             * @default []
+             */
+            open_api_ids: string[];
             /** Payload */
             payload?: string | null;
             /** Purpose */
@@ -1985,6 +2162,8 @@ export interface components {
             description?: string | null;
             /** Etom */
             etom?: string | null;
+            /** Etom Id */
+            etom_id?: string | null;
             /** Input */
             input?: string | null;
             /** Mode */
@@ -2005,6 +2184,8 @@ export interface components {
             point_of_no_return?: string | null;
             /** Role */
             role?: string | null;
+            /** Role Id */
+            role_id?: string | null;
             /** Source */
             source?: string | null;
             /**
@@ -2125,6 +2306,16 @@ export interface components {
             kind: components["schemas"]["ArchitectureJobKind"];
             /** Lease Until */
             lease_until?: string | null;
+            /** Progress Done */
+            progress_done?: number | null;
+            /** Progress Total */
+            progress_total?: number | null;
+            /** Queued At */
+            queued_at?: string | null;
+            /** Stage */
+            stage?: string | null;
+            /** Started At */
+            started_at?: string | null;
             status: components["schemas"]["ArchitectureJobStatus"];
             /** Subject Id */
             subject_id: string;
@@ -2253,6 +2444,32 @@ export interface components {
             /** Stories */
             stories: number;
         };
+        /**
+         * BusinessCapabilitySchema
+         * @description A business capability concept; a top concept names its capability domain (ADR-0114).
+         */
+        BusinessCapabilitySchema: {
+            /**
+             * Alt Labels
+             * @default []
+             */
+            alt_labels: string[];
+            /** Broader Id */
+            broader_id?: string | null;
+            confidence?: components["schemas"]["SourceConfidence"] | null;
+            /** Definition */
+            definition?: string | null;
+            /** Domain Id */
+            domain_id?: string | null;
+            /** Exact Match */
+            exact_match?: string | null;
+            /** Id */
+            id: string;
+            /** Pref Label */
+            pref_label: string;
+            /** Source */
+            source?: string | null;
+        };
         /** BusinessRuleSchema */
         BusinessRuleSchema: {
             confidence?: components["schemas"]["SourceConfidence"] | null;
@@ -2287,9 +2504,20 @@ export interface components {
             aliases: string[];
             /** Capability Id */
             capability_id?: string | null;
+            /**
+             * Capability Refs
+             * @default []
+             */
+            capability_refs: components["schemas"]["CapabilityRefSchema"][];
             channel?: components["schemas"]["ChannelSchema"] | null;
             /** Component Id */
             component_id?: string | null;
+            concept?: components["schemas"]["BusinessCapabilitySchema"] | null;
+            /**
+             * Concept Ids
+             * @default []
+             */
+            concept_ids: string[];
             /** Description */
             description?: string | null;
             journey?: components["schemas"]["JourneySchema"] | null;
@@ -2314,6 +2542,7 @@ export interface components {
             target_system_id?: string | null;
             /** Technology */
             technology?: string | null;
+            term?: components["schemas"]["VocabularyTermSchema"] | null;
             /**
              * Text
              * @default
@@ -2324,18 +2553,23 @@ export interface components {
              * @default []
              */
             triggers: string[];
+            /**
+             * Value Refs
+             * @default []
+             */
+            value_refs: components["schemas"]["VocabularyRefSchema"][];
         };
         /**
          * CandidateKind
          * @enum {string}
          */
-        CandidateKind: "system" | "component" | "capability" | "constraint" | "relationship" | "landscape_domain" | "placement" | "product" | "journey" | "channel" | "question";
+        CandidateKind: "system" | "component" | "capability" | "constraint" | "relationship" | "landscape_domain" | "placement" | "product" | "journey" | "channel" | "question" | "concept" | "component_link" | "vocabulary_term" | "offering_rule";
         /**
          * CandidateMatch
          * @description How a candidate relates to the draft as it stands now.
          * @enum {string}
          */
-        CandidateMatch: "new" | "updates_existing" | "already_present" | "needs_system" | "needs_component" | "needs_domain" | "needs_offering" | "needs_channel";
+        CandidateMatch: "new" | "updates_existing" | "already_present" | "needs_system" | "needs_component" | "needs_domain" | "needs_offering" | "needs_channel" | "needs_concept";
         /**
          * CandidateStatus
          * @enum {string}
@@ -2353,6 +2587,20 @@ export interface components {
             name_ar?: string | null;
             /** Parent Id */
             parent_id?: string | null;
+        };
+        /** CapabilityRefSchema */
+        CapabilityRefSchema: {
+            /** Capability Id */
+            capability_id: string;
+            /** System Id */
+            system_id: string;
+        };
+        /** CapabilityScopeResponse */
+        CapabilityScopeResponse: {
+            /** Capability Id */
+            capability_id: string;
+            /** System Id */
+            system_id: string;
         };
         /** CatalogPlanResponse */
         CatalogPlanResponse: {
@@ -2426,6 +2674,15 @@ export interface components {
          * @enum {string}
          */
         CatalogueFileFormat: "xlsx" | "yaml" | "json";
+        /**
+         * CatalogueReading
+         * @description A reading of the draft's own catalogue rather than of a document (ADR-0114).
+         *
+         *     Its value stands in for the document version id, so a new reading replaces the
+         *     undecided suggestions of the previous one.
+         * @enum {string}
+         */
+        CatalogueReading: "concept_backfill" | "component_links" | "vocabulary_cleanup";
         /** CatalogueSuggestionResponse */
         CatalogueSuggestionResponse: {
             basis: components["schemas"]["CandidateBasis"];
@@ -2449,6 +2706,11 @@ export interface components {
             /** Id */
             id: string;
             match: components["schemas"]["CandidateMatch"];
+            /**
+             * Missing Systems
+             * @default []
+             */
+            missing_systems: string[];
             /** Model */
             model: string;
             /** Possible Matches */
@@ -2514,6 +2776,11 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /**
+         * ChangeRequestKind
+         * @enum {string}
+         */
+        ChangeRequestKind: "approved_backlog" | "catalogue_change";
         /** ChangeRequestReadingResponse */
         ChangeRequestReadingResponse: {
             change_request: components["schemas"]["ChangeRequestResponse"];
@@ -2562,16 +2829,19 @@ export interface components {
          * @description A change request in the inbox, as a knowledge admin sees it.
          */
         ChangeRequestResponse: {
+            delivery: components["schemas"]["DeliveryResponse"] | null;
             /** Dismissal Reason */
             dismissal_reason: string | null;
             /** Dismissed At */
             dismissed_at: string | null;
             /** Dismissed By */
             dismissed_by: string | null;
+            draft?: components["schemas"]["OfferingDraftResponse"] | null;
             /** Features */
             features: components["schemas"]["IncomingFeatureResponse"][];
             /** Id */
             id: string;
+            kind: components["schemas"]["ChangeRequestKind"];
             /** Read At */
             read_at: string | null;
             /** Read By */
@@ -2599,7 +2869,7 @@ export interface components {
          * ChangedItem
          * @enum {string}
          */
-        ChangedItem: "system" | "capability" | "relationship" | "document" | "domain" | "component" | "landscape_domain" | "product" | "journey" | "channel" | "source" | "conflict" | "change_request";
+        ChangedItem: "system" | "capability" | "relationship" | "document" | "domain" | "component" | "landscape_domain" | "product" | "journey" | "channel" | "source" | "conflict" | "change_request" | "concept" | "vocabulary_term" | "interface" | "realisation";
         /**
          * ChannelSchema
          * @description Where orders are placed, and the system each is entered through (ADR-0101, step 3).
@@ -2614,6 +2884,8 @@ export interface components {
             id: string;
             /** Kind */
             kind?: string | null;
+            /** Kind Id */
+            kind_id?: string | null;
             /** Name */
             name: string;
             /** Source */
@@ -2719,10 +2991,23 @@ export interface components {
             order_types: string[];
             /** Role */
             role: string;
+            /** Role Id */
+            role_id?: string | null;
             /** Source */
             source?: string | null;
             /** System Id */
             system_id: string;
+        };
+        /** ConceptOverridesResponse */
+        ConceptOverridesResponse: {
+            /** Concept Id */
+            concept_id: string;
+            /** Decided */
+            decided: number;
+            /** Label */
+            label: string;
+            /** Overridden */
+            overridden: number;
         };
         /** ConflictScopeSchema */
         ConflictScopeSchema: {
@@ -2847,6 +3132,89 @@ export interface components {
             /** Name */
             name: string;
         };
+        /**
+         * DeliveredChangeKind
+         * @description A change to the catalogue a delivered requirement implies.
+         * @enum {string}
+         */
+        DeliveredChangeKind: "realise_concept" | "offer_concept";
+        /** DeliveredChangeResponse */
+        DeliveredChangeResponse: {
+            /** Concept Id */
+            concept_id: string;
+            /** Concept Label */
+            concept_label: string;
+            /** Feature Ids */
+            feature_ids: string[];
+            /** Offering Id */
+            offering_id: string | null;
+            /** Offering Name */
+            offering_name: string | null;
+            op: components["schemas"]["DeliveredChangeKind"];
+            /** System Id */
+            system_id: string | null;
+            /** System Name */
+            system_name: string | null;
+        };
+        /**
+         * DeliveryHitsResponse
+         * @description Delivered systems that were predicted and that were not, and predicted systems not
+         *     delivered: ids as the mapping wrote them, case set aside.
+         */
+        DeliveryHitsResponse: {
+            /** Predicted */
+            predicted: string[];
+            /** Undelivered */
+            undelivered: string[];
+            /** Unpredicted */
+            unpredicted: string[];
+        };
+        /**
+         * DeliveryResponse
+         * @description What a closed Epic delivered, set against the product impact decided for it.
+         */
+        DeliveryResponse: {
+            /** Changes */
+            changes: components["schemas"]["DeliveredChangeResponse"][];
+            /**
+             * Closed At
+             * Format: date-time
+             */
+            closed_at: string;
+            /** Decision */
+            decision: string;
+            /** Delivery Id */
+            delivery_id: string;
+            /** Epic External Id */
+            epic_external_id: string;
+            /** Epic Url */
+            epic_url: string | null;
+            hits: components["schemas"]["DeliveryHitsResponse"];
+            /** Impact Version */
+            impact_version: string;
+            /** Not Delivered */
+            not_delivered: components["schemas"]["UndeliveredFeatureResponse"][];
+            /** Offering Id */
+            offering_id: string | null;
+            /** Offering Name */
+            offering_name: string | null;
+            /** Predicted */
+            predicted: components["schemas"]["PredictedSystemResponse"][];
+            /** Release Id */
+            release_id: string;
+            /** Suggested Verdict */
+            suggested_verdict: string | null;
+            /** Verdict */
+            verdict: string | null;
+        };
+        /**
+         * DeliverySummariesResponse
+         * @description The delivery hit rate per release, newest closure first.
+         */
+        DeliverySummariesResponse: {
+            /** Releases */
+            releases: components["schemas"]["ReleaseDeliveriesResponse"][];
+        };
         /** DependencyImpact */
         DependencyImpact: {
             /** Decisions */
@@ -2932,6 +3300,8 @@ export interface components {
         };
         /** DraftUpdateRequest */
         DraftUpdateRequest: {
+            /** Business Capabilities */
+            business_capabilities?: components["schemas"]["BusinessCapabilitySchema"][] | null;
             /** Capability Domains */
             capability_domains?: components["schemas"]["CapabilityDomainSchema"][] | null;
             /** Channels */
@@ -2940,6 +3310,8 @@ export interface components {
             conflicts?: components["schemas"]["SourceConflictSchema"][] | null;
             /** Expected Revision */
             expected_revision: number;
+            /** Interfaces */
+            interfaces?: components["schemas"]["SystemInterfaceSchema"][] | null;
             /** Journeys */
             journeys?: components["schemas"]["JourneySchema"][] | null;
             /** Landscape Domains */
@@ -2948,12 +3320,27 @@ export interface components {
             portfolio?: components["schemas"]["PortfolioNodeSchema"][] | null;
             /** Products */
             products?: components["schemas"]["ProductOfferingSchema"][] | null;
+            /** Realisations */
+            realisations?: components["schemas"]["RealisationRecordSchema"][] | null;
             /** Relationships */
             relationships: components["schemas"]["SystemRelationshipSchema"][];
             /** Sources */
             sources?: components["schemas"]["KnowledgeSourceSchema"][] | null;
             /** Systems */
             systems: components["schemas"]["SystemDefinitionSchema"][];
+            /** Vocabulary */
+            vocabulary?: components["schemas"]["VocabularyTermSchema"][] | null;
+        };
+        /** DraftedComponentResponse */
+        DraftedComponentResponse: {
+            /** Capability Ids */
+            capability_ids: string[];
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** System Ids */
+            system_ids: string[];
         };
         /**
          * EvidenceBlockKind
@@ -3033,6 +3420,7 @@ export interface components {
             model: string;
             /** Prompt Version */
             prompt_version: string;
+            reading?: components["schemas"]["CatalogueReading"] | null;
             /** Warnings */
             warnings: string[];
         };
@@ -3330,6 +3718,34 @@ export interface components {
             name: string;
         };
         /**
+         * IndexCoverageResponse
+         * @description How far a release's evidence index links reach (ontology plan Phase 2).
+         *
+         *     `linked` is false when the release has no index yet, or its index was built before
+         *     links existed; rebuilding the draft links it.
+         */
+        IndexCoverageResponse: {
+            /**
+             * Chunks
+             * @default 0
+             */
+            chunks: number;
+            /**
+             * Chunks Without Concept
+             * @default 0
+             */
+            chunks_without_concept: number;
+            /**
+             * Concepts
+             * @default 0
+             */
+            concepts: number;
+            /** Concepts Without Chunk */
+            concepts_without_chunk?: components["schemas"]["UnlinkedConceptSchema"][];
+            /** Linked */
+            linked: boolean;
+        };
+        /**
          * IndexState
          * @enum {string}
          */
@@ -3339,6 +3755,12 @@ export interface components {
          * @enum {string}
          */
         IngestionStage: "queued" | "scanning" | "extracting" | "ready_for_review" | "failed" | "quarantined" | "cancelled";
+        /**
+         * InterfaceStyle
+         * @description How an interface is called, when its sources say.
+         * @enum {string}
+         */
+        InterfaceStyle: "api" | "event" | "file" | "unspecified";
         /** ItemChangeView */
         ItemChangeView: {
             /** Fields */
@@ -3434,6 +3856,8 @@ export interface components {
         KnowledgeCapabilitySchema: {
             /** Component Id */
             component_id?: string | null;
+            /** Concept Id */
+            concept_id?: string | null;
             /** Domain Id */
             domain_id?: string | null;
             /** Id */
@@ -3442,6 +3866,8 @@ export interface components {
             name: string;
             /** Triggers */
             triggers: string[];
+            /** Unlinked Reason */
+            unlinked_reason?: string | null;
         };
         /** KnowledgeDocumentVersionResponse */
         KnowledgeDocumentVersionResponse: {
@@ -3471,6 +3897,8 @@ export interface components {
         KnowledgeReleaseResponse: {
             /** Built Revision */
             built_revision?: number | null;
+            /** Business Capabilities */
+            business_capabilities?: components["schemas"]["BusinessCapabilitySchema"][];
             /** Capability Domains */
             capability_domains?: components["schemas"]["CapabilityDomainSchema"][];
             /** Change History */
@@ -3494,6 +3922,8 @@ export interface components {
             index_id?: string | null;
             /** Index Profile */
             index_profile?: string | null;
+            /** Interfaces */
+            interfaces?: components["schemas"]["SystemInterfaceSchema"][];
             /** Journeys */
             journeys?: components["schemas"]["JourneySchema"][];
             /** Landscape Domains */
@@ -3508,6 +3938,8 @@ export interface components {
             published_at?: string | null;
             /** Published By */
             published_by?: string | null;
+            /** Realisations */
+            realisations?: components["schemas"]["RealisationRecordSchema"][];
             /** Relationships */
             relationships: components["schemas"]["SystemRelationshipSchema"][];
             /** Revision */
@@ -3518,6 +3950,8 @@ export interface components {
             status: components["schemas"]["KnowledgeReleaseStatus"];
             /** Systems */
             systems: components["schemas"]["SystemDefinitionSchema"][];
+            /** Vocabulary */
+            vocabulary?: components["schemas"]["VocabularyTermSchema"][];
         };
         /**
          * KnowledgeReleaseStatus
@@ -3954,6 +4388,11 @@ export interface components {
         };
         /** OfferingComponentSchema */
         OfferingComponentSchema: {
+            /**
+             * Capability Ids
+             * @default []
+             */
+            capability_ids: string[];
             /** Code */
             code?: string | null;
             /** Commercial Spec */
@@ -3967,6 +4406,8 @@ export interface components {
             id: string;
             /** Kind */
             kind?: string | null;
+            /** Kind Id */
+            kind_id?: string | null;
             /** Mandatory */
             mandatory?: boolean | null;
             /** Name */
@@ -3987,6 +4428,30 @@ export interface components {
             technical_details?: string | null;
             /** Technical Spec */
             technical_spec?: string | null;
+            /** Unlinked Reason */
+            unlinked_reason?: string | null;
+        };
+        /**
+         * OfferingDraftResponse
+         * @description The offering and journey drafted for a new-offering verdict, in brief (Phase 9).
+         */
+        OfferingDraftResponse: {
+            /** Based On */
+            based_on: string | null;
+            /** Components */
+            components: components["schemas"]["DraftedComponentResponse"][];
+            /** Journey Id */
+            journey_id: string | null;
+            /** Journey Name */
+            journey_name: string | null;
+            /** Offering Id */
+            offering_id: string;
+            /** Offering Name */
+            offering_name: string;
+            /** Questions */
+            questions: string[];
+            /** Steps */
+            steps: number;
         };
         /**
          * OfferingNfrSchema
@@ -4158,6 +4623,12 @@ export interface components {
             /** Location */
             location: string;
         };
+        /** OwnedSeatResponse */
+        OwnedSeatResponse: {
+            resource: components["schemas"]["SquadResourceSchema"];
+            /** Squad Id */
+            squad_id: string;
+        };
         /** OwnershipTransfer */
         OwnershipTransfer: {
             new_owner: components["schemas"]["ActorSnapshot"];
@@ -4291,6 +4762,25 @@ export interface components {
             /** Written As */
             written_as: string;
         };
+        /**
+         * PrecedentSummariesResponse
+         * @description How reviewers decided suggested verdicts, per release, newest decision first.
+         */
+        PrecedentSummariesResponse: {
+            /** Releases */
+            releases: components["schemas"]["ReleasePrecedentsResponse"][];
+        };
+        /** PredictedSystemResponse */
+        PredictedSystemResponse: {
+            /** Change Type */
+            change_type: string | null;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Role */
+            role: string | null;
+        };
         /** PreviewRequest */
         PreviewRequest: {
             /** Query */
@@ -4416,6 +4906,13 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            /**
+             * Offering Ids
+             * @default []
+             */
+            offering_ids: string[];
+            /** Portfolio Node Id */
+            portfolio_node_id?: string | null;
             /**
              * Revision
              * @default 1
@@ -4557,6 +5054,37 @@ export interface components {
          */
         RealisationLayer: "cfs" | "rfs" | "resource";
         /**
+         * RealisationRecordSchema
+         * @description A CFS, RFS or resource, the systems that deliver it, and what realises it below.
+         */
+        RealisationRecordSchema: {
+            /**
+             * Aliases
+             * @default []
+             */
+            aliases: string[];
+            confidence?: components["schemas"]["SourceConfidence"] | null;
+            /** Description */
+            description?: string | null;
+            /** Id */
+            id: string;
+            layer: components["schemas"]["RealisationLayer"];
+            /** Name */
+            name: string;
+            /**
+             * Realised By
+             * @default []
+             */
+            realised_by: string[];
+            /** Source */
+            source?: string | null;
+            /**
+             * System Ids
+             * @default []
+             */
+            system_ids: string[];
+        };
+        /**
          * RealisationSchema
          * @description One thing a component is realised as: its CFS, an RFS behind it, or a resource.
          */
@@ -4565,6 +5093,8 @@ export interface components {
             layer: components["schemas"]["RealisationLayer"];
             /** Name */
             name: string;
+            /** Record Id */
+            record_id?: string | null;
             /** Source */
             source?: string | null;
         };
@@ -4636,6 +5166,34 @@ export interface components {
             /** Version Number */
             version_number: number;
         };
+        /**
+         * ReferenceFlagResponse
+         * @description A squad or product naming what the version in service no longer has, or a product
+         *     whose systems differ from what its offerings name, or that is linked to nothing.
+         */
+        ReferenceFlagResponse: {
+            /** Retired Capabilities */
+            retired_capabilities: components["schemas"]["CapabilityScopeResponse"][];
+            /** Retired Offering Ids */
+            retired_offering_ids: string[];
+            /** Retired Portfolio Node Id */
+            retired_portfolio_node_id: string | null;
+            /** Retired System Ids */
+            retired_system_ids: string[];
+            /**
+             * Subject
+             * @enum {string}
+             */
+            subject: "squad" | "product";
+            /** Subject Id */
+            subject_id: string;
+            /** Systems Missing */
+            systems_missing: string[];
+            /** Systems Unexplained */
+            systems_unexplained: string[];
+            /** Unlinked */
+            unlinked: boolean;
+        };
         /** ReindexRequest */
         ReindexRequest: {
             /** Requirement Ids */
@@ -4670,6 +5228,45 @@ export interface components {
          * @enum {string}
          */
         RelationshipKind: "calls_api" | "publishes_events_to" | "transfers_data_to" | "orchestrates" | "unspecified";
+        /** ReleaseDeliveriesResponse */
+        ReleaseDeliveriesResponse: {
+            /** Delivered */
+            delivered: number;
+            /** Deliveries */
+            deliveries: number;
+            /**
+             * Last Closed At
+             * Format: date-time
+             */
+            last_closed_at: string;
+            /** Predicted */
+            predicted: number;
+            /** Release Id */
+            release_id: string;
+            /** Undelivered */
+            undelivered: number;
+            /** Unpredicted */
+            unpredicted: number;
+        };
+        /** ReleasePrecedentsResponse */
+        ReleasePrecedentsResponse: {
+            /** Accepted */
+            accepted: number;
+            /** Concepts */
+            concepts: components["schemas"]["ConceptOverridesResponse"][];
+            /** Last Decided At */
+            last_decided_at: string | null;
+            /** Overridden */
+            overridden: number;
+            /** Override Rate */
+            override_rate: number | null;
+            /** Release Id */
+            release_id: string;
+            /** Release Name */
+            release_name: string | null;
+            /** Unknown */
+            unknown: number;
+        };
         /** Reminder */
         Reminder: {
             /** Id */
@@ -4913,6 +5510,27 @@ export interface components {
             updated_by: string | null;
         };
         /**
+         * SettleSubjectRequest
+         * @description What a name waiting suggestions name really is: a system or a product offering.
+         */
+        SettleSubjectRequest: {
+            kind: components["schemas"]["SubjectKind"];
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /** System Id */
+            system_id: string;
+        };
+        /** SettleSubjectResponse */
+        SettleSubjectResponse: {
+            /** Added */
+            added: number;
+            /** Retyped */
+            retyped: number;
+        };
+        /**
          * SharedRootView
          * @description A work item that is also the root of another historic requirement.
          */
@@ -4983,6 +5601,26 @@ export interface components {
             expected_revision?: number | null;
             squad: components["schemas"]["SquadSchema"];
         };
+        /**
+         * SquadResourceSchema
+         * @description A seat on a system, or on one capability concept it realises, in a role; no person
+         *     while the seat is open.
+         */
+        SquadResourceSchema: {
+            /** Capability Id */
+            capability_id?: string | null;
+            /** Person Id */
+            person_id?: string | null;
+            role: components["schemas"]["SquadRole"];
+            /** System Id */
+            system_id: string;
+        };
+        /**
+         * SquadRole
+         * @description What a squad resource does on its system: a controlled list.
+         * @enum {string}
+         */
+        SquadRole: "system_contact" | "developer" | "tester" | "solution_architect" | "business_analyst";
         /** SquadSchema */
         SquadSchema: {
             /** Id */
@@ -4990,27 +5628,26 @@ export interface components {
             /** Name */
             name: string;
             /**
+             * Resources
+             * @default []
+             */
+            resources: components["schemas"]["SquadResourceSchema"][];
+            /**
              * Revision
              * @default 1
              */
             revision: number;
             /** Scrum Master Person Id */
             scrum_master_person_id?: string | null;
-            /**
-             * Systems
-             * @default []
-             */
-            systems: components["schemas"]["SquadSystemSchema"][];
             /** Value Stream Id */
             value_stream_id: string;
         };
-        /** SquadSystemSchema */
-        SquadSystemSchema: {
-            /** Person Id */
-            person_id?: string | null;
-            /** System Id */
-            system_id: string;
-        };
+        /**
+         * SubjectKind
+         * @description What a name suggestions wait for really is, as a person says it on Decide.
+         * @enum {string}
+         */
+        SubjectKind: "system" | "offering";
         /** SuggestionDecisionRequest */
         SuggestionDecisionRequest: {
             /** Accept */
@@ -5082,6 +5719,11 @@ export interface components {
             id: string;
             /** Landscape Domain Id */
             landscape_domain_id?: string | null;
+            /**
+             * Masters
+             * @default []
+             */
+            masters: string[];
             /** Name */
             name: string;
             /** Name Ar */
@@ -5092,15 +5734,67 @@ export interface components {
             placement_from?: string | null;
             /** Placement Reason */
             placement_reason?: string | null;
+            /**
+             * Reads
+             * @default []
+             */
+            reads: string[];
             /** Roadmap */
             roadmap?: string | null;
             /** Source */
             source?: string | null;
         };
-        /** SystemOwnershipResponse */
+        /**
+         * SystemInterfaceSchema
+         * @description An API, event or file contract one system exposes, and the systems that consume it.
+         */
+        SystemInterfaceSchema: {
+            confidence?: components["schemas"]["SourceConfidence"] | null;
+            /**
+             * Consumer Ids
+             * @default []
+             */
+            consumer_ids: string[];
+            /** Description */
+            description?: string | null;
+            /**
+             * Entity Ids
+             * @default []
+             */
+            entity_ids: string[];
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Open Api Ids
+             * @default []
+             */
+            open_api_ids: string[];
+            /**
+             * Relays
+             * @default []
+             */
+            relays: string[];
+            /** Source */
+            source?: string | null;
+            /** @default unspecified */
+            style: components["schemas"]["InterfaceStyle"];
+            /** System Id */
+            system_id: string;
+        };
+        /**
+         * SystemOwnershipResponse
+         * @description Asked about a capability, its squads and seats come first, then those on the whole
+         *     system; seats on the system's other capabilities are left out.
+         */
         SystemOwnershipResponse: {
+            /** Capability Id */
+            capability_id: string | null;
             /** Products */
             products: components["schemas"]["ProductSchema"][];
+            /** Seats */
+            seats: components["schemas"]["OwnedSeatResponse"][];
             /** Squads */
             squads: components["schemas"]["SquadSchema"][];
             /** System Id */
@@ -5214,6 +5908,22 @@ export interface components {
             /** Type */
             type: string;
         };
+        /** UndeliveredFeatureResponse */
+        UndeliveredFeatureResponse: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** State */
+            state: string;
+        };
+        /** UnlinkedConceptSchema */
+        UnlinkedConceptSchema: {
+            /** Id */
+            id: string;
+            /** Pref Label */
+            pref_label: string;
+        };
         /**
          * UploadOutcome
          * @enum {string}
@@ -5275,6 +5985,59 @@ export interface components {
         Versioned: {
             /** Expected Version */
             expected_version: number;
+        };
+        /**
+         * VocabularyField
+         * @enum {string}
+         */
+        VocabularyField: "activity_etom" | "activity_role" | "channel_kind" | "component_kind" | "responsibility_role" | "integration_open_api";
+        /**
+         * VocabularyRefSchema
+         * @description One place a vocabulary value is written, and the value as it was read there.
+         */
+        VocabularyRefSchema: {
+            field: components["schemas"]["VocabularyField"];
+            /** Item */
+            item?: string | null;
+            /** Owner Id */
+            owner_id: string;
+            /** Part */
+            part?: string | null;
+            /** Value */
+            value: string;
+        };
+        /**
+         * VocabularyScheme
+         * @enum {string}
+         */
+        VocabularyScheme: "etom_process" | "channel_kind" | "component_kind" | "responsibility_role" | "open_api" | "information_entity";
+        /**
+         * VocabularyTermSchema
+         * @description A term of a controlled vocabulary: an eTOM process, a channel or component kind, a
+         *     role, an Open API or an information entity.
+         */
+        VocabularyTermSchema: {
+            /**
+             * Alt Labels
+             * @default []
+             */
+            alt_labels: string[];
+            /** Broader Id */
+            broader_id?: string | null;
+            confidence?: components["schemas"]["SourceConfidence"] | null;
+            /** Definition */
+            definition?: string | null;
+            /** Exact Match */
+            exact_match?: string | null;
+            /** Id */
+            id: string;
+            /** Notation */
+            notation?: string | null;
+            /** Pref Label */
+            pref_label: string;
+            scheme: components["schemas"]["VocabularyScheme"];
+            /** Source */
+            source?: string | null;
         };
         /** WithdrawRequest */
         WithdrawRequest: {
@@ -5466,6 +6229,37 @@ export interface operations {
             };
         };
     };
+    delivery_summaries_architecture_knowledge_deliveries_summary_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliverySummariesResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_documents_architecture_knowledge_documents_get: {
         parameters: {
             query?: never;
@@ -5581,6 +6375,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MappingImpactResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    precedent_summaries_architecture_knowledge_precedents_summary_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrecedentSummariesResponse"];
                 };
             };
             /** @description Validation Error */
@@ -6117,6 +6942,72 @@ export interface operations {
             };
         };
     };
+    suggest_component_capabilities_architecture_knowledge_releases__release_id__component_link_suggestions_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtractionRunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    propose_capability_concepts_architecture_knowledge_releases__release_id__concept_proposals_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtractionRunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     select_documents_architecture_knowledge_releases__release_id__documents_put: {
         parameters: {
             query?: never;
@@ -6354,6 +7245,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DocumentExtractionResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    index_coverage_architecture_knowledge_releases__release_id__index_coverage_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndexCoverageResponse"];
                 };
             };
             /** @description Validation Error */
@@ -6626,6 +7550,43 @@ export interface operations {
             };
         };
     };
+    settle_suggestion_subject_architecture_knowledge_releases__release_id__suggestions_subject_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettleSubjectRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettleSubjectResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     decide_suggestion_architecture_knowledge_releases__release_id__suggestions__suggestion_id__decision_post: {
         parameters: {
             query?: never;
@@ -6727,6 +7688,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KnowledgeReleaseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    clean_up_vocabulary_architecture_knowledge_releases__release_id__vocabulary_cleanup_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtractionRunResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9248,6 +10242,37 @@ export interface operations {
             };
         };
     };
+    references_organisation_references_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceFlagResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_squad_organisation_squads_post: {
         parameters: {
             query?: never;
@@ -9359,7 +10384,9 @@ export interface operations {
     };
     system_ownership_organisation_systems__system_id__ownership_get: {
         parameters: {
-            query?: never;
+            query?: {
+                capability_id?: string | null;
+            };
             header?: {
                 "X-Fake-Actor-Id"?: string | null;
             };

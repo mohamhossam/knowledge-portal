@@ -4,7 +4,7 @@ import type { Release } from "../api/client";
 import { buildState, connectionSentence, diffSections, fieldsInWords, impactVerdict, systemUses, withoutSystem } from "./drafting";
 import { finishedSystem, systemProblem } from "./editing";
 
-const system = (id: string, name: string, extra: object = {}) => ({ id, name, aliases: [], capabilities: [], components: [], constraints: [], external: false, ...extra });
+const system = (id: string, name: string, extra: object = {}) => ({ id, name, aliases: [], capabilities: [], components: [], constraints: [], external: false, masters: [], reads: [], ...extra });
 
 const draft = {
   id: "d", revision: 5, built_revision: 4, status: "draft", documents: [],

@@ -11,8 +11,8 @@ every component's API, states, keyboard and accessibility behaviour.
 | Use | Import `frontend/src/design` once at an app root. Wrap the area in `.ds-root`; `AppShell` does this for you. |
 | See it | `http://localhost:5184/knowledge/design-system` (dev only): every component, both themes, both densities |
 | Tests | `npx vitest run src/design`: 159 tests covering the token contract, behaviour, keyboard and ARIA |
-| Related | `docs/ux/interaction/model.md` (behaviour rules, cited as §n below) · `docs/ux/content/` (voice, microcopy, glossary) · `docs/redesign/02-directions.md` (why A) |
-| Status | Foundation (Phase 5). Today's screens still use the legacy `tokens.css` until their area migrates (Phase 8). |
+| Related | `docs/ux/interaction/model.md` (behaviour rules, cited as §n below) · `docs/ux/content/` (voice, microcopy, glossary) |
+| Status | In use on every screen. The legacy `src/styles/` and its island were removed in the UX rebuild's last phase. |
 
 ## 1. Calm rules, as enforced
 
@@ -126,42 +126,109 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
 - **`AppShell`**
   - **What it does:**
     - skip links ("Skip to content", "Skip to navigation");
-    - the maroon masthead: logo slot, product, outbound "Requirement AI" link, `utilities`;
-    - the rail: `navigation` and `secondaryNavigation` items with `current` and `count`;
+    - the slim maroon brand bar (36px): logo slot and product at the start, `search` in the
+      middle, the outbound "Requirement AI" link and `utilities` at the end;
+    - the sidebar: `navigation` and `secondaryNavigation` items with `current`, `count` and an
+      `icon`. Items sharing a `group` sit under a small heading ("Look up"), a labelled list
+      each. It is 13rem wide with labels, or 3.5rem with icons only (the label shows beside
+      the icon on hover or focus; Esc hides it). The "Collapse"/"Expand" button at its foot
+      remembers the choice (`localStorage`, `knowledge-portal.sidebar`); with no choice made,
+      it is expanded from 1440px and collapsed below. Under 640px it becomes a scrolling row
+      of labelled links under the brand bar;
     - an optional shell `banner`.
-  - **Reader variant:** `reader` drops the rail.
+  - **Reader variant:** `reader` drops the sidebar.
   - **Behaviour:** when `locationKey` changes, it scrolls to the top and focuses `#ds-page-title`
-    (§1). The masthead publishes `--sticky-top`.
+    (§1). The masthead publishes `--sticky-top`. Three cases keep the focus the page placed
+    itself: an address with a `#target`, and a pane marked `data-takes-focus`
+    (a list-and-record page that focuses the chosen record's heading, as the catalogue does).
   - **ARIA:** `banner`, `navigation "Areas"`, `main`. The current item has
     `aria-current="page"` and the red marker.
+  - **`search` and `overlay`:** `search` puts the way into global search first on the masthead's
+    end, in a `search` landmark; `overlay` renders a modal layer outside the page and the side
+    panel, so neither can make it inert.
+  - **Side panel over the page:** below 1024px, or wherever a page pins the panel over itself
+    (`position: fixed`, as the review desk does), the page and the sidebar go inert while it is
+    open, so focus never moves under it (WCAG 2.4.11).
 - **`MastheadButton`:** Jobs, Help or Account, with a text label, an icon and an optional count
-  (`aria-expanded`).
-- **`PageHeader`:** the h1 has `tabindex=-1` and the document title is set first. It has slots for
-  `lead`, `meta` (status, owner), `provenance` and `actions`; `children` take tabs or a state line.
+  (`aria-expanded`; `controls` names the open panel's id as `aria-controls`). `reserveCount`
+  holds a count's room while there is none, so the bar doesn't shift when one arrives. Up to
+  800px the portal's name leaves the bar (the home link still says it) and a long label ends
+  in an ellipsis, so everything stays on one line.
+- **`PageHeader`:** one line: the h1 (the record's own name), then `meta` (status as a pill,
+  then facts, a dot between each), then `actions` at the end; `children` (tabs or a state
+  line) take a slim row under it.
+  - The h1 has `tabindex=-1` and the document title is set first. From a 48rem-wide main area
+    the line never wraps: the facts give way first, then the name ends in an ellipsis, with the
+    whole name in its `title` (screen readers always read all of it).
+  - `breadcrumbs`, `lead` and `provenance` sit behind an "About this page" button (an icon
+    button with a hidden name, `aria-expanded`), so where a page sits and what it is for are
+    one press away without costing rows. Esc or a press outside closes it.
 - **`StateLine`:** `plain` or `proof` (a replaced version, on the beige tint). It is sticky,
   `role="status"`, and publishes `--sticky-state`.
-- **`ProvenanceLine`, `Breadcrumbs`:** the last crumb is `aria-current="page"`.
+- **`Breadcrumbs`:** the last crumb is `aria-current="page"`. Record pages put them in
+  `PageHeader`'s `breadcrumbs` slot: "Library › the document › Versions".
 - **`SubNav`:** navigation that changes the URL (`aria-current`).
 - **`Tabs`:** ARIA tabs for the same URL. ← → move between tabs, Home/End jump, there is one tab
   stop, and focus follows the selection.
 - **`Toolbar`:** `role="toolbar"`, roving with ← →.
-- **`SplitPane`:** the list beside a sticky, full-height detail pane from 1200px, stacked below
-  that. The pane is a labelled `complementary` region.
+- **`SplitPane`:** the list beside the detail pane once the main area is 60rem wide, stacked
+  below that. Side by side, it fills the window from where it starts (`--split-top`, measured)
+  to the sticky foot, and the list and the pane each scroll on their own; the list's table
+  head sticks to the top of the list. The pane is a labelled `complementary` region.
+- **`Workbench`** (`workbench.tsx`, UX rebuild phase 3): a look-up area's narrow list
+  (`--bench-list-width`) beside the chosen record, both filling the window from where they start
+  and scrolling on their own. The address names the record (a route or `?doc=`), so every row is
+  a link. Below 60rem they stack; with a record chosen, the rows keep to a short box so the
+  record follows close under them.
+  - **`ListTools`:** the list's sticky head: `ListFind` (a search field, `data-find`), one or two
+    `ListFilter` selects (a long row of chips doesn't fit a narrow list), an optional tertiary
+    action, and the count (`role="status"`).
+  - **`RecordList`:** rows as links (`aria-current="page"` on the record shown), each a name, one
+    quieter detail line and at most one meta (a status or a `GapBadge`). Rows may come in labelled
+    groups (systems by where they sit, documents by state) whose labels stick under the head. One
+    tab stop; ↑ ↓ move, Home/End jump, Enter opens. The current row is kept in view inside the
+    list, never by scrolling the window.
+  - **`RecordView`:** the record as an `article` named by its h2 (under the area's h1), with status
+    and short facts on the title's line, actions at the end and a lead. `takeFocus` (choosing a
+    row, not a fresh load) moves focus to the name, and `data-takes-focus` keeps the shell from
+    taking it back. A new record opens at its top. Stacked (below 60rem), the record scrolls itself
+    into view, so a shared link opens on the record, not the list; a fresh load leaves focus be.
+  - **`RecordPlaceholder`:** the record side with nothing chosen: what the list holds, in a line,
+    and a useful summary under it (counts, the version's connections), never an empty pane.
 - **`Pagination`:** `aria-current` on the current page; every page button is named "Page n".
 - **`Section`:** the ledger rule and an h2 with an optional count; a labelled `region`.
+
+### Global search (`search.tsx`)
+
+- **`SearchTrigger`:** a field-shaped masthead button ("Search", then its key, `Ctrl K` or `⌘K`).
+  `aria-haspopup="dialog"`, `aria-expanded`, `aria-keyshortcuts`.
+- **`SearchDialog`:** a modal `<dialog>` named by its field's label, holding one combobox.
+  - Results arrive grouped by kind (`SearchGroup`: label, hits, an optional state such as
+    "searching…"). Each group is a labelled `group` inside one `listbox`; each hit is an
+    `option` with a title and a detail line, bidi isolated, with `lang` where known.
+  - Focus stays in the field. ↓ ↑ move through every hit across the groups, wrapping
+    (`aria-activedescendant`); Enter opens the marked hit; a press opens one too.
+  - Esc, Close or a press on the backdrop closes it, and focus goes back to what opened it.
+  - One polite status line says what was found; before anything is typed, a hint says what can
+    be found.
+  - Below 480px it fills the screen.
 
 ### Actions and status (`actions.tsx`, `feedback.tsx`)
 
 - **`Button`**
-  - **Variants:** `secondary` (default), `primary` (the page's one main action), `danger` (rust,
-    with an icon), `quiet`, `link`.
+  - **Variants, by weight:** `primary` (filled maroon: the page's one main action),
+    `secondary` (outlined, the default), `tertiary` (text only, for minor actions beside
+    them), `danger` (rust, with an icon), `quiet` (the old name for tertiary), `link`.
   - **`unavailableReason`:** sets `aria-disabled`, keeps the button focusable, shows the reason
     beside it, and announces the reason on press (§1.2).
   - **`busy`:** sets `aria-busy` and ignores presses.
 - **`ActionGroup`:** a labelled group.
-- **`Status`:** one of six tones (neutral, working, done, attention, held, stopped). It always
+- **`Status`:** one of seven tones (neutral, working, done, attention, warning, held, stopped). It always
   shows an icon and words. Severe tones carry weight, so they never look lighter than routine ones.
 - **`Badge`:** a neutral count, named for screen readers ("6 need you").
+- **`GapBadge`:** a record's missing facts as one dashed pill ("3 gaps"), the list of what is
+  missing in its `title` and, for screen readers, as "Missing: concept, owner, source". Renders
+  nothing when nothing is missing. A list shows gaps this way instead of a column per fact.
 - **`Suggested`:** the AI mark (§9), "Suggested · stated in the source" or "… inferred, not stated
   in the source", plus optional detail. It reads without colour.
 - **`EmptyState`:** what this is, why it is empty, and what to do (§8).
@@ -169,7 +236,8 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
 - **`UndoToast`:** the only toast, used for the delayed-commit window (§4). It is polite and never
   takes focus.
 - **`JobStatus`, `JobTray`:** jobs ordered by need. Each shows its object, timing, cause and fix,
-  with retry and stop named for their job (§6).
+  with retry and stop named for their job (§6). A job's `busy` press says "Trying again…" or
+  "Stopping…" (`aria-busy`) and ignores a second press.
 - **`LiveMessage`:** one polite live region.
 
 ### Forms (`forms.tsx`)
@@ -184,15 +252,27 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
   isolated.
 - **`Upload`:** a labelled file control; each file shows its scan and read state
   (`JobStatus`).
+- **`FormPanel`:** an edit opened in place (§1): a form named by its heading, its fields, then the
+  verb (primary) and Cancel. While it can't be sent, the verb stays focusable with the reason
+  beside it (§1.2). A failure is announced in a line mounted from the start; Esc cancels. Pass a
+  disclosure's `panel` as `panelRef` so focus moves in and back.
 
 ### Data and review (`data.tsx`)
 
-- **`FilterStrip`:** pressed buttons with counts, an optional find field (`data-find` for the `/`
-  shortcut), and "Clear filters".
+- **`FilterStrip`:** toggle chips (`aria-pressed`) with counts; the pressed one is filled and
+  shows a check, so the state reads without colour. An optional find field (`data-find` for
+  the `/` shortcut), and "Clear filters". More than four chips fold into one select, labelled
+  with the strip's label, when the main area is under 40rem.
 - **`DataTable`:** the ledger table.
   - **Always:** a caption; a sticky head under the heavy rule; `aria-sort` on sortable columns; a
     row-header column; `bidi` cells (`dir="auto"`); `numeric` columns (condensed, tabular,
-    end-aligned); 24px selection checkboxes; an empty text; density-aware rows.
+    end-aligned); 24px selection checkboxes; an empty text; density-aware rows. A ticked row takes
+    `--table-row-selected` (Maroon Mist; `--color-selected-row`), deeper than the current row's
+    tint, which keeps its maroon bar, so the two never read alike.
+  - **Row press:** a row whose row header holds a link opens that link on a press anywhere in
+    the row (Ctrl/⌘ or middle opens a new tab), except on its own controls or when text is
+    being selected. The name is not underlined until the row is hovered or the link focused;
+    the link stays the keyboard and screen-reader way in.
   - **With `onActivate`, it becomes a keyboard grid with one tab stop:**
     - ↑ ↓ (and j k) move between rows;
     - Home and End jump to the ends;
@@ -225,8 +305,9 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
   caveat (§11).
 - **`ProvenanceTrail`:** an ordered list of hops (fact → evidence → document version → catalogue
   version → decided by), in a labelled nav (§10).
-- **`EvidenceQuote`:** the passage with only the quoted line highlighted (beige), in its own
-  direction, with the source underneath.
+- **`EvidenceQuote`:** the passage with only the quoted line (`quote`) highlighted (beige), in its
+  own direction, with the source underneath. `lang` (the document's language) marks the passage
+  alone, never the English source line.
 
 ### Overlays and help (`overlays.tsx`)
 
@@ -234,13 +315,67 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
   a 409 that needs a choice (§4). Focus moves to its first button and returns to the opener;
   Esc closes it.
 - **`Drawer`:** a non-modal side panel (Help, Jobs, Account, upload). Esc closes it. Pair it with
-  `useDisclosure` for focus in and back.
+  `useDisclosure` for focus in and back. `id` is for the button that opens it (`aria-controls`).
 - **`Toggletip`:** opened by press, never by hover alone. It is announced politely and closed with
   Esc (§14).
 - **`ShortcutHelp`:** the widget's keys plus the page-wide keys, with the on/off switch that WCAG
-  2.1.4 requires.
+  2.1.4 requires. Each group is named once, by its heading. Each key is its own `<kbd>`: a space
+  separates keys, `+` joins keys held together (one `<kbd>` around a `<kbd>` per key), and
+  ` / ` reads as "or".
 - **`HelpContent`:** the four parts of consistent help, always in order: this page, shortcuts,
   terms, ask the knowledge team (WCAG 3.2.6).
+
+### Focus mode (`focus.tsx`)
+
+One piece of work, one question at a time (UX rebuild plan, phase 2): a library review and a
+draft's decisions. A route whose path ends in `/focus` renders without the sidebar (`AppShell`
+`reader`).
+
+- **`FocusFrame`:** the work's name and where you are ("Question 2 of 5", "Summary"), a tertiary
+  **Leave** with its Esc key, a progress line whose segments repeat the "N of M answered" words
+  (answered in the success tone, skipped in the warning tone, the current one in maroon), and an
+  optional `aside` (a diagram) beside the question from 72rem, under it below. Esc leaves from
+  anywhere but a text field. The column is centred at `--focus-measure`.
+- **`FocusQuestion`:** a form: title, lead, the source it comes from (one heavy rule, never a
+  fill), then radio cards, each its answer (the accessible name) and what it does (the
+  description). Keys 1 to 9 choose, Enter confirms from anywhere but a button, link or text
+  area, Skip leaves it for later. Without an answer the primary button says why it can't run.
+- **`FocusTitle`:** the h1. The frame's first title leaves focus to the shell (a page opened
+  directly keeps the skip link first; the keys still work from there); each next question's
+  heading takes focus as it arrives, so it is announced.
+- **The summary is the commit.** Nothing is saved, published or sent before the summary the
+  person confirms. Leaving with unsent answers asks first (`Dialog`).
+
+### Diagrams (`design/diagram/`)
+
+A separate folder: import from `design/diagram`, not `design/components`. Shown in the gallery's
+Diagrams section with two seed-shaped examples (CWOM in context, the ownership tree).
+
+- **Layouts** (`layout.ts`, pure, unit-tested): `layered(nodes, edges, { lanes, containers })`
+  runs left to right, each node one column after whatever points at it or in the `lane` it names;
+  `containers` box grouped nodes as rows. `tree(nodes, edges)` is a left-to-right tidy tree, each
+  parent level with the middle of its children, with elbow edges. Both return a `DiagramLayout`.
+- **Parts** (`parts.tsx`): `DiagramNodeShape`, `DiagramEdgeLine`, `DiagramLaneBand`,
+  `DiagramContainerBox`, `DiagramArrowHead`, for a screen that needs its own arrangement.
+- **`Diagram`:** draws a layout at its natural size in a scrolling region, with a **Show as
+  table** switch (`aria-pressed`) that swaps the drawing for a table of every node with what it
+  links to and from.
+- **Fitting:** pass `layout` as a function of width, `(fitWidth) => layered(…, { fitWidth })`,
+  and the diagram lays out again whenever its width changes. Too wide, the gaps close first (each
+  no narrower than its edge label), then the nodes narrow to `nodeMin` if that makes it fit; with
+  room to spare, the nodes widen until their words sit on one line. A drawing that still doesn't
+  fit keeps its node widths, scrolls, and says so under it.
+- **Tones:** `plain`, `subject` (maroon, what the page is about), `ready`, `decide`, `gap`
+  (dashed) and `muted` (dotted). Each differs by its frame as well as its colour, and every state
+  tone carries its words in `status`. Red is never drawn. Colours come from the `--diagram-*`
+  component tokens.
+- **Accessibility:** a diagram with nothing to open is one image (`role="img"`, named by
+  `label`). Once nodes open something (an `href`, or `onActivate`), it is a named group
+  (`aria-roledescription="diagram"`), because an image hides its children: Tab enters once,
+  arrows move to the nearest node that way, Home and End jump, Enter (and Space on buttons)
+  opens. A label and its second line each wrap onto two lines, and every node of a layout grows
+  to hold the most lines any needs; past that, text ends in "…". The whole label is the
+  accessible name and the tooltip. No text is under 14px.
 
 ### Hooks (`hooks.ts`)
 
@@ -248,7 +383,7 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
 |---|---|
 | `useFocusAfterRender` | Focus after commit. Not `requestAnimationFrame`, which stops in background tabs. |
 | `useStickySize` | A sticky region publishes `--sticky-top`, `--sticky-state` or `--sticky-bottom`, so scroll padding keeps focus clear (§1.1) |
-| `useDisclosure` | Focus in on open, back to the opener (or a fallback) on close |
+| `useDisclosure` | Focus in on open, back to the opener (or a fallback) on close; `closeTo` sends it to what was said instead |
 | `useDelayedCommit` | Show a decision now, send it after 6s, `undo`, `flush` on leave (§4; BG3) |
 | `rovingKeyDown` | One tab stop with arrow keys for lists and toolbars |
 

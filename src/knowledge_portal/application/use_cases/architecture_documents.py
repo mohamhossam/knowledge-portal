@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from enum import StrEnum
 from pathlib import PurePosixPath
@@ -33,6 +33,7 @@ from knowledge_portal.application.use_cases.architecture_knowledge import (
     KnowledgeNotFoundError,
     ManageArchitectureKnowledge,
 )
+from knowledge_portal.application.use_cases.catalogue_candidates import MAX_EMBEDDED_BYTES
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
     InvalidKnowledgeError,
@@ -264,6 +265,9 @@ class DocumentPassage:
 _PART = re.compile(r" \(part \d+ of \d+\)$")
 _IMAGES = frozenset({"image/png", "image/jpeg"})
 _LINE_RANGE = re.compile(r"^lines? (?P<start>\d+)(?:-(?P<end>\d+))?$")
+_CELL = re.compile(r"^(table \d+, row \d+), cell \d+, paragraph \d+$")
+_FIGURE = re.compile(r"^image \d+$")
+_EMBEDDED_AT = re.compile(r"^embedded (?P<number>\d+), ")
 
 
 def _line_range(location: str) -> tuple[int, int] | None:
@@ -303,10 +307,37 @@ class ReadKnowledgeDocument:
             raise KnowledgeNotFoundError("This document is not part of the version.")
         if version.mime_type in _IMAGES:
             raise InvalidKnowledgeError("Images have no text passages to show.")
-        segments = self._located.extract(
-            version.mime_type, self._storage.get(DocumentVersionId(version.storage_key))
-        )
+        stored = self._storage.get(DocumentVersionId(version.storage_key))
+        segments = self._located.extract(version.mime_type, stored)
         wanted = _PART.sub("", location.strip())
+        if embedded := _EMBEDDED_AT.match(wanted):
+            # A passage of a file the document embeds: its neighbours are that file's.
+            number = int(embedded["number"])
+            part = next(
+                (
+                    item
+                    for item in self._located.embedded(
+                        version.mime_type, stored, MAX_EMBEDDED_BYTES
+                    ).parts
+                    if item.number == number
+                ),
+                None,
+            )
+            if part is None:
+                raise KnowledgeNotFoundError("That passage was not found in the document.")
+            segments = tuple(
+                replace(item, location=f"embedded {number}, {item.location}")
+                for item in self._located.extract(part.mime_type, part.content)
+            )
+        if _FIGURE.match(wanted):
+            # A Word document's figure, read by a vision model; it has no text around it.
+            figure = LocatedText(
+                wanted,
+                "A figure in the document, read from the image. Open the document to see it.",
+            )
+            return DocumentPassage(version.mime_type, figure, (), ())
+        # Suggestions read before a Word table row became one passage cite a cell of it.
+        wanted = _CELL.sub(r"\1", wanted)
         index = next((i for i, item in enumerate(segments) if item.location == wanted), None)
         if index is None and (lines := _line_range(wanted)) is not None:
             # Suggestions read before a document's passages changed shape cite line

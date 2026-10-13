@@ -143,3 +143,28 @@ class PostgresCatalogueCandidates:
                 )
         except psycopg.Error as exc:
             raise PersistenceError("Catalogue suggestion could not be reopened.") from exc
+
+    def revise(self, candidates: tuple[CatalogueCandidate, ...]) -> None:
+        try:
+            # One transaction: a suggestion decided meanwhile rolls the whole revision back.
+            with self._connector.connection() as connection:
+                for item in candidates:
+                    row = connection.execute(
+                        "INSERT INTO architecture_catalogue_candidates "
+                        "(candidate_id, release_id, document_version_id, status, payload, "
+                        "created_at) VALUES (%s, %s, %s, 'proposed', %s, %s) "
+                        "ON CONFLICT (candidate_id) DO UPDATE SET payload = EXCLUDED.payload "
+                        "WHERE architecture_catalogue_candidates.status = 'proposed' "
+                        "RETURNING candidate_id",
+                        (
+                            item.id,
+                            item.release_id,
+                            item.document_version_id,
+                            Jsonb(_CANDIDATE.dump_python(item, mode="json")),
+                            item.created_at,
+                        ),
+                    ).fetchone()
+                    if row is None:
+                        raise CandidateDecisionConflictError("This suggestion was already decided.")
+        except psycopg.Error as exc:
+            raise PersistenceError("Catalogue suggestions could not be saved.") from exc

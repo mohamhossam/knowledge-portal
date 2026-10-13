@@ -25,11 +25,7 @@ const src = join(root, "src");
 const legacyPath = join(root, "scripts", "brand-lint-legacy.json");
 
 /** The only files that may hold raw colour values. */
-const TOKEN_FILES = new Set([
-  "src/design/tokens/primitive.css",
-  // The Timetable Book's tokens: legacy, removed in Phase 9.
-  "src/styles/tokens.css",
-]);
+const TOKEN_FILES = new Set(["src/design/tokens/primitive.css"]);
 /**
  * Exempt in full: the catalogue direction mock-ups (2026-10-09). Dev-only, with
  * the user-relaxed calm rules; their palette moves into the token layers when

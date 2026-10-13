@@ -6,7 +6,7 @@ import { type AdminRecordEntry, api, type OwnershipTransfer } from "../api/clien
 import { ApiError, errorMessage } from "../api/errors";
 import { ActionGroup, Button, type Column, ConsequencePanel, DataTable, RadioGroup, Section, Skeleton, Status, TextField } from "../design/components";
 import { useDisclosure } from "../design/hooks";
-import { formatDay } from "../home/format";
+import { formatClock, formatDay } from "../home/format";
 import { useDocumentContext } from "./documentContext";
 import { plural } from "./where";
 
@@ -21,8 +21,6 @@ const ACTION: Record<AdminRecordEntry["action"], string> = {
   retry_reading: "Tried reading again, with other documents",
   retry_indexing: "Tried indexing again, with other documents",
 };
-
-const timeOf = (value: string) => new Date(value).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 
 /**
  * Who owns the document, and handing it to another knowledge admin through a
@@ -79,7 +77,7 @@ function AdminRecord() {
   const record = useQuery({ queryKey: ["library", "admin-record", document.id], queryFn: () => api.adminRecord(document.id) });
   const entries = record.data ?? [];
   const columns: Column<AdminRecordEntry>[] = [
-    { id: "when", header: "When", rowHeader: true, width: "11rem", cell: (entry) => <>{formatDay(entry.acted_at)}, {timeOf(entry.acted_at)}</> },
+    { id: "when", header: "When", rowHeader: true, width: "11rem", cell: (entry) => <>{formatDay(entry.acted_at)}, {formatClock(entry.acted_at)}</> },
     {
       id: "what",
       header: "What, and why",
@@ -93,7 +91,7 @@ function AdminRecord() {
   ];
   return (
     <Section title="Admin record" count={record.isSuccess ? entries.length : undefined}>
-      <p className="lib-quiet">What knowledge admins did to it on its owner's behalf, and the library-wide retries that included it.</p>
+      <p className="lib-quiet">What Knowledge admins did to it on its owner's behalf, and the library-wide retries that included it.</p>
       {record.isError ? (
         <p role="status"><Status tone="attention">Couldn't read the admin record: {errorMessage(record.error)}</Status> <Button variant="link" onClick={() => void record.refetch()}>Try again</Button></p>
       ) : record.isPending ? (
@@ -145,11 +143,11 @@ function Transfer() {
   const name = chosen?.display_name ?? "";
 
   return (
-    <Section title={acting ? "Hand it on, or take it over" : "Hand it to another knowledge admin"}>
+    <Section title={acting ? "Hand it on, or take it over" : "Hand it to another Knowledge admin"}>
       <p className="lib-quiet">
         {acting
-          ? <><bdi>{owner}</bdi> owns it now, and you act for them as admin. Hand it to another knowledge admin, or take it over yourself.</>
-          : <>You own it now. Only knowledge admins who have signed in to the portal can take it over.</>}
+          ? <><bdi>{owner}</bdi> owns it now, and you act for them as admin. Hand it to another Knowledge admin, or take it over yourself.</>
+          : <>You own it now. Only Knowledge admins who have signed in to the portal can take it over.</>}
       </p>
       <div className="lib-transfer">
         <TextField label="Find an admin by name or email" type="search" autoComplete="off" spellCheck={false} value={find} onChange={(event) => setFind(event.target.value)} />

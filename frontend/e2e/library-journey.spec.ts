@@ -1,7 +1,7 @@
 /**
  * Plan 02 criterion 2.2, keyboard only (T2): on the eligibility matrix, find
- * the hidden sheet's passages, exclude them with a reason, save, publish and
- * confirm. It publishes, so it works on its own copy of the seeded file and
+ * the hidden sheet's passages, exclude them with a reason, then approve and
+ * publish in one step (the summary is asked for in the panel). It publishes, so it works on its own copy of the seeded file and
  * runs after every other spec (playwright.config.ts, project "journeys"):
  * the seeded document stays waiting for review for the routes that show it.
  */
@@ -34,7 +34,9 @@ async function copyOfTheMatrix(request: import("@playwright/test").APIRequestCon
   return id;
 }
 
-test("2.2 keyboard only: exclude the hidden sheet with a reason, save, publish and confirm", async ({ page, request }) => {
+test("2.2 keyboard only: exclude the hidden sheet with a reason, then approve and publish in one step", async ({ page, request }) => {
+  // The copy is uploaded and read first (polled for up to 60 s), so the journey gets three times the default.
+  test.slow();
   const { reviewDocument } = await seeded();
   test.skip(!reviewDocument, "this seed has no eligibility matrix");
   const id = await copyOfTheMatrix(request, reviewDocument!);
@@ -42,39 +44,37 @@ test("2.2 keyboard only: exclude the hidden sheet with a reason, save, publish a
   await page.goto(`library/${id}`);
   await settled(page);
 
+  // Nothing is seen yet, so the desk opens on what is left to look at.
+  await expect(page.getByRole("group", { name: "Show passages" }).getByRole("button", { name: /^Not seen yet/ })).toHaveAttribute("aria-pressed", "true");
   // Into the grid (its one tab stop), then n: the next flagged passage not seen yet.
   await page.locator(".lib-desk [data-cell-focus][tabindex='0']").focus();
   await page.keyboard.press("n");
   await expect(page.locator(":focus")).toHaveText(/^Sheet 2 \(hidden\)/);
-  // x excludes (it already is: a hidden sheet starts excluded) and takes the reason; Enter goes back.
+  // x excludes (it already is: a hidden sheet starts excluded) and takes the reason; Enter goes on
+  // to the next row that needs a decision (model §1): the sheet's row, the next one down.
   await page.keyboard.press("x");
   await expect(page.locator(":focus")).toHaveAttribute("name", "desk-reason");
   await page.keyboard.press("Control+A");
   await page.keyboard.type("Internal pricing: not for publication.");
   await page.keyboard.press("Enter");
-  await expect(page.locator(":focus")).toHaveText(/^Sheet 2 \(hidden\)/);
-  // The sheet's row, the next one down.
-  await page.keyboard.press("j");
   await expect(page.locator(":focus")).toHaveText(/^Sheet 2 \(hidden\), row 1/);
   await page.keyboard.press("x");
   await page.keyboard.press("Control+A");
   await page.keyboard.type("Internal pricing: not for publication.");
-  await page.keyboard.press("Enter");
 
-  // Ctrl+Enter saves from the desk; without a summary it asks for one, in its field.
-  await page.keyboard.press("Control+Enter");
-  await expect(page.locator(":focus")).toHaveAttribute("name", "desk-summary");
-  await page.keyboard.type("Checked the hidden sheet; its pricing row stays out.");
-  await page.keyboard.press("Control+Enter");
-  await expect(page.getByText(/^Saved at \d\d:\d\d\./)).toBeVisible();
-
-  // Publish: Tab to the button, Enter opens the consequence panel, Tab to the verb, Enter confirms.
+  // Unsaved decisions don't stop publishing: from the reason, Tab past the pane's All shortcuts
+  // and the bar's Save review to Approve.
+  await page.keyboard.press("Tab");
+  await expect(page.locator(":focus")).toHaveText("All shortcuts");
   await page.keyboard.press("Tab");
   await page.keyboard.press("Tab");
   await expect(page.locator(":focus")).toHaveText("Approve and publish…");
   await page.keyboard.press("Enter");
+  // The panel asks for the summary in its own field, then the verb saves and publishes.
   const panel = page.getByRole("region", { name: "Publish version 1" });
   await expect(panel).toContainText("You looked at");
+  await expect(page.locator(":focus")).toHaveAccessibleName(/Review summary/);
+  await page.keyboard.type("Checked the hidden sheet; its pricing row stays out.");
   await page.keyboard.press("Tab");
   await expect(page.locator(":focus")).toHaveText("Publish version 1");
   await page.keyboard.press("Enter");

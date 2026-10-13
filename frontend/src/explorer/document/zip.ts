@@ -5,7 +5,7 @@
  * Word reads both. No dependency: the format is small and fixed.
  */
 
-export type ZipParts = Record<string, string | Uint8Array>;
+type ZipParts = Record<string, string | Uint8Array>;
 
 const CRC_TABLE = (() => {
   const table = new Uint32Array(256);

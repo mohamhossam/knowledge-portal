@@ -3,24 +3,8 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 
-// One family in two widths (Archivo's width axis sets the condensed table
-// numbers), and Noto Sans Arabic for Arabic content. Self-hosted: the portal
-// runs offline and behind a strict Content-Security-Policy.
-import "@fontsource-variable/archivo/wdth.css";
-import "@fontsource/noto-sans-arabic/arabic-400.css";
-import "@fontsource/noto-sans-arabic/arabic-600.css";
-import "./styles/tokens.css";
-import "./styles/base.css";
-import "./styles/shell.css";
-import "./styles/timetable.css";
-import "./styles/library.css";
-import "./styles/catalogue.css";
-import "./styles/squads.css";
-import "./styles/explorer.css";
-import "./styles/knowledge.css";
-// The design system (fonts + tokens), after the legacy CSS; legacy pages sit in an island.
+// The design system: its self-hosted fonts, tokens and base styles.
 import "./design";
-import "./styles/legacy-island.css";
 
 import { ApiError } from "./api/errors";
 import { App } from "./app/App";

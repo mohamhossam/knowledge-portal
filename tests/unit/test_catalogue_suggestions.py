@@ -172,7 +172,7 @@ def test_adapter_resolves_system_names_and_drops_unverifiable_citations() -> Non
     assert proposal.changes[1].content.system_id == "order-hub"
     assert proposal.changes[1].content.target_system_id == "bcrm"
     assert proposal.warnings == (
-        "2 suggestion(s) were left out because their citation could not be checked.",
+        "2 suggestion(s) were left out: what they quote was not found in the document.",
     )
     assert proposal.model == "test-model"
 

@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { useDelayedCommit, useDisclosure } from "../hooks";
 import { Button } from "./actions";
-import { Badge, EmptyState, JobTray, Skeleton, Status, Suggested, UndoToast } from "./feedback";
+import { Badge, EmptyState, GapBadge, JobTray, Skeleton, Status, Suggested, UndoToast } from "./feedback";
 import { Checkbox, Combobox, RadioGroup, TextField, Upload } from "./forms";
 import { checkAxeAfterEach } from "../../test/axe";
 
@@ -55,6 +55,14 @@ describe("feedback", () => {
   it("names a count for screen readers", () => {
     render(<a href="/">Your work<Badge count={6} label="need you" /></a>);
     expect(screen.getByRole("link", { name: "Your work 6 need you" })).toBeInTheDocument();
+  });
+
+  it("sums a record's gaps in one badge that names them, and shows nothing when there are none", () => {
+    const { container, rerender } = render(<p>BSCS <GapBadge gaps={["concept", "owner", "source"]} /></p>);
+    expect(screen.getByText("3 gaps")).toBeInTheDocument();
+    expect(container).toHaveTextContent("Missing: concept, owner, source");
+    rerender(<p>CWOM <GapBadge gaps={[]} /></p>);
+    expect(container.querySelector(".ds-gaps")).toBeNull();
   });
 
   it("marks a suggestion as suggested and says its basis", () => {

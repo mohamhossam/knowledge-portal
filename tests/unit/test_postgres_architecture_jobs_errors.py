@@ -20,6 +20,7 @@ from knowledge_portal.application.ports.architecture_jobs import (
     ArchitectureJob,
     ArchitectureJobKind,
     ArchitectureJobStatus,
+    JobProgress,
 )
 from knowledge_portal.infrastructure.persistence.postgres_architecture_jobs import (
     PostgresArchitectureJobs,
@@ -57,6 +58,11 @@ class _UnavailableConnector:
         pytest.param(lambda jobs: jobs.claim(NOW), "claim failed", id="claim"),
         pytest.param(lambda jobs: jobs.heartbeat("job-1", 1, NOW), "heartbeat failed", id="beat"),
         pytest.param(
+            lambda jobs: jobs.report("job-1", 1, JobProgress("reading", 1, 4)),
+            "progress could not be recorded",
+            id="report",
+        ),
+        pytest.param(
             lambda jobs: jobs.finish("job-1", 1, ArchitectureJobStatus.SUCCEEDED, None),
             "completion failed",
             id="finish",
@@ -87,6 +93,11 @@ def _row(**changes: object) -> tuple[object, ...]:
         "attempts": 0,
         "error": None,
         "lease": None,
+        "queued": NOW,
+        "started": None,
+        "stage": None,
+        "done": None,
+        "total": None,
     }
     row.update(changes)
     return tuple(row.values())
@@ -111,3 +122,14 @@ def test_a_stored_row_maps_to_a_job() -> None:
     assert job.status is ArchitectureJobStatus.RUNNING
     assert job.attempts == 2
     assert job.lease_until == NOW
+
+
+def test_a_stored_row_carries_when_it_started_and_how_far_it_got() -> None:
+    job = PostgresArchitectureJobs._job(
+        _row(status="running", attempts=1, started=NOW, stage="reading", done=2, total=9)
+    )
+
+    assert job.queued_at == NOW
+    assert job.started_at == NOW
+    assert job.progress == JobProgress("reading", 2, 9)
+    assert PostgresArchitectureJobs._job(_row()).progress is None

@@ -1,11 +1,14 @@
+import "./gate.css";
+
 import { LogIn, LogOut } from "lucide-react";
 import { type ReactNode, useEffect } from "react";
 
+import { ActionGroup, Button, Status } from "../design/components";
 import { useAuth } from "./authContext";
 import { BASE, REQUIREMENT_APP_URL } from "./paths";
 
 /** Where a signed-in reader who is not an admin reads the catalogue in service. */
-export const EXPLORER_URL = `${BASE}/explorer`;
+const EXPLORER_URL = `${BASE}/explorer`;
 
 /**
  * Nobody reaches a table until the portal knows who they are and that they
@@ -32,19 +35,21 @@ function Notice({ title, busy = false, children }: { title: string; busy?: boole
     document.title = `${title} · Knowledge portal`;
   }, [title]);
   return (
-    <main id="main" className="notice" aria-busy={busy || undefined}>
-      <p className="notice__portal">
-        {REQUIREMENT_APP_URL !== null && (
-          <>
-            <a href={REQUIREMENT_APP_URL}>Requirement AI</a>
-            <span aria-hidden="true" className="masthead__dot">·</span>
-          </>
-        )}
-        Knowledge portal
-      </p>
-      <h1 className="notice__title">{title}</h1>
-      <div className="notice__body">{children}</div>
-    </main>
+    <div className="ds-root gate">
+      <main id="main" className="gate__main" aria-busy={busy || undefined}>
+        <p className="gate__portal">
+          {REQUIREMENT_APP_URL !== null && (
+            <>
+              <a href={REQUIREMENT_APP_URL}>Requirement AI</a>
+              <span aria-hidden="true">·</span>
+            </>
+          )}
+          Knowledge portal
+        </p>
+        <h1 className="gate__title">{title}</h1>
+        <div className="gate__body">{children}</div>
+      </main>
+    </div>
   );
 }
 
@@ -62,17 +67,16 @@ export function NoAccess() {
         architecture evidence also open, read-only, from each requirement in Requirement AI.
       </p>
       <p>To curate, ask your platform administrator to add you to the knowledge-admins group.</p>
-      <p className="notice__actions">
+      <ActionGroup>
         {REQUIREMENT_APP_URL !== null && (
-          <a className="notice__primary" href={REQUIREMENT_APP_URL}>Go to Requirement AI</a>
+          <a className="ds-button ds-button--primary" href={REQUIREMENT_APP_URL}>Go to Requirement AI</a>
         )}
         {auth?.config?.mode === "oidc" && (
-          <button type="button" className="text-button" onClick={() => void auth.signOut()}>
-            <LogOut size={14} aria-hidden="true" />
+          <Button variant="tertiary" icon={<LogOut size={14} />} onClick={() => void auth.signOut()}>
             Sign out
-          </button>
+          </Button>
         )}
-      </p>
+      </ActionGroup>
     </Notice>
   );
 }
@@ -82,24 +86,22 @@ function SignIn() {
   const choices = auth?.config?.login_choices ?? [];
   return (
     <Notice title={auth?.sessionExpired ? "Your session has ended" : "Sign in to the knowledge portal"}>
-      {auth?.error && <p className="notice__error" role="alert">{auth.error}</p>}
+      {auth?.error && <p role="alert"><Status tone="attention">{auth.error}</Status></p>}
       <p>
         Use the same account you use for Requirement AI. Knowledge admins curate here; anyone
         signed in can read the product architecture explorer.
       </p>
-      <p className="notice__actions">
+      <ActionGroup>
         {choices.length > 0 ? choices.map((choice) => (
-          <button key={choice.id} type="button" className="notice__primary" onClick={() => void auth?.signIn(choice.id)}>
-            <LogIn size={16} aria-hidden="true" />
+          <Button key={choice.id} variant="primary" icon={<LogIn size={16} />} onClick={() => void auth?.signIn(choice.id)}>
             {choice.label}
-          </button>
+          </Button>
         )) : (
-          <button type="button" className="notice__primary" onClick={() => void auth?.signIn()}>
-            <LogIn size={16} aria-hidden="true" />
+          <Button variant="primary" icon={<LogIn size={16} />} onClick={() => void auth?.signIn()}>
             Sign in
-          </button>
+          </Button>
         )}
-      </p>
+      </ActionGroup>
     </Notice>
   );
 }

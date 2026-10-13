@@ -22,6 +22,12 @@ from knowledge_portal.domain.architecture.channels import (
     find_channel_among,
     merge_channels,
 )
+from knowledge_portal.domain.architecture.concepts import (
+    BusinessCapability,
+    CapabilityRef,
+    label_key,
+)
+from knowledge_portal.domain.architecture.drafts import OfferingDraft
 from knowledge_portal.domain.architecture.governance import (
     KnowledgeSource,
     OpenQuestion,
@@ -32,6 +38,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
     InvalidKnowledgeError,
     KnowledgeCapability,
+    KnowledgeReleaseStatus,
     LandscapeDomain,
     RelationshipKind,
     SystemComponent,
@@ -40,6 +47,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     relationship_kind,
 )
 from knowledge_portal.domain.architecture.products import (
+    OfferingComponent,
     ProductOffering,
     find_offering,
     find_offering_component,
@@ -47,6 +55,18 @@ from knowledge_portal.domain.architecture.products import (
     same_offering,
 )
 from knowledge_portal.domain.architecture.tracking import TrackingChannel
+from knowledge_portal.domain.architecture.vocabularies import (
+    SCHEME_NAMES,
+    VocabularyTerm,
+    find_term,
+)
+from knowledge_portal.domain.architecture.vocabulary_links import (
+    VocabularyRef,
+    kept_component_terms,
+    kept_journey_terms,
+    linkable,
+    with_terms,
+)
 
 
 class CandidateKind(StrEnum):
@@ -66,6 +86,15 @@ class CandidateKind(StrEnum):
     CHANNEL = "channel"
     # A question an approved feature puts to an offering (requirement-portal ADR-0101, step 7).
     QUESTION = "question"
+    # A business capability concept and the capabilities it covers, from the backfill (ADR-0114).
+    CONCEPT = "concept"
+    # The concepts an offering component delivers, as a model suggests them (ADR-0114).
+    COMPONENT_LINK = "component_link"
+    # A controlled vocabulary term, and the values written in the catalogue it covers.
+    VOCABULARY_TERM = "vocabulary_term"
+    # A rule or limitation of one product offering, such as a bundle's allowed devices: what
+    # a constraint is to a system.
+    OFFERING_RULE = "offering_rule"
 
 
 class CandidateStatus(StrEnum):
@@ -89,6 +118,8 @@ class CandidateMatch(StrEnum):
     NEEDS_OFFERING = "needs_offering"
     # An offering or journey that names a channel the draft does not have yet.
     NEEDS_CHANNEL = "needs_channel"
+    # A link, or a narrower concept, naming a concept the draft does not have yet.
+    NEEDS_CONCEPT = "needs_concept"
 
 
 class CandidateBasis(StrEnum):
@@ -130,6 +161,12 @@ _DESCRIBED = frozenset(
 _PLACING = frozenset({CandidateKind.LANDSCAPE_DOMAIN, CandidateKind.PLACEMENT})
 # Reviewed and accepted whole, replacing the item they match; they name no one system.
 _WHOLE = frozenset({CandidateKind.PRODUCT, CandidateKind.JOURNEY})
+# Their subject is a concept or an offering, never a system.
+_CONCEPTUAL = frozenset(
+    {CandidateKind.CONCEPT, CandidateKind.COMPONENT_LINK, CandidateKind.VOCABULARY_TERM}
+)
+# What a model may infer rather than read: how systems depend, and what a component delivers.
+_INFERABLE = frozenset({CandidateKind.RELATIONSHIP, CandidateKind.COMPONENT_LINK})
 
 
 @dataclass(frozen=True)
@@ -140,9 +177,12 @@ class CandidateContent:
       ``description`` (what the system is for)
     - component: ``system_id``, ``component_id``, ``name``, optional ``name_ar``,
       ``aliases``, ``description`` and ``technology``
-    - capability: ``system_id``, ``capability_id``, ``name``, ``triggers``, and
-      ``component_id`` when the source says which component delivers it
+    - capability: ``system_id``, ``capability_id``, ``name``, ``triggers``,
+      ``component_id`` when the source says which component delivers it, and one of
+      ``concept_ids`` when it is known to realise that concept (a delivered change)
     - constraint: ``system_id``, ``text``
+    - offering_rule: ``system_id`` (the offering, by id or name until the draft resolves
+      it) and ``text``, the rule it is sold or fulfilled by
     - relationship: ``system_id`` (source), ``target_system_id``, ``text``, and
       ``relationship_kind`` when the source says how the systems interact
     - landscape_domain: ``landscape_domain_id`` (also its ``system_id``, the
@@ -156,6 +196,12 @@ class CandidateContent:
       system is named as the document names it until the draft resolves it
     - question: an open ``question`` for the offering the ``system_id`` names, by id or
       name, as the change request names it until the draft resolves it
+    - concept: the whole ``concept``; its id is also the ``system_id``. ``capability_refs``
+      are the system capabilities it covers, linked to it when it is accepted
+    - component_link: ``system_id`` (the offering), ``component_id`` (its component) and the
+      ``concept_ids`` it delivers
+    - vocabulary_term: the whole ``term``; its id is also the ``system_id``. ``value_refs``
+      are the places a value it means is written, linked to it when it is accepted
     """
 
     kind: CandidateKind
@@ -177,6 +223,11 @@ class CandidateContent:
     journey: Journey | None = None
     channel: Channel | None = None
     question: OpenQuestion | None = None
+    concept: BusinessCapability | None = None
+    capability_refs: tuple[CapabilityRef, ...] = ()
+    concept_ids: tuple[str, ...] = ()
+    term: VocabularyTerm | None = None
+    value_refs: tuple[VocabularyRef, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "kind", CandidateKind(self.kind))
@@ -190,8 +241,14 @@ class CandidateContent:
         if any(not item for item in (*self.aliases, *self.triggers)):
             raise InvalidKnowledgeError("Aliases and matching phrases must not be blank.")
         if self.component_id is not None:
-            if self.kind not in {CandidateKind.COMPONENT, CandidateKind.CAPABILITY}:
-                raise InvalidKnowledgeError("Only a component or a capability names a component.")
+            if self.kind not in {
+                CandidateKind.COMPONENT,
+                CandidateKind.CAPABILITY,
+                CandidateKind.COMPONENT_LINK,
+            }:
+                raise InvalidKnowledgeError(
+                    "Only a component, a capability or a component link names a component."
+                )
             object.__setattr__(self, "component_id", _required(self.component_id, "Component"))
         if self.technology is not None and self.kind is not CandidateKind.COMPONENT:
             raise InvalidKnowledgeError("Only a component has a technology.")
@@ -218,6 +275,34 @@ class CandidateContent:
             raise InvalidKnowledgeError("Only a channel suggestion holds a channel.")
         if (self.question is not None) != (self.kind is CandidateKind.QUESTION):
             raise InvalidKnowledgeError("Only a question suggestion holds a question.")
+        if (self.concept is not None) != (self.kind is CandidateKind.CONCEPT):
+            raise InvalidKnowledgeError("Only a concept suggestion holds a concept.")
+        if self.capability_refs and self.kind is not CandidateKind.CONCEPT:
+            raise InvalidKnowledgeError("Only a concept suggestion covers capabilities.")
+        if len(set(self.capability_refs)) != len(self.capability_refs):
+            raise InvalidKnowledgeError("A concept suggestion names a capability more than once.")
+        object.__setattr__(
+            self, "concept_ids", tuple(_required(item, "Concept") for item in self.concept_ids)
+        )
+        if self.concept_ids and self.kind not in {
+            CandidateKind.COMPONENT_LINK,
+            CandidateKind.CAPABILITY,
+        }:
+            raise InvalidKnowledgeError("Only a component link or a capability names concepts.")
+        if self.kind is CandidateKind.CAPABILITY and len(self.concept_ids) > 1:
+            raise InvalidKnowledgeError("A capability realises one concept.")
+        if len(set(self.concept_ids)) != len(self.concept_ids):
+            raise InvalidKnowledgeError("A component link names a concept more than once.")
+        if (self.term is not None) != (self.kind is CandidateKind.VOCABULARY_TERM):
+            raise InvalidKnowledgeError("Only a vocabulary suggestion holds a term.")
+        if self.value_refs and self.kind is not CandidateKind.VOCABULARY_TERM:
+            raise InvalidKnowledgeError("Only a vocabulary suggestion covers written values.")
+        if len(set(self.value_refs)) != len(self.value_refs):
+            raise InvalidKnowledgeError("A vocabulary suggestion names a value more than once.")
+        if self.term is not None and any(
+            ref.scheme is not self.term.scheme for ref in self.value_refs
+        ):
+            raise InvalidKnowledgeError("A term covers only values of its own vocabulary.")
         if self.kind in _PLACING:
             _required(self.landscape_domain_id or "", "Landscape domain")
         if self.kind is CandidateKind.LANDSCAPE_DOMAIN:
@@ -228,8 +313,14 @@ class CandidateContent:
             CandidateKind.PLACEMENT,
             CandidateKind.CHANNEL,
             CandidateKind.QUESTION,
+            CandidateKind.CONCEPT,
+            CandidateKind.VOCABULARY_TERM,
         }:
             pass
+        elif self.kind is CandidateKind.COMPONENT_LINK:
+            _required(self.component_id or "", "Component")
+            if not self.concept_ids:
+                raise InvalidKnowledgeError("A component link names at least one concept.")
         elif self.kind is CandidateKind.SYSTEM:
             _required(self.name, "System name")
         elif self.kind is CandidateKind.COMPONENT:
@@ -242,6 +333,8 @@ class CandidateContent:
                 raise InvalidKnowledgeError("A capability needs non-empty matching phrases.")
         elif self.kind is CandidateKind.CONSTRAINT:
             _required(self.text, "Constraint")
+        elif self.kind is CandidateKind.OFFERING_RULE:
+            _required(self.text, "Offering rule")
         else:
             _required(self.target_system_id or "", "Relationship target")
             _required(self.text, "Relationship description")
@@ -315,8 +408,10 @@ class CatalogueCandidate:
         if (self.status is CandidateStatus.PROPOSED) != (self.decided_at is None):
             raise InvalidKnowledgeError("Only decided candidates carry a decision time.")
         if self.basis is CandidateBasis.INFERRED:
-            if self.content.kind is not CandidateKind.RELATIONSHIP:
-                raise InvalidKnowledgeError("Only a dependency can be inferred.")
+            if self.content.kind not in _INFERABLE:
+                raise InvalidKnowledgeError(
+                    "Only a dependency or a component's concepts can be inferred."
+                )
             _required(self.rationale or "", "Inference rationale")
         elif self.rationale is not None:
             raise InvalidKnowledgeError("Only an inferred suggestion carries a rationale.")
@@ -592,6 +687,7 @@ def _kept_governance(offering: ProductOffering, current: ProductOffering) -> Pro
         offering.boundaries,
         offering.not_used,
     )
+    offering = _kept_links(offering, current)
     if any(said):
         return replace(offering, id=current.id)
     return replace(
@@ -603,6 +699,32 @@ def _kept_governance(offering: ProductOffering, current: ProductOffering) -> Pro
         decisions=current.decisions,
         boundaries=current.boundaries,
         not_used=current.not_used,
+    )
+
+
+def _kept_links(offering: ProductOffering, current: ProductOffering) -> ProductOffering:
+    """The suggested offering keeping each component's concepts, or the reason it has none,
+    where the reading says nothing about them, and its vocabulary terms where it writes the
+    same values: a document never unlinks a component."""
+    before = {item.id: item for item in current.components}
+    parts = []
+    for item in offering.components:
+        kept = before.get(item.id)
+        if kept is not None and not item.capability_ids and item.unlinked_reason is None:
+            item = replace(
+                item, capability_ids=kept.capability_ids, unlinked_reason=kept.unlinked_reason
+            )
+        if kept is not None:
+            item = kept_component_terms(item, kept)
+        parts.append(item)
+    # Plans, business rules and the portfolio place come from a catalogue file or a
+    # person far more often than from prose: a reading that names none keeps them.
+    return replace(
+        offering,
+        components=tuple(parts),
+        plans=offering.plans or current.plans,
+        business_rules=offering.business_rules or current.business_rules,
+        portfolio_node_id=offering.portfolio_node_id or current.portfolio_node_id,
     )
 
 
@@ -751,7 +873,157 @@ def _resolved_question(
     return replace(question, order_types=tuple(codes)), tuple(missing)
 
 
+def find_concept(release: ArchitectureKnowledge, reference: str) -> BusinessCapability | None:
+    """A draft concept named by id or by any of its labels, ignoring case and punctuation."""
+    exact = next((item for item in release.business_capabilities if item.id == reference), None)
+    key = label_key(reference)
+    if exact is not None or not key:
+        return exact
+    return next(
+        (
+            item
+            for item in release.business_capabilities
+            if key in {label_key(label) for label in item.labels}
+        ),
+        None,
+    )
+
+
+def _current_concept(
+    concept: BusinessCapability, release: ArchitectureKnowledge
+) -> BusinessCapability | None:
+    return find_concept(release, concept.id) or find_concept(release, concept.pref_label)
+
+
+def _free_labels(
+    labels: tuple[str, ...], owner_id: str | None, release: ArchitectureKnowledge
+) -> tuple[str, ...]:
+    """The labels no other concept already has; each label must identify one concept."""
+    free: list[str] = []
+    seen: set[str] = set()
+    for label in labels:
+        key = label_key(label)
+        owner = find_concept(release, label)
+        if key and key not in seen and (owner is None or owner.id == owner_id):
+            seen.add(key)
+            free.append(label)
+    return tuple(free)
+
+
+def _concept_to_apply(
+    suggested: BusinessCapability, release: ArchitectureKnowledge
+) -> tuple[BusinessCapability, BusinessCapability | None]:
+    """The concept the draft would hold once the suggestion is accepted, and the one it
+    holds now. A suggestion adds labels and fills what is missing; it never moves a concept
+    a person placed, nor rewrites its definition."""
+    current = _current_concept(suggested, release)
+    if current is None:
+        labels = _free_labels(suggested.labels, None, release)
+        if label_key(suggested.pref_label) not in {label_key(item) for item in labels}:
+            raise CandidateDependencyError(
+                f"{suggested.pref_label!r} already names another concept; edit the suggestion "
+                "to merge into it or to use another label."
+            )
+        return replace(suggested, alt_labels=labels[1:]), None
+    known = {label_key(item) for item in current.labels}
+    extra = tuple(
+        label
+        for label in _free_labels(suggested.labels, current.id, release)
+        if label_key(label) not in known
+    )
+    placed = current.broader_id is not None or current.domain_id is not None
+    return (
+        replace(
+            current,
+            alt_labels=(*current.alt_labels, *extra),
+            definition=current.definition or suggested.definition,
+            broader_id=current.broader_id if placed else suggested.broader_id,
+            domain_id=current.domain_id if placed else suggested.domain_id,
+            exact_match=current.exact_match or suggested.exact_match,
+        ),
+        current,
+    )
+
+
+def _covered(
+    refs: tuple[CapabilityRef, ...], release: ArchitectureKnowledge
+) -> tuple[CapabilityRef, ...]:
+    """The capabilities a concept suggestion would link: those still in the draft that no
+    one has linked, nor marked as having no concept."""
+    systems = {item.id: item for item in release.systems}
+    found = []
+    for ref in refs:
+        system = systems.get(ref.system_id)
+        capability = (
+            next((item for item in system.capabilities if item.id == ref.capability_id), None)
+            if system is not None
+            else None
+        )
+        if (
+            capability is not None
+            and capability.concept_id is None
+            and capability.unlinked_reason is None
+        ):
+            found.append(ref)
+    return tuple(found)
+
+
+def _concept_gap(
+    concept: BusinessCapability, release: ArchitectureKnowledge
+) -> CandidateMatch | None:
+    if concept.broader_id is not None and find_concept(release, concept.broader_id) is None:
+        return CandidateMatch.NEEDS_CONCEPT
+    if concept.domain_id is not None and concept.domain_id not in {
+        item.id for item in release.capability_domains
+    }:
+        return CandidateMatch.NEEDS_DOMAIN
+    return None
+
+
+def _linked_component(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> tuple[ProductOffering, OfferingComponent] | None:
+    offering = find_offering(release.products, content.system_id)
+    component = (
+        find_offering_component(offering, content.component_id or "")
+        if offering is not None
+        else None
+    )
+    return (offering, component) if offering is not None and component is not None else None
+
+
 def classify(content: CandidateContent, release: ArchitectureKnowledge) -> CandidateMatch:
+    if content.kind is CandidateKind.VOCABULARY_TERM and content.term is not None:
+        return _classify_term(content.term, content, release)
+    if content.kind is CandidateKind.CONCEPT and content.concept is not None:
+        if any(find_system(release, ref.system_id) is None for ref in content.capability_refs):
+            return CandidateMatch.NEEDS_SYSTEM
+        gap = _concept_gap(content.concept, release)
+        if gap is not None:
+            return gap
+        try:
+            merged, held = _concept_to_apply(content.concept, release)
+        except CandidateDependencyError:
+            return CandidateMatch.UPDATES_EXISTING
+        if held is None:
+            return CandidateMatch.NEW
+        links = _covered(content.capability_refs, release)
+        return (
+            CandidateMatch.UPDATES_EXISTING
+            if links or merged != held
+            else CandidateMatch.ALREADY_PRESENT
+        )
+    if content.kind is CandidateKind.COMPONENT_LINK:
+        found = _linked_component(content, release)
+        if found is None:
+            return CandidateMatch.NEEDS_OFFERING
+        if any(find_concept(release, item) is None for item in content.concept_ids):
+            return CandidateMatch.NEEDS_CONCEPT
+        _, linked = found
+        wanted = {_concept_id(release, item) for item in content.concept_ids}
+        if wanted <= set(linked.capability_ids):
+            return CandidateMatch.ALREADY_PRESENT
+        return CandidateMatch.UPDATES_EXISTING if linked.capability_ids else CandidateMatch.NEW
     if content.kind is CandidateKind.QUESTION and content.question is not None:
         offering = _question_offering(content, release)
         if offering is None:
@@ -779,7 +1051,7 @@ def classify(content: CandidateContent, release: ArchitectureKnowledge) -> Candi
         kept = _current_journey(journey, release)
         if kept is None:
             return CandidateMatch.NEW
-        same = replace(journey, id=kept.id) == kept
+        same = kept_journey_terms(replace(journey, id=kept.id), kept) == kept
         return CandidateMatch.ALREADY_PRESENT if same else CandidateMatch.UPDATES_EXISTING
     if content.kind is CandidateKind.PRODUCT and content.product is not None:
         offering, missing = _resolved_offering(content.product, release)
@@ -805,6 +1077,12 @@ def classify(content: CandidateContent, release: ArchitectureKnowledge) -> Candi
             if _channel_fill(recorded, channel) != recorded
             else CandidateMatch.ALREADY_PRESENT
         )
+    if content.kind is CandidateKind.OFFERING_RULE:
+        offering = find_offering(release.products, content.system_id)
+        if offering is None:
+            return CandidateMatch.NEEDS_OFFERING
+        present = content.text.casefold() in {item.casefold() for item in offering.rules}
+        return CandidateMatch.ALREADY_PRESENT if present else CandidateMatch.NEW
     if content.kind is CandidateKind.LANDSCAPE_DOMAIN:
         domain = _suggested_domain(content, release)
         if domain is None:
@@ -860,17 +1138,27 @@ def classify(content: CandidateContent, release: ArchitectureKnowledge) -> Candi
             named = find_component(system, content.component_id)
             if named is None:
                 return CandidateMatch.NEEDS_COMPONENT
+        concept = None
+        if content.concept_ids:
+            concept = find_concept(release, content.concept_ids[0])
+            if concept is None:
+                return CandidateMatch.NEEDS_CONCEPT
+            # The system realising the concept already is all a delivered change says.
+            if any(item.concept_id == concept.id for item in system.capabilities):
+                return CandidateMatch.ALREADY_PRESENT
         current = next(
             (item for item in system.capabilities if item.id == content.capability_id), None
         )
         if current is None:
             return CandidateMatch.NEW
         places = named is not None and current.component_id is None
+        linking = concept is not None and current.concept_id is None
         return (
             CandidateMatch.ALREADY_PRESENT
             if set(content.triggers) <= set(current.triggers)
             and current.name == content.name
             and not places
+            and not linking
             else CandidateMatch.UPDATES_EXISTING
         )
     if content.kind is CandidateKind.CONSTRAINT:
@@ -917,23 +1205,171 @@ def open_matches(
 ) -> tuple[PossibleMatch, ...]:
     """The possible matches still to decide: those whose name no draft system answers to yet."""
     content = candidate.content
-    if content.kind in {
-        CandidateKind.LANDSCAPE_DOMAIN,
-        CandidateKind.CHANNEL,
-        CandidateKind.QUESTION,
-    } or (content.kind in _WHOLE):
+    if (
+        content.kind
+        in {
+            CandidateKind.LANDSCAPE_DOMAIN,
+            CandidateKind.CHANNEL,
+            CandidateKind.QUESTION,
+            CandidateKind.OFFERING_RULE,
+        }
+        or content.kind in _WHOLE
+        or content.kind in _CONCEPTUAL
+    ):
         return ()
     if content.kind is CandidateKind.SYSTEM:
-        still_new = classify(content, release) is CandidateMatch.NEW
-        return candidate.possible_matches if still_new else ()
+        if classify(content, release) is not CandidateMatch.NEW:
+            return ()
+        return _with_spellings(
+            candidate.possible_matches,
+            _spelling_matches(MatchRole.SYSTEM, content.name or content.system_id, release),
+        )
     references = {
         MatchRole.SYSTEM: content.system_id,
         MatchRole.TARGET: content.target_system_id or "",
     }
+    # A spelling is asked about once, on the system's own suggestion: answered there, the name
+    # becomes that system's alias and every capability or link naming it resolves. Asked on
+    # each of them, one name was asked about 71 times.
     return tuple(
         match
         for match in candidate.possible_matches
         if find_system(release, references[match.role]) is None
+    )
+
+
+def _compact(value: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", value.casefold())
+
+
+def _close(first: str, second: str, most: int) -> bool:
+    """Whether two spellings are at most ``most`` single-letter edits apart."""
+    if abs(len(first) - len(second)) > most:
+        return False
+    previous = list(range(len(second) + 1))
+    for row, left in enumerate(first, start=1):
+        current = [row]
+        for column, right in enumerate(second, start=1):
+            current.append(
+                min(
+                    previous[column] + 1,
+                    current[column - 1] + 1,
+                    previous[column - 1] + (left != right),
+                )
+            )
+        if min(current) > most:
+            return False
+        previous = current
+    return previous[-1] <= most
+
+
+def _spelling_matches(
+    role: MatchRole, written: str, release: ArchitectureKnowledge
+) -> tuple[PossibleMatch, ...]:
+    """The draft systems a name is spelled almost like, for a person to confirm or not.
+
+    A document writes one system several ways ("FortiGaurd", "Fortimanger", "ESESO");
+    once a person confirms "FortiGaurd" is FortiGuard, it is FortiGuard's alias and
+    every later reading resolves it. Only a slip of a letter or two counts, never a
+    different number ("FortiManager 7.2" is not "FortiManager 7.4"), and the check
+    runs against the draft as it is now, so a variant of a system accepted after the
+    reading is asked about too. Nothing is merged without that confirmation.
+    """
+    key = _compact(written)
+    if len(key) < _MIN_SPELLED:
+        return ()
+    found: list[PossibleMatch] = []
+    for system in release.systems:
+        for label in (system.id, system.name, *system.aliases):
+            other = _compact(label)
+            if (
+                len(other) >= _MIN_SPELLED
+                and other != key
+                and not _versions_differ(key, other)
+                and _close(key, other, 1 if max(len(key), len(other)) < _LONG_NAME else 2)
+            ):
+                found.append(
+                    PossibleMatch(
+                        role,
+                        written,
+                        system.id,
+                        f"Spelled almost like {system.name}: confirm it is the same system.",
+                    )
+                )
+                break
+    return tuple(found[:_MAX_SPELLED])
+
+
+def _versions_differ(first: str, second: str) -> bool:
+    """Whether both names carry a number and the numbers differ: two versions, not a slip."""
+    one, other = re.sub(r"\D", "", first), re.sub(r"\D", "", second)
+    return bool(one and other and one != other)
+
+
+def _with_spellings(
+    stored: tuple[PossibleMatch, ...], spelled: tuple[PossibleMatch, ...]
+) -> tuple[PossibleMatch, ...]:
+    """The matches found when the document was read, then spellings they do not name."""
+    named = {(match.role, match.system_id) for match in stored}
+    return (*stored, *(match for match in spelled if (match.role, match.system_id) not in named))
+
+
+# A name this short ("IN", "OM", "NEC") is too short to tell a slip from another system;
+# a longer one may be two slips off.
+_MIN_SPELLED = 5
+_LONG_NAME = 9
+_MAX_SPELLED = 3
+
+
+def missing_systems(content: CandidateContent, release: ArchitectureKnowledge) -> tuple[str, ...]:
+    """The system references a suggestion makes that no draft system answers to, as written.
+
+    A system is found by id, name, alias or the words of its name (``find_system``),
+    so a name a person confirmed as another system's alias is never missing. The
+    review shows what waits for what from this, rather than matching ids itself:
+    matching ids alone, it kept 24 suggestions waiting for "OM-E2ESO" after a
+    person had answered that OM-E2ESO is ESESO.
+    """
+    kind = content.kind
+    references: list[str] = []
+    if kind is CandidateKind.JOURNEY and content.journey is not None:
+        for step in content.journey.activities:
+            references.extend((step.performing_system_id or "", *step.supporting_system_ids))
+    elif kind is CandidateKind.PRODUCT and content.product is not None:
+        offering = content.product
+        references.extend(
+            duty.system_id for part in offering.components for duty in part.responsibilities
+        )
+        tracking = offering.tracking
+        if tracking is not None:
+            references.extend(
+                name for flow in tracking.flows for name in (flow.from_system_id, flow.to_system_id)
+            )
+            references.extend(
+                name
+                for item in tracking.channels
+                for name in (item.ui_system_id or "", item.read_system_id or "")
+            )
+            references.extend(item.system_id or "" for item in tracking.milestones)
+    elif kind is CandidateKind.CHANNEL and content.channel is not None:
+        references.append(content.channel.entry_system_id or "")
+    elif kind is CandidateKind.CONCEPT:
+        references.extend(ref.system_id for ref in content.capability_refs)
+    elif kind not in {
+        CandidateKind.SYSTEM,
+        CandidateKind.LANDSCAPE_DOMAIN,
+        CandidateKind.OFFERING_RULE,
+        CandidateKind.QUESTION,
+        CandidateKind.COMPONENT_LINK,
+        CandidateKind.VOCABULARY_TERM,
+    }:
+        references.extend((content.system_id, content.target_system_id or ""))
+    return tuple(
+        dict.fromkeys(
+            reference
+            for reference in references
+            if reference and find_system(release, reference) is None
+        )
     )
 
 
@@ -943,9 +1379,18 @@ def needs_one_by_one(candidate: CatalogueCandidate, release: ArchitectureKnowled
     moves = (
         candidate.content.kind is CandidateKind.PLACEMENT or candidate.content.kind in _WHOLE
     ) and classify(candidate.content, release) is CandidateMatch.UPDATES_EXISTING
+    # An offering or journey drafted for a requirement is reviewed alone (Phase 9).
+    drafted = candidate.change_request is not None and candidate.content.kind in _WHOLE
+    # A value no term names is flagged: a maintainer decides each new term alone.
+    flagged = (
+        candidate.content.kind is CandidateKind.VOCABULARY_TERM
+        and classify(candidate.content, release) is CandidateMatch.NEW
+    )
     return (
         candidate.basis is CandidateBasis.INFERRED
         or moves
+        or drafted
+        or flagged
         or bool(open_matches(candidate, release))
     )
 
@@ -1095,6 +1540,20 @@ def _with_offering(
     )
 
 
+def _with_offering_rule(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> ArchitectureKnowledge:
+    offering = find_offering(release.products, content.system_id)
+    if offering is None:
+        raise CandidateDependencyError(
+            f"Accept or add product offering {content.system_id!r} before its rules."
+        )
+    ruled = replace(offering, rules=_merged(offering.rules, (content.text.strip(),)))
+    return release.updated(
+        products=tuple(ruled if item.id == offering.id else item for item in release.products)
+    )
+
+
 def _with_journey(journey: Journey, release: ArchitectureKnowledge) -> ArchitectureKnowledge:
     resolved, gaps = _resolved_journey(journey, release)
     missing = (
@@ -1113,7 +1572,7 @@ def _with_journey(journey: Journey, release: ArchitectureKnowledge) -> Architect
     current = _current_journey(resolved, release)
     if current is None:
         return release.updated(journeys=(*release.journeys, resolved))
-    kept = replace(resolved, id=current.id)
+    kept = kept_journey_terms(replace(resolved, id=current.id), current)
     return release.updated(
         journeys=tuple(kept if item.id == current.id else item for item in release.journeys)
     )
@@ -1148,6 +1607,41 @@ def _with_question(
     return release.updated(
         products=tuple(changed if item.id == offering.id else item for item in release.products)
     )
+
+
+def draft_contents(draft: OfferingDraft) -> tuple[CandidateContent, ...]:
+    """A drafted offering and journey as two whole suggestions, the offering first."""
+    offering = CandidateContent(
+        CandidateKind.PRODUCT, draft.offering.id, name=draft.offering.name, product=draft.offering
+    )
+    if draft.journey is None:
+        return (offering,)
+    return (
+        offering,
+        CandidateContent(
+            CandidateKind.JOURNEY, draft.journey.id, name=draft.journey.name, journey=draft.journey
+        ),
+    )
+
+
+def draft_problems(release: ArchitectureKnowledge, draft: OfferingDraft) -> tuple[str, ...]:
+    """Why a drafted offering and journey would not apply to the release as new items, the
+    offering first; none when both apply cleanly (ontology plan Phase 9)."""
+    if release.status is not KnowledgeReleaseStatus.DRAFT:
+        release = replace(release, status=KnowledgeReleaseStatus.DRAFT)
+    problems: list[str] = []
+    for content in draft_contents(draft):
+        what = f"The drafted {content.kind.value} {content.system_id}"
+        match = classify(content, release)
+        if match is not CandidateMatch.NEW:
+            problems.append(f"{what} {match.value.replace('_', ' ')}.")
+            break
+        try:
+            release = apply_candidate(content, release)
+        except (InvalidKnowledgeError, CandidateDependencyError) as exc:
+            problems.append(f"{what}: {exc}")
+            break
+    return tuple(problems)
 
 
 def change_request_source(incoming: IncomingChangeRequest) -> KnowledgeSource:
@@ -1196,11 +1690,15 @@ def accept_from_change_request(
         )
     question = content.question
     feature = next((item for item in incoming.features if item.id == feature_id), None)
-    summary = (
-        f"Asks of {_asked_of(question, offering, content.system_id)}: {question.text}"
-        if question is not None
-        else (feature.asks() if feature else feature_id)
-    )
+    if question is not None:
+        summary = f"Asks of {_asked_of(question, offering, content.system_id)}: {question.text}"
+    elif content.product is not None:
+        summary = f"Adds the offering {content.product.name}, drafted for the requirement"
+    elif content.journey is not None:
+        summary = f"Adds the journey {content.journey.name}, drafted for the requirement"
+        offering = find_offering(release.products, content.journey.product_id or "")
+    else:
+        summary = feature.asks() if feature else feature_id
     item = ChangeItem(kind=content.kind.value, summary=summary, feature_id=feature_id)
     history = release.change_history
     current = next((each for each in history if each.id == incoming.id), None)
@@ -1212,6 +1710,210 @@ def accept_from_change_request(
             if current is not None
             else (*history, updated)
         )
+    )
+
+
+def _concept_id(release: ArchitectureKnowledge, reference: str) -> str:
+    found = find_concept(release, reference)
+    return found.id if found is not None else reference
+
+
+def _with_concept(
+    content: CandidateContent, suggested: BusinessCapability, release: ArchitectureKnowledge
+) -> ArchitectureKnowledge:
+    """The concept added, or merged into the one it names, and the capabilities it covers
+    linked to it. A capability already linked, or marked as having no concept, keeps that."""
+    missing = [
+        ref.system_id
+        for ref in content.capability_refs
+        if find_system(release, ref.system_id) is None
+    ]
+    if missing:
+        raise CandidateDependencyError(
+            f"Accept or add system {missing[0]!r} before the concept that covers its capability."
+        )
+    gap = _concept_gap(suggested, release)
+    if gap is CandidateMatch.NEEDS_CONCEPT:
+        raise CandidateDependencyError(
+            f"Accept or add concept {suggested.broader_id!r} before the narrower "
+            f"{suggested.pref_label}."
+        )
+    if gap is CandidateMatch.NEEDS_DOMAIN:
+        raise CandidateDependencyError(
+            f"Add capability domain {suggested.domain_id!r} before placing "
+            f"{suggested.pref_label} in it."
+        )
+    broader = find_concept(release, suggested.broader_id) if suggested.broader_id else None
+    concept, current = _concept_to_apply(
+        replace(suggested, broader_id=broader.id if broader else None), release
+    )
+    concepts = (
+        tuple(concept if item.id == current.id else item for item in release.business_capabilities)
+        if current is not None
+        else (*release.business_capabilities, concept)
+    )
+    covered = {
+        (ref.system_id, ref.capability_id) for ref in _covered(content.capability_refs, release)
+    }
+    systems = tuple(
+        replace(
+            system,
+            capabilities=tuple(
+                replace(item, concept_id=concept.id) if (system.id, item.id) in covered else item
+                for item in system.capabilities
+            ),
+        )
+        if any(key[0] == system.id for key in covered)
+        else system
+        for system in release.systems
+    )
+    return release.updated(systems=systems, business_capabilities=concepts)
+
+
+def _with_component_link(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> ArchitectureKnowledge:
+    """The component linked to the suggested concepts as well as those it has."""
+    found = _linked_component(content, release)
+    if found is None:
+        raise CandidateDependencyError(
+            f"Accept or add component {content.component_id!r} of offering "
+            f"{content.system_id!r} before linking it to concepts."
+        )
+    missing = [item for item in content.concept_ids if find_concept(release, item) is None]
+    if missing:
+        raise CandidateDependencyError(
+            f"Accept or add concept {missing[0]!r} before linking components to it."
+        )
+    offering, component = found
+    ids = tuple(
+        dict.fromkeys(
+            (
+                *component.capability_ids,
+                *(_concept_id(release, item) for item in content.concept_ids),
+            )
+        )
+    )
+    # Accepting a link is a maintainer saying a concept fits after all.
+    linked = replace(component, capability_ids=ids, unlinked_reason=None)
+    changed = replace(
+        offering,
+        components=tuple(
+            linked if item.id == component.id else item for item in offering.components
+        ),
+    )
+    return release.updated(
+        products=tuple(changed if item.id == offering.id else item for item in release.products)
+    )
+
+
+def _term_broader(term: VocabularyTerm, release: ArchitectureKnowledge) -> VocabularyTerm:
+    """The term naming its broader term by id, however the suggestion named it."""
+    if term.broader_id is None:
+        return term
+    broader = find_term(release.vocabulary, term.scheme, term.broader_id)
+    if broader is None:
+        raise CandidateDependencyError(
+            f"Accept or add the {SCHEME_NAMES[term.scheme]} {term.broader_id!r} before the "
+            f"narrower {term.pref_label}."
+        )
+    return replace(term, broader_id=broader.id)
+
+
+def _term_to_apply(
+    suggested: VocabularyTerm, release: ArchitectureKnowledge
+) -> tuple[VocabularyTerm, VocabularyTerm | None]:
+    """The term the draft would hold once the suggestion is accepted, and the one it holds
+    now. Like a concept suggestion, it adds labels and fills what is missing; it never
+    moves a term a person placed, nor rewrites its definition."""
+    scheme, terms = suggested.scheme, release.vocabulary
+    current = find_term(terms, scheme, suggested.id) or find_term(
+        terms, scheme, suggested.pref_label
+    )
+    owner_id = current.id if current is not None else None
+
+    def free(label: str) -> bool:
+        owner = find_term(terms, scheme, label)
+        return owner is None or owner.id == owner_id
+
+    labels: list[str] = []
+    for label in (suggested.pref_label, *suggested.alt_labels):
+        key = label_key(label)
+        if free(label) and key not in {label_key(item) for item in labels}:
+            labels.append(label)
+    notation = suggested.notation if suggested.notation and free(suggested.notation) else None
+    if current is None:
+        if not labels or labels[0] != suggested.pref_label:
+            raise CandidateDependencyError(
+                f"{suggested.pref_label!r} already names another {SCHEME_NAMES[scheme]}; edit "
+                "the suggestion to merge into it or to use another label."
+            )
+        return replace(suggested, alt_labels=tuple(labels[1:]), notation=notation), None
+    known = {label_key(item) for item in current.labels}
+    extra = tuple(label for label in labels if label_key(label) not in known)
+    if notation is not None and label_key(notation) in {label_key(item) for item in extra}:
+        notation = None
+    return (
+        replace(
+            current,
+            alt_labels=(*current.alt_labels, *extra),
+            notation=current.notation or notation,
+            definition=current.definition or suggested.definition,
+            broader_id=current.broader_id or suggested.broader_id,
+            exact_match=current.exact_match or suggested.exact_match,
+        ),
+        current,
+    )
+
+
+def _term_places(
+    content: CandidateContent, term_id: str, release: ArchitectureKnowledge
+) -> tuple[VocabularyRef, ...]:
+    return linkable(
+        content.value_refs, term_id, release.products, release.journeys, release.channels
+    )
+
+
+def _classify_term(
+    term: VocabularyTerm, content: CandidateContent, release: ArchitectureKnowledge
+) -> CandidateMatch:
+    if term.broader_id is not None and (
+        find_term(release.vocabulary, term.scheme, term.broader_id) is None
+    ):
+        return CandidateMatch.NEEDS_CONCEPT
+    try:
+        merged, held = _term_to_apply(_term_broader(term, release), release)
+    except CandidateDependencyError:
+        return CandidateMatch.UPDATES_EXISTING
+    if held is None:
+        return CandidateMatch.NEW
+    places = _term_places(content, held.id, release)
+    return (
+        CandidateMatch.UPDATES_EXISTING
+        if places or merged != held
+        else CandidateMatch.ALREADY_PRESENT
+    )
+
+
+def _with_term(
+    content: CandidateContent, suggested: VocabularyTerm, release: ArchitectureKnowledge
+) -> ArchitectureKnowledge:
+    """The term added, or merged into the one it names, and the values it covers linked to
+    it. A place already linked to a term, or whose text has changed, keeps what it has."""
+    term, current = _term_to_apply(_term_broader(suggested, release), release)
+    vocabulary = (
+        tuple(term if item.id == current.id else item for item in release.vocabulary)
+        if current is not None
+        else (*release.vocabulary, term)
+    )
+    linked = with_terms(
+        content.value_refs, term.id, release.products, release.journeys, release.channels
+    )
+    return release.updated(
+        vocabulary=vocabulary,
+        products=linked.products,
+        journeys=linked.journeys,
+        channels=linked.channels,
     )
 
 
@@ -1229,10 +1931,18 @@ def apply_candidate(
         return _with_question(content, content.question, release)
     if content.kind is CandidateKind.JOURNEY and content.journey is not None:
         return _with_journey(content.journey, release)
+    if content.kind is CandidateKind.OFFERING_RULE:
+        return _with_offering_rule(content, release)
     if content.kind is CandidateKind.LANDSCAPE_DOMAIN:
         return _with_domain(content, release)
     if content.kind is CandidateKind.CHANNEL and content.channel is not None:
         return _with_channel(content.channel, release)
+    if content.kind is CandidateKind.CONCEPT and content.concept is not None:
+        return _with_concept(content, content.concept, release)
+    if content.kind is CandidateKind.COMPONENT_LINK:
+        return _with_component_link(content, release)
+    if content.kind is CandidateKind.VOCABULARY_TERM and content.term is not None:
+        return _with_term(content, content.term, release)
     if content.kind is CandidateKind.SYSTEM:
         existing = find_system(release, content.system_id) or find_system(release, content.name)
         arabic = (content.name_ar,) if content.name_ar else ()
@@ -1304,6 +2014,15 @@ def apply_candidate(
                     f"Accept or add component {content.component_id!r} of {system.name} before "
                     "the capabilities it delivers."
                 )
+        concept = None
+        if content.concept_ids:
+            concept = find_concept(release, content.concept_ids[0])
+            if concept is None:
+                raise CandidateDependencyError(
+                    f"Accept or add concept {content.concept_ids[0]!r} before the capabilities "
+                    "that realise it."
+                )
+        held = current.concept_id if current else None
         capability = KnowledgeCapability(
             capability_id,
             content.name.strip(),
@@ -1312,6 +2031,12 @@ def apply_candidate(
             current.domain_id if current else None,
             # nor out of its component; it only places one that has none.
             (current.component_id if current else None) or (named.id if named else None),
+            # It links a capability no one has linked, and never relinks one.
+            held or (concept.id if concept else None),
+            # Accepting a link is a maintainer saying a concept fits after all.
+            None
+            if held is None and concept is not None
+            else (current.unlinked_reason if current else None),
         )
         capabilities = (
             tuple(capability if item.id == capability_id else item for item in system.capabilities)

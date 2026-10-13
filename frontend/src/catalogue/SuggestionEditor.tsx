@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 
 import type { Channel, Journey, Offering, RelationshipKind, Release, Suggestion, SuggestionContent } from "../api/client";
+import { ActionGroup, Button } from "../design/components";
 import { finishedOffering, journeyProblem, lines, offeringProblem, slug } from "./editing";
 import { AreaField, LinesField, SelectField, SystemField, TextField } from "./forms";
 import { JourneyEditor } from "./JourneyEditor";
@@ -46,7 +47,7 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
   useEffect(() => title.current?.focus(), []);
   const [content, setContent] = useState<SuggestionContent>(() => kept ?? ({
     ...original,
-    system_id: original.kind === "landscape_domain" || original.kind === "product" || original.kind === "journey" || original.kind === "channel"
+    system_id: original.kind === "landscape_domain" || original.kind === "product" || original.kind === "journey" || original.kind === "channel" || original.kind === "offering_rule"
       ? original.system_id
       : startingSystem(release, suggestion.system_name, original.system_id),
     target_system_id: original.target_system_id
@@ -91,6 +92,8 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
         return lines(content.triggers).length ? null : "Give at least one phrase that matches it.";
       case "constraint":
         return content.text.trim() ? null : "Say what the constraint is.";
+      case "offering_rule":
+        return content.text.trim() ? null : "Say what the rule is.";
       case "relationship":
         if (!content.target_system_id) return "Choose the system it depends on.";
         if (content.target_system_id === content.system_id) return "A system cannot depend on itself.";
@@ -106,6 +109,12 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
       case "question":
         if (!content.system_id.trim()) return "Choose the offering it asks.";
         return content.question?.text.trim() ? null : "Say what it asks.";
+      case "concept":
+        return content.concept?.pref_label.trim() ? null : "Give the concept a label.";
+      case "component_link":
+        return content.concept_ids.length ? null : "Choose at least one concept.";
+      case "vocabulary_term":
+        return content.term?.pref_label.trim() ? null : "Give the term a label.";
     }
   })();
 
@@ -174,6 +183,27 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
             <AreaField label="Constraint" value={content.text} required onChange={(text) => set({ text })} />
           </>
         );
+      case "offering_rule": {
+        const offerings = release.products ?? [];
+        const chosen = offerings.find((item) => item.id === content.system_id);
+        return (
+          <>
+            <SelectField
+              label="Of the offering"
+              value={content.system_id}
+              wide
+              options={[
+                ...(!chosen && original.system_id
+                  ? [{ value: original.system_id, label: `${words.offering(original.system_id)} (not in the draft yet)` }]
+                  : []),
+                ...offerings.map((item) => ({ value: item.id, label: item.name })),
+              ]}
+              onChange={(system_id) => set({ system_id })}
+            />
+            <AreaField label="Rule" value={content.text} required onChange={(text) => set({ text })} />
+          </>
+        );
+      }
       case "relationship":
         return (
           <>
@@ -304,11 +334,12 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
   const whole = content.kind === "product" || content.kind === "journey";
   return (
     <form
-      className="suggestion-editor"
+      className="cat-form"
+      noValidate
       aria-labelledby={`${id}-title`}
       onSubmit={(event) => {
         event.preventDefault();
-        if (!problem) onAccept(finished());
+        if (!problem && !busy) onAccept(finished());
       }}
       onKeyDown={(event) => {
         if (event.key === "Escape") {
@@ -317,15 +348,16 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
         }
       }}
     >
-      <h3 ref={title} id={`${id}-title`} className="suggestion-detail__label" tabIndex={-1}>Edit, then accept</h3>
-      {whole ? fields : <div className="form__grid">{fields}</div>}
-      <p className="suggestion-editor__actions">
-        <button type="submit" className="action-button" disabled={!!problem || busy} aria-describedby={problem ? `${id}-why` : undefined}>
-          {busy ? "Accepting…" : "Accept as edited"}
-        </button>
-        <button type="button" className="text-button" onClick={onCancel}>Stop editing</button>
-      </p>
-      {problem && <p id={`${id}-why`} className="suggestion-editor__why">{problem}</p>}
+      <h3 ref={title} id={`${id}-title`} className="cat-edit__title" tabIndex={-1}>Edit, then accept</h3>
+      {whole ? fields : <div className="cat-form__grid">{fields}</div>}
+      <div className="cat-edit__foot cat-edit__foot--flush">
+        <ActionGroup>
+          <Button type="submit" variant="primary" busy={busy} unavailableReason={busy ? null : problem}>
+            {busy ? "Accepting…" : "Accept as edited"}
+          </Button>
+          <Button variant="tertiary" onClick={onCancel}>Stop editing</Button>
+        </ActionGroup>
+      </div>
     </form>
   );
 }

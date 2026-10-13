@@ -3,13 +3,10 @@
 Phase 2 · Define.
 
 > **HYPOTHESIS.** No user research has been run (assumption mode), so nothing here is
-> validated yet. The tree test in `tree-test.md` validates it at GATE 2b, or the IA stays
-> labelled a hypothesis.
+> validated yet. It stays labelled a hypothesis until a tree test or usability round runs.
 
 **Inputs:**
 - `object-model.md`;
-- `../research/synthesis.md` (top tasks, themes T2, T7, T8, T10);
-- `../research/01-heuristic-review.md`.
 
 **Decisions it honours:**
 - the Timetable Book's structure is not inherited (GATE 1a);

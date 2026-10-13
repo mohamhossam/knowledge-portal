@@ -23,6 +23,7 @@ from collections.abc import Callable, Collection
 from dataclasses import dataclass
 from enum import StrEnum
 
+from knowledge_portal.domain.architecture.concepts import check_link
 from knowledge_portal.domain.architecture.governance import (
     ArchitectureDecision,
     OpenQuestion,
@@ -121,10 +122,14 @@ class Realisation:
     name: str
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # The realisation record the name means, by id (ontology plan Phase 8); None until a
+    # maintainer links one.
+    record_id: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "layer", realisation_layer(self.layer))
         object.__setattr__(self, "name", required(self.name, "Realisation"))
+        object.__setattr__(self, "record_id", optional(self.record_id, "Realisation record"))
         check_source(self)
 
 
@@ -193,10 +198,13 @@ class ComponentResponsibility:
     order_types: tuple[str, ...] = ()
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # The responsibility role term the role means, beside the code; None while unmapped.
+    role_id: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "system_id", required(self.system_id, "Responsible system"))
         object.__setattr__(self, "role", role_code(self.role))
+        object.__setattr__(self, "role_id", optional(self.role_id, "Role term"))
         object.__setattr__(self, "description", required(self.description, "Responsibility"))
         object.__setattr__(
             self, "order_types", tuple(required(item, "Order type") for item in self.order_types)
@@ -224,13 +232,29 @@ class OfferingComponent:
     source: str | None = None
     # How it is realised, layer by layer: its CFS, the RFSs behind it, its resources.
     realisation: tuple[Realisation, ...] = ()
+    # The business capability concepts it delivers (ADR-0114), by id.
+    capability_ids: tuple[str, ...] = ()
+    # Why no concept fits, when a maintainer has said so; None while undecided.
+    unlinked_reason: str | None = None
+    # The component kind term the kind means, beside the text; None while unmapped.
+    kind_id: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Component id"))
         object.__setattr__(self, "name", required(self.name, "Component name"))
+        object.__setattr__(
+            self,
+            "capability_ids",
+            tuple(required(item, "Capability concept") for item in self.capability_ids),
+        )
+        object.__setattr__(
+            self, "unlinked_reason", optional(self.unlinked_reason, "Why no concept fits")
+        )
+        check_link(self.capability_ids, self.unlinked_reason, self.name)
         for field, label in (
             ("code", "Component code"),
             ("kind", "Component type"),
+            ("kind_id", "Component kind term"),
             ("description", "Description"),
             ("commercial_spec", "Commercial spec"),
             ("technical_spec", "Technical spec"),
@@ -481,6 +505,7 @@ def merge_components(first: OfferingComponent, second: OfferingComponent) -> Off
         name=first.name,
         code=first_known(first.code, second.code),
         kind=first_known(first.kind, second.kind),
+        kind_id=first_known(first.kind_id, second.kind_id),
         mandatory=first_known(first.mandatory, second.mandatory),
         customer_visible=first_known(first.customer_visible, second.customer_visible),
         description=first_known(first.description, second.description),
@@ -491,6 +516,10 @@ def merge_components(first: OfferingComponent, second: OfferingComponent) -> Off
         confidence=first_known(first.confidence, second.confidence),
         source=first_known(first.source, second.source),
         realisation=tuple(layers.values()),
+        capability_ids=first.capability_ids or second.capability_ids,
+        unlinked_reason=None
+        if first.capability_ids or second.capability_ids
+        else first_known(first.unlinked_reason, second.unlinked_reason),
     )
 
 

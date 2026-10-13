@@ -1,147 +1,291 @@
-import { useEffect, useId, useRef, useState } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { Plus } from "lucide-react";
+import { lazy, Suspense, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
-import type { Journey } from "../api/client";
-import { CONFIDENCE, systemName } from "./catalogue";
-import { EditButton, JourneyEdit, WholeRemove } from "./DraftEdits";
-import { JourneyHandovers, JourneySteps } from "./JourneyTimetable";
+import type { Journey, Release } from "../api/client";
+import {
+  ActionGroup, Button, type Column, DataTable, EmptyState, GapBadge, ListFilter, ListFind, ListTools, RecordList, type RecordGroup,
+  RecordPlaceholder, RecordView, Section, Skeleton, Status, Workbench,
+} from "../design/components";
+import { useFocusAfterRender } from "../design/hooks";
+import { count } from "../home/format";
+import { RouterLink } from "../shell/links";
+import { systemName } from "./catalogue";
+import { JourneyEdit, WholeRemove } from "./DraftEdits";
+import { CatalogueHeader } from "./frame/CatalogueHeader";
+import { useFindParam } from "./frame/useFindParam";
+import type { JourneyView } from "./journey/JourneyViews";
+import { SOURCE_TONE, SOURCE_WORD } from "./ontology";
 import { useCatalogueContext } from "./useCatalogue";
 
-/** The journeys in a version: how an order travels from system to system. */
+/** The diagrams load as their own chunk, on the first journey opened (the main chunk stays under budget). */
+const JourneyViews = lazy(() => import("./journey/JourneyViews"));
+const VIEWS: JourneyView[] = ["swimlane", "flowchart", "timeline"];
+
+const ALL = "all";
+
+const systemsOf = (journey: Journey) =>
+  new Set(journey.activities.flatMap((step) => [step.performing_system_id, ...step.supporting_system_ids].filter((id): id is string => Boolean(id))));
+
+const fold = (text: string) => text.normalize("NFKC").toLocaleLowerCase();
+
+/** The order type a journey fulfils, by name when its offering names it. */
+function orderTypeName(release: Release, journey: Journey): string | null {
+  if (!journey.order_type_code) return null;
+  const offering = (release.products ?? []).find((item) => item.id === journey.product_id);
+  return offering?.order_types.find((item) => item.code === journey.order_type_code)?.name ?? journey.order_type_code;
+}
+
+/**
+ * The journeys of a version on the workbench (UX rebuild, phase 3): how an
+ * order travels from system to system. Every journey sits in a narrow list,
+ * grouped by the offering it fulfils, beside the chosen journey drawn as a
+ * swimlane, a flowchart or a stage timeline. With none chosen, every journey
+ * side by side.
+ */
 export function JourneysPage() {
+  const { journeyId } = useParams();
   const { book, base, editable } = useCatalogueContext();
   const navigate = useNavigate();
   const [adding, setAdding] = useState(false);
+  const focusLater = useFocusAfterRender();
   const journeys = book.release.journeys ?? [];
-  const offerings = new Map((book.release.products ?? []).map((item) => [item.id, item]));
+  const chosen = journeyId !== undefined ? journeys.find((item) => item.id === journeyId) : undefined;
+
+  const record = adding ? (
+    <JourneyEdit
+      onDone={(saved) => {
+        setAdding(false);
+        if (saved) return navigate(`${base}/journeys/${encodeURIComponent(saved)}`);
+        focusLater(() => document.getElementById("journey-add"));
+      }}
+    />
+  ) : chosen ? (
+    <JourneyRecord key={chosen.id} journey={chosen} />
+  ) : journeyId !== undefined ? (
+    <EmptyState title={`This version has no journey “${journeyId}”.`} action={<RouterLink href={`${base}/journeys`}>See every journey</RouterLink>} />
+  ) : journeys.length ? (
+    <RecordPlaceholder title={`${count(journeys.length, "journey")}. Choose one to see how its order travels from system to system.`}>
+      <AllJourneys release={book.release} />
+    </RecordPlaceholder>
+  ) : (
+    <EmptyState title="This version describes no journey.">
+      <p>Journeys arrive from a solution design read into a draft{editable ? ", or add one by hand" : ""}.</p>
+    </EmptyState>
+  );
+
   return (
-    <section className="govsection catalogue__first" aria-labelledby="journeys-title">
-      <h2 id="journeys-title" className="govsection__title">Journeys</h2>
-      <p className="govsection__lead">Each journey is read like a timetable: its steps in order, and the system that performs each.</p>
-      {editable && !adding && (
-        <p className="govsection__actions">
-          <EditButton onClick={() => setAdding(true)}>Add a journey</EditButton>
-        </p>
-      )}
-      {adding && (
-        <JourneyEdit
-          onDone={(saved) => {
-            setAdding(false);
-            if (saved) navigate(`${base}/journeys/${encodeURIComponent(saved)}`);
-          }}
-        />
-      )}
-      {journeys.length ? (
-        <table className="govtable">
-          <caption className="visually-hidden">Journeys in this version</caption>
-          <thead>
-            <tr>
-              <th scope="col">Journey</th>
-              <th scope="col" className="cell--end">Steps</th>
-              <th scope="col" className="cell--end">Systems</th>
-            </tr>
-          </thead>
-          <tbody>
-            {journeys.map((journey) => {
-              const offering = journey.product_id ? offerings.get(journey.product_id) : undefined;
-              const orderType = offering?.order_types.find((item) => item.code === journey.order_type_code);
-              const systems = new Set(
-                journey.activities.flatMap((step) => [step.performing_system_id, ...step.supporting_system_ids].filter(Boolean)),
-              );
-              return (
-                <tr key={journey.id} className="row">
-                  <th scope="row">
-                    <Link to={`${base}/journeys/${encodeURIComponent(journey.id)}`} dir="auto">{journey.name}</Link>
-                    {offering && (
-                      <span className="secondary govtable__by" dir="auto">
-                        {offering.name}
-                        {orderType ? ` · ${orderType.name}` : journey.order_type_code ? ` · ${journey.order_type_code}` : ""}
-                      </span>
-                    )}
-                  </th>
-                  <td className="cell--end">{journey.activities.length}</td>
-                  <td className="cell--end">{systems.size}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      ) : (
-        <p className="timetable__quiet">This version describes no journey.</p>
-      )}
-    </section>
+    <>
+      <CatalogueHeader page="journeys" chosen={chosen?.name} />
+      <Workbench
+        listLabel="Journeys"
+        chosen={Boolean(chosen) || adding}
+        list={<JourneysList current={chosen?.id} onAdd={editable && !adding ? () => setAdding(true) : undefined} />}
+        record={record}
+      />
+    </>
   );
 }
 
-export function JourneyPage() {
-  const { journeyId } = useParams();
+/** What a journey's record is missing. A step with no system is the channel's entry system's: not a gap. */
+const journeyGaps = (journey: Journey): string[] => (journey.activities.length ? [] : ["steps"]);
+
+function JourneysList({ current, onAdd }: { current?: string; onAdd?: () => void }) {
   const { book, base } = useCatalogueContext();
-  const journey = (book.release.journeys ?? []).find((item) => item.id === journeyId);
-  if (!journey) {
-    return (
-      <p className="docpage__failure catalogue__first" role="alert">
-        This version has no journey “{journeyId}”. <Link to={`${base}/journeys`}>See every journey</Link>
-      </p>
-    );
-  }
-  return <JourneySheet key={journey.id} journey={journey} />;
+  const release = book.release;
+  const journeys = useMemo(() => release.journeys ?? [], [release.journeys]);
+  const [params, setParams] = useSearchParams();
+  const through = params.get("system") ?? ALL;
+  const [find, setFind] = useFindParam();
+
+  const groups = useMemo<RecordGroup[]>(() => {
+    const query = params.size ? `?${params}` : "";
+    const wanted = fold(find.trim());
+    const offerings = new Map((release.products ?? []).map((item) => [item.id, item.name]));
+    const shown = journeys
+      .filter((journey) => through === ALL || systemsOf(journey).has(through))
+      .filter((journey) => !wanted || [journey.name, orderTypeName(release, journey)].some((text) => text && fold(text).includes(wanted)));
+    // Grouped by the offering each fulfils, in the offerings' order; journeys of none last.
+    const order = [...offerings.keys(), ""];
+    return order.map((offeringId) => ({
+      id: offeringId || "none",
+      label: offeringId ? <bdi>{offerings.get(offeringId)}</bdi> : "Not tied to an offering",
+      items: shown
+        .filter((journey) => (journey.product_id && offerings.has(journey.product_id) ? journey.product_id : "") === offeringId)
+        .map((journey) => ({
+          id: journey.id,
+          href: `${base}/journeys/${encodeURIComponent(journey.id)}${query}`,
+          name: journey.name,
+          bidi: true,
+          // The order type, unless the journey is named after it; then its size.
+          detail: [
+            orderTypeName(release, journey) !== journey.name && orderTypeName(release, journey),
+            count(journey.activities.length, "step"),
+            count(systemsOf(journey).size, "system"),
+          ].filter(Boolean).join(" · "),
+          meta: <GapBadge gaps={journeyGaps(journey)} />,
+        })),
+    }));
+  }, [release, journeys, through, find, base, params]);
+  const shownCount = groups.reduce((sum, group) => sum + group.items.length, 0);
+
+  // Only systems some journey passes through are offered.
+  const passing = [...new Set(journeys.flatMap((journey) => [...systemsOf(journey)]))]
+    .map((id) => ({ id, label: systemName(book, id), count: journeys.filter((journey) => systemsOf(journey).has(id)).length }))
+    .sort((a, b) => a.label.localeCompare(b.label, "en", { sensitivity: "base" }));
+
+  return (
+    <>
+      <ListTools count={through === ALL && !find.trim() ? count(journeys.length, "journey") : `${count(shownCount, "journey")} of ${journeys.length}`}>
+        <ListFind label="Find a journey" value={find} onChange={setFind} placeholder="Name or order type" />
+        {passing.length > 1 && (
+          <ListFilter
+            label="Passes through"
+            value={through}
+            options={[{ id: ALL, label: "Any system", count: journeys.length }, ...passing]}
+            onChange={(value) =>
+              setParams((previous) => {
+                const next = new URLSearchParams(previous);
+                if (value === ALL) next.delete("system");
+                else next.set("system", value);
+                return next;
+              }, { replace: true })
+            }
+          />
+        )}
+        {onAdd && <Button id="journey-add" variant="tertiary" icon={<Plus size={16} />} onClick={onAdd}>Add a journey</Button>}
+      </ListTools>
+      <RecordList
+        label="Journeys in this version"
+        groups={groups}
+        currentId={current}
+        link={RouterLink}
+        empty={find.trim() ? `No journey is known by “${find.trim()}”.` : "No journey passes through this system."}
+      />
+    </>
+  );
 }
 
-/** A journey as a timetable: steps grouped by phase, each with its system and where it goes next. */
-function JourneySheet({ journey }: { journey: Journey }) {
+/** With no journey chosen: every journey side by side, by its steps and stages. */
+function AllJourneys({ release }: { release: Release }) {
+  const { base } = useCatalogueContext();
+  const offerings = new Map((release.products ?? []).map((item) => [item.id, item.name]));
+  const columns: Column<Journey>[] = [
+    {
+      id: "name",
+      header: "Journey",
+      rowHeader: true,
+      bidi: true,
+      cell: (journey) => {
+        const fulfils = journey.product_id ? offerings.get(journey.product_id) : undefined;
+        const orderType = orderTypeName(release, journey);
+        return (
+          <>
+            <Link to={`${base}/journeys/${encodeURIComponent(journey.id)}`}>{journey.name}</Link>
+            {fulfils && <span className="cat-detail"><bdi>{fulfils}</bdi>{orderType && <> · <bdi>{orderType}</bdi></>}</span>}
+          </>
+        );
+      },
+    },
+    { id: "steps", header: "Steps", numeric: true, cell: (journey) => journey.activities.length },
+    { id: "systems", header: "Systems", numeric: true, cell: (journey) => systemsOf(journey).size },
+    // Stages only when some journey is staged: a column of "Not staged" says nothing.
+    ...((release.journeys ?? []).some((journey) => journey.activities.some((step) => step.phase))
+      ? [{
+          id: "phases",
+          header: "Stages",
+          bidi: true,
+          cell: (journey: Journey) => {
+            const phases = [...new Set(journey.activities.map((step) => step.phase).filter(Boolean))];
+            return phases.length ? <span className="cat-clamp">{phases.join(" › ")}</span> : <span className="cat-quiet">Not staged</span>;
+          },
+        }]
+      : []),
+    {
+      id: "source",
+      header: "Source",
+      cell: (journey) => (journey.confidence ? <Status tone={SOURCE_TONE[journey.confidence]}>{SOURCE_WORD[journey.confidence]}</Status> : <span className="cat-quiet">Not stated</span>),
+    },
+  ];
+  return (
+    <Section title="Every journey" count={(release.journeys ?? []).length}>
+      <p className="cat-lead">How an order travels: each step in order, the system that performs it and how it hands over to the next.</p>
+      <DataTable caption="Journeys in this version, side by side" captionHidden columns={columns} rows={release.journeys ?? []} rowId={(journey) => journey.id} />
+    </Section>
+  );
+}
+
+/**
+ * A journey's record (redesign phase 5) as a diagram: swimlanes by system (the
+ * default), a flowchart of its branches, or a timeline of its stages, with
+ * every step also as a table. A drawing wider than the record scrolls
+ * sideways in place. The view is kept in the address.
+ */
+function JourneyRecord({ journey }: { journey: Journey }) {
   const { book, base, editable } = useCatalogueContext();
   const navigate = useNavigate();
-  const [editing, setEditing] = useState<"edit" | "remove" | null>(null);
   const location = useLocation();
-  const id = useId();
-  const heading = useRef<HTMLHeadingElement>(null);
+  const [params, setParams] = useSearchParams();
+  const [editing, setEditing] = useState<"edit" | "remove" | null>(null);
+  const view = VIEWS.find((item) => item === params.get("view")) ?? "swimlane";
   const offering = (book.release.products ?? []).find((item) => item.id === journey.product_id);
-  const orderType = offering?.order_types.find((item) => item.code === journey.order_type_code);
-  useEffect(() => {
-    if (location.key !== "default") heading.current?.focus();
-  }, [location.key]);
+  const orderType = orderTypeName(book.release, journey);
   const channels = new Map((book.release.channels ?? []).map((item) => [item.id, item.name]));
-  const channelName = (channelId: string) => channels.get(channelId) ?? channelId;
-  const system = (systemId: string) => (
-    <Link to={`${base}/systems/${encodeURIComponent(systemId)}`} dir="auto">{systemName(book, systemId)}</Link>
-  );
+  const system = (systemId: string) => <Link to={`${base}/systems/${encodeURIComponent(systemId)}`} dir="auto">{systemName(book, systemId)}</Link>;
 
   return (
-    <article className="sheet" aria-labelledby={`${id}-name`}>
-      <header className="sheet__head">
-        <p className="sheet__trail">
-          <Link to={`${base}/journeys`} className="sheet__all">All journeys</Link>
-        </p>
-        <h2 id={`${id}-name`} ref={heading} tabIndex={-1} className="sheet__title" dir="auto">{journey.name}</h2>
-        <p className="sheet__meta">
-          {offering ? (
-            <>
-              Fulfils <Link to={`${base}/offerings/${encodeURIComponent(offering.id)}`} dir="auto">{offering.name}</Link>
-              {(orderType || journey.order_type_code) && <>, <span dir="auto">{orderType?.name ?? journey.order_type_code}</span></>}
-            </>
-          ) : (
-            "Not tied to an offering"
-          )}
-          {journey.confidence && <> · {CONFIDENCE[journey.confidence]}</>}
-        </p>
-        {journey.description && <p className="sheet__description" dir="auto">{journey.description}</p>}
-        {editable && (
-          <p className="docpage__actions">
-            <EditButton expanded={editing === "edit"} onClick={() => setEditing(editing === "edit" ? null : "edit")}>Edit this journey</EditButton>
-            <EditButton expanded={editing === "remove"} onClick={() => setEditing(editing === "remove" ? null : "remove")}>Remove this journey</EditButton>
-          </p>
-        )}
-      </header>
+    <RecordView
+      title={journey.name}
+      takeFocus={location.key !== "default"}
+      lead={journey.description || undefined}
+      meta={
+        <>
+          {journey.confidence && <Status tone={SOURCE_TONE[journey.confidence]}>{SOURCE_WORD[journey.confidence]}</Status>}
+          <span>
+            {offering ? (
+              <>
+                Fulfils <RouterLink href={`${base}/offerings/${encodeURIComponent(offering.id)}`}><bdi>{offering.name}</bdi></RouterLink>
+                {orderType && <>, <bdi>{orderType}</bdi></>}
+              </>
+            ) : (
+              "Not tied to an offering"
+            )}
+          </span>
+          <span>{count(journey.activities.length, "step")} · {count(systemsOf(journey).size, "system")}</span>
+        </>
+      }
+      actions={
+        editable ? (
+          <ActionGroup label="This journey">
+            <Button aria-expanded={editing === "edit"} onClick={() => setEditing(editing === "edit" ? null : "edit")}>Edit this journey</Button>
+            <Button variant="tertiary" aria-expanded={editing === "remove"} onClick={() => setEditing(editing === "remove" ? null : "remove")}>Remove this journey…</Button>
+          </ActionGroup>
+        ) : undefined
+      }
+    >
       {editing === "edit" && <JourneyEdit journey={journey} onDone={() => setEditing(null)} />}
       {editing === "remove" && (
         <WholeRemove kind="journey" item={journey} onDone={(removed) => (removed ? navigate(`${base}/journeys`) : setEditing(null))} />
       )}
       {editing !== "edit" && (
-        <>
-          <JourneySteps journey={journey} headingId={`${id}-steps`} system={system} channelName={channelName} />
-          <JourneyHandovers journey={journey} headingId={`${id}-handovers`} />
-        </>
+        <Suspense fallback={<Skeleton label="Drawing the journey" rows={6} />}>
+          <JourneyViews
+            journey={journey}
+            systemName={(systemId) => systemName(book, systemId)}
+            system={system}
+            channelName={(channelId) => channels.get(channelId) ?? channelId}
+            view={view}
+            onViewChange={(next) =>
+              setParams((previous) => {
+                const query = new URLSearchParams(previous);
+                if (next === "swimlane") query.delete("view");
+                else query.set("view", next);
+                return query;
+              }, { replace: true })
+            }
+          />
+        </Suspense>
       )}
-    </article>
+    </RecordView>
   );
 }

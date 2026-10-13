@@ -23,6 +23,7 @@ from knowledge_portal.interfaces.api.schemas.organisation import (
     OrganisationResponse,
     PersonRequest,
     ProductRequest,
+    ReferenceFlagResponse,
     RemovalRequest,
     SquadRequest,
     SystemOwnershipResponse,
@@ -51,11 +52,24 @@ def audit(
     return [OrganisationAuditEventResponse.from_domain(item) for item in organisation.audit(actor)]
 
 
+@router.get("/references", response_model=list[ReferenceFlagResponse])
+def references(
+    organisation: OrganisationDep, actor: KnowledgeActorDep
+) -> list[ReferenceFlagResponse]:
+    return [ReferenceFlagResponse.from_domain(item) for item in organisation.references(actor)]
+
+
 @router.get("/systems/{system_id}/ownership", response_model=SystemOwnershipResponse)
 def system_ownership(
-    system_id: str, organisation: OrganisationDep, actor: KnowledgeActorDep
+    system_id: str,
+    organisation: OrganisationDep,
+    actor: KnowledgeActorDep,
+    capability_id: str | None = None,
 ) -> SystemOwnershipResponse:
-    return SystemOwnershipResponse.from_domain(organisation.ownership(system_id, actor))
+    """Who owns a system, or, with ``capability_id``, one business capability concept of it."""
+    return SystemOwnershipResponse.from_domain(
+        organisation.ownership(system_id, actor, capability_id)
+    )
 
 
 @router.post("/people", response_model=OrganisationResponse, status_code=201)

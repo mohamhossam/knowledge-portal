@@ -1,7 +1,7 @@
 {
   "name": "knowledge-portal-ui",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.6.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "lint:brand": "node scripts/brand-lint.mjs",
+    "lint:legacy-css": "node scripts/legacy-css.mjs",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run",
     "e2e": "playwright test",

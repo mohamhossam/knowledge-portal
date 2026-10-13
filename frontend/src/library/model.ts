@@ -10,19 +10,20 @@
  */
 import type { components } from "../api/schema";
 import type { LibraryDocument, LibraryVersion, Publication } from "../api/client";
+import { humanWhere } from "./where";
 
 type Schemas = components["schemas"];
 export type Block = Schemas["DocumentEvidenceBlock"];
 export type Warning = Schemas["DocumentExtractionWarning"];
-export type ReviewedPassage = Schemas["ReviewedPassage"];
-export type Revision = Schemas["ExtractionRevision"];
+type ReviewedPassage = Schemas["ReviewedPassage"];
+type Revision = Schemas["ExtractionRevision"];
 
 /** The reviewer's working decision for one block. */
 export type Draft = { text: string; included: boolean; reason: string };
 export type Drafts = Record<string, Draft>;
 
 export type Change = "same" | "edited" | "excluded" | "new" | "removed";
-export type Filter = "all" | "changed" | "flagged" | "excluded" | "removed";
+type Filter = "all" | "changed" | "flagged" | "excluded" | "removed";
 
 export type Row = {
   key: string;
@@ -48,7 +49,7 @@ export function newestVersion(document: LibraryDocument): LibraryVersion | undef
 }
 
 /** Where the newest version stands. An admin who doesn't own the document gets only its outline. */
-export type NewestState = LibraryVersion | Schemas["VersionOutline"];
+type NewestState = LibraryVersion | Schemas["VersionOutline"];
 
 export function newestState(document: LibraryDocument): NewestState | undefined {
   return document.newest ?? newestVersion(document);
@@ -112,7 +113,7 @@ export const whereOf = (block: Block) =>
 const placeKey = (block: Block) => `${block.section_path.join("/")}::${block.label}`;
 
 /** What the working copy is compared against, and the passages it cites. */
-export type Basis =
+type Basis =
   | { kind: "edition"; publication: Publication; version: LibraryVersion; passages: Map<string, ReviewedPassage> }
   | { kind: "extraction" };
 
@@ -129,8 +130,24 @@ export function comparisonBasis(document: LibraryDocument): Basis {
   };
 }
 
-/** Every row of the review, in reading order, with removed passages after their neighbours. */
-export function reviewRows(document: LibraryDocument, working: LibraryVersion, drafts: Drafts): Row[] {
+/**
+ * What the review's rows need that no decision changes: the basis, which old block each block
+ * matches, its warnings, where it sits, and the passages removed since the edition. It depends
+ * on the document and version only, so the desk works it out once per answer, not per keystroke
+ * (area 2 backlog: the Maps and sorts ran on every draft change).
+ */
+export type Matching = {
+  basis: Basis;
+  /** The working version's blocks in reading order. */
+  blocks: Block[];
+  where: Map<string, string>;
+  matched: Map<string, Block>;
+  warningsOf: Map<string, Warning[]>;
+  /** Rows for passages in service with no counterpart in the working version. */
+  removed: Row[];
+};
+
+export function matchRows(document: LibraryDocument, working: LibraryVersion): Matching {
   const basis = comparisonBasis(document);
   const matched = new Map<string, Block>();
   if (basis.kind === "edition") {
@@ -159,7 +176,39 @@ export function reviewRows(document: LibraryDocument, working: LibraryVersion, d
   for (const warning of working.warning_details) {
     if (warning.block_id) warningsOf.set(warning.block_id, [...(warningsOf.get(warning.block_id) ?? []), warning]);
   }
-  const rows: Row[] = [...working.blocks].sort((a, b) => a.ordinal - b.ordinal).map((block) => {
+  const blocks = [...working.blocks].sort((a, b) => a.ordinal - b.ordinal);
+  const where = new Map(blocks.map((block) => [block.id, whereOf(block)]));
+
+  const removed: Row[] = [];
+  if (basis.kind === "edition" && basis.version.id !== working.id) {
+    const kept = new Set([...matched.values()].map((block) => block.id));
+    for (const block of basis.version.blocks) {
+      const passage = basis.passages.get(block.id);
+      if (!passage?.included || kept.has(block.id)) continue;
+      removed.push({
+        key: `removed-${block.id}`,
+        ordinal: block.ordinal,
+        where: whereOf(block),
+        block: null,
+        basis: passage.text,
+        basisBlockId: block.id,
+        draft: null,
+        change: "removed",
+        warnings: [],
+        blocking: false,
+      });
+    }
+  }
+  return { basis, blocks, where, matched, warningsOf, removed };
+}
+
+/**
+ * Every row of the review, in reading order, with removed passages after their neighbours:
+ * the decisions laid over the matching (pass it in when it is memoized, as the desk does).
+ */
+export function reviewRows(document: LibraryDocument, working: LibraryVersion, drafts: Drafts, matching: Matching = matchRows(document, working)): Row[] {
+  const { basis, matched, warningsOf } = matching;
+  const rows: Row[] = matching.blocks.map((block) => {
     const draft = drafts[block.id] ?? { text: placeholder(block), included: true, reason: "" };
     const warnings = warningsOf.get(block.id) ?? [];
     const old = matched.get(block.id);
@@ -174,7 +223,7 @@ export function reviewRows(document: LibraryDocument, working: LibraryVersion, d
     return {
       key: block.id,
       ordinal: block.ordinal,
-      where: whereOf(block),
+      where: matching.where.get(block.id) ?? whereOf(block),
       block,
       basis: basisText,
       basisBlockId: basis.kind === "edition" ? old?.id ?? null : block.id,
@@ -185,24 +234,8 @@ export function reviewRows(document: LibraryDocument, working: LibraryVersion, d
     };
   });
 
-  if (basis.kind === "edition" && basis.version.id !== working.id) {
-    const kept = new Set([...matched.values()].map((block) => block.id));
-    for (const block of basis.version.blocks) {
-      const passage = basis.passages.get(block.id);
-      if (!passage?.included || kept.has(block.id)) continue;
-      rows.push({
-        key: `removed-${block.id}`,
-        ordinal: block.ordinal,
-        where: whereOf(block),
-        block: null,
-        basis: passage.text,
-        basisBlockId: block.id,
-        draft: null,
-        change: "removed",
-        warnings: [],
-        blocking: false,
-      });
-    }
+  if (matching.removed.length > 0) {
+    rows.push(...matching.removed);
     rows.sort((a, b) => a.ordinal - b.ordinal || (a.change === "removed" ? 1 : 0) - (b.change === "removed" ? 1 : 0));
   }
   return rows;
@@ -267,6 +300,17 @@ export function nextToReview(rows: Row[], fromKey: string | undefined, seen: Rea
 }
 
 /**
+ * What `n` says when it goes round (model §1: never a silent jump): past the last row back to
+ * the top, or with Shift+n past the first to the end. Null for a step that doesn't go round.
+ */
+export function wrapWords(rows: Row[], fromKey: string | undefined, to: Row, backward = false): string | null {
+  const from = rows.findIndex((row) => row.key === fromKey);
+  const at = rows.findIndex((row) => row.key === to.key);
+  if (from < 0 || at < 0 || (backward ? at <= from : at >= from)) return null;
+  return `Back round to the ${backward ? "end" : "top"} of the list: passage ${to.ordinal}, ${humanWhere(to.where)}.`;
+}
+
+/**
  * Whether the owner has a review to finish: the newest version is read and its
  * saved review (if any) has never been published. A withdrawn edition is not
  * awaiting review: it returns to service as it was (StandingPanel).
@@ -279,12 +323,18 @@ export function awaitingReview(document: LibraryDocument): boolean {
 }
 
 /** What stops this draft from being saved, in the reviewer's words; empty when it can be. */
-export function saveProblems(version: LibraryVersion, drafts: Drafts, summary: string): string[] {
+/** What stops the passages being saved as they stand, the summary aside. */
+export function passageProblems(version: LibraryVersion, drafts: Drafts): string[] {
   const problems: string[] = [];
   const missingReason = version.blocks.filter((block) => drafts[block.id] && !drafts[block.id]!.included && !drafts[block.id]!.reason.trim()).length;
   const blank = version.blocks.filter((block) => drafts[block.id] && !drafts[block.id]!.text.trim()).length;
   if (missingReason) problems.push(`${missingReason} excluded ${missingReason === 1 ? "passage needs" : "passages need"} a reason.`);
   if (blank) problems.push(`${blank} ${blank === 1 ? "passage has" : "passages have"} no text.`);
+  return problems;
+}
+
+export function saveProblems(version: LibraryVersion, drafts: Drafts, summary: string): string[] {
+  const problems = passageProblems(version, drafts);
   if (!summary.trim()) problems.push("Write a review summary.");
   return problems;
 }
@@ -322,7 +372,7 @@ export function approvalBlocker(document: LibraryDocument, version: LibraryVersi
   return null;
 }
 
-export type Standing =
+type Standing =
   | { kind: "service"; publication: Publication; versionNumber: number | undefined }
   | { kind: "indexing"; publication: Publication; stuck: boolean }
   | { kind: "withdrawn"; publication: Publication }

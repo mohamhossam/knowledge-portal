@@ -100,7 +100,13 @@ export function useDisclosure(fallback?: () => HTMLElement | null) {
     focusLater(() => (opener.current?.isConnected ? opener.current : fallback?.()));
   }, [fallback, focusLater]);
 
-  return { open, show, close, panel };
+  /** Closes it, focus going to `to` instead of back to the opener (an outcome that was said, say). */
+  const closeTo = useCallback((to: () => HTMLElement | null) => {
+    setOpen(false);
+    focusLater(to);
+  }, [focusLater]);
+
+  return { open, show, close, closeTo, panel };
 }
 
 export type Pending<T> = { id: string; label: string; value: T; until: number };
@@ -179,4 +185,30 @@ export function rovingKeyDown(
   event.preventDefault();
   items.forEach((item) => item.setAttribute("tabindex", item === next ? "0" : "-1"));
   next.focus();
+}
+
+/**
+ * Publishes where an element starts on the page (--split-top), so CSS can give
+ * it the rest of the window. Measured again whenever the page above it changes.
+ */
+export function useFillHeight(ref: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const element = ref.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    let last = "";
+    const measure = () => {
+      const top = `${Math.round(element.getBoundingClientRect().top + window.scrollY)}px`;
+      if (top === last) return;
+      last = top;
+      element.style.setProperty("--split-top", top);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(document.getElementById("ds-main") ?? document.body);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [ref]);
 }

@@ -2,15 +2,20 @@
 
 The organisation catalogue is static reference data. It is edited in place (each
 record carries its own revision for optimistic concurrency) rather than released
-in versions like the architecture catalogue. Systems are referenced by their
-architecture catalogue id and are never created here.
+in versions like the architecture catalogue. Systems, offerings and portfolio
+nodes are referenced by their architecture catalogue id and are never created
+here, so a release can retire something a record still names; ``check_references``
+says which. A squad seat may be scoped to one business capability concept of its system,
+which the system must realise through one of its capabilities.
 """
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Collection, Iterable, Mapping
 from dataclasses import dataclass, replace
 from datetime import datetime
+from enum import StrEnum
+from typing import Literal
 
 
 class InvalidOrganisationError(ValueError):
@@ -76,6 +81,10 @@ class Product:
     name: str
     description: str = ""
     system_ids: tuple[str, ...] = ()
+    # The architecture catalogue's commercial offerings it sells, and the portfolio node
+    # it sits in, by id.
+    offering_ids: tuple[str, ...] = ()
+    portfolio_node_id: str | None = None
     revision: int = 1
 
     def __post_init__(self) -> None:
@@ -87,18 +96,53 @@ class Product:
         if len(set(systems)) != len(systems):
             raise InvalidOrganisationError("A product lists each system once.")
         object.__setattr__(self, "system_ids", systems)
+        offerings = tuple(_required(item, "Product offering") for item in self.offering_ids)
+        if len(set(offerings)) != len(offerings):
+            raise InvalidOrganisationError("A product lists each offering once.")
+        object.__setattr__(self, "offering_ids", offerings)
+        object.__setattr__(
+            self, "portfolio_node_id", _optional(self.portfolio_node_id, "Portfolio node")
+        )
+
+
+class SquadRole(StrEnum):
+    """What a squad resource does on its system: a controlled list."""
+
+    # The person who answers for the system in the squad; every resource recorded
+    # before roles existed holds this one.
+    SYSTEM_CONTACT = "system_contact"
+    DEVELOPER = "developer"
+    TESTER = "tester"
+    SOLUTION_ARCHITECT = "solution_architect"
+    BUSINESS_ANALYST = "business_analyst"
 
 
 @dataclass(frozen=True)
-class SquadSystemResource:
-    """The one person who represents a system inside a squad, if already named."""
+class SquadResource:
+    """A seat in a squad on a system, or on one capability of it, in a role.
+
+    The person is None while the seat is not yet filled: a known staffing gap.
+    """
 
     system_id: str
+    role: SquadRole
     person_id: str | None = None
+    # A business capability concept of the system; None means the whole system.
+    capability_id: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "system_id", _required(self.system_id, "Squad system"))
-        object.__setattr__(self, "person_id", _optional(self.person_id, "System resource"))
+        try:
+            object.__setattr__(self, "role", SquadRole(self.role))
+        except ValueError as exc:
+            raise InvalidOrganisationError(f"Unknown squad role {self.role!r}.") from exc
+        object.__setattr__(self, "person_id", _optional(self.person_id, "Squad resource"))
+        object.__setattr__(self, "capability_id", _optional(self.capability_id, "Capability"))
+
+    @property
+    def seat(self) -> tuple[str, str | None, str]:
+        """What makes it one seat: a person once on a system and capability; else its role."""
+        return (self.system_id, self.capability_id, self.person_id or f"vacant:{self.role}")
 
 
 @dataclass(frozen=True)
@@ -107,7 +151,7 @@ class Squad:
     name: str
     value_stream_id: str
     scrum_master_person_id: str | None = None
-    systems: tuple[SquadSystemResource, ...] = ()
+    resources: tuple[SquadResource, ...] = ()
     revision: int = 1
 
     def __post_init__(self) -> None:
@@ -119,9 +163,19 @@ class Squad:
             "scrum_master_person_id",
             _optional(self.scrum_master_person_id, "Scrum master"),
         )
-        system_ids = [item.system_id for item in self.systems]
-        if len(set(system_ids)) != len(system_ids):
-            raise InvalidOrganisationError("A squad lists each system once.")
+        seats: set[tuple[str, str | None, str]] = set()
+        for resource in self.resources:
+            if resource.seat in seats:
+                raise InvalidOrganisationError(
+                    f"{self.name} lists the same seat on {resource.system_id} twice: a person "
+                    "holds one seat per system and capability, and an open seat is one per role."
+                )
+            seats.add(resource.seat)
+
+    @property
+    def system_ids(self) -> tuple[str, ...]:
+        """The systems it staffs, each once, in the order first named."""
+        return tuple(dict.fromkeys(item.system_id for item in self.resources))
 
 
 @dataclass(frozen=True)
@@ -133,13 +187,27 @@ class OrganisationAuditEvent:
 
 
 @dataclass(frozen=True)
+class OwnedSeat:
+    """One squad's seat on the system being asked about."""
+
+    squad_id: str
+    resource: SquadResource
+
+
+@dataclass(frozen=True)
 class SystemOwnership:
-    """Where one architecture system sits in the organisation."""
+    """Where one architecture system, or one capability of it, sits in the organisation.
+
+    Asked about a capability, the squads and seats scoped to it come first, then those on
+    the whole system; seats on the system's other capabilities are left out.
+    """
 
     system_id: str
     squads: tuple[Squad, ...]
     products: tuple[Product, ...]
     value_streams: tuple[ValueStream, ...]
+    capability_id: str | None = None
+    seats: tuple[OwnedSeat, ...] = ()
 
 
 def _put[R: (Person, ValueStream, Product, Squad)](
@@ -235,8 +303,8 @@ class OrganisationCatalogue:
             )
         for squad in self.squads:
             require_person(squad.scrum_master_person_id, "Scrum master")
-            for resource in squad.systems:
-                require_person(resource.person_id, "System resource")
+            for resource in squad.resources:
+                require_person(resource.person_id, "Squad resource")
 
     def person(self, person_id: str) -> Person:
         return self._find(self.people, person_id, "Person")
@@ -299,15 +367,32 @@ class OrganisationCatalogue:
     def remove_squad(self, squad_id: str, expected_revision: int) -> OrganisationCatalogue:
         return replace(self, squads=_remove(self.squads, squad_id, expected_revision, "Squad"))
 
-    def ownership(self, system_id: str) -> SystemOwnership:
+    def ownership(self, system_id: str, capability_id: str | None = None) -> SystemOwnership:
+        def fits(resource: SquadResource) -> bool:
+            return resource.system_id == system_id and (
+                capability_id is None or resource.capability_id in (None, capability_id)
+            )
+
+        def scoped_first(resource: SquadResource) -> int:
+            return 0 if capability_id is not None and resource.capability_id == capability_id else 1
+
+        by_name = sorted(self.squads, key=lambda item: item.name.casefold())
+        seats = sorted(
+            (
+                OwnedSeat(squad.id, resource)
+                for squad in by_name
+                for resource in squad.resources
+                if fits(resource)
+            ),
+            key=lambda item: scoped_first(item.resource),
+        )
+        first_seat: dict[str, int] = {}
+        for index, seat in enumerate(seats):
+            first_seat.setdefault(seat.squad_id, index)
         squads = tuple(
             sorted(
-                (
-                    squad
-                    for squad in self.squads
-                    if any(item.system_id == system_id for item in squad.systems)
-                ),
-                key=lambda item: item.name.casefold(),
+                (squad for squad in by_name if squad.id in first_seat),
+                key=lambda item: first_seat[item.id],
             )
         )
         products = tuple(
@@ -325,4 +410,93 @@ class OrganisationCatalogue:
                 key=lambda item: item.name.casefold(),
             )
         )
-        return SystemOwnership(system_id, squads, products, streams)
+        return SystemOwnership(system_id, squads, products, streams, capability_id, tuple(seats))
+
+
+@dataclass(frozen=True)
+class CapabilityScope:
+    """One capability of one system, as a squad seat is scoped to it."""
+
+    system_id: str
+    capability_id: str
+
+
+@dataclass(frozen=True)
+class ReferenceFlag:
+    """A squad or product naming what the release in service no longer has, or a product
+    whose systems differ from what its offerings say."""
+
+    subject: Literal["squad", "product"]
+    subject_id: str
+    retired_system_ids: tuple[str, ...] = ()
+    retired_offering_ids: tuple[str, ...] = ()
+    retired_portfolio_node_id: str | None = None
+    # A squad's seats scoped to a capability its system no longer has.
+    retired_capabilities: tuple[CapabilityScope, ...] = ()
+    # A product's systems its offerings name but it does not, and the reverse.
+    systems_missing: tuple[str, ...] = ()
+    systems_unexplained: tuple[str, ...] = ()
+    # A product linked to no offering and no portfolio node.
+    unlinked: bool = False
+
+
+@dataclass(frozen=True)
+class ReleaseReferences:
+    """What one architecture release offers the organisation catalogue to point at."""
+
+    # Each system by id, with the business capability concepts its capabilities are linked to.
+    systems: Mapping[str, Collection[str]]
+    # Each offering by id, with the systems its components name.
+    offering_systems: Mapping[str, Collection[str]]
+    portfolio_node_ids: Collection[str]
+
+
+def check_references(
+    catalogue: OrganisationCatalogue, release: ReleaseReferences
+) -> tuple[ReferenceFlag, ...]:
+    """Flag each squad and product whose links a release leaves stale, squads first."""
+    systems = set(release.systems)
+    flags: list[ReferenceFlag] = []
+    for squad in sorted(catalogue.squads, key=lambda item: item.name.casefold()):
+        retired = tuple(item for item in squad.system_ids if item not in systems)
+        # A capability lapses with its system, so only those of systems still in service.
+        lapsed = tuple(
+            dict.fromkeys(
+                CapabilityScope(item.system_id, item.capability_id)
+                for item in squad.resources
+                if item.capability_id is not None
+                and item.system_id in systems
+                and item.capability_id not in release.systems[item.system_id]
+            )
+        )
+        if retired or lapsed:
+            flags.append(
+                ReferenceFlag(
+                    "squad", squad.id, retired_system_ids=retired, retired_capabilities=lapsed
+                )
+            )
+    for product in sorted(catalogue.products, key=lambda item: item.name.casefold()):
+        offered = [item for item in product.offering_ids if item in release.offering_systems]
+        named = {system for offering in offered for system in release.offering_systems[offering]}
+        node = product.portfolio_node_id
+        flag = ReferenceFlag(
+            "product",
+            product.id,
+            retired_system_ids=tuple(item for item in product.system_ids if item not in systems),
+            retired_offering_ids=tuple(
+                item for item in product.offering_ids if item not in release.offering_systems
+            ),
+            retired_portfolio_node_id=(
+                node if node is not None and node not in release.portfolio_node_ids else None
+            ),
+            systems_missing=tuple(sorted(named - set(product.system_ids))),
+            systems_unexplained=(
+                tuple(item for item in product.system_ids if item in systems and item not in named)
+                if offered
+                else ()
+            ),
+            unlinked=not product.offering_ids and node is None,
+        )
+        if flag != ReferenceFlag("product", product.id):
+            flags.append(flag)
+    return tuple(flags)

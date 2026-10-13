@@ -39,6 +39,8 @@ from knowledge_portal.application.use_cases.architecture_preview import (
 from knowledge_portal.application.use_cases.catalogue_candidates import (
     DecideCatalogueCandidate,
 )
+from knowledge_portal.application.use_cases.change_requests import ReadDeliverySummaries
+from knowledge_portal.application.use_cases.precedents import ReadPrecedentSummaries
 from knowledge_portal.domain.architecture.knowledge import InvalidKnowledgeError
 from knowledge_portal.interfaces.api.dependencies import (
     ContainerDep,
@@ -47,8 +49,10 @@ from knowledge_portal.interfaces.api.dependencies import (
     get_clock,
     get_compare_architecture_impact,
     get_decide_catalogue_candidates,
+    get_delivery_summaries,
     get_manage_architecture_knowledge,
     get_manage_sample_requirements,
+    get_precedent_summaries,
     get_preview_architecture_impact,
     get_read_knowledge_document,
     get_report_mapping_impact,
@@ -68,7 +72,9 @@ from knowledge_portal.interfaces.api.schemas.architecture_knowledge import (
     DocumentPassageResponse,
     DocumentSelectionRequest,
     DraftUpdateRequest,
+    ExtractionRunResponse,
     ImpactComparisonResponse,
+    IndexCoverageResponse,
     KnowledgeAuditEventResponse,
     KnowledgeDocumentVersionResponse,
     KnowledgeReleaseResponse,
@@ -80,6 +86,8 @@ from knowledge_portal.interfaces.api.schemas.architecture_knowledge import (
     RevisionRequest,
     SampleRequirementsRequest,
     SampleRequirementsResponse,
+    SettleSubjectRequest,
+    SettleSubjectResponse,
     SuggestionDecisionRequest,
     SystemUpdateRequest,
 )
@@ -91,7 +99,9 @@ from knowledge_portal.interfaces.api.schemas.change_requests import (
     ChangeRequestReadingResponse,
     ChangeRequestResponse,
     ChangeRequestsResponse,
+    DeliverySummariesResponse,
 )
+from knowledge_portal.interfaces.api.schemas.precedents import PrecedentSummariesResponse
 
 router = APIRouter(prefix="/architecture-knowledge", tags=["architecture knowledge"])
 job_router = APIRouter(prefix="/jobs", tags=["architecture jobs"])
@@ -161,6 +171,16 @@ def get_release(
     release_id: str, knowledge: KnowledgeDep, actor: KnowledgeActorDep
 ) -> KnowledgeReleaseResponse:
     return KnowledgeReleaseResponse.from_domain(knowledge.view(release_id, actor))
+
+
+@router.get("/releases/{release_id}/index-coverage", response_model=IndexCoverageResponse)
+def index_coverage(
+    release_id: str, knowledge: KnowledgeDep, actor: KnowledgeActorDep
+) -> IndexCoverageResponse:
+    """How many evidence chunks link to no concept, and which concepts no chunk speaks of
+    (ontology plan Phase 2). The counts are of the release's last build."""
+    coverage = knowledge.index_coverage(release_id, actor)
+    return IndexCoverageResponse.from_domain(coverage, knowledge.get(release_id))
 
 
 @router.get("/releases/{release_id}/audit", response_model=list[KnowledgeAuditEventResponse])
@@ -240,6 +260,26 @@ def update_draft(
                 None
                 if body.portfolio is None
                 else tuple(item.to_domain() for item in body.portfolio)
+            ),
+            business_capabilities=(
+                None
+                if body.business_capabilities is None
+                else tuple(item.to_domain() for item in body.business_capabilities)
+            ),
+            vocabulary=(
+                None
+                if body.vocabulary is None
+                else tuple(item.to_domain() for item in body.vocabulary)
+            ),
+            interfaces=(
+                None
+                if body.interfaces is None
+                else tuple(item.to_domain() for item in body.interfaces)
+            ),
+            realisations=(
+                None
+                if body.realisations is None
+                else tuple(item.to_domain() for item in body.realisations)
             ),
         )
     )
@@ -509,6 +549,22 @@ def reject_suggestions(
     return RejectSuggestionsResponse(rejected=rejected)
 
 
+@router.post("/releases/{release_id}/suggestions/subject", response_model=SettleSubjectResponse)
+def settle_suggestion_subject(
+    release_id: str,
+    body: SettleSubjectRequest,
+    suggestions: SuggestionsDep,
+    clock: ClockDep,
+    actor: KnowledgeActorDep,
+) -> SettleSubjectResponse:
+    """Say what a name waiting suggestions name is: a system to suggest, or a product
+    offering, so its constraints become the offering's rules."""
+    settled = suggestions.settle_subject(
+        release_id, body.system_id, body.name, body.kind, actor, clock.now()
+    )
+    return SettleSubjectResponse(retyped=settled.retyped, added=settled.added)
+
+
 @router.get(
     "/releases/{release_id}/documents/{version_id}/passage",
     response_model=DocumentPassageResponse,
@@ -533,6 +589,27 @@ def mapping_impact(
 ) -> MappingImpactResponse:
     """Counts of mapped and outdated requirements, features and stories; no titles."""
     return MappingImpactResponse.from_domain(report.execute(actor))
+
+
+@router.get("/precedents/summary", response_model=PrecedentSummariesResponse)
+def precedent_summaries(
+    actor: KnowledgeActorDep,
+    summaries: Annotated[ReadPrecedentSummaries, Depends(get_precedent_summaries)],
+) -> PrecedentSummariesResponse:
+    """How reviewers decided suggested verdicts, per release: accepted, overridden, unknown,
+    and the concepts most overridden (ontology plan Phase 5). Counts only, no text."""
+    return PrecedentSummariesResponse.from_domain(summaries.execute(actor))
+
+
+@router.get("/deliveries/summary", response_model=DeliverySummariesResponse)
+def delivery_summaries(
+    actor: KnowledgeActorDep,
+    summaries: Annotated[ReadDeliverySummaries, Depends(get_delivery_summaries)],
+) -> DeliverySummariesResponse:
+    """How the systems assessments predicted compare with what closed Epics delivered, per
+    release: delivered and predicted, delivered but not predicted, predicted but not
+    delivered (ontology plan Phase 7). Counts only."""
+    return DeliverySummariesResponse.from_domain(summaries.execute(actor))
 
 
 @router.get("/sample-requirements", response_model=SampleRequirementsResponse)
@@ -684,6 +761,59 @@ def accept_all_suggestions(
     )
     return AcceptAllResponse(
         release=KnowledgeReleaseResponse.from_domain(release), remaining=remaining
+    )
+
+
+@router.post(
+    "/releases/{release_id}/concept-proposals",
+    response_model=ExtractionRunResponse,
+    status_code=201,
+)
+def propose_capability_concepts(
+    release_id: str, container: ContainerDep, actor: KnowledgeActorDep
+) -> ExtractionRunResponse:
+    """Suggest one concept per distinct capability name the draft lists (ADR-0114).
+
+    The suggestions replace the undecided ones of the previous backfill.
+    """
+    return ExtractionRunResponse.from_domain(
+        container.propose_capability_concepts.execute(release_id, actor)
+    )
+
+
+@router.post(
+    "/releases/{release_id}/vocabulary-cleanup",
+    response_model=ExtractionRunResponse,
+    status_code=201,
+)
+def clean_up_vocabulary(
+    release_id: str, container: ContainerDep, actor: KnowledgeActorDep
+) -> ExtractionRunResponse:
+    """Suggest the term each eTOM process, channel kind, component kind, role and Open API
+    value the draft writes means; a value no term names is suggested as a new term.
+
+    The suggestions replace the undecided ones of the previous clean-up.
+    """
+    return ExtractionRunResponse.from_domain(
+        container.clean_up_vocabulary.execute(release_id, actor)
+    )
+
+
+@router.post(
+    "/releases/{release_id}/component-link-suggestions",
+    response_model=ExtractionRunResponse,
+    status_code=201,
+    dependencies=[Depends(limit_provider_calls)],
+)
+def suggest_component_capabilities(
+    release_id: str, container: ContainerDep, actor: KnowledgeActorDep
+) -> ExtractionRunResponse:
+    """Ask the configured model which concepts each unlinked offering component delivers.
+
+    The suggestions replace the undecided ones of the previous request (ADR-0114).
+    """
+    return ExtractionRunResponse.from_domain(
+        container.suggest_component_capabilities.execute(release_id, actor)
     )
 
 

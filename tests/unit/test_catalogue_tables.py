@@ -219,7 +219,7 @@ def test_a_row_already_read_is_marked_so_in_the_prompt() -> None:
     assert sent["segments"][0]["read"] is True
     assert (
         '"read": true' in SYSTEM_PROMPT
-        and "propose only capabilities and constraints" in SYSTEM_PROMPT
+        and "propose only capabilities, constraints and offering rules" in SYSTEM_PROMPT
     )
 
 

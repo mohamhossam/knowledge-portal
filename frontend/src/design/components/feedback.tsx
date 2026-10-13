@@ -1,6 +1,6 @@
 import "./feedback.css";
 
-import { AlertTriangle, Check, Clock, Lightbulb, Loader, ShieldAlert, Square, X } from "lucide-react";
+import { AlertTriangle, Check, Clock, Flag, Lightbulb, Loader, ShieldAlert, Square, X } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { type JobState, JOB_WORDS } from "../words";
@@ -9,14 +9,19 @@ import type { LinkLike } from "./layout";
 
 export type { JobState };
 
-/** One status vocabulary across the portal (interaction model §6, content guide §7). */
-export type StatusTone = "neutral" | "working" | "done" | "attention" | "held" | "stopped";
+/**
+ * One status vocabulary across the portal (interaction model §6, content guide §7). `warning`
+ * is a note to check (a flagged passage, a flag icon): lighter than `attention`, and not `held`,
+ * the malware scan's shield.
+ */
+export type StatusTone = "neutral" | "working" | "done" | "attention" | "warning" | "held" | "stopped";
 
 const ICON: Record<StatusTone, typeof Check> = {
   neutral: Clock,
   working: Loader,
   done: Check,
   attention: AlertTriangle,
+  warning: Flag,
   held: ShieldAlert,
   stopped: Square,
 };
@@ -39,6 +44,23 @@ export function Badge({ count, label }: { count: number; label?: string }) {
       <span aria-hidden="true">{count.toLocaleString("en")}</span>
       {/* One phrase; the badge box already separates it from the label before it. */}
       <span className="ds-visually-hidden">{`${count.toLocaleString("en")}${label ? ` ${label}` : ""}`}</span>
+    </span>
+  );
+}
+
+/**
+ * What a record is missing, as one quiet badge ("3 gaps") instead of a column
+ * of "Not stated" per field (UX rebuild, phase 1). It names the fields for
+ * screen readers and on hover; the record says the rest. Nothing missing,
+ * nothing shown.
+ */
+export function GapBadge({ gaps }: { gaps: string[] }) {
+  if (gaps.length === 0) return null;
+  const list = gaps.join(", ");
+  return (
+    <span className="ds-gaps" title={`Missing: ${list}`}>
+      <span aria-hidden="true">{gaps.length === 1 ? "1 gap" : `${gaps.length} gaps`}</span>
+      <span className="ds-visually-hidden">{`Missing: ${list}`}</span>
     </span>
   );
 }
@@ -126,6 +148,8 @@ export type Job = {
   retryLabel?: string;
   onCancel?: () => void;
   subjectHref?: string;
+  /** The press in flight for this job: its button says so and ignores a second press. */
+  busy?: "retry" | "cancel";
 };
 
 /**
@@ -150,8 +174,8 @@ export function JobTray({ jobs, empty = "No jobs are running. Reading, indexing 
           {(job.onRetry || job.onCancel || job.fix) && (
             <div className="ds-actions">
               {job.fix}
-              {job.onRetry && <Button onClick={job.onRetry}>{job.retryLabel ?? "Try again"}<span className="ds-visually-hidden">: {job.kind} {job.subject}</span></Button>}
-              {job.onCancel && <Button variant="quiet" onClick={job.onCancel}>Stop<span className="ds-visually-hidden">: {job.kind} {job.subject}</span></Button>}
+              {job.onRetry && <Button busy={job.busy === "retry"} onClick={job.onRetry}>{job.busy === "retry" ? "Trying again…" : job.retryLabel ?? "Try again"}<span className="ds-visually-hidden">: {job.kind} {job.subject}</span></Button>}
+              {job.onCancel && <Button variant="quiet" busy={job.busy === "cancel"} onClick={job.onCancel}>{job.busy === "cancel" ? "Stopping…" : "Stop"}<span className="ds-visually-hidden">: {job.kind} {job.subject}</span></Button>}
             </div>
           )}
         </li>
@@ -166,5 +190,21 @@ export function LiveMessage({ message }: { message: string }) {
     <p className="ds-visually-hidden" role="status" aria-live="polite">
       {message}
     </p>
+  );
+}
+
+/**
+ * A calm line across the top of a page about something in progress elsewhere
+ * (a draft being prepared), with the way to it. A labelled region, not a live
+ * one: it is read in page order, never announced over the page. Never an alert
+ * colour: a neutral band with an icon and words.
+ */
+export function Banner({ label, icon, children, action }: { label: string; icon?: ReactNode; children: ReactNode; action?: ReactNode }) {
+  return (
+    <section className="ds-banner" aria-label={label}>
+      {icon && <span className="ds-banner__icon" aria-hidden="true">{icon}</span>}
+      <p className="ds-banner__text">{children}</p>
+      {action && <div className="ds-banner__action">{action}</div>}
+    </section>
   );
 }

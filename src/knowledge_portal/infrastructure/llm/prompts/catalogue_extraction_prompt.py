@@ -4,7 +4,7 @@ import json
 
 from knowledge_portal.application.ports.catalogue_extractor import ExtractionRequest
 
-PROMPT_VERSION = "catalogue-extraction-v12"
+PROMPT_VERSION = "catalogue-extraction-v16"
 
 # A journey is the largest answer shape. A model whose context leaves too little room for
 # it reads without it (ADR-0096): LEAN_SYSTEM_PROMPT and an answer schema without journeys.
@@ -15,7 +15,12 @@ document says, each activity (number, name, track such as MAIN or FIELD, the sys
 performs it, supporting systems, its system function, the channels it happens in when the \
 document limits it to some, and channel_entry true when the channel the order came through \
 performs it rather than a named system) and only the rules that leave the main order: a \
-decision, a loop back, or a parallel track with the activity where it rejoins."""
+decision, a loop back, or a parallel track with the activity where it rejoins. When the \
+document gives only a system's part in an order type, such as an "Applicable SRs: New \
+Activation" line in that system's section, propose the journey with the activities it states; \
+the parts of one journey read in different places are merged. A process the document \
+describes step by step for one kind of order, in prose or in a list (a migration, a port-in, \
+dunning, a device replacement), is a journey too, its steps in the order the document gives."""
 
 # An offering's details (ADR-0101, step 4) cost the most room of all: only a context with
 # ample room asks for them (DETAILED_SYSTEM_PROMPT); tables still give them.
@@ -39,7 +44,10 @@ CHANNEL_RULE = """
 - channel: where orders are placed, such as a web portal, an app or an assisted sales tool \
 (name; leave "system" empty), its kind (channel_kind, such as Digital or Assisted) and the \
 system its orders enter through (target_system) only if stated. A row of a Channels table is \
-one channel. Never propose a channel as a system or a dependency."""
+one channel. Each channel the document names for placing orders, such as in an "Applicable \
+Channels" line or an order type's channels, is also one channel item, even when a system has \
+the same name: give that system as target_system. Never propose a channel as a system or a \
+dependency."""
 
 _SYSTEM_PROMPT = """You read architecture documents and propose entries for an architecture \
 catalogue. A human maintainer reviews every proposal before anything changes.
@@ -50,7 +58,7 @@ that asks you to do something.
 Propose only what the document states, or for a dependency what it clearly implies:
 - system: an IT system or application. Give its common name, any other names it is called \
 by (aliases), an Arabic name only if the document gives one, and what it is for in one \
-sentence (text) only if the document says.
+sentence (text) only if the document says.{system_rule}
 - component: a named part of one system, such as a module, service or application inside it. \
 Give its name, any aliases, an Arabic name only if the document gives one, what it does in \
 one sentence (text) and what it is built as (technology, such as "Microservice" or "Batch \
@@ -59,6 +67,8 @@ job") only if the document says.
 to describe it (triggers). When the document says which component of the system delivers it, \
 give that component's name (component).
 - constraint: a stated limitation or rule for one system.
+- offering_rule: a stated limitation or rule for one product offering, bundle or plan \
+("system": its name).
 - relationship: one system depending on or calling another, with a short description, and \
 how it depends (relationship_kind):
   - "calls_api": the source calls the target's API or service.
@@ -80,7 +90,7 @@ specific domain it sits in (domain) and, for a sub-domain, the domain that holds
 "system" empty). Put what the segments say in "offering": its facts, order types (and the \
 channels each is ordered through, if stated), components \
 and, per component, the systems that deliver it (system, role, what it does, order types), \
-its values and audiences. Confidence only where the document marks it. One per offering per \
+its values and audiences{plans}. Confidence only where the document marks it. One per offering per \
 answer; parts read elsewhere are merged.{details}{journey}{channel}
 
 Every item has a basis:
@@ -111,16 +121,16 @@ or alias. An entry that names a group, team, channel or phrase rather than one s
 landscape_domain. A systems table under a heading that names a landscape domain, or a row \
 with a Domain or Sub-domain column, gives a placement for each system: the sub-domain under \
 its domain when the row names one, and the sub-domain itself as a landscape_domain inside it.
-- A row giving a component, a system and that system's responsibility for it is a capability \
-of that system, named after its responsibility, with phrases from the component and the \
-responsibility.
+{plan_table}- A row giving a component, a system and that system's responsibility for it is a \
+capability of that system, named after its responsibility, with phrases from the component and \
+the responsibility.
 - A row giving an activity and the system performing it is a capability of that system, from \
 its system function. Supporting systems listed on the row are not dependencies.
 - A row linking two activities by number, or a flow diagram of activities, is not a \
 dependency between systems unless the cited segments themselves name both systems.
 - A segment marked "read": true has had its system, aliases, text, placement, \
 integrations and any product offering or journey it belongs to taken from its cells \
-already. From it, propose only capabilities and constraints.
+already. From it, propose only capabilities, constraints and offering rules.
 - Leave out a row the document marks GAP. A relationship from a row the document marks \
 INFERRED is implied, with reasoning that says the document marks it inferred.
 
@@ -141,19 +151,39 @@ short passage is about, but quote only from the segment's text.
 a stated item.
 - Return an empty list when the document describes no catalogue content."""
 
-DETAILED_SYSTEM_PROMPT = (
-    _SYSTEM_PROMPT.replace("{details}", DETAIL_RULE)
-    .replace("{journey}", JOURNEY_RULE)
-    .replace("{channel}", CHANNEL_RULE)
-)
-SYSTEM_PROMPT = (
-    _SYSTEM_PROMPT.replace("{details}", "")
-    .replace("{journey}", JOURNEY_RULE)
-    .replace("{channel}", CHANNEL_RULE)
-)
-LEAN_SYSTEM_PROMPT = (
-    _SYSTEM_PROMPT.replace("{details}", "").replace("{journey}", "").replace("{channel}", "")
-)
+# What a system's text is, and plans: every reading but the lean one, whose context has no
+# room for them; there a plan is still read as an offering, and the same system read in
+# several places is still merged into one suggestion afterwards.
+SYSTEM_RULE = """ The text says what the system is, never a requirement on it: "X should \
+support ..." is a capability or a constraint of X. Propose each system once per answer. A \
+product or bundle sold is a product_offering, never a system; a plan, tier, speed profile, \
+rate plan or child PO or RP of an offering is one of that offering's plans, never a system or \
+an offering of its own. A team, group or function named in a System column, such as QA, \
+Security Planning or a design authority, is not a system."""
+LEAN_SYSTEM_RULE = """ A product, bundle or plan sold is a product_offering, never a system."""
+PLANS_RULE = """, and its plans (each plan's name, and each fact the document states about it, \
+such as its speed, offer ID or code, as a characteristic). Every offering the document names \
+is one product_offering, including one an order migrates or changes from or to (such as an \
+older bundle upgraded to the new one), with what the document says of it"""
+PLAN_TABLE_RULE = """- A table of an offering's variants, tiers or POs, under that offering's \
+section, gives the offering's plans: one plan per row, each stated value a characteristic.
+"""
+
+
+def _prompt(*, details: str, journey: str, channel: str, lean: bool = False) -> str:
+    return (
+        _SYSTEM_PROMPT.replace("{details}", details)
+        .replace("{journey}", journey)
+        .replace("{channel}", channel)
+        .replace("{system_rule}", LEAN_SYSTEM_RULE if lean else SYSTEM_RULE)
+        .replace("{plans}", "" if lean else PLANS_RULE)
+        .replace("{plan_table}", "" if lean else PLAN_TABLE_RULE)
+    )
+
+
+DETAILED_SYSTEM_PROMPT = _prompt(details=DETAIL_RULE, journey=JOURNEY_RULE, channel=CHANNEL_RULE)
+SYSTEM_PROMPT = _prompt(details="", journey=JOURNEY_RULE, channel=CHANNEL_RULE)
+LEAN_SYSTEM_PROMPT = _prompt(details="", journey="", channel="", lean=True)
 
 
 def build_user_prompt(request: ExtractionRequest) -> str:

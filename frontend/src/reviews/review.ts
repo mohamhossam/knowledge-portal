@@ -4,7 +4,7 @@
  */
 import type { ReviewStanding, ReviewState } from "../api/client";
 import { formatDay } from "../home/format";
-import type { Rank } from "../timetable/TimetableTable";
+import type { Rank } from "../home/derive";
 
 export const REMINDERS_KEY = ["reviews", "reminders"] as const;
 export const SYSTEM_REVIEWS_KEY = ["architecture", "system-reviews"] as const;
@@ -30,7 +30,7 @@ export function cycleDays(standing: ReviewStanding): number {
 }
 
 /** How long before its due date a review is reminded of (the service's window). */
-export const REMINDER_WINDOW_DAYS = 14;
+const REMINDER_WINDOW_DAYS = 14;
 
 /** The cycle's statuses, kept apart from passage review's "Awaiting your review". */
 export const REVIEW_STATUS = { overdue: "Re-confirmation overdue", due_soon: "Re-confirmation due soon" } as const;

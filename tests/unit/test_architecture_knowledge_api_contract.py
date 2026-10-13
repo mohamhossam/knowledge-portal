@@ -17,6 +17,7 @@ from knowledge_portal.application.ports.architecture_jobs import (
     ArchitectureJob,
     ArchitectureJobKind,
     ArchitectureJobStatus,
+    JobProgress,
 )
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
@@ -74,12 +75,20 @@ def test_job_and_audit_responses_match_the_previous_domain_serialisation() -> No
         attempts=2,
         error_category=None,
         lease_until=AT,
+        queued_at=AT,
+        started_at=AT,
+        progress=JobProgress("reading", 2, 7),
     )
     event = KnowledgeAuditEvent("release-1", "amina", "publish", 3, "Reviewed", AT)
 
-    assert ArchitectureJobResponse.from_domain(job).model_dump(mode="json") == TypeAdapter(
-        ArchitectureJob
-    ).dump_python(job, mode="json")
+    previous = TypeAdapter(ArchitectureJob).dump_python(job, mode="json")
+    del previous["progress"]
+    # How far it got is said flat, as a stage and the parts done of those expected.
+    assert ArchitectureJobResponse.from_domain(job).model_dump(mode="json") == previous | {
+        "stage": "reading",
+        "progress_done": 2,
+        "progress_total": 7,
+    }
     assert KnowledgeAuditEventResponse.from_domain(event).model_dump(mode="json") == TypeAdapter(
         KnowledgeAuditEvent
     ).dump_python(event, mode="json")

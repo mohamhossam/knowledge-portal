@@ -55,7 +55,8 @@ function open(path: string) {
           <Routes>
             <Route element={<Shell />}>
               <Route index element={<HomePage />} />
-              <Route path="squads" element={<h1>Table 3: Squad catalogue</h1>} />
+              <Route path="explorer/older" element={<h1>An older page</h1>} />
+              <Route path="library/:documentId" element={<h1>A library document</h1>} />
             </Route>
           </Routes>
         </MemoryRouter>
@@ -65,38 +66,31 @@ function open(path: string) {
 }
 
 describe("the shell", () => {
-  it("offers the same utilities, skip links and areas on a rebuilt page and on a legacy one", async () => {
-    for (const [path, title] of [["/", "Your work"], ["/squads", "Table 3: Squad catalogue"]] as const) {
+  it("offers the same utilities, skip links and areas on every page", async () => {
+    for (const [path, title] of [["/", "To do"], ["/explorer/older", "An older page"]] as const) {
       open(path);
       await screen.findByRole("heading", { level: 1, name: title });
       const banner = screen.getByRole("banner");
       await within(banner).findByRole("button", { name: "Jobs 1 active or needing attention" });
-      const [jobs, help, account] = within(banner).getAllByRole("button");
+      const [search, jobs, help, account] = within(banner).getAllByRole("button");
+      expect(search).toHaveAccessibleName("Search");
+      expect(within(banner).getByRole("search", { name: "Portal" })).toContainElement(search!);
       expect(jobs).toHaveAccessibleName("Jobs 1 active or needing attention");
       expect(help).toHaveAccessibleName("Help");
       expect(account).toHaveAccessibleName("Account: Amina Owner");
       expect(screen.getByRole("link", { name: "Skip to content" })).toBeInTheDocument();
-      expect(within(screen.getByRole("navigation", { name: "Areas" })).getByRole("link", { name: /Your work/ })).toHaveAccessibleName("Your work 1 need you");
+      expect(within(screen.getByRole("navigation", { name: "Areas" })).getByRole("link", { name: /To do/ })).toHaveAccessibleName("To do 1 need you");
       document.body.innerHTML = "";
     }
   });
 
-  it("keeps a page that isn't rebuilt yet in the legacy island, and a rebuilt one out of it", async () => {
-    open("/squads");
-    const legacy = await screen.findByRole("heading", { level: 1, name: "Table 3: Squad catalogue" });
-    expect(legacy.closest(".ds-legacy")).not.toBeNull();
-    document.body.innerHTML = "";
-    open("/");
-    expect((await screen.findByRole("heading", { level: 1, name: "Your work" })).closest(".ds-legacy")).toBeNull();
-  });
-
-  it("ranks the failed read first on Your work, and the rail counts the same entries", async () => {
+  it("ranks the failed read first on To do, and the sidebar counts the same entries", async () => {
     open("/");
     const attention = await screen.findByRole("region", { name: /Needs attention/ });
     expect(attention).toHaveTextContent("Couldn't read");
     expect(attention).toHaveTextContent("Row 2 is short.");
-    const row = within(attention).getByRole("rowheader", { name: "Site survey checklist" });
-    expect(within(row).getByRole("link", { name: "Site survey checklist" })).toHaveAttribute("href", "/library/f");
+    const task = within(attention).getByRole("heading", { level: 3, name: "Site survey checklist" });
+    expect(within(task).getByRole("link", { name: "Site survey checklist" })).toHaveAttribute("href", "/library/f");
   });
 
   it("acts on the failed read from its row: tries reading again, says so, and moves focus to what it said (area 2)", async () => {
@@ -110,7 +104,7 @@ describe("the shell", () => {
     await waitFor(() => expect(said).toHaveFocus());
   });
 
-  it("says a part of Your work couldn't be read, instead of saying nothing is due, and retries it", async () => {
+  it("says a part of To do couldn't be read, instead of saying nothing is due, and retries it", async () => {
     const reminders = vi.spyOn(api, "reminders").mockRejectedValue(new Error("offline"));
     open("/");
     const due = await screen.findByRole("region", { name: "Re-confirmations due" });
@@ -125,10 +119,10 @@ describe("the shell", () => {
 
   it("opens Help beside the page, with the four parts, and hands focus back on Esc", async () => {
     open("/");
-    await screen.findByRole("heading", { level: 1, name: "Your work" });
+    await screen.findByRole("heading", { level: 1, name: "To do" });
     const help = screen.getByRole("button", { name: "Help" });
     await userEvent.click(help);
-    for (const part of ["Your work", "Keyboard shortcuts", "Terms on this page", "Ask the knowledge team"]) {
+    for (const part of ["To do", "Keyboard shortcuts", "Terms on this page", "Ask the knowledge team"]) {
       expect(screen.getByRole("heading", { level: 3, name: part })).toBeInTheDocument();
     }
     await userEvent.keyboard("{Escape}");
@@ -138,7 +132,7 @@ describe("the shell", () => {
 
   it("shows the failed read in Jobs with its cause and the fix", async () => {
     open("/");
-    await screen.findByRole("heading", { level: 1, name: "Your work" });
+    await screen.findByRole("heading", { level: 1, name: "To do" });
     await userEvent.click(screen.getByRole("button", { name: /Jobs/ }));
     const jobs = screen.getByRole("list", { name: "Jobs" });
     expect(jobs).toHaveTextContent("Needs attention");
@@ -155,7 +149,7 @@ describe("the shell", () => {
     const retry = vi.spyOn(api, "retry").mockResolvedValue(failed);
     const cancel = vi.spyOn(api, "cancel").mockResolvedValue(running);
     open("/");
-    await screen.findByRole("heading", { level: 1, name: "Your work" });
+    await screen.findByRole("heading", { level: 1, name: "To do" });
     await userEvent.click(screen.getByRole("button", { name: /Jobs/ }));
     const jobs = screen.getByRole("list", { name: "Jobs" });
     expect(jobs).toHaveTextContent("Attempt 2 of 3");
@@ -168,7 +162,7 @@ describe("the shell", () => {
 
   it("keeps page-wide shortcuts off until the person turns them on in Account (WCAG 2.1.4)", async () => {
     open("/");
-    await screen.findByRole("heading", { level: 1, name: "Your work" });
+    await screen.findByRole("heading", { level: 1, name: "To do" });
     await userEvent.keyboard("?");
     expect(screen.queryByRole("heading", { level: 2, name: "Help" })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Account: Amina Owner" }));
@@ -181,7 +175,7 @@ describe("the shell", () => {
 
   it("hands focus back to the button pressed last when switching panels", async () => {
     open("/");
-    await screen.findByRole("heading", { level: 1, name: "Your work" });
+    await screen.findByRole("heading", { level: 1, name: "To do" });
     await userEvent.click(screen.getByRole("button", { name: /Jobs/ }));
     const help = screen.getByRole("button", { name: "Help" });
     await userEvent.click(help);
@@ -192,7 +186,7 @@ describe("the shell", () => {
 
   it("opens Help at its shortcuts from the address", async () => {
     open("/?help=shortcuts");
-    await screen.findByRole("heading", { level: 1, name: "Your work" });
+    await screen.findByRole("heading", { level: 1, name: "To do" });
     expect(await screen.findByRole("heading", { level: 3, name: "Keyboard shortcuts" })).toHaveFocus();
   });
 
@@ -209,9 +203,78 @@ describe("the shell", () => {
 
   it("switches the offline persona from Account", async () => {
     open("/");
-    await screen.findByRole("heading", { level: 1, name: "Your work" });
+    await screen.findByRole("heading", { level: 1, name: "To do" });
     await userEvent.click(screen.getByRole("button", { name: "Account: Amina Owner" }));
     await userEvent.selectOptions(screen.getByRole("combobox", { name: /Persona/ }), "fake-reviewer");
     expect(auth.switchFakeActor).toHaveBeenCalledWith("fake-reviewer");
+  });
+
+  it("opens search with Ctrl+K from anywhere, finds a document by its name, and opens it", async () => {
+    const search = vi.spyOn(api, "search").mockResolvedValue([]);
+    open("/");
+    await screen.findByRole("heading", { level: 1, name: "To do" });
+    await userEvent.keyboard("{Control>}k{/Control}");
+    const field = screen.getByRole("combobox", { name: "Search the library and catalogue" });
+    expect(field).toHaveFocus();
+    await userEvent.type(field, "survey");
+    const hit = await screen.findByRole("option", { name: /Site survey checklist/ });
+    expect(hit).toHaveAttribute("aria-selected", "true");
+    // Passages are searched by the service once typing pauses.
+    await waitFor(() => expect(search).toHaveBeenCalledWith("survey"));
+    await userEvent.keyboard("{Enter}");
+    expect(await screen.findByRole("heading", { level: 1, name: "A library document" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Search" })).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("names the panel a masthead button opens, while it is open", async () => {
+    open("/");
+    await screen.findByRole("heading", { level: 1, name: "To do" });
+    const help = screen.getByRole("button", { name: "Help" });
+    expect(help).not.toHaveAttribute("aria-controls");
+    await userEvent.click(help);
+    const id = help.getAttribute("aria-controls");
+    expect(id).toBeTruthy();
+    expect(document.getElementById(id!)).toHaveAccessibleName("Help");
+  });
+
+  it("says a job's press is in progress, and ignores a second press (area 2)", async () => {
+    const retry = vi.spyOn(api, "retry").mockReturnValue(new Promise<never>(() => {}));
+    open("/");
+    await screen.findByRole("heading", { level: 1, name: "To do" });
+    await userEvent.click(screen.getByRole("button", { name: /Jobs/ }));
+    const jobs = screen.getByRole("list", { name: "Jobs" });
+    await userEvent.click(within(jobs).getByRole("button", { name: "Try reading again: Reading Site survey checklist" }));
+    const busy = await within(jobs).findByRole("button", { name: "Trying again…: Reading Site survey checklist" });
+    expect(busy).toHaveAttribute("aria-busy", "true");
+    await userEvent.click(busy);
+    expect(retry).toHaveBeenCalledTimes(1);
+  });
+
+  it("marks what began waiting since the last visit as new, in words, and keeps this visit for the next", async () => {
+    window.localStorage.setItem("knowledge-portal.todo.last-visit", String(Date.parse("2026-09-15T00:00:00Z")));
+    open("/");
+    const attention = await screen.findByRole("region", { name: /Needs attention/ });
+    // Uploaded on 1 October, after the last visit.
+    expect(within(attention).getByText("New")).toHaveTextContent("New since your last visit");
+    expect(screen.getByText(/1 new since your last visit\./)).toBeInTheDocument();
+    expect(Number(window.localStorage.getItem("knowledge-portal.todo.last-visit"))).toBeGreaterThan(Date.parse("2026-10-01T00:00:00Z"));
+  });
+
+  it("finds in To do and orders it by waiting time, in the address", async () => {
+    const other = { ...failed, id: "g", title: "Gateway runbook", versions: [{ ...failed.versions[0]!, id: "g-v1", uploaded_at: "2026-09-01T09:00:00Z" }] } as LibraryDocument;
+    vi.spyOn(api, "libraryDocuments").mockResolvedValue([failed, other]);
+    open("/");
+    const attention = await screen.findByRole("region", { name: /Needs attention/ });
+    const titles = () => within(attention).getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent);
+    await waitFor(() => expect(titles()).toHaveLength(2));
+    await userEvent.selectOptions(screen.getByRole("combobox", { name: "Order" }), "newest");
+    expect(titles()).toEqual(["Site survey checklist", "Gateway runbook"]);
+    await userEvent.selectOptions(screen.getByRole("combobox", { name: "Order" }), "oldest");
+    expect(titles()).toEqual(["Gateway runbook", "Site survey checklist"]);
+    await userEvent.type(screen.getByRole("searchbox", { name: "Find in To do" }), "survey");
+    expect(titles()).toEqual(["Site survey checklist"]);
+    await userEvent.clear(screen.getByRole("searchbox", { name: "Find in To do" }));
+    await userEvent.type(screen.getByRole("searchbox", { name: "Find in To do" }), "nothing like it");
+    expect(within(attention).getByText(/None of these match/)).toBeInTheDocument();
   });
 });

@@ -1,13 +1,14 @@
-import { BellRing, BookOpen, CircleHelp, Compass, FileText, Layers, LayoutDashboard, ListChecks, UserRound, UsersRound, WifiOff } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { BookOpen, CircleHelp, Compass, FileText, Inbox, Layers, ListChecks, UserRound, UsersRound, WifiOff } from "lucide-react";
+import { Suspense, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { Outlet, useLocation, useSearchParams } from "react-router-dom";
 
 import { useAuth } from "../auth/authContext";
 import { REQUIREMENT_APP_URL } from "../auth/paths";
-import { AppShell, LiveMessage, MastheadButton, type NavItem } from "../design/components";
+import { AppShell, LiveMessage, MastheadButton, type NavItem, Skeleton } from "../design/components";
 import { useDisclosure, useFocusAfterRender } from "../design/hooks";
 import { RouterLink } from "../shell/links";
 import { SHORTCUTS_EVENT } from "../shell/shortcuts";
+import { useGlobalSearch } from "../shell/GlobalSearch";
 import { AccountPanel, HelpPanel, JobsPanel } from "../shell/panels";
 import { densityFor, usePreferences } from "../shell/preferences";
 import { useGlobalShortcuts } from "../shell/useGlobalShortcuts";
@@ -16,39 +17,26 @@ import { useWorkQueue } from "../work/queue";
 
 type Panel = "jobs" | "help" | "account";
 
-/**
- * Routes rebuilt on the design system (redesign Phase 8). Any other route
- * renders in the legacy island, looking as it did, until its area is built.
- */
-const REDESIGNED: ((path: string) => boolean)[] = [
-  (path) => path === "/",
-  // Area 2: the library, its search and every document's pages.
-  (path) => path === "/library" || path.startsWith("/library/"),
-  // The architecture catalogue, rebuilt from scratch (plan 03-architecture-catalogue).
-  (path) => path === "/architecture" || path.startsWith("/architecture/"),
-  // The catalogue redesign draws its own pages on the design system's tokens.
-  (path) => path.startsWith("/design-lab/catalogue"),
-];
+function subscribeOnline(onChange: () => void) {
+  window.addEventListener("online", onChange);
+  window.addEventListener("offline", onChange);
+  return () => {
+    window.removeEventListener("online", onChange);
+    window.removeEventListener("offline", onChange);
+  };
+}
 
+/** The browser's own signal, read where it lives (no copy in state). */
 function useOnline() {
-  const [online, setOnline] = useState(() => navigator.onLine);
-  useEffect(() => {
-    const update = () => setOnline(navigator.onLine);
-    window.addEventListener("online", update);
-    window.addEventListener("offline", update);
-    return () => {
-      window.removeEventListener("online", update);
-      window.removeEventListener("offline", update);
-    };
-  }, []);
-  return online;
+  return useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true);
 }
 
 /**
- * The portal's frame (IA §2): skip links, the maroon masthead with the same
- * three utilities on every page (Jobs, Help, Account; WCAG 3.2.6), the
- * five-area rail with the shared "need you" count, and Jobs, Help and Account
- * as side panels beside the page. "?help" in the address opens Help.
+ * The portal's frame (IA §2): skip links, the slim maroon brand bar with search
+ * and the same three utilities on every page (Jobs, Help, Account; WCAG 3.2.6),
+ * the sidebar (To do with the shared "need you" count, then the look-up areas),
+ * and Jobs, Help and Account as side panels beside the page. "?help" in the
+ * address opens Help.
  */
 export function Shell() {
   const auth = useAuth();
@@ -58,6 +46,7 @@ export function Shell() {
   const online = useOnline();
   const needsYou = useWorkQueue().mine;
   const jobs = useJobs();
+  const search = useGlobalSearch();
   const openShortcuts = useCallback(() => {
     setParams((previous) => {
       const next = new URLSearchParams(previous);
@@ -108,34 +97,36 @@ export function Shell() {
 
   const path = location.pathname;
   const under = (prefix: string) => path === prefix || path.startsWith(`${prefix}/`);
+  // To do first, with the one count; then the areas you look things up in (UX rebuild plan, phase 1).
   const navigation: NavItem[] = [
-    { href: "/", label: "Your work", current: path === "/", count: needsYou, countLabel: "need you", icon: <LayoutDashboard /> },
-    { href: "/library", label: "Library", current: under("/library"), icon: <BookOpen /> },
+    { href: "/", label: "To do", current: path === "/", count: needsYou, countLabel: "need you", icon: <Inbox /> },
+    { href: "/library", label: "Library", current: under("/library"), icon: <BookOpen />, group: "Look up" },
     // In development the catalogue opens on its redesign (a development-only lab, like its route); production keeps /architecture.
-    { href: import.meta.env.DEV ? "/design-lab/catalogue" : "/architecture", label: "Catalogue", current: under("/architecture") || under("/design-lab/catalogue"), icon: <Layers /> },
-    { href: "/squads", label: "Ownership", current: under("/squads"), icon: <UsersRound /> },
-    { href: "/requirement-knowledge", label: "Requirements", current: under("/requirement-knowledge"), icon: <FileText /> },
+    { href: import.meta.env.DEV ? "/design-lab/catalogue" : "/architecture", label: "Catalogue", current: under("/architecture") || under("/design-lab/catalogue"), icon: <Layers />, group: "Look up" },
+    { href: "/squads", label: "Ownership", current: under("/squads"), icon: <UsersRound />, group: "Look up" },
+    { href: "/requirement-knowledge", label: "Requirements", current: under("/requirement-knowledge"), icon: <FileText />, group: "Look up" },
   ];
+  // Re-confirmations are To do's now (UX rebuild, phase 2): "/reminders" leads there.
   const secondary: NavItem[] = [
     { href: "/explorer", label: "Explorer", current: under("/explorer"), icon: <Compass /> },
-    { href: "/reminders", label: "Re-confirmations", current: under("/reminders"), icon: <BellRing /> },
   ];
 
   const actor = auth?.actor ?? null;
   const panel = isOpen("jobs") ? (
-    <JobsPanel jobs={jobs.jobs} state={jobs.state} onRetry={jobs.retry} onAct={jobs.act} said={jobs.said} onClose={close} panelRef={sidePanel} />
+    <JobsPanel id="shell-panel" jobs={jobs.jobs} state={jobs.state} onRetry={jobs.retry} onAct={jobs.act} busy={jobs.busy} said={jobs.said} onClose={close} panelRef={sidePanel} />
   ) : isOpen("help") ? (
-    <HelpPanel path={path} section={helpParam} onClose={close} panelRef={sidePanel} />
+    <HelpPanel id="shell-panel" path={path} section={helpParam} onClose={close} panelRef={sidePanel} />
   ) : isOpen("account") && actor ? (
-    <AccountPanel actor={actor} onClose={close} panelRef={sidePanel} />
+    <AccountPanel id="shell-panel" actor={actor} onClose={close} panelRef={sidePanel} />
   ) : null;
 
-  const redesigned = REDESIGNED.some((match) => match(path));
+  // Focus mode (UX rebuild, phase 2): one question at a time, without the sidebar.
+  const focus = /\/focus\/?$/.test(path);
   const busy = activeJobs(jobs.jobs);
 
   return (
-    // A page without a dark mode (not rebuilt yet, or the light-only catalogue redesign) keeps its whole view light, so one view is one theme.
-    <div data-density={densityFor(density, "page")} data-theme={redesigned && !path.startsWith("/design-lab/") ? undefined : "light"}>
+    // The catalogue redesign is light only, so its view stays light whatever the theme.
+    <div data-density={densityFor(density, "page")} data-theme={path.startsWith("/design-lab/catalogue") ? "light" : undefined}>
       <AppShell
         homeHref="/"
         product="Knowledge Portal"
@@ -144,26 +135,25 @@ export function Shell() {
         locationKey={location.pathname}
         navigation={navigation}
         secondaryNavigation={secondary}
+        reader={focus}
         banner={online ? undefined : <><WifiOff size={16} aria-hidden="true" /> You're offline. Your unsaved work stays here; the portal carries on when your connection returns.</>}
         utilities={
           <>
-            <MastheadButton id="shell-jobs" icon={<ListChecks size={16} />} label="Jobs" count={busy} countLabel="active or needing attention" expanded={isOpen("jobs")} onClick={toggle("jobs")} />
-            <MastheadButton id="shell-help" icon={<CircleHelp size={16} />} label="Help" expanded={isOpen("help")} onClick={toggle("help")} />
-            <MastheadButton id="shell-account" icon={<UserRound size={16} />} label={actor?.display_name ?? "Account"} hiddenPrefix={actor ? "Account:" : undefined} expanded={isOpen("account")} onClick={toggle("account")} />
+            {/* Jobs keeps its count's room: the count arrives with the documents, and the bar doesn't shift. */}
+            <MastheadButton id="shell-jobs" icon={<ListChecks size={16} />} label="Jobs" count={busy} countLabel="active or needing attention" reserveCount expanded={isOpen("jobs")} controls="shell-panel" onClick={toggle("jobs")} />
+            <MastheadButton id="shell-help" icon={<CircleHelp size={16} />} label="Help" expanded={isOpen("help")} controls="shell-panel" onClick={toggle("help")} />
+            <MastheadButton id="shell-account" icon={<UserRound size={16} />} label={actor?.display_name ?? "Account"} hiddenPrefix={actor ? "Account:" : undefined} expanded={isOpen("account")} controls="shell-panel" onClick={toggle("account")} />
           </>
         }
         panel={panel}
+        search={search.trigger}
+        overlay={search.overlay}
       >
         <LiveMessage message={jobs.announcement} />
-        {redesigned ? (
+        {/* An area's pages arrive in their own chunk: the skeleton until then, never a blank page (§8). */}
+        <Suspense fallback={<Skeleton label="Opening the page" rows={6} />}>
           <Outlet />
-        ) : (
-          <div className="ds-legacy">
-            <div className="page">
-              <Outlet />
-            </div>
-          </div>
-        )}
+        </Suspense>
       </AppShell>
     </div>
   );

@@ -40,6 +40,7 @@ from knowledge_portal.domain.architecture.change_requests import (
     TracedFeature,
 )
 from knowledge_portal.domain.architecture.channels import Channel
+from knowledge_portal.domain.architecture.concepts import BusinessCapability
 from knowledge_portal.domain.architecture.governance import (
     ArchitectureDecision,
     ConflictScope,
@@ -47,6 +48,11 @@ from knowledge_portal.domain.architecture.governance import (
     KnowledgeSource,
     OpenQuestion,
     SourceConflict,
+)
+from knowledge_portal.domain.architecture.interfaces import (
+    InterfaceStyle,
+    SystemInterface,
+    interface_style,
 )
 from knowledge_portal.domain.architecture.journeys import (
     Activity,
@@ -86,6 +92,7 @@ from knowledge_portal.domain.architecture.products import (
     Realisation,
     SourceConfidence,
 )
+from knowledge_portal.domain.architecture.realisations import RealisationRecord
 from knowledge_portal.domain.architecture.tracking import (
     FalloutCase,
     OrderTracking,
@@ -93,6 +100,7 @@ from knowledge_portal.domain.architecture.tracking import (
     TrackingEvent,
     TrackingFlow,
 )
+from knowledge_portal.domain.architecture.vocabularies import VocabularyTerm, vocabulary_scheme
 
 SYSTEMS = "Systems"
 COMPONENTS = "Components"
@@ -131,6 +139,10 @@ PORTFOLIO = "Portfolio"
 PLANS = "Plans"
 PLAN_CHARACTERISTICS = "PlanCharacteristics"
 BUSINESS_RULES = "BusinessRules"
+CONCEPTS = "Concepts"
+VOCABULARY = "Vocabulary"
+INTERFACES = "Interfaces"
+REALISATION_RECORDS = "RealisationRecords"
 _CELLS = tuple(f"cell_{number}" for number in range(1, MAX_TABLE_COLUMNS + 1))
 INSTRUCTIONS = "Instructions"
 _DOMAIN_HEADERS = ("domain_id", "name", "name_ar", "parent_id", "description")
@@ -149,6 +161,8 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "placement_reason",
         "confidence",
         "source",
+        "masters",
+        "reads",
     ),
     COMPONENTS: (
         "system_id",
@@ -166,6 +180,8 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "triggers",
         "domain_id",
         "component_id",
+        "concept_id",
+        "unlinked_reason",
     ),
     CONSTRAINTS: ("system_id", "constraint"),
     RELATIONSHIPS: ("source_system_id", "target_system_id", "description", "kind"),
@@ -210,6 +226,9 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "technical_details",
         "confidence",
         "source",
+        "capability_ids",
+        "unlinked_reason",
+        "type_term",
     ),
     RESPONSIBILITIES: (
         "product_id",
@@ -220,6 +239,7 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "order_types",
         "confidence",
         "source",
+        "role_term",
     ),
     PRODUCT_POINTS: ("product_id", "kind", "name", "description", "confidence", "source"),
     JOURNEYS: (
@@ -254,6 +274,8 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "performer",
         "point_of_no_return",
         "role",
+        "etom_term",
+        "role_term",
     ),
     FLOW_RULES: (
         "journey_id",
@@ -284,6 +306,7 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "purpose",
         "style",
         "tmf_equivalent",
+        "open_apis",
     ),
     CHANNELS: (
         "channel_id",
@@ -293,8 +316,17 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "description",
         "confidence",
         "source",
+        "kind_term",
     ),
-    REALISATION: ("product_id", "component_id", "layer", "name", "confidence", "source"),
+    REALISATION: (
+        "product_id",
+        "component_id",
+        "layer",
+        "name",
+        "confidence",
+        "source",
+        "record_id",
+    ),
     NFRS: ("product_id", "quality", "coverage", "statement", "confidence", "source"),
     TRACKING: (
         "product_id",
@@ -423,6 +455,53 @@ _HEADERS: dict[str, tuple[str, ...]] = {
     PLANS: ("product_id", "plan", "description", "confidence", "source"),
     PLAN_CHARACTERISTICS: ("product_id", "plan", "characteristic", "value"),
     BUSINESS_RULES: ("product_id", "rule_id", "statement", "kind", "confidence", "source"),
+    CONCEPTS: (
+        "concept_id",
+        "pref_label",
+        "alt_labels",
+        "definition",
+        "broader_id",
+        "domain_id",
+        "exact_match",
+        "confidence",
+        "source",
+    ),
+    VOCABULARY: (
+        "term_id",
+        "scheme",
+        "pref_label",
+        "alt_labels",
+        "notation",
+        "definition",
+        "broader_id",
+        "exact_match",
+        "confidence",
+        "source",
+    ),
+    INTERFACES: (
+        "interface_id",
+        "name",
+        "system_id",
+        "style",
+        "consumers",
+        "open_apis",
+        "entities",
+        "description",
+        "confidence",
+        "source",
+        "relays",
+    ),
+    REALISATION_RECORDS: (
+        "record_id",
+        "layer",
+        "name",
+        "aliases",
+        "systems",
+        "realised_by",
+        "description",
+        "confidence",
+        "source",
+    ),
 }
 # Headers a sheet cannot do without. Columns added later stay optional, so
 # workbooks filled from an older template still import.
@@ -471,6 +550,10 @@ _REQUIRED_HEADERS: dict[str, tuple[str, ...]] = {
     PLANS: ("product_id", "plan"),
     PLAN_CHARACTERISTICS: ("product_id", "plan", "characteristic", "value"),
     BUSINESS_RULES: ("product_id", "rule_id", "statement"),
+    CONCEPTS: ("concept_id", "pref_label"),
+    VOCABULARY: ("term_id", "scheme", "pref_label"),
+    INTERFACES: ("interface_id", "name", "system_id"),
+    REALISATION_RECORDS: ("record_id", "layer", "name"),
 }
 _KINDS = ", ".join(kind.value for kind in RelationshipKind)
 _REQUIRED_SHEETS = (SYSTEMS,)
@@ -519,7 +602,8 @@ _INSTRUCTIONS = (
     ),
     (
         "Realisation (optional): how a component is realised; layer is CFS (what the customer "
-        "is sold), RFS (what delivers it) or resource (what it runs on).",
+        "is sold), RFS (what delivers it) or resource (what it runs on). record_id: the "
+        "RealisationRecords row the name means, of the same layer.",
     ),
     (
         "NFRs (optional): an offering's non-functional requirements, one row per quality such "
@@ -585,6 +669,38 @@ _INSTRUCTIONS = (
         "Prices are read live from the product catalog, never kept here.",
     ),
     ("BusinessRules (optional): the rules an offering is sold and fulfilled by, with a kind.",),
+    (
+        "Concepts (optional): business capability concepts such as Managed Wi-Fi; alt_labels "
+        "by ;. A top concept names its domain_id; a narrower one names its broader_id instead.",
+    ),
+    (
+        "Capabilities concept_id and OfferingComponents capability_ids (by ;) link them to "
+        "concepts; unlinked_reason says why none fits.",
+    ),
+    (
+        "Vocabulary (optional): controlled terms, each in one scheme: etom_process, "
+        "channel_kind, component_kind, responsibility_role or open_api; notation is a code "
+        "such as TMF622. Activities etom_term and role_term, Channels kind_term, "
+        "OfferingComponents type_term, Responsibilities role_term and ActivityIntegrations "
+        "open_apis (by ;) name the term beside the text.",
+    ),
+    (
+        "Vocabulary scheme information_entity: the data systems master or read, such as "
+        "Customer or Product order. Systems masters and reads: the entity term ids it is the "
+        "system of record for, and those it reads, by ;.",
+    ),
+    (
+        "Interfaces (optional): an API, event or file contract one system_id exposes; style is "
+        "api, event, file or unspecified; consumers are the system ids that call or receive "
+        "it, open_apis the Open API term ids and entities the information entity term ids it "
+        "carries, each by ;. relays: the interface ids it passes on, by ;, each one its "
+        "system consumes, as an integration layer does.",
+    ),
+    (
+        "RealisationRecords (optional): one row per CFS, RFS or resource; systems are the "
+        "system ids that deliver or hold it, and realised_by the record ids one layer down "
+        "that realise it (a CFS by RFSs or resources, an RFS by resources), each by ;.",
+    ),
     (
         "Systems owner, external (yes or no), roadmap, and placement_from with "
         "placement_reason when a system sits elsewhere than a source put it.",
@@ -704,6 +820,8 @@ def content_from_mapping(raw: object) -> CatalogueContent:
                         _text_list(capability.get("triggers"), place, "triggers"),
                         _optional_text(capability.get("domain"), place, "domain"),
                         _optional_text(capability.get("component"), place, "component"),
+                        _optional_text(capability.get("concept"), place, "concept"),
+                        _optional_text(capability.get("unlinked_reason"), place, "unlinked_reason"),
                     )
                 )
             except InvalidKnowledgeError as exc:
@@ -755,6 +873,8 @@ def content_from_mapping(raw: object) -> CatalogueContent:
                     ),
                     confidence=_trust(item.get("confidence"), where),
                     source=_optional_text(item.get("source"), where, "source"),
+                    masters=_text_list(item.get("masters"), where, "masters"),
+                    reads=_text_list(item.get("reads"), where, "reads"),
                 )
             )
         except InvalidKnowledgeError as exc:
@@ -785,7 +905,176 @@ def content_from_mapping(raw: object) -> CatalogueContent:
         _conflicts(_entries(raw, "conflicts")),
         _history(_entries(raw, "change_history")) if "change_history" in raw else None,
         _portfolio(_entries(raw, "portfolio")),
+        _concepts(_entries(raw, "business_capabilities")),
+        _terms(_entries(raw, "vocabulary")),
+        _interfaces(_entries(raw, "interfaces")),
+        _realisations(_entries(raw, "realisations")),
     )
+
+
+def _concepts(entries: list[dict[str, Any]]) -> list[BusinessCapability]:
+    """Business capability concepts (ADR-0114); a top concept names its domain."""
+    concepts = []
+    for number, item in enumerate(entries, start=1):
+        where = _where(item, f"business_capabilities entry {number}")
+        try:
+            concepts.append(
+                BusinessCapability(
+                    _text(item.get("id"), where, "id"),
+                    _text(item.get("pref_label"), where, "pref_label"),
+                    _text_list(item.get("alt_labels"), where, "alt_labels"),
+                    _optional_text(item.get("definition"), where, "definition"),
+                    _optional_text(item.get("broader"), where, "broader"),
+                    _optional_text(item.get("domain"), where, "domain"),
+                    _optional_text(item.get("exact_match"), where, "exact_match"),
+                    _trust(item.get("confidence"), where),
+                    _optional_text(item.get("source"), where, "source"),
+                )
+            )
+        except InvalidKnowledgeError as exc:
+            raise _located(where, exc) from exc
+    return concepts
+
+
+def _concept_mapping(concept: BusinessCapability) -> dict[str, Any]:
+    return {
+        "id": concept.id,
+        "pref_label": concept.pref_label,
+        **_present(
+            alt_labels=list(concept.alt_labels),
+            definition=concept.definition,
+            broader=concept.broader_id,
+            domain=concept.domain_id,
+            exact_match=concept.exact_match,
+        ),
+        **_sourced(concept),
+    }
+
+
+def _terms(entries: list[dict[str, Any]]) -> list[VocabularyTerm]:
+    """Controlled vocabulary terms, each naming its scheme."""
+    terms = []
+    for number, item in enumerate(entries, start=1):
+        where = _where(item, f"vocabulary entry {number}")
+        try:
+            terms.append(
+                VocabularyTerm(
+                    _text(item.get("id"), where, "id"),
+                    vocabulary_scheme(_text(item.get("scheme"), where, "scheme")),
+                    _text(item.get("pref_label"), where, "pref_label"),
+                    _text_list(item.get("alt_labels"), where, "alt_labels"),
+                    _optional_text(item.get("notation"), where, "notation"),
+                    _optional_text(item.get("definition"), where, "definition"),
+                    _optional_text(item.get("broader"), where, "broader"),
+                    _optional_text(item.get("exact_match"), where, "exact_match"),
+                    _trust(item.get("confidence"), where),
+                    _optional_text(item.get("source"), where, "source"),
+                )
+            )
+        except InvalidKnowledgeError as exc:
+            raise _located(where, exc) from exc
+    return terms
+
+
+def _term_mapping(term: VocabularyTerm) -> dict[str, Any]:
+    return {
+        "id": term.id,
+        "scheme": term.scheme.value,
+        "pref_label": term.pref_label,
+        **_present(
+            alt_labels=list(term.alt_labels),
+            notation=term.notation,
+            definition=term.definition,
+            broader=term.broader_id,
+            exact_match=term.exact_match,
+        ),
+        **_sourced(term),
+    }
+
+
+def _interfaces(entries: list[dict[str, Any]]) -> list[SystemInterface]:
+    """The contracts systems expose, with their consumers, Open APIs and entities."""
+    interfaces = []
+    for number, item in enumerate(entries, start=1):
+        where = _where(item, f"interfaces entry {number}")
+        try:
+            interfaces.append(
+                SystemInterface(
+                    _text(item.get("id"), where, "id"),
+                    _text(item.get("name"), where, "name"),
+                    _text(item.get("system"), where, "system"),
+                    interface_style(
+                        _optional_text(item.get("style"), where, "style")
+                        or InterfaceStyle.UNSPECIFIED
+                    ),
+                    _text_list(item.get("consumers"), where, "consumers"),
+                    _text_list(item.get("open_apis"), where, "open_apis"),
+                    _text_list(item.get("entities"), where, "entities"),
+                    _optional_text(item.get("description"), where, "description"),
+                    _trust(item.get("confidence"), where),
+                    _optional_text(item.get("source"), where, "source"),
+                    _text_list(item.get("relays"), where, "relays"),
+                )
+            )
+        except InvalidKnowledgeError as exc:
+            raise _located(where, exc) from exc
+    return interfaces
+
+
+def _realisations(entries: list[dict[str, Any]]) -> list[RealisationRecord]:
+    """The CFSs, RFSs and resources components are realised as."""
+    records = []
+    for number, item in enumerate(entries, start=1):
+        where = _where(item, f"realisations entry {number}")
+        try:
+            records.append(
+                RealisationRecord(
+                    _text(item.get("id"), where, "id"),
+                    _text(item.get("layer"), where, "layer"),  # type: ignore[arg-type]
+                    _text(item.get("name"), where, "name"),
+                    _text_list(item.get("aliases"), where, "aliases"),
+                    _text_list(item.get("systems"), where, "systems"),
+                    _text_list(item.get("realised_by"), where, "realised_by"),
+                    _optional_text(item.get("description"), where, "description"),
+                    _trust(item.get("confidence"), where),
+                    _optional_text(item.get("source"), where, "source"),
+                )
+            )
+        except InvalidKnowledgeError as exc:
+            raise _located(where, exc) from exc
+    return records
+
+
+def _realisation_mapping(record: RealisationRecord) -> dict[str, Any]:
+    return {
+        "id": record.id,
+        "layer": record.layer.value,
+        "name": record.name,
+        **_present(
+            aliases=list(record.aliases),
+            systems=list(record.system_ids),
+            realised_by=list(record.realised_by),
+            description=record.description,
+        ),
+        **_sourced(record),
+    }
+
+
+def _interface_mapping(interface: SystemInterface) -> dict[str, Any]:
+    return {
+        "id": interface.id,
+        "name": interface.name,
+        "system": interface.system_id,
+        **_present(
+            style=None if interface.style is InterfaceStyle.UNSPECIFIED else interface.style.value,
+            consumers=list(interface.consumer_ids),
+            open_apis=list(interface.open_api_ids),
+            entities=list(interface.entity_ids),
+            description=interface.description,
+        ),
+        **_sourced(interface),
+        **_present(relays=list(interface.relays)),
+    }
 
 
 class _LocatedError(InvalidKnowledgeError):
@@ -826,6 +1115,8 @@ def _activity(step: dict[str, Any], place: str) -> Activity:
             step.get("point_of_no_return"), place, "point_of_no_return"
         ),
         role=_optional_text(step.get("role"), place, "role"),
+        etom_id=_optional_text(step.get("etom_term"), place, "etom_term"),
+        role_id=_optional_text(step.get("role_term"), place, "role_term"),
     )
 
 
@@ -860,6 +1151,7 @@ def _link(link: dict[str, Any], place: str) -> ActivityIntegration:
         purpose=_optional_text(link.get("purpose"), place, "purpose"),
         style=_optional_text(link.get("style"), place, "style"),
         tmf_equivalent=_optional_text(link.get("tmf_equivalent"), place, "tmf_equivalent"),
+        open_api_ids=_text_list(link.get("open_apis"), place, "open_apis"),
     )
 
 
@@ -939,6 +1231,8 @@ def _journey_mapping(journey: Journey) -> dict[str, Any]:
                         performer=step.performer,
                         point_of_no_return=step.point_of_no_return,
                         role=step.role,
+                        etom_term=step.etom_id,
+                        role_term=step.role_id,
                     ),
                     **_sourced(step),
                 }
@@ -975,6 +1269,7 @@ def _journey_mapping(journey: Journey) -> dict[str, Any]:
                         purpose=link.purpose,
                         style=link.style,
                         tmf_equivalent=link.tmf_equivalent,
+                        open_apis=list(link.open_api_ids),
                     ),
                     **_sourced(link),
                 }
@@ -1073,6 +1368,7 @@ def _offerings(entries: list[dict[str, Any]]) -> list[ProductOffering]:
                         _text_list(duty.get("order_types"), spot, "order_types"),
                         _trust(duty.get("confidence"), spot),
                         _optional_text(duty.get("source"), spot, "source"),
+                        _optional_text(duty.get("role_term"), spot, "role_term"),
                     )
                     for index, duty in enumerate(_sub_entries(part, "responsibilities", place), 1)
                     for spot in [_where(duty, f"{place}, responsibility {index}")]
@@ -1083,6 +1379,7 @@ def _offerings(entries: list[dict[str, Any]]) -> list[ProductOffering]:
                         _text(layer.get("name"), spot, "name"),
                         _trust(layer.get("confidence"), spot),
                         _optional_text(layer.get("source"), spot, "source"),
+                        _optional_text(layer.get("record"), spot, "record"),
                     )
                     for index, layer in enumerate(_sub_entries(part, "realisation", place), 1)
                     for spot in [_where(layer, f"{place}, realisation {index}")]
@@ -1111,6 +1408,11 @@ def _offerings(entries: list[dict[str, Any]]) -> list[ProductOffering]:
                         confidence=_trust(part.get("confidence"), place),
                         source=_optional_text(part.get("source"), place, "source"),
                         realisation=tuple(realisation),
+                        capability_ids=_text_list(part.get("capabilities"), place, "capabilities"),
+                        unlinked_reason=_optional_text(
+                            part.get("unlinked_reason"), place, "unlinked_reason"
+                        ),
+                        kind_id=_optional_text(part.get("type_term"), place, "type_term"),
                     )
                 )
             offerings.append(
@@ -1443,15 +1745,25 @@ def _offering_mapping(offering: ProductOffering) -> dict[str, Any]:
                                 "system": duty.system_id,
                                 "role": duty.role,
                                 "description": duty.description,
-                                **_present(order_types=list(duty.order_types)),
+                                **_present(
+                                    order_types=list(duty.order_types), role_term=duty.role_id
+                                ),
                                 **_sourced(duty),
                             }
                             for duty in part.responsibilities
                         ],
                         realisation=[
-                            {"layer": item.layer.value, "name": item.name, **_sourced(item)}
+                            {
+                                "layer": item.layer.value,
+                                "name": item.name,
+                                **_sourced(item),
+                                **_present(record=item.record_id),
+                            }
                             for item in part.realisation
                         ],
+                        capabilities=list(part.capability_ids),
+                        unlinked_reason=part.unlinked_reason,
+                        type_term=part.kind_id,
                     ),
                 }
                 for part in offering.components
@@ -1639,16 +1951,27 @@ def _content(
     conflicts: list[SourceConflict] | None = None,
     history: list[ChangeRequestRecord] | None = None,
     portfolio: list[PortfolioNode] | None = None,
+    concepts: list[BusinessCapability] | None = None,
+    terms: list[VocabularyTerm] | None = None,
+    interfaces: list[SystemInterface] | None = None,
+    realisations: list[RealisationRecord] | None = None,
 ) -> CatalogueContent:
-    """The file's content, refusing a placement in a domain the file does not list."""
+    """The file's content, refusing a placement in a domain the file does not list, or a
+    link to a concept it does not list."""
     known = {item.id for item in domains}
     places = {item.id for item in landscape}
+    listed = {item.id for item in concepts or ()}
     for system in systems:
         for capability in system.capabilities:
             if capability.domain_id is not None and capability.domain_id not in known:
                 raise InvalidKnowledgeError(
                     f"{system.id}, capability {capability.id}: domain {capability.domain_id!r} "
                     "is not listed among the capability domains."
+                )
+            if capability.concept_id is not None and capability.concept_id not in listed:
+                raise InvalidKnowledgeError(
+                    f"{system.id}, capability {capability.id}: concept "
+                    f"{capability.concept_id!r} is not listed among the business capabilities."
                 )
         if system.landscape_domain_id is not None and system.landscape_domain_id not in places:
             raise InvalidKnowledgeError(
@@ -1667,6 +1990,10 @@ def _content(
         tuple(conflicts or ()),
         None if history is None else tuple(history),
         tuple(portfolio or ()),
+        tuple(concepts or ()),
+        tuple(terms or ()),
+        tuple(interfaces or ()),
+        tuple(realisations or ()),
     )
 
 
@@ -1681,6 +2008,7 @@ def _channels(entries: list[dict[str, Any]]) -> list[Channel]:
                     id=_text(item.get("id"), where, "id"),
                     name=_text(item.get("name"), where, "name"),
                     kind=_optional_text(item.get("kind"), where, "kind"),
+                    kind_id=_optional_text(item.get("kind_term"), where, "kind_term"),
                     entry_system_id=_optional_text(item.get("entry_system"), where, "entry_system"),
                     description=_optional_text(item.get("description"), where, "description"),
                     confidence=_trust(item.get("confidence"), where),
@@ -1698,6 +2026,7 @@ def _channel_mapping(channel: Channel) -> dict[str, Any]:
         "name": channel.name,
         **_present(
             kind=channel.kind,
+            kind_term=channel.kind_id,
             entry_system=channel.entry_system_id,
             description=channel.description,
         ),
@@ -1854,6 +2183,7 @@ def release_to_mapping(release: ArchitectureKnowledge) -> dict[str, Any]:
                         "triggers": list(cap.triggers),
                         **({"domain": cap.domain_id} if cap.domain_id else {}),
                         **({"component": cap.component_id} if cap.component_id else {}),
+                        **_present(concept=cap.concept_id, unlinked_reason=cap.unlinked_reason),
                     }
                     for cap in item.capabilities
                 ],
@@ -1871,6 +2201,7 @@ def release_to_mapping(release: ArchitectureKnowledge) -> dict[str, Any]:
                     placement_reason=item.placement_reason,
                 ),
                 **_sourced(item),
+                **_present(masters=list(item.masters), reads=list(item.reads)),
             }
             for item in release.systems
         ],
@@ -1917,6 +2248,12 @@ def release_to_mapping(release: ArchitectureKnowledge) -> dict[str, Any]:
             conflicts=[_conflict_mapping(item) for item in release.conflicts],
             change_history=[_history_mapping(item) for item in release.change_history],
             portfolio=[_portfolio_mapping(item) for item in release.portfolio],
+            business_capabilities=[
+                _concept_mapping(item) for item in release.business_capabilities
+            ],
+            vocabulary=[_term_mapping(item) for item in release.vocabulary],
+            interfaces=[_interface_mapping(item) for item in release.interfaces],
+            realisations=[_realisation_mapping(item) for item in release.realisations],
         ),
     }
 
@@ -1997,6 +2334,8 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                 ),
                 "confidence": _trust(cells.get("confidence"), where),
                 "source": _optional_text(cells.get("source"), where, "source"),
+                "masters": _split(cells.get("masters"), where, "masters"),
+                "reads": _split(cells.get("reads"), where, "reads"),
                 "capabilities": [],
                 "constraints": [],
                 "components": [],
@@ -2020,6 +2359,8 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                         _split(cells.get("triggers"), where, "triggers"),
                         _optional_text(cells.get("domain_id"), where, "domain_id"),
                         _optional_text(cells.get("component_id"), where, "component_id"),
+                        _optional_text(cells.get("concept_id"), where, "concept_id"),
+                        _optional_text(cells.get("unlinked_reason"), where, "unlinked_reason"),
                     )
                 )
             except InvalidKnowledgeError as exc:
@@ -2094,6 +2435,66 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                 for number, cells in _rows(workbook, PORTFOLIO)
             ]
         )
+        concepts = _concepts(
+            [
+                {
+                    **cells,
+                    "_where": f"{CONCEPTS} row {number}",
+                    "id": cells.get("concept_id"),
+                    "alt_labels": list(
+                        _split(cells.get("alt_labels"), f"{CONCEPTS} row {number}", "alt_labels")
+                    ),
+                    "broader": cells.get("broader_id"),
+                    "domain": cells.get("domain_id"),
+                }
+                for number, cells in _rows(workbook, CONCEPTS)
+            ]
+        )
+        terms = _terms(
+            [
+                {
+                    **cells,
+                    "_where": f"{VOCABULARY} row {number}",
+                    "id": cells.get("term_id"),
+                    "alt_labels": list(
+                        _split(cells.get("alt_labels"), f"{VOCABULARY} row {number}", "alt_labels")
+                    ),
+                    "broader": cells.get("broader_id"),
+                }
+                for number, cells in _rows(workbook, VOCABULARY)
+            ]
+        )
+        interfaces = _interfaces(
+            [
+                {
+                    **cells,
+                    "_where": f"{INTERFACES} row {number}",
+                    "id": cells.get("interface_id"),
+                    "system": cells.get("system_id"),
+                    **{
+                        key: list(_split(cells.get(key), f"{INTERFACES} row {number}", key))
+                        for key in ("consumers", "open_apis", "entities", "relays")
+                    },
+                }
+                for number, cells in _rows(workbook, INTERFACES)
+            ]
+        )
+        realisations = _realisations(
+            [
+                {
+                    **cells,
+                    "_where": f"{REALISATION_RECORDS} row {number}",
+                    "id": cells.get("record_id"),
+                    **{
+                        key: list(
+                            _split(cells.get(key), f"{REALISATION_RECORDS} row {number}", key)
+                        )
+                        for key in ("aliases", "systems", "realised_by")
+                    },
+                }
+                for number, cells in _rows(workbook, REALISATION_RECORDS)
+            ]
+        )
     finally:
         workbook.close()
     definitions = []
@@ -2117,6 +2518,8 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                     placement_reason=data["placement_reason"],
                     confidence=data["confidence"],
                     source=data["source"],
+                    masters=data["masters"],
+                    reads=data["reads"],
                 )
             )
         except InvalidKnowledgeError as exc:
@@ -2133,6 +2536,10 @@ def _read_workbook(content: bytes) -> CatalogueContent:
         conflicts,
         history,
         portfolio,
+        concepts,
+        terms,
+        interfaces,
+        realisations,
     )
 
 
@@ -2198,6 +2605,7 @@ def _sheet_journeys(workbook: Any) -> list[dict[str, Any]]:
                 "_where": where,
                 "from": cells.get("from_activity"),
                 "to": cells.get("to_activity"),
+                "open_apis": list(_split(cells.get("open_apis"), where, "open_apis")),
             }
         )
     return list(journeys.values())
@@ -2260,6 +2668,7 @@ def _sheet_offerings(workbook: Any) -> list[dict[str, Any]]:
             **cells,
             "_where": where,
             "id": cells.get("component_id"),
+            "capabilities": list(_split(cells.get("capability_ids"), where, "capability_ids")),
             "responsibilities": [],
             "realisation": [],
         }
@@ -2293,7 +2702,9 @@ def _sheet_offerings(workbook: Any) -> list[dict[str, Any]]:
             raise InvalidKnowledgeError(
                 f"{where}: component {key[1]!r} is not listed on the {OFFERING_COMPONENTS} sheet."
             )
-        parts[key]["realisation"].append({**cells, "_where": where})
+        parts[key]["realisation"].append(
+            {**cells, "_where": where, "record": cells.get("record_id")}
+        )
     for number, cells in _rows(workbook, NFRS):
         where = f"{NFRS} row {number}"
         offering(cells, where)["nfrs"].append({**cells, "_where": where})
@@ -2622,6 +3033,9 @@ def _write_offering(sheets: dict[str, Any], product: ProductOffering) -> None:
                 part.technical_details,
                 _confidence(part),
                 part.source,
+                f"{_LIST_SEPARATOR} ".join(part.capability_ids),
+                part.unlinked_reason,
+                part.kind_id,
             ),
         )
         for duty in part.responsibilities:
@@ -2636,12 +3050,21 @@ def _write_offering(sheets: dict[str, Any], product: ProductOffering) -> None:
                     f"{_LIST_SEPARATOR} ".join(duty.order_types),
                     _confidence(duty),
                     duty.source,
+                    duty.role_id,
                 ),
             )
         for item in part.realisation:
             _append(
                 sheets[REALISATION],
-                (product.id, part.id, item.layer.value, item.name, _confidence(item), item.source),
+                (
+                    product.id,
+                    part.id,
+                    item.layer.value,
+                    item.name,
+                    _confidence(item),
+                    item.source,
+                    item.record_id,
+                ),
             )
     if product.tracking is not None:
         _write_tracking(sheets, product.id, product.tracking)
@@ -2830,6 +3253,8 @@ def _write_journey(sheets: dict[str, Any], journey: Journey) -> None:
                 step.performer,
                 step.point_of_no_return,
                 step.role,
+                step.etom_id,
+                step.role_id,
             ),
         )
     for rule in journey.flow_rules:
@@ -2868,6 +3293,7 @@ def _write_journey(sheets: dict[str, Any], journey: Journey) -> None:
                 link.purpose,
                 link.style,
                 link.tmf_equivalent,
+                joined(link.open_api_ids),
             ),
         )
 
@@ -2904,6 +3330,8 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 system.placement_reason,
                 _confidence(system),
                 system.source,
+                f"{_LIST_SEPARATOR} ".join(system.masters),
+                f"{_LIST_SEPARATOR} ".join(system.reads),
             ),
         )
         for capability in system.capabilities:
@@ -2916,6 +3344,8 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                     f"{_LIST_SEPARATOR} ".join(capability.triggers),
                     capability.domain_id,
                     capability.component_id,
+                    capability.concept_id,
+                    capability.unlinked_reason,
                 ),
             )
         for component in system.components:
@@ -2952,6 +3382,69 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 sheets[sheet],
                 (domain.id, domain.name, domain.name_ar, domain.parent_id, domain.description),
             )
+    for concept in release.business_capabilities if release is not None else ():
+        _append(
+            sheets[CONCEPTS],
+            (
+                concept.id,
+                concept.pref_label,
+                f"{_LIST_SEPARATOR} ".join(concept.alt_labels),
+                concept.definition,
+                concept.broader_id,
+                concept.domain_id,
+                concept.exact_match,
+                _confidence(concept),
+                concept.source,
+            ),
+        )
+    for term in release.vocabulary if release is not None else ():
+        _append(
+            sheets[VOCABULARY],
+            (
+                term.id,
+                term.scheme.value,
+                term.pref_label,
+                f"{_LIST_SEPARATOR} ".join(term.alt_labels),
+                term.notation,
+                term.definition,
+                term.broader_id,
+                term.exact_match,
+                _confidence(term),
+                term.source,
+            ),
+        )
+    for interface in release.interfaces if release is not None else ():
+        _append(
+            sheets[INTERFACES],
+            (
+                interface.id,
+                interface.name,
+                interface.system_id,
+                interface.style.value,
+                f"{_LIST_SEPARATOR} ".join(interface.consumer_ids),
+                f"{_LIST_SEPARATOR} ".join(interface.open_api_ids),
+                f"{_LIST_SEPARATOR} ".join(interface.entity_ids),
+                interface.description,
+                _confidence(interface),
+                interface.source,
+                f"{_LIST_SEPARATOR} ".join(interface.relays),
+            ),
+        )
+    for realised in release.realisations if release is not None else ():
+        _append(
+            sheets[REALISATION_RECORDS],
+            (
+                realised.id,
+                realised.layer.value,
+                realised.name,
+                f"{_LIST_SEPARATOR} ".join(realised.aliases),
+                f"{_LIST_SEPARATOR} ".join(realised.system_ids),
+                f"{_LIST_SEPARATOR} ".join(realised.realised_by),
+                realised.description,
+                _confidence(realised),
+                realised.source,
+            ),
+        )
     for node in release.portfolio if release is not None else ():
         _append(
             sheets[PORTFOLIO],
@@ -2980,6 +3473,7 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 channel.description,
                 _confidence(channel),
                 channel.source,
+                channel.kind_id,
             ),
         )
     for source in release.sources if release is not None else ():

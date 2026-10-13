@@ -1,5 +1,5 @@
 /** One place of a search result's surrounding text. */
-export type ContextPlace = { location: string; text: string; cited: boolean };
+type ContextPlace = { location: string; text: string; cited: boolean };
 
 /**
  * The service sends surrounding text as blocks of "place, newline, text",
