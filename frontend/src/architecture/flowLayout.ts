@@ -2,8 +2,11 @@
  * Lays a journey out as BPMN swimlanes: one lane per system (or team), in the
  * order the flow first reaches it, and one column per step along the longest
  * path from the start. A step never shares a cell with another step of its
- * lane. The same geometry draws the diagram and feeds the BPMN 2.0 export's
- * diagram interchange, so the exported file opens laid out as it is shown.
+ * lane. A way back to an earlier step (a loop, or any arrow that closes a
+ * cycle) is left out of the ordering, so no step of a cycle is ever dropped,
+ * and is routed under the lanes. The same geometry draws the diagram and feeds
+ * the BPMN 2.0 export's diagram interchange, so the exported file opens laid
+ * out as it is shown.
  */
 import type { JourneyView, Step } from "./model";
 
@@ -15,10 +18,14 @@ export const GEOMETRY = {
   gateway: 44,
   event: 34,
   pad: 24,
+  /** Under the lanes, where the ways back run: the first one this far below, each next one this much lower. */
+  backBand: 16,
+  backStep: 12,
 };
 
 export type Placed = { step: Step; lane: number; column: number; x: number; y: number; width: number; height: number };
-export type Edge = { from: string; to: string; label?: string; points: [number, number][] };
+/** `back`: a way back to an earlier step, routed under the lanes. */
+export type Edge = { from: string; to: string; label?: string; points: [number, number][]; back?: boolean };
 
 export type FlowLayout = {
   lanes: string[];
@@ -34,19 +41,43 @@ function size(step: Step): { width: number; height: number } {
   return { width: GEOMETRY.event, height: GEOMETRY.event };
 }
 
+/**
+ * The arrows that go back: a loop, or one to a step still being walked depth-first from
+ * the first step (it closes a cycle), keyed "from>to".
+ */
+export function waysBack(steps: Step[]): Set<string> {
+  const byId = new Map(steps.map((step) => [step.id, step]));
+  const back = new Set<string>();
+  const state = new Map<string, "walking" | "done">();
+  const walk = (step: Step) => {
+    state.set(step.id, "walking");
+    for (const next of step.next) {
+      const target = byId.get(next.to);
+      if (!target) continue;
+      if (next.loop || state.get(next.to) === "walking") back.add(`${step.id}>${next.to}`);
+      else if (!state.has(next.to)) walk(target);
+    }
+    state.set(step.id, "done");
+  };
+  for (const step of steps) if (!state.has(step.id)) walk(step);
+  return back;
+}
+
 export function layoutFlow(journey: JourneyView): FlowLayout {
   const byId = new Map(journey.steps.map((step) => [step.id, step]));
+  const back = waysBack(journey.steps);
+  const forward = (step: Step) => step.next.filter((next) => !back.has(`${step.id}>${next.to}`));
   const incoming = new Map<string, string[]>();
-  for (const step of journey.steps) for (const next of step.next) incoming.set(next.to, [...(incoming.get(next.to) ?? []), step.id]);
+  for (const step of journey.steps) for (const next of forward(step)) incoming.set(next.to, [...(incoming.get(next.to) ?? []), step.id]);
 
-  // Topological order from the start event (the flow has no loops).
+  // Topological order from the start event, the ways back left out: every step is reached.
   const order: Step[] = [];
   const pending = new Map(journey.steps.map((step) => [step.id, (incoming.get(step.id) ?? []).length]));
   const ready = journey.steps.filter((step) => (pending.get(step.id) ?? 0) === 0);
   while (ready.length) {
     const step = ready.shift() as Step;
     order.push(step);
-    for (const next of step.next) {
+    for (const next of forward(step)) {
       const left = (pending.get(next.to) ?? 1) - 1;
       pending.set(next.to, left);
       if (left === 0) {
@@ -55,6 +86,10 @@ export function layoutFlow(journey: JourneyView): FlowLayout {
       }
     }
   }
+
+  // Never drop a step: anything the ordering missed follows in the journey's own order.
+  const ordered = new Set(order);
+  for (const step of journey.steps) if (!ordered.has(step)) order.push(step);
 
   const lanes: string[] = [];
   for (const step of order) if (!lanes.includes(step.lane)) lanes.push(step.lane);
@@ -79,12 +114,23 @@ export function layoutFlow(journey: JourneyView): FlowLayout {
   }
 
   const edges: Edge[] = [];
+  const lanesHeight = lanes.length * GEOMETRY.laneHeight;
+  let backs = 0;
   for (const step of order) {
     const from = placed.get(step.id);
     if (!from) continue;
     for (const next of step.next) {
       const to = placed.get(next.to);
       if (!to) continue;
+      if (back.has(`${step.id}>${next.to}`)) {
+        // Down from the step, along under the lanes, and up into the earlier one.
+        const y = lanesHeight + GEOMETRY.backBand + backs * GEOMETRY.backStep;
+        const sx = from.x + from.width / 2;
+        const tx = to.x + to.width / 2;
+        backs += 1;
+        edges.push({ from: step.id, to: next.to, label: next.label, back: true, points: [[sx, from.y + from.height], [sx, y], [tx, y], [tx, to.y + to.height]] });
+        continue;
+      }
       const sx = from.x + from.width;
       const sy = from.y + from.height / 2;
       const tx = to.x;
@@ -102,6 +148,6 @@ export function layoutFlow(journey: JourneyView): FlowLayout {
     placed,
     edges,
     width: GEOMETRY.laneHeader + GEOMETRY.pad * 2 + columns * GEOMETRY.column,
-    height: lanes.length * GEOMETRY.laneHeight,
+    height: lanesHeight + (backs ? GEOMETRY.backBand + backs * GEOMETRY.backStep : 0),
   };
 }

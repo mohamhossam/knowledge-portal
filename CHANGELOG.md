@@ -58,6 +58,16 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Fixed
 
+- A journey with a way back (a loop such as "Correct & resubmit", or any arrow that closes a
+  cycle) no longer loses its steps in the catalogue lab's flow: the layout assumed no loops,
+  so the steps of a cycle and everything after them were dropped from the drawing and the BPMN
+  export. The way back is now left out of the ordering, so every step is placed, and is drawn
+  dashed from under the later step, along a band under the lanes, up into the earlier one; the
+  BPMN export carries it with its waypoints. No real journey loops today, and their drawings
+  are unchanged.
+- The lab draws the flow the service derives (`channel_edges`, `shared_edges`, `edges`)
+  instead of its own copy of the rules: the two matched in all 46 views of the Business Pro
+  Plus catalogue (20 journeys, each channel), so the copy is gone.
 - Sending Decide's answers no longer hides failures. Adding the systems the answers need,
   and accepting what is ready, pass over only the service's "already done" refusals: the
   draft has the system (422 `invalid_architecture_knowledge`), nothing waits for it any more
