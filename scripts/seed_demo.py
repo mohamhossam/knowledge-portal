@@ -23,7 +23,6 @@ from __future__ import annotations
 import argparse
 import io
 import sys
-import time
 import uuid
 from pathlib import Path
 from typing import Any
@@ -32,29 +31,18 @@ import httpx
 from openpyxl import Workbook
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from scripts.seed_full_catalogue import (  # noqa: E402
-    DEFAULT_FILE as DEFAULT_CATALOGUE_FILE,
+from scripts._catalogue_seed import (  # noqa: E402
+    FULL_CATALOGUE_FILE,
+    FULL_CATALOGUE_NAME,
+    OWNER,
+    REVIEWER,
+    one_draft_at_a_time,
+    wait_for,
 )
 from scripts.seed_full_catalogue import load as load_full_catalogue  # noqa: E402
 from tests.presentation_fixtures import PPTX_MIME, drawing_paragraph, presentation  # noqa: E402
 
-FULL_CATALOGUE_NAME = "Business Pro Plus (SDD v2.3)"
-
 XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-
-OWNER = {"X-Fake-Actor-Id": "fake-owner"}
-REVIEWER = {"X-Fake-Actor-Id": "fake-reviewer"}
-
-
-def wait_for(
-    client: httpx.Client, path: str, headers: dict[str, str], ready: Any
-) -> dict[str, Any]:
-    for _ in range(200):
-        view = client.get(path, headers=headers).json()
-        if ready(view):
-            return dict(view)
-        time.sleep(0.1)
-    raise RuntimeError(f"{path} never reached the expected state.")
 
 
 def upload(
@@ -823,7 +811,7 @@ def main() -> None:
         help="put the full Business Pro Plus catalogue in service before the sample draft",
     )
     arguments = parser.parse_args()
-    with httpx.Client(base_url=arguments.api, timeout=30) as client:
+    with httpx.Client(base_url=arguments.api, timeout=30) as client, one_draft_at_a_time():
         # Both admins sign in once, so the portal can name them.
         client.get("/identity/me", headers=OWNER).raise_for_status()
         client.get("/identity/me", headers=REVIEWER).raise_for_status()
@@ -834,7 +822,7 @@ def main() -> None:
         # The squads own systems of the sample version, so they are placed while it is in service.
         seed_squads(client)
         if arguments.full_catalogue:
-            load_full_catalogue(client, DEFAULT_CATALOGUE_FILE, FULL_CATALOGUE_NAME, publish=True)
+            load_full_catalogue(client, FULL_CATALOGUE_FILE, FULL_CATALOGUE_NAME, publish=True)
         seed_catalogue(client)
     print("Seeded sample curation work.")
 
