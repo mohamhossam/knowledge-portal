@@ -140,6 +140,11 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   waiting (`catalogue-tables-v10`).
 - A dependency from or to a group ("Channels", "Digital Channels", "the fulfilment systems")
   is left out (`document-reading-v6`).
+- A system that only a stated dependency names is suggested once, cited where it is named:
+  an interface table's eleven "vCPE DO" rows waited for a system nothing suggested. A
+  placeholder ("Unknown", "N/A") or an offering's name is not suggested; an inferred link
+  suggests nothing (`document-reading-v7`).
+- An item about no system is left out as incomplete, not given a system called "item".
 - Workflow titles are compared whatever separates their parts ("—", "|", ":" or " - "), so a
   model's "WF-3A Order fulfillment | ..." merges with the reader's "WF-3A Order fulfillment —".
 

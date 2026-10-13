@@ -25,6 +25,7 @@ from knowledge_portal.application.ports.catalogue_extractor import (
 )
 from knowledge_portal.application.use_cases.catalogue_candidates import _same_workflow
 from knowledge_portal.domain.architecture.candidates import (
+    CandidateBasis,
     CandidateCitation,
     CandidateContent,
     CandidateKind,
@@ -927,3 +928,64 @@ def test_a_link_from_a_group_of_channels_or_systems_is_left_out() -> None:
 
     assert [change.source_name for change in proposal.changes] == ["NPS"]
     assert proposal.warnings == ("Incomplete suggestions were left out: 1 relationship.",)
+
+
+def test_an_item_about_no_system_is_left_out_not_given_a_system_called_item() -> None:
+    # The reported reading: a spreadsheet row whose "Section" said only "System".
+    proposal = _read(
+        ["The Order Hub receives partner orders. Online Billing is automated."],
+        _item(),
+        _item(
+            kind="capability",
+            system="",
+            name="Online Billing",
+            triggers=["month end"],
+            quote="Online Billing is automated",
+        ),
+    )
+
+    assert [change.content.system_id for change in proposal.changes] == ["order-hub"]
+    assert proposal.warnings == ("Incomplete suggestions were left out: 1 capability.",)
+
+
+def _link(
+    source: str, target: str, basis: CandidateBasis = CandidateBasis.STATED
+) -> ProposedChange:
+    return ProposedChange(
+        CandidateContent(
+            CandidateKind.RELATIONSHIP, slug(source), target_system_id=slug(target), text="REST API"
+        ),
+        ("embedded 1, slide 4",),
+        f"{source} | {target} | REST API",
+        source_name=source,
+        target_name=target,
+        basis=basis,
+        rationale="Implied by the flow." if basis is CandidateBasis.INFERRED else None,
+    )
+
+
+def test_a_system_only_an_interface_table_names_is_suggested_once_where_it_is_named() -> None:
+    content = _docx(_p("Interfaces") + _p("The interfaces are listed in the annex."))
+    proposer, draft, _ = _setup(content, _Recording())
+    proposer._extractor = _Scripted(
+        _link("vCPE DO", "FortiGuard"),
+        _link("vCPE DO", "BCRM"),
+        _link("NRM", "vCPE DO"),
+        # Neither a placeholder nor an inferred link names a system.
+        _link("Unknown", "BCRM"),
+        _link("Ghost", "BCRM", CandidateBasis.INFERRED),
+    )
+
+    proposer.execute(draft.id, "doc", lambda: None)
+
+    systems = {
+        item.content.name: item
+        for item in proposer._candidates.list(draft.id)
+        if item.content.kind is CandidateKind.SYSTEM
+    }
+    # NRM is in the draft already.
+    assert sorted(systems) == ["FortiGuard", "vCPE DO"]
+    assert systems["vCPE DO"].content.system_id == "vcpe-do"
+    assert [citation.location for citation in systems["vCPE DO"].citations] == [
+        "embedded 1, slide 4"
+    ]

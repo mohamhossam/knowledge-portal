@@ -458,9 +458,9 @@ def test_unknown_or_repeated_matches_are_ignored_and_a_stated_copy_outweighs_an_
     run = proposer.execute(draft.id, "doc", lambda: None)
 
     items = {item.content.kind: item for item in candidates.list(draft.id)}
-    assert [(m.system_id, m.role) for m in items[CandidateKind.SYSTEM].possible_matches] == [
-        ("bcrm", MatchRole.SYSTEM)
-    ]
+    # Order Hub, named only by the dependency, is suggested beside Dynamics CRM.
+    crm = next(item for item in candidates.list(draft.id) if item.content.name == "Dynamics CRM")
+    assert [(m.system_id, m.role) for m in crm.possible_matches] == [("bcrm", MatchRole.SYSTEM)]
     assert items[CandidateKind.RELATIONSHIP].basis is CandidateBasis.STATED
     assert len(items[CandidateKind.RELATIONSHIP].citations) == 2
     assert "Looked by name only." in run.warnings

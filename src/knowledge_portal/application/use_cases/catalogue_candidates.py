@@ -130,7 +130,7 @@ _EMBEDDED_ORDER = (
     _DOCX,
     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 )
-READING_VERSION = "document-reading-v6"
+READING_VERSION = "document-reading-v7"
 MAX_MATCHES_PER_NAME = 3
 _FIGURE = re.compile(r"^image (\d+)\b", re.IGNORECASE)
 _JOURNEY = re.compile(r"\bjourneys?\b", re.IGNORECASE)
@@ -498,6 +498,8 @@ def _canonical(
     # BCRM, B2B, SMB App" read into the order types only left the offering waiting for
     # channels nobody could accept.
     named: dict[str, ProposedChange] = {}
+    # Likewise the systems a stated dependency names that nothing suggests.
+    unsuggested: dict[str, ProposedChange] = {}
     for change in changes:
         content = change.content
         if content.kind is CandidateKind.LANDSCAPE_DOMAIN:
@@ -577,17 +579,59 @@ def _canonical(
             result.append(replace(change, content=replace(content, journey=journey)))
             continue
         target = content.target_system_id
-        result.append(
-            replace(
-                change,
-                content=replace(
-                    content,
-                    system_id=resolved(content.system_id),
-                    target_system_id=resolved(target) if target else target,
-                ),
-            )
+        content = replace(
+            content,
+            system_id=resolved(content.system_id),
+            target_system_id=resolved(target) if target else target,
         )
-    return (*result, *named.values())
+        result.append(replace(change, content=content))
+        if content.kind is CandidateKind.RELATIONSHIP and change.basis is CandidateBasis.STATED:
+            ends = (
+                (content.system_id, change.source_name),
+                (content.target_system_id or "", change.target_name),
+            )
+            for reference, written in ends:
+                system = _named_system(reference, written, provisional, offering_named)
+                if system is not None and system.system_id not in unsuggested:
+                    unsuggested[system.system_id] = replace(
+                        change,
+                        content=system,
+                        source_name=system.name,
+                        target_name="",
+                        rationale=None,
+                        reader=None,
+                    )
+    return (*result, *named.values(), *unsuggested.values())
+
+
+# Words a table writes where it has no system's name.
+_NO_SYSTEM = frozenset(
+    {"system", "systems", "unknown", "n/a", "na", "tbd", "tbc", "none", "other", "others"}
+)
+
+
+def _named_system(
+    reference: str,
+    written: str,
+    provisional: ArchitectureKnowledge,
+    offering_named: Callable[..., ProductOffering | None],
+) -> CandidateContent | None:
+    """The system a stated dependency names that neither the draft nor a suggestion adds.
+
+    An interface table names both its ends as systems: "vCPE DO | FortiGuard" read
+    into eleven dependencies left all of them waiting for a "vCPE DO" nothing
+    suggested. A blank, placeholder or offering's name is not one.
+    """
+    name = " ".join(written.split())
+    if (
+        not reference
+        or not name
+        or name.casefold() in _NO_SYSTEM
+        or find_system(provisional, reference) is not None
+        or offering_named(reference, name) is not None
+    ):
+        return None
+    return CandidateContent(CandidateKind.SYSTEM, reference, name=name)
 
 
 def _canonical_journey(

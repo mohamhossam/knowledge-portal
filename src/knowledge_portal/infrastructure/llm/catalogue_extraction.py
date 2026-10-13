@@ -1026,8 +1026,12 @@ def _content(item: DetailedChangeOutput, names: _SystemNames) -> CandidateConten
             parent_domain_id=slug(parent) if parent else None,
             description=(item.text or "").strip() or None,
         )
+    subject = item.system.strip()
+    if not (subject or (kind is CandidateKind.SYSTEM and name)):
+        # Resolved, a blank name would become a system called "item" that nothing adds.
+        raise InvalidKnowledgeError(f"A {kind.value} needs the system it is about.")
     if kind is CandidateKind.SYSTEM:
-        name = name or item.system.strip()
+        name = name or subject
         return CandidateContent(
             kind,
             names.resolve(item.system or name),
