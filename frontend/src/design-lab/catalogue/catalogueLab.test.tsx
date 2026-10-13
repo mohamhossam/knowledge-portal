@@ -4,8 +4,9 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { api, type Release } from "../../api/client";
+import { api } from "../../api/client";
 import release from "../../architecture/fixtures/smb-release.json";
+import { asRelease } from "../../architecture/sample";
 import { axe } from "../../test/axe";
 import CatalogueLab from "./CatalogueLab";
 import { type CatalogueSource, catalogueSource } from "./catalogueSource";
@@ -39,7 +40,7 @@ describe("where the catalogue lab reads its catalogue", { timeout: 30_000 }, () 
   });
 
   it("draws the version in service from the API, after a skeleton", async () => {
-    const active = vi.spyOn(api, "activeRelease").mockResolvedValue(release as unknown as Release);
+    const active = vi.spyOn(api, "activeRelease").mockResolvedValue(asRelease(release));
     await open("", "api");
     expect(screen.getByRole("status", { name: "Reading the catalogue" })).toBeInTheDocument();
     expect(await screen.findByRole("heading", { level: 1, name: "SMB architecture" })).toBeInTheDocument();
@@ -54,7 +55,7 @@ describe("where the catalogue lab reads its catalogue", { timeout: 30_000 }, () 
   });
 
   it("says when the API can't be read, and tries again", async () => {
-    const active = vi.spyOn(api, "activeRelease").mockRejectedValueOnce(new Error("The knowledge service is not answering.")).mockResolvedValue(release as unknown as Release);
+    const active = vi.spyOn(api, "activeRelease").mockRejectedValueOnce(new Error("The knowledge service is not answering.")).mockResolvedValue(asRelease(release));
     await open("", "api");
     expect(await screen.findByText("The catalogue couldn't be read")).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1, name: "Architecture catalogue" })).toBeInTheDocument();
@@ -65,7 +66,7 @@ describe("where the catalogue lab reads its catalogue", { timeout: 30_000 }, () 
   });
 
   it("switches to the bundled sample and back with the Data source switch, saying when the sample is shown", async () => {
-    vi.spyOn(api, "activeRelease").mockResolvedValue(release as unknown as Release);
+    vi.spyOn(api, "activeRelease").mockResolvedValue(asRelease(release));
     const { container } = await open("", "api");
     await screen.findByRole("heading", { level: 1, name: "SMB architecture" });
     const switcher = screen.getByRole("group", { name: "Data source" });
