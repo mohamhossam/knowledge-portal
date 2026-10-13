@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { fromRelease, journeyView, journeyViews, laneName, parseEvidence } from "./adapter";
+import type { Release } from "../api/client";
+import { edgesFor, fromRelease, journeyView, journeyViews, laneName, parseEvidence } from "./adapter";
 import { toBpmn, toCsv, toMermaid, toPlantUml } from "./exports";
-import { layoutFlow } from "./flowLayout";
+import { GEOMETRY, layoutFlow, waysBack } from "./flowLayout";
+import type { Step } from "./model";
 import { impactOf } from "./impact";
 import release from "./fixtures/smb-release.json";
 import { asRelease } from "./sample";
@@ -123,6 +125,53 @@ describe("the BPMN layout and exports", () => {
       const lanes = new Set(view.steps.map((step) => step.lane)).size;
       expect(doc.getElementsByTagName("bpmndi:BPMNShape")).toHaveLength(view.steps.length + lanes + 1);
     }
+  });
+
+  it("draws a journey with a way back: every step kept, the way back under the lanes and in the BPMN", () => {
+    // No journey loops yet: New activation with one, a corrected order sent back to be resubmitted.
+    const looped = structuredClone(asRelease(release));
+    const journey = looped.journeys!.find((item) => item.id === "bpp-new-activation")!;
+    const loop = { from_activity: "330", to_activity: "300", kind: "loop", label: "Correct & resubmit" };
+    journey.flow_rules.push({ kind: "loop", from_activity: "330", to_activity: "300", condition: "Correct & resubmit" } as (typeof journey.flow_rules)[number]);
+    for (const flow of [journey.edges, journey.shared_edges, ...journey.channel_edges.map((item) => item.edges)]) flow.push(loop);
+    const catalogue = fromRelease(looped);
+    const view = journeyView(catalogue, "bpp-new-activation", "bcrm")!;
+
+    const layout = layoutFlow(view);
+    // Every step is placed, those of the cycle among them.
+    expect(layout.placed.size).toBe(view.steps.length);
+    expect(layout.placed.has("300")).toBe(true);
+    expect(layout.placed.has("330")).toBe(true);
+    const back = layout.edges.filter((edge) => edge.back);
+    expect(back.map((edge) => [edge.from, edge.to, edge.label])).toEqual([["330", "300", "Correct & resubmit"]]);
+    const lanesHeight = layout.lanes.length * GEOMETRY.laneHeight;
+    expect(Math.max(...back[0]!.points.map(([, y]) => y))).toBeGreaterThan(lanesHeight);
+    expect(layout.height).toBeGreaterThan(lanesHeight);
+
+    const doc = new DOMParser().parseFromString(toBpmn(catalogue, view), "application/xml");
+    expect(doc.getElementsByTagName("parsererror")).toHaveLength(0);
+    const flow = [...doc.getElementsByTagName("bpmn:sequenceFlow")].find((item) => item.getAttribute("sourceRef")?.endsWith("330") && item.getAttribute("targetRef")?.endsWith("300"));
+    expect(flow?.getAttribute("name")).toBe("Correct & resubmit");
+    const lanes = new Set(view.steps.map((step) => step.lane)).size;
+    expect(doc.getElementsByTagName("bpmndi:BPMNShape")).toHaveLength(view.steps.length + lanes + 1);
+  });
+
+  it("finds a way back that closes a cycle even when it isn't marked as a loop", () => {
+    const step = (id: string, next: Step["next"]): Step => ({ id, kind: "task", name: id, lane: "a", next, evidence: { status: "inferred" } });
+    const steps = [step("start", [{ to: "1" }]), step("1", [{ to: "2" }]), step("2", [{ to: "3" }, { to: "1" }]), step("3", [])];
+    expect([...waysBack(steps)]).toEqual(["2>1"]);
+    const layout = layoutFlow({ ...journeyView(data, "bpp-new-activation", "bcrm")!, steps });
+    expect(layout.placed.size).toBe(4);
+  });
+
+  it("takes the service's flow for the channel chosen, the shared one for a channel no step names", () => {
+    const journey = asRelease(release).journeys!.find((item) => item.id === "bpp-new-activation")! as NonNullable<Release["journeys"]>[number];
+    const key = (edges: { from: string; to: string }[]) => edges.map((edge) => `${edge.from}>${edge.to}`).sort();
+    const shape = (edges: { from_activity: string; to_activity: string }[]) => edges.map((edge) => `${edge.from_activity}>${edge.to_activity}`).sort();
+    expect(key(edgesFor(journey, null))).toEqual(shape(journey.edges));
+    expect(key(edgesFor(journey, "bcrm"))).toEqual(shape(journey.channel_edges.find((item) => item.channel_id === "bcrm")!.edges));
+    expect(key(edgesFor(journey, "no-step-names-this"))).toEqual(shape(journey.shared_edges));
+    expect(key(edgesFor(journey, "bcrm"))).not.toEqual(key(edgesFor(journey, "b2b-web")));
   });
 
   it("writes the integrations as PlantUML, Mermaid and a CSV register", () => {

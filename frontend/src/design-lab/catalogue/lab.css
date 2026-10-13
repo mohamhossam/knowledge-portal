@@ -382,6 +382,8 @@
 .cl-task.on .label { fill: #fff; }
 .cl-task.on .num { fill: #f1dfe3; }
 .cl-edge { fill: none; stroke: var(--cl-ink-2); stroke-width: 1.4; }
+/* A way back to an earlier step (a loop): dashed, under the lanes. */
+.cl-edge--back { stroke-dasharray: 6 4; }
 .cl-edge-label { font-size: 12px; fill: var(--cl-ink-2); }
 
 /* ---------- Product overview: phrases, who can buy, plans at a glance ---------- */

@@ -2,9 +2,9 @@
  * A catalogue version from the API, as the views read it. Journeys are kept as
  * the catalogue holds them (ADR-0096: numbered activities on tracks, flow rules,
  * integrations) and seen one channel at a time: the steps of other channels
- * drop out, the flow is derived again for what remains (as the backend's
- * journey_edges does), and BPMN gateways and events are placed where the rules
- * branch, split and join.
+ * drop out, the flow is the one the service derived for that view
+ * (`channel_edges`, `shared_edges`, `edges`), and BPMN gateways and events are
+ * placed where the rules branch, split and join.
  */
 import type { Release } from "../api/client";
 import {
@@ -24,7 +24,6 @@ import {
 
 type ApiJourney = NonNullable<Release["journeys"]>[number];
 type ApiActivity = ApiJourney["activities"][number];
-type ApiRule = ApiJourney["flow_rules"][number];
 type ApiIntegration = ApiJourney["integrations"][number];
 
 /** A catalogue version and the release it was read from (for journeys and saving). */
@@ -218,53 +217,17 @@ export function laneName(data: Catalogue, lane: string): string {
   return data.systems.find((system) => system.id === lane)?.name ?? lane;
 }
 
-function order(number: string): [number, number, string] {
-  const match = /^\d+(\.\d+)?/.exec(number);
-  return match ? [0, Number(match[0]), number] : [1, 0, number];
-}
-
+/** One arrow of a journey's flow, as the service sends it. */
 type Edge = { from: string; to: string; kind: string; label?: string };
 
-/** The flow among the activities in view, as the backend's journey_edges derives it. */
-function edgesOf(activities: ApiActivity[], rules: ApiRule[]): Edge[] {
-  const present = new Set(activities.map((item) => item.number));
-  const kept = rules.filter((rule) => present.has(rule.from_activity) && present.has(rule.to_activity));
-  const sorted = [...activities].sort((a, b) => {
-    const [x, y] = [order(a.number), order(b.number)];
-    return x[0] - y[0] || x[1] - y[1] || x[2].localeCompare(y[2]);
-  });
-  const leaving = new Set(kept.map((rule) => rule.from_activity));
-  const tracks = new Map<string, ApiActivity[]>();
-  for (const item of sorted) {
-    const track = (item.track ?? MAIN).toLowerCase();
-    tracks.set(track, [...(tracks.get(track) ?? []), item]);
-  }
-  const lastOnTrack = new Map<string, string>();
-  for (const steps of tracks.values()) for (const item of steps) lastOnTrack.set(item.number, steps[steps.length - 1]!.number);
-  const edges: Edge[] = [];
-  const seen = new Set<string>();
-  const add = (edge: Edge) => {
-    const key = `${edge.from}>${edge.to}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      edges.push(edge);
-    }
-  };
-  for (const steps of tracks.values()) {
-    steps.forEach((current, index) => {
-      const following = steps[index + 1];
-      if (following && !leaving.has(current.number)) add({ from: current.number, to: following.number, kind: "sequence" });
-    });
-  }
-  for (const rule of kept) {
-    add({ from: rule.from_activity, to: rule.to_activity, kind: rule.kind, label: rule.condition ?? rule.branch ?? undefined });
-    if (rule.kind === "parallel" && rule.rejoin_at && present.has(rule.rejoin_at)) {
-      const target = activities.find((item) => item.number === rule.to_activity);
-      const main = !target?.track || target.track.toLowerCase() === MAIN;
-      add({ from: main ? rule.to_activity : lastOnTrack.get(rule.to_activity) ?? rule.to_activity, to: rule.rejoin_at, kind: "rejoin" });
-    }
-  }
-  return edges;
+/**
+ * The flow the chosen channel sees, as the service derives it (journey_edges): every step
+ * with no channel chosen, that channel's flow when its steps name it, and otherwise the
+ * flow of the steps no channel is named for.
+ */
+export function edgesFor(journey: ApiJourney, chosen: string | null): Edge[] {
+  const flow = chosen === null ? journey.edges : (journey.channel_edges.find((item) => item.channel_id === chosen)?.edges ?? journey.shared_edges);
+  return flow.map((edge) => ({ from: edge.from_activity, to: edge.to_activity, kind: edge.kind, ...(edge.label ? { label: edge.label } : {}) }));
 }
 
 /** The activities a channel sees: its own and the shared ones (none named means every channel). */
@@ -289,7 +252,7 @@ export function journeyView(data: CatalogueData, journeyId: string, channel: str
     return "channel";
   };
   const activities = journey.activities.filter((item) => inView(item, chosen));
-  const edges = edgesOf(activities, journey.flow_rules);
+  const edges = edgesFor(journey, chosen);
   const out = (number: string) => edges.filter((edge) => edge.from === number);
   const into = (number: string) => edges.filter((edge) => edge.to === number);
 
@@ -348,7 +311,7 @@ export function journeyView(data: CatalogueData, journeyId: string, channel: str
       steps.push(split);
       step.next.push({ to: split.id });
     }
-    for (const edge of rest) step.next.push({ to: target(edge.to, edge.kind), ...(edge.label && edge.label !== "rejoin" && edge.kind !== "rejoin" ? { label: edge.label } : {}) });
+    for (const edge of rest) step.next.push({ to: target(edge.to, edge.kind), ...(edge.label && edge.label !== "rejoin" && edge.kind !== "rejoin" ? { label: edge.label } : {}), ...(edge.kind === "loop" ? { loop: true } : {}) });
   }
   // Events: the flow starts before the first step nothing leads to, and ends after each step that leads nowhere.
   const first = activities.filter((item) => into(item.number).length === 0 && (!item.track || item.track.toLowerCase() === MAIN));

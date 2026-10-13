@@ -375,7 +375,10 @@ export function JourneyFlow() {
   // The export geometry keeps a header column inside the drawing; the lane names live in their own sticky column here.
   const shift = GEOMETRY.laneHeader;
   const W = layout.width - shift;
-  const H = layout.lanes.length * LANE;
+  const lanesH = layout.lanes.length * LANE;
+  // The ways back run under the lanes, one line each (flowLayout).
+  const backs = layout.edges.filter((edge) => edge.back);
+  const H = lanesH + (backs.length ? GEOMETRY.backBand + backs.length * GEOMETRY.backStep : 0);
   const fitHeight = () => setScale(Math.max(0.5, Math.min(1.2, +((height - 8) / H).toFixed(2))));
   const setParam = (key: string, value: string | null) => {
     const next = new URLSearchParams(params);
@@ -507,6 +510,27 @@ export function JourneyFlow() {
                   </g>
                 ))}
                 {layout.edges.map((edge) => {
+                  if (edge.back) {
+                    // From under the later step, along the band, up into the earlier one.
+                    const from = layout.placed.get(edge.from);
+                    const to = layout.placed.get(edge.to);
+                    if (!from || !to) return null;
+                    const bottom = (placed: typeof from) => laneY(placed.y + placed.height / 2) + (placed.step.kind === "task" ? TASK_H : placed.height) / 2;
+                    const y = lanesH + GEOMETRY.backBand + backs.indexOf(edge) * GEOMETRY.backStep;
+                    const sx = from.x + from.width / 2 - shift;
+                    const tx = to.x + to.width / 2 - shift;
+                    const points: [number, number][] = [[sx, bottom(from)], [sx, y], [tx, y], [tx, bottom(to)]];
+                    return (
+                      <g key={`${edge.from}-${edge.to}`} aria-hidden="true">
+                        <polyline className="cl-edge cl-edge--back" points={points.map((point) => point.join(",")).join(" ")} markerEnd="url(#cl-flow-arrow)" />
+                        {edge.label && (
+                          <text className="cl-edge-label" x={tx + 6} y={y - 4}>
+                            {edge.label}
+                          </text>
+                        )}
+                      </g>
+                    );
+                  }
                   const points = edge.points.map(([px, py]): [number, number] => [px - shift, laneY(py)]);
                   const [lx, ly] = points[points.length - 2] ?? points[0] ?? [0, 0];
                   return (

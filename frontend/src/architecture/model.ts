@@ -156,7 +156,8 @@ export type Step = {
   detail?: string;
   /** Point of no return: once passed, the order can no longer be cancelled. */
   ponr?: string;
-  next: { to: string; label?: string }[];
+  /** Where the flow goes on; `loop` marks a way back to an earlier step. */
+  next: { to: string; label?: string; loop?: boolean }[];
   evidence: Evidence;
 };
 
