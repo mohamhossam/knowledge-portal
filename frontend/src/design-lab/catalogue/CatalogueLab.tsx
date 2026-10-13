@@ -1,24 +1,25 @@
 /**
  * Catalogue direction mock-ups ("Layered Architecture Poster", e& calm),
  * mounted at /design-lab/catalogue in development only (App.tsx guards it with
- * import.meta.env.DEV). Four screens on the real Business Pro Plus catalogue:
- * the draft seeded from catalogues/smb-architecture.yaml, read from the same
- * fixture the catalogue's tests use. Nothing here writes.
+ * import.meta.env.DEV). It reads the catalogue version in service from the
+ * API, or the bundled Business Pro Plus sample when VITE_CATALOGUE_SOURCE=sample
+ * (catalogueSource.ts). Nothing here writes.
  */
 import "../../design";
 import "./lab.css";
 
-import { type ReactNode, useContext, useLayoutEffect, useMemo, useRef } from "react";
+import { type ReactNode, useContext, useLayoutEffect, useRef, useState } from "react";
 import { Link, Route, Routes } from "react-router-dom";
 
-import type { Release } from "../../api/client";
-import { fromRelease } from "../../architecture/adapter";
-import release from "../../architecture/fixtures/smb-release.json";
+import { errorMessage } from "../../api/errors";
 import { EVIDENCE_WORDS, type Evidence } from "../../architecture/model";
+import { Button, EmptyState, Skeleton } from "../../design/components";
+import { type CatalogueSource, catalogueSource, LabSource, useLabCatalogue, useLabSource } from "./catalogueSource";
 import { ProductsIndex } from "./CatalogueIndexes";
 import { JourneyFlow } from "./JourneyFlow";
 import { JourneysIndex } from "./JourneysIndex";
 import { InShell, LAB, LabData, useLabData } from "./labData";
+import { useTitle } from "./labUtil";
 import { LandscapeHero } from "./LandscapeHero";
 import { ProductArchitecture } from "./ProductArchitecture";
 import { ProductOverview } from "./ProductPage";
@@ -104,27 +105,68 @@ export function AreaTabs({ current }: { current: "landscape" | "products" | "jou
     </svg>
   );
   return (
-    <div className="cl-area">
-      <div className="cl-area-id">
-        <span className="cl-area-mark" aria-hidden="true">
-          {icon("landscape")}
-        </span>
-        <span>
-          <strong>SMB architecture</strong>
-          <small>
-            Architecture catalogue
-          </small>
-        </span>
+    <>
+      <div className="cl-area">
+        <div className="cl-area-id">
+          <span className="cl-area-mark" aria-hidden="true">
+            {icon("landscape")}
+          </span>
+          <span>
+            <strong>SMB architecture</strong>
+            <small>
+              Architecture catalogue
+            </small>
+          </span>
+        </div>
+        <nav className="cl-area-nav" aria-label="Catalogue sections">
+          {items.map((item) => (
+            <Link key={item.id} to={item.to} aria-current={item.id === current ? "page" : undefined}>
+              {icon(item.id)}
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+        <SourceSwitch />
       </div>
-      <nav className="cl-area-nav" aria-label="Catalogue sections">
-        {items.map((item) => (
-          <Link key={item.id} to={item.to} aria-current={item.id === current ? "page" : undefined}>
-            {icon(item.id)}
-            {item.label}
-          </Link>
+      <SampleNotice />
+    </>
+  );
+}
+
+/**
+ * Development only, like the lab: which catalogue the screens draw, the API's
+ * version in service or the bundled sample, to compare the two. The sample says
+ * so under the bar, so it is never taken for the live catalogue.
+ */
+export function SourceSwitch() {
+  const lab = useLabSource();
+  if (!lab) return null;
+  const options: { id: CatalogueSource; label: string }[] = [
+    { id: "api", label: "Live API" },
+    { id: "sample", label: "Sample JSON" },
+  ];
+  return (
+    <div className="cl-source" role="group" aria-label="Data source">
+      <span className="cl-source-label" aria-hidden="true">Data</span>
+      <div className="cl-seg">
+        {options.map((option) => (
+          <button key={option.id} type="button" aria-pressed={lab.source === option.id} onClick={() => lab.setSource(option.id)}>
+            {option.label}
+          </button>
         ))}
-      </nav>
+      </div>
     </div>
+  );
+}
+
+/** Under the bar while the sample is shown: not the catalogue in service. */
+function SampleNotice() {
+  const lab = useLabSource();
+  if (lab?.source !== "sample") return null;
+  return (
+    <p className="cl-source-notice" role="status">
+      Showing the bundled sample (smb-release.json), not the catalogue version in service.
+    </p>
   );
 }
 
@@ -169,9 +211,51 @@ function LabShell({ children }: { children: ReactNode }) {
   return <div className="cl cl--embedded">{inShell ? <div className="cl-page">{children}</div> : <main className="cl-page">{children}</main>}</div>;
 }
 
-/** The lab; `inShell` when the portal's shell already provides the page's <main>. */
-export default function CatalogueLab({ inShell = false }: { inShell?: boolean }) {
-  const data = useMemo(() => fromRelease(release as unknown as Release), []);
+/** While the catalogue is read, or when it can't be: the page keeps its h1, says why, and offers the sample. */
+function LabState({ children }: { children: ReactNode }) {
+  useTitle("Architecture");
+  return (
+    <LabShell>
+      <h1>Architecture catalogue</h1>
+      {children}
+      <SourceSwitch />
+    </LabShell>
+  );
+}
+
+/**
+ * The lab; `inShell` when the portal's shell already provides the page's <main>.
+ * `source` overrides the configured one (catalogueSource.ts), e.g. in tests.
+ */
+export default function CatalogueLab({ inShell = false, source: initial = catalogueSource() }: { inShell?: boolean; source?: CatalogueSource }) {
+  const [source, setSource] = useState(initial);
+  return (
+    <LabSource.Provider value={{ source, setSource }}>
+      <LabPages inShell={inShell} source={source} />
+    </LabSource.Provider>
+  );
+}
+
+function LabPages({ inShell, source }: { inShell: boolean; source: CatalogueSource }) {
+  const catalogue = useLabCatalogue(source);
+  if (catalogue.state !== "ready") {
+    return (
+      <InShell.Provider value={inShell}>
+        <LabState>
+          {catalogue.state === "loading" ? (
+            <Skeleton label="Reading the catalogue" rows={6} />
+          ) : catalogue.state === "error" ? (
+            <EmptyState title="The catalogue couldn't be read" action={<Button onClick={catalogue.retry}>Try again</Button>}>
+              {errorMessage(catalogue.error)}
+            </EmptyState>
+          ) : (
+            <EmptyState title="No catalogue version is in service yet">Publish a version from Versions to read it here.</EmptyState>
+          )}
+        </LabState>
+      </InShell.Provider>
+    );
+  }
+  const data = catalogue.data;
   return (
     <InShell.Provider value={inShell}>
     <LabData.Provider value={data}>

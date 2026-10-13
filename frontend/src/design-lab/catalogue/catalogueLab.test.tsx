@@ -1,25 +1,102 @@
-import { render, screen, within } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { api, type Release } from "../../api/client";
+import release from "../../architecture/fixtures/smb-release.json";
 import { axe } from "../../test/axe";
 import CatalogueLab from "./CatalogueLab";
+import { type CatalogueSource, catalogueSource } from "./catalogueSource";
 
-function open(path: string) {
-  return render(
-    <MemoryRouter initialEntries={[`/design-lab/catalogue${path}`]}>
-      <Routes>
-        <Route path="design-lab/catalogue/*" element={<CatalogueLab />} />
-      </Routes>
-    </MemoryRouter>,
+/** Renders the lab at `path`; with the sample, waits until it has arrived (it loads on demand). */
+async function open(path: string, source: CatalogueSource = "sample") {
+  const view = render(
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <MemoryRouter initialEntries={[`/design-lab/catalogue${path}`]}>
+        <Routes>
+          <Route path="design-lab/catalogue/*" element={<CatalogueLab source={source} />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
+  if (source === "sample") await waitFor(() => expect(screen.queryByRole("status", { name: "Reading the catalogue" })).not.toBeInTheDocument());
+  return view;
 }
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe("where the catalogue lab reads its catalogue", () => {
+  it("reads the API unless the bundled sample is asked for by name", () => {
+    expect(catalogueSource(undefined)).toBe("api");
+    expect(catalogueSource("api")).toBe("api");
+    expect(catalogueSource("anything else")).toBe("api");
+    expect(catalogueSource("sample")).toBe("sample");
+  });
+
+  it("draws the version in service from the API, after a skeleton", async () => {
+    const active = vi.spyOn(api, "activeRelease").mockResolvedValue(release as unknown as Release);
+    await open("", "api");
+    expect(screen.getByRole("status", { name: "Reading the catalogue" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "SMB architecture" })).toBeInTheDocument();
+    expect(active).toHaveBeenCalledOnce();
+  });
+
+  it("never calls the API when it reads the bundled sample", async () => {
+    const active = vi.spyOn(api, "activeRelease");
+    await open("", "sample");
+    expect(screen.getByRole("heading", { level: 1, name: "SMB architecture" })).toBeInTheDocument();
+    expect(active).not.toHaveBeenCalled();
+  });
+
+  it("says when the API can't be read, and tries again", async () => {
+    const active = vi.spyOn(api, "activeRelease").mockRejectedValueOnce(new Error("The knowledge service is not answering.")).mockResolvedValue(release as unknown as Release);
+    await open("", "api");
+    expect(await screen.findByText("The catalogue couldn't be read")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Architecture catalogue" })).toBeInTheDocument();
+    expect(screen.getByText("The knowledge service is not answering.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "SMB architecture" })).toBeInTheDocument();
+    expect(active).toHaveBeenCalledTimes(2);
+  });
+
+  it("switches to the bundled sample and back with the Data source switch, saying when the sample is shown", async () => {
+    vi.spyOn(api, "activeRelease").mockResolvedValue(release as unknown as Release);
+    const { container } = await open("", "api");
+    await screen.findByRole("heading", { level: 1, name: "SMB architecture" });
+    const switcher = screen.getByRole("group", { name: "Data source" });
+    expect(within(switcher).getByRole("button", { name: "Live API" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByText(/Showing the bundled sample/)).not.toBeInTheDocument();
+    await userEvent.click(within(switcher).getByRole("button", { name: "Sample JSON" }));
+    expect(within(screen.getByRole("group", { name: "Data source" })).getByRole("button", { name: "Sample JSON" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("status")).toHaveTextContent("Showing the bundled sample (smb-release.json), not the catalogue version in service.");
+    expect(await axe(container)).toHaveNoViolations();
+    await userEvent.click(within(screen.getByRole("group", { name: "Data source" })).getByRole("button", { name: "Live API" }));
+    expect(screen.queryByText(/Showing the bundled sample/)).not.toBeInTheDocument();
+  });
+
+  it("offers the sample when the API can't be read", async () => {
+    vi.spyOn(api, "activeRelease").mockRejectedValue(new Error("The knowledge service is not answering."));
+    await open("", "api");
+    expect(await screen.findByText("The catalogue couldn't be read")).toBeInTheDocument();
+    await userEvent.click(within(screen.getByRole("group", { name: "Data source" })).getByRole("button", { name: "Sample JSON" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "SMB architecture" })).toBeInTheDocument();
+  });
+
+  it("says so when no version is in service yet", async () => {
+    vi.spyOn(api, "activeRelease").mockResolvedValue(null);
+    await open("", "api");
+    expect(await screen.findByText("No catalogue version is in service yet")).toBeInTheDocument();
+  });
+});
 
 // Each test renders the whole poster and runs axe on it: slow on a busy machine.
 describe("the catalogue direction mock-ups, on the seeded Business Pro Plus catalogue", { timeout: 30_000 }, () => {
   it("draws the landscape as TAM layers, one picture with no other views, and shows what a picked system talks to", async () => {
-    const { container } = open("");
+    const { container } = await open("");
     expect(screen.getByRole("heading", { level: 1, name: "SMB architecture" })).toBeInTheDocument();
     expect(document.title).toMatch(/^SMB architecture · Catalogue/);
     // One picture: no view switch on the landscape.
@@ -41,7 +118,7 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
   });
 
   it("lists every product under its place in the portfolio: how it is sold, who can buy it, its terms, what is in it", async () => {
-    const { container } = open("/products");
+    const { container } = await open("/products");
     expect(screen.getByRole("heading", { level: 1, name: "Products" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: /Business internet bundles/ })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Business Pro Plus" })).toBeInTheDocument();
@@ -65,7 +142,7 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
   });
 
   it("lays journeys out by the customer's stage, scoped by the portfolio hierarchy, with a preview", async () => {
-    const { container } = open("/journeys");
+    const { container } = await open("/journeys");
     expect(screen.getByRole("heading", { level: 1, name: "Journeys" })).toBeInTheDocument();
     // Every order type sits under its stage; the first is picked and previewed.
     const board = screen.getByRole("region", { name: "Order types by the customer's stage" });
@@ -92,7 +169,7 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
   });
 
   it("respects that not every channel takes every order type", async () => {
-    const { container } = open("/journeys?channel=b2b-web");
+    const { container } = await open("/journeys?channel=b2b-web");
     const board = screen.getByRole("region", { name: "Order types by the customer's stage" });
     // Seen through B2B Web, the order types it can't take go quiet and say so.
     expect(within(board).getByRole("button", { name: /^Renewal: .*not through B2B Web$/ })).toBeInTheDocument();
@@ -103,19 +180,19 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
     expect(await axe(container)).toHaveNoViolations();
   });
 
-  it("marks a product's selling channel that doesn't take every way to join", () => {
-    open("/products");
+  it("marks a product's selling channel that doesn't take every way to join", async () => {
+    await open("/products");
     expect(screen.getByText(/for new activation and port in only/)).toBeInTheDocument();
   });
 
   it("says which products use a picked system, and groups its journeys by product", async () => {
-    open("?system=cwom");
+    await open("?system=cwom");
     expect(screen.getByRole("heading", { level: 3, name: "Used by products" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Business Pro Plus" })).toHaveAttribute("href", expect.stringContaining("/products/business-pro-plus/architecture?system=cwom"));
   });
 
   it("shows on the Systems page who calls whom, product-neutral, and which systems deliver which capability", async () => {
-    const { container } = open("/systems");
+    const { container } = await open("/systems");
     expect(screen.getByRole("heading", { level: 1, name: "Systems" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Systems" })).toHaveAttribute("aria-current", "page");
     // Interfaces, each counted once whatever uses it, never journey calls.
@@ -134,13 +211,13 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
   });
 
   it("finds a system by the start of its name", async () => {
-    open("");
+    await open("");
     await userEvent.type(screen.getByRole("combobox", { name: "Find a system" }), "tib{Enter}");
     expect(screen.getByRole("heading", { level: 2, name: "TIBCO" })).toBeInTheDocument();
   });
 
   it("opens a product with one statement, its customer value and who can buy it, through which channels", async () => {
-    const { container } = open("/products/business-pro-plus");
+    const { container } = await open("/products/business-pro-plus");
     expect(screen.getByRole("heading", { level: 1, name: "Business Pro Plus" })).toBeInTheDocument();
     expect(screen.getByText(/Secure by default:/)).toBeInTheDocument();
     // The bundle: the device at its heart, the parts grouped by what they do, Backup 5G optional.
@@ -153,19 +230,19 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
   });
 
   it("draws where the product sits in the portfolio, down to its plans and components", async () => {
-    const { container } = open("/products/business-pro-plus/hierarchy");
+    const { container } = await open("/products/business-pro-plus/hierarchy");
     for (const level of ["Enterprise", "Fixed", "SMB", "Business internet bundles"]) expect(screen.getAllByText(level).length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { level: 2, name: /Plans/ })).toBeInTheDocument();
     expect(await axe(container)).toHaveNoViolations();
   });
 
   it("lists the plans with prices left as a gap, and filters business rules by kind", async () => {
-    open("/products/business-pro-plus/plans");
+    await open("/products/business-pro-plus/plans");
     expect(screen.getByRole("rowheader", { name: "Monthly price" })).toBeInTheDocument();
   });
 
   it("filters business rules by what they govern", async () => {
-    const { container } = open("/products/business-pro-plus/rules");
+    const { container } = await open("/products/business-pro-plus/rules");
     expect(screen.getAllByRole("listitem").filter((item) => /^R\d+/.test(item.textContent ?? "")).length).toBe(20);
     await userEvent.click(screen.getByRole("button", { name: /^Billing/ }));
     expect(screen.getAllByRole("listitem").filter((item) => /^R\d+/.test(item.textContent ?? "")).length).toBe(5);
@@ -173,7 +250,7 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
   });
 
   it("shows who delivers what, then each component with the systems that deliver it", async () => {
-    const { container } = open("/products/business-pro-plus/components");
+    const { container } = await open("/products/business-pro-plus/components");
     const grid = screen.getByRole("table");
     expect(within(grid).getByRole("rowheader", { name: /Backup 5G/ })).toBeInTheDocument();
     expect(within(grid).getAllByRole("img", { name: /^CWOM:/ }).length).toBeGreaterThan(3);
@@ -188,7 +265,7 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
   });
 
   it("draws the product's footprint on the architecture, with each system's role for it", async () => {
-    const { container } = open("/products/business-pro-plus/architecture");
+    const { container } = await open("/products/business-pro-plus/architecture");
     const map = screen.getByRole("group", { name: /Business Pro Plus on the SMB architecture map/ });
     expect(within(map).getByRole("button", { name: /^CWOM:.*core to the product/ })).toBeInTheDocument();
     expect(within(map).getAllByRole("button", { name: /not used by the product/ }).length).toBeGreaterThan(0);
@@ -199,7 +276,7 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
   });
 
   it("lights a journey's systems on the product's architecture and steps through its calls", async () => {
-    const { container } = open("/products/business-pro-plus/architecture");
+    const { container } = await open("/products/business-pro-plus/architecture");
     await userEvent.click(screen.getByRole("button", { name: "One journey at a time" }));
     expect(screen.getByText(/Call 1 of \d+/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Next" }));
@@ -212,7 +289,7 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
   });
 
   it("lays out a journey's flow in lanes and shows a picked step's calls", async () => {
-    const { container } = open("/journeys/bpp-new-activation?channel=bcrm");
+    const { container } = await open("/journeys/bpp-new-activation?channel=bcrm");
     expect(screen.getByRole("heading", { level: 1, name: "Business Pro Plus" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: /New activation · BCRM/ })).toBeInTheDocument();
     const steps = screen.getAllByRole("button", { name: /^Step \d+:/ });
@@ -223,7 +300,7 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
   });
 
   it("draws a journey's calls as a sequence with the picked call's details, and as a table filterable by system", async () => {
-    const { container } = open("/journeys/bpp-new-activation?channel=bcrm&view=integrations");
+    const { container } = await open("/journeys/bpp-new-activation?channel=bcrm&view=integrations");
     const register = screen.getByRole("region", { name: "Integration register" });
     const calls = within(within(register).getByRole("list", { name: /^Calls in order/ })).getAllByRole("button");
     expect(calls.length).toBeGreaterThan(10);
