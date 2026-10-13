@@ -41,6 +41,12 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   (`VITE_CATALOGUE_LAB`, `VITE_CATALOGUE_SOURCE`) and its address are read in one place,
   `frontend/src/app/features.ts`, which also holds the lab's loader: where the lab is off,
   as in a published image, its code is still left out of the bundle.
+- The catalogue lab's bundled sample (`frontend/src/architecture/fixtures/smb-release.json`)
+  is generated from `catalogues/smb-architecture.yaml` through the API's read schema by
+  `scripts/dump_catalogue_fixture.py`, so it carries what the API sends: the vocabulary,
+  role ids, interfaces, realisations and the per-channel flows. A backend test fails when it
+  is stale (`--check`). The frontend reads it through one checked loader
+  (`architecture/sample.ts`) instead of casting it.
 - Seed tooling for the full catalogue: `scripts/seed_full_catalogue.py` imports
   `catalogues/smb-architecture.yaml` into a running offline API as a maintainer would (draft,
   file import, build, publish), and `seed_demo.py --full-catalogue` puts it in service after

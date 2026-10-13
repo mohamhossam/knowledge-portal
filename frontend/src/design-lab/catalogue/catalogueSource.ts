@@ -9,9 +9,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { createContext, useContext, useMemo } from "react";
 
-import { api, type Release } from "../../api/client";
+import { api } from "../../api/client";
 import { catalogueSourceSetting } from "../../app/features";
 import { type CatalogueData, fromRelease } from "../../architecture/adapter";
+import { loadSampleRelease } from "../../architecture/sample";
 
 export type CatalogueSource = "api" | "sample";
 
@@ -33,15 +34,9 @@ export type LabCatalogue =
   | { state: "empty" }
   | { state: "ready"; data: CatalogueData; source: CatalogueSource };
 
-/** The bundled sample, fetched only when it is asked for: the live API never loads it. */
-async function readSample(): Promise<Release> {
-  const file = await import("../../architecture/fixtures/smb-release.json");
-  return file.default as unknown as Release;
-}
-
 export function useLabCatalogue(source: CatalogueSource): LabCatalogue {
   const live = useQuery({ queryKey: ["architecture", "active"], queryFn: api.activeRelease, enabled: source === "api" });
-  const bundled = useQuery({ queryKey: ["catalogue-lab", "sample"], queryFn: readSample, enabled: source === "sample", staleTime: Infinity });
+  const bundled = useQuery({ queryKey: ["catalogue-lab", "sample"], queryFn: loadSampleRelease, enabled: source === "sample", staleTime: Infinity });
   const query = source === "sample" ? bundled : live;
   const data = useMemo(() => (query.data ? fromRelease(query.data) : null), [query.data]);
   if (data) return { state: "ready", data, source };

@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import type { Release } from "../api/client";
 import { fromRelease, journeyView, journeyViews, laneName, parseEvidence } from "./adapter";
 import { toBpmn, toCsv, toMermaid, toPlantUml } from "./exports";
 import { layoutFlow } from "./flowLayout";
 import { impactOf } from "./impact";
 import release from "./fixtures/smb-release.json";
+import { asRelease } from "./sample";
 
 // The draft seeded from catalogues/smb-architecture.yaml, as the API returns it.
-const data = fromRelease(release as unknown as Release);
+const data = fromRelease(asRelease(release));
 
 describe("a catalogue version as the views read it", () => {
   it("places every system in a TAM domain and group, with the bands below the columns", () => {
