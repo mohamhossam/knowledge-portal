@@ -173,8 +173,14 @@ function Loading({ children }: { children: ReactNode }) {
  * never reaches the bundle.
  */
 const DesignGallery = import.meta.env.DEV ? lazy(() => import("../design-lab/gallery/Gallery")) : null;
-/** The catalogue redesign (Knowledge Hub V1); development only, like the gallery. */
-const CatalogueLab = import.meta.env.DEV ? lazy(() => import("../design-lab/catalogue/CatalogueLab")) : null;
+/**
+ * The catalogue redesign (Knowledge Hub V1): in development, and in a build made with
+ * VITE_CATALOGUE_LAB=true (a local image, `deploy/compose.local.override.yaml`). Without
+ * it, as in a published image, the import is dead code like the gallery's.
+ */
+const CatalogueLab = import.meta.env.DEV || import.meta.env.VITE_CATALOGUE_LAB === "true"
+  ? lazy(() => import("../design-lab/catalogue/CatalogueLab"))
+  : null;
 
 export function App() {
   // The library is the area people open most: fetch its chunk once the first page has painted.
@@ -192,7 +198,7 @@ export function App() {
       )}
       <Route element={<Shell />}>
         <Route index element={<HomePage />} />
-        {/* The redesigned catalogue (development only) inside the portal's own shell, like every other area. */}
+        {/* The redesigned catalogue (development, or a lab build) inside the portal's own shell, like every other area. */}
         {CatalogueLab && <Route path="design-lab/catalogue/*" element={<Suspense fallback={null}><CatalogueLab inShell /></Suspense>} />}
         <Route path="library" element={<Loading><LibraryPage /></Loading>} />
         {/* Re-confirmations are confirmed on To do now (UX rebuild, phase 2). */}

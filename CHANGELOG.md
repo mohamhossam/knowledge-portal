@@ -20,6 +20,10 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   started, roughly how long is left, and when the reader has stopped responding. The step
   header says the same in a few words. Catalogue jobs now report `queued_at`, `started_at`,
   `stage`, `progress_done` and `progress_total` (additive; migration `202610120900`).
+- A web image can carry the catalogue redesign lab: built with `VITE_CATALOGUE_LAB=true`
+  (`deploy/web/Dockerfile`), the lab and its "Catalogue" link are in the production build, as
+  under the dev server. Published images leave it out, as before (the argument defaults to
+  `false`).
 
 ### Fixed
 
