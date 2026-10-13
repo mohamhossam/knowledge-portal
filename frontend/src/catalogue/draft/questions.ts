@@ -4,7 +4,7 @@
  * does. Pure, shared by the focus page and To do (which shows the first).
  */
 import type { PossibleMatch, Suggestion, SuggestionContent } from "../../api/client";
-import { type Lexicon, draftedForRequirement, inDependencyOrder, standaloneSentence, suggestionState, systemsFirst, waitsFor } from "../suggestions";
+import { type Lexicon, draftedForRequirement, inDependencyOrder, listed, standaloneSentence, suggestionState, systemsFirst, waitsFor } from "../suggestions";
 import { NEW, linked } from "./decide";
 
 export type DecideQuestion = {
@@ -37,8 +37,8 @@ export function decideQuestions(suggestions: Suggestion[], words: Lexicon): Deci
     const accept = needed.suggested.filter((item) => suggestionState(item) !== "decide");
     const add = needed.unsuggested.map((id) => ({ id, name: words.system(id) }));
     const first = accept.length || add.length ? { accept, add } : undefined;
-    // With every system it waits for added first, a link or a part waits for nothing more.
-    const settled = first && accept.length === needed.suggested.length && !["product", "journey", "channel"].includes(suggestion.content.kind);
+    // With every system it waits for added first, it waits for nothing more, unless it also needs something else.
+    const settled = first && accept.length === needed.suggested.length && needed.others.length === 0;
     const waits = suggestion.match.startsWith("needs_") && !settled ? waitsFor(suggestion, words) : undefined;
     const role = suggestion.possible_matches[0]?.role;
     if (role) {
@@ -112,6 +112,5 @@ export function firstSystems(question: DecideQuestion): string {
     ...(question.first?.add ?? []).map((item) => item.name),
   ];
   if (!names.length) return "";
-  const joined = names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : names[0];
-  return `the system${names.length > 1 ? "s" : ""} ${joined}`;
+  return `the system${names.length > 1 ? "s" : ""} ${listed(names)}`;
 }

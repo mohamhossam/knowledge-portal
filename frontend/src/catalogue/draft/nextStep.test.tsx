@@ -87,6 +87,26 @@ describe("blockers", () => {
     expect(linkQuestion!.waits).toBe("Waits for the system vCPE DO");
   });
 
+  it("says an offering waits for nothing once its systems are added first, unless it also names a channel the draft lacks", () => {
+    const offering = (orderTypes: object[]) =>
+      suggestion(
+        "offer",
+        { kind: "product", system_id: "bpp", name: "Business Pro Plus", product: { id: "bpp", name: "Business Pro Plus", order_types: orderTypes, components: [{ name: "Router", responsibilities: [{ system_id: "rtf" }] }] } },
+        // Inferred, so it is asked on its own.
+        { basis: "inferred", match: "needs_system", missing_systems: ["rtf"] },
+      );
+
+    const onlySystems = offering([]);
+    const [settled] = decideQuestions([onlySystems], lexicon(draft, [onlySystems]));
+    expect(settled!.first?.add).toEqual([{ id: "rtf", name: "RTF" }]);
+    expect(settled!.waits).toBeUndefined();
+
+    const withChannel = offering([{ id: "new", name: "New connection", channels: ["b2b-web"] }]);
+    const [waiting] = decideQuestions([withChannel], lexicon(draft, [withChannel]));
+    expect(waiting!.first?.add).toEqual([{ id: "rtf", name: "RTF" }]);
+    expect(waiting!.waits).toBeDefined();
+  });
+
   it("lets an offering rule wait for an offering suggested by another spelling of its name", () => {
     const suggestions = [
       suggestion("rule", { kind: "offering_rule", system_id: "business-pro-plus", text: "Up to 300 users" }, { match: "needs_offering" }),

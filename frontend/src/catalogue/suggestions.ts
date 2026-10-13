@@ -131,7 +131,8 @@ const VERB: Record<RelationshipKind, string> = {
 };
 
 const quoted = (items: string[]) => items.map((item) => `“${item}”`).join(", ");
-const listed = (items: string[]) => (items.length > 1 ? `${items.slice(0, -1).join(", ")} and ${items.at(-1)}` : items[0] ?? "");
+/** "A", "A and B", "A, B and C". */
+export const listed = (items: string[]) => (items.length > 1 ? `${items.slice(0, -1).join(", ")} and ${items.at(-1)}` : items[0] ?? "");
 const count = (n: number, one: string) => `${n} ${one}${n === 1 ? "" : "s"}`;
 
 const realisedParts = (product: Offering) => product.components.filter((part) => (part.realisation ?? []).length > 0).length;
@@ -585,19 +586,24 @@ export function dependencyEdges(suggestions: Suggestion[]): { from: string; to: 
 /**
  * The missing systems accepting a suggestion needs first: the open system suggestions that
  * add them, and by id those nothing suggests. The service refuses a link to a system the
- * draft lacks, so an answer accepting it adds these first.
+ * draft lacks, so an answer accepting it adds these first. `others` are what it requires
+ * besides systems (a channel, an offering, a domain…): with any, adding systems isn't enough.
  */
-export function systemsFirst(suggestion: Suggestion, suggestions: Suggestion[]): { suggested: Suggestion[]; unsuggested: string[] } {
+export function systemsFirst(suggestion: Suggestion, suggestions: Suggestion[]): { suggested: Suggestion[]; unsuggested: string[]; others: string[] } {
   const systems = suggestions.filter((item) => item.status === "proposed" && item.id !== suggestion.id && item.content.kind === "system");
   const suggested: Suggestion[] = [];
   const unsuggested: string[] = [];
+  const others: string[] = [];
   for (const key of new Set(requires(suggestion))) {
-    if (!key.startsWith("system:")) continue;
+    if (!key.startsWith("system:")) {
+      others.push(key);
+      continue;
+    }
     const found = systems.find((item) => provides(item).includes(key));
     if (!found) unsuggested.push(key.slice("system:".length));
     else if (!suggested.includes(found)) suggested.push(found);
   }
-  return { suggested, unsuggested };
+  return { suggested, unsuggested, others };
 }
 
 /** Suggestions in the order accepting them works: domains, then systems, then what hangs on them. */
