@@ -71,8 +71,9 @@ describe("where the catalogue lab reads its catalogue", () => {
     expect(within(switcher).getByRole("button", { name: "Live API" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.queryByText(/Showing the bundled sample/)).not.toBeInTheDocument();
     await userEvent.click(within(switcher).getByRole("button", { name: "Sample JSON" }));
+    // The sample loads on demand: wait for it, past the skeleton.
+    expect(await screen.findByText("Showing the bundled sample (smb-release.json), not the catalogue version in service.")).toHaveAttribute("role", "status");
     expect(within(screen.getByRole("group", { name: "Data source" })).getByRole("button", { name: "Sample JSON" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("status")).toHaveTextContent("Showing the bundled sample (smb-release.json), not the catalogue version in service.");
     expect(await axe(container)).toHaveNoViolations();
     await userEvent.click(within(screen.getByRole("group", { name: "Data source" })).getByRole("button", { name: "Live API" }));
     expect(screen.queryByText(/Showing the bundled sample/)).not.toBeInTheDocument();
