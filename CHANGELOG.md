@@ -45,6 +45,15 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Fixed
 
+- Sending Decide's answers no longer hides failures. Adding the systems the answers need,
+  and accepting what is ready, pass over only the service's "already done" refusals: the
+  draft has the system (422 `invalid_architecture_knowledge`), nothing waits for it any more
+  (404 `catalogue_suggestion_not_found`), or the draft moved on (409). Any other failure, or
+  a failed re-read of the suggestions, stops the send and is shown. The send is
+  `catalogue/draft/sendAnswers.ts`, tested on its own. A suggestion that needs only
+  systems, an offering among them, no longer says it waits once they are added first; one
+  that also needs a channel, offering or domain still does.
+
 - Reading a document no longer takes a product, bundle or plan for a system (prompt
   `catalogue-extraction-v13`): its rules are proposed as offering rules, and a "system" named
   like an offering the draft has or the document suggests is left out, with its constraints
