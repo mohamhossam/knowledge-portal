@@ -683,6 +683,11 @@
             ],
             "title": "Input"
           },
+          "main_track": {
+            "default": false,
+            "title": "Main Track",
+            "type": "boolean"
+          },
           "mode": {
             "anyOf": [
               {
@@ -5596,6 +5601,17 @@
               }
             ]
           },
+          "delivery_drop": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Drop"
+          },
           "description": {
             "anyOf": [
               {
@@ -5661,6 +5677,18 @@
                 "type": "null"
               }
             ]
+          },
+          "delivery_drop": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Drop"
           },
           "description": {
             "anyOf": [

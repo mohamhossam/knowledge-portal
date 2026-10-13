@@ -956,12 +956,14 @@ landscape_domains:
 - id: enterprise
   name: Enterprise
   description: 'Cross-cutting: notification, documents, IT service management, single sign-on.'
+  cross_cutting: true
 - id: enterprise.common
   name: Common services
   parent_id: enterprise
 - id: integration
   name: Integration layer
   description: The bus and gateways every domain talks through.
+  cross_cutting: true
 - id: integration.bus
   name: Integration
   parent_id: integration
@@ -984,8 +986,8 @@ products:
   - code: NEW
     name: New activation
     enabled: true
-    description: A new Business Pro Plus subscription on a new or existing account. Delivered in drop
-      P1.
+    description: A new Business Pro Plus subscription on a new or existing account.
+    delivery_drop: P1
     channels:
     - bcrm
     - b2b-web
@@ -996,7 +998,8 @@ products:
     name: Migration to Business Pro Plus
     enabled: true
     description: From a legacy product (DEL, PBX, BQS…) or from Business Edge (BFV2). Legacy through BCRM
-      (P1); Business Edge through BCRM and the SMB App (P3). Delivered in drop P1 / P3.
+      (P1); Business Edge through BCRM and the SMB App (P3).
+    delivery_drop: P1 / P3
     channels:
     - bcrm
     - smb-app
@@ -1005,8 +1008,8 @@ products:
   - code: PORTIN
     name: Port in
     enabled: true
-    description: A new activation that brings the customer's number from another operator. Delivered in
-      drop P3.
+    description: A new activation that brings the customer's number from another operator.
+    delivery_drop: P3
     channels:
     - bcrm
     - b2b-web
@@ -1019,7 +1022,8 @@ products:
     enabled: true
     description: Change of plan between Business Pro Plus, Office Presence, Business ON and Business Pro,
       with or without a device change. 28 from/to paths across Business Pro Plus, Office Presence, Business
-      ON and Business Pro; P3 adds device change. Delivered in drop P2 / P3.
+      ON and Business Pro; P3 adds device change.
+    delivery_drop: P2 / P3
     channels:
     - bcrm
     - smb-app
@@ -1028,8 +1032,9 @@ products:
   - code: ADDDELETE
     name: Add / delete add-on
     enabled: true
-    description: Static IP, Speed Booster, VSaaS, voice, SaaS, managed-device and other add-ons. VSaaS
-      and static IP (P2); Speed Booster and add-ons while on 5G backup (P4). Delivered in drop P2 / P4.
+    description: Static IP, Speed Booster, VSaaS, voice, SaaS, managed-device and other add-ons. VSaaS and
+      static IP (P2); Speed Booster and add-ons while on 5G backup (P4).
+    delivery_drop: P2 / P4
     channels:
     - bcrm
     - b2b-web
@@ -1039,7 +1044,8 @@ products:
   - code: MODSUBS
     name: Modify subscription
     enabled: true
-    description: SaaS service activation from the digital channel. Delivered in drop P4.
+    description: SaaS service activation from the digital channel.
+    delivery_drop: P4
     channels:
     - b2b-web
     - smb-app
@@ -1048,7 +1054,7 @@ products:
   - code: CHINTUSRN
     name: Change internet username
     enabled: true
-    description: Delivered in drop P2 / P4.
+    delivery_drop: P2 / P4
     channels:
     - bcrm
     - b2b-web
@@ -1058,7 +1064,7 @@ products:
   - code: CHGPSWD
     name: Change password
     enabled: true
-    description: Delivered in drop P2 / P4.
+    delivery_drop: P2 / P4
     channels:
     - bcrm
     - b2b-web
@@ -1068,7 +1074,7 @@ products:
   - code: CHGDOMN
     name: Change domain
     enabled: true
-    description: Delivered in drop P4.
+    delivery_drop: P4
     channels:
     - bcrm
     - b2b-web
@@ -1078,7 +1084,7 @@ products:
   - code: CHGSUBDOMN
     name: Change sub-domain
     enabled: true
-    description: Delivered in drop P4.
+    delivery_drop: P4
     channels:
     - bcrm
     - b2b-web
@@ -1088,7 +1094,7 @@ products:
   - code: CHNUMBER
     name: Change number
     enabled: true
-    description: Delivered in drop P4.
+    delivery_drop: P4
     channels:
     - bcrm
     - b2b-web
@@ -1098,7 +1104,7 @@ products:
   - code: FLEXIMINMOV
     name: Flexi minute movement
     enabled: true
-    description: Delivered in drop P4.
+    delivery_drop: P4
     channels:
     - bcrm
     - b2b-web
@@ -1108,7 +1114,7 @@ products:
   - code: TECHVISIT
     name: Technician visit
     enabled: true
-    description: Delivered in drop P4.
+    delivery_drop: P4
     channels:
     - bcrm
     - b2b-web
@@ -1119,7 +1125,7 @@ products:
     name: Faulty device replacement
     enabled: true
     description: Raised as a complaint; CPE or FortiAP replaced, with exit charges when out of warranty.
-      Delivered in drop P3 / P4.
+    delivery_drop: P3 / P4
     channels:
     - cim
     confidence: confirmed
@@ -1127,7 +1133,8 @@ products:
   - code: EXTSHIFTSITE
     name: External shift of site
     enabled: true
-    description: Moves the service to another site within the Etisalat area. Delivered in drop P3.
+    description: Moves the service to another site within the Etisalat area.
+    delivery_drop: P3
     channels:
     - bcrm
     - b2b-web
@@ -1137,8 +1144,8 @@ products:
   - code: RENEWAL
     name: Renewal
     enabled: true
-    description: Contract renewal; EHS can trigger a move to the non-commitment package. Delivered in
-      drop P4.
+    description: Contract renewal; EHS can trigger a move to the non-commitment package.
+    delivery_drop: P4
     channels:
     - ehs
     confidence: confirmed
@@ -1146,7 +1153,8 @@ products:
   - code: CESSREQ
     name: Cessation
     enabled: true
-    description: Direct, with retention, within the trial period, or bulk. Delivered in drop P2.
+    description: Direct, with retention, within the trial period, or bulk.
+    delivery_drop: P2
     channels:
     - bcrm
     - b2b-web
@@ -1156,7 +1164,8 @@ products:
   - code: PORTOUT
     name: Port out
     enabled: true
-    description: A cessation started by a port-out request from NPC. Delivered in drop P3.
+    description: A cessation started by a port-out request from NPC.
+    delivery_drop: P3
     channels:
     - nps
     confidence: confirmed
@@ -1165,7 +1174,8 @@ products:
     name: Dunning (TOSS, reconnect, non-payment cessation)
     enabled: true
     description: Throttle or suspend for non-payment, reconnect, or cease (CESSNP). The source that starts
-      dunning isn't named in the SDD. Delivered in drop P3.
+      dunning isn't named in the SDD.
+    delivery_drop: P3
     confidence: confirmed
     source: SDD v2.3 · §P3 ADO 259162
   components:

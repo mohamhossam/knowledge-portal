@@ -8,7 +8,7 @@
  * kinds, never English: the lab's words.ts names them.
  */
 import type { Release } from "../api/client";
-import { BAND_DOMAINS, parseDrop, parseProposition, parseQuestion, trackKind } from "./conventions";
+import { BAND_DOMAINS, parseDrop, parseProposition, parseQuestion } from "./conventions";
 import {
   type Activity,
   type ActivityStep,
@@ -32,6 +32,7 @@ import {
 } from "./model";
 
 type ApiJourney = NonNullable<Release["journeys"]>[number];
+type ApiOrderType = NonNullable<Release["products"]>[number]["order_types"][number];
 type ApiEdge = ApiJourney["edges"][number];
 
 /** Evidence from a fact's confidence and its source line ("SDD v2.3 · §P1 · a note"). */
@@ -43,6 +44,11 @@ export function parseEvidence(confidence: string | null | undefined, source: str
   if (!named) return { status, where: source };
   const [, where, ...rest] = parts;
   return { status, source: named.id, ...(where ? { where } : {}), ...(rest.length ? { note: rest.join(" · ") } : {}) };
+}
+
+/** An order type's delivery drop and the rest of its description; read from the prose for a version saved before the service sent the drop. */
+function delivery(type: ApiOrderType): { drop?: string; note: string } {
+  return type.delivery_drop ? { drop: type.delivery_drop, note: type.description ?? "" } : parseDrop(type.description);
 }
 
 function role(code: string | null | undefined): StepRole | undefined {
@@ -74,7 +80,7 @@ function journeyOf(journey: ApiJourney, channels: string[], evidence: (item: { c
     name: item.name,
     performer: performer(item),
     channels: item.channels,
-    track: trackKind(item.track),
+    mainTrack: item.main_track,
     role: role(item.role),
     etom: item.etom ?? undefined,
     detail: item.description ?? undefined,
@@ -136,12 +142,14 @@ export function fromRelease(release: Release): Catalogue {
 
   const landscape = release.landscape_domains ?? [];
   const tops = landscape.filter((item) => !item.parent_id);
+  // A version saved before the service marked cross-cutting domains marks none: then they are known by id.
+  const marked = landscape.some((item) => item.cross_cutting);
   const domains = tops.map((top) => ({
     id: top.id,
     name: top.name,
     scope: top.description ?? "",
     groups: landscape.filter((item) => item.parent_id === top.id).map((item) => ({ id: item.id, name: item.name })),
-    band: BAND_DOMAINS.includes(top.id),
+    band: marked ? top.cross_cutting : BAND_DOMAINS.includes(top.id),
   }));
   const place = (id: string | null | undefined) => {
     const node = landscape.find((item) => item.id === id);
@@ -195,7 +203,7 @@ export function fromRelease(release: Release): Catalogue {
         evidence: evidence(part),
       })),
       orderTypes: product.order_types.map((type) => {
-        const { drop, note } = parseDrop(type.description);
+        const { drop, note } = delivery(type);
         return {
           code: type.code,
           name: type.name,
@@ -224,7 +232,7 @@ export function fromRelease(release: Release): Catalogue {
   const orderTypes = products
     .flatMap((product) => product.order_types)
     .filter((type, index, all) => all.findIndex((other) => other.code === type.code) === index)
-    .map((type) => ({ code: type.code, name: type.name, description: parseDrop(type.description).note }));
+    .map((type) => ({ code: type.code, name: type.name, description: delivery(type).note }));
 
   const journeys: Journey[] = (release.journeys ?? []).map((journey) => {
     const offering = offerings.find((item) => item.id === journey.product_id);
@@ -307,10 +315,9 @@ export function journeyView(data: Catalogue, journeyId: string, channel: string 
   const steps: Step[] = [];
   const nodes = new Map<string, ActivityStep>();
   for (const item of activities) {
-    const terminal = out(item.number).length === 0;
     const step: ActivityStep = {
       id: item.number,
-      kind: terminal && item.track === "error" ? "error-end" : "task",
+      kind: "task",
       name: item.name,
       lane: laneOf(item),
       role: item.role,
@@ -362,8 +369,9 @@ export function journeyView(data: Catalogue, journeyId: string, channel: string 
     }
     for (const edge of rest) step.next.push({ to: target(edge.to, edge.kind), ...(edge.label && edge.label !== "rejoin" && edge.kind !== "rejoin" ? { label: edge.label } : {}), ...(edge.kind === "loop" ? { loop: true } : {}) });
   }
-  // Events: the flow starts before the first step nothing leads to, and ends after each step that leads nowhere.
-  const first = activities.filter((item) => into(item.number).length === 0 && item.track === "main");
+  // Events: the flow starts before the first step nothing leads to, and ends after each step that leads nowhere
+  // (a plain end, whatever track it is on: an error end would need a subprocess to catch it).
+  const first = activities.filter((item) => into(item.number).length === 0 && item.mainTrack);
   if (first.length) {
     steps.unshift({ id: "start", kind: "start", lane: laneOf(first[0]), next: first.map((item) => ({ to: item.number })), evidence: inferred });
   }

@@ -54,7 +54,7 @@ type End = Lane | string;
 
 const endKey = (end: End) => (typeof end === "string" ? end : laneKey(end));
 
-const isActivity = (step: Step | undefined): step is ActivityStep => step?.kind === "task" || step?.kind === "error-end";
+const isActivity = (step: Step | undefined): step is ActivityStep => step?.kind === "task";
 
 function ExportMenu({ file, view }: { file: string; view: JourneyView }) {
   const data = useLabData();
@@ -580,7 +580,7 @@ export function JourneyFlow() {
                   const x = rawX - shift;
                   const h = item.kind === "task" ? TASK_H : rawHeight;
                   const y = laneY(rawY + rawHeight / 2) - h / 2;
-                  if (isActivity(item) && item.kind === "task") {
+                  if (item.kind === "task") {
                     const calls = callsByStep.get(item.id) ?? 0;
                     const on = item.id === selected;
                     return (

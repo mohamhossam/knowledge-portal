@@ -49,7 +49,34 @@ describe("a catalogue version as the views read it", () => {
     expect(journey.flow.all.length).toBeGreaterThan(0);
     expect(Object.keys(journey.flow.byChannel).sort()).toEqual(["b2b-web", "bcrm", "smb-app"]);
     expect(journey.calls.length).toBeGreaterThan(0);
-    expect(journey.activities.find((item) => item.number === "330")?.track).toBe("error");
+    expect(journey.activities.find((item) => item.number === "330")?.mainTrack).toBe(false);
+    expect(journey.activities.find((item) => item.number === "10")?.mainTrack).toBe(true);
+  });
+
+  it("reads the delivery drop and the cross-cutting domains the service sends", () => {
+    const orders = data.offerings[0]!.orderTypes;
+    expect(orders.find((type) => type.code === "NEW")).toMatchObject({ priority: "P1", note: "A new Business Pro Plus subscription on a new or existing account." });
+    expect(data.orderTypes.every((type) => !type.description.includes("Delivered in drop"))).toBe(true);
+  });
+
+  it("reads them from the prose of a version saved before the service sent them", () => {
+    const older = structuredClone(asRelease(release));
+    for (const product of older.products ?? [])
+      for (const type of product.order_types) {
+        if (type.delivery_drop) type.description = `${type.description ?? ""} Delivered in drop ${type.delivery_drop}.`.trim();
+        type.delivery_drop = null;
+      }
+    for (const domain of older.landscape_domains ?? []) domain.cross_cutting = false;
+    const read = fromRelease(older);
+    expect(read.offerings).toEqual(data.offerings);
+    expect(read.orderTypes).toEqual(data.orderTypes);
+    expect(read.domains).toEqual(data.domains);
+  });
+
+  it("takes the domains the service marks cross-cutting, not their ids, once any is marked", () => {
+    const marked = structuredClone(asRelease(release));
+    for (const domain of marked.landscape_domains ?? []) domain.cross_cutting = domain.id === "customer";
+    expect(fromRelease(marked).domains.filter((domain) => domain.band).map((domain) => domain.id)).toEqual(["customer"]);
   });
 });
 
@@ -94,9 +121,12 @@ describe("a journey seen through one channel", () => {
     const join = view.steps.find((step) => step.kind === "parallel" && step.gateway === "join");
     expect(view.steps.filter((step) => step.next.some((next) => next.to === join?.id))).toHaveLength(6);
     expect(view.steps.filter((step) => step.kind === "start")).toHaveLength(1);
-    expect(view.steps.some((step) => step.kind === "error-end" && step.name === "Order returned for correction")).toBe(true);
+    // A side track's last step ends the flow in a plain end: nothing would catch an error end.
+    const returned = view.steps.find((step) => step.kind === "task" && step.name === "Order returned for correction");
+    expect(returned?.next.map((next) => view.steps.find((step) => step.id === next.to)?.kind)).toEqual(["end"]);
+    expect(view.steps.map((step) => step.kind)).not.toContain("error-end");
     // Events and gateways carry kinds, not words.
-    for (const step of view.steps) if (step.kind !== "task" && step.kind !== "error-end") expect("name" in step, step.id).toBe(false);
+    for (const step of view.steps) if (step.kind !== "task") expect("name" in step, step.id).toBe(false);
     // Every arrow leads to a step of the view.
     const ids = new Set(view.steps.map((step) => step.id));
     for (const step of view.steps) for (const next of step.next) expect(ids.has(next.to), `${step.id} → ${next.to}`).toBe(true);
