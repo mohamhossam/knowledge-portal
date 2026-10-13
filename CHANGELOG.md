@@ -7,6 +7,13 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- Each journey's flow per channel, read-only beside `edges`: `channel_edges` (for each
+  channel its steps name, the flow that channel sees: its own steps and the shared ones) and
+  `shared_edges` (what a channel no step names sees). A rule counts in a view only when both
+  its ends are in it, a parallel track rejoins only where the view has the step, and a loop
+  stays a `loop` edge. Derived like `edges`, ignored on the way in; both contracts gain the
+  two fields (additive). In the domain: `Activity.seen_in`, `journey_edges(journey,
+  channel)`, `shared_journey_edges` and `journey_channels`.
 - Decide always says what to do next: answer the questions, accept the ready ones, or settle
   a wait nothing on the page can lift. A name that waiting suggestions need and nothing adds
   can be suggested as a system or made a product offering on the spot

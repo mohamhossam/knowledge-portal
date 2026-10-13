@@ -28,7 +28,9 @@ from knowledge_portal.domain.architecture.journeys import (
     FlowRule,
     FlowRuleKind,
     Journey,
+    journey_channels,
     journey_edges,
+    shared_journey_edges,
 )
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
@@ -151,6 +153,70 @@ def test_the_flow_is_derived_as_the_documents_diagram_draws_it() -> None:
     assert [item.number for item in ACTIVATION.ordered][:9] == [
         "10", "20", "30", "40", "50", "60", "70", "75", "80",
     ]  # fmt: skip
+
+
+# A journey whose steps differ by channel: 10 and 50 are shared, 20 is the web's, 30 the
+# app's; 40 is a side track the web reaches by a decision and the app rejoins from.
+CHANNELLED = Journey(
+    "change-speed",
+    "Change speed",
+    activities=(
+        Activity("10", "Start", performing_system_id="bcrm"),
+        Activity("20", "Web form", performing_system_id="b2b-web", channels=("b2b-web",)),
+        Activity("30", "App form", performing_system_id="smb-app", channels=("smb-app",)),
+        Activity("35", "Field visit", track="FIELD", performing_system_id="cwom"),
+        Activity("40", "Review", performing_system_id="bcrm"),
+        Activity("50", "Done", performing_system_id="bscs"),
+    ),
+    flow_rules=(
+        # Into the app's step: only the app sees it.
+        FlowRule(FlowRuleKind.DECISION, "10", "30", "APP"),
+        # A side track that rejoins at the app's step: the web sees no rejoin.
+        FlowRule(FlowRuleKind.PARALLEL, "20", "35", None, "FIELD", "PG1", "30"),
+        # The review passes on, or loops back for rework.
+        FlowRule(FlowRuleKind.DECISION, "40", "50", "OK"),
+        FlowRule(FlowRuleKind.LOOP, "40", "10", "Rework"),
+    ),
+)
+
+
+def _flow(edges: tuple[object, ...]) -> set[tuple[str, str, str]]:
+    return {(edge.from_activity, edge.to_activity, edge.kind) for edge in edges}  # type: ignore[attr-defined]
+
+
+def test_each_channel_sees_its_own_steps_and_the_shared_ones() -> None:
+    assert journey_channels(CHANNELLED) == ("b2b-web", "smb-app")
+    assert [item.number for item in CHANNELLED.ordered if item.seen_in("b2b-web")] == [
+        "10", "20", "35", "40", "50",
+    ]  # fmt: skip
+    # No channel: every step, as before.
+    assert all(item.seen_in(None) for item in CHANNELLED.activities)
+
+
+def test_a_rule_counts_in_a_channel_only_when_both_its_ends_are_in_view() -> None:
+    web = _flow(journey_edges(CHANNELLED, "b2b-web"))
+    app = _flow(journey_edges(CHANNELLED, "smb-app"))
+
+    # The decision into the app's step is the app's alone; without it, 10 runs on to 20.
+    assert ("10", "30", "decision") in app
+    assert ("10", "30", "decision") not in web
+    assert ("10", "20", "sequence") in web
+    # The web starts the side track, but the step it rejoins at is the app's: no rejoin.
+    assert ("20", "35", "parallel") in web
+    assert not any(kind == "rejoin" for _, _, kind in web)
+    # The loop back stays a loop in every view.
+    assert ("40", "10", "loop") in web
+    assert ("40", "10", "loop") in app
+
+
+def test_a_channel_no_step_names_sees_the_shared_flow() -> None:
+    assert _flow(shared_journey_edges(CHANNELLED)) == {
+        ("10", "40", "sequence"),
+        ("40", "50", "decision"),
+        ("40", "10", "loop"),
+    }
+    # Every step in view, the flow is the journey's own.
+    assert journey_edges(CHANNELLED, None) == journey_edges(CHANNELLED)
 
 
 @pytest.mark.parametrize(
@@ -294,6 +360,8 @@ def test_a_draft_saves_journeys_and_sends_their_flow(client: TestClient) -> None
         ],
         # Sent edges are ignored: the flow is always derived.
         "edges": [{"from_activity": "10", "to_activity": "25", "kind": "sequence"}],
+        "channel_edges": [{"channel_id": "web", "edges": []}],
+        "shared_edges": [{"from_activity": "25", "to_activity": "10", "kind": "loop"}],
     }
     body = {"systems": draft["systems"], "relationships": draft["relationships"]}
 
@@ -308,7 +376,11 @@ def test_a_draft_saves_journeys_and_sends_their_flow(client: TestClient) -> None
         headers=OWNER,
     )
     assert saved.status_code == 200, saved.text
-    edges = saved.json()["journeys"][0]["edges"]
+    sent = saved.json()["journeys"][0]
+    # No step names a channel: no flow per channel, and the shared flow is the journey's.
+    assert sent["channel_edges"] == []
+    assert sent["shared_edges"] == sent["edges"]
+    edges = sent["edges"]
     assert [(item["from_activity"], item["to_activity"], item["label"]) for item in edges] == [
         ("10", "20", None),
         ("20", "25", "FAIL"),
