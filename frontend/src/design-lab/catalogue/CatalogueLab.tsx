@@ -1,8 +1,8 @@
 /**
- * Catalogue direction mock-ups ("Layered Architecture Poster", e& calm),
- * mounted at /design-lab/catalogue in development only (App.tsx guards it with
- * import.meta.env.DEV). It reads the catalogue version in service from the
- * API, or the bundled Business Pro Plus sample when VITE_CATALOGUE_SOURCE=sample
+ * The catalogue redesign ("Layered Architecture Poster", e& calm), mounted at
+ * /design-lab/catalogue where app/features.ts turns it on: under the dev server,
+ * or in a build made with VITE_CATALOGUE_LAB=true. It reads the catalogue
+ * version in service from the API, or the bundled Business Pro Plus sample
  * (catalogueSource.ts). Nothing here writes.
  */
 import "../../design";
@@ -90,7 +90,7 @@ const ICONS: Record<string, ReactNode> = {
  * pages, not the navigation). Governance and Versions open the portal's
  * catalogue pages, on the live API, until the lab draws its own.
  */
-export function AreaTabs({ current }: { current: "landscape" | "products" | "journeys" | "systems" }) {
+export function AreaTabs({ current }: { current?: "landscape" | "products" | "journeys" | "systems" }) {
   const items: { id: string; label: string; to: string }[] = [
     { id: "landscape", label: "Landscape", to: LAB },
     { id: "products", label: "Products", to: `${LAB}/products` },
@@ -211,6 +211,22 @@ function LabShell({ children }: { children: ReactNode }) {
   return <div className="cl cl--embedded">{inShell ? <div className="cl-page">{children}</div> : <main className="cl-page">{children}</main>}</div>;
 }
 
+/** An address under the lab that no page has: says so, with the lab's sections and the way back. */
+function LabNotFound() {
+  useTitle("Page not found");
+  return (
+    <>
+      <AreaTabs />
+      <div className="cl-empty">
+        <h1>Page not found</h1>
+        <p>
+          Nothing in the catalogue is at this address. <Link to={LAB}>Back to the landscape</Link>.
+        </p>
+      </div>
+    </>
+  );
+}
+
 /** While the catalogue is read, or when it can't be: the page keeps its h1, says why, and offers the sample. */
 function LabState({ children }: { children: ReactNode }) {
   useTitle("Architecture");
@@ -272,6 +288,7 @@ function LabPages({ inShell, source }: { inShell: boolean; source: CatalogueSour
           <Route path="products/:offeringId/components" element={<ProductComponents />} />
           <Route path="products/:offeringId/architecture" element={<ProductArchitecture />} />
           <Route path="journeys/:journeyId" element={<JourneyFlow />} />
+          <Route path="*" element={<LabNotFound />} />
         </Routes>
       </LabShell>
     </LabData.Provider>

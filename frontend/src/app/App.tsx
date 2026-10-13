@@ -5,6 +5,7 @@ import { CALLBACK_PATH, SILENT_CALLBACK_PATH } from "../auth/paths";
 import { ExplorerPage } from "../explorer/ExplorerPage";
 import { ActionGroup, EmptyState, PageHeader, Skeleton } from "../design/components";
 import { ButtonLink } from "../shell/links";
+import { LAB, loadCatalogueLab } from "./features";
 import { HomePage } from "./HomePage";
 import { Shell } from "./Shell";
 
@@ -173,14 +174,8 @@ function Loading({ children }: { children: ReactNode }) {
  * never reaches the bundle.
  */
 const DesignGallery = import.meta.env.DEV ? lazy(() => import("../design-lab/gallery/Gallery")) : null;
-/**
- * The catalogue redesign (Knowledge Hub V1): in development, and in a build made with
- * VITE_CATALOGUE_LAB=true (a local image, `deploy/compose.local.override.yaml`). Without
- * it, as in a published image, the import is dead code like the gallery's.
- */
-const CatalogueLab = import.meta.env.DEV || import.meta.env.VITE_CATALOGUE_LAB === "true"
-  ? lazy(() => import("../design-lab/catalogue/CatalogueLab"))
-  : null;
+/** The catalogue redesign, where features.ts turns it on (its loader lives there, so the bundler can drop it). */
+const CatalogueLab = loadCatalogueLab ? lazy(loadCatalogueLab) : null;
 
 export function App() {
   // The library is the area people open most: fetch its chunk once the first page has painted.
@@ -199,7 +194,7 @@ export function App() {
       <Route element={<Shell />}>
         <Route index element={<HomePage />} />
         {/* The redesigned catalogue (development, or a lab build) inside the portal's own shell, like every other area. */}
-        {CatalogueLab && <Route path="design-lab/catalogue/*" element={<Suspense fallback={null}><CatalogueLab inShell /></Suspense>} />}
+        {CatalogueLab && <Route path={`${LAB.slice(1)}/*`} element={<Suspense fallback={null}><CatalogueLab inShell /></Suspense>} />}
         <Route path="library" element={<Loading><LibraryPage /></Loading>} />
         {/* Re-confirmations are confirmed on To do now (UX rebuild, phase 2). */}
         <Route path="reminders" element={<Navigate to="/" replace />} />
