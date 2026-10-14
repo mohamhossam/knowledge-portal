@@ -18,26 +18,11 @@ import { type CSSProperties, type KeyboardEvent, type ReactNode, memo, useCallba
 import { type Catalogue, type Integration, type StepRole, type System, systemOf, type TamDomain } from "../../architecture/model";
 import { monogram, plural, shortFunction } from "./labUtil";
 import type { SystemLink } from "./posterModel";
+import { roleName } from "./words";
 
 /** Which layers share a row, top to bottom; the integration layer runs between them as a bus. */
 const SIDE_LAYERS = ["engaged-party", "enterprise"];
 const ROWS: string[][] = [["market-sales", "product"], ["customer"], ["integration"], ["service", "resource"], ["engaged-party", "enterprise"]];
-
-/** Short role names for a card; the inspector uses the long ones. */
-const ROLE_SHORT: Record<StepRole, string> = {
-  capture: "Captures",
-  catalog: "Catalogue",
-  "customer-data": "Customer data",
-  orchestrate: "Orchestrates",
-  validate: "Validates",
-  activate: "Activates",
-  field: "Field work",
-  logistics: "Logistics",
-  track: "Tracks",
-  notify: "Notifies",
-  bill: "Bills",
-  record: "Records",
-};
 
 /** One line icon per TAM layer, on a 16px grid in the layer's ink. */
 const LAYER_ICON: Record<string, ReactNode> = {
@@ -306,7 +291,7 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
       .filter(Boolean)
       .join(" ");
     const group = domain?.groups.find((item) => item.id === system.group);
-    const caption = foot && foot.roles.length ? foot.roles.slice(0, 2).map((role) => ROLE_SHORT[role]).join(" · ") : foot?.tier === "carries" ? "Carries calls" : shortFunction(system.function || group?.name || "");
+    const caption = foot && foot.roles.length ? foot.roles.slice(0, 2).map((role) => roleName(data, role, "short")).join(" · ") : foot?.tier === "carries" ? "Carries calls" : shortFunction(system.function || group?.name || "");
     const facts = [
       domain?.name,
       group?.name,

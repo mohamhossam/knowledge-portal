@@ -25,11 +25,10 @@ import {
   type Offering,
   type Performer,
   type Point,
-  ROLE_WORDS,
   type Source,
   type Step,
-  type StepRole,
 } from "./model";
+import { roleTerms, stepRole } from "./vocabulary";
 
 type ApiJourney = NonNullable<Release["journeys"]>[number];
 type ApiOrderType = NonNullable<Release["products"]>[number]["order_types"][number];
@@ -49,11 +48,6 @@ export function parseEvidence(confidence: string | null | undefined, source: str
 /** An order type's delivery drop and the rest of its description; read from the prose for a version saved before the service sent the drop. */
 function delivery(type: ApiOrderType): { drop?: string; note: string } {
   return type.delivery_drop ? { drop: type.delivery_drop, note: type.description ?? "" } : parseDrop(type.description);
-}
-
-function role(code: string | null | undefined): StepRole | undefined {
-  const value = code?.toLowerCase().replace(/_/g, "-");
-  return value && value in ROLE_WORDS ? (value as StepRole) : undefined;
 }
 
 /** Whether a call waits for its answer, as the source's timing says (any case). */
@@ -81,7 +75,7 @@ function journeyOf(journey: ApiJourney, channels: string[], evidence: (item: { c
     performer: performer(item),
     channels: item.channels,
     mainTrack: item.main_track,
-    role: role(item.role),
+    role: stepRole(item.role, item.role_id),
     etom: item.etom ?? undefined,
     detail: item.description ?? undefined,
     ponr: item.point_of_no_return ?? undefined,
@@ -274,6 +268,7 @@ export function fromRelease(release: Release): Catalogue {
     offerings,
     journeys,
     findings,
+    roleTerms: roleTerms(release),
   };
 }
 

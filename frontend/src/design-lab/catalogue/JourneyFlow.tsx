@@ -9,13 +9,13 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { journeyView } from "../../architecture/adapter";
 import { download, toBpmn, toCsv, toMermaid, toPlantUml } from "../../architecture/exports";
 import { GEOMETRY, layoutFlow, type Placed } from "../../architecture/flowLayout";
-import { type ActivityStep, type Integration, type JourneyView, type Lane, laneKey, ROLE_WORDS, type Step, systemOf } from "../../architecture/model";
+import { type ActivityStep, type Integration, type JourneyView, type Lane, laneKey, type Step, systemOf } from "../../architecture/model";
 import { AreaTabs, EvidenceTag, PathBar } from "./CatalogueLab";
 import { JourneyPicker } from "./JourneyPicker";
 import { journeyHref, LAB, useLabData } from "./labData";
 import { monogram, plural, useTitle } from "./labUtil";
 import { ProductHeader } from "./ProductPage";
-import { channelMissingText, laneKindName, laneName, MODE_WORDS, NOT_STATED, operationName, styleName, systemName, viewTitle } from "./words";
+import { channelMissingText, laneKindName, laneName, MODE_WORDS, NOT_STATED, operationName, roleName, styleName, systemName, viewTitle } from "./words";
 
 const LAYER: Record<string, string> = {
   "market-sales": "market",
@@ -635,7 +635,7 @@ export function JourneyFlow() {
                 <>
                   <p className="cl-sub">
                     Step {number.get(step.id)} of {tasks.length} · <span translate="no">{laneTitle(step.lane)}</span>
-                    {step.role ? ` · ${ROLE_WORDS[step.role]}` : ""}
+                    {step.role ? ` · ${roleName(data, step.role)}` : ""}
                   </p>
                   <h3 id="cl-step-h">{step.name}</h3>
                   {step.detail && <p className="cl-body">{step.detail}</p>}

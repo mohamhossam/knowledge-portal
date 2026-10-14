@@ -126,20 +126,12 @@ export type Offering = {
   evidence: Evidence;
 };
 
-/** What a step does for the order: it decides the system's role in the impact lens. */
-export type StepRole =
-  | "capture"
-  | "catalog"
-  | "customer-data"
-  | "orchestrate"
-  | "validate"
-  | "activate"
-  | "field"
-  | "logistics"
-  | "track"
-  | "notify"
-  | "bill"
-  | "record";
+/**
+ * What a step does for the order, as a role code ("orchestrate", "customer-data"): it
+ * decides the system's role in the impact lens. Any code the source writes is kept; the
+ * catalogue's vocabulary (roleTerms) and the lab's words name it.
+ */
+export type StepRole = string;
 
 /**
  * A lane of a journey's flow: a catalogued system, a team or party that performs a step
@@ -317,6 +309,8 @@ export type Catalogue = {
   offerings: Offering[];
   journeys: Journey[];
   findings: Finding[];
+  /** The role terms of the version's vocabulary: each role's preferred label, by code. */
+  roleTerms: Record<string, string>;
 };
 
 export const EVIDENCE_WORDS: Record<Evidence["status"], string> = {
@@ -325,23 +319,11 @@ export const EVIDENCE_WORDS: Record<Evidence["status"], string> = {
   gap: "Gap",
 };
 
-export const ROLE_WORDS: Record<StepRole, string> = {
-  capture: "Captures the order",
-  catalog: "Catalogue",
-  "customer-data": "Customer data",
-  orchestrate: "Orchestrates",
-  validate: "Validates",
-  activate: "Activates",
-  field: "Field work",
-  logistics: "Logistics",
-  track: "Tracks",
-  notify: "Notifies",
-  bill: "Bills",
-  record: "Records",
-};
-
-/** When a system plays several roles, the impact lens names the strongest. */
-export const ROLE_RANK: StepRole[] = [
+/**
+ * When a system plays several roles, the impact lens names the strongest: a business rule,
+ * kept here. A role not listed (one the source adds) ranks after these, by code.
+ */
+export const ROLE_RANK: readonly StepRole[] = [
   "orchestrate",
   "capture",
   "activate",
@@ -355,3 +337,9 @@ export const ROLE_RANK: StepRole[] = [
   "notify",
   "record",
 ];
+
+/** Roles from strongest to weakest (ROLE_RANK, then any other by code). */
+export function byRank(a: StepRole, b: StepRole): number {
+  const rank = (role: StepRole) => (ROLE_RANK.includes(role) ? ROLE_RANK.indexOf(role) : ROLE_RANK.length);
+  return rank(a) - rank(b) || a.localeCompare(b);
+}

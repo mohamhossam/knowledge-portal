@@ -4,7 +4,7 @@
  * disagree with the flow.
  */
 import { journeyViews } from "./adapter";
-import { type Catalogue, type Integration, type JourneyView, ROLE_RANK, type Step, type StepRole, systemOf } from "./model";
+import { byRank, type Catalogue, type Integration, type JourneyView, type Step, type StepRole, systemOf } from "./model";
 
 export type Impacted = {
   systemId: string;
@@ -46,7 +46,7 @@ export function impactOf(data: Catalogue, scope: ImpactScope): { journeys: Journ
     }
   }
   for (const item of systems.values()) {
-    item.roles.sort((a, b) => ROLE_RANK.indexOf(a) - ROLE_RANK.indexOf(b));
+    item.roles.sort(byRank);
     item.carriesOnly = item.steps.length === 0 && item.integrations.every(({ integration }) => integration.via === item.systemId);
   }
   return { journeys, systems };

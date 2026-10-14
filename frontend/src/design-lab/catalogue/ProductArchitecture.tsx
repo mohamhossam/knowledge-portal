@@ -11,7 +11,7 @@ import { Link, useSearchParams } from "react-router-dom";
 
 import { journeyView } from "../../architecture/adapter";
 import { impactOf } from "../../architecture/impact";
-import { type Integration, type Lane, ROLE_WORDS, systemOf } from "../../architecture/model";
+import { type Integration, type Lane, systemOf } from "../../architecture/model";
 import { ArchitectureMap, type Foot } from "./ArchitectureMap";
 import { EvidenceTag } from "./CatalogueLab";
 import { JourneyPicker } from "./JourneyPicker";
@@ -19,7 +19,7 @@ import { journeyHref, useLabData, useOffering } from "./labData";
 import { plural, useTitle } from "./labUtil";
 import { allViews, links } from "./posterModel";
 import { Missing, ProductHeader } from "./ProductPage";
-import { channelMissingText, laneName, MODE_WORDS, NOT_STATED, operationName, styleName, systemName } from "./words";
+import { channelMissingText, laneName, MODE_WORDS, NOT_STATED, operationName, roleName, styleName, systemName } from "./words";
 
 /** The systems a call reaches: its ends that are systems, and the integration layer it goes through. */
 const systemsOf = (call: Integration) => [systemOf(call.from), systemOf(call.to), call.via];
@@ -224,7 +224,7 @@ export function ProductArchitecture() {
                     <ul className="cl-roles">
                       {pickedFoot.roles.map((role) => (
                         <li key={role} className="cl-role">
-                          {ROLE_WORDS[role]}
+                          {roleName(data, role)}
                         </li>
                       ))}
                     </ul>
@@ -271,7 +271,7 @@ export function ProductArchitecture() {
                     <li key={id}>
                       <button type="button" onClick={() => setPicked(id)}>
                         <strong translate="no">{name(id)}</strong>
-                        <span>{foot.roles.length ? foot.roles.slice(0, 2).map((role) => ROLE_WORDS[role]).join(" · ") : "Carries calls"}</span>
+                        <span>{foot.roles.length ? foot.roles.slice(0, 2).map((role) => roleName(data, role)).join(" · ") : "Carries calls"}</span>
                         <small>
                           {foot.journeys}/{journeys.length}
                         </small>
@@ -380,7 +380,7 @@ export function ProductArchitecture() {
                 <ul className="cl-roles" aria-label={`${name(call.to)}'s roles in this journey`}>
                   {callRoles(call.to).map((role) => (
                     <li key={role} className="cl-role">
-                      {ROLE_WORDS[role]}
+                      {roleName(data, role)}
                     </li>
                   ))}
                 </ul>
