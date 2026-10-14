@@ -15,9 +15,10 @@ import { type Integration, type Lane, systemOf } from "../../architecture/model"
 import { ArchitectureMap, type Foot } from "./ArchitectureMap";
 import { EvidenceTag } from "./CatalogueLab";
 import { JourneyPicker } from "./JourneyPicker";
+import { coreThreshold } from "./catalogueRules";
 import { journeyHref, useLabData, useOffering } from "./labData";
 import { plural, useTitle } from "./labUtil";
-import { allViews, links } from "./posterModel";
+import { allViews, links, reachOf } from "./posterModel";
 import { Missing, ProductHeader } from "./ProductPage";
 import { channelMissingText, laneName, MODE_WORDS, NOT_STATED, operationName, roleName, styleName, systemName } from "./words";
 
@@ -37,23 +38,15 @@ export function ProductArchitecture() {
   const views = useMemo(() => allViews(data).filter((view) => view.offeringId === offering?.id), [data, offering]);
   const impact = useMemo(() => (offering ? impactOf(data, { offeringId: offering.id }) : null), [data, offering]);
   const footprint = useMemo(() => {
-    const reach = new Map<string, Set<string>>();
-    const add = (id: string | undefined, journey: string) => {
-      if (!id || !systemById.has(id)) return;
-      reach.set(id, (reach.get(id) ?? new Set()).add(journey));
-    };
-    for (const view of views) {
-      for (const step of view.steps) if (step.kind === "task") add(systemOf(step.lane), view.id);
-      for (const call of view.integrations) for (const id of systemsOf(call)) add(id, view.id);
-    }
-    const core = Math.max(2, Math.ceil(journeys.length / 2));
+    const reach = offering ? reachOf(data, offering.id) : new Map<string, Set<string>>();
+    const core = coreThreshold(journeys.length);
     const out = new Map<string, Foot>();
     for (const [id, set] of reach) {
       const item = impact?.systems.get(id);
       out.set(id, { tier: item?.carriesOnly ? "carries" : set.size >= core ? "core" : "used", roles: item?.roles ?? [], journeys: set.size });
     }
     return out;
-  }, [views, journeys.length, impact, systemById]);
+  }, [data, offering, journeys.length, impact]);
   const productLinks = useMemo(() => links(data, views.flatMap((view) => view.integrations)), [data, views]);
   // A system picked elsewhere (the landscape's "Used by products") arrives as ?system=.
   const [picked, setPicked] = useState<string | null>(() => params.get("system"));

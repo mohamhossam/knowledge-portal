@@ -9,6 +9,7 @@ import { type FormEvent, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { type Catalogue, systemOf } from "../../architecture/model";
+import { coreThreshold } from "./catalogueRules";
 import { journeyHref, LAB } from "./labData";
 import { plural } from "./labUtil";
 import { allViews, partnersOf, reachOf, type SystemLink } from "./posterModel";
@@ -90,7 +91,7 @@ export function SystemDrawer({ data, systemId, linkCounts, onSelect }: { data: C
     .map((offering) => {
       const set = reach.get(offering.id)?.get(system.id);
       const total = data.journeys.filter((journey) => journey.offeringId === offering.id).length;
-      return { offering, count: set?.size ?? 0, total, core: (set?.size ?? 0) >= Math.max(2, Math.ceil(total / 2)) };
+      return { offering, count: set?.size ?? 0, total, core: (set?.size ?? 0) >= coreThreshold(total) };
     })
     .filter((item) => item.count > 0);
   const steps = new Set(views.flatMap((item) => item.steps.filter((step) => step.kind === "task" && systemOf(step.lane) === system.id).map((step) => `${item.id}:${step.id}`))).size;

@@ -26,6 +26,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { journeyView } from "../../architecture/adapter";
 import { type Catalogue, type JourneyView, type Lane, laneKey, type Offering, type PortfolioNode, systemOf } from "../../architecture/model";
 import { AreaTabs } from "./CatalogueLab";
+import { channelKindName } from "./catalogueRules";
 import { journeyHref, LAB, useLabData } from "./labData";
 import { monogram, plural, useTitle } from "./labUtil";
 import { STAGES, stageOfCode } from "./stages";
@@ -55,8 +56,6 @@ const STAGE_ICONS: Record<string, ReactNode> = {
   leave: <path d="M9.5 3h3.5v10H9.5M3 8h7M7.5 5.5 10 8l-2.5 2.5" />,
   across: <path d="M2 8h12M5 5 2 8l3 3M11 5l3 3-3 3" />,
 };
-
-const CHANNEL_KIND_WORDS: Record<string, string> = { assisted: "Assisted", "self-service": "Self-service", system: "System" };
 
 /** The portfolio path from the top level down to a node. */
 function pathTo(nodes: PortfolioNode[], nodeId: string | null): PortfolioNode[] {
@@ -265,7 +264,7 @@ export function JourneysIndex() {
           {monogram(channel.name)}
         </span>
         {shortName(channel.name)}
-        <small>{CHANNEL_KIND_WORDS[channel.kind] ?? channel.kind}</small>
+        <small>{channelKindName(data, channel.kind)}</small>
       </span>
     ) : null;
   };

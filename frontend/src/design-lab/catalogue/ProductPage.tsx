@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 
 import { type Component, type Offering, systemOf } from "../../architecture/model";
 import { AreaTabs, EvidenceTag, PathBar } from "./CatalogueLab";
+import { channelKindName, type EligibilityGroup, eligibilityGroup, hubOf, isPriced } from "./catalogueRules";
 import { firstJourneyHref, journeyHref, LAB, useLabData, useOffering } from "./labData";
 import { leadingNumber, listOf, monogram, plural, useTitle } from "./labUtil";
 import { allViews } from "./posterModel";
@@ -184,7 +185,7 @@ function SystemTiles({ component, max = 3 }: { component: Component; max?: numbe
 }
 
 function Bundle({ offering }: { offering: Offering }) {
-  const hub = offering.components.find((item) => /device|router/i.test(item.name)) ?? offering.components.find((item) => /cpe/i.test(item.name)) ?? offering.components[0];
+  const hub = hubOf(offering);
   const rest = offering.components.filter((item) => item !== hub);
   const hubName = hub ? hub.name.replace(/\s*\(.*\)\s*$/, "") : "";
   const hubModels = hub ? (/\((.*)\)/.exec(hub.name)?.[1] ?? "").split(/\s*\/\s*/).filter(Boolean) : [];
@@ -308,7 +309,7 @@ export function Plans({ offering }: { offering: Offering }) {
   });
   const differs = rows.filter((row) => !row.same);
   const shared = rows.filter((row) => row.same);
-  const priced = names.some((name) => /price|fee|aed/i.test(name));
+  const priced = isPriced(offering);
   const short = (name: string) => name.replace(offering.name, "").trim() || name;
   return (
     <section className="cl-card" aria-labelledby="cl-plans-h">
@@ -374,13 +375,12 @@ export function Plans({ offering }: { offering: Offering }) {
   );
 }
 
-/** Eligibility grouped by what it answers: who, where, on what terms, through which route. */
-const ELIGIBILITY_GROUPS: { id: string; label: string; question: string; match: RegExp; icon: ReactNode }[] = [
+/** Eligibility grouped by what it answers (eligibilityGroup): who, where, on what terms, through which route. */
+const ELIGIBILITY_GROUPS: { id: EligibilityGroup; label: string; question: string; icon: ReactNode }[] = [
   {
     id: "who",
     label: "Who",
     question: "Which customers",
-    match: /segment|customer|audience|business/i,
     icon: (
       <>
         <circle cx="8" cy="5.5" r="2.5" />
@@ -392,7 +392,6 @@ const ELIGIBILITY_GROUPS: { id: string; label: string; question: string; match: 
     id: "where",
     label: "Where",
     question: "Which locations",
-    match: /location|area|site|coverage/i,
     icon: (
       <>
         <path d="M8 14.5s-4.5-4.2-4.5-7.8a4.5 4.5 0 0 1 9 0c0 3.6-4.5 7.8-4.5 7.8z" />
@@ -404,14 +403,12 @@ const ELIGIBILITY_GROUPS: { id: string; label: string; question: string; match: 
     id: "terms",
     label: "On what terms",
     question: "Contract and account",
-    match: /commitment|contract|term|portal|account/i,
     icon: <path d="M4 1.5h5.5l3 3v10H4zM9.5 1.5v3h3M6 8h4.5M6 10.5h4.5M6 13h2.5" />,
   },
   {
     id: "how",
     label: "Through which route",
     question: "How the order arrives",
-    match: /activation|migration|port|channel|order/i,
     icon: (
       <>
         <circle cx="3.5" cy="12.5" r="1.5" />
@@ -422,7 +419,6 @@ const ELIGIBILITY_GROUPS: { id: string; label: string; question: string; match: 
   },
 ];
 
-const CHANNEL_KINDS: Record<string, string> = { assisted: "Assisted", "self-service": "Self-service", system: "Systems" };
 
 /**
  * Who can buy the offering and how its orders arrive, as two full-width
@@ -437,10 +433,10 @@ function WhoCanBuy({ offering }: { offering: Offering }) {
   const data = useLabData();
   const grouped = new Map<string, Offering["eligibility"]>();
   for (const point of offering.eligibility) {
-    const group = ELIGIBILITY_GROUPS.find((item) => item.match.test(point.title))?.id ?? "other";
+    const group = eligibilityGroup(point.title);
     grouped.set(group, [...(grouped.get(group) ?? []), point]);
   }
-  const groups = [...ELIGIBILITY_GROUPS, { id: "other", label: "Also", question: "Other conditions", match: /./, icon: <path d="M3 8h.01M8 8h.01M13 8h.01" /> }].filter((group) => grouped.has(group.id));
+  const groups = [...ELIGIBILITY_GROUPS, { id: "other" as const, label: "Also", question: "Other conditions", icon: <path d="M3 8h.01M8 8h.01M13 8h.01" /> }].filter((group) => grouped.has(group.id));
   const sure = { confirmed: 0, inferred: 0, gap: 0 };
   for (const point of offering.eligibility) sure[point.evidence.status] += 1;
 
@@ -517,7 +513,7 @@ function WhoCanBuy({ offering }: { offering: Offering }) {
                   <td />
                   {kinds.map((item) => (
                     <th key={item.kind} scope="colgroup" colSpan={item.channels.length}>
-                      {CHANNEL_KINDS[item.kind] ?? item.kind}
+                      {channelKindName(data, item.kind)}
                     </th>
                   ))}
                 </tr>

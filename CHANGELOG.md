@@ -68,6 +68,14 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Fixed
 
+- The catalogue lab's business rules each live in one place (`design-lab/catalogue/catalogueRules.ts`),
+  where copies had drifted apart: a bundle's hub device (a whole-word "CPE" match, and no hub
+  rather than the first part when nothing matches), a channel kind's name (the vocabulary's
+  label, so the product page says "System" like the journeys page, not "Systems"), which
+  question an eligibility point answers (the product card now uses the product page's
+  grouping), the contract periods, when a system is core to a product, and whether plans
+  state a price (the Plans tab no longer says "Monthly price: Gap" when a plan names one). The
+  product's architecture reuses `reachOf` instead of its own copy.
 - A step's role that the catalogue lab doesn't know (a code beyond its twelve, such as a new
   `PAYMENT`) is no longer dropped: the step keeps it, it is named from the version's
   vocabulary (`responsibility_role` terms, by `role_id` or `role-<code>`), or as written when

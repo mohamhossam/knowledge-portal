@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 
 import type { Offering } from "../../architecture/model";
 import { EvidenceTag } from "./CatalogueLab";
+import { hubOf, isPriced } from "./catalogueRules";
 import { firstJourneyHref, journeyHref, LAB, useLabData, useOffering } from "./labData";
 import { CAPABILITIES, capabilityOf, DEVICE_ICON } from "./capabilities";
 import { leadingNumber, monogram, plural, useTitle } from "./labUtil";
@@ -116,6 +117,7 @@ export function ProductPlans() {
   if (!offering) return <Missing what="No such product" />;
   const value = (plan: Offering["plans"][number], name: RegExp) => plan.characteristics.find((item) => name.test(item.name))?.value;
   const max = Math.max(1, ...offering.plans.map((plan) => leadingNumber(value(plan, /download/i) ?? "") ?? 0));
+  const priced = isPriced(offering);
   return (
     <>
       <ProductHeader offering={offering} current="plans" />
@@ -142,10 +144,12 @@ export function ProductPlans() {
                       <dd translate="no">{item.value}</dd>
                     </div>
                   ))}
-                <div>
-                  <dt>Monthly price</dt>
-                  <dd className="gap">Gap</dd>
-                </div>
+                {!priced && (
+                  <div>
+                    <dt>Monthly price</dt>
+                    <dd className="gap">Gap</dd>
+                  </div>
+                )}
               </dl>
               <EvidenceTag evidence={plan.evidence} />
             </li>
@@ -230,7 +234,7 @@ export function ProductComponents() {
   if (!offering) return <Missing what="No such product" />;
   const system = (id: string) => data.systems.find((item) => item.id === id);
   const name = (id: string) => system(id)?.name ?? id;
-  const hub = offering.components.find((item) => /device|router/i.test(item.name)) ?? offering.components.find((item) => /\bcpe\b/i.test(item.name));
+  const hub = hubOf(offering);
   const groups = [
     ...(hub ? [{ id: "device", name: "At the heart", blurb: "The device the bundle is built on", icon: DEVICE_ICON, items: [hub] }] : []),
     ...CAPABILITIES.map((capability) => ({ ...capability, items: offering.components.filter((item) => item !== hub && capabilityOf(item.name)?.id === capability.id) })),
