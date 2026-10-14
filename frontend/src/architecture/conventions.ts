@@ -11,6 +11,19 @@
 /** The cross-cutting TAM domains, for a catalogue version that marks none. */
 export const BAND_DOMAINS: readonly string[] = ["enterprise", "integration"];
 
+/*
+ * Where TAM's layers sit on the map. The order is the version's own (its landscape
+ * domains, top to bottom); these say only where TAM draws two kinds of layer.
+ */
+/** The integration layer: the bus, drawn just under the last customer-facing layer. */
+export const BUS_DOMAIN = "integration";
+/** The last layer above the bus: TAM's customer domain. */
+export const ABOVE_BUS_DOMAIN = "customer";
+/** The layers drawn last, side by side (in the compact map, in a column beside it). */
+export const SIDE_DOMAINS: readonly string[] = ["engaged-party", "enterprise"];
+/** A layer with this many groups or more takes a row of its own; narrower ones share a row in pairs. */
+export const WIDE_LAYER_GROUPS = 4;
+
 const DROP = /\s*Delivered in drop ([^.]+)\./;
 
 /** An order type's description, and the delivery drop it names ("Delivered in drop P2 / P3."), taken out of it. */

@@ -2,22 +2,22 @@
 import { type Offering, type PortfolioNode } from "../../architecture/model";
 import { pathTo } from "./labUtil";
 
-/** The portfolio path the page opens on, by name from the top: Fixed, then SMB. */
-const DEFAULT_SCOPE = ["Fixed", "SMB"];
-
 /**
- * The scope the page opens on: DEFAULT_SCOPE by name (the first name anywhere,
- * each next one among the previous one's children), then down through the
- * first child that holds a product, so every level opens with a choice.
+ * The scope the page opens on: the deepest portfolio node every product sits
+ * under, then down through the first child that holds a product, so every level
+ * opens with a choice. No product in the portfolio: no scope.
  */
 export function defaultScope(nodes: PortfolioNode[], offerings: Offering[]): string | null {
-  const holdsProduct = (node: PortfolioNode) => offerings.some((offering) => pathTo(nodes, offering.nodeId).some((item) => item.id === node.id));
+  const paths = offerings.map((offering) => pathTo(nodes, offering.nodeId)).filter((path) => path.length);
+  if (!paths.length) return null;
+  const holdsProduct = (node: PortfolioNode) => paths.some((path) => path.some((item) => item.id === node.id));
   let node: PortfolioNode | undefined;
-  for (const name of DEFAULT_SCOPE) {
-    const found: PortfolioNode | undefined = nodes.find((item) => item.name === name && (!node || item.parentId === node.id));
-    if (!found) break;
-    node = found;
+  for (const [depth, item] of paths[0]!.entries()) {
+    if (!paths.every((path) => path[depth]?.id === item.id)) break;
+    node = item;
   }
-  for (let next = node && nodes.find((item) => item.parentId === node?.id && holdsProduct(item)); next; next = nodes.find((item) => item.parentId === node?.id && holdsProduct(item))) node = next;
+  const firstChild = (parent: PortfolioNode | undefined) => nodes.find((item) => (parent ? item.parentId === parent.id : !item.parentId) && holdsProduct(item));
+  node ??= firstChild(undefined);
+  for (let next = firstChild(node); next; next = firstChild(node)) node = next;
   return node?.id ?? null;
 }

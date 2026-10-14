@@ -3,9 +3,20 @@
  * events and gateways, how a call is made, and a journey seen through a channel.
  * The model holds no English; the views and the exports name things from here.
  */
-import type { Catalogue, Integration, IntegrationMode, JourneyView, Lane, Step, StepRole } from "../../architecture/model";
+import type { Catalogue, Integration, IntegrationMode, JourneyView, Lane, Offering, Step, StepRole } from "../../architecture/model";
 
 export const NOT_STATED = "Not stated";
+
+/** The catalogue's name: its version's name up to any colon ("SMB architecture: Business Pro Plus" is "SMB architecture"). */
+export function catalogueName(data: Pick<Catalogue, "name">): string {
+  return data.name.split(":")[0]!.trim() || data.name;
+}
+
+/** What a product's gaps are measured against: its primary source, else the version's first, by short name. */
+export function gapSource(data: Pick<Catalogue, "sources">, offering: Pick<Offering, "primarySource">): string {
+  const source = data.sources.find((item) => item.id === offering.primarySource) ?? data.sources[0];
+  return source?.short || source?.title || "the sources";
+}
 
 /** A call whose source names no interface or interaction. */
 export const HANDOVER = "Hand-over";

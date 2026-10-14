@@ -20,7 +20,7 @@ import { journeyHref, useLabData, useOffering } from "./labData";
 import { plural, useTitle } from "./labUtil";
 import { allViews, links, reachOf } from "./posterModel";
 import { Missing, ProductHeader } from "./productParts";
-import { channelMissingText, laneName, MODE_WORDS, NOT_STATED, operationName, roleName, styleName, systemName } from "./words";
+import { catalogueName, channelMissingText, laneName, MODE_WORDS, NOT_STATED, operationName, roleName, styleName, systemName } from "./words";
 import { useSystemParam } from "./systemHooks";
 
 /** The systems a call reaches: its ends that are systems, and the integration layer it goes through. */
@@ -158,7 +158,7 @@ function ProductMap({ offering, journeys, switcher }: { offering: Offering; jour
       </dl>
       <div className="cl-board">
         <div className="cl-board-main">
-          <ArchitectureMap data={data} label={`${offering.name} on the SMB architecture map`} linkCounts={productLinks} selected={picked} onSelect={setPicked} footprint={footprint} />
+          <ArchitectureMap data={data} label={`${offering.name} on the ${catalogueName(data)} map`} linkCounts={productLinks} selected={picked} onSelect={setPicked} footprint={footprint} />
         </div>
         <aside className="cl-insp" aria-labelledby="cl-foot-h">
           <p className="ds-visually-hidden" aria-live="polite">
@@ -364,7 +364,7 @@ function ProductJourneyMap({ offering, journeys, switcher }: { offering: Offerin
       </p>
       <div className="cl-board">
         <div className="cl-board-main">
-          <ArchitectureMap data={data} label={`${def.name} on the SMB architecture map`} linkCounts={journeyLinks} selected={null} onSelect={pick} journey={journeyProp} />
+          <ArchitectureMap data={data} label={`${def.name} on the ${catalogueName(data)} map`} linkCounts={journeyLinks} selected={null} onSelect={pick} journey={journeyProp} />
         </div>
         <aside className="cl-insp" aria-labelledby="cl-call-h">
           {call ? (

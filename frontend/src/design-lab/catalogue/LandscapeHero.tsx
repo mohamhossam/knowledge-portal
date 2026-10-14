@@ -1,5 +1,5 @@
 /**
- * Mock-up 1, the Landscape: the SMB architecture as one picture. Each TAM
+ * Mock-up 1, the Landscape: the catalogue's architecture as one picture. Each TAM
  * layer is a calm band of its groups and systems, hung from the integration
  * bus. The page is about the architecture only, so it holds for any product
  * and version. It fits one screen. The header is a soft band: the title with
@@ -16,19 +16,23 @@ import { AreaTabs } from "./labChrome";
 import { ArchitectureMap, LayerIcon } from "./ArchitectureMap";
 import { useLabData } from "./labData";
 import { useDismissableDetails, useTitle } from "./labUtil";
-import { domainRank } from "./posterModel";
+import { layerRank } from "./posterModel";
 import { useLinkCounts, useSystemParam } from "./systemHooks";
 import { FindSystem, SystemDrawer } from "./SystemTools";
+import { catalogueName } from "./words";
 
 export function LandscapeHero() {
   const data = useLabData();
-  useTitle("SMB architecture");
+  useTitle(catalogueName(data));
   const [params, setParams] = useSearchParams();
   const [selected, select] = useSystemParam();
   const [showLinks, setShowLinks] = useState(false);
   const { linkCounts } = useLinkCounts(data);
   // The layers that hold systems, in map order.
-  const layers = useMemo(() => data.domains.filter((domain) => data.systems.some((system) => system.domain === domain.id)).sort((a, b) => domainRank(a.id) - domainRank(b.id)), [data]);
+  const layers = useMemo(() => {
+    const rank = layerRank(data.domains);
+    return data.domains.filter((domain) => data.systems.some((system) => system.domain === domain.id)).sort((a, b) => rank(a.id) - rank(b.id));
+  }, [data]);
   const wanted = params.get("layer");
   const focus = layers.some((layer) => layer.id === wanted) ? wanted : null;
   const showLayer = (id: string | null) => {
@@ -53,7 +57,7 @@ export function LandscapeHero() {
             </svg>
           </span>
           <div className="lx-title">
-            <h1 id="cl-hero-h">SMB architecture</h1>
+            <h1 id="cl-hero-h">{catalogueName(data)}</h1>
             <p className="lx-lede">TM Forum application map of every SMB system, by layer and group</p>
           </div>
           <div className="lx-tools">
@@ -101,7 +105,7 @@ export function LandscapeHero() {
       </header>
 
       <div className="lx-board">
-        <ArchitectureMap data={data} label="SMB architecture layers" linkCounts={linkCounts} selected={selected} onSelect={select} showLinks={showLinks} focusLayer={focus} compact />
+        <ArchitectureMap data={data} label={`${catalogueName(data)} layers`} linkCounts={linkCounts} selected={selected} onSelect={select} showLinks={showLinks} focusLayer={focus} compact />
         <SystemDrawer data={data} systemId={selected} linkCounts={linkCounts} onSelect={select} />
       </div>
     </>

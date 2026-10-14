@@ -16,6 +16,7 @@ import { CAPABILITIES, DEVICE_ICON } from "./capabilities";
 import { SystemMonogram } from "./SystemMonogram";
 
 import { WhoCanBuy } from "./WhoCanBuy";
+import { gapSource } from "./words";
 /** The systems that deliver a component, as the map's monogram tiles in their layer colours. */
 function SystemTiles({ component, max = 3 }: { component: Component; max?: number }) {
   const data = useLabData();
@@ -151,12 +152,13 @@ function Bundle({ offering }: { offering: Offering }) {
 
 /** Each plan's speeds, at a glance; the full comparison is on the Plans tab. */
 function PlansAtAGlance({ offering }: { offering: Offering }) {
+  const data = useLabData();
   const speed = (plan: Offering["plans"][number], name: RegExp) => plan.characteristics.find((item) => name.test(item.name))?.value;
   const max = Math.max(1, ...offering.plans.map((plan) => leadingNumber(speed(plan, /download/i) ?? "") ?? 0));
   return (
     <section className="cl-card cl-span-12 pv-sec" aria-labelledby="cl-glance-h">
       <h2 id="cl-glance-h">
-        Plans at a glance <small>Prices are a gap: the SDD states none</small>
+        Plans at a glance <small>Prices are a gap: {gapSource(data, offering)} states none</small>
         <Link className="cl-h2-link" to={`${LAB}/products/${offering.id}/plans`}>
           Compare every characteristic
         </Link>

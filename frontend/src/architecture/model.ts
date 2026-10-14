@@ -114,6 +114,8 @@ export type Offering = {
   nodeId: string | null;
   name: string;
   shortName?: string;
+  /** The id of the source its facts come from first (a `Source` of the version). */
+  primarySource?: string;
   summary: string;
   purpose: string;
   values: Point[];

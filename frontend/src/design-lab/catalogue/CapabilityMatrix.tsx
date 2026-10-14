@@ -10,13 +10,14 @@
 import type { Catalogue } from "../../architecture/model";
 import { PART_KINDS, type Part, systemParts } from "./capabilities";
 import { plural } from "./labUtil";
-import { domainRank } from "./posterModel";
+import { layerRank } from "./posterModel";
 import { SystemMonogram } from "./SystemMonogram";
 
 export function CapabilityMatrix({ data, selected, onSelect }: { data: Catalogue; selected: string | null; onSelect: (id: string | null) => void }) {
   const parts = systemParts(data);
   const kinds = PART_KINDS.filter((kind) => [...parts.values()].some((byKind) => byKind.has(kind.id)));
-  const systems = data.systems.filter((system) => parts.has(system.id)).sort((a, b) => domainRank(a.domain) - domainRank(b.domain) || (parts.get(b.id)?.size ?? 0) - (parts.get(a.id)?.size ?? 0));
+  const rank = layerRank(data.domains);
+  const systems = data.systems.filter((system) => parts.has(system.id)).sort((a, b) => rank(a.domain) - rank(b.domain) || (parts.get(b.id)?.size ?? 0) - (parts.get(a.id)?.size ?? 0));
   const many = data.offerings.length > 1;
   const describe = (list: Part[]) => list.map((part) => `${part.component}${many ? ` (${part.product})` : ""}${part.responsibility ? `: ${part.responsibility}` : ""}`).join("; ");
   const domainName = (id: string) => data.domains.find((domain) => domain.id === id)?.name ?? id;
