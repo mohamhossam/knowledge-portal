@@ -23,8 +23,8 @@
 import type { ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
-import { journeyView } from "../../architecture/adapter";
-import { type Catalogue, type JourneyView, type Lane, laneKey, systemOf } from "../../architecture/model";
+import { journeyView } from "../../catalogue/model/adapter";
+import { type Catalogue, type JourneyView, type Lane, laneKey, systemOf } from "../../catalogue/model/model";
 import { AreaTabs } from "./labChrome";
 import { LabIcon } from "./labIcon";
 import { channelKindName } from "./catalogueRules";

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Offering, PortfolioNode } from "../../architecture/model";
+import type { Offering, PortfolioNode } from "../../catalogue/model/model";
 import { defaultScope } from "./journeyScope";
 
 const node = (id: string, parentId: string | null = null): PortfolioNode => ({ id, level: "Level", name: id.toUpperCase(), parentId });

@@ -6,7 +6,7 @@
  */
 import type { ReactNode } from "react";
 
-import type { Catalogue } from "../../architecture/model";
+import type { Catalogue } from "../../catalogue/model/model";
 
 export const CAPABILITIES: { id: string; name: string; blurb: string; test: RegExp; icon: ReactNode }[] = [
   {

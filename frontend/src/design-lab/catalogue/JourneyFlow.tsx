@@ -6,10 +6,10 @@
 import { type KeyboardEvent, type ReactNode, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
-import { journeyView } from "../../architecture/adapter";
-import { download, toBpmn, toCsv, toMermaid, toPlantUml } from "../../architecture/exports";
-import { GEOMETRY, layoutFlow, type Placed } from "../../architecture/flowLayout";
-import { type ActivityStep, type JourneyView, type Lane, laneKey, systemOf } from "../../architecture/model";
+import { journeyView } from "../../catalogue/model/adapter";
+import { download, toBpmn, toCsv, toMermaid, toPlantUml } from "../../catalogue/model/exports";
+import { GEOMETRY, layoutFlow, type Placed } from "../../catalogue/model/flowLayout";
+import { type ActivityStep, type JourneyView, type Lane, laneKey, systemOf } from "../../catalogue/model/model";
 import { AreaTabs, EvidenceTag, PathBar } from "./labChrome";
 import { JourneyPicker } from "./JourneyPicker";
 import { journeyHref, LAB, useLabData } from "./labData";

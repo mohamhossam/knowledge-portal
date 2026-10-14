@@ -6,7 +6,7 @@
 import { type ReactNode, useContext, useLayoutEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 
-import { EVIDENCE_WORDS, type Evidence } from "../../architecture/model";
+import { EVIDENCE_WORDS, type Evidence } from "../../catalogue/model/model";
 import { type CatalogueSource, useLabSource } from "./catalogueSource";
 import { LAB, LabData, useLabData } from "./labData";
 import { catalogueName } from "./words";

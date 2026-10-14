@@ -7,7 +7,7 @@
  * events are placed where the flow branches, splits and joins. The model carries
  * kinds, never English: the lab's words.ts names them.
  */
-import type { Release } from "../api/client";
+import type { Release } from "../../api/client";
 import { BAND_DOMAINS, parseDrop, parseProposition, parseQuestion } from "./conventions";
 import {
   type Activity,

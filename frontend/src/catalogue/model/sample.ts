@@ -3,7 +3,7 @@
  * committed catalogue file by scripts/dump_catalogue_fixture.py). It is checked once on
  * the way in, so a sample of the wrong shape fails loudly instead of drawing nothing.
  */
-import type { Release } from "../api/client";
+import type { Release } from "../../api/client";
 
 /** The lists the screens read; each must be present, even when empty. */
 const LISTS = ["systems", "relationships", "journeys", "products", "channels", "landscape_domains", "sources", "conflicts", "portfolio"] as const;

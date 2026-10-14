@@ -51,12 +51,12 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   (`VITE_CATALOGUE_LAB`, `VITE_CATALOGUE_SOURCE`) and its address are read in one place,
   `frontend/src/app/features.ts`, which also holds the lab's loader: where the lab is off,
   as in a published image, its code is still left out of the bundle.
-- The catalogue lab's bundled sample (`frontend/src/architecture/fixtures/smb-release.json`)
+- The catalogue lab's bundled sample (`frontend/src/catalogue/model/fixtures/smb-release.json`)
   is generated from `catalogues/smb-architecture.yaml` through the API's read schema by
   `scripts/dump_catalogue_fixture.py`, so it carries what the API sends: the vocabulary,
   role ids, interfaces, realisations and the per-channel flows. A backend test fails when it
   is stale (`--check`). The frontend reads it through one checked loader
-  (`architecture/sample.ts`) instead of casting it.
+  (`catalogue/model/sample.ts`) instead of casting it.
 - Seed tooling for the full catalogue: `scripts/seed_full_catalogue.py` imports
   `catalogues/smb-architecture.yaml` into a running offline API as a maintainer would (draft,
   file import, build, publish), and `seed_demo.py --full-catalogue` puts it in service after
@@ -68,11 +68,15 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Fixed
 
+- The catalogue's view model (adapter, model, conventions, vocabulary, flow layout, exports and the
+  bundled sample) moves from a new top-level `frontend/src/architecture/` to
+  `frontend/src/catalogue/model/`, a sub-area of the catalogue module like `draft/` and `journey/`,
+  so the branch keeps main's module structure. Only import paths change.
 - The catalogue lab reads from the version what it used to write in. The catalogue's name is the
   version's name up to any colon (the live catalogue reads "Business Pro Plus (SDD v2.3)", the
   sample "SMB architecture"). A plan's price gap names the product's primary source ("SDD v2.3").
   The layers keep one order everywhere, the version's own, with the integration bus placed by a
-  named rule under the customer layer (`architecture/conventions.ts`). The map's rows follow
+  named rule under the customer layer (`catalogue/model/conventions.ts`). The map's rows follow
   from that order and each layer's width, which replaces `DOMAIN_ORDER`, `ROWS` and the magic
   99. On the Systems page, the integrations matrix now lists the integration layer after
   Customer, as the map does. The journeys page opens on the deepest portfolio node every
@@ -129,7 +133,7 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   no term names it, and the impact lens ranks it after the known roles. The lab's words for
   the twelve known roles are unchanged and now live in one place (`words.ts`, long and short
   forms), not in the model and again in the architecture map; the strongest-role order stays
-  a rule in code (`ROLE_RANK`, `byRank`). `architecture/vocabulary.ts` reads the role terms.
+  a rule in code (`ROLE_RANK`, `byRank`). `catalogue/model/vocabulary.ts` reads the role terms.
 - A journey with a way back (a loop such as "Correct & resubmit", or any arrow that closes a
   cycle) no longer loses its steps in the catalogue lab's flow: the layout assumed no loops,
   so the steps of a cycle and everything after them were dropped from the drawing and the BPMN
@@ -155,7 +159,7 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   and `journeyView`, `journeyViews` and `impactOf` read only the model. The prose the service
   has no field for yet (the delivery drop, a proposition's summary and purpose, a question's
   title, the band domains, the main and error-end tracks) is parsed in one tested place,
-  `frontend/src/architecture/conventions.ts`. The model carries kinds (a lane is a system, a
+  `frontend/src/catalogue/model/conventions.ts`. The model carries kinds (a lane is a system, a
   team or the ordering channel; events, gateways, hand-overs, unstated styles and timings),
   and the lab's `words.ts` names them; a call's id is the same in every channel's view, and
   its timing is read in any case. Nothing else on screen changes: every journey × channel

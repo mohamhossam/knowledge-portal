@@ -9,9 +9,9 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
-import { journeyView } from "../../architecture/adapter";
-import { impactOf } from "../../architecture/impact";
-import { type Integration, type JourneyDef, type Lane, type Offering, systemOf } from "../../architecture/model";
+import { journeyView } from "../../catalogue/model/adapter";
+import { impactOf } from "../../catalogue/model/impact";
+import { type Integration, type JourneyDef, type Lane, type Offering, systemOf } from "../../catalogue/model/model";
 import { ArchitectureMap, type Foot } from "./ArchitectureMap";
 import { EvidenceTag } from "./labChrome";
 import { JourneyPicker } from "./JourneyPicker";

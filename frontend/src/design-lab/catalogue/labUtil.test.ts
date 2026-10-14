@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { PortfolioNode } from "../../architecture/model";
+import type { PortfolioNode } from "../../catalogue/model/model";
 import { firstSentence, leadingNumber, listOf, monogram, pathTo, plural, shortFunction } from "./labUtil";
 
 const node = (id: string, parentId: string | null = null): PortfolioNode => ({ id, level: "Level", name: id, parentId });

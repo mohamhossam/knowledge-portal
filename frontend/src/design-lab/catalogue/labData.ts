@@ -3,7 +3,7 @@ import { createContext, useContext } from "react";
 import { useParams } from "react-router-dom";
 
 import { LAB } from "../../app/features";
-import type { Catalogue, Offering } from "../../architecture/model";
+import type { Catalogue, Offering } from "../../catalogue/model/model";
 
 export { LAB };
 

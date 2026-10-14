@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import type { Release } from "../api/client";
-import { laneName, viewTitle } from "../design-lab/catalogue/words";
+import type { Release } from "../../api/client";
+import { laneName, viewTitle } from "../../design-lab/catalogue/words";
 import { edgesFor, fromRelease, journeyView, journeyViews, modeOf, parseEvidence } from "./adapter";
 import { toBpmn, toCsv, toMermaid, toPlantUml } from "./exports";
 import { GEOMETRY, layoutFlow, waysBack } from "./flowLayout";

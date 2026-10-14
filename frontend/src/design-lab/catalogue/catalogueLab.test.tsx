@@ -5,8 +5,8 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { api } from "../../api/client";
-import release from "../../architecture/fixtures/smb-release.json";
-import { asRelease } from "../../architecture/sample";
+import release from "../../catalogue/model/fixtures/smb-release.json";
+import { asRelease } from "../../catalogue/model/sample";
 import { axe } from "../../test/axe";
 import CatalogueLab from "./CatalogueLab";
 import { type CatalogueSource, catalogueSource } from "./catalogueSource";

@@ -1,7 +1,7 @@
 /** A journey's calls: the sequence of who calls whom, or the register as a table, with the picked call's details beside it. */
 import { type CSSProperties, useMemo, useState } from "react";
 
-import { type ActivityStep, type Integration, type JourneyView, type Lane, laneKey, type Step, systemOf } from "../../architecture/model";
+import { type ActivityStep, type Integration, type JourneyView, type Lane, laneKey, type Step, systemOf } from "../../catalogue/model/model";
 import { EvidenceTag } from "./labChrome";
 import { useLabData } from "./labData";
 import { SystemMonogram } from "./SystemMonogram";

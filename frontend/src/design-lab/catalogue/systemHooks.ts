@@ -2,7 +2,7 @@
 import { useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 
-import type { Catalogue } from "../../architecture/model";
+import type { Catalogue } from "../../catalogue/model/model";
 import { allIntegrations, distinctInterfaces, links } from "./posterModel";
 
 /** The picked system, from `?system=`, and a setter that keeps the rest of the URL. */

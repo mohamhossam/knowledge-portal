@@ -1,5 +1,5 @@
 /** The portfolio scope the journeys page opens on. */
-import { type Offering, type PortfolioNode } from "../../architecture/model";
+import { type Offering, type PortfolioNode } from "../../catalogue/model/model";
 import { pathTo } from "./labUtil";
 
 /**

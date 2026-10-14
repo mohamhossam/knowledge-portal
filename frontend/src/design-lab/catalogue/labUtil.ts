@@ -1,7 +1,7 @@
 /** Small helpers shared by the catalogue mock-ups. */
 import { type KeyboardEvent, type RefObject, useCallback, useEffect, useRef } from "react";
 
-import type { PortfolioNode } from "../../architecture/model";
+import type { PortfolioNode } from "../../catalogue/model/model";
 
 const RULES = new Intl.PluralRules("en");
 

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { fromRelease } from "../../architecture/adapter";
-import release from "../../architecture/fixtures/smb-release.json";
-import type { Evidence, Integration, Lane, TamDomain } from "../../architecture/model";
-import { asRelease } from "../../architecture/sample";
+import { fromRelease } from "../../catalogue/model/adapter";
+import release from "../../catalogue/model/fixtures/smb-release.json";
+import type { Evidence, Integration, Lane, TamDomain } from "../../catalogue/model/model";
+import { asRelease } from "../../catalogue/model/sample";
 import { allIntegrations, allViews, distinctInterfaces, layerOrder, layerRank, linkKey, links, mapRows, partnersOf, reachOf } from "./posterModel";
 
 const data = fromRelease(asRelease(release));

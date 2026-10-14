@@ -15,8 +15,8 @@
  */
 import { type CSSProperties, type KeyboardEvent, type ReactNode, memo, useCallback, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 
-import { BUS_DOMAIN, SIDE_DOMAINS } from "../../architecture/conventions";
-import { type Catalogue, type Integration, type StepRole, type System, systemOf, type TamDomain } from "../../architecture/model";
+import { BUS_DOMAIN, SIDE_DOMAINS } from "../../catalogue/model/conventions";
+import { type Catalogue, type Integration, type StepRole, type System, systemOf, type TamDomain } from "../../catalogue/model/model";
 import { monogram, plural, shortFunction } from "./labUtil";
 import { mapRows, type SystemLink } from "./posterModel";
 import { roleName } from "./words";

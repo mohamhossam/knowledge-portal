@@ -11,7 +11,7 @@
  */
 import { Fragment, useMemo, useState } from "react";
 
-import { type Catalogue, type Integration, systemOf } from "../../architecture/model";
+import { type Catalogue, type Integration, systemOf } from "../../catalogue/model/model";
 import { plural } from "./labUtil";
 import { layerRank } from "./posterModel";
 import { NOT_STATED, operationName } from "./words";

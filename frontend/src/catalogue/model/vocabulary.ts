@@ -4,7 +4,7 @@
  * the one the activity names (`role_id`), or else `role-<code>` by the vocabulary's own
  * naming ("role-orchestrate", "role-customer-data").
  */
-import type { Release } from "../api/client";
+import type { Release } from "../../api/client";
 
 const ROLE_SCHEME = "responsibility_role";
 

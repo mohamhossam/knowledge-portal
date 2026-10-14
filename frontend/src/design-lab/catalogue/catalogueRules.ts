@@ -4,7 +4,7 @@
  * eligibility point answers, a product's contract periods, when a system is core to a
  * product, and whether plans state a price. Agreed with Shady (phase 11, 2026-10-14).
  */
-import type { Catalogue, Offering } from "../../architecture/model";
+import type { Catalogue, Offering } from "../../catalogue/model/model";
 
 /** The device a bundle is built on: a device or router, else a part named CPE (as a word); none when nothing is. */
 export function hubOf(offering: Offering): Offering["components"][number] | undefined {
