@@ -13,14 +13,15 @@ import { journeyView } from "../../architecture/adapter";
 import { impactOf } from "../../architecture/impact";
 import { type Integration, type Lane, systemOf } from "../../architecture/model";
 import { ArchitectureMap, type Foot } from "./ArchitectureMap";
-import { EvidenceTag } from "./CatalogueLab";
+import { EvidenceTag } from "./labChrome";
 import { JourneyPicker } from "./JourneyPicker";
 import { coreThreshold } from "./catalogueRules";
 import { journeyHref, useLabData, useOffering } from "./labData";
 import { plural, useTitle } from "./labUtil";
 import { allViews, links, reachOf } from "./posterModel";
-import { Missing, ProductHeader } from "./ProductPage";
+import { Missing, ProductHeader } from "./productParts";
 import { channelMissingText, laneName, MODE_WORDS, NOT_STATED, operationName, roleName, styleName, systemName } from "./words";
+import { useSystemParam } from "./systemHooks";
 
 /** The systems a call reaches: its ends that are systems, and the integration layer it goes through. */
 const systemsOf = (call: Integration) => [systemOf(call.from), systemOf(call.to), call.via];
@@ -48,8 +49,9 @@ export function ProductArchitecture() {
     return out;
   }, [data, offering, journeys.length, impact]);
   const productLinks = useMemo(() => links(data, views.flatMap((view) => view.integrations)), [data, views]);
-  // A system picked elsewhere (the landscape's "Used by products") arrives as ?system=.
-  const [picked, setPicked] = useState<string | null>(() => params.get("system"));
+  // The picked system lives in the address (?system=), as on the Landscape and Systems pages:
+  // one picked elsewhere (the landscape's "Used by products") arrives with it, and a reload keeps it.
+  const [picked, setPicked] = useSystemParam();
 
   // One journey: the journey, its channel, its calls and the current one.
   const def = journeys.find((journey) => journey.id === params.get("journey")) ?? journeys[0];

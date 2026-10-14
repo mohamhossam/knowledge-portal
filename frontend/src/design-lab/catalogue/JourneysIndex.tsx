@@ -20,28 +20,22 @@
  * the order the order travels, its ordering channels, its size, the decisions it
  * contains, and the way into the flow.
  */
-import { type KeyboardEvent, type ReactNode, useEffect, useRef } from "react";
+import type { ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { journeyView } from "../../architecture/adapter";
 import { type Catalogue, type JourneyView, type Lane, laneKey, type Offering, type PortfolioNode, systemOf } from "../../architecture/model";
-import { AreaTabs } from "./CatalogueLab";
+import { AreaTabs } from "./labChrome";
+import { LabIcon } from "./labIcon";
 import { channelKindName } from "./catalogueRules";
 import { journeyHref, LAB, useLabData } from "./labData";
-import { monogram, plural, useTitle } from "./labUtil";
+import { pathTo, plural, useDismissableDetails, useTitle } from "./labUtil";
 import { STAGES, stageOfCode } from "./stages";
 import { laneName } from "./words";
+import { SystemMonogram } from "./SystemMonogram";
 
 /** The portfolio path the page opens on, by name from the top: Fixed, then SMB. */
 const DEFAULT_SCOPE = ["Fixed", "SMB"];
-
-function Icon({ children, size = 16 }: { children: ReactNode; size?: number }) {
-  return (
-    <svg className="cl-view-icon" viewBox="0 0 16 16" width={size} height={size} aria-hidden="true">
-      {children}
-    </svg>
-  );
-}
 
 const STAGE_ICONS: Record<string, ReactNode> = {
   join: <path d="M8 3v10M3 8h10" />,
@@ -56,18 +50,6 @@ const STAGE_ICONS: Record<string, ReactNode> = {
   leave: <path d="M9.5 3h3.5v10H9.5M3 8h7M7.5 5.5 10 8l-2.5 2.5" />,
   across: <path d="M2 8h12M5 5 2 8l3 3M11 5l3 3-3 3" />,
 };
-
-/** The portfolio path from the top level down to a node. */
-function pathTo(nodes: PortfolioNode[], nodeId: string | null): PortfolioNode[] {
-  const path: PortfolioNode[] = [];
-  let node = nodes.find((item) => item.id === nodeId);
-  while (node) {
-    path.unshift(node);
-    const parent = node.parentId;
-    node = parent ? nodes.find((item) => item.id === parent) : undefined;
-  }
-  return path;
-}
 
 /**
  * The scope the page opens on: DEFAULT_SCOPE by name (the first name anywhere,
@@ -88,24 +70,10 @@ function defaultScope(nodes: PortfolioNode[], offerings: Offering[]): string | n
 
 /** One level's menu in the scope bar: a chip naming its kind and the choice, "Any …" first unless the level must name one. */
 function ScopeMenu({ level, value, options, onPick, allowAny = true }: { level: string; value: string | null; options: { id: string; name: string }[]; onPick: (id: string | null) => void; allowAny?: boolean }) {
-  const menu = useRef<HTMLDetailsElement>(null);
-  useEffect(() => {
-    const outside = (event: PointerEvent) => {
-      if (menu.current?.open && !menu.current.contains(event.target as Node)) menu.current.open = false;
-    };
-    document.addEventListener("pointerdown", outside);
-    return () => document.removeEventListener("pointerdown", outside);
-  }, []);
+  const { ref: menu, close, onKeyDown } = useDismissableDetails();
   const pick = (id: string | null) => {
-    if (menu.current) menu.current.open = false;
+    close();
     onPick(id);
-  };
-  const onKeyDown = (event: KeyboardEvent<HTMLDetailsElement>) => {
-    if (event.key === "Escape" && menu.current?.open) {
-      event.preventDefault();
-      menu.current.open = false;
-      menu.current.querySelector("summary")?.focus();
-    }
   };
   const chosen = options.find((option) => option.id === value);
   const any = `Any ${level.toLowerCase()}`;
@@ -242,10 +210,10 @@ export function JourneysIndex() {
           <span className="jx-tile-meta" aria-hidden="true">
             {off ? (
               <span className="jx-tile-off" title={off}>
-                <Icon size={14}>
+                <LabIcon kind="view" size={14}>
                   <circle cx="8" cy="8" r="5.5" />
                   <path d="m4.2 11.8 7.6-7.6" />
-                </Icon>
+                </LabIcon>
               </span>
             ) : (
               <span className={`jx-tile-steps${steps === undefined ? " is-gap" : ""}`}>{steps === undefined ? "No journey yet" : plural(steps, "step")}</span>
@@ -260,9 +228,7 @@ export function JourneysIndex() {
     const channel = data.channels.find((item) => item.id === id);
     return channel ? (
       <span key={id} className={`cl-chanchip${muted ? " is-off" : ""}`}>
-        <span className={`am-mono cl-systile tone--${systemTone(channel.systemId) ?? "customer"} am-mono--${monogram(channel.name).length}`} aria-hidden="true" translate="no">
-          {monogram(channel.name)}
-        </span>
+        <SystemMonogram name={channel.name} tone={systemTone(channel.systemId) ?? "customer"} />
         {shortName(channel.name)}
         <small>{channelKindName(data, channel.kind)}</small>
       </span>
@@ -340,7 +306,7 @@ export function JourneysIndex() {
                 {stages.map((stage, index) => (
                   <li key={stage.id} className={`jx-stage${pickedStage === stage.id ? " is-on" : ""}`}>
                     <span className="jx-stage-icon">
-                      <Icon>{STAGE_ICONS[stage.id]}</Icon>
+                      <LabIcon kind="view">{STAGE_ICONS[stage.id]}</LabIcon>
                     </span>
                     <span className="jx-stage-text">
                       <strong>
@@ -356,7 +322,7 @@ export function JourneysIndex() {
                   <div key={stage.id} className="jx-colwrap">
                     {/* On a narrow screen the ribbon is hidden and each stage names itself above its tiles. */}
                     <p className="jx-col-head" aria-hidden="true">
-                      <Icon>{STAGE_ICONS[stage.id]}</Icon>
+                      <LabIcon kind="view">{STAGE_ICONS[stage.id]}</LabIcon>
                       {stage.name}
                       <small>{stage.blurb}</small>
                     </p>
@@ -372,7 +338,7 @@ export function JourneysIndex() {
               {shared.length > 0 && (
                 <div className="jx-across">
                   <span className="jx-across-label">
-                    <Icon>{STAGE_ICONS.across}</Icon>
+                    <LabIcon kind="view">{STAGE_ICONS.across}</LabIcon>
                     Across the lifecycle
                   </span>
                   <ul>{shared.map((item) => tile(item.id, item.name, stepsOf(item.id, item.channels[0] ?? null)))}</ul>
@@ -388,7 +354,7 @@ export function JourneysIndex() {
           {product && pickedName ? (
             <>
               <p className="jx-panel-stage">
-                <Icon>{STAGE_ICONS[pickedStage ?? "across"]}</Icon>
+                <LabIcon kind="view">{STAGE_ICONS[pickedStage ?? "across"]}</LabIcon>
                 {pickedStage === "across" ? "Across the lifecycle" : STAGES.find((stage) => stage.id === pickedStage)?.name}
               </p>
               <h2 id="jx-panel-h">{pickedName}</h2>
@@ -420,9 +386,7 @@ export function JourneysIndex() {
                   <ol className="jx-route" aria-label={`Route: ${shape.route.map(laneTitle).join(", then ")}`}>
                     {shape.route.slice(0, 12).map((lane) => (
                       <li key={laneKey(lane)} title={laneTitle(lane)}>
-                        <span className={`am-mono cl-systile${laneTone(lane) ? ` tone--${laneTone(lane)}` : " is-party"} am-mono--${monogram(laneTitle(lane)).length}`} translate="no">
-                          {monogram(laneTitle(lane))}
-                        </span>
+                        <SystemMonogram name={laneTitle(lane)} tone={laneTone(lane)} decorative={false} />
                       </li>
                     ))}
                     {shape.route.length > 12 && <li className="jx-route-more">+{shape.route.length - 12}</li>}

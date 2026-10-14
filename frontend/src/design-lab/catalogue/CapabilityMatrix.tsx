@@ -9,8 +9,9 @@
  */
 import type { Catalogue } from "../../architecture/model";
 import { PART_KINDS, type Part, systemParts } from "./capabilities";
-import { monogram, plural } from "./labUtil";
+import { plural } from "./labUtil";
 import { domainRank } from "./posterModel";
+import { SystemMonogram } from "./SystemMonogram";
 
 export function CapabilityMatrix({ data, selected, onSelect }: { data: Catalogue; selected: string | null; onSelect: (id: string | null) => void }) {
   const parts = systemParts(data);
@@ -45,9 +46,7 @@ export function CapabilityMatrix({ data, selected, onSelect }: { data: Catalogue
               <tr key={system.id} className={`${index === 0 || systems[index - 1]?.domain !== system.domain ? "cm-first" : ""}${selected === system.id ? " is-picked" : ""}`.trim() || undefined}>
                 <th scope="row">
                   <button type="button" className="cm-sys" aria-pressed={selected === system.id} onClick={() => onSelect(selected === system.id ? null : system.id)}>
-                    <span className={`am-mono cl-systile tone--${system.domain} am-mono--${monogram(system.name).length}`} aria-hidden="true" translate="no">
-                      {monogram(system.name)}
-                    </span>
+                    <SystemMonogram name={system.name} tone={system.domain} />
                     <span>
                       <b translate="no">{system.name}</b>
                       <small>{domainName(system.domain)}</small>

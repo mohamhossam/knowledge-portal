@@ -10,11 +10,12 @@ import { journeyView } from "../../architecture/adapter";
 import { download, toBpmn, toCsv, toMermaid, toPlantUml } from "../../architecture/exports";
 import { GEOMETRY, layoutFlow, type Placed } from "../../architecture/flowLayout";
 import { type ActivityStep, type Integration, type JourneyView, type Lane, laneKey, type Step, systemOf } from "../../architecture/model";
-import { AreaTabs, EvidenceTag, PathBar } from "./CatalogueLab";
+import { AreaTabs, EvidenceTag, PathBar } from "./labChrome";
 import { JourneyPicker } from "./JourneyPicker";
 import { journeyHref, LAB, useLabData } from "./labData";
-import { monogram, plural, useTitle } from "./labUtil";
-import { ProductHeader } from "./ProductPage";
+import { plural, useTitle } from "./labUtil";
+import { ProductHeader } from "./productParts";
+import { SystemMonogram } from "./SystemMonogram";
 import { channelMissingText, laneKindName, laneName, MODE_WORDS, NOT_STATED, operationName, roleName, styleName, systemName, viewTitle } from "./words";
 
 const LAYER: Record<string, string> = {
@@ -102,6 +103,14 @@ function IntegrationRegister({ view }: { view: JourneyView }) {
   const [mode, setMode] = useState<"sequence" | "table">("sequence");
   const [system, setSystem] = useState<string | null>(null);
   const [picked, setPicked] = useState(0);
+  // Another journey or channel has other calls: start again at its first call, with no system picked.
+  const viewKey = `${view.id}:${view.channel ?? ""}`;
+  const [shown, setShown] = useState(viewKey);
+  if (shown !== viewKey) {
+    setShown(viewKey);
+    setPicked(0);
+    setSystem(null);
+  }
   const name = (end?: End) => (end === undefined ? "" : typeof end === "string" ? systemName(data, end) : laneName(data, end));
   const tone = (end: End) => {
     const id = typeof end === "string" ? end : systemOf(end);
@@ -141,11 +150,7 @@ function IntegrationRegister({ view }: { view: JourneyView }) {
   const touches = (call: Integration) => !system || ends(call).some((end) => endKey(end) === system);
   const call = calls[Math.min(picked, calls.length - 1)];
   const center = (end?: End) => (end === undefined ? 0 : ((keys.indexOf(endKey(end)) + 0.5) / keys.length) * 100);
-  const tile = (end: End) => (
-    <span className={`am-mono cl-systile${tone(end) ? ` tone--${tone(end)}` : " is-party"} am-mono--${monogram(name(end)).length}`} aria-hidden="true" translate="no">
-      {monogram(name(end))}
-    </span>
-  );
+  const tile = (end: End) => <SystemMonogram name={name(end)} tone={tone(end)} />;
 
   return (
     <section aria-labelledby="cl-reg-h" className="cl-register">

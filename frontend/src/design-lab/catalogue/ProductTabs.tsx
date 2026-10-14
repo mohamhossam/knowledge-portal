@@ -6,13 +6,15 @@ import { type ReactNode, useState } from "react";
 import { Link } from "react-router-dom";
 
 import type { Offering } from "../../architecture/model";
-import { EvidenceTag } from "./CatalogueLab";
+import { EvidenceTag } from "./labChrome";
+import { LabIcon } from "./labIcon";
 import { hubOf, isPriced } from "./catalogueRules";
 import { firstJourneyHref, journeyHref, LAB, useLabData, useOffering } from "./labData";
 import { CAPABILITIES, capabilityOf, DEVICE_ICON } from "./capabilities";
-import { leadingNumber, monogram, plural, useTitle } from "./labUtil";
+import { leadingNumber, plural, useTitle } from "./labUtil";
 import { domainRank } from "./posterModel";
-import { Missing, Plans, ProductHeader } from "./ProductPage";
+import { Missing, Plans, ProductHeader } from "./productParts";
+import { SystemMonogram } from "./SystemMonogram";
 
 /** The portfolio from the business unit down to this offering, then what the offering is made of. */
 export function ProductHierarchy() {
@@ -248,15 +250,9 @@ export function ProductComponents() {
   const shown = (groupId: string, component: Offering["components"][number]) => (!kind || kind === groupId) && (!by || component.systems.some((item) => item.systemId === by));
   const cards = groups.flatMap((group) => group.items.filter((component) => shown(group.id, component)).map((component) => ({ group, component })));
   const tile = (id: string) => (
-    <span className={`am-mono cl-systile tone--${system(id)?.domain ?? "customer"} am-mono--${monogram(name(id)).length}`} aria-hidden="true" translate="no">
-      {monogram(name(id))}
-    </span>
+    <SystemMonogram name={name(id)} tone={system(id)?.domain ?? "customer"} />
   );
-  const glyph = (icon: ReactNode, size = 16) => (
-    <svg className="cl-glyph" viewBox="0 0 16 16" width={size} height={size} aria-hidden="true">
-      {icon}
-    </svg>
-  );
+  const glyph = (icon: ReactNode, size = 16) => <LabIcon size={size}>{icon}</LabIcon>;
   // A system's heading narrows the cards to what it delivers and brings them into view.
   const showBy = (id: string) => {
     setBy(by === id ? null : id);

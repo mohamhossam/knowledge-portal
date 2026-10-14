@@ -68,6 +68,17 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Fixed
 
+- The catalogue lab's modules no longer import one another in circles (11 cycles, all through
+  the lab's router and the product page): the chrome every page shares (section bar, data
+  switch, sample notice, evidence tag, path) is in `labChrome.tsx`, and the product parts
+  other pages show (header, plans, "not in this version") in `productParts.tsx`. A test
+  (`importCycles.test.ts`) fails on any new cycle. Repeated helpers are one each: `LabIcon`,
+  `SystemMonogram` (8 copies), `pathTo` (now safe against a node that is its own ancestor)
+  and `useDismissableDetails`, which gives the Landscape's Key menu Escape to close, like the
+  others. The product's Architecture tab keeps the picked system in the address
+  (`?system=`), so a reload or a shared link keeps it, and the journey's Integrations tab
+  starts again at the first call when the journey or channel changes, instead of keeping a
+  position in another list. The lab's 14 pages read the same before and after.
 - The catalogue lab's business rules each live in one place (`design-lab/catalogue/catalogueRules.ts`),
   where copies had drifted apart: a bundle's hub device (a whole-word "CPE" match, and no hub
   rather than the first part when nothing matches), a channel kind's name (the vocabulary's

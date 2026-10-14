@@ -5,38 +5,20 @@
  * its commercial terms and what is in it. The journey catalogue is
  * JourneysIndex.tsx.
  */
-import { type ReactNode, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
-import type { Offering, PortfolioNode } from "../../architecture/model";
-import { AreaTabs } from "./CatalogueLab";
+import type { Offering } from "../../architecture/model";
+import { AreaTabs } from "./labChrome";
+import { LabIcon } from "./labIcon";
 import { channelKindName, contractPeriods, eligibilityGroup, hubOf, SELLING_KINDS } from "./catalogueRules";
 import { journeyHref, LAB, useLabData } from "./labData";
-import { firstSentence, listOf, monogram, plural, useTitle } from "./labUtil";
+import { firstSentence, listOf, pathTo, plural, useTitle } from "./labUtil";
 import { capabilityOf, DEVICE_ICON, shortComponentName } from "./capabilities";
 import { stageOfCode } from "./stages";
-
-function Icon({ children }: { children: ReactNode }) {
-  return (
-    <svg className="cl-view-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-      {children}
-    </svg>
-  );
-}
+import { SystemMonogram } from "./SystemMonogram";
 
 const PRODUCT_ICON = <path d="M2.5 4.5 8 2l5.5 2.5v7L8 14l-5.5-2.5zM2.5 4.5 8 7l5.5-2.5M8 7v7" />;
-
-/** The portfolio path from the top level down to a node. */
-function pathTo(nodes: PortfolioNode[], nodeId: string | null): PortfolioNode[] {
-  const path: PortfolioNode[] = [];
-  let node = nodes.find((item) => item.id === nodeId);
-  while (node) {
-    path.unshift(node);
-    const parent = node.parentId;
-    node = parent ? nodes.find((item) => item.id === parent) : undefined;
-  }
-  return path;
-}
 
 const CARD_LINK_ICONS = {
   overview: <path d="M3 3.5h10M3 8h10M3 12.5h6" />,
@@ -116,7 +98,7 @@ function ProductCard({ offering }: { offering: Offering }) {
       <div className="cl-prodcard-id">
         <div className="cl-prodcard-head">
           <span className="cl-cap-icon">
-            <Icon>{PRODUCT_ICON}</Icon>
+            <LabIcon kind="view">{PRODUCT_ICON}</LabIcon>
           </span>
           <div>
             <h3>
@@ -127,16 +109,16 @@ function ProductCard({ offering }: { offering: Offering }) {
         </div>
         <nav className="cl-prodcard-links" aria-label={`${offering.name} pages`}>
           <Link className="cl-btn" to={base}>
-            <Icon>{CARD_LINK_ICONS.overview}</Icon>
+            <LabIcon kind="view">{CARD_LINK_ICONS.overview}</LabIcon>
             Overview
           </Link>
           <Link className="cl-btn" to={`${base}/architecture`}>
-            <Icon>{CARD_LINK_ICONS.architecture}</Icon>
+            <LabIcon kind="view">{CARD_LINK_ICONS.architecture}</LabIcon>
             Architecture
           </Link>
           {journeys[0] && (
             <Link className="cl-btn" to={journeyHref(journeys[0].id, journeys[0].channels[0])}>
-              <Icon>{CARD_LINK_ICONS.journeys}</Icon>
+              <LabIcon kind="view">{CARD_LINK_ICONS.journeys}</LabIcon>
               Journeys
             </Link>
           )}
@@ -145,7 +127,7 @@ function ProductCard({ offering }: { offering: Offering }) {
       <dl className="cl-glance-rows">
         <div>
           <dt>
-            <Icon>{ROW_ICONS.sold}</Icon>
+            <LabIcon kind="view">{ROW_ICONS.sold}</LabIcon>
             Sold through
           </dt>
           <dd className="cl-sold">
@@ -158,9 +140,7 @@ function ProductCard({ offering }: { offering: Offering }) {
                     const label = only ? `For ${listOf(only)} only` : undefined;
                     return (
                       <span key={channel.id} className={`cl-chanchip${only ? " is-partial" : ""}`} title={label}>
-                        <span className={`am-mono cl-systile tone--${tone(channel.systemId)} am-mono--${monogram(channel.name).length}`} aria-hidden="true" translate="no">
-                          {monogram(channel.name)}
-                        </span>
+                        <SystemMonogram name={channel.name} tone={tone(channel.systemId)} />
                         {channel.name.replace(/\s*\(.*\)\s*$/, "")}
                         {label && <span className="ds-visually-hidden">: {label.toLowerCase()}</span>}
                       </span>
@@ -176,7 +156,7 @@ function ProductCard({ offering }: { offering: Offering }) {
         </div>
         <div>
           <dt>
-            <Icon>{ROW_ICONS.who}</Icon>
+            <LabIcon kind="view">{ROW_ICONS.who}</LabIcon>
             Who can buy
           </dt>
           <dd className="cl-chips-wrap">
@@ -193,7 +173,7 @@ function ProductCard({ offering }: { offering: Offering }) {
         </div>
         <div>
           <dt>
-            <Icon>{ROW_ICONS.terms}</Icon>
+            <LabIcon kind="view">{ROW_ICONS.terms}</LabIcon>
             Commercial terms
           </dt>
           <dd className="cl-terms">
@@ -211,7 +191,7 @@ function ProductCard({ offering }: { offering: Offering }) {
         </div>
         <div>
           <dt>
-            <Icon>{ROW_ICONS.bundle}</Icon>
+            <LabIcon kind="view">{ROW_ICONS.bundle}</LabIcon>
             In the bundle
           </dt>
           <dd className="cl-chips-wrap">
@@ -220,7 +200,7 @@ function ProductCard({ offering }: { offering: Offering }) {
               const isHub = component === hub;
               return (
                 <span key={component.id} className={`cl-part-chip${isHub ? " is-hub" : ""}${component.mandatory === false ? " is-optional" : ""}`} title={component.name}>
-                  <Icon>{isHub ? DEVICE_ICON : (capability?.icon ?? <path d="M4 8h8" />)}</Icon>
+                  <LabIcon kind="view">{isHub ? DEVICE_ICON : (capability?.icon ?? <path d="M4 8h8" />)}</LabIcon>
                   {shortComponentName(component.name)}
                   {component.mandatory === false && <small>optional</small>}
                 </span>
@@ -271,7 +251,7 @@ export function ProductsIndex() {
       <header className="lx-band cx-band">
         <div className="lx-band-row">
           <span className="lx-mark" aria-hidden="true">
-            <Icon>{PRODUCT_ICON}</Icon>
+            <LabIcon kind="view">{PRODUCT_ICON}</LabIcon>
           </span>
           <div className="lx-title">
             <h1 id="cl-products-h">Products</h1>
@@ -279,10 +259,10 @@ export function ProductsIndex() {
           </div>
           <div className="lx-tools">
             <div className="cl-find lx-find">
-              <Icon>
+              <LabIcon kind="view">
                 <circle cx="7" cy="7" r="4.5" />
                 <path d="m10.5 10.5 3.5 3.5" />
-              </Icon>
+              </LabIcon>
               <label className="ds-visually-hidden" htmlFor="cl-filter-products">
                 Filter products
               </label>
@@ -315,7 +295,7 @@ export function ProductsIndex() {
         <section key={family.nodeId} className="cl-family" aria-labelledby={`cl-family-${family.nodeId}`}>
           <header>
             <span className="cl-cap-icon">
-              <Icon>{FAMILY_ICON}</Icon>
+              <LabIcon kind="view">{FAMILY_ICON}</LabIcon>
             </span>
             <div className="cl-family-title">
               <small>{family.path.at(-1)?.level ?? "Product family"}</small>

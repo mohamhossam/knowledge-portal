@@ -1,5 +1,7 @@
 /** Small helpers shared by the catalogue mock-ups. */
-import { useEffect } from "react";
+import { type KeyboardEvent, type RefObject, useCallback, useEffect, useRef } from "react";
+
+import type { PortfolioNode } from "../../architecture/model";
 
 const RULES = new Intl.PluralRules("en");
 
@@ -64,4 +66,47 @@ export function monogram(name: string): string {
   if (words.length === 1 && first.length <= 4) return first;
   if (words.length > 1) return words.slice(0, 3).map((word) => word[0] ?? "").join("");
   return first.slice(0, 2);
+}
+
+/** The portfolio path from the top level down to a node; a node that is its own ancestor ends the walk. */
+export function pathTo(nodes: PortfolioNode[], nodeId: string | null): PortfolioNode[] {
+  const path: PortfolioNode[] = [];
+  const seen = new Set<string>();
+  let node = nodes.find((item) => item.id === nodeId);
+  while (node && !seen.has(node.id)) {
+    seen.add(node.id);
+    path.unshift(node);
+    const parent = node.parentId;
+    node = parent ? nodes.find((item) => item.id === parent) : undefined;
+  }
+  return path;
+}
+
+/**
+ * A <details> used as a menu: it closes on a click anywhere outside it, and on Escape, which
+ * hands focus back to its summary. `close` shuts it after a choice.
+ */
+export function useDismissableDetails(): { ref: RefObject<HTMLDetailsElement | null>; close: () => void; onKeyDown: (event: KeyboardEvent<HTMLDetailsElement>) => void } {
+  const ref = useRef<HTMLDetailsElement>(null);
+  const close = useCallback(() => {
+    if (ref.current) ref.current.open = false;
+  }, []);
+  useEffect(() => {
+    const outside = (event: PointerEvent) => {
+      if (ref.current?.open && !ref.current.contains(event.target as Node)) close();
+    };
+    document.addEventListener("pointerdown", outside);
+    return () => document.removeEventListener("pointerdown", outside);
+  }, [close]);
+  const onKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLDetailsElement>) => {
+      if (event.key === "Escape" && ref.current?.open) {
+        event.preventDefault();
+        close();
+        ref.current.querySelector("summary")?.focus();
+      }
+    },
+    [close],
+  );
+  return { ref, close, onKeyDown };
 }
