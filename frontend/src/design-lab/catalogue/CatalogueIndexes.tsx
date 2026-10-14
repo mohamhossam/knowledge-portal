@@ -8,7 +8,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
-import type { Offering } from "../../architecture/model";
+import type { Offering } from "../../catalogue/model/model";
 import { AreaTabs } from "./labChrome";
 import { LabIcon } from "./labIcon";
 import { channelKindName, contractPeriods, eligibilityGroup, hubOf, SELLING_KINDS } from "./catalogueRules";

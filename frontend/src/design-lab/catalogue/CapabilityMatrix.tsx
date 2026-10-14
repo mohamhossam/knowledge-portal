@@ -7,7 +7,7 @@
  * components of that kind it delivers, with how many, and names them (and
  * their product, when more than one product is catalogued).
  */
-import type { Catalogue } from "../../architecture/model";
+import type { Catalogue } from "../../catalogue/model/model";
 import { PART_KINDS, type Part, systemParts } from "./capabilities";
 import { plural } from "./labUtil";
 import { layerRank } from "./posterModel";

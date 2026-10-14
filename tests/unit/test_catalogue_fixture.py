@@ -1,6 +1,6 @@
 """The catalogue lab's bundled sample is the committed catalogue file, as the API sends it.
 
-`frontend/src/architecture/fixtures/smb-release.json` is written by
+`frontend/src/catalogue/model/fixtures/smb-release.json` is written by
 `scripts/dump_catalogue_fixture.py`. A change to the catalogue file, or to the read schema,
 that is not written into the sample fails here, not in front of a person comparing it.
 """
@@ -18,7 +18,7 @@ from knowledge_portal.interfaces.api.schemas.architecture_knowledge import (
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts" / "dump_catalogue_fixture.py"
-FIXTURE = ROOT / "frontend" / "src" / "architecture" / "fixtures" / "smb-release.json"
+FIXTURE = ROOT / "frontend" / "src" / "catalogue" / "model" / "fixtures" / "smb-release.json"
 
 
 def test_the_sample_is_the_committed_catalogue_file_as_written_today() -> None:

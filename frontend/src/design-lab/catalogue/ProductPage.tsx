@@ -5,7 +5,7 @@
  */
 import { Link } from "react-router-dom";
 
-import type { Component, Offering } from "../../architecture/model";
+import type { Component, Offering } from "../../catalogue/model/model";
 import { EvidenceTag } from "./labChrome";
 import { LabIcon } from "./labIcon";
 import { Missing, ProductHeader } from "./productParts";

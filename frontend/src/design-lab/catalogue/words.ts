@@ -3,7 +3,7 @@
  * events and gateways, how a call is made, and a journey seen through a channel.
  * The model holds no English; the views and the exports name things from here.
  */
-import type { Catalogue, Integration, IntegrationMode, JourneyView, Lane, Offering, Step, StepRole } from "../../architecture/model";
+import type { Catalogue, Integration, IntegrationMode, JourneyView, Lane, Offering, Step, StepRole } from "../../catalogue/model/model";
 
 export const NOT_STATED = "Not stated";
 

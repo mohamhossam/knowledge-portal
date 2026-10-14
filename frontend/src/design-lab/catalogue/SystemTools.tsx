@@ -8,7 +8,7 @@
 import { type FormEvent, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { type Catalogue, systemOf } from "../../architecture/model";
+import { type Catalogue, systemOf } from "../../catalogue/model/model";
 import { coreThreshold } from "./catalogueRules";
 import { journeyHref, LAB } from "./labData";
 import { plural } from "./labUtil";

@@ -5,7 +5,7 @@
  * short lists instead of a wall of chips.
  */
 
-import type { JourneyDef } from "../../architecture/model";
+import type { JourneyDef } from "../../catalogue/model/model";
 import { STAGES, stageOfCode } from "./stages";
 import { useDismissableDetails } from "./labUtil";
 

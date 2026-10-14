@@ -11,9 +11,9 @@ import { createContext, useContext, useMemo } from "react";
 
 import { api } from "../../api/client";
 import { catalogueSourceSetting } from "../../app/features";
-import { fromRelease } from "../../architecture/adapter";
-import type { Catalogue } from "../../architecture/model";
-import { loadSampleRelease } from "../../architecture/sample";
+import { fromRelease } from "../../catalogue/model/adapter";
+import type { Catalogue } from "../../catalogue/model/model";
+import { loadSampleRelease } from "../../catalogue/model/sample";
 
 export type CatalogueSource = "api" | "sample";
 

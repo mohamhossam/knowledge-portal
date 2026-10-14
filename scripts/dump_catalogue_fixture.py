@@ -1,6 +1,6 @@
 """Write the catalogue lab's bundled sample from the committed catalogue file.
 
-`frontend/src/architecture/fixtures/smb-release.json` is the draft a fake-identity API
+`frontend/src/catalogue/model/fixtures/smb-release.json` is the draft a fake-identity API
 holds after importing `catalogues/smb-architecture.yaml`, as the API's read schema sends
 it: every field the screens read, the derived flows (`edges`, `channel_edges`,
 `shared_edges`) and the vocabulary among them. The lab's "Sample JSON" and the frontend
@@ -28,7 +28,7 @@ from knowledge_portal.interfaces.api.schemas.architecture_knowledge import (  # 
 )
 from scripts._catalogue_seed import FULL_CATALOGUE_FILE, ROOT  # noqa: E402
 
-FIXTURE = ROOT / "frontend" / "src" / "architecture" / "fixtures" / "smb-release.json"
+FIXTURE = ROOT / "frontend" / "src" / "catalogue" / "model" / "fixtures" / "smb-release.json"
 
 # The draft as the frontend tests have always known it: these never come from the file.
 DRAFT_ID = "smb-architecture-draft"

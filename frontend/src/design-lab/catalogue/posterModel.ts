@@ -3,9 +3,9 @@
  * channel, each integration once, the system-to-system links and how each
  * system takes part in the calls.
  */
-import { journeyView } from "../../architecture/adapter";
-import { ABOVE_BUS_DOMAIN, BUS_DOMAIN, SIDE_DOMAINS, WIDE_LAYER_GROUPS } from "../../architecture/conventions";
-import { type Catalogue, type Integration, type JourneyView, laneKey, systemOf, type TamDomain } from "../../architecture/model";
+import { journeyView } from "../../catalogue/model/adapter";
+import { ABOVE_BUS_DOMAIN, BUS_DOMAIN, SIDE_DOMAINS, WIDE_LAYER_GROUPS } from "../../catalogue/model/conventions";
+import { type Catalogue, type Integration, type JourneyView, laneKey, systemOf, type TamDomain } from "../../catalogue/model/model";
 
 /** Every journey seen through every channel it serves. */
 export function allViews(data: Catalogue): JourneyView[] {

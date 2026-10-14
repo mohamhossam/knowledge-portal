@@ -1,7 +1,7 @@
 /** A product's Components tab: what the bundle is made of, grouped by capability, and the systems that deliver each part. */
 import { type ReactNode, useState } from "react";
 
-import type { Offering } from "../../architecture/model";
+import type { Offering } from "../../catalogue/model/model";
 import { EvidenceTag } from "./labChrome";
 import { LabIcon } from "./labIcon";
 import { hubOf } from "./catalogueRules";
