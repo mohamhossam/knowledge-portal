@@ -68,6 +68,16 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Fixed
 
+- The catalogue lab's largest modules are split along their seams, with no change on any
+  page or in the model: the journey's calls (`IntegrationRegister.tsx`, out of the 709-line
+  `JourneyFlow.tsx`), the product's Components tab (`ProductComponents.tsx`) and who can buy
+  it (`WhoCanBuy.tsx`), the journeys page's scope menu (`JourneyFilters.tsx`) and opening
+  scope (`journeyScope.ts`). The product's Architecture tab is two views (`ProductMap`,
+  `ProductJourneyMap`), each computing only its own state. `fromRelease` reads as one line per
+  part of the version (`sourcesOf`, `domainsOf`, `systemsOf`, `offeringOf`, `journeysOf`,
+  `findingsOf`…) and `journeyView` as what it decides, with `stepsOf` and `callsInView`. The
+  journey flow's sizes, margins and text placement are named constants. The model the lab
+  builds is byte for byte the same, and 17 lab pages read the same.
 - The catalogue lab's modules no longer import one another in circles (11 cycles, all through
   the lab's router and the product page): the chrome every page shares (section bar, data
   switch, sample notice, evidence tag, path) is in `labChrome.tsx`, and the product parts
