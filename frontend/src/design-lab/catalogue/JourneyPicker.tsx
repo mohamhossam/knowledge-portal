@@ -4,34 +4,16 @@
  * the product (join, change, support, leave), so twenty journeys read as four
  * short lists instead of a wall of chips.
  */
-import { type KeyboardEvent, useEffect, useRef } from "react";
 
 import type { JourneyDef } from "../../architecture/model";
 import { STAGES, stageOfCode } from "./stages";
+import { useDismissableDetails } from "./labUtil";
 
 /** Where a journey sits; one without an order type (order tracking) supports every order. */
 const stageOf = (journey: JourneyDef) => stageOfCode(journey.orderType);
 
 export function JourneyPicker({ journeys, current, onPick }: { journeys: JourneyDef[]; current: JourneyDef; onPick: (journey: JourneyDef) => void }) {
-  const menu = useRef<HTMLDetailsElement>(null);
-  const close = () => {
-    if (menu.current) menu.current.open = false;
-  };
-  useEffect(() => {
-    // A click anywhere else closes it, as a menu would.
-    const outside = (event: PointerEvent) => {
-      if (menu.current?.open && !menu.current.contains(event.target as Node)) close();
-    };
-    document.addEventListener("pointerdown", outside);
-    return () => document.removeEventListener("pointerdown", outside);
-  }, []);
-  const onKeyDown =(event: KeyboardEvent<HTMLDetailsElement>) => {
-    if (event.key === "Escape" && menu.current?.open) {
-      event.preventDefault();
-      close();
-      menu.current.querySelector("summary")?.focus();
-    }
-  };
+  const { ref: menu, close, onKeyDown } = useDismissableDetails();
   const stage = STAGES.find((item) => item.id === stageOf(current));
   const groups = STAGES.map((item) => ({ ...item, journeys: journeys.filter((journey) => stageOf(journey) === item.id) })).filter((item) => item.journeys.length);
 

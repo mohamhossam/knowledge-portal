@@ -14,7 +14,7 @@ import { useSearchParams } from "react-router-dom";
 
 import { CapabilityMatrix } from "./CapabilityMatrix";
 import { PART_KINDS, systemParts } from "./capabilities";
-import { AreaTabs } from "./CatalogueLab";
+import { AreaTabs } from "./labChrome";
 import { IntegrationMatrix } from "./IntegrationMatrix";
 import { useLabData } from "./labData";
 import { plural, useTitle } from "./labUtil";

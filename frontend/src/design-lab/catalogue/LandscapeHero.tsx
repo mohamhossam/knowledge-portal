@@ -9,13 +9,13 @@
  * right side only while a system is picked. Every integration, pair by pair,
  * is on the Systems page.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
-import { AreaTabs } from "./CatalogueLab";
+import { AreaTabs } from "./labChrome";
 import { ArchitectureMap, LayerIcon } from "./ArchitectureMap";
 import { useLabData } from "./labData";
-import { useTitle } from "./labUtil";
+import { useDismissableDetails, useTitle } from "./labUtil";
 import { domainRank } from "./posterModel";
 import { useLinkCounts, useSystemParam } from "./systemHooks";
 import { FindSystem, SystemDrawer } from "./SystemTools";
@@ -37,15 +37,8 @@ export function LandscapeHero() {
     else next.delete("layer");
     setParams(next, { replace: true });
   };
-  // The Key opens as a small menu and closes on a click anywhere else.
-  const keyMenu = useRef<HTMLDetailsElement>(null);
-  useEffect(() => {
-    const outside = (event: PointerEvent) => {
-      if (keyMenu.current?.open && !keyMenu.current.contains(event.target as Node)) keyMenu.current.open = false;
-    };
-    document.addEventListener("pointerdown", outside);
-    return () => document.removeEventListener("pointerdown", outside);
-  }, []);
+  // The Key opens as a small menu and closes on a click anywhere else, or on Escape.
+  const { ref: keyMenu, onKeyDown: keyMenuKeys } = useDismissableDetails();
 
   return (
     <>
@@ -65,7 +58,7 @@ export function LandscapeHero() {
           </div>
           <div className="lx-tools">
             <FindSystem data={data} onFound={select} />
-            <details ref={keyMenu} className="lx-key">
+            <details ref={keyMenu} className="lx-key" onKeyDown={keyMenuKeys}>
               <summary className="cl-btn">Key</summary>
               <div className="lx-key-panel" role="group" aria-label="Key">
                 <p>
