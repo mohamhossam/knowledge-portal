@@ -3,12 +3,13 @@
  * switch and the sample notice, the evidence tag, and the hierarchy path. Kept apart from
  * CatalogueLab, which routes to the pages, so no page imports the router back.
  */
-import { type ReactNode, useLayoutEffect, useRef } from "react";
+import { type ReactNode, useContext, useLayoutEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 
 import { EVIDENCE_WORDS, type Evidence } from "../../architecture/model";
 import { type CatalogueSource, useLabSource } from "./catalogueSource";
-import { LAB, useLabData } from "./labData";
+import { LAB, LabData, useLabData } from "./labData";
+import { catalogueName } from "./words";
 
 /** "Confirmed · SDD v2.3 §P1.1": how sure, and from where, in one line. */
 export function EvidenceTag({ evidence }: { evidence: Evidence }) {
@@ -75,6 +76,8 @@ const ICONS: Record<string, ReactNode> = {
  * catalogue pages, on the live API, until the lab draws its own.
  */
 export function AreaTabs({ current }: { current?: "landscape" | "products" | "journeys" | "systems" }) {
+  // The bar also heads the loading and not-found pages, before any catalogue is read.
+  const data = useContext(LabData);
   const items: { id: string; label: string; to: string }[] = [
     { id: "landscape", label: "Landscape", to: LAB },
     { id: "products", label: "Products", to: `${LAB}/products` },
@@ -96,7 +99,7 @@ export function AreaTabs({ current }: { current?: "landscape" | "products" | "jo
             {icon("landscape")}
           </span>
           <span>
-            <strong>SMB architecture</strong>
+            <strong>{data ? catalogueName(data) : "Catalogue"}</strong>
             <small>
               Architecture catalogue
             </small>

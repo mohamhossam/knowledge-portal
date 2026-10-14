@@ -26,6 +26,13 @@ async function open(path: string, source: CatalogueSource = "sample") {
   return view;
 }
 
+// What the expectations count, read from the fixture rather than written in.
+const sample = asRelease(release);
+const offering = sample.products!.find((product) => product.id === "business-pro-plus")!;
+const SYSTEMS = sample.systems.length;
+const RULES = offering.business_rules.length;
+const BILLING_RULES = offering.business_rules.filter((rule) => rule.kind === "billing").length;
+
 afterEach(() => {
   vi.restoreAllMocks();
 });
@@ -115,7 +122,7 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
     expect(screen.queryByRole("group", { name: "View" })).not.toBeInTheDocument();
     const layers = screen.getByRole("group", { name: /SMB architecture layers/ });
     const systems = within(layers).getAllByRole("button");
-    expect(systems).toHaveLength(46);
+    expect(systems).toHaveLength(SYSTEMS);
     // One tab stop for the whole map.
     expect(systems.filter((button) => button.tabIndex === 0)).toHaveLength(1);
     await userEvent.click(within(layers).getByRole("button", { name: /^CWOM:/ }));
@@ -255,9 +262,9 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
 
   it("filters business rules by what they govern", async () => {
     const { container } = await open("/products/business-pro-plus/rules");
-    expect(screen.getAllByRole("listitem").filter((item) => /^R\d+/.test(item.textContent ?? "")).length).toBe(20);
+    expect(screen.getAllByRole("listitem").filter((item) => /^R\d+/.test(item.textContent ?? "")).length).toBe(RULES);
     await userEvent.click(screen.getByRole("button", { name: /^Billing/ }));
-    expect(screen.getAllByRole("listitem").filter((item) => /^R\d+/.test(item.textContent ?? "")).length).toBe(5);
+    expect(screen.getAllByRole("listitem").filter((item) => /^R\d+/.test(item.textContent ?? "")).length).toBe(BILLING_RULES);
     expect(await axe(container)).toHaveNoViolations();
   });
 

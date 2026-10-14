@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Catalogue, Evidence, Integration, Lane, Step } from "../../architecture/model";
-import { channelMissingText, laneKindName, laneName, MODE_WORDS, operationName, stepName, styleName, systemName, viewTitle } from "./words";
+import { catalogueName, channelMissingText, gapSource, laneKindName, laneName, MODE_WORDS, operationName, stepName, styleName, systemName, viewTitle } from "./words";
 
 const data = {
   systems: [{ id: "cbcm", name: "CBCM" }],
@@ -49,5 +49,23 @@ describe("the lab's words for the model's kinds", () => {
     expect(viewTitle(data, { ...view, channel: "b2b-web" })).toBe("New activation · B2B Web");
     expect(viewTitle(data, { ...view, channel: null })).toBe("New activation");
     expect(channelMissingText("New activation", "Shop", "B2B Web")).toBe("New activation isn't offered through “Shop”; it is shown through B2B Web instead.");
+  });
+
+  it("names the catalogue from its version's name, up to any colon", () => {
+    expect(catalogueName({ name: "SMB architecture: Business Pro Plus" })).toBe("SMB architecture");
+    expect(catalogueName({ name: "Business Pro Plus (SDD v2.3)" })).toBe("Business Pro Plus (SDD v2.3)");
+    expect(catalogueName({ name: ": odd" })).toBe(": odd");
+  });
+
+  it("measures a product's gaps against its primary source, else the version's first", () => {
+    const sources = [
+      { id: "ref", short: "SMB reference v1.0", title: "Reference", level: "L1" },
+      { id: "sdd", short: "SDD v2.3", title: "Solution design", level: "L2" },
+    ];
+    expect(gapSource({ sources }, { primarySource: "sdd" })).toBe("SDD v2.3");
+    expect(gapSource({ sources }, { primarySource: "gone" })).toBe("SMB reference v1.0");
+    expect(gapSource({ sources }, {})).toBe("SMB reference v1.0");
+    expect(gapSource({ sources: [{ id: "x", short: "", title: "Untitled brief", level: "L2" }] }, {})).toBe("Untitled brief");
+    expect(gapSource({ sources: [] }, {})).toBe("the sources");
   });
 });

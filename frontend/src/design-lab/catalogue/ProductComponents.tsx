@@ -8,7 +8,7 @@ import { hubOf } from "./catalogueRules";
 import { useLabData, useOffering } from "./labData";
 import { CAPABILITIES, capabilityOf, DEVICE_ICON } from "./capabilities";
 import { plural, scrollBehavior, useTitle } from "./labUtil";
-import { domainRank } from "./posterModel";
+import { layerRank } from "./posterModel";
 import { Missing, ProductHeader } from "./productParts";
 import { SystemMonogram } from "./SystemMonogram";
 
@@ -42,7 +42,8 @@ export function ProductComponents() {
   // The systems that deliver any component, in map order (layer by layer), the busiest first within a layer.
   const parts = new Map<string, number>();
   for (const component of offering.components) for (const item of component.systems) parts.set(item.systemId, (parts.get(item.systemId) ?? 0) + 1);
-  const columns = [...parts.keys()].sort((a, b) => domainRank(system(a)?.domain ?? "") - domainRank(system(b)?.domain ?? "") || (parts.get(b) ?? 0) - (parts.get(a) ?? 0));
+  const rank = layerRank(data.domains);
+  const columns = [...parts.keys()].sort((a, b) => rank(system(a)?.domain ?? "") - rank(system(b)?.domain ?? "") || (parts.get(b) ?? 0) - (parts.get(a) ?? 0));
   const optional = offering.components.filter((item) => item.mandatory === false).length;
   const shown = (groupId: string, component: Offering["components"][number]) => (!kind || kind === groupId) && (!by || component.systems.some((item) => item.systemId === by));
   const cards = groups.flatMap((group) => group.items.filter((component) => shown(group.id, component)).map((component) => ({ group, component })));

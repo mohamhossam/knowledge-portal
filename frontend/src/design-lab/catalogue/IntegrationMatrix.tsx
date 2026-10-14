@@ -13,6 +13,7 @@ import { Fragment, useMemo, useState } from "react";
 
 import { type Catalogue, type Integration, systemOf } from "../../architecture/model";
 import { plural } from "./labUtil";
+import { layerRank } from "./posterModel";
 import { NOT_STATED, operationName } from "./words";
 
 /** One slate ramp, light to dark, for 1, 2, 3–4 and 5+ interfaces. */
@@ -51,10 +52,10 @@ export function IntegrationMatrix({ data, interfaces, selected, onSelect }: { da
         add(call.via, to, operation);
       } else add(from, to, operation);
     }
-    const order = new Map(data.domains.map((domain, index) => [domain.id, index]));
+    const rank = layerRank(data.domains);
     const linked = data.systems
       .filter((system) => partners.has(system.id))
-      .sort((a, b) => (order.get(a.domain) ?? 99) - (order.get(b.domain) ?? 99) || (partners.get(b.id)?.size ?? 0) - (partners.get(a.id)?.size ?? 0));
+      .sort((a, b) => rank(a.domain) - rank(b.domain) || (partners.get(b.id)?.size ?? 0) - (partners.get(a.id)?.size ?? 0));
     return { hops, partners, linked };
   }, [data, interfaces]);
   const reach = (id: string) => partners.get(id)?.size ?? 0;

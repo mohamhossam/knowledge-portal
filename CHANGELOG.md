@@ -68,6 +68,18 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Fixed
 
+- The catalogue lab reads from the version what it used to write in. The catalogue's name is the
+  version's name up to any colon (the live catalogue reads "Business Pro Plus (SDD v2.3)", the
+  sample "SMB architecture"). A plan's price gap names the product's primary source ("SDD v2.3").
+  The layers keep one order everywhere, the version's own, with the integration bus placed by a
+  named rule under the customer layer (`architecture/conventions.ts`). The map's rows follow
+  from that order and each layer's width, which replaces `DOMAIN_ORDER`, `ROWS` and the magic
+  99. On the Systems page, the integrations matrix now lists the integration layer after
+  Customer, as the map does. The journeys page opens on the deepest portfolio node every
+  product shares, not on "Fixed › SMB" by name. The order-type stages stay a business rule in
+  code, now tested.
+  - New unit tests for the lab's pure helpers (`labUtil`, `posterModel`, `journeyScope`,
+    `stages`, the name helpers). The lab test reads its counts from the fixture.
 - The catalogue lab's styles are built on the design system, in light only. Each `--cl-*`
   colour is now a semantic token (`design/tokens`). The ones it lacked are new primitive and
   semantic tokens, with no dark values yet: layer tints and inks, footprint, intensity,

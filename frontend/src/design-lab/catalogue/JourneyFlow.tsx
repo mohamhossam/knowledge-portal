@@ -15,7 +15,7 @@ import { JourneyPicker } from "./JourneyPicker";
 import { journeyHref, LAB, useLabData } from "./labData";
 import { plural, scrollBehavior, useTitle } from "./labUtil";
 import { ProductHeader } from "./productParts";
-import { channelMissingText, laneKindName, laneName, MODE_WORDS, operationName, roleName, styleName, systemName, viewTitle } from "./words";
+import { catalogueName, channelMissingText, laneKindName, laneName, MODE_WORDS, operationName, roleName, styleName, systemName, viewTitle } from "./words";
 
 import { IntegrationRegister } from "./IntegrationRegister";
 const LAYER: Record<string, string> = {
@@ -196,7 +196,7 @@ export function JourneyFlow() {
   ) : (
     <>
       <AreaTabs current="journeys" />
-      <PathBar label="Where this journey belongs" items={[{ level: "Catalogue", name: "SMB architecture", to: LAB }, { level: "Journey", name: def.name }]} />
+      <PathBar label="Where this journey belongs" items={[{ level: "Catalogue", name: catalogueName(data), to: LAB }, { level: "Journey", name: def.name }]} />
     </>
   );
   const Heading = offering ? "h2" : "h1";

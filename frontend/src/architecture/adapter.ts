@@ -192,6 +192,7 @@ function offeringOf(product: NonNullable<Release["products"]>[number], channels:
     nodeId: product.portfolio_node_id ?? null,
     name: product.name,
     shortName: product.code ?? undefined,
+    primarySource: product.primary_source ?? undefined,
     summary,
     purpose,
     values: product.values.map(point),

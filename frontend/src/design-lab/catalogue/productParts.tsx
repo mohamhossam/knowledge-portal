@@ -13,6 +13,7 @@ import { LabIcon } from "./labIcon";
 import { firstJourneyHref, LAB, useLabData } from "./labData";
 import { leadingNumber, plural } from "./labUtil";
 import { allViews } from "./posterModel";
+import { catalogueName, gapSource } from "./words";
 
 export function Missing({ what }: { what: string }) {
   return (
@@ -101,7 +102,7 @@ export function ProductHeader({ offering, current, actions, compact = false }: {
       <div className={`pd-band${compact ? " pd-band--compact" : ""}`}>
         <PathBar
           label="Where it sits in the portfolio"
-          items={[{ level: "Catalogue", name: "SMB architecture", to: LAB }, ...path.map((item) => ({ level: item.level, name: item.name, to: `${base}/hierarchy` })), { level: "Offering", name: offering.name }]}
+          items={[{ level: "Catalogue", name: catalogueName(data), to: LAB }, ...path.map((item) => ({ level: item.level, name: item.name, to: `${base}/hierarchy` })), { level: "Offering", name: offering.name }]}
         />
         <header className="pd-head">
           <span className="pd-mark" aria-hidden="true">
@@ -155,6 +156,7 @@ export function ProductHeader({ offering, current, actions, compact = false }: {
 
 /** Plans side by side, differences first; what every plan shares is said once. */
 export function Plans({ offering }: { offering: Offering }) {
+  const data = useLabData();
   const names = [...new Set(offering.plans.flatMap((plan) => plan.characteristics.map((item) => item.name)))];
   const value = (plan: Offering["plans"][number], name: string) => plan.characteristics.find((item) => item.name === name)?.value;
   const rows = names.map((name) => {
@@ -221,7 +223,7 @@ export function Plans({ offering }: { offering: Offering }) {
               <tr>
                 <th scope="row">Monthly price</th>
                 <td colSpan={offering.plans.length} className="gap">
-                  Gap: the SDD states no prices
+                  Gap: {gapSource(data, offering)} states no prices
                 </td>
               </tr>
             )}
