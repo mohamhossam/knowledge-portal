@@ -367,6 +367,11 @@
   padding-block-end: 0;
 }
 
+/* A page that draws its own edges: bands that run the main area's full width. */
+.ds-main--full-bleed {
+  padding: 0;
+}
+
 .ds-main:focus {
   outline: none;
 }

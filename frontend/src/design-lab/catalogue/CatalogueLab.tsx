@@ -34,7 +34,7 @@ import { SystemsPage } from "./SystemsPage";
 function LabShell({ children }: { children: ReactNode }) {
   // Inside the portal shell, the shell's <main> holds the page. Rendered alone (a test, a preview), the lab brings its own.
   const inShell = useContext(InShell);
-  return <div className="cl cl--embedded">{inShell ? <div className="cl-page">{children}</div> : <main className="cl-page">{children}</main>}</div>;
+  return <div className="cl">{inShell ? <div className="cl-page">{children}</div> : <main className="cl-page">{children}</main>}</div>;
 }
 
 /** An address under the lab that no page has: says so, with the lab's sections and the way back. */

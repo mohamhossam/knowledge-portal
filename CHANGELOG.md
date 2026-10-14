@@ -68,6 +68,20 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Fixed
 
+- The catalogue lab's styles are built on the design system, in light only. Each `--cl-*`
+  colour is now a semantic token (`design/tokens`). The ones it lacked are new primitive and
+  semantic tokens, with no dark values yet: layer tints and inks, footprint, intensity,
+  amounts, and quiet text on the action fill. Their contrast is checked in the token test.
+  - The brand lint no longer exempts the lab, and the lab has no raw colours left.
+  - Focus and the current system are maroon. Red marks only the traced call: its line,
+    arrowhead and number.
+  - The gradients are flat tints. Only hatching that marks a state is kept.
+  - Colour changes are instant. The motion left is opacity and transform, at 200 ms or less.
+  - Smooth scrolling respects reduced motion.
+  - The portal shell has a `fullBleed` prop, which replaces the lab's `.ds-main:has(...)`
+    override. The lab sticks under the shell's measured `--sticky-top`, not a fixed 56px.
+  - 74 duplicate rules are folded into their first rule, and the dead masthead CSS is gone.
+    Computed styles stay identical on 19 lab pages at 3 widths, apart from the changes above.
 - The catalogue lab's largest modules are split along their seams, with no change on any
   page or in the model: the journey's calls (`IntegrationRegister.tsx`, out of the 709-line
   `JourneyFlow.tsx`), the product's Components tab (`ProductComponents.tsx`) and who can buy

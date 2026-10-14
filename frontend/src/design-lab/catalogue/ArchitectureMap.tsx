@@ -436,7 +436,7 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
         {lines.map((line) => (
           <g key={line.key} className={`am-line am-line--${line.kind}`}>
             <path className="halo" d={line.d} />
-            <path className="ink" d={line.d} pathLength={1} markerEnd={line.kind === "now" ? `url(#${marker}-now)` : line.kind === "past" ? `url(#${marker}-mine)` : undefined} />
+            <path className="ink" d={line.d} markerEnd={line.kind === "now" ? `url(#${marker}-now)` : line.kind === "past" ? `url(#${marker}-mine)` : undefined} />
           </g>
         ))}
         {now && journey && (

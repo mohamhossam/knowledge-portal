@@ -13,7 +13,7 @@ import { type ActivityStep, type JourneyView, type Lane, laneKey, systemOf } fro
 import { AreaTabs, EvidenceTag, PathBar } from "./labChrome";
 import { JourneyPicker } from "./JourneyPicker";
 import { journeyHref, LAB, useLabData } from "./labData";
-import { plural, useTitle } from "./labUtil";
+import { plural, scrollBehavior, useTitle } from "./labUtil";
 import { ProductHeader } from "./productParts";
 import { channelMissingText, laneKindName, laneName, MODE_WORDS, operationName, roleName, styleName, systemName, viewTitle } from "./words";
 
@@ -155,7 +155,7 @@ export function JourneyFlow() {
   };
   const tint = (lane: Lane) => {
     const domain = laneDomain(lane);
-    return domain ? `var(--cl-${LAYER[domain.id] ?? "enterprise"}-lane)` : "var(--cl-sand)";
+    return domain ? `var(--cl-${LAYER[domain.id] ?? "enterprise"})` : "var(--cl-sand)";
   };
   const file = `${def.id}${channel ? `-${channel}` : ""}`;
   const laneY = (y: number) => Math.floor(y / GEOMETRY.laneHeight) * LANE + LANE / 2;
@@ -180,8 +180,8 @@ export function JourneyFlow() {
     if (placed && element) {
       const x = (placed.x - shift) * scale;
       const y = laneY(placed.y + placed.height / 2) * scale;
-      if (x < element.scrollLeft || x > element.scrollLeft + element.clientWidth - LABEL_W - KEEP_IN_VIEW.right) element.scrollTo?.({ left: Math.max(0, x - KEEP_IN_VIEW.lead), behavior: "smooth" });
-      if (y < element.scrollTop || y > element.scrollTop + element.clientHeight - KEEP_IN_VIEW.bottom) element.scrollTo?.({ top: Math.max(0, y - KEEP_IN_VIEW.lead), behavior: "smooth" });
+      if (x < element.scrollLeft || x > element.scrollLeft + element.clientWidth - LABEL_W - KEEP_IN_VIEW.right) element.scrollTo?.({ left: Math.max(0, x - KEEP_IN_VIEW.lead), behavior: scrollBehavior() });
+      if (y < element.scrollTop || y > element.scrollTop + element.clientHeight - KEEP_IN_VIEW.bottom) element.scrollTo?.({ top: Math.max(0, y - KEEP_IN_VIEW.lead), behavior: scrollBehavior() });
     }
   };
   const keyDown = (id: string) => (event: KeyboardEvent<SVGGElement>) => {
