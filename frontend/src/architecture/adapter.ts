@@ -11,9 +11,10 @@ import type { Release } from "../api/client";
 import { BAND_DOMAINS, parseDrop, parseProposition, parseQuestion } from "./conventions";
 import {
   type Activity,
-  type ActivityStep,
   type ActivityCall,
+  type ActivityStep,
   type Catalogue,
+  type Channel,
   type Evidence,
   type Finding,
   type FlowEdge,
@@ -121,8 +122,11 @@ function journeyOf(journey: ApiJourney, channels: string[], evidence: (item: { c
   };
 }
 
-export function fromRelease(release: Release): Catalogue {
-  const sources: Source[] = (release.sources ?? []).map((item) => ({
+type EvidenceOf = (item: { confidence?: string | null; source?: string | null }) => Evidence;
+
+/** The version's sources, which every fact's evidence names. */
+function sourcesOf(release: Release): Source[] {
+  return (release.sources ?? []).map((item) => ({
     id: item.id,
     title: item.title,
     short: item.short ?? item.id,
@@ -132,26 +136,31 @@ export function fromRelease(release: Release): Catalogue {
     file: item.file ?? undefined,
     scope: item.scope ?? undefined,
   }));
-  const evidence = (item: { confidence?: string | null; source?: string | null }) => parseEvidence(item.confidence, item.source, sources);
+}
 
-  const landscape = release.landscape_domains ?? [];
+/** The TAM domains, each with its groups, and whether it is a cross-cutting band. */
+function domainsOf(landscape: NonNullable<Release["landscape_domains"]>): Catalogue["domains"] {
   const tops = landscape.filter((item) => !item.parent_id);
   // A version saved before the service marked cross-cutting domains marks none: then they are known by id.
   const marked = landscape.some((item) => item.cross_cutting);
-  const domains = tops.map((top) => ({
+  return tops.map((top) => ({
     id: top.id,
     name: top.name,
     scope: top.description ?? "",
     groups: landscape.filter((item) => item.parent_id === top.id).map((item) => ({ id: item.id, name: item.name })),
     band: marked ? top.cross_cutting : BAND_DOMAINS.includes(top.id),
   }));
+}
+
+/** The systems, each placed in its domain and group. */
+function systemsOf(release: Release, evidence: EvidenceOf): Catalogue["systems"] {
+  const landscape = release.landscape_domains ?? [];
   const place = (id: string | null | undefined) => {
     const node = landscape.find((item) => item.id === id);
     if (!node) return { domain: "", group: "" };
     return node.parent_id ? { domain: node.parent_id, group: node.id } : { domain: node.id, group: "" };
   };
-
-  const systems = release.systems.map((system) => ({
+  return release.systems.map((system) => ({
     id: system.id,
     name: system.name,
     aliases: system.aliases,
@@ -163,78 +172,89 @@ export function fromRelease(release: Release): Catalogue {
     evidence: evidence(system),
     ...(system.placement_from && system.placement_reason ? { proposedMove: { from: system.placement_from, reason: system.placement_reason } } : {}),
   }));
+}
 
-  const channels = (release.channels ?? []).map((channel) => ({ id: channel.id, name: channel.name, systemId: channel.entry_system_id ?? "", kind: channel.kind ?? "" }));
+function channelsOf(release: Release): Channel[] {
+  return (release.channels ?? []).map((channel) => ({ id: channel.id, name: channel.name, systemId: channel.entry_system_id ?? "", kind: channel.kind ?? "" }));
+}
 
-  const products = release.products ?? [];
-  const offerings: Offering[] = products.map((product) => {
-    const { summary, purpose } = parseProposition(product.proposition);
-    const point = (item: { name: string; description?: string | null; confidence?: string | null; source?: string | null }): Point => ({
-      title: item.name,
-      detail: item.description ?? "",
-      evidence: evidence(item),
-    });
-    const tracking = product.tracking;
-    return {
-      id: product.id,
-      nodeId: product.portfolio_node_id ?? null,
-      name: product.name,
-      shortName: product.code ?? undefined,
-      summary,
-      purpose,
-      values: product.values.map(point),
-      eligibility: product.audiences.map(point),
-      plans: product.plans.map((plan) => ({ name: plan.name, characteristics: plan.characteristics, evidence: evidence(plan) })),
-      rules: product.business_rules.map((rule) => ({ id: rule.id, kind: rule.kind ?? undefined, statement: rule.statement, evidence: evidence(rule) })),
-      components: product.components.map((part) => ({
-        id: part.id,
-        name: part.name,
-        offerCode: part.code ?? undefined,
-        specCode: part.technical_spec ?? undefined,
-        mandatory: part.mandatory ?? null,
-        description: part.description ?? "",
-        systems: part.responsibilities.map((duty) => ({ systemId: duty.system_id, responsibility: duty.description })),
-        evidence: evidence(part),
-      })),
-      orderTypes: product.order_types.map((type) => {
-        const { drop, note } = delivery(type);
-        return {
-          code: type.code,
-          name: type.name,
-          channels: type.channels,
-          priority: drop,
-          note: note || undefined,
-          evidence: evidence(type),
-        };
-      }),
-      tracking: tracking
-        ? {
-            summary: tracking.scope_note ?? "",
-            milestones: tracking.milestones.map((item) => ({ name: item.label, producer: item.system_id ?? null, detail: item.detail ?? "", evidence: evidence(item) })),
-            correlation: tracking.channels.map((item) => ({
-              title: channels.find((channel) => channel.id === item.channel_id)?.name ?? item.channel_id,
-              detail: [item.correlation_key, item.read_interface ? `read with ${item.read_interface}` : null].filter(Boolean).join("; "),
-              evidence: evidence(item),
-            })),
-            knownIssues: tracking.fallout.map((item) => ({ title: item.trigger, detail: item.handling ?? "", evidence: evidence(item) })),
-          }
-        : null,
-      evidence: evidence(product),
-    };
+/** One product as an offering: its proposition, plans, rules, parts, order types and tracking. */
+function offeringOf(product: NonNullable<Release["products"]>[number], channels: Channel[], evidence: EvidenceOf): Offering {
+  const { summary, purpose } = parseProposition(product.proposition);
+  const point = (item: { name: string; description?: string | null; confidence?: string | null; source?: string | null }): Point => ({
+    title: item.name,
+    detail: item.description ?? "",
+    evidence: evidence(item),
   });
+  const tracking = product.tracking;
+  return {
+    id: product.id,
+    nodeId: product.portfolio_node_id ?? null,
+    name: product.name,
+    shortName: product.code ?? undefined,
+    summary,
+    purpose,
+    values: product.values.map(point),
+    eligibility: product.audiences.map(point),
+    plans: product.plans.map((plan) => ({ name: plan.name, characteristics: plan.characteristics, evidence: evidence(plan) })),
+    rules: product.business_rules.map((rule) => ({ id: rule.id, kind: rule.kind ?? undefined, statement: rule.statement, evidence: evidence(rule) })),
+    components: product.components.map((part) => ({
+      id: part.id,
+      name: part.name,
+      offerCode: part.code ?? undefined,
+      specCode: part.technical_spec ?? undefined,
+      mandatory: part.mandatory ?? null,
+      description: part.description ?? "",
+      systems: part.responsibilities.map((duty) => ({ systemId: duty.system_id, responsibility: duty.description })),
+      evidence: evidence(part),
+    })),
+    orderTypes: product.order_types.map((type) => {
+      const { drop, note } = delivery(type);
+      return {
+        code: type.code,
+        name: type.name,
+        channels: type.channels,
+        priority: drop,
+        note: note || undefined,
+        evidence: evidence(type),
+      };
+    }),
+    tracking: tracking
+      ? {
+          summary: tracking.scope_note ?? "",
+          milestones: tracking.milestones.map((item) => ({ name: item.label, producer: item.system_id ?? null, detail: item.detail ?? "", evidence: evidence(item) })),
+          correlation: tracking.channels.map((item) => ({
+            title: channels.find((channel) => channel.id === item.channel_id)?.name ?? item.channel_id,
+            detail: [item.correlation_key, item.read_interface ? `read with ${item.read_interface}` : null].filter(Boolean).join("; "),
+            evidence: evidence(item),
+          })),
+          knownIssues: tracking.fallout.map((item) => ({ title: item.trigger, detail: item.handling ?? "", evidence: evidence(item) })),
+        }
+      : null,
+    evidence: evidence(product),
+  };
+}
 
-  const orderTypes = products
+/** Every order type the products name, once each. */
+function orderTypesOf(products: NonNullable<Release["products"]>): Catalogue["orderTypes"] {
+  return products
     .flatMap((product) => product.order_types)
     .filter((type, index, all) => all.findIndex((other) => other.code === type.code) === index)
     .map((type) => ({ code: type.code, name: type.name, description: delivery(type).note }));
+}
 
-  const journeys: Journey[] = (release.journeys ?? []).map((journey) => {
+/** The journeys, each seen through the channels its order type is sold through. */
+function journeysOf(release: Release, offerings: Offering[], evidence: EvidenceOf): Journey[] {
+  return (release.journeys ?? []).map((journey) => {
     const offering = offerings.find((item) => item.id === journey.product_id);
     const support = offering?.orderTypes.find((type) => type.code === journey.order_type_code);
     return journeyOf(journey, support?.channels ?? [], evidence);
   });
+}
 
-  const findings: Finding[] = [
+/** What to look into: conflicts between sources, and the products' open questions. */
+function findingsOf(release: Release, products: NonNullable<Release["products"]>, evidence: EvidenceOf): Finding[] {
+  return [
     ...(release.conflicts ?? []).map((conflict) => ({
       id: conflict.id,
       kind: "conflict" as const,
@@ -253,21 +273,33 @@ export function fromRelease(release: Release): Catalogue {
       }),
     ),
   ];
+}
 
+function portfolioOf(release: Release): Catalogue["portfolio"] {
+  return (release.portfolio ?? []).map((node) => ({ id: node.id, level: node.level, name: node.name, parentId: node.parent_id ?? null, description: node.description ?? undefined }));
+}
+
+/** A catalogue version as the lab reads it, mapped once from the API's release. */
+export function fromRelease(release: Release): Catalogue {
+  const sources = sourcesOf(release);
+  const evidence: EvidenceOf = (item) => parseEvidence(item.confidence, item.source, sources);
+  const channels = channelsOf(release);
+  const products = release.products ?? [];
+  const offerings = products.map((product) => offeringOf(product, channels, evidence));
   return {
     releaseId: release.id,
     revision: release.revision,
     status: release.status,
     name: release.name ?? release.id,
     sources,
-    domains,
-    systems,
-    portfolio: (release.portfolio ?? []).map((node) => ({ id: node.id, level: node.level, name: node.name, parentId: node.parent_id ?? null, description: node.description ?? undefined })),
+    domains: domainsOf(release.landscape_domains ?? []),
+    systems: systemsOf(release, evidence),
+    portfolio: portfolioOf(release),
     channels,
-    orderTypes,
+    orderTypes: orderTypesOf(products),
     offerings,
-    journeys,
-    findings,
+    journeys: journeysOf(release, offerings, evidence),
+    findings: findingsOf(release, products, evidence),
     roleTerms: roleTerms(release),
     channelKindTerms: channelKindTerms(release),
   };
@@ -288,22 +320,13 @@ function inView(activity: Activity, channel: string | null): boolean {
  * one: the one asked for, or else its first, and then `channelMissing` names the one asked for.
  * A shared journey (no channels of its own) is the same through every channel.
  */
-export function journeyView(data: Catalogue, journeyId: string, channel: string | null): JourneyView | null {
-  const journey = data.journeys.find((item) => item.id === journeyId);
-  if (!journey) return null;
-  const { id, offeringId, orderType, name, summary, channels, activities: every, calls } = journey;
-  const def = { id, offeringId, orderType, name, summary, channels };
-  const chosen = channel && def.channels.includes(channel) ? channel : (def.channels[0] ?? null);
-  const missing = channel && def.channels.length > 0 && !def.channels.includes(channel) ? channel : undefined;
-  const entry = data.channels.find((item) => item.id === chosen)?.systemId || undefined;
-  const all = new Map(every.map((item) => [item.number, item]));
-  const laneOf = (activity: Activity | undefined): Lane => {
-    const who: Performer = activity?.performer ?? { kind: "channel" };
-    if (who.kind !== "entry") return who;
-    return entry ? { kind: "system", systemId: entry } : { kind: "channel" };
-  };
-  const activities = every.filter((item) => inView(item, chosen));
-  const edges = edgesFor(journey, chosen);
+/**
+ * A view's BPMN steps from its activities and flow: a task per activity; a joining gateway where
+ * several parallel tracks rejoin; a decision gateway where a step branches; a split where tracks
+ * start; a start event before the first step nothing leads to, and an end after each that leads
+ * nowhere.
+ */
+function stepsOf(activities: Activity[], edges: FlowEdge[], laneOf: (activity: Activity | undefined) => Lane): Step[] {
   const out = (number: string) => edges.filter((edge) => edge.from === number);
   const into = (number: string) => edges.filter((edge) => edge.to === number);
   const inferred: Evidence = { status: "inferred" };
@@ -378,9 +401,13 @@ export function journeyView(data: Catalogue, journeyId: string, channel: string 
       step.next.push({ to: end.id });
     }
   }
+  return steps;
+}
 
+/** The calls the view's steps make, each from and to a lane (or a system the source names). */
+function callsInView(calls: Journey["calls"], activities: Activity[], all: Map<string, Activity>, laneOf: (activity: Activity | undefined) => Lane): Integration[] {
   const present = new Set(activities.map((item) => item.number));
-  const integrations: Integration[] = calls
+  return calls
     .filter((call) => present.has(call.fromActivity))
     .map(({ fromActivity, toActivity, fromSystem, toSystem, ...call }) => ({
       ...call,
@@ -388,6 +415,26 @@ export function journeyView(data: Catalogue, journeyId: string, channel: string 
       from: fromSystem !== undefined ? { kind: "system", systemId: fromSystem } : laneOf(all.get(fromActivity)),
       to: toSystem !== undefined ? { kind: "system", systemId: toSystem } : laneOf(all.get(toActivity !== fromActivity ? toActivity : fromActivity)),
     }));
+}
+
+export function journeyView(data: Catalogue, journeyId: string, channel: string | null): JourneyView | null {
+  const journey = data.journeys.find((item) => item.id === journeyId);
+  if (!journey) return null;
+  const { id, offeringId, orderType, name, summary, channels, activities: every, calls } = journey;
+  const def = { id, offeringId, orderType, name, summary, channels };
+  const chosen = channel && def.channels.includes(channel) ? channel : (def.channels[0] ?? null);
+  const missing = channel && def.channels.length > 0 && !def.channels.includes(channel) ? channel : undefined;
+  const entry = data.channels.find((item) => item.id === chosen)?.systemId || undefined;
+  const all = new Map(every.map((item) => [item.number, item]));
+  const laneOf = (activity: Activity | undefined): Lane => {
+    const who: Performer = activity?.performer ?? { kind: "channel" };
+    if (who.kind !== "entry") return who;
+    return entry ? { kind: "system", systemId: entry } : { kind: "channel" };
+  };
+  const activities = every.filter((item) => inView(item, chosen));
+  const edges = edgesFor(journey, chosen);
+  const steps = stepsOf(activities, edges, laneOf);
+  const integrations = callsInView(calls, activities, all, laneOf);
 
   return {
     ...def,

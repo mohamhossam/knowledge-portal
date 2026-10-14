@@ -6,12 +6,12 @@
  * layer. "One journey at a time" lights a single journey and steps through its
  * calls in order.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { journeyView } from "../../architecture/adapter";
 import { impactOf } from "../../architecture/impact";
-import { type Integration, type Lane, systemOf } from "../../architecture/model";
+import { type Integration, type JourneyDef, type Lane, type Offering, systemOf } from "../../architecture/model";
 import { ArchitectureMap, type Foot } from "./ArchitectureMap";
 import { EvidenceTag } from "./labChrome";
 import { JourneyPicker } from "./JourneyPicker";
@@ -26,16 +26,58 @@ import { useSystemParam } from "./systemHooks";
 /** The systems a call reaches: its ends that are systems, and the integration layer it goes through. */
 const systemsOf = (call: Integration) => [systemOf(call.from), systemOf(call.to), call.via];
 
+/** How the product's architecture is shown; the switch between them sits in either view's toolbar. */
+type Mode = "product" | "journey";
+
+/** The switch between the whole product and one journey at a time. */
+function ModeSwitch({ mode, onChange }: { mode: Mode; onChange: (mode: Mode) => void }) {
+  return (
+    <div className="cl-seg" role="group" aria-label="What to show">
+      <button type="button" aria-pressed={mode === "product"} onClick={() => onChange("product")}>
+        Whole product
+      </button>
+      <button type="button" aria-pressed={mode === "journey"} onClick={() => onChange("journey")}>
+        One journey at a time
+      </button>
+    </div>
+  );
+}
+
+/** Changes some of the address's parameters, keeping the rest: a null removes one. */
+function useParamSetter() {
+  const [params, setParams] = useSearchParams();
+  return (changes: Record<string, string | null>) => {
+    const next = new URLSearchParams(params);
+    for (const [key, value] of Object.entries(changes)) {
+      if (value) next.set(key, value);
+      else next.delete(key);
+    }
+    setParams(next, { replace: true });
+  };
+}
+
 export function ProductArchitecture() {
   const data = useLabData();
   const offering = useOffering();
   useTitle(offering ? `${offering.name} architecture` : "Architecture");
-  const [params, setParams] = useSearchParams();
-  const mode = params.get("view") === "journey" ? "journey" : "product";
+  const [params] = useSearchParams();
+  const setParam = useParamSetter();
+  const mode: Mode = params.get("view") === "journey" ? "journey" : "product";
   const journeys = useMemo(() => data.journeys.filter((journey) => journey.offeringId === offering?.id), [data, offering]);
-  const systemById = useMemo(() => new Map(data.systems.map((system) => [system.id, system])), [data]);
+  if (!offering) return <Missing what="No such product" />;
+  if (!journeys.length) return <Missing what="No journey is modelled for this product yet" />;
+  const switcher = <ModeSwitch mode={mode} onChange={(next) => setParam({ view: next === "journey" ? "journey" : null })} />;
+  return mode === "product" ? <ProductMap offering={offering} journeys={journeys} switcher={switcher} /> : <ProductJourneyMap offering={offering} journeys={journeys} switcher={switcher} />;
+}
 
-  // The whole product: which journeys reach each system, its roles, and its tier.
+/**
+ * The whole product: which journeys reach each system, its roles, and its tier (core to
+ * most journeys, used by some, carrying calls only), with a dot meter per layer.
+ */
+function ProductMap({ offering, journeys, switcher }: { offering: Offering; journeys: JourneyDef[]; switcher: ReactNode }) {
+  const data = useLabData();
+  const name = (end?: Lane | string) => (end === undefined ? "" : typeof end === "string" ? systemName(data, end) : laneName(data, end));
+  const systemById = useMemo(() => new Map(data.systems.map((system) => [system.id, system])), [data]);
   const views = useMemo(() => allViews(data).filter((view) => view.offeringId === offering?.id), [data, offering]);
   const impact = useMemo(() => (offering ? impactOf(data, { offeringId: offering.id }) : null), [data, offering]);
   const footprint = useMemo(() => {
@@ -53,7 +95,167 @@ export function ProductArchitecture() {
   // one picked elsewhere (the landscape's "Used by products") arrives with it, and a reload keeps it.
   const [picked, setPicked] = useSystemParam();
 
-  // One journey: the journey, its channel, its calls and the current one.
+  const layers = data.domains
+    .map((domain) => {
+      const all = data.systems.filter((system) => system.domain === domain.id);
+      return { domain, all, used: all.filter((system) => footprint.has(system.id)) };
+    })
+    .filter((row) => row.all.length);
+  const tiers = { core: 0, used: 0, carries: 0 };
+  for (const foot of footprint.values()) tiers[foot.tier] += 1;
+  const coreSystems = [...footprint.entries()].filter(([, foot]) => foot.tier === "core").sort((a, b) => b[1].journeys - a[1].journeys);
+  const pickedSystem = picked ? systemById.get(picked) : undefined;
+  const pickedFoot = picked ? footprint.get(picked) : undefined;
+  const pickedJourneys = picked ? journeys.filter((journey) => views.some((item) => item.id === journey.id && (item.steps.some((step) => systemOf(step.lane) === picked) || item.integrations.some((call) => systemsOf(call).includes(picked))))) : [];
+
+  return (
+    <>
+      <ProductHeader offering={offering} current="architecture" compact />
+      <div className="cl-toolbar">
+        {switcher}
+        <div className="cl-legend" role="group" aria-label="Legend">
+          <span>
+            <i className="tier core" />
+            Core: in half the journeys or more
+          </span>
+          <span>
+            <i className="tier used" />
+            Used by some
+          </span>
+          <span>
+            <i className="tier carries" />
+            Carries calls only
+          </span>
+          <span>
+            <i className="tier none" />
+            Not used
+          </span>
+        </div>
+      </div>
+      <dl className="cl-impact" aria-label={`${offering.name}'s footprint`}>
+        <div>
+          <dt>Systems reached</dt>
+          <dd>
+            {footprint.size}
+            <small> of {data.systems.length}</small>
+          </dd>
+        </div>
+        <div>
+          <dt>Core systems</dt>
+          <dd>{tiers.core}</dd>
+        </div>
+        <div>
+          <dt>Layers touched</dt>
+          <dd>
+            {layers.filter((row) => row.used.length).length}
+            <small> of {layers.length}</small>
+          </dd>
+        </div>
+        <div>
+          <dt>Journeys drawn from</dt>
+          <dd>{journeys.length}</dd>
+        </div>
+      </dl>
+      <div className="cl-board">
+        <div className="cl-board-main">
+          <ArchitectureMap data={data} label={`${offering.name} on the SMB architecture map`} linkCounts={productLinks} selected={picked} onSelect={setPicked} footprint={footprint} />
+        </div>
+        <aside className="cl-insp" aria-labelledby="cl-foot-h">
+          <p className="ds-visually-hidden" aria-live="polite">
+            {pickedSystem ? `${pickedSystem.name} selected.` : ""}
+          </p>
+          {pickedSystem ? (
+            <>
+              <div className="cl-insp-head">
+                <h2 id="cl-foot-h" translate="no">
+                  {pickedSystem.name}
+                </h2>
+                <button type="button" className="cl-close" onClick={() => setPicked(null)} aria-label={`Clear the selection of ${pickedSystem.name}`}>
+                  Clear
+                </button>
+              </div>
+              <p className="cl-sub">
+                {pickedFoot
+                  ? `${pickedFoot.tier === "core" ? "Core to" : pickedFoot.tier === "carries" ? "Carries calls for" : "Used by"} ${offering.name}: ${plural(pickedFoot.journeys, "journey")} of ${journeys.length}.`
+                  : `Not used by ${offering.name}.`}
+              </p>
+              <p className="cl-body">{pickedSystem.function || "Its sources don't describe what it does."}</p>
+              <EvidenceTag evidence={pickedSystem.evidence} />
+              {pickedFoot && pickedFoot.roles.length > 0 && (
+                <>
+                  <h3>What it does for the product</h3>
+                  <ul className="cl-roles">
+                    {pickedFoot.roles.map((role) => (
+                      <li key={role} className="cl-role">
+                        {roleName(data, role)}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+              {pickedJourneys.length > 0 && (
+                <>
+                  <h3>Journeys that reach it</h3>
+                  <ul className="cl-linklist">
+                    {pickedJourneys.map((journey) => (
+                      <li key={journey.id}>
+                        <Link to={`?view=journey&journey=${journey.id}${journey.channels[0] ? `&channel=${journey.channels[0]}` : ""}`}>{journey.name}</Link>
+                        <span>{journey.channels.length ? plural(journey.channels.length, "channel") : "Shared"}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              <h2 id="cl-foot-h">Footprint by layer</h2>
+              <p className="cl-body">Every system {offering.name}'s journeys reach. Pick one to see its role and the journeys behind it.</p>
+              <ul className="cl-footlayers">
+                {layers.map(({ domain, all, used }) => (
+                  <li key={domain.id} className={`cl-linked--${domain.id}`}>
+                    <span>{domain.name}</span>
+                    <span className="am-meter" aria-label={`${used.length} of ${all.length} used`}>
+                      <span aria-hidden="true">
+                        {all.map((system) => (
+                          <i key={system.id} className={footprint.has(system.id) ? "on" : undefined} />
+                        ))}
+                      </span>
+                      <b>
+                        {used.length}/{all.length}
+                      </b>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <h3>Core systems</h3>
+              <ul className="cl-core">
+                {coreSystems.map(([id, foot]) => (
+                  <li key={id}>
+                    <button type="button" onClick={() => setPicked(id)}>
+                      <strong translate="no">{name(id)}</strong>
+                      <span>{foot.roles.length ? foot.roles.slice(0, 2).map((role) => roleName(data, role)).join(" · ") : "Carries calls"}</span>
+                      <small>
+                        {foot.journeys}/{journeys.length}
+                      </small>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </aside>
+      </div>
+    </>
+  );
+}
+
+/** One journey at a time: the journey lit on the map, its calls stepped through in order. */
+function ProductJourneyMap({ offering, journeys, switcher }: { offering: Offering; journeys: JourneyDef[]; switcher: ReactNode }) {
+  const data = useLabData();
+  const [params] = useSearchParams();
+  const setParam = useParamSetter();
+  const systemById = useMemo(() => new Map(data.systems.map((system) => [system.id, system])), [data]);
   const def = journeys.find((journey) => journey.id === params.get("journey")) ?? journeys[0];
   const wanted = params.get("channel");
   // The channel asked for, or the journey's first when it isn't offered through that one (the view says so).
@@ -81,7 +283,6 @@ export function ProductArchitecture() {
 
   // ← / → step through the calls when focus isn't in a field or on the map.
   useEffect(() => {
-    if (mode !== "journey") return;
     const onKey = (event: globalThis.KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       if (event.altKey || event.ctrlKey || event.metaKey || target?.closest("input, textarea, select, .am")) return;
@@ -90,7 +291,7 @@ export function ProductArchitecture() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [mode, calls.length, scopeKey]);
+  }, [calls.length, scopeKey]);
 
   const list = useRef<HTMLOListElement>(null);
   // Keep the current call in view inside the aside only; never scroll the page.
@@ -102,185 +303,9 @@ export function ProductArchitecture() {
     if (top < pane.scrollTop + 40 || top + item.offsetHeight > pane.scrollTop + pane.clientHeight - 16) pane.scrollTop = Math.max(0, top - pane.clientHeight / 2);
   }, [current, scopeKey]);
 
-  if (!offering) return <Missing what="No such product" />;
   if (!def || !view) return <Missing what="No journey is modelled for this product yet" />;
-
-  const setParam = (changes: Record<string, string | null>) => {
-    const next = new URLSearchParams(params);
-    for (const [key, value] of Object.entries(changes)) {
-      if (value) next.set(key, value);
-      else next.delete(key);
-    }
-    setParams(next, { replace: true });
-  };
   const name = (end?: Lane | string) => (end === undefined ? "" : typeof end === "string" ? systemName(data, end) : laneName(data, end));
   const channelName = (id: string) => data.channels.find((item) => item.id === id)?.name ?? id;
-  const layers = data.domains
-    .map((domain) => {
-      const all = data.systems.filter((system) => system.domain === domain.id);
-      return { domain, all, used: all.filter((system) => footprint.has(system.id)) };
-    })
-    .filter((row) => row.all.length);
-  const tiers = { core: 0, used: 0, carries: 0 };
-  for (const foot of footprint.values()) tiers[foot.tier] += 1;
-  const coreSystems = [...footprint.entries()].filter(([, foot]) => foot.tier === "core").sort((a, b) => b[1].journeys - a[1].journeys);
-  const pickedSystem = picked ? systemById.get(picked) : undefined;
-  const pickedFoot = picked ? footprint.get(picked) : undefined;
-  const pickedJourneys = picked ? journeys.filter((journey) => views.some((item) => item.id === journey.id && (item.steps.some((step) => systemOf(step.lane) === picked) || item.integrations.some((call) => systemsOf(call).includes(picked))))) : [];
-
-  const switcher = (
-    <div className="cl-seg" role="group" aria-label="What to show">
-      <button type="button" aria-pressed={mode === "product"} onClick={() => setParam({ view: null })}>
-        Whole product
-      </button>
-      <button type="button" aria-pressed={mode === "journey"} onClick={() => setParam({ view: "journey" })}>
-        One journey at a time
-      </button>
-    </div>
-  );
-
-  if (mode === "product") {
-    return (
-      <>
-        <ProductHeader offering={offering} current="architecture" compact />
-        <div className="cl-toolbar">
-          {switcher}
-          <div className="cl-legend" role="group" aria-label="Legend">
-            <span>
-              <i className="tier core" />
-              Core: in half the journeys or more
-            </span>
-            <span>
-              <i className="tier used" />
-              Used by some
-            </span>
-            <span>
-              <i className="tier carries" />
-              Carries calls only
-            </span>
-            <span>
-              <i className="tier none" />
-              Not used
-            </span>
-          </div>
-        </div>
-        <dl className="cl-impact" aria-label={`${offering.name}'s footprint`}>
-          <div>
-            <dt>Systems reached</dt>
-            <dd>
-              {footprint.size}
-              <small> of {data.systems.length}</small>
-            </dd>
-          </div>
-          <div>
-            <dt>Core systems</dt>
-            <dd>{tiers.core}</dd>
-          </div>
-          <div>
-            <dt>Layers touched</dt>
-            <dd>
-              {layers.filter((row) => row.used.length).length}
-              <small> of {layers.length}</small>
-            </dd>
-          </div>
-          <div>
-            <dt>Journeys drawn from</dt>
-            <dd>{journeys.length}</dd>
-          </div>
-        </dl>
-        <div className="cl-board">
-          <div className="cl-board-main">
-            <ArchitectureMap data={data} label={`${offering.name} on the SMB architecture map`} linkCounts={productLinks} selected={picked} onSelect={setPicked} footprint={footprint} />
-          </div>
-          <aside className="cl-insp" aria-labelledby="cl-foot-h">
-            <p className="ds-visually-hidden" aria-live="polite">
-              {pickedSystem ? `${pickedSystem.name} selected.` : ""}
-            </p>
-            {pickedSystem ? (
-              <>
-                <div className="cl-insp-head">
-                  <h2 id="cl-foot-h" translate="no">
-                    {pickedSystem.name}
-                  </h2>
-                  <button type="button" className="cl-close" onClick={() => setPicked(null)} aria-label={`Clear the selection of ${pickedSystem.name}`}>
-                    Clear
-                  </button>
-                </div>
-                <p className="cl-sub">
-                  {pickedFoot
-                    ? `${pickedFoot.tier === "core" ? "Core to" : pickedFoot.tier === "carries" ? "Carries calls for" : "Used by"} ${offering.name}: ${plural(pickedFoot.journeys, "journey")} of ${journeys.length}.`
-                    : `Not used by ${offering.name}.`}
-                </p>
-                <p className="cl-body">{pickedSystem.function || "Its sources don't describe what it does."}</p>
-                <EvidenceTag evidence={pickedSystem.evidence} />
-                {pickedFoot && pickedFoot.roles.length > 0 && (
-                  <>
-                    <h3>What it does for the product</h3>
-                    <ul className="cl-roles">
-                      {pickedFoot.roles.map((role) => (
-                        <li key={role} className="cl-role">
-                          {roleName(data, role)}
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                )}
-                {pickedJourneys.length > 0 && (
-                  <>
-                    <h3>Journeys that reach it</h3>
-                    <ul className="cl-linklist">
-                      {pickedJourneys.map((journey) => (
-                        <li key={journey.id}>
-                          <Link to={`?view=journey&journey=${journey.id}${journey.channels[0] ? `&channel=${journey.channels[0]}` : ""}`}>{journey.name}</Link>
-                          <span>{journey.channels.length ? plural(journey.channels.length, "channel") : "Shared"}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                )}
-              </>
-            ) : (
-              <>
-                <h2 id="cl-foot-h">Footprint by layer</h2>
-                <p className="cl-body">Every system {offering.name}'s journeys reach. Pick one to see its role and the journeys behind it.</p>
-                <ul className="cl-footlayers">
-                  {layers.map(({ domain, all, used }) => (
-                    <li key={domain.id} className={`cl-linked--${domain.id}`}>
-                      <span>{domain.name}</span>
-                      <span className="am-meter" aria-label={`${used.length} of ${all.length} used`}>
-                        <span aria-hidden="true">
-                          {all.map((system) => (
-                            <i key={system.id} className={footprint.has(system.id) ? "on" : undefined} />
-                          ))}
-                        </span>
-                        <b>
-                          {used.length}/{all.length}
-                        </b>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <h3>Core systems</h3>
-                <ul className="cl-core">
-                  {coreSystems.map(([id, foot]) => (
-                    <li key={id}>
-                      <button type="button" onClick={() => setPicked(id)}>
-                        <strong translate="no">{name(id)}</strong>
-                        <span>{foot.roles.length ? foot.roles.slice(0, 2).map((role) => roleName(data, role)).join(" · ") : "Carries calls"}</span>
-                        <small>
-                          {foot.journeys}/{journeys.length}
-                        </small>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </aside>
-        </div>
-      </>
-    );
-  }
 
   const call = calls[current];
   const step = call ? view.steps.find((item) => item.id === call.step) : undefined;

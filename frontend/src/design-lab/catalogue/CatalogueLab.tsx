@@ -23,7 +23,8 @@ import { useTitle } from "./labUtil";
 import { LandscapeHero } from "./LandscapeHero";
 import { ProductArchitecture } from "./ProductArchitecture";
 import { ProductOverview } from "./ProductPage";
-import { ProductComponents, ProductHierarchy, ProductPlans, ProductRules } from "./ProductTabs";
+import { ProductComponents } from "./ProductComponents";
+import { ProductHierarchy, ProductPlans, ProductRules } from "./ProductTabs";
 import { SystemsPage } from "./SystemsPage";
 
 /**

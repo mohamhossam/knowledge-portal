@@ -24,19 +24,18 @@ import type { ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { journeyView } from "../../architecture/adapter";
-import { type Catalogue, type JourneyView, type Lane, laneKey, type Offering, type PortfolioNode, systemOf } from "../../architecture/model";
+import { type Catalogue, type JourneyView, type Lane, laneKey, systemOf } from "../../architecture/model";
 import { AreaTabs } from "./labChrome";
 import { LabIcon } from "./labIcon";
 import { channelKindName } from "./catalogueRules";
 import { journeyHref, LAB, useLabData } from "./labData";
-import { pathTo, plural, useDismissableDetails, useTitle } from "./labUtil";
+import { pathTo, plural, useTitle } from "./labUtil";
 import { STAGES, stageOfCode } from "./stages";
 import { laneName } from "./words";
 import { SystemMonogram } from "./SystemMonogram";
 
-/** The portfolio path the page opens on, by name from the top: Fixed, then SMB. */
-const DEFAULT_SCOPE = ["Fixed", "SMB"];
-
+import { ScopeMenu } from "./JourneyFilters";
+import { defaultScope } from "./journeyScope";
 const STAGE_ICONS: Record<string, ReactNode> = {
   join: <path d="M8 3v10M3 8h10" />,
   change: <path d="M3 5.5h9l-2.5-2.5M13 10.5H4l2.5 2.5" />,
@@ -50,60 +49,6 @@ const STAGE_ICONS: Record<string, ReactNode> = {
   leave: <path d="M9.5 3h3.5v10H9.5M3 8h7M7.5 5.5 10 8l-2.5 2.5" />,
   across: <path d="M2 8h12M5 5 2 8l3 3M11 5l3 3-3 3" />,
 };
-
-/**
- * The scope the page opens on: DEFAULT_SCOPE by name (the first name anywhere,
- * each next one among the previous one's children), then down through the
- * first child that holds a product, so every level opens with a choice.
- */
-function defaultScope(nodes: PortfolioNode[], offerings: Offering[]): string | null {
-  const holdsProduct = (node: PortfolioNode) => offerings.some((offering) => pathTo(nodes, offering.nodeId).some((item) => item.id === node.id));
-  let node: PortfolioNode | undefined;
-  for (const name of DEFAULT_SCOPE) {
-    const found: PortfolioNode | undefined = nodes.find((item) => item.name === name && (!node || item.parentId === node.id));
-    if (!found) break;
-    node = found;
-  }
-  for (let next = node && nodes.find((item) => item.parentId === node?.id && holdsProduct(item)); next; next = nodes.find((item) => item.parentId === node?.id && holdsProduct(item))) node = next;
-  return node?.id ?? null;
-}
-
-/** One level's menu in the scope bar: a chip naming its kind and the choice, "Any …" first unless the level must name one. */
-function ScopeMenu({ level, value, options, onPick, allowAny = true }: { level: string; value: string | null; options: { id: string; name: string }[]; onPick: (id: string | null) => void; allowAny?: boolean }) {
-  const { ref: menu, close, onKeyDown } = useDismissableDetails();
-  const pick = (id: string | null) => {
-    close();
-    onPick(id);
-  };
-  const chosen = options.find((option) => option.id === value);
-  const any = `Any ${level.toLowerCase()}`;
-  return (
-    <li className="jx-scope-level">
-      <details ref={menu} className="jx-scope-menu" onKeyDown={onKeyDown}>
-        <summary aria-label={`${level}: ${chosen?.name ?? any}. Change`}>
-          <small aria-hidden="true">{level}</small>
-          <span className={chosen ? undefined : "is-any"}>{chosen?.name ?? any}</span>
-        </summary>
-        <ul>
-          {allowAny && (
-            <li>
-              <button type="button" aria-current={value === null ? "true" : undefined} onClick={() => pick(null)}>
-                {any}
-              </button>
-            </li>
-          )}
-          {options.map((option) => (
-            <li key={option.id}>
-              <button type="button" aria-current={option.id === value ? "true" : undefined} onClick={() => pick(option.id)}>
-                {option.name}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </details>
-    </li>
-  );
-}
 
 /** A journey link that opens on its Integrations tab. */
 function withView(href: string): string {
