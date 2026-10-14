@@ -10,6 +10,7 @@ import { Link } from "react-router-dom";
 
 import type { Offering, PortfolioNode } from "../../architecture/model";
 import { AreaTabs } from "./CatalogueLab";
+import { channelKindName, contractPeriods, eligibilityGroup, hubOf, SELLING_KINDS } from "./catalogueRules";
 import { journeyHref, LAB, useLabData } from "./labData";
 import { firstSentence, listOf, monogram, plural, useTitle } from "./labUtil";
 import { capabilityOf, DEVICE_ICON, shortComponentName } from "./capabilities";
@@ -67,8 +68,6 @@ const ROW_ICONS = {
   bundle: PRODUCT_ICON,
 };
 
-const CHANNEL_KIND_WORDS: Record<string, string> = { assisted: "Assisted", "self-service": "Self-service" };
-
 /** The part of a condition worth a chip: the text before its first bracket, semicolon or full stop. */
 function headline(text: string): string {
   return (text.split(/\s*[(;.]/)[0] ?? text).trim();
@@ -89,8 +88,8 @@ function ProductCard({ offering }: { offering: Offering }) {
   // Sold through: the channels its joining order types (new sale, migration, port in) arrive by, people-facing ones only.
   const joining = offering.orderTypes.filter((type) => stageOfCode(type.code) === "join");
   const sellingIds = new Set((joining.length ? joining : offering.orderTypes).flatMap((type) => type.channels));
-  const selling = data.channels.filter((channel) => sellingIds.has(channel.id) && channel.kind in CHANNEL_KIND_WORDS);
-  const kinds = Object.keys(CHANNEL_KIND_WORDS)
+  const selling = data.channels.filter((channel) => sellingIds.has(channel.id) && (SELLING_KINDS as readonly string[]).includes(channel.kind));
+  const kinds = [...SELLING_KINDS]
     .map((kind) => ({ kind, channels: selling.filter((channel) => channel.kind === kind) }))
     .filter((item) => item.channels.length);
   const tone = (systemId: string) => data.systems.find((system) => system.id === systemId)?.domain ?? "customer";
@@ -103,14 +102,13 @@ function ProductCard({ offering }: { offering: Offering }) {
   const partial = selling.some((channel) => onlyFor(channel.id));
 
   // Who can buy: the customer type, cut to its headline.
-  const who = offering.eligibility.filter((point) => /segment|customer|audience/i.test(point.title));
+  const who = offering.eligibility.filter((point) => eligibilityGroup(point.title) === "who");
 
   // Commercial terms: the contract periods a customer can choose, one stop each.
-  const commitment = offering.eligibility.find((point) => /commitment|contract|term/i.test(point.title));
-  const periods = commitment ? headline(commitment.detail).split(/\s*,\s*|\s+or\s+/).filter(Boolean) : [];
+  const periods = contractPeriods(offering, headline);
 
   // In the bundle: the device first, then the rest, optional parts last.
-  const hub = offering.components.find((item) => /device|router/i.test(item.name)) ?? offering.components.find((item) => /\bcpe\b/i.test(item.name));
+  const hub = hubOf(offering);
   const parts = [...(hub ? [hub] : []), ...offering.components.filter((item) => item !== hub).sort((a, b) => Number(a.mandatory === false) - Number(b.mandatory === false))];
 
   return (
@@ -154,7 +152,7 @@ function ProductCard({ offering }: { offering: Offering }) {
             {kinds.length ? (
               kinds.map((item) => (
                 <span key={item.kind} className="cl-sold-group">
-                  <small>{CHANNEL_KIND_WORDS[item.kind]}</small>
+                  <small>{channelKindName(data, item.kind)}</small>
                   {item.channels.map((channel) => {
                     const only = onlyFor(channel.id);
                     const label = only ? `For ${listOf(only)} only` : undefined;

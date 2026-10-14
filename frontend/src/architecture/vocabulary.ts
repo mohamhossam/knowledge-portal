@@ -1,6 +1,6 @@
 /**
- * The catalogue's controlled vocabulary, as the lab reads it: for now, what a step's role
- * is called. A role is a code ("ORCHESTRATE", or "orchestrate" once read); its term is
+ * The catalogue's controlled vocabulary, as the lab reads it: what a step's role and a
+ * channel's kind are called. A role is a code ("ORCHESTRATE", or "orchestrate" once read); its term is
  * the one the activity names (`role_id`), or else `role-<code>` by the vocabulary's own
  * naming ("role-orchestrate", "role-customer-data").
  */
@@ -31,4 +31,13 @@ export function roleTerms(release: Release): Record<string, string> {
 /** A step's role: its code as the source wrote it, or, without one, the code of the term it names. */
 export function stepRole(role: string | null | undefined, roleId: string | null | undefined): string | undefined {
   return roleCode(role) ?? (roleId ? codeOfTerm(roleId) : undefined);
+}
+
+/** Each channel kind the vocabulary names ("channel-system" is "system"), with its preferred label. */
+export function channelKindTerms(release: Release): Record<string, string> {
+  const terms: Record<string, string> = {};
+  for (const term of release.vocabulary ?? []) {
+    if (term.scheme === "channel_kind") terms[term.id.startsWith("channel-") ? term.id.slice("channel-".length) : term.id] = term.pref_label;
+  }
+  return terms;
 }

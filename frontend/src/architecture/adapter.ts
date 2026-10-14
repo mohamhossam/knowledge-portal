@@ -28,7 +28,7 @@ import {
   type Source,
   type Step,
 } from "./model";
-import { roleTerms, stepRole } from "./vocabulary";
+import { channelKindTerms, roleTerms, stepRole } from "./vocabulary";
 
 type ApiJourney = NonNullable<Release["journeys"]>[number];
 type ApiOrderType = NonNullable<Release["products"]>[number]["order_types"][number];
@@ -269,6 +269,7 @@ export function fromRelease(release: Release): Catalogue {
     journeys,
     findings,
     roleTerms: roleTerms(release),
+    channelKindTerms: channelKindTerms(release),
   };
 }
 

@@ -311,6 +311,8 @@ export type Catalogue = {
   findings: Finding[];
   /** The role terms of the version's vocabulary: each role's preferred label, by code. */
   roleTerms: Record<string, string>;
+  /** The channel kind terms of the version's vocabulary: each kind's preferred label. */
+  channelKindTerms: Record<string, string>;
 };
 
 export const EVIDENCE_WORDS: Record<Evidence["status"], string> = {
