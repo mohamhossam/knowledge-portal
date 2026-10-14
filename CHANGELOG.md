@@ -68,6 +68,13 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Fixed
 
+- A step's role that the catalogue lab doesn't know (a code beyond its twelve, such as a new
+  `PAYMENT`) is no longer dropped: the step keeps it, it is named from the version's
+  vocabulary (`responsibility_role` terms, by `role_id` or `role-<code>`), or as written when
+  no term names it, and the impact lens ranks it after the known roles. The lab's words for
+  the twelve known roles are unchanged and now live in one place (`words.ts`, long and short
+  forms), not in the model and again in the architecture map; the strongest-role order stays
+  a rule in code (`ROLE_RANK`, `byRank`). `architecture/vocabulary.ts` reads the role terms.
 - A journey with a way back (a loop such as "Correct & resubmit", or any arrow that closes a
   cycle) no longer loses its steps in the catalogue lab's flow: the layout assumed no loops,
   so the steps of a cycle and everything after them were dropped from the drawing and the BPMN

@@ -3,7 +3,7 @@
  * events and gateways, how a call is made, and a journey seen through a channel.
  * The model holds no English; the views and the exports name things from here.
  */
-import type { Catalogue, Integration, IntegrationMode, JourneyView, Lane, Step } from "../../architecture/model";
+import type { Catalogue, Integration, IntegrationMode, JourneyView, Lane, Step, StepRole } from "../../architecture/model";
 
 export const NOT_STATED = "Not stated";
 
@@ -76,4 +76,33 @@ export function viewTitle(data: Catalogue, view: JourneyView): string {
 /** Why a journey is seen through another channel than the one asked for (`channelMissing`). */
 export function channelMissingText(journey: string, asked: string, shown: string): string {
   return `${journey} isn't offered through “${asked}”; it is shown through ${shown} instead.`;
+}
+
+/** The lab's words for the roles it knows: what a step does, and the shorter form a map card has room for. */
+const ROLE_WORDS: Record<string, { long: string; short: string }> = {
+  capture: { long: "Captures the order", short: "Captures" },
+  catalog: { long: "Catalogue", short: "Catalogue" },
+  "customer-data": { long: "Customer data", short: "Customer data" },
+  orchestrate: { long: "Orchestrates", short: "Orchestrates" },
+  validate: { long: "Validates", short: "Validates" },
+  activate: { long: "Activates", short: "Activates" },
+  field: { long: "Field work", short: "Field work" },
+  logistics: { long: "Logistics", short: "Logistics" },
+  track: { long: "Tracks", short: "Tracks" },
+  notify: { long: "Notifies", short: "Notifies" },
+  bill: { long: "Bills", short: "Bills" },
+  record: { long: "Records", short: "Records" },
+};
+
+/**
+ * A role's name: the lab's words for a role it knows; else the vocabulary's label for it;
+ * else the code as written ("payment" reads "Payment"). A role is never left unnamed.
+ */
+export function roleName(data: Pick<Catalogue, "roleTerms">, role: StepRole, form: "long" | "short" = "long"): string {
+  const known = ROLE_WORDS[role];
+  if (known) return known[form];
+  const term = data.roleTerms[role];
+  if (term) return term;
+  const written = role.replace(/-/g, " ");
+  return written.charAt(0).toUpperCase() + written.slice(1);
 }
