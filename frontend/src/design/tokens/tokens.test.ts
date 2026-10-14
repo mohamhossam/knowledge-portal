@@ -86,6 +86,19 @@ const NON_TEXT: [string, string][] = [
   ["--color-chart-4", "--color-surface"], ["--color-chart-5", "--color-surface"], ["--color-chart-6", "--color-surface"],
 ];
 
+// The architecture diagrams' tokens are light only for now (the catalogue keeps data-theme="light").
+const LAYERS = ["market", "product", "customer", "service", "resource", "party", "enterprise"];
+const LIGHT_TEXT: [string, string][] = [
+  ...LAYERS.map((layer): [string, string] => [`--color-layer-${layer}-ink`, `--color-layer-${layer}`]),
+  ...LAYERS.map((layer): [string, string] => ["--color-ink", `--color-layer-${layer}`]),
+  ...LAYERS.map((layer): [string, string] => ["--color-ink-2", `--color-layer-${layer}`]),
+  ["--color-on-action-fill-quiet", "--color-action-fill"],
+  ["--color-footprint-ink", "--color-footprint-soft"], ["--color-footprint", "--color-surface"],
+];
+const LIGHT_NON_TEXT: [string, string][] = [
+  ["--color-footprint", "--color-surface"], ["--color-intensity-4", "--color-surface"], ["--color-amount-4", "--color-surface"],
+];
+
 describe("design tokens", () => {
   for (const [name, theme] of [["light", light], ["dark", dark]] as const) {
     it.each(TEXT)(`${name}: %s on %s reaches 4.5:1`, (fg, bg) => {
@@ -95,6 +108,13 @@ describe("design tokens", () => {
       expect(ratio(resolve(fg, theme), resolve(bg, theme))).toBeGreaterThanOrEqual(3);
     });
   }
+
+  it.each(LIGHT_TEXT)("light: %s on %s reaches 4.5:1", (fg, bg) => {
+    expect(ratio(resolve(fg, light), resolve(bg, light))).toBeGreaterThanOrEqual(4.5);
+  });
+  it.each(LIGHT_NON_TEXT)("light: %s against %s reaches 3:1", (fg, bg) => {
+    expect(ratio(resolve(fg, light), resolve(bg, light))).toBeGreaterThanOrEqual(3);
+  });
 
   it("keeps raw colours in the primitive layer only", () => {
     for (const css of [semantic, component]) expect(css).not.toMatch(/#[0-9a-f]{3,8}\b|rgb\(|hsl\(/i);

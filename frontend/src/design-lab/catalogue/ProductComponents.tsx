@@ -7,7 +7,7 @@ import { LabIcon } from "./labIcon";
 import { hubOf } from "./catalogueRules";
 import { useLabData, useOffering } from "./labData";
 import { CAPABILITIES, capabilityOf, DEVICE_ICON } from "./capabilities";
-import { plural, useTitle } from "./labUtil";
+import { plural, scrollBehavior, useTitle } from "./labUtil";
 import { domainRank } from "./posterModel";
 import { Missing, ProductHeader } from "./productParts";
 import { SystemMonogram } from "./SystemMonogram";
@@ -53,7 +53,7 @@ export function ProductComponents() {
   // A system's heading narrows the cards to what it delivers and brings them into view.
   const showBy = (id: string) => {
     setBy(by === id ? null : id);
-    if (by !== id) document.getElementById("cp-cards-h")?.scrollIntoView?.({ block: "start", behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    if (by !== id) document.getElementById("cp-cards-h")?.scrollIntoView?.({ block: "start", behavior: scrollBehavior() });
   };
 
   return (

@@ -68,6 +68,11 @@ export function monogram(name: string): string {
   return first.slice(0, 2);
 }
 
+/** How far-off scrolling moves: smoothly, or at once when the person asks for reduced motion. */
+export function scrollBehavior(): ScrollBehavior {
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+}
+
 /** The portfolio path from the top level down to a node; a node that is its own ancestor ends the walk. */
 export function pathTo(nodes: PortfolioNode[], nodeId: string | null): PortfolioNode[] {
   const path: PortfolioNode[] = [];

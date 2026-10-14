@@ -137,6 +137,7 @@ export function Shell() {
         navigation={navigation}
         secondaryNavigation={secondary}
         reader={focus}
+        fullBleed={under(LAB)}
         banner={online ? undefined : <><WifiOff size={16} aria-hidden="true" /> You're offline. Your unsaved work stays here; the portal carries on when your connection returns.</>}
         utilities={
           <>
