@@ -61,6 +61,11 @@ from tests.word_table_fixtures import (
     DOCX_MIME,
     reviewed_word_prose_document,
     reviewed_word_table_document,
+    word_cell,
+    word_document,
+    word_paragraph,
+    word_row,
+    word_table,
 )
 
 
@@ -295,7 +300,10 @@ def test_chunks_are_sized_in_tokens_and_keep_every_character(
     assert len(chunks) > 1
     assert all(c.token_count <= TOKEN_BUDGET.maximum for c in chunks)
     assert all(c.context_token_count <= TOKEN_BUDGET.context for c in chunks)
-    assert all(c.chunking_policy.endswith(":approx-4c-tokens-v1:normalize-ar-v1") for c in chunks)
+    assert all(
+        c.chunking_policy.endswith(":approx-4c-tokens-v1:normalize-ar-v1:row-headers-v1")
+        for c in chunks
+    )
     assert "".join(c.original_text for c in chunks) == text.strip()
     # Words are counted in pieces of at most four characters.
     assert ApproximateTokenCounter().count("Coverage is required") == 5
@@ -356,6 +364,77 @@ def test_the_library_accepts_no_arabic(
         )
 
 
+def _fleet_table() -> bytes:
+    return word_document(
+        word_paragraph("Tiers", heading=True)
+        + word_table(
+            word_row(word_cell("Tier"), word_cell("Pooled data"), word_cell("Roaming")),
+            word_row(word_cell("Fleet Essential"), word_cell("10 GB per line"), word_cell("None")),
+            word_row(word_cell("Fleet Plus"), word_cell("25 GB per line"), word_cell("GCC")),
+            columns=3,
+        )
+    )
+
+
+@pytest.mark.parametrize("header_included", [True, False], ids=["header", "header-excluded"])
+def test_table_rows_are_searched_with_their_column_names_and_cited_as_approved(
+    library: tuple[DocumentLibrary, ReferenceKnowledge, InMemoryDocumentLibrary],
+    header_included: bool,
+) -> None:
+    service, knowledge, _ = library
+    document = service.submit(
+        "Fleet guide", UploadDocumentInput("fleet.docx", DOCX_MIME, _fleet_table()), "t", owner()
+    )
+    service.process_next()
+    view = service.get(document.id, owner())
+    source = view.versions[0]
+    header = next(b for b in source.blocks if b.label == "Table 1, row 1")
+    document = service.review(
+        document.id,
+        source.id,
+        view.version,
+        owner(),
+        tuple(
+            ReviewedPassage(b.id, b.text or "", True)
+            if b.id != header.id or header_included
+            else ReviewedPassage(b.id, b.text or "", False, "Internal column names")
+            for b in source.blocks
+        ),
+        "Checked",
+    )
+    revision = document.versions[0].revisions[-1]
+    document = service.approve(
+        document.id,
+        source.id,
+        revision.id,
+        revision.fingerprint(source.id, CHUNKING_POLICY),
+        document.version,
+        owner(),
+    )
+    chunks = knowledge.preview(document, document.publications[0])
+    row = next(c for c in chunks if c.location == "Table 1, row 3")
+
+    # The citation is the approved text, unchanged, at its own offsets.
+    assert row.original_text.startswith("R3C1: Fleet Plus | R3C2: 25 GB per line")
+    approved = next(p.text for p in revision.passages if p.block_id == row.block_id)
+    assert approved[row.start_offset : row.end_offset] == row.original_text
+    if header_included:
+        assert "tier: fleet plus | pooled data: 25 gb per line | roaming: gcc" in row.search_text
+        assert knowledge.index_next()
+        found = knowledge.search("pooled data for Plus")
+        # This test's embedding gives every chunk the same vector, so the vector side is a
+        # random tie. Only the three rows share words with the question, and the answer row
+        # shares the most, so fusion keeps it in the top three whatever the tie. Without
+        # column names it would share only "plus". The golden set measures the real ranking.
+        top = {c.location: c for c in found[:3]}
+        assert "Table 1, row 3" in top
+        assert top["Table 1, row 3"].original_text == row.original_text
+    else:
+        # An excluded header names nothing: its words never reach the index.
+        assert "r3c2: 25 gb per line" in row.search_text
+        assert all("pooled data" not in c.search_text for c in chunks)
+
+
 def test_documents_chunked_by_bytes_stay_searchable_until_rebuilt() -> None:
     """Switching to tokens never takes the library offline: publications indexed under the
     byte budget are still searched and cited, rebuilt with the byte sizer, next to new ones."""
@@ -382,7 +461,7 @@ def test_documents_chunked_by_bytes_stay_searchable_until_rebuilt() -> None:
             repository, index, Embeddings(), chunks, transactions, clock, "test-model"
         )
 
-    before = knowledge(StructureAwareChunks(legacy.counter, legacy.budget))
+    before = knowledge(StructureAwareChunks(legacy.counter, legacy.budget, row_headers=False))
     _approve_text(service, "Old policy", "Coverage is required before quoting.", "old")
     assert before.index_next()
 

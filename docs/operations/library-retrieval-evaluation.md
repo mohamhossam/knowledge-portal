@@ -99,29 +99,41 @@ Two runs can be compared case by case.
 ## The recorded floors
 
 With the fake embedding on the fixture (`tests/unit/test_library_evaluation.py`), with chunks
-sized in approximate tokens, over 35 runs on 2026-10-15:
+sized in approximate tokens and table rows searched with their column names, over 20 runs on
+2026-10-15:
 
 | Score | Measured | Floor |
 | --- | --- | --- |
-| recall@10 | 90.0% on every run | ≥ 85% |
-| mean reciprocal rank | 77.5% to 87.5% | ≥ 72% |
-| zero-hit share | 10.0% on every run | ≤ 15% |
+| recall@10 | 95.0% on every run | ≥ 90% |
+| mean reciprocal rank | 80.8% to 92.5% | ≥ 75% |
+| zero-hit share | 5.0% on every run | ≤ 10% |
 
 The mean reciprocal rank moves because near-ties are broken by chunk id, and chunk ids change
-with each run's publication ids. Five cases rank second or third on some runs and first on
-others; if all five ranked low at once the score would be about 76%, so the floor sits below
+with each run's publication ids. Six cases rank second or third on some runs and first on
+others; if all six ranked low at once the score would be about 78%, so the floor sits below
 that. The test also requires every case that shares words with its passage to rank it within
-the first three chunks, except the known miss below.
+the first three chunks.
 
-Before chunks were sized in tokens (byte budget, two Arabic cases), the same set measured 84%
-to 90% over eight runs. Recall and the zero-hit share did not change.
+How the scores moved:
 
-**Finding: a document's own prose can crowd out its table.** L008 asks for a Word table row
-("25 GB per line"). Search keeps at most three chunks per document, and the guide's three prose
-paragraphs outrank the row, so the answer is cut from every result. This is a property of
-search, not of the fixture. It belongs to the retrieval tuning that follows this measurement,
-and the test lists L008 as a known miss until then. L020, a semantic case expecting any passage
-of the fleet guide, also misses with the fake embedding.
+| Change | recall@10 | mean reciprocal rank | zero-hit share |
+| --- | --- | --- | --- |
+| Byte budget, two Arabic cases (8 runs) | 90% | 84% to 90% | 10% |
+| Token budget, English only (35 runs) | 90% | 77.5% to 87.5% | 10% |
+| Table rows searched with column names (20 runs) | 95% | 80.8% to 92.5% | 5% |
+
+**Finding, fixed: a table row did not carry its column names.** L008 asks for "pooled data" on
+the Fleet Plus tier; the answer is a Word table row. Extraction renders a row with cell
+references ("R3C1: Fleet Plus | R3C2: 25 GB per line"), so only the header row said "Pooled
+data". Tracing the search showed the answer row ranked 14th on both keyword and vector search,
+and the three-chunks-per-document limit then cut it, since the guide's prose already filled its
+three places. Each table row is now searched and embedded with the first row's column names
+("Tier: Fleet Plus | Pooled data: 25 GB per line"); the cited text and its offsets are
+unchanged. An excluded header row names nothing, so excluded text never reaches the index. L008
+now ranks first or second. The per-document limit still applies before any reranking, which
+matters for documents with many relevant passages; that is the next retrieval change to
+measure. L020, a semantic case expecting any passage of the fleet guide, still misses with the
+fake embedding.
 
 **HYPOTHESIS:** real embeddings should hold the floors and find the semantic cases. That has not
 been measured yet; record the first live run here before tuning retrieval.

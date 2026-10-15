@@ -39,24 +39,23 @@ ROOT = Path(__file__).resolve().parents[2]
 GOLDEN = ROOT / "tests" / "fixtures" / "golden" / "library_golden_set.json"
 NOW = datetime(2026, 10, 15, tzinfo=UTC)
 
-# The fake hash embedding on the fixture, with chunks sized in tokens, recorded in
-# docs/operations/library-retrieval-evaluation.md. Recall and the zero-hit share are the same
-# on every run; over 35 runs the mean reciprocal rank moved between 77.5% and 87.5%, because
-# near-ties are broken by chunk id and chunk ids change with each run's publications. Its floor
-# sits below the worst case those ties allow (about 76%). A retrieval change may raise these
-# floors; none may fall below them.
+# The fake hash embedding on the fixture, with chunks sized in tokens and table rows searched
+# with their column names, recorded in docs/operations/library-retrieval-evaluation.md. Recall
+# (95%) and the zero-hit share (5%) are the same on every run; over 20 runs the mean reciprocal
+# rank moved between 80.8% and 92.5%, because near-ties are broken by chunk id and chunk ids
+# change with each run's publications. Its floor sits below the worst case those ties allow
+# (about 78%). A retrieval change may raise these floors; none may fall below them.
 FLOORS = {
-    "recall_at_10": 0.85,
-    "mean_reciprocal_rank": 0.72,
+    "recall_at_10": 0.90,
+    "mean_reciprocal_rank": 0.75,
 }
-ZERO_HIT_CEILING = 0.15
-# Every case that shares words with its passage puts it within the first three chunks, except
-# the known misses below; semantic cases may rank anywhere or miss.
+ZERO_HIT_CEILING = 0.10
+# Every case that shares words with its passage puts it within the first three chunks; semantic
+# cases may rank anywhere or miss.
 RANK_CEILING = 3
-# Search keeps three chunks per document. The fleet guide's three prose paragraphs outrank its
-# table row, so the row that answers L008 is cut. A retrieval change that fixes it may drop
-# the case from here.
-KNOWN_MISSES = {"L008"}
+# L008, a Word table row, missed until rows were searched with their column names: its row
+# never said "pooled data", only the header row did. No case is a known miss now.
+KNOWN_MISSES: set[str] = set()
 
 
 def _golden() -> LibraryGoldenSet:
