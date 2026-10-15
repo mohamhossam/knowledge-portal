@@ -34,8 +34,9 @@ since the golden set no longer describes its corpus.
 ## The fixture
 
 `tests/fixtures/golden/library_golden_set.json` holds 14 documents and 20 cases across seven
-products. Eight short texts are the library documents `scripts/seed_demo.py` publishes, word
-for word, one of them withdrawn. Six files under `tests/fixtures/golden/library/` are written by
+products, all in English: the library accepts no Arabic (a title, file, review or search
+containing Arabic is refused). Eight short texts are the library documents
+`scripts/seed_demo.py` publishes, word for word, one of them withdrawn. Six files under `tests/fixtures/golden/library/` are written by
 `scripts/build_library_golden_corpus.py`, one product and one format each: Word, PDF,
 PowerPoint, Excel, CSV and a long Markdown policy. **The set is a fixture, not user evidence**:
 no case comes from a historic requirement or a real search, and the file's `provenance` says
@@ -97,19 +98,23 @@ Two runs can be compared case by case.
 
 ## The recorded floors
 
-With the fake embedding on the fixture (`tests/unit/test_library_evaluation.py`), over eight
-runs on 2026-10-15:
+With the fake embedding on the fixture (`tests/unit/test_library_evaluation.py`), with chunks
+sized in approximate tokens, over 35 runs on 2026-10-15:
 
 | Score | Measured | Floor |
 | --- | --- | --- |
 | recall@10 | 90.0% on every run | ≥ 85% |
-| mean reciprocal rank | 84% to 90% | ≥ 80% |
+| mean reciprocal rank | 77.5% to 87.5% | ≥ 72% |
 | zero-hit share | 10.0% on every run | ≤ 15% |
 
 The mean reciprocal rank moves because near-ties are broken by chunk id, and chunk ids change
-with each run's publication ids. Two cases rank second or third on some runs and first on
-others. The test also requires every case that shares words with its passage to rank it within
+with each run's publication ids. Five cases rank second or third on some runs and first on
+others; if all five ranked low at once the score would be about 76%, so the floor sits below
+that. The test also requires every case that shares words with its passage to rank it within
 the first three chunks, except the known miss below.
+
+Before chunks were sized in tokens (byte budget, two Arabic cases), the same set measured 84%
+to 90% over eight runs. Recall and the zero-hit share did not change.
 
 **Finding: a document's own prose can crowd out its table.** L008 asks for a Word table row
 ("25 GB per line"). Search keeps at most three chunks per document, and the guide's three prose

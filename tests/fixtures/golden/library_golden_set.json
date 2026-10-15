@@ -1,7 +1,7 @@
 {
   "version": 2,
   "labelled_on": "2026-10-15",
-  "provenance": "FIXTURE, not user evidence. The corpus mixes products and formats, as a real library does. Eight short texts are the library documents scripts/seed_demo.py publishes (titles ending in '(sample)'), kept word for word. Six files under library/ (titles ending in '(fixture)') are written by scripts/build_library_golden_corpus.py, one product and one format each: a Word guide with headings and a table, a two-page PDF, a slide deck with a table, a spreadsheet rate card, a CSV procedure, and a long Markdown policy whose paragraphs the chunker splits. Every case and expected passage was written by hand from these documents, not from historic requirements or from knowledge admins' searches. An expected passage is a piece of the document's wording, wherever the extractor puts it; an expected document with no passage means any of its passages answers. Cases marked 'semantic' share few words with their passage: the fake hash embedding may miss them, and they are there to be measured against real embeddings.",
+  "provenance": "FIXTURE, not user evidence. The corpus mixes products and formats, as a real library does, in English only: the library accepts no Arabic. Eight short texts are the library documents scripts/seed_demo.py publishes (titles ending in '(sample)'), kept word for word. Six files under library/ (titles ending in '(fixture)') are written by scripts/build_library_golden_corpus.py, one product and one format each: a Word guide with headings and a table, a two-page PDF, a slide deck with a table, a spreadsheet rate card, a CSV procedure, and a long Markdown policy whose paragraphs the chunker splits. Every case and expected passage was written by hand from these documents, not from historic requirements or from knowledge admins' searches. An expected passage is a piece of the document's wording, wherever the extractor puts it; an expected document with no passage means any of its passages answers. Cases marked 'semantic' share few words with their passage: the fake hash embedding may miss them, and they are there to be measured against real embeddings.",
   "documents": [
     {
       "id": "xgpon-coverage",
@@ -18,11 +18,11 @@
       "text": "An SMB customer may hold at most three bundles per site."
     },
     {
-      "id": "number-porting-ar",
-      "title": "إجراءات نقل الأرقام (sample)",
+      "id": "number-porting-identity",
+      "title": "Number porting identity check (sample)",
       "product": "Number porting",
       "filename": "policy.txt",
-      "text": "يجب التحقق من هوية العميل قبل نقل الرقم."
+      "text": "The customer's identity is verified before a number is ported."
     },
     {
       "id": "ordering-procedure",
@@ -48,11 +48,11 @@
       "text": "Discounts show on the invoice line."
     },
     {
-      "id": "address-check-ar",
-      "title": "سياسة التحقق من العنوان (sample)",
+      "id": "address-check",
+      "title": "Address verification policy (sample)",
       "product": "All products",
       "filename": "address.txt",
-      "text": "يجب التحقق من العنوان قبل تفعيل الخدمة."
+      "text": "The address is verified before the service is activated."
     },
     {
       "id": "fault-escalation",
@@ -117,11 +117,10 @@
     },
     {
       "id": "L003",
-      "text": "التحقق من هوية العميل عند نقل الرقم إلى الشبكة",
+      "text": "Verify the customer's identity before their number is ported to our network.",
       "expected": [
-        {"document": "إجراءات نقل الأرقام (sample)", "passage": "يجب التحقق من هوية العميل"}
-      ],
-      "note": "An Arabic query against an Arabic passage."
+        {"document": "Number porting identity check (sample)", "passage": "The customer's identity is verified before a number is ported."}
+      ]
     },
     {
       "id": "L004",
@@ -146,11 +145,10 @@
     },
     {
       "id": "L007",
-      "text": "يجب التحقق من عنوان العميل الجديد قبل تفعيل الخدمة",
+      "text": "Check the new customer's address before the service is activated.",
       "expected": [
-        {"document": "سياسة التحقق من العنوان (sample)", "passage": "التحقق من العنوان"}
-      ],
-      "note": "An Arabic query against an Arabic passage."
+        {"document": "Address verification policy (sample)", "passage": "The address is verified before the service is activated."}
+      ]
     },
     {
       "id": "L008",

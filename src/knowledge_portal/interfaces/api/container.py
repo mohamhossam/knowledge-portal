@@ -116,6 +116,8 @@ from knowledge_portal.application.use_cases.precedents import (
 )
 from knowledge_portal.application.use_cases.provider_call_rate import ProviderCallRateLimit
 from knowledge_portal.application.use_cases.reference_knowledge import (
+    LEGACY_BYTE_BUDGET,
+    ChunkSizer,
     ReferenceKnowledge,
     StructureAwareChunks,
 )
@@ -135,7 +137,10 @@ from knowledge_portal.infrastructure.config.options import (
 from knowledge_portal.infrastructure.config.settings import Settings
 from knowledge_portal.infrastructure.documents.library_worker import DocumentIngestionWorker
 from knowledge_portal.infrastructure.identity.fake_identity import FAKE_ACTORS
-from knowledge_portal.infrastructure.persistence.reference_index import Utf8BudgetCounter
+from knowledge_portal.infrastructure.persistence.reference_index import (
+    ApproximateTokenCounter,
+    LegacyByteCounter,
+)
 from knowledge_portal.infrastructure.product_catalog import (
     CachedProductCatalog,
     FakeProductCatalog,
@@ -317,7 +322,12 @@ def _build_container(
         persistence.library_repository,
         persistence.reference_index,
         llm.knowledge_embedding,
-        StructureAwareChunks(Utf8BudgetCounter()),
+        # Chunks are sized in tokens; documents published under the byte budget stay readable
+        # until they are rebuilt.
+        StructureAwareChunks(
+            ApproximateTokenCounter(),
+            legacy=(ChunkSizer(LegacyByteCounter(), LEGACY_BYTE_BUDGET),),
+        ),
         persistence.transaction_manager,
         clock,
         _embedding_identity(settings),

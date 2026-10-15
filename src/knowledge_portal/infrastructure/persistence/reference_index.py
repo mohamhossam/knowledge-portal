@@ -13,15 +13,33 @@ from smb_kernel.embeddings import Embedding
 
 from knowledge_portal.application.ports.document_library import DocumentLibraryPort
 from knowledge_portal.application.ports.reference_index import ReferenceChunk
+from knowledge_portal.infrastructure.architecture.tokenizer import ApproximateTokenizer
 from knowledge_portal.infrastructure.persistence.postgres_session import PostgresSession
 
 
-class Utf8BudgetCounter:
-    """Conservative byte budget, not an English chars/4 estimate.
+class ApproximateTokenCounter:
+    """Approximate model tokens: words, with long words cut every four characters.
 
-    One UTF-8 byte is charged as one budget unit, never a measured model token.
-    A dated model-specific qualification measures representative chunks separately.
-    Identity prevents silently mixing it with a later model-specific counter.
+    Hosted embedding providers publish no tokenizer, so the library counts as the architecture
+    index sizes its windows (`ApproximateTokenizer`). English averages about 3.8 bytes per
+    token this way. The identity is part of every index identity, so changing the rule
+    re-indexes the library rather than mixing two sizes silently.
+    """
+
+    @property
+    def identity(self) -> str:
+        return "approx-4c-tokens-v1"
+
+    def count(self, text: str) -> int:
+        return len(_APPROXIMATE.spans(text))
+
+
+class LegacyByteCounter:
+    """The byte budget the library used before tokens: one UTF-8 byte per unit.
+
+    It never sizes a new chunk. Documents published under it keep chunks measured with it, and
+    search and citations rebuild those chunks exactly, so it reads them until each document is
+    rebuilt. Remove it once no publication in service carries its identity.
     """
 
     @property
@@ -30,6 +48,9 @@ class Utf8BudgetCounter:
 
     def count(self, text: str) -> int:
         return len(text.encode("utf-8"))
+
+
+_APPROXIMATE = ApproximateTokenizer()
 
 
 def query_terms(text: str) -> tuple[str, ...]:

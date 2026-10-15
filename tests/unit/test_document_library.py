@@ -13,6 +13,7 @@ from knowledge_portal.application.errors import (
     DocumentNotFoundError,
     DocumentVersionConflictError,
     KnowledgeGenerationError,
+    UnsupportedDocumentError,
 )
 from knowledge_portal.application.use_cases.document_library import (
     CHUNKING_POLICY,
@@ -21,7 +22,9 @@ from knowledge_portal.application.use_cases.document_library import (
 )
 from knowledge_portal.application.use_cases.documents import UploadDocumentInput
 from knowledge_portal.application.use_cases.reference_knowledge import (
-    CONTEXT_MAX_BUDGET,
+    LEGACY_BYTE_BUDGET,
+    TOKEN_BUDGET,
+    ChunkSizer,
     ReferenceKnowledge,
     StructureAwareChunks,
 )
@@ -43,8 +46,9 @@ from knowledge_portal.infrastructure.persistence.in_memory_transaction import (
     InMemoryTransactionManager,
 )
 from knowledge_portal.infrastructure.persistence.reference_index import (
+    ApproximateTokenCounter,
     InMemoryReferenceIndex,
-    Utf8BudgetCounter,
+    LegacyByteCounter,
 )
 from tests.delimited_fixtures import reviewed_delimited_table
 from tests.presentation_fixtures import PPTX_MIME, reviewed_table_presentation
@@ -91,7 +95,7 @@ def test_cross_owner_model_rollout_and_rollback_preserve_review_authority() -> N
             repository,
             index,
             Embeddings(),
-            StructureAwareChunks(Utf8BudgetCounter()),
+            StructureAwareChunks(ApproximateTokenCounter()),
             transactions,
             clock,
             identity,
@@ -123,7 +127,7 @@ def library() -> tuple[DocumentLibrary, ReferenceKnowledge, InMemoryDocumentLibr
         repository,
         index,
         Embeddings(),
-        StructureAwareChunks(Utf8BudgetCounter()),
+        StructureAwareChunks(ApproximateTokenCounter()),
         transactions,
         clock,
         "test-model",
@@ -254,13 +258,9 @@ def test_csv_values_inert_and_row_citations() -> None:
     assert '=HYPERLINK("bad")' in result.text
 
 
-def test_chunk_budget_preserves_all_arabic_text(
-    library: tuple[DocumentLibrary, ReferenceKnowledge, InMemoryDocumentLibrary],
-) -> None:
-    service, knowledge, _ = library
-    text = "التغطية مطلوبة للاشتراك. " * 100
+def _approve_text(service: DocumentLibrary, title: str, text: str, key: str) -> LibraryDocument:
     document = service.submit(
-        "Policy", UploadDocumentInput("a.txt", "text/plain", text.encode()), "ar", owner()
+        title, UploadDocumentInput("a.txt", "text/plain", text.encode()), key, owner()
     )
     service.process_next()
     view = service.get(document.id, owner())
@@ -271,10 +271,10 @@ def test_chunk_budget_preserves_all_arabic_text(
         view.version,
         owner(),
         tuple(ReviewedPassage(b.id, b.text or "", True) for b in source.blocks),
-        "Checked Arabic",
+        "Checked",
     )
     revision = document.versions[0].revisions[-1]
-    document = service.approve(
+    return service.approve(
         document.id,
         source.id,
         revision.id,
@@ -282,11 +282,122 @@ def test_chunk_budget_preserves_all_arabic_text(
         document.version,
         owner(),
     )
+
+
+def test_chunks_are_sized_in_tokens_and_keep_every_character(
+    library: tuple[DocumentLibrary, ReferenceKnowledge, InMemoryDocumentLibrary],
+) -> None:
+    service, knowledge, _ = library
+    text = "Coverage is required before the subscription starts. " * 100
+    document = _approve_text(service, "Policy", text, "long")
+
     chunks = knowledge.preview(document, document.publications[0])
     assert len(chunks) > 1
-    assert all(c.token_count <= 768 and c.language == "ar" for c in chunks)
-    assert all(c.context_token_count <= CONTEXT_MAX_BUDGET for c in chunks)
+    assert all(c.token_count <= TOKEN_BUDGET.maximum for c in chunks)
+    assert all(c.context_token_count <= TOKEN_BUDGET.context for c in chunks)
+    assert all(c.chunking_policy.endswith(":approx-4c-tokens-v1:normalize-ar-v1") for c in chunks)
     assert "".join(c.original_text for c in chunks) == text.strip()
+    # Words are counted in pieces of at most four characters.
+    assert ApproximateTokenCounter().count("Coverage is required") == 5
+
+
+@pytest.mark.parametrize(
+    "where", ["title", "content", "review", "exclusion reason", "explanation", "search"]
+)
+def test_the_library_accepts_no_arabic(
+    library: tuple[DocumentLibrary, ReferenceKnowledge, InMemoryDocumentLibrary], where: str
+) -> None:
+    service, knowledge, _ = library
+    arabic = "التغطية"  # "coverage"
+    if where == "title":
+        with pytest.raises(UnsupportedDocumentError, match="English documents only"):
+            service.submit(
+                f"Policy {arabic}",
+                UploadDocumentInput("a.txt", "text/plain", b"Rule"),
+                "k",
+                owner(),
+            )
+        return
+    if where == "search":
+        _approve_text(service, "Policy", "Coverage is required.", "k")
+        assert knowledge.index_next()
+        with pytest.raises(UnsupportedDocumentError, match="search in English"):
+            knowledge.search(f"coverage {arabic}")
+        with pytest.raises(UnsupportedDocumentError):
+            knowledge.retrieve(arabic)
+        return
+    content = f"English line.\nMixed line with {arabic}." if where == "content" else "Rule."
+    document = service.submit(
+        "Policy", UploadDocumentInput("a.txt", "text/plain", content.encode()), "k", owner()
+    )
+    service.process_next()
+    view = service.get(document.id, owner())
+    source = view.versions[0]
+    if where == "content":
+        # A mostly English document with one Arabic line is refused whole, naming the line.
+        assert source.stage is IngestionStage.FAILED
+        assert source.error is not None
+        assert "English documents only" in source.error and "Line 2" in source.error
+        return
+    block = source.blocks[0]
+    passage = {
+        "review": ReviewedPassage(block.id, f"Rule {arabic}.", True),
+        "exclusion reason": ReviewedPassage(block.id, "Rule.", False, arabic),
+        "explanation": ReviewedPassage(block.id, "Rule.", True),
+    }[where]
+    with pytest.raises(UnsupportedDocumentError, match="English documents only"):
+        service.review(
+            document.id,
+            source.id,
+            view.version,
+            owner(),
+            (passage,),
+            arabic if where == "explanation" else "Checked",
+        )
+
+
+def test_documents_chunked_by_bytes_stay_searchable_until_rebuilt() -> None:
+    """Switching to tokens never takes the library offline: publications indexed under the
+    byte budget are still searched and cited, rebuilt with the byte sizer, next to new ones."""
+    lock = RLock()
+    repository = InMemoryDocumentLibrary(lock)
+    storage = InMemoryDocumentStorage()
+    index = InMemoryReferenceIndex(lock, repository)
+    transactions = InMemoryTransactionManager(lock)
+    transactions.enroll(repository, storage, index)
+    clock = FixedClock(datetime(2026, 10, 15, tzinfo=UTC))
+    service = DocumentLibrary(
+        repository,
+        storage,
+        SafeDocumentTextExtractor(),
+        OfflineDocumentScanner(),
+        transactions,
+        clock,
+        100000,
+    )
+    legacy = ChunkSizer(LegacyByteCounter(), LEGACY_BYTE_BUDGET)
+
+    def knowledge(chunks: StructureAwareChunks) -> ReferenceKnowledge:
+        return ReferenceKnowledge(
+            repository, index, Embeddings(), chunks, transactions, clock, "test-model"
+        )
+
+    before = knowledge(StructureAwareChunks(legacy.counter, legacy.budget))
+    _approve_text(service, "Old policy", "Coverage is required before quoting.", "old")
+    assert before.index_next()
+
+    after = knowledge(StructureAwareChunks(ApproximateTokenCounter(), legacy=(legacy,)))
+    _approve_text(service, "New policy", "Coverage is confirmed by a survey.", "new")
+    assert after.index_next()
+
+    found = after.search("coverage")
+    assert {c.document_title for c in found} == {"Old policy", "New policy"}
+    old = next(c for c in found if c.document_title == "Old policy")
+    assert ":utf8-byte-upper-bound-v1:" in old.chunking_policy
+    after.require_current([after.citation(old)])
+    # Without the legacy sizer the old generation is refused, as for any model change.
+    with pytest.raises(KnowledgeGenerationError, match="another index generation"):
+        knowledge(StructureAwareChunks(ApproximateTokenCounter())).search("coverage")
 
 
 def test_surrounding_context_is_bounded_to_selected_passages_in_one_section(
@@ -342,7 +453,7 @@ def test_surrounding_context_is_bounded_to_selected_passages_in_one_section(
     assert "BCRM and CPP" in target.context_text
     assert "Private operational note" not in target.context_text
     assert "Monthly billing" not in target.context_text
-    assert target.context_token_count <= CONTEXT_MAX_BUDGET
+    assert target.context_token_count <= TOKEN_BUDGET.context
     assert knowledge.citation(target).excerpt == "XGPON coverage is required."
 
     assert knowledge.index_next()
@@ -502,8 +613,8 @@ def test_partial_index_batches_are_invisible_and_reused_after_retry(
 
 @pytest.mark.parametrize(
     "value",
-    ["rule " * 280, "التغطية مطلوبة " * 120, "value | embedded: delimiter " * 70],
-    ids=["long-english", "long-arabic", "literal-delimiters"],
+    ["rule " * 280, "telecommunications " * 120, "value | embedded: delimiter " * 70],
+    ids=["long-english", "long-words", "literal-delimiters"],
 )
 def test_table_children_preserve_fields_offsets_and_budgets(
     library: tuple[DocumentLibrary, ReferenceKnowledge, InMemoryDocumentLibrary],
@@ -536,7 +647,8 @@ def test_table_children_preserve_fields_offsets_and_budgets(
     assert "".join(c.original_text for c in preview.chunks) == approved_text
     assert preview.chunks[0].original_text.startswith("R2C1: BCRM | ")
     assert all(
-        c.token_count <= 768 and c.context_token_count <= CONTEXT_MAX_BUDGET for c in preview.chunks
+        c.token_count <= TOKEN_BUDGET.maximum and c.context_token_count <= TOKEN_BUDGET.context
+        for c in preview.chunks
     )
     assert all(
         approved_text[c.start_offset : c.end_offset] == c.original_text for c in preview.chunks
@@ -635,7 +747,8 @@ def test_table_rows_flow_through_review_build_and_exact_search(
         assert "Different table context" not in chunk.context_text
         assert chunk.location == expected_location
         assert chunk.original_text == (approved.text or "")[chunk.start_offset : chunk.end_offset]
-        assert chunk.token_count <= 768 and chunk.context_token_count <= CONTEXT_MAX_BUDGET
+        assert chunk.token_count <= TOKEN_BUDGET.maximum
+        assert chunk.context_token_count <= TOKEN_BUDGET.context
         knowledge.require_current((knowledge.citation(chunk),))
     public = service.get(document.id, other())
     assert [p.block_id for p in public.versions[0].revisions[0].passages] == [approved.id]

@@ -66,8 +66,8 @@ from knowledge_portal.infrastructure.persistence.in_memory_transaction import (
     InMemoryTransactionManager,
 )
 from knowledge_portal.infrastructure.persistence.reference_index import (
+    ApproximateTokenCounter,
     InMemoryReferenceIndex,
-    Utf8BudgetCounter,
 )
 from knowledge_portal.interfaces.api.composition.architecture import (
     build_architecture_retrieval,
@@ -170,7 +170,7 @@ def build_library_evaluation(settings: Settings, clock: ClockPort) -> LibraryEva
         repository,
         index,
         llm.knowledge_embedding,
-        StructureAwareChunks(Utf8BudgetCounter()),
+        StructureAwareChunks(ApproximateTokenCounter()),
         transactions,
         clock,
         llm.knowledge_embedding.model,

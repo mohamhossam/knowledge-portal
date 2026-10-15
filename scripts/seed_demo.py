@@ -108,7 +108,10 @@ def seed_library(client: httpx.Client) -> None:
             "Business bundle eligibility (sample)",
             b"An SMB customer may hold at most three bundles per site.",
         ),
-        ("إجراءات نقل الأرقام (sample)", "يجب التحقق من هوية العميل قبل نقل الرقم.".encode()),
+        (
+            "Number porting identity check (sample)",
+            b"The customer's identity is verified before a number is ported.",
+        ),
     ):
         publish(client, upload(client, title, "policy.txt", body, text, OWNER), OWNER)
 
@@ -185,14 +188,14 @@ def seed_library(client: httpx.Client) -> None:
         headers=OWNER,
     ).raise_for_status()
 
-    # Awaiting your review, titled in Arabic, so a cell renders right to left.
+    # Awaiting your review.
     read(
         client,
         upload(
             client,
-            "سياسة التحقق من العنوان (sample)",
+            "Address verification policy (sample)",
             "address.txt",
-            "يجب التحقق من العنوان قبل تفعيل الخدمة.".encode(),
+            b"The address is verified before the service is activated.",
             text,
             OWNER,
         ),

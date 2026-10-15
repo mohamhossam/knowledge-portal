@@ -59,8 +59,8 @@ from knowledge_portal.infrastructure.persistence.library_admin import (
     InMemoryLibraryAdminRecord,
 )
 from knowledge_portal.infrastructure.persistence.reference_index import (
+    ApproximateTokenCounter,
     InMemoryReferenceIndex,
-    Utf8BudgetCounter,
 )
 from tests.unit.test_document_library import Embeddings, owner
 
@@ -108,7 +108,7 @@ def library() -> Library:
         repository,
         index,
         Embeddings(),
-        StructureAwareChunks(Utf8BudgetCounter()),
+        StructureAwareChunks(ApproximateTokenCounter()),
         transactions,
         clock,
         "test-model",

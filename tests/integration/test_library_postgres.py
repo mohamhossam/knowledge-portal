@@ -38,8 +38,8 @@ from knowledge_portal.infrastructure.persistence.knowledge_events import (
 from knowledge_portal.infrastructure.persistence.migration_runner import run_migrations
 from knowledge_portal.infrastructure.persistence.postgres_store import PostgresStore
 from knowledge_portal.infrastructure.persistence.reference_index import (
+    ApproximateTokenCounter,
     PostgresReferenceIndex,
-    Utf8BudgetCounter,
 )
 from tests.delimited_fixtures import reviewed_delimited_table
 from tests.presentation_fixtures import PPTX_MIME, reviewed_table_presentation
@@ -130,7 +130,7 @@ def test_cross_owner_rollout_and_rollback_with_postgres_vectors() -> None:
             repository,
             PostgresReferenceIndex(store),
             ConstantEmbeddings(),
-            StructureAwareChunks(Utf8BudgetCounter()),
+            StructureAwareChunks(ApproximateTokenCounter()),
             store,
             clock,
             identity,
@@ -166,7 +166,7 @@ def test_postgres_table_rows_and_exclusions_survive_ready_build_restart(kind: st
         extraction_version = "structured-delimited-rows-v1"
     if kind in {"txt", "md"}:
         mime = "text/plain" if kind == "txt" else "text/markdown"
-        content = "# Private heading\nXGPON التغطية مطلوبة\n# Private appendix".encode()
+        content = b"# Private heading\nXGPON coverage is required\n# Private appendix"
         expected_location = "Line 2"
         extraction_version = "structured-text-sections-v1"
     if kind == "docx-prose":
@@ -190,7 +190,7 @@ def test_postgres_table_rows_and_exclusions_survive_ready_build_restart(kind: st
         repository,
         PostgresReferenceIndex(store),
         ConstantEmbeddings(),
-        StructureAwareChunks(Utf8BudgetCounter()),
+        StructureAwareChunks(ApproximateTokenCounter()),
         store,
         clock,
         f"{kind}-contract",
@@ -246,7 +246,7 @@ def test_postgres_table_rows_and_exclusions_survive_ready_build_restart(kind: st
         restarted_repository,
         PostgresReferenceIndex(restarted_store),
         ConstantEmbeddings(),
-        StructureAwareChunks(Utf8BudgetCounter()),
+        StructureAwareChunks(ApproximateTokenCounter()),
         restarted_store,
         clock,
         f"{kind}-contract",
@@ -313,7 +313,7 @@ def test_postgres_library_publication_survives_restart_and_replacement() -> None
         repository,
         PostgresReferenceIndex(store),
         ConstantEmbeddings(),
-        StructureAwareChunks(Utf8BudgetCounter()),
+        StructureAwareChunks(ApproximateTokenCounter()),
         store,
         clock,
         "contract-test",
@@ -372,7 +372,7 @@ def test_postgres_library_publication_survives_restart_and_replacement() -> None
         _publishing(restarted_store),
         PostgresReferenceIndex(restarted_store),
         ConstantEmbeddings(),
-        StructureAwareChunks(Utf8BudgetCounter()),
+        StructureAwareChunks(ApproximateTokenCounter()),
         restarted_store,
         clock,
         "contract-test",
