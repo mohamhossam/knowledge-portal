@@ -80,6 +80,45 @@
 
   --elevation-overlay: 0 6px 24px var(--shadow-ink);
   --color-scrim: var(--black-32);
+
+  /*
+   * Architecture diagrams (the catalogue). Light only for now: the catalogue
+   * keeps data-theme="light", and these have no dark values yet.
+   */
+  --color-layer-market: var(--layer-market-tint);
+  --color-layer-market-ink: var(--layer-market-ink);
+  --color-layer-market-edge: var(--layer-market-edge);
+  --color-layer-product: var(--layer-product-tint);
+  --color-layer-product-ink: var(--layer-product-ink);
+  --color-layer-product-edge: var(--layer-product-edge);
+  --color-layer-customer: var(--layer-customer-tint);
+  --color-layer-customer-ink: var(--layer-customer-ink);
+  --color-layer-customer-edge: var(--layer-customer-edge);
+  --color-layer-service: var(--layer-service-tint);
+  --color-layer-service-ink: var(--layer-service-ink);
+  --color-layer-service-edge: var(--layer-service-edge);
+  --color-layer-resource: var(--layer-resource-tint);
+  --color-layer-resource-ink: var(--layer-resource-ink);
+  --color-layer-resource-edge: var(--layer-resource-edge);
+  --color-layer-party: var(--layer-party-tint);
+  --color-layer-party-ink: var(--layer-party-ink);
+  --color-layer-party-edge: var(--layer-party-edge);
+  --color-layer-enterprise: var(--layer-enterprise-tint);
+  --color-layer-enterprise-ink: var(--layer-enterprise-ink);
+  --color-layer-enterprise-edge: var(--layer-enterprise-edge);
+  --color-footprint: var(--pine-700);
+  --color-footprint-ink: var(--pine-900);
+  --color-footprint-mid: var(--pine-300);
+  --color-footprint-soft: var(--pine-50);
+  --color-intensity-1: var(--slate-50);
+  --color-intensity-2: var(--slate-200);
+  --color-intensity-3: var(--slate-400);
+  --color-intensity-4: var(--slate-700);
+  --color-amount-1: var(--maroon-tint);
+  --color-amount-2: var(--maroon-200);
+  --color-amount-3: var(--maroon-400);
+  --color-amount-4: var(--maroon-600);
+  --color-on-action-fill-quiet: var(--maroon-blush);
 }
 
 /* Dark: warm charcoal. Repeated under two selectors: OS preference, and forced. */

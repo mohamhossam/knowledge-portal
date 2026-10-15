@@ -35,7 +35,7 @@ def reviewed_spreadsheet_document() -> bytes:
     sheet["A2"] = "Private anchor"
     sheet["B2"] = "Private condition"
     sheet.merge_cells("A2:A3")
-    sheet["B3"] = "XGPON التغطية مطلوبة. " * 80
+    sheet["B3"] = "XGPON coverage is required. " * 80
     sheet["C3"] = "Public note"
     hidden = workbook.create_sheet("Internal")
     hidden.sheet_state = "hidden"
@@ -74,8 +74,8 @@ def reviewed_worksheet_names_document() -> bytes:
     workbook = Workbook()
     sheet = workbook.active
     assert sheet is not None
-    sheet.title = "Private heading سري"
-    sheet["A1"] = "XGPON التغطية مطلوبة."
+    sheet.title = "Private heading secret"
+    sheet["A1"] = "XGPON coverage is required."
     sheet["B1"] = "Public note"
     workbook.create_sheet("Private empty")
     hidden = workbook.create_sheet("Private hidden")

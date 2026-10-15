@@ -1,14 +1,16 @@
-"""The golden-set evaluation's object graph (ontology plan, Phases 0 and 3).
+"""The golden-set evaluations' object graphs: the impact mapper's (ontology plan, Phases 0
+and 3) and the reference library's retrieval (RAG review, E1).
 
-It uses the configured models, so the same run scores fake models in CI and live ones by
-hand, but keeps every release, index and squad record in memory: an evaluation never reads
-or writes the portal's database.
+They use the configured models, so the same run scores fake models in CI and live ones by
+hand, but keep every release, document, index and squad record in memory: an evaluation never
+reads or writes the portal's database.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from threading import RLock
 
 from smb_kernel.documents.text_extractor import SafeDocumentTextExtractor
 from smb_kernel.observability.metrics import Metrics
@@ -19,6 +21,11 @@ from knowledge_portal.application.use_cases.architecture_knowledge import (
     ManageArchitectureKnowledge,
 )
 from knowledge_portal.application.use_cases.assess_requirement import AssessRequirement
+from knowledge_portal.application.use_cases.document_library import DocumentLibrary
+from knowledge_portal.application.use_cases.library_evaluation import (
+    EvaluateLibraryRetrieval,
+    SeedLibraryForEvaluation,
+)
 from knowledge_portal.application.use_cases.mapping_evaluation import (
     AssessedImpact,
     EvaluateImpactMapping,
@@ -27,6 +34,10 @@ from knowledge_portal.application.use_cases.mapping_evaluation import (
     SeedGoldenPrecedents,
 )
 from knowledge_portal.application.use_cases.precedents import RecordPrecedent
+from knowledge_portal.application.use_cases.reference_knowledge import (
+    ReferenceKnowledge,
+    StructureAwareChunks,
+)
 from knowledge_portal.application.use_cases.resolve_architecture_knowledge import (
     ResolveArchitectureKnowledge,
 )
@@ -41,6 +52,8 @@ from knowledge_portal.infrastructure.architecture.yaml_knowledge import (
     default_knowledge_path,
 )
 from knowledge_portal.infrastructure.config.settings import Settings
+from knowledge_portal.infrastructure.documents.library_worker import OfflineDocumentScanner
+from knowledge_portal.infrastructure.persistence.document_library import InMemoryDocumentLibrary
 from knowledge_portal.infrastructure.persistence.document_storage import InMemoryDocumentStorage
 from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
     InMemoryArchitectureKnowledgeRepository,
@@ -49,6 +62,13 @@ from knowledge_portal.infrastructure.persistence.in_memory_organisation import (
     InMemoryOrganisationRepository,
 )
 from knowledge_portal.infrastructure.persistence.in_memory_precedents import InMemoryPrecedents
+from knowledge_portal.infrastructure.persistence.in_memory_transaction import (
+    InMemoryTransactionManager,
+)
+from knowledge_portal.infrastructure.persistence.reference_index import (
+    ApproximateTokenCounter,
+    InMemoryReferenceIndex,
+)
 from knowledge_portal.interfaces.api.composition.architecture import (
     build_architecture_retrieval,
 )
@@ -111,5 +131,52 @@ def build_mapping_evaluation(settings: Settings, clock: ClockPort) -> MappingEva
         seed_precedents=SeedGoldenPrecedents(
             RecordPrecedent(repository, index, precedents, clock), clock
         ),
+        close=llm.close,
+    )
+
+
+@dataclass(frozen=True)
+class LibraryEvaluation:
+    # Puts the golden corpus in service through the worker's own path.
+    seed: SeedLibraryForEvaluation
+    evaluate: EvaluateLibraryRetrieval
+    # Releases the model clients the run shares.
+    close: Callable[[], None]
+
+
+def build_library_evaluation(settings: Settings, clock: ClockPort) -> LibraryEvaluation:
+    """The library as `build_container` wires it, on in-memory stores and an offline scanner.
+
+    The chunking policy, the token counter and the embedding adapter are the container's, so
+    the chunks scored are the chunks the portal would serve for the same configuration.
+    """
+    llm = build_llm_adapters(settings, Metrics())
+    lock = RLock()
+    repository = InMemoryDocumentLibrary(lock)
+    storage = InMemoryDocumentStorage()
+    index = InMemoryReferenceIndex(lock, repository)
+    transactions = InMemoryTransactionManager(lock)
+    transactions.enroll(repository, storage, index)
+    library = DocumentLibrary(
+        repository,
+        storage,
+        SafeDocumentTextExtractor(),
+        OfflineDocumentScanner(),
+        transactions,
+        clock,
+        settings.document_max_file_bytes,
+    )
+    knowledge = ReferenceKnowledge(
+        repository,
+        index,
+        llm.knowledge_embedding,
+        StructureAwareChunks(ApproximateTokenCounter()),
+        transactions,
+        clock,
+        llm.knowledge_embedding.model,
+    )
+    return LibraryEvaluation(
+        seed=SeedLibraryForEvaluation(library, knowledge),
+        evaluate=EvaluateLibraryRetrieval(knowledge, llm.knowledge_embedding.model),
         close=llm.close,
     )

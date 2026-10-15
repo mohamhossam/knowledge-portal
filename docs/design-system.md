@@ -39,8 +39,8 @@ every component's API, states, keyboard and accessibility behaviour.
 
 | Layer | File | Holds | May read |
 |---|---|---|---|
-| Primitive | `tokens/primitive.css` | e& primitives (the brief's values, unverified), derived neutrals, charcoal, maroon family, state hues, chart palettes, type, space, radius, motion, layers | — |
-| Semantic | `tokens/semantic.css` | What a value is *for*: surfaces, ink, rules, action, selected, focus, brand accent, masthead, states, highlight, proof, charts; type roles; density; reduced motion | primitives |
+| Primitive | `tokens/primitive.css` | e& primitives (the brief's values, unverified), derived neutrals, charcoal, maroon family, state hues, chart palettes, the architecture diagrams' palettes (light only), type, space, radius, motion, layers | — |
+| Semantic | `tokens/semantic.css` | What a value is *for*: surfaces, ink, rules, action, selected, focus, brand accent, masthead, states, highlight, proof, charts, architecture diagrams (layer tints and inks, footprint, intensity, amounts; light only); type roles; density; reduced motion | primitives |
 | Component | `tokens/component.css` | Per-component knobs: button, field, focus ring, masthead and rail, table, badge, suggested, panel, state line, split pane, overlays, toast, skeleton, quote | semantic |
 
 **Scoping rule.** A custom property's `var()` resolves *where it is declared*. That is why:
@@ -115,6 +115,10 @@ Notes:
 - The dark masthead (`#4a1b26`) was deepened from the action fill because red on it measured 2.75:1.
   It is now 4.27:1, a finding from the token test.
 - The two lightest sequential chart steps are fills only, labelled directly.
+- The architecture diagrams' tokens (`--color-layer-*`, `--color-footprint*`, `--color-intensity-*`,
+  `--color-amount-*`, `--color-on-action-fill-quiet`) are light only: the catalogue keeps
+  `data-theme="light"`. The token test checks their pairs in light only: each layer's ink, ink and
+  ink-2 on its tint, quiet text on the action fill, and the footprint, intensity and amount marks.
 
 ## 4. Components
 
@@ -137,6 +141,8 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
       of labelled links under the brand bar;
     - an optional shell `banner`.
   - **Reader variant:** `reader` drops the sidebar.
+  - **Full bleed:** `fullBleed` drops the main area's padding, for a page that draws its own
+    edges (the catalogue's bands run the area's full width).
   - **Behaviour:** when `locationKey` changes, it scrolls to the top and focuses `#ds-page-title`
     (§1). The masthead publishes `--sticky-top`. Three cases keep the focus the page placed
     itself: an address with a `#target`, and a pane marked `data-takes-focus`

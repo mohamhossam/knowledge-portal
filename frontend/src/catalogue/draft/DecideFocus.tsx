@@ -19,7 +19,8 @@ import { useDraft } from "../useDraft";
 import { documentLang, stateWords } from "./decide";
 import { DecisionTree } from "./DecisionTree";
 import { type NodeMark, touching } from "./decisionTreeModel";
-import { type DecideAnswer, type DecideQuestion, decideChoices, decideQuestions } from "./questions";
+import { type DecideAnswer, type DecideQuestion, decideChoices, decideQuestions, firstSystems } from "./questions";
+import { type SendAnswer, sendAnswers, type SendPlan, type SendPort } from "./sendAnswers";
 
 /** How many suggestions the summary names before "and N more". */
 const NAMED = 8;
@@ -261,32 +262,35 @@ function Summary({ release, all, words, questions, answers, draft, onBack, onDon
   const send = async (withFollowing: boolean) => {
     setSending(true);
     setFailed(null);
-    let done = 0;
-    let refused = 0;
-    const decide = async (question: DecideQuestion) => {
+    const answerOf = (question: DecideQuestion): SendAnswer => {
       const answer = answers[question.id]!;
-      if (await draft.decide({ suggestionId: question.id, accept: answer.accept, content: answer.content })) done += 1;
-      else refused += 1;
+      return { suggestionId: question.id, accept: answer.accept, content: answer.content };
+    };
+    const byId = new Map(accepted.map((item) => [item.id, item]));
+    const plan: SendPlan = {
+      rejected: rejected.map(answerOf),
+      accepted: inDependencyOrder(accepted.map((item) => item.suggestion)).flatMap((suggestion) => {
+        const question = byId.get(suggestion.id);
+        return question ? [answerOf(question)] : [];
+      }),
+      first: {
+        accept: accepted.flatMap((item) => item.first?.accept ?? []).map((item) => item.id),
+        add: accepted.flatMap((item) => item.first?.add ?? []),
+      },
+      withFollowing,
+    };
+    const port: SendPort = {
+      decide: draft.decide,
+      acceptReady: () => draft.acceptReady.mutateAsync(),
+      settleSubject: (subject) => draft.settleSubject.mutateAsync(subject),
+      refetchSuggestions: async () => (await draft.suggestions.refetch({ throwOnError: true })).data?.suggestions ?? [],
     };
     try {
-      // Rejections first; then what follows, so the answers find the systems they hang on; then the answers.
-      for (const question of rejected) await decide(question);
-      const last = { remaining: 0 };
-      const acceptReady = async () => {
-        try {
-          last.remaining = (await draft.acceptReady.mutateAsync()).remaining;
-        } catch {
-          // Nothing was ready, or the draft moved on: the answers still go.
-        }
-      };
-      if (withFollowing) await acceptReady();
-      const order = inDependencyOrder(accepted.map((item) => item.suggestion)).map((suggestion) => accepted.find((item) => item.id === suggestion.id)!);
-      for (const question of order) await decide(question);
-      if (withFollowing) await acceptReady();
+      const { done, refused, systems, remaining } = await sendAnswers(port, plan);
       const parts = [
-        `${count(done, "answer")} sent${withFollowing ? ", and what followed accepted" : ""}`,
+        `${count(done, "answer")} sent${systems ? `, with ${count(systems, "system")} they need` : ""}${withFollowing ? ", and what followed accepted" : ""}`,
         refused ? `${count(refused, "answer")} couldn't be taken: decide ${refused === 1 ? "it" : "them"} here` : "",
-        last.remaining ? `${count(last.remaining, "suggestion")} still ${last.remaining === 1 ? "waits" : "wait"} for you` : "",
+        remaining ? `${count(remaining, "suggestion")} still ${remaining === 1 ? "waits" : "wait"} for you` : "",
       ].filter(Boolean);
       onDone(`${parts.join("; ")}.`);
     } catch (error) {
@@ -315,7 +319,15 @@ function Summary({ release, all, words, questions, answers, draft, onBack, onDon
           {listed(accepted.map((item) => item.suggestion), "You accept", (item) => {
             const choice = answers[item.id]!.choice;
             const match = item.possible_matches.find((candidate) => choice === `match:${candidate.system_id}`);
-            return <>{sentence(item)}{match ? <span className="draft-quiet"> · “{match.written_as}” is {match.system_name}</span> : null}</>;
+            const question = questions.find((candidate) => candidate.id === item.id);
+            const systems = choice === "accept" && question ? firstSystems(question) : "";
+            return (
+              <>
+                {sentence(item)}
+                {match ? <span className="draft-quiet"> · “{match.written_as}” is {match.system_name}</span> : null}
+                {systems ? <span className="draft-quiet"> · adds {systems} first</span> : null}
+              </>
+            );
           })}
         </section>
       )}

@@ -38,16 +38,67 @@ from knowledge_portal.application.use_cases.document_library import (
     TABLE_CHUNKING_POLICY,
 )
 from knowledge_portal.application.use_cases.library_admin import LibraryStewardship
-from knowledge_portal.domain.document.library import LibraryDocument, Publication
+from knowledge_portal.domain.document.entities import DocumentEvidenceBlock
+from knowledge_portal.domain.document.language import has_arabic
+from knowledge_portal.domain.document.library import (
+    LibraryDocument,
+    Publication,
+    ReviewedPassage,
+)
 from knowledge_portal.domain.document.reference import (
     PublishedReference,
     normalize_search,
 )
+from knowledge_portal.domain.document.table_headers import column_names, with_column_names
 from knowledge_portal.domain.document.value_objects import EvidenceBlockKind
 from knowledge_portal.domain.identity.entities import ActorProfile
 from knowledge_portal.domain.identity.errors import AuthorizationDeniedError
 
-CONTEXT_MAX_BUDGET = 1536
+
+@dataclass(frozen=True)
+class ChunkBudget:
+    """A chunker's limits, in the units of the counter that measures them."""
+
+    # A chunk with its source label.
+    maximum: int
+    # The size a split of a long passage aims for.
+    target: int
+    # A sentence break is preferred only once a piece is at least this big.
+    smallest_break: int
+    # A source label (title, section path, location) must stay under this.
+    label: int
+    # A table field's heading is repeated on its fragments up to this size.
+    field_heading: int
+    # A chunk with its neighbours, as the prompt sees it.
+    context: int
+
+
+# Approximate tokens, about 3.8 bytes of English each: the sizes the byte budget had.
+TOKEN_BUDGET = ChunkBudget(
+    maximum=200, target=135, smallest_break=100, label=64, field_heading=40, context=400
+)
+# The byte budget chunks were sized with before tokens. Only documents published under it are
+# measured with it, so their chunks are rebuilt exactly.
+LEGACY_BYTE_BUDGET = ChunkBudget(
+    maximum=768, target=512, smallest_break=384, label=256, field_heading=160, context=1536
+)
+# The evidence `retrieve` hands to requirement work, in tokens (about 8,000 bytes of English).
+EVIDENCE_TOKEN_BUDGET = 2100
+NO_ARABIC_SEARCH = "The library holds English documents only; search in English."
+
+
+@dataclass(frozen=True)
+class ChunkSizer:
+    """A counter, the budget expressed in its units, and how table rows are searched."""
+
+    counter: TokenCounterPort
+    budget: ChunkBudget
+    # Table rows are searched and embedded with their header row's column names. Chunks built
+    # before this were not; a legacy sizer leaves it off so they are rebuilt exactly.
+    row_headers: bool = False
+
+
+TABLE_KINDS = (EvidenceBlockKind.TABLE_ROW, EvidenceBlockKind.WORKSHEET_RANGE)
 
 
 @dataclass(frozen=True)
@@ -64,19 +115,54 @@ def chunk_manifest(pairs: tuple[tuple[str, str], ...]) -> str:
 
 
 class StructureAwareChunks:
-    def __init__(self, tokens: TokenCounterPort) -> None:
-        self._tokens = tokens
+    """Cut approved passages into chunks sized in tokens.
+
+    `legacy` sizers only rebuild the chunks of publications indexed with them, so documents
+    published before a counter change stay searchable and citable until they are rebuilt.
+    New chunks are always sized with `tokens`.
+    """
+
+    def __init__(
+        self,
+        tokens: TokenCounterPort,
+        budget: ChunkBudget = TOKEN_BUDGET,
+        legacy: tuple[ChunkSizer, ...] = (),
+        row_headers: bool = True,
+    ) -> None:
+        self._sizer = ChunkSizer(tokens, budget, row_headers)
+        self._legacy = legacy
 
     @property
     def identity(self) -> str:
         return self.policy_identity(CHUNKING_POLICY)
 
-    def policy_identity(self, policy: str) -> str:
+    def count(self, text: str) -> int:
+        return self._sizer.counter.count(text)
+
+    def policy_identity(self, policy: str, sizer: ChunkSizer | None = None) -> str:
         if policy not in (CHUNKING_POLICY, TABLE_CHUNKING_POLICY):
             raise KnowledgeGenerationError(
                 "Unsupported chunking policy; restore its implementation."
             )
-        return f"{policy}:{self._tokens.identity}:normalize-ar-v1"
+        sizer = sizer or self._sizer
+        headers = ":row-headers-v1" if sizer.row_headers else ""
+        return f"{policy}:{sizer.counter.identity}:normalize-ar-v1{headers}"
+
+    def legacy_identities(self) -> tuple[str, ...]:
+        """The policy identities chunks indexed with a legacy sizer carry."""
+        return tuple(
+            self.policy_identity(policy, sizer)
+            for sizer in self._legacy
+            for policy in (CHUNKING_POLICY, TABLE_CHUNKING_POLICY)
+        )
+
+    def _sizer_for(self, publication: Publication) -> ChunkSizer:
+        if publication.index_identity is not None:
+            for sizer in self._legacy:
+                suffix = ":" + self.policy_identity(publication.chunking_policy, sizer)
+                if publication.index_identity.endswith(suffix):
+                    return sizer
+        return self._sizer
 
     def build(
         self, document: LibraryDocument, publication: Publication
@@ -84,14 +170,17 @@ class StructureAwareChunks:
         version = document.file_version(publication.version_id)
         revision = next(r for r in version.revisions if r.id == publication.revision_id)
         blocks = {b.id: b for b in version.blocks}
-        identity = self.policy_identity(publication.chunking_policy)
+        sizer = self._sizer_for(publication)
+        count, budget = sizer.counter.count, sizer.budget
+        identity = self.policy_identity(publication.chunking_policy, sizer)
+        headers = self._row_headers(version.blocks, revision.passages) if sizer.row_headers else {}
         result: list[ReferenceChunk] = []
         for passage in revision.passages:
             if not passage.included:
                 continue
             block = blocks[passage.block_id]
             label = " / ".join((document.title, *block.section_path, block.label))
-            if self._tokens.count(label) >= 256:
+            if count(label) >= budget.label:
                 raise KnowledgeGenerationError(
                     "Source labels exceed the chunk budget. "
                     "Shorten the document title or review its structure."
@@ -101,19 +190,23 @@ class StructureAwareChunks:
             ).hexdigest()
             # Each approved block remains isolated. Sentence boundaries are preferred; a very long
             # sentence is explicitly split without dropping any characters or crossing a source.
-            table = publication.chunking_policy == TABLE_CHUNKING_POLICY and block.kind in (
-                EvidenceBlockKind.TABLE_ROW,
-                EvidenceBlockKind.WORKSHEET_RANGE,
+            table = (
+                publication.chunking_policy == TABLE_CHUNKING_POLICY and block.kind in TABLE_KINDS
             )
+            names = headers.get(block.id, {})
             spans = (
-                self._table_spans(passage.text, label)
+                self._table_spans(passage.text, label, sizer)
                 if table
-                else tuple((start, end, "") for start, end in self._spans(passage.text, label))
+                else tuple(
+                    (start, end, "") for start, end in self._spans(passage.text, label, sizer)
+                )
             )
             for start, end, field in spans:
                 original = passage.text[start:end]
                 child_label = f"{label}\n{field}" if field else label
-                search = normalize_search(f"{child_label}\n{original}")
+                # The cited text stays as approved; only what is searched names the columns.
+                searched = with_column_names(original, names)
+                search = normalize_search(f"{child_label}\n{searched}")
                 digest = hashlib.sha256(search.encode()).hexdigest()
                 chunk_id = hashlib.sha256(
                     f"{publication.id}:{block.id}:{start}:{end}:{identity}".encode()
@@ -136,7 +229,7 @@ class StructureAwareChunks:
                         search,
                         digest,
                         "ar" if re.search(r"[\u0600-\u06ff]", original) else "en",
-                        self._tokens.count(f"{child_label}\n{original}"),
+                        count(f"{child_label}\n{original}"),
                         identity,
                         start,
                         end,
@@ -148,41 +241,73 @@ class StructureAwareChunks:
                         field_context=field,
                     )
                 )
-        return self._with_context(tuple(result))
+        return self._with_context(tuple(result), sizer)
 
-    def _table_spans(self, text: str, label: str) -> tuple[tuple[int, int, str], ...]:
+    @staticmethod
+    def _row_headers(
+        blocks: Sequence[DocumentEvidenceBlock], passages: Sequence[ReviewedPassage]
+    ) -> dict[str, dict[str, str]]:
+        """Each table row's column names, read from the first row of its table.
+
+        A table is the run of rows that share a section (a Word table, a slide table, a
+        delimited file, a worksheet). The header is used only as the reviewer approved it: an
+        excluded header row names nothing, so excluded text never reaches the index.
+        """
+        reviewed = {p.block_id: p for p in passages}
+        header_of: dict[tuple[str, ...], str] = {}
+        result: dict[str, dict[str, str]] = {}
+        for block in blocks:
+            if block.kind not in TABLE_KINDS:
+                continue
+            first = header_of.setdefault(block.section_path, block.id)
+            if first == block.id:
+                continue
+            header = reviewed.get(first)
+            if header is not None and header.included:
+                result[block.id] = column_names(header.text)
+        return result
+
+    def _table_spans(
+        self, text: str, label: str, sizer: ChunkSizer
+    ) -> tuple[tuple[int, int, str], ...]:
         """Pack rendered fields without losing characters; isolate oversized cells.
 
         Delimiters are layout hints only. Exact offsets always refer to approved text,
         including when a reviewer or a cell value contains a delimiter itself.
         """
+        count, budget = sizer.counter.count, sizer.budget
         boundaries = [0, *(m.end() for m in re.finditer(r" \| ", text)), len(text)]
         result: list[tuple[int, int, str]] = []
         start = end = 0
         for left, right in zip(boundaries, boundaries[1:], strict=False):
-            if self._tokens.count(f"{label}\n{text[start:right]}") <= 768:
+            if count(f"{label}\n{text[start:right]}") <= budget.maximum:
                 end = right
                 continue
             if end > start:
                 result.append((start, end, ""))
             start = left
             field = text[left:right]
-            if self._tokens.count(f"{label}\n{field}") <= 768:
+            if count(f"{label}\n{field}") <= budget.maximum:
                 end = right
                 continue
             match = re.match(r"([^:=\n|]{1,80}[:=])", field)
             heading = match.group(1) if match else ""
-            if self._tokens.count(heading) > 160:
+            if count(heading) > budget.field_heading:
                 heading = ""
             child_label = f"{label}\n{heading}" if heading else label
-            result.extend((left + a, left + b, heading) for a, b in self._spans(field, child_label))
+            result.extend(
+                (left + a, left + b, heading) for a, b in self._spans(field, child_label, sizer)
+            )
             start = end = right
         if end > start:
             result.append((start, end, ""))
         return tuple(result)
 
-    def _with_context(self, chunks: tuple[ReferenceChunk, ...]) -> tuple[ReferenceChunk, ...]:
+    def _with_context(
+        self, chunks: tuple[ReferenceChunk, ...], sizer: ChunkSizer
+    ) -> tuple[ReferenceChunk, ...]:
         """Attach a bounded same-section window without changing the indexed child text."""
+        count, budget = sizer.counter.count, sizer.budget
 
         groups: dict[str, list[int]] = {}
         for index, chunk in enumerate(chunks):
@@ -203,7 +328,7 @@ class StructureAwareChunks:
                     trial = sorted((*selected, candidate))
                     context = self._render_context(tuple(chunks[indexes[item]] for item in trial))
                     header = " / ".join((target.document_title, *target.heading_path))
-                    if self._tokens.count(f"{header}\n{context}") <= CONTEXT_MAX_BUDGET:
+                    if count(f"{header}\n{context}") <= budget.context:
                         selected.add(candidate)
                 window = tuple(chunks[indexes[item]] for item in sorted(selected))
                 context = self._render_context(window)
@@ -212,7 +337,7 @@ class StructureAwareChunks:
                     target,
                     context_text=context,
                     context_locations=tuple(item.location for item in window),
-                    context_token_count=self._tokens.count(f"{header}\n{context}"),
+                    context_token_count=count(f"{header}\n{context}"),
                 )
         return tuple(enriched)
 
@@ -225,7 +350,8 @@ class StructureAwareChunks:
             for chunk in chunks
         )
 
-    def _spans(self, text: str, label: str) -> tuple[tuple[int, int], ...]:
+    def _spans(self, text: str, label: str, sizer: ChunkSizer) -> tuple[tuple[int, int], ...]:
+        count, budget = sizer.counter.count, sizer.budget
         result: list[tuple[int, int]] = []
         start = 0
         while start < len(text):
@@ -233,7 +359,7 @@ class StructureAwareChunks:
             end = start
             while low <= high:
                 mid = (low + high) // 2
-                if self._tokens.count(f"{label}\n{text[start:mid]}") <= 768:
+                if count(f"{label}\n{text[start:mid]}") <= budget.maximum:
                     end, low = mid, mid + 1
                 else:
                     high = mid - 1
@@ -244,12 +370,14 @@ class StructureAwareChunks:
                     m.end() + start for m in re.finditer(r"[.!?\u061f]\s+|\n+", text[start:end])
                 ]
                 preferred = [
-                    b for b in boundaries if self._tokens.count(f"{label}\n{text[start:b]}") >= 384
+                    b
+                    for b in boundaries
+                    if count(f"{label}\n{text[start:b]}") >= budget.smallest_break
                 ]
                 if preferred:
                     end = min(
                         preferred,
-                        key=lambda b: abs(self._tokens.count(f"{label}\n{text[start:b]}") - 512),
+                        key=lambda b: abs(count(f"{label}\n{text[start:b]}") - budget.target),
                     )
             result.append((start, end))
             start = end
@@ -264,8 +392,8 @@ class ReferenceKnowledge:
         budget = 0
         for chunk in self.search(query[:2000]):
             context = chunk.context_text or chunk.original_text
-            cost = len(context.encode("utf-8"))
-            if budget + cost > 8000 or len(result) >= 10:
+            cost = self._chunks.count(context)
+            if budget + cost > EVIDENCE_TOKEN_BUDGET or len(result) >= 10:
                 continue
             result.append(ReferenceEvidence(self.citation(chunk), context, chunk.context_locations))
             budget += cost
@@ -667,10 +795,18 @@ class ReferenceKnowledge:
             )
 
     def search(self, query: str) -> tuple[ReferenceChunk, ...]:
+        if has_arabic(query):
+            raise UnsupportedDocumentError(NO_ARABIC_SEARCH)
         query = normalize_search(query)
         if not query or len(query) > 2000:
             raise UnsupportedDocumentError("Search requires 1 to 2,000 characters.")
-        identities = (self.identity, self._index_identity(TABLE_CHUNKING_POLICY))
+        # Documents published before a counter change are read in their own generation until
+        # they are rebuilt; vectors still never cross embedding models.
+        identities = (
+            self.identity,
+            self._index_identity(TABLE_CHUNKING_POLICY),
+            *(f"{self._embedding_identity}:{item}" for item in self._chunks.legacy_identities()),
+        )
         if self._documents.has_incompatible_publication(identities):
             raise KnowledgeGenerationError(
                 "Published references use another index generation. "

@@ -19,9 +19,12 @@ ARG VITE_API_BASE=/knowledge-api
 # default, or / at the root of the portal's own hostname.
 ARG KNOWLEDGE_BASE_PATH=/knowledge/
 ARG CSP_IDENTITY_ORIGINS=runtime
+# "true" builds the catalogue redesign lab in (a local image only); published images leave it out.
+ARG VITE_CATALOGUE_LAB=false
 ENV VITE_API_BASE=$VITE_API_BASE \
     KNOWLEDGE_BASE_PATH=$KNOWLEDGE_BASE_PATH \
-    CSP_IDENTITY_ORIGINS=$CSP_IDENTITY_ORIGINS
+    CSP_IDENTITY_ORIGINS=$CSP_IDENTITY_ORIGINS \
+    VITE_CATALOGUE_LAB=$VITE_CATALOGUE_LAB
 RUN npm run build
 
 FROM nginxinc/nginx-unprivileged:1.31-alpine@sha256:26b0bf6fbf07297983cb341998d79c831508787de26627dd2a112321b9c3a4af

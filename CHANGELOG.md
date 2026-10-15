@@ -7,6 +7,23 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- The catalogue says three things it left to prose and naming before, additively in both
+  contracts. An order type's `delivery_drop` ("P2 / P3"), set in the catalogue file
+  (YAML, JSON, or the workbook's new `OrderTypes` column); `catalogues/smb-architecture.yaml`
+  moves its 19 "Delivered in drop …" sentences there. A landscape domain's `cross_cutting`
+  (TAM's enterprise domain and the integration layer), in the file and the workbook's
+  `LandscapeDomains` sheet, and named in a version diff. Each activity's `main_track`,
+  derived from its track on the way out and ignored on the way in. The catalogue lab reads
+  them, and reads the old prose only for a version saved before them. The internal contract
+  gains `delivery_drop` and `main_track`: requirement-portal should review it.
+
+- Each journey's flow per channel, read-only beside `edges`: `channel_edges` (for each
+  channel its steps name, the flow that channel sees: its own steps and the shared ones) and
+  `shared_edges` (what a channel no step names sees). A rule counts in a view only when both
+  its ends are in it, a parallel track rejoins only where the view has the step, and a loop
+  stays a `loop` edge. Derived like `edges`, ignored on the way in; both contracts gain the
+  two fields (additive). In the domain: `Activity.seen_in`, `journey_edges(journey,
+  channel)`, `shared_journey_edges` and `journey_channels`.
 - Decide always says what to do next: answer the questions, accept the ready ones, or settle
   a wait nothing on the page can lift. A name that waiting suggestions need and nothing adds
   can be suggested as a system or made a product offering on the spot
@@ -20,8 +37,142 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   started, roughly how long is left, and when the reader has stopped responding. The step
   header says the same in a few words. Catalogue jobs now report `queued_at`, `started_at`,
   `stage`, `progress_done` and `progress_total` (additive; migration `202610120900`).
+- A web image can carry the catalogue redesign lab: built with `VITE_CATALOGUE_LAB=true`
+  (`deploy/web/Dockerfile`), the lab and its "Catalogue" link are in the production build, as
+  under the dev server. Published images leave it out, as before (the argument defaults to
+  `false`).
+- The catalogue redesign lab reads the catalogue version in service from the API, with a
+  loading, error and nothing-in-service state. Its "Data" switch turns to the bundled
+  Business Pro Plus sample and back, to compare the two; the sample says so under the bar and
+  loads only when chosen. `VITE_CATALOGUE_SOURCE=sample` makes the sample the default.
+  Governance and Versions open the portal's catalogue pages.
+- An address under the catalogue redesign lab that no page has says "Page not found", with
+  the lab's sections and the way back to the landscape. The lab's switches
+  (`VITE_CATALOGUE_LAB`, `VITE_CATALOGUE_SOURCE`) and its address are read in one place,
+  `frontend/src/app/features.ts`, which also holds the lab's loader: where the lab is off,
+  as in a published image, its code is still left out of the bundle.
+- The catalogue lab's bundled sample (`frontend/src/catalogue/model/fixtures/smb-release.json`)
+  is generated from `catalogues/smb-architecture.yaml` through the API's read schema by
+  `scripts/dump_catalogue_fixture.py`, so it carries what the API sends: the vocabulary,
+  role ids, interfaces, realisations and the per-channel flows. A backend test fails when it
+  is stale (`--check`). The frontend reads it through one checked loader
+  (`catalogue/model/sample.ts`) instead of casting it.
+- Seed tooling for the full catalogue: `scripts/seed_full_catalogue.py` imports
+  `catalogues/smb-architecture.yaml` into a running offline API as a maintainer would (draft,
+  file import, build, publish), and `seed_demo.py --full-catalogue` puts it in service after
+  the sample version, before the sample draft. The sample squads are now seeded before the
+  draft, while the sample version whose systems they own is in service. Both scripts share
+  `scripts/_catalogue_seed.py`: the personas, the full catalogue's file and name, one wait
+  that stops on a failed read or after 120 s, and the service's refusal (409, such as a
+  draft already in progress) reported in one line instead of a traceback.
 
 ### Fixed
+
+- The catalogue's view model (adapter, model, conventions, vocabulary, flow layout, exports and the
+  bundled sample) moves from a new top-level `frontend/src/architecture/` to
+  `frontend/src/catalogue/model/`, a sub-area of the catalogue module like `draft/` and `journey/`,
+  so the branch keeps main's module structure. Only import paths change.
+- The catalogue lab reads from the version what it used to write in. The catalogue's name is the
+  version's name up to any colon (the live catalogue reads "Business Pro Plus (SDD v2.3)", the
+  sample "SMB architecture"). A plan's price gap names the product's primary source ("SDD v2.3").
+  The layers keep one order everywhere, the version's own, with the integration bus placed by a
+  named rule under the customer layer (`catalogue/model/conventions.ts`). The map's rows follow
+  from that order and each layer's width, which replaces `DOMAIN_ORDER`, `ROWS` and the magic
+  99. On the Systems page, the integrations matrix now lists the integration layer after
+  Customer, as the map does. The journeys page opens on the deepest portfolio node every
+  product shares, not on "Fixed › SMB" by name. The order-type stages stay a business rule in
+  code, now tested.
+  - New unit tests for the lab's pure helpers (`labUtil`, `posterModel`, `journeyScope`,
+    `stages`, the name helpers). The lab test reads its counts from the fixture.
+- The catalogue lab's styles are built on the design system, in light only. Each `--cl-*`
+  colour is now a semantic token (`design/tokens`). The ones it lacked are new primitive and
+  semantic tokens, with no dark values yet: layer tints and inks, footprint, intensity,
+  amounts, and quiet text on the action fill. Their contrast is checked in the token test.
+  - The brand lint no longer exempts the lab, and the lab has no raw colours left.
+  - Focus and the current system are maroon. Red marks only the traced call: its line,
+    arrowhead and number.
+  - The gradients are flat tints. Only hatching that marks a state is kept.
+  - Colour changes are instant. The motion left is opacity and transform, at 200 ms or less.
+  - Smooth scrolling respects reduced motion.
+  - The portal shell has a `fullBleed` prop, which replaces the lab's `.ds-main:has(...)`
+    override. The lab sticks under the shell's measured `--sticky-top`, not a fixed 56px.
+  - 74 duplicate rules are folded into their first rule, and the dead masthead CSS is gone.
+    Computed styles stay identical on 19 lab pages at 3 widths, apart from the changes above.
+- The catalogue lab's largest modules are split along their seams, with no change on any
+  page or in the model: the journey's calls (`IntegrationRegister.tsx`, out of the 709-line
+  `JourneyFlow.tsx`), the product's Components tab (`ProductComponents.tsx`) and who can buy
+  it (`WhoCanBuy.tsx`), the journeys page's scope menu (`JourneyFilters.tsx`) and opening
+  scope (`journeyScope.ts`). The product's Architecture tab is two views (`ProductMap`,
+  `ProductJourneyMap`), each computing only its own state. `fromRelease` reads as one line per
+  part of the version (`sourcesOf`, `domainsOf`, `systemsOf`, `offeringOf`, `journeysOf`,
+  `findingsOf`…) and `journeyView` as what it decides, with `stepsOf` and `callsInView`. The
+  journey flow's sizes, margins and text placement are named constants. The model the lab
+  builds is byte for byte the same, and 17 lab pages read the same.
+- The catalogue lab's modules no longer import one another in circles (11 cycles, all through
+  the lab's router and the product page): the chrome every page shares (section bar, data
+  switch, sample notice, evidence tag, path) is in `labChrome.tsx`, and the product parts
+  other pages show (header, plans, "not in this version") in `productParts.tsx`. A test
+  (`importCycles.test.ts`) fails on any new cycle. Repeated helpers are one each: `LabIcon`,
+  `SystemMonogram` (8 copies), `pathTo` (now safe against a node that is its own ancestor)
+  and `useDismissableDetails`, which gives the Landscape's Key menu Escape to close, like the
+  others. The product's Architecture tab keeps the picked system in the address
+  (`?system=`), so a reload or a shared link keeps it, and the journey's Integrations tab
+  starts again at the first call when the journey or channel changes, instead of keeping a
+  position in another list. The lab's 14 pages read the same before and after.
+- The catalogue lab's business rules each live in one place (`design-lab/catalogue/catalogueRules.ts`),
+  where copies had drifted apart: a bundle's hub device (a whole-word "CPE" match, and no hub
+  rather than the first part when nothing matches), a channel kind's name (the vocabulary's
+  label, so the product page says "System" like the journeys page, not "Systems"), which
+  question an eligibility point answers (the product card now uses the product page's
+  grouping), the contract periods, when a system is core to a product, and whether plans
+  state a price (the Plans tab no longer says "Monthly price: Gap" when a plan names one). The
+  product's architecture reuses `reachOf` instead of its own copy.
+- A step's role that the catalogue lab doesn't know (a code beyond its twelve, such as a new
+  `PAYMENT`) is no longer dropped: the step keeps it, it is named from the version's
+  vocabulary (`responsibility_role` terms, by `role_id` or `role-<code>`), or as written when
+  no term names it, and the impact lens ranks it after the known roles. The lab's words for
+  the twelve known roles are unchanged and now live in one place (`words.ts`, long and short
+  forms), not in the model and again in the architecture map; the strongest-role order stays
+  a rule in code (`ROLE_RANK`, `byRank`). `catalogue/model/vocabulary.ts` reads the role terms.
+- A journey with a way back (a loop such as "Correct & resubmit", or any arrow that closes a
+  cycle) no longer loses its steps in the catalogue lab's flow: the layout assumed no loops,
+  so the steps of a cycle and everything after them were dropped from the drawing and the BPMN
+  export. The way back is now left out of the ordering, so every step is placed, and is drawn
+  dashed from under the later step, along a band under the lanes, up into the earlier one; the
+  BPMN export carries it with its waypoints. No real journey loops today, and their drawings
+  are unchanged.
+- The lab draws the flow the service derives (`channel_edges`, `shared_edges`, `edges`)
+  instead of its own copy of the rules: the two matched in all 46 views of the Business Pro
+  Plus catalogue (20 journeys, each channel), so the copy is gone.
+- A journey's flow in the catalogue lab no longer ends in a BPMN error end event, which only
+  a subprocess's boundary event can catch and these flows have none. The last step of a
+  side track (New activation's "Order returned for correction") is drawn as a step, like a
+  rejected order's, and is followed by a plain end; in the flow it is now a numbered step
+  with its own details, in the BPMN export a task, and in the impact lens one of its
+  system's steps.
+- A journey opened in the catalogue lab through a channel it isn't offered through (an old
+  link, or a channel that no longer sells its order type) says so: "… isn't offered through
+  “X”; it is shown through Y instead.", on the journey's flow and on the product's
+  Architecture tab, one journey at a time. Before, the lab silently showed the first channel.
+- The catalogue lab's view model no longer carries the API's release. `fromRelease` maps
+  each journey's activities, flow (`edges`, `channel_edges`, `shared_edges`) and calls once,
+  and `journeyView`, `journeyViews` and `impactOf` read only the model. The prose the service
+  has no field for yet (the delivery drop, a proposition's summary and purpose, a question's
+  title, the band domains, the main and error-end tracks) is parsed in one tested place,
+  `frontend/src/catalogue/model/conventions.ts`. The model carries kinds (a lane is a system, a
+  team or the ordering channel; events, gateways, hand-overs, unstated styles and timings),
+  and the lab's `words.ts` names them; a call's id is the same in every channel's view, and
+  its timing is read in any case. Nothing else on screen changes: every journey × channel
+  view, its layout and exports, the impact lens and the systems' links matched the previous
+  model, and the lab's pages matched pixel for pixel.
+- Sending Decide's answers no longer hides failures. Adding the systems the answers need,
+  and accepting what is ready, pass over only the service's "already done" refusals: the
+  draft has the system (422 `invalid_architecture_knowledge`), nothing waits for it any more
+  (404 `catalogue_suggestion_not_found`), or the draft moved on (409). Any other failure, or
+  a failed re-read of the suggestions, stops the send and is shown. The send is
+  `catalogue/draft/sendAnswers.ts`, tested on its own. A suggestion that needs only
+  systems, an offering among them, no longer says it waits once they are added first; one
+  that also needs a channel, offering or domain still does.
 
 - Reading a document no longer takes a product, bundle or plan for a system (prompt
   `catalogue-extraction-v13`): its rules are proposed as offering rules, and a "system" named
@@ -145,6 +296,10 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   placeholder ("Unknown", "N/A") or an offering's name is not suggested; an inferred link
   suggests nothing (`document-reading-v7`).
 - An item about no system is left out as incomplete, not given a system called "item".
+- Accepting a link in Decide's focus mode adds the systems it needs first, and says so
+  ("Accept the link, adding the system Generic AP PO"): a system nothing suggests is suggested
+  and accepted, and one already suggested is accepted, before the link. Promised to "wait" for a
+  system nothing added, the service refused every such answer and the same questions came back.
 - Workflow titles are compared whatever separates their parts ("—", "|", ":" or " - "), so a
   model's "WF-3A Order fulfillment | ..." merges with the reader's "WF-3A Order fulfillment —".
 

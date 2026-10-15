@@ -89,6 +89,48 @@
   --seq-4: #cba9ab;
   --seq-5: #e6e6dc;
 
+  /*
+   * Architecture diagrams (the catalogue), light only for now: no dark values
+   * yet (CleanCode v2, decision 3). Each TAM layer has a tint, an ink and a
+   * deeper edge, free of maroon so maroon only ever means something.
+   */
+  --layer-market-tint: #f7f2e8;
+  --layer-market-ink: #5e4a26;
+  --layer-market-edge: #cdb98e;
+  --layer-product-tint: #f8efea;
+  --layer-product-ink: #6e3b2c;
+  --layer-product-edge: #d6ae9c;
+  --layer-customer-tint: #fbedeb;
+  --layer-customer-ink: #8c1d18;
+  --layer-customer-edge: #e6a39c;
+  --layer-service-tint: #efeae5;
+  --layer-service-ink: #4c3f37;
+  --layer-service-edge: #bbaa9b;
+  --layer-resource-tint: #f4efe2;
+  --layer-resource-ink: #57482a;
+  --layer-resource-edge: #c9b98f;
+  --layer-party-tint: #edf1e9;
+  --layer-party-ink: #3d4a37;
+  --layer-party-edge: #a6b59c;
+  --layer-enterprise-tint: #eaeff3;
+  --layer-enterprise-ink: #34434f;
+  --layer-enterprise-edge: #9fb0bf;
+  /* A product's footprint: a deep pine that no layer, state or brand colour uses. */
+  --pine-700: #17615d;
+  --pine-900: #0f4744;
+  --pine-300: #8fc3bc;
+  --pine-50: #e3f1ef;
+  /* Integration intensity: a calm slate ramp. */
+  --slate-50: #e9edf4;
+  --slate-200: #c5cfe0;
+  --slate-400: #8f9fbd;
+  --slate-700: #3f5178;
+  /* Amounts in the maroon family, light to dark (after --maroon-tint), and quiet text on maroon. */
+  --maroon-200: #e2b8c1;
+  --maroon-400: #b9707f;
+  --maroon-600: #7d2a3e;
+  --maroon-blush: #f1dfe3;
+
   /* Shadow colour bases (overlays only) */
   --shadow-ink: rgb(31 27 26 / 0.12);
   --shadow-night: rgb(0 0 0 / 0.45);

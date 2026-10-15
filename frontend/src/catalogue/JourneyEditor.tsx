@@ -90,6 +90,8 @@ export function JourneyEditor({ value, onChange, systems, offerings, channels = 
           component_ids: [],
           channels: [],
           channel_entry: false,
+          // Derived by the service from the track, and ignored when sent; a new step names none, so it is on the main track.
+          main_track: true,
         })}
         itemLabel={(step) => `step ${step.number}`}
         render={(step, update) => (

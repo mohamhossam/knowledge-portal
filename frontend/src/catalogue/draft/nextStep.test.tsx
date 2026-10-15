@@ -61,7 +61,50 @@ describe("blockers", () => {
     const accept = decideChoices(question!).find((item) => item.value === "accept");
 
     expect(question!.prompt).toBe("Accept a link the reading inferred? NPS sends data to RTF");
-    expect(accept?.consequence).toBe("Adds: NPS sends data to RTF. Then it waits for the system RTF, and reaches the draft with it.");
+    // The service refuses a link to a system the draft lacks: accepting adds it first, said so.
+    expect(accept?.label).toBe("Accept the link, adding the system RTF");
+    expect(accept?.consequence).toBe("Adds the system RTF first, then: NPS sends data to RTF.");
+    expect(question!.first?.add).toEqual([{ id: "rtf", name: "RTF" }]);
+  });
+
+  it("accepts a system already suggested before the link that needs it, unless it is a question of its own", () => {
+    const link = suggestion(
+      "link",
+      { kind: "relationship", system_id: "nps", target_system_id: "vcpe-do", relationship_kind: "transfers_data_to", text: "Sends requests" },
+      { basis: "inferred", match: "needs_system", missing_systems: ["vcpe-do"], system_name: "NPS", rationale: "Implied." },
+    );
+    const system = suggestion("vcpe", { kind: "system", system_id: "vcpe-do", name: "vCPE DO", aliases: [] });
+    const words = lexicon(draft, [link, system]);
+
+    const [question] = decideQuestions([link, system], words);
+    expect(question!.first).toEqual({ accept: [system], add: [] });
+    expect(decideChoices(question!).find((item) => item.value === "accept")?.consequence).toBe("Adds the system vCPE DO first, then: NPS sends data to vCPE DO.");
+
+    // Asked about itself, the system is answered there; the link waits for that answer.
+    const asked = { ...system, possible_matches: [{ system_id: "vcpe", system_name: "vCPE", role: "system", written_as: "vCPE DO", reason: null }] } as unknown as Suggestion;
+    const linkQuestion = decideQuestions([link, asked], lexicon(draft, [link, asked])).find((item) => item.id === "link");
+    expect(linkQuestion!.first).toBeUndefined();
+    expect(linkQuestion!.waits).toBe("Waits for the system vCPE DO");
+  });
+
+  it("says an offering waits for nothing once its systems are added first, unless it also names a channel the draft lacks", () => {
+    const offering = (orderTypes: object[]) =>
+      suggestion(
+        "offer",
+        { kind: "product", system_id: "bpp", name: "Business Pro Plus", product: { id: "bpp", name: "Business Pro Plus", order_types: orderTypes, components: [{ name: "Router", responsibilities: [{ system_id: "rtf" }] }] } },
+        // Inferred, so it is asked on its own.
+        { basis: "inferred", match: "needs_system", missing_systems: ["rtf"] },
+      );
+
+    const onlySystems = offering([]);
+    const [settled] = decideQuestions([onlySystems], lexicon(draft, [onlySystems]));
+    expect(settled!.first?.add).toEqual([{ id: "rtf", name: "RTF" }]);
+    expect(settled!.waits).toBeUndefined();
+
+    const withChannel = offering([{ id: "new", name: "New connection", channels: ["b2b-web"] }]);
+    const [waiting] = decideQuestions([withChannel], lexicon(draft, [withChannel]));
+    expect(waiting!.first?.add).toEqual([{ id: "rtf", name: "RTF" }]);
+    expect(waiting!.waits).toBeDefined();
   });
 
   it("lets an offering rule wait for an offering suggested by another spelling of its name", () => {

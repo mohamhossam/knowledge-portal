@@ -8,6 +8,10 @@ suggestions; squads that own some systems and leave others without an owner.
 
     uv run python -m knowledge_portal.interfaces.api.serve --port 8100   # fake, in memory
     uv run python scripts/seed_demo.py --api http://127.0.0.1:8100
+    uv run python scripts/seed_demo.py --api http://127.0.0.1:8100 --full-catalogue
+
+`--full-catalogue` puts the full Business Pro Plus catalogue (seed_full_catalogue.py)
+in service after the sample version, so the sample draft builds on it.
 
 Requires LLM_PROVIDER=fake, IDENTITY_PROVIDER=fake and LIBRARY_SCAN_MODE=offline.
 The review material (a deck, a workbook) is built with the test suite's file
@@ -19,7 +23,6 @@ from __future__ import annotations
 import argparse
 import io
 import sys
-import time
 import uuid
 from pathlib import Path
 from typing import Any
@@ -28,23 +31,18 @@ import httpx
 from openpyxl import Workbook
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from scripts._catalogue_seed import (  # noqa: E402
+    FULL_CATALOGUE_FILE,
+    FULL_CATALOGUE_NAME,
+    OWNER,
+    REVIEWER,
+    one_draft_at_a_time,
+    wait_for,
+)
+from scripts.seed_full_catalogue import load as load_full_catalogue  # noqa: E402
 from tests.presentation_fixtures import PPTX_MIME, drawing_paragraph, presentation  # noqa: E402
 
 XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-
-OWNER = {"X-Fake-Actor-Id": "fake-owner"}
-REVIEWER = {"X-Fake-Actor-Id": "fake-reviewer"}
-
-
-def wait_for(
-    client: httpx.Client, path: str, headers: dict[str, str], ready: Any
-) -> dict[str, Any]:
-    for _ in range(200):
-        view = client.get(path, headers=headers).json()
-        if ready(view):
-            return dict(view)
-        time.sleep(0.1)
-    raise RuntimeError(f"{path} never reached the expected state.")
 
 
 def upload(
@@ -110,7 +108,10 @@ def seed_library(client: httpx.Client) -> None:
             "Business bundle eligibility (sample)",
             b"An SMB customer may hold at most three bundles per site.",
         ),
-        ("إجراءات نقل الأرقام (sample)", "يجب التحقق من هوية العميل قبل نقل الرقم.".encode()),
+        (
+            "Number porting identity check (sample)",
+            b"The customer's identity is verified before a number is ported.",
+        ),
     ):
         publish(client, upload(client, title, "policy.txt", body, text, OWNER), OWNER)
 
@@ -187,14 +188,14 @@ def seed_library(client: httpx.Client) -> None:
         headers=OWNER,
     ).raise_for_status()
 
-    # Awaiting your review, titled in Arabic, so a cell renders right to left.
+    # Awaiting your review.
     read(
         client,
         upload(
             client,
-            "سياسة التحقق من العنوان (sample)",
+            "Address verification policy (sample)",
             "address.txt",
-            "يجب التحقق من العنوان قبل تفعيل الخدمة.".encode(),
+            b"The address is verified before the service is activated.",
             text,
             OWNER,
         ),
@@ -807,8 +808,13 @@ def seed_squads(client: httpx.Client) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--api", default="http://127.0.0.1:8100")
+    parser.add_argument(
+        "--full-catalogue",
+        action="store_true",
+        help="put the full Business Pro Plus catalogue in service before the sample draft",
+    )
     arguments = parser.parse_args()
-    with httpx.Client(base_url=arguments.api, timeout=30) as client:
+    with httpx.Client(base_url=arguments.api, timeout=30) as client, one_draft_at_a_time():
         # Both admins sign in once, so the portal can name them.
         client.get("/identity/me", headers=OWNER).raise_for_status()
         client.get("/identity/me", headers=REVIEWER).raise_for_status()
@@ -816,8 +822,11 @@ def main() -> None:
         seed_review_material(client)
         seed_governance(client)
         seed_published_catalogue(client)
-        seed_catalogue(client)
+        # The squads own systems of the sample version, so they are placed while it is in service.
         seed_squads(client)
+        if arguments.full_catalogue:
+            load_full_catalogue(client, FULL_CATALOGUE_FILE, FULL_CATALOGUE_NAME, publish=True)
+        seed_catalogue(client)
     print("Seeded sample curation work.")
 
 

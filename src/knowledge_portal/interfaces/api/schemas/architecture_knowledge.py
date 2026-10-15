@@ -79,7 +79,10 @@ from knowledge_portal.domain.architecture.journeys import (
     FlowRule,
     FlowRuleKind,
     Journey,
+    JourneyEdge,
+    journey_channels,
     journey_edges,
+    shared_journey_edges,
 )
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
@@ -396,6 +399,8 @@ class LandscapeDomainSchema(BaseModel):
     name_ar: Name | None = None
     parent_id: Identifier | None = None
     description: Text | None = None
+    # It serves every other domain (the enterprise domain, the integration layer).
+    cross_cutting: bool = False
 
     @classmethod
     def from_domain(cls, domain: LandscapeDomain) -> LandscapeDomainSchema:
@@ -405,10 +410,18 @@ class LandscapeDomainSchema(BaseModel):
             name_ar=domain.name_ar,
             parent_id=domain.parent_id,
             description=domain.description,
+            cross_cutting=domain.cross_cutting,
         )
 
     def to_domain(self) -> LandscapeDomain:
-        return LandscapeDomain(self.id, self.name, self.name_ar, self.parent_id, self.description)
+        return LandscapeDomain(
+            self.id,
+            self.name,
+            self.name_ar,
+            self.parent_id,
+            self.description,
+            cross_cutting=self.cross_cutting,
+        )
 
 
 class PortfolioNodeSchema(BaseModel):
@@ -1151,6 +1164,8 @@ class OrderTypeSchema(BaseModel):
     source: Text | None = None
     # The channels it can be ordered through, by id; empty when the source does not say.
     channels: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    # The delivery drop it comes in, as its source names it, such as "P2 / P3".
+    delivery_drop: Name | None = None
 
     @classmethod
     def from_domain(cls, order: OrderType) -> OrderTypeSchema:
@@ -1162,6 +1177,7 @@ class OrderTypeSchema(BaseModel):
             confidence=order.confidence,
             source=order.source,
             channels=list(order.channels),
+            delivery_drop=order.delivery_drop,
         )
 
     def to_domain(self) -> OrderType:
@@ -1173,6 +1189,7 @@ class OrderTypeSchema(BaseModel):
             self.confidence,
             self.source,
             tuple(self.channels),
+            delivery_drop=self.delivery_drop,
         )
 
 
@@ -1482,6 +1499,9 @@ class ActivitySchema(BaseModel):
     # The eTOM process and role terms ``etom`` and ``role`` mean.
     etom_id: Identifier | None = None
     role_id: Identifier | None = None
+    # Derived on the way out and ignored on the way in: on the main track, which is also
+    # where it is when ``track`` names none.
+    main_track: bool = False
 
     @classmethod
     def from_domain(cls, item: Activity) -> ActivitySchema:
@@ -1509,6 +1529,7 @@ class ActivitySchema(BaseModel):
             role=item.role,
             etom_id=item.etom_id,
             role_id=item.role_id,
+            main_track=item.main,
         )
 
     def to_domain(self) -> Activity:
@@ -1649,6 +1670,25 @@ class JourneyEdgeResponse(BaseModel):
     label: Name | None = None
 
 
+class JourneyChannelFlowResponse(BaseModel):
+    """The flow one channel sees: its own steps and those that name no channel."""
+
+    channel_id: Identifier
+    edges: list[JourneyEdgeResponse] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS * 4)
+
+
+def _edge_responses(edges: tuple[JourneyEdge, ...]) -> list[JourneyEdgeResponse]:
+    return [
+        JourneyEdgeResponse.model_construct(
+            from_activity=edge.from_activity,
+            to_activity=edge.to_activity,
+            kind=edge.kind,
+            label=edge.label,
+        )
+        for edge in edges
+    ]
+
+
 class JourneySchema(BaseModel):
     """A journey and, read-only, the flow derived from its order and rules (ADR-0096)."""
 
@@ -1666,6 +1706,11 @@ class JourneySchema(BaseModel):
     source: Text | None = None
     # Derived on the way out and ignored on the way in: the flow is never stored.
     edges: list[JourneyEdgeResponse] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS * 4)
+    # The same, per channel the steps name, and for a channel no step names.
+    channel_edges: list[JourneyChannelFlowResponse] = Field(
+        default=[], max_length=MAX_CATALOGUE_ITEMS
+    )
+    shared_edges: list[JourneyEdgeResponse] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS * 4)
 
     @classmethod
     def from_domain(cls, journey: Journey) -> JourneySchema:
@@ -1682,15 +1727,14 @@ class JourneySchema(BaseModel):
             ],
             confidence=journey.confidence,
             source=journey.source,
-            edges=[
-                JourneyEdgeResponse.model_construct(
-                    from_activity=edge.from_activity,
-                    to_activity=edge.to_activity,
-                    kind=edge.kind,
-                    label=edge.label,
+            edges=_edge_responses(journey_edges(journey)),
+            channel_edges=[
+                JourneyChannelFlowResponse.model_construct(
+                    channel_id=channel, edges=_edge_responses(journey_edges(journey, channel))
                 )
-                for edge in journey_edges(journey)
+                for channel in journey_channels(journey)
             ],
+            shared_edges=_edge_responses(shared_journey_edges(journey)),
         )
 
     def to_domain(self) -> Journey:
