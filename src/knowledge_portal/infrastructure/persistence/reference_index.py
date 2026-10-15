@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import re
+from collections.abc import Mapping
 from threading import RLock
 from typing import cast
 
@@ -57,12 +58,19 @@ def query_terms(text: str) -> tuple[str, ...]:
     return tuple(dict.fromkeys(re.findall(r"\w+", text.casefold())))[:24]
 
 
-def fuse(lexical: list[str], semantic: list[str], limit: int) -> tuple[str, ...]:
+def fuse(
+    lexical: list[str], semantic: list[str], limit: int, ties: Mapping[str, str]
+) -> tuple[str, ...]:
+    """Reciprocal rank fusion of two rankings of chunk ids.
+
+    Equal scores are ordered by `ties` (each chunk's content hash), then by id, so the same
+    chunks rank the same way on every run and after every rebuild.
+    """
     scores: dict[str, float] = {}
     for branch in (lexical, semantic):
         for rank, key in enumerate(branch, 1):
             scores[key] = scores.get(key, 0) + 1 / (60 + rank)
-    return tuple(sorted(scores, key=lambda key: (-scores[key], key))[:limit])
+    return tuple(sorted(scores, key=lambda key: (-scores[key], ties.get(key, ""), key))[:limit])
 
 
 class InMemoryReferenceIndex:
@@ -122,9 +130,11 @@ class InMemoryReferenceIndex:
             key: len(terms & set(re.findall(r"\w+", c.search_text.casefold())))
             for key, (c, _) in items.items()
         }
+        # Ties are broken by content hash, which a rebuild never changes; ids do change.
+        ties = {key: chunk.content_hash for key, (chunk, _) in items.items()}
         lexical = sorted(
             (key for key in items if lexical_scores[key]),
-            key=lambda key: (-lexical_scores[key], key),
+            key=lambda key: (-lexical_scores[key], ties[key], key),
         )[:100]
         norm = math.sqrt(sum(x * x for x in vector))
         semantic_scores = {
@@ -132,8 +142,8 @@ class InMemoryReferenceIndex:
             / (norm * math.sqrt(sum(x * x for x in v)))
             for key, (_, v) in items.items()
         }
-        semantic = sorted(items, key=lambda key: (-semantic_scores[key], key))[:100]
-        return tuple(items[key][0] for key in fuse(lexical, semantic, limit))
+        semantic = sorted(items, key=lambda key: (-semantic_scores[key], ties[key], key))[:100]
+        return tuple(items[key][0] for key in fuse(lexical, semantic, limit, ties))
 
 
 class PostgresReferenceIndex:
@@ -200,7 +210,8 @@ class PostgresReferenceIndex:
                     "SELECT c.id,c.payload "
                     + eligible
                     + " AND c.lexical @@ to_tsquery('simple',%s) "
-                    "ORDER BY ts_rank_cd(c.lexical,to_tsquery('simple',%s)) DESC,c.id LIMIT 100",
+                    "ORDER BY ts_rank_cd(c.lexical,to_tsquery('simple',%s)) DESC,"
+                    "c.payload->>'content_hash',c.id LIMIT 100",
                     (identity, lexical_query, lexical_query),
                 ).fetchall()
                 if terms
@@ -209,11 +220,14 @@ class PostgresReferenceIndex:
             semantic = connection.execute(
                 "SELECT c.id,c.payload "
                 + eligible
-                + " ORDER BY c.embedding <=> %s::vector,c.id LIMIT 100",
+                + " ORDER BY c.embedding <=> %s::vector,c.payload->>'content_hash',c.id LIMIT 100",
                 (identity, encoded),
             ).fetchall()
         chunks = {str(row[0]): self._codec.validate_python(row[1]) for row in (*lexical, *semantic)}
+        ties = {key: chunk.content_hash for key, chunk in chunks.items()}
         return tuple(
             chunks[key]
-            for key in fuse([str(r[0]) for r in lexical], [str(r[0]) for r in semantic], limit)
+            for key in fuse(
+                [str(r[0]) for r in lexical], [str(r[0]) for r in semantic], limit, ties
+            )
         )

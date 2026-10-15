@@ -39,17 +39,16 @@ ROOT = Path(__file__).resolve().parents[2]
 GOLDEN = ROOT / "tests" / "fixtures" / "golden" / "library_golden_set.json"
 NOW = datetime(2026, 10, 15, tzinfo=UTC)
 
-# The fake hash embedding on the fixture, with chunks sized in tokens and table rows searched
-# with their column names, recorded in docs/operations/library-retrieval-evaluation.md. Recall
-# (95%) and the zero-hit share (5%) are the same on every run; over 20 runs the mean reciprocal
-# rank moved between 80.8% and 92.5%, because near-ties are broken by chunk id and chunk ids
-# change with each run's publications. Its floor sits below the worst case those ties allow
-# (about 78%). A retrieval change may raise these floors; none may fall below them.
+# The fake hash embedding on the fixture, with chunks sized in tokens, table rows searched with
+# their column names and ties broken by content hash, recorded in
+# docs/operations/library-retrieval-evaluation.md. Every run now ranks identically: recall 95%,
+# mean reciprocal rank 87.5%, zero hits 5%. The reciprocal-rank floor leaves room for one case to
+# drop one place. A retrieval change may raise these floors; none may fall below them.
 FLOORS = {
-    "recall_at_10": 0.90,
-    "mean_reciprocal_rank": 0.75,
+    "recall_at_10": 0.95,
+    "mean_reciprocal_rank": 0.85,
 }
-ZERO_HIT_CEILING = 0.10
+ZERO_HIT_CEILING = 0.05
 # Every case that shares words with its passage puts it within the first three chunks; semantic
 # cases may rank anywhere or miss.
 RANK_CEILING = 3
@@ -103,6 +102,19 @@ def test_the_golden_set_is_a_fixture_across_products_and_formats() -> None:
     }  # fmt: skip
     assert any(case.semantic for case in golden.cases)
     assert any(hit.passage is None for case in golden.cases for hit in case.expected)
+
+
+def _answers(report: LibraryEvaluationReport) -> list[list[tuple[str, str, str]]]:
+    return [[(h.document_title, h.location, h.text) for h in r.hits] for r in report.results]
+
+
+def test_two_separate_runs_rank_every_case_identically() -> None:
+    """Ties are broken by content hash, not by ids a new publication changes, so the same
+    corpus and questions give the same answers in the same order on every run."""
+    first, second = _report(), _report()
+
+    assert _answers(first) == _answers(second)
+    assert evaluate.library_scores(first) == evaluate.library_scores(second)
 
 
 def test_the_fake_embedding_never_falls_below_the_recorded_floors() -> None:

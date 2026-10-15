@@ -99,20 +99,25 @@ Two runs can be compared case by case.
 ## The recorded floors
 
 With the fake embedding on the fixture (`tests/unit/test_library_evaluation.py`), with chunks
-sized in approximate tokens and table rows searched with their column names, over 20 runs on
-2026-10-15:
+sized in approximate tokens, table rows searched with their column names and ties broken by
+content hash, on 2026-10-15. Every run ranks every case identically, so each score is one
+number:
 
 | Score | Measured | Floor |
 | --- | --- | --- |
-| recall@10 | 95.0% on every run | ≥ 90% |
-| mean reciprocal rank | 80.8% to 92.5% | ≥ 75% |
-| zero-hit share | 5.0% on every run | ≤ 10% |
+| recall@10 | 95.0% | ≥ 95% |
+| mean reciprocal rank | 87.5% | ≥ 85% |
+| zero-hit share | 5.0% | ≤ 5% |
 
-The mean reciprocal rank moves because near-ties are broken by chunk id, and chunk ids change
-with each run's publication ids. Six cases rank second or third on some runs and first on
-others; if all six ranked low at once the score would be about 78%, so the floor sits below
-that. The test also requires every case that shares words with its passage to rank it within
-the first three chunks.
+**Ties are broken the same way every time.** When two chunks score the same, search orders them
+by the chunk's content hash, a fingerprint of its searched text, and only then by its id. The
+id includes the publication's, which is new on every approval or rebuild, so ordering by it
+made the same question rank differently from run to run. The content hash does not change, and
+favours no document. The same order applies at every stage: the keyword and vector rankings,
+their fusion, and the database queries that pick the top 100 candidates. The test runs the
+golden set twice and requires identical answers. The reciprocal-rank floor leaves room for one
+case to drop one place. The test also requires every case that shares words with its passage
+to rank it within the first three chunks.
 
 How the scores moved:
 
@@ -121,6 +126,7 @@ How the scores moved:
 | Byte budget, two Arabic cases (8 runs) | 90% | 84% to 90% | 10% |
 | Token budget, English only (35 runs) | 90% | 77.5% to 87.5% | 10% |
 | Table rows searched with column names (20 runs) | 95% | 80.8% to 92.5% | 5% |
+| Ties broken by content hash (identical on every run) | 95% | 87.5% | 5% |
 
 **Finding, fixed: a table row did not carry its column names.** L008 asks for "pooled data" on
 the Fleet Plus tier; the answer is a Word table row. Extraction renders a row with cell
@@ -130,7 +136,7 @@ and the three-chunks-per-document limit then cut it, since the guide's prose alr
 three places. Each table row is now searched and embedded with the first row's column names
 ("Tier: Fleet Plus | Pooled data: 25 GB per line"); the cited text and its offsets are
 unchanged. An excluded header row names nothing, so excluded text never reaches the index. L008
-now ranks first or second. The per-document limit still applies before any reranking, which
+now ranks second, just below its own table's header row. The per-document limit still applies before any reranking, which
 matters for documents with many relevant passages; that is the next retrieval change to
 measure. L020, a semantic case expecting any passage of the fleet guide, still misses with the
 fake embedding.
