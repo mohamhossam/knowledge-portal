@@ -1,0 +1,258 @@
+{
+  "version": 1,
+  "labelled_on": "2026-10-15",
+  "provenance": "FIXTURE, not user evidence. The corpus starts from the library documents scripts/seed_demo.py publishes (titles ending in '(sample)'), kept word for word, and adds six short fixture documents (titles ending in '(fixture)') so the set has enough passages to rank. Every case and every expected hit was written by hand from these documents, not from historic requirements or from knowledge admins' searches. A case's text is phrased as a requirement (title and description) or as a rule sentence. An expected hit names the document and a passage the retrieved chunk must contain, or the block label the chunk must carry. Cases marked 'semantic' share few or no words with their passage: they are expected to miss with the fake hash embedding and are there to be measured against real embeddings.",
+  "documents": [
+    {
+      "id": "xgpon-coverage",
+      "title": "XGPON coverage rules (sample)",
+      "filename": "policy.txt",
+      "mime_type": "text/plain",
+      "text": "High-speed bundles require XGPON coverage at the customer address."
+    },
+    {
+      "id": "bundle-eligibility",
+      "title": "Business bundle eligibility (sample)",
+      "filename": "policy.txt",
+      "mime_type": "text/plain",
+      "text": "An SMB customer may hold at most three bundles per site."
+    },
+    {
+      "id": "number-porting-ar",
+      "title": "إجراءات نقل الأرقام (sample)",
+      "filename": "policy.txt",
+      "mime_type": "text/plain",
+      "text": "يجب التحقق من هوية العميل قبل نقل الرقم."
+    },
+    {
+      "id": "ordering-procedure",
+      "title": "Bundle ordering procedure (sample)",
+      "filename": "ordering.md",
+      "mime_type": "text/markdown",
+      "text": "# Ordering a business fibre bundle (sample)\nConfirm XGPON coverage at the customer's address before quoting.\nCheck the site has a free optical port; book a survey if it does not.\nQuote the bundle only after coverage and the port are confirmed.\nRecord the coverage reference on the order."
+    },
+    {
+      "id": "legacy-adsl",
+      "title": "Legacy ADSL ordering (sample)",
+      "filename": "adsl.txt",
+      "mime_type": "text/plain",
+      "text": "ADSL orders go through the legacy portal.",
+      "withdrawn": true
+    },
+    {
+      "id": "invoice-discount",
+      "title": "Invoice discount display (sample)",
+      "filename": "discount.txt",
+      "mime_type": "text/plain",
+      "text": "Discounts show on the invoice line."
+    },
+    {
+      "id": "address-check-ar",
+      "title": "سياسة التحقق من العنوان (sample)",
+      "filename": "address.txt",
+      "mime_type": "text/plain",
+      "text": "يجب التحقق من العنوان قبل تفعيل الخدمة."
+    },
+    {
+      "id": "fault-escalation",
+      "title": "Fault escalation matrix (sample)",
+      "filename": "faults.txt",
+      "mime_type": "text/plain",
+      "text": "Severity 1 faults escalate within 15 minutes."
+    },
+    {
+      "id": "static-ip",
+      "title": "Static IP allocation (fixture)",
+      "filename": "static-ip.md",
+      "mime_type": "text/markdown",
+      "text": "# Static IP addressing (fixture)\nA business fibre bundle may include one static public IPv4 address.\nAdditional static addresses need a justification recorded on the order.\nStatic addresses are released when the bundle is ceased."
+    },
+    {
+      "id": "managed-firewall",
+      "title": "Managed firewall service (fixture)",
+      "filename": "firewall.md",
+      "mime_type": "text/markdown",
+      "text": "# Managed firewall (fixture)\nThe managed firewall is provisioned on the customer's CPE after the line is activated.\nFirewall rule changes are requested through the self-service portal.\nA rule change is applied within one working day."
+    },
+    {
+      "id": "service-levels",
+      "title": "Service level targets (fixture)",
+      "filename": "service-levels.md",
+      "mime_type": "text/markdown",
+      "text": "# Service levels (fixture)\nInstallation is completed within five working days of the coverage confirmation.\nSeverity 2 faults are acknowledged within one hour and resolved within eight hours.\nService credits are applied to the next invoice when a target is missed."
+    },
+    {
+      "id": "identity-checks",
+      "title": "Customer identity verification (fixture)",
+      "filename": "identity.md",
+      "mime_type": "text/markdown",
+      "text": "# Identity checks (fixture)\nA trade licence is verified before a business account is opened.\nThe signatory's Emirates ID is checked against the trade licence.\nExpired trade licences block new orders until renewed."
+    },
+    {
+      "id": "site-survey",
+      "title": "Site survey and installation (fixture)",
+      "filename": "survey.md",
+      "mime_type": "text/markdown",
+      "text": "# Site survey (fixture)\nA site survey is booked when no free optical port is recorded at the address.\nThe technician confirms the optical port and the router location during the survey.\nInstallation is scheduled only after the survey is closed."
+    },
+    {
+      "id": "mobile-backup",
+      "title": "Mobile backup access (fixture)",
+      "filename": "backup.md",
+      "mime_type": "text/markdown",
+      "text": "# Mobile backup (fixture)\nA 4G backup SIM keeps the site online when the fibre line fails.\nBackup traffic is capped at the bundle's backup allowance.\nThe SIM is activated with the fibre line and billed on the same invoice."
+    }
+  ],
+  "cases": [
+    {
+      "id": "L001",
+      "text": "Confirm fibre coverage before quoting. Sales must check XGPON coverage at the customer's address before a quote is issued.",
+      "expected": [
+        {"document": "XGPON coverage rules (sample)", "passage": "require XGPON coverage at the customer address"},
+        {"document": "Bundle ordering procedure (sample)", "passage": "Confirm XGPON coverage at the customer's address before quoting."}
+      ],
+      "note": "Two documents state the rule; both count."
+    },
+    {
+      "id": "L002",
+      "text": "Limit bundles per site. An SMB customer must not hold more than three bundles at one site.",
+      "expected": [
+        {"document": "Business bundle eligibility (sample)", "passage": "at most three bundles per site"}
+      ]
+    },
+    {
+      "id": "L003",
+      "text": "التحقق من هوية العميل عند نقل الرقم إلى الشبكة",
+      "expected": [
+        {"document": "إجراءات نقل الأرقام (sample)", "label": "Line 1"}
+      ],
+      "note": "An Arabic query against an Arabic passage."
+    },
+    {
+      "id": "L004",
+      "text": "Record the coverage reference on the order so fulfilment can trace the coverage check.",
+      "expected": [
+        {"document": "Bundle ordering procedure (sample)", "passage": "Record the coverage reference on the order."}
+      ]
+    },
+    {
+      "id": "L005",
+      "text": "Book a site survey when the address has no free optical port.",
+      "expected": [
+        {"document": "Bundle ordering procedure (sample)", "passage": "free optical port; book a survey"},
+        {"document": "Site survey and installation (fixture)", "passage": "A site survey is booked when no free optical port is recorded"}
+      ]
+    },
+    {
+      "id": "L006",
+      "text": "Show discounts on the invoice. Customers must see each discount on the invoice line.",
+      "expected": [
+        {"document": "Invoice discount display (sample)", "passage": "Discounts show on the invoice line."}
+      ]
+    },
+    {
+      "id": "L007",
+      "text": "يجب التحقق من عنوان العميل الجديد قبل تفعيل الخدمة",
+      "expected": [
+        {"document": "سياسة التحقق من العنوان (sample)", "label": "Line 1"}
+      ],
+      "note": "An Arabic query against an Arabic passage."
+    },
+    {
+      "id": "L008",
+      "text": "Escalate severity 1 faults within 15 minutes of the ticket being raised.",
+      "expected": [
+        {"document": "Fault escalation matrix (sample)", "passage": "Severity 1 faults escalate within 15 minutes."}
+      ]
+    },
+    {
+      "id": "L009",
+      "text": "Add a second static public IP address to a fibre bundle. The order must record a justification for the additional static address.",
+      "expected": [
+        {"document": "Static IP allocation (fixture)", "passage": "one static public IPv4 address"},
+        {"document": "Static IP allocation (fixture)", "passage": "Additional static addresses need a justification recorded on the order."}
+      ]
+    },
+    {
+      "id": "L010",
+      "text": "Release static addresses when the bundle is ceased.",
+      "expected": [
+        {"document": "Static IP allocation (fixture)", "passage": "Static addresses are released when the bundle is ceased."}
+      ]
+    },
+    {
+      "id": "L011",
+      "text": "Let customers request firewall rule changes in the self-service portal.",
+      "expected": [
+        {"document": "Managed firewall service (fixture)", "passage": "Firewall rule changes are requested through the self-service portal."}
+      ]
+    },
+    {
+      "id": "L012",
+      "text": "Provision the managed firewall on the customer's CPE once the line is activated.",
+      "expected": [
+        {"document": "Managed firewall service (fixture)", "passage": "provisioned on the customer's CPE after the line is activated"}
+      ]
+    },
+    {
+      "id": "L013",
+      "text": "Apply service credits to the next invoice when a service level target is missed.",
+      "expected": [
+        {"document": "Service level targets (fixture)", "passage": "Service credits are applied to the next invoice when a target is missed."}
+      ]
+    },
+    {
+      "id": "L014",
+      "text": "Severity 2 faults: acknowledge within one hour and resolve within eight hours.",
+      "expected": [
+        {"document": "Service level targets (fixture)", "passage": "Severity 2 faults are acknowledged within one hour and resolved within eight hours."}
+      ]
+    },
+    {
+      "id": "L015",
+      "text": "Block new orders while the customer's trade licence has expired, until it is renewed.",
+      "expected": [
+        {"document": "Customer identity verification (fixture)", "passage": "Expired trade licences block new orders until renewed."}
+      ]
+    },
+    {
+      "id": "L016",
+      "text": "Check the signatory's Emirates ID against the trade licence when a business account is opened.",
+      "expected": [
+        {"document": "Customer identity verification (fixture)", "passage": "A trade licence is verified before a business account is opened."},
+        {"document": "Customer identity verification (fixture)", "passage": "The signatory's Emirates ID is checked against the trade licence."}
+      ]
+    },
+    {
+      "id": "L017",
+      "text": "Schedule the installation only after the site survey is closed.",
+      "expected": [
+        {"document": "Site survey and installation (fixture)", "passage": "Installation is scheduled only after the survey is closed."}
+      ]
+    },
+    {
+      "id": "L018",
+      "text": "Mobile backup for fibre sites. A 4G backup SIM keeps the site online when the fibre line fails, and backup traffic is capped at the bundle's backup allowance.",
+      "expected": [
+        {"document": "Mobile backup access (fixture)", "passage": "A 4G backup SIM keeps the site online when the fibre line fails."},
+        {"document": "Mobile backup access (fixture)", "passage": "Backup traffic is capped at the bundle's backup allowance."}
+      ]
+    },
+    {
+      "id": "L019",
+      "text": "What happens to a customer's spare internet connection if the main link drops?",
+      "expected": [
+        {"document": "Mobile backup access (fixture)", "passage": "A 4G backup SIM keeps the site online when the fibre line fails."}
+      ],
+      "semantic": true,
+      "note": "Shares no words with its passage: a miss with the fake hash embedding, a test for real embeddings."
+    },
+    {
+      "id": "L020",
+      "text": "Complete the installation within five working days of confirming coverage.",
+      "expected": [
+        {"document": "Service level targets (fixture)", "passage": "Installation is completed within five working days of the coverage confirmation."}
+      ]
+    }
+  ]
+}
