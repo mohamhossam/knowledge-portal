@@ -1,32 +1,33 @@
 {
-  "version": 1,
+  "version": 2,
   "labelled_on": "2026-10-15",
-  "provenance": "FIXTURE, not user evidence. The corpus starts from the library documents scripts/seed_demo.py publishes (titles ending in '(sample)'), kept word for word, and adds six short fixture documents (titles ending in '(fixture)') so the set has enough passages to rank. Every case and every expected hit was written by hand from these documents, not from historic requirements or from knowledge admins' searches. A case's text is phrased as a requirement (title and description) or as a rule sentence. An expected hit names the document and a passage the retrieved chunk must contain, or the block label the chunk must carry. Cases marked 'semantic' share few or no words with their passage: they are expected to miss with the fake hash embedding and are there to be measured against real embeddings.",
+  "provenance": "FIXTURE, not user evidence. The corpus mixes products and formats, as a real library does. Eight short texts are the library documents scripts/seed_demo.py publishes (titles ending in '(sample)'), kept word for word. Six files under library/ (titles ending in '(fixture)') are written by scripts/build_library_golden_corpus.py, one product and one format each: a Word guide with headings and a table, a two-page PDF, a slide deck with a table, a spreadsheet rate card, a CSV procedure, and a long Markdown policy whose paragraphs the chunker splits. Every case and expected passage was written by hand from these documents, not from historic requirements or from knowledge admins' searches. An expected passage is a piece of the document's wording, wherever the extractor puts it; an expected document with no passage means any of its passages answers. Cases marked 'semantic' share few words with their passage: the fake hash embedding may miss them, and they are there to be measured against real embeddings.",
   "documents": [
     {
       "id": "xgpon-coverage",
       "title": "XGPON coverage rules (sample)",
+      "product": "Business fibre",
       "filename": "policy.txt",
-      "mime_type": "text/plain",
       "text": "High-speed bundles require XGPON coverage at the customer address."
     },
     {
       "id": "bundle-eligibility",
       "title": "Business bundle eligibility (sample)",
+      "product": "Business fibre",
       "filename": "policy.txt",
-      "mime_type": "text/plain",
       "text": "An SMB customer may hold at most three bundles per site."
     },
     {
       "id": "number-porting-ar",
       "title": "إجراءات نقل الأرقام (sample)",
+      "product": "Number porting",
       "filename": "policy.txt",
-      "mime_type": "text/plain",
       "text": "يجب التحقق من هوية العميل قبل نقل الرقم."
     },
     {
       "id": "ordering-procedure",
       "title": "Bundle ordering procedure (sample)",
+      "product": "Business fibre",
       "filename": "ordering.md",
       "mime_type": "text/markdown",
       "text": "# Ordering a business fibre bundle (sample)\nConfirm XGPON coverage at the customer's address before quoting.\nCheck the site has a free optical port; book a survey if it does not.\nQuote the bundle only after coverage and the port are confirmed.\nRecord the coverage reference on the order."
@@ -34,73 +35,67 @@
     {
       "id": "legacy-adsl",
       "title": "Legacy ADSL ordering (sample)",
+      "product": "Legacy ADSL",
       "filename": "adsl.txt",
-      "mime_type": "text/plain",
       "text": "ADSL orders go through the legacy portal.",
       "withdrawn": true
     },
     {
       "id": "invoice-discount",
       "title": "Invoice discount display (sample)",
+      "product": "All products",
       "filename": "discount.txt",
-      "mime_type": "text/plain",
       "text": "Discounts show on the invoice line."
     },
     {
       "id": "address-check-ar",
       "title": "سياسة التحقق من العنوان (sample)",
+      "product": "All products",
       "filename": "address.txt",
-      "mime_type": "text/plain",
       "text": "يجب التحقق من العنوان قبل تفعيل الخدمة."
     },
     {
       "id": "fault-escalation",
       "title": "Fault escalation matrix (sample)",
+      "product": "All products",
       "filename": "faults.txt",
-      "mime_type": "text/plain",
       "text": "Severity 1 faults escalate within 15 minutes."
     },
     {
-      "id": "static-ip",
-      "title": "Static IP allocation (fixture)",
-      "filename": "static-ip.md",
-      "mime_type": "text/markdown",
-      "text": "# Static IP addressing (fixture)\nA business fibre bundle may include one static public IPv4 address.\nAdditional static addresses need a justification recorded on the order.\nStatic addresses are released when the bundle is ceased."
+      "id": "mobile-fleet-guide",
+      "title": "Mobile fleet plan guide (fixture)",
+      "product": "Mobile fleet",
+      "file": "library/mobile-fleet-guide.docx"
     },
     {
-      "id": "managed-firewall",
-      "title": "Managed firewall service (fixture)",
-      "filename": "firewall.md",
-      "mime_type": "text/markdown",
-      "text": "# Managed firewall (fixture)\nThe managed firewall is provisioned on the customer's CPE after the line is activated.\nFirewall rule changes are requested through the self-service portal.\nA rule change is applied within one working day."
+      "id": "cloud-backup-service",
+      "title": "Cloud backup service description (fixture)",
+      "product": "Cloud backup",
+      "file": "library/cloud-backup-service.pdf"
     },
     {
-      "id": "service-levels",
-      "title": "Service level targets (fixture)",
-      "filename": "service-levels.md",
-      "mime_type": "text/markdown",
-      "text": "# Service levels (fixture)\nInstallation is completed within five working days of the coverage confirmation.\nSeverity 2 faults are acknowledged within one hour and resolved within eight hours.\nService credits are applied to the next invoice when a target is missed."
+      "id": "managed-security-deck",
+      "title": "Managed security sales deck (fixture)",
+      "product": "Managed security",
+      "file": "library/managed-security-deck.pptx"
     },
     {
-      "id": "identity-checks",
-      "title": "Customer identity verification (fixture)",
-      "filename": "identity.md",
-      "mime_type": "text/markdown",
-      "text": "# Identity checks (fixture)\nA trade licence is verified before a business account is opened.\nThe signatory's Emirates ID is checked against the trade licence.\nExpired trade licences block new orders until renewed."
+      "id": "sip-trunk-rate-card",
+      "title": "SIP trunk rate card (fixture)",
+      "product": "SIP trunk",
+      "file": "library/sip-trunk-rate-card.xlsx"
     },
     {
-      "id": "site-survey",
-      "title": "Site survey and installation (fixture)",
-      "filename": "survey.md",
-      "mime_type": "text/markdown",
-      "text": "# Site survey (fixture)\nA site survey is booked when no free optical port is recorded at the address.\nThe technician confirms the optical port and the router location during the survey.\nInstallation is scheduled only after the survey is closed."
+      "id": "number-porting-steps",
+      "title": "Number porting steps (fixture)",
+      "product": "Number porting",
+      "file": "library/number-porting-steps.csv"
     },
     {
-      "id": "mobile-backup",
-      "title": "Mobile backup access (fixture)",
-      "filename": "backup.md",
-      "mime_type": "text/markdown",
-      "text": "# Mobile backup (fixture)\nA 4G backup SIM keeps the site online when the fibre line fails.\nBackup traffic is capped at the bundle's backup allowance.\nThe SIM is activated with the fibre line and billed on the same invoice."
+      "id": "data-retention-policy",
+      "title": "Customer data retention policy (fixture)",
+      "product": "All products",
+      "file": "library/data-retention-policy.md"
     }
   ],
   "cases": [
@@ -124,135 +119,141 @@
       "id": "L003",
       "text": "التحقق من هوية العميل عند نقل الرقم إلى الشبكة",
       "expected": [
-        {"document": "إجراءات نقل الأرقام (sample)", "label": "Line 1"}
+        {"document": "إجراءات نقل الأرقام (sample)", "passage": "يجب التحقق من هوية العميل"}
       ],
       "note": "An Arabic query against an Arabic passage."
     },
     {
       "id": "L004",
-      "text": "Record the coverage reference on the order so fulfilment can trace the coverage check.",
+      "text": "Book a site survey when the address has no free optical port.",
       "expected": [
-        {"document": "Bundle ordering procedure (sample)", "passage": "Record the coverage reference on the order."}
+        {"document": "Bundle ordering procedure (sample)", "passage": "free optical port; book a survey"}
       ]
     },
     {
       "id": "L005",
-      "text": "Book a site survey when the address has no free optical port.",
-      "expected": [
-        {"document": "Bundle ordering procedure (sample)", "passage": "free optical port; book a survey"},
-        {"document": "Site survey and installation (fixture)", "passage": "A site survey is booked when no free optical port is recorded"}
-      ]
-    },
-    {
-      "id": "L006",
       "text": "Show discounts on the invoice. Customers must see each discount on the invoice line.",
       "expected": [
         {"document": "Invoice discount display (sample)", "passage": "Discounts show on the invoice line."}
       ]
     },
     {
-      "id": "L007",
-      "text": "يجب التحقق من عنوان العميل الجديد قبل تفعيل الخدمة",
-      "expected": [
-        {"document": "سياسة التحقق من العنوان (sample)", "label": "Line 1"}
-      ],
-      "note": "An Arabic query against an Arabic passage."
-    },
-    {
-      "id": "L008",
+      "id": "L006",
       "text": "Escalate severity 1 faults within 15 minutes of the ticket being raised.",
       "expected": [
         {"document": "Fault escalation matrix (sample)", "passage": "Severity 1 faults escalate within 15 minutes."}
       ]
     },
     {
-      "id": "L009",
-      "text": "Add a second static public IP address to a fibre bundle. The order must record a justification for the additional static address.",
+      "id": "L007",
+      "text": "يجب التحقق من عنوان العميل الجديد قبل تفعيل الخدمة",
       "expected": [
-        {"document": "Static IP allocation (fixture)", "passage": "one static public IPv4 address"},
-        {"document": "Static IP allocation (fixture)", "passage": "Additional static addresses need a justification recorded on the order."}
+        {"document": "سياسة التحقق من العنوان (sample)", "passage": "التحقق من العنوان"}
+      ],
+      "note": "An Arabic query against an Arabic passage."
+    },
+    {
+      "id": "L008",
+      "text": "How much pooled data does each line on the Fleet Plus tier get?",
+      "expected": [
+        {"document": "Mobile fleet plan guide (fixture)", "passage": "25 GB per line"}
+      ],
+      "note": "The answer is a row of a Word table."
+    },
+    {
+      "id": "L009",
+      "text": "Bar roaming on new mobile fleet lines until the administrator enables it.",
+      "expected": [
+        {"document": "Mobile fleet plan guide (fixture)", "passage": "Roaming is barred on new lines until the administrator enables it for that line."}
       ]
     },
     {
       "id": "L010",
-      "text": "Release static addresses when the bundle is ceased.",
+      "text": "What is the minimum number of lines for a mobile fleet?",
       "expected": [
-        {"document": "Static IP allocation (fixture)", "passage": "Static addresses are released when the bundle is ceased."}
+        {"document": "Mobile fleet plan guide (fixture)", "passage": "A fleet starts at five lines."}
       ]
     },
     {
       "id": "L011",
-      "text": "Let customers request firewall rule changes in the self-service portal.",
+      "text": "Cloud backup must keep thirty daily restore points.",
       "expected": [
-        {"document": "Managed firewall service (fixture)", "passage": "Firewall rule changes are requested through the self-service portal."}
-      ]
+        {"document": "Cloud backup service description (fixture)", "passage": "Backups run every night and keep thirty daily restore points."}
+      ],
+      "note": "The answer is one line of a PDF page."
     },
     {
       "id": "L012",
-      "text": "Provision the managed firewall on the customer's CPE once the line is activated.",
+      "text": "Restore a full server within four hours of the customer's request.",
       "expected": [
-        {"document": "Managed firewall service (fixture)", "passage": "provisioned on the customer's CPE after the line is activated"}
+        {"document": "Cloud backup service description (fixture)", "passage": "A full server restore is completed within four hours of the request."}
       ]
     },
     {
       "id": "L013",
-      "text": "Apply service credits to the next invoice when a service level target is missed.",
+      "text": "Customers request firewall rule changes in the business portal, and standard changes are applied within one working day.",
       "expected": [
-        {"document": "Service level targets (fixture)", "passage": "Service credits are applied to the next invoice when a target is missed."}
-      ]
+        {"document": "Managed security sales deck (fixture)", "passage": "Customers request firewall rule changes in the business portal."},
+        {"document": "Managed security sales deck (fixture)", "passage": "Standard rule changes are applied within one working day."}
+      ],
+      "note": "Two paragraphs of one slide."
     },
     {
       "id": "L014",
-      "text": "Severity 2 faults: acknowledge within one hour and resolve within eight hours.",
+      "text": "Which managed security package includes 24x7 threat monitoring?",
       "expected": [
-        {"document": "Service level targets (fixture)", "passage": "Severity 2 faults are acknowledged within one hour and resolved within eight hours."}
-      ]
+        {"document": "Managed security sales deck (fixture)", "passage": "Firewall, web filtering and 24x7 threat monitoring"}
+      ],
+      "note": "The answer is a row of a slide table."
     },
     {
       "id": "L015",
-      "text": "Block new orders while the customer's trade licence has expired, until it is renewed.",
+      "text": "Emergency calls must still be routed when a SIP trunk is suspended.",
       "expected": [
-        {"document": "Customer identity verification (fixture)", "passage": "Expired trade licences block new orders until renewed."}
-      ]
+        {"document": "SIP trunk rate card (fixture)", "passage": "Emergency calls are always routed, even when the trunk is suspended."}
+      ],
+      "note": "The answer is a cell of a spreadsheet row."
     },
     {
       "id": "L016",
-      "text": "Check the signatory's Emirates ID against the trade licence when a business account is opened.",
+      "text": "Who collects the letter of authority before a number is ported?",
       "expected": [
-        {"document": "Customer identity verification (fixture)", "passage": "A trade licence is verified before a business account is opened."},
-        {"document": "Customer identity verification (fixture)", "passage": "The signatory's Emirates ID is checked against the trade licence."}
-      ]
+        {"document": "Number porting steps (fixture)", "passage": "Collect the letter of authority signed by the account holder"}
+      ],
+      "note": "The answer is a CSV row."
     },
     {
       "id": "L017",
-      "text": "Schedule the installation only after the site survey is closed.",
+      "text": "Delete customer identity documents ninety days after the account closes, unless a legal hold is open.",
       "expected": [
-        {"document": "Site survey and installation (fixture)", "passage": "Installation is scheduled only after the survey is closed."}
-      ]
+        {"document": "Customer data retention policy (fixture)", "passage": "Customer identity documents are deleted ninety days after the account closes, unless a dispute or a legal hold is open."}
+      ],
+      "note": "The passage sits in the middle of a paragraph the chunker splits."
     },
     {
       "id": "L018",
-      "text": "Mobile backup for fibre sites. A 4G backup SIM keeps the site online when the fibre line fails, and backup traffic is capped at the bundle's backup allowance.",
+      "text": "How long are call detail records kept before they are deleted?",
       "expected": [
-        {"document": "Mobile backup access (fixture)", "passage": "A 4G backup SIM keeps the site online when the fibre line fails."},
-        {"document": "Mobile backup access (fixture)", "passage": "Backup traffic is capped at the bundle's backup allowance."}
+        {"document": "Customer data retention policy (fixture)", "passage": "Call detail records are kept for twelve months and then deleted."}
       ]
     },
     {
       "id": "L019",
-      "text": "What happens to a customer's spare internet connection if the main link drops?",
+      "text": "Is customer information scrambled before it is sent off site?",
       "expected": [
-        {"document": "Mobile backup access (fixture)", "passage": "A 4G backup SIM keeps the site online when the fibre line fails."}
+        {"document": "Cloud backup service description (fixture)", "passage": "Backup data is encrypted with AES-256 before it leaves the customer site."}
       ],
       "semantic": true,
-      "note": "Shares no words with its passage: a miss with the fake hash embedding, a test for real embeddings."
+      "note": "Says 'scrambled' and 'sent off site' for 'encrypted' and 'leaves the customer site'."
     },
     {
       "id": "L020",
-      "text": "Complete the installation within five working days of confirming coverage.",
+      "text": "Can employees use their work phones when they travel to another country?",
       "expected": [
-        {"document": "Service level targets (fixture)", "passage": "Installation is completed within five working days of the coverage confirmation."}
-      ]
+        {"document": "Mobile fleet plan guide (fixture)"}
+      ],
+      "semantic": true,
+      "note": "Any passage of the fleet guide answers: roaming is covered in its table and its prose."
     }
   ]
 }

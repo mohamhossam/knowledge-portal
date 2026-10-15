@@ -10,9 +10,10 @@ map every case with the models the settings configure (``LLM_PROVIDER``), and pr
 scores. ``--json`` also writes each case's answer, for comparing two runs.
 
 ``--mapper library`` scores the reference library's retrieval instead (RAG review, E1): it
-puts the library golden set's corpus in service through the worker's own path, in memory,
-searches every case with the configured embedding, and prints recall@10, the mean reciprocal
-rank and the share of cases with no expected passage among the first ten chunks.
+puts the library golden set's corpus, of any products and formats, in service through the
+worker's own path, in memory, searches every case with the configured embedding, and prints
+recall@10, the mean reciprocal rank and the share of cases with no expected passage among the
+first ten chunks, in all and per product.
 """
 
 from __future__ import annotations
@@ -132,12 +133,12 @@ def library_scores(report: LibraryEvaluationReport) -> dict[str, float]:
 def _library_case(result: LibraryCaseResult) -> dict[str, Any]:
     return {
         "id": result.case.id,
+        "product": result.product,
         "semantic": result.case.semantic,
         "expected": [
             {
                 "document": hit.document_title,
                 "passage": hit.passage,
-                "label": hit.label,
                 "found": found,
             }
             for hit, found in zip(result.case.expected, result.found, strict=True)
@@ -157,10 +158,18 @@ def _library_case(result: LibraryCaseResult) -> dict[str, Any]:
     }
 
 
+def library_scores_by_product(report: LibraryEvaluationReport) -> dict[str, dict[str, Any]]:
+    return {
+        product: {"cases": len(part.results), **library_scores(part)}
+        for product in report.products
+        for part in (report.only(product),)
+    }
+
+
 def render_library(report: LibraryEvaluationReport) -> str:
     lines = [
         f"Library golden set v{report.golden_set_version}: {report.documents} documents, "
-        f"{report.chunks} chunks",
+        f"{report.chunks} chunks, {report.excluded_blocks} blocks excluded at review",
         f"Mapper: library ({report.model}); {len(report.results)} cases, "
         f"{report.failures} failed, {report.empty_answers} empty answers",
         "",
@@ -172,12 +181,24 @@ def render_library(report: LibraryEvaluationReport) -> str:
     misses = [item.case.id for item in report.results if item.zero_hit]
     if misses:
         lines.append(f"{'cases with no hit':<24}{', '.join(misses)}")
+    by_product = library_scores_by_product(report)
+    width = max(len(name) for name in by_product) + 2
+    lines += [
+        "",
+        f"{'By product':<{width}}{'cases':>6}{'recall':>9}{'MRR':>9}{'no hit':>9}",
+        *(
+            f"{name:<{width}}{values['cases']:>6}"
+            + "".join(f"{_percent(value):>9}" for key, value in values.items() if key != "cases")
+            for name, values in by_product.items()
+        ),
+    ]
     return "\n".join(lines)
 
 
 def _evaluate_library(golden_set: Path | None, output: Path | None, settings: Settings) -> int:
+    path = golden_set or DEFAULT_LIBRARY_GOLDEN_SET
     try:
-        golden = read_library_golden_set((golden_set or DEFAULT_LIBRARY_GOLDEN_SET).read_bytes())
+        golden = read_library_golden_set(path.read_bytes(), path.parent)
     except (LibraryGoldenSetFileError, OSError) as exc:
         print(f"[evaluate] {exc}", file=sys.stderr)
         return 2
@@ -199,6 +220,8 @@ def _evaluate_library(golden_set: Path | None, output: Path | None, settings: Se
                     "model": report.model,
                     "index_identity": report.index_identity,
                     "scores": library_scores(report),
+                    "scores_by_product": library_scores_by_product(report),
+                    "excluded_blocks": report.excluded_blocks,
                     "failures": report.failures,
                     "empty_answers": report.empty_answers,
                     "cases": [_library_case(item) for item in report.results],
