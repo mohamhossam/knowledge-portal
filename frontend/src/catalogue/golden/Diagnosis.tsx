@@ -17,7 +17,7 @@ export function OutcomeStrip({ cases, onOpen }: { cases: GoldenCase[]; onOpen: (
           <li key={item.id}>
             <button type="button" className={`golden-square golden-square--${outcome}`} onClick={() => onOpen(item.id)}>
               <span aria-hidden="true">{MARK[outcome]}</span>
-              <span className="golden-sr">{item.id}: {OUTCOME_LABEL[outcome]}</span>
+              <span className="ds-visually-hidden">{item.id}: {OUTCOME_LABEL[outcome]}</span>
             </button>
           </li>
         );
@@ -34,7 +34,7 @@ export function VerdictTable({ cases }: { cases: GoldenCase[] }) {
   return (
     <div className="golden-scroll">
       <table className="golden-table">
-        <caption className="golden-sr">Expected verdict against predicted verdict, in cases</caption>
+        <caption className="ds-visually-hidden">Expected verdict against predicted verdict, in cases</caption>
         <thead>
           <tr>
             <th scope="col">Expected ↓ · Said →</th>
@@ -84,7 +84,7 @@ function Ranking({ title, rows, of }: { title: string; rows: { id: string; value
               <span className="golden-ranking__count">
                 {row.value}
                 {row.total !== undefined ? ` of ${row.total}` : ""}
-                <span className="golden-sr"> {of === "missed" ? "times missed" : "times raised by mistake"}</span>
+                <span className="ds-visually-hidden"> {of === "missed" ? "times missed" : "times raised by mistake"}</span>
               </span>
             </li>
           ))}
