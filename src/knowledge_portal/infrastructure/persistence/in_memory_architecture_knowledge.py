@@ -39,6 +39,9 @@ class InMemoryArchitectureKnowledgeRepository:
             (
                 self._releases,
                 self._documents,
+                self._published_documents,
+                self._active_id,
+                self._events,
             )
         )
 
@@ -46,6 +49,9 @@ class InMemoryArchitectureKnowledgeRepository:
         (
             self._releases,
             self._documents,
+            self._published_documents,
+            self._active_id,
+            self._events,
         ) = deepcopy(state)
 
     def _activated(self, release: ArchitectureKnowledge) -> None:

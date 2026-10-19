@@ -50,7 +50,6 @@ class InMemoryEvidenceIndex(ArchitectureEvidenceIndexPort):
         # Vectors by (model, passage text): a rebuild only embeds what changed.
         self._cache: dict[tuple[str, str], tuple[float, ...]] = {}
 
-    @property
     def snapshot_state(self) -> Any:
         return deepcopy(
             (
@@ -65,6 +64,7 @@ class InMemoryEvidenceIndex(ArchitectureEvidenceIndexPort):
             self._links,
         ) = deepcopy(state)
 
+    @property
     def embedding_model(self) -> str:
         return self._embeddings.model
 

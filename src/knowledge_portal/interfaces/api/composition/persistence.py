@@ -249,31 +249,60 @@ def _memory(
     library_admin = InMemoryLibraryAdmin(lock)
     system_reviews = InMemorySystemReviews(lock)
     historic = InMemoryHistoricRequirements(lock)
+    architecture = InMemoryArchitectureKnowledgeRepository(seed_knowledge(), events)
+    organisation = InMemoryOrganisationRepository(clock)
+    samples = InMemorySampleRequirements()
+    candidates = InMemoryCatalogueCandidates()
+    change_requests = InMemoryChangeRequests()
+    precedents = InMemoryPrecedents()
+    evidence_index = InMemoryEvidenceIndex(architecture_embeddings, architecture_tokenizer)
+    architecture_jobs = InMemoryArchitectureJobs()
+    historic_jobs = InMemoryArchitectureJobs()
+    golden_runs = InMemoryGoldenRuns()
+    golden_jobs = InMemoryArchitectureJobs()
+    # Every mutable store joins the one manager, so the fake graph rolls a
+    # failed multi-repository flow back exactly as PostgreSQL does.
     transactions.enroll(
-        library, events, reference_index, storage, actors, library_admin, system_reviews, historic
+        library,
+        events,
+        reference_index,
+        storage,
+        actors,
+        library_admin,
+        system_reviews,
+        historic,
+        architecture,
+        organisation,
+        samples,
+        candidates,
+        change_requests,
+        precedents,
+        evidence_index,
+        architecture_jobs,
+        historic_jobs,
+        golden_runs,
+        golden_jobs,
     )
     return PersistenceAdapters(
         document_storage=storage,
         actor_directory=actors,
-        architecture_repository=InMemoryArchitectureKnowledgeRepository(seed_knowledge(), events),
-        organisation_repository=InMemoryOrganisationRepository(clock),
-        sample_requirements=InMemorySampleRequirements(),
-        catalogue_candidates=InMemoryCatalogueCandidates(),
-        change_requests=InMemoryChangeRequests(),
-        precedents=InMemoryPrecedents(),
-        architecture_evidence_index=InMemoryEvidenceIndex(
-            architecture_embeddings, architecture_tokenizer
-        ),
-        architecture_job_repository=InMemoryArchitectureJobs(),
+        architecture_repository=architecture,
+        organisation_repository=organisation,
+        sample_requirements=samples,
+        catalogue_candidates=candidates,
+        change_requests=change_requests,
+        precedents=precedents,
+        architecture_evidence_index=evidence_index,
+        architecture_job_repository=architecture_jobs,
         library_repository=PublishingDocumentLibrary(library, events, review_cycle),
         library_admin_grants=library_admin,
         library_admin_record=InMemoryLibraryAdminRecord(library_admin),
         system_reviews=system_reviews,
         knowledge_events=events,
         historic_requirements=historic,
-        historic_job_repository=InMemoryArchitectureJobs(),
-        golden_runs=InMemoryGoldenRuns(),
-        golden_job_repository=InMemoryArchitectureJobs(),
+        historic_job_repository=historic_jobs,
+        golden_runs=golden_runs,
+        golden_job_repository=golden_jobs,
         reference_index=reference_index,
         transaction_manager=transactions,
         readiness_check=_always_ready,

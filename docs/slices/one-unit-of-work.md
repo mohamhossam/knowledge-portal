@@ -56,4 +56,13 @@ flows are therefore not atomic (review finding #4, remediation plan Wave 3).
 
 ## Validation Evidence
 
-(recorded on completion)
+Run locally on the slice's final tree (integration tests run in CI with
+`TEST_DATABASE_URL`; they skip locally):
+
+- `uv run pytest` — PASS (unit suite 1219 passed; integration skipped locally,
+  including the three new induced-failure tests in
+  `tests/integration/test_one_unit_of_work.py`)
+- `uv run ruff check .` — All checks passed
+- `uv run ruff format --check .` — 440 files already formatted
+- `uv run mypy src tests` — Success: no issues found in 374 source files
+- `uv run lint-imports` — Contracts: 10 kept, 0 broken
