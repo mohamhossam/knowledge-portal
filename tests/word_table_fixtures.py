@@ -64,7 +64,7 @@ def reviewed_word_table_document() -> bytes:
             ),
             word_row(
                 word_cell("", "<w:vMerge/>"),
-                word_cell("XGPON التغطية مطلوبة. " * 40),
+                word_cell("XGPON coverage is required. " * 40),
                 word_cell("Public note", extra=nested),
             ),
         )
@@ -75,7 +75,7 @@ def reviewed_word_table_document() -> bytes:
 def reviewed_word_prose_document() -> bytes:
     return word_document(
         word_paragraph("Private heading", heading=True)
-        + word_paragraph("Private paragraph XGPON التغطية مطلوبة.")
+        + word_paragraph("Private paragraph XGPON coverage is required.")
         + word_paragraph("Private list").replace(
             "<w:p>", '<w:p><w:pPr><w:pStyle w:val="ListParagraph"/></w:pPr>', 1
         )

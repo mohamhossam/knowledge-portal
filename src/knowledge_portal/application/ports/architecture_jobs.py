@@ -20,6 +20,8 @@ class ArchitectureJobKind(StrEnum):
     # a breakdown from Azure DevOps (a first read, or a refresh).
     HISTORIC_READ_BRD = "historic_read_brd"
     HISTORIC_READ_BREAKDOWN = "historic_read_breakdown"
+    # A golden set report run, on its own queue: it scores the mapper with the configured models.
+    GOLDEN_RUN = "golden_run"
 
 
 class ArchitectureJobStatus(StrEnum):

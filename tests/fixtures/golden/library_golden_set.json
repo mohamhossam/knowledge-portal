@@ -1,0 +1,257 @@
+{
+  "version": 2,
+  "labelled_on": "2026-10-15",
+  "provenance": "FIXTURE, not user evidence. The corpus mixes products and formats, as a real library does, in English only: the library accepts no Arabic. Eight short texts are the library documents scripts/seed_demo.py publishes (titles ending in '(sample)'), kept word for word. Six files under library/ (titles ending in '(fixture)') are written by scripts/build_library_golden_corpus.py, one product and one format each: a Word guide with headings and a table, a two-page PDF, a slide deck with a table, a spreadsheet rate card, a CSV procedure, and a long Markdown policy whose paragraphs the chunker splits. Every case and expected passage was written by hand from these documents, not from historic requirements or from knowledge admins' searches. An expected passage is a piece of the document's wording, wherever the extractor puts it; an expected document with no passage means any of its passages answers. Cases marked 'semantic' share few words with their passage: the fake hash embedding may miss them, and they are there to be measured against real embeddings.",
+  "documents": [
+    {
+      "id": "xgpon-coverage",
+      "title": "XGPON coverage rules (sample)",
+      "product": "Business fibre",
+      "filename": "policy.txt",
+      "text": "High-speed bundles require XGPON coverage at the customer address."
+    },
+    {
+      "id": "bundle-eligibility",
+      "title": "Business bundle eligibility (sample)",
+      "product": "Business fibre",
+      "filename": "policy.txt",
+      "text": "An SMB customer may hold at most three bundles per site."
+    },
+    {
+      "id": "number-porting-identity",
+      "title": "Number porting identity check (sample)",
+      "product": "Number porting",
+      "filename": "policy.txt",
+      "text": "The customer's identity is verified before a number is ported."
+    },
+    {
+      "id": "ordering-procedure",
+      "title": "Bundle ordering procedure (sample)",
+      "product": "Business fibre",
+      "filename": "ordering.md",
+      "mime_type": "text/markdown",
+      "text": "# Ordering a business fibre bundle (sample)\nConfirm XGPON coverage at the customer's address before quoting.\nCheck the site has a free optical port; book a survey if it does not.\nQuote the bundle only after coverage and the port are confirmed.\nRecord the coverage reference on the order."
+    },
+    {
+      "id": "legacy-adsl",
+      "title": "Legacy ADSL ordering (sample)",
+      "product": "Legacy ADSL",
+      "filename": "adsl.txt",
+      "text": "ADSL orders go through the legacy portal.",
+      "withdrawn": true
+    },
+    {
+      "id": "invoice-discount",
+      "title": "Invoice discount display (sample)",
+      "product": "All products",
+      "filename": "discount.txt",
+      "text": "Discounts show on the invoice line."
+    },
+    {
+      "id": "address-check",
+      "title": "Address verification policy (sample)",
+      "product": "All products",
+      "filename": "address.txt",
+      "text": "The address is verified before the service is activated."
+    },
+    {
+      "id": "fault-escalation",
+      "title": "Fault escalation matrix (sample)",
+      "product": "All products",
+      "filename": "faults.txt",
+      "text": "Severity 1 faults escalate within 15 minutes."
+    },
+    {
+      "id": "mobile-fleet-guide",
+      "title": "Mobile fleet plan guide (fixture)",
+      "product": "Mobile fleet",
+      "file": "library/mobile-fleet-guide.docx"
+    },
+    {
+      "id": "cloud-backup-service",
+      "title": "Cloud backup service description (fixture)",
+      "product": "Cloud backup",
+      "file": "library/cloud-backup-service.pdf"
+    },
+    {
+      "id": "managed-security-deck",
+      "title": "Managed security sales deck (fixture)",
+      "product": "Managed security",
+      "file": "library/managed-security-deck.pptx"
+    },
+    {
+      "id": "sip-trunk-rate-card",
+      "title": "SIP trunk rate card (fixture)",
+      "product": "SIP trunk",
+      "file": "library/sip-trunk-rate-card.xlsx"
+    },
+    {
+      "id": "number-porting-steps",
+      "title": "Number porting steps (fixture)",
+      "product": "Number porting",
+      "file": "library/number-porting-steps.csv"
+    },
+    {
+      "id": "data-retention-policy",
+      "title": "Customer data retention policy (fixture)",
+      "product": "All products",
+      "file": "library/data-retention-policy.md"
+    }
+  ],
+  "cases": [
+    {
+      "id": "L001",
+      "text": "Confirm fibre coverage before quoting. Sales must check XGPON coverage at the customer's address before a quote is issued.",
+      "expected": [
+        {"document": "XGPON coverage rules (sample)", "passage": "require XGPON coverage at the customer address"},
+        {"document": "Bundle ordering procedure (sample)", "passage": "Confirm XGPON coverage at the customer's address before quoting."}
+      ],
+      "note": "Two documents state the rule; both count."
+    },
+    {
+      "id": "L002",
+      "text": "Limit bundles per site. An SMB customer must not hold more than three bundles at one site.",
+      "expected": [
+        {"document": "Business bundle eligibility (sample)", "passage": "at most three bundles per site"}
+      ]
+    },
+    {
+      "id": "L003",
+      "text": "Verify the customer's identity before their number is ported to our network.",
+      "expected": [
+        {"document": "Number porting identity check (sample)", "passage": "The customer's identity is verified before a number is ported."}
+      ]
+    },
+    {
+      "id": "L004",
+      "text": "Book a site survey when the address has no free optical port.",
+      "expected": [
+        {"document": "Bundle ordering procedure (sample)", "passage": "free optical port; book a survey"}
+      ]
+    },
+    {
+      "id": "L005",
+      "text": "Show discounts on the invoice. Customers must see each discount on the invoice line.",
+      "expected": [
+        {"document": "Invoice discount display (sample)", "passage": "Discounts show on the invoice line."}
+      ]
+    },
+    {
+      "id": "L006",
+      "text": "Escalate severity 1 faults within 15 minutes of the ticket being raised.",
+      "expected": [
+        {"document": "Fault escalation matrix (sample)", "passage": "Severity 1 faults escalate within 15 minutes."}
+      ]
+    },
+    {
+      "id": "L007",
+      "text": "Check the new customer's address before the service is activated.",
+      "expected": [
+        {"document": "Address verification policy (sample)", "passage": "The address is verified before the service is activated."}
+      ]
+    },
+    {
+      "id": "L008",
+      "text": "How much pooled data does each line on the Fleet Plus tier get?",
+      "expected": [
+        {"document": "Mobile fleet plan guide (fixture)", "passage": "25 GB per line"}
+      ],
+      "note": "The answer is a row of a Word table."
+    },
+    {
+      "id": "L009",
+      "text": "Bar roaming on new mobile fleet lines until the administrator enables it.",
+      "expected": [
+        {"document": "Mobile fleet plan guide (fixture)", "passage": "Roaming is barred on new lines until the administrator enables it for that line."}
+      ]
+    },
+    {
+      "id": "L010",
+      "text": "What is the minimum number of lines for a mobile fleet?",
+      "expected": [
+        {"document": "Mobile fleet plan guide (fixture)", "passage": "A fleet starts at five lines."}
+      ]
+    },
+    {
+      "id": "L011",
+      "text": "Cloud backup must keep thirty daily restore points.",
+      "expected": [
+        {"document": "Cloud backup service description (fixture)", "passage": "Backups run every night and keep thirty daily restore points."}
+      ],
+      "note": "The answer is one line of a PDF page."
+    },
+    {
+      "id": "L012",
+      "text": "Restore a full server within four hours of the customer's request.",
+      "expected": [
+        {"document": "Cloud backup service description (fixture)", "passage": "A full server restore is completed within four hours of the request."}
+      ]
+    },
+    {
+      "id": "L013",
+      "text": "Customers request firewall rule changes in the business portal, and standard changes are applied within one working day.",
+      "expected": [
+        {"document": "Managed security sales deck (fixture)", "passage": "Customers request firewall rule changes in the business portal."},
+        {"document": "Managed security sales deck (fixture)", "passage": "Standard rule changes are applied within one working day."}
+      ],
+      "note": "Two paragraphs of one slide."
+    },
+    {
+      "id": "L014",
+      "text": "Which managed security package includes 24x7 threat monitoring?",
+      "expected": [
+        {"document": "Managed security sales deck (fixture)", "passage": "Firewall, web filtering and 24x7 threat monitoring"}
+      ],
+      "note": "The answer is a row of a slide table."
+    },
+    {
+      "id": "L015",
+      "text": "Emergency calls must still be routed when a SIP trunk is suspended.",
+      "expected": [
+        {"document": "SIP trunk rate card (fixture)", "passage": "Emergency calls are always routed, even when the trunk is suspended."}
+      ],
+      "note": "The answer is a cell of a spreadsheet row."
+    },
+    {
+      "id": "L016",
+      "text": "Who collects the letter of authority before a number is ported?",
+      "expected": [
+        {"document": "Number porting steps (fixture)", "passage": "Collect the letter of authority signed by the account holder"}
+      ],
+      "note": "The answer is a CSV row."
+    },
+    {
+      "id": "L017",
+      "text": "Delete customer identity documents ninety days after the account closes, unless a legal hold is open.",
+      "expected": [
+        {"document": "Customer data retention policy (fixture)", "passage": "Customer identity documents are deleted ninety days after the account closes, unless a dispute or a legal hold is open."}
+      ],
+      "note": "The passage sits in the middle of a paragraph the chunker splits."
+    },
+    {
+      "id": "L018",
+      "text": "How long are call detail records kept before they are deleted?",
+      "expected": [
+        {"document": "Customer data retention policy (fixture)", "passage": "Call detail records are kept for twelve months and then deleted."}
+      ]
+    },
+    {
+      "id": "L019",
+      "text": "Is customer information scrambled before it is sent off site?",
+      "expected": [
+        {"document": "Cloud backup service description (fixture)", "passage": "Backup data is encrypted with AES-256 before it leaves the customer site."}
+      ],
+      "semantic": true,
+      "note": "Says 'scrambled' and 'sent off site' for 'encrypted' and 'leaves the customer site'."
+    },
+    {
+      "id": "L020",
+      "text": "Can employees use their work phones when they travel to another country?",
+      "expected": [
+        {"document": "Mobile fleet plan guide (fixture)"}
+      ],
+      "semantic": true,
+      "note": "Any passage of the fleet guide answers: roaming is covered in its table and its prose."
+    }
+  ]
+}

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -14,11 +15,15 @@ from knowledge_portal.domain.architecture.diff import ChangedItem, ChangeKind, d
 from knowledge_portal.domain.architecture.knowledge import (
     InvalidKnowledgeError,
     KnowledgeCapability,
+    LandscapeDomain,
     SystemDefinition,
     SystemRelationship,
 )
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
+from knowledge_portal.infrastructure.architecture.knowledge_yaml import (
+    knowledge_from_yaml,
+    seed_knowledge,
+)
 
 ADAPTER = CatalogueFileAdapter()
 OWNER = {"X-Fake-Actor-Id": "fake-owner"}
@@ -38,6 +43,27 @@ def test_every_format_round_trips_the_catalogue(file_format: CatalogueFileFormat
 
     assert content.systems == seed.systems
     assert content.relationships == seed.relationships
+
+
+CATALOGUE = Path(__file__).resolve().parents[2] / "catalogues" / "smb-architecture.yaml"
+
+
+@pytest.mark.parametrize("file_format", list(CatalogueFileFormat))
+def test_every_format_keeps_delivery_drops_and_cross_cutting_domains(
+    file_format: CatalogueFileFormat,
+) -> None:
+    catalogue = knowledge_from_yaml(CATALOGUE.read_text(encoding="utf-8"))
+    orders = {item.code: item for item in catalogue.products[0].order_types}
+    assert orders["NEW"].delivery_drop == "P1"
+    assert orders["UPDOWNGRD"].delivery_drop == "P2 / P3"
+    assert "Delivered in drop" not in (orders["UPDOWNGRD"].description or "")
+    crossing = [item.id for item in catalogue.landscape_domains if item.cross_cutting]
+    assert crossing == ["enterprise", "integration"]
+
+    content = ADAPTER.read(file_format, ADAPTER.write(file_format, catalogue))
+
+    assert content.products[0].order_types == catalogue.products[0].order_types
+    assert content.landscape_domains == catalogue.landscape_domains
 
 
 def _workbook(**sheets: list[tuple[object, ...]]) -> bytes:
@@ -215,6 +241,21 @@ def test_diff_lists_added_changed_and_removed_items() -> None:
     )
     assert sum(item.item is ChangedItem.RELATIONSHIP for item in diff.changes) >= 1
     assert diff_releases(base, base).empty
+
+
+def test_diff_names_a_landscape_domain_made_cross_cutting() -> None:
+    base = replace(seed_knowledge(), landscape_domains=(LandscapeDomain("integration", "Bus"),))
+    draft = replace(
+        base,
+        id="draft",
+        landscape_domains=(LandscapeDomain("integration", "Bus", cross_cutting=True),),
+    )
+
+    changes = diff_releases(base, draft).changes
+
+    assert [(item.item, item.key, item.fields) for item in changes] == [
+        (ChangedItem.LANDSCAPE_DOMAIN, "integration", ("cross_cutting",))
+    ]
 
 
 def test_changes_and_template_endpoints_are_for_maintainers(client: TestClient) -> None:

@@ -13,6 +13,7 @@ import io
 import json
 import zipfile
 from collections.abc import Callable, Iterator, Sequence
+from dataclasses import replace
 from datetime import UTC, datetime
 from functools import partial
 from typing import Any
@@ -186,7 +187,7 @@ _HEADERS: dict[str, tuple[str, ...]] = {
     CONSTRAINTS: ("system_id", "constraint"),
     RELATIONSHIPS: ("source_system_id", "target_system_id", "description", "kind"),
     DOMAINS: _DOMAIN_HEADERS,
-    LANDSCAPE: _DOMAIN_HEADERS,
+    LANDSCAPE: (*_DOMAIN_HEADERS, "cross_cutting"),
     PRODUCTS: (
         "product_id",
         "name",
@@ -211,6 +212,7 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "confidence",
         "source",
         "channels",
+        "delivery_drop",
     ),
     OFFERING_COMPONENTS: (
         "product_id",
@@ -572,11 +574,15 @@ _INSTRUCTIONS = (
     ("Capabilities component_id (optional): the component of its system that delivers it.",),
     (
         "LandscapeDomains (optional): where systems sit, such as Customer; parent_id makes a "
-        "sub-domain such as Customer > Assisted.",
+        "sub-domain such as Customer > Assisted; cross_cutting yes for one that serves every "
+        "other domain, such as the integration layer.",
     ),
     ("Systems description and landscape_domain_id (optional): what it is for, and where.",),
     ("Products (optional): product offerings such as Business Pro Plus; rules separated by ;.",),
-    ("OrderTypes: how each offering is ordered; enabled is yes or no.",),
+    (
+        "OrderTypes: how each offering is ordered; enabled is yes or no; delivery_drop (optional) "
+        "is the drop it comes in, such as P2 / P3.",
+    ),
     ("OfferingComponents: the parts of each offering; mandatory and customer_visible yes or no.",),
     (
         "Responsibilities: which system does what for a component, in which role; order_types "
@@ -897,7 +903,11 @@ def content_from_mapping(raw: object) -> CatalogueContent:
         systems,
         relationships,
         _mapped_domains(raw, "capability_domains", CapabilityDomain),
-        _mapped_domains(raw, "landscape_domains", LandscapeDomain),
+        _cross_cutting(
+            _mapped_domains(raw, "landscape_domains", LandscapeDomain),
+            enumerate(_entries(raw, "landscape_domains"), start=1),
+            "landscape_domains entry",
+        ),
         _offerings(_entries(raw, "products")),
         _journeys(_entries(raw, "journeys")),
         _channels(_entries(raw, "channels")),
@@ -1353,6 +1363,9 @@ def _offerings(entries: list[dict[str, Any]]) -> list[ProductOffering]:
                     _trust(order.get("confidence"), place),
                     _optional_text(order.get("source"), place, "source"),
                     _text_list(order.get("channels"), place, "channels"),
+                    delivery_drop=_optional_text(
+                        order.get("delivery_drop"), place, "delivery_drop"
+                    ),
                 )
                 for position, order in enumerate(_sub_entries(item, "order_types", where), 1)
                 for place in [_where(order, f"{where}, order type {position}")]
@@ -1719,7 +1732,11 @@ def _offering_mapping(offering: ProductOffering) -> dict[str, Any]:
                     "code": order.code,
                     "name": order.name,
                     "enabled": order.enabled,
-                    **_present(description=order.description, channels=list(order.channels)),
+                    **_present(
+                        description=order.description,
+                        channels=list(order.channels),
+                        delivery_drop=order.delivery_drop,
+                    ),
                     **_sourced(order),
                 }
                 for order in offering.order_types
@@ -1925,15 +1942,14 @@ def _mapped_domains[DomainT: (CapabilityDomain, LandscapeDomain)](
     for number, item in enumerate(_entries(raw, key), start=1):
         where = f"{key} entry {number}"
         try:
-            domains.append(
-                kind(
-                    _text(item.get("id"), where, "id"),
-                    _text(item.get("name"), where, "name"),
-                    _optional_text(item.get("name_ar"), where, "name_ar"),
-                    _optional_text(item.get("parent_id"), where, "parent_id"),
-                    _optional_text(item.get("description"), where, "description"),
-                )
+            domain = kind(
+                _text(item.get("id"), where, "id"),
+                _text(item.get("name"), where, "name"),
+                _optional_text(item.get("name_ar"), where, "name_ar"),
+                _optional_text(item.get("parent_id"), where, "parent_id"),
+                _optional_text(item.get("description"), where, "description"),
             )
+            domains.append(domain)
         except InvalidKnowledgeError as exc:
             raise _located(where, exc) from exc
     return domains
@@ -2147,6 +2163,11 @@ def _domain_mapping(item: CapabilityDomain | LandscapeDomain) -> dict[str, Any]:
         **({"name_ar": item.name_ar} if item.name_ar else {}),
         **({"parent_id": item.parent_id} if item.parent_id else {}),
         **({"description": item.description} if item.description else {}),
+        **(
+            {"cross_cutting": True}
+            if isinstance(item, LandscapeDomain) and item.cross_cutting
+            else {}
+        ),
     }
 
 
@@ -2400,7 +2421,11 @@ def _read_workbook(content: bytes) -> CatalogueContent:
             except InvalidKnowledgeError as exc:
                 raise _located(where, exc) from exc
         domains = _sheet_domains(workbook, DOMAINS, CapabilityDomain)
-        landscape = _sheet_domains(workbook, LANDSCAPE, LandscapeDomain)
+        landscape = _cross_cutting(
+            _sheet_domains(workbook, LANDSCAPE, LandscapeDomain),
+            _rows(workbook, LANDSCAPE),
+            f"{LANDSCAPE} row",
+        )
         offerings = _offerings(_sheet_offerings(workbook))
         journeys = _journeys(_sheet_journeys(workbook))
         channels = _channels(
@@ -2909,18 +2934,28 @@ def _sheet_domains[DomainT: (CapabilityDomain, LandscapeDomain)](
     for number, cells in _rows(workbook, sheet):
         where = f"{sheet} row {number}"
         try:
-            domains.append(
-                kind(
-                    _text(cells.get("domain_id"), where, "domain_id"),
-                    _text(cells.get("name"), where, "name"),
-                    _optional_text(cells.get("name_ar"), where, "name_ar"),
-                    _optional_text(cells.get("parent_id"), where, "parent_id"),
-                    _optional_text(cells.get("description"), where, "description"),
-                )
+            domain = kind(
+                _text(cells.get("domain_id"), where, "domain_id"),
+                _text(cells.get("name"), where, "name"),
+                _optional_text(cells.get("name_ar"), where, "name_ar"),
+                _optional_text(cells.get("parent_id"), where, "parent_id"),
+                _optional_text(cells.get("description"), where, "description"),
             )
+            domains.append(domain)
         except InvalidKnowledgeError as exc:
             raise _located(where, exc) from exc
     return domains
+
+
+def _cross_cutting(
+    domains: list[LandscapeDomain], entries: Iterator[tuple[int, dict[str, Any]]], where: str
+) -> list[LandscapeDomain]:
+    """The landscape domains, each marked cross-cutting when its entry says so (no by default)."""
+    marked = []
+    for domain, (number, cells) in zip(domains, entries, strict=True):
+        crossing = _flag(cells.get("cross_cutting"), f"{where} {number}", "cross_cutting", False)
+        marked.append(replace(domain, cross_cutting=True) if crossing else domain)
+    return marked
 
 
 def _located(where: str, exc: InvalidKnowledgeError) -> InvalidKnowledgeError:
@@ -3014,6 +3049,7 @@ def _write_offering(sheets: dict[str, Any], product: ProductOffering) -> None:
                 _confidence(order),
                 order.source,
                 f"{_LIST_SEPARATOR} ".join(order.channels),
+                order.delivery_drop,
             ),
         )
     for part in product.components:
@@ -3378,9 +3414,21 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
         (LANDSCAPE, release.landscape_domains if release is not None else ()),
     ):
         for domain in tree:
+            crossing = (
+                (_yes(domain.cross_cutting) if domain.cross_cutting else None,)
+                if isinstance(domain, LandscapeDomain)
+                else ()
+            )
             _append(
                 sheets[sheet],
-                (domain.id, domain.name, domain.name_ar, domain.parent_id, domain.description),
+                (
+                    domain.id,
+                    domain.name,
+                    domain.name_ar,
+                    domain.parent_id,
+                    domain.description,
+                    *crossing,
+                ),
             )
     for concept in release.business_capabilities if release is not None else ():
         _append(

@@ -74,11 +74,14 @@ class OrderType:
     source: str | None = None
     # The channels it can be ordered through, by id; none named means the source does not say.
     channels: tuple[str, ...] = ()
+    # The delivery drop it comes in, as its source names it, such as "P2 / P3".
+    delivery_drop: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "code", required(self.code, "Order type code"))
         object.__setattr__(self, "name", required(self.name, "Order type name"))
         object.__setattr__(self, "description", optional(self.description, "Description"))
+        object.__setattr__(self, "delivery_drop", optional(self.delivery_drop, "Delivery drop"))
         object.__setattr__(
             self,
             "channels",

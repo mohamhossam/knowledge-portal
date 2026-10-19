@@ -27,6 +27,7 @@ from knowledge_portal.application.ports.catalogue_candidates import (
 )
 from knowledge_portal.application.ports.change_requests import ChangeRequestInboxPort
 from knowledge_portal.application.ports.document_library import DocumentLibraryPort
+from knowledge_portal.application.ports.golden_runs import GoldenRunRepositoryPort
 from knowledge_portal.application.ports.historic_requirements import HistoricRequirementsPort
 from knowledge_portal.application.ports.knowledge_events import KnowledgeEventOutboxPort
 from knowledge_portal.application.ports.library_admin import (
@@ -75,6 +76,7 @@ from knowledge_portal.infrastructure.persistence.in_memory_catalogue_candidates 
 from knowledge_portal.infrastructure.persistence.in_memory_change_requests import (
     InMemoryChangeRequests,
 )
+from knowledge_portal.infrastructure.persistence.in_memory_golden_runs import InMemoryGoldenRuns
 from knowledge_portal.infrastructure.persistence.in_memory_organisation import (
     InMemoryOrganisationRepository,
 )
@@ -107,6 +109,7 @@ from knowledge_portal.infrastructure.persistence.postgres_catalogue_candidates i
 from knowledge_portal.infrastructure.persistence.postgres_change_requests import (
     PostgresChangeRequests,
 )
+from knowledge_portal.infrastructure.persistence.postgres_golden_runs import PostgresGoldenRuns
 from knowledge_portal.infrastructure.persistence.postgres_organisation import (
     PostgresOrganisationRepository,
 )
@@ -149,6 +152,9 @@ class PersistenceAdapters:
     # Historic Requirements and their own import queue (Knowledge Center E, ADR-0102).
     historic_requirements: HistoricRequirementsPort
     historic_job_repository: ArchitectureJobRepositoryPort
+    # Golden set report runs and their own queue (the scores of the impact mapper).
+    golden_runs: GoldenRunRepositoryPort
+    golden_job_repository: ArchitectureJobRepositoryPort
     reference_index: ReferenceIndexPort
     transaction_manager: TransactionManagerPort
     readiness_check: Callable[[], bool]
@@ -221,6 +227,8 @@ def _postgres(
         knowledge_events=knowledge_events,
         historic_requirements=PostgresHistoricRequirements(postgres),
         historic_job_repository=PostgresArchitectureJobs(connector, "historic_import_jobs"),
+        golden_runs=PostgresGoldenRuns(connector),
+        golden_job_repository=PostgresArchitectureJobs(connector, "golden_run_jobs"),
         reference_index=PostgresReferenceIndex(postgres),
         transaction_manager=postgres,
         readiness_check=postgres.readiness,
@@ -266,6 +274,8 @@ def _memory(
         knowledge_events=events,
         historic_requirements=historic,
         historic_job_repository=InMemoryArchitectureJobs(),
+        golden_runs=InMemoryGoldenRuns(),
+        golden_job_repository=InMemoryArchitectureJobs(),
         reference_index=reference_index,
         transaction_manager=transactions,
         readiness_check=_always_ready,

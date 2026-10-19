@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
@@ -71,6 +72,11 @@ from knowledge_portal.infrastructure.config.options import (
     RerankerProvider,
 )
 from knowledge_portal.infrastructure.config.settings_validation import validate_settings
+
+# The repository root: the golden set, its floors and the catalogue it was labelled against
+# live there, beside the code. A container image copies the same layout and points
+# EVALUATION_ROOT at it.
+DEFAULT_EVALUATION_ROOT = Path(__file__).resolve().parents[4]
 
 
 def _library_scanner_port() -> int:
@@ -215,6 +221,8 @@ class Settings:
     # Where historic Requirements' breakdowns are read from, read-only (ADR-0102).
     ado_provider: AdoProvider = AdoProvider.NONE
     ado_import_max_items: int = DEFAULT_ADO_IMPORT_MAX_ITEMS
+    # Where the golden set report finds its golden set, floors and catalogue.
+    evaluation_root: Path = DEFAULT_EVALUATION_ROOT
     # What reorders an assessment's passages per facet (ontology plan Phase 5).
     reranker_provider: RerankerProvider = RerankerProvider.LEXICAL
     reranker_url: str | None = None
@@ -585,6 +593,7 @@ def _operability_from_env() -> dict[str, Any]:
         **_product_catalog_from_env(),
         "knowledge_review_cycle_days": _review_cycle_from_env(),
         **_ado_from_env(),
+        "evaluation_root": _evaluation_root_from_env(),
         **_reranker_from_env(),
     }
 
@@ -629,6 +638,11 @@ def _ado_from_env() -> dict[str, Any]:
     except ValueError as exc:
         raise ConfigurationError("ADO_IMPORT_MAX_ITEMS must be a whole number.") from exc
     return {"ado_provider": provider, "ado_import_max_items": max_items}
+
+
+def _evaluation_root_from_env() -> Path:
+    raw = os.getenv("EVALUATION_ROOT", "").strip()
+    return Path(raw) if raw else DEFAULT_EVALUATION_ROOT
 
 
 def _review_cycle_from_env() -> int:

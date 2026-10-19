@@ -136,7 +136,7 @@ function grouped(items: NavItem[]): { name?: string; items: NavItem[] }[] {
  * The sidebar collapses to icons (each keeps its name, shown beside it on hover
  * or focus); below 640px it becomes a row that scrolls sideways. On a location
  * change, focus moves to the page h1 and the view starts at the top (§1).
- * `reader` drops the sidebar (Explorer readers).
+ * `reader` drops the sidebar (Explorer readers); `fullBleed` drops the page's padding.
  */
 export function AppShell({
   product = "Knowledge Portal",
@@ -147,6 +147,7 @@ export function AppShell({
   navigation = [],
   secondaryNavigation = [],
   reader = false,
+  fullBleed = false,
   locationKey,
   link: Link = Anchor,
   banner,
@@ -168,6 +169,8 @@ export function AppShell({
   /** Areas set apart at the sidebar's foot. */
   secondaryNavigation?: NavItem[];
   reader?: boolean;
+  /** The page draws its own edges (bands across the full width), so the main area adds no padding. */
+  fullBleed?: boolean;
   /** Changes on every route change (e.g. location.pathname). */
   locationKey?: string;
   link?: LinkLike;
@@ -302,7 +305,7 @@ export function AppShell({
             </button>
           </nav>
         )}
-        <main id="ds-main" className="ds-main" tabIndex={-1} inert={covered || undefined}>
+        <main id="ds-main" className={`ds-main${fullBleed ? " ds-main--full-bleed" : ""}`} tabIndex={-1} inert={covered || undefined}>
           {children}
         </main>
         {panel}

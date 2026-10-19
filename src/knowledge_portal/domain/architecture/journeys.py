@@ -129,6 +129,10 @@ class Activity:
         named = (self.performing_system_id,) if self.performing_system_id else ()
         return (*named, *self.supporting_system_ids)
 
+    def seen_in(self, channel: str | None) -> bool:
+        """Whether the step is in a channel's view: every view when it names no channel."""
+        return channel is None or not self.channels or channel in self.channels
+
 
 class FlowRuleKind(StrEnum):
     DECISION = "decision"
@@ -303,14 +307,32 @@ class Journey:
         return tuple(dict.fromkeys(system for item in self.ordered for system in item.systems))
 
 
-def journey_edges(journey: Journey) -> tuple[JourneyEdge, ...]:
+def journey_edges(journey: Journey, channel: str | None = None) -> tuple[JourneyEdge, ...]:
     """The flow: each activity to the next on its own track, unless a rule leaves it, plus
     every rule, and each parallel track back to where it rejoins, from its last activity.
     Each arrow once.
 
     A side track with several activities (a parallel track such as "E2ESO provisions the
     CPE, then Fortinet registers it") runs in number order like the main track.
+
+    With a channel, the flow that channel sees: its own steps and those that name no
+    channel. A rule counts only when both its ends are in view, and a parallel track rejoins
+    only where the view has the step it rejoins at. A loop stays a "loop" edge back.
     """
+    return _edges(journey, tuple(item for item in journey.ordered if item.seen_in(channel)))
+
+
+def shared_journey_edges(journey: Journey) -> tuple[JourneyEdge, ...]:
+    """The flow a channel that no step names sees: the steps that name no channel."""
+    return _edges(journey, tuple(item for item in journey.ordered if not item.channels))
+
+
+def journey_channels(journey: Journey) -> tuple[str, ...]:
+    """The channels the journey's steps name, in the order its steps first name them."""
+    return tuple(dict.fromkeys(channel for item in journey.ordered for channel in item.channels))
+
+
+def _edges(journey: Journey, in_view: tuple[Activity, ...]) -> tuple[JourneyEdge, ...]:
     edges: list[JourneyEdge] = []
     seen: set[tuple[str, str]] = set()
 
@@ -319,29 +341,36 @@ def journey_edges(journey: Journey) -> tuple[JourneyEdge, ...]:
             seen.add((edge.from_activity, edge.to_activity))
             edges.append(edge)
 
-    leaving = {rule.from_activity for rule in journey.flow_rules}
+    present = {item.number for item in in_view}
+    rules = [
+        rule
+        for rule in journey.flow_rules
+        if rule.from_activity in present and rule.to_activity in present
+    ]
+    leaving = {rule.from_activity for rule in rules}
     tracks: dict[str, list[Activity]] = {}
-    for item in journey.ordered:
+    for item in in_view:
         tracks.setdefault((item.track or MAIN_TRACK).casefold(), []).append(item)
     last_on_track = {item.number: steps[-1].number for steps in tracks.values() for item in steps}
     for steps in tracks.values():
         for current, following in zip(steps, steps[1:], strict=False):
             if current.number not in leaving:
                 add(JourneyEdge(current.number, following.number, "sequence"))
-    for rule in journey.flow_rules:
+    for rule in rules:
         add(
             JourneyEdge(
                 rule.from_activity, rule.to_activity, rule.kind.value, rule.condition or rule.branch
             )
         )
-        if rule.kind is FlowRuleKind.PARALLEL and rule.rejoin_at:
+        rejoin = rule.rejoin_at
+        if rule.kind is FlowRuleKind.PARALLEL and rejoin is not None and rejoin in present:
             target = by_number(journey, rule.to_activity)
             last = (
                 last_on_track.get(rule.to_activity, rule.to_activity)
                 if target is not None and not target.main
                 else rule.to_activity
             )
-            add(JourneyEdge(last, rule.rejoin_at, "rejoin", "rejoin"))
+            add(JourneyEdge(last, rejoin, "rejoin", "rejoin"))
     return tuple(edges)
 
 

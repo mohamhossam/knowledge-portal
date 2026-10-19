@@ -44,6 +44,7 @@ from knowledge_portal.application.use_cases.catalogue_candidates import (
 )
 from knowledge_portal.application.use_cases.change_requests import ReadDeliverySummaries
 from knowledge_portal.application.use_cases.document_library import DocumentLibrary
+from knowledge_portal.application.use_cases.golden_runs import GoldenSetRuns
 from knowledge_portal.application.use_cases.historic_requirements import HistoricImports
 from knowledge_portal.application.use_cases.identity_access import SearchKnownActors
 from knowledge_portal.application.use_cases.knowledge_reviews import (
@@ -229,6 +230,10 @@ def get_decide_catalogue_candidates(container: ContainerDep) -> DecideCatalogueC
 
 def get_historic_imports(container: ContainerDep) -> HistoricImports:
     return container.historic_imports
+
+
+def get_golden_set_runs(container: ContainerDep) -> GoldenSetRuns:
+    return container.golden_runs
 
 
 def get_architecture_jobs(container: ContainerDep) -> ArchitectureJobs:

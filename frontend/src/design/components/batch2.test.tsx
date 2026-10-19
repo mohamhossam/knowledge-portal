@@ -56,6 +56,13 @@ describe("AppShell", () => {
     window.localStorage.removeItem("knowledge-portal.sidebar");
   });
 
+  it("drops the main area's padding only for a full-bleed page", () => {
+    const { rerender } = render(<AppShell homeHref="/" navigation={NAV}><p>Page</p></AppShell>);
+    expect(screen.getByRole("main")).not.toHaveClass("ds-main--full-bleed");
+    rerender(<AppShell homeHref="/" navigation={NAV} fullBleed><p>Page</p></AppShell>);
+    expect(screen.getByRole("main")).toHaveClass("ds-main", "ds-main--full-bleed");
+  });
+
   it("moves focus to the new page's h1 when the location changes (§1)", () => {
     const scroll = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
     const { rerender } = render(<AppShell homeHref="/" navigation={NAV} locationKey="/a"><PageHeader title="A">a</PageHeader></AppShell>);

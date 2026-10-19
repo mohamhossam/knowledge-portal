@@ -1,0 +1,16 @@
+{
+  "note": "The least each score may be. The fake floors sit a few points under the Phase 0 baseline of the fake models and only catch regressions of the harness; they say nothing about a real model. The live floors are empty until real-model runs set them: do not fill them in from the fake baseline.",
+  "floors": {
+    "fake": {
+      "system_precision": 0.70,
+      "system_recall": 0.30,
+      "verdict_accuracy": 0.68,
+      "offering_accuracy": 0.85,
+      "concept_recall": 0.18,
+      "citation_faithfulness": 1.0,
+      "owner_consumer_reach": 1.0,
+      "drafts_applied": 1.0
+    },
+    "live": {}
+  }
+}

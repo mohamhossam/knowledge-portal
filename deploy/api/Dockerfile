@@ -33,7 +33,12 @@ RUN apt-get update \
 RUN groupadd --system --gid 10001 app \
     && useradd --system --uid 10001 --gid app --home-dir /app --no-create-home app
 COPY --from=build --chown=app:app /app/.venv /app/.venv
-ENV PATH=/app/.venv/bin:$PATH \
+# What the Golden set report scores against: the golden set with its floors, and the catalogue
+# it was labelled against. The same layout as the repository, found through EVALUATION_ROOT.
+COPY --chown=app:app tests/fixtures/golden/impact_golden_set.json tests/fixtures/golden/impact_floors.json /app/evaluation/tests/fixtures/golden/
+COPY --chown=app:app catalogues/smb-architecture.yaml /app/evaluation/catalogues/
+ENV EVALUATION_ROOT=/app/evaluation \
+    PATH=/app/.venv/bin:$PATH \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 WORKDIR /app

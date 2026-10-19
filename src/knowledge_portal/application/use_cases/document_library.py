@@ -35,6 +35,7 @@ from knowledge_portal.application.use_cases.documents import (
 )
 from knowledge_portal.application.use_cases.identity_access import KNOWLEDGE_ADMIN
 from knowledge_portal.application.use_cases.library_admin import LibraryStewardship
+from knowledge_portal.domain.document.language import has_arabic
 from knowledge_portal.domain.document.library import (
     AdminOverride,
     ExtractionRevision,
@@ -55,6 +56,8 @@ from knowledge_portal.domain.shared.review import ReviewStanding, standing
 
 CHUNKING_POLICY = "structure-512-768-v1"
 TABLE_CHUNKING_POLICY = "table-fields-512-768-v2"
+# The library accepts no Arabic (domain/document/language.py).
+NO_ARABIC = "The library accepts English documents only; Arabic text is not accepted."
 
 
 # A publication stops being picked up for indexing after this many attempts (the worker's
@@ -344,6 +347,8 @@ class DocumentLibrary:
             raise UnsupportedDocumentError(
                 "A title (up to 200 characters) and submission key (up to 100) are required."
             )
+        if has_arabic(title):
+            raise UnsupportedDocumentError(NO_ARABIC)
         digest = hashlib.sha256(data.content).hexdigest()
         with self._transactions.transaction():
             existing = self._repository.find_submission(actor.id.value, key)
@@ -470,6 +475,10 @@ class DocumentLibrary:
         explanation: str,
     ) -> LibraryDocument:
         require_submittable_passages(passages)
+        if has_arabic(explanation) or any(
+            has_arabic(p.text) or has_arabic(p.exclusion_reason) for p in passages
+        ):
+            raise UnsupportedDocumentError(NO_ARABIC)
         with self._transactions.transaction():
             document, override = self._stewarded(document_id, actor, expected)
             if sum(len(p.text) for p in passages) > 2_000_000:
@@ -609,6 +618,9 @@ class DocumentLibrary:
             extraction = self._extractor.extract_structured(source.mime_type, content)
             if not extraction.evidence_blocks:
                 raise DocumentExtractionError("Extraction produced no reviewable evidence.")
+            arabic = next((b for b in extraction.evidence_blocks if has_arabic(b.text or "")), None)
+            if arabic is not None:
+                raise UnsupportedDocumentError(f"{NO_ARABIC} Arabic text found at {arabic.label}.")
             ready = replace(
                 source,
                 stage=IngestionStage.READY,

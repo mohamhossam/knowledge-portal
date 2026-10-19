@@ -6,3 +6,6 @@
 !pyproject.toml
 !uv.lock
 !src/
+!tests/fixtures/golden/impact_golden_set.json
+!tests/fixtures/golden/impact_floors.json
+!catalogues/smb-architecture.yaml

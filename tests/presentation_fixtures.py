@@ -77,7 +77,7 @@ def reviewed_table_presentation() -> bytes:
     return presentation(
         drawing_table(
             (table_cell("Private operations", 'rowSpan="2"'), table_cell("Internal only")),
-            (table_cell("", 'vMerge="true"'), table_cell("XGPON التغطية مطلوبة. " * 40)),
+            (table_cell("", 'vMerge="true"'), table_cell("XGPON coverage is required. " * 40)),
         ),
         notes="Private speaker notes",
     )

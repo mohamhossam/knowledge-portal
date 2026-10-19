@@ -105,6 +105,9 @@ class LandscapeDomain:
     name_ar: str | None = None
     parent_id: str | None = None
     description: str | None = None
+    # It serves every other domain (TAM's enterprise domain, the integration layer), so the
+    # landscape runs it across the domains rather than beside them.
+    cross_cutting: bool = False
 
     def __post_init__(self) -> None:
         _check_node(self, "Landscape domain")

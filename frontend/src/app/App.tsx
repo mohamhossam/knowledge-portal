@@ -5,6 +5,7 @@ import { CALLBACK_PATH, SILENT_CALLBACK_PATH } from "../auth/paths";
 import { ExplorerPage } from "../explorer/ExplorerPage";
 import { ActionGroup, EmptyState, PageHeader, Skeleton } from "../design/components";
 import { ButtonLink } from "../shell/links";
+import { LAB, loadCatalogueLab } from "./features";
 import { HomePage } from "./HomePage";
 import { Shell } from "./Shell";
 
@@ -49,7 +50,7 @@ const ReviewFocus = library.page("ReviewFocus");
 
 /** The catalogue: a version's pages, its draft's steps, versions and compare. */
 const catalogue = routeGroup(async () => {
-  const [frame, systems, map, concepts, domains, channels, governance, offerings, journeys, evidence, compare, versions, sources, decide, decideFocus, changes, check, publish, headed] = await Promise.all([
+  const [frame, systems, map, concepts, domains, channels, governance, offerings, journeys, evidence, compare, versions, sources, decide, decideFocus, changes, check, publish, headed, golden] = await Promise.all([
     import("../catalogue/CataloguePage"),
     import("../catalogue/SystemsPage"),
     import("../catalogue/MapPage"),
@@ -69,11 +70,12 @@ const catalogue = routeGroup(async () => {
     import("../catalogue/draft/CheckStep"),
     import("../catalogue/draft/PublishStep"),
     import("../catalogue/frame/HeadedPage"),
+    import("../catalogue/golden/GoldenSetPage"),
   ]);
   return {
     ...frame, ...systems, ...map, ...concepts, ...domains, ...channels, ...governance, ...offerings, ...journeys, ...evidence, ...compare,
     CatalogueVersionsPage: versions.VersionsPage,
-    ...sources, ...decide, ...decideFocus, ...changes, ...check, ...publish, ...headed,
+    ...sources, ...decide, ...decideFocus, ...changes, ...check, ...publish, ...headed, ...golden,
   };
 });
 const CataloguePage = catalogue.page("CataloguePage");
@@ -95,6 +97,7 @@ const ChangesStep = catalogue.page("ChangesStep");
 const CheckStep = catalogue.page("CheckStep");
 const PublishStep = catalogue.page("PublishStep");
 const HeadedPage = catalogue.page("HeadedPage");
+const GoldenSetPage = catalogue.page("GoldenSetPage");
 
 /** Ownership: who runs each system, squads, people, products and the history. */
 const ownership = routeGroup(async () => {
@@ -173,6 +176,8 @@ function Loading({ children }: { children: ReactNode }) {
  * never reaches the bundle.
  */
 const DesignGallery = import.meta.env.DEV ? lazy(() => import("../design-lab/gallery/Gallery")) : null;
+/** The catalogue redesign, where features.ts turns it on (its loader lives there, so the bundler can drop it). */
+const CatalogueLab = loadCatalogueLab ? lazy(loadCatalogueLab) : null;
 
 export function App() {
   // The library is the area people open most: fetch its chunk once the first page has painted.
@@ -190,6 +195,8 @@ export function App() {
       )}
       <Route element={<Shell />}>
         <Route index element={<HomePage />} />
+        {/* The redesigned catalogue (development, or a lab build) inside the portal's own shell, like every other area. */}
+        {CatalogueLab && <Route path={`${LAB.slice(1)}/*`} element={<Suspense fallback={null}><CatalogueLab inShell /></Suspense>} />}
         <Route path="library" element={<Loading><LibraryPage /></Loading>} />
         {/* Re-confirmations are confirmed on To do now (UX rebuild, phase 2). */}
         <Route path="reminders" element={<Navigate to="/" replace />} />
@@ -216,6 +223,7 @@ export function App() {
           {catalogueRoutes}
           <Route path="versions" element={<CatalogueVersionsPage />} />
           <Route path="compare" element={<HeadedPage page="compare"><ComparePage /></HeadedPage>} />
+          <Route path="golden-set" element={<HeadedPage page="golden"><GoldenSetPage /></HeadedPage>} />
         </Route>
         <Route path="architecture/versions/:releaseId" element={<CataloguePage />}>
           {catalogueRoutes}

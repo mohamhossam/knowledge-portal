@@ -223,7 +223,8 @@ export function ConnectionRemove({ connection, onDone }: { connection: Relations
   );
 }
 
-type Domain = { id: string; name: string; name_ar?: string | null; parent_id?: string | null; description?: string | null };
+/** A domain as edited; a landscape domain keeps whether it is cross-cutting, which the panel doesn't change. */
+type Domain = { id: string; name: string; name_ar?: string | null; parent_id?: string | null; description?: string | null; cross_cutting?: boolean };
 
 /** One domain tree edited whole: the landscape, or the business areas. */
 export function DomainsEdit({ tree, onDone }: { tree: "landscape" | "areas"; onDone: () => void }) {
@@ -267,7 +268,7 @@ export function DomainsEdit({ tree, onDone }: { tree: "landscape" | "areas"; onD
       error={saveDraft.error}
       onCancel={onDone}
       onSubmit={() =>
-        saveDraft.mutate(draftBody(release, tree === "landscape" ? { landscape_domains: finished } : { capability_domains: finished }), {
+        saveDraft.mutate(draftBody(release, tree === "landscape" ? { landscape_domains: finished.map((item) => ({ ...item, cross_cutting: item.cross_cutting ?? false })) } : { capability_domains: finished }), {
           onSuccess: onDone,
         })
       }
@@ -442,7 +443,7 @@ export function JourneyEdit({ journey, onDone }: { journey?: Journey; onDone: (s
   const release = book.release;
   const { saveDraft } = useEditing(release);
   const [value, setValue] = useState<Journey>(
-    () => journey ?? { id: "", name: "", activities: [], flow_rules: [], integrations: [], edges: [] },
+    () => journey ?? { id: "", name: "", activities: [], flow_rules: [], integrations: [], edges: [], channel_edges: [], shared_edges: [] },
   );
   const journeys = release.journeys ?? [];
   return (

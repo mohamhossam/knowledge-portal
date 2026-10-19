@@ -39,8 +39,8 @@ from knowledge_portal.infrastructure.persistence.in_memory_transaction import (
     InMemoryTransactionManager,
 )
 from knowledge_portal.infrastructure.persistence.reference_index import (
+    ApproximateTokenCounter,
     InMemoryReferenceIndex,
-    Utf8BudgetCounter,
 )
 from tests.unit.test_document_library import Embeddings, approve_fixture, owner
 
@@ -96,7 +96,7 @@ def _published() -> tuple[str, PublishedReference, DocumentLibrary, InMemoryDocu
         repository,
         index,
         Embeddings(),
-        StructureAwareChunks(Utf8BudgetCounter()),
+        StructureAwareChunks(ApproximateTokenCounter()),
         transactions,
         clock,
         "test-model",

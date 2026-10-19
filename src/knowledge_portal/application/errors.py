@@ -52,3 +52,19 @@ class ActorNotFoundError(Exception):
 
 class CitationNotCurrentError(Exception):
     """A cited library passage was withdrawn or replaced since it was cited."""
+
+
+class GoldenRunNotFoundError(Exception):
+    """A requested golden set run does not exist."""
+
+
+class GoldenRunBusyError(Exception):
+    """A golden set run is already queued or running; another would only compete with it."""
+
+
+class InvalidGoldenRunError(Exception):
+    """The requested golden set run options cannot be run."""
+
+
+class GoldenSetUnavailableError(Exception):
+    """This deployment holds no golden set or catalogue to score against."""
