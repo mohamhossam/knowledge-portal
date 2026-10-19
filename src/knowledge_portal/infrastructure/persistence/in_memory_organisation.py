@@ -1,7 +1,9 @@
 """Isolated offline repository for the organisation catalogue."""
 
 from collections.abc import Callable
+from copy import deepcopy
 from threading import RLock
+from typing import Any
 
 from smb_kernel.time.clock import ClockPort
 
@@ -17,6 +19,20 @@ class InMemoryOrganisationRepository:
         self._lock = RLock()
         self._catalogue = OrganisationCatalogue()
         self._events: list[OrganisationAuditEvent] = []
+
+    def snapshot_state(self) -> Any:
+        return deepcopy(
+            (
+                self._catalogue,
+                self._events,
+            )
+        )
+
+    def restore_state(self, state: Any) -> None:
+        (
+            self._catalogue,
+            self._events,
+        ) = deepcopy(state)
 
     def load(self) -> OrganisationCatalogue:
         with self._lock:

@@ -1,7 +1,9 @@
 """Isolated offline repository for versioned architecture knowledge."""
 
+from copy import deepcopy
 from datetime import UTC, datetime
 from threading import RLock
+from typing import Any
 
 from knowledge_portal.application.ports.knowledge_events import (
     ARCHITECTURE_RELEASE_ACTIVATED,
@@ -31,6 +33,20 @@ class InMemoryArchitectureKnowledgeRepository:
         self._active_id = initial.id
         self._events: list[KnowledgeAuditEvent] = []
         self._activated(initial)
+
+    def snapshot_state(self) -> Any:
+        return deepcopy(
+            (
+                self._releases,
+                self._documents,
+            )
+        )
+
+    def restore_state(self, state: Any) -> None:
+        (
+            self._releases,
+            self._documents,
+        ) = deepcopy(state)
 
     def _activated(self, release: ArchitectureKnowledge) -> None:
         """Report the new active release, as the PostgreSQL adapter does (ADR-0099)."""

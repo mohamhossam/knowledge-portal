@@ -6,6 +6,7 @@ import io
 import zipfile
 from dataclasses import replace
 from datetime import UTC, datetime
+from threading import RLock
 from typing import Any
 
 import psycopg
@@ -93,6 +94,9 @@ from knowledge_portal.infrastructure.persistence.in_memory_catalogue_candidates 
 )
 from knowledge_portal.infrastructure.persistence.in_memory_organisation import (
     InMemoryOrganisationRepository,
+)
+from knowledge_portal.infrastructure.persistence.in_memory_transaction import (
+    InMemoryTransactionManager,
 )
 from knowledge_portal.infrastructure.persistence.postgres_catalogue_candidates import (
     PostgresCatalogueCandidates,
@@ -320,7 +324,7 @@ def _proposer(
     storage.put(DocumentVersionId("doc"), b"Nothing architectural here.\n")
     drafted = draft.updated(documents=(version, image))
     repository.save(drafted, draft.revision, "amina", "upload_document")
-    decide = DecideCatalogueCandidate(manage, repository, candidates)
+    decide = DecideCatalogueCandidate(manage, repository, candidates, InMemoryTransactionManager(RLock()))
     return proposer, decide, drafted, candidates, manage
 
 
@@ -375,10 +379,15 @@ def test_decisions_check_revision_ownership_and_undo_on_a_lost_draft() -> None:
         def save(self, *_: object) -> None:
             raise PersistenceError("lost")
 
+    # A save that loses rolls the decision marks back with it: they share one
+    # transaction, so no candidate is left decided against an unsaved draft.
+    rollback = InMemoryTransactionManager(RLock())
+    rollback.enroll(candidates)
     losing = DecideCatalogueCandidate(
         manage,
         _LosingRepository(),  # type: ignore[arg-type]
         candidates,
+        rollback,
     )
     with pytest.raises(PersistenceError):
         losing.decide(draft.id, "c1", draft.revision, True, MAINTAINER, NOW)

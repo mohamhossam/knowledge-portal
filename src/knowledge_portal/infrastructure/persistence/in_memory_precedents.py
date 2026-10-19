@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import math
 from collections.abc import Iterable
+from copy import deepcopy
 from threading import RLock
+from typing import Any
 
 from knowledge_portal.application.ports.precedents import PrecedentMatch
 from knowledge_portal.domain.architecture.precedents import (
@@ -25,6 +27,12 @@ class InMemoryPrecedents:
     def __init__(self) -> None:
         self._lock = RLock()
         self._items: dict[str, tuple[Precedent, str, tuple[float, ...]]] = {}
+
+    def snapshot_state(self) -> Any:
+        return deepcopy((self._items,))
+
+    def restore_state(self, state: Any) -> None:
+        (self._items,) = deepcopy(state)
 
     def record(self, precedent: Precedent, embedding_model: str, vector: tuple[float, ...]) -> bool:
         with self._lock:

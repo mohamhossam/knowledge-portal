@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from copy import deepcopy
+from typing import Any
 
 from knowledge_portal.application.ports.architecture_rag import (
     ArchitectureEvidenceIndexPort,
@@ -49,6 +51,20 @@ class InMemoryEvidenceIndex(ArchitectureEvidenceIndexPort):
         self._cache: dict[tuple[str, str], tuple[float, ...]] = {}
 
     @property
+    def snapshot_state(self) -> Any:
+        return deepcopy(
+            (
+                self._entries,
+                self._links,
+            )
+        )
+
+    def restore_state(self, state: Any) -> None:
+        (
+            self._entries,
+            self._links,
+        ) = deepcopy(state)
+
     def embedding_model(self) -> str:
         return self._embeddings.model
 
