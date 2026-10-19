@@ -31,7 +31,7 @@ _REQUEUED_VALUES = (
 _REQUEUED = ", ".join(f"{column} = {value}" for column, value in _REQUEUED_VALUES)
 
 # Each queue has its own table: `claim` takes any kind, so queues must never share one.
-QUEUE_TABLES = frozenset({"architecture_jobs", "historic_import_jobs"})
+QUEUE_TABLES = frozenset({"architecture_jobs", "historic_import_jobs", "golden_run_jobs"})
 
 
 class PostgresArchitectureJobs:

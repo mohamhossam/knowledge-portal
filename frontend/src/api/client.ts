@@ -79,6 +79,16 @@ export type FindingKind = Schemas["FindingKind"];
 type Nudge = Schemas["NudgeResponse"];
 type Membership = Schemas["MembershipResponse"];
 export type ReindexScope = Schemas["ReindexScope"];
+/** The Golden set report: runs of the impact mapper over the catalogue's golden set. */
+export type GoldenSetInfo = Schemas["GoldenSetInfoResponse"];
+export type GoldenRunOptions = Schemas["GoldenRunRequest"];
+export type GoldenRun = Schemas["GoldenRunResponse"];
+export type GoldenRunSummary = Schemas["GoldenRunSummaryResponse"];
+export type GoldenScoreSet = Schemas["ScoreSetResponse"];
+export type GoldenCase = Schemas["CaseRecordResponse"];
+export type GoldenRepetition = Schemas["RepetitionResponse"];
+type GoldenRunList = Schemas["GoldenRunListResponse"];
+
 /** A historic Requirement: an old BRD with its Azure DevOps breakdown (Knowledge Center E). */
 export type HistoricDetail = Schemas["HistoricDetail"];
 export type HistoricSummary = Schemas["HistoricSummary"];
@@ -464,6 +474,10 @@ export const api = {
   systemReviewHistory: (systemId: string) =>
     apiRequest<ReviewConfirmation[]>(`/architecture-knowledge/systems/${encodeURIComponent(systemId)}/reviews`),
   reminders: () => apiRequest<Reminders>("/reviews/reminders"),
+  goldenSetInfo: () => apiRequest<GoldenSetInfo>("/evaluation/golden-set"),
+  goldenRuns: () => apiRequest<GoldenRunList>("/evaluation/golden-runs"),
+  goldenRun: (runId: string) => apiRequest<GoldenRun>(`/evaluation/golden-runs/${encodeURIComponent(runId)}`),
+  startGoldenRun: (options: GoldenRunOptions) => post<GoldenRun>("/evaluation/golden-runs", options),
   historicList: (input: { status?: HistoricStatus; query?: string; offset?: number }) => {
     const params = new URLSearchParams({ offset: String(input.offset ?? 0), limit: "50" });
     if (input.status) params.set("status", input.status);

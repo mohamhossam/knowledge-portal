@@ -220,6 +220,7 @@
     },
     {
       "id": "G004",
+      "split": "held_out",
       "text": "Customers who ordered Business Pro Plus online want to follow every order milestone, including the technician visit, inside the SMB App.",
       "verdict": "change_existing_offering",
       "offering": "business-pro-plus",
@@ -286,6 +287,7 @@
     },
     {
       "id": "G008",
+      "split": "held_out",
       "text": "Waive the one-time device charge when a faulty Fortinet 90G or 120G is replaced within the first 30 days.",
       "verdict": "change_existing_offering",
       "offering": "business-pro-plus",
@@ -352,6 +354,7 @@
     },
     {
       "id": "G012",
+      "split": "held_out",
       "text": "Sales agents in BCRM must be able to port the customer's existing fixed numbers in during a Business Pro Plus new activation.",
       "verdict": "change_existing_offering",
       "offering": "business-pro-plus",
@@ -420,6 +423,7 @@
     },
     {
       "id": "G016",
+      "split": "held_out",
       "text": "Allow a block of eight static IP addresses as a paid add-on on Business Pro Plus.",
       "verdict": "change_existing_offering",
       "offering": "business-pro-plus",
@@ -492,6 +496,7 @@
     },
     {
       "id": "G020",
+      "split": "held_out",
       "text": "The technician should scan the CPE and access point serial numbers with the phone camera instead of typing them during installation.",
       "verdict": "change_existing_offering",
       "offering": "business-pro-plus",
@@ -555,6 +560,7 @@
     },
     {
       "id": "G024",
+      "split": "held_out",
       "text": "Read and validate the trade licence automatically when a business buys Business Pro Plus online.",
       "verdict": "change_existing_offering",
       "offering": "business-pro-plus",
@@ -618,6 +624,7 @@
     },
     {
       "id": "G028",
+      "split": "held_out",
       "text": "Ship the replacement CPE to the customer by courier when a faulty device is replaced, and track the shipment.",
       "verdict": "change_existing_offering",
       "offering": "business-pro-plus",
@@ -691,6 +698,7 @@
     },
     {
       "id": "G032",
+      "split": "held_out",
       "text": "Add a 500 Mbps Business Pro Plus plan with symmetric upload and download.",
       "verdict": "new_plan",
       "offering": "business-pro-plus",
@@ -824,6 +832,7 @@
     },
     {
       "id": "G039",
+      "split": "held_out",
       "text": "One business internet order for a head office and its branches, with a shared SD-WAN overlay across all sites.",
       "verdict": "new_offering_in_family",
       "offering": null,
@@ -954,6 +963,7 @@
     },
     {
       "id": "G046",
+      "split": "held_out",
       "text": "A cyber-security awareness training subscription for employees of small businesses.",
       "verdict": "new_product_line",
       "offering": null,
@@ -1033,6 +1043,7 @@
     },
     {
       "id": "G051",
+      "split": "held_out",
       "text": "Support a new add-on for SMB customers.",
       "verdict": null,
       "offering": null,
@@ -1158,6 +1169,7 @@
     },
     {
       "id": "G057",
+      "split": "held_out",
       "text": "Add the CPE serial number to the Service order API that CWOM calls on E2ESO for Business Pro Plus.",
       "verdict": "change_existing_offering",
       "offering": "business-pro-plus",

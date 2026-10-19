@@ -7,6 +7,17 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- The Golden set report (Catalogue › Golden set): run the impact mapper over the catalogue's
+  golden set in the background, keep each run, and read it: scores in three groups with the counts
+  and range behind each and the floor it is held to, a verdict table, every case at a glance,
+  the systems it misses and raises most, every case's expected and predicted answer, and
+  comparison with another run. 12 of the 59 cases are held out of tuning (`split: held_out`), and
+  a run may repeat 1 to 5 times for a mean and spread. Public contract, additive: `GET
+  /evaluation/golden-set`, `GET` and `POST /evaluation/golden-runs`, `GET
+  /evaluation/golden-runs/{run_id}`, and the `golden_run` value of `ArchitectureJobKind`. New
+  setting `EVALUATION_ROOT`; the API image now carries the golden set, its floors and the
+  catalogue. Migration `202610190900_golden_runs`. See `docs/operations/golden-set-report.md`.
+
 - The catalogue says three things it left to prose and naming before, additively in both
   contracts. An order type's `delivery_drop` ("P2 / P3"), set in the catalogue file
   (YAML, JSON, or the workbook's new `OrderTypes` column); `catalogues/smb-architecture.yaml`

@@ -46,6 +46,7 @@ export const ROUTES: RouteDef[] = [
   // The architecture catalogue.
   { key: "architecture", path: at("architecture") },
   // The map (UX rebuild phase 4): how systems connect, one system in context, what systems do.
+  { key: "architecture-golden-set", path: at("architecture/golden-set"), mask: [".golden-meta", "select"] },
   { key: "architecture-map", path: at("architecture/map") },
   { key: "architecture-map-system", path: (s) => s.system && `architecture/map?system=${s.system}` },
   { key: "architecture-map-capabilities", path: at("architecture/map?lens=capabilities") },

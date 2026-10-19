@@ -13,7 +13,7 @@ import { type CatalogueContext, useCatalogueContext, useMappingImpact } from "..
 
 /** A catalogue page, as its sub-navigation and its breadcrumb name it. */
 export type CataloguePageId =
-  | "systems" | "map" | "concepts" | "offerings" | "journeys" | "domains" | "channels" | "governance" | "versions" | "compare" | "evidence";
+  | "systems" | "map" | "concepts" | "offerings" | "journeys" | "domains" | "channels" | "governance" | "versions" | "compare" | "evidence" | "golden";
 
 const PAGE_LABEL: Record<CataloguePageId, string> = {
   systems: "Systems",
@@ -27,6 +27,7 @@ const PAGE_LABEL: Record<CataloguePageId, string> = {
   versions: "Versions",
   compare: "Compare versions",
   evidence: "A cited passage",
+  golden: "Golden set report",
 };
 
 const PAGE_PATH: Partial<Record<CataloguePageId, string>> = {
@@ -38,6 +39,7 @@ const PAGE_PATH: Partial<Record<CataloguePageId, string>> = {
   domains: "/domains",
   channels: "/channels",
   governance: "/governance",
+  golden: "/golden-set",
 };
 
 const versionName = (release: Release) => release.name || "Untitled version";
@@ -108,10 +110,14 @@ export function CatalogueHeader({ page, chosen, record, children }: {
         title={PAGE_LABEL[page]}
         documentTitle={`${chosen ? `${chosen} · ` : ""}${PAGE_LABEL[page]} · ${inService ? "Architecture catalogue" : `${name} · Catalogue`}`}
         lead={
-          <>
-            <Edition release={release} inService={inService} actorName={context.actorName} />
-            {!inService && <>{" "}<Consequence release={release} /></>}
-          </>
+          page === "golden" ? (
+            "How well the impact mapper agrees with the catalogue's hand-labelled answer key. A run scores a throwaway copy of the golden set's catalogue, never the live one."
+          ) : (
+            <>
+              <Edition release={release} inService={inService} actorName={context.actorName} />
+              {!inService && <>{" "}<Consequence release={release} /></>}
+            </>
+          )
         }
         meta={
           <>
@@ -147,7 +153,12 @@ function pages(base: string, page: CataloguePageId, inService: boolean, release:
     { href: `${base}/channels`, label: "Channels", current: page === "channels" },
     { href: `${base}/governance`, label: "Governance", current: page === "governance" },
     // Change requests from Requirement AI wait on Versions; the count is seen from every page.
-    ...(inService ? [{ href: "/architecture/versions", label: waiting ? `Versions · ${waiting} waiting` : "Versions", current: page === "versions" || page === "compare" }] : []),
+    ...(inService
+      ? [
+          { href: "/architecture/versions", label: waiting ? `Versions · ${waiting} waiting` : "Versions", current: page === "versions" || page === "compare" },
+          { href: "/architecture/golden-set", label: "Golden set", current: page === "golden" },
+        ]
+      : []),
   ];
 }
 

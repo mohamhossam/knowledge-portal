@@ -718,7 +718,8 @@
           "index",
           "extraction",
           "historic_read_brd",
-          "historic_read_breakdown"
+          "historic_read_breakdown",
+          "golden_run"
         ],
         "title": "ArchitectureJobKind",
         "type": "string"
@@ -1760,6 +1761,142 @@
           "capability_id"
         ],
         "title": "CapabilityScopeResponse",
+        "type": "object"
+      },
+      "CaseRecordResponse": {
+        "properties": {
+          "answered": {
+            "title": "Answered",
+            "type": "boolean"
+          },
+          "citations_checked": {
+            "title": "Citations Checked",
+            "type": "integer"
+          },
+          "citations_faithful": {
+            "title": "Citations Faithful",
+            "type": "integer"
+          },
+          "draft_offering": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Draft Offering"
+          },
+          "draft_problems": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Draft Problems"
+          },
+          "expected_offering": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Offering"
+          },
+          "expected_systems": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Expected Systems",
+            "type": "array"
+          },
+          "expected_verdict": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Verdict"
+          },
+          "failure": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "predicted_offering": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Predicted Offering"
+          },
+          "predicted_systems": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Predicted Systems",
+            "type": "array"
+          },
+          "predicted_verdict": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Predicted Verdict"
+          },
+          "split": {
+            "title": "Split",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "split",
+          "expected_verdict",
+          "expected_offering",
+          "expected_systems",
+          "answered",
+          "predicted_verdict",
+          "predicted_offering",
+          "predicted_systems",
+          "failure",
+          "citations_checked",
+          "citations_faithful",
+          "draft_offering",
+          "draft_problems"
+        ],
+        "title": "CaseRecordResponse",
         "type": "object"
       },
       "CatalogPlanResponse": {
@@ -4714,6 +4851,394 @@
           "to_activity"
         ],
         "title": "FlowRuleSchema",
+        "type": "object"
+      },
+      "GoldenMapper": {
+        "description": "The assessment (`/internal/architecture/assess`) or today's per-item match.",
+        "enum": [
+          "assess",
+          "match"
+        ],
+        "title": "GoldenMapper",
+        "type": "string"
+      },
+      "GoldenPrecedents": {
+        "description": "No precedents, or every other labelled case kept as an accepted verdict.",
+        "enum": [
+          "none",
+          "loo"
+        ],
+        "title": "GoldenPrecedents",
+        "type": "string"
+      },
+      "GoldenRunListResponse": {
+        "properties": {
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/GoldenRunSummaryResponse"
+            },
+            "title": "Runs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "runs"
+        ],
+        "title": "GoldenRunListResponse",
+        "type": "object"
+      },
+      "GoldenRunRequest": {
+        "properties": {
+          "mapper": {
+            "$ref": "#/components/schemas/GoldenMapper",
+            "default": "assess"
+          },
+          "precedents": {
+            "$ref": "#/components/schemas/GoldenPrecedents",
+            "default": "none"
+          },
+          "repeats": {
+            "default": 1,
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Repeats",
+            "type": "integer"
+          }
+        },
+        "title": "GoldenRunRequest",
+        "type": "object"
+      },
+      "GoldenRunResponse": {
+        "properties": {
+          "actor_id": {
+            "title": "Actor Id",
+            "type": "string"
+          },
+          "error_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Category"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "mapper": {
+            "$ref": "#/components/schemas/GoldenMapper"
+          },
+          "precedents": {
+            "$ref": "#/components/schemas/GoldenPrecedents"
+          },
+          "progress_done": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress Done"
+          },
+          "progress_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress Total"
+          },
+          "repeats": {
+            "title": "Repeats",
+            "type": "integer"
+          },
+          "requested_at": {
+            "format": "date-time",
+            "title": "Requested At",
+            "type": "string"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GoldenRunResultResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ArchitectureJobStatus"
+          }
+        },
+        "required": [
+          "id",
+          "actor_id",
+          "requested_at",
+          "mapper",
+          "precedents",
+          "repeats",
+          "status",
+          "error_category",
+          "stage",
+          "progress_done",
+          "progress_total",
+          "result"
+        ],
+        "title": "GoldenRunResponse",
+        "type": "object"
+      },
+      "GoldenRunResultResponse": {
+        "properties": {
+          "catalogue_version": {
+            "title": "Catalogue Version",
+            "type": "string"
+          },
+          "completed_at": {
+            "format": "date-time",
+            "title": "Completed At",
+            "type": "string"
+          },
+          "golden_set_version": {
+            "title": "Golden Set Version",
+            "type": "integer"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "repetitions": {
+            "items": {
+              "$ref": "#/components/schemas/RepetitionResponse"
+            },
+            "title": "Repetitions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "provider",
+          "model",
+          "golden_set_version",
+          "catalogue_version",
+          "completed_at",
+          "repetitions"
+        ],
+        "title": "GoldenRunResultResponse",
+        "type": "object"
+      },
+      "GoldenRunResultSummary": {
+        "properties": {
+          "catalogue_version": {
+            "title": "Catalogue Version",
+            "type": "string"
+          },
+          "completed_at": {
+            "format": "date-time",
+            "title": "Completed At",
+            "type": "string"
+          },
+          "golden_set_version": {
+            "title": "Golden Set Version",
+            "type": "integer"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "repetitions": {
+            "items": {
+              "$ref": "#/components/schemas/RepetitionScoresResponse"
+            },
+            "title": "Repetitions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "provider",
+          "model",
+          "golden_set_version",
+          "catalogue_version",
+          "completed_at",
+          "repetitions"
+        ],
+        "title": "GoldenRunResultSummary",
+        "type": "object"
+      },
+      "GoldenRunSummaryResponse": {
+        "properties": {
+          "actor_id": {
+            "title": "Actor Id",
+            "type": "string"
+          },
+          "error_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Category"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "mapper": {
+            "$ref": "#/components/schemas/GoldenMapper"
+          },
+          "precedents": {
+            "$ref": "#/components/schemas/GoldenPrecedents"
+          },
+          "progress_done": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress Done"
+          },
+          "progress_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress Total"
+          },
+          "repeats": {
+            "title": "Repeats",
+            "type": "integer"
+          },
+          "requested_at": {
+            "format": "date-time",
+            "title": "Requested At",
+            "type": "string"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GoldenRunResultSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ArchitectureJobStatus"
+          }
+        },
+        "required": [
+          "id",
+          "actor_id",
+          "requested_at",
+          "mapper",
+          "precedents",
+          "repeats",
+          "status",
+          "error_category",
+          "stage",
+          "progress_done",
+          "progress_total",
+          "result"
+        ],
+        "title": "GoldenRunSummaryResponse",
+        "type": "object"
+      },
+      "GoldenSetInfoResponse": {
+        "properties": {
+          "cases": {
+            "title": "Cases",
+            "type": "integer"
+          },
+          "catalogue_version": {
+            "title": "Catalogue Version",
+            "type": "string"
+          },
+          "floors": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "type": "number"
+              },
+              "type": "object"
+            },
+            "title": "Floors",
+            "type": "object"
+          },
+          "golden_set_version": {
+            "title": "Golden Set Version",
+            "type": "integer"
+          },
+          "held_out_cases": {
+            "title": "Held Out Cases",
+            "type": "integer"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "provider_name": {
+            "title": "Provider Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "golden_set_version",
+          "catalogue_version",
+          "cases",
+          "held_out_cases",
+          "provider",
+          "provider_name",
+          "floors"
+        ],
+        "title": "GoldenSetInfoResponse",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -10138,6 +10663,68 @@
         "title": "RenameVersionRequest",
         "type": "object"
       },
+      "RepetitionResponse": {
+        "properties": {
+          "cases": {
+            "items": {
+              "$ref": "#/components/schemas/CaseRecordResponse"
+            },
+            "title": "Cases",
+            "type": "array"
+          },
+          "held_out": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScoreSetResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scores": {
+            "$ref": "#/components/schemas/ScoreSetResponse"
+          },
+          "tuning": {
+            "$ref": "#/components/schemas/ScoreSetResponse"
+          }
+        },
+        "required": [
+          "scores",
+          "tuning",
+          "held_out",
+          "cases"
+        ],
+        "title": "RepetitionResponse",
+        "type": "object"
+      },
+      "RepetitionScoresResponse": {
+        "properties": {
+          "held_out": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScoreSetResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scores": {
+            "$ref": "#/components/schemas/ScoreSetResponse"
+          },
+          "tuning": {
+            "$ref": "#/components/schemas/ScoreSetResponse"
+          }
+        },
+        "required": [
+          "scores",
+          "tuning",
+          "held_out"
+        ],
+        "title": "RepetitionScoresResponse",
+        "type": "object"
+      },
       "RequirementCorpusResponse": {
         "description": "Requirement work's corpus in counts; never which Requirements.",
         "properties": {
@@ -10656,6 +11243,166 @@
           "updated_at"
         ],
         "title": "SampleRequirementsResponse",
+        "type": "object"
+      },
+      "ScoreSetResponse": {
+        "description": "Scores over some cases, with the counts behind them. None: not measured.",
+        "properties": {
+          "cases": {
+            "title": "Cases",
+            "type": "integer"
+          },
+          "citation_faithfulness": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Citation Faithfulness"
+          },
+          "concept_recall": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Concept Recall"
+          },
+          "drafts_applied": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Drafts Applied"
+          },
+          "false_changes": {
+            "title": "False Changes",
+            "type": "integer"
+          },
+          "new_offerings_drafted": {
+            "title": "New Offerings Drafted",
+            "type": "integer"
+          },
+          "new_offerings_labelled": {
+            "title": "New Offerings Labelled",
+            "type": "integer"
+          },
+          "offering_accuracy": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offering Accuracy"
+          },
+          "offerings_labelled": {
+            "title": "Offerings Labelled",
+            "type": "integer"
+          },
+          "offerings_right": {
+            "title": "Offerings Right",
+            "type": "integer"
+          },
+          "owner_consumer_reach": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Consumer Reach"
+          },
+          "system_precision": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System Precision"
+          },
+          "system_recall": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System Recall"
+          },
+          "systems_expected": {
+            "title": "Systems Expected",
+            "type": "integer"
+          },
+          "systems_found": {
+            "title": "Systems Found",
+            "type": "integer"
+          },
+          "systems_named": {
+            "title": "Systems Named",
+            "type": "integer"
+          },
+          "verdict_accuracy": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verdict Accuracy"
+          },
+          "verdicts_right": {
+            "title": "Verdicts Right",
+            "type": "integer"
+          },
+          "verdicts_total": {
+            "title": "Verdicts Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "cases",
+          "system_precision",
+          "system_recall",
+          "verdict_accuracy",
+          "offering_accuracy",
+          "concept_recall",
+          "citation_faithfulness",
+          "owner_consumer_reach",
+          "drafts_applied",
+          "false_changes",
+          "new_offerings_labelled",
+          "new_offerings_drafted",
+          "systems_found",
+          "systems_expected",
+          "systems_named",
+          "verdicts_right",
+          "verdicts_total",
+          "offerings_right",
+          "offerings_labelled"
+        ],
+        "title": "ScoreSetResponse",
         "type": "object"
       },
       "SettleSubjectRequest": {
@@ -15962,6 +16709,242 @@
         "summary": "System Review History",
         "tags": [
           "reviews"
+        ]
+      }
+    },
+    "/evaluation/golden-runs": {
+      "get": {
+        "description": "Newest first, with scores and without every case's answer.",
+        "operationId": "list_runs_evaluation_golden_runs_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoldenRunListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Runs",
+        "tags": [
+          "golden set report"
+        ]
+      },
+      "post": {
+        "description": "Queue a run; it scores in the background and the page follows its progress.",
+        "operationId": "start_run_evaluation_golden_runs_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoldenRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoldenRunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Start Run",
+        "tags": [
+          "golden set report"
+        ]
+      }
+    },
+    "/evaluation/golden-runs/{run_id}": {
+      "get": {
+        "operationId": "read_run_evaluation_golden_runs__run_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoldenRunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Read Run",
+        "tags": [
+          "golden set report"
+        ]
+      }
+    },
+    "/evaluation/golden-set": {
+      "get": {
+        "description": "What a run would score and with which model, and the floors scores are held to.",
+        "operationId": "golden_set_evaluation_golden_set_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoldenSetInfoResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Golden Set",
+        "tags": [
+          "golden set report"
         ]
       }
     },

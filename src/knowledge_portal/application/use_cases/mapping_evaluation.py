@@ -32,7 +32,8 @@ from __future__ import annotations
 
 import re
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from enum import StrEnum
 from typing import Protocol
 
 from smb_kernel.time.clock import ClockPort
@@ -71,6 +72,17 @@ NEW_OFFERINGS = frozenset({ProductVerdict.NEW_OFFERING_IN_FAMILY, ProductVerdict
 EVALUATOR = Actor("golden-set-evaluation", frozenset({"knowledge_maintainer"}))
 
 
+class GoldenSplit(StrEnum):
+    """Which cases a prompt, model or threshold may be tuned on.
+
+    Held-out cases are kept out of tuning, so their score is the honest one: it shows
+    whether a gain on the tuning cases carries over to cases nobody tuned against.
+    """
+
+    TUNING = "tuning"
+    HELD_OUT = "held_out"
+
+
 @dataclass(frozen=True)
 class GoldenCase:
     """One labelled requirement. A case with no verdict expects questions instead."""
@@ -85,6 +97,7 @@ class GoldenCase:
     # The owners and consumers a data or interface change must reach, among its systems.
     owner_ids: frozenset[str] = frozenset()
     consumer_ids: frozenset[str] = frozenset()
+    split: GoldenSplit = GoldenSplit.TUNING
 
 
 @dataclass(frozen=True)
@@ -279,9 +292,33 @@ class EvaluationReport:
     model: str
     results: tuple[CaseResult, ...]
 
+    def only(self, split: GoldenSplit) -> EvaluationReport:
+        """The same run, scored over the cases of one split."""
+        return replace(
+            self, results=tuple(item for item in self.results if item.case.split is split)
+        )
+
     @property
     def failures(self) -> int:
         return sum(1 for item in self.results if item.failure is not None)
+
+    @property
+    def system_tally(self) -> tuple[int, int, int]:
+        """Systems found, systems expected and systems named: the counts behind precision
+        and recall."""
+        found = sum(item.true_positives for item in self.results)
+        expected = found + sum(item.false_negatives for item in self.results)
+        named = found + sum(item.false_positives for item in self.results)
+        return found, expected, named
+
+    @property
+    def verdict_tally(self) -> tuple[int, int]:
+        return sum(item.verdict_correct for item in self.results), len(self.results)
+
+    @property
+    def offering_tally(self) -> tuple[int, int]:
+        labelled = [item for item in self.results if item.case.offering_id is not None]
+        return sum(item.offering_correct for item in labelled), len(labelled)
 
     @property
     def system_precision(self) -> float | None:

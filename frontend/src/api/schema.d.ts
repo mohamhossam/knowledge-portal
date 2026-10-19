@@ -823,6 +823,67 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/evaluation/golden-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Runs
+         * @description Newest first, with scores and without every case's answer.
+         */
+        get: operations["list_runs_evaluation_golden_runs_get"];
+        put?: never;
+        /**
+         * Start Run
+         * @description Queue a run; it scores in the background and the page follows its progress.
+         */
+        post: operations["start_run_evaluation_golden_runs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/evaluation/golden-runs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Run */
+        get: operations["read_run_evaluation_golden_runs__run_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/evaluation/golden-set": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Golden Set
+         * @description What a run would score and with which model, and the floors scores are held to.
+         */
+        get: operations["golden_set_evaluation_golden_set_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/explorer/me": {
         parameters: {
             query?: never;
@@ -2292,7 +2353,7 @@ export interface components {
          * ArchitectureJobKind
          * @enum {string}
          */
-        ArchitectureJobKind: "index" | "extraction" | "historic_read_brd" | "historic_read_breakdown";
+        ArchitectureJobKind: "index" | "extraction" | "historic_read_brd" | "historic_read_breakdown" | "golden_run";
         /** ArchitectureJobResponse */
         ArchitectureJobResponse: {
             /** Actor Id */
@@ -2606,6 +2667,37 @@ export interface components {
             capability_id: string;
             /** System Id */
             system_id: string;
+        };
+        /** CaseRecordResponse */
+        CaseRecordResponse: {
+            /** Answered */
+            answered: boolean;
+            /** Citations Checked */
+            citations_checked: number;
+            /** Citations Faithful */
+            citations_faithful: number;
+            /** Draft Offering */
+            draft_offering: string | null;
+            /** Draft Problems */
+            draft_problems: string[] | null;
+            /** Expected Offering */
+            expected_offering: string | null;
+            /** Expected Systems */
+            expected_systems: string[];
+            /** Expected Verdict */
+            expected_verdict: string | null;
+            /** Failure */
+            failure: string | null;
+            /** Id */
+            id: string;
+            /** Predicted Offering */
+            predicted_offering: string | null;
+            /** Predicted Systems */
+            predicted_systems: string[];
+            /** Predicted Verdict */
+            predicted_verdict: string | null;
+            /** Split */
+            split: string;
         };
         /** CatalogPlanResponse */
         CatalogPlanResponse: {
@@ -3500,6 +3592,144 @@ export interface components {
             source?: string | null;
             /** To Activity */
             to_activity: string;
+        };
+        /**
+         * GoldenMapper
+         * @description The assessment (`/internal/architecture/assess`) or today's per-item match.
+         * @enum {string}
+         */
+        GoldenMapper: "assess" | "match";
+        /**
+         * GoldenPrecedents
+         * @description No precedents, or every other labelled case kept as an accepted verdict.
+         * @enum {string}
+         */
+        GoldenPrecedents: "none" | "loo";
+        /** GoldenRunListResponse */
+        GoldenRunListResponse: {
+            /** Runs */
+            runs: components["schemas"]["GoldenRunSummaryResponse"][];
+        };
+        /** GoldenRunRequest */
+        GoldenRunRequest: {
+            /** @default assess */
+            mapper: components["schemas"]["GoldenMapper"];
+            /** @default none */
+            precedents: components["schemas"]["GoldenPrecedents"];
+            /**
+             * Repeats
+             * @default 1
+             */
+            repeats: number;
+        };
+        /** GoldenRunResponse */
+        GoldenRunResponse: {
+            /** Actor Id */
+            actor_id: string;
+            /** Error Category */
+            error_category: string | null;
+            /** Id */
+            id: string;
+            mapper: components["schemas"]["GoldenMapper"];
+            precedents: components["schemas"]["GoldenPrecedents"];
+            /** Progress Done */
+            progress_done: number | null;
+            /** Progress Total */
+            progress_total: number | null;
+            /** Repeats */
+            repeats: number;
+            /**
+             * Requested At
+             * Format: date-time
+             */
+            requested_at: string;
+            result: components["schemas"]["GoldenRunResultResponse"] | null;
+            /** Stage */
+            stage: string | null;
+            status: components["schemas"]["ArchitectureJobStatus"];
+        };
+        /** GoldenRunResultResponse */
+        GoldenRunResultResponse: {
+            /** Catalogue Version */
+            catalogue_version: string;
+            /**
+             * Completed At
+             * Format: date-time
+             */
+            completed_at: string;
+            /** Golden Set Version */
+            golden_set_version: number;
+            /** Model */
+            model: string;
+            /** Provider */
+            provider: string;
+            /** Repetitions */
+            repetitions: components["schemas"]["RepetitionResponse"][];
+        };
+        /** GoldenRunResultSummary */
+        GoldenRunResultSummary: {
+            /** Catalogue Version */
+            catalogue_version: string;
+            /**
+             * Completed At
+             * Format: date-time
+             */
+            completed_at: string;
+            /** Golden Set Version */
+            golden_set_version: number;
+            /** Model */
+            model: string;
+            /** Provider */
+            provider: string;
+            /** Repetitions */
+            repetitions: components["schemas"]["RepetitionScoresResponse"][];
+        };
+        /** GoldenRunSummaryResponse */
+        GoldenRunSummaryResponse: {
+            /** Actor Id */
+            actor_id: string;
+            /** Error Category */
+            error_category: string | null;
+            /** Id */
+            id: string;
+            mapper: components["schemas"]["GoldenMapper"];
+            precedents: components["schemas"]["GoldenPrecedents"];
+            /** Progress Done */
+            progress_done: number | null;
+            /** Progress Total */
+            progress_total: number | null;
+            /** Repeats */
+            repeats: number;
+            /**
+             * Requested At
+             * Format: date-time
+             */
+            requested_at: string;
+            result: components["schemas"]["GoldenRunResultSummary"] | null;
+            /** Stage */
+            stage: string | null;
+            status: components["schemas"]["ArchitectureJobStatus"];
+        };
+        /** GoldenSetInfoResponse */
+        GoldenSetInfoResponse: {
+            /** Cases */
+            cases: number;
+            /** Catalogue Version */
+            catalogue_version: string;
+            /** Floors */
+            floors: {
+                [key: string]: {
+                    [key: string]: number;
+                };
+            };
+            /** Golden Set Version */
+            golden_set_version: number;
+            /** Held Out Cases */
+            held_out_cases: number;
+            /** Provider */
+            provider: string;
+            /** Provider Name */
+            provider_name: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -5347,6 +5577,20 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** RepetitionResponse */
+        RepetitionResponse: {
+            /** Cases */
+            cases: components["schemas"]["CaseRecordResponse"][];
+            held_out: components["schemas"]["ScoreSetResponse"] | null;
+            scores: components["schemas"]["ScoreSetResponse"];
+            tuning: components["schemas"]["ScoreSetResponse"];
+        };
+        /** RepetitionScoresResponse */
+        RepetitionScoresResponse: {
+            held_out: components["schemas"]["ScoreSetResponse"] | null;
+            scores: components["schemas"]["ScoreSetResponse"];
+            tuning: components["schemas"]["ScoreSetResponse"];
+        };
         /**
          * RequirementCorpusResponse
          * @description Requirement work's corpus in counts; never which Requirements.
@@ -5543,6 +5787,50 @@ export interface components {
             updated_at: string | null;
             /** Updated By */
             updated_by: string | null;
+        };
+        /**
+         * ScoreSetResponse
+         * @description Scores over some cases, with the counts behind them. None: not measured.
+         */
+        ScoreSetResponse: {
+            /** Cases */
+            cases: number;
+            /** Citation Faithfulness */
+            citation_faithfulness: number | null;
+            /** Concept Recall */
+            concept_recall: number | null;
+            /** Drafts Applied */
+            drafts_applied: number | null;
+            /** False Changes */
+            false_changes: number;
+            /** New Offerings Drafted */
+            new_offerings_drafted: number;
+            /** New Offerings Labelled */
+            new_offerings_labelled: number;
+            /** Offering Accuracy */
+            offering_accuracy: number | null;
+            /** Offerings Labelled */
+            offerings_labelled: number;
+            /** Offerings Right */
+            offerings_right: number;
+            /** Owner Consumer Reach */
+            owner_consumer_reach: number | null;
+            /** System Precision */
+            system_precision: number | null;
+            /** System Recall */
+            system_recall: number | null;
+            /** Systems Expected */
+            systems_expected: number;
+            /** Systems Found */
+            systems_found: number;
+            /** Systems Named */
+            systems_named: number;
+            /** Verdict Accuracy */
+            verdict_accuracy: number | null;
+            /** Verdicts Right */
+            verdicts_right: number;
+            /** Verdicts Total */
+            verdicts_total: number;
         };
         /**
          * SettleSubjectRequest
@@ -7921,6 +8209,136 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReviewConfirmation"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_runs_evaluation_golden_runs_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoldenRunListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_run_evaluation_golden_runs_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoldenRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoldenRunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_run_evaluation_golden_runs__run_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoldenRunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    golden_set_evaluation_golden_set_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoldenSetInfoResponse"];
                 };
             };
             /** @description Validation Error */

@@ -50,7 +50,7 @@ const ReviewFocus = library.page("ReviewFocus");
 
 /** The catalogue: a version's pages, its draft's steps, versions and compare. */
 const catalogue = routeGroup(async () => {
-  const [frame, systems, map, concepts, domains, channels, governance, offerings, journeys, evidence, compare, versions, sources, decide, decideFocus, changes, check, publish, headed] = await Promise.all([
+  const [frame, systems, map, concepts, domains, channels, governance, offerings, journeys, evidence, compare, versions, sources, decide, decideFocus, changes, check, publish, headed, golden] = await Promise.all([
     import("../catalogue/CataloguePage"),
     import("../catalogue/SystemsPage"),
     import("../catalogue/MapPage"),
@@ -70,11 +70,12 @@ const catalogue = routeGroup(async () => {
     import("../catalogue/draft/CheckStep"),
     import("../catalogue/draft/PublishStep"),
     import("../catalogue/frame/HeadedPage"),
+    import("../catalogue/golden/GoldenSetPage"),
   ]);
   return {
     ...frame, ...systems, ...map, ...concepts, ...domains, ...channels, ...governance, ...offerings, ...journeys, ...evidence, ...compare,
     CatalogueVersionsPage: versions.VersionsPage,
-    ...sources, ...decide, ...decideFocus, ...changes, ...check, ...publish, ...headed,
+    ...sources, ...decide, ...decideFocus, ...changes, ...check, ...publish, ...headed, ...golden,
   };
 });
 const CataloguePage = catalogue.page("CataloguePage");
@@ -96,6 +97,7 @@ const ChangesStep = catalogue.page("ChangesStep");
 const CheckStep = catalogue.page("CheckStep");
 const PublishStep = catalogue.page("PublishStep");
 const HeadedPage = catalogue.page("HeadedPage");
+const GoldenSetPage = catalogue.page("GoldenSetPage");
 
 /** Ownership: who runs each system, squads, people, products and the history. */
 const ownership = routeGroup(async () => {
@@ -221,6 +223,7 @@ export function App() {
           {catalogueRoutes}
           <Route path="versions" element={<CatalogueVersionsPage />} />
           <Route path="compare" element={<HeadedPage page="compare"><ComparePage /></HeadedPage>} />
+          <Route path="golden-set" element={<HeadedPage page="golden"><GoldenSetPage /></HeadedPage>} />
         </Route>
         <Route path="architecture/versions/:releaseId" element={<CataloguePage />}>
           {catalogueRoutes}

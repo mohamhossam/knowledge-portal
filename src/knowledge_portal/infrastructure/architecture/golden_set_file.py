@@ -9,7 +9,11 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, ValidationError
 
-from knowledge_portal.application.use_cases.mapping_evaluation import GoldenCase, GoldenSet
+from knowledge_portal.application.use_cases.mapping_evaluation import (
+    GoldenCase,
+    GoldenSet,
+    GoldenSplit,
+)
 from knowledge_portal.domain.architecture.verdicts import ProductVerdict
 
 
@@ -38,6 +42,8 @@ class _Case(_Strict):
     # change must reach (ontology plan Phase 8); each among the case's systems.
     owners: list[str] = []
     consumers: list[str] = []
+    # Held-out cases are never tuned against; a case that says nothing is a tuning case.
+    split: GoldenSplit = GoldenSplit.TUNING
     note: str | None = None
 
 
@@ -102,6 +108,7 @@ def _case(raw: _Case, concepts: frozenset[str]) -> GoldenCase:
         tuple(sorted(facets)),
         owners,
         consumers,
+        raw.split,
     )
 
 

@@ -152,6 +152,7 @@ def test_each_provider_builds_its_catalogue_models_and_queues_jobs(
             "document_worker",
             "architecture_job_worker",
             "historic_import_worker",
+            "golden_run_worker",
         }
     finally:
         container.close_resources()
@@ -161,7 +162,11 @@ def test_fake_models_finish_catalogue_jobs_inside_the_request() -> None:
     container = build_container(FAKE_PROVIDER_SETTINGS)
     try:
         # Historic imports always queue: reading a BRD never runs inside a request.
-        assert set(container.background_workers) == {"document_worker", "historic_import_worker"}
+        assert set(container.background_workers) == {
+            "document_worker",
+            "historic_import_worker",
+            "golden_run_worker",
+        }
     finally:
         container.close_resources()
 

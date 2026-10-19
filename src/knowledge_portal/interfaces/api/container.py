@@ -87,6 +87,7 @@ from knowledge_portal.application.use_cases.change_requests import (
 )
 from knowledge_portal.application.use_cases.cited_passages import CitedPassages
 from knowledge_portal.application.use_cases.document_library import DocumentLibrary
+from knowledge_portal.application.use_cases.golden_runs import GoldenSetRuns
 from knowledge_portal.application.use_cases.historic_requirements import (
     HistoricImportJobs,
     HistoricImports,
@@ -101,6 +102,7 @@ from knowledge_portal.application.use_cases.knowledge_reviews import (
     ReviewReminders,
     SystemReviews,
 )
+from knowledge_portal.application.use_cases.leased_jobs import ArchitectureJobExecution
 from knowledge_portal.application.use_cases.library_admin import (
     AdministerLibraryDocument,
     LibraryStewardship,
@@ -137,6 +139,7 @@ from knowledge_portal.infrastructure.config.options import (
 from knowledge_portal.infrastructure.config.settings import Settings
 from knowledge_portal.infrastructure.documents.library_worker import DocumentIngestionWorker
 from knowledge_portal.infrastructure.identity.fake_identity import FAKE_ACTORS
+from knowledge_portal.infrastructure.jobs.architecture_job_worker import ArchitectureJobWorker
 from knowledge_portal.infrastructure.persistence.reference_index import (
     ApproximateTokenCounter,
     LegacyByteCounter,
@@ -164,6 +167,7 @@ from knowledge_portal.interfaces.api.composition.architecture import (
     build_architecture,
     build_architecture_retrieval,
 )
+from knowledge_portal.interfaces.api.composition.evaluation import GoldenSetRunner
 from knowledge_portal.interfaces.api.composition.historic import build_historic
 from knowledge_portal.interfaces.api.composition.identity import build_identity
 from knowledge_portal.interfaces.api.composition.llm import build_llm_adapters
@@ -251,6 +255,8 @@ class Container:
     # Historic Requirements and their import queue (Knowledge Center E, ADR-0102).
     historic_imports: HistoricImports
     historic_jobs: HistoricImportJobs
+    # The Golden set report's runs and their own queue.
+    golden_runs: GoldenSetRuns
     background_workers: Mapping[str, BackgroundWorker]
 
 
@@ -355,9 +361,22 @@ def _build_container(
     historic = build_historic(
         settings, persistence, clock, extractor, scanner, requirement_work.historic_citations
     )
+    golden_runs = GoldenSetRuns(
+        persistence.golden_job_repository,
+        ArchitectureJobExecution.QUEUED,
+        clock,
+        persistence.golden_runs,
+        GoldenSetRunner(settings, clock),
+    )
     workers: dict[str, BackgroundWorker] = {
         "document_worker": DocumentIngestionWorker(library, reference_knowledge),
         "historic_import_worker": historic.worker,
+        "golden_run_worker": ArchitectureJobWorker(
+            golden_runs,
+            poll_interval_seconds=settings.ai_job_poll_interval_seconds,
+            shutdown_grace_seconds=settings.ai_job_shutdown_grace_seconds,
+            name="golden-runs",
+        ),
     }
     if architecture.worker is not None:
         workers["architecture_job_worker"] = architecture.worker
@@ -458,6 +477,7 @@ def _build_container(
         architecture_jobs=architecture.jobs,
         historic_imports=historic.imports,
         historic_jobs=historic.jobs,
+        golden_runs=golden_runs,
         background_workers=workers,
     )
 
