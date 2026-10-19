@@ -10,7 +10,11 @@ from enum import StrEnum
 from pathlib import PurePosixPath
 from uuid import uuid4
 
-from smb_kernel.documents.ports import DocumentExtractorPort, DocumentStoragePort
+from smb_kernel.documents.ports import (
+    DocumentExtractorPort,
+    DocumentScannerPort,
+    DocumentStoragePort,
+)
 
 from knowledge_portal.application.document_upload_validation import (
     SUPPORTED_EXTENSIONS,
@@ -18,6 +22,7 @@ from knowledge_portal.application.document_upload_validation import (
 )
 from knowledge_portal.application.errors import (
     DocumentExtractionError,
+    MalwareRejectedError,
     PersistenceError,
     UnsupportedDocumentError,
 )
@@ -74,12 +79,14 @@ class UploadKnowledgeDocument:
         repository: ArchitectureKnowledgeRepositoryPort,
         storage: DocumentStoragePort,
         extractor: DocumentExtractorPort,
+        scanner: DocumentScannerPort,
         max_bytes: int,
     ) -> None:
         self._knowledge = knowledge
         self._repository = repository
         self._storage = storage
         self._extractor = extractor
+        self._scanner = scanner
         self._max_bytes = max_bytes
 
     @property
@@ -115,6 +122,10 @@ class UploadKnowledgeDocument:
             self._max_bytes,
             ARCHITECTURE_EXTENSIONS,
         )
+        # Architecture sources are read by models and re-downloaded by admins, so they
+        # pass the same malware scan as library uploads before anything parses them.
+        if not self._scanner.scan(content):
+            raise MalwareRejectedError("Malware scan rejected this upload.")
         # The existing extractor checks signatures, unsafe archives, macros and blank text.
         self._extractor.extract(mime_type, content)
         checksum = hashlib.sha256(content).hexdigest()
@@ -235,6 +246,7 @@ class UploadArchitectureDocuments:
                 DocumentExtractionError,
                 InvalidKnowledgeError,
                 KnowledgeConflictError,
+                MalwareRejectedError,
             ) as refused:
                 results.append(
                     FileResult(incoming.filename, UploadOutcome.REFUSED, reason=str(refused))

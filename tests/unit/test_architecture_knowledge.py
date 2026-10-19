@@ -70,6 +70,7 @@ from knowledge_portal.infrastructure.config.options import (
     PersistenceProvider,
 )
 from knowledge_portal.infrastructure.config.settings import Settings
+from knowledge_portal.infrastructure.documents.library_worker import OfflineDocumentScanner
 from knowledge_portal.infrastructure.persistence.document_storage import (
     InMemoryDocumentStorage,
 )
@@ -122,7 +123,9 @@ def test_stale_build_cannot_replace_newly_published_evidence() -> None:
             return super().embed(texts)
 
     index = InMemoryEvidenceIndex(InterleavedEmbeddings(), FakeWordTokenizer())
-    knowledge = ManageArchitectureKnowledge(repository, CatalogueFileAdapter(), index, 10_000_000)
+    knowledge = ManageArchitectureKnowledge(
+        repository, CatalogueFileAdapter(), index, 10_000_000, OfflineDocumentScanner()
+    )
     draft = knowledge.create_draft(actor, "Next version")
     builder = BuildArchitectureIndex(
         knowledge,
@@ -185,6 +188,7 @@ def test_draft_is_version_checked_and_published_release_is_immutable() -> None:
         CatalogueFileAdapter(),
         InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer()),
         10_000_000,
+        OfflineDocumentScanner(),
     )
     actor = Actor("maintainer", frozenset({"knowledge_maintainer"}))
     with pytest.raises(AuthorizationError):
@@ -551,7 +555,9 @@ def test_reviewed_retrieval_fixture_reaches_top_eight_and_resolves_citations() -
     repository = InMemoryArchitectureKnowledgeRepository(seed)
     repository.save(release, None, "reviewer", "create_draft")
     index = InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer())
-    knowledge = ManageArchitectureKnowledge(repository, CatalogueFileAdapter(), index, 10_000_000)
+    knowledge = ManageArchitectureKnowledge(
+        repository, CatalogueFileAdapter(), index, 10_000_000, OfflineDocumentScanner()
+    )
     storage = InMemoryDocumentStorage()
     for doc_id, content in documents:
         storage.put(DocumentVersionId(doc_id), content.encode("utf-8"))
