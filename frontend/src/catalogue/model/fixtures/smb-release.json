@@ -1701,6 +1701,7 @@
  "index_id": null,
  "name": "SMB architecture: Business Pro Plus",
  "created_by": "fake-owner",
+ "base_release_id": null,
  "capability_domains": [
   {
    "id": "market-sales",

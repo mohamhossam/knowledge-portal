@@ -321,6 +321,7 @@ const ITEM: Record<CatalogueDiff["changes"][number]["item"], [string, string]> =
   document: ["document", "documents"],
   interface: ["interface", "interfaces"],
   realisation: ["service or resource record", "service and resource records"],
+  portfolio_node: ["portfolio node", "portfolio nodes"],
 };
 
 /** What this version would change if it were in service, counted. */
