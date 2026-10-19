@@ -125,3 +125,55 @@ def test_resolver_lists_connected_systems_with_their_owners() -> None:
     assert [
         (item.source_system_id, item.target_system_id) for item in result.adjacent_dependencies
     ] == [("dcrm", "cbcm-crmgw")]
+
+
+def test_interface_edges_read_each_style_in_its_direction() -> None:
+    from knowledge_portal.domain.architecture.interfaces import InterfaceStyle, SystemInterface
+    from knowledge_portal.domain.architecture.knowledge import RelationshipKind
+    from knowledge_portal.domain.architecture.neighbours import interface_edges
+
+    edges = interface_edges(
+        (
+            SystemInterface(
+                "api", "CRM GW API", "cbcm", InterfaceStyle.API, consumer_ids=("dcrm",)
+            ),
+            SystemInterface(
+                "events", "Order events", "cwom", InterfaceStyle.EVENT, consumer_ids=("gis",)
+            ),
+            SystemInterface(
+                "file", "Billing extract", "bscs", InterfaceStyle.FILE, consumer_ids=("edms",)
+            ),
+            SystemInterface("plain", "Lookups", "felix", consumer_ids=("cns",)),
+        )
+    )
+
+    assert [
+        (edge.source_system_id, edge.target_system_id, edge.description, edge.kind)
+        for edge in edges
+    ] == [
+        ("dcrm", "cbcm", "CRM GW API", RelationshipKind.CALLS_API),
+        ("cwom", "gis", "Order events", RelationshipKind.PUBLISHES_EVENTS_TO),
+        ("bscs", "edms", "Billing extract", RelationshipKind.TRANSFERS_DATA_TO),
+        ("cns", "felix", "Lookups", RelationshipKind.UNSPECIFIED),
+    ]
+
+
+def test_the_committed_catalogue_gets_adjacency_through_its_interfaces() -> None:
+    """catalogues/smb-architecture.yaml records no relationships, only interfaces;
+    without the fallback the adjacent-systems view is always empty on it."""
+    from pathlib import Path
+
+    from knowledge_portal.application.ports.catalogue_file import CatalogueFileFormat
+    from knowledge_portal.domain.architecture.neighbours import interface_edges
+    from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
+
+    catalogue = Path(__file__).resolve().parents[2] / "catalogues" / "smb-architecture.yaml"
+    content = CatalogueFileAdapter().read(CatalogueFileFormat.YAML, catalogue.read_bytes())
+    assert content.relationships == ()
+    edges = interface_edges(content.interfaces)
+    assert edges
+
+    exposing = content.interfaces[0]
+    consumer = exposing.consumer_ids[0]
+    nearby = adjacent({consumer}, edges)
+    assert nearby.system_ids
