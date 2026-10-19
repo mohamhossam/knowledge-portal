@@ -55,6 +55,7 @@ from knowledge_portal.infrastructure.persistence.postgres_architecture_knowledge
 from knowledge_portal.infrastructure.persistence.postgres_sample_requirements import (
     PostgresSampleRequirements,
 )
+from knowledge_portal.infrastructure.persistence.postgres_store import PostgresStore
 
 DATABASE_URL = os.getenv("TEST_DATABASE_URL")
 pytestmark = pytest.mark.skipif(not DATABASE_URL, reason="TEST_DATABASE_URL is not configured")
@@ -72,10 +73,10 @@ def test_pgvector_index_release_and_job_survive_repository_restart() -> None:
     assert DATABASE_URL is not None
     run_migrations(DATABASE_URL)
     repository = PostgresArchitectureKnowledgeRepository(
-        DirectPostgresConnector(DATABASE_URL), seed_knowledge()
+        PostgresStore(DirectPostgresConnector(DATABASE_URL)), seed_knowledge()
     )
     index = PostgresEvidenceIndex(
-        DirectPostgresConnector(DATABASE_URL), FakeEmbeddings(), FakeWordTokenizer()
+        PostgresStore(DirectPostgresConnector(DATABASE_URL)), FakeEmbeddings(), FakeWordTokenizer()
     )
     knowledge = ManageArchitectureKnowledge(repository, CatalogueFileAdapter(), index, 10_000_000)
     actor = Actor("knowledge-editor", frozenset({"knowledge_maintainer"}))
@@ -105,7 +106,7 @@ def test_pgvector_index_release_and_job_survive_repository_restart() -> None:
     assert all(index.get(built.index_id, item.id) == item for item in indexed)
 
     job_id = uuid4().hex
-    jobs = PostgresArchitectureJobs(DirectPostgresConnector(DATABASE_URL))
+    jobs = PostgresArchitectureJobs(PostgresStore(DirectPostgresConnector(DATABASE_URL)))
     jobs.enqueue(
         ArchitectureJob(
             job_id,
@@ -118,14 +119,17 @@ def test_pgvector_index_release_and_job_survive_repository_restart() -> None:
     )
     claimed = jobs.claim(datetime.now(UTC))
     assert claimed is not None and claimed.id == job_id
-    assert PostgresArchitectureJobs(DirectPostgresConnector(DATABASE_URL)).get(job_id) == claimed
+    restarted_jobs = PostgresArchitectureJobs(PostgresStore(DirectPostgresConnector(DATABASE_URL)))
+    assert restarted_jobs.get(job_id) == claimed
     assert jobs.heartbeat(job_id, claimed.attempts, datetime.now(UTC))
     jobs.finish(job_id, claimed.attempts, ArchitectureJobStatus.SUCCEEDED, None)
-    completed = PostgresArchitectureJobs(DirectPostgresConnector(DATABASE_URL)).get(job_id)
+    completed = PostgresArchitectureJobs(PostgresStore(DirectPostgresConnector(DATABASE_URL))).get(
+        job_id
+    )
     assert completed is not None and completed.status is ArchitectureJobStatus.SUCCEEDED
 
     restarted = PostgresArchitectureKnowledgeRepository(
-        DirectPostgresConnector(DATABASE_URL), seed_knowledge()
+        PostgresStore(DirectPostgresConnector(DATABASE_URL)), seed_knowledge()
     )
     assert restarted.active().id == published.id
     knowledge.activate("smb-source-reference-v1", actor, "Restore seed after integration test")
@@ -135,10 +139,10 @@ def test_deselected_document_registry_survives_restart() -> None:
     assert DATABASE_URL is not None
     run_migrations(DATABASE_URL)
     repository = PostgresArchitectureKnowledgeRepository(
-        DirectPostgresConnector(DATABASE_URL), seed_knowledge()
+        PostgresStore(DirectPostgresConnector(DATABASE_URL)), seed_knowledge()
     )
     index = PostgresEvidenceIndex(
-        DirectPostgresConnector(DATABASE_URL), FakeEmbeddings(), FakeWordTokenizer()
+        PostgresStore(DirectPostgresConnector(DATABASE_URL)), FakeEmbeddings(), FakeWordTokenizer()
     )
     knowledge = ManageArchitectureKnowledge(repository, CatalogueFileAdapter(), index, 10_000_000)
     actor = Actor("maintainer", frozenset({"knowledge_maintainer"}))
@@ -159,7 +163,7 @@ def test_deselected_document_registry_survives_restart() -> None:
     repository.save(uploaded, draft.revision, actor.id, "upload_document")
     selected = knowledge.select_documents(uploaded.id, uploaded.revision, actor, ())
     restarted = PostgresArchitectureKnowledgeRepository(
-        DirectPostgresConnector(DATABASE_URL), seed_knowledge()
+        PostgresStore(DirectPostgresConnector(DATABASE_URL)), seed_knowledge()
     )
     assert document in restarted.document_versions(True)
     assert document not in restarted.document_versions(False)
@@ -174,14 +178,15 @@ def test_deselected_document_registry_survives_restart() -> None:
 def test_sample_list_survives_restart_and_refuses_a_stale_save() -> None:
     assert DATABASE_URL is not None
     run_migrations(DATABASE_URL)
-    repository = PostgresSampleRequirements(DirectPostgresConnector(DATABASE_URL))
+    repository = PostgresSampleRequirements(PostgresStore(DirectPostgresConnector(DATABASE_URL)))
     current = repository.load()
     updated = current.replaced(
         (SampleRequirement(uuid4().hex, "Bill partner orders"),), "maintainer", datetime.now(UTC)
     )
     repository.save(updated, current.revision)
 
-    assert PostgresSampleRequirements(DirectPostgresConnector(DATABASE_URL)).load() == updated
+    restarted = PostgresSampleRequirements(PostgresStore(DirectPostgresConnector(DATABASE_URL)))
+    assert restarted.load() == updated
     with pytest.raises(KnowledgeConflictError):
         repository.save(updated, current.revision)
 
@@ -198,13 +203,13 @@ def test_a_rebuild_reuses_cached_embeddings_across_instances() -> None:
             return super().embed(texts)
 
     repository = PostgresArchitectureKnowledgeRepository(
-        DirectPostgresConnector(DATABASE_URL), seed_knowledge()
+        PostgresStore(DirectPostgresConnector(DATABASE_URL)), seed_knowledge()
     )
     marker = uuid4().hex
     chunks = (EvidenceChunk("c1", "Doc", "line 1", f"cached passage {marker}"),)
     for _ in range(2):
         PostgresEvidenceIndex(
-            DirectPostgresConnector(DATABASE_URL), Counting(), FakeWordTokenizer()
+            PostgresStore(DirectPostgresConnector(DATABASE_URL)), Counting(), FakeWordTokenizer()
         ).store(repository.active().id, uuid4().hex, chunks)
 
     assert Counting.calls == [f"cached passage {marker}"]

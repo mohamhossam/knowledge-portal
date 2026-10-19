@@ -104,6 +104,7 @@ from knowledge_portal.infrastructure.persistence.postgres_catalogue_candidates i
 from knowledge_portal.infrastructure.persistence.postgres_organisation import (
     PostgresOrganisationRepository,
 )
+from knowledge_portal.infrastructure.persistence.postgres_store import PostgresStore
 
 NOW = datetime(2026, 9, 29, 9, 0, tzinfo=UTC)
 MAINTAINER = Actor("amina", frozenset({"knowledge_maintainer"}))
@@ -324,7 +325,9 @@ def _proposer(
     storage.put(DocumentVersionId("doc"), b"Nothing architectural here.\n")
     drafted = draft.updated(documents=(version, image))
     repository.save(drafted, draft.revision, "amina", "upload_document")
-    decide = DecideCatalogueCandidate(manage, repository, candidates, InMemoryTransactionManager(RLock()))
+    decide = DecideCatalogueCandidate(
+        manage, repository, candidates, InMemoryTransactionManager(RLock())
+    )
     return proposer, decide, drafted, candidates, manage
 
 
@@ -519,14 +522,23 @@ def test_ai_mapping_of_a_published_release_records_organisation_ownership() -> N
 class _BrokenConnector:
     """A database that refuses every connection."""
 
+    def acquire(self) -> Any:
+        raise psycopg.OperationalError("database is down")
+
+    def release(self, connection: Any) -> None:
+        return None
+
     def connection(self, timeout_seconds: float | None = None) -> Any:
         raise psycopg.OperationalError("database is down")
 
+    def close(self) -> None:
+        return None
+
 
 def test_postgres_adapters_report_database_failures_as_persistence_errors() -> None:
-    connector: Any = _BrokenConnector()
-    organisation = PostgresOrganisationRepository(connector, FixedClock(NOW))
-    candidates = PostgresCatalogueCandidates(connector)
+    store = PostgresStore(_BrokenConnector())
+    organisation = PostgresOrganisationRepository(store, FixedClock(NOW))
+    candidates = PostgresCatalogueCandidates(store)
     candidate = _candidate("draft", CandidateContent(CandidateKind.SYSTEM, "hub", name="Hub"))
     failing: list[Any] = [
         organisation.load,

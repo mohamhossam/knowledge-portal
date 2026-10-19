@@ -204,18 +204,16 @@ def _postgres(
     return PersistenceAdapters(
         document_storage=PostgresDocumentStorage(postgres),
         actor_directory=PostgresActorDirectory(postgres),
-        architecture_repository=PostgresArchitectureKnowledgeRepository(
-            connector, seed_knowledge()
-        ),
-        organisation_repository=PostgresOrganisationRepository(connector, clock),
-        sample_requirements=PostgresSampleRequirements(connector),
-        catalogue_candidates=PostgresCatalogueCandidates(connector),
-        change_requests=PostgresChangeRequests(connector),
-        precedents=PostgresPrecedents(connector),
+        architecture_repository=PostgresArchitectureKnowledgeRepository(postgres, seed_knowledge()),
+        organisation_repository=PostgresOrganisationRepository(postgres, clock),
+        sample_requirements=PostgresSampleRequirements(postgres),
+        catalogue_candidates=PostgresCatalogueCandidates(postgres),
+        change_requests=PostgresChangeRequests(postgres),
+        precedents=PostgresPrecedents(postgres),
         architecture_evidence_index=PostgresEvidenceIndex(
-            connector, architecture_embeddings, architecture_tokenizer
+            postgres, architecture_embeddings, architecture_tokenizer
         ),
-        architecture_job_repository=PostgresArchitectureJobs(connector),
+        architecture_job_repository=PostgresArchitectureJobs(postgres),
         library_repository=PublishingDocumentLibrary(
             PostgresDocumentLibrary(postgres),
             knowledge_events,
@@ -226,9 +224,9 @@ def _postgres(
         system_reviews=PostgresSystemReviews(postgres),
         knowledge_events=knowledge_events,
         historic_requirements=PostgresHistoricRequirements(postgres),
-        historic_job_repository=PostgresArchitectureJobs(connector, "historic_import_jobs"),
-        golden_runs=PostgresGoldenRuns(connector),
-        golden_job_repository=PostgresArchitectureJobs(connector, "golden_run_jobs"),
+        historic_job_repository=PostgresArchitectureJobs(postgres, "historic_import_jobs"),
+        golden_runs=PostgresGoldenRuns(postgres),
+        golden_job_repository=PostgresArchitectureJobs(postgres, "golden_run_jobs"),
         reference_index=PostgresReferenceIndex(postgres),
         transaction_manager=postgres,
         readiness_check=postgres.readiness,

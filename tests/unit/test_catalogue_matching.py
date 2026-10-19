@@ -434,7 +434,14 @@ def _setup(
     storage.put(DocumentVersionId("doc"), text)
     drafted = draft.updated(documents=(version,))
     repository.save(drafted, draft.revision, "amina", "upload_document")
-    return proposer, DecideCatalogueCandidate(manage, repository, candidates, InMemoryTransactionManager(RLock())), drafted, candidates
+    return (
+        proposer,
+        DecideCatalogueCandidate(
+            manage, repository, candidates, InMemoryTransactionManager(RLock())
+        ),
+        drafted,
+        candidates,
+    )
 
 
 def test_matching_failures_are_warnings_and_known_pairs_are_not_inferred_again() -> None:

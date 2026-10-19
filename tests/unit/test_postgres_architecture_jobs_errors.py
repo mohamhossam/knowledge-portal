@@ -1,8 +1,9 @@
 """The architecture job queue reports storage failures as `PersistenceError`.
 
-A driver error must never escape as a raw `psycopg` exception, and a stored row
-the code cannot interpret must fail loudly rather than become a wrong job. The
-state transitions themselves run against PostgreSQL in
+A driver error must never escape as a raw `psycopg` exception: the shared
+`PostgresStore` unit of work translates it. A stored row the code cannot
+interpret must fail loudly rather than become a wrong job. The state
+transitions themselves run against PostgreSQL in
 `tests/integration/test_postgres_architecture_jobs.py`.
 """
 
@@ -25,6 +26,7 @@ from knowledge_portal.application.ports.architecture_jobs import (
 from knowledge_portal.infrastructure.persistence.postgres_architecture_jobs import (
     PostgresArchitectureJobs,
 )
+from knowledge_portal.infrastructure.persistence.postgres_store import PostgresStore
 from knowledge_portal.infrastructure.persistence.postgres_values import DbConnection
 
 NOW = datetime(2026, 9, 25, 12, tzinfo=UTC)
@@ -51,32 +53,29 @@ class _UnavailableConnector:
 
 
 @pytest.mark.parametrize(
-    ("call", "message"),
+    "call",
     [
-        pytest.param(lambda jobs: jobs.enqueue(JOB), "could not be queued", id="enqueue"),
-        pytest.param(lambda jobs: jobs.get("job-1"), "read failed", id="get"),
-        pytest.param(lambda jobs: jobs.claim(NOW), "claim failed", id="claim"),
-        pytest.param(lambda jobs: jobs.heartbeat("job-1", 1, NOW), "heartbeat failed", id="beat"),
+        pytest.param(lambda jobs: jobs.enqueue(JOB), id="enqueue"),
+        pytest.param(lambda jobs: jobs.get("job-1"), id="get"),
+        pytest.param(lambda jobs: jobs.claim(NOW), id="claim"),
+        pytest.param(lambda jobs: jobs.heartbeat("job-1", 1, NOW), id="beat"),
         pytest.param(
-            lambda jobs: jobs.report("job-1", 1, JobProgress("reading", 1, 4)),
-            "progress could not be recorded",
-            id="report",
+            lambda jobs: jobs.report("job-1", 1, JobProgress("reading", 1, 4)), id="report"
         ),
         pytest.param(
             lambda jobs: jobs.finish("job-1", 1, ArchitectureJobStatus.SUCCEEDED, None),
-            "completion failed",
             id="finish",
         ),
-        pytest.param(lambda jobs: jobs.cancel("job-1"), "state update failed", id="cancel"),
-        pytest.param(lambda jobs: jobs.retry("job-1"), "state update failed", id="retry"),
+        pytest.param(lambda jobs: jobs.cancel("job-1"), id="cancel"),
+        pytest.param(lambda jobs: jobs.retry("job-1"), id="retry"),
     ],
 )
 def test_a_driver_error_becomes_a_persistence_error(
-    call: Callable[[PostgresArchitectureJobs], object], message: str
+    call: Callable[[PostgresArchitectureJobs], object],
 ) -> None:
-    jobs = PostgresArchitectureJobs(_UnavailableConnector())
+    jobs = PostgresArchitectureJobs(PostgresStore(_UnavailableConnector()))
 
-    with pytest.raises(PersistenceError, match=message) as raised:
+    with pytest.raises(PersistenceError, match="PostgreSQL operation failed") as raised:
         call(jobs)
 
     assert isinstance(raised.value.__cause__, psycopg.OperationalError)

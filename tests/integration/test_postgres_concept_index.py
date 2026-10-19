@@ -53,6 +53,7 @@ from knowledge_portal.infrastructure.persistence.migration_runner import run_mig
 from knowledge_portal.infrastructure.persistence.postgres_architecture_knowledge import (
     PostgresArchitectureKnowledgeRepository,
 )
+from knowledge_portal.infrastructure.persistence.postgres_store import PostgresStore
 
 DATABASE_URL = os.getenv("TEST_DATABASE_URL")
 pytestmark = pytest.mark.skipif(not DATABASE_URL, reason="TEST_DATABASE_URL is not configured")
@@ -114,10 +115,10 @@ def test_pgvector_holds_the_same_links_and_answers_concept_queries() -> None:
     assert DATABASE_URL is not None
     run_migrations(DATABASE_URL)
     index = PostgresEvidenceIndex(
-        DirectPostgresConnector(DATABASE_URL), FakeEmbeddings(), FakeWordTokenizer()
+        PostgresStore(DirectPostgresConnector(DATABASE_URL)), FakeEmbeddings(), FakeWordTokenizer()
     )
     repository = PostgresArchitectureKnowledgeRepository(
-        DirectPostgresConnector(DATABASE_URL), seed_knowledge()
+        PostgresStore(DirectPostgresConnector(DATABASE_URL)), seed_knowledge()
     )
     knowledge, built = _build(repository, index)
     memory = _Recording()
@@ -153,10 +154,10 @@ def test_an_index_stored_before_links_reports_no_coverage() -> None:
     assert DATABASE_URL is not None
     run_migrations(DATABASE_URL)
     index = PostgresEvidenceIndex(
-        DirectPostgresConnector(DATABASE_URL), FakeEmbeddings(), FakeWordTokenizer()
+        PostgresStore(DirectPostgresConnector(DATABASE_URL)), FakeEmbeddings(), FakeWordTokenizer()
     )
     repository = PostgresArchitectureKnowledgeRepository(
-        DirectPostgresConnector(DATABASE_URL), seed_knowledge()
+        PostgresStore(DirectPostgresConnector(DATABASE_URL)), seed_knowledge()
     )
     knowledge = ManageArchitectureKnowledge(repository, CatalogueFileAdapter(), index, 10_000_000)
     for release in knowledge.list_releases(ACTOR):

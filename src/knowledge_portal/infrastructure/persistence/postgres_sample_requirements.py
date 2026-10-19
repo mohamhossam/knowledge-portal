@@ -40,8 +40,7 @@ class PostgresSampleRequirements:
                 (Jsonb(_ADAPTER.dump_python(SampleRequirementSet(), mode="json")),),
             )
             row = connection.execute(
-                "SELECT payload FROM architecture_sample_requirements "
-                "WHERE set_id = 1 FOR UPDATE"
+                "SELECT payload FROM architecture_sample_requirements WHERE set_id = 1 FOR UPDATE"
             ).fetchone()
             if row is None:
                 raise PersistenceError("Sample requirements row is missing.")

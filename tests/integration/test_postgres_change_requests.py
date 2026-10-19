@@ -38,6 +38,7 @@ from knowledge_portal.infrastructure.persistence.migration_runner import run_mig
 from knowledge_portal.infrastructure.persistence.postgres_change_requests import (
     PostgresChangeRequests,
 )
+from knowledge_portal.infrastructure.persistence.postgres_store import PostgresStore
 
 DATABASE_URL = os.getenv("TEST_DATABASE_URL")
 pytestmark = pytest.mark.skipif(not DATABASE_URL, reason="TEST_DATABASE_URL is not configured")
@@ -64,7 +65,7 @@ def _incoming() -> IncomingChangeRequest:
 def test_a_change_request_is_kept_once_per_approval_and_read_or_dismissed_once() -> None:
     assert DATABASE_URL is not None
     run_migrations(DATABASE_URL)
-    inbox = PostgresChangeRequests(DirectPostgresConnector(DATABASE_URL))
+    inbox = PostgresChangeRequests(PostgresStore(DirectPostgresConnector(DATABASE_URL)))
     item = _incoming()
 
     kept, created = inbox.receive(item)
@@ -86,7 +87,7 @@ def test_a_change_request_is_kept_once_per_approval_and_read_or_dismissed_once()
 def test_a_catalogue_change_round_trips_with_what_was_delivered() -> None:
     assert DATABASE_URL is not None
     run_migrations(DATABASE_URL)
-    inbox = PostgresChangeRequests(DirectPostgresConnector(DATABASE_URL))
+    inbox = PostgresChangeRequests(PostgresStore(DirectPostgresConnector(DATABASE_URL)))
     delivery_id = f"REQ-1:4711:{uuid4().hex}"
     item = replace(
         _incoming(),
@@ -126,7 +127,7 @@ def test_a_catalogue_change_round_trips_with_what_was_delivered() -> None:
 def test_an_approved_backlog_round_trips_with_its_drafted_offering() -> None:
     assert DATABASE_URL is not None
     run_migrations(DATABASE_URL)
-    inbox = PostgresChangeRequests(DirectPostgresConnector(DATABASE_URL))
+    inbox = PostgresChangeRequests(PostgresStore(DirectPostgresConnector(DATABASE_URL)))
     offering = ProductOffering(
         "cloud-voice",
         "Cloud Voice",

@@ -148,9 +148,9 @@ def test_accept_all_leaves_what_cannot_apply_and_accepts_the_rest() -> None:
         ),
     )
 
-    updated, remaining = DecideCatalogueCandidate(manage, repository, candidates, InMemoryTransactionManager(RLock())).accept_all(
-        draft.id, draft.revision, MAINTAINER, NOW
-    )
+    updated, remaining = DecideCatalogueCandidate(
+        manage, repository, candidates, InMemoryTransactionManager(RLock())
+    ).accept_all(draft.id, draft.revision, MAINTAINER, NOW)
 
     assert remaining == 1
     assert any(item.id == "atg-commerce" for item in updated.systems)
