@@ -61,6 +61,9 @@ KNOWLEDGE_TABLES = {
     "architecture_chunk_entities",
     "architecture_chunk_concepts",
     "architecture_concepts",
+    # Stored golden set runs and their own job queue (Catalogue > Golden set report).
+    "golden_runs",
+    "golden_run_jobs",
 }
 
 
