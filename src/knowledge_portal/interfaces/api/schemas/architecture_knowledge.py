@@ -1401,6 +1401,8 @@ class ProductOfferingSchema(BaseModel):
     portfolio_node_id: Identifier | None = None
     plans: list[OfferingPlanSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     business_rules: list[BusinessRuleSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    # Ids it was known by before a rename; set by renaming, kept when the file says so.
+    former_ids: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, offering: ProductOffering) -> ProductOfferingSchema:
@@ -1437,6 +1439,7 @@ class ProductOfferingSchema(BaseModel):
             business_rules=[
                 BusinessRuleSchema.from_domain(item) for item in offering.business_rules
             ],
+            former_ids=list(offering.former_ids),
         )
 
     def to_domain(self) -> ProductOffering:
@@ -1467,6 +1470,7 @@ class ProductOfferingSchema(BaseModel):
             portfolio_node_id=self.portfolio_node_id,
             plans=tuple(item.to_domain() for item in self.plans),
             business_rules=tuple(item.to_domain() for item in self.business_rules),
+            former_ids=tuple(self.former_ids),
         )
 
 
@@ -1704,6 +1708,8 @@ class JourneySchema(BaseModel):
     )
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # Ids it was known by before a rename.
+    former_ids: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     # Derived on the way out and ignored on the way in: the flow is never stored.
     edges: list[JourneyEdgeResponse] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS * 4)
     # The same, per channel the steps name, and for a channel no step names.
@@ -1727,6 +1733,7 @@ class JourneySchema(BaseModel):
             ],
             confidence=journey.confidence,
             source=journey.source,
+            former_ids=list(journey.former_ids),
             edges=_edge_responses(journey_edges(journey)),
             channel_edges=[
                 JourneyChannelFlowResponse.model_construct(
@@ -1749,6 +1756,7 @@ class JourneySchema(BaseModel):
             integrations=tuple(item.to_domain() for item in self.integrations),
             confidence=self.confidence,
             source=self.source,
+            former_ids=tuple(self.former_ids),
         )
 
 
@@ -1843,6 +1851,56 @@ class SystemRelationshipSchema(BaseModel):
         )
 
 
+class OutdatedPassageSchema(BaseModel):
+    """A document passage marked as describing what the catalogue no longer holds."""
+
+    version_id: Identifier
+    location: Text
+
+
+class OutdatedPassagesRequest(BaseModel):
+    """The draft's whole list of outdated passages, replacing the one it has."""
+
+    expected_revision: int
+    passages: list[OutdatedPassageSchema] = Field(max_length=MAX_CATALOGUE_ITEMS * 10)
+
+
+class FactSourceResponse(BaseModel):
+    version_id: str
+    title: str
+
+
+class OrphanedFactResponse(BaseModel):
+    """A fact the catalogue holds whose every source document has left the draft."""
+
+    kind: CandidateKind
+    subject: str
+    label: str
+    sources: list[FactSourceResponse]
+
+
+class DriftedPassageResponse(BaseModel):
+    chunk_id: str
+    version_id: str
+    location: str
+    text: str
+    outdated: bool
+
+
+class DriftItemResponse(BaseModel):
+    """A system, offering or journey the draft changes or removes, and the passages of its
+    documents that name it."""
+
+    item: ChangedItem
+    key: str
+    label: str
+    change: ChangeKind
+    fields: list[str]
+    passages: list[DriftedPassageResponse]
+    # Passages that name it beyond those listed.
+    more: int
+
+
 class KnowledgeDocumentVersionResponse(BaseModel):
     id: str
     title: str
@@ -1853,6 +1911,10 @@ class KnowledgeDocumentVersionResponse(BaseModel):
     storage_key: str
     uploaded_by: str
     uploaded_at: datetime
+    # The document this is a version of, the same for all its later versions (none: this
+    # version's own id names it), and the version it replaced when uploaded as a new one.
+    document_id: str | None = None
+    supersedes: str | None = None
 
     @classmethod
     def from_domain(cls, version: KnowledgeDocumentVersion) -> KnowledgeDocumentVersionResponse:
@@ -1866,6 +1928,8 @@ class KnowledgeDocumentVersionResponse(BaseModel):
             storage_key=version.storage_key,
             uploaded_by=version.uploaded_by,
             uploaded_at=version.uploaded_at,
+            document_id=version.document_id,
+            supersedes=version.supersedes,
         )
 
 
@@ -1924,6 +1988,10 @@ class KnowledgeReleaseResponse(BaseModel):
     realisations: list[RealisationRecordSchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
     )
+    # Passages a curator marked as describing what the catalogue no longer holds.
+    outdated_passages: list[OutdatedPassageSchema] = Field(
+        default_factory=list, max_length=MAX_CATALOGUE_ITEMS * 10
+    )
 
     @classmethod
     def from_domain(cls, release: ArchitectureKnowledge) -> KnowledgeReleaseResponse:
@@ -1968,6 +2036,10 @@ class KnowledgeReleaseResponse(BaseModel):
             interfaces=[SystemInterfaceSchema.from_domain(item) for item in release.interfaces],
             realisations=[
                 RealisationRecordSchema.from_domain(item) for item in release.realisations
+            ],
+            outdated_passages=[
+                OutdatedPassageSchema(version_id=item.version_id, location=item.location)
+                for item in release.outdated_passages
             ],
         )
 
@@ -2210,6 +2282,23 @@ class SystemUpdateRequest(BaseModel):
 
 class RevisionRequest(BaseModel):
     expected_revision: int
+
+
+class OfferingUpdateRequest(BaseModel):
+    expected_revision: int
+    offering: ProductOfferingSchema
+
+
+class JourneyUpdateRequest(BaseModel):
+    expected_revision: int
+    journey: JourneySchema
+
+
+class EntityRenameRequest(BaseModel):
+    """A new id for an offering or journey; the old one is kept as a former id."""
+
+    expected_revision: int
+    new_id: Identifier
 
 
 class CreateVersionRequest(BaseModel):
@@ -2465,6 +2554,16 @@ class CatalogueSuggestionResponse(BaseModel):
         )
 
 
+class NoLongerStatedResponse(BaseModel):
+    """A fact taken from an earlier version of the document that this one no longer says."""
+
+    kind: CandidateKind
+    subject: str
+    label: str
+    location: str | None = None
+    quote: str | None = None
+
+
 class ExtractionRunResponse(BaseModel):
     id: str
     document_version_id: str
@@ -2479,6 +2578,7 @@ class ExtractionRunResponse(BaseModel):
     change_request_id: str | None = None
     # Set when the run read the draft's own catalogue for concepts or links (ADR-0114).
     reading: CatalogueReading | None = None
+    no_longer_stated: list[NoLongerStatedResponse] = []
 
     @classmethod
     def from_domain(cls, run: ExtractionRun) -> ExtractionRunResponse:
@@ -2494,6 +2594,16 @@ class ExtractionRunResponse(BaseModel):
             match_prompt_version=run.match_prompt_version,
             change_request_id=run.change_request_id,
             reading=run.reading,
+            no_longer_stated=[
+                NoLongerStatedResponse(
+                    kind=item.kind,
+                    subject=item.subject,
+                    label=item.label,
+                    location=item.location,
+                    quote=item.quote,
+                )
+                for item in run.no_longer_stated
+            ],
         )
 
 

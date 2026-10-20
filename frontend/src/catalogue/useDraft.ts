@@ -98,14 +98,17 @@ export function useDraft(release: Release) {
   });
 
   const addDocument = useMutation({
-    mutationFn: async (input: { file: File; title: string; language: DocumentLanguage }) => {
+    mutationFn: async (input: { file: File; title: string; language: DocumentLanguage; replaces?: string }) => {
       const next = await api.addCatalogueDocument(releaseId, {
         ...input,
         file: typedFile(input.file),
         expectedRevision: revision.current,
       });
       settle(next);
-      const added = next.documents.at(-1);
+      // A new version takes the old one's place in the list; a new document comes last.
+      const added = input.replaces
+        ? next.documents.find((item) => item.supersedes === input.replaces)
+        : next.documents.at(-1);
       // Uploading does not start the reading; ask for it straight away.
       if (added) await api.readCatalogueDocument(releaseId, added.id);
       return added;

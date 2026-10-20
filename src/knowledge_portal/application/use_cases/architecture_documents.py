@@ -99,7 +99,10 @@ class UploadKnowledgeDocument:
         content: bytes,
         actor: Actor,
         uploaded_at: datetime,
+        replaces: str | None = None,
     ) -> ArchitectureKnowledge:
+        """Add a document to the draft, or, with `replaces`, a new version of one it holds,
+        which takes the old version's place: a version holds one version of each document."""
         require_maintainer(actor)
         current = self._knowledge.get(release_id)
         if (
@@ -121,6 +124,11 @@ class UploadKnowledgeDocument:
         checksum = hashlib.sha256(content).hexdigest()
         if any(version.checksum == checksum for version in current.documents):
             raise InvalidKnowledgeError("This document content is already in the draft.")
+        replaced = None
+        if replaces is not None:
+            replaced = next((item for item in current.documents if item.id == replaces), None)
+            if replaced is None:
+                raise InvalidKnowledgeError("The version to replace is not in this draft.")
         version_id = uuid4().hex
         version = KnowledgeDocumentVersion(
             id=version_id,
@@ -132,8 +140,15 @@ class UploadKnowledgeDocument:
             storage_key=version_id,
             uploaded_by=actor.id,
             uploaded_at=uploaded_at,
+            document_id=replaced.lineage if replaced else None,
+            supersedes=replaced.id if replaced else None,
         )
-        updated = current.updated(documents=(*current.documents, version))
+        documents = (
+            tuple(version if item.id == replaced.id else item for item in current.documents)
+            if replaced
+            else (*current.documents, version)
+        )
+        updated = current.updated(documents=documents)
         blob_id = DocumentVersionId(version_id)
         self._storage.put(blob_id, content)
         try:

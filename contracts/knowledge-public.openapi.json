@@ -1009,6 +1009,17 @@
             "title": "Language",
             "type": "string"
           },
+          "replaces": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaces"
+          },
           "title": {
             "title": "Title",
             "type": "string"
@@ -4326,6 +4337,107 @@
         "title": "DraftedComponentResponse",
         "type": "object"
       },
+      "DriftItemResponse": {
+        "description": "A system, offering or journey the draft changes or removes, and the passages of its\ndocuments that name it.",
+        "properties": {
+          "change": {
+            "$ref": "#/components/schemas/ChangeKind"
+          },
+          "fields": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Fields",
+            "type": "array"
+          },
+          "item": {
+            "$ref": "#/components/schemas/ChangedItem"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "more": {
+            "title": "More",
+            "type": "integer"
+          },
+          "passages": {
+            "items": {
+              "$ref": "#/components/schemas/DriftedPassageResponse"
+            },
+            "title": "Passages",
+            "type": "array"
+          }
+        },
+        "required": [
+          "item",
+          "key",
+          "label",
+          "change",
+          "fields",
+          "passages",
+          "more"
+        ],
+        "title": "DriftItemResponse",
+        "type": "object"
+      },
+      "DriftedPassageResponse": {
+        "properties": {
+          "chunk_id": {
+            "title": "Chunk Id",
+            "type": "string"
+          },
+          "location": {
+            "title": "Location",
+            "type": "string"
+          },
+          "outdated": {
+            "title": "Outdated",
+            "type": "boolean"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "version_id": {
+            "title": "Version Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "chunk_id",
+          "version_id",
+          "location",
+          "text",
+          "outdated"
+        ],
+        "title": "DriftedPassageResponse",
+        "type": "object"
+      },
+      "EntityRenameRequest": {
+        "description": "A new id for an offering or journey; the old one is kept as a former id.",
+        "properties": {
+          "expected_revision": {
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "new_id": {
+            "maxLength": 200,
+            "title": "New Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "new_id"
+        ],
+        "title": "EntityRenameRequest",
+        "type": "object"
+      },
       "EvidenceBlockKind": {
         "enum": [
           "heading",
@@ -4560,6 +4672,14 @@
             "title": "Model",
             "type": "string"
           },
+          "no_longer_stated": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/NoLongerStatedResponse"
+            },
+            "title": "No Longer Stated",
+            "type": "array"
+          },
           "prompt_version": {
             "title": "Prompt Version",
             "type": "string"
@@ -4604,6 +4724,24 @@
         ],
         "title": "ExtractionWarningSeverity",
         "type": "string"
+      },
+      "FactSourceResponse": {
+        "properties": {
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "version_id": {
+            "title": "Version Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version_id",
+          "title"
+        ],
+        "title": "FactSourceResponse",
+        "type": "object"
       },
       "FalloutCaseSchema": {
         "description": "What makes an order fall out, and how it is handled.",
@@ -6212,6 +6350,16 @@
             "title": "Flow Rules",
             "type": "array"
           },
+          "former_ids": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Former Ids",
+            "type": "array"
+          },
           "id": {
             "maxLength": 200,
             "title": "Id",
@@ -6282,6 +6430,23 @@
           "name"
         ],
         "title": "JourneySchema",
+        "type": "object"
+      },
+      "JourneyUpdateRequest": {
+        "properties": {
+          "expected_revision": {
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "journey": {
+            "$ref": "#/components/schemas/JourneySchema"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "journey"
+        ],
+        "title": "JourneyUpdateRequest",
         "type": "object"
       },
       "KnowledgeAuditEventResponse": {
@@ -6414,6 +6579,17 @@
             "title": "Checksum",
             "type": "string"
           },
+          "document_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Id"
+          },
           "filename": {
             "title": "Filename",
             "type": "string"
@@ -6433,6 +6609,17 @@
           "storage_key": {
             "title": "Storage Key",
             "type": "string"
+          },
+          "supersedes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supersedes"
           },
           "title": {
             "title": "Title",
@@ -6605,6 +6792,14 @@
               }
             ],
             "title": "Name"
+          },
+          "outdated_passages": {
+            "items": {
+              "$ref": "#/components/schemas/OutdatedPassageSchema"
+            },
+            "maxItems": 50000,
+            "title": "Outdated Passages",
+            "type": "array"
           },
           "portfolio": {
             "items": {
@@ -7801,6 +7996,51 @@
         "title": "NfrCoverage",
         "type": "string"
       },
+      "NoLongerStatedResponse": {
+        "description": "A fact taken from an earlier version of the document that this one no longer says.",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/CandidateKind"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "quote": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quote"
+          },
+          "subject": {
+            "title": "Subject",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "subject",
+          "label"
+        ],
+        "title": "NoLongerStatedResponse",
+        "type": "object"
+      },
       "NoteBlockKind": {
         "enum": [
           "text",
@@ -8396,6 +8636,23 @@
         "title": "OfferingPointSchema",
         "type": "object"
       },
+      "OfferingUpdateRequest": {
+        "properties": {
+          "expected_revision": {
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "offering": {
+            "$ref": "#/components/schemas/ProductOfferingSchema"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "offering"
+        ],
+        "title": "OfferingUpdateRequest",
+        "type": "object"
+      },
       "OpenFindingAgesResponse": {
         "properties": {
           "from_7_to_30_days": {
@@ -8769,6 +9026,81 @@
           "explanation"
         ],
         "title": "OriginalPreview",
+        "type": "object"
+      },
+      "OrphanedFactResponse": {
+        "description": "A fact the catalogue holds whose every source document has left the draft.",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/CandidateKind"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/FactSourceResponse"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "subject": {
+            "title": "Subject",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "subject",
+          "label",
+          "sources"
+        ],
+        "title": "OrphanedFactResponse",
+        "type": "object"
+      },
+      "OutdatedPassageSchema": {
+        "description": "A document passage marked as describing what the catalogue no longer holds.",
+        "properties": {
+          "location": {
+            "maxLength": 10000,
+            "title": "Location",
+            "type": "string"
+          },
+          "version_id": {
+            "maxLength": 200,
+            "title": "Version Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version_id",
+          "location"
+        ],
+        "title": "OutdatedPassageSchema",
+        "type": "object"
+      },
+      "OutdatedPassagesRequest": {
+        "description": "The draft's whole list of outdated passages, replacing the one it has.",
+        "properties": {
+          "expected_revision": {
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "passages": {
+            "items": {
+              "$ref": "#/components/schemas/OutdatedPassageSchema"
+            },
+            "maxItems": 50000,
+            "title": "Passages",
+            "type": "array"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "passages"
+        ],
+        "title": "OutdatedPassagesRequest",
         "type": "object"
       },
       "OwnedSeatResponse": {
@@ -9335,6 +9667,16 @@
               }
             ],
             "title": "Family"
+          },
+          "former_ids": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Former Ids",
+            "type": "array"
           },
           "id": {
             "maxLength": 200,
@@ -15305,6 +15647,74 @@
         ]
       }
     },
+    "/architecture-knowledge/releases/{release_id}/drift": {
+      "get": {
+        "description": "What the version changes or removes, with the document passages that name it.",
+        "operationId": "drift_architecture_knowledge_releases__release_id__drift_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DriftItemResponse"
+                  },
+                  "title": "Response Drift Architecture Knowledge Releases  Release Id  Drift Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Drift",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
     "/architecture-knowledge/releases/{release_id}/evidence/{chunk_id}": {
       "get": {
         "operationId": "get_evidence_architecture_knowledge_releases__release_id__evidence__chunk_id__get",
@@ -15510,6 +15920,251 @@
         ]
       }
     },
+    "/architecture-knowledge/releases/{release_id}/journeys/{journey_id}": {
+      "delete": {
+        "operationId": "remove_journey_architecture_knowledge_releases__release_id__journeys__journey_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "journey_id",
+            "required": true,
+            "schema": {
+              "title": "Journey Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeReleaseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Remove Journey",
+        "tags": [
+          "architecture knowledge"
+        ]
+      },
+      "put": {
+        "description": "Add or replace one journey; every other stays as it is.",
+        "operationId": "put_journey_architecture_knowledge_releases__release_id__journeys__journey_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "journey_id",
+            "required": true,
+            "schema": {
+              "title": "Journey Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JourneyUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeReleaseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Put Journey",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
+    "/architecture-knowledge/releases/{release_id}/journeys/{journey_id}/rename": {
+      "post": {
+        "operationId": "rename_journey_architecture_knowledge_releases__release_id__journeys__journey_id__rename_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "journey_id",
+            "required": true,
+            "schema": {
+              "title": "Journey Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntityRenameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeReleaseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Rename Journey",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
     "/architecture-knowledge/releases/{release_id}/name": {
       "put": {
         "operationId": "rename_draft_architecture_knowledge_releases__release_id__name_put",
@@ -15578,6 +16233,326 @@
           }
         ],
         "summary": "Rename Draft",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
+    "/architecture-knowledge/releases/{release_id}/offerings/{offering_id}": {
+      "delete": {
+        "operationId": "remove_offering_architecture_knowledge_releases__release_id__offerings__offering_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "offering_id",
+            "required": true,
+            "schema": {
+              "title": "Offering Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeReleaseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Remove Offering",
+        "tags": [
+          "architecture knowledge"
+        ]
+      },
+      "put": {
+        "description": "Add or replace one offering; every other stays as it is.",
+        "operationId": "put_offering_architecture_knowledge_releases__release_id__offerings__offering_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "offering_id",
+            "required": true,
+            "schema": {
+              "title": "Offering Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfferingUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeReleaseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Put Offering",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
+    "/architecture-knowledge/releases/{release_id}/offerings/{offering_id}/rename": {
+      "post": {
+        "description": "Give an offering a new id; the old id stays as a former id, and the version's\njourneys and conflicts follow.",
+        "operationId": "rename_offering_architecture_knowledge_releases__release_id__offerings__offering_id__rename_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "offering_id",
+            "required": true,
+            "schema": {
+              "title": "Offering Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntityRenameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeReleaseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Rename Offering",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
+    "/architecture-knowledge/releases/{release_id}/outdated-passages": {
+      "put": {
+        "description": "Replace the draft's outdated passages: each stays readable, never searched.",
+        "operationId": "put_outdated_passages_architecture_knowledge_releases__release_id__outdated_passages_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OutdatedPassagesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeReleaseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Put Outdated Passages",
         "tags": [
           "architecture knowledge"
         ]
@@ -15731,6 +16706,74 @@
           }
         ],
         "summary": "Preview Impact",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
+    "/architecture-knowledge/releases/{release_id}/provenance": {
+      "get": {
+        "description": "Facts the version holds whose every source document has left it.",
+        "operationId": "provenance_architecture_knowledge_releases__release_id__provenance_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OrphanedFactResponse"
+                  },
+                  "title": "Response Provenance Architecture Knowledge Releases  Release Id  Provenance Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Provenance",
         "tags": [
           "architecture knowledge"
         ]

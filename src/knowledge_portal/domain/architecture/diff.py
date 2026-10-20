@@ -333,6 +333,22 @@ def _system_fields(before: SystemDefinition, after: SystemDefinition) -> tuple[s
     return tuple(fields)
 
 
+def _renames[T: (ProductOffering, Journey)](
+    before: dict[str, tuple[str, T]], after: dict[str, tuple[str, T]]
+) -> dict[str, str]:
+    """New id -> old id, for each item the draft holds under a new id with the old one among
+    its former ids."""
+    return {
+        key: next(old for old in item.former_ids if old in before and old not in after)
+        for key, (_, item) in after.items()
+        if key not in before and any(old in before and old not in after for old in item.former_ids)
+    }
+
+
+def _without[T](items: dict[str, T], keys: set[str]) -> dict[str, T]:
+    return {key: value for key, value in items.items() if key not in keys}
+
+
 def _keyed_changes[T](
     item: ChangedItem,
     before: dict[str, tuple[str, T]],
@@ -555,9 +571,17 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
             )
     base_offerings = {item.id: (item.name, item) for item in base.products}
     draft_offerings = {item.id: (item.name, item) for item in draft.products}
-    changes.extend(_keyed_changes(ChangedItem.PRODUCT, base_offerings, draft_offerings))
+    # A renamed offering is the same offering: changed, with "id" among its fields.
+    offering_renames = _renames(base_offerings, draft_offerings)
+    changes.extend(
+        _keyed_changes(
+            ChangedItem.PRODUCT,
+            _without(base_offerings, set(offering_renames.values())),
+            _without(draft_offerings, set(offering_renames)),
+        )
+    )
     for key, (label, offering) in draft_offerings.items():
-        previous_offering = base_offerings.get(key)
+        previous_offering = base_offerings.get(offering_renames.get(key, key))
         if previous_offering is None or previous_offering[1] == offering:
             continue
         changes.append(
@@ -566,14 +590,24 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
                 ChangeKind.CHANGED,
                 key,
                 label,
-                _offering_fields(previous_offering[1], offering),
+                (
+                    *(("id",) if key in offering_renames else ()),
+                    *_offering_fields(previous_offering[1], offering),
+                ),
             )
         )
     base_journeys = {item.id: (item.name, item) for item in base.journeys}
     draft_journeys = {item.id: (item.name, item) for item in draft.journeys}
-    changes.extend(_keyed_changes(ChangedItem.JOURNEY, base_journeys, draft_journeys))
+    journey_renames = _renames(base_journeys, draft_journeys)
+    changes.extend(
+        _keyed_changes(
+            ChangedItem.JOURNEY,
+            _without(base_journeys, set(journey_renames.values())),
+            _without(draft_journeys, set(journey_renames)),
+        )
+    )
     for key, (label, journey) in draft_journeys.items():
-        previous_journey = base_journeys.get(key)
+        previous_journey = base_journeys.get(journey_renames.get(key, key))
         if previous_journey is None or previous_journey[1] == journey:
             continue
         changes.append(
@@ -582,7 +616,10 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
                 ChangeKind.CHANGED,
                 key,
                 label,
-                _journey_fields(previous_journey[1], journey),
+                (
+                    *(("id",) if key in journey_renames else ()),
+                    *_journey_fields(previous_journey[1], journey),
+                ),
             )
         )
     base_channels = {item.id: (item.name, item) for item in base.channels}

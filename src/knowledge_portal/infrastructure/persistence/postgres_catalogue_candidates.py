@@ -95,6 +95,30 @@ class PostgresCatalogueCandidates:
         except psycopg.Error as exc:
             raise PersistenceError("Catalogue suggestions could not be read.") from exc
 
+    def accepted(self) -> tuple[CatalogueCandidate, ...]:
+        try:
+            with self._connector.connection() as connection:
+                rows = connection.execute(
+                    "SELECT payload FROM architecture_catalogue_candidates "
+                    "WHERE status = 'accepted' ORDER BY created_at, candidate_id"
+                ).fetchall()
+            return tuple(_candidate(row[0]) for row in rows)
+        except psycopg.Error as exc:
+            raise PersistenceError("Catalogue suggestions could not be read.") from exc
+
+    def accepted_from(self, document_version_id: str) -> tuple[CatalogueCandidate, ...]:
+        try:
+            with self._connector.connection() as connection:
+                rows = connection.execute(
+                    "SELECT payload FROM architecture_catalogue_candidates "
+                    "WHERE document_version_id = %s AND status = 'accepted' "
+                    "ORDER BY created_at, candidate_id",
+                    (document_version_id,),
+                ).fetchall()
+            return tuple(_candidate(row[0]) for row in rows)
+        except psycopg.Error as exc:
+            raise PersistenceError("Catalogue suggestions could not be read.") from exc
+
     def get(self, candidate_id: str) -> CatalogueCandidate | None:
         try:
             with self._connector.connection() as connection:

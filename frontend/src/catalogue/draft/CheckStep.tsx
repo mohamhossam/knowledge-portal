@@ -1,8 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, ChevronRight, RotateCw } from "lucide-react";
 import { type FormEvent, Fragment, useState } from "react";
 
-import { api, type ImpactComparison, type Release, type SampleRequirement } from "../../api/client";
+import { api, type DriftItem, type ImpactComparison, type OutdatedPassage, type Release, type SampleRequirement } from "../../api/client";
 import { ApiError, errorMessage } from "../../api/errors";
 import { ActionGroup, Button, EmptyState, Lines, Section, Status, type StatusTone, TextArea, TextField } from "../../design/components";
 import { count } from "../../home/format";
@@ -37,6 +37,8 @@ export function CheckStep() {
   return (
     <div className="draft-step">
       <BuildSection release={release} build={build} state={state} />
+      <Provenance release={release} />
+      <Drift release={release} />
       <Samples release={release} built={state === "built"} />
       <p className="draft-next">
         <ButtonLink to={`${base}/publish`} variant={state === "built" ? "primary" : "secondary"}>Next: publish</ButtonLink>
@@ -76,6 +78,103 @@ function BuildSection({ release, build, state }: { release: Release; build: Retu
           <Button icon={<RotateCw size={14} />} busy={build.retry.isPending} onClick={() => build.retry.mutate(job.id)}>Build it again</Button>
         </ActionGroup>
       )}
+    </Section>
+  );
+}
+
+/** Facts the draft holds whose every source document has left it: re-confirm, keep or remove. */
+function Provenance({ release }: { release: Release }) {
+  const facts = useQuery({
+    queryKey: ["architecture", "releases", release.id, "provenance", release.revision],
+    queryFn: () => api.provenance(release.id),
+  });
+  const items = facts.data ?? [];
+  if (facts.isPending || (!facts.isError && !items.length)) return null;
+  return (
+    <Section title="Facts whose sources left this version" count={items.length}>
+      <p className="draft-lead">
+        The catalogue took these from documents this version no longer holds, in any version. Check each still stands, or
+        change it in the catalogue; nothing here changes on its own.
+      </p>
+      {facts.isError ? (
+        <p role="status"><Status tone="attention">{errorMessage(facts.error)}</Status></p>
+      ) : (
+        <Lines label="Facts whose sources left this version">
+          {items.map((item) => (
+            <li key={`${item.kind}:${item.subject}:${item.label}`} dir="auto">
+              {item.label}
+              <span className="draft-detail"> · from {item.sources.map((source) => `‘${source.title}’`).join(", ")}</span>
+            </li>
+          ))}
+        </Lines>
+      )}
+    </Section>
+  );
+}
+
+const passageKey = (item: OutdatedPassage) => `${item.version_id}\u0000${item.location}`;
+
+/** Passages of the draft's documents that name what it changes or removes: a curator marks one
+ * outdated so it is no longer searched as evidence, while its citations still open it. */
+function Drift({ release }: { release: Release }) {
+  const queryClient = useQueryClient();
+  const drift = useQuery({
+    queryKey: ["architecture", "releases", release.id, "drift", release.revision],
+    queryFn: () => api.drift(release.id),
+  });
+  const marked = new Set((release.outdated_passages ?? []).map(passageKey));
+  const save = useMutation({
+    mutationFn: (passages: OutdatedPassage[]) =>
+      api.setOutdatedPassages(release.id, { expected_revision: release.revision, passages }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["architecture"] }),
+  });
+  const items: DriftItem[] = drift.data ?? [];
+  if (drift.isPending || (!drift.isError && !items.length)) return null;
+  const toggle = (passage: OutdatedPassage) => {
+    const current = release.outdated_passages ?? [];
+    const key = passageKey(passage);
+    save.mutate(marked.has(key) ? current.filter((item) => passageKey(item) !== key) : [...current, passage]);
+  };
+  return (
+    <Section title="Passages about what this draft changes" count={items.length}>
+      <p className="draft-lead">
+        These passages name a system, offering or journey this draft changes or removes, so they may describe how it was. Mark a
+        passage outdated to keep it out of the evidence requirement work searches; its citations still open it. A mark takes
+        effect with the next build.
+      </p>
+      <Said text={save.isError ? errorMessage(save.error) : drift.isError ? errorMessage(drift.error) : null} failed />
+      {items.map((item) => (
+        <section key={`${item.item}:${item.key}`} className="draft-drift" aria-labelledby={`drift-${item.item}-${item.key}`}>
+          <h3 id={`drift-${item.item}-${item.key}`} className="draft-subhead">
+            <bdi>{item.label}</bdi>{" "}
+            <span className="draft-detail">
+              {item.change === "removed" ? "removed" : `changed${item.fields.length ? `: ${item.fields.join(", ")}` : ""}`}
+            </span>
+          </h3>
+          <ul className="draft-drift__list">
+            {item.passages.map((passage) => {
+              const key = passageKey(passage);
+              const outdated = marked.has(key);
+              const where = release.documents.find((document) => document.id === passage.version_id)?.title ?? "A document";
+              return (
+                <li key={key} className="draft-drift__item">
+                  <p className="draft-detail"><bdi>{where}</bdi> · {passage.location}</p>
+                  <blockquote className="draft-drift__quote" dir="auto">{passage.text.split("\n").slice(1).join(" ").slice(0, 280)}</blockquote>
+                  <Button
+                    variant="link"
+                    aria-pressed={outdated}
+                    busy={save.isPending}
+                    onClick={() => !save.isPending && toggle({ version_id: passage.version_id, location: passage.location })}
+                  >
+                    {outdated ? "Outdated: search it again" : "Mark it outdated"}
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+          {item.more > 0 && <p className="draft-detail">{count(item.more, "more passage")} {item.more === 1 ? "names" : "name"} it.</p>}
+        </section>
+      ))}
     </Section>
   );
 }

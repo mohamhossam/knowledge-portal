@@ -30,6 +30,7 @@ from knowledge_portal.domain.architecture.channels import Channel
 from knowledge_portal.domain.architecture.concepts import BusinessCapability
 from knowledge_portal.domain.architecture.diff import CatalogueDiff, diff_releases
 from knowledge_portal.domain.architecture.governance import KnowledgeSource, SourceConflict
+from knowledge_portal.domain.architecture.identity import renamed_journey, renamed_offering
 from knowledge_portal.domain.architecture.interfaces import SystemInterface
 from knowledge_portal.domain.architecture.journeys import Journey
 from knowledge_portal.domain.architecture.knowledge import (
@@ -41,6 +42,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     KnowledgeDocumentVersion,
     KnowledgeReleaseStatus,
     LandscapeDomain,
+    OutdatedPassage,
     SystemDefinition,
     SystemRelationship,
     version_name,
@@ -156,6 +158,41 @@ class ManageArchitectureKnowledge:
         require_reader(actor)
         return self._repository.document_versions(actor.may_maintain_knowledge)
 
+    def known_versions(self) -> dict[str, KnowledgeDocumentVersion]:
+        """Every document version ever uploaded, published or not, by id."""
+        return {item.id: item for item in self._repository.document_versions(True)}
+
+    def mark_outdated(
+        self,
+        release_id: str,
+        expected_revision: int,
+        passages: tuple[OutdatedPassage, ...],
+        actor: Actor,
+    ) -> ArchitectureKnowledge:
+        """Replace the draft's outdated passages: each stays readable, never searched."""
+        require_maintainer(actor)
+        current = self.get(release_id)
+        held = {item.id for item in current.documents}
+        if any(item.version_id not in held for item in passages):
+            raise InvalidKnowledgeError("An outdated passage must be of a document in the draft.")
+        return self.update(
+            release_id,
+            expected_revision,
+            actor,
+            outdated_passages=tuple(dict.fromkeys(passages)),
+        )
+
+    def earlier_versions(self, version: KnowledgeDocumentVersion) -> tuple[str, ...]:
+        """The ids of the versions a document version replaced, newest first."""
+        known = {item.id: item for item in self._repository.document_versions(True)}
+        found: list[str] = []
+        current = version.supersedes
+        while current is not None and current not in found:
+            found.append(current)
+            earlier = known.get(current)
+            current = earlier.supersedes if earlier else None
+        return tuple(found)
+
     def document_version(self, version_id: str, actor: Actor) -> KnowledgeDocumentVersion:
         version = next(
             (item for item in self.document_versions(actor) if item.id == version_id), None
@@ -223,6 +260,9 @@ class ManageArchitectureKnowledge:
         if current.status is not KnowledgeReleaseStatus.DRAFT:
             raise KnowledgeConflictError("Only a version in progress can be discarded.")
         self._repository.delete_draft(release_id, expected_revision, actor.id)
+        # Its indexes go with it, then the chunk sets only they read.
+        self._index.prune(release_id, keep="")
+        self._index.collect()
 
     def update(
         self,
@@ -244,6 +284,7 @@ class ManageArchitectureKnowledge:
         vocabulary: tuple[VocabularyTerm, ...] | None = None,
         interfaces: tuple[SystemInterface, ...] | None = None,
         realisations: tuple[RealisationRecord, ...] | None = None,
+        outdated_passages: tuple[OutdatedPassage, ...] | None = None,
     ) -> ArchitectureKnowledge:
         require_maintainer(actor)
         current = self.get(release_id)
@@ -264,6 +305,7 @@ class ManageArchitectureKnowledge:
             vocabulary=vocabulary,
             interfaces=interfaces,
             realisations=realisations,
+            outdated_passages=outdated_passages,
         )
         self._repository.save(updated, expected_revision, actor.id, "edit_draft")
         return updated
@@ -285,6 +327,79 @@ class ManageArchitectureKnowledge:
         if len(systems) == len(current.systems):
             raise KnowledgeNotFoundError(f"System {system_id!r} not found.")
         return self.update(release_id, expected_revision, actor, systems=systems)
+
+    def upsert_offering(
+        self, release_id: str, expected_revision: int, offering: ProductOffering, actor: Actor
+    ) -> ArchitectureKnowledge:
+        """Add an offering, or replace the one with its id, leaving every other untouched."""
+        require_maintainer(actor)
+        current = self.get(release_id)
+        kept = tuple(item for item in current.products if item.id != offering.id)
+        at = next((n for n, item in enumerate(current.products) if item.id == offering.id), None)
+        products = (*kept, offering) if at is None else (*kept[:at], offering, *kept[at:])
+        return self.update(release_id, expected_revision, actor, products=products)
+
+    def remove_offering(
+        self, release_id: str, expected_revision: int, offering_id: str, actor: Actor
+    ) -> ArchitectureKnowledge:
+        require_maintainer(actor)
+        current = self.get(release_id)
+        products = tuple(item for item in current.products if item.id != offering_id)
+        if len(products) == len(current.products):
+            raise KnowledgeNotFoundError(f"Offering {offering_id!r} not found.")
+        return self.update(release_id, expected_revision, actor, products=products)
+
+    def upsert_journey(
+        self, release_id: str, expected_revision: int, journey: Journey, actor: Actor
+    ) -> ArchitectureKnowledge:
+        """Add a journey, or replace the one with its id, leaving every other untouched."""
+        require_maintainer(actor)
+        current = self.get(release_id)
+        kept = tuple(item for item in current.journeys if item.id != journey.id)
+        at = next((n for n, item in enumerate(current.journeys) if item.id == journey.id), None)
+        journeys = (*kept, journey) if at is None else (*kept[:at], journey, *kept[at:])
+        return self.update(release_id, expected_revision, actor, journeys=journeys)
+
+    def remove_journey(
+        self, release_id: str, expected_revision: int, journey_id: str, actor: Actor
+    ) -> ArchitectureKnowledge:
+        require_maintainer(actor)
+        current = self.get(release_id)
+        journeys = tuple(item for item in current.journeys if item.id != journey_id)
+        if len(journeys) == len(current.journeys):
+            raise KnowledgeNotFoundError(f"Journey {journey_id!r} not found.")
+        return self.update(release_id, expected_revision, actor, journeys=journeys)
+
+    def rename_offering(
+        self, release_id: str, expected_revision: int, old_id: str, new_id: str, actor: Actor
+    ) -> ArchitectureKnowledge:
+        """Give an offering a new id, keeping the old one as a former id and moving every
+        reference in the version to the new one."""
+        require_maintainer(actor)
+        current = self.get(release_id)
+        products, journeys, conflicts = renamed_offering(
+            current.products, current.journeys, current.conflicts, old_id, new_id
+        )
+        return self.update(
+            release_id,
+            expected_revision,
+            actor,
+            products=products,
+            journeys=journeys,
+            conflicts=conflicts,
+        )
+
+    def rename_journey(
+        self, release_id: str, expected_revision: int, old_id: str, new_id: str, actor: Actor
+    ) -> ArchitectureKnowledge:
+        require_maintainer(actor)
+        current = self.get(release_id)
+        return self.update(
+            release_id,
+            expected_revision,
+            actor,
+            journeys=renamed_journey(current.journeys, old_id, new_id),
+        )
 
     def mark_built(
         self,

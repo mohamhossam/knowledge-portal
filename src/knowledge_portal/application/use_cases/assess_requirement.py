@@ -72,6 +72,7 @@ from knowledge_portal.domain.architecture.assessment import (
 )
 from knowledge_portal.domain.architecture.drafts import OfferingDraft
 from knowledge_portal.domain.architecture.entities import OrganisationReference
+from knowledge_portal.domain.architecture.identity import current_id
 from knowledge_portal.domain.architecture.impact_graph import realised_nowhere, realisers
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
@@ -223,10 +224,12 @@ class AssessRequirement(RequirementAssessmentPort):
             if not any(seat.person_id for seat in item.seats)
         )
         offering_id = decision.offering_id if decision.verdict else None
+        # The organisation catalogue may still name the offering by an id it had before.
+        named = {offering_id, *offerings[offering_id].former_ids} if offering_id else set()
         products = tuple(
             item
             for item in sorted(catalogue.products, key=lambda item: item.name.casefold())
-            if offering_id is not None and offering_id in item.offering_ids
+            if named & set(item.offering_ids)
         )
         streams = {item.value_stream_id for item in products}
         return ArchitectureAssessment(
@@ -392,7 +395,8 @@ def _precedent(
         release_id=precedent.release_id,
         verdict=verdict,
         decision=precedent.decision,
-        offering_id=precedent.offering_id,
+        # Named as it is now, when it was renamed since the precedent was decided.
+        offering_id=current_id(release.products, precedent.offering_id) or precedent.offering_id,
         score=round(score, 4),
         system_ids=tuple(item.system_id for item in precedent.systems if item.system_id in systems),
         shared_concept_ids=tuple(item for item in precedent.concept_ids if item in needed),

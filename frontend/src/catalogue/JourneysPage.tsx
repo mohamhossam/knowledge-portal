@@ -252,6 +252,7 @@ function JourneyRecord({ journey }: { journey: Journey }) {
             )}
           </span>
           <span>{count(journey.activities.length, "step")} · {count(systemsOf(journey).size, "system")}</span>
+          {(journey.former_ids ?? []).length > 0 && <span>Formerly <code>{(journey.former_ids ?? []).join(", ")}</code></span>}
         </>
       }
       actions={

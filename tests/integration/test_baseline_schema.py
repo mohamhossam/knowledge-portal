@@ -64,6 +64,8 @@ KNOWLEDGE_TABLES = {
     # Stored golden set runs and their own job queue (Catalogue > Golden set report).
     "golden_runs",
     "golden_run_jobs",
+    "architecture_index_members",
+    "architecture_index_outdated",
 }
 
 

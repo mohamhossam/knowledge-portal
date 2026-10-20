@@ -2067,3 +2067,48 @@ def apply_candidate(
         content.relationship_kind or RelationshipKind.UNSPECIFIED,
     )
     return release.updated(relationships=(*release.relationships, relationship))
+
+
+# What a suggestion states, apart from how it is worded: two readings of a document that
+# state the same fact give the same key. A constraint or rule is its words; a dependency is
+# the pair of systems, however its description is written.
+_WORDED = frozenset({CandidateKind.CONSTRAINT, CandidateKind.OFFERING_RULE})
+
+
+def fact_key(content: CandidateContent) -> tuple[str, ...]:
+    return (
+        content.kind.value,
+        content.system_id.casefold(),
+        (content.component_id or "").casefold(),
+        (content.capability_id or "").casefold(),
+        (content.target_system_id or "").casefold(),
+        (content.landscape_domain_id or "").casefold(),
+        " ".join(content.text.casefold().split()) if content.kind in _WORDED else "",
+    )
+
+
+def fact_label(content: CandidateContent) -> str:
+    """The fact in a reviewer's words."""
+    kind, subject = content.kind, content.system_id
+    named = {
+        CandidateKind.PRODUCT: content.product.name if content.product else subject,
+        CandidateKind.JOURNEY: content.journey.name if content.journey else subject,
+        CandidateKind.CHANNEL: content.channel.name if content.channel else subject,
+    }
+    if kind in named:
+        return f"{kind.value.capitalize()} {named[kind]}"
+    if kind is CandidateKind.SYSTEM:
+        return f"System {content.name or subject}"
+    if kind in {CandidateKind.COMPONENT, CandidateKind.CAPABILITY}:
+        return f"{kind.value.capitalize()} {content.name} of {subject}"
+    if kind is CandidateKind.CONSTRAINT:
+        return f"Constraint of {subject}: {content.text}"
+    if kind is CandidateKind.OFFERING_RULE:
+        return f"Rule of {subject}: {content.text}"
+    if kind is CandidateKind.RELATIONSHIP:
+        return f"{subject} depends on {content.target_system_id}" + (
+            f": {content.text}" if content.text else ""
+        )
+    if kind is CandidateKind.PLACEMENT:
+        return f"{subject} sits in {content.landscape_domain_id}"
+    return f"{kind.value.replace('_', ' ').capitalize()} {content.name or subject}"

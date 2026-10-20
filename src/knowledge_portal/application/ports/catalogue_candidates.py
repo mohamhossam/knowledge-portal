@@ -7,7 +7,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Protocol
 
-from knowledge_portal.domain.architecture.candidates import CatalogueCandidate
+from knowledge_portal.domain.architecture.candidates import CandidateKind, CatalogueCandidate
 
 
 class CatalogueReading(StrEnum):
@@ -20,6 +20,19 @@ class CatalogueReading(StrEnum):
     CONCEPT_BACKFILL = "concept_backfill"
     COMPONENT_LINKS = "component_links"
     VOCABULARY_CLEANUP = "vocabulary_cleanup"
+
+
+@dataclass(frozen=True)
+class NoLongerStated:
+    """A fact the catalogue accepted from the version this document replaced, which this
+    version no longer states: the curator re-confirms, edits or removes it."""
+
+    kind: CandidateKind
+    subject: str
+    label: str
+    # Where the earlier version said it, and how.
+    location: str | None = None
+    quote: str | None = None
 
 
 @dataclass(frozen=True)
@@ -42,6 +55,9 @@ class ExtractionRun:
     change_request_id: str | None = None
     # Set when the run read the draft's own catalogue; ``document_version_id`` then holds it.
     reading: CatalogueReading | None = None
+    # For a new version of a document: what the catalogue took from the one it replaced
+    # that this one no longer says.
+    no_longer_stated: tuple[NoLongerStated, ...] = ()
 
 
 class CatalogueCandidateRepositoryPort(Protocol):
@@ -54,6 +70,15 @@ class CatalogueCandidateRepositoryPort(Protocol):
     def runs(self, release_id: str) -> tuple[ExtractionRun, ...]: ...
 
     def list(self, release_id: str) -> tuple[CatalogueCandidate, ...]: ...
+
+    def accepted(self) -> tuple[CatalogueCandidate, ...]:
+        """Every accepted suggestion, in any version of the catalogue: where facts came from."""
+        ...
+
+    def accepted_from(self, document_version_id: str) -> tuple[CatalogueCandidate, ...]:
+        """The suggestions read from one document version that were accepted, in any
+        version of the catalogue."""
+        ...
 
     def get(self, candidate_id: str) -> CatalogueCandidate | None: ...
 

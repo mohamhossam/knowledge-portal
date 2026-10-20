@@ -43,6 +43,7 @@ from knowledge_portal.domain.architecture.assessment import (
     speeds_in,
 )
 from knowledge_portal.domain.architecture.concepts import label_key, labels_in
+from knowledge_portal.domain.architecture.identity import current_id
 from knowledge_portal.domain.architecture.impact_graph import (
     composes,
     delivering_systems,
@@ -623,7 +624,10 @@ def precedent_candidates(
     paths: dict[str, list[tuple[PathStep, ...]]] = {}
     for match in precedents:
         precedent = match.precedent
-        if precedent.offering_id != offering_id or not needed & set(precedent.concept_ids):
+        # A precedent decided before its offering was renamed still names the old id.
+        if current_id(release.products, precedent.offering_id) != offering_id or not needed & set(
+            precedent.concept_ids
+        ):
             continue
         for system in precedent.systems:
             if system.system_id in names and system.system_id not in reached:

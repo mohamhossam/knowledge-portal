@@ -23,6 +23,7 @@ from knowledge_portal.domain.architecture.governance import (
     SourceConflict,
     check_governance,
 )
+from knowledge_portal.domain.architecture.identity import check_former_ids
 from knowledge_portal.domain.architecture.interfaces import (
     SystemInterface,
     check_data_roles,
@@ -369,6 +370,16 @@ class KnowledgeDocumentVersion:
     storage_key: str
     uploaded_by: str
     uploaded_at: datetime
+    # The document this version belongs to, kept across its versions; None for a first
+    # version, whose own id names the document.
+    document_id: str | None = None
+    # The version this one replaced, when it was uploaded as a new version of it.
+    supersedes: str | None = None
+
+    @property
+    def lineage(self) -> str:
+        """The document this version is of: the same for every version of it."""
+        return self.document_id or self.id
 
     def __post_init__(self) -> None:
         for label, value in (
@@ -383,6 +394,20 @@ class KnowledgeDocumentVersion:
             raise InvalidKnowledgeError("Document language must be en, ar, or mixed.")
         if self.uploaded_at.tzinfo is None:
             raise InvalidKnowledgeError("Document timestamp must have a timezone.")
+
+
+@dataclass(frozen=True)
+class OutdatedPassage:
+    """A passage of a document that a curator found describes what the catalogue no longer
+    holds. It stays in the index, readable by its citations, but is never searched as
+    evidence again while the version keeps the mark."""
+
+    version_id: str
+    location: str
+
+    def __post_init__(self) -> None:
+        _required(self.version_id, "Document version")
+        _required(self.location, "Passage location")
 
 
 MAX_VERSION_NAME = 80
@@ -444,6 +469,8 @@ class ArchitectureKnowledge:
     interfaces: tuple[SystemInterface, ...] = ()
     # The CFSs, RFSs and resources components are realised as (ontology plan Phase 8).
     realisations: tuple[RealisationRecord, ...] = ()
+    # Passages of its documents a curator marked as describing what it no longer holds.
+    outdated_passages: tuple[OutdatedPassage, ...] = ()
 
     def __post_init__(self) -> None:
         _required(self.id, "Knowledge id")
@@ -501,6 +528,9 @@ class ArchitectureKnowledge:
                     )
         channel_ids = check_channels(self.channels, system_ids)
         check_offerings(self.products, system_ids, channel_ids)
+        # An id names one offering, and one journey, whether it is current or former.
+        check_former_ids("offering", self.products)
+        check_former_ids("journey", self.journeys)
         for product in self.products:
             for component in product.components:
                 unknown = [item for item in component.capability_ids if item not in concepts]
@@ -571,6 +601,7 @@ class ArchitectureKnowledge:
         vocabulary: tuple[VocabularyTerm, ...] | None = None,
         interfaces: tuple[SystemInterface, ...] | None = None,
         realisations: tuple[RealisationRecord, ...] | None = None,
+        outdated_passages: tuple[OutdatedPassage, ...] | None = None,
     ) -> ArchitectureKnowledge:
         if self.status is not KnowledgeReleaseStatus.DRAFT:
             raise KnowledgeConflictError("Published knowledge is immutable.")
@@ -605,6 +636,9 @@ class ArchitectureKnowledge:
             vocabulary=self.vocabulary if vocabulary is None else vocabulary,
             interfaces=self.interfaces if interfaces is None else interfaces,
             realisations=self.realisations if realisations is None else realisations,
+            outdated_passages=(
+                self.outdated_passages if outdated_passages is None else outdated_passages
+            ),
         )
 
     def domain_path(self, domain_id: str | None) -> tuple[CapabilityDomain, ...]:

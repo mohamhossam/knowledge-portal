@@ -129,6 +129,7 @@ from knowledge_portal.application.use_cases.requirement_corpus import (
     ReadRequirementCorpus,
 )
 from knowledge_portal.application.use_cases.source_impact import DocumentSourceImpact
+from knowledge_portal.application.use_cases.source_review import ReviewSources
 from knowledge_portal.application.use_cases.vocabulary_cleanup import CleanUpVocabulary
 from knowledge_portal.domain.identity.entities import ActorProfile
 from knowledge_portal.infrastructure.config.options import (
@@ -231,6 +232,7 @@ class Container:
     catalog_plans: ReadCatalogPlans
     manage_organisation_catalogue: ManageOrganisationCatalogue
     preview_architecture_impact: PreviewArchitectureImpact
+    review_sources: ReviewSources
     manage_sample_requirements: ManageSampleRequirements
     compare_architecture_impact: CompareArchitectureImpact
     report_mapping_impact: ReportMappingImpact
@@ -451,6 +453,7 @@ def _build_container(
             persistence.organisation_repository, persistence.architecture_repository
         ),
         preview_architecture_impact=architecture.preview_impact,
+        review_sources=architecture.review_sources,
         manage_sample_requirements=ManageSampleRequirements(persistence.sample_requirements, clock),
         compare_architecture_impact=CompareArchitectureImpact(
             architecture.manage, architecture.preview_impact, architecture.knowledge

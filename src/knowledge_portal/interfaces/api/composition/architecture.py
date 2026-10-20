@@ -55,6 +55,7 @@ from knowledge_portal.application.use_cases.precedents import (
 from knowledge_portal.application.use_cases.resolve_architecture_knowledge import (
     ResolveArchitectureKnowledge,
 )
+from knowledge_portal.application.use_cases.source_review import ReviewSources
 from knowledge_portal.application.use_cases.vocabulary_cleanup import CleanUpVocabulary
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
 from knowledge_portal.infrastructure.architecture.catalogue_tables import (
@@ -96,6 +97,7 @@ class ArchitectureWiring:
     manage: ManageArchitectureKnowledge
     build_index: BuildArchitectureIndex
     preview_impact: PreviewArchitectureImpact
+    review_sources: ReviewSources
     upload_document: UploadKnowledgeDocument
     upload_documents: UploadArchitectureDocuments
     read_document: ReadKnowledgeDocument
@@ -217,6 +219,9 @@ def build_architecture(
         build_index=build_index,
         preview_impact=PreviewArchitectureImpact(
             manage, persistence.architecture_evidence_index, reasoner
+        ),
+        review_sources=ReviewSources(
+            manage, persistence.catalogue_candidates, persistence.architecture_evidence_index
         ),
         upload_document=upload,
         upload_documents=UploadArchitectureDocuments(upload, manage),

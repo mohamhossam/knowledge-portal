@@ -39,6 +39,7 @@ from knowledge_portal.domain.architecture.journeys import Journey
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
     KnowledgeConflictError,
+    KnowledgeDocumentVersion,
     KnowledgeReleaseStatus,
     RelationshipKind,
     SystemDefinition,
@@ -324,6 +325,12 @@ def _kind(item: SystemRelationship) -> str:
     return f" ({words})" if words else ""
 
 
+def _set_key(kind: str, profile: str, *parts: str) -> str:
+    """A chunk set's key: what kind it is, then a hash of how and what it was cut from."""
+    digest = hashlib.sha256("\0".join((profile, *parts)).encode("utf-8")).hexdigest()
+    return f"{kind}:{digest[:40]}"
+
+
 class BuildArchitectureIndex:
     def __init__(
         self,
@@ -539,26 +546,25 @@ class BuildArchitectureIndex:
                 journey.name,
                 _journey_text(journey, names, offerings),
             )
+        profile = self._index.profile
+        # The catalogue's records are one chunk set, reused while the catalogue is unchanged.
+        records_key = _set_key(
+            "records", profile, *(f"{r.chunk.id}:{r.chunk.text}" for r in records)
+        )
+        self._index.store_set(records_key, tuple(item.chunk for item in records))
+        members = [records_key]
         for document in release.documents:
-            document_bytes = self._storage.get(DocumentVersionId(document.storage_key))
-            segments = self._extractor.extract(document.mime_type, document_bytes)
-            if sectioned:
-                records.extend(self._parents_and_children(document.id, document.title, segments))
-                continue
-            for header, location, body in self._sections(document.title, segments):
-                for part_location, part in self._windows(body, location):
-                    text = f"{header}\n{part}"
-                    records.append(
-                        IndexedRecord(
-                            EvidenceChunk(
-                                self._chunk_id(document.id, part_location, text),
-                                document.title,
-                                part_location,
-                                text,
-                                document.id,
-                            )
-                        )
-                    )
+            # A document version's chunks depend only on its file, its title and how it is
+            # cut, so they are cut and embedded once and shared by every build.
+            key = _set_key("document", profile, document.id, document.checksum, document.title)
+            stored = self._index.chunk_set(key)
+            if stored is None:
+                cut = self._document_records(document, sectioned)
+                self._index.store_set(key, tuple(item.chunk for item in cut))
+                records.extend(cut)
+            else:
+                records.extend(IndexedRecord(chunk) for chunk in stored)
+            members.append(key)
         chunks = [item.chunk for item in records]
         # Embedded before storing, through the index's cache, so nothing is embedded twice.
         texts = texts_to_embed(release, tuple(records))
@@ -566,14 +572,48 @@ class BuildArchitectureIndex:
         links = build_links(release, tuple(records), vectors, mentions=sectioned)
         index_id = uuid4().hex
         fence()
-        self._index.store(release.id, index_id, tuple(chunks))
+        # Passages a curator marked outdated stay readable but are never searched.
+        marked = {(item.version_id, item.location) for item in release.outdated_passages}
+        outdated = tuple(
+            chunk.id for chunk in chunks if (chunk.document_version_id, chunk.location) in marked
+        )
+        self._index.store(release.id, index_id, (), tuple(dict.fromkeys(members)), outdated)
         fence()
         self._index.link(index_id, links)
         content_hash = hashlib.sha256(
             "".join(f"{chunk.id}:{chunk.text}\n" for chunk in chunks).encode("utf-8")
         ).hexdigest()
-        profile = self._index.profile
         fence()
-        return self._knowledge.mark_built(
+        built = self._knowledge.mark_built(
             release_id, expected_revision, profile, content_hash, actor_id, index_id
         )
+        # The draft's earlier builds are never read again, nor the sets only they read.
+        self._index.prune(release.id, index_id)
+        self._index.collect()
+        return built
+
+    def _document_records(
+        self, document: KnowledgeDocumentVersion, sectioned: bool
+    ) -> list[IndexedRecord]:
+        """A document version's chunks, cut from its stored file."""
+        document_id, title = document.id, document.title
+        document_bytes = self._storage.get(DocumentVersionId(document.storage_key))
+        segments = self._extractor.extract(document.mime_type, document_bytes)
+        if sectioned:
+            return self._parents_and_children(document_id, title, segments)
+        records: list[IndexedRecord] = []
+        for header, location, body in self._sections(title, segments):
+            for part_location, part in self._windows(body, location):
+                text = f"{header}\n{part}"
+                records.append(
+                    IndexedRecord(
+                        EvidenceChunk(
+                            self._chunk_id(document_id, part_location, text),
+                            title,
+                            part_location,
+                            text,
+                            document_id,
+                        )
+                    )
+                )
+        return records

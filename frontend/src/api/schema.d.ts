@@ -502,6 +502,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/architecture-knowledge/releases/{release_id}/drift": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Drift
+         * @description What the version changes or removes, with the document passages that name it.
+         */
+        get: operations["drift_architecture_knowledge_releases__release_id__drift_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/architecture-knowledge/releases/{release_id}/evidence/{chunk_id}": {
         parameters: {
             query?: never;
@@ -557,6 +577,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/architecture-knowledge/releases/{release_id}/journeys/{journey_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Put Journey
+         * @description Add or replace one journey; every other stays as it is.
+         */
+        put: operations["put_journey_architecture_knowledge_releases__release_id__journeys__journey_id__put"];
+        post?: never;
+        /** Remove Journey */
+        delete: operations["remove_journey_architecture_knowledge_releases__release_id__journeys__journey_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/architecture-knowledge/releases/{release_id}/journeys/{journey_id}/rename": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rename Journey */
+        post: operations["rename_journey_architecture_knowledge_releases__release_id__journeys__journey_id__rename_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/architecture-knowledge/releases/{release_id}/name": {
         parameters: {
             query?: never;
@@ -567,6 +625,68 @@ export interface paths {
         get?: never;
         /** Rename Draft */
         put: operations["rename_draft_architecture_knowledge_releases__release_id__name_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/architecture-knowledge/releases/{release_id}/offerings/{offering_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Put Offering
+         * @description Add or replace one offering; every other stays as it is.
+         */
+        put: operations["put_offering_architecture_knowledge_releases__release_id__offerings__offering_id__put"];
+        post?: never;
+        /** Remove Offering */
+        delete: operations["remove_offering_architecture_knowledge_releases__release_id__offerings__offering_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/architecture-knowledge/releases/{release_id}/offerings/{offering_id}/rename": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rename Offering
+         * @description Give an offering a new id; the old id stays as a former id, and the version's
+         *     journeys and conflicts follow.
+         */
+        post: operations["rename_offering_architecture_knowledge_releases__release_id__offerings__offering_id__rename_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/architecture-knowledge/releases/{release_id}/outdated-passages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Put Outdated Passages
+         * @description Replace the draft's outdated passages: each stays readable, never searched.
+         */
+        put: operations["put_outdated_passages_architecture_knowledge_releases__release_id__outdated_passages_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -602,6 +722,26 @@ export interface paths {
         put?: never;
         /** Preview Impact */
         post: operations["preview_impact_architecture_knowledge_releases__release_id__preview_impact_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/architecture-knowledge/releases/{release_id}/provenance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Provenance
+         * @description Facts the version holds whose every source document has left it.
+         */
+        get: operations["provenance_architecture_knowledge_releases__release_id__provenance_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2445,6 +2585,8 @@ export interface components {
             file: string;
             /** Language */
             language: string;
+            /** Replaces */
+            replaces?: string | null;
             /** Title */
             title: string;
         };
@@ -3440,6 +3582,48 @@ export interface components {
             system_ids: string[];
         };
         /**
+         * DriftItemResponse
+         * @description A system, offering or journey the draft changes or removes, and the passages of its
+         *     documents that name it.
+         */
+        DriftItemResponse: {
+            change: components["schemas"]["ChangeKind"];
+            /** Fields */
+            fields: string[];
+            item: components["schemas"]["ChangedItem"];
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** More */
+            more: number;
+            /** Passages */
+            passages: components["schemas"]["DriftedPassageResponse"][];
+        };
+        /** DriftedPassageResponse */
+        DriftedPassageResponse: {
+            /** Chunk Id */
+            chunk_id: string;
+            /** Location */
+            location: string;
+            /** Outdated */
+            outdated: boolean;
+            /** Text */
+            text: string;
+            /** Version Id */
+            version_id: string;
+        };
+        /**
+         * EntityRenameRequest
+         * @description A new id for an offering or journey; the old one is kept as a former id.
+         */
+        EntityRenameRequest: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** New Id */
+            new_id: string;
+        };
+        /**
          * EvidenceBlockKind
          * @enum {string}
          */
@@ -3515,6 +3699,11 @@ export interface components {
             match_prompt_version: string | null;
             /** Model */
             model: string;
+            /**
+             * No Longer Stated
+             * @default []
+             */
+            no_longer_stated: components["schemas"]["NoLongerStatedResponse"][];
             /** Prompt Version */
             prompt_version: string;
             reading?: components["schemas"]["CatalogueReading"] | null;
@@ -3526,6 +3715,13 @@ export interface components {
          * @enum {string}
          */
         ExtractionWarningSeverity: "info" | "warning" | "blocking";
+        /** FactSourceResponse */
+        FactSourceResponse: {
+            /** Title */
+            title: string;
+            /** Version Id */
+            version_id: string;
+        };
         /**
          * FalloutCaseSchema
          * @description What makes an order fall out, and how it is handled.
@@ -4071,6 +4267,11 @@ export interface components {
              * @default []
              */
             flow_rules: components["schemas"]["FlowRuleSchema"][];
+            /**
+             * Former Ids
+             * @default []
+             */
+            former_ids: string[];
             /** Id */
             id: string;
             /**
@@ -4091,6 +4292,12 @@ export interface components {
             shared_edges: components["schemas"]["JourneyEdgeResponse"][];
             /** Source */
             source?: string | null;
+        };
+        /** JourneyUpdateRequest */
+        JourneyUpdateRequest: {
+            /** Expected Revision */
+            expected_revision: number;
+            journey: components["schemas"]["JourneySchema"];
         };
         /** KnowledgeAuditEventResponse */
         KnowledgeAuditEventResponse: {
@@ -4131,6 +4338,8 @@ export interface components {
         KnowledgeDocumentVersionResponse: {
             /** Checksum */
             checksum: string;
+            /** Document Id */
+            document_id?: string | null;
             /** Filename */
             filename: string;
             /** Id */
@@ -4141,6 +4350,8 @@ export interface components {
             mime_type: string;
             /** Storage Key */
             storage_key: string;
+            /** Supersedes */
+            supersedes?: string | null;
             /** Title */
             title: string;
             /**
@@ -4188,6 +4399,8 @@ export interface components {
             landscape_domains?: components["schemas"]["LandscapeDomainSchema"][];
             /** Name */
             name?: string | null;
+            /** Outdated Passages */
+            outdated_passages?: components["schemas"]["OutdatedPassageSchema"][];
             /** Portfolio */
             portfolio?: components["schemas"]["PortfolioNodeSchema"][];
             /** Products */
@@ -4582,6 +4795,21 @@ export interface components {
          */
         NfrCoverage: "defined" | "partial" | "missing";
         /**
+         * NoLongerStatedResponse
+         * @description A fact taken from an earlier version of the document that this one no longer says.
+         */
+        NoLongerStatedResponse: {
+            kind: components["schemas"]["CandidateKind"];
+            /** Label */
+            label: string;
+            /** Location */
+            location?: string | null;
+            /** Quote */
+            quote?: string | null;
+            /** Subject */
+            subject: string;
+        };
+        /**
          * NoteBlockKind
          * @enum {string}
          */
@@ -4761,6 +4989,12 @@ export interface components {
             /** Source */
             source?: string | null;
         };
+        /** OfferingUpdateRequest */
+        OfferingUpdateRequest: {
+            /** Expected Revision */
+            expected_revision: number;
+            offering: components["schemas"]["ProductOfferingSchema"];
+        };
         /** OpenFindingAgesResponse */
         OpenFindingAgesResponse: {
             /** From 7 To 30 Days */
@@ -4887,6 +5121,39 @@ export interface components {
             image_data: string | null;
             /** Location */
             location: string;
+        };
+        /**
+         * OrphanedFactResponse
+         * @description A fact the catalogue holds whose every source document has left the draft.
+         */
+        OrphanedFactResponse: {
+            kind: components["schemas"]["CandidateKind"];
+            /** Label */
+            label: string;
+            /** Sources */
+            sources: components["schemas"]["FactSourceResponse"][];
+            /** Subject */
+            subject: string;
+        };
+        /**
+         * OutdatedPassageSchema
+         * @description A document passage marked as describing what the catalogue no longer holds.
+         */
+        OutdatedPassageSchema: {
+            /** Location */
+            location: string;
+            /** Version Id */
+            version_id: string;
+        };
+        /**
+         * OutdatedPassagesRequest
+         * @description The draft's whole list of outdated passages, replacing the one it has.
+         */
+        OutdatedPassagesRequest: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** Passages */
+            passages: components["schemas"]["OutdatedPassageSchema"][];
         };
         /** OwnedSeatResponse */
         OwnedSeatResponse: {
@@ -5091,6 +5358,11 @@ export interface components {
             decisions: components["schemas"]["ArchitectureDecisionSchema"][];
             /** Family */
             family?: string | null;
+            /**
+             * Former Ids
+             * @default []
+             */
+            former_ids: string[];
             /** Id */
             id: string;
             /** Lifecycle */
@@ -7512,6 +7784,39 @@ export interface operations {
             };
         };
     };
+    drift_architecture_knowledge_releases__release_id__drift_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriftItemResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_evidence_architecture_knowledge_releases__release_id__evidence__chunk_id__get: {
         parameters: {
             query?: never;
@@ -7614,6 +7919,120 @@ export interface operations {
             };
         };
     };
+    put_journey_architecture_knowledge_releases__release_id__journeys__journey_id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+                journey_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JourneyUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeReleaseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_journey_architecture_knowledge_releases__release_id__journeys__journey_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+                journey_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevisionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeReleaseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rename_journey_architecture_knowledge_releases__release_id__journeys__journey_id__rename_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+                journey_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntityRenameRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeReleaseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     rename_draft_architecture_knowledge_releases__release_id__name_put: {
         parameters: {
             query?: never;
@@ -7628,6 +8047,157 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["RenameVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeReleaseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_offering_architecture_knowledge_releases__release_id__offerings__offering_id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+                offering_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OfferingUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeReleaseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_offering_architecture_knowledge_releases__release_id__offerings__offering_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+                offering_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevisionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeReleaseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rename_offering_architecture_knowledge_releases__release_id__offerings__offering_id__rename_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+                offering_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntityRenameRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeReleaseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_outdated_passages_architecture_knowledge_releases__release_id__outdated_passages_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OutdatedPassagesRequest"];
             };
         };
         responses: {
@@ -7716,6 +8286,39 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    provenance_architecture_knowledge_releases__release_id__provenance_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrphanedFactResponse"][];
                 };
             };
             /** @description Validation Error */

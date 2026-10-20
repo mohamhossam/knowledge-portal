@@ -356,7 +356,7 @@ def test_architecture_upload_reads_at_most_one_byte_past_the_limit(container: Co
     class RecordingUpload:
         max_bytes = 8
 
-        def execute(self, *args: object) -> object:
+        def execute(self, *args: object, **_: object) -> object:
             content = args[6]
             assert isinstance(content, bytes)
             received.append(len(content))

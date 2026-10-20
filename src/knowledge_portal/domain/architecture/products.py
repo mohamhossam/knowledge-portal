@@ -371,9 +371,13 @@ class ProductOffering:
     # Its plans as the sources describe them, and the rules it is sold and fulfilled by.
     plans: tuple[OfferingPlan, ...] = ()
     business_rules: tuple[BusinessRule, ...] = ()
+    # Ids it was known by before a rename, so precedents, change requests and requirement
+    # work that still name an old id find it.
+    former_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Offering id"))
+        object.__setattr__(self, "former_ids", former(self.id, self.former_ids))
         object.__setattr__(self, "name", required(self.name, "Offering name"))
         for field, label in (
             ("code", "Offering code"),
@@ -447,6 +451,14 @@ class ProductOffering:
                 for responsibility in component.responsibilities
             )
         )
+
+
+def former(current: str, ids: tuple[str, ...]) -> tuple[str, ...]:
+    """An entity's former ids: each once, and never its current id."""
+    found = tuple(dict.fromkeys(required(item, "Former id") for item in ids))
+    if current in found:
+        raise InvalidKnowledgeError(f"{current!r} cannot be a former id of itself.")
+    return found
 
 
 def check_offerings(
@@ -626,7 +638,10 @@ def _named[T](
 
 def find_offering(offerings: tuple[ProductOffering, ...], reference: str) -> ProductOffering | None:
     """The offering named by id, code or name, ignoring case and punctuation; only one may fit."""
-    exact = next((item for item in offerings if item.id == reference), None)
+    exact = next(
+        (item for item in offerings if item.id == reference or reference in item.former_ids),
+        None,
+    )
     return exact or _named(offerings, reference, lambda item: (item.id, item.code, item.name))
 
 

@@ -146,7 +146,38 @@ class ArchitectureEvidenceIndexPort(Protocol):
         """How this index cuts evidence into chunks; the last part of its profile."""
         ...
 
-    def store(self, release_id: str, index_id: str, chunks: tuple[EvidenceChunk, ...]) -> None: ...
+    def store(
+        self,
+        release_id: str,
+        index_id: str,
+        chunks: tuple[EvidenceChunk, ...],
+        members: tuple[str, ...] = (),
+        outdated: tuple[str, ...] = (),
+    ) -> None:
+        """Store an index: its own chunks, the chunk sets it reads (`members`), and the
+        chunks it never searches (`outdated`; a child is left out with its parent)."""
+        ...
+
+    def passages(self, index_id: str) -> tuple[EvidenceChunk, ...]:
+        """Every document passage as it is read (whole chunks and parents), in stored order."""
+        ...
+
+    def chunk_set(self, key: str) -> tuple[EvidenceChunk, ...] | None:
+        """A stored chunk set's chunks, in the order stored; None when none has that key."""
+        ...
+
+    def store_set(self, key: str, chunks: tuple[EvidenceChunk, ...]) -> None:
+        """Store a chunk set once, whole or not at all; storing a key again does nothing."""
+        ...
+
+    def prune(self, release_id: str, keep: str) -> None:
+        """Delete every index of the release but `keep`: a draft's earlier builds, which
+        nothing reads again once a newer build is recorded."""
+        ...
+
+    def collect(self) -> int:
+        """Delete the chunk sets no index reads any more; how many were deleted."""
+        ...
 
     def retrieve(self, release_id: str, query: str, limit: int) -> tuple[EvidenceChunk, ...]:
         """The best searchable chunks (whole and child, never parent), best first."""

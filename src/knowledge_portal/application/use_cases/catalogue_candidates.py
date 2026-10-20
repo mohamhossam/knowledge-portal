@@ -35,6 +35,7 @@ from knowledge_portal.application.ports.architecture_knowledge_repository import
 from knowledge_portal.application.ports.catalogue_candidates import (
     CatalogueCandidateRepositoryPort,
     ExtractionRun,
+    NoLongerStated,
 )
 from knowledge_portal.application.ports.catalogue_extractor import (
     CatalogueExtractionUnsupportedError,
@@ -77,6 +78,8 @@ from knowledge_portal.domain.architecture.candidates import (
     accept_from_change_request,
     apply_candidate,
     classify,
+    fact_key,
+    fact_label,
     find_system,
     missing_systems,
     needs_one_by_one,
@@ -1264,6 +1267,12 @@ class ProposeCatalogueChanges:
             {_settled(key, kinds[key]): item for key, item in proposed.items()}
         )
         proposed, both_ways = _one_way(proposed)
+        no_longer = self._no_longer_stated(version, tuple(proposed), release)
+        if no_longer:
+            warnings.append(
+                f"{len(no_longer)} fact(s) the catalogue took from an earlier version of this "
+                "document are no longer stated in it: review them."
+            )
         skipped = linked = 0
         kept: dict[CandidateContent, _Proposal] = {}
         for content, item in proposed.items():
@@ -1337,11 +1346,41 @@ class ProposeCatalogueChanges:
             now,
             self._matcher.model if matched else None,
             self._matcher.prompt_version if matched else None,
+            no_longer_stated=no_longer,
         )
         report(JobProgress("saving"))
         fence()
         self._candidates.replace_proposals(run, tuple(candidates))
         return run
+
+    def _no_longer_stated(
+        self,
+        version: KnowledgeDocumentVersion,
+        stated: tuple[CandidateContent, ...],
+        release: ArchitectureKnowledge,
+    ) -> tuple[NoLongerStated, ...]:
+        """What the catalogue accepted from the versions this one replaced, still holds,
+        and this version no longer states."""
+        said = {fact_key(item) for item in stated}
+        found: dict[tuple[str, ...], NoLongerStated] = {}
+        for earlier in self._knowledge.earlier_versions(version):
+            for candidate in self._candidates.accepted_from(earlier):
+                key = fact_key(candidate.content)
+                if (
+                    key in said
+                    or key in found
+                    or classify(candidate.content, release) is not CandidateMatch.ALREADY_PRESENT
+                ):
+                    continue
+                cited = candidate.citations[0] if candidate.citations else None
+                found[key] = NoLongerStated(
+                    candidate.content.kind,
+                    candidate.content.system_id,
+                    fact_label(candidate.content),
+                    cited.location if cited else None,
+                    cited.quote if cited else None,
+                )
+        return tuple(found.values())
 
     def _matches(
         self,

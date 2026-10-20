@@ -244,6 +244,7 @@ function OfferingRecord({ offering }: { offering: Offering }) {
             {[offering.code, offering.family, offering.version && `version ${offering.version}`, offering.lifecycle].filter(Boolean).join(" · ")}
           </span>
           <span>{count(offering.components.length, "component")} · {count(offering.order_types.length, "order type")} · {count(journeys.length, "journey")}</span>
+          {(offering.former_ids ?? []).length > 0 && <span>Formerly <code>{(offering.former_ids ?? []).join(", ")}</code></span>}
         </>
       }
       actions={

@@ -60,6 +60,11 @@ class InMemoryEvidenceIndex(ArchitectureEvidenceIndexPort):
         self._tokenizer = tokenizer
         self._version = version
         self._entries: dict[str, tuple[tuple[EvidenceChunk, tuple[float, ...]], ...]] = {}
+        # Chunk sets, stored once and read by every index that names them as members.
+        self._sets: dict[str, tuple[tuple[EvidenceChunk, tuple[float, ...]], ...]] = {}
+        self._members: dict[str, tuple[str, ...]] = {}
+        self._release_of: dict[str, str] = {}
+        self._outdated: dict[str, frozenset[str]] = {}
         self._links: dict[str, IndexLinks] = {}
         # Vectors by (model, passage text): a rebuild only embeds what changed.
         self._cache: dict[tuple[str, str], tuple[float, ...]] = {}
@@ -89,9 +94,9 @@ class InMemoryEvidenceIndex(ArchitectureEvidenceIndexPort):
             )
         return tuple(self._cache[(model, text)] for text in texts)
 
-    def store(self, release_id: str, index_id: str, chunks: tuple[EvidenceChunk, ...]) -> None:
-        if index_id in self._entries:
-            raise ValueError("Evidence indexes are immutable.")
+    def _embedded(
+        self, chunks: tuple[EvidenceChunk, ...]
+    ) -> tuple[tuple[EvidenceChunk, tuple[float, ...]], ...]:
         # A parent is read, never searched, so it is not embedded.
         searched = tuple(chunk for chunk in chunks if chunk.role is not ChunkRole.PARENT)
         vectors = dict(
@@ -101,7 +106,75 @@ class InMemoryEvidenceIndex(ArchitectureEvidenceIndexPort):
                 strict=True,
             )
         )
-        self._entries[index_id] = tuple((chunk, vectors.get(chunk.id, ())) for chunk in chunks)
+        return tuple((chunk, vectors.get(chunk.id, ())) for chunk in chunks)
+
+    def store(
+        self,
+        release_id: str,
+        index_id: str,
+        chunks: tuple[EvidenceChunk, ...],
+        members: tuple[str, ...] = (),
+        outdated: tuple[str, ...] = (),
+    ) -> None:
+        if index_id in self._entries:
+            raise ValueError("Evidence indexes are immutable.")
+        if any(key not in self._sets for key in members):
+            raise ValueError("An index can only read stored chunk sets.")
+        self._entries[index_id] = self._embedded(chunks)
+        self._members[index_id] = members
+        self._release_of[index_id] = release_id
+        self._outdated[index_id] = frozenset(outdated)
+
+    def chunk_set(self, key: str) -> tuple[EvidenceChunk, ...] | None:
+        stored = self._sets.get(key)
+        return None if stored is None else tuple(chunk for chunk, _ in stored)
+
+    def store_set(self, key: str, chunks: tuple[EvidenceChunk, ...]) -> None:
+        if key not in self._sets:
+            self._sets[key] = self._embedded(chunks)
+
+    def prune(self, release_id: str, keep: str) -> None:
+        for index_id in [
+            key for key, owner in self._release_of.items() if owner == release_id and key != keep
+        ]:
+            for held in (
+                self._entries,
+                self._members,
+                self._links,
+                self._release_of,
+                self._outdated,
+            ):
+                held.pop(index_id, None)
+
+    def collect(self) -> int:
+        read = {key for keys in self._members.values() for key in keys}
+        unread = [key for key in self._sets if key not in read]
+        for key in unread:
+            del self._sets[key]
+        return len(unread)
+
+    def _searched(self, index_id: str) -> tuple[tuple[EvidenceChunk, tuple[float, ...]], ...]:
+        """What a search may return: none of the passages the index marks outdated."""
+        outdated = self._outdated.get(index_id, frozenset())
+        return tuple(
+            row
+            for row in self._all(index_id)
+            if row[0].id not in outdated and (row[0].parent_id or "") not in outdated
+        )
+
+    def passages(self, index_id: str) -> tuple[EvidenceChunk, ...]:
+        return tuple(
+            chunk
+            for chunk, _ in self._all(index_id)
+            if chunk.document_version_id is not None and chunk.role is not ChunkRole.CHILD
+        )
+
+    def _all(self, index_id: str) -> tuple[tuple[EvidenceChunk, tuple[float, ...]], ...]:
+        """An index's own chunks and those of the sets it reads."""
+        own = self._entries.get(index_id, ())
+        return own + tuple(
+            row for key in self._members.get(index_id, ()) for row in self._sets[key]
+        )
 
     def _ranked(
         self, entries: tuple[tuple[EvidenceChunk, tuple[float, ...]], ...], query: str, limit: int
@@ -123,19 +196,17 @@ class InMemoryEvidenceIndex(ArchitectureEvidenceIndexPort):
         )
 
     def retrieve(self, release_id: str, query: str, limit: int) -> tuple[EvidenceChunk, ...]:
-        return self._ranked(self._entries.get(release_id, ()), query, limit)
+        return self._ranked(self._searched(release_id), query, limit)
 
     def get(self, release_id: str, chunk_id: str) -> EvidenceChunk | None:
-        return next(
-            (chunk for chunk, _ in self._entries.get(release_id, ()) if chunk.id == chunk_id), None
-        )
+        return next((chunk for chunk, _ in self._all(release_id) if chunk.id == chunk_id), None)
 
     def system_chunk(self, index_id: str, system_id: str) -> EvidenceChunk | None:
         own = f"system {system_id}"
         return next(
             (
                 chunk
-                for chunk, _ in self._entries.get(index_id, ())
+                for chunk, _ in self._all(index_id)
                 if chunk.document_version_id is None
                 and (chunk.location == own or chunk.location.startswith(f"{own},"))
             ),
@@ -191,7 +262,7 @@ class InMemoryEvidenceIndex(ArchitectureEvidenceIndexPort):
             for item in self._links.get(index_id, IndexLinks()).concepts
             if item.concept_id in wanted
         }
-        entries = tuple(row for row in self._entries.get(index_id, ()) if row[0].id in linked)
+        entries = tuple(row for row in self._searched(index_id) if row[0].id in linked)
         return self._ranked(entries, query, limit)
 
     def coverage(self, index_id: str) -> IndexCoverage | None:
@@ -199,7 +270,7 @@ class InMemoryEvidenceIndex(ArchitectureEvidenceIndexPort):
         if links is None:
             return None
         chunks = {
-            chunk.id for chunk, _ in self._entries[index_id] if chunk.role is not ChunkRole.PARENT
+            chunk.id for chunk, _ in self._all(index_id) if chunk.role is not ChunkRole.PARENT
         }
         reached = {item.chunk_id for item in links.concepts}
         spoken = {item.concept_id for item in links.concepts}

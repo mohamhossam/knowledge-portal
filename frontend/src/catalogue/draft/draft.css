@@ -382,3 +382,37 @@
 .draft-parts::-moz-progress-bar {
   background: var(--color-info);
 }
+
+/* A form opened from a row, such as a document's new version: titled like a section's part. */
+.draft-subhead {
+  margin: 0;
+  font-size: var(--text-h3);
+  font-weight: var(--weight-emphasis);
+}
+
+/* Passages naming what a draft changes (Check): each with where it is and the mark. */
+.draft-drift {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.draft-drift__list {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.draft-drift__item {
+  display: grid;
+  gap: var(--space-1);
+  padding-block-start: var(--space-2);
+  border-block-start: 1px solid var(--color-rule);
+}
+
+.draft-drift__quote {
+  margin: 0;
+  max-inline-size: 72ch;
+  color: var(--color-ink);
+}

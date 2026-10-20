@@ -7,6 +7,21 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- Catalogue versioning (`docs/architecture/adr-catalogue-versioning.md`). A document can be
+  uploaded as a new version of one the draft holds: it takes the old version's place, and its
+  reading lists what the catalogue took from earlier versions that it no longer says.
+  Offerings and journeys keep their former ids when renamed (`…/rename`), and precedents,
+  change requests and the organisation catalogue still find them; a single offering or journey
+  can be edited or removed alone. Documents and catalogue records are stored once as chunk sets
+  and shared by every build, so a rebuild re-reads and re-embeds only what changed, and a
+  draft's earlier builds are cleaned up. Check lists facts whose sources left the version and
+  passages naming what the draft changes, which can be marked outdated: kept and readable, no
+  longer searched. Contracts, additive: `replaces` on upload, `document_id` and `supersedes`
+  on document versions, `former_ids` on offerings and journeys (internal contract too:
+  requirement-portal should review it), `outdated_passages` on releases, `no_longer_stated` on
+  readings, and the routes above plus `GET …/provenance`, `GET …/drift` and
+  `PUT …/outdated-passages`. Migration `202610201100_chunk_sets`.
+
 - Section-v4 catalogue chunking, built beside section-v3 and off by default
   (`ARCHITECTURE_INDEX_VERSION=section-v4`; `docs/architecture/adr-section-v4-chunking.md`): a
   document is indexed as sections and tables the reasoner reads, searched through their

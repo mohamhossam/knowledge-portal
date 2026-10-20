@@ -1,8 +1,9 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, RotateCw, X } from "lucide-react";
 import { type FormEvent, useMemo, useState } from "react";
 
 import { api, type CatalogueDocument, type CatalogueFileFormat, type DocumentLanguage, type Release } from "../../api/client";
+import type { components } from "../../api/schema";
 import { errorMessage } from "../../api/errors";
 import {
   ActionGroup, Button, type Column, ConsequencePanel, DataTable, EmptyState, Lines, Section, Select, Status, type StatusTone, TextField,
@@ -18,6 +19,8 @@ import { type DraftHook, type UploadLine, useDraft } from "../useDraft";
 import { saveBlob, useCatalogueFile } from "../useEditing";
 import { ChangeTable } from "./ChangeTable";
 import { Said } from "./parts";
+
+type Schemas = components["schemas"];
 
 const LANGUAGE: Record<string, string> = { en: "English", ar: "Arabic", mixed: "English and Arabic" };
 const MAX_FILES = 20;
@@ -48,10 +51,16 @@ export function SourcesStep() {
   );
 }
 
-type DocumentRow = { document: CatalogueDocument; tone: StatusTone; state: Reading; notes: string[]; found: number | null; waiting: number };
+type NoLongerStated = Schemas["NoLongerStatedResponse"];
+type DocumentRow = {
+  document: CatalogueDocument; tone: StatusTone; state: Reading; notes: string[]; found: number | null; waiting: number;
+  // What the catalogue took from an earlier version of the document that this one no longer says.
+  dropped: NoLongerStated[];
+};
 
 function Documents({ release, draft, actorName }: { release: Release; draft: DraftHook; actorName: (id: string | null | undefined) => string }) {
   const removing = useDisclosure();
+  const { open: replacingOpen, show: showReplacing, close: closeReplacing, panel: replacingPanel } = useDisclosure();
   const [chosen, setChosen] = useState<CatalogueDocument | null>(null);
   const jobs = new Map((draft.extractions.data ?? []).map((item) => [item.document_version_id, item.job]));
   // Each answer is read against the moment it arrived, so elapsed times move with the polling.
@@ -72,6 +81,7 @@ function Documents({ release, draft, actorName }: { release: Release; draft: Dra
       notes: state.busy ? [] : documentWarnings(runs, document.id).map(warningInWords),
       found: last && !state.busy && state.label === "Read" ? last.candidate_count : null,
       waiting: waiting.get(document.id) ?? 0,
+      dropped: last && !state.busy ? last.no_longer_stated ?? [] : [],
     };
   });
   const failure = [draft.read, draft.cancel, draft.retry].find((item) => item.isError)?.error;
@@ -88,6 +98,7 @@ function Documents({ release, draft, actorName }: { release: Release; draft: Dra
           <span className="draft-detail" dir="ltr">
             <bdi>{document.filename}</bdi> · {LANGUAGE[document.language] ?? document.language} · added by <bdi>{actorName(document.uploaded_by)}</bdi>
           </span>
+          {document.supersedes && <EarlierVersions document={document} />}
         </>
       ),
     },
@@ -113,6 +124,16 @@ function Documents({ release, draft, actorName }: { release: Release; draft: Dra
           {row.notes.length > 0 && (
             <Lines label={`What the reading of ${row.document.title} noted`}>
               {row.notes.map((note) => <li key={note} className="draft-detail" dir="auto">{note}</li>)}
+            </Lines>
+          )}
+          {row.dropped.length > 0 && (
+            <Lines label={`No longer said in this version of ${row.document.title}; still in the catalogue`}>
+              {row.dropped.map((item) => (
+                <li key={`${item.kind}:${item.subject}:${item.label}`} className="draft-detail" dir="auto">
+                  {item.label}
+                  {item.quote && <> (earlier version{item.location ? `, ${item.location}` : ""}: “{item.quote}”)</>}
+                </li>
+              ))}
             </Lines>
           )}
         </>
@@ -148,6 +169,17 @@ function Documents({ release, draft, actorName }: { release: Release; draft: Dra
                 Read it again
               </Button>
             )}
+            <Button
+              variant="link"
+              aria-label={`Add a new version of ${document.title}…`}
+              aria-expanded={replacingOpen && chosen?.id === document.id}
+              onClick={(event) => {
+                setChosen(document);
+                showReplacing(event);
+              }}
+            >
+              New version…
+            </Button>
             <Button
               variant="link"
               aria-label={`Remove ${document.title}…`}
@@ -192,7 +224,75 @@ function Documents({ release, draft, actorName }: { release: Release; draft: Dra
           onKeep={removing.close}
         />
       )}
+      {replacingOpen && chosen && (
+        <section ref={replacingPanel} tabIndex={-1} aria-label={`New version of ${chosen.title}`}>
+          <NewVersion key={chosen.id} document={chosen} draft={draft} onDone={closeReplacing} />
+        </section>
+      )}
     </Section>
+  );
+}
+
+/** The versions a document replaced, newest first, as the curator uploaded them. */
+function EarlierVersions({ document }: { document: CatalogueDocument }) {
+  const versions = useQuery({ queryKey: ["architecture", "documents"], queryFn: () => api.documentVersions() });
+  const known = new Map((versions.data ?? []).map((item) => [item.id, item]));
+  const chain: CatalogueDocument[] = [];
+  for (let at = document.supersedes; at && !chain.some((item) => item.id === at); at = known.get(at)?.supersedes) {
+    const earlier = known.get(at);
+    if (!earlier) break;
+    chain.push(earlier);
+  }
+  return (
+    <span className="draft-detail">
+      A new version: it took an earlier version's place
+      {chain.length > 0 && <>; before it {chain.map((item) => `${item.filename} (${item.uploaded_at.slice(0, 10)})`).join(", ")}</>}
+    </span>
+  );
+}
+
+/** A new version of a document: it takes the old version's place in the draft and is read; what
+ * the catalogue took from the old one and the new one no longer says is listed after its reading. */
+function NewVersion({ document, draft, onDone }: { document: CatalogueDocument; draft: DraftHook; onDone: () => void }) {
+  const [file, setFile] = useState<File | null>(null);
+  const [said, setSaid] = useState<{ text: string; failed?: boolean } | null>(null);
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    if (draft.addDocument.isPending) return;
+    if (!file) {
+      setSaid({ text: "Choose the new version's file first.", failed: true });
+      return;
+    }
+    draft.addDocument.mutate(
+      { file, title: document.title, language: document.language as DocumentLanguage, replaces: document.id },
+      { onSuccess: () => { setSaid(null); onDone(); } },
+    );
+  };
+  return (
+    <form className="draft-form" aria-label={`Upload the new version of ${document.title}`} onSubmit={submit}>
+      <h3 className="draft-subhead">New version of <bdi>‘{document.title}’</bdi></h3>
+      <p className="draft-lead">
+        It takes this version's place in the draft and is read. The earlier version stays in the versions already
+        published. What the catalogue took from it that the new version no longer says is listed here once read.
+      </p>
+      <Upload
+        label="File"
+        multiple={false}
+        accept={ACCEPTED_FILES}
+        items={file ? [{ name: file.name, state: "waiting", note: "Chosen" }] : []}
+        onFiles={(chosen) => setFile(chosen[0] ?? null)}
+      />
+      <ActionGroup>
+        <Button type="submit" variant="primary" busy={draft.addDocument.isPending}>
+          {draft.addDocument.isPending ? "Adding and reading…" : "Use this version and read it"}
+        </Button>
+        <Button variant="secondary" onClick={onDone}>Keep the current version</Button>
+      </ActionGroup>
+      <Said
+        text={draft.addDocument.isError ? errorMessage(draft.addDocument.error) : said?.text ?? null}
+        failed={draft.addDocument.isError || said?.failed}
+      />
+    </form>
   );
 }
 

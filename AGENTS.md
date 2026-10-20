@@ -549,6 +549,12 @@ A task is complete only when:
 - **Catalogue uploads: embedded Office parts and figure text are not indexed**, PDFs are read
   page by page without layout, and catalogue uploads are not malware-scanned as library uploads
   are. Carried from the chunking proposal; not in the section-v4 slice.
+- **One draft at a time** (`docs/architecture/adr-catalogue-versioning.md`). Several drafts
+  scoped to different entities, with per-entity conflicts at publish, wait until more than one
+  team curates at once or publishing is weekly or more often.
+- **Proposed offerings are not published.** Until a new offering's draft is published, each
+  later requirement about it is assessed as a new offering again. Publishing them as
+  "Proposed" needs a product decision on how the assessment treats them.
 
 ---
 

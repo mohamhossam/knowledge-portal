@@ -25,6 +25,7 @@ from knowledge_portal.domain.architecture.products import (
     SourceConfidence,
     check_source,
     first_known,
+    former,
     role_code,
 )
 
@@ -266,9 +267,12 @@ class Journey:
     integrations: tuple[ActivityIntegration, ...] = ()
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # Ids it was known by before a rename.
+    former_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Journey id"))
+        object.__setattr__(self, "former_ids", former(self.id, self.former_ids))
         object.__setattr__(self, "name", required(self.name, "Journey name"))
         for field, label in (
             ("product_id", "Product offering"),

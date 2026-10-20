@@ -41,7 +41,8 @@ from knowledge_portal.application.use_cases.catalogue_candidates import (
 )
 from knowledge_portal.application.use_cases.change_requests import ReadDeliverySummaries
 from knowledge_portal.application.use_cases.precedents import ReadPrecedentSummaries
-from knowledge_portal.domain.architecture.knowledge import InvalidKnowledgeError
+from knowledge_portal.application.use_cases.source_review import ReviewSources
+from knowledge_portal.domain.architecture.knowledge import InvalidKnowledgeError, OutdatedPassage
 from knowledge_portal.interfaces.api.dependencies import (
     ContainerDep,
     KnowledgeActorDep,
@@ -56,6 +57,7 @@ from knowledge_portal.interfaces.api.dependencies import (
     get_preview_architecture_impact,
     get_read_knowledge_document,
     get_report_mapping_impact,
+    get_review_sources,
     get_upload_architecture_documents,
     get_upload_knowledge_document,
     limit_provider_calls,
@@ -72,13 +74,21 @@ from knowledge_portal.interfaces.api.schemas.architecture_knowledge import (
     DocumentPassageResponse,
     DocumentSelectionRequest,
     DraftUpdateRequest,
+    DriftedPassageResponse,
+    DriftItemResponse,
+    EntityRenameRequest,
     ExtractionRunResponse,
+    FactSourceResponse,
     ImpactComparisonResponse,
     IndexCoverageResponse,
+    JourneyUpdateRequest,
     KnowledgeAuditEventResponse,
     KnowledgeDocumentVersionResponse,
     KnowledgeReleaseResponse,
     MappingImpactResponse,
+    OfferingUpdateRequest,
+    OrphanedFactResponse,
+    OutdatedPassagesRequest,
     PublishRequest,
     RejectSuggestionsRequest,
     RejectSuggestionsResponse,
@@ -315,6 +325,179 @@ def remove_system(
     )
 
 
+@router.put(
+    "/releases/{release_id}/offerings/{offering_id}", response_model=KnowledgeReleaseResponse
+)
+def put_offering(
+    release_id: str,
+    offering_id: str,
+    body: OfferingUpdateRequest,
+    knowledge: KnowledgeDep,
+    actor: KnowledgeActorDep,
+) -> KnowledgeReleaseResponse:
+    """Add or replace one offering; every other stays as it is."""
+    if offering_id != body.offering.id:
+        raise InvalidKnowledgeError("Offering id in the URL and body must match.")
+    return KnowledgeReleaseResponse.from_domain(
+        knowledge.upsert_offering(
+            release_id, body.expected_revision, body.offering.to_domain(), actor
+        )
+    )
+
+
+@router.delete(
+    "/releases/{release_id}/offerings/{offering_id}", response_model=KnowledgeReleaseResponse
+)
+def remove_offering(
+    release_id: str,
+    offering_id: str,
+    body: RevisionRequest,
+    knowledge: KnowledgeDep,
+    actor: KnowledgeActorDep,
+) -> KnowledgeReleaseResponse:
+    return KnowledgeReleaseResponse.from_domain(
+        knowledge.remove_offering(release_id, body.expected_revision, offering_id, actor)
+    )
+
+
+@router.post(
+    "/releases/{release_id}/offerings/{offering_id}/rename",
+    response_model=KnowledgeReleaseResponse,
+)
+def rename_offering(
+    release_id: str,
+    offering_id: str,
+    body: EntityRenameRequest,
+    knowledge: KnowledgeDep,
+    actor: KnowledgeActorDep,
+) -> KnowledgeReleaseResponse:
+    """Give an offering a new id; the old id stays as a former id, and the version's
+    journeys and conflicts follow."""
+    return KnowledgeReleaseResponse.from_domain(
+        knowledge.rename_offering(
+            release_id, body.expected_revision, offering_id, body.new_id, actor
+        )
+    )
+
+
+@router.put("/releases/{release_id}/journeys/{journey_id}", response_model=KnowledgeReleaseResponse)
+def put_journey(
+    release_id: str,
+    journey_id: str,
+    body: JourneyUpdateRequest,
+    knowledge: KnowledgeDep,
+    actor: KnowledgeActorDep,
+) -> KnowledgeReleaseResponse:
+    """Add or replace one journey; every other stays as it is."""
+    if journey_id != body.journey.id:
+        raise InvalidKnowledgeError("Journey id in the URL and body must match.")
+    return KnowledgeReleaseResponse.from_domain(
+        knowledge.upsert_journey(
+            release_id, body.expected_revision, body.journey.to_domain(), actor
+        )
+    )
+
+
+@router.delete(
+    "/releases/{release_id}/journeys/{journey_id}", response_model=KnowledgeReleaseResponse
+)
+def remove_journey(
+    release_id: str,
+    journey_id: str,
+    body: RevisionRequest,
+    knowledge: KnowledgeDep,
+    actor: KnowledgeActorDep,
+) -> KnowledgeReleaseResponse:
+    return KnowledgeReleaseResponse.from_domain(
+        knowledge.remove_journey(release_id, body.expected_revision, journey_id, actor)
+    )
+
+
+@router.post(
+    "/releases/{release_id}/journeys/{journey_id}/rename",
+    response_model=KnowledgeReleaseResponse,
+)
+def rename_journey(
+    release_id: str,
+    journey_id: str,
+    body: EntityRenameRequest,
+    knowledge: KnowledgeDep,
+    actor: KnowledgeActorDep,
+) -> KnowledgeReleaseResponse:
+    return KnowledgeReleaseResponse.from_domain(
+        knowledge.rename_journey(release_id, body.expected_revision, journey_id, body.new_id, actor)
+    )
+
+
+@router.get("/releases/{release_id}/provenance", response_model=list[OrphanedFactResponse])
+def provenance(
+    release_id: str,
+    actor: KnowledgeActorDep,
+    review: Annotated[ReviewSources, Depends(get_review_sources)],
+) -> list[OrphanedFactResponse]:
+    """Facts the version holds whose every source document has left it."""
+    return [
+        OrphanedFactResponse(
+            kind=item.kind,
+            subject=item.subject,
+            label=item.label,
+            sources=[
+                FactSourceResponse(version_id=source.version_id, title=source.title)
+                for source in item.sources
+            ],
+        )
+        for item in review.provenance(release_id, actor)
+    ]
+
+
+@router.get("/releases/{release_id}/drift", response_model=list[DriftItemResponse])
+def drift(
+    release_id: str,
+    actor: KnowledgeActorDep,
+    review: Annotated[ReviewSources, Depends(get_review_sources)],
+) -> list[DriftItemResponse]:
+    """What the version changes or removes, with the document passages that name it."""
+    return [
+        DriftItemResponse(
+            item=item.item,
+            key=item.key,
+            label=item.label,
+            change=item.change,
+            fields=list(item.fields),
+            passages=[
+                DriftedPassageResponse(
+                    chunk_id=each.passage.id,
+                    version_id=each.passage.document_version_id or "",
+                    location=each.passage.location,
+                    text=each.passage.text,
+                    outdated=each.outdated,
+                )
+                for each in item.passages
+            ],
+            more=item.more,
+        )
+        for item in review.drift(release_id, actor)
+    ]
+
+
+@router.put("/releases/{release_id}/outdated-passages", response_model=KnowledgeReleaseResponse)
+def put_outdated_passages(
+    release_id: str,
+    body: OutdatedPassagesRequest,
+    knowledge: KnowledgeDep,
+    actor: KnowledgeActorDep,
+) -> KnowledgeReleaseResponse:
+    """Replace the draft's outdated passages: each stays readable, never searched."""
+    return KnowledgeReleaseResponse.from_domain(
+        knowledge.mark_outdated(
+            release_id,
+            body.expected_revision,
+            tuple(OutdatedPassage(item.version_id, item.location) for item in body.passages),
+            actor,
+        )
+    )
+
+
 @router.post(
     "/releases/{release_id}/build",
     response_model=ArchitectureJobResponse,
@@ -409,6 +592,8 @@ async def upload_document(
     title: Annotated[str, Form()],
     language: Annotated[str, Form()],
     expected_revision: Annotated[int, Form()],
+    # A version the draft holds that this upload replaces, as its next version.
+    replaces: Annotated[str | None, Form()] = None,
 ) -> KnowledgeReleaseResponse:
     # One byte past the limit is enough for validation to reject an oversized
     # file without buffering the rest of an arbitrarily large body.
@@ -424,6 +609,7 @@ async def upload_document(
             content,
             actor,
             clock.now(),
+            replaces=replaces or None,
         )
     )
 

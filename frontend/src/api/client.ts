@@ -124,6 +124,9 @@ export type CorpusFilters = {
 export type FindingFilters = { kind?: FindingKind; age?: FindingAge; ownerId?: string };
 type CitedPassage = Schemas["DocumentPassageResponse"];
 export type CatalogueDocument = Schemas["KnowledgeDocumentVersionResponse"];
+export type OrphanedFact = Schemas["OrphanedFactResponse"];
+export type DriftItem = Schemas["DriftItemResponse"];
+export type OutdatedPassage = Schemas["OutdatedPassageSchema"];
 export type DocumentLanguage = "en" | "ar" | "mixed";
 export type Person = Schemas["PersonSchema"];
 export type ValueStream = Schemas["ValueStreamSchema"];
@@ -273,6 +276,15 @@ export const api = {
   /** What changed from `base` to this release; from the version in service when no base is given. */
   releaseChanges: (releaseId: string, base?: string) =>
     apiRequest<CatalogueDiff>(`${releasePath(releaseId)}/changes${base ? `?${new URLSearchParams({ base })}` : ""}`),
+  /** Every catalogue document version ever uploaded, published or not. */
+  documentVersions: () => apiRequest<CatalogueDocument[]>("/architecture-knowledge/documents"),
+  /** Facts the version holds whose every source document has left it. */
+  provenance: (releaseId: string) => apiRequest<OrphanedFact[]>(`${releasePath(releaseId)}/provenance`),
+  /** What the version changes or removes, with the document passages that name it. */
+  drift: (releaseId: string) => apiRequest<DriftItem[]>(`${releasePath(releaseId)}/drift`),
+  /** The draft's whole list of outdated passages: each stays readable, never searched. */
+  setOutdatedPassages: (releaseId: string, body: { expected_revision: number; passages: OutdatedPassage[] }) =>
+    apiRequest<Release>(`${releasePath(releaseId)}/outdated-passages`, { method: "PUT", body: JSON.stringify(body) }),
   /** Puts a published version back in service. */
   activateRelease: (releaseId: string, rationale: string) =>
     post<Release>(`${releasePath(releaseId)}/activate`, { rationale }),
@@ -285,12 +297,17 @@ export const api = {
   discardDraft: async (releaseId: string, expectedRevision: number) => {
     await send(releasePath(releaseId), { method: "DELETE", body: JSON.stringify({ expected_revision: expectedRevision }) });
   },
-  addCatalogueDocument: (releaseId: string, input: { file: File; title: string; language: DocumentLanguage; expectedRevision: number }) => {
+  /** A document, or with `replaces` a new version of one the draft holds, which takes its place. */
+  addCatalogueDocument: (
+    releaseId: string,
+    input: { file: File; title: string; language: DocumentLanguage; expectedRevision: number; replaces?: string },
+  ) => {
     const body = new FormData();
     body.set("file", input.file);
     body.set("title", input.title);
     body.set("language", input.language);
     body.set("expected_revision", String(input.expectedRevision));
+    if (input.replaces) body.set("replaces", input.replaces);
     return apiRequest<Release>(`${releasePath(releaseId)}/documents`, { method: "POST", body });
   },
   /** Several files at once: each is added or refused with its reason. */

@@ -302,9 +302,17 @@ class _Recording(InMemoryEvidenceIndex):
         super().__init__(FakeEmbeddings(), ApproximateTokenizer())
         self.chunks: tuple[EvidenceChunk, ...] = ()
 
-    def store(self, release_id: str, index_id: str, chunks: tuple[EvidenceChunk, ...]) -> None:
-        self.chunks = chunks
-        super().store(release_id, index_id, chunks)
+    def store(
+        self,
+        release_id: str,
+        index_id: str,
+        chunks: tuple[EvidenceChunk, ...],
+        members: tuple[str, ...] = (),
+        outdated: tuple[str, ...] = (),
+    ) -> None:
+        # The index's chunks: its own and those of the chunk sets it reads.
+        self.chunks = (*chunks, *(item for key in members for item in self.chunk_set(key) or ()))
+        super().store(release_id, index_id, chunks, members, outdated)
 
 
 def test_evidence_walks_the_journey_with_the_system_at_each_step() -> None:

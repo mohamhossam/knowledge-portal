@@ -259,3 +259,76 @@ def test_section_v4_parents_are_stored_unembedded_and_never_searched() -> None:
             (index_id,),
         ).fetchone()
     assert row is not None and row[0] is True
+
+
+def test_a_chunk_set_is_stored_once_shared_pruned_and_collected() -> None:
+    assert DATABASE_URL is not None
+    run_migrations(DATABASE_URL)
+    index = PostgresEvidenceIndex(
+        DirectPostgresConnector(DATABASE_URL),
+        FakeEmbeddings(),
+        FakeWordTokenizer(),
+        set_grace_minutes=0,
+    )
+    repository = PostgresArchitectureKnowledgeRepository(
+        DirectPostgresConnector(DATABASE_URL), seed_knowledge()
+    )
+    actor = Actor("knowledge-editor", frozenset({"knowledge_maintainer"}))
+    knowledge = ManageArchitectureKnowledge(repository, CatalogueFileAdapter(), index, 10_000_000)
+    release = _fresh_draft(knowledge, actor)
+    key = f"document:{uuid4().hex}"
+    passage = EvidenceChunk("p1", "Notes", "lines 1-1", "Notes\nCWOM validates orders", "doc-9")
+    assert index.chunk_set(key) is None
+    index.store_set(key, (passage,))
+    index.store_set(key, (EvidenceChunk("p2", "Notes", "x", "ignored", "doc-9"),))
+    assert index.chunk_set(key) == (passage,)
+    first, second = uuid4().hex, uuid4().hex
+    index.store(release.id, first, (), (key,))
+    index.store(release.id, second, (), (key,))
+    assert [item.id for item in index.retrieve(second, "CWOM validates", 3)] == ["p1"]
+    assert index.get(first, "p1") == passage
+    # Pruning keeps the newest build; the set is still read by it, so it stays.
+    index.prune(release.id, second)
+    assert index.retrieve(first, "CWOM validates", 3) == ()
+    index.collect()
+    assert index.chunk_set(key) == (passage,)
+    # Once nothing reads it, it is collected.
+    index.prune(release.id, "")
+    index.collect()
+    assert index.chunk_set(key) is None
+    knowledge.discard_draft(release.id, release.revision, actor)
+
+
+def test_outdated_passages_are_read_but_never_searched() -> None:
+    assert DATABASE_URL is not None
+    run_migrations(DATABASE_URL)
+    index = PostgresEvidenceIndex(
+        DirectPostgresConnector(DATABASE_URL), FakeEmbeddings(), FakeWordTokenizer()
+    )
+    repository = PostgresArchitectureKnowledgeRepository(
+        DirectPostgresConnector(DATABASE_URL), seed_knowledge()
+    )
+    actor = Actor("knowledge-editor", frozenset({"knowledge_maintainer"}))
+    knowledge = ManageArchitectureKnowledge(repository, CatalogueFileAdapter(), index, 10_000_000)
+    release = _fresh_draft(knowledge, actor)
+    key = f"document:{uuid4().hex}"
+    kept = EvidenceChunk("k1", "Notes", "paragraph 1", "Notes\nCWOM validates orders", "doc-7")
+    parent = EvidenceChunk(
+        "p1", "Notes", "paragraphs 2–3", "Notes\nBCRM takes orders", "doc-7", role=ChunkRole.PARENT
+    )
+    child = EvidenceChunk(
+        "c1",
+        "Notes",
+        "paragraph 2",
+        "Notes\nBCRM takes orders",
+        "doc-7",
+        role=ChunkRole.CHILD,
+        parent_id="p1",
+    )
+    index.store_set(key, (kept, parent, child))
+    index_id = uuid4().hex
+    index.store(release.id, index_id, (), (key,), ("p1",))
+    assert [item.id for item in index.retrieve(index_id, "BCRM takes orders", 5)] == ["k1"]
+    assert index.get(index_id, "c1") == child
+    assert {item.id for item in index.passages(index_id)} == {"k1", "p1"}
+    knowledge.discard_draft(release.id, release.revision, actor)

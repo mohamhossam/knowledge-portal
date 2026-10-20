@@ -370,7 +370,7 @@ export function OfferingEdit({ onDone }: { onDone: (saved?: string) => void }) {
   const [value, setValue] = useState<Offering>(
     () => ({
       id: "", name: "", rules: [], order_types: [], components: [], values: [], audiences: [], nfrs: [], lifecycle_notes: [],
-      sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [],
+      sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [], former_ids: [],
     }),
   );
   const products = release.products ?? [];
@@ -443,7 +443,7 @@ export function JourneyEdit({ journey, onDone }: { journey?: Journey; onDone: (s
   const release = book.release;
   const { saveDraft } = useEditing(release);
   const [value, setValue] = useState<Journey>(
-    () => journey ?? { id: "", name: "", activities: [], flow_rules: [], integrations: [], edges: [], channel_edges: [], shared_edges: [] },
+    () => journey ?? { id: "", name: "", activities: [], flow_rules: [], integrations: [], edges: [], channel_edges: [], shared_edges: [], former_ids: [] },
   );
   const journeys = release.journeys ?? [];
   return (

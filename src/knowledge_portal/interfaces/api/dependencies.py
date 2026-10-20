@@ -66,6 +66,7 @@ from knowledge_portal.application.use_cases.requirement_corpus import (
     ReadRequirementCorpus,
 )
 from knowledge_portal.application.use_cases.source_impact import DocumentSourceImpact
+from knowledge_portal.application.use_cases.source_review import ReviewSources
 from knowledge_portal.domain.identity.entities import ActorProfile
 from knowledge_portal.infrastructure.config.options import IdentityProvider
 from knowledge_portal.interfaces.api.container import Container
@@ -254,6 +255,10 @@ def get_read_knowledge_document(container: ContainerDep) -> ReadKnowledgeDocumen
 
 def get_preview_architecture_impact(container: ContainerDep) -> PreviewArchitectureImpact:
     return container.preview_architecture_impact
+
+
+def get_review_sources(container: ContainerDep) -> ReviewSources:
+    return container.review_sources
 
 
 def get_manage_sample_requirements(container: ContainerDep) -> ManageSampleRequirements:

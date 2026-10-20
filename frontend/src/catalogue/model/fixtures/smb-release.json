@@ -3228,7 +3228,8 @@
      "confidence": "confirmed",
      "source": "SDD v2.3 · §P1 FortiPortal Access; §P2 ADO 259161"
     }
-   ]
+   ],
+   "former_ids": []
   }
  ],
  "journeys": [
@@ -4668,6 +4669,7 @@
    ],
    "confidence": "confirmed",
    "source": "SMB reference v1.0 · §3.1; SDD v2.3 · §P1",
+   "former_ids": [],
    "edges": [
     {
      "from_activity": "10",
@@ -6598,6 +6600,7 @@
    ],
    "confidence": "confirmed",
    "source": "SDD v2.3 · §P2 ADO 81197; §P3 ADO 81961; §P4 Pending Order Validation; §P4 Enhancements 1871663, 1873844; §ADO 438907",
+   "former_ids": [],
    "edges": [
     {
      "from_activity": "10",
@@ -7421,6 +7424,7 @@
    ],
    "confidence": "confirmed",
    "source": "SDD v2.3 · §BPM; §TIBCO",
+   "former_ids": [],
    "edges": [
     {
      "from_activity": "10",
@@ -8547,6 +8551,7 @@
    ],
    "confidence": "confirmed",
    "source": "SDD v2.3 · §P1 Legacy Migration; §P3 ADO 202824; Feasibility US 202815, 202817",
+   "former_ids": [],
    "edges": [
     {
      "from_activity": "10",
@@ -9682,6 +9687,7 @@
    ],
    "confidence": "confirmed",
    "source": "SDD v2.3 · §P2 ADO 259161; §P4 ADO 288752; §ADO 438907",
+   "former_ids": [],
    "edges": [
     {
      "from_activity": "10",
@@ -10703,6 +10709,7 @@
    ],
    "confidence": "confirmed",
    "source": "SDD v2.3 · §P3 ADO 202826 (External Shift of Site); §P4 Enhancement 1873844",
+   "former_ids": [],
    "edges": [
     {
      "from_activity": "10",
@@ -11427,6 +11434,7 @@
    ],
    "confidence": "confirmed",
    "source": "SDD v2.3 · §P3 ADO 259162; §P4 Enhancement 1873844; General Highlights (Dunning)",
+   "former_ids": [],
    "edges": [
     {
      "from_activity": "10",
@@ -12041,6 +12049,7 @@
    ],
    "confidence": "confirmed",
    "source": "SDD v2.3 · §P3 ADO 202826 (Port In & Port Out); §ADO 470510",
+   "former_ids": [],
    "edges": [
     {
      "from_activity": "10",
@@ -12682,6 +12691,7 @@
    ],
    "confidence": "confirmed",
    "source": "SDD v2.3 · §P3 ADO 202826 (Port In & Port Out); §ADO 470510",
+   "former_ids": [],
    "edges": [
     {
      "from_activity": "10",
@@ -13302,6 +13312,7 @@
    ],
    "confidence": "confirmed",
    "source": "SDD v2.3 · §P4 ADO 289225; §ADO 438907 US 438912; §P4 Enhancement 1871663",
+   "former_ids": [],
    "edges": [
     {
      "from_activity": "10",
@@ -13947,6 +13958,7 @@
    ],
    "confidence": "confirmed",
    "source": "SDD v2.3 · §P4 ADO 420619; §P4 ADO 198968",
+   "former_ids": [],
    "edges": [
     {
      "from_activity": "10",
@@ -14472,6 +14484,7 @@
    ],
    "confidence": "confirmed",
    "source": "SDD v2.3 · §P4 Pending Order Validation; §P4 ADO 324570; §P4 ADO 198968",
+   "former_ids": [],
    "edges": [
     {
      "from_activity": "10",
@@ -14858,6 +14871,7 @@
    ],
    "confidence": "confirmed",
    "source": "SDD v2.3 · §P4 ADO 288756; §P4 Pending Order Validation",
+   "former_ids": [],
    "edges": [
     {
      "from_activity": "10",
@@ -15208,6 +15222,7 @@
    ],
    "confidence": "confirmed",
    "source": "SDD v2.3 · §P4 ADO 288754; §P4 Pending Order Validation",
+   "former_ids": [],
    "edges": [
     {
      "from_activity": "10",
@@ -15558,6 +15573,7 @@
    ],
    "confidence": "confirmed",
    "source": "SDD v2.3 · §P4 ADO 288753; §P4 Pending Order Validation",
+   "former_ids": [],
    "edges": [
     {
      "from_activity": "10",
@@ -15908,6 +15924,7 @@
    ],
    "confidence": "confirmed",
    "source": "SDD v2.3 · §P4 ADO 290747; §P4 Pending Order Validation",
+   "former_ids": [],
    "edges": [
     {
      "from_activity": "10",
@@ -16258,6 +16275,7 @@
    ],
    "confidence": "confirmed",
    "source": "SDD v2.3 · §P4 ADO 288755; §P4 Pending Order Validation",
+   "former_ids": [],
    "edges": [
     {
      "from_activity": "10",
@@ -16608,6 +16626,7 @@
    ],
    "confidence": "confirmed",
    "source": "SDD v2.3 · §P4 ADO 324564; §P4 Pending Order Validation",
+   "former_ids": [],
    "edges": [
     {
      "from_activity": "10",
@@ -16958,6 +16977,7 @@
    ],
    "confidence": "confirmed",
    "source": "SDD v2.3 · §P4 ADO 290746; §P4 Pending Order Validation",
+   "former_ids": [],
    "edges": [
     {
      "from_activity": "10",
@@ -17352,6 +17372,7 @@
    ],
    "confidence": "confirmed",
    "source": "SDD v2.3 · §P4 ADO 324568; §P4 Pending Order Validation",
+   "former_ids": [],
    "edges": [
     {
      "from_activity": "10",
@@ -19807,5 +19828,6 @@
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)"
   }
- ]
+ ],
+ "outdated_passages": []
 }

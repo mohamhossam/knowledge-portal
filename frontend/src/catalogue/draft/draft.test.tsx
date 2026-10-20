@@ -43,14 +43,16 @@ const SUGGESTIONS = [
 /** A draft's step, inside the catalogue's own frame, as the app routes it. */
 function renderStep(
   step: string,
-  { release = draft(), suggestions = SUGGESTIONS, extractions = [] }: { release?: Release; suggestions?: Suggestion[]; extractions?: DocumentExtraction[] } = {},
+  { release = draft(), suggestions = SUGGESTIONS, extractions = [], runs = [] }: {
+    release?: Release; suggestions?: Suggestion[]; extractions?: DocumentExtraction[]; runs?: object[];
+  } = {},
 ) {
   vi.spyOn(api, "activeRelease").mockResolvedValue(null);
   vi.spyOn(api, "release").mockResolvedValue(release);
   vi.spyOn(api, "releases").mockResolvedValue([release]);
   vi.spyOn(api, "knownActors").mockResolvedValue([{ id: "fake-owner", display_name: "Amina Owner" }] as never);
   vi.spyOn(api, "changeRequests").mockResolvedValue([]);
-  vi.spyOn(api, "suggestions").mockResolvedValue({ release_id: "d", release_revision: release.revision, suggestions, runs: [] } as never);
+  vi.spyOn(api, "suggestions").mockResolvedValue({ release_id: "d", release_revision: release.revision, suggestions, runs } as never);
   vi.spyOn(api, "extractions").mockResolvedValue(extractions);
   vi.spyOn(api, "buildJob").mockResolvedValue(null);
   vi.spyOn(api, "releaseChanges").mockResolvedValue({
@@ -61,6 +63,9 @@ function renderStep(
     active_release_id: "live", requirements: 7, features: 0, stories: 0, outdated_requirements: 2, outdated_features: 0, outdated_stories: 0,
   });
   vi.spyOn(api, "samples").mockResolvedValue({ revision: 1, updated_at: null, updated_by: null, items: [{ id: "s1", text: "Order Hub takes orders" }] });
+  if (!vi.isMockFunction(api.provenance)) vi.spyOn(api, "provenance").mockResolvedValue([]);
+  if (!vi.isMockFunction(api.drift)) vi.spyOn(api, "drift").mockResolvedValue([]);
+  vi.spyOn(api, "documentVersions").mockResolvedValue([]);
   let revision = release.revision;
   const decide = vi.spyOn(api, "decide").mockImplementation(async () => ({ ...release, revision: ++revision }) as Release);
   render(
@@ -244,7 +249,55 @@ describe("Decide", () => {
   });
 });
 
+describe("Check: sources and drift", () => {
+  it("lists facts whose sources left, and marks a passage about a changed system outdated", async () => {
+    vi.spyOn(api, "provenance").mockResolvedValue([
+      { kind: "constraint", subject: "cwom", label: "Constraint of cwom: Nights only", sources: [{ version_id: "v0", title: "Old design" }] },
+    ] as never);
+    vi.spyOn(api, "drift").mockResolvedValue([{
+      item: "system", key: "bcrm", label: "BCRM", change: "changed", fields: ["description"], more: 0,
+      passages: [{ chunk_id: "c1", version_id: "v1", location: "paragraph 4", text: "Design\nBCRM captures assisted sales.", outdated: false }],
+    }] as never);
+    const save = vi.spyOn(api, "setOutdatedPassages").mockResolvedValue(draft({ revision: 4 }));
+    renderStep("check");
+    const facts = await screen.findByRole("list", { name: "Facts whose sources left this version" });
+    expect(within(facts).getByText(/Constraint of cwom: Nights only/)).toBeInTheDocument();
+    expect(within(facts).getByText(/from ‘Old design’/)).toBeInTheDocument();
+    expect(await screen.findByText("BCRM captures assisted sales.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Mark it outdated" }));
+    await waitFor(() => expect(save).toHaveBeenCalledWith("d", { expected_revision: 3, passages: [{ version_id: "v1", location: "paragraph 4" }] }));
+  });
+});
+
 describe("Sources", () => {
+  it("uploads a new version of a document in its place", async () => {
+    const added = vi.spyOn(api, "addCatalogueDocument").mockResolvedValue(
+      draft({ revision: 4, documents: [{ id: "v2", title: "Integration design", filename: "design-2.txt", language: "en", mime_type: "text/plain", uploaded_by: "fake-owner", supersedes: "v1", document_id: "v1" }] } as never),
+    );
+    vi.spyOn(api, "readCatalogueDocument").mockResolvedValue({} as never);
+    renderStep("sources");
+    fireEvent.click(await screen.findByRole("button", { name: "Add a new version of Integration design…" }));
+    const form = await screen.findByRole("form", { name: "Upload the new version of Integration design" });
+    fireEvent.change(within(form).getByLabelText(/^File/), { target: { files: [new File(["v2"], "design-2.txt", { type: "text/plain" })] } });
+    fireEvent.click(within(form).getByRole("button", { name: "Use this version and read it" }));
+    await waitFor(() => expect(added).toHaveBeenCalledWith("d", expect.objectContaining({ replaces: "v1", title: "Integration design" })));
+  });
+
+  it("lists what the catalogue took from an earlier version that the new one no longer says", async () => {
+    renderStep("sources", {
+      suggestions: [],
+      release: draft({ documents: [{ id: "v2", title: "Integration design", filename: "design-2.txt", language: "en", mime_type: "text/plain", uploaded_by: "fake-owner", supersedes: "v1", document_id: "v1" }] } as never),
+      runs: [{
+        id: "r1", document_version_id: "v2", model: "fake", prompt_version: "1", candidate_count: 0, warnings: [], created_at: "",
+        match_model: null, match_prompt_version: null,
+        no_longer_stated: [{ kind: "constraint", subject: "cwom", label: "Constraint of cwom: Nights only", location: "line 3", quote: "Nights only" }],
+      }],
+    });
+    const list = await screen.findByRole("list", { name: "No longer said in this version of Integration design; still in the catalogue" });
+    expect(within(list).getByText(/Constraint of cwom: Nights only/)).toBeInTheDocument();
+    expect(screen.getByText("A new version: it took an earlier version's place")).toBeInTheDocument();
+  });
+
   it("adds several documents in one go and says what became of each", async () => {
     const files = [new File(["# Billing"], "billing.md", { type: "text/markdown" }), new File(["CRM"], "crm.txt", { type: "text/plain" })];
     vi.spyOn(api, "addCatalogueDocuments").mockResolvedValue({

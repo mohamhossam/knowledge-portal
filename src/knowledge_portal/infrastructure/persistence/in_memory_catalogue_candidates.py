@@ -43,6 +43,23 @@ class InMemoryCatalogueCandidates:
                 item for item in self._candidates.values() if item.release_id == release_id
             )
 
+    def accepted(self) -> tuple[CatalogueCandidate, ...]:
+        with self._lock:
+            return tuple(
+                item
+                for item in self._candidates.values()
+                if item.status is CandidateStatus.ACCEPTED
+            )
+
+    def accepted_from(self, document_version_id: str) -> tuple[CatalogueCandidate, ...]:
+        with self._lock:
+            return tuple(
+                item
+                for item in self._candidates.values()
+                if item.document_version_id == document_version_id
+                and item.status is CandidateStatus.ACCEPTED
+            )
+
     def get(self, candidate_id: str) -> CatalogueCandidate | None:
         with self._lock:
             return self._candidates.get(candidate_id)
