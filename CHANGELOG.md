@@ -7,6 +7,18 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- Section-v4 catalogue chunking, built beside section-v3 and off by default
+  (`ARCHITECTURE_INDEX_VERSION=section-v4`; `docs/architecture/adr-section-v4-chunking.md`): a
+  document is indexed as sections and tables the reasoner reads, searched through their
+  paragraphs, sentence groups and rows; the assessment reads each matched section once and caps
+  per section rather than per document; passages are linked to the catalogue systems and
+  offerings they name, shown on the evidence page. Under every version the Word reader now reads
+  text inside content controls (as "control N, paragraph M"; tables of contents left out) and
+  records numbering, list depth, title and caption beside the text. Contracts, additive: the
+  evidence read gains `role`, `aliases` and `mentions`, the preview `focus`, and the internal
+  `EvidenceChunk` `role`, `parent_id`, `aliases` and `focus`: requirement-portal should review
+  it. Migration `202610201000_chunk_parents`.
+
 - The Golden set report (Catalogue › Golden set): run the impact mapper over the catalogue's
   golden set in the background, keep each run, and read it: scores in three groups with the counts
   and range behind each and the floor it is held to, a verdict table, every case at a glance,

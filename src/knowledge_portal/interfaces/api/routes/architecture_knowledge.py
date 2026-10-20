@@ -479,12 +479,29 @@ def get_evidence(
     release_id: str, chunk_id: str, knowledge: KnowledgeDep, actor: KnowledgeActorDep
 ) -> dict[str, object]:
     chunk = knowledge.evidence(release_id, chunk_id, actor)
+    release = knowledge.get(release_id)
+    names = {
+        **{("system", item.id): item.name for item in release.systems},
+        **{("offering", item.id): item.name for item in release.products},
+    }
     return {
         "id": chunk.id,
         "source_label": chunk.source_label,
         "location": chunk.location,
         "text": chunk.text,
         "document_version_id": chunk.document_version_id,
+        # ADR section-v4: what the passage is, where else its text appears, and the
+        # catalogue systems and offerings it names.
+        "role": chunk.role.value,
+        "aliases": list(chunk.aliases),
+        "mentions": [
+            {
+                "entity": item.entity.value,
+                "entity_id": item.entity_id,
+                "name": names.get((item.entity.value, item.entity_id), item.entity_id),
+            }
+            for item in knowledge.named_in(release_id, chunk_id, actor)
+        ],
     }
 
 
@@ -498,6 +515,8 @@ def preview_release(
             "source_label": chunk.source_label,
             "location": chunk.location,
             "text": chunk.text,
+            # For a section read because one of its children matched: which child.
+            "focus": chunk.focus,
         }
         for chunk in knowledge.preview(release_id, body.query, actor)
     ]

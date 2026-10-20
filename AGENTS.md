@@ -543,7 +543,12 @@ A task is complete only when:
 
 ## 19. Outstanding Architectural Debt
 
-None recorded yet.
+- **Section-v4 is unmeasured** (`docs/architecture/adr-section-v4-chunking.md`). It is built and
+  selectable, but the default stays section-v3 until the Golden set report compares both with
+  live models. Owner: catalogue maintainers.
+- **Catalogue uploads: embedded Office parts and figure text are not indexed**, PDFs are read
+  page by page without layout, and catalogue uploads are not malware-scanned as library uploads
+  are. Carried from the chunking proposal; not in the section-v4 slice.
 
 ---
 

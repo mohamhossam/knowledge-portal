@@ -143,7 +143,19 @@ type ChangeRequestReading = Schemas["ChangeRequestReadingResponse"];
 /** A change request applied to a version, in its change history. */
 export type ChangeRecord = Schemas["ChangeRequestRecordSchema"];
 /** One passage the draft's index holds, cited as evidence for a system. */
-type Evidence = { id: string; source_label: string; location: string; text: string; document_version_id?: string | null };
+type Evidence = {
+  id: string;
+  source_label: string;
+  location: string;
+  text: string;
+  document_version_id?: string | null;
+  /** ADR section-v4: "parent" for a section read whole, "whole" for older indexes. */
+  role?: "whole" | "child" | "parent";
+  /** Other places in the same document with exactly this text, indexed once. */
+  aliases?: string[];
+  /** The catalogue systems and offerings the passage names. */
+  mentions?: { entity: "system" | "offering"; entity_id: string; name: string }[];
+};
 /** What this draft would map a requirement to, with the evidence behind each system. */
 type ImpactPreview = {
   release_id: string;

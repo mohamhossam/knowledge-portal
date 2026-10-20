@@ -11,6 +11,7 @@ from knowledge_portal.application.errors import PersistenceError
 from knowledge_portal.application.ports.architecture_rag import (
     ChunkConceptLink,
     ChunkEntityLink,
+    ChunkRole,
     ConceptBasis,
     ConceptMatch,
     EmbeddingPort,
@@ -18,10 +19,28 @@ from knowledge_portal.application.ports.architecture_rag import (
     EvidenceChunk,
     IndexCoverage,
     IndexLinks,
+    IndexVersion,
     LinkedEntity,
 )
 from knowledge_portal.application.ports.architecture_tokenizer import ArchitectureTokenizerPort
-from knowledge_portal.infrastructure.architecture.evidence_index import INDEX_VERSION, readable
+from knowledge_portal.infrastructure.architecture.evidence_index import index_profile, readable
+
+_COLUMNS = (
+    "chunk_id, source_label, location, content, document_version_id, role, parent_id, aliases"
+)
+
+
+def _chunk(row: tuple[object, ...]) -> EvidenceChunk:
+    return EvidenceChunk(
+        str(row[0]),
+        str(row[1]),
+        str(row[2]),
+        str(row[3]),
+        str(row[4]) if row[4] is not None else None,
+        role=ChunkRole(str(row[5])),
+        parent_id=str(row[6]) if row[6] is not None else None,
+        aliases=tuple(str(item) for item in row[7]) if isinstance(row[7], list) else (),
+    )
 
 
 def _hash(text: str) -> str:
@@ -34,10 +53,12 @@ class PostgresEvidenceIndex:
         connector: PostgresConnector,
         embeddings: EmbeddingPort,
         tokenizer: ArchitectureTokenizerPort,
+        version: IndexVersion = IndexVersion.SECTION_V3,
     ) -> None:
         self._connector = connector
         self._embeddings = embeddings
         self._tokenizer = tokenizer
+        self._version = version
 
     @property
     def embedding_model(self) -> str:
@@ -45,7 +66,11 @@ class PostgresEvidenceIndex:
 
     @property
     def profile(self) -> str:
-        return f"{self._embeddings.model}:{self._tokenizer.profile}:{INDEX_VERSION}"
+        return index_profile(self._embeddings.model, self._tokenizer.profile, self._version)
+
+    @property
+    def version(self) -> IndexVersion:
+        return self._version
 
     def reads(self, profile: str | None) -> bool:
         return readable(profile, self.profile)
@@ -103,7 +128,10 @@ class PostgresEvidenceIndex:
 
     def store(self, release_id: str, index_id: str, chunks: tuple[EvidenceChunk, ...]) -> None:
         """Store an index, embedding only passage texts this model has not embedded before."""
-        vectors = self._cached(tuple(chunk.text for chunk in chunks))
+        # A parent is read, never searched, so it is stored without an embedding.
+        vectors = self._cached(
+            tuple(chunk.text for chunk in chunks if chunk.role is not ChunkRole.PARENT)
+        )
         try:
             with self._connector.connection() as connection:
                 connection.execute(
@@ -115,7 +143,8 @@ class PostgresEvidenceIndex:
                     connection.execute(
                         "INSERT INTO architecture_knowledge_chunks "
                         "(index_id, chunk_id, document_version_id, source_label, location, "
-                        "content, embedding) VALUES (%s, %s, %s, %s, %s, %s, %s::vector)",
+                        "content, embedding, role, parent_id, aliases) "
+                        "VALUES (%s, %s, %s, %s, %s, %s, %s::vector, %s, %s, %s)",
                         (
                             index_id,
                             chunk.id,
@@ -123,7 +152,10 @@ class PostgresEvidenceIndex:
                             chunk.source_label,
                             chunk.location,
                             chunk.text,
-                            vectors[_hash(chunk.text)],
+                            None if chunk.role is ChunkRole.PARENT else vectors[_hash(chunk.text)],
+                            chunk.role.value,
+                            chunk.parent_id,
+                            list(chunk.aliases),
                         ),
                     )
         except psycopg.Error as exc:
@@ -140,13 +172,14 @@ class PostgresEvidenceIndex:
                         ORDER BY ts_rank_cd(search_text, plainto_tsquery('simple', %s)) DESC
                       ) AS rank
                       FROM architecture_knowledge_chunks
-                      WHERE index_id = %s
+                      WHERE index_id = %s AND role <> 'parent'
                         AND search_text @@ plainto_tsquery('simple', %s)
                       ORDER BY ts_rank_cd(search_text, plainto_tsquery('simple', %s)) DESC
                       LIMIT 20
                     ), semantic AS (
                       SELECT chunk_id, row_number() OVER (ORDER BY embedding <=> %s::vector) AS rank
-                      FROM architecture_knowledge_chunks WHERE index_id = %s
+                      FROM architecture_knowledge_chunks
+                      WHERE index_id = %s AND role <> 'parent'
                       ORDER BY embedding <=> %s::vector LIMIT 20
                     ), ranked AS (
                       SELECT chunk_id, sum(score) AS score FROM (
@@ -156,7 +189,7 @@ class PostgresEvidenceIndex:
                       ) results GROUP BY chunk_id
                     )
                     SELECT c.chunk_id, c.source_label, c.location, c.content,
-                           c.document_version_id
+                           c.document_version_id, c.role, c.parent_id, c.aliases
                     FROM ranked r JOIN architecture_knowledge_chunks c
                       ON c.index_id = %s AND c.chunk_id = r.chunk_id
                     ORDER BY r.score DESC LIMIT %s
@@ -173,38 +206,21 @@ class PostgresEvidenceIndex:
                         limit,
                     ),
                 ).fetchall()
-            return tuple(
-                EvidenceChunk(
-                    str(row[0]),
-                    str(row[1]),
-                    str(row[2]),
-                    str(row[3]),
-                    str(row[4]) if row[4] is not None else None,
-                )
-                for row in rows
-            )
         except psycopg.Error as exc:
             raise PersistenceError("Architecture evidence retrieval failed.") from exc
+        return tuple(_chunk(row) for row in rows)
 
     def get(self, index_id: str, chunk_id: str) -> EvidenceChunk | None:
         try:
             with self._connector.connection() as connection:
                 row = connection.execute(
-                    "SELECT chunk_id, source_label, location, content, document_version_id "
-                    "FROM architecture_knowledge_chunks WHERE index_id = %s AND chunk_id = %s",
+                    f"SELECT {_COLUMNS} FROM architecture_knowledge_chunks "
+                    "WHERE index_id = %s AND chunk_id = %s",
                     (index_id, chunk_id),
                 ).fetchone()
-            if row is None:
-                return None
-            return EvidenceChunk(
-                str(row[0]),
-                str(row[1]),
-                str(row[2]),
-                str(row[3]),
-                str(row[4]) if row[4] is not None else None,
-            )
         except psycopg.Error as exc:
             raise PersistenceError("Architecture evidence read failed.") from exc
+        return None if row is None else _chunk(row)
 
     def system_chunk(self, index_id: str, system_id: str) -> EvidenceChunk | None:
         try:
@@ -357,7 +373,7 @@ class PostgresEvidenceIndex:
                       FROM architecture_knowledge_chunks c
                       JOIN architecture_chunk_concepts l
                         ON l.index_id = c.index_id AND l.chunk_id = c.chunk_id
-                      WHERE c.index_id = %s AND l.concept_id = ANY(%s)
+                      WHERE c.index_id = %s AND c.role <> 'parent' AND l.concept_id = ANY(%s)
                     ), lexical AS (
                       SELECT chunk_id, row_number() OVER (
                         ORDER BY ts_rank_cd(search_text, plainto_tsquery('simple', %s)) DESC
@@ -376,7 +392,7 @@ class PostgresEvidenceIndex:
                       ) results GROUP BY chunk_id
                     )
                     SELECT c.chunk_id, c.source_label, c.location, c.content,
-                           c.document_version_id
+                           c.document_version_id, c.role, c.parent_id, c.aliases
                     FROM ranked r JOIN architecture_knowledge_chunks c
                       ON c.index_id = %s AND c.chunk_id = r.chunk_id
                     ORDER BY r.score DESC LIMIT %s
@@ -395,16 +411,7 @@ class PostgresEvidenceIndex:
                 ).fetchall()
         except psycopg.Error as exc:
             raise PersistenceError("Architecture evidence retrieval failed.") from exc
-        return tuple(
-            EvidenceChunk(
-                str(row[0]),
-                str(row[1]),
-                str(row[2]),
-                str(row[3]),
-                str(row[4]) if row[4] is not None else None,
-            )
-            for row in rows
-        )
+        return tuple(_chunk(row) for row in rows)
 
     def coverage(self, index_id: str) -> IndexCoverage | None:
         try:
@@ -422,7 +429,8 @@ class PostgresEvidenceIndex:
                       SELECT 1 FROM architecture_chunk_concepts l
                       WHERE l.index_id = c.index_id AND l.chunk_id = c.chunk_id
                     ))
-                    FROM architecture_knowledge_chunks c WHERE c.index_id = %s
+                    FROM architecture_knowledge_chunks c
+                    WHERE c.index_id = %s AND c.role <> 'parent'
                     """,
                     (index_id,),
                 ).fetchone() or (0, 0)

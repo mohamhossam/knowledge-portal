@@ -20,6 +20,7 @@ from knowledge_portal.application.ports.architecture_knowledge_repository import
 from knowledge_portal.application.ports.architecture_rag import (
     ArchitectureEvidenceIndexPort,
     EmbeddingPort,
+    IndexVersion,
 )
 from knowledge_portal.application.ports.architecture_tokenizer import ArchitectureTokenizerPort
 from knowledge_portal.application.ports.catalogue_candidates import (
@@ -176,6 +177,7 @@ def build_persistence(
         architecture_embeddings,
         architecture_tokenizer,
         timedelta(days=settings.knowledge_review_cycle_days),
+        settings.architecture_index_version,
     )
 
 
@@ -213,7 +215,10 @@ def _postgres(
         change_requests=PostgresChangeRequests(connector),
         precedents=PostgresPrecedents(connector),
         architecture_evidence_index=PostgresEvidenceIndex(
-            connector, architecture_embeddings, architecture_tokenizer
+            connector,
+            architecture_embeddings,
+            architecture_tokenizer,
+            settings.architecture_index_version,
         ),
         architecture_job_repository=PostgresArchitectureJobs(connector),
         library_repository=PublishingDocumentLibrary(
@@ -240,6 +245,7 @@ def _memory(
     architecture_embeddings: EmbeddingPort,
     architecture_tokenizer: ArchitectureTokenizerPort,
     review_cycle: timedelta,
+    index_version: IndexVersion,
 ) -> PersistenceAdapters:
     lock = RLock()
     events = InMemoryKnowledgeEvents(lock)
@@ -264,7 +270,7 @@ def _memory(
         change_requests=InMemoryChangeRequests(),
         precedents=InMemoryPrecedents(),
         architecture_evidence_index=InMemoryEvidenceIndex(
-            architecture_embeddings, architecture_tokenizer
+            architecture_embeddings, architecture_tokenizer, index_version
         ),
         architecture_job_repository=InMemoryArchitectureJobs(),
         library_repository=PublishingDocumentLibrary(library, events, review_cycle),

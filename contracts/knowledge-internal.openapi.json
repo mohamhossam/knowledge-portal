@@ -1903,6 +1903,15 @@
         "title": "ChangeType",
         "type": "string"
       },
+      "ChunkRole": {
+        "enum": [
+          "whole",
+          "child",
+          "parent"
+        ],
+        "title": "ChunkRole",
+        "type": "string"
+      },
       "CitedPassage": {
         "properties": {
           "block_id": {
@@ -2616,6 +2625,14 @@
       },
       "EvidenceChunk": {
         "properties": {
+          "aliases": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Aliases",
+            "type": "array"
+          },
           "document_version_id": {
             "anyOf": [
               {
@@ -2627,6 +2644,17 @@
             ],
             "title": "Document Version Id"
           },
+          "focus": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Focus"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -2634,6 +2662,21 @@
           "location": {
             "title": "Location",
             "type": "string"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "role": {
+            "$ref": "#/components/schemas/ChunkRole",
+            "default": "whole"
           },
           "source_label": {
             "title": "Source Label",
@@ -5791,7 +5834,7 @@
         "type": "object"
       },
       "PlanCharacteristic": {
-        "description": "One stated fact of a plan, such as \"Download\" \u203a \"200 Mbps\" or \"CPE\" \u203a \"Fortinet 90G\".",
+        "description": "One stated fact of a plan, such as \"Download\" › \"200 Mbps\" or \"CPE\" › \"Fortinet 90G\".",
         "properties": {
           "name": {
             "title": "Name",

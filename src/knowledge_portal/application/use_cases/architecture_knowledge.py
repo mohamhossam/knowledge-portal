@@ -11,6 +11,8 @@ from knowledge_portal.application.ports.architecture_knowledge_repository import
 )
 from knowledge_portal.application.ports.architecture_rag import (
     ArchitectureEvidenceIndexPort,
+    ChunkEntityLink,
+    EntityRole,
     EvidenceChunk,
     IndexCoverage,
 )
@@ -23,6 +25,7 @@ from knowledge_portal.application.ports.identity import (
     require_maintainer,
     require_reader,
 )
+from knowledge_portal.application.use_cases.architecture_evidence import readable
 from knowledge_portal.domain.architecture.channels import Channel
 from knowledge_portal.domain.architecture.concepts import BusinessCapability
 from knowledge_portal.domain.architecture.diff import CatalogueDiff, diff_releases
@@ -130,7 +133,16 @@ class ManageArchitectureKnowledge:
             raise KnowledgeConflictError("Build this release with the current embedding profile.")
         if not query.strip():
             raise InvalidKnowledgeError("Retrieval query must not be blank.")
-        return self._index.retrieve(release.index_id or release.id, query, 8)
+        index_id = release.index_id or release.id
+        # Children are what is searched; a preview shows what would be read (ADR section-v4).
+        return readable(self._index, index_id, self._index.retrieve(index_id, query, 8))
+
+    def named_in(self, release_id: str, chunk_id: str, actor: Actor) -> tuple[ChunkEntityLink, ...]:
+        """The catalogue systems and offerings a passage names (section-v4 indexes only)."""
+        chunk = self.evidence(release_id, chunk_id, actor)
+        release = self.get(release_id)
+        entities, _ = self._index.links(release.index_id or release.id, (chunk.id,))
+        return tuple(item for item in entities if item.role is EntityRole.MENTIONS)
 
     def active(self) -> ArchitectureKnowledge:
         return self._repository.active()

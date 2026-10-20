@@ -6,6 +6,7 @@ import io
 import posixpath
 import re
 import zipfile
+from collections.abc import Iterable
 from pathlib import PurePosixPath
 from xml.etree import ElementTree
 
@@ -66,47 +67,7 @@ class LocatedDocumentExtractor:
         body, styles, _ = _word(content)
         if body is None:
             return ()
-        segments: list[LocatedText] = []
-        headings: list[str] = []
-        # Table paragraphs are counted too, so "paragraph N" names the same
-        # paragraph however the tables around it are read.
-        paragraph_number = 0
-        table_number = 0
-        for element in body:
-            if element.tag == f"{_W}p":
-                paragraph_number += 1
-                value = _text(element)
-                if not value:
-                    continue
-                level = _heading_level(element, styles)
-                location = f"paragraph {paragraph_number}"
-                if level is None:
-                    segments.append(LocatedText(location, value, tuple(headings)))
-                    continue
-                headings = [*headings[: level - 1], value]
-                segments.append(LocatedText(location, value, tuple(headings[:-1]), heading=True))
-            elif element.tag == f"{_W}tbl":
-                table_number += 1
-                rows: list[list[str]] = []
-                for row in element.findall(f"{_W}tr"):
-                    cells: list[str] = []
-                    for cell in row.findall(f"{_W}tc"):
-                        paragraphs = list(cell.iter(f"{_W}p"))
-                        paragraph_number += len(paragraphs)
-                        value = "\n".join(filter(None, map(_text, paragraphs)))
-                        merged = cell.find(f"{_W}tcPr/{_W}vMerge")
-                        above = rows[-1] if rows else []
-                        if merged is not None and merged.get(f"{_W}val", "continue") != "restart":
-                            # A cell merged down from the row above holds that row's value.
-                            value = above[len(cells)] if len(cells) < len(above) else value
-                        span = cell.find(f"{_W}tcPr/{_W}gridSpan")
-                        width = int(span.get(f"{_W}val", "1")) if span is not None else 1
-                        # A cell across several columns fills them all in the header, so
-                        # every column is named, and only the first in a later row.
-                        cells.extend([value] * width if not rows else [value] + [""] * (width - 1))
-                    rows.append(cells)
-                segments.extend(_table_rows(table_number, rows, tuple(headings)))
-        return tuple(segments)
+        return _word_passages(body, styles, _numbering(content), _paragraph_roles(content))
 
     def _slides(self, content: bytes) -> tuple[LocatedText, ...]:
         """One passage per slide: its text, table rows and speaker notes, in order."""
@@ -319,6 +280,261 @@ def _under(sheet: str, title: str | None) -> tuple[str, ...]:
     return (sheet, title) if title else (sheet,)
 
 
+class _Counters:
+    """Paragraphs and tables counted in one scope: the body, or one content control."""
+
+    def __init__(self) -> None:
+        self.paragraphs = 0
+        self.tables = 0
+
+
+def _word_passages(
+    body: ElementTree.Element, styles: dict[str, int], numbering: _Numbering, roles: _Roles
+) -> tuple[LocatedText, ...]:
+    """A Word body's passages: paragraphs, table rows, and what content controls hold.
+
+    Text inside a content control (``w:sdt``), such as a cover page or a form field, is
+    read as "control N, paragraph M", so the paragraphs around it keep their numbers. A
+    table of contents is a control too, and is left out: it repeats the headings.
+    """
+    segments: list[LocatedText] = []
+    headings: list[str] = []
+    controls = 0
+
+    def walk(elements: Iterable[ElementTree.Element], prefix: str, count: _Counters) -> None:
+        nonlocal headings, controls
+        for element in elements:
+            if element.tag == f"{_W}p":
+                count.paragraphs += 1
+                # Numbering advances on every numbered paragraph, empty or not, as Word counts.
+                label, depth = numbering.label(element, roles)
+                value = _text(element)
+                if not value:
+                    continue
+                level = _heading_level(element, styles)
+                style = _style_id(element)
+                location = f"{prefix}paragraph {count.paragraphs}"
+                # A style named so in styles.xml, or one whose id says it when there is none.
+                title = style in roles.titles or (style or "").casefold() == "title"
+                caption = style in roles.captions or (style or "").casefold() == "caption"
+                if level is None:
+                    segments.append(
+                        LocatedText(
+                            location,
+                            value,
+                            tuple(headings),
+                            title=title,
+                            caption=caption,
+                            label=label,
+                            list_level=depth,
+                        )
+                    )
+                    continue
+                headings = [*headings[: level - 1], value]
+                segments.append(
+                    LocatedText(
+                        location,
+                        value,
+                        tuple(headings[:-1]),
+                        heading=True,
+                        title=title,
+                        caption=caption,
+                        label=label,
+                    )
+                )
+            elif element.tag == f"{_W}tbl":
+                count.tables += 1
+                rows: list[list[str]] = []
+                for row in element.findall(f"{_W}tr"):
+                    cells: list[str] = []
+                    for cell in row.findall(f"{_W}tc"):
+                        paragraphs = list(cell.iter(f"{_W}p"))
+                        count.paragraphs += len(paragraphs)
+                        value = "\n".join(filter(None, map(_text, paragraphs)))
+                        merged = cell.find(f"{_W}tcPr/{_W}vMerge")
+                        above = rows[-1] if rows else []
+                        if merged is not None and merged.get(f"{_W}val", "continue") != "restart":
+                            # A cell merged down from the row above holds that row's value.
+                            value = above[len(cells)] if len(cells) < len(above) else value
+                        span = cell.find(f"{_W}tcPr/{_W}gridSpan")
+                        width = int(span.get(f"{_W}val", "1")) if span is not None else 1
+                        # A cell across several columns fills them all in the header, so
+                        # every column is named, and only the first in a later row.
+                        cells.extend([value] * width if not rows else [value] + [""] * (width - 1))
+                    rows.append(cells)
+                segments.extend(_table_rows(count.tables, rows, tuple(headings), prefix))
+            elif element.tag == f"{_W}sdt":
+                if _table_of_contents(element):
+                    continue
+                inner = element.find(f"{_W}sdtContent")
+                if inner is not None:
+                    controls += 1
+                    walk(inner, f"control {controls}, ", _Counters())
+
+    # Paragraphs and tables are counted in the body's own order (``paragraph N`` names the
+    # same paragraph however the tables around it are read); controls count their own.
+    walk(body, "", _Counters())
+    return tuple(segments)
+
+
+def _table_of_contents(control: ElementTree.Element) -> bool:
+    gallery = control.find(f"{_W}sdtPr/{_W}docPartObj/{_W}docPartGallery")
+    value = (gallery.get(f"{_W}val") or "") if gallery is not None else ""
+    return "contents" in value.casefold()
+
+
+def _style_id(paragraph: ElementTree.Element) -> str | None:
+    style = paragraph.find(f"{_W}pPr/{_W}pStyle")
+    return style.get(f"{_W}val") if style is not None else None
+
+
+class _Roles:
+    """Paragraph styles by role, and the numbering each style carries."""
+
+    def __init__(self) -> None:
+        self.titles: set[str | None] = set()
+        self.captions: set[str | None] = set()
+        # Style id -> (numbering id, level), following "based on" to the style that says.
+        self.numbered: dict[str, tuple[str, int]] = {}
+
+
+def _paragraph_roles(content: bytes) -> _Roles:
+    roles = _Roles()
+    with zipfile.ZipFile(io.BytesIO(content)) as archive:
+        if "word/styles.xml" not in set(archive.namelist()):
+            return roles
+        styles = ElementTree.fromstring(archive.read("word/styles.xml"))
+    based: dict[str, str] = {}
+    own: dict[str, tuple[str | None, int | None]] = {}
+    for style in styles.iter(f"{_W}style"):
+        style_id = style.get(f"{_W}styleId")
+        if not style_id or style.get(f"{_W}type") != "paragraph":
+            continue
+        name_node = style.find(f"{_W}name")
+        name = ((name_node.get(f"{_W}val") if name_node is not None else "") or "").strip()
+        if name.casefold() == "title" or style_id.casefold() == "title":
+            roles.titles.add(style_id)
+        if name.casefold() == "caption" or style_id.casefold() == "caption":
+            roles.captions.add(style_id)
+        parent = style.find(f"{_W}basedOn")
+        if parent is not None and parent.get(f"{_W}val"):
+            based[style_id] = parent.get(f"{_W}val", "")
+        number = style.find(f"{_W}pPr/{_W}numPr")
+        if number is not None:
+            named = number.find(f"{_W}numId")
+            depth = number.find(f"{_W}ilvl")
+            own[style_id] = (
+                named.get(f"{_W}val") if named is not None else None,
+                int(depth.get(f"{_W}val", "0")) if depth is not None else None,
+            )
+    for style_id in {*based, *own}:
+        num_id: str | None = None
+        level: int | None = None
+        current: str | None = style_id
+        for _ in range(_MAX_BASED_ON):
+            if current is None:
+                break
+            found = own.get(current, (None, None))
+            num_id = num_id if num_id is not None else found[0]
+            level = level if level is not None else found[1]
+            current = based.get(current)
+        if num_id and num_id != "0":
+            roles.numbered[style_id] = (num_id, level or 0)
+    return roles
+
+
+class _Numbering:
+    """Word's list and heading numbers, counted as Word counts them, per numbering id."""
+
+    def __init__(self, root: ElementTree.Element | None) -> None:
+        # Abstract numbering id -> level -> (start, format, text such as "%1.%2.").
+        abstract: dict[str, dict[int, tuple[int, str, str]]] = {}
+        self._levels: dict[str, dict[int, tuple[int, str, str]]] = {}
+        self._counts: dict[str, list[int]] = {}
+        if root is None:
+            return
+        for item in root.iter(f"{_W}abstractNum"):
+            levels: dict[int, tuple[int, str, str]] = {}
+            for lvl in item.findall(f"{_W}lvl"):
+                start = lvl.find(f"{_W}start")
+                fmt = lvl.find(f"{_W}numFmt")
+                text = lvl.find(f"{_W}lvlText")
+                levels[int(lvl.get(f"{_W}ilvl", "0"))] = (
+                    int(start.get(f"{_W}val", "1")) if start is not None else 1,
+                    (fmt.get(f"{_W}val") or "decimal") if fmt is not None else "decimal",
+                    (text.get(f"{_W}val") or "") if text is not None else "",
+                )
+            abstract[item.get(f"{_W}abstractNumId", "")] = levels
+        for item in root.iter(f"{_W}num"):
+            target = item.find(f"{_W}abstractNumId")
+            if target is not None:
+                self._levels[item.get(f"{_W}numId", "")] = abstract.get(
+                    target.get(f"{_W}val", ""), {}
+                )
+
+    def label(self, paragraph: ElementTree.Element, roles: _Roles) -> tuple[str | None, int | None]:
+        """The paragraph's number or bullet, and its list depth; (None, None) when it has none."""
+        number = paragraph.find(f"{_W}pPr/{_W}numPr")
+        style = _style_id(paragraph)
+        num_id: str | None = None
+        level = 0
+        if number is not None:
+            found = number.find(f"{_W}numId")
+            depth = number.find(f"{_W}ilvl")
+            num_id = found.get(f"{_W}val") if found is not None else None
+            level = int(depth.get(f"{_W}val", "0")) if depth is not None else 0
+            if num_id is None and style in roles.numbered:
+                num_id = roles.numbered[style][0]
+        elif style in roles.numbered:
+            num_id, level = roles.numbered[style]
+        levels = self._levels.get(num_id or "")
+        if not levels or level not in levels:
+            return None, None
+        counts = self._counts.setdefault(num_id or "", [0] * _MAX_LEVELS)
+        counts[level] = (counts[level] or levels[level][0] - 1) + 1
+        for deeper in range(level + 1, _MAX_LEVELS):
+            counts[deeper] = 0
+        start, fmt, text = levels[level]
+        if fmt == "bullet":
+            return "•", level
+        if fmt == "none":
+            return None, level
+
+        def number_at(match: re.Match[str]) -> str:
+            at = int(match.group(1)) - 1
+            first, form, _ = levels.get(at, (1, "decimal", ""))
+            return _formatted(counts[at] or first, form)
+
+        rendered = _LEVEL_TEXT.sub(number_at, text).strip()
+        return rendered or None, level
+
+
+def _formatted(value: int, form: str) -> str:
+    if form in {"lowerLetter", "upperLetter"}:
+        letters = ""
+        while value > 0:
+            value, rest = divmod(value - 1, 26)
+            letters = chr(ord("a") + rest) + letters
+        return letters.upper() if form == "upperLetter" else letters
+    if form in {"lowerRoman", "upperRoman"}:
+        roman = ""
+        for amount, numeral in _ROMAN:
+            while value >= amount:
+                roman += numeral
+                value -= amount
+        return roman if form == "upperRoman" else roman.casefold()
+    if form == "decimalZero":
+        return f"{value:02d}"
+    return str(value)
+
+
+def _numbering(content: bytes) -> _Numbering:
+    with zipfile.ZipFile(io.BytesIO(content)) as archive:
+        if _NUMBERING not in set(archive.namelist()):
+            return _Numbering(None)
+        return _Numbering(ElementTree.fromstring(archive.read(_NUMBERING)))
+
+
 def _word(
     content: bytes,
 ) -> tuple[ElementTree.Element | None, dict[str, int], dict[str, str]]:
@@ -415,7 +631,9 @@ def _text(paragraph: ElementTree.Element) -> str:
     return "".join(node.text or "" for node in paragraph.iter(f"{_W}t")).strip()
 
 
-def _table_rows(table: int, rows: list[list[str]], headings: tuple[str, ...]) -> list[LocatedText]:
+def _table_rows(
+    table: int, rows: list[list[str]], headings: tuple[str, ...], prefix: str = ""
+) -> list[LocatedText]:
     """One passage per Word table row, as a spreadsheet row is read.
 
     A cell per passage split one row across many passages, so neither a reader
@@ -433,7 +651,7 @@ def _table_rows(table: int, rows: list[list[str]], headings: tuple[str, ...]) ->
     )
     passages: list[LocatedText] = []
     for row_number, values in enumerate(rows, 1):
-        location = f"table {table}, row {row_number}"
+        location = f"{prefix}table {table}, row {row_number}"
         if header is None or row_number == 1:
             text = " | ".join(value for value in values if value)
             if text:
@@ -492,6 +710,25 @@ _MAX_TITLE = 120
 _CODED_TITLE = re.compile(r"^WF[\s_-]*\d", re.IGNORECASE)
 _MAX_TITLE_CELLS = 4
 _W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+_NUMBERING = "word/numbering.xml"
+_LEVEL_TEXT = re.compile(r"%([1-9])")
+_MAX_LEVELS = 9
+_MAX_BASED_ON = 8
+_ROMAN = (
+    (1000, "M"),
+    (900, "CM"),
+    (500, "D"),
+    (400, "CD"),
+    (100, "C"),
+    (90, "XC"),
+    (50, "L"),
+    (40, "XL"),
+    (10, "X"),
+    (9, "IX"),
+    (5, "V"),
+    (4, "IV"),
+    (1, "I"),
+)
 _HEADING_NAME = re.compile(r"^heading\s*([1-9])$")
 
 

@@ -8,26 +8,36 @@ from knowledge_portal.application.ports.architecture_rag import (
     ArchitectureEvidenceIndexPort,
     ChunkConceptLink,
     ChunkEntityLink,
+    ChunkRole,
     ConceptMatch,
     EmbeddingPort,
     EvidenceChunk,
     IndexCoverage,
     IndexLinks,
+    IndexVersion,
 )
 from knowledge_portal.application.ports.architecture_tokenizer import ArchitectureTokenizerPort
 
 # v3: catalogue records carry a context header, and chunks link to entities and concepts.
-INDEX_VERSION = "section-v3"
-# Indexes of the version before still search the same way; they only lack links.
-READABLE_VERSIONS = ("section-v2", INDEX_VERSION)
+# v4: documents as parents and children (ADR section-v4), chosen by ARCHITECTURE_INDEX_VERSION.
+INDEX_VERSION = IndexVersion.SECTION_V3.value
+# Every version searches the same way: v2 indexes only lack links, and a v3 or v2 index
+# has no parents. So any of them is read whichever version builds new indexes, and
+# switching ARCHITECTURE_INDEX_VERSION back needs no rebuild.
+READABLE_VERSIONS = ("section-v2", *(item.value for item in IndexVersion))
 
 
 def readable(profile: str | None, current: str) -> bool:
-    """Whether an index built under `profile` reads like one built under `current`."""
+    """Whether an index built under `profile` reads like one built under `current`: the
+    same embedding model and tokenizer, and a version every reader understands."""
     if profile is None:
         return False
     stem, _, version = profile.rpartition(":")
-    return version in READABLE_VERSIONS and f"{stem}:{INDEX_VERSION}" == current
+    return version in READABLE_VERSIONS and current.rpartition(":")[0] == stem
+
+
+def index_profile(model: str, tokenizer: str, version: IndexVersion) -> str:
+    return f"{model}:{tokenizer}:{version.value}"
 
 
 def fuse(*orderings: Iterable[str], depth: int = 20) -> dict[str, float]:
@@ -40,9 +50,15 @@ def fuse(*orderings: Iterable[str], depth: int = 20) -> dict[str, float]:
 
 
 class InMemoryEvidenceIndex(ArchitectureEvidenceIndexPort):
-    def __init__(self, embeddings: EmbeddingPort, tokenizer: ArchitectureTokenizerPort) -> None:
+    def __init__(
+        self,
+        embeddings: EmbeddingPort,
+        tokenizer: ArchitectureTokenizerPort,
+        version: IndexVersion = IndexVersion.SECTION_V3,
+    ) -> None:
         self._embeddings = embeddings
         self._tokenizer = tokenizer
+        self._version = version
         self._entries: dict[str, tuple[tuple[EvidenceChunk, tuple[float, ...]], ...]] = {}
         self._links: dict[str, IndexLinks] = {}
         # Vectors by (model, passage text): a rebuild only embeds what changed.
@@ -54,7 +70,11 @@ class InMemoryEvidenceIndex(ArchitectureEvidenceIndexPort):
 
     @property
     def profile(self) -> str:
-        return f"{self._embeddings.model}:{self._tokenizer.profile}:{INDEX_VERSION}"
+        return index_profile(self._embeddings.model, self._tokenizer.profile, self._version)
+
+    @property
+    def version(self) -> IndexVersion:
+        return self._version
 
     def reads(self, profile: str | None) -> bool:
         return readable(profile, self.profile)
@@ -72,12 +92,21 @@ class InMemoryEvidenceIndex(ArchitectureEvidenceIndexPort):
     def store(self, release_id: str, index_id: str, chunks: tuple[EvidenceChunk, ...]) -> None:
         if index_id in self._entries:
             raise ValueError("Evidence indexes are immutable.")
-        vectors = self.vectors(tuple(chunk.text for chunk in chunks))
-        self._entries[index_id] = tuple(zip(chunks, vectors, strict=True))
+        # A parent is read, never searched, so it is not embedded.
+        searched = tuple(chunk for chunk in chunks if chunk.role is not ChunkRole.PARENT)
+        vectors = dict(
+            zip(
+                (chunk.id for chunk in searched),
+                self.vectors(tuple(chunk.text for chunk in searched)),
+                strict=True,
+            )
+        )
+        self._entries[index_id] = tuple((chunk, vectors.get(chunk.id, ())) for chunk in chunks)
 
     def _ranked(
         self, entries: tuple[tuple[EvidenceChunk, tuple[float, ...]], ...], query: str, limit: int
     ) -> tuple[EvidenceChunk, ...]:
+        entries = tuple(row for row in entries if row[0].role is not ChunkRole.PARENT)
         if not entries:
             return ()
         query_vector = self._embeddings.embed((query,))[0]
@@ -169,7 +198,9 @@ class InMemoryEvidenceIndex(ArchitectureEvidenceIndexPort):
         links = self._links.get(index_id)
         if links is None:
             return None
-        chunks = {chunk.id for chunk, _ in self._entries[index_id]}
+        chunks = {
+            chunk.id for chunk, _ in self._entries[index_id] if chunk.role is not ChunkRole.PARENT
+        }
         reached = {item.chunk_id for item in links.concepts}
         spoken = {item.concept_id for item in links.concepts}
         return IndexCoverage(

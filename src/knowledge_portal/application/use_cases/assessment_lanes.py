@@ -12,8 +12,10 @@ from dataclasses import dataclass, field
 
 from knowledge_portal.application.ports.architecture_rag import (
     ArchitectureEvidenceIndexPort,
+    ChunkRole,
     EntityRole,
     EvidenceChunk,
+    LinkedEntity,
 )
 from knowledge_portal.application.ports.passage_reranker import PassageRerankerPort
 from knowledge_portal.application.ports.precedents import PrecedentMatch, PrecedentStorePort
@@ -25,7 +27,7 @@ from knowledge_portal.application.ports.requirement_assessment import (
     LinkedFacet,
     SystemCandidate,
 )
-from knowledge_portal.application.use_cases.architecture_evidence import named_systems
+from knowledge_portal.application.use_cases.architecture_evidence import named_systems, readable
 from knowledge_portal.application.use_cases.capability_domain_fallback import (
     contains,
     normalise,
@@ -66,6 +68,8 @@ POOL_PER_FACET = 12
 PASSAGES_PER_FACET = 3
 PASSAGES_PER_ENTITY = 2
 PASSAGE_BUDGET = 12
+# How deep in a facet's reranked pool a passage naming a candidate system is moved up.
+PREFERRED_DEPTH = 6
 RECORD_BUDGET = 16
 SEARCHED_FACETS = frozenset({FacetKind.NEED, FacetKind.DATA, FacetKind.INTERFACE})
 # The precedent lane: how many decided requirements to weigh, how near they must be, and
@@ -463,9 +467,22 @@ def _by_role(candidates: tuple[SystemCandidate, ...]) -> tuple[SystemCandidate, 
 
 
 def _entity(chunk: EvidenceChunk, records: dict[str, str]) -> str:
-    """What a passage is about, for the per-entity cap: the catalogue record it is, else
-    the document it comes from."""
+    """What a passage is about, for the per-entity cap: the catalogue record it is, the
+    section a section-v4 parent is (ADR section-v4), else the document it comes from."""
+    if chunk.role is ChunkRole.PARENT:
+        return chunk.id
     return records.get(chunk.id) or chunk.document_version_id or chunk.source_label
+
+
+def _preferring(
+    ranked: tuple[EvidenceChunk, ...], mentioned: frozenset[str]
+) -> tuple[EvidenceChunk, ...]:
+    """Within the first PREFERRED_DEPTH, passages that name a candidate system come first,
+    each group keeping the reranker's order; the rest follow as ranked (ADR section-v4). Only
+    section-v4 passages carry the mentions this reads."""
+    head, tail = ranked[:PREFERRED_DEPTH], ranked[PREFERRED_DEPTH:]
+    first = tuple(item for item in head if item.id in mentioned)
+    return (*first, *(item for item in head if item.id not in mentioned), *tail)
 
 
 def passage_lane(
@@ -484,8 +501,13 @@ def passage_lane(
     and keeps at most `PASSAGES_PER_FACET`, at most `PASSAGES_PER_ENTITY` about one entity.
     The facets then take turns, best passage first, until `PASSAGE_BUDGET` is spent, so one
     wordy need cannot crowd out the others. Each passage is kept once.
+
+    In a section-v4 index (ADR section-v4) the pool holds children: they are ranked, a child
+    naming a candidate system moves up, and each is read as its parent section, which is
+    what is kept, capped and passed on. A section is its own entity for the cap.
     """
     chunks: dict[str, EvidenceChunk] = {}
+    candidate_ids = frozenset(item.system_id for item in candidates)
     for candidate in _by_role(candidates):
         if len(chunks) >= RECORD_BUDGET:
             break
@@ -511,14 +533,27 @@ def passage_lane(
             for link in entities
             if link.role is EntityRole.RECORD
         }
+        mentioned = frozenset(
+            link.chunk_id
+            for link in entities
+            if link.role is EntityRole.MENTIONS
+            and link.entity is LinkedEntity.SYSTEM
+            and link.entity_id in candidate_ids
+        )
+        ranked = _preferring(
+            tuple(item.chunk for item in reranker.rerank(facet.text, pool)), mentioned
+        )
         kept: list[EvidenceChunk] = []
         about: dict[str, int] = {}
-        for ranked in reranker.rerank(facet.text, pool):
-            entity = _entity(ranked.chunk, records)
+        # Children are ranked; their parents are what is kept and read (ADR section-v4).
+        for chunk in readable(index, index_id, ranked):
+            if chunk.id in chunks:
+                continue
+            entity = _entity(chunk, records)
             if about.get(entity, 0) >= PASSAGES_PER_ENTITY:
                 continue
             about[entity] = about.get(entity, 0) + 1
-            kept.append(ranked.chunk)
+            kept.append(chunk)
             if len(kept) >= PASSAGES_PER_FACET:
                 break
         per_facet.append(kept)

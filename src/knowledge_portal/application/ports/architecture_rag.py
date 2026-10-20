@@ -10,6 +10,24 @@ from knowledge_portal.domain.architecture.entities import ArchitectureCitation
 from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge
 
 
+class IndexVersion(StrEnum):
+    """How a release's evidence is cut into chunks; the last part of an index profile."""
+
+    # One chunk per packed section or record window, both searched and read.
+    SECTION_V3 = "section-v3"
+    # Documents as parents (read) and children (searched) (ADR section-v4).
+    SECTION_V4 = "section-v4"
+
+
+class ChunkRole(StrEnum):
+    # Searched, and read as it is: a catalogue record, or a passage of a section-v3 index.
+    WHOLE = "whole"
+    # Searched only; a hit is read as its parent.
+    CHILD = "child"
+    # Read only: the section or table its children were cut from.
+    PARENT = "parent"
+
+
 @dataclass(frozen=True)
 class EvidenceChunk:
     id: str
@@ -20,6 +38,13 @@ class EvidenceChunk:
     # For a catalogue system's own record: when the system falls due for review again
     # (Knowledge Center D). None for passages of documents.
     system_review_due_on: date | None = None
+    role: ChunkRole = ChunkRole.WHOLE
+    # A child's parent, by chunk id.
+    parent_id: str | None = None
+    # Other places in the same document with exactly this text, indexed once.
+    aliases: tuple[str, ...] = ()
+    # For a parent read because a child matched: where in it the match is.
+    focus: str | None = None
 
 
 @dataclass(frozen=True)
@@ -41,6 +66,8 @@ class EntityRole(StrEnum):
     RECORD = "record"
     # The record names it: a system delivering a component, or performing a step.
     NAMES = "names"
+    # A document passage names it, by the catalogue's own names and aliases (ADR section-v4).
+    MENTIONS = "mentions"
 
 
 @dataclass(frozen=True)
@@ -114,9 +141,16 @@ class ArchitectureEvidenceIndexPort(Protocol):
     @property
     def profile(self) -> str: ...
 
+    @property
+    def version(self) -> IndexVersion:
+        """How this index cuts evidence into chunks; the last part of its profile."""
+        ...
+
     def store(self, release_id: str, index_id: str, chunks: tuple[EvidenceChunk, ...]) -> None: ...
 
-    def retrieve(self, release_id: str, query: str, limit: int) -> tuple[EvidenceChunk, ...]: ...
+    def retrieve(self, release_id: str, query: str, limit: int) -> tuple[EvidenceChunk, ...]:
+        """The best searchable chunks (whole and child, never parent), best first."""
+        ...
 
     def get(self, release_id: str, chunk_id: str) -> EvidenceChunk | None: ...
 

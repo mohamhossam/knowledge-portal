@@ -17,7 +17,11 @@ from knowledge_portal.application.ports.architecture_jobs import (
     ArchitectureJobKind,
     ArchitectureJobStatus,
 )
-from knowledge_portal.application.ports.architecture_rag import EvidenceChunk
+from knowledge_portal.application.ports.architecture_rag import (
+    ChunkRole,
+    EvidenceChunk,
+    IndexVersion,
+)
 from knowledge_portal.application.ports.identity import Actor
 from knowledge_portal.application.use_cases.architecture_index import BuildArchitectureIndex
 from knowledge_portal.application.use_cases.architecture_knowledge import (
@@ -208,3 +212,50 @@ def test_a_rebuild_reuses_cached_embeddings_across_instances() -> None:
         ).store(repository.active().id, uuid4().hex, chunks)
 
     assert Counting.calls == [f"cached passage {marker}"]
+
+
+def test_section_v4_parents_are_stored_unembedded_and_never_searched() -> None:
+    """ADR section-v4: a parent is read only; children are searched and point at it."""
+    assert DATABASE_URL is not None
+    run_migrations(DATABASE_URL)
+    index = PostgresEvidenceIndex(
+        DirectPostgresConnector(DATABASE_URL),
+        FakeEmbeddings(),
+        FakeWordTokenizer(),
+        IndexVersion.SECTION_V4,
+    )
+    assert index.profile.endswith(":section-v4")
+    index_id = uuid4().hex
+    parent = EvidenceChunk(
+        "parent-1",
+        "Design",
+        "paragraphs 3–4",
+        "Design / Fulfilment\nRTF decomposes the order.\nCWOM asks ECM for the router model.",
+        "doc-1",
+        role=ChunkRole.PARENT,
+        aliases=("paragraphs 9–10",),
+    )
+    child = EvidenceChunk(
+        "child-1",
+        "Design",
+        "paragraph 4",
+        "Design › Fulfilment\nCWOM asks ECM for the router model.",
+        "doc-1",
+        role=ChunkRole.CHILD,
+        parent_id="parent-1",
+    )
+    release = PostgresArchitectureKnowledgeRepository(
+        DirectPostgresConnector(DATABASE_URL), seed_knowledge()
+    ).active()
+    index.store(release.id, index_id, (parent, child))
+    found = index.retrieve(index_id, "router model", 8)
+    assert [item.id for item in found] == ["child-1"]
+    assert found[0].parent_id == "parent-1" and found[0].role is ChunkRole.CHILD
+    assert index.get(index_id, "parent-1") == parent
+    with DirectPostgresConnector(DATABASE_URL).connection() as connection:
+        row = connection.execute(
+            "SELECT embedding IS NULL FROM architecture_knowledge_chunks "
+            "WHERE index_id = %s AND chunk_id = 'parent-1'",
+            (index_id,),
+        ).fetchone()
+    assert row is not None and row[0] is True

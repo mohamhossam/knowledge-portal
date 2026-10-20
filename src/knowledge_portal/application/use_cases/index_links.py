@@ -14,12 +14,17 @@ from dataclasses import dataclass
 from knowledge_portal.application.ports.architecture_rag import (
     ChunkConceptLink,
     ChunkEntityLink,
+    ChunkRole,
     ConceptBasis,
     EntityRole,
     EvidenceChunk,
     IndexedConcept,
     IndexLinks,
     LinkedEntity,
+)
+from knowledge_portal.application.use_cases.architecture_evidence import (
+    named_offerings,
+    named_systems,
 )
 from knowledge_portal.domain.architecture.concepts import BusinessCapability, labels_in
 from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge
@@ -112,6 +117,25 @@ def _entities(release: ArchitectureKnowledge, record: IndexedRecord) -> tuple[Ch
     )
 
 
+def _mentions(release: ArchitectureKnowledge, record: IndexedRecord) -> tuple[ChunkEntityLink, ...]:
+    """A document passage's links to the catalogue systems and offerings it names, by their
+    names and aliases (ADR section-v4). A deterministic match, never a model's reading, so it
+    selects nothing on its own (ADR-0114)."""
+    chunk = record.chunk
+    if record.entity is not None or chunk.document_version_id is None:
+        return ()
+    return (
+        *(
+            ChunkEntityLink(chunk.id, LinkedEntity.SYSTEM, item.id, EntityRole.MENTIONS)
+            for item in named_systems(release, chunk.text)
+        ),
+        *(
+            ChunkEntityLink(chunk.id, LinkedEntity.OFFERING, item.id, EntityRole.MENTIONS)
+            for item in named_offerings(release, chunk.text)
+        ),
+    )
+
+
 def _cosine(left: tuple[float, ...], right: tuple[float, ...]) -> float:
     norm = math.sqrt(sum(a * a for a in left)) * math.sqrt(sum(b * b for b in right))
     return sum(a * b for a, b in zip(left, right, strict=True)) / norm if norm else 0.0
@@ -121,14 +145,25 @@ def build_links(
     release: ArchitectureKnowledge,
     records: tuple[IndexedRecord, ...],
     vectors: dict[str, tuple[float, ...]],
+    *,
+    mentions: bool = False,
 ) -> IndexLinks:
     """Every chunk's links. `vectors` holds the embedding of each concept's indexed text
-    and of each chunk text a label was found in (see `texts_to_embed`)."""
+    and of each chunk text a label was found in (see `texts_to_embed`).
+
+    With `mentions` (section-v4), document passages, parents and children alike, are
+    linked to the systems and offerings they name. A parent is read, never searched, so
+    it has no concept links: its children carry them.
+    """
     scheme = concept_scheme(release)
     entities: list[ChunkEntityLink] = []
     concepts: list[ChunkConceptLink] = []
     for record in records:
         entities.extend(_entities(release, record))
+        if mentions:
+            entities.extend(_mentions(release, record))
+        if record.chunk.role is ChunkRole.PARENT:
+            continue
         exact = record_concepts(release, record.entity, record.entity_id)
         concepts.extend(
             ChunkConceptLink(record.chunk.id, item, ConceptBasis.CATALOGUE, 1.0) for item in exact
@@ -163,6 +198,7 @@ def texts_to_embed(
     named = (
         record.chunk.text
         for record in records
-        if labels_in(record.chunk.text, release.business_capabilities)
+        if record.chunk.role is not ChunkRole.PARENT
+        and labels_in(record.chunk.text, release.business_capabilities)
     )
     return tuple(dict.fromkeys((*(item.text for item in concept_scheme(release)), *named)))

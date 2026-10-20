@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-import re
 from collections.abc import Callable
 from uuid import uuid4
 
@@ -11,7 +10,9 @@ from smb_kernel.documents.ports import DocumentStoragePort
 
 from knowledge_portal.application.ports.architecture_rag import (
     ArchitectureEvidenceIndexPort,
+    ChunkRole,
     EvidenceChunk,
+    IndexVersion,
     LinkedEntity,
 )
 from knowledge_portal.application.ports.architecture_tokenizer import ArchitectureTokenizerPort
@@ -27,6 +28,11 @@ from knowledge_portal.application.use_cases.index_links import (
     build_links,
     record_concepts,
     texts_to_embed,
+)
+from knowledge_portal.application.use_cases.section_chunking import (
+    plan_document,
+    record_windows,
+    span,
 )
 from knowledge_portal.domain.architecture.interfaces import SystemInterface
 from knowledge_portal.domain.architecture.journeys import Journey
@@ -47,26 +53,6 @@ from knowledge_portal.domain.architecture.realisations import RealisationRecord
 from knowledge_portal.domain.document.value_objects import DocumentVersionId
 
 SECTION_TOKENS = 400
-_NUMBERED = re.compile(r"^(?P<unit>[a-z]+) (?P<number>\d+)$")
-_LINES = re.compile(r"^lines? (?P<start>\d+)(?:-(?P<end>\d+))?$")
-_SHEET_ROW = re.compile(r"^sheet (?P<sheet>\d+), row (?P<row>\d+)$")
-
-
-def _span(first: str, last: str) -> str:
-    """ "paragraph 12" and "paragraph 15" read as "paragraphs 12–15", and likewise rows."""
-    if first == last:
-        return first
-    lines = _LINES.match(first), _LINES.match(last)
-    if lines[0] and lines[1]:
-        # Markdown passages mix "line 4" (a table row) with "lines 6-9" (a paragraph).
-        return f"lines {lines[0]['start']}-{lines[1]['end'] or lines[1]['start']}"
-    start, end = _NUMBERED.match(first), _NUMBERED.match(last)
-    if start and end and start["unit"] == end["unit"]:
-        return f"{start['unit']}s {start['number']}–{end['number']}"
-    rows = _SHEET_ROW.match(first), _SHEET_ROW.match(last)
-    if rows[0] and rows[1] and rows[0]["sheet"] == rows[1]["sheet"]:
-        return f"sheet {rows[0]['sheet']}, rows {rows[0]['row']}–{rows[1]['row']}"
-    return f"{first} – {last}"
 
 
 # How a relationship reads in evidence text. An unspecified kind adds nothing, so
@@ -381,6 +367,48 @@ class BuildArchitectureIndex:
     def _tokens(self, text: str) -> int:
         return len(self._tokenizer.spans(text))
 
+    def _parents_and_children(
+        self, document_id: str, title: str, segments: tuple[LocatedText, ...]
+    ) -> list[IndexedRecord]:
+        """A document's section-v4 chunks (ADR section-v4): each parent, read with its full
+        heading path, then its children, searched with a compact header."""
+        records: list[IndexedRecord] = []
+        for parent in plan_document(segments, self._tokens):
+            text = f"{' / '.join((title, *parent.headings))}\n{parent.body}"
+            parent_id = self._chunk_id(document_id, parent.location, text)
+            records.append(
+                IndexedRecord(
+                    EvidenceChunk(
+                        parent_id,
+                        title,
+                        parent.location,
+                        text,
+                        document_id,
+                        role=ChunkRole.PARENT,
+                        aliases=parent.aliases,
+                    )
+                )
+            )
+            compact = f"{title} › {parent.headings[-1]}" if parent.headings else title
+            for child in parent.children:
+                lines = (compact, *((child.context,) if child.context else ()), child.text)
+                embedded = "\n".join(lines)
+                records.append(
+                    IndexedRecord(
+                        EvidenceChunk(
+                            self._chunk_id(document_id, child.location, embedded),
+                            title,
+                            child.location,
+                            embedded,
+                            document_id,
+                            role=ChunkRole.CHILD,
+                            parent_id=parent_id,
+                            aliases=child.aliases,
+                        )
+                    )
+                )
+        return records
+
     def _sections(
         self, title: str, segments: tuple[LocatedText, ...]
     ) -> tuple[tuple[str, str, str], ...]:
@@ -402,7 +430,7 @@ class BuildArchitectureIndex:
             if first.block is not None:
                 result.append((header, first.block, " | ".join(item.text for item in group)))
             else:
-                location = _span(first.location, group[-1].location)
+                location = span(first.location, group[-1].location)
                 result.append((header, location, "\n".join(item.text for item in group)))
             group.clear()
 
@@ -445,12 +473,19 @@ class BuildArchitectureIndex:
         ):
             raise KnowledgeConflictError("The build no longer matches this draft.")
         records: list[IndexedRecord] = []
+        sectioned = self._index.version is IndexVersion.SECTION_V4
 
         def record(
             entity: LinkedEntity, entity_id: str, source: str, name: str, content: str
         ) -> None:
             header = _header(release, entity, entity_id, name)
-            for location, part in self._windows(content, f"{_LOCATION[entity]} {entity_id}"):
+            located = f"{_LOCATION[entity]} {entity_id}"
+            windows = (
+                record_windows(content, located, self._tokens)
+                if sectioned
+                else self._windows(content, located)
+            )
+            for location, part in windows:
                 text = f"{header}\n{part}"
                 chunk = EvidenceChunk(self._chunk_id(source, location, text), name, location, text)
                 records.append(IndexedRecord(chunk, entity, entity_id))
@@ -507,6 +542,9 @@ class BuildArchitectureIndex:
         for document in release.documents:
             document_bytes = self._storage.get(DocumentVersionId(document.storage_key))
             segments = self._extractor.extract(document.mime_type, document_bytes)
+            if sectioned:
+                records.extend(self._parents_and_children(document.id, document.title, segments))
+                continue
             for header, location, body in self._sections(document.title, segments):
                 for part_location, part in self._windows(body, location):
                     text = f"{header}\n{part}"
@@ -525,7 +563,7 @@ class BuildArchitectureIndex:
         # Embedded before storing, through the index's cache, so nothing is embedded twice.
         texts = texts_to_embed(release, tuple(records))
         vectors = dict(zip(texts, self._index.vectors(texts), strict=True))
-        links = build_links(release, tuple(records), vectors)
+        links = build_links(release, tuple(records), vectors, mentions=sectioned)
         index_id = uuid4().hex
         fence()
         self._index.store(release.id, index_id, tuple(chunks))

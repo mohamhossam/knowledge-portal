@@ -13,6 +13,11 @@ class LocatedText:
     `block` (the cells of one table row) belong together when indexed.
     `cells` holds a table row's (column, value) pairs, every column of its
     header included, when the format has one row per passage.
+
+    What a Word document says of a paragraph's role, for chunking (ADR section-v4):
+    `title` marks the document's own title; `caption` a captioned paragraph;
+    `label` the number or bullet Word draws before it ("2.1", "a)", "•"), which
+    is not in `text`; `list_level` the depth of a list item, 0 outermost.
     """
 
     location: str
@@ -21,6 +26,10 @@ class LocatedText:
     heading: bool = False
     block: str | None = None
     cells: tuple[tuple[str, str], ...] = ()
+    title: bool = False
+    caption: bool = False
+    label: str | None = None
+    list_level: int | None = None
 
 
 @dataclass(frozen=True)

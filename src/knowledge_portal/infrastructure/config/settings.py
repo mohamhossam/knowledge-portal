@@ -20,6 +20,7 @@ from smb_kernel.llm.profiles import (
     load_profiles,
 )
 
+from knowledge_portal.application.ports.architecture_rag import IndexVersion
 from knowledge_portal.infrastructure.config.options import (
     DEFAULT_ADO_IMPORT_MAX_ITEMS,
     DEFAULT_AI_JOB_POLL_INTERVAL_SECONDS,
@@ -223,6 +224,9 @@ class Settings:
     ado_import_max_items: int = DEFAULT_ADO_IMPORT_MAX_ITEMS
     # Where the golden set report finds its golden set, floors and catalogue.
     evaluation_root: Path = DEFAULT_EVALUATION_ROOT
+    # How new catalogue indexes cut documents into chunks (ADR section-v4); existing indexes of
+    # either version are still read.
+    architecture_index_version: IndexVersion = IndexVersion.SECTION_V3
     # What reorders an assessment's passages per facet (ontology plan Phase 5).
     reranker_provider: RerankerProvider = RerankerProvider.LEXICAL
     reranker_url: str | None = None
@@ -594,6 +598,7 @@ def _operability_from_env() -> dict[str, Any]:
         "knowledge_review_cycle_days": _review_cycle_from_env(),
         **_ado_from_env(),
         "evaluation_root": _evaluation_root_from_env(),
+        "architecture_index_version": _index_version_from_env(),
         **_reranker_from_env(),
     }
 
@@ -638,6 +643,15 @@ def _ado_from_env() -> dict[str, Any]:
     except ValueError as exc:
         raise ConfigurationError("ADO_IMPORT_MAX_ITEMS must be a whole number.") from exc
     return {"ado_provider": provider, "ado_import_max_items": max_items}
+
+
+def _index_version_from_env() -> IndexVersion:
+    raw = os.getenv("ARCHITECTURE_INDEX_VERSION", "").strip().lower()
+    try:
+        return IndexVersion(raw) if raw else IndexVersion.SECTION_V3
+    except ValueError as exc:
+        choices = ", ".join(item.value for item in IndexVersion)
+        raise ConfigurationError(f"ARCHITECTURE_INDEX_VERSION must be one of: {choices}.") from exc
 
 
 def _evaluation_root_from_env() -> Path:

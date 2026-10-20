@@ -34,6 +34,7 @@ from knowledge_portal.application.use_cases.architecture_knowledge import (
     ManageArchitectureKnowledge,
 )
 from knowledge_portal.application.use_cases.catalogue_candidates import MAX_EMBEDDED_BYTES
+from knowledge_portal.application.use_cases.section_chunking import first_location
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
     InvalidKnowledgeError,
@@ -339,6 +340,11 @@ class ReadKnowledgeDocument:
         # Suggestions read before a Word table row became one passage cite a cell of it.
         wanted = _CELL.sub(r"\1", wanted)
         index = next((i for i, item in enumerate(segments) if item.location == wanted), None)
+        if index is None:
+            # A section-v4 passage cites a span, a sentence range or a whole table
+            # (ADR section-v4); its first passage stands in, since the quote is in or after it.
+            first = first_location(wanted)
+            index = next((i for i, item in enumerate(segments) if item.location == first), None)
         if index is None and (lines := _line_range(wanted)) is not None:
             # Suggestions read before a document's passages changed shape cite line
             # windows ("lines 1-40"); the first passage on those lines stands in.

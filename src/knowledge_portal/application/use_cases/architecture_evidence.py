@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 import re
+from dataclasses import replace
 
 from knowledge_portal.application.ports.architecture_rag import (
     ArchitectureEvidenceIndexPort,
+    ChunkRole,
     EvidenceChunk,
 )
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
     SystemDefinition,
 )
+from knowledge_portal.domain.architecture.products import ProductOffering
 
 EVIDENCE_LIMIT = 8
 MIN_SEARCH_RESULTS = 6
@@ -51,6 +54,42 @@ def named_systems(release: ArchitectureKnowledge, text: str) -> tuple[SystemDefi
     )
 
 
+def named_offerings(release: ArchitectureKnowledge, text: str) -> tuple[ProductOffering, ...]:
+    """Catalogue offerings whose name or code appears as a whole word, as systems are found."""
+    return tuple(
+        offering
+        for offering in release.products
+        if any(_names(label, text) for label in (offering.name, offering.code or "") if label)
+    )
+
+
+def readable(
+    index: ArchitectureEvidenceIndexPort, index_id: str, chunks: tuple[EvidenceChunk, ...]
+) -> tuple[EvidenceChunk, ...]:
+    """Searched chunks as they are read, in the same order (ADR section-v4).
+
+    A child is read as its parent, once, at the place of its best child, with `focus`
+    naming that child; any other chunk as itself. A child whose parent cannot be found
+    is read as it is, so nothing searched is lost.
+    """
+    parents: dict[str, EvidenceChunk | None] = {}
+    seen: set[str] = set()
+    result: list[EvidenceChunk] = []
+    for chunk in chunks:
+        read = chunk
+        if chunk.role is ChunkRole.CHILD and chunk.parent_id is not None:
+            if chunk.parent_id not in parents:
+                parents[chunk.parent_id] = index.get(index_id, chunk.parent_id)
+            parent = parents[chunk.parent_id]
+            if parent is not None:
+                read = replace(parent, focus=chunk.location)
+        if read.id in seen:
+            continue
+        seen.add(read.id)
+        result.append(read)
+    return tuple(result)
+
+
 def gather_evidence(
     index: ArchitectureEvidenceIndexPort,
     release: ArchitectureKnowledge,
@@ -70,7 +109,9 @@ def gather_evidence(
     )
     searched = tuple(
         chunk
-        for chunk in index.retrieve(index_id, text, EVIDENCE_LIMIT + len(named))
+        for chunk in readable(
+            index, index_id, index.retrieve(index_id, text, EVIDENCE_LIMIT + len(named))
+        )
         if chunk.id not in {item.id for item in named}
     )
     room = max(MIN_SEARCH_RESULTS, EVIDENCE_LIMIT - len(named))
