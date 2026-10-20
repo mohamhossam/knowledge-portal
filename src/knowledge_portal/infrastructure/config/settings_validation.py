@@ -217,8 +217,6 @@ def validate_settings(settings: Settings) -> None:
             f"CATALOGUE_READING_CONCURRENCY must be between 1 and "
             f"{MAX_CATALOGUE_READING_CONCURRENCY}."
         )
-    if not settings.document_storage_path.strip():
-        raise ConfigurationError("DOCUMENT_STORAGE_PATH must not be blank.")
     if settings.identity_provider is IdentityProvider.OIDC:
         for name, value in (
             ("OIDC_ISSUER_URL", settings.oidc_issuer_url),

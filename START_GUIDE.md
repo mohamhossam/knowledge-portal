@@ -480,6 +480,8 @@ Browser app:
 ```bash
 cd frontend
 npm run lint && npm run typecheck && npm test && npm run api:check && npm run build
+npm run lint:brand && npm run lint:legacy-css && npm run budget   # budget needs the build
+npm run e2e   # route axe checks and keyboard journeys (Playwright)
 ```
 
 ## 12. Common startup problems
