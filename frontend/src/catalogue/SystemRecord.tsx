@@ -12,7 +12,8 @@ import { seatsLine, seatsOn } from "../squads/organisation";
 import { connections, dependsHow, domainPath, sentenceCase, systemName, systemRoles, usedHow } from "./catalogue";
 import { SystemContextDiagram } from "./diagrams/CatalogueDiagrams";
 import { ConnectionEdit, ConnectionRemove, SystemEdit, SystemRemove } from "./DraftEdits";
-import { linkBasis, type SystemLink } from "./links";
+import { LinkBasis } from "./LinkBasis";
+import type { SystemLink } from "./links";
 import { type ConceptIndex, entityNames, INTERFACE_STYLE, type Interface, interfacesOf, SOURCE_TONE, SOURCE_WORD } from "./ontology";
 import { useCatalogueContext } from "./useCatalogue";
 
@@ -262,7 +263,7 @@ function ConnectionTable({ title, rows, other, how, from, system, empty, editabl
       },
     },
     { id: "what", header: "For what", bidi: true, cell: (row) => row.description },
-    { id: "basis", header: "Known from", cell: (row) => linkBasis(row) },
+    { id: "basis", header: "Known from", cell: (row) => <LinkBasis link={row} base={base} /> },
     ...(editable
       ? [{
           id: "edit",
@@ -270,7 +271,8 @@ function ConnectionTable({ title, rows, other, how, from, system, empty, editabl
           // Only a stated connection is edited here; the rest change with their interfaces and journeys.
           cell: (row: SystemLink) => {
             const stated = row.stated;
-            if (!stated) return null;
+            // A derived link changes with the interfaces and journeys it is known from.
+            if (!stated) return <span className="cat-quiet">Changes with its sources</span>;
             return (
               <ActionGroup label={`The dependency on ${systemName(book, other(row))}`}>
                 <Button variant="quiet" onClick={() => { setRemoving(null); setEditing(stated); }}>Change</Button>

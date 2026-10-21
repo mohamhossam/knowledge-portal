@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Journey, SystemInterface } from "../api/client";
-import { linkBasis, styleKind, systemLinks } from "./links";
+import { styleKind, systemLinks } from "./links";
 
 const api = (over: Partial<SystemInterface>): SystemInterface => ({
   id: "if-crm",
@@ -38,7 +38,7 @@ describe("systemLinks", () => {
       ["web", "calls_api", "crm"],
       ["om", "publishes_events_to", "crm"],
     ]);
-    expect(links[0]).toMatchObject({ stated: null, description: "CRM API", interfaces: [{ id: "if-crm", name: "CRM API" }] });
+    expect(links[0]).toMatchObject({ stated: null, description: "CRM API", interfaces: [{ id: "if-crm", name: "CRM API", systemId: "crm" }] });
   });
 
   it("finds a step's system from the step when the call does not name it, and counts steps per journey", () => {
@@ -48,7 +48,6 @@ describe("systemLinks", () => {
       ["om", "publishes_events_to", "crm"],
     ]);
     expect(links[0]!.journeys).toEqual([{ id: "activation", name: "New activation", steps: 1 }]);
-    expect(linkBasis(links[0]!)).toBe("Journey New activation");
   });
 
   it("merges every source of one pair into one line, a stated connection's words first", () => {
@@ -56,7 +55,6 @@ describe("systemLinks", () => {
     const links = systemLinks({ relationships: [stated], interfaces: [api({})], journeys: [] });
     expect(links).toHaveLength(1);
     expect(links[0]).toMatchObject({ stated, kind: "calls_api", description: "Reads the customer" });
-    expect(linkBasis(links[0]!)).toBe("Stated · Interface CRM API");
   });
 
   it("leaves out calls within one system and calls whose systems are not known", () => {

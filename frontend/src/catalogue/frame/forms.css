@@ -176,7 +176,9 @@
   padding-inline: 0;
 }
 
-/* A focused field is never hidden under a pinned panel foot: tabbing scrolls it clear. */
-html:has(.cat-edit__foot) {
+/* A focused field is never hidden under a pinned panel foot: tabbing scrolls it clear, in the
+   page and in a workbench record pane, which scrolls on its own (WCAG 2.4.11). */
+html:has(.cat-edit__foot),
+.ds-bench__record:has(.cat-edit__foot) {
   scroll-padding-block-end: 9rem;
 }

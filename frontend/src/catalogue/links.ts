@@ -18,7 +18,8 @@ export type Linked = {
 export type SystemLink = Relationship & {
   /** The connection a curator stated for this pair, if any: only these are edited. */
   stated: Relationship | null;
-  interfaces: { id: string; name: string }[];
+  /** The interfaces it is known from, with the system that exposes each. */
+  interfaces: { id: string; name: string; systemId: string }[];
   journeys: { id: string; name: string; steps: number }[];
 };
 
@@ -34,7 +35,7 @@ export function styleKind(style: string | null | undefined): RelationshipKind {
 // Of several kinds on one pair, the first said here names the line.
 const PRECEDENCE: RelationshipKind[] = ["calls_api", "publishes_events_to", "transfers_data_to", "orchestrates", "unspecified"];
 
-type Draft = { source: string; target: string; stated?: Relationship; kinds: Set<RelationshipKind>; interfaces: Map<string, string>; journeys: Map<string, { name: string; steps: number }>; said: Set<string>; purposes: string[] };
+type Draft = { source: string; target: string; stated?: Relationship; kinds: Set<RelationshipKind>; interfaces: Map<string, { name: string; systemId: string }>; journeys: Map<string, { name: string; steps: number }>; said: Set<string>; purposes: string[] };
 
 /** A few names in full, the rest counted: "A, B, C and 4 more". */
 function named(names: string[]): string {
@@ -67,7 +68,7 @@ export function systemLinks(version: Linked): SystemLink[] {
       const found = outward ? pair(item.system_id, consumer) : pair(consumer, item.system_id);
       if (!found) continue;
       found.kinds.add({ api: "calls_api", event: "publishes_events_to", file: "transfers_data_to", unspecified: "unspecified" }[item.style] as RelationshipKind);
-      found.interfaces.set(item.id, item.name);
+      found.interfaces.set(item.id, { name: item.name, systemId: item.system_id });
       found.said.add(item.name);
     }
   }
@@ -96,17 +97,8 @@ export function systemLinks(version: Linked): SystemLink[] {
       kind: found.stated && found.stated.kind !== "unspecified" ? found.stated.kind : derived,
       description: found.stated?.description || named([...found.said]) || found.purposes[0] || "",
       stated: found.stated ?? null,
-      interfaces: [...found.interfaces].map(([id, name]) => ({ id, name })),
+      interfaces: [...found.interfaces].map(([id, item]) => ({ id, ...item })),
       journeys: [...found.journeys].map(([id, seen]) => ({ id, ...seen })),
     };
   });
-}
-
-/** Where a link is known from, in a few words: "Stated · 2 interfaces · 3 journeys". */
-export function linkBasis(link: SystemLink): string {
-  const parts: string[] = [];
-  if (link.stated) parts.push("Stated");
-  if (link.interfaces.length) parts.push(link.interfaces.length === 1 ? `Interface ${link.interfaces[0]!.name}` : `${link.interfaces.length} interfaces`);
-  if (link.journeys.length) parts.push(link.journeys.length === 1 ? `Journey ${link.journeys[0]!.name}` : `${link.journeys.length} journeys`);
-  return parts.join(" · ");
 }

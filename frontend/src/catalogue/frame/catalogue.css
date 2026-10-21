@@ -355,3 +355,14 @@ a.cat-chip:hover {
   min-block-size: 24px;
   line-height: 24px;
 }
+
+/* Where a link between systems is known from: its sources, a counted kind opening its list. */
+.cat-basis__list {
+  margin: var(--space-1) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cat-basis__list li + li {
+  margin-block-start: var(--space-1);
+}

@@ -6,7 +6,8 @@ import { diagramHref } from "../shell/diagramHref";
 import { RouterLink } from "../shell/links";
 import { LINK_VERB, allConnections, systemName } from "./catalogue";
 import type { Href } from "./diagrams/build";
-import { linkBasis, type SystemLink } from "./links";
+import { LinkBasis } from "./LinkBasis";
+import type { SystemLink } from "./links";
 import { CapabilityMapDiagram, ConnectionsFlowDiagram, SystemContextDiagram } from "./diagrams/CatalogueDiagrams";
 import { CatalogueHeader } from "./frame/CatalogueHeader";
 import { useCatalogueContext } from "./useCatalogue";
@@ -73,7 +74,7 @@ function ConnectionsTable() {
     { id: "how", header: "How", cell: (row) => LINK_VERB[row.kind] },
     { id: "to", header: "To", bidi: true, cell: (row) => link(row.target_system_id) },
     { id: "what", header: "For what", bidi: true, cell: (row) => row.description },
-    { id: "basis", header: "Known from", cell: (row) => linkBasis(row) },
+    { id: "basis", header: "Known from", cell: (row) => <LinkBasis link={row} base={base} /> },
   ];
   return (
     <DataTable

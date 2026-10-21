@@ -90,6 +90,23 @@ describe("an offering edited one section at a time", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "Edit the rules" })).toHaveFocus());
   });
 
+  it("takes the device it is built on as one choice, so only one part is ever its hub", async () => {
+    const save = vi.spyOn(api, "saveDraft").mockResolvedValue(RELEASE);
+    open(true, `/architecture/offerings/${OFFERING.id}`);
+    fireEvent.click(screen.getByRole("button", { name: "Edit the parts" }));
+    const panel = screen.getByRole("form", { name: "Edit the parts of Business Pro Plus" });
+    const device = within(panel).getByLabelText("The device it is built on");
+    expect(device).toHaveValue("");
+    const names = OFFERING.components.map((part) => part.name);
+    fireEvent.change(device, { target: { value: "1" } });
+    fireEvent.change(device, { target: { value: "0" } });
+    fireEvent.click(within(panel).getByRole("button", { name: "Save the parts" }));
+
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    const sent = save.mock.calls[0]![1].products![0]!.components;
+    expect(sent.filter((part) => part.hub).map((part) => part.name)).toEqual([names[0]]);
+  });
+
   it("will not drop an order type its parts, tracking, notes or journeys still name", () => {
     open(true, `/architecture/offerings/${OFFERING.id}?tab=orders`);
     fireEvent.click(screen.getByRole("button", { name: "Edit the order types" }));
