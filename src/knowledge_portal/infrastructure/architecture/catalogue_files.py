@@ -76,6 +76,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     InvalidKnowledgeError,
     KnowledgeCapability,
     LandscapeDomain,
+    MasteryNote,
     RelationshipKind,
     SystemComponent,
     SystemDefinition,
@@ -155,6 +156,7 @@ VOCABULARY = "Vocabulary"
 INTERFACES = "Interfaces"
 REALISATION_RECORDS = "RealisationRecords"
 ACCEPTANCES = "Acceptances"
+MASTERY_NOTES = "MasteryNotes"
 _CELLS = tuple(f"cell_{number}" for number in range(1, MAX_TABLE_COLUMNS + 1))
 INSTRUCTIONS = "Instructions"
 _DOMAIN_HEADERS = ("domain_id", "name", "name_ar", "parent_id", "description")
@@ -536,6 +538,7 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "confidence",
         "source",
     ),
+    MASTERY_NOTES: ("system_id", "entity_id", "note"),
     ACCEPTANCES: (
         "entity",
         "key",
@@ -597,6 +600,7 @@ _REQUIRED_HEADERS: dict[str, tuple[str, ...]] = {
     VOCABULARY: ("term_id", "scheme", "pref_label"),
     INTERFACES: ("interface_id", "name", "system_id"),
     REALISATION_RECORDS: ("record_id", "layer", "name"),
+    MASTERY_NOTES: _HEADERS[MASTERY_NOTES],
     ACCEPTANCES: _HEADERS[ACCEPTANCES],
 }
 _KINDS = ", ".join(kind.value for kind in RelationshipKind)
@@ -773,6 +777,10 @@ _INSTRUCTIONS = (
         "nothing in the file is ignored.",
     ),
     (
+        "MasteryNotes: where several systems master one information entity, one row per system "
+        "saying which part of it that system is the system of record for.",
+    ),
+    (
         "Systems, Concepts and Vocabulary deprecated (yes or no) and replaced_by (optional): a "
         "retired entry stays in the catalogue but is never matched again; replaced_by names the "
         "entry of the same sheet that takes its place, and implies deprecated.",
@@ -861,6 +869,25 @@ def _text_list(value: object, where: str, field: str) -> tuple[str, ...]:
     if isinstance(value, list):
         return tuple(_text(item, where, field) for item in value)
     raise InvalidKnowledgeError(f"{where}: {field} must be a list.")
+
+
+def _mastery_notes(value: object, where: str) -> tuple[MasteryNote, ...]:
+    """A system's notes on what it masters where others master it too (ADR-0123)."""
+    if value is None:
+        return ()
+    if not isinstance(value, list):
+        raise InvalidKnowledgeError(f"{where}: mastery_notes must be a list.")
+    notes = []
+    for number, item in enumerate(value, start=1):
+        place = f"{where} mastery note {number}"
+        if not isinstance(item, dict):
+            raise InvalidKnowledgeError(f"{place} must name an entity and a note.")
+        notes.append(
+            MasteryNote(
+                _text(item.get("entity"), place, "entity"), _text(item.get("note"), place, "note")
+            )
+        )
+    return tuple(notes)
 
 
 def _entries(raw: dict[str, Any], key: str) -> list[dict[str, Any]]:
@@ -1007,6 +1034,7 @@ def content_from_mapping(raw: object) -> CatalogueContent:
                     reads=_text_list(item.get("reads"), where, "reads"),
                     deprecated=bool(_flag(item.get("deprecated"), where, "deprecated", False)),
                     replaced_by=_optional_text(item.get("replaced_by"), where, "replaced_by"),
+                    mastery_notes=_mastery_notes(item.get("mastery_notes"), where),
                 )
             )
         except InvalidKnowledgeError as exc:
@@ -2383,6 +2411,11 @@ def release_to_mapping(release: ArchitectureKnowledge) -> dict[str, Any]:
                 ),
                 **_sourced(item),
                 **_present(masters=list(item.masters), reads=list(item.reads)),
+                **_present(
+                    mastery_notes=[
+                        {"entity": note.entity_id, "note": note.note} for note in item.mastery_notes
+                    ]
+                ),
                 **_retired(item),
             }
             for item in release.systems
@@ -2521,6 +2554,7 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                 "masters": _split(cells.get("masters"), where, "masters"),
                 "reads": _split(cells.get("reads"), where, "reads"),
                 **_retirement(cells, where),
+                "mastery_notes": [],
                 "capabilities": [],
                 "constraints": [],
                 "components": [],
@@ -2570,6 +2604,17 @@ def _read_workbook(content: bytes) -> CatalogueContent:
             owner(cells, where)["constraints"].append(
                 _text(cells.get("constraint"), where, "constraint")
             )
+        for number, cells in _rows(workbook, MASTERY_NOTES):
+            where = f"{MASTERY_NOTES} row {number}"
+            try:
+                owner(cells, where)["mastery_notes"].append(
+                    MasteryNote(
+                        _text(cells.get("entity_id"), where, "entity_id"),
+                        _text(cells.get("note"), where, "note"),
+                    )
+                )
+            except InvalidKnowledgeError as exc:
+                raise _located(where, exc) from exc
         relationships = []
         for number, cells in _rows(workbook, RELATIONSHIPS):
             where = f"{RELATIONSHIPS} row {number}"
@@ -2723,6 +2768,7 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                     reads=data["reads"],
                     deprecated=data["deprecated"],
                     replaced_by=data["replaced_by"],
+                    mastery_notes=tuple(data["mastery_notes"]),
                 )
             )
         except InvalidKnowledgeError as exc:
@@ -3590,6 +3636,8 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
             )
         for constraint in system.constraints:
             _append(sheets[CONSTRAINTS], (system.id, constraint))
+        for note in system.mastery_notes:
+            _append(sheets[MASTERY_NOTES], (system.id, note.entity_id, note.note))
     for relationship in release.relationships if release is not None else ():
         _append(
             sheets[RELATIONSHIPS],

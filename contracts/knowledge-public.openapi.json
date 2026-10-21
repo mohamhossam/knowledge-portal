@@ -999,6 +999,18 @@
             ],
             "title": "Document Id"
           },
+          "document_type": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Type"
+          },
           "expected_version": {
             "anyOf": [
               {
@@ -1468,6 +1480,16 @@
             "title": "Aliases",
             "type": "array"
           },
+          "capability_domain": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CapabilityDomainSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "capability_id": {
             "anyOf": [
               {
@@ -1531,6 +1553,16 @@
             "title": "Concept Ids",
             "type": "array"
           },
+          "conflict": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConflictSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "description": {
             "anyOf": [
               {
@@ -1542,6 +1574,16 @@
               }
             ],
             "title": "Description"
+          },
+          "interface": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SystemInterfaceSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "journey": {
             "anyOf": [
@@ -1555,6 +1597,16 @@
           },
           "kind": {
             "$ref": "#/components/schemas/CandidateKind"
+          },
+          "knowledge_source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KnowledgeSourceSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "landscape_domain_id": {
             "anyOf": [
@@ -1598,6 +1650,16 @@
             ],
             "title": "Parent Domain Id"
           },
+          "portfolio_node": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PortfolioNodeSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "product": {
             "anyOf": [
               {
@@ -1612,6 +1674,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/OpenQuestionSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "realisation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RealisationRecordSchema"
               },
               {
                 "type": "null"
@@ -1716,7 +1788,13 @@
           "concept",
           "component_link",
           "vocabulary_term",
-          "offering_rule"
+          "offering_rule",
+          "interface",
+          "capability_domain",
+          "portfolio_node",
+          "realisation_record",
+          "source",
+          "conflict"
         ],
         "title": "CandidateKind",
         "type": "string"
@@ -1732,7 +1810,11 @@
           "needs_domain",
           "needs_offering",
           "needs_channel",
-          "needs_concept"
+          "needs_concept",
+          "needs_interface",
+          "needs_portfolio_node",
+          "needs_realisation",
+          "needs_source"
         ],
         "title": "CandidateMatch",
         "type": "string"
@@ -1748,6 +1830,15 @@
       },
       "CapabilityDomainSchema": {
         "properties": {
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
+          },
           "description": {
             "anyOf": [
               {
@@ -3109,6 +3200,49 @@
           "active"
         ],
         "title": "CitingDependency",
+        "type": "object"
+      },
+      "ClassificationOption": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label"
+        ],
+        "title": "ClassificationOption",
+        "type": "object"
+      },
+      "ClassificationOptions": {
+        "description": "The types and topics a library document may be given now.",
+        "properties": {
+          "document_types": {
+            "items": {
+              "$ref": "#/components/schemas/ClassificationOption"
+            },
+            "title": "Document Types",
+            "type": "array"
+          },
+          "topics": {
+            "items": {
+              "$ref": "#/components/schemas/ClassificationOption"
+            },
+            "title": "Topics",
+            "type": "array"
+          }
+        },
+        "required": [
+          "document_types",
+          "topics"
+        ],
+        "title": "ClassificationOptions",
         "type": "object"
       },
       "ComparedImpactResponse": {
@@ -6912,6 +7046,15 @@
       "KnowledgeSourceSchema": {
         "description": "A source the catalogue is read from, and its level (ADR-0101, step 5).",
         "properties": {
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
+          },
           "authority": {
             "anyOf": [
               {
@@ -7218,6 +7361,43 @@
           "fingerprint"
         ],
         "title": "LibraryApprovalRequest",
+        "type": "object"
+      },
+      "LibraryClassificationRequest": {
+        "description": "What kind of document it is and what it is about, as catalogue ids (ADR-0123).",
+        "properties": {
+          "document_type": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Type"
+          },
+          "expected_version": {
+            "minimum": 1.0,
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "topics": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Topics",
+            "type": "array"
+          }
+        },
+        "required": [
+          "expected_version"
+        ],
+        "title": "LibraryClassificationRequest",
         "type": "object"
       },
       "LibraryDependency": {
@@ -7609,6 +7789,17 @@
             ],
             "title": "Citations"
           },
+          "document_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Type"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -7673,6 +7864,14 @@
           "title": {
             "title": "Title",
             "type": "string"
+          },
+          "topics": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Topics",
+            "type": "array"
           },
           "version": {
             "title": "Version",
@@ -7931,6 +8130,27 @@
           "outdated_stories"
         ],
         "title": "MappingImpactResponse",
+        "type": "object"
+      },
+      "MasteryNoteSchema": {
+        "description": "Which part of an entity a system masters, where others master it too (ADR-0123).",
+        "properties": {
+          "entity_id": {
+            "maxLength": 200,
+            "title": "Entity Id",
+            "type": "string"
+          },
+          "note": {
+            "maxLength": 10000,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "entity_id",
+          "note"
+        ],
+        "title": "MasteryNoteSchema",
         "type": "object"
       },
       "MatchRole": {
@@ -9310,6 +9530,15 @@
       "PortfolioNodeSchema": {
         "description": "A level of the product portfolio, such as Enterprise \u203a Fixed \u203a SMB; levels are data.",
         "properties": {
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
+          },
           "confidence": {
             "anyOf": [
               {
@@ -10256,6 +10485,15 @@
       "RealisationRecordSchema": {
         "description": "A CFS, RFS or resource, the systems that deliver it, and what realises it below.",
         "properties": {
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
+          },
           "aliases": {
             "default": [],
             "items": {
@@ -11790,6 +12028,15 @@
           "a": {
             "$ref": "#/components/schemas/ConflictSideSchema"
           },
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
+          },
           "b": {
             "$ref": "#/components/schemas/ConflictSideSchema"
           },
@@ -12291,6 +12538,15 @@
             "title": "Masters",
             "type": "array"
           },
+          "mastery_notes": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/MasteryNoteSchema"
+            },
+            "maxItems": 5000,
+            "title": "Mastery Notes",
+            "type": "array"
+          },
           "name": {
             "maxLength": 300,
             "title": "Name",
@@ -12401,6 +12657,15 @@
       "SystemInterfaceSchema": {
         "description": "An API, event or file contract one system exposes, and the systems that consume it.",
         "properties": {
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
+          },
           "confidence": {
             "anyOf": [
               {
@@ -13323,7 +13588,8 @@
           "component_kind",
           "responsibility_role",
           "open_api",
-          "information_entity"
+          "information_entity",
+          "document_type"
         ],
         "title": "VocabularyScheme",
         "type": "string"
@@ -20047,6 +20313,61 @@
         ]
       }
     },
+    "/library/classification-options": {
+      "get": {
+        "description": "The document types and topics the catalogue in service offers.",
+        "operationId": "classification_options_library_classification_options_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassificationOptions"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Classification Options",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/library/documents": {
       "get": {
         "operationId": "list_documents_library_documents_get",
@@ -20749,6 +21070,79 @@
           }
         ],
         "summary": "Preview Chunks",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/library/documents/{document_id}/classification": {
+      "put": {
+        "operationId": "classify_library_documents__document_id__classification_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LibraryClassificationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Classify",
         "tags": [
           "library"
         ]

@@ -66,7 +66,7 @@ export function SourcesEdit({ onDone }: { onDone: () => void }) {
         items={items}
         onChange={setItems}
         labelled
-        blank={() => ({ id: "", title: "", level: "L2", supplied: true })}
+        blank={() => ({ id: "", title: "", level: "L2", supplied: true, accepted: [] })}
         itemLabel={(item, index) => cut(item.short || item.title, index, "source")}
         render={(item, update) => (
           <>
@@ -153,7 +153,7 @@ export function ConflictsEdit({ onDone }: { onDone: () => void }) {
         items={items}
         onChange={setItems}
         labelled
-        blank={() => ({ id: "", title: "", a: { source_id: "", statement: "" }, b: { source_id: "", statement: "" }, scope: [] })}
+        blank={() => ({ id: "", title: "", a: { source_id: "", statement: "" }, b: { source_id: "", statement: "" }, scope: [], accepted: [] })}
         itemLabel={(item, index) => cut(item.title, index, "conflict")}
         render={(item, update) => (
           <>

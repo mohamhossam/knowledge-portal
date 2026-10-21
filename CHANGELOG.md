@@ -7,20 +7,13 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
-- Names compared one way (`docs/slices/model-cleanup.md`): two systems, two components of
-  one system or two sibling domains may no longer differ only in punctuation ("Wi-Fi Hub"
-  and "WiFi hub"), as concepts and terms already may not; one system still keeps such
-  spellings of its own name. A capability linked to a concept sits in that concept's
-  domain or in none. The committed catalogue holds to both. ADR-0123 proposes the item's
-  three open decisions: co-mastery, an interface suggestion kind, library classification.
-
 - Sources a draft cites but doesn't register. A fact cites its source as the source's id or
   short name, then where in it; one whose source the register doesn't hold can't show that
   source's level or title. The Check step lists each such source with how many facts cite it
   and a few of them, and links to the draft's register; it says so when every fact names a
   registered source, and a failed check doesn't hold up the step. Citations that differ only
-  in case are one source. The committed catalogue cites four: "Ontology plan" Phases 1, 6 and
-  8, and "Catalogue curation". `GET /architecture-knowledge/releases/{id}/citations`; public
+  in case are one source. The committed catalogue cites five: "Ontology plan" Phases 1, 6 and
+  8, "ADR-0123" and "Catalogue curation". `GET /architecture-knowledge/releases/{id}/citations`; public
   contract, additive.
 
 - Stable ids for offerings and journeys (ADR 0124, proposed). An offering or journey can be
@@ -55,6 +48,120 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   order types' stages (the lab's stage table of 2026-10-14) and the two fallout cases' systems,
   each named in its own text. Contracts, additive (public and internal: requirement-portal
   should review the new optional fields).
+
+### Changed
+
+- Dependabot no longer proposes TypeScript 6 or later (`.github/dependabot.yml`):
+  openapi-typescript and typescript-eslint, even at their latest, require TypeScript below 6.1,
+  so such a bump cannot install. Lift the rule once both accept a newer major.
+- CI builds and tests the frontend on Node 26 (`.github/workflows/ci.yml`), the version the web
+  image builds with once #115 moves `deploy/web` to `node:26-alpine`.
+
+### Fixed
+
+- A catalogue upload the malware scanner gives no verdict on is refused with 503
+  `malware_scanner_unavailable`, not 422 `document_extraction`: the scanner being down, or
+  the file being larger than it accepts, is an outage to retry, not a fault in the file. This
+  covers document uploads and catalogue-file preview and import. A batch upload stops at the
+  first such file instead of waiting on the scanner for each one after it; those are refused
+  unscanned, and the response still lists every file, with the ones already added. Nothing is
+  ever taken unscanned. The screens say what to do, since the service withholds an outage's
+  own message. Public contract unchanged.
+
+- Accessibility and reading fixes from the catalogue's design review. A focused field in a
+  workbench record pane, which scrolls on its own, now stays clear of a pinned editor foot
+  as it does in the page (WCAG 2.4.11). The masthead's sign-out and a search field's clear
+  button are 24px targets (WCAG 2.5.8). A diagram's "Show as table" button now says
+  "Show as drawing" once the table shows, instead of a pressed state. Lead and caption text
+  keeps to 62 characters a line, as Archivo's wide figures run long. The device an offering
+  is built on is one choice above its parts, so choosing one no longer silently clears
+  another part's box. Closing a journey's edit or remove panel gives focus back to its
+  button, as an offering's already did. A question's title field takes the full width.
+
+## 0.7.0 — 2026-10-21
+
+Reading a document now suggests every kind of catalogue entry a curator decides on: interfaces,
+capability domains, portfolio nodes, realisation records, sources and conflicts join the
+earlier kinds, each recording where it came from once accepted (ADR-0123). Systems that share
+mastery of an entity carry a note on the part each owns; library documents carry a type and
+topics, in English; the explorer keeps a version's change history and rate-limits plans
+lookups (ADR-0101 Amendment 3). Uses platform-kernel v1.3.1 and Pillow 13.
+
+### Added
+
+- Sources and conflicts suggested from documents (ADR-0123,
+  `docs/slices/source-conflict-suggestions.md`), the last of the suggestion kinds the owner
+  asked for: reading a document now suggests the sources it names or is (title, the name it is
+  cited by, version, and level, L3 unless the document states one) and the conflicts it reports
+  between two sources (both statements, where each is said, the offerings affected). A source
+  fills an existing one's gaps and never changes its level; a conflict waits for its two
+  sources (new `needs_source`) and the offerings it affects (`needs_offering`), keeps the sides
+  first recorded, and is always decided one by one, never accepted in bulk. Both record where
+  they came from once accepted (`accepted` on sources and conflicts, kept by every catalogue
+  file format). Decide lists them under Sources and Conflicts between sources. Public contract,
+  additive; prompt `catalogue-extraction-v20`.
+
+- Realisation records suggested from documents (ADR-0123,
+  `docs/slices/realisation-suggestions.md`): reading a document now suggests the customer-facing
+  services, resource-facing services and resources it names (layer, the system that delivers or
+  holds it, and what realises it one layer down). One per record, its readings merged; it waits
+  for the systems it names (`needs_system`) and for the lower-layer records that realise it (new
+  `needs_realisation`), fills an existing record's names, systems and gaps without replacing its
+  layer or anything set, and records where it came from once accepted (`accepted` on realisation
+  records, kept by every catalogue file format). Accepting all takes resources, then RFSs, then
+  CFSs. Decide lists them under Realisations. Public contract, additive; prompt
+  `catalogue-extraction-v19`.
+
+- Business areas and portfolio places suggested from documents (ADR-0123,
+  `docs/slices/tree-suggestions.md`): reading a document now suggests the capability domains
+  ("business areas") and portfolio nodes it describes, each with the node it sits inside,
+  and a portfolio node with its level in the document's own words. One per tree and name, its
+  readings merged; each waits for its parent (`needs_domain`, new `needs_portfolio_node`),
+  fills an existing node's gaps and never replaces its level or anything set, and records
+  where it came from once accepted (ADR-0120): `accepted` on capability domains and portfolio
+  nodes, kept by every catalogue file format. Decide lists them under Business areas and
+  Portfolio. Accepting all now repeats while it makes progress, so a node three levels down
+  is accepted in one go once the nodes above it are. Public contract, additive; prompt
+  `catalogue-extraction-v18`.
+
+- Interfaces suggested from documents (ADR-0123, `docs/slices/interface-suggestions.md`):
+  reading a document now suggests the APIs, event streams and file feeds it describes, each
+  with the system that exposes it and those that consume it. One per system and name, its
+  readings merged; it waits for the systems it names and the interfaces it relays, fills an
+  existing interface's gaps and never overrides it, and records where it came from once
+  accepted (ADR-0120). Decide lists them under Interfaces. An accepted suggestion of any kind
+  now always reaches the draft: capability domains, conflicts, the portfolio, interfaces and
+  realisation records were left out of what accepting saved. Public contract, additive;
+  prompt `catalogue-extraction-v17`.
+
+- Library documents have a type and topics (ADR-0123, `docs/slices/library-classification.md`):
+  the owner sets what kind of document it is (a document-type term of the catalogue in service,
+  such as Solution design or Contract) and the business capabilities it is about, on its page
+  or its type at upload. The library list filters by type and topic, and the summary and the
+  document page say both. English only. `GET /library/classification-options`,
+  `PUT /library/documents/{id}/classification`, and an optional `document_type` on upload;
+  public contract, additive. The catalogue gains a `document_type` vocabulary with eight terms.
+
+- Data with more than one owner (ADR-0123, `docs/slices/shared-mastery.md`): several systems
+  may be the system of record for one information entity when each says which part it
+  masters, in a `mastery_notes` list on the system (API, YAML and JSON, and a new MasteryNotes
+  workbook sheet). A note names an entity its system masters, once. The system record shows
+  each note; the draft's Check step lists the shared entities and the owners with no note yet,
+  and Publish names them as worth a look without holding publishing. Public contract, additive.
+
+- Explorer plans lookups are rate-limited (requirement-portal ADR-0101, Amendment 3,
+  `docs/slices/explorer-plans-limit.md`): each reader's lookups of an offering's plans count
+  against their own per-minute budget (`PROVIDER_RATE_LIMIT_PER_MINUTE`), apart from admins' AI
+  calls; past it they are told "Too many product catalogue lookups" with when to try again
+  (429, `Retry-After`). The explorer keeps the version's change history: the owner decided it is
+  content, and the rule now says so.
+
+- Names compared one way (`docs/slices/model-cleanup.md`): two systems, two components of
+  one system or two sibling domains may no longer differ only in punctuation ("Wi-Fi Hub"
+  and "WiFi hub"), as concepts and terms already may not; one system still keeps such
+  spellings of its own name. A capability linked to a concept sits in that concept's
+  domain or in none. The committed catalogue holds to both. ADR-0123 proposes the item's
+  three open decisions: co-mastery, an interface suggestion kind, library classification.
 
 - One canonical dependency model, part 2 (ADR-0119, `docs/slices/derived-dependencies.md`):
   a draft's Sources step suggests every dependency its interfaces and journeys already say
@@ -165,26 +272,17 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   that stops on a failed read or after 120 s, and the service's refusal (409, such as a
   draft already in progress) reported in one line instead of a traceback.
 
+### Changed
+
+- platform-kernel v1.3.1 (was v1.1.0): it allows Pillow 13, so only the docling family still
+  needs the `[tool.uv]` Pillow override. Behaviour changes it brings (kernel CHANGELOG 1.2.0):
+  migrations serialise on an advisory lock and wait at most 10 s for each lock, so a migration
+  stuck behind live traffic fails and leaves the database as it was instead of queueing every
+  later query; OIDC tokens get 60 s of clock leeway; signing keys reload without blocking other
+  requests; and the client for requirement-portal has a circuit breaker, failing at once for
+  30 s after five unavailable calls in a row. Tracing (1.3.0) stays off. No upgrade step.
+
 ### Fixed
-
-- Accessibility and reading fixes from the catalogue's design review. A focused field in a
-  workbench record pane, which scrolls on its own, now stays clear of a pinned editor foot
-  as it does in the page (WCAG 2.4.11). The masthead's sign-out and a search field's clear
-  button are 24px targets (WCAG 2.5.8). A diagram's "Show as table" button now says
-  "Show as drawing" once the table shows, instead of a pressed state. Lead and caption text
-  keeps to 62 characters a line, as Archivo's wide figures run long. The device an offering
-  is built on is one choice above its parts, so choosing one no longer silently clears
-  another part's box. Closing a journey's edit or remove panel gives focus back to its
-  button, as an offering's already did. A question's title field takes the full width.
-
-- A catalogue upload the malware scanner gives no verdict on is refused with 503
-  `malware_scanner_unavailable`, not 422 `document_extraction`: the scanner being down, or
-  the file being larger than it accepts, is an outage to retry, not a fault in the file. This
-  covers document uploads and catalogue-file preview and import. A batch upload stops at the
-  first such file instead of waiting on the scanner for each one after it; those are refused
-  unscanned, and the response still lists every file, with the ones already added. Nothing is
-  ever taken unscanned. The screens say what to do, since the service withholds an outage's
-  own message. Public contract unchanged.
 
 - The catalogue's view model (adapter, model, conventions, vocabulary, flow layout, exports and the
   bundled sample) moves from a new top-level `frontend/src/architecture/` to

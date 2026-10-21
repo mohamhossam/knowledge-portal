@@ -50,6 +50,7 @@ def test_the_smb_catalogue_lists_what_it_cites_but_does_not_register() -> None:
         ("Ontology plan Phase 8", 68),
         ("Ontology plan Phase 1", 38),
         ("Ontology plan Phase 6", 35),
+        ("ADR-0123", 8),
         ("Catalogue curation", 3),
     ]
     assert len(found[0].examples) == 3
@@ -112,7 +113,8 @@ def test_a_citation_names_a_source_by_its_id_or_short_name_as_a_whole_word() -> 
 def test_the_endpoint_lists_them_for_maintainers_only(client: TestClient) -> None:
     draft = client.post(RELEASES, json={"name": "Next"}).json()
     root = f"{RELEASES}/{draft['id']}"
-    assert client.get(f"{root}/citations").json() == []
+    # A new draft starts as the version in service, whose vocabulary cites ADR-0123.
+    assert [item["cited"] for item in client.get(f"{root}/citations").json()] == ["ADR-0123"]
     imported = client.post(
         f"{root}/catalogue-file",
         data={"expected_revision": draft["revision"]},

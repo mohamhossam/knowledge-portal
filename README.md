@@ -13,7 +13,7 @@ It is one of three repositories:
 - [`platform-kernel`](https://github.com/mohamhossam/platform-kernel), which holds the shared
   mechanisms.
 
-> **Status: the portal is complete and released (v0.6.0).** The API, worker, schema, data
+> **Status: the portal is complete and released (v0.7.0).** The API, worker, schema, data
 > import, images and CI are in place. The browser app ships every curation screen on its
 > design system ("The Calm Ledger", `DESIGN.md`), with sign-in, the no-access page and the
 > read-only Product Architecture Explorer. See `ROADMAP.md` for what each stage delivered.

@@ -6,8 +6,9 @@ from a link in requirement-portal, sometimes on a phone.
 **Goal:** find out which systems take part when a customer orders an offering through a
 channel, in plain words.
 
-**Constraint (ADR-0101):** the reader sees the version in service only. Never drafts,
-documents or history. Never any write.
+**Constraint (ADR-0101):** the reader sees the version in service only, with the change
+history applied to it (Amendment 3). Never drafts, documents, the index or earlier versions.
+Never any write.
 
 ## Current
 

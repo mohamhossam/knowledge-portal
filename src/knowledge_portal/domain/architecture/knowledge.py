@@ -94,6 +94,8 @@ class CapabilityDomain:
     name_ar: str | None = None
     parent_id: str | None = None
     description: str | None = None
+    # The accepted suggestions that created or extended it, oldest first (ADR-0120).
+    accepted: tuple[AcceptedFrom, ...] = ()
 
     def __post_init__(self) -> None:
         _check_node(self, "Domain")
@@ -262,6 +264,19 @@ class SystemComponent:
 
 
 @dataclass(frozen=True)
+class MasteryNote:
+    """Which part of an information entity a system is the system of record for, when it
+    shares that role with another system (ADR-0123): "Customers migrated to Netcracker"."""
+
+    entity_id: str
+    note: str
+
+    def __post_init__(self) -> None:
+        _required(self.entity_id, "Mastered entity")
+        _required(self.note, "Mastery note")
+
+
+@dataclass(frozen=True)
 class SystemDefinition:
     id: str
     name: str
@@ -297,6 +312,8 @@ class SystemDefinition:
     replaced_by: str | None = None
     # The accepted suggestions that created or extended it, oldest first (ADR-0120).
     accepted: tuple[AcceptedFrom, ...] = ()
+    # What part of an entity it masters, where others master it too (ADR-0123).
+    mastery_notes: tuple[MasteryNote, ...] = ()
 
     def __post_init__(self) -> None:
         _required(self.id, "System id")
@@ -323,6 +340,14 @@ class SystemDefinition:
         labels = (self.name, *((self.name_ar,) if self.name_ar else ()), *self.aliases)
         if len({_compared(value) for value in labels}) != len(labels):
             raise InvalidKnowledgeError("System names and aliases must be unique.")
+        noted = [item.entity_id for item in self.mastery_notes]
+        if len(set(noted)) != len(noted):
+            raise InvalidKnowledgeError(f"{self.name}: one mastery note per entity.")
+        unmastered = [item for item in noted if item not in self.masters]
+        if unmastered:
+            raise InvalidKnowledgeError(
+                f"{self.name} has a mastery note for {unmastered[0]!r}, which it does not master."
+            )
         if len({item.id for item in self.capabilities}) != len(self.capabilities):
             raise InvalidKnowledgeError("Capability ids must be unique within a system.")
         if len({item.id for item in self.components}) != len(self.components):

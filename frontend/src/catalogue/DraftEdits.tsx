@@ -269,7 +269,7 @@ export function DomainsEdit({ tree, onDone }: { tree: "landscape" | "areas"; onD
       error={saveDraft.error}
       onCancel={onDone}
       onSubmit={() =>
-        saveDraft.mutate(draftBody(release, tree === "landscape" ? { landscape_domains: finished.map((item) => ({ ...item, cross_cutting: item.cross_cutting ?? false, accepted: [] })) } : { capability_domains: finished }), {
+        saveDraft.mutate(draftBody(release, tree === "landscape" ? { landscape_domains: finished.map((item) => ({ ...item, cross_cutting: item.cross_cutting ?? false, accepted: [] })) } : { capability_domains: finished.map((item) => ({ ...item, accepted: [] })) }), {
           onSuccess: onDone,
         })
       }

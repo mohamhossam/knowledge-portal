@@ -1,10 +1,10 @@
 # ROADMAP.md — knowledge-portal
 
-## Delivery status — 2026-10-20
+## Delivery status — 2026-10-21
 
 | Scope | Status | Remaining |
 |---|---|---|
-| Post-v0.6.0 curation work (the golden-set report, catalogue fields `delivery_drop` / `cross_cutting` / `main_track`, per-channel journey flows, decide-next guidance, and the rest of `CHANGELOG.md` "Unreleased") | Built on `main`, unreleased | Cut the next release tag so the ~300 unreleased changelog lines ship (or decide to hold them) |
+| Post-v0.6.0 curation work (the golden-set report, catalogue fields `delivery_drop` / `cross_cutting` / `main_track`, per-channel journey flows, decide-next guidance, every remaining AI suggestion kind (ADR-0123), shared mastery notes, library type and topics, explorer change history and the plans rate limit, platform-kernel v1.3.1) | Released as v0.7.0 (2026-10-21) | Customer's two masters (CBCM, Netcracker CRM) still need their mastery notes from the owner (ADR-0123) |
 | Stage 0: repository scaffolding (`AGENTS.md`, `CLAUDE.md`, `ROADMAP.md`, `UPSTREAM.md`) | Done; CI arrived with 3.4 | Branch protection on `main` |
 | Stage 3: the service | Done: the backend (3.1 to 3.4, and the owner's source-impact view), the UI foundation and front page, and the curation screens for the library, the architecture catalogue and the squads ([#11](https://github.com/mohamhossam/knowledge-portal/pull/11)–[#18](https://github.com/mohamhossam/knowledge-portal/pull/18)) | — |
 | The Product Architecture Explorer (requirement-portal ADR-0101, steps 1–7) | Done 2026-10-05: the explorer on the version in service for anyone signed in, channels, plans and prices (TMF620), realisation, NFRs, tracking and lifecycle notes, source levels and conflicts, the Solution Architecture `.docx`, and change requests from Requirement AI ([#22](https://github.com/mohamhossam/knowledge-portal/pull/22)–[#36](https://github.com/mohamhossam/knowledge-portal/pull/36); `UPSTREAM.md` names each) | Live-model extraction checks, and a live TMF620 catalog |

@@ -376,3 +376,151 @@ describe("what waits on what (focus mode)", () => {
     expect(decideChoices(link)[0]!.consequence).toContain("The link was inferred, not stated.");
   });
 });
+
+describe("an interface suggestion (ADR-0123)", () => {
+  const contract = (extra: Partial<NonNullable<Suggestion["content"]["interface"]>> = {}) => ({
+    id: "if-order-hub-order-api", name: "Order API", system_id: "order-hub", style: "api" as const,
+    consumer_ids: ["cwom", "billing"], open_api_ids: [], entity_ids: [], relays: [], accepted: [], ...extra,
+  });
+  const orders = suggestion(
+    { kind: "interface", system_id: "if-order-hub-order-api", name: "Order API", interface: contract() },
+    { match: "needs_system", missing_systems: ["order-hub", "billing"] } as Partial<Suggestion>,
+  );
+  const relaying = suggestion(
+    { kind: "interface", system_id: "if-tibco-relay", name: "Relay", interface: contract({ id: "if-tibco-relay", name: "Relay", system_id: "cwom", consumer_ids: [], relays: ["Order API"] }) },
+    { match: "needs_interface" },
+  );
+  const named = lexicon(release, [hub, orders, relaying]);
+
+  it("says what it adds, of which system and for whom", () => {
+    expect(changeSentence(orders, named)).toBe("Adds the interface Order API of Order Hub, consumed by CWOM, Billing");
+  });
+
+  it("waits for the systems it names, and for the interfaces it relays", () => {
+    expect(waitsFor(orders, named)).toBe("Waits for the systems Order Hub, Billing");
+    expect(waitsFor(relaying, named)).toBe("Waits for the interface it relays: Order API");
+    expect(inWords("Accept or add interface 'Order API' before the interface Relay that relays it.", named)).toBe(
+      "Accept or add the interface Order API before the interface Relay that relays it.",
+    );
+  });
+
+  it("is listed under Interfaces, not under a system", () => {
+    const groups = suggestionGroups(release, [hub, orders], named);
+    expect(groups.find((group) => group.key === "section:interfaces")?.suggestions).toEqual([orders]);
+  });
+});
+
+describe("business area and portfolio suggestions (ADR-0123)", () => {
+  const area = suggestion(
+    { kind: "capability_domain", system_id: "partners", name: "Partners", capability_domain: { id: "partners", name: "Partners", accepted: [] } },
+  );
+  const onboarding = suggestion(
+    {
+      kind: "capability_domain", system_id: "partners-onboarding", name: "Onboarding",
+      capability_domain: { id: "partners-onboarding", name: "Onboarding", parent_id: "Partners", accepted: [] },
+    },
+    { match: "needs_domain" },
+  );
+  const fixed = suggestion(
+    { kind: "portfolio_node", system_id: "fixed", name: "Fixed", portfolio_node: { id: "fixed", name: "Fixed", level: "Line of business", accepted: [] } },
+  );
+  const smb = suggestion(
+    {
+      kind: "portfolio_node", system_id: "fixed-smb", name: "SMB",
+      portfolio_node: { id: "fixed-smb", name: "SMB", level: "Segment", parent_id: "Fixed", accepted: [] },
+    },
+    { match: "needs_portfolio_node" },
+  );
+  const all = [area, onboarding, fixed, smb];
+  const named = lexicon(release, all);
+
+  it("says what each adds and where it sits", () => {
+    expect(changeSentence(onboarding, named)).toBe("Adds the business area Onboarding, inside Partners");
+    expect(changeSentence(smb, named)).toBe("Adds SMB (Segment) to the portfolio, under Fixed");
+  });
+
+  it("waits for its parent, which another suggestion adds", () => {
+    expect(waitsFor(onboarding, named)).toBe("Waits for the business area Partners");
+    expect(waitsFor(smb, named)).toBe("Waits for Fixed in the portfolio");
+    expect(bulkAcceptable(release, all).lifted).toEqual([onboarding, smb]);
+    expect(inWords("Accept or add portfolio node 'Fixed' before SMB, which sits under it.", named)).toBe(
+      "Accept or add Fixed in the portfolio before SMB, which sits under it.",
+    );
+  });
+
+  it("is listed under Business areas and Portfolio, not under a system", () => {
+    const groups = suggestionGroups(release, all, named);
+    const held = (key: string) => groups.find((group) => group.key === key)?.suggestions.map((item) => item.id).sort();
+    expect(held("section:areas")).toEqual([area.id, onboarding.id].sort());
+    expect(held("section:portfolio")).toEqual([fixed.id, smb.id].sort());
+  });
+});
+
+describe("realisation record suggestions (ADR-0123)", () => {
+  const appliance = suggestion(
+    { kind: "realisation_record", system_id: "resource-quokka-appliance", name: "QUOKKA_APPLIANCE", realisation: { id: "resource-quokka-appliance", layer: "resource", name: "QUOKKA_APPLIANCE", aliases: [], system_ids: [], realised_by: [], accepted: [] } },
+  );
+  const firewall = suggestion(
+    {
+      kind: "realisation_record", system_id: "cfs-quokka-firewall", name: "CFSS_QUOKKA_FIREWALL",
+      realisation: { id: "cfs-quokka-firewall", layer: "cfs", name: "CFSS_QUOKKA_FIREWALL", aliases: [], system_ids: ["cwom"], realised_by: ["QUOKKA_APPLIANCE"], accepted: [] },
+    },
+    { match: "needs_realisation" },
+  );
+  const all = [appliance, firewall];
+  const named = lexicon(release, all);
+
+  it("says its layer, who delivers it and what realises it", () => {
+    expect(changeSentence(firewall, named)).toBe("Adds the CFS CFSS_QUOKKA_FIREWALL, delivered by CWOM, realised by QUOKKA_APPLIANCE");
+    expect(changeSentence(appliance, named)).toBe("Adds the resource QUOKKA_APPLIANCE");
+  });
+
+  it("waits for what realises it, which another suggestion adds", () => {
+    expect(waitsFor(firewall, named)).toBe("Waits for QUOKKA_APPLIANCE, which realises it");
+    expect(bulkAcceptable(release, all).lifted).toEqual([firewall]);
+    expect(inWords("Accept or add realisation record 'QUOKKA_APPLIANCE' before CFSS_QUOKKA_FIREWALL, which it realises.", named)).toBe(
+      "Accept or add QUOKKA_APPLIANCE before CFSS_QUOKKA_FIREWALL, which it realises.",
+    );
+  });
+
+  it("is listed under Realisations", () => {
+    const groups = suggestionGroups(release, all, named);
+    expect(groups.find((group) => group.key === "section:realisations")?.suggestions.map((item) => item.id).sort()).toEqual([appliance.id, firewall.id].sort());
+  });
+});
+
+describe("source and conflict suggestions (ADR-0123)", () => {
+  const qpd = suggestion(
+    { kind: "source", system_id: "src-qpd", name: "Quokka Product Design", knowledge_source: { id: "src-qpd", title: "Quokka Product Design", short: "QPD", level: "L2", supplied: true, accepted: [] } },
+  );
+  const wln = suggestion(
+    { kind: "source", system_id: "src-wln", name: "Wombat Landscape Notes", knowledge_source: { id: "src-wln", title: "Wombat Landscape Notes", short: "WLN", level: "L3", supplied: true, accepted: [] } },
+  );
+  const speed = suggestion(
+    {
+      kind: "conflict", system_id: "conflict-speed", name: "Upload speed",
+      conflict: { id: "conflict-speed", title: "Upload speed", a: { source_id: "QPD", statement: "100 Mbps" }, b: { source_id: "WLN", statement: "50 Mbps" }, scope: [], accepted: [] },
+    },
+    { match: "needs_source" },
+  );
+  const all = [qpd, wln, speed];
+  const named = lexicon(release, all);
+
+  it("says what it registers, and both sides of a conflict", () => {
+    expect(changeSentence(qpd, named)).toBe("Registers the source Quokka Product Design (QPD), level L2");
+    expect(changeSentence(speed, named)).toBe("Records the conflict Upload speed: QPD says “100 Mbps”; WLN says “50 Mbps”");
+  });
+
+  it("waits for the sources a conflict cites, and is always decided one by one", () => {
+    expect(waitsFor(speed, named)).toBe("Waits for the sources QPD and WLN");
+    expect(needsOneByOne(speed)).toBe(true);
+    expect(needsOneByOne({ ...speed, match: "new" })).toBe(true);
+    expect(bulkAcceptable(release, all).ready).toEqual([qpd, wln]);
+  });
+
+  it("is listed under Sources and Conflicts between sources", () => {
+    const groups = suggestionGroups(release, all, named);
+    expect(groups.find((group) => group.key === "section:sources")?.suggestions.map((item) => item.id).sort()).toEqual([qpd.id, wln.id].sort());
+    expect(groups.find((group) => group.key === "section:conflicts")?.label).toBe("Conflicts between sources");
+  });
+});

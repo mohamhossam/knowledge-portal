@@ -4,7 +4,7 @@ import json
 
 from knowledge_portal.application.ports.catalogue_extractor import ExtractionRequest
 
-PROMPT_VERSION = "catalogue-extraction-v16"
+PROMPT_VERSION = "catalogue-extraction-v20"
 
 # A journey is the largest answer shape. A model whose context leaves too little room for
 # it reads without it (ADR-0096): LEAN_SYSTEM_PROMPT and an answer schema without journeys.
@@ -48,6 +48,44 @@ one channel. Each channel the document names for placing orders, such as in an "
 Channels" line or an order type's channels, is also one channel item, even when a system has \
 the same name: give that system as target_system. Never propose a channel as a system or a \
 dependency."""
+
+# Interfaces (ADR-0123) ride with channels: only the full prompts propose them.
+INTERFACE_RULE = """
+- interface: an API, event or file contract one system exposes for others, such as "CRM GW \
+API" (name), the system that exposes it (system), one system that consumes it (target_system) \
+if stated, how it is called (interface_style: "api", "event", "file", or "unspecified" when \
+the document does not say) and what it carries in one sentence (text) only if stated. Give one \
+interface item per consumer the document names; they are merged. An interface is also the \
+reason for a dependency: propose the relationship as well when the document says one system \
+calls or feeds another through it."""
+
+# Capability domains and the product portfolio (ADR-0123): only the full prompts propose them.
+TREE_RULE = """
+- capability_domain: a business area that capabilities belong to, such as "Order capture" or \
+"Billing", or an area inside one. Give its name, the name of the area it sits inside \
+(parent_domain) only if stated, and a short description (text) only if the document gives \
+one. Leave "system" empty. It is an area of business, never a system, team or landscape domain.
+- portfolio_node: a place in the product portfolio that offerings sit in, such as a business \
+unit, line of business, segment or product family ("Enterprise", "Fixed", "SMB"). Give its \
+name, its level in the document's own words (portfolio_level, such as "Segment"), the node \
+it sits under (parent_domain) only if stated, and a short description (text) only if given. \
+Leave "system" empty. A product sold is a product_offering, never a portfolio node.
+- realisation_record: a customer-facing service (CFS), resource-facing service (RFS) or \
+resource named as such, such as "CFSS_ONPREM_FIREWALL_HE". Give its name, its layer \
+(realisation_layer: "cfs", "rfs" or "resource"), the system that delivers it or holds the \
+resource (system) only if stated, the names of the RFSs or resources one layer down that \
+realise it (realised_by) only if stated, and what it is in one sentence (text) only if given. \
+A resource is realised by nothing below it.
+- source: a document the catalogue's facts come from, such as a solution design or a product \
+specification, when this document names it or says what it itself is. Give its title (name), \
+the short name it is cited by (aliases, one) if stated, its version (source_version) and level \
+(source_level: "L1" for the enterprise landscape, "L2" for a primary source of its scope, \
+"L3" for a carried-forward baseline) only if stated, and what it is the authority for (text) \
+only if stated. Leave "system" empty.
+- conflict: two sources that say contradicting things about the same fact. Give a short title \
+(name), the two sides (conflict_sides: each the source as named, what it says, and where if \
+stated), the offerings it affects (affected_offerings) if stated, and what differs (text). \
+Only when the document itself says the sources disagree; never reconcile them."""
 
 _SYSTEM_PROMPT = """You read architecture documents and propose entries for an architecture \
 catalogue. A human maintainer reviews every proposal before anything changes.
@@ -181,8 +219,12 @@ def _prompt(*, details: str, journey: str, channel: str, lean: bool = False) -> 
     )
 
 
-DETAILED_SYSTEM_PROMPT = _prompt(details=DETAIL_RULE, journey=JOURNEY_RULE, channel=CHANNEL_RULE)
-SYSTEM_PROMPT = _prompt(details="", journey=JOURNEY_RULE, channel=CHANNEL_RULE)
+DETAILED_SYSTEM_PROMPT = _prompt(
+    details=DETAIL_RULE, journey=JOURNEY_RULE, channel=CHANNEL_RULE + INTERFACE_RULE + TREE_RULE
+)
+SYSTEM_PROMPT = _prompt(
+    details="", journey=JOURNEY_RULE, channel=CHANNEL_RULE + INTERFACE_RULE + TREE_RULE
+)
 LEAN_SYSTEM_PROMPT = _prompt(details="", journey="", channel="", lean=True)
 
 

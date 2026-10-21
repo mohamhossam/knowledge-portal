@@ -15,17 +15,22 @@ from typing import Any, ClassVar, Protocol
 from knowledge_portal.domain.architecture.candidates import CandidateKind
 from knowledge_portal.domain.architecture.channels import Channel
 from knowledge_portal.domain.architecture.concepts import BusinessCapability
+from knowledge_portal.domain.architecture.governance import KnowledgeSource, SourceConflict
+from knowledge_portal.domain.architecture.interfaces import SystemInterface
 from knowledge_portal.domain.architecture.journeys import Journey
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
+    CapabilityDomain,
     KnowledgeCapability,
     LandscapeDomain,
     SystemComponent,
     SystemDefinition,
     SystemRelationship,
 )
+from knowledge_portal.domain.architecture.portfolio import PortfolioNode
 from knowledge_portal.domain.architecture.products import ProductOffering
 from knowledge_portal.domain.architecture.provenance import AcceptedFrom
+from knowledge_portal.domain.architecture.realisations import RealisationRecord
 from knowledge_portal.domain.architecture.vocabularies import VocabularyTerm
 
 # Which entity, by kind and identity: ("system", id), ("component", system id, id),
@@ -40,6 +45,12 @@ type _Carrier = (
     | ProductOffering
     | Journey
     | Channel
+    | SystemInterface
+    | CapabilityDomain
+    | PortfolioNode
+    | RealisationRecord
+    | KnowledgeSource
+    | SourceConflict
     | BusinessCapability
     | VocabularyTerm
 )
@@ -75,6 +86,24 @@ class CatalogueBody(Protocol):
     @property
     def vocabulary(self) -> tuple[VocabularyTerm, ...]: ...
 
+    @property
+    def interfaces(self) -> tuple[SystemInterface, ...]: ...
+
+    @property
+    def capability_domains(self) -> tuple[CapabilityDomain, ...]: ...
+
+    @property
+    def portfolio(self) -> tuple[PortfolioNode, ...]: ...
+
+    @property
+    def realisations(self) -> tuple[RealisationRecord, ...]: ...
+
+    @property
+    def sources(self) -> tuple[KnowledgeSource, ...]: ...
+
+    @property
+    def conflicts(self) -> tuple[SourceConflict, ...]: ...
+
 
 class _Visitor(Protocol):
     def __call__[T: _Carrier](self, key: AcceptanceKey, item: T, /) -> T: ...
@@ -95,6 +124,12 @@ _SUBJECT: dict[CandidateKind, str] = {
     CandidateKind.COMPONENT_LINK: "offering",
     CandidateKind.JOURNEY: "journey",
     CandidateKind.CHANNEL: "channel",
+    CandidateKind.INTERFACE: "interface",
+    CandidateKind.CAPABILITY_DOMAIN: "capability_domain",
+    CandidateKind.PORTFOLIO_NODE: "portfolio_node",
+    CandidateKind.REALISATION_RECORD: "realisation",
+    CandidateKind.SOURCE: "source",
+    CandidateKind.CONFLICT: "conflict",
     CandidateKind.CONCEPT: "concept",
     CandidateKind.VOCABULARY_TERM: "term",
 }
@@ -140,6 +175,14 @@ def _visit[Body: CatalogueBody](body: Body, visit: _Visitor) -> Body:
             visit(("concept", item.id), item) for item in body.business_capabilities
         ),
         vocabulary=tuple(visit(("term", item.id), item) for item in body.vocabulary),
+        interfaces=tuple(visit(("interface", item.id), item) for item in body.interfaces),
+        capability_domains=tuple(
+            visit(("capability_domain", item.id), item) for item in body.capability_domains
+        ),
+        portfolio=tuple(visit(("portfolio_node", item.id), item) for item in body.portfolio),
+        realisations=tuple(visit(("realisation", item.id), item) for item in body.realisations),
+        sources=tuple(visit(("source", item.id), item) for item in body.sources),
+        conflicts=tuple(visit(("conflict", item.id), item) for item in body.conflicts),
     )
 
 

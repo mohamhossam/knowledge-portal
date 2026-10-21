@@ -41,6 +41,8 @@ class VocabularyScheme(StrEnum):
     OPEN_API = "open_api"
     # What systems master or read, and interfaces carry: Customer, Product order.
     INFORMATION_ENTITY = "information_entity"
+    # What kind of document a library document is: a solution design, a contract (ADR-0123).
+    DOCUMENT_TYPE = "document_type"
 
 
 SCHEME_NAMES = {
@@ -50,6 +52,7 @@ SCHEME_NAMES = {
     VocabularyScheme.RESPONSIBILITY_ROLE: "role",
     VocabularyScheme.OPEN_API: "Open API",
     VocabularyScheme.INFORMATION_ENTITY: "information entity",
+    VocabularyScheme.DOCUMENT_TYPE: "document type",
 }
 
 _ID_PREFIXES = {
@@ -59,6 +62,7 @@ _ID_PREFIXES = {
     VocabularyScheme.RESPONSIBILITY_ROLE: "role",
     VocabularyScheme.OPEN_API: "api",
     VocabularyScheme.INFORMATION_ENTITY: "entity",
+    VocabularyScheme.DOCUMENT_TYPE: "doctype",
 }
 
 

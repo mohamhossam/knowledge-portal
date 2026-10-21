@@ -91,7 +91,10 @@ from knowledge_portal.domain.architecture.channels import (
     merge_channels,
     same_channel,
 )
+from knowledge_portal.domain.architecture.concepts import label_key
 from knowledge_portal.domain.architecture.deprecation import in_service
+from knowledge_portal.domain.architecture.governance import merge_conflicts, merge_sources
+from knowledge_portal.domain.architecture.interfaces import merge_interfaces
 from knowledge_portal.domain.architecture.journeys import (
     Journey,
     merge_journeys,
@@ -108,6 +111,7 @@ from knowledge_portal.domain.architecture.knowledge import (
 from knowledge_portal.domain.architecture.offering_drafts import slug
 from knowledge_portal.domain.architecture.products import (
     ProductOffering,
+    RealisationLayer,
     find_offering,
     find_offering_component,
     find_order_type,
@@ -115,6 +119,7 @@ from knowledge_portal.domain.architecture.products import (
     same_offering,
 )
 from knowledge_portal.domain.architecture.provenance import AcceptedFrom
+from knowledge_portal.domain.architecture.realisations import merge_realisations
 from knowledge_portal.domain.document.value_objects import DocumentVersionId, EvidenceBlockKind
 
 IMAGE_TYPES = frozenset({"image/png", "image/jpeg"})
@@ -315,6 +320,11 @@ def _within_budget(
 
 # Accepted in this order, so what a suggestion refers to is in the draft first.
 _ORDER = (
+    # The sources an offering or a conflict names are registered first;
+    CandidateKind.SOURCE,
+    # then trees: a capability names its domain, and an offering its portfolio node.
+    CandidateKind.CAPABILITY_DOMAIN,
+    CandidateKind.PORTFOLIO_NODE,
     CandidateKind.LANDSCAPE_DOMAIN,
     CandidateKind.SYSTEM,
     CandidateKind.PLACEMENT,
@@ -322,7 +332,11 @@ _ORDER = (
     CandidateKind.CAPABILITY,
     CandidateKind.CONSTRAINT,
     CandidateKind.RELATIONSHIP,
-    # A channel names the system its orders enter through,
+    # An interface names the systems that expose and consume it,
+    CandidateKind.INTERFACE,
+    # a realisation record the systems that deliver it,
+    CandidateKind.REALISATION_RECORD,
+    # a channel names the system its orders enter through,
     CandidateKind.CHANNEL,
     # then an offering names systems and channels that must be in the draft first,
     CandidateKind.PRODUCT,
@@ -338,6 +352,8 @@ _ORDER = (
     CandidateKind.COMPONENT_LINK,
     # A vocabulary term links values written in channels, offerings and journeys.
     CandidateKind.VOCABULARY_TERM,
+    # A conflict names the sources it cites and the offerings it affects.
+    CandidateKind.CONFLICT,
 )
 
 CommitFence = Callable[[], None]
@@ -361,6 +377,12 @@ def _view(candidate: CatalogueCandidate, release: ArchitectureKnowledge) -> Cand
     # concept's, and a component link's offering.
     channel = candidate.content.kind in {
         CandidateKind.CHANNEL,
+        CandidateKind.INTERFACE,
+        CandidateKind.CAPABILITY_DOMAIN,
+        CandidateKind.PORTFOLIO_NODE,
+        CandidateKind.REALISATION_RECORD,
+        CandidateKind.SOURCE,
+        CandidateKind.CONFLICT,
         CandidateKind.QUESTION,
         CandidateKind.CONCEPT,
         CandidateKind.COMPONENT_LINK,
@@ -423,6 +445,12 @@ def _references(
         CandidateKind.OFFERING_RULE,
         CandidateKind.JOURNEY,
         CandidateKind.CHANNEL,
+        CandidateKind.INTERFACE,
+        CandidateKind.CAPABILITY_DOMAIN,
+        CandidateKind.PORTFOLIO_NODE,
+        CandidateKind.REALISATION_RECORD,
+        CandidateKind.SOURCE,
+        CandidateKind.CONFLICT,
     }:
         return ()
     if content.kind is CandidateKind.SYSTEM:
@@ -507,8 +535,14 @@ def _canonical(
     unsuggested: dict[str, ProposedChange] = {}
     for change in changes:
         content = change.content
-        if content.kind is CandidateKind.LANDSCAPE_DOMAIN:
-            # Its subject is a domain, not a system.
+        if content.kind in {
+            CandidateKind.LANDSCAPE_DOMAIN,
+            CandidateKind.CAPABILITY_DOMAIN,
+            CandidateKind.PORTFOLIO_NODE,
+            CandidateKind.SOURCE,
+            CandidateKind.CONFLICT,
+        }:
+            # Its subject is a domain, a portfolio node, a source or a conflict, not a system.
             result.append(change)
             continue
         ruled = (
@@ -526,6 +560,30 @@ def _canonical(
             entry = content.channel.entry_system_id
             channel = replace(content.channel, entry_system_id=resolved(entry) if entry else None)
             result.append(replace(change, content=replace(content, channel=channel)))
+            continue
+        if content.kind is CandidateKind.INTERFACE and content.interface is not None:
+            exposer = resolved(content.interface.system_id)
+            interface = replace(
+                content.interface,
+                system_id=exposer,
+                consumer_ids=tuple(
+                    item
+                    for item in dict.fromkeys(
+                        resolved(name) for name in content.interface.consumer_ids
+                    )
+                    if item != exposer
+                ),
+            )
+            result.append(replace(change, content=replace(content, interface=interface)))
+            continue
+        if content.kind is CandidateKind.REALISATION_RECORD and content.realisation is not None:
+            record = replace(
+                content.realisation,
+                system_ids=tuple(
+                    dict.fromkeys(resolved(name) for name in content.realisation.system_ids)
+                ),
+            )
+            result.append(replace(change, content=replace(content, realisation=record)))
             continue
         if content.kind is CandidateKind.PRODUCT and content.product is not None:
             offering = content.product
@@ -804,6 +862,37 @@ def _one_channel_each(changes: tuple[ProposedChange, ...]) -> tuple[ProposedChan
     return tuple(result)
 
 
+def _one_interface_each(changes: tuple[ProposedChange, ...]) -> tuple[ProposedChange, ...]:
+    """Every reading of one interface as one suggestion: one system's interface of one name,
+    its consumers joined, the first's facts winning, with every reading's citations."""
+    result: list[ProposedChange] = []
+    places: dict[tuple[str, str], int] = {}
+    for change in changes:
+        interface = change.content.interface
+        if interface is None:
+            result.append(change)
+            continue
+        key = (interface.system_id, label_key(interface.name))
+        index = places.get(key)
+        first_interface = result[index].content.interface if index is not None else None
+        if index is None or first_interface is None:
+            places[key] = len(result)
+            result.append(change)
+            continue
+        first = result[index]
+        result[index] = replace(
+            first,
+            content=replace(first.content, interface=merge_interfaces(first_interface, interface)),
+            also_cited=(*first.also_cited, *change.citations),
+            basis=(
+                CandidateBasis.STATED
+                if CandidateBasis.STATED in {first.basis, change.basis}
+                else first.basis
+            ),
+        )
+    return tuple(result)
+
+
 def _one_offering_each(changes: tuple[ProposedChange, ...]) -> tuple[ProposedChange, ...]:
     """Every reading of one product offering as one suggestion (ADR-0095).
 
@@ -863,6 +952,14 @@ def _subject(content: CandidateContent) -> tuple[object, ...] | None:
         return (kind, content.system_id, " ".join(content.text.casefold().split()))
     if kind is CandidateKind.RELATIONSHIP:
         return (kind, content.system_id, content.target_system_id, content.relationship_kind)
+    if kind in {
+        CandidateKind.CAPABILITY_DOMAIN,
+        CandidateKind.PORTFOLIO_NODE,
+        CandidateKind.REALISATION_RECORD,
+        CandidateKind.SOURCE,
+        CandidateKind.CONFLICT,
+    }:
+        return (kind, content.system_id)
     return None
 
 
@@ -900,6 +997,44 @@ def _merged_content(lead: CandidateContent, others: list[CandidateContent]) -> C
             triggers=_labels(*(item.triggers for item in every)),
             concept_ids=tuple(dict.fromkeys(cid for item in every for cid in item.concept_ids)),
             component_id=_first([item.component_id for item in every]),
+        )
+    if lead.capability_domain is not None:
+        domain = lead.capability_domain
+        described = _first(
+            [item.capability_domain.description for item in every if item.capability_domain]
+        )
+        return replace(
+            lead, capability_domain=replace(domain, description=domain.description or described)
+        )
+    if lead.knowledge_source is not None:
+        source = lead.knowledge_source
+        for other in others:
+            if other.knowledge_source is not None:
+                source = merge_sources(source, other.knowledge_source)
+        return replace(lead, knowledge_source=source)
+    if lead.conflict is not None:
+        conflict = lead.conflict
+        for other in others:
+            if other.conflict is not None:
+                conflict = merge_conflicts(conflict, other.conflict)
+        return replace(lead, conflict=conflict)
+    if lead.realisation is not None:
+        record = lead.realisation
+        for other in others:
+            if other.realisation is not None:
+                record = merge_realisations(record, other.realisation)
+        return replace(lead, realisation=record)
+    if lead.portfolio_node is not None:
+        node = lead.portfolio_node
+        others_nodes = [item.portfolio_node for item in every if item.portfolio_node]
+        return replace(
+            lead,
+            portfolio_node=replace(
+                node,
+                description=_first([item.description for item in others_nodes]),
+                confidence=_first([item.confidence for item in others_nodes]),
+                source=_first([item.source for item in others_nodes]),
+            ),
         )
     return lead
 
@@ -1014,6 +1149,11 @@ def _accepted(
         change_history=merged.change_history,
         business_capabilities=merged.business_capabilities,
         vocabulary=merged.vocabulary,
+        capability_domains=merged.capability_domains,
+        conflicts=merged.conflicts,
+        portfolio=merged.portfolio,
+        interfaces=merged.interfaces,
+        realisations=merged.realisations,
     )
 
 
@@ -1244,7 +1384,9 @@ class ProposeCatalogueChanges:
         self_linked = 0
         read = tuple(_cited_where_repeated(change, repeats) for change in proposal.changes)
         canonical = _canonical(read, release)
-        for change in _one_journey_each(_one_offering_each(_one_channel_each(canonical))):
+        for change in _one_journey_each(
+            _one_offering_each(_one_channel_each(_one_interface_each(canonical)))
+        ):
             if _self_dependency(change.content):
                 # A table row naming one system twice is not a dependency, and
                 # accepting it would fail; it is left out rather than offered.
@@ -1496,22 +1638,29 @@ class DecideCatalogueCandidate:
                 if item.status is CandidateStatus.PROPOSED
             ),
             # A domain before the sub-domains inside it.
-            key=lambda item: (
-                _ORDER.index(item.content.kind),
-                item.content.parent_domain_id is not None,
-            ),
+            key=lambda item: (_ORDER.index(item.content.kind), _nested(item.content)),
         )
         merged = release
         accepted: list[CatalogueCandidate] = []
-        for candidate in pending:
-            if needs_one_by_one(candidate, merged):
-                continue
-            try:
-                merged = self._applied(candidate, candidate.content, merged, actor.id, at)
-            except (CandidateDependencyError, InvalidKnowledgeError):
-                # Left undecided for a one-by-one look; the rest still apply.
-                continue
-            accepted.append(candidate.decide(True, actor.id, at))
+        # Again while a round accepts something: a node three levels down waits for the one
+        # between, accepted in the same round or the round before.
+        waiting = pending
+        while waiting:
+            before = len(accepted)
+            later: list[CatalogueCandidate] = []
+            for candidate in waiting:
+                if needs_one_by_one(candidate, merged):
+                    continue
+                try:
+                    merged = self._applied(candidate, candidate.content, merged, actor.id, at)
+                except CandidateDependencyError:
+                    later.append(candidate)
+                    continue
+                except InvalidKnowledgeError:
+                    # Left undecided for a one-by-one look; the rest still apply.
+                    continue
+                accepted.append(candidate.decide(True, actor.id, at))
+            waiting = later if len(accepted) > before else []
         if not accepted:
             return release, len(pending)
         updated = _accepted(release, merged)
@@ -1669,6 +1818,19 @@ class DecideCatalogueCandidate:
             for item in decided:
                 self._candidates.save_decision(item)
             self._repository.save(updated, expected_revision, actor.id, "accept_suggestion")
+
+
+# Resources first, then the RFSs they realise, then CFSs.
+_LAYER_RANK = {RealisationLayer.RESOURCE: 0, RealisationLayer.RFS: 1, RealisationLayer.CFS: 2}
+
+
+def _nested(content: CandidateContent) -> int:
+    """How deep a suggestion sits, so what it sits inside or is realised by is accepted first:
+    a domain or portfolio node inside another, or a record by its layer."""
+    if content.realisation is not None:
+        return _LAYER_RANK[content.realisation.layer]
+    tree = content.capability_domain or content.portfolio_node
+    return int((content.parent_domain_id or (tree.parent_id if tree else None)) is not None)
 
 
 def _identity(content: CandidateContent) -> CandidateContent:

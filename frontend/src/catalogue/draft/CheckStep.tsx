@@ -4,11 +4,14 @@ import { type FormEvent, Fragment, useState } from "react";
 
 import { api, type ImpactComparison, type Release, type SampleRequirement } from "../../api/client";
 import { ApiError, errorMessage } from "../../api/errors";
-import { ActionGroup, Button, EmptyState, Lines, Section, Skeleton, Status, type StatusTone, TextArea, TextField } from "../../design/components";
+import {
+  ActionGroup, Button, type Column, DataTable, EmptyState, Lines, Section, Skeleton, Status, type StatusTone, TextArea, TextField,
+} from "../../design/components";
 import { count } from "../../home/format";
 import { ButtonLink, RouterLink } from "../../shell/links";
 import { BUILD_STATE, buildState, impactVerdict } from "../drafting";
 import { lines } from "../editing";
+import { type SharedEntity, sharedMastery } from "../mastery";
 import { useCatalogueContext } from "../useCatalogue";
 import { useBuild, useSamples } from "../useEditing";
 import { Said } from "./parts";
@@ -39,6 +42,7 @@ export function CheckStep() {
       <BuildSection release={release} build={build} state={state} />
       <Citations release={release} base={base} />
       <Samples release={release} built={state === "built"} />
+      <SharedData release={release} />
       <p className="draft-next">
         <ButtonLink to={`${base}/publish`} variant={state === "built" ? "primary" : "secondary"}>Next: publish</ButtonLink>
       </p>
@@ -81,6 +85,43 @@ function Citations({ release, base }: { release: Release; base: string }) {
           </Lines>
         </>
       )}
+    </Section>
+  );
+}
+
+/**
+ * Data that more than one system is the system of record for (ADR-0123). Sharing is
+ * allowed; each owner says which part it masters, and an owner that does not is listed.
+ */
+function SharedData({ release }: { release: Release }) {
+  const shared = sharedMastery(release);
+  if (!shared.length) return null;
+  const columns: Column<SharedEntity>[] = [
+    { id: "entity", header: "Information", rowHeader: true, bidi: true, width: "14rem", cell: (item) => item.name },
+    {
+      id: "owners",
+      header: "Systems of record, and the part each masters",
+      bidi: true,
+      cell: (item) => (
+        <Lines label={`Who masters ${item.name}`}>
+          {item.owners.map((owner) => (
+            <li key={owner.id} dir="auto">
+              <bdi>{owner.name}</bdi>: {owner.note ? <bdi>{owner.note}</bdi> : <Status tone="held">No note yet</Status>}
+            </li>
+          ))}
+        </Lines>
+      ),
+    },
+  ];
+  const unexplained = shared.reduce((total, item) => total + item.unexplained, 0);
+  return (
+    <Section title="Data with more than one owner" count={shared.length}>
+      <p className="draft-lead">
+        Several systems may be the system of record for the same information when each says which part it masters, such as the customers
+        migrated to a new CRM. Write the note in the catalogue file's MasteryNotes sheet.
+        {unexplained ? ` ${count(unexplained, "owner")} ${unexplained === 1 ? "says" : "say"} nothing yet; publishing is not held for it.` : ""}
+      </p>
+      <DataTable caption="Information more than one system masters" captionHidden columns={columns} rows={shared} rowId={(item) => item.id} />
     </Section>
   );
 }

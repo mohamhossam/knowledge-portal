@@ -53,7 +53,8 @@
    ],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "nc-csrd",
@@ -92,7 +93,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "pega",
@@ -128,7 +130,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "sonic",
@@ -164,7 +167,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "bcc",
@@ -206,7 +210,8 @@
    ],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "psm",
@@ -248,7 +253,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "ecm",
@@ -290,7 +296,8 @@
    ],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "rtf-catalog",
@@ -327,7 +334,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "caf",
@@ -369,7 +377,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "b2b-web",
@@ -422,7 +431,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "smb-app",
@@ -470,7 +480,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "sas-portal",
@@ -509,7 +520,8 @@
    ],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "cim",
@@ -547,7 +559,8 @@
    ],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "dcrm",
@@ -583,7 +596,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "cbcm",
@@ -628,7 +642,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "nc-crm",
@@ -671,7 +686,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "rtf",
@@ -716,7 +732,8 @@
    ],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "ibm-bpm",
@@ -757,7 +774,8 @@
    ],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "felix",
@@ -796,7 +814,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "ehs",
@@ -833,7 +852,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "nc-cpm",
@@ -873,7 +893,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "bscs",
@@ -914,7 +935,8 @@
    ],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "cwom",
@@ -953,7 +975,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "e2eso",
@@ -992,7 +1015,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "xaas",
@@ -1028,7 +1052,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "sla",
@@ -1064,7 +1089,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "veda",
@@ -1116,7 +1142,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "in",
@@ -1179,7 +1206,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "alepo",
@@ -1215,7 +1243,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "nrm",
@@ -1252,7 +1281,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "inv-6d",
@@ -1295,7 +1325,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "nps",
@@ -1334,7 +1365,8 @@
    ],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "gis",
@@ -1371,7 +1403,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "wfms",
@@ -1412,7 +1445,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "remedy",
@@ -1449,7 +1483,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "gov",
@@ -1486,7 +1521,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "eida",
@@ -1522,7 +1558,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "ocr",
@@ -1562,7 +1599,8 @@
    ],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "fortinet",
@@ -1613,7 +1651,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "npc",
@@ -1649,7 +1688,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "cns",
@@ -1689,7 +1729,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "edms",
@@ -1728,7 +1769,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "itsm",
@@ -1768,7 +1810,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "adfs",
@@ -1804,7 +1847,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "tibco",
@@ -1840,7 +1884,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "bff",
@@ -1878,7 +1923,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   }
  ],
  "relationships": [],
@@ -1899,35 +1945,40 @@
    "name": "Market and sales",
    "name_ar": null,
    "parent_id": null,
-   "description": "Selling to business customers: opportunities, quotes, offers and discounts."
+   "description": "Selling to business customers: opportunities, quotes, offers and discounts.",
+   "accepted": []
   },
   {
    "id": "product",
    "name": "Product",
    "name_ar": null,
    "parent_id": null,
-   "description": "Designing offerings and keeping the product catalogue, its eligibility and prices."
+   "description": "Designing offerings and keeping the product catalogue, its eligibility and prices.",
+   "accepted": []
   },
   {
    "id": "customer",
    "name": "Customer",
    "name_ar": null,
    "parent_id": null,
-   "description": "Taking, tracking and caring for customers' orders, accounts, documents, bills and problems."
+   "description": "Taking, tracking and caring for customers' orders, accounts, documents, bills and problems.",
+   "accepted": []
   },
   {
    "id": "service",
    "name": "Service",
    "name_ar": null,
    "parent_id": null,
-   "description": "The services an offering delivers, their fulfilment, activation and assurance."
+   "description": "The services an offering delivers, their fulfilment, activation and assurance.",
+   "accepted": []
   },
   {
    "id": "resource",
    "name": "Resource",
    "name_ar": null,
    "parent_id": null,
-   "description": "The network, devices, numbers and field work the services run on."
+   "description": "The network, devices, numbers and field work the services run on.",
+   "accepted": []
   }
  ],
  "landscape_domains": [
@@ -18125,7 +18176,8 @@
    "supplied": true,
    "authority": "CIT/E2E Solution Architecture",
    "scope": "Business Pro Plus: catalogue modelling, order types, fulfilment and tracking by drop (P1 to P4).",
-   "boundary": null
+   "boundary": null,
+   "accepted": []
   },
   {
    "id": "ref",
@@ -18137,7 +18189,8 @@
    "supplied": true,
    "authority": "Technical Value Stream Lead, SMB",
    "scope": "The SMB system landscape, its TAM domains and the default order flow.",
-   "boundary": null
+   "boundary": null,
+   "accepted": []
   }
  ],
  "conflicts": [
@@ -18165,7 +18218,8 @@
    "impact": null,
    "decision": null,
    "confidence": null,
-   "source": null
+   "source": null,
+   "accepted": []
   },
   {
    "id": "F2",
@@ -18191,7 +18245,8 @@
    "impact": null,
    "decision": null,
    "confidence": null,
-   "source": null
+   "source": null,
+   "accepted": []
   },
   {
    "id": "F13",
@@ -18217,7 +18272,8 @@
    "impact": null,
    "decision": null,
    "confidence": null,
-   "source": null
+   "source": null,
+   "accepted": []
   },
   {
    "id": "F16",
@@ -18245,7 +18301,8 @@
    "impact": null,
    "decision": null,
    "confidence": null,
-   "source": null
+   "source": null,
+   "accepted": []
   },
   {
    "id": "F17",
@@ -18271,7 +18328,8 @@
    "impact": null,
    "decision": null,
    "confidence": null,
-   "source": null
+   "source": null,
+   "accepted": []
   }
  ],
  "change_history": [],
@@ -18283,7 +18341,8 @@
    "parent_id": null,
    "description": "The business unit that owns the business portfolios.",
    "confidence": "inferred",
-   "source": "SMB reference v1.0 · title and scope; user, 2026-10-06"
+   "source": "SMB reference v1.0 · title and scope; user, 2026-10-06",
+   "accepted": []
   },
   {
    "id": "fixed",
@@ -18292,7 +18351,8 @@
    "parent_id": "enterprise",
    "description": "Fixed-line products: fibre broadband, voice and the services bundled with them.",
    "confidence": "inferred",
-   "source": "SMB reference v1.0 · title and scope; user, 2026-10-06"
+   "source": "SMB reference v1.0 · title and scope; user, 2026-10-06",
+   "accepted": []
   },
   {
    "id": "smb",
@@ -18301,7 +18361,8 @@
    "parent_id": "fixed",
    "description": "Small and medium businesses.",
    "confidence": "inferred",
-   "source": "SMB reference v1.0 · title and scope; user, 2026-10-06"
+   "source": "SMB reference v1.0 · title and scope; user, 2026-10-06",
+   "accepted": []
   },
   {
    "id": "business-internet",
@@ -18310,7 +18371,8 @@
    "parent_id": "smb",
    "description": "Bundles built on the Bundle Framework (BFM): broadband with business services.",
    "confidence": "inferred",
-   "source": "SMB reference v1.0 · title and scope; user, 2026-10-06"
+   "source": "SMB reference v1.0 · title and scope; user, 2026-10-06",
+   "accepted": []
   }
  ],
  "business_capabilities": [
@@ -19857,6 +19919,137 @@
    "deprecated": false,
    "replaced_by": null,
    "accepted": []
+  },
+  {
+   "id": "doctype-solution-design",
+   "scheme": "document_type",
+   "pref_label": "Solution design",
+   "alt_labels": [
+    "SDD",
+    "Solution design document"
+   ],
+   "notation": null,
+   "definition": "How a solution is built: its systems, integrations and data, such as an SDD.",
+   "broader_id": null,
+   "exact_match": null,
+   "confidence": "inferred",
+   "source": "ADR-0123 · library classification, the owner's decision of 2026-10-21",
+   "deprecated": false,
+   "replaced_by": null,
+   "accepted": []
+  },
+  {
+   "id": "doctype-high-level-design",
+   "scheme": "document_type",
+   "pref_label": "High-level design",
+   "alt_labels": [
+    "HLD"
+   ],
+   "notation": null,
+   "definition": "The shape of a solution before its detail: its parts and how they connect.",
+   "broader_id": null,
+   "exact_match": null,
+   "confidence": "inferred",
+   "source": "ADR-0123 · library classification, the owner's decision of 2026-10-21",
+   "deprecated": false,
+   "replaced_by": null,
+   "accepted": []
+  },
+  {
+   "id": "doctype-process-book",
+   "scheme": "document_type",
+   "pref_label": "Process book",
+   "alt_labels": [
+    "Workflow book"
+   ],
+   "notation": null,
+   "definition": "How work flows step by step, such as a workflow book of an order journey.",
+   "broader_id": null,
+   "exact_match": null,
+   "confidence": "inferred",
+   "source": "ADR-0123 · library classification, the owner's decision of 2026-10-21",
+   "deprecated": false,
+   "replaced_by": null,
+   "accepted": []
+  },
+  {
+   "id": "doctype-product-specification",
+   "scheme": "document_type",
+   "pref_label": "Product specification",
+   "alt_labels": [
+    "Product spec"
+   ],
+   "notation": null,
+   "definition": "What an offering is and how it is sold and fulfilled.",
+   "broader_id": null,
+   "exact_match": null,
+   "confidence": "inferred",
+   "source": "ADR-0123 · library classification, the owner's decision of 2026-10-21",
+   "deprecated": false,
+   "replaced_by": null,
+   "accepted": []
+  },
+  {
+   "id": "doctype-contract",
+   "scheme": "document_type",
+   "pref_label": "Contract",
+   "alt_labels": [],
+   "notation": null,
+   "definition": "An agreement with a customer, vendor or partner.",
+   "broader_id": null,
+   "exact_match": null,
+   "confidence": "inferred",
+   "source": "ADR-0123 · library classification, the owner's decision of 2026-10-21",
+   "deprecated": false,
+   "replaced_by": null,
+   "accepted": []
+  },
+  {
+   "id": "doctype-policy",
+   "scheme": "document_type",
+   "pref_label": "Policy",
+   "alt_labels": [],
+   "notation": null,
+   "definition": "A rule the business has to follow, and why.",
+   "broader_id": null,
+   "exact_match": null,
+   "confidence": "inferred",
+   "source": "ADR-0123 · library classification, the owner's decision of 2026-10-21",
+   "deprecated": false,
+   "replaced_by": null,
+   "accepted": []
+  },
+  {
+   "id": "doctype-guide",
+   "scheme": "document_type",
+   "pref_label": "Guide",
+   "alt_labels": [
+    "How-to"
+   ],
+   "notation": null,
+   "definition": "How to do something, for the people who do it.",
+   "broader_id": null,
+   "exact_match": null,
+   "confidence": "inferred",
+   "source": "ADR-0123 · library classification, the owner's decision of 2026-10-21",
+   "deprecated": false,
+   "replaced_by": null,
+   "accepted": []
+  },
+  {
+   "id": "doctype-other",
+   "scheme": "document_type",
+   "pref_label": "Other",
+   "alt_labels": [],
+   "notation": null,
+   "definition": "A document none of the other types describes.",
+   "broader_id": null,
+   "exact_match": null,
+   "confidence": "inferred",
+   "source": "ADR-0123 · library classification, the owner's decision of 2026-10-21",
+   "deprecated": false,
+   "replaced_by": null,
+   "accepted": []
   }
  ],
  "interfaces": [
@@ -19883,7 +20076,8 @@
    "description": "Customer, account and product data for the channels and RTF.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-cbcm-retrieve-account",
@@ -19904,7 +20098,8 @@
    "description": "An account and its installed products.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-cbcm-evaluate-order",
@@ -19924,7 +20119,8 @@
    "description": "Translates an order to the value order with PSM codes and checks business rules.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-cbcm-load-registry-basket",
@@ -19941,7 +20137,8 @@
    "description": "The summary-order basket RTF loads.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-cbcm-order-closure",
@@ -19961,7 +20158,8 @@
    "description": "Closes the order and updates the product inventory.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-bscs-billing",
@@ -19979,7 +20177,8 @@
    "description": "Starts billing once the order is fulfilled.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-bcc-offer-catalogue",
@@ -19997,7 +20196,8 @@
    "description": "The offers and components the digital channels show.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-psm-package-codes",
@@ -20014,7 +20214,8 @@
    "description": "Maps an offer to PSM package codes.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-ecm-product-structure",
@@ -20031,7 +20232,8 @@
    "description": "Bundle and component detail.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-ecm-evaluate-order",
@@ -20048,7 +20250,8 @@
    "description": "Checks an order against the ECM product structure.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-ecm-catalogue-validation",
@@ -20066,7 +20269,8 @@
    "description": "Validates an order against the ECM catalogue.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-ecm-cpe-model-inquiry",
@@ -20084,7 +20288,8 @@
    "description": "The CPE and access-point model for a bandwidth.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-rtf-order-request",
@@ -20107,7 +20312,8 @@
    "description": "Submits a channel order, with the summary-order flags, as XML.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-rtf-order-closure-notification",
@@ -20124,7 +20330,8 @@
    "description": "Tells RTF the fixed order is closed.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-cwom-order",
@@ -20143,7 +20350,8 @@
    "description": "The summary, cessation and dunning orders RTF hands to CWOM.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-cwom-create-shopping-cart",
@@ -20162,7 +20370,8 @@
    "description": "Hands a migration or up/downgrade order to CWOM.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-cwom-refresh-shopping-cart",
@@ -20181,7 +20390,8 @@
    "description": "Carries devices forward and overrides amounts on a changed order.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-cwom-callback",
@@ -20199,7 +20409,8 @@
    "description": "Activation and shipment results returned to CWOM.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-cwom-update-transaction",
@@ -20216,7 +20427,8 @@
    "description": "The technician's results: SIC codes and serials.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-e2eso-service-order",
@@ -20235,7 +20447,8 @@
    "description": "Provisions the Fortinet CPE, SD-WAN and FortiPortal services.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-e2eso-serials",
@@ -20252,7 +20465,8 @@
    "description": "Passes the installed CPE and FEX serials on.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-fortinet-api",
@@ -20269,7 +20483,8 @@
    "description": "Provisions the CPE in the ADOM and creates the FortiPortal organisation.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-in-update-offer",
@@ -20286,7 +20501,8 @@
    "description": "Applies a Backup 5G speed or the dunning offer.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-in-delete-offer",
@@ -20303,7 +20519,8 @@
    "description": "Removes a Backup 5G speed or the dunning offer.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-veda-hss-activation",
@@ -20320,7 +20537,8 @@
    "description": "Activates or removes the Backup 5G profile.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-alepo-commands",
@@ -20335,7 +20553,8 @@
    "description": "vEDA's Backup 5G commands.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-xaas-activate-saas",
@@ -20352,7 +20571,8 @@
    "description": "Activates a SaaS add-on.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-wfms-work-order",
@@ -20369,7 +20589,8 @@
    "description": "A manual work order for the technician.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-wfms-create-complaint-wo",
@@ -20389,7 +20610,8 @@
    "description": "A work order raised for a complaint.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-itsm-shipment-order",
@@ -20406,7 +20628,8 @@
    "description": "A device-delivery shipment order.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-cns-notification-api",
@@ -20424,7 +20647,8 @@
    "description": "SMS and email to the customer: order submitted, completed, OTP.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-nc-crm-party-apis",
@@ -20445,7 +20669,8 @@
    "description": "Customer, organisation, individual, contact and site data.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-tibco-party-apis",
@@ -20469,7 +20694,8 @@
    "source": "Ontology plan Phase 8 · the journeys' integrations",
    "relays": [
     "if-nc-crm-party-apis"
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "if-ibm-bpm-notify-order-creation",
@@ -20488,7 +20714,8 @@
    "description": "Opens the order tracker.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-tibco-notify-order-creation",
@@ -20509,7 +20736,8 @@
    "source": "Ontology plan Phase 8 · the journeys' integrations",
    "relays": [
     "if-ibm-bpm-notify-order-creation"
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "if-ibm-bpm-update-milestones",
@@ -20526,7 +20754,8 @@
    "description": "Milestones per sub-order.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-tibco-milestones",
@@ -20545,7 +20774,8 @@
    "source": "Ontology plan Phase 8 · the journeys' integrations",
    "relays": [
     "if-ibm-bpm-update-milestones"
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "if-felix-order-details",
@@ -20564,7 +20794,8 @@
    "description": "Stored procedure reading an order and its milestones.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-tibco-order-details",
@@ -20587,7 +20818,8 @@
    "source": "Ontology plan Phase 8 · the journeys' integrations",
    "relays": [
     "if-felix-order-details"
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "if-nps-port-out-request",
@@ -20604,7 +20836,8 @@
    "description": "A number leaving for another operator.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-ocr-read-document",
@@ -20622,7 +20855,8 @@
    "description": "Reads a trade licence, Emirates ID or establishment card.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-gov-licence-validation",
@@ -20639,7 +20873,8 @@
    "description": "Validates a trade licence or decree.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   }
  ],
  "realisations": [
@@ -20657,7 +20892,8 @@
    ],
    "description": "Fibre internet on the on-premises CPE: the customer-facing service the GPON component is sold as.",
    "confidence": "inferred",
-   "source": "Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)"
+   "source": "Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)",
+   "accepted": []
   },
   {
    "id": "cfs-onprem-firewall-he",
@@ -20673,7 +20909,8 @@
    ],
    "description": "The firewall on the on-premises CPE, default or non-default configuration.",
    "confidence": "inferred",
-   "source": "Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)"
+   "source": "Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)",
+   "accepted": []
   },
   {
    "id": "cfs-selfservice-portal-access",
@@ -20686,7 +20923,8 @@
    "realised_by": [],
    "description": "FortiPortal access, shown in B2B as Security & Services Portal.",
    "confidence": "inferred",
-   "source": "Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)"
+   "source": "Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)",
+   "accepted": []
   },
   {
    "id": "cfs-sdwan-new",
@@ -20699,7 +20937,8 @@
    "realised_by": [],
    "description": "SD-WAN; its configuration is Day-N by MSS.",
    "confidence": "inferred",
-   "source": "Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)"
+   "source": "Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)",
+   "accepted": []
   },
   {
    "id": "res-fortinet-he-cpe",
@@ -20715,7 +20954,8 @@
    "realised_by": [],
    "description": "The CPE device (CPE_PLATFORM_TYPE Fortinet HE, models 90G and 120G), provisioned in the ADOM cluster.",
    "confidence": "inferred",
-   "source": "Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)"
+   "source": "Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)",
+   "accepted": []
   },
   {
    "id": "res-fortiap",
@@ -20730,7 +20970,8 @@
    "realised_by": [],
    "description": "The access point device, with its SIC code and model.",
    "confidence": "inferred",
-   "source": "Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)"
+   "source": "Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)",
+   "accepted": []
   }
  ]
 }
