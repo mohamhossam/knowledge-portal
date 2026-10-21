@@ -116,6 +116,14 @@ describe("design tokens", () => {
     expect(ratio(resolve(fg, light), resolve(bg, light))).toBeGreaterThanOrEqual(3);
   });
 
+  it("keeps the OS-preference dark theme identical to the forced one", () => {
+    // The dark values are written twice (prefers-color-scheme and
+    // [data-theme="dark"]); the contrast matrix below reads only the forced
+    // copy, so drift in the media-query copy would otherwise go unseen.
+    const preference = declarations(block(semantic, /^\s*:root:not\(\[data-theme="light"\]\)/m));
+    expect(Object.fromEntries(preference)).toEqual(Object.fromEntries(dark));
+  });
+
   it("keeps raw colours in the primitive layer only", () => {
     for (const css of [semantic, component]) expect(css).not.toMatch(/#[0-9a-f]{3,8}\b|rgb\(|hsl\(/i);
   });
