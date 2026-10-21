@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 from collections.abc import Callable
 from uuid import uuid4
 
@@ -45,6 +46,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     SystemDefinition,
     SystemRelationship,
 )
+from knowledge_portal.domain.architecture.links import connections
 from knowledge_portal.domain.architecture.products import (
     ProductOffering,
     Realisation,
@@ -54,6 +56,8 @@ from knowledge_portal.domain.architecture.realisations import RealisationRecord
 from knowledge_portal.domain.document.value_objects import DocumentVersionId
 
 SECTION_TOKENS = 400
+
+_LOGGER = logging.getLogger(__name__)
 
 
 # How a relationship reads in evidence text. An unspecified kind adds nothing, so
@@ -498,6 +502,9 @@ class BuildArchitectureIndex:
                 records.append(IndexedRecord(chunk, entity, entity_id))
 
         names = {system.id: system.name for system in release.systems}
+        # Every link, stated or read from interfaces and journeys, so a system's record names
+        # what it depends on even where no connection is stated.
+        connected = connections(release)
         for system in release.systems:
             content = "\n".join(
                 line
@@ -514,14 +521,15 @@ class BuildArchitectureIndex:
                     ),
                     *system.constraints,
                     *(
-                        f"Depends on: {names[item.target_system_id]}{_kind(item)}"
-                        f" — {item.description}"
-                        for item in release.relationships
+                        f"Depends on: {names.get(item.target_system_id, item.target_system_id)}"
+                        f"{_kind(item)} — {item.description}"
+                        for item in connected
                         if item.source_system_id == system.id
                     ),
                     *(
-                        f"Used by: {names[item.source_system_id]}{_kind(item)} — {item.description}"
-                        for item in release.relationships
+                        f"Used by: {names.get(item.source_system_id, item.source_system_id)}"
+                        f"{_kind(item)} — {item.description}"
+                        for item in connected
                         if item.target_system_id == system.id
                     ),
                     *_data_lines(release, system, names),
@@ -553,6 +561,7 @@ class BuildArchitectureIndex:
         )
         self._index.store_set(records_key, tuple(item.chunk for item in records))
         members = [records_key]
+        reused = cut_count = 0
         for document in release.documents:
             # A document version's chunks depend only on its file, its title and how it is
             # cut, so they are cut and embedded once and shared by every build.
@@ -562,8 +571,10 @@ class BuildArchitectureIndex:
                 cut = self._document_records(document, sectioned)
                 self._index.store_set(key, tuple(item.chunk for item in cut))
                 records.extend(cut)
+                cut_count += 1
             else:
                 records.extend(IndexedRecord(chunk) for chunk in stored)
+                reused += 1
             members.append(key)
         chunks = [item.chunk for item in records]
         # Embedded before storing, through the index's cache, so nothing is embedded twice.
@@ -589,7 +600,19 @@ class BuildArchitectureIndex:
         )
         # The draft's earlier builds are never read again, nor the sets only they read.
         self._index.prune(release.id, index_id)
-        self._index.collect()
+        collected = self._index.collect()
+        # One line per build, so what a build reused and what it cut can be watched.
+        _LOGGER.info(
+            "Architecture index %s built for %s: %d chunks, %d texts to embed; "
+            "documents reused %d, cut %d; %d unread chunk sets collected",
+            index_id,
+            release.id,
+            len(chunks),
+            len(texts),
+            reused,
+            cut_count,
+            collected,
+        )
         return built
 
     def _document_records(

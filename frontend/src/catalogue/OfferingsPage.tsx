@@ -12,7 +12,7 @@ import { count } from "../home/format";
 import { RouterLink } from "../shell/links";
 import { portfolioPath, roleLabel, systemName } from "./catalogue";
 import { OfferingStructureDiagram } from "./diagrams/CatalogueDiagrams";
-import { OfferingEdit, OfferingSectionEdit, WholeRemove } from "./DraftEdits";
+import { OfferingEdit, OfferingSectionEdit, WholeRemove, WholeRename } from "./DraftEdits";
 import { BusinessRules, Plans } from "./OfferingFacts";
 import { CatalogueHeader } from "./frame/CatalogueHeader";
 import { useFindParam } from "./frame/useFindParam";
@@ -206,10 +206,10 @@ function OfferingRecord({ offering }: { offering: Offering }) {
       return query;
     }, { replace: true });
   // One section is edited at a time, in place of where it is read; closing gives focus back to its button.
-  const [editing, setEditing] = useState<OfferingSection | "remove" | null>(null);
+  const [editing, setEditing] = useState<OfferingSection | "remove" | "rename" | null>(null);
   const focusLater = useFocusAfterRender();
   const setReturnTo = (id: string) => focusLater(() => document.getElementById(id));
-  const buttonId = (key: OfferingSection | "remove") => `offering-edit-${key}`;
+  const buttonId = (key: OfferingSection | "remove" | "rename") => `offering-edit-${key}`;
   const offer = (key: OfferingSection): ReactNode =>
     editable && editing === null ? (
       <Button id={buttonId(key)} variant="quiet" onClick={() => setEditing(key)}>Edit {OFFERING_SECTIONS[key].edit}</Button>
@@ -257,6 +257,17 @@ function OfferingRecord({ offering }: { offering: Offering }) {
           <ActionGroup label="This offering">
             {editing === null && <Button id={buttonId("facts")} onClick={() => setEditing("facts")}>Edit what it is</Button>}
             <Button
+              id={buttonId("rename")}
+              variant="tertiary"
+              aria-expanded={editing === "rename"}
+              onClick={() => {
+                if (editing === "rename") setReturnTo(buttonId("rename"));
+                setEditing(editing === "rename" ? null : "rename");
+              }}
+            >
+              Change its id…
+            </Button>
+            <Button
               id={buttonId("remove")}
               variant="tertiary"
               aria-expanded={editing === "remove"}
@@ -272,6 +283,17 @@ function OfferingRecord({ offering }: { offering: Offering }) {
       }
     >
       {editing === "facts" && panel("facts")}
+      {editing === "rename" && (
+        <WholeRename
+          kind="offering"
+          item={offering}
+          onDone={(renamed) => {
+            setEditing(null);
+            if (renamed) return navigate(`${base}/offerings/${encodeURIComponent(renamed)}${location.search}`, { replace: true });
+            setReturnTo(buttonId("rename"));
+          }}
+        />
+      )}
       {editing === "remove" && (
         <WholeRemove
           kind="offering"

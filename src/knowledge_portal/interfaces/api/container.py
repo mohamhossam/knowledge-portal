@@ -87,6 +87,7 @@ from knowledge_portal.application.use_cases.change_requests import (
 )
 from knowledge_portal.application.use_cases.cited_passages import CitedPassages
 from knowledge_portal.application.use_cases.document_library import DocumentLibrary
+from knowledge_portal.application.use_cases.document_retention import DocumentRetention
 from knowledge_portal.application.use_cases.golden_runs import GoldenSetRuns
 from knowledge_portal.application.use_cases.historic_requirements import (
     HistoricImportJobs,
@@ -233,6 +234,8 @@ class Container:
     manage_organisation_catalogue: ManageOrganisationCatalogue
     preview_architecture_impact: PreviewArchitectureImpact
     review_sources: ReviewSources
+    # Stored catalogue documents no version reads again, listed and collected by an operator.
+    document_retention: DocumentRetention
     manage_sample_requirements: ManageSampleRequirements
     compare_architecture_impact: CompareArchitectureImpact
     report_mapping_impact: ReportMappingImpact
@@ -311,8 +314,14 @@ def _build_container(
     )
     identity = build_identity(settings, resources, persistence.actor_directory, identity_override)
     requirement_work = requirement_override or _requirement_work(settings, resources, metrics)
+    # One scanner, shared by the library, historic imports and catalogue documents.
+    scanner = (
+        OfflineDocumentScanner()
+        if settings.library_scan_mode == "offline"
+        else ClamAvDocumentScanner(settings.library_scanner_host, settings.library_scanner_port)
+    )
     architecture = build_architecture(
-        settings, persistence, retrieval, llm, llm.architecture_reasoner, clock
+        settings, persistence, retrieval, llm, llm.architecture_reasoner, clock, scanner
     )
     review_cycle = timedelta(days=settings.knowledge_review_cycle_days)
     system_reviews = SystemReviews(
@@ -341,13 +350,8 @@ def _build_container(
         _embedding_identity(settings),
         stewardship,
     )
-    # One bounded extractor and one scanner, shared by the library and historic imports.
+    # One bounded extractor, shared by the library and historic imports.
     extractor = _library_extractor(settings)
-    scanner = (
-        OfflineDocumentScanner()
-        if settings.library_scan_mode == "offline"
-        else ClamAvDocumentScanner(settings.library_scanner_host, settings.library_scanner_port)
-    )
     library = DocumentLibrary(
         persistence.library_repository,
         persistence.document_storage,
@@ -454,6 +458,9 @@ def _build_container(
         ),
         preview_architecture_impact=architecture.preview_impact,
         review_sources=architecture.review_sources,
+        document_retention=DocumentRetention(
+            persistence.architecture_repository, persistence.document_storage
+        ),
         manage_sample_requirements=ManageSampleRequirements(persistence.sample_requirements, clock),
         compare_architecture_impact=CompareArchitectureImpact(
             architecture.manage, architecture.preview_impact, architecture.knowledge

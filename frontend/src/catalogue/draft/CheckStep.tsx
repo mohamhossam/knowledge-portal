@@ -38,6 +38,7 @@ export function CheckStep() {
     <div className="draft-step">
       <BuildSection release={release} build={build} state={state} />
       <Provenance release={release} />
+      <Citations release={release} base={base} />
       <Drift release={release} />
       <Samples release={release} built={state === "built"} />
       <p className="draft-next">
@@ -104,6 +105,39 @@ function Provenance({ release }: { release: Release }) {
             <li key={`${item.kind}:${item.subject}:${item.label}`} dir="auto">
               {item.label}
               <span className="draft-detail"> · from {item.sources.map((source) => `‘${source.title}’`).join(", ")}</span>
+            </li>
+          ))}
+        </Lines>
+      )}
+    </Section>
+  );
+}
+
+/** What the draft's facts cite that its source register does not hold: such a citation can't
+ * say its source's level or title, so the source is registered or the citation corrected. */
+function Citations({ release, base }: { release: Release; base: string }) {
+  const found = useQuery({
+    queryKey: ["architecture", "releases", release.id, "citations", release.revision],
+    queryFn: () => api.citations(release.id),
+  });
+  const items = found.data ?? [];
+  if (found.isPending || (!found.isError && !items.length)) return null;
+  return (
+    <Section title="Sources it cites but doesn’t register" count={items.length}>
+      <p className="draft-lead">
+        These facts name a source the register doesn’t hold, so they can’t show its level or title.{" "}
+        <RouterLink href={`${base}/governance`}>Register the source</RouterLink>, or correct the citation on the fact.
+      </p>
+      {found.isError ? (
+        <p role="status"><Status tone="attention">{errorMessage(found.error)}</Status></p>
+      ) : (
+        <Lines label="Sources it cites but doesn’t register">
+          {items.map((item) => (
+            <li key={item.cited} dir="auto">
+              <bdi>{item.cited}</bdi>
+              <span className="draft-detail">
+                {" "}· {count(item.facts, "fact")}, such as {item.examples.join("; ")}
+              </span>
             </li>
           ))}
         </Lines>

@@ -1691,6 +1691,1464 @@
   }
  ],
  "relationships": [],
+ "connections": [
+  {
+   "source_system_id": "b2b-web",
+   "target_system_id": "cbcm",
+   "description": "CRM GW API",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-cbcm-crm-gw-api",
+     "name": "CRM GW API",
+     "system_id": "cbcm"
+    }
+   ],
+   "journeys": []
+  },
+  {
+   "source_system_id": "smb-app",
+   "target_system_id": "cbcm",
+   "description": "CRM GW API",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-cbcm-crm-gw-api",
+     "name": "CRM GW API",
+     "system_id": "cbcm"
+    }
+   ],
+   "journeys": []
+  },
+  {
+   "source_system_id": "dcrm",
+   "target_system_id": "cbcm",
+   "description": "CRM GW API",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-cbcm-crm-gw-api",
+     "name": "CRM GW API",
+     "system_id": "cbcm"
+    }
+   ],
+   "journeys": []
+  },
+  {
+   "source_system_id": "rtf",
+   "target_system_id": "cbcm",
+   "description": "CRM GW API, retrieveAccount, evaluateOrder and 1 more",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-cbcm-crm-gw-api",
+     "name": "CRM GW API",
+     "system_id": "cbcm"
+    },
+    {
+     "id": "if-cbcm-retrieve-account",
+     "name": "retrieveAccount",
+     "system_id": "cbcm"
+    },
+    {
+     "id": "if-cbcm-evaluate-order",
+     "name": "evaluateOrder",
+     "system_id": "cbcm"
+    },
+    {
+     "id": "if-cbcm-load-registry-basket",
+     "name": "Load registry basket",
+     "system_id": "cbcm"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-new-activation",
+     "name": "New activation",
+     "steps": 1
+    },
+    {
+     "id": "bpp-updowngrd",
+     "name": "Upgrade / downgrade",
+     "steps": 3
+    },
+    {
+     "id": "bpp-migrate",
+     "name": "Migration to Business Pro Plus",
+     "steps": 3
+    },
+    {
+     "id": "bpp-cessation",
+     "name": "Cessation",
+     "steps": 2
+    },
+    {
+     "id": "bpp-extshift",
+     "name": "External shift of site",
+     "steps": 2
+    },
+    {
+     "id": "bpp-dunning",
+     "name": "Dunning (TOSS, reconnect, non-payment cessation)",
+     "steps": 1
+    },
+    {
+     "id": "bpp-portin",
+     "name": "Port in",
+     "steps": 1
+    },
+    {
+     "id": "bpp-portout",
+     "name": "Port out",
+     "steps": 1
+    },
+    {
+     "id": "bpp-dvcrep",
+     "name": "Faulty device replacement",
+     "steps": 1
+    },
+    {
+     "id": "bpp-renewal",
+     "name": "Renewal",
+     "steps": 1
+    },
+    {
+     "id": "bpp-adddelete",
+     "name": "Add / delete add-on",
+     "steps": 1
+    },
+    {
+     "id": "bpp-chintusrn",
+     "name": "Change internet username",
+     "steps": 1
+    },
+    {
+     "id": "bpp-chgpswd",
+     "name": "Change password",
+     "steps": 1
+    },
+    {
+     "id": "bpp-chgdomn",
+     "name": "Change domain",
+     "steps": 1
+    },
+    {
+     "id": "bpp-chgsubdomn",
+     "name": "Change sub-domain",
+     "steps": 1
+    },
+    {
+     "id": "bpp-chnumber",
+     "name": "Change number",
+     "steps": 1
+    },
+    {
+     "id": "bpp-fleximinmov",
+     "name": "Flexi minute movement",
+     "steps": 1
+    },
+    {
+     "id": "bpp-techvisit",
+     "name": "Technician visit",
+     "steps": 1
+    },
+    {
+     "id": "bpp-modsubs",
+     "name": "Modify subscription",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "nps",
+   "target_system_id": "cbcm",
+   "description": "retrieveAccount",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-cbcm-retrieve-account",
+     "name": "retrieveAccount",
+     "system_id": "cbcm"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-portout",
+     "name": "Port out",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "cwom",
+   "target_system_id": "cbcm",
+   "description": "Order closure",
+   "kind": "unspecified",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-cbcm-order-closure",
+     "name": "Order closure",
+     "system_id": "cbcm"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-new-activation",
+     "name": "New activation",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "cwom",
+   "target_system_id": "bscs",
+   "description": "Billing",
+   "kind": "unspecified",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-bscs-billing",
+     "name": "Billing",
+     "system_id": "bscs"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-new-activation",
+     "name": "New activation",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "b2b-web",
+   "target_system_id": "bcc",
+   "description": "Offer catalogue",
+   "kind": "unspecified",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-bcc-offer-catalogue",
+     "name": "Offer catalogue",
+     "system_id": "bcc"
+    }
+   ],
+   "journeys": []
+  },
+  {
+   "source_system_id": "smb-app",
+   "target_system_id": "bcc",
+   "description": "Offer catalogue",
+   "kind": "unspecified",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-bcc-offer-catalogue",
+     "name": "Offer catalogue",
+     "system_id": "bcc"
+    }
+   ],
+   "journeys": []
+  },
+  {
+   "source_system_id": "bcc",
+   "target_system_id": "psm",
+   "description": "Package codes",
+   "kind": "unspecified",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-psm-package-codes",
+     "name": "Package codes",
+     "system_id": "psm"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-new-activation",
+     "name": "New activation",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "bcc",
+   "target_system_id": "ecm",
+   "description": "Product structure",
+   "kind": "unspecified",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-ecm-product-structure",
+     "name": "Product structure",
+     "system_id": "ecm"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-new-activation",
+     "name": "New activation",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "rtf",
+   "target_system_id": "ecm",
+   "description": "evaluateOrder",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-ecm-evaluate-order",
+     "name": "evaluateOrder",
+     "system_id": "ecm"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-new-activation",
+     "name": "New activation",
+     "steps": 1
+    },
+    {
+     "id": "bpp-updowngrd",
+     "name": "Upgrade / downgrade",
+     "steps": 1
+    },
+    {
+     "id": "bpp-migrate",
+     "name": "Migration to Business Pro Plus",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "cwom",
+   "target_system_id": "ecm",
+   "description": "Catalogue validation, CPE Model Inquiry",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-ecm-catalogue-validation",
+     "name": "Catalogue validation",
+     "system_id": "ecm"
+    },
+    {
+     "id": "if-ecm-cpe-model-inquiry",
+     "name": "CPE Model Inquiry",
+     "system_id": "ecm"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-new-activation",
+     "name": "New activation",
+     "steps": 2
+    },
+    {
+     "id": "bpp-updowngrd",
+     "name": "Upgrade / downgrade",
+     "steps": 1
+    },
+    {
+     "id": "bpp-migrate",
+     "name": "Migration to Business Pro Plus",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "wfms",
+   "target_system_id": "ecm",
+   "description": "CPE Model Inquiry",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-ecm-cpe-model-inquiry",
+     "name": "CPE Model Inquiry",
+     "system_id": "ecm"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-dvcrep",
+     "name": "Faulty device replacement",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "b2b-web",
+   "target_system_id": "rtf",
+   "description": "RTF order request",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-rtf-order-request",
+     "name": "RTF order request",
+     "system_id": "rtf"
+    }
+   ],
+   "journeys": []
+  },
+  {
+   "source_system_id": "smb-app",
+   "target_system_id": "rtf",
+   "description": "RTF order request",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-rtf-order-request",
+     "name": "RTF order request",
+     "system_id": "rtf"
+    }
+   ],
+   "journeys": []
+  },
+  {
+   "source_system_id": "bcrm",
+   "target_system_id": "rtf",
+   "description": "RTF order request",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-rtf-order-request",
+     "name": "RTF order request",
+     "system_id": "rtf"
+    }
+   ],
+   "journeys": []
+  },
+  {
+   "source_system_id": "nps",
+   "target_system_id": "rtf",
+   "description": "RTF order request, RTF order request (PORTIN), RTF order request (PORTOUT)",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-rtf-order-request",
+     "name": "RTF order request",
+     "system_id": "rtf"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-portin",
+     "name": "Port in",
+     "steps": 1
+    },
+    {
+     "id": "bpp-portout",
+     "name": "Port out",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "wfms",
+   "target_system_id": "rtf",
+   "description": "RTF order request, RTF order request (DEVICEREPLACEMENT)",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-rtf-order-request",
+     "name": "RTF order request",
+     "system_id": "rtf"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-dvcrep",
+     "name": "Faulty device replacement",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "cwom",
+   "target_system_id": "rtf",
+   "description": "Order closure notification, NP RFS (new)",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-rtf-order-closure-notification",
+     "name": "Order closure notification",
+     "system_id": "rtf"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-portin",
+     "name": "Port in",
+     "steps": 2
+    }
+   ]
+  },
+  {
+   "source_system_id": "rtf",
+   "target_system_id": "cwom",
+   "description": "Order, createShoppingCart, refreshShoppingCart and 4 more",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-cwom-order",
+     "name": "Order",
+     "system_id": "cwom"
+    },
+    {
+     "id": "if-cwom-create-shopping-cart",
+     "name": "createShoppingCart",
+     "system_id": "cwom"
+    },
+    {
+     "id": "if-cwom-refresh-shopping-cart",
+     "name": "refreshShoppingCart",
+     "system_id": "cwom"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-new-activation",
+     "name": "New activation",
+     "steps": 1
+    },
+    {
+     "id": "bpp-updowngrd",
+     "name": "Upgrade / downgrade",
+     "steps": 2
+    },
+    {
+     "id": "bpp-migrate",
+     "name": "Migration to Business Pro Plus",
+     "steps": 1
+    },
+    {
+     "id": "bpp-cessation",
+     "name": "Cessation",
+     "steps": 1
+    },
+    {
+     "id": "bpp-extshift",
+     "name": "External shift of site",
+     "steps": 1
+    },
+    {
+     "id": "bpp-dunning",
+     "name": "Dunning (TOSS, reconnect, non-payment cessation)",
+     "steps": 1
+    },
+    {
+     "id": "bpp-portin",
+     "name": "Port in",
+     "steps": 1
+    },
+    {
+     "id": "bpp-portout",
+     "name": "Port out",
+     "steps": 1
+    },
+    {
+     "id": "bpp-dvcrep",
+     "name": "Faulty device replacement",
+     "steps": 1
+    },
+    {
+     "id": "bpp-renewal",
+     "name": "Renewal",
+     "steps": 1
+    },
+    {
+     "id": "bpp-adddelete",
+     "name": "Add / delete add-on",
+     "steps": 1
+    },
+    {
+     "id": "bpp-chintusrn",
+     "name": "Change internet username",
+     "steps": 1
+    },
+    {
+     "id": "bpp-chgpswd",
+     "name": "Change password",
+     "steps": 1
+    },
+    {
+     "id": "bpp-chgdomn",
+     "name": "Change domain",
+     "steps": 1
+    },
+    {
+     "id": "bpp-chgsubdomn",
+     "name": "Change sub-domain",
+     "steps": 1
+    },
+    {
+     "id": "bpp-chnumber",
+     "name": "Change number",
+     "steps": 1
+    },
+    {
+     "id": "bpp-fleximinmov",
+     "name": "Flexi minute movement",
+     "steps": 1
+    },
+    {
+     "id": "bpp-techvisit",
+     "name": "Technician visit",
+     "steps": 1
+    },
+    {
+     "id": "bpp-modsubs",
+     "name": "Modify subscription",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "xaas",
+   "target_system_id": "cwom",
+   "description": "CWOM callback, Activation callback",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-cwom-callback",
+     "name": "CWOM callback",
+     "system_id": "cwom"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-new-activation",
+     "name": "New activation",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "tibco",
+   "target_system_id": "cwom",
+   "description": "CWOM callback, Milestone (per sub-order)",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-cwom-callback",
+     "name": "CWOM callback",
+     "system_id": "cwom"
+    },
+    {
+     "id": "if-tibco-milestones",
+     "name": "Milestone (per sub-order)",
+     "system_id": "tibco"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-order-tracking",
+     "name": "Order tracking",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "wfms",
+   "target_system_id": "cwom",
+   "description": "Update transaction",
+   "kind": "unspecified",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-cwom-update-transaction",
+     "name": "Update transaction",
+     "system_id": "cwom"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-new-activation",
+     "name": "New activation",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "cwom",
+   "target_system_id": "e2eso",
+   "description": "Service order, PATCH (CPE and FEX serials), Service order (UPDOWNGRD bandwidth) and 5 more",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-e2eso-service-order",
+     "name": "Service order",
+     "system_id": "e2eso"
+    },
+    {
+     "id": "if-e2eso-serials",
+     "name": "PATCH (CPE and FEX serials)",
+     "system_id": "e2eso"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-new-activation",
+     "name": "New activation",
+     "steps": 2
+    },
+    {
+     "id": "bpp-updowngrd",
+     "name": "Upgrade / downgrade",
+     "steps": 2
+    },
+    {
+     "id": "bpp-migrate",
+     "name": "Migration to Business Pro Plus",
+     "steps": 1
+    },
+    {
+     "id": "bpp-cessation",
+     "name": "Cessation",
+     "steps": 1
+    },
+    {
+     "id": "bpp-extshift",
+     "name": "External shift of site",
+     "steps": 1
+    },
+    {
+     "id": "bpp-dunning",
+     "name": "Dunning (TOSS, reconnect, non-payment cessation)",
+     "steps": 1
+    },
+    {
+     "id": "bpp-renewal",
+     "name": "Renewal",
+     "steps": 1
+    },
+    {
+     "id": "bpp-adddelete",
+     "name": "Add / delete add-on",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "e2eso",
+   "target_system_id": "fortinet",
+   "description": "Fortinet API, Provision in ADOM; create organisation, Fortinet site-name API (new)",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-fortinet-api",
+     "name": "Fortinet API",
+     "system_id": "fortinet"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-new-activation",
+     "name": "New activation",
+     "steps": 1
+    },
+    {
+     "id": "bpp-migrate",
+     "name": "Migration to Business Pro Plus",
+     "steps": 1
+    },
+    {
+     "id": "bpp-cessation",
+     "name": "Cessation",
+     "steps": 1
+    },
+    {
+     "id": "bpp-extshift",
+     "name": "External shift of site",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "cwom",
+   "target_system_id": "in",
+   "description": "UpdateOffer, DeleteOffer, UpdateOffer (base, bandwidth) and 5 more",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-in-update-offer",
+     "name": "UpdateOffer",
+     "system_id": "in"
+    },
+    {
+     "id": "if-in-delete-offer",
+     "name": "DeleteOffer",
+     "system_id": "in"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-new-activation",
+     "name": "New activation",
+     "steps": 1
+    },
+    {
+     "id": "bpp-updowngrd",
+     "name": "Upgrade / downgrade",
+     "steps": 3
+    },
+    {
+     "id": "bpp-migrate",
+     "name": "Migration to Business Pro Plus",
+     "steps": 1
+    },
+    {
+     "id": "bpp-cessation",
+     "name": "Cessation",
+     "steps": 1
+    },
+    {
+     "id": "bpp-extshift",
+     "name": "External shift of site",
+     "steps": 1
+    },
+    {
+     "id": "bpp-dunning",
+     "name": "Dunning (TOSS, reconnect, non-payment cessation)",
+     "steps": 2
+    },
+    {
+     "id": "bpp-portout",
+     "name": "Port out",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "cwom",
+   "target_system_id": "veda",
+   "description": "HSS activation, Delete Backup 5G accounts, HSS deactivation (DI/DPI) and 1 more",
+   "kind": "unspecified",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-veda-hss-activation",
+     "name": "HSS activation",
+     "system_id": "veda"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-new-activation",
+     "name": "New activation",
+     "steps": 1
+    },
+    {
+     "id": "bpp-updowngrd",
+     "name": "Upgrade / downgrade",
+     "steps": 2
+    },
+    {
+     "id": "bpp-migrate",
+     "name": "Migration to Business Pro Plus",
+     "steps": 1
+    },
+    {
+     "id": "bpp-cessation",
+     "name": "Cessation",
+     "steps": 1
+    },
+    {
+     "id": "bpp-dunning",
+     "name": "Dunning (TOSS, reconnect, non-payment cessation)",
+     "steps": 1
+    },
+    {
+     "id": "bpp-portout",
+     "name": "Port out",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "veda",
+   "target_system_id": "alepo",
+   "description": "Alepo commands, vEDA commands",
+   "kind": "unspecified",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-alepo-commands",
+     "name": "Alepo commands",
+     "system_id": "alepo"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-new-activation",
+     "name": "New activation",
+     "steps": 1
+    },
+    {
+     "id": "bpp-cessation",
+     "name": "Cessation",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "cwom",
+   "target_system_id": "xaas",
+   "description": "Activate SaaS, ceaseService",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-xaas-activate-saas",
+     "name": "Activate SaaS",
+     "system_id": "xaas"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-new-activation",
+     "name": "New activation",
+     "steps": 1
+    },
+    {
+     "id": "bpp-cessation",
+     "name": "Cessation",
+     "steps": 1
+    },
+    {
+     "id": "bpp-modsubs",
+     "name": "Modify subscription",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "cwom",
+   "target_system_id": "wfms",
+   "description": "Work order, Work order / update transaction, Work order 1 and 1 more",
+   "kind": "unspecified",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-wfms-work-order",
+     "name": "Work order",
+     "system_id": "wfms"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-new-activation",
+     "name": "New activation",
+     "steps": 1
+    },
+    {
+     "id": "bpp-updowngrd",
+     "name": "Upgrade / downgrade",
+     "steps": 1
+    },
+    {
+     "id": "bpp-migrate",
+     "name": "Migration to Business Pro Plus",
+     "steps": 1
+    },
+    {
+     "id": "bpp-extshift",
+     "name": "External shift of site",
+     "steps": 3
+    }
+   ]
+  },
+  {
+   "source_system_id": "tibco",
+   "target_system_id": "wfms",
+   "description": "CreateComplaintWO",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-wfms-create-complaint-wo",
+     "name": "CreateComplaintWO",
+     "system_id": "wfms"
+    }
+   ],
+   "journeys": []
+  },
+  {
+   "source_system_id": "cwom",
+   "target_system_id": "itsm",
+   "description": "ShipmentOrder, Ticket cancel",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-itsm-shipment-order",
+     "name": "ShipmentOrder",
+     "system_id": "itsm"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-new-activation",
+     "name": "New activation",
+     "steps": 1
+    },
+    {
+     "id": "bpp-order-tracking",
+     "name": "Order tracking",
+     "steps": 1
+    },
+    {
+     "id": "bpp-migrate",
+     "name": "Migration to Business Pro Plus",
+     "steps": 1
+    },
+    {
+     "id": "bpp-cessation",
+     "name": "Cessation",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "cwom",
+   "target_system_id": "cns",
+   "description": "CNS notification API",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-cns-notification-api",
+     "name": "CNS notification API",
+     "system_id": "cns"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-new-activation",
+     "name": "New activation",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "rtf",
+   "target_system_id": "cns",
+   "description": "CNS notification API, Order submitted / completed emails",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-cns-notification-api",
+     "name": "CNS notification API",
+     "system_id": "cns"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-new-activation",
+     "name": "New activation",
+     "steps": 1
+    },
+    {
+     "id": "bpp-updowngrd",
+     "name": "Upgrade / downgrade",
+     "steps": 1
+    },
+    {
+     "id": "bpp-migrate",
+     "name": "Migration to Business Pro Plus",
+     "steps": 1
+    },
+    {
+     "id": "bpp-extshift",
+     "name": "External shift of site",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "tibco",
+   "target_system_id": "nc-crm",
+   "description": "TMF party APIs",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-nc-crm-party-apis",
+     "name": "TMF party APIs",
+     "system_id": "nc-crm"
+    }
+   ],
+   "journeys": []
+  },
+  {
+   "source_system_id": "b2b-web",
+   "target_system_id": "tibco",
+   "description": "NC CRM party APIs, getRealTimeOrderDetails",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-tibco-party-apis",
+     "name": "NC CRM party APIs",
+     "system_id": "tibco"
+    },
+    {
+     "id": "if-tibco-order-details",
+     "name": "getRealTimeOrderDetails",
+     "system_id": "tibco"
+    }
+   ],
+   "journeys": []
+  },
+  {
+   "source_system_id": "smb-app",
+   "target_system_id": "tibco",
+   "description": "NC CRM party APIs, getRealTimeOrderDetails",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-tibco-party-apis",
+     "name": "NC CRM party APIs",
+     "system_id": "tibco"
+    },
+    {
+     "id": "if-tibco-order-details",
+     "name": "getRealTimeOrderDetails",
+     "system_id": "tibco"
+    }
+   ],
+   "journeys": []
+  },
+  {
+   "source_system_id": "tibco",
+   "target_system_id": "ibm-bpm",
+   "description": "NotifyOrderCreationRequest, Create the tracker, Update milestones",
+   "kind": "unspecified",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-ibm-bpm-notify-order-creation",
+     "name": "NotifyOrderCreationRequest",
+     "system_id": "ibm-bpm"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-order-tracking",
+     "name": "Order tracking",
+     "steps": 2
+    }
+   ]
+  },
+  {
+   "source_system_id": "rtf",
+   "target_system_id": "tibco",
+   "description": "NotifyOrderCreationRequest",
+   "kind": "unspecified",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-tibco-notify-order-creation",
+     "name": "NotifyOrderCreationRequest",
+     "system_id": "tibco"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-order-tracking",
+     "name": "Order tracking",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "ibm-bpm",
+   "target_system_id": "tibco",
+   "description": "Update milestones",
+   "kind": "publishes_events_to",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-ibm-bpm-update-milestones",
+     "name": "Update milestones",
+     "system_id": "ibm-bpm"
+    }
+   ],
+   "journeys": []
+  },
+  {
+   "source_system_id": "ibm-bpm",
+   "target_system_id": "felix",
+   "description": "getRealTimeOrderDetails, Store (felix / getRealTimeOrderDetails SP)",
+   "kind": "transfers_data_to",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-felix-order-details",
+     "name": "getRealTimeOrderDetails",
+     "system_id": "felix"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-order-tracking",
+     "name": "Order tracking",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "tibco",
+   "target_system_id": "felix",
+   "description": "getRealTimeOrderDetails, Read order and milestones",
+   "kind": "transfers_data_to",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-felix-order-details",
+     "name": "getRealTimeOrderDetails",
+     "system_id": "felix"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-order-tracking",
+     "name": "Order tracking",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "npc",
+   "target_system_id": "nps",
+   "description": "Port-out request",
+   "kind": "unspecified",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-nps-port-out-request",
+     "name": "Port-out request",
+     "system_id": "nps"
+    }
+   ],
+   "journeys": [
+    {
+     "id": "bpp-portout",
+     "name": "Port out",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "b2b-web",
+   "target_system_id": "ocr",
+   "description": "Document reading",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-ocr-read-document",
+     "name": "Document reading",
+     "system_id": "ocr"
+    }
+   ],
+   "journeys": []
+  },
+  {
+   "source_system_id": "sas-portal",
+   "target_system_id": "ocr",
+   "description": "Document reading",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-ocr-read-document",
+     "name": "Document reading",
+     "system_id": "ocr"
+    }
+   ],
+   "journeys": []
+  },
+  {
+   "source_system_id": "tibco",
+   "target_system_id": "gov",
+   "description": "Trade licence validation",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [
+    {
+     "id": "if-gov-licence-validation",
+     "name": "Trade licence validation",
+     "system_id": "gov"
+    }
+   ],
+   "journeys": []
+  },
+  {
+   "source_system_id": "rtf",
+   "target_system_id": "ibm-bpm",
+   "description": "NotifyOrderCreationRequest",
+   "kind": "unspecified",
+   "stated": false,
+   "interfaces": [],
+   "journeys": [
+    {
+     "id": "bpp-new-activation",
+     "name": "New activation",
+     "steps": 1
+    },
+    {
+     "id": "bpp-updowngrd",
+     "name": "Upgrade / downgrade",
+     "steps": 1
+    },
+    {
+     "id": "bpp-migrate",
+     "name": "Migration to Business Pro Plus",
+     "steps": 1
+    },
+    {
+     "id": "bpp-cessation",
+     "name": "Cessation",
+     "steps": 1
+    },
+    {
+     "id": "bpp-extshift",
+     "name": "External shift of site",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "veda",
+   "target_system_id": "in",
+   "description": "IN commands",
+   "kind": "unspecified",
+   "stated": false,
+   "interfaces": [],
+   "journeys": [
+    {
+     "id": "bpp-new-activation",
+     "name": "New activation",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "itsm",
+   "target_system_id": "cwom",
+   "description": "ShipmentConfirmation → CWOM callback",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [],
+   "journeys": [
+    {
+     "id": "bpp-new-activation",
+     "name": "New activation",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "cwom",
+   "target_system_id": "tibco",
+   "description": "Milestone (per sub-order)",
+   "kind": "publishes_events_to",
+   "stated": false,
+   "interfaces": [],
+   "journeys": [
+    {
+     "id": "bpp-order-tracking",
+     "name": "Order tracking",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "itsm",
+   "target_system_id": "tibco",
+   "description": "ShipmentConfirmation",
+   "kind": "calls_api",
+   "stated": false,
+   "interfaces": [],
+   "journeys": [
+    {
+     "id": "bpp-order-tracking",
+     "name": "Order tracking",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "cwom",
+   "target_system_id": "ibm-bpm",
+   "description": "Milestone (per sub-order)",
+   "kind": "publishes_events_to",
+   "stated": false,
+   "interfaces": [],
+   "journeys": [
+    {
+     "id": "bpp-extshift",
+     "name": "External shift of site",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "cwom",
+   "target_system_id": "nps",
+   "description": "Port request",
+   "kind": "unspecified",
+   "stated": false,
+   "interfaces": [],
+   "journeys": [
+    {
+     "id": "bpp-portin",
+     "name": "Port in",
+     "steps": 1
+    }
+   ]
+  },
+  {
+   "source_system_id": "rtf",
+   "target_system_id": "nps",
+   "description": "NP RFS update",
+   "kind": "unspecified",
+   "stated": false,
+   "interfaces": [],
+   "journeys": [
+    {
+     "id": "bpp-portin",
+     "name": "Port in",
+     "steps": 1
+    }
+   ]
+  }
+ ],
  "documents": [],
  "status": "draft",
  "built_revision": null,
@@ -2965,23 +4423,33 @@
      "characteristics": [
       {
        "name": "Download",
-       "value": "200 Mbps"
+       "value": "200 Mbps",
+       "amount": "200",
+       "unit": "Mbps"
       },
       {
        "name": "Upload",
-       "value": "100 Mbps"
+       "value": "100 Mbps",
+       "amount": "100",
+       "unit": "Mbps"
       },
       {
        "name": "CPE",
-       "value": "Fortinet 90G"
+       "value": "Fortinet 90G",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Access point",
-       "value": "FAP-23JF-E"
+       "value": "FAP-23JF-E",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Backup 5G",
-       "value": "IN offer 862 (200 Mbps)"
+       "value": "IN offer 862 (200 Mbps)",
+       "amount": null,
+       "unit": null
       }
      ],
      "description": null,
@@ -2993,23 +4461,33 @@
      "characteristics": [
       {
        "name": "Download",
-       "value": "300 Mbps"
+       "value": "300 Mbps",
+       "amount": "300",
+       "unit": "Mbps"
       },
       {
        "name": "Upload",
-       "value": "150 Mbps"
+       "value": "150 Mbps",
+       "amount": "150",
+       "unit": "Mbps"
       },
       {
        "name": "CPE",
-       "value": "Fortinet 90G"
+       "value": "Fortinet 90G",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Access point",
-       "value": "FAP-23JF-E"
+       "value": "FAP-23JF-E",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Backup 5G",
-       "value": "IN offer 864 (300 Mbps)"
+       "value": "IN offer 864 (300 Mbps)",
+       "amount": null,
+       "unit": null
       }
      ],
      "description": null,
@@ -3021,23 +4499,33 @@
      "characteristics": [
       {
        "name": "Download",
-       "value": "400 Mbps"
+       "value": "400 Mbps",
+       "amount": "400",
+       "unit": "Mbps"
       },
       {
        "name": "Upload",
-       "value": "200 Mbps"
+       "value": "200 Mbps",
+       "amount": "200",
+       "unit": "Mbps"
       },
       {
        "name": "CPE",
-       "value": "Fortinet 90G"
+       "value": "Fortinet 90G",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Access point",
-       "value": "FAP-23JF-E"
+       "value": "FAP-23JF-E",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Backup 5G",
-       "value": "IN offer 866 (400 Mbps)"
+       "value": "IN offer 866 (400 Mbps)",
+       "amount": null,
+       "unit": null
       }
      ],
      "description": null,
@@ -3049,23 +4537,33 @@
      "characteristics": [
       {
        "name": "Download",
-       "value": "600 Mbps"
+       "value": "600 Mbps",
+       "amount": "600",
+       "unit": "Mbps"
       },
       {
        "name": "Upload",
-       "value": "300 Mbps"
+       "value": "300 Mbps",
+       "amount": "300",
+       "unit": "Mbps"
       },
       {
        "name": "CPE",
-       "value": "Fortinet 90G"
+       "value": "Fortinet 90G",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Access point",
-       "value": "FAP-23JF-E"
+       "value": "FAP-23JF-E",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Backup 5G",
-       "value": "IN offer 869 (600 Mbps)"
+       "value": "IN offer 869 (600 Mbps)",
+       "amount": null,
+       "unit": null
       }
      ],
      "description": null,
@@ -3077,23 +4575,33 @@
      "characteristics": [
       {
        "name": "Download",
-       "value": "800 Mbps"
+       "value": "800 Mbps",
+       "amount": "800",
+       "unit": "Mbps"
       },
       {
        "name": "Upload",
-       "value": "400 Mbps"
+       "value": "400 Mbps",
+       "amount": "400",
+       "unit": "Mbps"
       },
       {
        "name": "CPE",
-       "value": "Fortinet 90G"
+       "value": "Fortinet 90G",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Access point",
-       "value": "FAP-23JF-E"
+       "value": "FAP-23JF-E",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Backup 5G",
-       "value": "IN offer 872 (800 Mbps)"
+       "value": "IN offer 872 (800 Mbps)",
+       "amount": null,
+       "unit": null
       }
      ],
      "description": null,
@@ -3105,23 +4613,33 @@
      "characteristics": [
       {
        "name": "Download",
-       "value": "1024 Mbps"
+       "value": "1024 Mbps",
+       "amount": "1024",
+       "unit": "Mbps"
       },
       {
        "name": "Upload",
-       "value": "512 Mbps"
+       "value": "512 Mbps",
+       "amount": "512",
+       "unit": "Mbps"
       },
       {
        "name": "CPE",
-       "value": "Fortinet 120G"
+       "value": "Fortinet 120G",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Access point",
-       "value": "FAP-431F-E"
+       "value": "FAP-431F-E",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Backup 5G",
-       "value": "IN offer 874 (1 Gbps)"
+       "value": "IN offer 874 (1 Gbps)",
+       "amount": null,
+       "unit": null
       }
      ],
      "description": null,

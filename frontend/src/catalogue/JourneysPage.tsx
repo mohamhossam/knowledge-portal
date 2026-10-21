@@ -11,7 +11,7 @@ import { useFocusAfterRender } from "../design/hooks";
 import { count } from "../home/format";
 import { RouterLink } from "../shell/links";
 import { systemName } from "./catalogue";
-import { JourneyEdit, WholeRemove } from "./DraftEdits";
+import { JourneyEdit, WholeRemove, WholeRename } from "./DraftEdits";
 import { CatalogueHeader } from "./frame/CatalogueHeader";
 import { useFindParam } from "./frame/useFindParam";
 import type { JourneyView } from "./journey/JourneyViews";
@@ -226,7 +226,7 @@ function JourneyRecord({ journey }: { journey: Journey }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [params, setParams] = useSearchParams();
-  const [editing, setEditing] = useState<"edit" | "remove" | null>(null);
+  const [editing, setEditing] = useState<"edit" | "remove" | "rename" | null>(null);
   const view = VIEWS.find((item) => item === params.get("view")) ?? "swimlane";
   const offering = (book.release.products ?? []).find((item) => item.id === journey.product_id);
   const orderType = orderTypeName(book.release, journey);
@@ -259,12 +259,23 @@ function JourneyRecord({ journey }: { journey: Journey }) {
         editable ? (
           <ActionGroup label="This journey">
             <Button aria-expanded={editing === "edit"} onClick={() => setEditing(editing === "edit" ? null : "edit")}>Edit this journey</Button>
+            <Button variant="tertiary" aria-expanded={editing === "rename"} onClick={() => setEditing(editing === "rename" ? null : "rename")}>Change its id…</Button>
             <Button variant="tertiary" aria-expanded={editing === "remove"} onClick={() => setEditing(editing === "remove" ? null : "remove")}>Remove this journey…</Button>
           </ActionGroup>
         ) : undefined
       }
     >
       {editing === "edit" && <JourneyEdit journey={journey} onDone={() => setEditing(null)} />}
+      {editing === "rename" && (
+        <WholeRename
+          kind="journey"
+          item={journey}
+          onDone={(renamed) => {
+            setEditing(null);
+            if (renamed) navigate(`${base}/journeys/${encodeURIComponent(renamed)}`, { replace: true });
+          }}
+        />
+      )}
       {editing === "remove" && (
         <WholeRemove kind="journey" item={journey} onDone={(removed) => (removed ? navigate(`${base}/journeys`) : setEditing(null))} />
       )}

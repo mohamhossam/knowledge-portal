@@ -82,8 +82,8 @@ describe("connections", () => {
     const { dependsOn, usedBy } = connections(book, "cwom");
     expect(dependsOn.map((item) => item.target_system_id)).toEqual(["bscs"]);
     expect(usedBy.map((item) => item.source_system_id)).toEqual(["web"]);
-    expect(dependsHow("transfers_data_to", "CWOM")).toBe("Gets data from CWOM");
-    expect(usedHow("orchestrates", "CWOM")).toBe("Orchestrates CWOM");
+    expect(dependsHow("transfers_data_to")).toBe("Gets its data");
+    expect(usedHow("orchestrates")).toBe("Orchestrates it");
   });
 
   it("lists every connection by the depending system's name", () => {

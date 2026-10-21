@@ -42,6 +42,7 @@ type ReviewRequest = Schemas["LibraryReviewRequest"];
 export type CatalogueSystem = Schemas["SystemDefinitionSchema"];
 export type Relationship = Schemas["SystemRelationshipSchema"];
 export type SystemInterface = Schemas["SystemInterfaceSchema"];
+export type ServedLink = Schemas["SystemLinkResponse"];
 export type RelationshipKind = Schemas["RelationshipKind"];
 export type LandscapeDomain = Schemas["LandscapeDomainSchema"];
 export type Offering = Schemas["ProductOfferingSchema"];
@@ -126,6 +127,7 @@ export type FindingFilters = { kind?: FindingKind; age?: FindingAge; ownerId?: s
 type CitedPassage = Schemas["DocumentPassageResponse"];
 export type CatalogueDocument = Schemas["KnowledgeDocumentVersionResponse"];
 export type OrphanedFact = Schemas["OrphanedFactResponse"];
+export type UnregisteredCitation = Schemas["UnregisteredCitationResponse"];
 export type DriftItem = Schemas["DriftItemResponse"];
 export type OutdatedPassage = Schemas["OutdatedPassageSchema"];
 export type DocumentLanguage = "en" | "ar" | "mixed";
@@ -281,6 +283,7 @@ export const api = {
   documentVersions: () => apiRequest<CatalogueDocument[]>("/architecture-knowledge/documents"),
   /** Facts the version holds whose every source document has left it. */
   provenance: (releaseId: string) => apiRequest<OrphanedFact[]>(`${releasePath(releaseId)}/provenance`),
+  citations: (releaseId: string) => apiRequest<UnregisteredCitation[]>(`${releasePath(releaseId)}/citations`),
   /** What the version changes or removes, with the document passages that name it. */
   drift: (releaseId: string) => apiRequest<DriftItem[]>(`${releasePath(releaseId)}/drift`),
   /** The draft's whole list of outdated passages: each stays readable, never searched. */
@@ -293,6 +296,9 @@ export const api = {
     (await send(`${releasePath(releaseId)}/catalogue-file?format=${format}`)).blob(),
   /** Starts the one draft: a copy of the version in service. */
   createDraft: (name: string) => post<Release>("/architecture-knowledge/releases", { name }),
+  /** A new id for an offering or journey of the draft; the old one is kept as a former id. */
+  renameEntity: (releaseId: string, kind: "offerings" | "journeys", id: string, body: { expected_revision: number; new_id: string }) =>
+    post<Release>(`${releasePath(releaseId)}/${kind}/${encodeURIComponent(id)}/rename`, body),
   renameDraft: (releaseId: string, body: { expected_revision: number; name: string }) =>
     apiRequest<Release>(`${releasePath(releaseId)}/name`, { method: "PUT", body: JSON.stringify(body) }),
   discardDraft: async (releaseId: string, expectedRevision: number) => {

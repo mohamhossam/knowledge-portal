@@ -503,3 +503,48 @@ export function WholeRemove({ kind, item, onDone }: { kind: "offering" | "journe
     />
   );
 }
+
+/**
+ * A new id for an offering or journey. Precedents, change requests and requirement work that
+ * name the old id still find it: the old id is kept as a former id.
+ */
+export function WholeRename({ kind, item, onDone }: { kind: "offering" | "journey"; item: Offering | Journey; onDone: (newId: string | null) => void }) {
+  const { book } = useCatalogueContext();
+  const release = book.release;
+  const { renameEntity } = useEditing(release);
+  const [newId, setNewId] = useState(item.id);
+  const wanted = newId.trim();
+  const siblings: (Offering | Journey)[] = kind === "offering" ? release.products ?? [] : release.journeys ?? [];
+  const taken = siblings.some((other) => other.id !== item.id && (other.id === wanted || (other.former_ids ?? []).includes(wanted)));
+  const problem = !wanted
+    ? "Give it an id."
+    : wanted === item.id
+      ? "Type the id it should have."
+      : !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(wanted)
+        ? "An id is letters, digits, dots, dashes and underscores, with no spaces."
+        : taken
+          ? `${wanted} is already the id, or a former id, of another ${kind}.`
+          : null;
+  return (
+    <EditPanel
+      title={`Change the id of ${item.name}`}
+      focusOnOpen
+      action="Change the id"
+      busy={renameEntity.isPending}
+      problem={problem}
+      error={renameEntity.error}
+      onCancel={() => onDone(null)}
+      onSubmit={() =>
+        void renameEntity
+          .mutateAsync({ kind: kind === "offering" ? "offerings" : "journeys", id: item.id, newId: wanted })
+          .then(() => onDone(wanted))
+          .catch(() => undefined)
+      }
+    >
+      <p className="cat-quiet">
+        What still names <code>{item.id}</code> finds it under its new id: the old one is kept as a former id.
+      </p>
+      <TextField label="New id" value={newId} dir="ltr" required onChange={setNewId} />
+    </EditPanel>
+  );
+}

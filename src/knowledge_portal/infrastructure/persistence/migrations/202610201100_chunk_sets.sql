@@ -4,6 +4,11 @@
 -- re-parses, re-chunks, re-embeds and re-stores only what changed. Indexes built before this
 -- hold their chunks themselves and read as before.
 
+-- Fail fast rather than queue behind live traffic: an ALTER that waits for its lock blocks every
+-- query behind it. The migration runs in one transaction, so a timeout rolls it back whole and
+-- the deployment retries it (docs/operations/deployment.md, "Catalogue evidence").
+SET LOCAL lock_timeout = '5s';
+
 ALTER TABLE architecture_knowledge_indexes
     ADD COLUMN kind text DEFAULT 'release' NOT NULL,
     -- Unread sets are collected only after a grace period, so a build that has just found a

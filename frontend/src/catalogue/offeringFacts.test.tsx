@@ -19,8 +19,8 @@ const OFFERING = {
     { id: "R2", statement: "One bundle per account.", kind: null },
   ],
   plans: [
-    { name: "200 Mbps", characteristics: [{ name: "Download", value: "200 Mbps" }, { name: "CPE", value: "Fortinet 90G" }], source: "SDD", confidence: "confirmed" },
-    { name: "500 Mbps", characteristics: [{ name: "Download", value: "500 Mbps" }, { name: "Access point", value: "FAP-23JF-E" }], source: "SDD", confidence: "confirmed" },
+    { name: "200 Mbps", characteristics: [{ name: "Download", value: "200 Mbps", amount: "200", unit: "Mbps" }, { name: "CPE", value: "Fortinet 90G" }], source: "SDD", confidence: "confirmed" },
+    { name: "500 Mbps", characteristics: [{ name: "Download", value: "500 Mbps", amount: "500", unit: "Mbps" }, { name: "Access point", value: "FAP-23JF-E" }], source: "SDD", confidence: "confirmed" },
   ],
 };
 const RELEASE = {

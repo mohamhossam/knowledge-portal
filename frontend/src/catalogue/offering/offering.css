@@ -18,7 +18,7 @@
 
 .offering-lead {
   margin: 0;
-  max-inline-size: 72ch;
+  max-inline-size: 62ch;
   color: var(--color-ink-2);
 }
 
@@ -165,7 +165,7 @@
 
 .offering-items p {
   margin: 0;
-  max-inline-size: 72ch;
+  max-inline-size: 62ch;
 }
 
 .offering-items__title {
@@ -288,7 +288,7 @@
 
 .offering-text {
   margin: 0;
-  max-inline-size: 72ch;
+  max-inline-size: 62ch;
   line-height: var(--leading-reading);
 }
 

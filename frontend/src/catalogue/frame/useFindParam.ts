@@ -23,7 +23,12 @@ export function useFindParam(key = "find"): [string, (value: string) => void] {
   }
   useEffect(() => {
     if (draft === applied) return;
+    // A navigation while the timer waits (Enter on a result found a moment ago) belongs to the
+    // page it opens: writing `?find=` then would resolve against this page and pull the reader
+    // back to it while the new one is still rendering.
+    const scheduledAt = window.location.pathname;
     const timer = window.setTimeout(() => {
+      if (window.location.pathname !== scheduledAt) return;
       setSent(draft);
       setParams((previous) => {
         const next = new URLSearchParams(previous);

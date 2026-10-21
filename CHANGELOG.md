@@ -7,6 +7,31 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- Every link between systems is worked out by the service (`domain/architecture/links.py`):
+  from the stated connections, the interfaces systems expose and the calls journey steps make.
+  The map, a system's record and the explorer read it as `connections` on the release, and
+  requirement mapping's neighbours and dependencies now follow it, so a catalogue that states
+  no connection still connects its systems. Contracts, additive (`connections`; internal
+  contract unchanged in shape: see `docs/architecture/requirement-portal-handoff-catalogue.md`).
+- Check lists the sources the draft's facts cite that its source register does not hold
+  (`GET …/citations`), grouped by what they cite.
+- Plan characteristics carry `amount` and `unit` for a measured value; a call's `timing` is
+  `Sync` or `Async` (any spelling read, anything else refused; a document table's other words
+  are left out); a step whose point of no return is a bare "yes" reads as what it means.
+- Catalogue documents are malware-scanned on upload, by the library's scanner; a scanner that
+  does not answer refuses the upload with 503.
+- Section-v4: Arabic sentences end without capitals; each slide is a section of its own; tested
+  on PDF, PowerPoint and Excel as well as Word.
+- An offering's or journey's id can be changed from its record ("Change its id…").
+- Drift in Check also lists passages naming a changed channel or interface.
+- Each index build logs what it reused and cut; `scripts/collect_unused_documents.py` lists and
+  collects stored files no version reads. The chunk migrations wait at most five seconds for
+  their locks.
+- Design review leftovers: the diagram's switch names the view it shows ("Show as drawing"); a
+  crowded map draws unlabelled lines, the table saying how each depends; a system's
+  "Depends on" and "Used by" say only the kind; prose keeps to about 75 characters a line; the
+  masthead's Requirement AI link is a 24px target.
+
 - Structured fields for facts the screens read from prose. Offerings carry a `purpose` beside
   the proposition; open questions a `title`; components a `hub` flag (at most one per
   offering); order types a customer `stage` (join, change, support, leave); fallout cases the
@@ -126,6 +151,10 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   draft already in progress) reported in one line instead of a traceback.
 
 ### Fixed
+
+- Opening a result just after typing in a find field could pull the page back to the list (the
+  field's delayed address write landed on the old page). It was the cause of the intermittent
+  catalogue and squads keyboard journeys (`docs/operations/test-reliability.md`).
 
 - The catalogue's view model (adapter, model, conventions, vocabulary, flow layout, exports and the
   bundled sample) moves from a new top-level `frontend/src/architecture/` to

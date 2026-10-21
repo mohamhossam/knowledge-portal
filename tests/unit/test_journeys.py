@@ -25,6 +25,7 @@ from knowledge_portal.domain.architecture.diff import ChangedItem, ChangeKind, d
 from knowledge_portal.domain.architecture.journeys import (
     Activity,
     ActivityIntegration,
+    CallTiming,
     FlowRule,
     FlowRuleKind,
     Journey,
@@ -109,7 +110,7 @@ ACTIVATION = Journey(
     flow_rules=RULES,
     integrations=(
         ActivityIntegration(
-            "10", "20", "INTERNAL_APP", "Digital Catalog", "Selected offer", "SYNC"
+            "10", "20", "INTERNAL_APP", "Digital Catalog", "Selected offer", CallTiming.SYNC
         ),
     ),
 )

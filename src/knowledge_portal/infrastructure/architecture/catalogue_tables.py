@@ -42,6 +42,7 @@ from knowledge_portal.domain.architecture.journeys import (
     FlowRule,
     Journey,
     flow_rule_kind,
+    read_timing,
 )
 from knowledge_portal.domain.architecture.knowledge import (
     InvalidKnowledgeError,
@@ -1413,7 +1414,7 @@ class _JourneySection:
                         interaction=row.get(_INTERACTION) or None,
                         interface=row.get(_INTERFACE) or None,
                         payload=row.get(_PAYLOAD) or None,
-                        timing=row.get(_TIMING) or None,
+                        timing=read_timing(row.get(_TIMING) or None),
                         correlation_key=row.get(_CORRELATION) or None,
                         confidence=_trust(row),
                         source=source,

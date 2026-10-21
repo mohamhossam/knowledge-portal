@@ -302,16 +302,42 @@ class OfferingComponent:
             )
 
 
+# A value written as a number and its unit: "200 Mbps", "2,5 GB", "100Mbps".
+_MEASURE = re.compile(r"^(\d+(?:[.,]\d+)?)\s*([^\d\s]\S*)$")
+_AMOUNT = re.compile(r"\d+(?:\.\d+)?")
+
+
 @dataclass(frozen=True)
 class PlanCharacteristic:
-    """One stated fact of a plan, such as "Download" › "200 Mbps" or "CPE" › "Fortinet 90G"."""
+    """One stated fact of a plan, such as "Download" › "200 Mbps" or "CPE" › "Fortinet 90G".
+
+    A measured value is also held as its amount and unit ("200", "Mbps"), so plans compare
+    without reading the words: given, or taken from a value written as a number and a unit.
+    """
 
     name: str
     value: str
+    # The amount as written, a decimal number with a point ("200", "2.5"); None when the value
+    # is not a measure.
+    amount: str | None = None
+    unit: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "name", required(self.name, "Plan characteristic"))
         object.__setattr__(self, "value", required(self.value, f"{self.name}'s value"))
+        object.__setattr__(self, "amount", optional(self.amount, f"{self.name}'s amount"))
+        object.__setattr__(self, "unit", optional(self.unit, f"{self.name}'s unit"))
+        if self.amount is None and self.unit is None:
+            measured = _MEASURE.match(self.value)
+            if measured:
+                object.__setattr__(self, "amount", measured[1].replace(",", "."))
+                object.__setattr__(self, "unit", measured[2])
+        elif self.amount is None or self.unit is None:
+            raise InvalidKnowledgeError(
+                f"{self.name}: an amount needs its unit, and a unit its amount."
+            )
+        elif not _AMOUNT.fullmatch(self.amount):
+            raise InvalidKnowledgeError(f"{self.name}: the amount {self.amount!r} is not a number.")
 
 
 @dataclass(frozen=True)

@@ -17,6 +17,8 @@ P2  A table's header row names its columns; it is never a unit of its own.
 P3  A row whose one value spans the columns is a note on the table.
 P4  A caption, or a short paragraph just before a table under the same
     heading, is that table's caption.
+P5  A slide is a section of its own. (A PDF's pages, which carry no headings
+    to read, pack together like paragraphs: a page is not a section.)
 C1  A section's paragraphs pack into parents of at most PARENT_MAX tokens; a
     paragraph longer than that splits at sentence ends.
 C2  A paragraph is a child; one under CHILD_MIN joins its neighbour; one over
@@ -51,9 +53,12 @@ _LINES = re.compile(r"^lines? (?P<start>\d+)(?:-(?P<end>\d+))?$")
 _SHEET_ROW = re.compile(r"^sheet (?P<sheet>\d+), row (?P<row>\d+)$")
 _TABLE_ROW = re.compile(r"^(?P<table>(?:control \d+, )?table \d+), row \d+$")
 # Sentence ends: ".", "!" or "?" then space and a capital or a digit, but not after a
-# single capital ("E. Smith") or a common abbreviation.
+# single capital ("E. Smith") or a common abbreviation. Arabic has no capitals: there a
+# sentence ends at ".", "!", "?", the Arabic question mark or full stop, before an Arabic
+# letter or digit.
 _SENTENCE_END = re.compile(
     r"(?<!\be\.g)(?<!\bi\.e)(?<!\betc)(?<!\bvs)(?<!\bNo)(?<!\b[A-Z])(?<=[.!?])\s+(?=[A-Z0-9])"
+    r"|(?<=[.!?\u061f\u06d4])\s+(?=[\u0600-\u06ff\u0750-\u077f\u0660-\u0669])"
 )
 
 
@@ -382,6 +387,9 @@ def plan_document(segments: Sequence[LocatedText], count: TokenCount) -> tuple[P
             continue
         if group and group[0].headings != item.headings:
             flush()
+        # P5: a slide is a section of its own: a deck's slides are never read as one parent.
+        if group and _is_slide(group[0].location) and group[-1].location != item.location:
+            flush()
         if count(item.text) > PARENT_MAX:
             flush()
             for piece in _split_long(item, count):
@@ -393,6 +401,13 @@ def plan_document(segments: Sequence[LocatedText], count: TokenCount) -> tuple[P
         group.append(item)
     flush()
     return _deduplicated(parents)
+
+
+_SLIDE = re.compile(r"^slide \d+$")
+
+
+def _is_slide(location: str) -> bool:
+    return bool(_SLIDE.match(location))
 
 
 def _deduplicated(parents: list[ParentPlan]) -> tuple[ParentPlan, ...]:

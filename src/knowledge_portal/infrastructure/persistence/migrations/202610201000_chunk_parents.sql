@@ -1,6 +1,11 @@
 -- Section-v4 evidence (ADR section-v4): a document is indexed as parents, which the reasoner reads,
 -- and children, which are searched. Earlier indexes hold only whole chunks and read as before.
 
+-- Fail fast rather than queue behind live traffic: an ALTER that waits for its lock blocks every
+-- query behind it. The migration runs in one transaction, so a timeout rolls it back whole and
+-- the deployment retries it (docs/operations/deployment.md, "Catalogue evidence").
+SET LOCAL lock_timeout = '5s';
+
 ALTER TABLE architecture_knowledge_chunks
     ADD COLUMN role text DEFAULT 'whole' NOT NULL,
     ADD COLUMN parent_id text,

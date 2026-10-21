@@ -13,6 +13,7 @@ Two checks, both read-only:
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 from knowledge_portal.application.ports.architecture_rag import (
@@ -36,6 +37,10 @@ from knowledge_portal.domain.architecture.candidates import (
     classify,
     fact_key,
     fact_label,
+)
+from knowledge_portal.domain.architecture.citations import (
+    UnregisteredCitation,
+    unregistered_citations,
 )
 from knowledge_portal.domain.architecture.diff import ChangedItem, ChangeKind, diff_releases
 from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge
@@ -90,6 +95,11 @@ class ReviewSources:
         self._knowledge = knowledge
         self._candidates = candidates
         self._index = index
+
+    def citations(self, release_id: str, actor: Actor) -> tuple[UnregisteredCitation, ...]:
+        """What the version's facts cite that is not in its source register."""
+        require_maintainer(actor)
+        return unregistered_citations(self._knowledge.get(release_id))
 
     def provenance(self, release_id: str, actor: Actor) -> tuple[OrphanedFact, ...]:
         require_maintainer(actor)
@@ -166,7 +176,25 @@ class ReviewSources:
         return tuple(item for item in items if item.passages)
 
 
-_NAMED = frozenset({ChangedItem.SYSTEM, ChangedItem.PRODUCT, ChangedItem.JOURNEY})
+_NAMED = frozenset(
+    {
+        ChangedItem.SYSTEM,
+        ChangedItem.PRODUCT,
+        ChangedItem.JOURNEY,
+        ChangedItem.CHANNEL,
+        ChangedItem.INTERFACE,
+    }
+)
+# A name this short ("IN", "BI") would be found in passages about something else.
+_SHORTEST_NAME = 3
+
+
+def _says(name: str, text: str) -> bool:
+    """Whether the text names it as a whole word or phrase, in any case."""
+    name = name.strip()
+    if len(name) < _SHORTEST_NAME:
+        return False
+    return re.search(rf"(?<!\w){re.escape(name)}(?!\w)", text, re.IGNORECASE) is not None
 
 
 def _names(
@@ -179,5 +207,11 @@ def _names(
         return any(system.id == key for system in named_systems(base, text))
     if item is ChangedItem.PRODUCT:
         return any(offering.id == key for offering in named_offerings(base, text))
+    if item is ChangedItem.CHANNEL:
+        channel = next((each for each in base.channels if each.id == key), None)
+        return channel is not None and _says(channel.name, text)
+    if item is ChangedItem.INTERFACE:
+        interface = next((each for each in base.interfaces if each.id == key), None)
+        return interface is not None and _says(interface.name, text)
     journey = next((each for each in base.journeys if each.id == key), None)
     return journey is not None and journey.name.casefold() in text.casefold()

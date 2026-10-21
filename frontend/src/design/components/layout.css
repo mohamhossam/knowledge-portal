@@ -98,6 +98,10 @@
 }
 
 .ds-masthead__out {
+  /* A 24px target at least (WCAG 2.5.8), the text centred in it. */
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 24px;
   color: inherit;
   font-size: var(--text-meta);
   white-space: nowrap;

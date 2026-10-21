@@ -130,7 +130,7 @@ export function MarkLines({ step, channelName }: { step: JourneyActivity; channe
       {step.point_of_no_return && (
         <span className="journey-line" dir="auto">
           <Flag size={14} aria-hidden="true" className="journey-mark--noreturn" />
-          {/^(yes|true|y)$/i.test(step.point_of_no_return.trim()) ? "Point of no return" : <>Point of no return: <bdi>{step.point_of_no_return}</bdi></>}
+          Point of no return: <bdi>{step.point_of_no_return}</bdi>
         </span>
       )}
       {step.confidence && step.confidence !== "confirmed" && (

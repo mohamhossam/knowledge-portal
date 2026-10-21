@@ -3,9 +3,11 @@ and a rebuild cuts and embeds only what changed."""
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+import logging
+from datetime import UTC, datetime, timedelta
 
 import pytest
+from smb_kernel.documents.scanner import OfflineDocumentScanner
 from smb_kernel.documents.text_extractor import SafeDocumentTextExtractor
 from smb_kernel.time.fixed import FixedClock
 
@@ -20,11 +22,13 @@ from knowledge_portal.application.use_cases.catalogue_candidates import (
     DecideCatalogueCandidate,
     ProposeCatalogueChanges,
 )
+from knowledge_portal.application.use_cases.document_retention import DocumentRetention
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
     InvalidKnowledgeError,
     SystemDefinition,
 )
+from knowledge_portal.domain.document.value_objects import DocumentVersionId
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
 from knowledge_portal.infrastructure.architecture.embeddings import FakeEmbeddings
 from knowledge_portal.infrastructure.architecture.evidence_index import InMemoryEvidenceIndex
@@ -79,7 +83,12 @@ class Catalogue:
         self.storage = InMemoryDocumentStorage()
         self.extractor = CountingExtractor()
         self.upload = UploadKnowledgeDocument(
-            self.manage, self.repository, self.storage, SafeDocumentTextExtractor(), 10_000_000
+            self.manage,
+            self.repository,
+            self.storage,
+            SafeDocumentTextExtractor(),
+            10_000_000,
+            OfflineDocumentScanner(),
         )
         self.builder = BuildArchitectureIndex(
             self.manage, self.index, self.storage, self.extractor, FakeWordTokenizer()
@@ -198,3 +207,42 @@ def test_reading_a_new_version_lists_what_the_catalogue_took_from_the_old_one_an
     assert "Orders close at midnight" in dropped.label
     assert dropped.quote and "midnight" in dropped.quote
     assert any("no longer stated" in warning for warning in run.warnings)
+
+
+def test_a_document_the_malware_scanner_holds_back_is_never_added() -> None:
+    catalogue = Catalogue()
+    draft = catalogue.manage.create_draft(MAINTAINER, "Next")
+    with pytest.raises(InvalidKnowledgeError, match="malware scanner held"):
+        catalogue.add(draft, "Notes X5O!P%@AP EICAR-STANDARD-ANTIVIRUS-TEST-FILE end")
+    assert catalogue.manage.get(draft.id).documents == ()
+
+
+def test_a_build_says_what_it_reused_and_cut(caplog: pytest.LogCaptureFixture) -> None:
+    catalogue = Catalogue()
+    draft = catalogue.add(catalogue.manage.create_draft(MAINTAINER, "Next"), "CWOM orders")
+    first = catalogue.build(draft)
+    edited = catalogue.manage.upsert_system(
+        first.id, first.revision, SystemDefinition("new-system", "New system"), MAINTAINER
+    )
+    with caplog.at_level(
+        logging.INFO, logger="knowledge_portal.application.use_cases.architecture_index"
+    ):
+        catalogue.build(edited)
+    assert "documents reused 1, cut 0" in caplog.text
+
+
+def test_unused_document_files_are_listed_then_collected_and_registrations_kept() -> None:
+    catalogue = Catalogue()
+    draft = catalogue.add(catalogue.manage.create_draft(MAINTAINER, "Next"), "CWOM orders v1")
+    first = draft.documents[0]
+    draft = catalogue.add(draft, "CWOM orders v2", replaces=first.id)
+    retention = DocumentRetention(catalogue.repository, catalogue.storage)
+    later = NOW + timedelta(days=91)
+    # Too recent for a 90-day period, and the draft still holds the second version.
+    assert retention.unused(NOW, timedelta(days=90)) == ()
+    assert [item.id for item in retention.unused(later, timedelta(days=90))] == [first.id]
+    retention.collect(later, timedelta(days=90))
+    with pytest.raises(Exception):  # noqa: B017 - the store's own not-found error
+        catalogue.storage.get(DocumentVersionId(first.storage_key))
+    assert first.id in catalogue.manage.known_versions()
+    assert catalogue.storage.get(DocumentVersionId(draft.documents[0].storage_key))

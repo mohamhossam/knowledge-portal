@@ -55,6 +55,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     KnowledgeReleaseStatus,
     SystemDefinition,
 )
+from knowledge_portal.domain.architecture.links import connections
 from knowledge_portal.domain.architecture.neighbours import adjacent
 
 
@@ -105,7 +106,8 @@ class ResolveArchitectureKnowledge(ArchitectureKnowledgePort):
             )
 
         mapped = {item.id for item in matched.systems if item.catalogued}
-        nearby = adjacent(mapped, release.relationships)
+        # Neighbours by every link: stated, or read from interfaces and journeys.
+        nearby = adjacent(mapped, connections(release))
         systems = {item.id: item for item in release.systems}
 
         def placed(system: SystemReference) -> SystemReference:
@@ -238,7 +240,7 @@ class ResolveArchitectureKnowledge(ArchitectureKnowledgePort):
             ArchitectureDependency(
                 item.source_system_id, item.target_system_id, item.description, item.kind
             )
-            for item in release.relationships
+            for item in connections(release)
             if item.source_system_id in ids and item.target_system_id in ids
         )
         uncertainty = selected.uncertainty

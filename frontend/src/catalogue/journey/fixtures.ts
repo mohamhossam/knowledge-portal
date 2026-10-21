@@ -26,7 +26,7 @@ export const ORDERING = {
     step("300", "Submit the order", { channel_entry: true, phase: "Capture", customer_visible: true }),
     step("320", "Build the value order and evaluate it", { performing_system_id: "rtf", phase: "Validate" }),
     step("330", "Order returned for correction", { phase: "Validate", customer_visible: true }),
-    step("340", "Hand the order to CWOM", { performing_system_id: "rtf", phase: "Validate", point_of_no_return: "Yes" }),
+    step("340", "Hand the order to CWOM", { performing_system_id: "rtf", phase: "Validate", point_of_no_return: "Past this step, the order can no longer be cancelled." }),
     step("370", "Split into sub-orders", { performing_system_id: "cwom", supporting_system_ids: ["ecm"], phase: "Orchestrate", confidence: "inferred" }),
     step("380", "Provision the CPE", { performing_system_id: "e2eso", phase: "Fulfil", track: "CPE" }),
     step("400", "Install the CPE and FortiAP", { performing_system_id: "wfms", phase: "Fulfil", track: "Install" }),

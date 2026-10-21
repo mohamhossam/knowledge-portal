@@ -33,6 +33,7 @@ from typing import Any
 from knowledge_portal.domain.architecture.channels import check_channels
 from knowledge_portal.domain.architecture.journeys import (
     MAIN_TRACK,
+    CallTiming,
     check_journeys,
     journey_edges,
 )
@@ -46,7 +47,7 @@ ENTRY = "@ENTRY"
 # catalogue's derived flow does not run on from it to the next activity.
 END_TRACK = "END"
 _CONFIDENCE = {"CONFIRMED": "confirmed", "INFERRED": "inferred", "GAP": "gap"}
-_TIMING = {"SYNC": "Sync", "ASYNC": "Async"}
+_TIMING = {"SYNC": CallTiming.SYNC, "ASYNC": CallTiming.ASYNC}
 _ROLE_BY_SCOPE = {"DESIGN": "DESIGN_TIME", "OPS": "OPERATIONS"}
 _FULFILMENT = "FULFILMENT"
 # A correlation key the source says it does not define ("Correlation key not defined by …").

@@ -79,6 +79,8 @@ def test_the_service_runs_on_postgresql() -> None:
         FAKE_PROVIDER_SETTINGS,
         persistence_provider=PersistenceProvider.POSTGRES,
         database_url=DATABASE_URL,
+        # Offline scanning is for memory persistence only; nothing here uploads.
+        library_scan_mode="clamav",
     )
     container = build_container(settings)
     with TestClient(create_app(lambda: container)) as client:

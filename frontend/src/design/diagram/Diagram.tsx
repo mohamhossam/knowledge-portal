@@ -1,6 +1,6 @@
 import "./diagram.css";
 
-import { Table2 } from "lucide-react";
+import { Network, Table2 } from "lucide-react";
 import { type KeyboardEvent, type MouseEvent, type ReactNode, type RefObject, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "../components/actions";
@@ -62,7 +62,7 @@ export type DiagramProps = {
  * children are hidden from assistive tech: Tab enters it once, on the first
  * node; the arrow keys move to the nearest node that way; Home and End go to
  * the first and last; Enter opens. "Show as table" swaps the drawing for a
- * table of every node with what it links to and from.
+ * table of every node with what it links to and from; "Show as drawing" swaps it back.
  */
 export function Diagram({ label, caption, layout: given, onActivate, link: Link = Anchor, legend, headers, startAsTable = false, table }: DiagramProps) {
   const [asTable, setAsTable] = useState(startAsTable);
@@ -79,8 +79,9 @@ export function Diagram({ label, caption, layout: given, onActivate, link: Link 
         <figcaption id={captionId} className="ds-diagram__caption">
           {caption ?? label}
         </figcaption>
-        <Button variant="quiet" icon={<Table2 size={16} />} aria-pressed={asTable} onClick={() => setAsTable((on) => !on)}>
-          Show as table
+        {/* The button names what it will show: the view in place is plain to see. */}
+        <Button variant="quiet" icon={asTable ? <Network size={16} /> : <Table2 size={16} />} onClick={() => setAsTable((on) => !on)}>
+          {asTable ? "Show as drawing" : "Show as table"}
         </Button>
       </div>
       {asTable ? (

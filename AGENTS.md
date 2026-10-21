@@ -546,9 +546,13 @@ A task is complete only when:
 - **Section-v4 is unmeasured** (`docs/architecture/adr-section-v4-chunking.md`). It is built and
   selectable, but the default stays section-v3 until the Golden set report compares both with
   live models. Owner: catalogue maintainers.
-- **Catalogue uploads: embedded Office parts and figure text are not indexed**, PDFs are read
-  page by page without layout, and catalogue uploads are not malware-scanned as library uploads
-  are. Carried from the chunking proposal; not in the section-v4 slice.
+- **Catalogue uploads: embedded Office parts and figure text are not indexed**, and PDFs are
+  read page by page without layout: a PDF's numbered headings are not recognised, so section-v4
+  packs its pages like paragraphs. Carried from the chunking proposal. (Catalogue uploads are
+  now malware-scanned as library uploads are.)
+- **Unused catalogue document files are collected by hand.** `scripts/collect_unused_documents.py`
+  lists them and, with `--apply`, deletes them; the retention period is the operator's policy
+  (`docs/operations/deployment.md`, "Catalogue evidence").
 - **One draft at a time** (`docs/architecture/adr-catalogue-versioning.md`). Several drafts
   scoped to different entities, with per-entity conflicts at publish, wait until more than one
   team curates at once or publishing is weekly or more often.

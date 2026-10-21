@@ -30,7 +30,7 @@ import { LabIcon } from "./labIcon";
 import { channelKindName } from "./catalogueRules";
 import { journeyHref, LAB, useLabData } from "./labData";
 import { pathTo, plural, useTitle } from "./labUtil";
-import { STAGES, stageOfCode } from "./stages";
+import { STAGES, stageOf, stageOfCode } from "./stages";
 import { laneName } from "./words";
 import { SystemMonogram } from "./SystemMonogram";
 
@@ -108,7 +108,9 @@ export function JourneysIndex() {
   const journeyOf = (code: string) => (product ? data.journeys.find((journey) => journey.offeringId === product.id && journey.orderType === code) : undefined);
   const stepsOf = (journeyId: string, channel: string | null) => journeyView(data, journeyId, channel)?.steps.filter((step) => step.kind === "task").length ?? 0;
   const names = new Map((product?.orderTypes ?? []).map((type) => [type.code, type.name]));
-  const stages = STAGES.map((stage) => ({ ...stage, codes: [...names.keys()].filter((code) => stageOfCode(code) === stage.id) })).filter((stage) => stage.codes.length);
+  const stageByCode = new Map((product?.orderTypes ?? []).map((type) => [type.code, stageOf(type)]));
+  const stageOfType = (code: string) => stageByCode.get(code) ?? stageOfCode(code);
+  const stages = STAGES.map((stage) => ({ ...stage, codes: [...names.keys()].filter((code) => stageOfType(code) === stage.id) })).filter((stage) => stage.codes.length);
   const shared = product ? data.journeys.filter((journey) => !journey.orderType && journey.offeringId === product.id) : [];
 
   // Ordering channels: not every channel takes every order type. The product's channels, and the one the board is seen through.
@@ -128,7 +130,7 @@ export function JourneysIndex() {
   const flowChannel = journey && lens && journey.channels.includes(lens.id) ? lens.id : journey?.channels[0];
   const shape = shapeOf(data, journey ? journeyView(data, journey.id, flowChannel ?? null) : null);
   const pickedName = sharedPick?.name ?? (pickedKey ? names.get(pickedKey) : undefined);
-  const pickedStage = sharedPick ? "across" : pickedKey ? stageOfCode(pickedKey) : null;
+  const pickedStage = sharedPick ? "across" : pickedKey ? stageOfType(pickedKey) : null;
 
   const offered = product?.orderTypes.length ?? 0;
   const modelled = (product?.orderTypes ?? []).filter((type) => journeyOf(type.code)).length;

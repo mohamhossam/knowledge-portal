@@ -67,8 +67,8 @@ describe("SystemsPage", () => {
 
   it("follows a connection, lights the way back, and moves focus to the new record", async () => {
     renderAt("/architecture/systems/cwom", systemRoutes);
-    expect(screen.getByText("Orchestrated by CWOM")).toBeInTheDocument();
-    expect(screen.getByText("Orchestrates CWOM")).toBeInTheDocument();
+    expect(screen.getByText("Orchestrated by it")).toBeInTheDocument();
+    expect(screen.getByText("Orchestrates it")).toBeInTheDocument();
     fireEvent.click(within(screen.getByRole("table", { name: "Depends on: CWOM" })).getByRole("link", { name: "WFM" }));
     const title = await screen.findByRole("heading", { level: 2, name: "WFM" });
     expect(title).toHaveFocus();

@@ -8,27 +8,31 @@ import type {
   CatalogueDiff, CatalogueSystem, Journey, JourneyActivity, LandscapeDomain, Offering, RelationshipKind, Release,
   ReleaseAuditEvent, SourceConfidence,
 } from "../api/client";
-import { type SystemLink, systemLinks } from "./links";
+import { type SystemLink, linksOf } from "./links";
 
-/** A connection on a sheet's "Depends on" side, the other system as its subject: "Gets data from CWOM". */
-export function dependsHow(kind: RelationshipKind, sheet: string): string {
+/**
+ * How a system on a record's "Depends on" side serves it, in a few words: the
+ * section already says whose record it is, so the line names only the kind
+ * ("Its API is called", "Gets its data").
+ */
+export function dependsHow(kind: RelationshipKind): string {
   return {
-    calls_api: `API called by ${sheet}`,
-    publishes_events_to: `Gets events from ${sheet}`,
-    transfers_data_to: `Gets data from ${sheet}`,
-    orchestrates: `Orchestrated by ${sheet}`,
-    unspecified: `Depended on by ${sheet}`,
+    calls_api: "Its API is called",
+    publishes_events_to: "Gets its events",
+    transfers_data_to: "Gets its data",
+    orchestrates: "Orchestrated by it",
+    unspecified: "How isn’t known",
   }[kind];
 }
 
-/** The same on the "Used by" side: "Orchestrates CWOM". */
-export function usedHow(kind: RelationshipKind, sheet: string): string {
+/** The same on the "Used by" side: "Calls its API". */
+export function usedHow(kind: RelationshipKind): string {
   return {
-    calls_api: `Calls the API of ${sheet}`,
-    publishes_events_to: `Sends events to ${sheet}`,
-    transfers_data_to: `Sends data to ${sheet}`,
-    orchestrates: `Orchestrates ${sheet}`,
-    unspecified: `Depends on ${sheet}`,
+    calls_api: "Calls its API",
+    publishes_events_to: "Sends it events",
+    transfers_data_to: "Sends it data",
+    orchestrates: "Orchestrates it",
+    unspecified: "How isn’t known",
   }[kind];
 }
 
@@ -96,7 +100,7 @@ export type Catalogue = {
 export function catalogue(release: Release): Catalogue {
   return {
     release,
-    links: systemLinks(release),
+    links: linksOf(release),
     systems: new Map(release.systems.map((system) => [system.id, system])),
     landscape: new Map((release.landscape_domains ?? []).map((domain) => [domain.id, domain])),
   };
@@ -313,7 +317,7 @@ export function portfolioPath(release: Pick<Release, "portfolio">, nodeId: strin
 export function contents(release: Release): { systems: number; connections: number; offerings: number; journeys: number } {
   return {
     systems: release.systems.length,
-    connections: systemLinks(release).length,
+    connections: linksOf(release).length,
     offerings: release.products?.length ?? 0,
     journeys: release.journeys?.length ?? 0,
   };

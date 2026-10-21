@@ -9,5 +9,8 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
     css: true,
+    // Rendering with real CSS in jsdom is heavy, and the suite runs in parallel: under load a
+    // whole explorer sheet can take over the default 5 s. A hang still fails, at 15 s.
+    testTimeout: 15_000,
   },
 });

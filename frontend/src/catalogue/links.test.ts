@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Journey, SystemInterface } from "../api/client";
-import { styleKind, systemLinks } from "./links";
+import { linksOf, styleKind, systemLinks } from "./links";
 
 const api = (over: Partial<SystemInterface>): SystemInterface => ({
   id: "if-crm",
@@ -72,5 +72,18 @@ describe("systemLinks", () => {
     expect(styleKind("Database")).toBe("transfers_data_to");
     expect(styleKind("Ticket")).toBe("unspecified");
     expect(styleKind(null)).toBe("unspecified");
+  });
+});
+
+describe("the links the service sends", () => {
+  it("are the ones worked out here, for the SMB catalogue", async () => {
+    const { default: fixture } = await import("./model/fixtures/smb-release.json");
+    const release = fixture as unknown as Parameters<typeof systemLinks>[0] & { connections: unknown[] };
+    const key = (link: { source_system_id: string; target_system_id: string; kind: string; description: string }) =>
+      [link.source_system_id, link.target_system_id, link.kind, link.description].join(" | ");
+    const local = systemLinks({ ...release, connections: null });
+    expect(release.connections.length).toBeGreaterThan(0);
+    expect(linksOf(release).map(key)).toEqual(local.map(key));
+    expect(linksOf(release).map((link) => link.interfaces)).toEqual(local.map((link) => link.interfaces));
   });
 });

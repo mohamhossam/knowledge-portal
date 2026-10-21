@@ -182,7 +182,12 @@ export function JourneyEditor({ value, onChange, systems, offerings, channels = 
             <TextField label="Interaction" value={link.interaction} onChange={(interaction) => update({ interaction: interaction || null })} />
             <TextField label="Interface" value={link.interface} onChange={(item) => update({ interface: item || null })} />
             <TextField label="Payload" value={link.payload} onChange={(payload) => update({ payload: payload || null })} />
-            <TextField label="Timing" value={link.timing} onChange={(timing) => update({ timing: timing || null })} />
+            <SelectField
+              label="Timing"
+              value={link.timing ?? ""}
+              options={[{ value: "", label: "Not said" }, { value: "Sync", label: "Sync: waits for its answer" }, { value: "Async", label: "Async: carries on" }]}
+              onChange={(timing) => update({ timing: (timing || null) as Handover["timing"] })}
+            />
           </>
         )}
       />

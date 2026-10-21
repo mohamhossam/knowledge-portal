@@ -13,6 +13,7 @@ from knowledge_portal.application.ports.architecture_rag import (
     EmbeddingPort,
 )
 from knowledge_portal.application.ports.architecture_tokenizer import ArchitectureTokenizerPort
+from knowledge_portal.application.ports.document_library import DocumentScannerPort
 from knowledge_portal.application.ports.embedding import KnowledgeEmbeddingPort
 from knowledge_portal.application.ports.requirement_assessment import RequirementAssessmentPort
 from knowledge_portal.application.use_cases.architecture_documents import (
@@ -133,6 +134,7 @@ def build_architecture(
     llm: LLMAdapters,
     reasoner: ArchitectureReasonerPort,
     clock: ClockPort,
+    scanner: DocumentScannerPort,
 ) -> ArchitectureWiring:
     manage = ManageArchitectureKnowledge(
         persistence.architecture_repository,
@@ -155,6 +157,7 @@ def build_architecture(
         persistence.document_storage,
         document_extractor,
         settings.document_max_file_bytes,
+        scanner,
     )
     build_index = BuildArchitectureIndex(
         manage,

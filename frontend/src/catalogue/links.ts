@@ -5,11 +5,12 @@
  * pair of systems, in the direction of the dependency, whatever it is known
  * from; a stated connection keeps its own kind and words.
  */
-import type { Journey, Relationship, RelationshipKind, SystemInterface } from "../api/client";
+import type { Journey, Relationship, RelationshipKind, ServedLink, SystemInterface } from "../api/client";
 
-/** What a version holds that its links are read from. */
+/** What a version holds that its links are read from; the service sends them worked out. */
 export type Linked = {
   relationships: Relationship[];
+  connections?: ServedLink[] | null;
   interfaces?: SystemInterface[] | null;
   journeys?: Journey[] | null;
 };
@@ -36,6 +37,9 @@ export function styleKind(style: string | null | undefined): RelationshipKind {
 const PRECEDENCE: RelationshipKind[] = ["calls_api", "publishes_events_to", "transfers_data_to", "orchestrates", "unspecified"];
 
 type Draft = { source: string; target: string; stated?: Relationship; kinds: Set<RelationshipKind>; interfaces: Map<string, { name: string; systemId: string }>; journeys: Map<string, { name: string; steps: number }>; said: Set<string>; purposes: string[] };
+
+/** Said when nothing names what a link carries (as the service says it). */
+export const UNNAMED = "Known from its interfaces and journeys";
 
 /** A few names in full, the rest counted: "A, B, C and 4 more". */
 function named(names: string[]): string {
@@ -95,10 +99,29 @@ export function systemLinks(version: Linked): SystemLink[] {
       target_system_id: found.target,
       // A stated kind wins; a stated "unspecified" takes what the interfaces and journeys say.
       kind: found.stated && found.stated.kind !== "unspecified" ? found.stated.kind : derived,
-      description: found.stated?.description || named([...found.said]) || found.purposes[0] || "",
+      description: found.stated?.description || named([...found.said]) || found.purposes[0] || UNNAMED,
       stated: found.stated ?? null,
       interfaces: [...found.interfaces].map(([id, item]) => ({ id, ...item })),
       journeys: [...found.journeys].map(([id, seen]) => ({ id, ...seen })),
     };
   });
+}
+
+/**
+ * A version's links: as the service works them out (domain.architecture.links), or, for a
+ * version that came without them, worked out here the same way.
+ */
+export function linksOf(version: Linked): SystemLink[] {
+  if (!version.connections) return systemLinks(version);
+  return version.connections.map((link) => ({
+    source_system_id: link.source_system_id,
+    target_system_id: link.target_system_id,
+    kind: link.kind,
+    description: link.description,
+    stated: link.stated
+      ? version.relationships.find((item) => item.source_system_id === link.source_system_id && item.target_system_id === link.target_system_id) ?? null
+      : null,
+    interfaces: link.interfaces.map((item) => ({ id: item.id, name: item.name, systemId: item.system_id })),
+    journeys: link.journeys.map((item) => ({ ...item })),
+  }));
 }

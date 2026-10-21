@@ -15,7 +15,7 @@ import { NfrSection, RealisationKey, RealisedAs } from "../catalogue/Realisation
 import { ArchitectureDecisions, ConflictList, OfferingSourceList, OpenQuestions } from "../catalogue/GovernanceSections";
 import { conflictsFor, questionOf, SourcesContext } from "../catalogue/governance";
 import { LifecycleSection } from "../catalogue/LifecycleNotes";
-import { systemLinks } from "../catalogue/links";
+import { linksOf } from "../catalogue/links";
 import { type InformationHeld, informationHeld, SOURCE_TONE, SOURCE_WORD } from "../catalogue/ontology";
 import { TrackingSection } from "../catalogue/Tracking";
 import {
@@ -193,7 +193,7 @@ function ScenarioSheet({ release, scenario, linkSystems, view, onView }: {
     );
   const taking = involvement(scenario);
   const highlight = useMemo(() => new Set(involvement(scenario).map((item) => item.systemId)), [scenario]);
-  const hasLinks = useMemo(() => systemLinks(release).length > 0, [release]);
+  const hasLinks = useMemo(() => linksOf(release).length > 0, [release]);
   const information = useMemo(() => informationHeld(release, highlight), [release, highlight]);
   const parts = partsFor(scenario);
   const tracked = trackingFor(scenario);

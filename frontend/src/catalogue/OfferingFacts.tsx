@@ -45,16 +45,17 @@ export function BusinessRules({ offering, level }: { offering: Offering; level: 
   );
 }
 
-/** A value as a number and its unit, "200 Mbps" as 200 and Mbps; nothing for anything else. */
-function measure(value: string): { amount: string; unit: string } | null {
-  const found = /^(\d+(?:[.,]\d+)?)\s*([^\d\s]\S*)$/.exec(value.trim());
-  return found ? { amount: found[1]!, unit: found[2]! } : null;
+type Fact = Plan["characteristics"][number];
+
+/** A characteristic as its amount and unit, as the service holds them; nothing when it is not a measure. */
+function measure(fact: Fact): { amount: string; unit: string } | null {
+  return fact.amount && fact.unit ? { amount: fact.amount, unit: fact.unit } : null;
 }
 
 /** A characteristic's column: its unit in the head when every plan states it in the same one. */
 function characteristic(plans: Plan[], name: string): Column<Plan> {
-  const values = plans.map((plan) => plan.characteristics.find((item) => item.name === name)?.value).filter((value): value is string => !!value);
-  const units = new Set(values.map((value) => measure(value)?.unit ?? null));
+  const facts = plans.map((plan) => plan.characteristics.find((item) => item.name === name)).filter((fact): fact is Fact => !!fact);
+  const units = new Set(facts.map((fact) => measure(fact)?.unit ?? null));
   const unit = units.size === 1 ? [...units][0] : null;
   const missing = <span className="cat-quiet">—</span>;
   if (unit) {
@@ -63,8 +64,8 @@ function characteristic(plans: Plan[], name: string): Column<Plan> {
       header: `${name} (${unit})`,
       numeric: true,
       cell: (plan) => {
-        const value = plan.characteristics.find((item) => item.name === name)?.value;
-        return value ? measure(value)!.amount : missing;
+        const fact = plan.characteristics.find((item) => item.name === name);
+        return fact ? measure(fact)!.amount : missing;
       },
     };
   }

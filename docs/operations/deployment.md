@@ -191,3 +191,28 @@ deployment:
    keep the old volume until this deployment has run cleanly.
 
 Users sign in again once when the portal moves to a new origin.
+
+## Catalogue evidence
+
+- **Migrations that alter evidence tables.** `202610201000_chunk_parents` and
+  `202610201100_chunk_sets` alter the catalogue's chunk and link tables. Each waits at most five
+  seconds for its locks (`lock_timeout`), then rolls back whole rather than queue behind live
+  traffic. If the deployment reports the timeout, run it again when the portal is quiet; nothing
+  is left half applied. The backfill touches every stored chunk link once.
+- **Malware scanning.** Catalogue documents are scanned as they are uploaded, by the same
+  scanner as library uploads (`LIBRARY_SCAN_MODE`, `LIBRARY_SCANNER_HOST`,
+  `LIBRARY_SCANNER_PORT`). A document the scanner holds back is refused; when the scanner does
+  not answer, the upload is refused with 503 and is never taken unscanned.
+- **What a build reused.** Each index build logs one line: the chunks, the texts to embed, the
+  documents whose chunk sets it reused and those it cut, and the unread sets it collected. A
+  rebuild after a catalogue edit should say "cut 0".
+- **Retention.** A document version's registration is kept for good; its stored file is read
+  only while a version holds it. To list the files of versions no release holds, never
+  published and older than a period, then delete them:
+
+  ```bash
+  uv run python scripts/collect_unused_documents.py --older-than-days 90          # lists only
+  uv run python scripts/collect_unused_documents.py --older-than-days 90 --apply  # deletes
+  ```
+
+  The period is the retention policy's to set; nothing is deleted on its own.

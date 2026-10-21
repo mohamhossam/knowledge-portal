@@ -24,7 +24,8 @@ export function ConnectionsFlowDiagram({ landscape, href, highlight, table, capt
   caption?: ReactNode;
 }) {
   const flow = useMemo(() => connectionsFlow(landscape, { href, highlight }), [landscape, href, highlight]);
-  const layout = useCallback((fitWidth?: number) => layered(flow.nodes, flow.edges, { nodeWidth: 168, columnGap: 112, fitWidth }), [flow]);
+  // Unlabelled lines need no room for words between the columns.
+  const layout = useCallback((fitWidth?: number) => layered(flow.nodes, flow.edges, { nodeWidth: 168, columnGap: flow.crowded ? 56 : 112, fitWidth }), [flow]);
   const keys: [LegendMark, string][] = [
     ...(highlight ? [["subject", "In this order"] as [LegendMark, string]] : []),
     ...(flow.edges.some((edge) => edge.dashed) ? [["dashed", "Dashed line: the kind of dependency isn’t known"] as [LegendMark, string]] : []),
@@ -38,6 +39,7 @@ export function ConnectionsFlowDiagram({ landscape, href, highlight, table, capt
           <>
             {count(flow.edges.length, "connection")} between {count(flow.nodes.length, "system")}, read from the system that depends to the one it
             depends on.{flow.unconnected > 0 && <> {count(flow.unconnected, "other system")} {flow.unconnected === 1 ? "connects" : "connect"} to nothing yet.</>}
+            {flow.crowded && <> With this many, the lines carry no words: the table says how each depends.</>}
           </>
         )
       }

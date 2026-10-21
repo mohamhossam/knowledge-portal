@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from xml.sax.saxutils import escape
 
 import pytest
+from smb_kernel.documents.scanner import OfflineDocumentScanner
 from smb_kernel.documents.text_extractor import SafeDocumentTextExtractor
 
 from knowledge_portal.application.ports.architecture_rag import (
@@ -34,6 +35,7 @@ from knowledge_portal.application.use_cases.assessment_lanes import passage_lane
 from knowledge_portal.application.use_cases.section_chunking import (
     CHILD_MAX,
     PARENT_MAX,
+    ParentPlan,
     first_location,
     plan_document,
     record_windows,
@@ -63,6 +65,9 @@ from knowledge_portal.infrastructure.persistence.document_storage import InMemor
 from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
     InMemoryArchitectureKnowledgeRepository,
 )
+from tests.pdf_fixtures import pdf_document
+from tests.presentation_fixtures import drawing_paragraph, drawing_table, presentation, table_cell
+from tests.spreadsheet_fixtures import spreadsheet_document
 from tests.word_table_fixtures import DOCX_MIME, W, word_document
 
 TOKENS = ApproximateTokenizer()
@@ -313,7 +318,12 @@ def _published_v4() -> Published:
     storage = InMemoryDocumentStorage()
     draft = manage.create_draft(MAINTAINER, "With a design")
     draft = UploadKnowledgeDocument(
-        manage, repository, storage, SafeDocumentTextExtractor(), 10_000_000
+        manage,
+        repository,
+        storage,
+        SafeDocumentTextExtractor(),
+        10_000_000,
+        OfflineDocumentScanner(),
     ).execute(
         draft.id,
         draft.revision,
@@ -413,3 +423,79 @@ def test_the_index_version_is_read_from_the_environment(monkeypatch: pytest.Monk
     monkeypatch.setenv("ARCHITECTURE_INDEX_VERSION", "section-v9")
     with pytest.raises(ConfigurationError, match="ARCHITECTURE_INDEX_VERSION"):
         Settings.from_env()
+
+
+ARABIC = "يرسل النظام الطلب إلى CWOM. ثم ينتظر الرد؟ نعم، يتم ذلك تلقائيًا. Then CWOM replies."
+
+
+def test_arabic_sentences_end_without_capitals() -> None:
+    assert [ARABIC[a:b] for a, b in sentences(ARABIC)] == [
+        "يرسل النظام الطلب إلى CWOM.",
+        "ثم ينتظر الرد؟",
+        "نعم، يتم ذلك تلقائيًا.",
+        "Then CWOM replies.",
+    ]
+
+
+PPTX = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
+def _bounded(plan: tuple[ParentPlan, ...]) -> None:
+    assert plan
+    for parent in plan:
+        assert count(parent.body) <= PARENT_MAX
+        for child in parent.children:
+            assert child.text in parent.body and child.text.strip()
+
+
+def test_section_v4_reads_a_pdf_page_by_page_within_bounds() -> None:
+    content = pdf_document(
+        ["1 Scope", "CWOM orchestrates the order. RTF captures it for the channel."],
+        ["2 Billing", "BSCS rates the order. It bills every month."],
+    )
+    found = LocatedDocumentExtractor(SafeDocumentTextExtractor()).extract(
+        "application/pdf", content
+    )
+    assert [item.location for item in found] == ["page 1", "page 2"]
+    plan = plan_document(found, count)
+    _bounded(plan)
+    # A page carries no headings to read: small pages pack into one parent.
+    assert [parent.location for parent in plan] == ["pages 1–2"]
+
+
+def test_section_v4_keeps_each_slide_a_section_of_its_own() -> None:
+    rows = (
+        (table_cell("System"), table_cell("Role")),
+        (table_cell("CWOM"), table_cell("Orchestrates")),
+    )
+    content = presentation(
+        "<p:sp><p:txBody>"
+        + drawing_paragraph("Order flow")
+        + drawing_paragraph("CWOM orchestrates the order.")
+        + "</p:txBody></p:sp>",
+        drawing_table(*rows),
+    )
+    plan = plan_document(
+        LocatedDocumentExtractor(SafeDocumentTextExtractor()).extract(PPTX, content), count
+    )
+    _bounded(plan)
+    assert [parent.location for parent in plan] == ["slide 1", "slide 2"]
+
+
+def test_section_v4_reads_a_sheet_s_rows_as_one_parent() -> None:
+    content = spreadsheet_document(
+        {
+            "A1": "System",
+            "B1": "Role",
+            "A2": "CWOM",
+            "B2": "Orchestrates",
+            "A3": "BSCS",
+            "B3": "Bills",
+        }
+    )
+    plan = plan_document(
+        LocatedDocumentExtractor(SafeDocumentTextExtractor()).extract(XLSX, content), count
+    )
+    _bounded(plan)
+    assert [parent.location for parent in plan] == ["sheet 1, rows 1–3"]

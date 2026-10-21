@@ -100,6 +100,7 @@ from knowledge_portal.interfaces.api.schemas.architecture_knowledge import (
     SettleSubjectResponse,
     SuggestionDecisionRequest,
     SystemUpdateRequest,
+    UnregisteredCitationResponse,
 )
 from knowledge_portal.interfaces.api.schemas.bounds import (
     Text,
@@ -427,6 +428,21 @@ def rename_journey(
     return KnowledgeReleaseResponse.from_domain(
         knowledge.rename_journey(release_id, body.expected_revision, journey_id, body.new_id, actor)
     )
+
+
+@router.get("/releases/{release_id}/citations", response_model=list[UnregisteredCitationResponse])
+def citations(
+    release_id: str,
+    actor: KnowledgeActorDep,
+    review: Annotated[ReviewSources, Depends(get_review_sources)],
+) -> list[UnregisteredCitationResponse]:
+    """What the version's facts cite that its source register does not hold."""
+    return [
+        UnregisteredCitationResponse(
+            cited=item.cited, facts=item.facts, examples=list(item.examples)
+        )
+        for item in review.citations(release_id, actor)
+    ]
 
 
 @router.get("/releases/{release_id}/provenance", response_model=list[OrphanedFactResponse])

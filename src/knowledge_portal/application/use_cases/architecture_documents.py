@@ -18,12 +18,14 @@ from knowledge_portal.application.document_upload_validation import (
 )
 from knowledge_portal.application.errors import (
     DocumentExtractionError,
+    MalwareScannerUnavailableError,
     PersistenceError,
     UnsupportedDocumentError,
 )
 from knowledge_portal.application.ports.architecture_knowledge_repository import (
     ArchitectureKnowledgeRepositoryPort,
 )
+from knowledge_portal.application.ports.document_library import DocumentScannerPort
 from knowledge_portal.application.ports.identity import Actor, require_maintainer
 from knowledge_portal.application.ports.located_document_extractor import (
     LocatedDocumentExtractorPort,
@@ -76,12 +78,14 @@ class UploadKnowledgeDocument:
         storage: DocumentStoragePort,
         extractor: DocumentExtractorPort,
         max_bytes: int,
+        scanner: DocumentScannerPort,
     ) -> None:
         self._knowledge = knowledge
         self._repository = repository
         self._storage = storage
         self._extractor = extractor
         self._max_bytes = max_bytes
+        self._scanner = scanner
 
     @property
     def max_bytes(self) -> int:
@@ -119,6 +123,18 @@ class UploadKnowledgeDocument:
             self._max_bytes,
             ARCHITECTURE_EXTENSIONS,
         )
+        # Scanned as library uploads are, before anything reads it. A scanner that cannot say
+        # is an outage: the document is refused, never taken unscanned.
+        try:
+            clean = self._scanner.scan(content)
+        except DocumentExtractionError as exc:
+            raise MalwareScannerUnavailableError(
+                "The malware scanner is not answering; try the upload again later."
+            ) from exc
+        if not clean:
+            raise InvalidKnowledgeError(
+                "The malware scanner held this document back; it was not added."
+            )
         # The existing extractor checks signatures, unsafe archives, macros and blank text.
         self._extractor.extract(mime_type, content)
         checksum = hashlib.sha256(content).hexdigest()

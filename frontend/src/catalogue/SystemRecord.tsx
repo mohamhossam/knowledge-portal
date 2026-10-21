@@ -212,7 +212,7 @@ function Connections({ system, from }: { system: CatalogueSystem; from?: string 
         title="Depends on"
         rows={dependsOn}
         other={(row) => row.target_system_id}
-        how={(row) => dependsHow(row.kind, system.name)}
+        how={(row) => dependsHow(row.kind)}
         from={from}
         system={system}
         empty="It depends on no other system in this version."
@@ -222,7 +222,7 @@ function Connections({ system, from }: { system: CatalogueSystem; from?: string 
         title="Used by"
         rows={usedBy}
         other={(row) => row.source_system_id}
-        how={(row) => usedHow(row.kind, system.name)}
+        how={(row) => usedHow(row.kind)}
         from={from}
         system={system}
         empty="No system depends on it in this version."

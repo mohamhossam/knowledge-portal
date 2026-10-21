@@ -69,7 +69,7 @@ function performer(activity: ApiJourney["activities"][number]): Performer {
 }
 
 /** A journey's activities, flow and calls, mapped once. A call's id is stable across the channels' views. */
-function journeyOf(journey: ApiJourney, channels: string[], evidence: (item: { confidence?: string | null; source?: string | null }) => Evidence): Journey {
+function journeyOf(journey: ApiJourney, channels: string[], evidence: (item: { confidence?: string | null; source?: string | null }) => Evidence, stage?: string): Journey {
   const activities: Activity[] = journey.activities.map((item) => ({
     number: item.number,
     name: item.name,
@@ -112,6 +112,7 @@ function journeyOf(journey: ApiJourney, channels: string[], evidence: (item: { c
     name: journey.name,
     summary: journey.description ?? "",
     channels,
+    ...(stage ? { stage } : {}),
     activities,
     flow: {
       all: flowEdges(journey.edges),
@@ -254,7 +255,7 @@ function journeysOf(release: Release, offerings: Offering[], evidence: EvidenceO
   return (release.journeys ?? []).map((journey) => {
     const offering = offerings.find((item) => item.id === journey.product_id);
     const support = offering?.orderTypes.find((type) => type.code === journey.order_type_code);
-    return journeyOf(journey, support?.channels ?? [], evidence);
+    return journeyOf(journey, support?.channels ?? [], evidence, support?.stage);
   });
 }
 

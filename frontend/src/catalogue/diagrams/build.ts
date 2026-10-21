@@ -8,7 +8,7 @@ import type { CatalogueSystem, Journey, LandscapeDomain, Offering, RelationshipK
 import type { DiagramEdge, DiagramNode } from "../../design/diagram";
 import { formatDay } from "../../home/format";
 import { domainPath, roleLabel } from "../catalogue";
-import { type Linked, type SystemLink, systemLinks } from "../links";
+import { type Linked, type SystemLink, linksOf } from "../links";
 
 /** What a release or an explorer release has that these diagrams read. */
 export type Landscape = Linked & {
@@ -28,10 +28,13 @@ export const KIND_WORD: Record<RelationshipKind, string> = {
   unspecified: "depends on",
 };
 
-const edgeOf = (relationship: SystemLink, from: string, to: string): DiagramEdge => ({
+/** Past this many lines, labels crowd each other: the lines go unlabelled and the table names each. */
+export const CROWDED_LINES = 20;
+
+const edgeOf = (relationship: SystemLink, from: string, to: string, labelled = true): DiagramEdge => ({
   from,
   to,
-  label: KIND_WORD[relationship.kind],
+  ...(labelled ? { label: KIND_WORD[relationship.kind] } : {}),
   // Only a link whose kind its source left unsaid is drawn weaker; the label says so too.
   dashed: relationship.kind === "unspecified",
 });
@@ -51,7 +54,7 @@ function where(landscape: Landscape, system: CatalogueSystem): string | undefine
  */
 export function connectionsFlow(landscape: Landscape, options: { href?: Href; highlight?: Set<string> } = {}) {
   const { href, highlight } = options;
-  const links = systemLinks(landscape);
+  const links = linksOf(landscape);
   const linked = new Set(links.flatMap((item) => [item.source_system_id, item.target_system_id]));
   const nodes: DiagramNode[] = landscape.systems
     .filter((system) => linked.has(system.id) || highlight?.has(system.id))
@@ -64,11 +67,11 @@ export function connectionsFlow(landscape: Landscape, options: { href?: Href; hi
       ...(highlight?.has(system.id) ? { tone: "subject" as const, status: "In this order" } : {}),
     }));
   const known = new Set(nodes.map((node) => node.id));
-  const edges = links
-    .filter((item) => known.has(item.source_system_id) && known.has(item.target_system_id))
-    .map((item) => edgeOf(item, item.source_system_id, item.target_system_id));
+  const drawn = links.filter((item) => known.has(item.source_system_id) && known.has(item.target_system_id));
+  const crowded = drawn.length > CROWDED_LINES;
+  const edges = drawn.map((item) => edgeOf(item, item.source_system_id, item.target_system_id, !crowded));
   const unconnected = landscape.systems.length - landscape.systems.filter((system) => linked.has(system.id)).length;
-  return { nodes, edges, unconnected };
+  return { nodes, edges, unconnected, crowded };
 }
 
 export const CONTEXT_LANES = [
@@ -103,7 +106,7 @@ export function systemContext(landscape: Landscape, systemId: string, options: {
   ];
   const edges: DiagramEdge[] = [];
   const name = (id: string) => systems.get(id)?.name ?? id;
-  const links = systemLinks(landscape);
+  const links = linksOf(landscape);
   const sorted = (rows: SystemLink[], other: (row: SystemLink) => string) => [...rows].sort((a, b) => name(other(a)).localeCompare(name(other(b))));
   for (const row of sorted(links.filter((item) => item.target_system_id === systemId && item.source_system_id !== systemId), (row) => row.source_system_id)) {
     const key = `in:${row.source_system_id}`;

@@ -350,13 +350,12 @@
           "timing": {
             "anyOf": [
               {
-                "type": "string"
+                "$ref": "#/components/schemas/CallTiming"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Timing"
+            ]
           },
           "tmf_equivalent": {
             "anyOf": [
@@ -529,14 +528,12 @@
           "timing": {
             "anyOf": [
               {
-                "maxLength": 300,
-                "type": "string"
+                "$ref": "#/components/schemas/CallTiming"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Timing"
+            ]
           },
           "tmf_equivalent": {
             "anyOf": [
@@ -1824,6 +1821,15 @@
         ],
         "title": "BusinessRuleSchema",
         "type": "object"
+      },
+      "CallTiming": {
+        "description": "Whether a call waits for its answer.",
+        "enum": [
+          "Sync",
+          "Async"
+        ],
+        "title": "CallTiming",
+        "type": "string"
       },
       "CapabilityOwners": {
         "description": "Who owns and staffs one impacted capability on one system (Phase 1b).",
@@ -5962,11 +5968,33 @@
         "type": "object"
       },
       "PlanCharacteristic": {
-        "description": "One stated fact of a plan, such as \"Download\" › \"200 Mbps\" or \"CPE\" › \"Fortinet 90G\".",
+        "description": "One stated fact of a plan, such as \"Download\" \u203a \"200 Mbps\" or \"CPE\" \u203a \"Fortinet 90G\".\n\nA measured value is also held as its amount and unit (\"200\", \"Mbps\"), so plans compare\nwithout reading the words: given, or taken from a value written as a number and a unit.",
         "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
           },
           "value": {
             "title": "Value",
@@ -5982,10 +6010,34 @@
       },
       "PlanCharacteristicSchema": {
         "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
           "name": {
             "maxLength": 300,
             "title": "Name",
             "type": "string"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
           },
           "value": {
             "maxLength": 10000,

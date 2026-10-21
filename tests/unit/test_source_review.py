@@ -6,6 +6,7 @@ from dataclasses import replace
 from datetime import UTC, datetime
 
 from fastapi.testclient import TestClient
+from smb_kernel.documents.scanner import OfflineDocumentScanner
 from smb_kernel.documents.text_extractor import SafeDocumentTextExtractor
 from smb_kernel.time.fixed import FixedClock
 
@@ -20,6 +21,7 @@ from knowledge_portal.application.use_cases.catalogue_candidates import (
     ProposeCatalogueChanges,
 )
 from knowledge_portal.application.use_cases.source_review import ReviewSources
+from knowledge_portal.domain.architecture.channels import Channel
 from knowledge_portal.domain.architecture.diff import ChangedItem
 from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge, OutdatedPassage
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
@@ -55,7 +57,12 @@ class Portal:
         self.candidates = InMemoryCatalogueCandidates()
         documents = SafeDocumentTextExtractor()
         self.upload = UploadKnowledgeDocument(
-            self.manage, self.repository, self.storage, documents, 10_000_000
+            self.manage,
+            self.repository,
+            self.storage,
+            documents,
+            10_000_000,
+            OfflineDocumentScanner(),
         )
         self.builder = BuildArchitectureIndex(
             self.manage,
@@ -163,6 +170,29 @@ def test_drift_lists_passages_naming_a_changed_system_and_marks_keep_them_out_of
     assert portal.index.get(built.index_id, passage.passage.id) is not None
     (again,) = portal.review.drift(built.id, MAINTAINER)
     assert again.passages[0].outdated
+
+
+def test_drift_lists_passages_naming_a_changed_channel_as_a_whole_word() -> None:
+    portal = Portal()
+    first = portal.manage.create_draft(MAINTAINER, "First")
+    first = portal.manage.update(
+        first.id, first.revision, MAINTAINER, channels=(Channel("shop", "Retail Shop"),)
+    )
+    first = portal.add(
+        first, "Orders from the Retail Shop are captured in BCRM. Retail Shops close."
+    )
+    portal.publish(first)
+    draft = portal.manage.create_draft(MAINTAINER, "Second")
+    draft = portal.manage.update(
+        draft.id,
+        draft.revision,
+        MAINTAINER,
+        channels=(Channel("shop", "Retail Shop", description="Retired"),),
+    )
+    found = [item for item in portal.review.drift(draft.id, MAINTAINER) if item.key == "shop"]
+    (item,) = found
+    assert item.item is ChangedItem.CHANNEL
+    assert "Retail Shop" in item.passages[0].passage.text
 
 
 def test_the_review_endpoints_answer(client: TestClient) -> None:

@@ -66,5 +66,9 @@ class InvalidGoldenRunError(Exception):
     """The requested golden set run options cannot be run."""
 
 
+class MalwareScannerUnavailableError(Exception):
+    """The malware scanner could not say whether a document is clean, so it was not taken."""
+
+
 class GoldenSetUnavailableError(Exception):
     """This deployment holds no golden set or catalogue to score against."""

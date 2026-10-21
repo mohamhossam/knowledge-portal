@@ -229,6 +229,8 @@ export type JourneyDef = {
   summary: string;
   /** The channels it can be viewed for: its order type's channels, or none for a shared flow. */
   channels: string[];
+  /** Its order type's stage in the customer's life, when the version gives one. */
+  stage?: string;
 };
 
 /** Who performs an activity: a lane, or the entry system of whichever channel the order came through. */

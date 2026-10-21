@@ -60,6 +60,8 @@ def test_the_explorer_never_shows_documents_index_or_who_curated(client: TestCli
         # they master and read is called: content of the version, like its systems.
         "interfaces",
         "vocabulary",
+        # Every link between systems, derived from the content above.
+        "connections",
     }
 
 
@@ -105,6 +107,8 @@ def oidc_client(container: Container) -> Generator[TestClient, None, None]:
         oidc_issuer_url="https://identity.example/tenant",
         oidc_audience="api://smb",
         oidc_client_id="browser",
+        # Real sign-in never scans offline; nothing here uploads, so no scanner is reached.
+        library_scan_mode="clamav",
     )
     application = create_app(lambda: replace(container, settings=settings))
     with TestClient(application) as client:

@@ -76,6 +76,7 @@ from knowledge_portal.domain.architecture.interfaces import InterfaceStyle, Syst
 from knowledge_portal.domain.architecture.journeys import (
     Activity,
     ActivityIntegration,
+    CallTiming,
     FlowRule,
     FlowRuleKind,
     Journey,
@@ -103,6 +104,7 @@ from knowledge_portal.domain.architecture.lifecycle import (
     NoteBlock,
     NoteBlockKind,
 )
+from knowledge_portal.domain.architecture.links import SystemLink, system_links
 from knowledge_portal.domain.architecture.plans import PriceKind
 from knowledge_portal.domain.architecture.portfolio import PortfolioNode
 from knowledge_portal.domain.architecture.products import (
@@ -1318,13 +1320,19 @@ class OfferingComponentSchema(BaseModel):
 class PlanCharacteristicSchema(BaseModel):
     name: Name
     value: Text
+    # A measured value's amount (a decimal with a point) and unit; taken from the value when
+    # it is written as a number and a unit.
+    amount: Name | None = None
+    unit: Name | None = None
 
     @classmethod
     def from_domain(cls, item: PlanCharacteristic) -> PlanCharacteristicSchema:
-        return cls.model_construct(name=item.name, value=item.value)
+        return cls.model_construct(
+            name=item.name, value=item.value, amount=item.amount, unit=item.unit
+        )
 
     def to_domain(self) -> PlanCharacteristic:
-        return PlanCharacteristic(self.name, self.value)
+        return PlanCharacteristic(self.name, self.value, self.amount, self.unit)
 
 
 class OfferingPlanSchema(BaseModel):
@@ -1635,7 +1643,7 @@ class ActivityIntegrationSchema(BaseModel):
     interaction: Name | None = None
     interface: Text | None = None
     payload: Text | None = None
-    timing: Name | None = None
+    timing: CallTiming | None = None
     correlation_key: Name | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
@@ -1877,6 +1885,53 @@ class SystemRelationshipSchema(BaseModel):
         )
 
 
+class LinkInterfaceResponse(BaseModel):
+    id: str
+    name: str
+    # The system that exposes it.
+    system_id: str
+
+
+class LinkJourneyResponse(BaseModel):
+    id: str
+    name: str
+    steps: int
+
+
+class SystemLinkResponse(BaseModel):
+    """One link between two systems, read from the stated connections, the interfaces and the
+    journeys' calls (domain.architecture.links); only a stated one is edited as a connection."""
+
+    source_system_id: str
+    target_system_id: str
+    description: str
+    kind: RelationshipKind
+    stated: bool
+    interfaces: list[LinkInterfaceResponse]
+    journeys: list[LinkJourneyResponse]
+
+    @classmethod
+    def from_domain(cls, link: SystemLink) -> SystemLinkResponse:
+        relationship = link.relationship
+        return cls.model_construct(
+            source_system_id=relationship.source_system_id,
+            target_system_id=relationship.target_system_id,
+            description=relationship.description,
+            kind=relationship.kind,
+            stated=link.stated,
+            interfaces=[
+                LinkInterfaceResponse.model_construct(
+                    id=item.id, name=item.name, system_id=item.system_id
+                )
+                for item in link.interfaces
+            ],
+            journeys=[
+                LinkJourneyResponse.model_construct(id=item.id, name=item.name, steps=item.steps)
+                for item in link.journeys
+            ],
+        )
+
+
 class OutdatedPassageSchema(BaseModel):
     """A document passage marked as describing what the catalogue no longer holds."""
 
@@ -1894,6 +1949,14 @@ class OutdatedPassagesRequest(BaseModel):
 class FactSourceResponse(BaseModel):
     version_id: str
     title: str
+
+
+class UnregisteredCitationResponse(BaseModel):
+    """What a set of the version's facts cite that is not in its source register."""
+
+    cited: str
+    facts: int
+    examples: list[str]
 
 
 class OrphanedFactResponse(BaseModel):
@@ -1964,6 +2027,8 @@ class KnowledgeReleaseResponse(BaseModel):
     revision: int
     systems: list[SystemDefinitionSchema] = Field(max_length=MAX_CATALOGUE_ITEMS)
     relationships: list[SystemRelationshipSchema] = Field(max_length=MAX_CATALOGUE_ITEMS)
+    # Every link between systems, stated or read from interfaces and journeys.
+    connections: list[SystemLinkResponse] = []
     documents: list[KnowledgeDocumentVersionResponse] = []
     status: KnowledgeReleaseStatus = KnowledgeReleaseStatus.DRAFT
     built_revision: int | None = None
@@ -2028,6 +2093,7 @@ class KnowledgeReleaseResponse(BaseModel):
             relationships=[
                 SystemRelationshipSchema.from_domain(item) for item in release.relationships
             ],
+            connections=[SystemLinkResponse.from_domain(item) for item in system_links(release)],
             documents=[
                 KnowledgeDocumentVersionResponse.from_domain(item) for item in release.documents
             ],
@@ -2080,6 +2146,8 @@ class ExplorerReleaseResponse(BaseModel):
     published_at: datetime | None = None
     systems: list[SystemDefinitionSchema] = Field(max_length=MAX_CATALOGUE_ITEMS)
     relationships: list[SystemRelationshipSchema] = Field(max_length=MAX_CATALOGUE_ITEMS)
+    # Every link between systems, stated or read from interfaces and journeys.
+    connections: list[SystemLinkResponse] = []
     landscape_domains: list[LandscapeDomainSchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
     )
@@ -2119,6 +2187,7 @@ class ExplorerReleaseResponse(BaseModel):
             relationships=[
                 SystemRelationshipSchema.from_domain(item) for item in release.relationships
             ],
+            connections=[SystemLinkResponse.from_domain(item) for item in system_links(release)],
             landscape_domains=[
                 LandscapeDomainSchema.from_domain(item) for item in release.landscape_domains
             ],

@@ -42,6 +42,11 @@ def activity_order(number: str) -> tuple[int, float, str]:
     return (0, float(match.group(0)), number) if match else (1, 0.0, number)
 
 
+# What a point of no return is, said for a step whose source marks it with a bare "yes".
+NO_RETURN = "Past this step, the order can no longer be cancelled."
+_YES = frozenset({"yes", "y", "true"})
+
+
 @dataclass(frozen=True)
 class Activity:
     number: str
@@ -100,6 +105,9 @@ class Activity:
             ("point_of_no_return", "Point of no return"),
         ):
             object.__setattr__(self, field, optional(getattr(self, field), label))
+        # A bare "yes" marks the step without saying why: it reads as what the mark means.
+        if self.point_of_no_return and self.point_of_no_return.casefold() in _YES:
+            object.__setattr__(self, "point_of_no_return", NO_RETURN)
         if self.role is not None:
             object.__setattr__(self, "role", role_code(self.role))
         object.__setattr__(
@@ -184,6 +192,43 @@ class FlowRule:
         check_source(self)
 
 
+class CallTiming(StrEnum):
+    """Whether a call waits for its answer."""
+
+    SYNC = "Sync"
+    ASYNC = "Async"
+
+
+_TIMING_WORDS = {
+    "sync": CallTiming.SYNC,
+    "synchronous": CallTiming.SYNC,
+    "async": CallTiming.ASYNC,
+    "asynchronous": CallTiming.ASYNC,
+}
+
+
+def call_timing(value: CallTiming | str | None) -> CallTiming | None:
+    """A call's timing in any case or spelling the sources use; anything else is refused."""
+    if value is None or isinstance(value, CallTiming):
+        return value
+    said = str(value).strip().casefold()
+    if not said:
+        return None
+    try:
+        return _TIMING_WORDS[said]
+    except KeyError as exc:
+        raise InvalidKnowledgeError(f"A call's timing is Sync or Async, not {value!r}.") from exc
+
+
+def read_timing(value: str | None) -> CallTiming | None:
+    """A timing read from a document's table: known words only, anything else unsaid (the
+    table's own text stays in the document)."""
+    try:
+        return call_timing(value)
+    except InvalidKnowledgeError:
+        return None
+
+
 @dataclass(frozen=True)
 class ActivityIntegration:
     """How one activity hands over to another, or calls a system: the interaction,
@@ -199,8 +244,8 @@ class ActivityIntegration:
     interaction: str | None = None
     interface: str | None = None
     payload: str | None = None
-    # "Sync", "Async" or unknown, as the source says.
-    timing: str | None = None
+    # Whether the call waits for its answer; None when the source does not say.
+    timing: CallTiming | None = None
     correlation_key: str | None = None
     confidence: SourceConfidence | None = None
     source: str | None = None
@@ -224,7 +269,6 @@ class ActivityIntegration:
             ("interaction", "Interaction"),
             ("interface", "Interface"),
             ("payload", "Payload"),
-            ("timing", "Timing"),
             ("correlation_key", "Correlation key"),
             ("from_system_id", "Calling system"),
             ("to_system_id", "Called system"),
@@ -234,6 +278,7 @@ class ActivityIntegration:
             ("tmf_equivalent", "TMF equivalent"),
         ):
             object.__setattr__(self, field, optional(getattr(self, field), label))
+        object.__setattr__(self, "timing", call_timing(self.timing))
         object.__setattr__(self, "open_api_ids", _codes(self.open_api_ids, "Open API term"))
         check_source(self)
 

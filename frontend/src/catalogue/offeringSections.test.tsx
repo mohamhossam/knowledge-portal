@@ -107,6 +107,21 @@ describe("an offering edited one section at a time", () => {
     expect(sent.filter((part) => part.hub).map((part) => part.name)).toEqual([names[0]]);
   });
 
+  it("changes an offering's id, keeping the old one, and refuses an id another offering has", async () => {
+    const rename = vi.spyOn(api, "renameEntity").mockResolvedValue(RELEASE);
+    open(true, `/architecture/offerings/${OFFERING.id}`);
+    fireEvent.click(screen.getByRole("button", { name: "Change its id…" }));
+    const panel = screen.getByRole("form", { name: `Change the id of ${OFFERING.name}` });
+    const field = within(panel).getByLabelText(/^New id/);
+    fireEvent.change(field, { target: { value: "has space" } });
+    fireEvent.click(within(panel).getByRole("button", { name: "Change the id" }));
+    expect(rename).not.toHaveBeenCalled();
+    expect(within(panel).getAllByText(/no spaces/).length).toBeGreaterThan(0);
+    fireEvent.change(field, { target: { value: "bpp-2" } });
+    fireEvent.click(within(panel).getByRole("button", { name: "Change the id" }));
+    await waitFor(() => expect(rename).toHaveBeenCalledWith(RELEASE.id, "offerings", OFFERING.id, { expected_revision: RELEASE.revision, new_id: "bpp-2" }));
+  });
+
   it("will not drop an order type its parts, tracking, notes or journeys still name", () => {
     open(true, `/architecture/offerings/${OFFERING.id}?tab=orders`);
     fireEvent.click(screen.getByRole("button", { name: "Edit the order types" }));

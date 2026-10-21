@@ -26,6 +26,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     KnowledgeReleaseStatus,
     SystemDefinition,
 )
+from knowledge_portal.domain.architecture.links import system_links
 from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.interfaces.api.schemas.architecture_knowledge import (
     ArchitectureJobResponse,
@@ -59,9 +60,14 @@ def _published_release_with_document() -> ArchitectureKnowledge:
 def test_release_response_matches_the_previous_domain_serialisation() -> None:
     previous = TypeAdapter(ArchitectureKnowledge)
     for release in (seed_knowledge(), _published_release_with_document()):
-        assert KnowledgeReleaseResponse.from_domain(release).model_dump(
-            mode="json"
-        ) == previous.dump_python(release, mode="json")
+        response = KnowledgeReleaseResponse.from_domain(release).model_dump(mode="json")
+        # Read-only and derived from the rest: every link between systems.
+        connections = response.pop("connections")
+        assert response == previous.dump_python(release, mode="json")
+        assert [(item["source_system_id"], item["target_system_id"]) for item in connections] == [
+            (link.relationship.source_system_id, link.relationship.target_system_id)
+            for link in system_links(release)
+        ]
 
 
 def test_job_and_audit_responses_match_the_previous_domain_serialisation() -> None:

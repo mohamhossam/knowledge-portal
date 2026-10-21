@@ -363,6 +363,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/architecture-knowledge/releases/{release_id}/citations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Citations
+         * @description What the version's facts cite that its source register does not hold.
+         */
+        get: operations["citations_architecture_knowledge_releases__release_id__citations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/architecture-knowledge/releases/{release_id}/compare-impact": {
         parameters: {
             query?: never;
@@ -2328,8 +2348,7 @@ export interface components {
             source?: string | null;
             /** Style */
             style?: string | null;
-            /** Timing */
-            timing?: string | null;
+            timing?: components["schemas"]["CallTiming"] | null;
             /** Tmf Equivalent */
             tmf_equivalent?: string | null;
             /** To Activity */
@@ -2690,6 +2709,12 @@ export interface components {
             /** Statement */
             statement: string;
         };
+        /**
+         * CallTiming
+         * @description Whether a call waits for its answer.
+         * @enum {string}
+         */
+        CallTiming: "Sync" | "Async";
         /**
          * CandidateBasis
          * @description Whether the document says this outright or the model read it from what it describes.
@@ -3647,6 +3672,11 @@ export interface components {
             channels?: components["schemas"]["ChannelSchema"][];
             /** Conflicts */
             conflicts?: components["schemas"]["SourceConflictSchema"][];
+            /**
+             * Connections
+             * @default []
+             */
+            connections: components["schemas"]["SystemLinkResponse"][];
             /** Id */
             id: string;
             /** Interfaces */
@@ -4390,6 +4420,11 @@ export interface components {
             channels?: components["schemas"]["ChannelSchema"][];
             /** Conflicts */
             conflicts?: components["schemas"]["SourceConflictSchema"][];
+            /**
+             * Connections
+             * @default []
+             */
+            connections: components["schemas"]["SystemLinkResponse"][];
             /** Created By */
             created_by?: string | null;
             /**
@@ -4742,6 +4777,24 @@ export interface components {
             /** Children */
             children: components["schemas"]["LineageNodeView"][];
             item: components["schemas"]["WorkItemView"];
+        };
+        /** LinkInterfaceResponse */
+        LinkInterfaceResponse: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** System Id */
+            system_id: string;
+        };
+        /** LinkJourneyResponse */
+        LinkJourneyResponse: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Steps */
+            steps: number;
         };
         /** LinkRequest */
         LinkRequest: {
@@ -5263,8 +5316,12 @@ export interface components {
         };
         /** PlanCharacteristicSchema */
         PlanCharacteristicSchema: {
+            /** Amount */
+            amount?: string | null;
             /** Name */
             name: string;
+            /** Unit */
+            unit?: string | null;
             /** Value */
             value: string;
         };
@@ -6403,6 +6460,26 @@ export interface components {
             system_id: string;
         };
         /**
+         * SystemLinkResponse
+         * @description One link between two systems, read from the stated connections, the interfaces and the
+         *     journeys' calls (domain.architecture.links); only a stated one is edited as a connection.
+         */
+        SystemLinkResponse: {
+            /** Description */
+            description: string;
+            /** Interfaces */
+            interfaces: components["schemas"]["LinkInterfaceResponse"][];
+            /** Journeys */
+            journeys: components["schemas"]["LinkJourneyResponse"][];
+            kind: components["schemas"]["RelationshipKind"];
+            /** Source System Id */
+            source_system_id: string;
+            /** Stated */
+            stated: boolean;
+            /** Target System Id */
+            target_system_id: string;
+        };
+        /**
          * SystemOwnershipResponse
          * @description Asked about a capability, its squads and seats come first, then those on the whole
          *     system; seats on the system's other capabilities are left out.
@@ -6542,6 +6619,18 @@ export interface components {
             id: string;
             /** Pref Label */
             pref_label: string;
+        };
+        /**
+         * UnregisteredCitationResponse
+         * @description What a set of the version's facts cite that is not in its source register.
+         */
+        UnregisteredCitationResponse: {
+            /** Cited */
+            cited: string;
+            /** Examples */
+            examples: string[];
+            /** Facts */
+            facts: number;
         };
         /**
          * UploadOutcome
@@ -7511,6 +7600,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CatalogueDiffResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    citations_architecture_knowledge_releases__release_id__citations_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnregisteredCitationResponse"][];
                 };
             };
             /** @description Validation Error */
