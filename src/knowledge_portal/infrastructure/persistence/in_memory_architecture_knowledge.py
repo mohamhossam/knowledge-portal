@@ -1,5 +1,6 @@
 """Isolated offline repository for versioned architecture knowledge."""
 
+from dataclasses import replace
 from datetime import UTC, datetime
 from threading import RLock
 
@@ -52,6 +53,12 @@ class InMemoryArchitectureKnowledgeRepository:
                 for key, item in self._documents.items()
                 if include_drafts or key in self._published_documents
             )
+
+    def mark_file_collected(self, version_id: str) -> None:
+        with self._lock:
+            found = self._documents.get(version_id)
+            if found is not None:
+                self._documents[version_id] = replace(found, file_collected=True)
 
     def active(self) -> ArchitectureKnowledge:
         with self._lock:

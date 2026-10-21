@@ -227,6 +227,17 @@ function JourneyRecord({ journey }: { journey: Journey }) {
   const location = useLocation();
   const [params, setParams] = useSearchParams();
   const [editing, setEditing] = useState<"edit" | "remove" | "rename" | null>(null);
+  // A closed panel hands focus back to the button that opened it, as an offering's record does.
+  const focusLater = useFocusAfterRender();
+  const buttonId = (key: "edit" | "remove" | "rename") => `journey-edit-${key}`;
+  const toggle = (key: "edit" | "remove" | "rename") => {
+    if (editing === key) focusLater(() => document.getElementById(buttonId(key)));
+    setEditing(editing === key ? null : key);
+  };
+  const closed = (key: "edit" | "remove" | "rename") => {
+    setEditing(null);
+    focusLater(() => document.getElementById(buttonId(key)));
+  };
   const view = VIEWS.find((item) => item === params.get("view")) ?? "swimlane";
   const offering = (book.release.products ?? []).find((item) => item.id === journey.product_id);
   const orderType = orderTypeName(book.release, journey);
@@ -258,26 +269,29 @@ function JourneyRecord({ journey }: { journey: Journey }) {
       actions={
         editable ? (
           <ActionGroup label="This journey">
-            <Button aria-expanded={editing === "edit"} onClick={() => setEditing(editing === "edit" ? null : "edit")}>Edit this journey</Button>
-            <Button variant="tertiary" aria-expanded={editing === "rename"} onClick={() => setEditing(editing === "rename" ? null : "rename")}>Change its id…</Button>
-            <Button variant="tertiary" aria-expanded={editing === "remove"} onClick={() => setEditing(editing === "remove" ? null : "remove")}>Remove this journey…</Button>
+            <Button id={buttonId("edit")} aria-expanded={editing === "edit"} onClick={() => toggle("edit")}>Edit this journey</Button>
+            <Button id={buttonId("rename")} variant="tertiary" aria-expanded={editing === "rename"} onClick={() => toggle("rename")}>Change its id…</Button>
+            <Button id={buttonId("remove")} variant="tertiary" aria-expanded={editing === "remove"} onClick={() => toggle("remove")}>Remove this journey…</Button>
           </ActionGroup>
         ) : undefined
       }
     >
-      {editing === "edit" && <JourneyEdit journey={journey} onDone={() => setEditing(null)} />}
+      {editing === "edit" && <JourneyEdit journey={journey} onDone={() => closed("edit")} />}
       {editing === "rename" && (
         <WholeRename
           kind="journey"
           item={journey}
           onDone={(renamed) => {
-            setEditing(null);
-            if (renamed) navigate(`${base}/journeys/${encodeURIComponent(renamed)}`, { replace: true });
+            if (renamed) {
+              setEditing(null);
+              return navigate(`${base}/journeys/${encodeURIComponent(renamed)}`, { replace: true });
+            }
+            closed("rename");
           }}
         />
       )}
       {editing === "remove" && (
-        <WholeRemove kind="journey" item={journey} onDone={(removed) => (removed ? navigate(`${base}/journeys`) : setEditing(null))} />
+        <WholeRemove kind="journey" item={journey} onDone={(removed) => (removed ? navigate(`${base}/journeys`) : closed("remove"))} />
       )}
       {editing !== "edit" && (
         <Suspense fallback={<Skeleton label="Drawing the journey" rows={6} />}>

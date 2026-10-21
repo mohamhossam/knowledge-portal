@@ -29,8 +29,9 @@ export function namedSource(text: string | null | undefined, sources: KnowledgeS
     for (const name of [source.id, source.short]) {
       const key = (name ?? "").trim().toLocaleLowerCase();
       if (!key || !written.startsWith(key)) continue;
-      const next = written.charAt(key.length);
-      if (next && /[\p{L}\p{N}]/u.test(next)) continue;
+      const next = written.slice(key.length, key.length + 2);
+      // A word goes on, or a point and a digit carry on a number: "SDD v2" is not cited by "SDD v2.3".
+      if (/^[\p{L}\p{N}]/u.test(next) || /^\.\d/.test(next)) continue;
       if (!best || key.length > best.length) best = { length: key.length, source };
     }
   }

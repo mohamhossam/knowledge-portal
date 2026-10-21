@@ -44,8 +44,10 @@ def cited_source(text: str | None, sources: tuple[KnowledgeSource, ...]) -> Know
             key = (name or "").strip().casefold()
             if not key or not written.startswith(key):
                 continue
-            after = written[len(key) : len(key) + 1]
-            if after and _WORD.match(after):
+            after = written[len(key) : len(key) + 2]
+            # A word goes on, or a point and a digit carry on a number: "SDD v2" is not
+            # cited by "SDD v2.3".
+            if after[:1] and _WORD.match(after[:1]) or (after[:1] == "." and after[1:].isdigit()):
                 continue
             if best is None or len(key) > best[0]:
                 best = (len(key), source)

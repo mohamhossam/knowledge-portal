@@ -246,3 +246,12 @@ def test_unused_document_files_are_listed_then_collected_and_registrations_kept(
         catalogue.storage.get(DocumentVersionId(first.storage_key))
     assert first.id in catalogue.manage.known_versions()
     assert catalogue.storage.get(DocumentVersionId(draft.documents[0].storage_key))
+    # Marked collected: never listed again, not offered for selection, refused if selected.
+    assert retention.unused(later, timedelta(days=90)) == ()
+    assert retention.collect(later, timedelta(days=90)) == ()
+    assert catalogue.manage.known_versions()[first.id].file_collected
+    assert first.id not in {item.id for item in catalogue.manage.document_versions(MAINTAINER)}
+    with pytest.raises(InvalidKnowledgeError, match="file was collected"):
+        catalogue.manage.select_documents(
+            draft.id, draft.revision, MAINTAINER, (first.id, draft.documents[0].id)
+        )

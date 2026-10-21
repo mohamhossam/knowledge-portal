@@ -4384,6 +4384,11 @@ export interface components {
             checksum: string;
             /** Document Id */
             document_id?: string | null;
+            /**
+             * File Collected
+             * @default false
+             */
+            file_collected: boolean;
             /** Filename */
             filename: string;
             /** Id */

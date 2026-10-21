@@ -123,13 +123,16 @@ class UploadKnowledgeDocument:
             self._max_bytes,
             ARCHITECTURE_EXTENSIONS,
         )
-        # Scanned as library uploads are, before anything reads it. A scanner that cannot say
-        # is an outage: the document is refused, never taken unscanned.
+        # Scanned as library uploads are, before anything reads it. A scanner that gives no
+        # verdict refuses the document, never takes it unscanned. The scanner reports an
+        # outage and a file past its own size limit alike, so the message names both.
         try:
             clean = self._scanner.scan(content)
         except DocumentExtractionError as exc:
             raise MalwareScannerUnavailableError(
-                "The malware scanner is not answering; try the upload again later."
+                "The malware scanner gave no verdict, so the document was not added. It may be "
+                "down, or the file may be larger than the scanner accepts: try again later, or "
+                "ask an operator to check the scanner and its size limit."
             ) from exc
         if not clean:
             raise InvalidKnowledgeError(

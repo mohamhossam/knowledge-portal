@@ -152,6 +152,25 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Fixed
 
+- A release stored with a call timing written as free text ("Synchronous", "nightly") loads
+  again: known spellings read as Sync or Async, anything else as unsaid. The API takes the same
+  spellings on write.
+- A document file collected by retention is marked collected: it is no longer offered or
+  accepted for a draft, and never listed for collection again. The public document version
+  carries `file_collected`.
+- Several stated connections between the same two systems each stay a connection of their own,
+  in the service and on screen; only the first was kept.
+- A plan value reads as a measure only when it is one: "1,000 GB" is 1000 GB, "24/7" is not a
+  measure, and a given amount and unit must agree with a value written as a measure.
+- A change to how documents are cut now cuts every document again on the next build
+  (`SECTIONING_RULES` is part of a document's chunk-set key).
+- A citation of "SDD v2.3" no longer counts as citing a source registered as "SDD v2".
+- The catalogue names a connection of unknown kind one way everywhere ("Kind not known", with
+  the dashed stroke its diagram line has); the map's find field also matches how systems
+  connect. Interface sources read as names, not links to a system the row already links.
+  Changing an id shows what is wrong under the field; a journey's record hands focus back to
+  the button that opened a panel. Swimlane system links meet the 24px target size.
+
 - Opening a result just after typing in a find field could pull the page back to the list (the
   field's delayed address write landed on the old page). It was the cause of the intermittent
   catalogue and squads keyboard journeys (`docs/operations/test-reliability.md`).

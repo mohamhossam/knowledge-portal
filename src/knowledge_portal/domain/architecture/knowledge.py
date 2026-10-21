@@ -375,6 +375,9 @@ class KnowledgeDocumentVersion:
     document_id: str | None = None
     # The version this one replaced, when it was uploaded as a new version of it.
     supersedes: str | None = None
+    # Its stored file was collected (document retention): it is still registered, so where a
+    # fact came from still reads, but it can no longer be read, downloaded or selected.
+    file_collected: bool = False
 
     @property
     def lineage(self) -> str:

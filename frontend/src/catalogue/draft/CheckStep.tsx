@@ -125,6 +125,7 @@ function Citations({ release, base }: { release: Release; base: string }) {
   return (
     <Section title="Sources it cites but doesn’t register" count={items.length}>
       <p className="draft-lead">
+        <Status tone="attention">Not registered</Status>{" "}
         These facts name a source the register doesn’t hold, so they can’t show its level or title.{" "}
         <RouterLink href={`${base}/governance`}>Register the source</RouterLink>, or correct the citation on the fact.
       </p>
@@ -135,8 +136,9 @@ function Citations({ release, base }: { release: Release; base: string }) {
           {items.map((item) => (
             <li key={item.cited} dir="auto">
               <bdi>{item.cited}</bdi>
+              {/* A line of its own under the citation, so it starts with words, not a separator. */}
               <span className="draft-detail">
-                {" "}· {count(item.facts, "fact")}, such as {item.examples.join("; ")}
+                Cited by {count(item.facts, "fact")}, such as {item.examples.join("; ")}
               </span>
             </li>
           ))}

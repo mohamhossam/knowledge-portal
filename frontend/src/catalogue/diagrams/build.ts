@@ -25,7 +25,7 @@ export const KIND_WORD: Record<RelationshipKind, string> = {
   publishes_events_to: "sends events",
   transfers_data_to: "sends data",
   orchestrates: "orchestrates",
-  unspecified: "depends on",
+  unspecified: "kind not known",
 };
 
 /** Past this many lines, labels crowd each other: the lines go unlabelled and the table names each. */

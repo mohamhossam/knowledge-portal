@@ -155,8 +155,14 @@ class ManageArchitectureKnowledge:
         return self._repository.audit(release_id)
 
     def document_versions(self, actor: Actor) -> tuple[KnowledgeDocumentVersion, ...]:
+        """The versions a reader can open or a curator select: not those whose file was
+        collected."""
         require_reader(actor)
-        return self._repository.document_versions(actor.may_maintain_knowledge)
+        return tuple(
+            item
+            for item in self._repository.document_versions(actor.may_maintain_knowledge)
+            if not item.file_collected
+        )
 
     def known_versions(self) -> dict[str, KnowledgeDocumentVersion]:
         """Every document version ever uploaded, published or not, by id."""
@@ -573,6 +579,11 @@ class ManageArchitectureKnowledge:
         known = {version.id: version for version in self._repository.document_versions(True)}
         if any(version_id not in known for version_id in version_ids):
             raise InvalidKnowledgeError("A selected document version does not exist.")
+        current_ids = {item.id for item in self.get(release_id).documents}
+        if any(known[item].file_collected and item not in current_ids for item in version_ids):
+            raise InvalidKnowledgeError(
+                "A selected document version's file was collected; upload the document again."
+            )
         current = self.get(release_id)
         if current.revision != expected_revision:
             raise KnowledgeConflictError("The draft changed; reload before saving.")

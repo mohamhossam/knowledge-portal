@@ -303,8 +303,24 @@ class OfferingComponent:
 
 
 # A value written as a number and its unit: "200 Mbps", "2,5 GB", "100Mbps".
-_MEASURE = re.compile(r"^(\d+(?:[.,]\d+)?)\s*([^\d\s]\S*)$")
+# A number and a unit: "200 Mbps", "2.5 GB", "2,5 GB" (a decimal comma takes one or two digits),
+# "1,000 GB" (thousands grouped by commas). The unit starts with a letter or "%", so "24/7" is
+# not a measure.
+_MEASURE = re.compile(
+    r"^(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+|,\d{1,2})?)\s*((?:[^\W\d_]|%)\S*)$"
+)
 _AMOUNT = re.compile(r"\d+(?:\.\d+)?")
+
+
+def _measure(value: str) -> tuple[str, str] | None:
+    """A value's amount (with a decimal point, no grouping) and unit, if it is a measure."""
+    measured = _MEASURE.match(value)
+    if not measured:
+        return None
+    number = measured[1]
+    grouped = re.fullmatch(r"\d{1,3}(?:,\d{3})+(?:\.\d+)?", number)
+    amount = number.replace(",", "") if grouped else number.replace(",", ".")
+    return amount, measured[2]
 
 
 @dataclass(frozen=True)
@@ -327,17 +343,26 @@ class PlanCharacteristic:
         object.__setattr__(self, "value", required(self.value, f"{self.name}'s value"))
         object.__setattr__(self, "amount", optional(self.amount, f"{self.name}'s amount"))
         object.__setattr__(self, "unit", optional(self.unit, f"{self.name}'s unit"))
-        if self.amount is None and self.unit is None:
-            measured = _MEASURE.match(self.value)
-            if measured:
-                object.__setattr__(self, "amount", measured[1].replace(",", "."))
-                object.__setattr__(self, "unit", measured[2])
-        elif self.amount is None or self.unit is None:
+        if (self.amount is None) != (self.unit is None):
             raise InvalidKnowledgeError(
                 f"{self.name}: an amount needs its unit, and a unit its amount."
             )
-        elif not _AMOUNT.fullmatch(self.amount):
+        if self.amount is not None and not _AMOUNT.fullmatch(self.amount):
             raise InvalidKnowledgeError(f"{self.name}: the amount {self.amount!r} is not a number.")
+        measured = _measure(self.value)
+        if measured is None:
+            return
+        # A value written as a measure says its own amount and unit; a given pair must agree.
+        if self.amount is not None and (float(self.amount), self.unit) != (
+            float(measured[0]),
+            measured[1],
+        ):
+            raise InvalidKnowledgeError(
+                f"{self.name}: the amount and unit ({self.amount} {self.unit}) disagree with "
+                f"the value {self.value!r}."
+            )
+        object.__setattr__(self, "amount", measured[0])
+        object.__setattr__(self, "unit", measured[1])
 
 
 @dataclass(frozen=True)

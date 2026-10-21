@@ -41,6 +41,8 @@ describe("source levels on facts", () => {
   it("finds the registered source a fact's source text begins with, the longest name first", () => {
     expect(namedSource("BPP SDD §11.1.3", SOURCES)?.id).toBe("SDD");
     expect(namedSource("SDDX §1", SOURCES)).toBeNull();
+    expect(namedSource("SDD.4 §1", SOURCES)).toBeNull();
+    expect(namedSource("SDD. §1", SOURCES)?.id).toBe("SDD");
     expect(withLevel("BPP SDD §10", SOURCES)).toBe("BPP SDD (L2) §10");
     expect(withLevel("v8.2 OrderEvaluate", SOURCES)).toBe("v8.2 (L3, not supplied) OrderEvaluate");
     expect(withLevel("SDD", SOURCES)).toBe("SDD (L2)");

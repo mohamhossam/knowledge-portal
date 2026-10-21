@@ -21,7 +21,7 @@ export function dependsHow(kind: RelationshipKind): string {
     publishes_events_to: "Gets its events",
     transfers_data_to: "Gets its data",
     orchestrates: "Orchestrated by it",
-    unspecified: "How isn’t known",
+    unspecified: "Kind not known",
   }[kind];
 }
 
@@ -32,7 +32,7 @@ export function usedHow(kind: RelationshipKind): string {
     publishes_events_to: "Sends it events",
     transfers_data_to: "Sends it data",
     orchestrates: "Orchestrates it",
-    unspecified: "How isn’t known",
+    unspecified: "Kind not known",
   }[kind];
 }
 

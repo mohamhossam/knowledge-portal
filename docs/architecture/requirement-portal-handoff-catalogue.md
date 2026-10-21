@@ -16,7 +16,8 @@ client, and adopt the first item.
 
 - **`timing` on a journey's calls** was any string up to 300 characters; it is now `Sync` or
   `Async` (`CallTiming`). Every catalogue so far wrote only those two values, so readers see no
-  change. A writer that sends anything else is refused with 422. Tables read from documents keep
+  change. A writer may send them in any case or spelling ("sync", "Synchronous"); anything else
+  is refused with 422. Tables read from documents, and releases stored before the change, keep
   any other wording out of the field rather than fail.
 
 ## Added, optional
@@ -36,7 +37,13 @@ client, and adopt the first item.
   the stated connections, the interfaces systems expose to their consumers, and the calls
   journey steps make (`domain/architecture/links.py`). A catalogue that states no connection,
   such as the SMB catalogue, now returns neighbours and dependencies where it returned none.
-  The public release response carries the same links as `connections`.
+  The public release response carries the same links as `connections`, where `stated` says
+  whether a link was stated or worked out. The internal `ArchitectureDependency` carries no such
+  flag: a dependency there may be stated or derived, and requirement-portal should not read one
+  as a curator's statement.
+- **A pair of systems can hold several connections.** Each stated connection between the same
+  two systems stays a link of its own, with its own kind and words; only the first also
+  gathers the interfaces and journey calls between them.
 - **A bare "yes" as a step's point of no return** is read as "Past this step, the order can no
   longer be cancelled."
 

@@ -102,6 +102,8 @@
   display: inline-flex;
   align-items: center;
   min-block-size: 24px;
+  /* Room inside the target, so the focus ring sits clear of the words. */
+  padding-inline: var(--space-1);
   color: inherit;
   font-size: var(--text-meta);
   white-space: nowrap;

@@ -12,6 +12,7 @@ from knowledge_portal.application.ports.knowledge_events import (
     ARCHITECTURE_RELEASE_ACTIVATED,
     activation,
 )
+from knowledge_portal.domain.architecture.journeys import read_timing
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
     KnowledgeAuditEvent,
@@ -25,6 +26,23 @@ from knowledge_portal.infrastructure.persistence.postgres_values import _datetim
 _DOCUMENT: TypeAdapter[KnowledgeDocumentVersion] = TypeAdapter(KnowledgeDocumentVersion)
 
 _ADAPTER: TypeAdapter[ArchitectureKnowledge] = TypeAdapter(ArchitectureKnowledge)
+
+
+def _stored_timings(raw: object) -> object:
+    """A stored release with each call's timing as the domain now holds it.
+
+    Timing was free text until it became Sync or Async: a release stored before then may say
+    "sync", "Synchronous" or anything a document's table said. Those load as the timing they
+    mean, or as unsaid, never as a release that can't be read.
+    """
+    if not isinstance(raw, dict):
+        return raw
+    for journey in raw.get("journeys") or ():
+        for call in (journey.get("integrations") if isinstance(journey, dict) else None) or ():
+            if isinstance(call, dict) and isinstance(call.get("timing"), str):
+                timing = read_timing(call["timing"])
+                call["timing"] = timing.value if timing else None
+    return raw
 
 
 class PostgresArchitectureKnowledgeRepository:
@@ -49,7 +67,7 @@ class PostgresArchitectureKnowledgeRepository:
     @staticmethod
     def _release(raw: object) -> ArchitectureKnowledge:
         try:
-            return _ADAPTER.validate_python(raw)
+            return _ADAPTER.validate_python(_stored_timings(raw))
         except ValidationError as exc:
             raise PersistenceError("Stored architecture knowledge is invalid.") from exc
 
@@ -84,6 +102,18 @@ class PostgresArchitectureKnowledgeRepository:
             return tuple(_DOCUMENT.validate_python(row[0]) for row in rows)
         except (psycopg.Error, ValidationError) as exc:
             raise PersistenceError("Architecture document list failed.") from exc
+
+    def mark_file_collected(self, version_id: str) -> None:
+        try:
+            with self._connector.connection() as connection:
+                connection.execute(
+                    "UPDATE architecture_knowledge_documents "
+                    "SET payload = jsonb_set(payload, '{file_collected}', 'true') "
+                    "WHERE version_id = %s",
+                    (version_id,),
+                )
+        except psycopg.Error as exc:
+            raise PersistenceError("Architecture document update failed.") from exc
 
     def active(self) -> ArchitectureKnowledge:
         try:

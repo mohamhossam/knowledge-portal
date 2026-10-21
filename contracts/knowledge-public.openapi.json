@@ -6656,6 +6656,11 @@
             ],
             "title": "Document Id"
           },
+          "file_collected": {
+            "default": false,
+            "title": "File Collected",
+            "type": "boolean"
+          },
           "filename": {
             "title": "Filename",
             "type": "string"

@@ -24,9 +24,9 @@ const show = (value: SystemLink) =>
   );
 
 describe("where a link is known from", () => {
-  it("opens an interface at the system that exposes it, and a journey at the journey", () => {
+  it("names an interface (its system is already on the row) and opens a journey at the journey", () => {
     show(link({ interfaces: [{ id: "if-crm", name: "CRM API", systemId: "crm" }], journeys: [{ id: "new", name: "New activation", steps: 2 }] }));
-    expect(screen.getByRole("link", { name: "CRM API" })).toHaveAttribute("href", "/architecture/systems/crm");
+    expect(screen.queryByRole("link", { name: "CRM API" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "New activation" })).toHaveAttribute("href", "/architecture/journeys/new");
     expect(screen.getByText(/^Interface/).textContent).toBe("Interface CRM API\u00a0· Journey New activation");
   });

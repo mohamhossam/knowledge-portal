@@ -31,6 +31,7 @@ from knowledge_portal.application.use_cases.index_links import (
     texts_to_embed,
 )
 from knowledge_portal.application.use_cases.section_chunking import (
+    SECTIONING_RULES,
     plan_document,
     record_windows,
     span,
@@ -564,8 +565,16 @@ class BuildArchitectureIndex:
         reused = cut_count = 0
         for document in release.documents:
             # A document version's chunks depend only on its file, its title and how it is
-            # cut, so they are cut and embedded once and shared by every build.
-            key = _set_key("document", profile, document.id, document.checksum, document.title)
+            # cut (the profile and SECTIONING_RULES), so they are cut and embedded once and
+            # shared by every build.
+            key = _set_key(
+                "document",
+                profile,
+                SECTIONING_RULES,
+                document.id,
+                document.checksum,
+                document.title,
+            )
             stored = self._index.chunk_set(key)
             if stored is None:
                 cut = self._document_records(document, sectioned)

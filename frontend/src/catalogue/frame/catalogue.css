@@ -383,3 +383,23 @@ a.cat-chip:hover {
 .cat-find {
   max-inline-size: 28rem;
 }
+
+/* A connection whose kind no source says: the dashed stroke its diagram line has, and the words. */
+.cat-kind-unknown {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  white-space: nowrap;
+  color: var(--color-ink-2);
+}
+
+.cat-kind-unknown svg {
+  flex: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+
+.cat-nowrap {
+  white-space: nowrap;
+}

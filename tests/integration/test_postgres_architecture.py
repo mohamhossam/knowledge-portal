@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import os
 from datetime import UTC, datetime
+from pathlib import Path
 from uuid import uuid4
 
+import psycopg
 import pytest
+from psycopg.types.json import Jsonb
 from smb_kernel.documents.text_extractor import SafeDocumentTextExtractor
 from smb_kernel.persistence.connector import (
     DirectPostgresConnector,
@@ -27,6 +30,7 @@ from knowledge_portal.application.use_cases.architecture_index import BuildArchi
 from knowledge_portal.application.use_cases.architecture_knowledge import (
     ManageArchitectureKnowledge,
 )
+from knowledge_portal.domain.architecture.journeys import CallTiming
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
     KnowledgeConflictError,
@@ -167,12 +171,53 @@ def test_deselected_document_registry_survives_restart() -> None:
     )
     assert document in restarted.document_versions(True)
     assert document not in restarted.document_versions(False)
+    repository.mark_file_collected(version_id)
+    (collected,) = [item for item in restarted.document_versions(True) if item.id == version_id]
+    assert collected.file_collected
 
     knowledge.discard_draft(selected.id, selected.revision, actor)
     assert restarted.get(selected.id) is None
     assert [item.action for item in restarted.audit(selected.id)][-1] == "discard_draft"
     with pytest.raises(KnowledgeConflictError):
         restarted.delete_draft(repository.active().id, 1, actor.id)
+
+
+def test_a_release_stored_with_free_text_timings_still_loads() -> None:
+    assert DATABASE_URL is not None
+    run_migrations(DATABASE_URL)
+    repository = PostgresArchitectureKnowledgeRepository(
+        DirectPostgresConnector(DATABASE_URL), seed_knowledge()
+    )
+    index = PostgresEvidenceIndex(
+        DirectPostgresConnector(DATABASE_URL), FakeEmbeddings(), FakeWordTokenizer()
+    )
+    knowledge = ManageArchitectureKnowledge(repository, CatalogueFileAdapter(), index, 10_000_000)
+    actor = Actor("maintainer", frozenset({"knowledge_maintainer"}))
+    draft = _fresh_draft(knowledge, actor)
+    catalogue = Path(__file__).resolve().parents[2] / "catalogues" / "smb-architecture.yaml"
+    draft = knowledge.apply_file_import(
+        draft.id, draft.revision, catalogue.name, catalogue.read_bytes(), actor
+    )
+    # Timing was free text before it became Sync or Async; store calls as they were written then.
+    with psycopg.connect(DATABASE_URL) as connection:
+        row = connection.execute(
+            "SELECT payload FROM architecture_knowledge_releases WHERE release_id = %s",
+            (draft.id,),
+        ).fetchone()
+        assert row is not None
+        stored = row[0]
+        calls = [call for journey in stored["journeys"] for call in journey["integrations"]]
+        assert len(calls) >= 2
+        calls[0]["timing"], calls[1]["timing"] = "Synchronous", "once a night"
+        connection.execute(
+            "UPDATE architecture_knowledge_releases SET payload = %s WHERE release_id = %s",
+            (Jsonb(stored), draft.id),
+        )
+    loaded = repository.get(draft.id)
+    assert loaded is not None
+    read = [call.timing for journey in loaded.journeys for call in journey.integrations]
+    assert read[:2] == [CallTiming.SYNC, None]
+    knowledge.discard_draft(loaded.id, loaded.revision, actor)
 
 
 def test_sample_list_survives_restart_and_refuses_a_stale_save() -> None:

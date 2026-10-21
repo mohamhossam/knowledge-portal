@@ -196,9 +196,11 @@ Users sign in again once when the portal moves to a new origin.
 
 - **Migrations that alter evidence tables.** `202610201000_chunk_parents` and
   `202610201100_chunk_sets` alter the catalogue's chunk and link tables. Each waits at most five
-  seconds for its locks (`lock_timeout`), then rolls back whole rather than queue behind live
-  traffic. If the deployment reports the timeout, run it again when the portal is quiet; nothing
-  is left half applied. The backfill touches every stored chunk link once.
+  seconds for a lock (`lock_timeout`) rather than queue behind live traffic. The runner applies
+  every pending migration in one transaction, so a timeout rolls back all of that run's
+  migrations, those before these two included, and the five seconds also bound the migrations
+  after them in the same run. If the deployment reports the timeout, run it again when the portal
+  is quiet; nothing is left half applied. The backfill touches every stored chunk link once.
 - **Malware scanning.** Catalogue documents are scanned as they are uploaded, by the same
   scanner as library uploads (`LIBRARY_SCAN_MODE`, `LIBRARY_SCANNER_HOST`,
   `LIBRARY_SCANNER_PORT`). A document the scanner holds back is refused; when the scanner does

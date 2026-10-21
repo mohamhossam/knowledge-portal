@@ -46,6 +46,11 @@ CAPTION_MAX = 60
 # A catalogue record's lines pack into windows of at most this many tokens.
 RECORD_WINDOW = 500
 
+# Bump whenever a rule (the module docstring) or a size above changes how a document is cut.
+# A document's stored chunk set is keyed by it, so every document is cut again on the next
+# build instead of reusing old cuts.
+SECTIONING_RULES = "2026-10-21"
+
 TokenCount = Callable[[str], int]
 
 _NUMBERED = re.compile(r"^(?P<unit>[a-z]+) (?P<number>\d+)$")

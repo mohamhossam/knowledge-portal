@@ -1,8 +1,8 @@
 /**
- * Where a link between two systems is known from, each source one press away: an
- * interface opens the record of the system that exposes it, a journey opens the
- * journey. Two or fewer of a kind are named in place; more are counted, and the
- * count opens the list.
+ * Where a link between two systems is known from. A journey is one press away; an
+ * interface is named only, since it belongs to one of the two systems the row already
+ * links to. Two or fewer of a kind are named in place; more are counted, and the count
+ * opens the list.
  */
 import { Fragment, type ReactNode, useId, useState } from "react";
 import { Link } from "react-router-dom";
@@ -11,7 +11,7 @@ import { Button } from "../design/components";
 import { count } from "../home/format";
 import type { SystemLink } from "./links";
 
-type Source = { key: string; name: string; href: string };
+type Source = { key: string; name: string; href?: string };
 
 const capital = (word: string) => word.charAt(0).toLocaleUpperCase() + word.slice(1);
 
@@ -22,7 +22,7 @@ export function LinkBasis({ link, base }: { link: SystemLink; base: string }) {
     parts.push(
       <Sources
         noun="interface"
-        items={link.interfaces.map((item) => ({ key: item.id, name: item.name, href: `${base}/systems/${encodeURIComponent(item.systemId)}` }))}
+        items={link.interfaces.map((item) => ({ key: item.id, name: item.name }))}
       />,
     );
   }
@@ -57,7 +57,7 @@ function Sources({ noun, items }: { noun: string; items: Source[] }) {
         {items.map((item, index) => (
           <Fragment key={item.key}>
             {index > 0 && ", "}
-            <Link to={item.href} dir="auto">{item.name}</Link>
+            <Named item={item} />
           </Fragment>
         ))}
       </>
@@ -71,10 +71,14 @@ function Sources({ noun, items }: { noun: string; items: Source[] }) {
       <ul id={id} className="cat-basis__list" hidden={!open}>
         {items.map((item) => (
           <li key={item.key}>
-            <Link to={item.href} dir="auto">{item.name}</Link>
+            <Named item={item} />
           </li>
         ))}
       </ul>
     </>
   );
+}
+
+function Named({ item }: { item: Source }) {
+  return item.href ? <Link to={item.href} dir="auto">{item.name}</Link> : <bdi>{item.name}</bdi>;
 }

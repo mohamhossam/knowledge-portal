@@ -8,7 +8,8 @@ import { RouterLink } from "../shell/links";
 import { LINK_VERB, allConnections, systemName } from "./catalogue";
 import type { Href } from "./diagrams/build";
 import { LinkBasis } from "./LinkBasis";
-import type { SystemLink } from "./links";
+import { KindNotKnown } from "./KindNotKnown";
+import { linkKey, type SystemLink } from "./links";
 import { CapabilityMapDiagram, ConnectionsFlowDiagram, SystemContextDiagram } from "./diagrams/CatalogueDiagrams";
 import { CatalogueHeader } from "./frame/CatalogueHeader";
 import { useCatalogueContext } from "./useCatalogue";
@@ -73,14 +74,20 @@ function ConnectionsTable() {
   const rows = useMemo(() => {
     const wanted = fold(find.trim());
     if (!wanted) return all;
-    return all.filter((row) => [row.source_system_id, row.target_system_id].some((id) => fold(systemName(book, id)).includes(wanted) || fold(id).includes(wanted)));
+    // A system's name or id, or how the two connect ("events", "kind not known").
+    const how = (row: SystemLink) => fold(row.kind === "unspecified" ? "Kind not known" : LINK_VERB[row.kind]);
+    return all.filter(
+      (row) =>
+        how(row).includes(wanted) ||
+        [row.source_system_id, row.target_system_id].some((id) => fold(systemName(book, id)).includes(wanted) || fold(id).includes(wanted)),
+    );
   }, [all, book, find]);
   const link = (systemId: string) => (
     <Link to={`${base}/systems/${encodeURIComponent(systemId)}`} dir="auto">{systemName(book, systemId)}</Link>
   );
   const columns: Column<SystemLink>[] = [
     { id: "from", header: "From", rowHeader: true, bidi: true, cell: (row) => link(row.source_system_id) },
-    { id: "how", header: "How", cell: (row) => LINK_VERB[row.kind] },
+    { id: "how", header: "How", cell: (row) => (row.kind === "unspecified" ? <KindNotKnown /> : <span className="cat-nowrap">{LINK_VERB[row.kind]}</span>) },
     { id: "to", header: "To", bidi: true, cell: (row) => link(row.target_system_id) },
     { id: "what", header: "For what", bidi: true, cell: (row) => row.description },
     { id: "basis", header: "Known from", cell: (row) => <LinkBasis link={row} base={base} /> },
@@ -88,15 +95,15 @@ function ConnectionsTable() {
   return (
     <div className="cat-stack">
       <div className="cat-find">
-        <ListFind label="Find connections by a system’s name" value={find} onChange={setFind} />
+        <ListFind label="Find connections by a system’s name or how they connect" value={find} onChange={setFind} />
       </div>
       {find.trim() && <p className="cat-quiet" role="status">{count(rows.length, "connection")} of {all.length.toLocaleString("en")}</p>}
       <DataTable
         caption="Every connection between systems in this version"
         columns={columns}
         rows={rows}
-        rowId={(row) => `${row.source_system_id}>${row.target_system_id}`}
-        emptyText={find.trim() ? "No connection names that system." : "No system depends on another in this version."}
+        rowId={linkKey}
+        emptyText={find.trim() ? "No connection matches that system or kind." : "No system depends on another in this version."}
       />
     </div>
   );

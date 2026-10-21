@@ -46,7 +46,7 @@ describe("connectionsFlow", () => {
     expect(flow.nodes.find((node) => node.id === "cwom")).toMatchObject({ detail: "Order orchestration", href: "/s/cwom" });
     expect(flow.edges).toContainEqual({ from: "rtf", to: "cwom", label: "orchestrates", dashed: false });
     // A connection whose kind its source left unsaid is dashed, and says so in its label.
-    expect(flow.edges).toContainEqual({ from: "cwom", to: "bscs", label: "depends on", dashed: true });
+    expect(flow.edges).toContainEqual({ from: "cwom", to: "bscs", label: "kind not known", dashed: true });
     expect(flow.unconnected).toBe(1);
   });
 
@@ -171,7 +171,7 @@ describe("MapPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Show as table" }));
     const table = screen.getByRole("table", { name: "Every connection between systems in this version" });
     const before = within(table).getAllByRole("row").length;
-    await userEvent.type(screen.getByRole("searchbox", { name: "Find connections by a system’s name" }), "wfm");
+    await userEvent.type(screen.getByRole("searchbox", { name: "Find connections by a system’s name or how they connect" }), "wfm");
     const rows = within(table).getAllByRole("row").slice(1);
     expect(rows.length).toBeLessThan(before - 1);
     expect(rows.every((row) => /WFM/.test(row.textContent ?? ""))).toBe(true);

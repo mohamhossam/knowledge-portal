@@ -544,7 +544,8 @@ export function WholeRename({ kind, item, onDone }: { kind: "offering" | "journe
       <p className="cat-quiet">
         What still names <code>{item.id}</code> finds it under its new id: the old one is kept as a former id.
       </p>
-      <TextField label="New id" value={newId} dir="ltr" required onChange={setNewId} />
+      {/* The id as it stands is no error, only nothing to save yet. */}
+      <TextField label="New id" value={newId} dir="ltr" required onChange={setNewId} error={wanted === item.id ? null : problem} />
     </EditPanel>
   );
 }

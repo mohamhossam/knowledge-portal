@@ -345,6 +345,13 @@
   overflow-wrap: anywhere;
 }
 
+/* A system's name opens its record: a 24px target at least (WCAG 2.5.8). */
+.journey-lanes__system a {
+  display: inline-block;
+  min-block-size: 24px;
+  padding-block: 4px;
+}
+
 .journey-band {
   stroke: var(--color-rule-soft);
   stroke-width: 1;

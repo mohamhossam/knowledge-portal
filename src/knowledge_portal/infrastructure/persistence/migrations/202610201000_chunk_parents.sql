@@ -2,8 +2,9 @@
 -- and children, which are searched. Earlier indexes hold only whole chunks and read as before.
 
 -- Fail fast rather than queue behind live traffic: an ALTER that waits for its lock blocks every
--- query behind it. The migration runs in one transaction, so a timeout rolls it back whole and
--- the deployment retries it (docs/operations/deployment.md, "Catalogue evidence").
+-- query behind it. The runner applies every pending migration in one transaction, so a timeout
+-- rolls back this run's migrations together, and the setting holds for the ones after it
+-- (docs/operations/deployment.md, "Catalogue evidence").
 SET LOCAL lock_timeout = '5s';
 
 ALTER TABLE architecture_knowledge_chunks

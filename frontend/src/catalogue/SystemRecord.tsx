@@ -13,7 +13,8 @@ import { connections, dependsHow, domainPath, sentenceCase, systemName, systemRo
 import { SystemContextDiagram } from "./diagrams/CatalogueDiagrams";
 import { ConnectionEdit, ConnectionRemove, SystemEdit, SystemRemove } from "./DraftEdits";
 import { LinkBasis } from "./LinkBasis";
-import type { SystemLink } from "./links";
+import { KindNotKnown } from "./KindNotKnown";
+import { linkKey, type SystemLink } from "./links";
 import { type ConceptIndex, entityNames, INTERFACE_STYLE, type Interface, interfacesOf, SOURCE_TONE, SOURCE_WORD } from "./ontology";
 import { useCatalogueContext } from "./useCatalogue";
 
@@ -257,7 +258,7 @@ function ConnectionTable({ title, rows, other, how, from, system, empty, editabl
           <>
             <Link to={`${base}/systems/${encodeURIComponent(target)}`} state={{ from: system.id } satisfies Trail}>{systemName(book, target)}</Link>
             {target === from && <span className="cat-detail">Where you came from</span>}
-            <span className="cat-detail">{how(row)}</span>
+            <span className="cat-detail">{row.kind === "unspecified" ? <KindNotKnown /> : how(row)}</span>
           </>
         );
       },
@@ -291,7 +292,7 @@ function ConnectionTable({ title, rows, other, how, from, system, empty, editabl
       actions={editable && !editing && !removing ? <Button variant="quiet" onClick={() => setEditing("new")}>Add a dependency</Button> : undefined}
     >
       {rows.length ? (
-        <DataTable caption={`${title}: ${system.name}`} captionHidden columns={columns} rows={rows} rowId={(row) => `${row.source_system_id}>${row.target_system_id}`} />
+        <DataTable caption={`${title}: ${system.name}`} captionHidden columns={columns} rows={rows} rowId={linkKey} />
       ) : (
         <p className="cat-quiet">{empty}</p>
       )}

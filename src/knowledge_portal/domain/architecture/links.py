@@ -81,7 +81,8 @@ class SystemLink:
 
 @dataclass
 class _Pair:
-    stated: SystemRelationship | None = None
+    # Every connection a curator stated for the pair: each stays a link of its own.
+    stated: list[SystemRelationship] = field(default_factory=list)
     kinds: set[RelationshipKind] = field(default_factory=set)
     interfaces: dict[str, InterfaceSource] = field(default_factory=dict)
     journeys: dict[str, JourneySource] = field(default_factory=dict)
@@ -108,8 +109,8 @@ def system_links(release: ArchitectureKnowledge) -> tuple[SystemLink, ...]:
 
     for relationship in release.relationships:
         found = pair(relationship.source_system_id, relationship.target_system_id)
-        if found is not None and found.stated is None:
-            found.stated = relationship
+        if found is not None:
+            found.stated.append(relationship)
 
     for item in release.interfaces:
         # A consumer calls an API; events and files go out from the system that exposes them.
@@ -141,27 +142,38 @@ def system_links(release: ArchitectureKnowledge) -> tuple[SystemLink, ...]:
             if call.purpose:
                 found.purposes.append(call.purpose)
 
-    links = []
+    links: list[SystemLink] = []
     for (source, target), found in pairs.items():
         derived = next(
             (kind for kind in _PRECEDENCE if kind in found.kinds), RelationshipKind.UNSPECIFIED
         )
-        stated = found.stated
-        kind = (
-            stated.kind if stated and stated.kind is not RelationshipKind.UNSPECIFIED else derived
-        )
+        interfaces = tuple(found.interfaces.values())
+        journeys = tuple(found.journeys.values())
+        if found.stated:
+            # Each stated connection keeps its own words; the first is also what the
+            # interfaces and journeys add to, and takes their kind when it left its own unsaid.
+            for at, stated in enumerate(found.stated):
+                kind = stated.kind
+                if at == 0 and kind is RelationshipKind.UNSPECIFIED:
+                    kind = derived
+                links.append(
+                    SystemLink(
+                        SystemRelationship(source, target, stated.description, kind),
+                        True,
+                        interfaces if at == 0 else (),
+                        journeys if at == 0 else (),
+                    )
+                )
+            continue
         description = (
-            (stated.description if stated else None)
-            or _named(list(found.said))
-            or (found.purposes[0] if found.purposes else None)
-            or UNNAMED
+            _named(list(found.said)) or (found.purposes[0] if found.purposes else None) or UNNAMED
         )
         links.append(
             SystemLink(
-                SystemRelationship(source, target, description, kind),
-                stated is not None,
-                tuple(found.interfaces.values()),
-                tuple(found.journeys.values()),
+                SystemRelationship(source, target, description, derived),
+                False,
+                interfaces,
+                journeys,
             )
         )
     return tuple(links)

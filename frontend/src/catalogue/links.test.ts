@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Journey, SystemInterface } from "../api/client";
-import { linksOf, styleKind, systemLinks } from "./links";
+import { linkKey, linksOf, styleKind, systemLinks } from "./links";
 
 const api = (over: Partial<SystemInterface>): SystemInterface => ({
   id: "if-crm",
@@ -55,6 +55,19 @@ describe("systemLinks", () => {
     const links = systemLinks({ relationships: [stated], interfaces: [api({})], journeys: [] });
     expect(links).toHaveLength(1);
     expect(links[0]).toMatchObject({ stated, kind: "calls_api", description: "Reads the customer" });
+  });
+
+  it("keeps each stated connection of one pair as a line of its own", () => {
+    const orders = { source_system_id: "web", target_system_id: "crm", kind: "unspecified" as const, description: "Reads the customer" };
+    const events = { source_system_id: "web", target_system_id: "crm", kind: "publishes_events_to" as const, description: "Sends order events" };
+    const links = systemLinks({ relationships: [orders, events], interfaces: [api({})], journeys: [] });
+    expect(links.map((link) => [link.kind, link.description, link.interfaces.length])).toEqual([
+      ["calls_api", "Reads the customer", 1],
+      ["publishes_events_to", "Sends order events", 0],
+    ]);
+    expect(new Set(links.map(linkKey)).size).toBe(2);
+    const served = linksOf({ relationships: [orders, events], connections: links.map((link) => ({ ...link, stated: true })) } as never);
+    expect(served.map((link) => link.stated)).toEqual([orders, events]);
   });
 
   it("leaves out calls within one system and calls whose systems are not known", () => {

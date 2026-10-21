@@ -36,7 +36,7 @@ export function styleKind(style: string | null | undefined): RelationshipKind {
 // Of several kinds on one pair, the first said here names the line.
 const PRECEDENCE: RelationshipKind[] = ["calls_api", "publishes_events_to", "transfers_data_to", "orchestrates", "unspecified"];
 
-type Draft = { source: string; target: string; stated?: Relationship; kinds: Set<RelationshipKind>; interfaces: Map<string, { name: string; systemId: string }>; journeys: Map<string, { name: string; steps: number }>; said: Set<string>; purposes: string[] };
+type Draft = { source: string; target: string; stated: Relationship[]; kinds: Set<RelationshipKind>; interfaces: Map<string, { name: string; systemId: string }>; journeys: Map<string, { name: string; steps: number }>; said: Set<string>; purposes: string[] };
 
 /** Said when nothing names what a link carries (as the service says it). */
 export const UNNAMED = "Known from its interfaces and journeys";
@@ -54,7 +54,7 @@ export function systemLinks(version: Linked): SystemLink[] {
     const key = `${source}>${target}`;
     let found = pairs.get(key);
     if (!found) {
-      found = { source, target, kinds: new Set(), interfaces: new Map(), journeys: new Map(), said: new Set(), purposes: [] };
+      found = { source, target, stated: [], kinds: new Set(), interfaces: new Map(), journeys: new Map(), said: new Set(), purposes: [] };
       pairs.set(key, found);
     }
     return found;
@@ -62,7 +62,7 @@ export function systemLinks(version: Linked): SystemLink[] {
 
   for (const relationship of version.relationships) {
     const found = pair(relationship.source_system_id, relationship.target_system_id);
-    if (found && !found.stated) found.stated = relationship;
+    if (found) found.stated.push(relationship);
   }
 
   for (const item of version.interfaces ?? []) {
@@ -92,20 +92,37 @@ export function systemLinks(version: Linked): SystemLink[] {
     }
   }
 
-  return [...pairs.values()].map((found): SystemLink => {
+  return [...pairs.values()].flatMap((found): SystemLink[] => {
     const derived = PRECEDENCE.find((item) => found.kinds.has(item)) ?? "unspecified";
-    return {
+    const interfaces = [...found.interfaces].map(([id, item]) => ({ id, ...item }));
+    const journeys = [...found.journeys].map(([id, seen]) => ({ id, ...seen }));
+    if (found.stated.length) {
+      // Each stated connection keeps its own words; the first is also what the interfaces and
+      // journeys add to, and takes their kind when it left its own unsaid.
+      return found.stated.map((stated, at) => ({
+        source_system_id: found.source,
+        target_system_id: found.target,
+        kind: at === 0 && stated.kind === "unspecified" ? derived : stated.kind,
+        description: stated.description,
+        stated,
+        interfaces: at === 0 ? interfaces : [],
+        journeys: at === 0 ? journeys : [],
+      }));
+    }
+    return [{
       source_system_id: found.source,
       target_system_id: found.target,
-      // A stated kind wins; a stated "unspecified" takes what the interfaces and journeys say.
-      kind: found.stated && found.stated.kind !== "unspecified" ? found.stated.kind : derived,
-      description: found.stated?.description || named([...found.said]) || found.purposes[0] || UNNAMED,
-      stated: found.stated ?? null,
-      interfaces: [...found.interfaces].map(([id, item]) => ({ id, ...item })),
-      journeys: [...found.journeys].map(([id, seen]) => ({ id, ...seen })),
-    };
+      kind: derived,
+      description: named([...found.said]) || found.purposes[0] || UNNAMED,
+      stated: null,
+      interfaces,
+      journeys,
+    }];
   });
 }
+
+/** A link's key: a pair can hold several stated connections, told apart by their words. */
+export const linkKey = (link: SystemLink) => `${link.source_system_id}>${link.target_system_id}>${link.description}`;
 
 /**
  * A version's links: as the service works them out (domain.architecture.links), or, for a
@@ -119,7 +136,9 @@ export function linksOf(version: Linked): SystemLink[] {
     kind: link.kind,
     description: link.description,
     stated: link.stated
-      ? version.relationships.find((item) => item.source_system_id === link.source_system_id && item.target_system_id === link.target_system_id) ?? null
+      ? version.relationships.find(
+          (item) => item.source_system_id === link.source_system_id && item.target_system_id === link.target_system_id && item.description === link.description,
+        ) ?? null
       : null,
     interfaces: link.interfaces.map((item) => ({ id: item.id, name: item.name, systemId: item.system_id })),
     journeys: link.journeys.map((item) => ({ ...item })),

@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, BeforeValidator, Field
 
 from knowledge_portal.application.ports.architecture_jobs import (
     ArchitectureJob,
@@ -83,6 +83,7 @@ from knowledge_portal.domain.architecture.journeys import (
     JourneyEdge,
     journey_channels,
     journey_edges,
+    read_timing,
     shared_journey_edges,
 )
 from knowledge_portal.domain.architecture.knowledge import (
@@ -1637,13 +1638,24 @@ class FlowRuleSchema(BaseModel):
         )
 
 
+def _timing(value: object) -> object:
+    """A timing in any case or spelling the catalogue files use ("sync", "Synchronous"); other
+    text is left for the enum to refuse."""
+    if isinstance(value, str) and (value.strip() == "" or read_timing(value) is not None):
+        return read_timing(value)
+    return value
+
+
+Timing = Annotated[CallTiming | None, BeforeValidator(_timing)]
+
+
 class ActivityIntegrationSchema(BaseModel):
     from_activity: Identifier
     to_activity: Identifier
     interaction: Name | None = None
     interface: Text | None = None
     payload: Text | None = None
-    timing: CallTiming | None = None
+    timing: Timing = None
     correlation_key: Name | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
@@ -2004,6 +2016,8 @@ class KnowledgeDocumentVersionResponse(BaseModel):
     # version's own id names it), and the version it replaced when uploaded as a new one.
     document_id: str | None = None
     supersedes: str | None = None
+    # Its stored file was collected: still registered, no longer readable.
+    file_collected: bool = False
 
     @classmethod
     def from_domain(cls, version: KnowledgeDocumentVersion) -> KnowledgeDocumentVersionResponse:
@@ -2019,6 +2033,7 @@ class KnowledgeDocumentVersionResponse(BaseModel):
             uploaded_at=version.uploaded_at,
             document_id=version.document_id,
             supersedes=version.supersedes,
+            file_collected=version.file_collected,
         )
 
 

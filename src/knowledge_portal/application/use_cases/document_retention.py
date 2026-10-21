@@ -37,14 +37,26 @@ class DocumentRetention:
         return tuple(
             version
             for version in self._repository.document_versions(True)
-            if version.id not in held
+            if not version.file_collected
+            and version.id not in held
             and version.id not in published
             and now - version.uploaded_at >= older_than
         )
 
     def collect(self, now: datetime, older_than: timedelta) -> tuple[KnowledgeDocumentVersion, ...]:
-        """Delete the stored files of the unused versions; their registrations stay."""
-        unused = self.unused(now, older_than)
-        for version in unused:
+        """Delete the stored files of the unused versions; their registrations stay.
+
+        Each version is marked collected before its file goes, so it can no longer be
+        selected into a draft; one a draft took in the meantime is left alone.
+        """
+        collected: list[KnowledgeDocumentVersion] = []
+        for version in self.unused(now, older_than):
+            held = {
+                item.id for release in self._repository.list_all() for item in release.documents
+            }
+            if version.id in held:
+                continue
+            self._repository.mark_file_collected(version.id)
             self._storage.delete(DocumentVersionId(version.storage_key))
-        return unused
+            collected.append(version)
+        return tuple(collected)
