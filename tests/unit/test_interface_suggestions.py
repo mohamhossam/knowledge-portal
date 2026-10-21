@@ -152,6 +152,8 @@ def _change(**values: Any) -> ChangeOutput:
         "channel_kind": None,
         "interface_style": "api",
         "portfolio_level": None,
+        "realisation_layer": None,
+        "realised_by": [],
     }
     return ChangeOutput(**(base | values))
 

@@ -455,3 +455,36 @@ describe("business area and portfolio suggestions (ADR-0123)", () => {
     expect(held("section:portfolio")).toEqual([fixed.id, smb.id].sort());
   });
 });
+
+describe("realisation record suggestions (ADR-0123)", () => {
+  const appliance = suggestion(
+    { kind: "realisation_record", system_id: "resource-quokka-appliance", name: "QUOKKA_APPLIANCE", realisation: { id: "resource-quokka-appliance", layer: "resource", name: "QUOKKA_APPLIANCE", aliases: [], system_ids: [], realised_by: [], accepted: [] } },
+  );
+  const firewall = suggestion(
+    {
+      kind: "realisation_record", system_id: "cfs-quokka-firewall", name: "CFSS_QUOKKA_FIREWALL",
+      realisation: { id: "cfs-quokka-firewall", layer: "cfs", name: "CFSS_QUOKKA_FIREWALL", aliases: [], system_ids: ["cwom"], realised_by: ["QUOKKA_APPLIANCE"], accepted: [] },
+    },
+    { match: "needs_realisation" },
+  );
+  const all = [appliance, firewall];
+  const named = lexicon(release, all);
+
+  it("says its layer, who delivers it and what realises it", () => {
+    expect(changeSentence(firewall, named)).toBe("Adds the CFS CFSS_QUOKKA_FIREWALL, delivered by CWOM, realised by QUOKKA_APPLIANCE");
+    expect(changeSentence(appliance, named)).toBe("Adds the resource QUOKKA_APPLIANCE");
+  });
+
+  it("waits for what realises it, which another suggestion adds", () => {
+    expect(waitsFor(firewall, named)).toBe("Waits for QUOKKA_APPLIANCE, which realises it");
+    expect(bulkAcceptable(release, all).lifted).toEqual([firewall]);
+    expect(inWords("Accept or add realisation record 'QUOKKA_APPLIANCE' before CFSS_QUOKKA_FIREWALL, which it realises.", named)).toBe(
+      "Accept or add QUOKKA_APPLIANCE before CFSS_QUOKKA_FIREWALL, which it realises.",
+    );
+  });
+
+  it("is listed under Realisations", () => {
+    const groups = suggestionGroups(release, all, named);
+    expect(groups.find((group) => group.key === "section:realisations")?.suggestions.map((item) => item.id).sort()).toEqual([appliance.id, firewall.id].sort());
+  });
+});

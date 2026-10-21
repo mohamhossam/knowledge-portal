@@ -7,6 +7,17 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- Realisation records suggested from documents (ADR-0123,
+  `docs/slices/realisation-suggestions.md`): reading a document now suggests the customer-facing
+  services, resource-facing services and resources it names (layer, the system that delivers or
+  holds it, and what realises it one layer down). One per record, its readings merged; it waits
+  for the systems it names (`needs_system`) and for the lower-layer records that realise it (new
+  `needs_realisation`), fills an existing record's names, systems and gaps without replacing its
+  layer or anything set, and records where it came from once accepted (`accepted` on realisation
+  records, kept by every catalogue file format). Accepting all takes resources, then RFSs, then
+  CFSs. Decide lists them under Realisations. Public contract, additive; prompt
+  `catalogue-extraction-v19`.
+
 - Business areas and portfolio places suggested from documents (ADR-0123,
   `docs/slices/tree-suggestions.md`): reading a document now suggests the capability domains
   ("business areas") and portfolio nodes it describes, each with the node it sits inside,

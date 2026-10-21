@@ -922,6 +922,8 @@ class RealisationRecordSchema(BaseModel):
     description: Text | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
+    accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, record: RealisationRecord) -> RealisationRecordSchema:
@@ -935,6 +937,7 @@ class RealisationRecordSchema(BaseModel):
             description=record.description,
             confidence=record.confidence,
             source=record.source,
+            accepted=[AcceptedFromSchema.from_domain(item) for item in record.accepted],
         )
 
     def to_domain(self) -> RealisationRecord:
@@ -2406,6 +2409,8 @@ class CandidateContentSchema(BaseModel):
     # The whole node, for a capability domain or portfolio suggestion (ADR-0123).
     capability_domain: CapabilityDomainSchema | None = None
     portfolio_node: PortfolioNodeSchema | None = None
+    # The whole record, for a realisation suggestion (ADR-0123).
+    realisation: RealisationRecordSchema | None = None
 
     @classmethod
     def from_domain(cls, content: CandidateContent) -> CandidateContentSchema:
@@ -2458,6 +2463,11 @@ class CandidateContentSchema(BaseModel):
                 if content.portfolio_node
                 else None
             ),
+            realisation=(
+                RealisationRecordSchema.from_domain(content.realisation)
+                if content.realisation
+                else None
+            ),
         )
 
     def to_domain(self) -> CandidateContent:
@@ -2491,6 +2501,7 @@ class CandidateContentSchema(BaseModel):
             self.interface.to_domain() if self.interface else None,
             self.capability_domain.to_domain() if self.capability_domain else None,
             self.portfolio_node.to_domain() if self.portfolio_node else None,
+            self.realisation.to_domain() if self.realisation else None,
         )
 
 

@@ -58,10 +58,16 @@ from knowledge_portal.domain.architecture.portfolio import PortfolioNode
 from knowledge_portal.domain.architecture.products import (
     OfferingComponent,
     ProductOffering,
+    RealisationLayer,
     find_offering,
     find_offering_component,
     find_order_type,
     same_offering,
+)
+from knowledge_portal.domain.architecture.realisations import (
+    RealisationRecord,
+    find_realisation_among,
+    merge_realisations,
 )
 from knowledge_portal.domain.architecture.tracking import TrackingChannel
 from knowledge_portal.domain.architecture.vocabularies import (
@@ -110,6 +116,8 @@ class CandidateKind(StrEnum):
     # A business area capabilities belong to, and a place in the product portfolio (ADR-0123).
     CAPABILITY_DOMAIN = "capability_domain"
     PORTFOLIO_NODE = "portfolio_node"
+    # A CFS, RFS or resource, the systems that deliver it and what realises it (ADR-0123).
+    REALISATION_RECORD = "realisation_record"
 
 
 class CandidateStatus(StrEnum):
@@ -140,6 +148,8 @@ class CandidateMatch(StrEnum):
     NEEDS_INTERFACE = "needs_interface"
     # A portfolio node sitting under one the draft does not have yet.
     NEEDS_PORTFOLIO_NODE = "needs_portfolio_node"
+    # A realisation record realised by one the draft does not have yet.
+    NEEDS_REALISATION = "needs_realisation"
 
 
 class CandidateBasis(StrEnum):
@@ -228,6 +238,9 @@ class CandidateContent:
       Its parent is named as the document names it until the draft resolves it
     - portfolio_node: the whole ``portfolio_node``; its id is also the ``system_id``, and its
       parent is named likewise
+    - realisation_record: the whole ``realisation``; its id is also the ``system_id``. Its
+      systems and the records realising it are named as the document names them until the
+      draft resolves them
     """
 
     kind: CandidateKind
@@ -257,6 +270,7 @@ class CandidateContent:
     interface: SystemInterface | None = None
     capability_domain: CapabilityDomain | None = None
     portfolio_node: PortfolioNode | None = None
+    realisation: RealisationRecord | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "kind", CandidateKind(self.kind))
@@ -308,6 +322,8 @@ class CandidateContent:
             raise InvalidKnowledgeError("Only a capability domain suggestion holds a domain.")
         if (self.portfolio_node is not None) != (self.kind is CandidateKind.PORTFOLIO_NODE):
             raise InvalidKnowledgeError("Only a portfolio suggestion holds a portfolio node.")
+        if (self.realisation is not None) != (self.kind is CandidateKind.REALISATION_RECORD):
+            raise InvalidKnowledgeError("Only a realisation suggestion holds a realisation record.")
         if (self.question is not None) != (self.kind is CandidateKind.QUESTION):
             raise InvalidKnowledgeError("Only a question suggestion holds a question.")
         if (self.concept is not None) != (self.kind is CandidateKind.CONCEPT):
@@ -353,6 +369,7 @@ class CandidateContent:
             CandidateKind.INTERFACE,
             CandidateKind.CAPABILITY_DOMAIN,
             CandidateKind.PORTFOLIO_NODE,
+            CandidateKind.REALISATION_RECORD,
         }:
             pass
         elif self.kind is CandidateKind.COMPONENT_LINK:
@@ -664,6 +681,50 @@ def _current_interface(
 ) -> SystemInterface | None:
     by_id = next((item for item in release.interfaces if item.id == interface.id), None)
     return by_id or find_interface_among(release.interfaces, interface.name, interface.system_id)
+
+
+# What may realise each layer: the layers below it, as ``check_realisations`` holds them.
+_LOWER = {
+    RealisationLayer.CFS: (RealisationLayer.RFS, RealisationLayer.RESOURCE),
+    RealisationLayer.RFS: (RealisationLayer.RESOURCE,),
+    RealisationLayer.RESOURCE: (),
+}
+
+
+def _resolved_realisation(
+    record: RealisationRecord, release: ArchitectureKnowledge
+) -> tuple[RealisationRecord, tuple[str, ...], tuple[str, ...]]:
+    """The record naming its systems and what realises it by the draft's ids, with the system
+    names and realising records the draft lacks."""
+    missing: list[str] = []
+    systems: list[str] = []
+    for reference in record.system_ids:
+        found = find_system(release, reference)
+        if found is None:
+            missing.append(reference)
+        systems.append(found.id if found is not None else reference)
+    below: list[str] = []
+    unrealised: list[str] = []
+    for reference in record.realised_by:
+        found_record = find_realisation_among(release.realisations, reference, _LOWER[record.layer])
+        if found_record is None:
+            unrealised.append(reference)
+        below.append(found_record.id if found_record is not None else reference)
+    resolved = replace(
+        record,
+        system_ids=tuple(dict.fromkeys(systems)),
+        realised_by=tuple(item for item in dict.fromkeys(below) if item != record.id),
+    )
+    return resolved, tuple(dict.fromkeys(missing)), tuple(dict.fromkeys(unrealised))
+
+
+def _current_realisation(
+    record: RealisationRecord, release: ArchitectureKnowledge
+) -> RealisationRecord | None:
+    """The draft's record a suggested one is: the same id, or a record of its layer that
+    answers to its name."""
+    by_id = next((item for item in release.realisations if item.id == record.id), None)
+    return by_id or find_realisation_among(release.realisations, record.name, (record.layer,))
 
 
 def _find_node[Node: (CapabilityDomain, PortfolioNode)](
@@ -1288,6 +1349,20 @@ def classify(content: CandidateContent, release: ArchitectureKnowledge) -> Candi
             if _portfolio_fill(recorded_node, node) != recorded_node
             else CandidateMatch.ALREADY_PRESENT
         )
+    if content.kind is CandidateKind.REALISATION_RECORD and content.realisation is not None:
+        record, systems, below = _resolved_realisation(content.realisation, release)
+        if systems:
+            return CandidateMatch.NEEDS_SYSTEM
+        if below:
+            return CandidateMatch.NEEDS_REALISATION
+        recorded_record = _current_realisation(record, release)
+        if recorded_record is None:
+            return CandidateMatch.NEW
+        return (
+            CandidateMatch.UPDATES_EXISTING
+            if merge_realisations(recorded_record, record) != recorded_record
+            else CandidateMatch.ALREADY_PRESENT
+        )
     if content.kind is CandidateKind.OFFERING_RULE:
         offering = find_offering(release.products, content.system_id)
         if offering is None:
@@ -1436,6 +1511,7 @@ def open_matches(
             CandidateKind.INTERFACE,
             CandidateKind.CAPABILITY_DOMAIN,
             CandidateKind.PORTFOLIO_NODE,
+            CandidateKind.REALISATION_RECORD,
             CandidateKind.QUESTION,
             CandidateKind.OFFERING_RULE,
         }
@@ -1581,6 +1657,8 @@ def missing_systems(content: CandidateContent, release: ArchitectureKnowledge) -
         references.append(content.channel.entry_system_id or "")
     elif kind is CandidateKind.INTERFACE and content.interface is not None:
         references.extend((content.interface.system_id, *content.interface.consumer_ids))
+    elif kind is CandidateKind.REALISATION_RECORD and content.realisation is not None:
+        references.extend(content.realisation.system_ids)
     elif kind is CandidateKind.CONCEPT:
         references.extend(ref.system_id for ref in content.capability_refs)
     elif kind not in {
@@ -1765,6 +1843,30 @@ def _with_interface(
     merged = merge_interfaces(current, resolved)
     return release.updated(
         interfaces=tuple(merged if item.id == current.id else item for item in release.interfaces)
+    )
+
+
+def _with_realisation(
+    record: RealisationRecord, release: ArchitectureKnowledge
+) -> ArchitectureKnowledge:
+    """The draft with a suggested realisation record added, or its gaps filled."""
+    resolved, systems, below = _resolved_realisation(record, release)
+    if systems:
+        names = ", ".join(f"system {item!r}" for item in systems)
+        raise CandidateDependencyError(f"Accept or add {names} before {record.name}.")
+    if below:
+        names = ", ".join(f"realisation record {item!r}" for item in below)
+        raise CandidateDependencyError(
+            f"Accept or add {names} before {record.name}, which it realises."
+        )
+    current = _current_realisation(resolved, release)
+    if current is None:
+        return release.updated(realisations=(*release.realisations, resolved))
+    merged = merge_realisations(current, resolved)
+    return release.updated(
+        realisations=tuple(
+            merged if item.id == current.id else item for item in release.realisations
+        )
     )
 
 
@@ -2233,6 +2335,8 @@ def apply_candidate(
         return _with_interface(content.interface, release)
     if content.kind is CandidateKind.CAPABILITY_DOMAIN and content.capability_domain is not None:
         return _with_capability_domain(content.capability_domain, release)
+    if content.kind is CandidateKind.REALISATION_RECORD and content.realisation is not None:
+        return _with_realisation(content.realisation, release)
     if content.kind is CandidateKind.PORTFOLIO_NODE and content.portfolio_node is not None:
         return _with_portfolio_node(content.portfolio_node, release)
     if content.kind is CandidateKind.CONCEPT and content.concept is not None:

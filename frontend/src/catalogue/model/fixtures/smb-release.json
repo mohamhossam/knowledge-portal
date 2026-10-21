@@ -20480,7 +20480,8 @@
    ],
    "description": "Fibre internet on the on-premises CPE: the customer-facing service the GPON component is sold as.",
    "confidence": "inferred",
-   "source": "Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)"
+   "source": "Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)",
+   "accepted": []
   },
   {
    "id": "cfs-onprem-firewall-he",
@@ -20496,7 +20497,8 @@
    ],
    "description": "The firewall on the on-premises CPE, default or non-default configuration.",
    "confidence": "inferred",
-   "source": "Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)"
+   "source": "Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)",
+   "accepted": []
   },
   {
    "id": "cfs-selfservice-portal-access",
@@ -20509,7 +20511,8 @@
    "realised_by": [],
    "description": "FortiPortal access, shown in B2B as Security & Services Portal.",
    "confidence": "inferred",
-   "source": "Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)"
+   "source": "Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)",
+   "accepted": []
   },
   {
    "id": "cfs-sdwan-new",
@@ -20522,7 +20525,8 @@
    "realised_by": [],
    "description": "SD-WAN; its configuration is Day-N by MSS.",
    "confidence": "inferred",
-   "source": "Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)"
+   "source": "Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)",
+   "accepted": []
   },
   {
    "id": "res-fortinet-he-cpe",
@@ -20538,7 +20542,8 @@
    "realised_by": [],
    "description": "The CPE device (CPE_PLATFORM_TYPE Fortinet HE, models 90G and 120G), provisioned in the ADOM cluster.",
    "confidence": "inferred",
-   "source": "Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)"
+   "source": "Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)",
+   "accepted": []
   },
   {
    "id": "res-fortiap",
@@ -20553,7 +20558,8 @@
    "realised_by": [],
    "description": "The access point device, with its SIC code and model.",
    "confidence": "inferred",
-   "source": "Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)"
+   "source": "Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)",
+   "accepted": []
   }
  ]
 }

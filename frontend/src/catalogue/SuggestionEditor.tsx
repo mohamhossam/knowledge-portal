@@ -11,6 +11,7 @@ import type { Lexicon } from "./suggestions";
 type Contract = NonNullable<SuggestionContent["interface"]>;
 type Area = NonNullable<SuggestionContent["capability_domain"]>;
 type PortfolioPlace = NonNullable<SuggestionContent["portfolio_node"]>;
+type Realised = NonNullable<SuggestionContent["realisation"]>;
 
 /** A tree's parents to choose from, with one the document named that the draft lacks, as written. */
 function parentOptions(nodes: { id: string; name: string }[], self: string, current: string | null | undefined) {
@@ -60,7 +61,7 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
   useEffect(() => title.current?.focus(), []);
   const [content, setContent] = useState<SuggestionContent>(() => kept ?? ({
     ...original,
-    system_id: original.kind === "landscape_domain" || original.kind === "product" || original.kind === "journey" || original.kind === "channel" || original.kind === "interface" || original.kind === "capability_domain" || original.kind === "portfolio_node" || original.kind === "offering_rule"
+    system_id: original.kind === "landscape_domain" || original.kind === "product" || original.kind === "journey" || original.kind === "channel" || original.kind === "interface" || original.kind === "capability_domain" || original.kind === "portfolio_node" || original.kind === "realisation_record" || original.kind === "offering_rule"
       ? original.system_id
       : startingSystem(release, suggestion.system_name, original.system_id),
     target_system_id: original.target_system_id
@@ -94,6 +95,7 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
     if (content.kind === "interface" && content.interface) return { ...base, name: content.interface.name };
     if (content.kind === "capability_domain" && content.capability_domain) return { ...base, name: content.capability_domain.name };
     if (content.kind === "portfolio_node" && content.portfolio_node) return { ...base, name: content.portfolio_node.name };
+    if (content.kind === "realisation_record" && content.realisation) return { ...base, name: content.realisation.name };
     return base;
   };
 
@@ -130,6 +132,8 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
       case "portfolio_node":
         if (!content.portfolio_node?.name.trim()) return "Give it a name.";
         return content.portfolio_node.level.trim() ? null : "Say what level of the portfolio it is.";
+      case "realisation_record":
+        return content.realisation?.name.trim() ? null : "Give it a name.";
       case "question":
         if (!content.system_id.trim()) return "Choose the offering it asks.";
         return content.question?.text.trim() ? null : "Say what it asks.";
@@ -347,6 +351,35 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
               onChange={(parent) => change({ parent_id: parent || null })}
             />
             <AreaField label="What it is" value={place.description} onChange={(description) => change({ description: description || null })} />
+          </>
+        );
+      }
+      case "realisation_record": {
+        const record = content.realisation;
+        if (!record) return null;
+        const change = (patch: Partial<Realised>) => set({ realisation: { ...record, ...patch } });
+        const delivered = record.system_ids ?? [];
+        const below = record.realised_by ?? [];
+        return (
+          <>
+            <TextField label="Name" value={record.name} required onChange={(name) => change({ name })} />
+            <SelectField
+              label="Layer"
+              value={record.layer}
+              options={[
+                { value: "cfs", label: "Customer-facing service (CFS)" },
+                { value: "rfs", label: "Resource-facing service (RFS)" },
+                { value: "resource", label: "Resource" },
+              ]}
+              onChange={(layer) => change({ layer: layer as Realised["layer"], realised_by: layer === "resource" ? [] : below })}
+            />
+            <AreaField label="What it is" value={record.description} onChange={(description) => change({ description: description || null })} />
+            <p className="cat-quiet">
+              {delivered.length
+                ? `${record.layer === "resource" ? "Held" : "Delivered"} by ${delivered.map(words.system).join(", ")}`
+                : `The document names no system that ${record.layer === "resource" ? "holds" : "delivers"} it`}
+              {record.layer === "resource" ? "." : below.length ? `; realised by ${below.map(words.realisation).join(", ")}, as the document says.` : "; the document names nothing that realises it."}
+            </p>
           </>
         );
       }
