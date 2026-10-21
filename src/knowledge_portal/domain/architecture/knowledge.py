@@ -360,14 +360,21 @@ def relationship_kind(value: str | RelationshipKind) -> RelationshipKind:
 
 @dataclass(frozen=True)
 class SystemRelationship:
+    """The canonical edge for what depends on what (ADR-0119).
+
+    Its source, target and kind identify it, so a pair holds at most one dependency of
+    each kind; what it is for is an attribute, and rewording it is an edit. Relationships
+    recorded before kinds existed are unspecified.
+    """
+
     source_system_id: str
     target_system_id: str
     description: str
-    # An attribute of the relationship, not part of its identity: changing it is
-    # an edit. Relationships recorded before kinds existed are unspecified.
     kind: RelationshipKind = RelationshipKind.UNSPECIFIED
     # The accepted suggestions that created or extended it, oldest first (ADR-0120).
     accepted: tuple[AcceptedFrom, ...] = ()
+    confidence: SourceConfidence | None = None
+    source: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "kind", relationship_kind(self.kind))
@@ -376,6 +383,47 @@ class SystemRelationship:
         _required(self.description, "Relationship description")
         if self.source_system_id == self.target_system_id:
             raise InvalidKnowledgeError("A system cannot depend on itself.")
+        check_source(self)
+
+    @property
+    def key(self) -> tuple[str, str, RelationshipKind]:
+        return (self.source_system_id, self.target_system_id, self.kind)
+
+
+def with_purpose(description: str, purpose: str) -> str:
+    """A dependency's description with another purpose said for it, unless it says it
+    already: "Closure; Billing"."""
+    said = {part.strip().casefold() for part in description.split(";")}
+    addition = purpose.strip()
+    return description if addition.casefold() in said else f"{description}; {addition}"
+
+
+def merged_relationships(
+    relationships: tuple[SystemRelationship, ...],
+) -> tuple[SystemRelationship, ...]:
+    """One dependency per source, target and kind, in first-seen order (ADR-0119).
+
+    Releases recorded while the description was part of the identity may hold several of
+    one kind between two systems; reading them joins their descriptions, keeps the first
+    confidence and source given, and every acceptance recorded on any of them.
+    """
+    merged: dict[tuple[str, str, RelationshipKind], SystemRelationship] = {}
+    for item in relationships:
+        held = merged.get(item.key)
+        if held is None:
+            merged[item.key] = item
+            continue
+        merged[item.key] = replace(
+            held,
+            description=with_purpose(held.description, item.description),
+            confidence=held.confidence or item.confidence,
+            source=held.source or item.source,
+            accepted=(
+                *held.accepted,
+                *(each for each in item.accepted if each not in held.accepted),
+            ),
+        )
+    return tuple(merged.values())
 
 
 @dataclass(frozen=True)
@@ -499,12 +547,7 @@ class ArchitectureKnowledge:
             for item in self.relationships
         ):
             raise InvalidKnowledgeError("Relationships must connect catalogued systems.")
-        relationship_keys = [
-            (item.source_system_id, item.target_system_id, item.description.casefold())
-            for item in self.relationships
-        ]
-        if len(set(relationship_keys)) != len(relationship_keys):
-            raise InvalidKnowledgeError("Relationships must be unique.")
+        object.__setattr__(self, "relationships", merged_relationships(self.relationships))
         if len({item.id for item in self.documents}) != len(self.documents):
             raise InvalidKnowledgeError("Document version ids must be unique.")
         domains = _check_domains(self.capability_domains)

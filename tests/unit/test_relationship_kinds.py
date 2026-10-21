@@ -86,21 +86,33 @@ def test_the_seed_names_kinds_only_where_its_descriptions_show_them() -> None:
     assert kinds[("dcrm", "cbcm-crmgw")] is RelationshipKind.UNSPECIFIED
 
 
-def test_changing_a_kind_is_an_edit_to_the_same_relationship() -> None:
+def test_a_kind_identifies_a_dependency_and_rewording_it_is_an_edit() -> None:
+    # ADR-0119: source, target and kind identify a dependency; what it is for is a field.
     base = seed_knowledge()
     first, *rest = base.relationships
-    draft = replace(
+    rekinded = replace(
         base, id="draft", relationships=(replace(first, kind=RelationshipKind.ORCHESTRATES), *rest)
     )
-
-    changes = diff_releases(base, draft).changes
-
-    assert [(item.item, item.change, item.fields) for item in changes] == [
-        (ChangedItem.RELATIONSHIP, ChangeKind.CHANGED, ("kind",))
-    ]
-    assert changes[0].key == (
-        f"{first.source_system_id}->{first.target_system_id}:{first.description.casefold()}"
+    reworded = replace(
+        base, id="draft", relationships=(replace(first, description="Something else"), *rest)
     )
+
+    kind_changes = diff_releases(base, rekinded).changes
+    word_changes = diff_releases(base, reworded).changes
+
+    pair = f"{first.source_system_id}->{first.target_system_id}"
+    assert sorted((item.change, item.key) for item in kind_changes) == [
+        (ChangeKind.ADDED, f"{pair}:orchestrates"),
+        (ChangeKind.REMOVED, f"{pair}:{first.kind.value}"),
+    ]
+    assert [(item.item, item.change, item.key, item.fields) for item in word_changes] == [
+        (
+            ChangedItem.RELATIONSHIP,
+            ChangeKind.CHANGED,
+            f"{pair}:{first.kind.value}",
+            ("description",),
+        )
+    ]
 
 
 def test_a_suggestion_sets_a_stated_kind_but_never_clears_one() -> None:

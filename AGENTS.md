@@ -551,11 +551,12 @@ A task is complete only when:
   verb `PASSES` has no curated role term yet; the Phase 6 clean-up deliberately
   leaves it flagged until a curator decides whether it merges into
   `role-record` or earns its own term.
-- **ADR-0119** (one canonical dependency model) still reads Proposed: it is
-  accepted in the pull request that implements it. ADR-0120 (provenance that
-  survives acceptance) and ADR-0121 (lifecycle) are implemented; under ADR-0121,
-  concepts and terms retire only through a catalogue file until their pages
-  have an editor.
+- **ADR-0119** (one canonical dependency model) is half implemented: the
+  dependency's identity, source and merge are in; deriving dependency
+  suggestions from interfaces and journeys, and retiring the adjacent-systems
+  fallback, are its next slice. ADR-0120 (provenance that survives acceptance)
+  and ADR-0121 (lifecycle) are implemented; under ADR-0121, concepts and terms
+  retire only through a catalogue file until their pages have an editor.
 - **No frontend coverage floor.** The backend holds an 89% floor with
   `TEST_DATABASE_URL`; the frontend's vitest suite runs without one.
 

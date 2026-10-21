@@ -287,6 +287,8 @@ def test_extraction_to_accepted_draft_through_the_api(client: TestClient) -> Non
         "target_system_id": "bcrm",
         "description": "customer lookup",
         "kind": "unspecified",
+        "confidence": None,
+        "source": None,
     }
     # Accepting it recorded which suggestion it came from and who accepted it (ADR-0120).
     assert [(entry["candidate_id"], entry["decided_by"]) for entry in lookup["accepted"]] == [

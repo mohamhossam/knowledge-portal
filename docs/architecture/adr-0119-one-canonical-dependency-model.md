@@ -2,9 +2,18 @@
 
 ## Status
 
+Accepted 2026-10-21 by the owner, implemented in two slices: the dependency itself (points
+2 and 3, `docs/slices/dependency-identity.md`) and the derived suggestions (point 1, with
+point 4's fallback retirement), which follows.
 Proposed 2026-10-19. Implements review finding #7 of the portal review
 ([report](https://claude.ai/code/artifact/d5147883-5ccd-472f-a57a-6a2464b2fd53));
 pairs with the adjacent-systems fallback shipped as the stop-gap (#109).
+
+Settled while implementing point 3: the merge happens whenever a release is built or read,
+so a stored release of either shape loads; a suggested dependency that states a kind
+means the one of that kind or the pair's unspecified one, one that states none means the
+unspecified one or the pair's only one, and a new purpose joins the description rather
+than replacing it.
 
 ## Context
 

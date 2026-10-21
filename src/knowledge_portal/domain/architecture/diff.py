@@ -537,15 +537,22 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
             )
         )
 
-    def relationships(release: ArchitectureKnowledge) -> dict[str, tuple[str, str]]:
-        # The key and label formats are read by the catalogue workbench; the kind is
-        # the value, so a changed kind is an edit to the same relationship.
+    def relationships(
+        release: ArchitectureKnowledge,
+    ) -> dict[str, tuple[str, tuple[str, str, str]]]:
+        # The key and label formats are read by the catalogue workbench. Source, target
+        # and kind identify a dependency (ADR-0119); what it is for and where that is
+        # said are its fields, so rewording one is an edit to the same dependency.
         names = {item.id: item.name for item in release.systems}
         return {
-            f"{item.source_system_id}->{item.target_system_id}:{item.description.casefold()}": (
+            f"{item.source_system_id}->{item.target_system_id}:{item.kind.value}": (
                 f"{names.get(item.source_system_id, item.source_system_id)} → "
                 f"{names.get(item.target_system_id, item.target_system_id)}: {item.description}",
-                item.kind.value,
+                (
+                    item.description,
+                    item.confidence.value if item.confidence else "",
+                    item.source or "",
+                ),
             )
             for item in release.relationships
         }
@@ -554,11 +561,28 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
     changes.extend(
         _keyed_changes(ChangedItem.RELATIONSHIP, base_relationships, draft_relationships)
     )
-    changes.extend(
-        CatalogueChange(ChangedItem.RELATIONSHIP, ChangeKind.CHANGED, key, label, ("kind",))
-        for key, (label, kind) in draft_relationships.items()
-        if key in base_relationships and base_relationships[key][1] != kind
-    )
+    for key, (label, said) in draft_relationships.items():
+        previous_relationship = base_relationships.get(key)
+        if previous_relationship is None or previous_relationship[1] == said:
+            continue
+        changes.append(
+            CatalogueChange(
+                ChangedItem.RELATIONSHIP,
+                ChangeKind.CHANGED,
+                key,
+                label,
+                tuple(
+                    field
+                    for field, before, after in zip(
+                        ("description", "confidence", "source"),
+                        previous_relationship[1],
+                        said,
+                        strict=True,
+                    )
+                    if before != after
+                ),
+            )
+        )
 
     def domains(
         release: ArchitectureKnowledge, landscape: bool

@@ -195,7 +195,14 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "unlinked_reason",
     ),
     CONSTRAINTS: ("system_id", "constraint"),
-    RELATIONSHIPS: ("source_system_id", "target_system_id", "description", "kind"),
+    RELATIONSHIPS: (
+        "source_system_id",
+        "target_system_id",
+        "description",
+        "kind",
+        "confidence",
+        "source",
+    ),
     DOMAINS: _DOMAIN_HEADERS,
     LANDSCAPE: (*_DOMAIN_HEADERS, "cross_cutting"),
     PRODUCTS: (
@@ -987,6 +994,8 @@ def content_from_mapping(raw: object) -> CatalogueContent:
                     _text(item.get("target_system_id"), where, "target_system_id"),
                     _text(item.get("description"), where, "description"),
                     _kind(item.get("kind"), where),
+                    confidence=_trust(item.get("confidence"), where),
+                    source=_optional_text(item.get("source"), where, "source"),
                 )
             )
         except InvalidKnowledgeError as exc:
@@ -2346,6 +2355,7 @@ def release_to_mapping(release: ArchitectureKnowledge) -> dict[str, Any]:
                     if item.kind is not RelationshipKind.UNSPECIFIED
                     else {}
                 ),
+                **_sourced(item),
             }
             for item in release.relationships
         ],
@@ -2528,6 +2538,8 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                         _text(cells.get("target_system_id"), where, "target_system_id"),
                         _text(cells.get("description"), where, "description"),
                         _kind(cells.get("kind"), where),
+                        confidence=_trust(cells.get("confidence"), where),
+                        source=_optional_text(cells.get("source"), where, "source"),
                     )
                 )
             except InvalidKnowledgeError as exc:
@@ -3534,6 +3546,8 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 relationship.target_system_id,
                 relationship.description,
                 relationship.kind.value,
+                _confidence(relationship),
+                relationship.source,
             ),
         )
     for sheet, tree in (

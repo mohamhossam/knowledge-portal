@@ -6214,10 +6214,13 @@ export interface components {
              * @default []
              */
             accepted: components["schemas"]["AcceptedFromSchema"][];
+            confidence?: components["schemas"]["SourceConfidence"] | null;
             /** Description */
             description: string;
             /** @default unspecified */
             kind: components["schemas"]["RelationshipKind"];
+            /** Source */
+            source?: string | null;
             /** Source System Id */
             source_system_id: string;
             /** Target System Id */

@@ -1907,6 +1907,8 @@ class SystemRelationshipSchema(BaseModel):
     target_system_id: Identifier
     description: Text
     kind: RelationshipKind = RelationshipKind.UNSPECIFIED
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
 
     # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
     accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
@@ -1918,12 +1920,19 @@ class SystemRelationshipSchema(BaseModel):
             target_system_id=relationship.target_system_id,
             description=relationship.description,
             kind=relationship.kind,
+            confidence=relationship.confidence,
+            source=relationship.source,
             accepted=[AcceptedFromSchema.from_domain(item) for item in relationship.accepted],
         )
 
     def to_domain(self) -> SystemRelationship:
         return SystemRelationship(
-            self.source_system_id, self.target_system_id, self.description, self.kind
+            self.source_system_id,
+            self.target_system_id,
+            self.description,
+            self.kind,
+            confidence=self.confidence,
+            source=self.source,
         )
 
 

@@ -208,6 +208,17 @@ export function fieldsInWords(fields: string[]): string {
   return list([...new Set(fields.map((field) => FIELD[field] ?? field.replace(/_/g, " ")))]);
 }
 
+/** A connection's changed fields in words: what it is for, rather than its "description". */
+const CONNECTION_FIELD: Record<string, string> = {
+  description: "what it is for",
+  confidence: "how sure its source is",
+  source: "where it is said",
+};
+
+export function connectionFieldsInWords(fields: string[]): string {
+  return list([...new Set(fields.map((field) => CONNECTION_FIELD[field] ?? FIELD[field] ?? field.replace(/_/g, " ")))]);
+}
+
 export const CHANGE_WORD = { added: "Added", changed: "Changed", removed: "Removed" } as const;
 
 const VERB = {
@@ -221,22 +232,21 @@ const VERB = {
 /**
  * A connection's change as a sentence about its two systems ("Order Hub calls
  * the API of CWOM"), and what it is for, kept apart because a description is
- * often a clause of its own. The service keys a connection "source->target:for
- * what" and labels it with an arrow; the arrow never reaches the screen.
+ * often a clause of its own. The service keys a connection "source->target:kind"
+ * (ADR-0119: its kind is part of what it is) and labels it with an arrow and what
+ * it is for; the arrow never reaches the screen.
  */
 export function connectionSentence(change: CatalogueDiff["changes"][number], release: Release): { sentence: string; forWhat: string } {
   const match = /^(.+?)->(.+?):(.*)$/.exec(change.key);
   const [labelSource = "", rest = ""] = change.label.split(" → ");
   const labelTarget = rest.split(": ")[0] ?? "";
   if (!match) return { sentence: change.label.replace(" → ", " depends on "), forWhat: "" };
-  const [, source = "", target = "", purpose = ""] = match;
+  const [, source = "", target = "", kind = ""] = match;
   const name = (id: string, fallback: string) => release.systems.find((system) => system.id === id)?.name ?? (fallback || id);
-  const said = release.relationships.find(
-    (item) => item.source_system_id === source && item.target_system_id === target && item.description.toLocaleLowerCase() === purpose,
-  );
-  const forWhat = change.label.includes(": ") ? change.label.slice(change.label.indexOf(": ") + 2) : purpose;
-  const verb = change.change === "removed" || !said ? "depends on" : VERB[said.kind];
-  const lead = change.change === "removed" ? "no longer depends on" : change.change === "changed" ? `now ${verb}` : verb;
+  const forWhat = change.label.includes(": ") ? change.label.slice(change.label.indexOf(": ") + 2) : "";
+  const verb = kind in VERB ? VERB[kind as keyof typeof VERB] : VERB.unspecified;
+  // A changed connection is reworded or re-sourced: changing its kind replaces it.
+  const lead = change.change === "removed" ? `no longer ${verb}` : verb;
   return { sentence: `${name(source, labelSource)} ${lead} ${name(target, labelTarget)}`, forWhat };
 }
 
