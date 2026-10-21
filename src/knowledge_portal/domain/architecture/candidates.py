@@ -34,6 +34,11 @@ from knowledge_portal.domain.architecture.governance import (
     OpenQuestion,
     SourceLevel,
 )
+from knowledge_portal.domain.architecture.interfaces import (
+    SystemInterface,
+    find_interface_among,
+    merge_interfaces,
+)
 from knowledge_portal.domain.architecture.journeys import Journey, same_journey
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
@@ -98,6 +103,8 @@ class CandidateKind(StrEnum):
     # A rule or limitation of one product offering, such as a bundle's allowed devices: what
     # a constraint is to a system.
     OFFERING_RULE = "offering_rule"
+    # An API, event or file contract one system exposes and others consume (ADR-0123).
+    INTERFACE = "interface"
 
 
 class CandidateStatus(StrEnum):
@@ -123,6 +130,8 @@ class CandidateMatch(StrEnum):
     NEEDS_CHANNEL = "needs_channel"
     # A link, or a narrower concept, naming a concept the draft does not have yet.
     NEEDS_CONCEPT = "needs_concept"
+    # An interface relaying another the draft does not have yet.
+    NEEDS_INTERFACE = "needs_interface"
 
 
 class CandidateBasis(StrEnum):
@@ -205,6 +214,8 @@ class CandidateContent:
       ``concept_ids`` it delivers
     - vocabulary_term: the whole ``term``; its id is also the ``system_id``. ``value_refs``
       are the places a value it means is written, linked to it when it is accepted
+    - interface: the whole ``interface``; its id is also the ``system_id``. Its exposing and
+      consuming systems are named as the document names them until the draft resolves them
     """
 
     kind: CandidateKind
@@ -231,6 +242,7 @@ class CandidateContent:
     concept_ids: tuple[str, ...] = ()
     term: VocabularyTerm | None = None
     value_refs: tuple[VocabularyRef, ...] = ()
+    interface: SystemInterface | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "kind", CandidateKind(self.kind))
@@ -276,6 +288,8 @@ class CandidateContent:
             raise InvalidKnowledgeError("Only a journey suggestion holds a journey.")
         if (self.channel is not None) != (self.kind is CandidateKind.CHANNEL):
             raise InvalidKnowledgeError("Only a channel suggestion holds a channel.")
+        if (self.interface is not None) != (self.kind is CandidateKind.INTERFACE):
+            raise InvalidKnowledgeError("Only an interface suggestion holds an interface.")
         if (self.question is not None) != (self.kind is CandidateKind.QUESTION):
             raise InvalidKnowledgeError("Only a question suggestion holds a question.")
         if (self.concept is not None) != (self.kind is CandidateKind.CONCEPT):
@@ -318,6 +332,7 @@ class CandidateContent:
             CandidateKind.QUESTION,
             CandidateKind.CONCEPT,
             CandidateKind.VOCABULARY_TERM,
+            CandidateKind.INTERFACE,
         }:
             pass
         elif self.kind is CandidateKind.COMPONENT_LINK:
@@ -588,6 +603,47 @@ def _resolved_channel(
     if system is None:
         return channel, channel.entry_system_id
     return replace(channel, entry_system_id=system.id), None
+
+
+def _resolved_interface(
+    interface: SystemInterface, release: ArchitectureKnowledge
+) -> tuple[SystemInterface, tuple[str, ...], tuple[str, ...]]:
+    """The interface naming its systems and relayed interfaces by the draft's ids, with the
+    system names and relayed interfaces the draft lacks."""
+    missing: list[str] = []
+
+    def system(reference: str) -> str:
+        found = find_system(release, reference)
+        if found is None:
+            missing.append(reference)
+            return reference
+        return found.id
+
+    exposer = system(interface.system_id)
+    consumers = tuple(dict.fromkeys(system(item) for item in interface.consumer_ids))
+    relays: list[str] = []
+    unrelayed: list[str] = []
+    for reference in interface.relays:
+        relayed = find_interface_among(release.interfaces, reference)
+        if relayed is None:
+            unrelayed.append(reference)
+            relays.append(reference)
+        else:
+            relays.append(relayed.id)
+    resolved = replace(
+        interface,
+        system_id=exposer,
+        consumer_ids=tuple(item for item in consumers if item != exposer),
+        relays=tuple(dict.fromkeys(relays)),
+    )
+    return resolved, tuple(dict.fromkeys(missing)), tuple(unrelayed)
+
+
+def _current_interface(
+    interface: SystemInterface, release: ArchitectureKnowledge
+) -> SystemInterface | None:
+    by_id = next((item for item in release.interfaces if item.id == interface.id), None)
+    return by_id or find_interface_among(release.interfaces, interface.name, interface.system_id)
 
 
 def _current_channel(channel: Channel, release: ArchitectureKnowledge) -> Channel | None:
@@ -1107,6 +1163,20 @@ def classify(content: CandidateContent, release: ArchitectureKnowledge) -> Candi
             if _channel_fill(recorded, channel) != recorded
             else CandidateMatch.ALREADY_PRESENT
         )
+    if content.kind is CandidateKind.INTERFACE and content.interface is not None:
+        interface, systems, relays = _resolved_interface(content.interface, release)
+        if systems:
+            return CandidateMatch.NEEDS_SYSTEM
+        if relays:
+            return CandidateMatch.NEEDS_INTERFACE
+        recorded_interface = _current_interface(interface, release)
+        if recorded_interface is None:
+            return CandidateMatch.NEW
+        return (
+            CandidateMatch.UPDATES_EXISTING
+            if merge_interfaces(recorded_interface, interface) != recorded_interface
+            else CandidateMatch.ALREADY_PRESENT
+        )
     if content.kind is CandidateKind.OFFERING_RULE:
         offering = find_offering(release.products, content.system_id)
         if offering is None:
@@ -1252,6 +1322,7 @@ def open_matches(
         in {
             CandidateKind.LANDSCAPE_DOMAIN,
             CandidateKind.CHANNEL,
+            CandidateKind.INTERFACE,
             CandidateKind.QUESTION,
             CandidateKind.OFFERING_RULE,
         }
@@ -1395,6 +1466,8 @@ def missing_systems(content: CandidateContent, release: ArchitectureKnowledge) -
             references.extend(item.system_id or "" for item in tracking.milestones)
     elif kind is CandidateKind.CHANNEL and content.channel is not None:
         references.append(content.channel.entry_system_id or "")
+    elif kind is CandidateKind.INTERFACE and content.interface is not None:
+        references.extend((content.interface.system_id, *content.interface.consumer_ids))
     elif kind is CandidateKind.CONCEPT:
         references.extend(ref.system_id for ref in content.capability_refs)
     elif kind not in {
@@ -1553,6 +1626,30 @@ def _with_channel(channel: Channel, release: ArchitectureKnowledge) -> Architect
     filled = _channel_fill(current, resolved)
     return release.updated(
         channels=tuple(filled if item.id == current.id else item for item in release.channels)
+    )
+
+
+def _with_interface(
+    interface: SystemInterface, release: ArchitectureKnowledge
+) -> ArchitectureKnowledge:
+    """The draft with a suggested interface added, or its gaps filled."""
+    resolved, systems, relays = _resolved_interface(interface, release)
+    if systems:
+        names = ", ".join(f"system {item!r}" for item in systems)
+        raise CandidateDependencyError(
+            f"Accept or add {names} before the interface {interface.name}."
+        )
+    if relays:
+        names = ", ".join(f"interface {item!r}" for item in relays)
+        raise CandidateDependencyError(
+            f"Accept or add {names} before the interface {interface.name} that relays it."
+        )
+    current = _current_interface(resolved, release)
+    if current is None:
+        return release.updated(interfaces=(*release.interfaces, resolved))
+    merged = merge_interfaces(current, resolved)
+    return release.updated(
+        interfaces=tuple(merged if item.id == current.id else item for item in release.interfaces)
     )
 
 
@@ -1979,6 +2076,8 @@ def apply_candidate(
         return _with_domain(content, release)
     if content.kind is CandidateKind.CHANNEL and content.channel is not None:
         return _with_channel(content.channel, release)
+    if content.kind is CandidateKind.INTERFACE and content.interface is not None:
+        return _with_interface(content.interface, release)
     if content.kind is CandidateKind.CONCEPT and content.concept is not None:
         return _with_concept(content, content.concept, release)
     if content.kind is CandidateKind.COMPONENT_LINK:

@@ -1536,6 +1536,16 @@
             ],
             "title": "Description"
           },
+          "interface": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SystemInterfaceSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "journey": {
             "anyOf": [
               {
@@ -1709,7 +1719,8 @@
           "concept",
           "component_link",
           "vocabulary_term",
-          "offering_rule"
+          "offering_rule",
+          "interface"
         ],
         "title": "CandidateKind",
         "type": "string"
@@ -1725,7 +1736,8 @@
           "needs_domain",
           "needs_offering",
           "needs_channel",
-          "needs_concept"
+          "needs_concept",
+          "needs_interface"
         ],
         "title": "CandidateMatch",
         "type": "string"
@@ -12256,6 +12268,15 @@
       "SystemInterfaceSchema": {
         "description": "An API, event or file contract one system exposes, and the systems that consume it.",
         "properties": {
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
+          },
           "confidence": {
             "anyOf": [
               {

@@ -15,6 +15,7 @@ from typing import Any, ClassVar, Protocol
 from knowledge_portal.domain.architecture.candidates import CandidateKind
 from knowledge_portal.domain.architecture.channels import Channel
 from knowledge_portal.domain.architecture.concepts import BusinessCapability
+from knowledge_portal.domain.architecture.interfaces import SystemInterface
 from knowledge_portal.domain.architecture.journeys import Journey
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
@@ -40,6 +41,7 @@ type _Carrier = (
     | ProductOffering
     | Journey
     | Channel
+    | SystemInterface
     | BusinessCapability
     | VocabularyTerm
 )
@@ -75,6 +77,9 @@ class CatalogueBody(Protocol):
     @property
     def vocabulary(self) -> tuple[VocabularyTerm, ...]: ...
 
+    @property
+    def interfaces(self) -> tuple[SystemInterface, ...]: ...
+
 
 class _Visitor(Protocol):
     def __call__[T: _Carrier](self, key: AcceptanceKey, item: T, /) -> T: ...
@@ -95,6 +100,7 @@ _SUBJECT: dict[CandidateKind, str] = {
     CandidateKind.COMPONENT_LINK: "offering",
     CandidateKind.JOURNEY: "journey",
     CandidateKind.CHANNEL: "channel",
+    CandidateKind.INTERFACE: "interface",
     CandidateKind.CONCEPT: "concept",
     CandidateKind.VOCABULARY_TERM: "term",
 }
@@ -140,6 +146,7 @@ def _visit[Body: CatalogueBody](body: Body, visit: _Visitor) -> Body:
             visit(("concept", item.id), item) for item in body.business_capabilities
         ),
         vocabulary=tuple(visit(("term", item.id), item) for item in body.vocabulary),
+        interfaces=tuple(visit(("interface", item.id), item) for item in body.interfaces),
     )
 
 

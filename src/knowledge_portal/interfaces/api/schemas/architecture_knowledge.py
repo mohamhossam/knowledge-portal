@@ -333,6 +333,8 @@ class SystemInterfaceSchema(BaseModel):
     source: Text | None = None
     # The interfaces it passes on, each one its system consumes.
     relays: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
+    accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, interface: SystemInterface) -> SystemInterfaceSchema:
@@ -348,6 +350,7 @@ class SystemInterfaceSchema(BaseModel):
             confidence=interface.confidence,
             source=interface.source,
             relays=list(interface.relays),
+            accepted=[AcceptedFromSchema.from_domain(item) for item in interface.accepted],
         )
 
     def to_domain(self) -> SystemInterface:
@@ -2392,6 +2395,8 @@ class CandidateContentSchema(BaseModel):
     # A vocabulary term and the places it covers, for a vocabulary suggestion.
     term: VocabularyTermSchema | None = None
     value_refs: list[VocabularyRefSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    # The whole interface, for an interface suggestion (ADR-0123).
+    interface: SystemInterfaceSchema | None = None
 
     @classmethod
     def from_domain(cls, content: CandidateContent) -> CandidateContentSchema:
@@ -2431,6 +2436,9 @@ class CandidateContentSchema(BaseModel):
             concept_ids=list(content.concept_ids),
             term=VocabularyTermSchema.from_domain(content.term) if content.term else None,
             value_refs=[VocabularyRefSchema.from_domain(item) for item in content.value_refs],
+            interface=(
+                SystemInterfaceSchema.from_domain(content.interface) if content.interface else None
+            ),
         )
 
     def to_domain(self) -> CandidateContent:
@@ -2461,6 +2469,7 @@ class CandidateContentSchema(BaseModel):
             tuple(self.concept_ids),
             self.term.to_domain() if self.term else None,
             tuple(item.to_domain() for item in self.value_refs),
+            self.interface.to_domain() if self.interface else None,
         )
 
 

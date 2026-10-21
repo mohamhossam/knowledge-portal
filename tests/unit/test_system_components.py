@@ -342,6 +342,7 @@ def _change(**values: Any) -> ChangeOutput:
         "reasoning": None,
         "relationship_kind": None,
         "channel_kind": None,
+        "interface_style": None,
     }
     return ChangeOutput(**(defaults | values))
 

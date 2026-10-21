@@ -22,7 +22,7 @@ export const STATE_LABEL: Record<SuggestionState, string> = {
 
 /** The order accepting-all walks, and the order rows sit inside a system. */
 const KIND_ORDER: SuggestionKind[] = [
-  "landscape_domain", "system", "placement", "component", "capability", "constraint", "relationship", "channel", "product", "offering_rule", "question", "journey",
+  "landscape_domain", "system", "placement", "component", "capability", "constraint", "relationship", "interface", "channel", "product", "offering_rule", "question", "journey",
 ];
 
 /**
@@ -194,6 +194,14 @@ export function changeSentence(suggestion: Suggestion, words: Lexicon): string {
         ? `Rewords the question it asks of ${of}: ${content.question?.text ?? ""}`
         : `Asks of ${of}: ${content.question?.text ?? ""}`;
     }
+    case "interface": {
+      const consumers = (content.interface?.consumer_ids ?? []).map(words.system);
+      const of = content.interface ? ` of ${words.system(content.interface.system_id)}` : "";
+      const used = consumers.length ? `, consumed by ${consumers.join(", ")}` : "";
+      return replaces
+        ? `Adds what the document says about the interface ${content.name}${of}${used}`
+        : `Adds the interface ${content.name}${of}${used}`;
+    }
     case "channel": {
       const entry = content.channel?.entry_system_id;
       const through = entry ? `, its orders entering through ${words.system(entry)}` : "";
@@ -259,6 +267,10 @@ export function waitsFor(suggestion: Suggestion, words: Lexicon): string {
   switch (suggestion.match) {
     case "needs_system": {
       if (content.kind === "channel") return `Waits for the system ${words.system(content.channel?.entry_system_id ?? "")}`;
+      if (content.kind === "interface") {
+        const named = (suggestion.missing_systems ?? []).map(words.system);
+        return `Waits for the ${named.length === 1 ? "system" : "systems"} ${few(named)}`;
+      }
       const missing = !suggestion.system_name && content.kind !== "product" && content.kind !== "journey"
         ? content.system_id
         : content.target_system_id ?? content.system_id;
@@ -290,6 +302,10 @@ export function waitsFor(suggestion: Suggestion, words: Lexicon): string {
     case "needs_channel": {
       const named = [...new Set(channelsNamed(suggestion).map(words.channel))];
       return `Waits for the ${named.length === 1 ? "channel" : "channels"} ${named.join(", ")}`;
+    }
+    case "needs_interface": {
+      const relays = content.interface?.relays ?? [];
+      return `Waits for the ${relays.length === 1 ? "interface" : "interfaces"} it relays: ${relays.join(", ")}`;
     }
     default:
       return "";
@@ -407,6 +423,7 @@ export type SuggestionGroup = {
 
 const SECTION = {
   domains: "Landscape domains",
+  interfaces: "Interfaces",
   channels: "Channels",
   offerings: "Offerings",
   questions: "Questions for offerings",
@@ -425,6 +442,9 @@ export function suggestionGroups(release: Release, suggestions: Suggestion[], wo
     if (content.kind === "landscape_domain") {
       key = "section:domains";
       group = { key, isNew: false, label: SECTION.domains };
+    } else if (content.kind === "interface") {
+      key = "section:interfaces";
+      group = { key, isNew: false, label: SECTION.interfaces };
     } else if (content.kind === "channel") {
       key = "section:channels";
       group = { key, isNew: false, label: SECTION.channels };
@@ -514,6 +534,7 @@ function knownKeys(release: Release): Set<string> {
   for (const domain of release.landscape_domains ?? []) known.add(`domain:${domain.id}`);
   for (const offering of release.products ?? []) [offering.id, offering.code ?? "", offering.name].forEach((reference) => reference && known.add(offeringKey(reference)));
   for (const channel of release.channels ?? []) channelKeys(channel.id, channel.name).forEach((key) => known.add(key));
+  for (const item of release.interfaces ?? []) interfaceKeys(item.id, item.name).forEach((key) => known.add(key));
   return known;
 }
 
@@ -637,9 +658,16 @@ function provides(suggestion: Suggestion): string[] {
       return [offeringKey(content.system_id), ...(content.product ? [offeringKey(content.product.name)] : [])];
     case "channel":
       return channelKeys(content.system_id, content.channel?.name ?? content.name);
+    case "interface":
+      return interfaceKeys(content.system_id, content.interface?.name ?? content.name);
     default:
       return [];
   }
+}
+
+/** An interface's keys: its id and its name, without case, as the service finds a relayed one. */
+function interfaceKeys(...references: string[]): string[] {
+  return references.filter(Boolean).map((reference) => `interface:${reference.trim().toLowerCase()}`);
 }
 
 /** The systems an offering's parts and order tracking, or a journey's steps, name. */
@@ -713,8 +741,13 @@ function requiredKeys(suggestion: Suggestion): string[] {
       return [`domain:${(content.kind === "landscape_domain" ? content.parent_domain_id : content.landscape_domain_id) ?? ""}`];
     case "needs_offering":
       return [offeringKey(content.kind === "question" || content.kind === "offering_rule" ? content.system_id : content.journey?.product_id ?? "")];
+    case "needs_interface":
+      return (content.interface?.relays ?? []).flatMap((reference) => interfaceKeys(reference));
     case "needs_system":
       if (content.kind === "channel") return [`system:${content.channel?.entry_system_id ?? ""}`];
+      if (content.kind === "interface") {
+        return [content.interface?.system_id ?? "", ...(content.interface?.consumer_ids ?? [])].filter(Boolean).map((id) => `system:${id}`);
+      }
       if (content.kind === "product" || content.kind === "journey") {
         return [...systemsNamed(suggestion).map((id) => `system:${id}`), ...channels];
       }
@@ -787,7 +820,8 @@ export function inWords(message: string, words: Lexicon): string {
     .replace(/landscape domain '([^']+)'/g, (_, id: string) => `the landscape domain ${words.domain(id)}`)
     .replace(/component '([^']+)'/g, (_, id: string) => `the component ${id.replace(/[-_]+/g, " ")}`)
     .replace(/product offering '([^']+)'/g, (_, id: string) => `the offering ${words.offering(id)}`)
-    .replace(/channel '([^']+)'/g, (_, id: string) => `the channel ${words.channel(id)}`);
+    .replace(/channel '([^']+)'/g, (_, id: string) => `the channel ${words.channel(id)}`)
+    .replace(/interface '([^']+)'/g, (_, id: string) => `the interface ${id}`);
 }
 
 /** How the reading of one document stands. */

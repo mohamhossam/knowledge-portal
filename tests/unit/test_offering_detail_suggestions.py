@@ -334,6 +334,7 @@ def _change(offering: DetailedOfferingOutput) -> DetailedChangeOutput:
         reasoning=None,
         relationship_kind=None,
         channel_kind=None,
+        interface_style=None,
         journey=None,
     )
 

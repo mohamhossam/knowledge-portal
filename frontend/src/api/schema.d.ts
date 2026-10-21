@@ -2642,6 +2642,7 @@ export interface components {
             concept_ids: string[];
             /** Description */
             description?: string | null;
+            interface?: components["schemas"]["SystemInterfaceSchema"] | null;
             journey?: components["schemas"]["JourneySchema"] | null;
             kind: components["schemas"]["CandidateKind"];
             /** Landscape Domain Id */
@@ -2685,13 +2686,13 @@ export interface components {
          * CandidateKind
          * @enum {string}
          */
-        CandidateKind: "system" | "component" | "capability" | "constraint" | "relationship" | "landscape_domain" | "placement" | "product" | "journey" | "channel" | "question" | "concept" | "component_link" | "vocabulary_term" | "offering_rule";
+        CandidateKind: "system" | "component" | "capability" | "constraint" | "relationship" | "landscape_domain" | "placement" | "product" | "journey" | "channel" | "question" | "concept" | "component_link" | "vocabulary_term" | "offering_rule" | "interface";
         /**
          * CandidateMatch
          * @description How a candidate relates to the draft as it stands now.
          * @enum {string}
          */
-        CandidateMatch: "new" | "updates_existing" | "already_present" | "needs_system" | "needs_component" | "needs_domain" | "needs_offering" | "needs_channel" | "needs_concept";
+        CandidateMatch: "new" | "updates_existing" | "already_present" | "needs_system" | "needs_component" | "needs_domain" | "needs_offering" | "needs_channel" | "needs_concept" | "needs_interface";
         /**
          * CandidateStatus
          * @enum {string}
@@ -6178,6 +6179,11 @@ export interface components {
          * @description An API, event or file contract one system exposes, and the systems that consume it.
          */
         SystemInterfaceSchema: {
+            /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
             confidence?: components["schemas"]["SourceConfidence"] | null;
             /**
              * Consumer Ids
