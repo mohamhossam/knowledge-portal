@@ -7,6 +7,13 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- Names compared one way (`docs/slices/model-cleanup.md`): two systems, two components of
+  one system or two sibling domains may no longer differ only in punctuation ("Wi-Fi Hub"
+  and "WiFi hub"), as concepts and terms already may not; one system still keeps such
+  spellings of its own name. A capability linked to a concept sits in that concept's
+  domain or in none. The committed catalogue holds to both. ADR-0123 proposes the item's
+  three open decisions: co-mastery, an interface suggestion kind, library classification.
+
 - One canonical dependency model, part 2 (ADR-0119, `docs/slices/derived-dependencies.md`):
   a draft's Sources step suggests every dependency its interfaces and journeys already say
   (an API's consumer calls it; an event's or a file's system sends to its consumers; a

@@ -558,6 +558,9 @@ A task is complete only when:
   catalogue records no dependency yet. ADR-0120 (provenance that survives acceptance)
   and ADR-0121 (lifecycle) are implemented; under ADR-0121, concepts and terms
   retire only through a catalogue file until their pages have an editor.
+- **ADR-0123 is proposed.** Co-mastery of an information entity (the committed
+  catalogue has CBCM and Netcracker CRM both mastering Customer), an interface
+  suggestion kind, and library classification wait on the owner's decision.
 - **No frontend coverage floor.** The backend holds an 89% floor with
   `TEST_DATABASE_URL`; the frontend's vitest suite runs without one.
 
