@@ -1,4 +1,4 @@
-"""A per-actor ceiling on operations that call an AI provider."""
+"""A per-actor ceiling on operations that call an external provider."""
 
 from __future__ import annotations
 
@@ -15,6 +15,15 @@ from knowledge_portal.application.errors import ProviderRateLimitExceededError
 from knowledge_portal.domain.identity.entities import ActorProfile
 
 _WINDOW = timedelta(minutes=1)
+
+# What a refused caller is told; ``{limit}`` and ``{retry}`` are filled in.
+AI_REFUSAL = (
+    "Too many AI requests: at most {limit} per minute. Creating or changing a Requirement "
+    "counts, because it starts knowledge screening. Try again in {retry} seconds."
+)
+CATALOG_REFUSAL = (
+    "Too many product catalogue lookups: at most {limit} per minute. Try again in {retry} seconds."
+)
 
 
 @dataclass(frozen=True)
@@ -41,11 +50,12 @@ class ProviderCallRateLimit:
     place for an exact global ceiling. A limit of 0 disables the check.
     """
 
-    def __init__(self, limit_per_minute: int, clock: ClockPort) -> None:
+    def __init__(self, limit_per_minute: int, clock: ClockPort, refusal: str = AI_REFUSAL) -> None:
         if limit_per_minute < 0:
             raise ValueError("The provider call limit must not be negative.")
         self._limit = limit_per_minute
         self._clock = clock
+        self._refusal = refusal
         self._lock = threading.Lock()
         self._calls: dict[str, deque[tuple[datetime, int]]] = {}
         self._sequence = itertools.count()
@@ -67,10 +77,7 @@ class ProviderCallRateLimit:
                 oldest = calls[0][0]
                 retry_after = max(1, math.ceil((oldest + _WINDOW - now).total_seconds()))
                 raise ProviderRateLimitExceededError(
-                    f"Too many AI requests: at most {self._limit} per minute. "
-                    "Creating or changing a Requirement counts, because it starts "
-                    "knowledge screening. "
-                    f"Try again in {retry_after} seconds.",
+                    self._refusal.format(limit=self._limit, retry=retry_after),
                     retry_after_seconds=retry_after,
                 )
             ticket = ProviderCallTicket(key, now, next(self._sequence))

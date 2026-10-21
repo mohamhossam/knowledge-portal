@@ -3,7 +3,7 @@
 The platform's decisions are made and numbered in
 [requirement-portal](https://github.com/mohamhossam/requirement-portal/tree/main/docs/architecture).
 The ones this portal follows are copied here so it can be read on its own (ADR-0104). The copies
-were taken on 2026-10-09 (0077, 0115 and 0116 on 2026-10-20); requirement-portal's are
+were taken on 2026-10-09 (0077, 0115 and 0116 on 2026-10-20; 0101 refreshed with its Amendment 3 on 2026-10-21); requirement-portal's are
 authoritative if the two differ. ADRs this portal authors itself (0114, 0119–0123) are numbered in
 the same platform-wide series.
 
