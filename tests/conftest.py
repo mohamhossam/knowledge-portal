@@ -22,7 +22,9 @@ from knowledge_portal.interfaces.api.main import create_app
 os.environ.setdefault("LLM_PROVIDER", LLMProvider.FAKE.value)
 os.environ.setdefault("PERSISTENCE_PROVIDER", "memory")
 
-FAKE_PROVIDER_SETTINGS = Settings(llm_provider=LLMProvider.FAKE)
+# Offline scan mode, as a developer without ClamAV runs: uploads are scanned
+# deterministically (the EICAR marker) instead of failing closed on a missing daemon.
+FAKE_PROVIDER_SETTINGS = Settings(llm_provider=LLMProvider.FAKE, library_scan_mode="offline")
 
 
 @pytest.fixture

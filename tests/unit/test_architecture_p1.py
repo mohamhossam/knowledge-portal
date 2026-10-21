@@ -65,6 +65,7 @@ from knowledge_portal.infrastructure.architecture.tokenizer import (
 )
 from knowledge_portal.infrastructure.config.options import LLMProvider
 from knowledge_portal.infrastructure.config.settings import Settings
+from knowledge_portal.infrastructure.documents.library_worker import OfflineDocumentScanner
 from knowledge_portal.infrastructure.persistence.document_storage import (
     InMemoryDocumentStorage,
 )
@@ -200,7 +201,9 @@ class _RecordingIndex(InMemoryEvidenceIndex):
 def _build(content: bytes, mime_type: str = DOCX) -> tuple[EvidenceChunk, ...]:
     repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
     index = _RecordingIndex()
-    manage = ManageArchitectureKnowledge(repository, CatalogueFileAdapter(), index, 10_000_000)
+    manage = ManageArchitectureKnowledge(
+        repository, CatalogueFileAdapter(), index, 10_000_000, OfflineDocumentScanner()
+    )
     storage = InMemoryDocumentStorage()
     draft = manage.create_draft(MAINTAINER, "Next version")
     storage.put(DocumentVersionId("doc"), content)

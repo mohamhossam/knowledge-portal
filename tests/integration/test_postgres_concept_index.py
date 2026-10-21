@@ -43,6 +43,7 @@ from knowledge_portal.infrastructure.architecture.postgres_evidence_index import
     PostgresEvidenceIndex,
 )
 from knowledge_portal.infrastructure.architecture.tokenizer import FakeWordTokenizer
+from knowledge_portal.infrastructure.documents.library_worker import OfflineDocumentScanner
 from knowledge_portal.infrastructure.persistence.document_storage import (
     InMemoryDocumentStorage,
 )
@@ -75,7 +76,9 @@ def _build(
     repository: ArchitectureKnowledgeRepositoryPort, index: ArchitectureEvidenceIndexPort
 ) -> tuple[ManageArchitectureKnowledge, ArchitectureKnowledge]:
     """The committed SMB catalogue, in a fresh draft, built into the index."""
-    knowledge = ManageArchitectureKnowledge(repository, CatalogueFileAdapter(), index, 10_000_000)
+    knowledge = ManageArchitectureKnowledge(
+        repository, CatalogueFileAdapter(), index, 10_000_000, OfflineDocumentScanner()
+    )
     for release in knowledge.list_releases(ACTOR):
         if release.status is KnowledgeReleaseStatus.DRAFT:
             knowledge.discard_draft(release.id, release.revision, ACTOR)
@@ -158,7 +161,9 @@ def test_an_index_stored_before_links_reports_no_coverage() -> None:
     repository = PostgresArchitectureKnowledgeRepository(
         DirectPostgresConnector(DATABASE_URL), seed_knowledge()
     )
-    knowledge = ManageArchitectureKnowledge(repository, CatalogueFileAdapter(), index, 10_000_000)
+    knowledge = ManageArchitectureKnowledge(
+        repository, CatalogueFileAdapter(), index, 10_000_000, OfflineDocumentScanner()
+    )
     for release in knowledge.list_releases(ACTOR):
         if release.status is KnowledgeReleaseStatus.DRAFT:
             knowledge.discard_draft(release.id, release.revision, ACTOR)

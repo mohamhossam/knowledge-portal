@@ -36,6 +36,7 @@ from knowledge_portal.infrastructure.architecture.located_extractor import (
     LocatedDocumentExtractor,
 )
 from knowledge_portal.infrastructure.architecture.tokenizer import ApproximateTokenizer
+from knowledge_portal.infrastructure.documents.library_worker import OfflineDocumentScanner
 from knowledge_portal.infrastructure.persistence.document_storage import (
     InMemoryDocumentStorage,
 )
@@ -185,7 +186,9 @@ class _Recording(InMemoryEvidenceIndex):
 def _system_chunks(place: bool) -> dict[str, str]:
     repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
     index = _Recording()
-    manage = ManageArchitectureKnowledge(repository, CatalogueFileAdapter(), index, 10_000_000)
+    manage = ManageArchitectureKnowledge(
+        repository, CatalogueFileAdapter(), index, 10_000_000, OfflineDocumentScanner()
+    )
     draft = manage.create_draft(MAINTAINER, "Next version")
     if place:
         placed = _placed(draft)
