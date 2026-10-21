@@ -18,6 +18,12 @@ describe("the catalogue lab's shared rules", () => {
     expect(hubOf(offering({ components: names.map(part) }))?.name).toBe(hub);
   });
 
+  it("takes the part the version marks as its hub over any name", () => {
+    const parts = ["Business router", "Managed switch"].map(part);
+    parts[1] = { ...parts[1]!, hub: true };
+    expect(hubOf(offering({ components: parts }))?.name).toBe("Managed switch");
+  });
+
   it.each([
     ["system", { system: "System" }, "System"],
     ["assisted", { assisted: "Assisted" }, "Assisted"],

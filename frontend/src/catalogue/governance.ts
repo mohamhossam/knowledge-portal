@@ -80,6 +80,11 @@ export function conflictsFor(conflicts: SourceConflict[], productId: string, ord
   );
 }
 
+/** An open question on one line: "title: text" when it has a title, else its text. */
+export function questionLine(question: Pick<Offering["questions"][number], "title" | "text">): string {
+  return question.title ? `${question.title}: ${question.text}` : question.text;
+}
+
 /** The question a conflict raises for an offering, when it names one. */
 export function questionOf(conflict: SourceConflict, productId: string): string | null {
   return conflict.scope.find((scope) => scope.product_id === productId)?.question_id ?? null;

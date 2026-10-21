@@ -15,6 +15,7 @@ from knowledge_portal.domain.architecture.candidates import (
     CatalogueCandidate,
 )
 from knowledge_portal.infrastructure.persistence.postgres_store import PostgresStore
+from knowledge_portal.infrastructure.persistence.stored_timings import stored_timings
 
 _CANDIDATE: TypeAdapter[CatalogueCandidate] = TypeAdapter(CatalogueCandidate)
 _RUN: TypeAdapter[ExtractionRun] = TypeAdapter(ExtractionRun)
@@ -22,7 +23,7 @@ _RUN: TypeAdapter[ExtractionRun] = TypeAdapter(ExtractionRun)
 
 def _candidate(raw: object) -> CatalogueCandidate:
     try:
-        return _CANDIDATE.validate_python(raw)
+        return _CANDIDATE.validate_python(stored_timings(raw))
     except ValidationError as exc:
         raise PersistenceError("A stored catalogue suggestion is invalid.") from exc
 

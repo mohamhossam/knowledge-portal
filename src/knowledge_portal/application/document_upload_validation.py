@@ -2,7 +2,14 @@
 
 from pathlib import PurePosixPath, PureWindowsPath
 
-from knowledge_portal.application.errors import UnsupportedDocumentError
+from smb_kernel.documents.ports import DocumentScannerPort
+
+from knowledge_portal.application.errors import (
+    DocumentExtractionError,
+    MalwareRejectedError,
+    MalwareScannerUnavailableError,
+    UnsupportedDocumentError,
+)
 
 SUPPORTED_EXTENSIONS = {
     "application/pdf": ".pdf",
@@ -46,3 +53,24 @@ def validate_document_upload(
             f"Document extension and declared MIME type must agree for {kinds}."
         )
     return filename, mime_type
+
+
+def require_clean(scanner: DocumentScannerPort, content: bytes, upload: str) -> None:
+    """Refuse an upload the malware scanner flags, or on which it gives no verdict.
+
+    An upload is never taken unscanned. The scanner raises when it cannot answer: when it
+    is down, and when the file is larger than it accepts. Both are an outage the caller can
+    retry or an operator can fix, not something wrong with the file, so they refuse the
+    upload as unavailable rather than as invalid input. ``upload`` names what was sent,
+    such as "this upload".
+    """
+    try:
+        clean = scanner.scan(content)
+    except DocumentExtractionError as exc:
+        raise MalwareScannerUnavailableError(
+            f"The malware scanner gave no verdict on {upload}, so it was not taken. The "
+            "scanner may be down, or the file may be larger than it accepts: try again later, "
+            "or ask an operator to check the scanner and its size limit."
+        ) from exc
+    if not clean:
+        raise MalwareRejectedError(f"Malware scan rejected {upload}.")

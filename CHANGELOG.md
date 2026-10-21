@@ -5,6 +5,50 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ## Unreleased
 
+### Added
+
+- Sources a draft cites but doesn't register. A fact cites its source as the source's id or
+  short name, then where in it; one whose source the register doesn't hold can't show that
+  source's level or title. The Check step lists each such source with how many facts cite it
+  and a few of them, and links to the draft's register; it says so when every fact names a
+  registered source, and a failed check doesn't hold up the step. Citations that differ only
+  in case are one source. The committed catalogue cites five: "Ontology plan" Phases 1, 6 and
+  8, "ADR-0123" and "Catalogue curation". `GET /architecture-knowledge/releases/{id}/citations`; public
+  contract, additive.
+
+- Stable ids for offerings and journeys (ADR 0124, proposed). An offering or journey can be
+  given a new id from its page ("Change the id…"); the old id is kept in `former_ids`, and the
+  version's journeys and conflicts follow. Precedents, change requests, suggestions and the
+  organisation catalogue that still name the old id find it, and an address with the old id
+  opens the page under the new one. Renaming back undoes a rename. The version diff reports
+  a rename as one change with `id` first. Every catalogue file carries `former_ids`.
+  `POST /architecture-knowledge/releases/{id}/offerings/{offering_id}/rename` and
+  `.../journeys/{journey_id}/rename`. Public and internal contracts, additive; requirement-portal
+  should adopt `former_ids` (`docs/architecture/requirement-portal-handoff-catalogue.md`).
+
+- Structured fields, part 2: a call's `timing` is `Sync` or `Async`, read in any case and as
+  sources write it ("Synchronous", "Sync (callback)"); text that names no timing, or both, is
+  refused, with its place in a catalogue file. Tables read from documents keep other wording
+  out of the field, and releases, suggestions and change requests stored before load with it
+  read again. The journey editor chooses the timing. A plan characteristic carries the `amount`
+  and `unit` its value says ("200 Mbps" is 200, Mbps; "5G" is a name, not a measure). A step
+  whose point of no return is a bare "yes" says what that means; a "no" or "N/A" is not one.
+  Public contract additive but for `timing`; internal contract the same, with `timing` narrowed
+  on `POST /internal/change-requests`
+  (`docs/architecture/requirement-portal-handoff-catalogue.md`).
+
+- Structured fields for facts the screens read from prose. Offerings carry a `purpose` beside
+  the proposition; open questions a `title`; components a `hub` flag (at most one per
+  offering); order types a customer `stage` (join, change, support, leave); fallout cases the
+  `system_id` they fall out in; flow rules the `channel_id` they are taken for. Every catalogue
+  file format reads and writes them, the editors set them, and the lab and explorer read them
+  first, parsing the old prose only for a version saved before them. The explorer document
+  takes a step's `VALIDATE` role, not its words, as a validation. smb-architecture.yaml moves
+  its prose into the fields: the purpose paragraph, 12 question titles, the CPE as hub, the 19
+  order types' stages (the lab's stage table of 2026-10-14) and the two fallout cases' systems,
+  each named in its own text. Contracts, additive (public and internal: requirement-portal
+  should review the new optional fields).
+
 ### Changed
 
 - Dependabot no longer proposes TypeScript 6 or later (`.github/dependabot.yml`):
@@ -14,6 +58,31 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   image builds with once #115 moves `deploy/web` to `node:26-alpine`.
 
 ### Fixed
+
+- Opening a result a moment after typing in a find box no longer pulls the reader back to the
+  list. The box writes `?find=` to the address shortly after typing stops; when Enter opened a
+  record first, that late write landed on the list's address and replaced the record. It now
+  stays with the page it was typed on. The catalogue's keyboard journey failed about one run
+  in twenty on it.
+
+- A catalogue upload the malware scanner gives no verdict on is refused with 503
+  `malware_scanner_unavailable`, not 422 `document_extraction`: the scanner being down, or
+  the file being larger than it accepts, is an outage to retry, not a fault in the file. This
+  covers document uploads and catalogue-file preview and import. A batch upload stops at the
+  first such file instead of waiting on the scanner for each one after it; those are refused
+  unscanned, and the response still lists every file, with the ones already added. Nothing is
+  ever taken unscanned. The screens say what to do, since the service withholds an outage's
+  own message. Public contract unchanged.
+
+- Accessibility and reading fixes from the catalogue's design review. A focused field in a
+  workbench record pane, which scrolls on its own, now stays clear of a pinned editor foot
+  as it does in the page (WCAG 2.4.11). The masthead's sign-out and a search field's clear
+  button are 24px targets (WCAG 2.5.8). A diagram's "Show as table" button now says
+  "Show as drawing" once the table shows, instead of a pressed state. Lead and caption text
+  keeps to 62 characters a line, as Archivo's wide figures run long. The device an offering
+  is built on is one choice above its parts, so choosing one no longer silently clears
+  another part's box. Closing a journey's edit or remove panel gives focus back to its
+  button, as an offering's already did. A question's title field takes the full width.
 
 - Every word a diagram node shows is in its accessible name, in order (WCAG 2.5.3 Label in
   Name, which axe 4.14 checks): a node's label wraps onto as many lines as it needs and is

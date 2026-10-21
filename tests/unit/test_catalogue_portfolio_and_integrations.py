@@ -308,7 +308,9 @@ def test_the_draft_api_stores_and_returns_the_additions(client: TestClient) -> N
     ]
     (product,) = stored["products"]
     assert product["portfolio_node_id"] == "smb"
-    assert product["plans"][0]["characteristics"] == [{"name": "Download", "value": "200 Mbps"}]
+    assert product["plans"][0]["characteristics"] == [
+        {"name": "Download", "value": "200 Mbps", "amount": "200", "unit": "Mbps"}
+    ]
     assert product["business_rules"][0]["id"] == "R1"
     (journey,) = stored["journeys"]
     assert journey["activities"][1]["performer"] == "MSS team"

@@ -24,6 +24,7 @@ from knowledge_portal.application.ports.precedents import (
     PrecedentStorePort,
 )
 from knowledge_portal.application.use_cases.architecture_knowledge import KnowledgeNotFoundError
+from knowledge_portal.domain.architecture.identity import current_id
 from knowledge_portal.domain.architecture.knowledge import KnowledgeReleaseStatus
 from knowledge_portal.domain.architecture.precedents import (
     TEXT_LIMIT,
@@ -71,9 +72,8 @@ class RecordPrecedent:
             suggested_verdict=request.suggested_verdict,
             verdict=request.verdict,
             decision=request.decision,
-            offering_id=request.offering_id
-            if request.offering_id in {item.id for item in release.products}
-            else None,
+            # Kept under the offering's current id, whichever of its ids the request names.
+            offering_id=current_id(release.products, request.offering_id),
             concept_ids=tuple(item for item in request.concept_ids if item in concepts),
             systems=kept,
             decided_at=request.decided_at,

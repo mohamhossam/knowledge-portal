@@ -197,14 +197,12 @@
           "timing": {
             "anyOf": [
               {
-                "maxLength": 300,
-                "type": "string"
+                "$ref": "#/components/schemas/CallTiming"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Timing"
+            ]
           },
           "tmf_equivalent": {
             "anyOf": [
@@ -1433,6 +1431,15 @@
         ],
         "title": "BusinessRuleSchema",
         "type": "object"
+      },
+      "CallTiming": {
+        "description": "Whether a call waits for its answer.",
+        "enum": [
+          "Sync",
+          "Async"
+        ],
+        "title": "CallTiming",
+        "type": "string"
       },
       "CandidateBasis": {
         "description": "Whether the document says this outright or the model read it from what it describes.",
@@ -3767,6 +3774,17 @@
         "title": "CreateVersionRequest",
         "type": "object"
       },
+      "CustomerStage": {
+        "description": "Where an order type sits in the customer's life with the offering.",
+        "enum": [
+          "join",
+          "change",
+          "support",
+          "leave"
+        ],
+        "title": "CustomerStage",
+        "type": "string"
+      },
       "DeliveredChangeKind": {
         "description": "A change to the catalogue a delivered requirement implies.",
         "enum": [
@@ -4541,6 +4559,26 @@
         "title": "DraftedComponentResponse",
         "type": "object"
       },
+      "EntityRenameRequest": {
+        "description": "A new id for an offering or journey; the old one is kept as a former id.",
+        "properties": {
+          "expected_revision": {
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "new_id": {
+            "maxLength": 200,
+            "title": "New Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "new_id"
+        ],
+        "title": "EntityRenameRequest",
+        "type": "object"
+      },
       "EvidenceBlockKind": {
         "enum": [
           "heading",
@@ -4857,6 +4895,18 @@
             ],
             "title": "Source"
           },
+          "system_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System Id"
+          },
           "trigger": {
             "maxLength": 10000,
             "title": "Trigger",
@@ -4987,6 +5037,18 @@
               }
             ],
             "title": "Branch"
+          },
+          "channel_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel Id"
           },
           "condition": {
             "anyOf": [
@@ -6434,6 +6496,16 @@
             },
             "maxItems": 5000,
             "title": "Flow Rules",
+            "type": "array"
+          },
+          "former_ids": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Former Ids",
             "type": "array"
           },
           "id": {
@@ -8380,6 +8452,11 @@
             ],
             "title": "Description"
           },
+          "hub": {
+            "default": false,
+            "title": "Hub",
+            "type": "boolean"
+          },
           "id": {
             "maxLength": 200,
             "title": "Id",
@@ -8813,6 +8890,18 @@
             "maxLength": 10000,
             "title": "Text",
             "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
           }
         },
         "required": [
@@ -9002,6 +9091,16 @@
               }
             ],
             "title": "Source"
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomerStage"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -9337,10 +9436,34 @@
       },
       "PlanCharacteristicSchema": {
         "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
           "name": {
             "maxLength": 300,
             "title": "Name",
             "type": "string"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
           },
           "value": {
             "maxLength": 10000,
@@ -9693,6 +9816,16 @@
             ],
             "title": "Family"
           },
+          "former_ids": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Former Ids",
+            "type": "array"
+          },
           "id": {
             "maxLength": 200,
             "title": "Id",
@@ -9796,6 +9929,18 @@
               }
             ],
             "title": "Proposition"
+          },
+          "purpose": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purpose"
           },
           "questions": {
             "default": [],
@@ -13181,6 +13326,33 @@
         "title": "UnlinkedConceptSchema",
         "type": "object"
       },
+      "UnregisteredCitationResponse": {
+        "description": "What a set of the version's facts cite that is not in its source register.",
+        "properties": {
+          "cited": {
+            "title": "Cited",
+            "type": "string"
+          },
+          "examples": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Examples",
+            "type": "array"
+          },
+          "facts": {
+            "title": "Facts",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "cited",
+          "facts",
+          "examples"
+        ],
+        "title": "UnregisteredCitationResponse",
+        "type": "object"
+      },
       "UploadOutcome": {
         "enum": [
           "added",
@@ -15242,6 +15414,74 @@
         ]
       }
     },
+    "/architecture-knowledge/releases/{release_id}/citations": {
+      "get": {
+        "description": "What the version's facts cite that its source register does not hold.",
+        "operationId": "citations_architecture_knowledge_releases__release_id__citations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UnregisteredCitationResponse"
+                  },
+                  "title": "Response Citations Architecture Knowledge Releases  Release Id  Citations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Citations",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
     "/architecture-knowledge/releases/{release_id}/compare-impact": {
       "post": {
         "description": "One requirement mapped by the version in use and by this built version.",
@@ -16087,6 +16327,89 @@
         ]
       }
     },
+    "/architecture-knowledge/releases/{release_id}/journeys/{journey_id}/rename": {
+      "post": {
+        "description": "Give a journey a new id; the old id stays as a former id.",
+        "operationId": "rename_journey_architecture_knowledge_releases__release_id__journeys__journey_id__rename_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "journey_id",
+            "required": true,
+            "schema": {
+              "title": "Journey Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntityRenameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeReleaseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Rename Journey",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
     "/architecture-knowledge/releases/{release_id}/name": {
       "put": {
         "operationId": "rename_draft_architecture_knowledge_releases__release_id__name_put",
@@ -16155,6 +16478,89 @@
           }
         ],
         "summary": "Rename Draft",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
+    "/architecture-knowledge/releases/{release_id}/offerings/{offering_id}/rename": {
+      "post": {
+        "description": "Give an offering a new id; the old id stays as a former id, and the version's\njourneys and conflicts follow.",
+        "operationId": "rename_offering_architecture_knowledge_releases__release_id__offerings__offering_id__rename_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "offering_id",
+            "required": true,
+            "schema": {
+              "title": "Offering Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntityRenameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeReleaseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Rename Offering",
         "tags": [
           "architecture knowledge"
         ]

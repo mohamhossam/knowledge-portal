@@ -93,6 +93,8 @@ export type Component = {
   /** Customer-facing service specification (CFSS / PRS). */
   specCode?: string;
   mandatory: boolean | null;
+  /** The device the bundle is built on, when the version says so. */
+  hub?: boolean;
   description: string;
   systems: { systemId: string; responsibility: string }[];
   evidence: Evidence;
@@ -106,6 +108,8 @@ export type OfferingOrderType = {
   /** The delivery drop it comes in, when its source says (e.g. "P2 / P3"). */
   priority?: string;
   note?: string;
+  /** Where it sits in the customer's life (join, change, support, leave), when the version says so. */
+  stage?: string;
   evidence: Evidence;
 };
 

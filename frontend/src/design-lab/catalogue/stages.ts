@@ -15,7 +15,15 @@ export const STAGES: { id: string; name: string; blurb: string; orderTypes: stri
   { id: "leave", name: "Leave", blurb: "Ending or suspending the service", orderTypes: ["CESSREQ", "PORTOUT", "DUNNING"] },
 ];
 
-/** The stage of an order type; an unknown code is a change, no code (order tracking) is support. */
+/** An order type's stage: the one the version gives it, else the one its code has here. */
+export function stageOf(type: { code: string; stage?: string }): string {
+  return type.stage && STAGES.some((stage) => stage.id === type.stage) ? type.stage : stageOfCode(type.code);
+}
+
+/**
+ * The stage of an order type by its code, for a version that gives none (and for journeys,
+ * which name only the code); an unknown code is a change, no code (order tracking) is support.
+ */
 export function stageOfCode(code: string | null | undefined): string {
   const upper = code?.toUpperCase();
   return STAGES.find((stage) => upper && stage.orderTypes.includes(upper))?.id ?? (upper ? "change" : "support");

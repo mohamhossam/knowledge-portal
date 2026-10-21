@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from smb_kernel.documents.ports import DocumentScannerPort
 
-from knowledge_portal.application.errors import MalwareRejectedError
+from knowledge_portal.application.document_upload_validation import require_clean
 from knowledge_portal.application.ports.architecture_knowledge_repository import (
     ArchitectureKnowledgeRepositoryPort,
 )
@@ -28,9 +28,14 @@ from knowledge_portal.application.ports.identity import (
 )
 from knowledge_portal.domain.architecture.acceptance import with_provenance_kept
 from knowledge_portal.domain.architecture.channels import Channel
+from knowledge_portal.domain.architecture.citations import (
+    UnregisteredCitation,
+    unregistered_citations,
+)
 from knowledge_portal.domain.architecture.concepts import BusinessCapability
 from knowledge_portal.domain.architecture.diff import CatalogueDiff, diff_releases
 from knowledge_portal.domain.architecture.governance import KnowledgeSource, SourceConflict
+from knowledge_portal.domain.architecture.identity import renamed_journey, renamed_offering
 from knowledge_portal.domain.architecture.interfaces import SystemInterface
 from knowledge_portal.domain.architecture.journeys import Journey
 from knowledge_portal.domain.architecture.knowledge import (
@@ -283,6 +288,45 @@ class ManageArchitectureKnowledge:
             raise KnowledgeNotFoundError(f"System {system_id!r} not found.")
         return self.update(release_id, expected_revision, actor, systems=systems)
 
+    def unregistered_citations(
+        self, release_id: str, actor: Actor
+    ) -> tuple[UnregisteredCitation, ...]:
+        """What the version's facts cite that is not in its source register."""
+        require_maintainer(actor)
+        return unregistered_citations(self.get(release_id))
+
+    def rename_offering(
+        self, release_id: str, expected_revision: int, old_id: str, new_id: str, actor: Actor
+    ) -> ArchitectureKnowledge:
+        """Give an offering a new id, keeping the old one as a former id and moving every
+        reference in the version to the new one."""
+        require_maintainer(actor)
+        current = self.get(release_id)
+        products, journeys, conflicts = renamed_offering(
+            current.products, current.journeys, current.conflicts, old_id, new_id
+        )
+        return self.update(
+            release_id,
+            expected_revision,
+            actor,
+            products=products,
+            journeys=journeys,
+            conflicts=conflicts,
+        )
+
+    def rename_journey(
+        self, release_id: str, expected_revision: int, old_id: str, new_id: str, actor: Actor
+    ) -> ArchitectureKnowledge:
+        """Give a journey a new id, keeping the old one as a former id."""
+        require_maintainer(actor)
+        current = self.get(release_id)
+        return self.update(
+            release_id,
+            expected_revision,
+            actor,
+            journeys=renamed_journey(current.journeys, old_id, new_id),
+        )
+
     def mark_built(
         self,
         release_id: str,
@@ -365,8 +409,7 @@ class ManageArchitectureKnowledge:
             raise InvalidKnowledgeError("The catalogue file is empty.")
         # Catalogue files are parsed (XLSX/YAML/CSV) and kept, so they pass the same
         # malware scan as document uploads before anything reads them.
-        if not self._scanner.scan(content):
-            raise MalwareRejectedError("Malware scan rejected this catalogue file.")
+        require_clean(self._scanner, content, "this catalogue file")
         imported = self._files.read(CatalogueFileFormat.from_filename(filename), content)
         return replace(
             current,

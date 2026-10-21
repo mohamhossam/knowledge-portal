@@ -2243,7 +2243,7 @@
    "family": "Business internet bundles",
    "version": null,
    "lifecycle": null,
-   "proposition": "The premium flavour of Business Pro: fibre (GPON) internet on Fortinet 90G/120G CPEs, with SD-WAN and FortiPortal, firewall, static IP, proactive monitoring, a managed FortiAP and optional Backup 5G.\n\nGives a small or medium business a secure, managed business connection it can run itself: one premium bundle instead of separate internet, security and Wi-Fi products, delivered through the Summary Order Fulfillment of the SMB Framework (Order to Delivery).",
+   "proposition": "The premium flavour of Business Pro: fibre (GPON) internet on Fortinet 90G/120G CPEs, with SD-WAN and FortiPortal, firewall, static IP, proactive monitoring, a managed FortiAP and optional Backup 5G.",
    "rules": [],
    "order_types": [
     {
@@ -2258,7 +2258,8 @@
       "b2b-web",
       "smb-app"
      ],
-     "delivery_drop": "P1"
+     "delivery_drop": "P1",
+     "stage": "join"
     },
     {
      "code": "MIGRATE",
@@ -2271,7 +2272,8 @@
       "bcrm",
       "smb-app"
      ],
-     "delivery_drop": "P1 / P3"
+     "delivery_drop": "P1 / P3",
+     "stage": "join"
     },
     {
      "code": "PORTIN",
@@ -2286,7 +2288,8 @@
       "smb-app",
       "nps"
      ],
-     "delivery_drop": "P3"
+     "delivery_drop": "P3",
+     "stage": "join"
     },
     {
      "code": "UPDOWNGRD",
@@ -2299,7 +2302,8 @@
       "bcrm",
       "smb-app"
      ],
-     "delivery_drop": "P2 / P3"
+     "delivery_drop": "P2 / P3",
+     "stage": "change"
     },
     {
      "code": "ADDDELETE",
@@ -2313,7 +2317,8 @@
       "b2b-web",
       "smb-app"
      ],
-     "delivery_drop": "P2 / P4"
+     "delivery_drop": "P2 / P4",
+     "stage": "change"
     },
     {
      "code": "MODSUBS",
@@ -2326,7 +2331,8 @@
       "b2b-web",
       "smb-app"
      ],
-     "delivery_drop": "P4"
+     "delivery_drop": "P4",
+     "stage": "change"
     },
     {
      "code": "CHINTUSRN",
@@ -2340,7 +2346,8 @@
       "b2b-web",
       "smb-app"
      ],
-     "delivery_drop": "P2 / P4"
+     "delivery_drop": "P2 / P4",
+     "stage": "change"
     },
     {
      "code": "CHGPSWD",
@@ -2354,7 +2361,8 @@
       "b2b-web",
       "smb-app"
      ],
-     "delivery_drop": "P2 / P4"
+     "delivery_drop": "P2 / P4",
+     "stage": "change"
     },
     {
      "code": "CHGDOMN",
@@ -2368,7 +2376,8 @@
       "b2b-web",
       "smb-app"
      ],
-     "delivery_drop": "P4"
+     "delivery_drop": "P4",
+     "stage": "change"
     },
     {
      "code": "CHGSUBDOMN",
@@ -2382,7 +2391,8 @@
       "b2b-web",
       "smb-app"
      ],
-     "delivery_drop": "P4"
+     "delivery_drop": "P4",
+     "stage": "change"
     },
     {
      "code": "CHNUMBER",
@@ -2396,7 +2406,8 @@
       "b2b-web",
       "smb-app"
      ],
-     "delivery_drop": "P4"
+     "delivery_drop": "P4",
+     "stage": "change"
     },
     {
      "code": "FLEXIMINMOV",
@@ -2410,7 +2421,8 @@
       "b2b-web",
       "smb-app"
      ],
-     "delivery_drop": "P4"
+     "delivery_drop": "P4",
+     "stage": "change"
     },
     {
      "code": "TECHVISIT",
@@ -2424,7 +2436,8 @@
       "b2b-web",
       "smb-app"
      ],
-     "delivery_drop": "P4"
+     "delivery_drop": "P4",
+     "stage": "support"
     },
     {
      "code": "DVCREP",
@@ -2436,7 +2449,8 @@
      "channels": [
       "cim"
      ],
-     "delivery_drop": "P3 / P4"
+     "delivery_drop": "P3 / P4",
+     "stage": "support"
     },
     {
      "code": "EXTSHIFTSITE",
@@ -2450,7 +2464,8 @@
       "b2b-web",
       "smb-app"
      ],
-     "delivery_drop": "P3"
+     "delivery_drop": "P3",
+     "stage": "change"
     },
     {
      "code": "RENEWAL",
@@ -2462,7 +2477,8 @@
      "channels": [
       "ehs"
      ],
-     "delivery_drop": "P4"
+     "delivery_drop": "P4",
+     "stage": "change"
     },
     {
      "code": "CESSREQ",
@@ -2476,7 +2492,8 @@
       "b2b-web",
       "smb-app"
      ],
-     "delivery_drop": "P2"
+     "delivery_drop": "P2",
+     "stage": "leave"
     },
     {
      "code": "PORTOUT",
@@ -2488,7 +2505,8 @@
      "channels": [
       "nps"
      ],
-     "delivery_drop": "P3"
+     "delivery_drop": "P3",
+     "stage": "leave"
     },
     {
      "code": "DUNNING",
@@ -2498,7 +2516,8 @@
      "confidence": "confirmed",
      "source": "SDD v2.3 · §P3 ADO 259162",
      "channels": [],
-     "delivery_drop": "P3"
+     "delivery_drop": "P3",
+     "stage": "leave"
     }
    ],
    "components": [
@@ -2557,7 +2576,8 @@
       "cap-fibre-access"
      ],
      "unlinked_reason": null,
-     "kind_id": null
+     "kind_id": null,
+     "hub": false
     },
     {
      "id": "cpe",
@@ -2614,7 +2634,8 @@
       "cap-cpe-provisioning"
      ],
      "unlinked_reason": null,
-     "kind_id": null
+     "kind_id": null,
+     "hub": true
     },
     {
      "id": "firewall",
@@ -2662,7 +2683,8 @@
       "cap-firewall"
      ],
      "unlinked_reason": null,
-     "kind_id": null
+     "kind_id": null,
+     "hub": false
     },
     {
      "id": "selfservice",
@@ -2719,7 +2741,8 @@
       "cap-customer-self-management"
      ],
      "unlinked_reason": null,
-     "kind_id": null
+     "kind_id": null,
+     "hub": false
     },
     {
      "id": "sdwan",
@@ -2758,7 +2781,8 @@
       "cap-sdwan"
      ],
      "unlinked_reason": null,
-     "kind_id": null
+     "kind_id": null,
+     "hub": false
     },
     {
      "id": "ap",
@@ -2815,7 +2839,8 @@
       "cap-wifi-access"
      ],
      "unlinked_reason": null,
-     "kind_id": null
+     "kind_id": null,
+     "hub": false
     },
     {
      "id": "static-ip",
@@ -2846,7 +2871,8 @@
       "cap-static-ip"
      ],
      "unlinked_reason": null,
-     "kind_id": null
+     "kind_id": null,
+     "hub": false
     },
     {
      "id": "monitoring",
@@ -2877,7 +2903,8 @@
       "cap-proactive-monitoring"
      ],
      "unlinked_reason": null,
-     "kind_id": null
+     "kind_id": null,
+     "hub": false
     },
     {
      "id": "backup-5g",
@@ -2917,7 +2944,8 @@
       "cap-mobile-backup-access"
      ],
      "unlinked_reason": null,
-     "kind_id": null
+     "kind_id": null,
+     "hub": false
     }
    ],
    "values": [
@@ -3068,13 +3096,15 @@
       "trigger": "Stale or incomplete status",
       "handling": "Tracking can show a stale status if CWOM fails to send a milestone or it isn't captured.",
       "confidence": "confirmed",
-      "source": "SMB reference v1.0 · §5 Known Issues"
+      "source": "SMB reference v1.0 · §5 Known Issues",
+      "system_id": "cwom"
      },
      {
       "trigger": "Deleted items aren't tracked",
       "handling": "BPM doesn't track order items with type DELETE on MIGRATE or UPDOWNGRD orders.",
       "confidence": "confirmed",
-      "source": "SDD v2.3 · §BPM General Note"
+      "source": "SDD v2.3 · §BPM General Note",
+      "system_id": "ibm-bpm"
      }
     ],
     "confidence": null,
@@ -3089,99 +3119,111 @@
    "questions": [
     {
      "id": "F3",
-     "text": "RTF → CWOM call for new activation: The reference says only “CWOM format”. The SDD names createShoppingCart and refreshShoppingCart for migration and up/downgrade.",
+     "text": "The reference says only “CWOM format”. The SDD names createShoppingCart and refreshShoppingCart for migration and up/downgrade.",
      "impact": null,
      "confidence": "confirmed",
      "source": "SMB reference v1.0 · §3.1 step 7",
-     "order_types": []
+     "order_types": [],
+     "title": "RTF → CWOM call for new activation"
     },
     {
      "id": "F4",
-     "text": "Workflows and points of no return: The SDD's workflow annex (WF-1 to WF-7) and PONR definitions are “yet to be provided”.",
+     "text": "The SDD's workflow annex (WF-1 to WF-7) and PONR definitions are “yet to be provided”.",
      "impact": null,
      "confidence": "confirmed",
      "source": "SDD v2.3 · Annexure: Workflows",
-     "order_types": []
+     "order_types": [],
+     "title": "Workflows and points of no return"
     },
     {
      "id": "F5",
-     "text": "E2ESO technical proposal and interface agreement: Both annexes are empty, so the CWOM ↔ E2ESO calls are known by purpose only.",
+     "text": "Both annexes are empty, so the CWOM ↔ E2ESO calls are known by purpose only.",
      "impact": null,
      "confidence": "confirmed",
      "source": "SDD v2.3 · Annexure: E2ESO TP, IAD",
-     "order_types": []
+     "order_types": [],
+     "title": "E2ESO technical proposal and interface agreement"
     },
     {
      "id": "F6",
-     "text": "Integration style and timing: Most calls don't say whether they are REST, SOAP or messages, or whether they are synchronous.",
+     "text": "Most calls don't say whether they are REST, SOAP or messages, or whether they are synchronous.",
      "impact": null,
      "confidence": "confirmed",
      "source": "SDD v2.3 · Throughout",
-     "order_types": []
+     "order_types": [],
+     "title": "Integration style and timing"
     },
     {
      "id": "F7",
-     "text": "Plan prices: Neither source states the plans' prices. The only amount is the 90G/120G CPE exit charge, AED 650, to be confirmed.",
+     "text": "Neither source states the plans' prices. The only amount is the 90G/120G CPE exit charge, AED 650, to be confirmed.",
      "impact": null,
      "confidence": "confirmed",
      "source": "SDD v2.3 · §ADO 438907",
-     "order_types": []
+     "order_types": [],
+     "title": "Plan prices"
     },
     {
      "id": "F8",
-     "text": "Device codes: SIC codes and some models of the 90G, 120G and FortiAP are TBD.",
+     "text": "SIC codes and some models of the 90G, 120G and FortiAP are TBD.",
      "impact": null,
      "confidence": "confirmed",
      "source": "SDD v2.3 · §P1 Catalog Modelling",
-     "order_types": []
+     "order_types": [],
+     "title": "Device codes"
     },
     {
      "id": "F9",
-     "text": "Milestone names: No milestone dictionary in either source.",
+     "text": "No milestone dictionary in either source.",
      "impact": null,
      "confidence": "confirmed",
      "source": "SDD v2.3 · §BPM",
-     "order_types": []
+     "order_types": [],
+     "title": "Milestone names"
     },
     {
      "id": "F10",
-     "text": "MSS ticketing system: The system that carries the SD-WAN onboarding ticket isn't named.",
+     "text": "The system that carries the SD-WAN onboarding ticket isn't named.",
      "impact": null,
      "confidence": "confirmed",
      "source": "SDD v2.3 · §P1 New Activation",
-     "order_types": []
+     "order_types": [],
+     "title": "MSS ticketing system"
     },
     {
      "id": "F11",
-     "text": "Names used but not defined: CPP, ODS (DWH), Bid Mgmt, PM tool and “Billing” are named as integrations but not described as systems.",
+     "text": "CPP, ODS (DWH), Bid Mgmt, PM tool and “Billing” are named as integrations but not described as systems.",
      "impact": null,
      "confidence": "confirmed",
      "source": "SMB reference v1.0 · §1; §5",
-     "order_types": []
+     "order_types": [],
+     "title": "Names used but not defined"
     },
     {
      "id": "F12",
-     "text": "Who starts dunning: The SDD details the fulfilment of TOSS, reconnect and CESSNP but not the system that raises them.",
+     "text": "The SDD details the fulfilment of TOSS, reconnect and CESSNP but not the system that raises them.",
      "impact": null,
      "confidence": "confirmed",
      "source": "SDD v2.3 · §P3 ADO 259162",
-     "order_types": []
+     "order_types": [],
+     "title": "Who starts dunning"
     },
     {
      "id": "F14",
-     "text": "Section references: The reference's rules point to Section 4 for process flows; they are in Section 3.",
+     "text": "The reference's rules point to Section 4 for process flows; they are in Section 3.",
      "impact": null,
      "confidence": "confirmed",
      "source": "SMB reference v1.0 · §0 Rules",
-     "order_types": []
+     "order_types": [],
+     "title": "Section references"
     },
     {
      "id": "F15",
-     "text": "SDD version: The cover says version 2.2; the revision history goes to 2.3 (11/09/2026), and 2.2's date is incomplete.",
+     "text": "The cover says version 2.2; the revision history goes to 2.3 (11/09/2026), and 2.2's date is incomplete.",
      "impact": null,
      "confidence": "confirmed",
      "source": "SDD v2.3 · Cover; Revision History",
-     "order_types": []
+     "order_types": [],
+     "title": "SDD version"
     }
    ],
    "decisions": [],
@@ -3194,23 +3236,33 @@
      "characteristics": [
       {
        "name": "Download",
-       "value": "200 Mbps"
+       "value": "200 Mbps",
+       "amount": "200",
+       "unit": "Mbps"
       },
       {
        "name": "Upload",
-       "value": "100 Mbps"
+       "value": "100 Mbps",
+       "amount": "100",
+       "unit": "Mbps"
       },
       {
        "name": "CPE",
-       "value": "Fortinet 90G"
+       "value": "Fortinet 90G",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Access point",
-       "value": "FAP-23JF-E"
+       "value": "FAP-23JF-E",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Backup 5G",
-       "value": "IN offer 862 (200 Mbps)"
+       "value": "IN offer 862 (200 Mbps)",
+       "amount": null,
+       "unit": null
       }
      ],
      "description": null,
@@ -3222,23 +3274,33 @@
      "characteristics": [
       {
        "name": "Download",
-       "value": "300 Mbps"
+       "value": "300 Mbps",
+       "amount": "300",
+       "unit": "Mbps"
       },
       {
        "name": "Upload",
-       "value": "150 Mbps"
+       "value": "150 Mbps",
+       "amount": "150",
+       "unit": "Mbps"
       },
       {
        "name": "CPE",
-       "value": "Fortinet 90G"
+       "value": "Fortinet 90G",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Access point",
-       "value": "FAP-23JF-E"
+       "value": "FAP-23JF-E",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Backup 5G",
-       "value": "IN offer 864 (300 Mbps)"
+       "value": "IN offer 864 (300 Mbps)",
+       "amount": null,
+       "unit": null
       }
      ],
      "description": null,
@@ -3250,23 +3312,33 @@
      "characteristics": [
       {
        "name": "Download",
-       "value": "400 Mbps"
+       "value": "400 Mbps",
+       "amount": "400",
+       "unit": "Mbps"
       },
       {
        "name": "Upload",
-       "value": "200 Mbps"
+       "value": "200 Mbps",
+       "amount": "200",
+       "unit": "Mbps"
       },
       {
        "name": "CPE",
-       "value": "Fortinet 90G"
+       "value": "Fortinet 90G",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Access point",
-       "value": "FAP-23JF-E"
+       "value": "FAP-23JF-E",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Backup 5G",
-       "value": "IN offer 866 (400 Mbps)"
+       "value": "IN offer 866 (400 Mbps)",
+       "amount": null,
+       "unit": null
       }
      ],
      "description": null,
@@ -3278,23 +3350,33 @@
      "characteristics": [
       {
        "name": "Download",
-       "value": "600 Mbps"
+       "value": "600 Mbps",
+       "amount": "600",
+       "unit": "Mbps"
       },
       {
        "name": "Upload",
-       "value": "300 Mbps"
+       "value": "300 Mbps",
+       "amount": "300",
+       "unit": "Mbps"
       },
       {
        "name": "CPE",
-       "value": "Fortinet 90G"
+       "value": "Fortinet 90G",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Access point",
-       "value": "FAP-23JF-E"
+       "value": "FAP-23JF-E",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Backup 5G",
-       "value": "IN offer 869 (600 Mbps)"
+       "value": "IN offer 869 (600 Mbps)",
+       "amount": null,
+       "unit": null
       }
      ],
      "description": null,
@@ -3306,23 +3388,33 @@
      "characteristics": [
       {
        "name": "Download",
-       "value": "800 Mbps"
+       "value": "800 Mbps",
+       "amount": "800",
+       "unit": "Mbps"
       },
       {
        "name": "Upload",
-       "value": "400 Mbps"
+       "value": "400 Mbps",
+       "amount": "400",
+       "unit": "Mbps"
       },
       {
        "name": "CPE",
-       "value": "Fortinet 90G"
+       "value": "Fortinet 90G",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Access point",
-       "value": "FAP-23JF-E"
+       "value": "FAP-23JF-E",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Backup 5G",
-       "value": "IN offer 872 (800 Mbps)"
+       "value": "IN offer 872 (800 Mbps)",
+       "amount": null,
+       "unit": null
       }
      ],
      "description": null,
@@ -3334,23 +3426,33 @@
      "characteristics": [
       {
        "name": "Download",
-       "value": "1024 Mbps"
+       "value": "1024 Mbps",
+       "amount": "1024",
+       "unit": "Mbps"
       },
       {
        "name": "Upload",
-       "value": "512 Mbps"
+       "value": "512 Mbps",
+       "amount": "512",
+       "unit": "Mbps"
       },
       {
        "name": "CPE",
-       "value": "Fortinet 120G"
+       "value": "Fortinet 120G",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Access point",
-       "value": "FAP-431F-E"
+       "value": "FAP-431F-E",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Backup 5G",
-       "value": "IN offer 874 (1 Gbps)"
+       "value": "IN offer 874 (1 Gbps)",
+       "amount": null,
+       "unit": null
       }
      ],
      "description": null,
@@ -3500,7 +3602,9 @@
      "source": "SDD v2.3 · §P1 FortiPortal Access; §P2 ADO 259161"
     }
    ],
-   "accepted": []
+   "accepted": [],
+   "purpose": "Gives a small or medium business a secure, managed business connection it can run itself: one premium bundle instead of separate internet, security and Wi-Fi products, delivered through the Summary Order Fulfillment of the SMB Framework (Order to Delivery).",
+   "former_ids": []
   }
  ],
  "journeys": [
@@ -4243,7 +4347,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -4254,7 +4359,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -4265,7 +4371,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -4276,7 +4383,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "parallel",
@@ -4287,7 +4395,8 @@
      "parallel_group": "sub-orders",
      "rejoin_at": "460",
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "parallel",
@@ -4298,7 +4407,8 @@
      "parallel_group": "sub-orders",
      "rejoin_at": "460",
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "parallel",
@@ -4309,7 +4419,8 @@
      "parallel_group": "sub-orders",
      "rejoin_at": "460",
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -4320,7 +4431,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -4331,7 +4443,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "parallel",
@@ -4342,7 +4455,8 @@
      "parallel_group": "sub-orders",
      "rejoin_at": "460",
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "parallel",
@@ -4353,7 +4467,8 @@
      "parallel_group": "sub-orders",
      "rejoin_at": "460",
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "parallel",
@@ -4364,7 +4479,8 @@
      "parallel_group": "sub-orders",
      "rejoin_at": "460",
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -4375,7 +4491,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     }
    ],
    "integrations": [
@@ -5863,7 +5980,8 @@
      "label": "rejoin"
     }
    ],
-   "accepted": []
+   "accepted": [],
+   "former_ids": []
   },
   {
    "id": "bpp-updowngrd",
@@ -6403,7 +6521,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -6414,7 +6533,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -6425,7 +6545,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -6436,7 +6557,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -6447,7 +6569,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -6458,7 +6581,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -6469,7 +6593,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -6480,7 +6605,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -6491,7 +6617,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -6502,7 +6629,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -6513,7 +6641,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -6524,7 +6653,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     }
    ],
    "integrations": [
@@ -7184,7 +7314,8 @@
      "label": "Yes"
     }
    ],
-   "accepted": []
+   "accepted": [],
+   "former_ids": []
   },
   {
    "id": "bpp-order-tracking",
@@ -7866,7 +7997,8 @@
      "label": null
     }
    ],
-   "accepted": []
+   "accepted": [],
+   "former_ids": []
   },
   {
    "id": "bpp-migrate",
@@ -8484,7 +8616,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -8495,7 +8628,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -8506,7 +8640,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -8517,7 +8652,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -8528,7 +8664,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -8539,7 +8676,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -8550,7 +8688,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -8561,7 +8700,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     }
    ],
    "integrations": [
@@ -9161,7 +9301,8 @@
      "label": "rejoin"
     }
    ],
-   "accepted": []
+   "accepted": [],
+   "former_ids": []
   },
   {
    "id": "bpp-cessation",
@@ -9675,7 +9816,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -9686,7 +9828,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -9697,7 +9840,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -9708,7 +9852,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -9719,7 +9864,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -9730,7 +9876,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -9741,7 +9888,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -9752,7 +9900,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -9763,7 +9912,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     }
    ],
    "integrations": [
@@ -10271,7 +10421,8 @@
      "label": "rejoin"
     }
    ],
-   "accepted": []
+   "accepted": [],
+   "former_ids": []
   },
   {
    "id": "bpp-extshift",
@@ -10707,7 +10858,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -10718,7 +10870,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -10729,7 +10882,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -10740,7 +10894,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -10751,7 +10906,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -10762,7 +10918,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -10773,7 +10930,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -10784,7 +10942,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -10795,7 +10954,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     }
    ],
    "integrations": [
@@ -11255,7 +11415,8 @@
      "label": "rejoin"
     }
    ],
-   "accepted": []
+   "accepted": [],
+   "former_ids": []
   },
   {
    "id": "bpp-dunning",
@@ -11535,7 +11696,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -11546,7 +11708,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -11557,7 +11720,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -11568,7 +11732,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -11579,7 +11744,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -11590,7 +11756,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -11601,7 +11768,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -11612,7 +11780,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -11623,7 +11792,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -11634,7 +11804,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -11645,7 +11816,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -11656,7 +11828,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     }
    ],
    "integrations": [
@@ -11948,7 +12121,8 @@
      "label": "rejoin"
     }
    ],
-   "accepted": []
+   "accepted": [],
+   "former_ids": []
   },
   {
    "id": "bpp-portin",
@@ -12206,7 +12380,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -12217,7 +12392,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -12228,7 +12404,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -12239,7 +12416,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     }
    ],
    "integrations": [
@@ -12679,7 +12857,8 @@
      "label": "rejoin"
     }
    ],
-   "accepted": []
+   "accepted": [],
+   "former_ids": []
   },
   {
    "id": "bpp-portout",
@@ -12881,7 +13060,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -12892,7 +13072,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -12903,7 +13084,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     }
    ],
    "integrations": [
@@ -13131,7 +13313,8 @@
      "label": "rejoin"
     }
    ],
-   "accepted": []
+   "accepted": [],
+   "former_ids": []
   },
   {
    "id": "bpp-dvcrep",
@@ -13489,7 +13672,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -13500,7 +13684,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -13511,7 +13696,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -13522,7 +13708,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -13533,7 +13720,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -13544,7 +13732,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -13555,7 +13744,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -13566,7 +13756,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     }
    ],
    "integrations": [
@@ -13842,7 +14033,8 @@
      "label": "Yes"
     }
    ],
-   "accepted": []
+   "accepted": [],
+   "former_ids": []
   },
   {
    "id": "bpp-renewal",
@@ -14174,7 +14366,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -14185,7 +14378,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -14196,7 +14390,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -14207,7 +14402,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -14218,7 +14414,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     }
    ],
    "integrations": [
@@ -14474,7 +14671,8 @@
      "label": "rejoin"
     }
    ],
-   "accepted": []
+   "accepted": [],
+   "former_ids": []
   },
   {
    "id": "bpp-adddelete",
@@ -14728,7 +14926,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -14739,7 +14938,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -14750,7 +14950,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -14761,7 +14962,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -14772,7 +14974,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     }
    ],
    "integrations": [
@@ -14970,7 +15173,8 @@
      "label": "rejoin"
     }
    ],
-   "accepted": []
+   "accepted": [],
+   "former_ids": []
   },
   {
    "id": "bpp-chintusrn",
@@ -15172,7 +15376,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -15183,7 +15388,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     }
    ],
    "integrations": [
@@ -15325,7 +15531,8 @@
      "label": "Yes"
     }
    ],
-   "accepted": []
+   "accepted": [],
+   "former_ids": []
   },
   {
    "id": "bpp-chgpswd",
@@ -15527,7 +15734,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -15538,7 +15746,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     }
    ],
    "integrations": [
@@ -15680,7 +15889,8 @@
      "label": "Yes"
     }
    ],
-   "accepted": []
+   "accepted": [],
+   "former_ids": []
   },
   {
    "id": "bpp-chgdomn",
@@ -15882,7 +16092,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -15893,7 +16104,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     }
    ],
    "integrations": [
@@ -16035,7 +16247,8 @@
      "label": "Yes"
     }
    ],
-   "accepted": []
+   "accepted": [],
+   "former_ids": []
   },
   {
    "id": "bpp-chgsubdomn",
@@ -16237,7 +16450,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -16248,7 +16462,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     }
    ],
    "integrations": [
@@ -16390,7 +16605,8 @@
      "label": "Yes"
     }
    ],
-   "accepted": []
+   "accepted": [],
+   "former_ids": []
   },
   {
    "id": "bpp-chnumber",
@@ -16592,7 +16808,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -16603,7 +16820,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     }
    ],
    "integrations": [
@@ -16745,7 +16963,8 @@
      "label": "Yes"
     }
    ],
-   "accepted": []
+   "accepted": [],
+   "former_ids": []
   },
   {
    "id": "bpp-fleximinmov",
@@ -16947,7 +17166,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -16958,7 +17178,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     }
    ],
    "integrations": [
@@ -17100,7 +17321,8 @@
      "label": "Yes"
     }
    ],
-   "accepted": []
+   "accepted": [],
+   "former_ids": []
   },
   {
    "id": "bpp-techvisit",
@@ -17302,7 +17524,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -17313,7 +17536,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     }
    ],
    "integrations": [
@@ -17455,7 +17679,8 @@
      "label": "Yes"
     }
    ],
-   "accepted": []
+   "accepted": [],
+   "former_ids": []
   },
   {
    "id": "bpp-modsubs",
@@ -17683,7 +17908,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     },
     {
      "kind": "decision",
@@ -17694,7 +17920,8 @@
      "parallel_group": null,
      "rejoin_at": null,
      "confidence": null,
-     "source": null
+     "source": null,
+     "channel_id": null
     }
    ],
    "integrations": [
@@ -17866,7 +18093,8 @@
      "label": "Yes"
     }
    ],
-   "accepted": []
+   "accepted": [],
+   "former_ids": []
   }
  ],
  "channels": [

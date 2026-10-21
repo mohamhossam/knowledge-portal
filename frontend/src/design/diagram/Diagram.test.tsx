@@ -105,10 +105,11 @@ describe("Show as table", () => {
     const user = userEvent.setup();
     render(<Diagram label="CWOM in context" layout={context} />);
     const toggle = screen.getByRole("button", { name: "Show as table" });
-    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    expect(toggle).not.toHaveAttribute("aria-pressed");
 
     await user.click(toggle);
-    expect(toggle).toHaveAttribute("aria-pressed", "true");
+    // The same button, now naming the way back; focus stays on it.
+    expect(toggle).toHaveAccessibleName("Show as drawing");
     expect(toggle).toHaveFocus();
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
     const table = screen.getByRole("table", { name: "CWOM in context" });

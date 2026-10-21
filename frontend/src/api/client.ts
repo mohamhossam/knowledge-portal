@@ -6,7 +6,7 @@
  * every request still in flight, so one person's answer never lands on
  * another's screen.
  */
-import { ApiError, normalizeErrorDetail } from "./errors";
+import { ApiError, codeWords, normalizeErrorDetail } from "./errors";
 import type { components } from "./schema";
 
 type Schemas = components["schemas"];
@@ -138,6 +138,7 @@ export type ReferenceFlag = Schemas["ReferenceFlagResponse"];
 type SampleRequirements = Schemas["SampleRequirementsResponse"];
 export type SampleRequirement = Schemas["SampleRequirementSchema"];
 export type ImpactComparison = Schemas["ImpactComparisonResponse"];
+export type UnregisteredCitation = Schemas["UnregisteredCitationResponse"];
 export type DraftUpdate = Schemas["DraftUpdateRequest"];
 /** A change request from Requirement AI waiting in the inbox (requirement-portal ADR-0101, step 7). */
 export type ChangeRequest = Schemas["ChangeRequestResponse"];
@@ -186,10 +187,11 @@ function responseError(status: number, payload: unknown): ApiError {
   const value = typeof payload === "object" && payload !== null
     ? payload as Record<string, unknown>
     : {};
+  const code = typeof value.code === "string" ? value.code : undefined;
   return new ApiError(
     status,
-    normalizeErrorDetail(payload, `Request failed with status ${status}.`),
-    typeof value.code === "string" ? value.code : undefined,
+    codeWords(code) ?? normalizeErrorDetail(payload, `Request failed with status ${status}.`),
+    code,
     typeof value.correlation_id === "string" ? value.correlation_id : undefined,
   );
 }
@@ -272,6 +274,11 @@ export const api = {
     (await send(`${releasePath(releaseId)}/catalogue-file?format=${format}`)).blob(),
   /** Starts the one draft: a copy of the version in service. */
   createDraft: (name: string) => post<Release>("/architecture-knowledge/releases", { name }),
+  /** What the version's facts cite that its source register does not hold. */
+  citations: (releaseId: string) => apiRequest<UnregisteredCitation[]>(`${releasePath(releaseId)}/citations`),
+  /** A new id for an offering or journey; the old one is kept as a former id. */
+  renameEntity: (releaseId: string, kind: "offerings" | "journeys", id: string, body: { expected_revision: number; new_id: string }) =>
+    post<Release>(`${releasePath(releaseId)}/${kind}/${encodeURIComponent(id)}/rename`, body),
   renameDraft: (releaseId: string, body: { expected_revision: number; name: string }) =>
     apiRequest<Release>(`${releasePath(releaseId)}/name`, { method: "PUT", body: JSON.stringify(body) }),
   discardDraft: async (releaseId: string, expectedRevision: number) => {

@@ -33,7 +33,12 @@ export function useEditing(release: Release) {
     mutationFn: (body: DraftUpdate) => api.saveDraft(release.id, body),
     onSuccess: settle,
   });
-  return { saveSystem, removeSystem, saveDraft };
+  const renameEntity = useMutation({
+    mutationFn: ({ kind, id, newId }: { kind: "offerings" | "journeys"; id: string; newId: string }) =>
+      api.renameEntity(release.id, kind, id, { expected_revision: release.revision, new_id: newId }),
+    onSuccess: settle,
+  });
+  return { saveSystem, removeSystem, saveDraft, renameEntity };
 }
 
 /** The draft's build for matching, checked every few seconds while it runs. */

@@ -53,6 +53,8 @@ function renderStep(
   vi.spyOn(api, "suggestions").mockResolvedValue({ release_id: "d", release_revision: release.revision, suggestions, runs: [] } as never);
   vi.spyOn(api, "extractions").mockResolvedValue(extractions);
   vi.spyOn(api, "buildJob").mockResolvedValue(null);
+  // Nothing unregistered unless a test says otherwise.
+  if (!vi.isMockFunction(api.citations)) vi.spyOn(api, "citations").mockResolvedValue([]);
   vi.spyOn(api, "releaseChanges").mockResolvedValue({
     base_release_id: "live", draft_release_id: "d",
     changes: [{ item: "system", key: "order-hub", label: "Order Hub", change: "added", fields: [] }],
@@ -358,6 +360,33 @@ describe("Check", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Compare all 1" }));
     expect(await screen.findByText("Now also finds Order Hub")).toBeInTheDocument();
     expect(screen.getByText(/All compared:/)).toHaveTextContent("1 mapping would move.");
+  });
+});
+
+describe("Check: sources it cites but doesn't register", () => {
+  const section = async () => (await screen.findByRole("heading", { name: /Sources it cites but doesn’t register/ })).closest("section")!;
+
+  it("lists each one with how many facts cite it and a few of them, and where to register it", async () => {
+    vi.spyOn(api, "citations").mockResolvedValue([
+      { cited: "Ontology plan Phase 8", facts: 68, examples: ["Realisation Fortinet HE CPE", "Realisation CFSS_ONPREM_FIREWALL_HE"] },
+    ]);
+    renderStep("check");
+    const found = within(await section());
+    expect(await found.findByText("Ontology plan Phase 8")).toBeInTheDocument();
+    expect(found.getByText(/Cited by 68 facts, such as Realisation Fortinet HE CPE; Realisation CFSS_ONPREM_FIREWALL_HE/)).toBeInTheDocument();
+    expect(found.getByRole("link", { name: "Register the source" })).toHaveAttribute("href", "/architecture/versions/d/governance");
+  });
+
+  it("says so when every fact names a registered source", async () => {
+    renderStep("check");
+    expect(await within(await section()).findByText("Every fact names a registered source.")).toBeInTheDocument();
+  });
+
+  it("says the check failed without holding up the rest of the step", async () => {
+    vi.spyOn(api, "citations").mockRejectedValue(new Error("The knowledge service is unavailable."));
+    renderStep("check");
+    expect(await within(await section()).findByText(/couldn’t be checked: The knowledge service is unavailable\./)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Next: publish" })).toBeInTheDocument();
   });
 });
 

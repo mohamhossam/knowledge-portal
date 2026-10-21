@@ -9,6 +9,13 @@ import { ChannelChoices } from "./OfferingEditor";
 type Rule = Journey["flow_rules"][number];
 type Handover = Journey["integrations"][number];
 
+// Whether a call waits for its answer; most sources don't say.
+const TIMINGS = [
+  { value: "", label: "Not said" },
+  { value: "Sync", label: "Sync: waits for its answer" },
+  { value: "Async", label: "Async: carries on" },
+];
+
 const CONFIDENCE_OPTIONS = [
   { value: "", label: "Not stated" },
   ...(Object.keys(CONFIDENCE) as SourceConfidence[]).map((value) => ({ value, label: CONFIDENCE[value] })),
@@ -148,6 +155,14 @@ export function JourneyEditor({ value, onChange, systems, offerings, channels = 
             <SelectField label="From step" value={rule.from_activity} options={stepOptions} onChange={(from_activity) => update({ from_activity })} />
             <SelectField label="To step" value={rule.to_activity} options={stepOptions} onChange={(to_activity) => update({ to_activity })} />
             <TextField label="When" value={rule.condition} onChange={(condition) => update({ condition: condition || null })} />
+            {(channels.length > 0 || rule.channel_id) && (
+              <SelectField
+                label="Taken for channel"
+                value={rule.channel_id ?? ""}
+                options={[{ value: "", label: "Every channel" }, ...channels.map((channel) => ({ value: channel.id, label: channel.name }))]}
+                onChange={(channel_id) => update({ channel_id: channel_id || null })}
+              />
+            )}
             {rule.kind === "parallel" && (
               <SelectField
                 label="Rejoins at step"
@@ -174,7 +189,12 @@ export function JourneyEditor({ value, onChange, systems, offerings, channels = 
             <TextField label="Interaction" value={link.interaction} onChange={(interaction) => update({ interaction: interaction || null })} />
             <TextField label="Interface" value={link.interface} onChange={(item) => update({ interface: item || null })} />
             <TextField label="Payload" value={link.payload} onChange={(payload) => update({ payload: payload || null })} />
-            <TextField label="Timing" value={link.timing} onChange={(timing) => update({ timing: timing || null })} />
+            <SelectField
+              label="Timing"
+              value={link.timing ?? ""}
+              options={TIMINGS}
+              onChange={(timing) => update({ timing: (timing || null) as Handover["timing"] })}
+            />
           </>
         )}
       />

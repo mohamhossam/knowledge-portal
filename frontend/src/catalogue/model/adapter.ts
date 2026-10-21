@@ -180,7 +180,10 @@ function channelsOf(release: Release): Channel[] {
 
 /** One product as an offering: its proposition, plans, rules, parts, order types and tracking. */
 function offeringOf(product: NonNullable<Release["products"]>[number], channels: Channel[], evidence: EvidenceOf): Offering {
-  const { summary, purpose } = parseProposition(product.proposition);
+  // A version saved before offerings carried a purpose says it after the proposition's first paragraph.
+  const { summary, purpose } = product.purpose
+    ? { summary: product.proposition ?? "", purpose: product.purpose }
+    : parseProposition(product.proposition);
   const point = (item: { name: string; description?: string | null; confidence?: string | null; source?: string | null }): Point => ({
     title: item.name,
     detail: item.description ?? "",
@@ -205,6 +208,7 @@ function offeringOf(product: NonNullable<Release["products"]>[number], channels:
       offerCode: part.code ?? undefined,
       specCode: part.technical_spec ?? undefined,
       mandatory: part.mandatory ?? null,
+      ...(part.hub ? { hub: true } : {}),
       description: part.description ?? "",
       systems: part.responsibilities.map((duty) => ({ systemId: duty.system_id, responsibility: duty.description })),
       evidence: evidence(part),
@@ -217,6 +221,7 @@ function offeringOf(product: NonNullable<Release["products"]>[number], channels:
         channels: type.channels,
         priority: drop,
         note: note || undefined,
+        stage: type.stage ?? undefined,
         evidence: evidence(type),
       };
     }),
@@ -269,7 +274,8 @@ function findingsOf(release: Release, products: NonNullable<Release["products"]>
     })),
     ...products.flatMap((product) =>
       product.questions.map((question) => {
-        const { title, detail } = parseQuestion(question.text);
+        // A version saved before questions carried a title writes it as "title: detail".
+        const { title, detail } = question.title ? { title: question.title, detail: question.text } : parseQuestion(question.text);
         return { id: question.id, kind: "gap" as const, title, detail, sources: [evidence(question)] };
       }),
     ),

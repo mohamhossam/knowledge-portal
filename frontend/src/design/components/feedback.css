@@ -177,6 +177,8 @@
 
 .ds-banner__text {
   flex: 1 1 20rem;
+  /* Archivo's "0" is wide: 62ch keeps a line near 75 characters. */
+  max-inline-size: 62ch;
   margin: 0;
 }
 

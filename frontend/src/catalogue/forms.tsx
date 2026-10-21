@@ -11,7 +11,7 @@ import type { ReactNode } from "react";
 import type { CatalogueSystem } from "../api/client";
 import { Button, Checkbox, Field } from "../design/components";
 
-export function TextField({ label, value, onChange, required, dir = "auto", lang, wide, hint }: {
+export function TextField({ label, value, onChange, required, dir = "auto", lang, wide, hint, error }: {
   label: string;
   value: string | null | undefined;
   onChange: (value: string) => void;
@@ -21,10 +21,12 @@ export function TextField({ label, value, onChange, required, dir = "auto", lang
   lang?: string;
   wide?: boolean;
   hint?: string;
+  /** What is wrong with the value, said beside the field and tied to it. */
+  error?: string | null;
 }) {
   return (
     <div className={wide ? "cat-form__cell cat-form__wide" : "cat-form__cell"}>
-      <Field label={label} hint={hint} required={required}>
+      <Field label={label} hint={hint} error={error} required={required}>
         {(control) => (
           <input
             className="ds-input"

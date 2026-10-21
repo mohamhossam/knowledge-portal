@@ -10,6 +10,16 @@ type Responsibility = Part["responsibilities"][number];
 type Point = Offering["values"][number];
 type Realised = Part["realisation"][number];
 type Nfr = Offering["nfrs"][number];
+type OrderTypeStage = Offering["order_types"][number]["stage"];
+
+/** Where an order type sits in the customer's life; left empty when its source does not say. */
+const STAGE_OPTIONS = [
+  { value: "", label: "Not said" },
+  { value: "join", label: "Join: becoming a customer" },
+  { value: "change", label: "Change: changing a live account" },
+  { value: "support", label: "Support: tracking, repairs and visits" },
+  { value: "leave", label: "Leave: ending or suspending the service" },
+];
 
 /** "CFS CFSS_ONPREM_FIREWALL_HE", cut short, to name one row on its legend and its Remove button. */
 function realisedLabel(item: Realised, index: number): string {
@@ -70,6 +80,7 @@ export function OfferingFacts({ value, onChange }: SectionProps) {
         />
       </div>
       <AreaField label="What it offers" value={value.proposition} onChange={(proposition) => set({ proposition: proposition || null })} />
+      <AreaField label="Why a customer buys it" value={value.purpose} onChange={(purpose) => set({ purpose: purpose || null })} />
       <LinesField
         label="For"
         value={pointLines(value.audiences)}
@@ -101,6 +112,12 @@ export function OfferingOrderTypes({ value, onChange, channels, names }: Section
           <TextField label="Name" value={type.name} required onChange={(name) => update({ name })} />
           <TextField label="Code" value={type.code} required dir="ltr" onChange={(code) => update({ code })} />
           <CheckField label="Offered" checked={type.enabled} onChange={(enabled) => update({ enabled })} />
+          <SelectField
+            label="Customer stage"
+            value={type.stage ?? ""}
+            options={STAGE_OPTIONS}
+            onChange={(stage) => update({ stage: (stage || null) as OrderTypeStage })}
+          />
           {(channels.length > 0 || (type.channels ?? []).length > 0) && (
             <ChannelChoices
               legend="Ordered through"
@@ -119,84 +136,99 @@ export function OfferingOrderTypes({ value, onChange, channels, names }: Section
 /** Its parts, the systems responsible for each, and what each is realised as. */
 export function OfferingParts({ value, onChange, systems, names }: SectionProps) {
   const orders = orderTypeOptions(value);
+  // One part at most is the device the bundle is built on: one choice, not a box on each part.
+  const hub = value.components.findIndex((part) => part.hub);
+  const chooseHub = (index: string) =>
+    onChange({ ...value, components: value.components.map((part, at) => ({ ...part, hub: String(at) === index })) });
   return (
-    <Rows<Part>
-      legend="Parts"
-      one="part"
-      items={value.components}
-      onChange={(components) => onChange({ ...value, components })}
-      blank={() => ({ id: "", name: "", responsibilities: [], realisation: [], capability_ids: [] })}
-      itemLabel={(part, index) => `part ${part.name || index + 1}`}
-      render={(part, update) => (
-        <>
-          <TextField label="Name" value={part.name} required onChange={(name) => update({ name })} />
-          <TextField label="Code" value={part.code} onChange={(code) => update({ code: code || null })} />
-          <TextField label="Kind" value={part.kind} onChange={(kind) => update({ kind: kind || null })} />
-          <CheckField label="Always included" checked={part.mandatory === true} onChange={(mandatory) => update({ mandatory })} />
-          <CheckField
-            label="Seen by the customer"
-            checked={part.customer_visible === true}
-            onChange={(customer_visible) => update({ customer_visible })}
-          />
-          <AreaField label="What it is" value={part.description} onChange={(description) => update({ description: description || null })} />
-          <Rows<Responsibility>
-            legend="Responsible systems"
-            one="responsible system"
-            items={part.responsibilities}
-            onChange={(responsibilities) => update({ responsibilities })}
-            blank={() => ({ system_id: systems[0]?.id ?? "", role: "", description: "", order_types: [] })}
-            itemLabel={(item, index) => `responsibility ${item.role || index + 1}`}
-            render={(item, change) => (
-              <>
-                <SystemField
-                  label="System"
-                  value={item.system_id}
-                  systems={systems}
-                  writtenAs={names?.system(item.system_id)}
-                  onChange={(system_id) => change({ system_id })}
-                />
-                <TextField label="Role" value={item.role} required onChange={(role) => change({ role })} />
-                <AreaField label="What it does for this part" value={item.description} onChange={(description) => change({ description })} />
-                {orders.length > 0 && (
-                  <fieldset className="cat-form__choices cat-form__wide">
-                    <legend className="ds-field__label">For order types (none means all)</legend>
-                    {orders.map((type) => (
-                      <CheckField
-                        key={type.code}
-                        label={type.name}
-                        checked={item.order_types.includes(type.code)}
-                        onChange={(on) =>
-                          change({ order_types: on ? [...item.order_types, type.code] : item.order_types.filter((code) => code !== type.code) })
-                        }
-                      />
-                    ))}
-                  </fieldset>
-                )}
-              </>
-            )}
-          />
-          <Rows<Realised>
-            legend="Realised as"
-            one={`thing ${part.name || "this part"} is realised as`}
-            items={part.realisation ?? []}
-            onChange={(realisation) => update({ realisation })}
-            blank={() => ({ layer: "cfs", name: "" })}
-            itemLabel={(item, index) => realisedLabel(item, index)}
-            render={(item, change) => (
-              <>
-                <SelectField
-                  label="Layer"
-                  value={item.layer}
-                  options={LAYER_OPTIONS}
-                  onChange={(layer) => change({ layer: layer as Realised["layer"] })}
-                />
-                <TextField label="Name" value={item.name} required wide onChange={(name) => change({ name })} />
-              </>
-            )}
-          />
-        </>
-      )}
-    />
+    <>
+      <SelectField
+        label="The device it is built on"
+        value={hub < 0 ? "" : String(hub)}
+        options={[
+          { value: "", label: "None of its parts" },
+          ...value.components.map((part, at) => ({ value: String(at), label: part.name || `Part ${at + 1}` })),
+        ]}
+        onChange={chooseHub}
+      />
+      <Rows<Part>
+        legend="Parts"
+        one="part"
+        items={value.components}
+        onChange={(components) => onChange({ ...value, components })}
+        blank={() => ({ id: "", name: "", responsibilities: [], realisation: [], capability_ids: [], hub: false })}
+        itemLabel={(part, index) => `part ${part.name || index + 1}`}
+        render={(part, update) => (
+          <>
+            <TextField label="Name" value={part.name} required onChange={(name) => update({ name })} />
+            <TextField label="Code" value={part.code} onChange={(code) => update({ code: code || null })} />
+            <TextField label="Kind" value={part.kind} onChange={(kind) => update({ kind: kind || null })} />
+            <CheckField label="Always included" checked={part.mandatory === true} onChange={(mandatory) => update({ mandatory })} />
+            <CheckField
+              label="Seen by the customer"
+              checked={part.customer_visible === true}
+              onChange={(customer_visible) => update({ customer_visible })}
+            />
+            <AreaField label="What it is" value={part.description} onChange={(description) => update({ description: description || null })} />
+            <Rows<Responsibility>
+              legend="Responsible systems"
+              one="responsible system"
+              items={part.responsibilities}
+              onChange={(responsibilities) => update({ responsibilities })}
+              blank={() => ({ system_id: systems[0]?.id ?? "", role: "", description: "", order_types: [] })}
+              itemLabel={(item, index) => `responsibility ${item.role || index + 1}`}
+              render={(item, change) => (
+                <>
+                  <SystemField
+                    label="System"
+                    value={item.system_id}
+                    systems={systems}
+                    writtenAs={names?.system(item.system_id)}
+                    onChange={(system_id) => change({ system_id })}
+                  />
+                  <TextField label="Role" value={item.role} required onChange={(role) => change({ role })} />
+                  <AreaField label="What it does for this part" value={item.description} onChange={(description) => change({ description })} />
+                  {orders.length > 0 && (
+                    <fieldset className="cat-form__choices cat-form__wide">
+                      <legend className="ds-field__label">For order types (none means all)</legend>
+                      {orders.map((type) => (
+                        <CheckField
+                          key={type.code}
+                          label={type.name}
+                          checked={item.order_types.includes(type.code)}
+                          onChange={(on) =>
+                            change({ order_types: on ? [...item.order_types, type.code] : item.order_types.filter((code) => code !== type.code) })
+                          }
+                        />
+                      ))}
+                    </fieldset>
+                  )}
+                </>
+              )}
+            />
+            <Rows<Realised>
+              legend="Realised as"
+              one={`thing ${part.name || "this part"} is realised as`}
+              items={part.realisation ?? []}
+              onChange={(realisation) => update({ realisation })}
+              blank={() => ({ layer: "cfs", name: "" })}
+              itemLabel={(item, index) => realisedLabel(item, index)}
+              render={(item, change) => (
+                <>
+                  <SelectField
+                    label="Layer"
+                    value={item.layer}
+                    options={LAYER_OPTIONS}
+                    onChange={(layer) => change({ layer: layer as Realised["layer"] })}
+                  />
+                  <TextField label="Name" value={item.name} required wide onChange={(name) => change({ name })} />
+                </>
+              )}
+            />
+          </>
+        )}
+      />
+    </>
   );
 }
 
@@ -268,7 +300,7 @@ export function QuestionFields({ item, orders, change }: {
   const choices = [...orders, ...unknown.map((code) => ({ code, name: `${code} (not one of its order types)` }))];
   return (
     <>
-      <TextField label="Id" value={item.id} dir="ltr" hint="Such as OQ-01; made for you when left empty." onChange={(id) => change({ id })} />
+      <TextField label="Id" value={item.id} dir="ltr" hint="The source’s own, such as F3; made for you when empty." onChange={(id) => change({ id })} />
       <SelectField
         label="How sure its source is"
         value={item.confidence ?? ""}
@@ -276,6 +308,7 @@ export function QuestionFields({ item, orders, change }: {
         onChange={(confidence) => change({ confidence: (confidence || null) as SourceConfidence | null })}
       />
       <TextField label="Source" value={item.source} onChange={(source) => change({ source: source || null })} />
+      <TextField label="In a few words" value={item.title} wide hint="The question’s title, such as Is B2B Digital in scope?; optional." onChange={(title) => change({ title: title || null })} />
       <AreaField label="Question" value={item.text} required onChange={(text) => change({ text })} />
       <AreaField label="What the catalogue does meanwhile" value={item.impact} onChange={(impact) => change({ impact: impact || null })} />
       {choices.length > 0 && (

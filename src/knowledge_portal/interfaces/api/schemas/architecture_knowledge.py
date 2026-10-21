@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, BeforeValidator, Field
 
 from knowledge_portal.application.ports.architecture_jobs import (
     ArchitectureJob,
@@ -77,10 +77,12 @@ from knowledge_portal.domain.architecture.interfaces import InterfaceStyle, Syst
 from knowledge_portal.domain.architecture.journeys import (
     Activity,
     ActivityIntegration,
+    CallTiming,
     FlowRule,
     FlowRuleKind,
     Journey,
     JourneyEdge,
+    call_timing,
     journey_channels,
     journey_edges,
     shared_journey_edges,
@@ -88,6 +90,7 @@ from knowledge_portal.domain.architecture.journeys import (
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
     CapabilityDomain,
+    InvalidKnowledgeError,
     KnowledgeAuditEvent,
     KnowledgeCapability,
     KnowledgeDocumentVersion,
@@ -110,6 +113,7 @@ from knowledge_portal.domain.architecture.portfolio import PortfolioNode
 from knowledge_portal.domain.architecture.products import (
     BusinessRule,
     ComponentResponsibility,
+    CustomerStage,
     NfrCoverage,
     OfferingComponent,
     OfferingNfr,
@@ -121,6 +125,7 @@ from knowledge_portal.domain.architecture.products import (
     Realisation,
     RealisationLayer,
     SourceConfidence,
+    measure_disagrees,
 )
 from knowledge_portal.domain.architecture.provenance import AcceptedFrom
 from knowledge_portal.domain.architecture.realisations import RealisationRecord
@@ -704,6 +709,8 @@ class OpenQuestionSchema(BaseModel):
     source: Text | None = None
     # The order types it is asked for; none means the offering as a whole (step 7).
     order_types: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    # The question in a few words; the text is its detail.
+    title: Name | None = None
 
     @classmethod
     def from_domain(cls, item: OpenQuestion) -> OpenQuestionSchema:
@@ -714,6 +721,7 @@ class OpenQuestionSchema(BaseModel):
             confidence=item.confidence,
             source=item.source,
             order_types=list(item.order_types),
+            title=item.title,
         )
 
     def to_domain(self) -> OpenQuestion:
@@ -724,6 +732,7 @@ class OpenQuestionSchema(BaseModel):
             self.confidence,
             self.source,
             tuple(self.order_types),
+            self.title,
         )
 
 
@@ -1089,6 +1098,8 @@ class FalloutCaseSchema(BaseModel):
     handling: Text | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # The catalogued system it falls out in, when its source names one.
+    system_id: Identifier | None = None
 
     @classmethod
     def from_domain(cls, item: FalloutCase) -> FalloutCaseSchema:
@@ -1097,10 +1108,13 @@ class FalloutCaseSchema(BaseModel):
             handling=item.handling,
             confidence=item.confidence,
             source=item.source,
+            system_id=item.system_id,
         )
 
     def to_domain(self) -> FalloutCase:
-        return FalloutCase(self.trigger, self.handling, self.confidence, self.source)
+        return FalloutCase(
+            self.trigger, self.handling, self.confidence, self.source, self.system_id
+        )
 
 
 class OrderTrackingSchema(BaseModel):
@@ -1246,6 +1260,8 @@ class OrderTypeSchema(BaseModel):
     channels: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     # The delivery drop it comes in, as its source names it, such as "P2 / P3".
     delivery_drop: Name | None = None
+    # Where it sits in the customer's life: join, change, support or leave.
+    stage: CustomerStage | None = None
 
     @classmethod
     def from_domain(cls, order: OrderType) -> OrderTypeSchema:
@@ -1258,6 +1274,7 @@ class OrderTypeSchema(BaseModel):
             source=order.source,
             channels=list(order.channels),
             delivery_drop=order.delivery_drop,
+            stage=order.stage,
         )
 
     def to_domain(self) -> OrderType:
@@ -1270,6 +1287,7 @@ class OrderTypeSchema(BaseModel):
             self.source,
             tuple(self.channels),
             delivery_drop=self.delivery_drop,
+            stage=self.stage,
         )
 
 
@@ -1329,6 +1347,8 @@ class OfferingComponentSchema(BaseModel):
     unlinked_reason: Sentence | None = None
     # The component kind term the kind means.
     kind_id: Identifier | None = None
+    # The device the bundle is built on: at most one per offering.
+    hub: bool = False
 
     @classmethod
     def from_domain(cls, component: OfferingComponent) -> OfferingComponentSchema:
@@ -1353,6 +1373,7 @@ class OfferingComponentSchema(BaseModel):
             capability_ids=list(component.capability_ids),
             unlinked_reason=component.unlinked_reason,
             kind_id=component.kind_id,
+            hub=component.hub,
         )
 
     def to_domain(self) -> OfferingComponent:
@@ -1374,18 +1395,30 @@ class OfferingComponentSchema(BaseModel):
             capability_ids=tuple(self.capability_ids),
             unlinked_reason=self.unlinked_reason,
             kind_id=self.kind_id,
+            hub=self.hub,
         )
 
 
 class PlanCharacteristicSchema(BaseModel):
     name: Name
     value: Text
+    # Read from a value written as a number and a unit ("200 Mbps" is 200, Mbps); None when it
+    # is not a measure. A request may leave them out; one that gives them must agree.
+    amount: Name | None = None
+    unit: Name | None = None
 
     @classmethod
     def from_domain(cls, item: PlanCharacteristic) -> PlanCharacteristicSchema:
-        return cls.model_construct(name=item.name, value=item.value)
+        return cls.model_construct(
+            name=item.name, value=item.value, amount=item.amount, unit=item.unit
+        )
 
     def to_domain(self) -> PlanCharacteristic:
+        if measure_disagrees(self.value, self.amount, self.unit):
+            raise InvalidKnowledgeError(
+                f"{self.name}: the amount and unit are read from the value {self.value!r}, "
+                f"which does not say {self.amount} {self.unit}."
+            )
         return PlanCharacteristic(self.name, self.value)
 
 
@@ -1484,6 +1517,10 @@ class ProductOfferingSchema(BaseModel):
 
     # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
     accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    # Why a customer buys it, beside the proposition that says what it is.
+    purpose: Text | None = None
+    # Ids it was known by before a rename; set by renaming, kept when a file says so.
+    former_ids: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, offering: ProductOffering) -> ProductOfferingSchema:
@@ -1521,6 +1558,8 @@ class ProductOfferingSchema(BaseModel):
                 BusinessRuleSchema.from_domain(item) for item in offering.business_rules
             ],
             accepted=[AcceptedFromSchema.from_domain(item) for item in offering.accepted],
+            purpose=offering.purpose,
+            former_ids=list(offering.former_ids),
         )
 
     def to_domain(self) -> ProductOffering:
@@ -1551,6 +1590,8 @@ class ProductOfferingSchema(BaseModel):
             portfolio_node_id=self.portfolio_node_id,
             plans=tuple(item.to_domain() for item in self.plans),
             business_rules=tuple(item.to_domain() for item in self.business_rules),
+            purpose=self.purpose,
+            former_ids=tuple(self.former_ids),
         )
 
 
@@ -1654,6 +1695,8 @@ class FlowRuleSchema(BaseModel):
     rejoin_at: Identifier | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # The channel it is taken for, when it splits the flow by channel.
+    channel_id: Identifier | None = None
 
     @classmethod
     def from_domain(cls, rule: FlowRule) -> FlowRuleSchema:
@@ -1667,6 +1710,7 @@ class FlowRuleSchema(BaseModel):
             rejoin_at=rule.rejoin_at,
             confidence=rule.confidence,
             source=rule.source,
+            channel_id=rule.channel_id,
         )
 
     def to_domain(self) -> FlowRule:
@@ -1680,7 +1724,22 @@ class FlowRuleSchema(BaseModel):
             self.rejoin_at,
             self.confidence,
             self.source,
+            self.channel_id,
         )
+
+
+def _timing(value: object) -> object:
+    """A timing as sources write it ("sync", "Synchronous", "Sync (callback)"); other text is
+    left for the enum to refuse with 422."""
+    if isinstance(value, str):
+        try:
+            return call_timing(value)
+        except InvalidKnowledgeError:
+            return value
+    return value
+
+
+Timing = Annotated[CallTiming | None, BeforeValidator(_timing)]
 
 
 class ActivityIntegrationSchema(BaseModel):
@@ -1689,7 +1748,7 @@ class ActivityIntegrationSchema(BaseModel):
     interaction: Name | None = None
     interface: Text | None = None
     payload: Text | None = None
-    timing: Name | None = None
+    timing: Timing = None
     correlation_key: Name | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
@@ -1798,6 +1857,8 @@ class JourneySchema(BaseModel):
 
     # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
     accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    # Ids it was known by before a rename; set by renaming, kept when a file says so.
+    former_ids: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, journey: Journey) -> JourneySchema:
@@ -1823,6 +1884,7 @@ class JourneySchema(BaseModel):
             ],
             shared_edges=_edge_responses(shared_journey_edges(journey)),
             accepted=[AcceptedFromSchema.from_domain(item) for item in journey.accepted],
+            former_ids=list(journey.former_ids),
         )
 
     def to_domain(self) -> Journey:
@@ -1837,6 +1899,7 @@ class JourneySchema(BaseModel):
             integrations=tuple(item.to_domain() for item in self.integrations),
             confidence=self.confidence,
             source=self.source,
+            former_ids=tuple(self.former_ids),
         )
 
 
@@ -2887,3 +2950,19 @@ class IndexCoverageResponse(BaseModel):
                 for item in coverage.concepts_without_chunk
             ],
         )
+
+
+class EntityRenameRequest(BaseModel):
+    """A new id for an offering or journey; the old one is kept as a former id."""
+
+    expected_revision: int
+    new_id: Identifier
+
+
+class UnregisteredCitationResponse(BaseModel):
+    """What a set of the version's facts cite that is not in its source register."""
+
+    cited: str
+    facts: int
+    # A few of the facts, by kind and name: "Offering component CPE device".
+    examples: list[str]

@@ -21,6 +21,7 @@ from knowledge_portal.domain.architecture.knowledge import (
 from knowledge_portal.infrastructure.persistence.knowledge_events import append_event
 from knowledge_portal.infrastructure.persistence.postgres_store import PostgresStore
 from knowledge_portal.infrastructure.persistence.postgres_values import _datetime, _integer
+from knowledge_portal.infrastructure.persistence.stored_timings import stored_timings
 
 _DOCUMENT: TypeAdapter[KnowledgeDocumentVersion] = TypeAdapter(KnowledgeDocumentVersion)
 
@@ -49,7 +50,7 @@ class PostgresArchitectureKnowledgeRepository:
     @staticmethod
     def _release(raw: object) -> ArchitectureKnowledge:
         try:
-            return _ADAPTER.validate_python(raw)
+            return _ADAPTER.validate_python(stored_timings(raw))
         except ValidationError as exc:
             raise PersistenceError("Stored architecture knowledge is invalid.") from exc
 

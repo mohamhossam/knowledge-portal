@@ -25,6 +25,7 @@ from knowledge_portal.domain.architecture.products import (
     SourceConfidence,
     check_source,
     first_known,
+    former,
     role_code,
 )
 from knowledge_portal.domain.architecture.provenance import AcceptedFrom
@@ -40,6 +41,13 @@ def activity_order(number: str) -> tuple[int, float, str]:
     """Activities sort by number as a number ("75" before "100"), then as text."""
     match = re.match(r"\d+(\.\d+)?", number)
     return (0, float(match.group(0)), number) if match else (1, 0.0, number)
+
+
+# What a point of no return is, said for a step whose source marks it with a bare "yes".
+NO_RETURN = "Past this step, the order can no longer be cancelled."
+_YES = frozenset({"yes", "y", "true"})
+# A source's column for the mark also says when a step is not one.
+_NO = frozenset({"no", "n", "false", "n/a", "na", "none", "-", "—"})
 
 
 @dataclass(frozen=True)
@@ -100,6 +108,13 @@ class Activity:
             ("point_of_no_return", "Point of no return"),
         ):
             object.__setattr__(self, field, optional(getattr(self, field), label))
+        # A bare "yes" marks the step without saying why, so it reads as what the mark means;
+        # a "no" says the step is not one.
+        mark = (self.point_of_no_return or "").casefold()
+        if mark in _YES:
+            object.__setattr__(self, "point_of_no_return", NO_RETURN)
+        elif mark in _NO:
+            object.__setattr__(self, "point_of_no_return", None)
         if self.role is not None:
             object.__setattr__(self, "role", role_code(self.role))
         object.__setattr__(
@@ -166,6 +181,8 @@ class FlowRule:
     rejoin_at: str | None = None
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # The channel it is taken for, when it splits the flow by channel.
+    channel_id: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "kind", flow_rule_kind(self.kind))
@@ -176,9 +193,52 @@ class FlowRule:
             ("branch", "Branch"),
             ("parallel_group", "Parallel group"),
             ("rejoin_at", "Rejoin activity"),
+            ("channel_id", "Channel"),
         ):
             object.__setattr__(self, field, optional(getattr(self, field), label))
         check_source(self)
+
+
+class CallTiming(StrEnum):
+    """Whether a call waits for its answer."""
+
+    SYNC = "Sync"
+    ASYNC = "Async"
+
+
+_TIMING_WORDS = {
+    "sync": CallTiming.SYNC,
+    "synchronous": CallTiming.SYNC,
+    "async": CallTiming.ASYNC,
+    "asynchronous": CallTiming.ASYNC,
+}
+_TIMING_WORD = re.compile(r"\b(a?sync(?:hronous)?)\b")
+
+
+def call_timing(value: CallTiming | str | None) -> CallTiming | None:
+    """A call's timing in any case, and as sources write it: "sync", "Synchronous", or
+    "Sync (callback)", which leads with its timing. Text that names no timing, or both
+    ("Sync/Async"), is refused."""
+    if value is None or isinstance(value, CallTiming):
+        return value
+    said = str(value).strip().casefold()
+    if not said:
+        return None
+    named = {_TIMING_WORDS[word] for word in _TIMING_WORD.findall(said)}
+    leading = _TIMING_WORD.match(said)
+    if leading is None or len(named) != 1:
+        raise InvalidKnowledgeError(f"A call's timing is Sync or Async, not {value!r}.")
+    return _TIMING_WORDS[leading[1]]
+
+
+def read_timing(value: str | None) -> CallTiming | None:
+    """A timing read where no one can be asked to correct it, such as a document's table or a
+    version stored before timing was Sync or Async: what names a timing, else unsaid. The
+    document keeps its own text."""
+    try:
+        return call_timing(value)
+    except InvalidKnowledgeError:
+        return None
 
 
 @dataclass(frozen=True)
@@ -196,8 +256,8 @@ class ActivityIntegration:
     interaction: str | None = None
     interface: str | None = None
     payload: str | None = None
-    # "Sync", "Async" or unknown, as the source says.
-    timing: str | None = None
+    # Whether the call waits for its answer; None when the source does not say.
+    timing: CallTiming | None = None
     correlation_key: str | None = None
     confidence: SourceConfidence | None = None
     source: str | None = None
@@ -221,7 +281,6 @@ class ActivityIntegration:
             ("interaction", "Interaction"),
             ("interface", "Interface"),
             ("payload", "Payload"),
-            ("timing", "Timing"),
             ("correlation_key", "Correlation key"),
             ("from_system_id", "Calling system"),
             ("to_system_id", "Called system"),
@@ -231,6 +290,7 @@ class ActivityIntegration:
             ("tmf_equivalent", "TMF equivalent"),
         ):
             object.__setattr__(self, field, optional(getattr(self, field), label))
+        object.__setattr__(self, "timing", call_timing(self.timing))
         object.__setattr__(self, "open_api_ids", _codes(self.open_api_ids, "Open API term"))
         check_source(self)
 
@@ -269,9 +329,12 @@ class Journey:
     source: str | None = None
     # The accepted suggestions that created or extended it, oldest first (ADR-0120).
     accepted: tuple[AcceptedFrom, ...] = ()
+    # Ids it was known by before a rename.
+    former_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Journey id"))
+        object.__setattr__(self, "former_ids", former(self.id, self.former_ids))
         object.__setattr__(self, "name", required(self.name, "Journey name"))
         for field, label in (
             ("product_id", "Product offering"),
@@ -430,6 +493,12 @@ def check_journeys(
                 raise InvalidKnowledgeError(
                     f"{journey.name} › {activity.number}. {activity.name} names channel "
                     f"{unknown[0]!r}, which is not in the catalogue."
+                )
+        for rule in journey.flow_rules:
+            if rule.channel_id is not None and rule.channel_id not in channel_ids:
+                raise InvalidKnowledgeError(
+                    f"{journey.name}: the flow from activity {rule.from_activity} names channel "
+                    f"{rule.channel_id!r}, which is not in the catalogue."
                 )
         for link in journey.integrations:
             for system in link.systems:

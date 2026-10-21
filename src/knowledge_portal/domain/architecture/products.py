@@ -21,6 +21,7 @@ from __future__ import annotations
 import re
 from collections.abc import Callable, Collection
 from dataclasses import dataclass
+from decimal import Decimal
 from enum import StrEnum
 
 from knowledge_portal.domain.architecture.concepts import check_link
@@ -77,8 +78,11 @@ class OrderType:
     channels: tuple[str, ...] = ()
     # The delivery drop it comes in, as its source names it, such as "P2 / P3".
     delivery_drop: str | None = None
+    # Where it sits in the customer's life: joining, changing, support or leaving.
+    stage: CustomerStage | None = None
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "stage", customer_stage(self.stage))
         object.__setattr__(self, "code", required(self.code, "Order type code"))
         object.__setattr__(self, "name", required(self.name, "Order type name"))
         object.__setattr__(self, "description", optional(self.description, "Description"))
@@ -89,6 +93,26 @@ class OrderType:
             tuple(dict.fromkeys(required(item, "Channel") for item in self.channels)),
         )
         check_source(self)
+
+
+class CustomerStage(StrEnum):
+    """Where an order type sits in the customer's life with the offering."""
+
+    JOIN = "join"
+    CHANGE = "change"
+    SUPPORT = "support"
+    LEAVE = "leave"
+
+
+def customer_stage(value: CustomerStage | str | None) -> CustomerStage | None:
+    if value is None:
+        return None
+    try:
+        return CustomerStage(str(value).strip().casefold())
+    except ValueError as exc:
+        raise InvalidKnowledgeError(
+            f"A customer stage is join, change, support or leave, not {value!r}."
+        ) from exc
 
 
 class RealisationLayer(StrEnum):
@@ -242,6 +266,8 @@ class OfferingComponent:
     unlinked_reason: str | None = None
     # The component kind term the kind means, beside the text; None while unmapped.
     kind_id: str | None = None
+    # The device the bundle is built on (its router or CPE): at most one per offering.
+    hub: bool = False
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Component id"))
@@ -278,16 +304,64 @@ class OfferingComponent:
             )
 
 
+# A number and a unit: "200 Mbps", "2.5 GB", "2,5 GB" (a decimal comma takes one or two digits),
+# "1,000 GB" (thousands grouped by commas), "100Mbps". The unit starts with a letter or "%", so
+# "24/7" is not a measure.
+_MEASURE = re.compile(
+    r"^(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+|,\d{1,2})?)(\s*)((?:[^\W\d_]|%)\S*)$"
+)
+_GROUPED = re.compile(r"\d{1,3}(?:,\d{3})+(?:\.\d+)?")
+_AMOUNT = re.compile(r"\d+(?:\.\d+)?")
+
+
+def measure_of(value: str) -> tuple[str, str] | None:
+    """A value's amount (with a decimal point, no grouping) and unit, if it is a measure.
+
+    A single letter written against its number names a thing, not a unit: "5G", "4K"."""
+    measured = _MEASURE.match(value)
+    if not measured:
+        return None
+    number, spaced, unit = measured[1], measured[2], measured[3]
+    if not spaced and len(unit) == 1 and unit != "%":
+        return None
+    amount = number.replace(",", "") if _GROUPED.fullmatch(number) else number.replace(",", ".")
+    return amount, unit
+
+
+def measure_disagrees(value: str, amount: str | None, unit: str | None) -> bool:
+    """An amount and unit a writer gave that the value does not say: "300 Mbps" given as 200
+    Mbps, or any pair for a value that is not a measure. Units compare in any case; amounts as
+    decimals ("200" is "200.0")."""
+    if amount is None and unit is None:
+        return False
+    measured = measure_of(value)
+    if measured is None or amount is None or unit is None or not _AMOUNT.fullmatch(amount):
+        return True
+    return (Decimal(amount), unit.casefold()) != (Decimal(measured[0]), measured[1].casefold())
+
+
 @dataclass(frozen=True)
 class PlanCharacteristic:
-    """One stated fact of a plan, such as "Download" › "200 Mbps" or "CPE" › "Fortinet 90G"."""
+    """One stated fact of a plan, such as "Download" › "200 Mbps" or "CPE" › "Fortinet 90G".
+
+    A value written as a number and a unit is also held as its amount and unit ("200",
+    "Mbps"), so plans compare without reading the words. Both are read from the value, never
+    stated beside it, so every catalogue file, which holds the value alone, keeps them.
+    """
 
     name: str
     value: str
+    # The amount, a decimal number with a point ("200", "2.5"); None when it is not a measure.
+    amount: str | None = None
+    unit: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "name", required(self.name, "Plan characteristic"))
         object.__setattr__(self, "value", required(self.value, f"{self.name}'s value"))
+        # Whatever a writer gave, the value says the amount and unit.
+        amount, unit = measure_of(self.value) or (None, None)
+        object.__setattr__(self, "amount", amount)
+        object.__setattr__(self, "unit", unit)
 
 
 @dataclass(frozen=True)
@@ -374,9 +448,15 @@ class ProductOffering:
     business_rules: tuple[BusinessRule, ...] = ()
     # The accepted suggestions that created or extended it, oldest first (ADR-0120).
     accepted: tuple[AcceptedFrom, ...] = ()
+    # Ids it was known by before a rename, so precedents, change requests and requirement
+    # work that still name an old id find it.
+    former_ids: tuple[str, ...] = ()
+    # Why a customer buys it, beside the proposition that says what it is.
+    purpose: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Offering id"))
+        object.__setattr__(self, "former_ids", former(self.id, self.former_ids))
         object.__setattr__(self, "name", required(self.name, "Offering name"))
         for field, label in (
             ("code", "Offering code"),
@@ -384,6 +464,7 @@ class ProductOffering:
             ("version", "Version"),
             ("lifecycle", "Lifecycle"),
             ("proposition", "Proposition"),
+            ("purpose", "Purpose"),
             ("portfolio_node_id", "Portfolio node"),
         ):
             object.__setattr__(self, field, optional(getattr(self, field), label))
@@ -409,6 +490,8 @@ class ProductOffering:
         ids = [item.id for item in self.components]
         if len(set(ids)) != len(ids):
             raise InvalidKnowledgeError(f"{self.name}: component ids must be unique.")
+        if sum(item.hub for item in self.components) > 1:
+            raise InvalidKnowledgeError(f"{self.name}: at most one component is its hub.")
         qualities = [item.quality.casefold() for item in self.nfrs]
         if len(set(qualities)) != len(qualities):
             raise InvalidKnowledgeError(f"{self.name}: each NFR quality is stated once.")
@@ -627,9 +710,21 @@ def _named[T](
     return found[0] if len(found) == 1 else None
 
 
+def former(current: str, ids: tuple[str, ...]) -> tuple[str, ...]:
+    """An entity's former ids: each once, and never its current id."""
+    found = tuple(dict.fromkeys(required(item, "Former id") for item in ids))
+    if current in found:
+        raise InvalidKnowledgeError(f"{current!r} cannot be a former id of itself.")
+    return found
+
+
 def find_offering(offerings: tuple[ProductOffering, ...], reference: str) -> ProductOffering | None:
-    """The offering named by id, code or name, ignoring case and punctuation; only one may fit."""
-    exact = next((item for item in offerings if item.id == reference), None)
+    """The offering named by id, former id, code or name, ignoring case and punctuation; only
+    one may fit."""
+    exact = next(
+        (item for item in offerings if item.id == reference or reference in item.former_ids),
+        None,
+    )
     return exact or _named(offerings, reference, lambda item: (item.id, item.code, item.name))
 
 

@@ -8,7 +8,7 @@ import { LabIcon } from "./labIcon";
 import { channelKindName, type EligibilityGroup, eligibilityGroup } from "./catalogueRules";
 import { journeyHref, useLabData } from "./labData";
 import { plural } from "./labUtil";
-import { STAGES, stageOfCode } from "./stages";
+import { STAGES, stageOf } from "./stages";
 import { SystemMonogram } from "./SystemMonogram";
 
 /** Eligibility grouped by what it answers (eligibilityGroup): who, where, on what terms, through which route. */
@@ -80,7 +80,7 @@ export function WhoCanBuy({ offering }: { offering: Offering }) {
   const ordered = kinds.flatMap((item) => item.channels);
   const takes = (channelId: string) => offering.orderTypes.filter((type) => type.channels.includes(channelId)).length;
   const tone = (systemId: string) => data.systems.find((system) => system.id === systemId)?.domain ?? "customer";
-  const stages = STAGES.map((stage) => ({ ...stage, types: offering.orderTypes.filter((type) => stageOfCode(type.code) === stage.id) })).filter((stage) => stage.types.length);
+  const stages = STAGES.map((stage) => ({ ...stage, types: offering.orderTypes.filter((type) => stageOf(type) === stage.id) })).filter((stage) => stage.types.length);
   const journeyFor = (code: string) => data.journeys.find((journey) => journey.offeringId === offering.id && journey.orderType === code);
 
   return (

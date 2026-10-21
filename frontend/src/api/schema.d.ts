@@ -363,6 +363,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/architecture-knowledge/releases/{release_id}/citations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Citations
+         * @description What the version's facts cite that its source register does not hold.
+         */
+        get: operations["citations_architecture_knowledge_releases__release_id__citations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/architecture-knowledge/releases/{release_id}/compare-impact": {
         parameters: {
             query?: never;
@@ -581,6 +601,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/architecture-knowledge/releases/{release_id}/journeys/{journey_id}/rename": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rename Journey
+         * @description Give a journey a new id; the old id stays as a former id.
+         */
+        post: operations["rename_journey_architecture_knowledge_releases__release_id__journeys__journey_id__rename_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/architecture-knowledge/releases/{release_id}/name": {
         parameters: {
             query?: never;
@@ -592,6 +632,27 @@ export interface paths {
         /** Rename Draft */
         put: operations["rename_draft_architecture_knowledge_releases__release_id__name_put"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/architecture-knowledge/releases/{release_id}/offerings/{offering_id}/rename": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rename Offering
+         * @description Give an offering a new id; the old id stays as a former id, and the version's
+         *     journeys and conflicts follow.
+         */
+        post: operations["rename_offering_architecture_knowledge_releases__release_id__offerings__offering_id__rename_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2269,8 +2330,7 @@ export interface components {
             source?: string | null;
             /** Style */
             style?: string | null;
-            /** Timing */
-            timing?: string | null;
+            timing?: components["schemas"]["CallTiming"] | null;
             /** Tmf Equivalent */
             tmf_equivalent?: string | null;
             /** To Activity */
@@ -2643,6 +2703,12 @@ export interface components {
             /** Statement */
             statement: string;
         };
+        /**
+         * CallTiming
+         * @description Whether a call waits for its answer.
+         * @enum {string}
+         */
+        CallTiming: "Sync" | "Async";
         /**
          * CandidateBasis
          * @description Whether the document says this outright or the model read it from what it describes.
@@ -3358,6 +3424,12 @@ export interface components {
             name: string;
         };
         /**
+         * CustomerStage
+         * @description Where an order type sits in the customer's life with the offering.
+         * @enum {string}
+         */
+        CustomerStage: "join" | "change" | "support" | "leave";
+        /**
          * DeliveredChangeKind
          * @description A change to the catalogue a delivered requirement implies.
          * @enum {string}
@@ -3568,6 +3640,16 @@ export interface components {
             system_ids: string[];
         };
         /**
+         * EntityRenameRequest
+         * @description A new id for an offering or journey; the old one is kept as a former id.
+         */
+        EntityRenameRequest: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** New Id */
+            new_id: string;
+        };
+        /**
          * EvidenceBlockKind
          * @enum {string}
          */
@@ -3665,6 +3747,8 @@ export interface components {
             handling?: string | null;
             /** Source */
             source?: string | null;
+            /** System Id */
+            system_id?: string | null;
             /** Trigger */
             trigger: string;
         };
@@ -3707,6 +3791,8 @@ export interface components {
         FlowRuleSchema: {
             /** Branch */
             branch?: string | null;
+            /** Channel Id */
+            channel_id?: string | null;
             /** Condition */
             condition?: string | null;
             confidence?: components["schemas"]["SourceConfidence"] | null;
@@ -4205,6 +4291,11 @@ export interface components {
              * @default []
              */
             flow_rules: components["schemas"]["FlowRuleSchema"][];
+            /**
+             * Former Ids
+             * @default []
+             */
+            former_ids: string[];
             /** Id */
             id: string;
             /**
@@ -4848,6 +4939,11 @@ export interface components {
             customer_visible?: boolean | null;
             /** Description */
             description?: string | null;
+            /**
+             * Hub
+             * @default false
+             */
+            hub: boolean;
             /** Id */
             id: string;
             /** Kind */
@@ -4969,6 +5065,8 @@ export interface components {
             source?: string | null;
             /** Text */
             text: string;
+            /** Title */
+            title?: string | null;
         };
         /**
          * OrderTrackingSchema
@@ -5036,6 +5134,7 @@ export interface components {
             name: string;
             /** Source */
             source?: string | null;
+            stage?: components["schemas"]["CustomerStage"] | null;
         };
         /** OrganisationAuditEventResponse */
         OrganisationAuditEventResponse: {
@@ -5157,8 +5256,12 @@ export interface components {
         };
         /** PlanCharacteristicSchema */
         PlanCharacteristicSchema: {
+            /** Amount */
+            amount?: string | null;
             /** Name */
             name: string;
+            /** Unit */
+            unit?: string | null;
             /** Value */
             value: string;
         };
@@ -5284,6 +5387,11 @@ export interface components {
             decisions: components["schemas"]["ArchitectureDecisionSchema"][];
             /** Family */
             family?: string | null;
+            /**
+             * Former Ids
+             * @default []
+             */
+            former_ids: string[];
             /** Id */
             id: string;
             /** Lifecycle */
@@ -5321,6 +5429,8 @@ export interface components {
             primary_source?: string | null;
             /** Proposition */
             proposition?: string | null;
+            /** Purpose */
+            purpose?: string | null;
             /**
              * Questions
              * @default []
@@ -6501,6 +6611,18 @@ export interface components {
             pref_label: string;
         };
         /**
+         * UnregisteredCitationResponse
+         * @description What a set of the version's facts cite that is not in its source register.
+         */
+        UnregisteredCitationResponse: {
+            /** Cited */
+            cited: string;
+            /** Examples */
+            examples: string[];
+            /** Facts */
+            facts: number;
+        };
+        /**
          * UploadOutcome
          * @enum {string}
          */
@@ -7493,6 +7615,39 @@ export interface operations {
             };
         };
     };
+    citations_architecture_knowledge_releases__release_id__citations_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnregisteredCitationResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     compare_impact_architecture_knowledge_releases__release_id__compare_impact_post: {
         parameters: {
             query?: never;
@@ -7912,6 +8067,44 @@ export interface operations {
             };
         };
     };
+    rename_journey_architecture_knowledge_releases__release_id__journeys__journey_id__rename_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+                journey_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntityRenameRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeReleaseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     rename_draft_architecture_knowledge_releases__release_id__name_put: {
         parameters: {
             query?: never;
@@ -7926,6 +8119,44 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["RenameVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeReleaseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rename_offering_architecture_knowledge_releases__release_id__offerings__offering_id__rename_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+                offering_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntityRenameRequest"];
             };
         };
         responses: {

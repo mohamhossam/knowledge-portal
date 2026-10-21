@@ -226,10 +226,13 @@ class OpenQuestion:
     # The order types it is asked for; none means the offering as a whole (step 7: a
     # question a change request raises for one order type).
     order_types: tuple[str, ...] = ()
+    # The question in a few words, such as "B2B Digital scope"; the text is its detail.
+    title: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Question id"))
         object.__setattr__(self, "text", required(self.text, "Question"))
+        object.__setattr__(self, "title", optional(self.title, "Question title"))
         object.__setattr__(self, "impact", optional(self.impact, "Impact"))
         object.__setattr__(
             self,

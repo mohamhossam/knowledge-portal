@@ -5,7 +5,7 @@ import { type FormEvent, Fragment, useState } from "react";
 import { api, type ImpactComparison, type Release, type SampleRequirement } from "../../api/client";
 import { ApiError, errorMessage } from "../../api/errors";
 import {
-  ActionGroup, Button, type Column, DataTable, EmptyState, Lines, Section, Status, type StatusTone, TextArea, TextField,
+  ActionGroup, Button, type Column, DataTable, EmptyState, Lines, Section, Skeleton, Status, type StatusTone, TextArea, TextField,
 } from "../../design/components";
 import { count } from "../../home/format";
 import { ButtonLink, RouterLink } from "../../shell/links";
@@ -40,12 +40,52 @@ export function CheckStep() {
   return (
     <div className="draft-step">
       <BuildSection release={release} build={build} state={state} />
+      <Citations release={release} base={base} />
       <Samples release={release} built={state === "built"} />
       <SharedData release={release} />
       <p className="draft-next">
         <ButtonLink to={`${base}/publish`} variant={state === "built" ? "primary" : "secondary"}>Next: publish</ButtonLink>
       </p>
     </div>
+  );
+}
+
+/** What the draft's facts cite that its source register does not hold: such a citation can't
+ * say its source's level or title, so the source is registered or the citation corrected. */
+function Citations({ release, base }: { release: Release; base: string }) {
+  const found = useQuery({
+    queryKey: ["architecture", "releases", release.id, "citations", release.revision],
+    queryFn: () => api.citations(release.id),
+  });
+  const items = found.data ?? [];
+  return (
+    <Section title="Sources it cites but doesn’t register" count={found.isSuccess ? items.length : undefined}>
+      {found.isPending ? (
+        <Skeleton label="Reading what the draft cites" rows={2} />
+      ) : found.isError ? (
+        <p role="status"><Status tone="attention">These couldn’t be checked: {errorMessage(found.error)}</Status></p>
+      ) : !items.length ? (
+        <p role="status"><Status tone="done">Every fact names a registered source.</Status></p>
+      ) : (
+        <>
+          <p className="draft-lead">
+            These facts name a source the register doesn’t hold, so they can’t show its level or title.{" "}
+            <RouterLink href={`${base}/governance`}>Register the source</RouterLink>, or correct the citation on the fact.
+          </p>
+          <Lines label="Sources it cites but doesn’t register">
+            {items.map((item) => (
+              <li key={item.cited} dir="auto">
+                <bdi>{item.cited}</bdi>
+                {/* A line of its own under the citation, so it starts with words, not a separator. */}
+                <span className="draft-detail">
+                  Cited by {count(item.facts, "fact")}, such as {item.examples.join("; ")}
+                </span>
+              </li>
+            ))}
+          </Lines>
+        </>
+      )}
+    </Section>
   );
 }
 
