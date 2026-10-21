@@ -172,6 +172,8 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "source",
         "masters",
         "reads",
+        "deprecated",
+        "replaced_by",
     ),
     COMPONENTS: (
         "system_id",
@@ -193,7 +195,14 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "unlinked_reason",
     ),
     CONSTRAINTS: ("system_id", "constraint"),
-    RELATIONSHIPS: ("source_system_id", "target_system_id", "description", "kind"),
+    RELATIONSHIPS: (
+        "source_system_id",
+        "target_system_id",
+        "description",
+        "kind",
+        "confidence",
+        "source",
+    ),
     DOMAINS: _DOMAIN_HEADERS,
     LANDSCAPE: (*_DOMAIN_HEADERS, "cross_cutting"),
     PRODUCTS: (
@@ -475,6 +484,8 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "exact_match",
         "confidence",
         "source",
+        "deprecated",
+        "replaced_by",
     ),
     VOCABULARY: (
         "term_id",
@@ -487,6 +498,8 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "exact_match",
         "confidence",
         "source",
+        "deprecated",
+        "replaced_by",
     ),
     INTERFACES: (
         "interface_id",
@@ -740,6 +753,11 @@ _INSTRUCTIONS = (
         "row each, naming the entry by entity and key. Leave it as exported; a row naming "
         "nothing in the file is ignored.",
     ),
+    (
+        "Systems, Concepts and Vocabulary deprecated (yes or no) and replaced_by (optional): a "
+        "retired entry stays in the catalogue but is never matched again; replaced_by names the "
+        "entry of the same sheet that takes its place, and implies deprecated.",
+    ),
     ("Row 1 of each sheet holds the headers; keep them as they are.",),
 )
 
@@ -960,6 +978,8 @@ def content_from_mapping(raw: object) -> CatalogueContent:
                     source=_optional_text(item.get("source"), where, "source"),
                     masters=_text_list(item.get("masters"), where, "masters"),
                     reads=_text_list(item.get("reads"), where, "reads"),
+                    deprecated=bool(_flag(item.get("deprecated"), where, "deprecated", False)),
+                    replaced_by=_optional_text(item.get("replaced_by"), where, "replaced_by"),
                 )
             )
         except InvalidKnowledgeError as exc:
@@ -974,6 +994,8 @@ def content_from_mapping(raw: object) -> CatalogueContent:
                     _text(item.get("target_system_id"), where, "target_system_id"),
                     _text(item.get("description"), where, "description"),
                     _kind(item.get("kind"), where),
+                    confidence=_trust(item.get("confidence"), where),
+                    source=_optional_text(item.get("source"), where, "source"),
                 )
             )
         except InvalidKnowledgeError as exc:
@@ -1019,6 +1041,7 @@ def _concepts(entries: list[dict[str, Any]]) -> list[BusinessCapability]:
                     _optional_text(item.get("exact_match"), where, "exact_match"),
                     _trust(item.get("confidence"), where),
                     _optional_text(item.get("source"), where, "source"),
+                    **_retirement(item, where),
                 )
             )
         except InvalidKnowledgeError as exc:
@@ -1038,6 +1061,7 @@ def _concept_mapping(concept: BusinessCapability) -> dict[str, Any]:
             exact_match=concept.exact_match,
         ),
         **_sourced(concept),
+        **_retired(concept),
     }
 
 
@@ -1059,6 +1083,7 @@ def _terms(entries: list[dict[str, Any]]) -> list[VocabularyTerm]:
                     _optional_text(item.get("exact_match"), where, "exact_match"),
                     _trust(item.get("confidence"), where),
                     _optional_text(item.get("source"), where, "source"),
+                    **_retirement(item, where),
                 )
             )
         except InvalidKnowledgeError as exc:
@@ -1079,6 +1104,7 @@ def _term_mapping(term: VocabularyTerm) -> dict[str, Any]:
             exact_match=term.exact_match,
         ),
         **_sourced(term),
+        **_retired(term),
     }
 
 
@@ -1793,6 +1819,18 @@ def _sourced(item: Any) -> dict[str, Any]:
     )
 
 
+def _retired(item: Any) -> dict[str, Any]:
+    """A retired entry and its successor (ADR-0121); one in service writes neither."""
+    return _present(deprecated=item.deprecated or None, replaced_by=item.replaced_by)
+
+
+def _retirement(item: dict[str, Any], where: str) -> dict[str, Any]:
+    return {
+        "deprecated": bool(_flag(item.get("deprecated"), where, "deprecated", False)),
+        "replaced_by": _optional_text(item.get("replaced_by"), where, "replaced_by"),
+    }
+
+
 def _offering_mapping(offering: ProductOffering) -> dict[str, Any]:
     return {
         "id": offering.id,
@@ -2303,6 +2341,7 @@ def release_to_mapping(release: ArchitectureKnowledge) -> dict[str, Any]:
                 ),
                 **_sourced(item),
                 **_present(masters=list(item.masters), reads=list(item.reads)),
+                **_retired(item),
             }
             for item in release.systems
         ],
@@ -2316,6 +2355,7 @@ def release_to_mapping(release: ArchitectureKnowledge) -> dict[str, Any]:
                     if item.kind is not RelationshipKind.UNSPECIFIED
                     else {}
                 ),
+                **_sourced(item),
             }
             for item in release.relationships
         ],
@@ -2438,6 +2478,7 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                 "source": _optional_text(cells.get("source"), where, "source"),
                 "masters": _split(cells.get("masters"), where, "masters"),
                 "reads": _split(cells.get("reads"), where, "reads"),
+                **_retirement(cells, where),
                 "capabilities": [],
                 "constraints": [],
                 "components": [],
@@ -2497,6 +2538,8 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                         _text(cells.get("target_system_id"), where, "target_system_id"),
                         _text(cells.get("description"), where, "description"),
                         _kind(cells.get("kind"), where),
+                        confidence=_trust(cells.get("confidence"), where),
+                        source=_optional_text(cells.get("source"), where, "source"),
                     )
                 )
             except InvalidKnowledgeError as exc:
@@ -2636,6 +2679,8 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                     source=data["source"],
                     masters=data["masters"],
                     reads=data["reads"],
+                    deprecated=data["deprecated"],
+                    replaced_by=data["replaced_by"],
                 )
             )
         except InvalidKnowledgeError as exc:
@@ -3460,6 +3505,8 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 system.source,
                 f"{_LIST_SEPARATOR} ".join(system.masters),
                 f"{_LIST_SEPARATOR} ".join(system.reads),
+                _yes(system.deprecated) if system.deprecated else None,
+                system.replaced_by,
             ),
         )
         for capability in system.capabilities:
@@ -3499,6 +3546,8 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 relationship.target_system_id,
                 relationship.description,
                 relationship.kind.value,
+                _confidence(relationship),
+                relationship.source,
             ),
         )
     for sheet, tree in (
@@ -3535,6 +3584,8 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 concept.exact_match,
                 _confidence(concept),
                 concept.source,
+                _yes(concept.deprecated) if concept.deprecated else None,
+                concept.replaced_by,
             ),
         )
     for term in release.vocabulary if release is not None else ():
@@ -3551,6 +3602,8 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 term.exact_match,
                 _confidence(term),
                 term.source,
+                _yes(term.deprecated) if term.deprecated else None,
+                term.replaced_by,
             ),
         )
     for interface in release.interfaces if release is not None else ():

@@ -569,6 +569,8 @@ def test_a_possible_match_is_confirmed_and_inferred_items_wait_for_a_person(
         "target_system_id": "bcrm",
         "description": "quotes",
         "kind": "unspecified",
+        "confidence": None,
+        "source": None,
     }
     assert [entry["candidate_id"] for entry in quotes["accepted"]] == [stated["id"]]
     decided = {

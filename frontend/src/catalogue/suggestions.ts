@@ -4,7 +4,7 @@
  * Pure functions over the suggestions payload and the draft.
  */
 import type {
-  ArchitectureJob, CatalogueSystem, ExtractionRun, Offering, RelationshipKind, Release, Suggestion, SuggestionKind,
+  ArchitectureJob, CatalogueReading, CatalogueSystem, ExtractionRun, Offering, RelationshipKind, Release, Suggestion, SuggestionKind,
 } from "../api/client";
 import { formatClock, formatElapsed } from "../home/format";
 import { COVERAGE, LAYERS } from "./catalogue";
@@ -369,13 +369,26 @@ export function draftedForRequirement(suggestion: Suggestion): boolean {
   return suggestion.change_request != null && (kind === "product" || kind === "journey");
 }
 
+/** The readings of a draft's own catalogue (ADR-0114, ADR-0119): each stands where a document's id would. */
+const CATALOGUE_READINGS: ReadonlySet<string> = new Set<CatalogueReading>([
+  "concept_backfill",
+  "component_links",
+  "vocabulary_cleanup",
+  "derived_dependencies",
+]);
+
+/** Whether a suggestion comes from reading the draft's own catalogue rather than a document. */
+export function fromCatalogue(suggestion: Pick<Suggestion, "document_version_id" | "change_request">): boolean {
+  return !suggestion.change_request && CATALOGUE_READINGS.has(suggestion.document_version_id);
+}
+
 /** Why a person must decide, in words. */
 export function decideWhy(suggestion: Suggestion): string {
   if (suggestion.possible_matches.length) {
     const names = suggestion.possible_matches.map((item) => item.written_as);
     return `“${[...new Set(names)].join("”, “")}” may be a system the draft already has`;
   }
-  if (suggestion.basis === "inferred") return "Inferred, not stated in the document";
+  if (suggestion.basis === "inferred") return fromCatalogue(suggestion) ? "Inferred from the draft's catalogue" : "Inferred, not stated in the document";
   if (draftedForRequirement(suggestion) && suggestion.match !== "updates_existing") {
     return "Drafted for a new offering: review what it holds";
   }

@@ -82,6 +82,8 @@ from knowledge_portal.domain.architecture.candidates import (
     missing_systems,
     needs_one_by_one,
     open_matches,
+    retired_names,
+    system_named,
 )
 from knowledge_portal.domain.architecture.channels import (
     Channel,
@@ -89,6 +91,7 @@ from knowledge_portal.domain.architecture.channels import (
     merge_channels,
     same_channel,
 )
+from knowledge_portal.domain.architecture.deprecation import in_service
 from knowledge_portal.domain.architecture.journeys import (
     Journey,
     merge_journeys,
@@ -1208,11 +1211,16 @@ class ProposeCatalogueChanges:
             )
             if version.mime_type == _DOCX:
                 segments += self._figures(stored, len(segments), warnings)
+        # The systems in service, each also known by the names of those it replaced.
+        forwarded = retired_names(release)
         known = tuple(
             KnownSystem(
-                item.id, item.name, item.aliases, tuple(part.name for part in item.components)
+                item.id,
+                item.name,
+                (*item.aliases, *forwarded.get(item.id, ())),
+                tuple(part.name for part in item.components),
             )
-            for item in release.systems
+            for item in in_service(release.systems)
         )
 
         def still_in_draft() -> None:
@@ -1358,17 +1366,18 @@ class ProposeCatalogueChanges:
                 queries.setdefault(written.casefold(), MatchQuery(written, item.quote))
         if not queries or not release.systems:
             return {}, False
+        forwarded = retired_names(release)
         systems = tuple(
             MatchableSystem(
                 system.id,
                 system.name,
                 system.name_ar,
-                system.aliases,
+                (*system.aliases, *forwarded.get(system.id, ())),
                 tuple(capability.name for capability in system.capabilities),
             )
-            for system in release.systems
+            for system in in_service(release.systems)
         )
-        known = {system.id for system in release.systems}
+        known = {system.id for system in systems}
         try:
             result = self._matcher.match(tuple(queries.values()), systems)
         except SystemMatchingError:
@@ -1559,7 +1568,8 @@ class DecideCatalogueCandidate:
         require_maintainer(actor)
         release = _draft(self._knowledge, release_id)
         name = name.strip() or reference
-        if find_system(release, reference) is not None:
+        # A retired system still holds its name, so it is no subject to settle either.
+        if system_named(release, reference) is not None:
             raise InvalidKnowledgeError(f"The draft already has the system {name}.")
         wanted = reference.casefold().strip()
         pending = [

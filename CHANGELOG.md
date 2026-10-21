@@ -7,6 +7,34 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- One canonical dependency model, part 2 (ADR-0119, `docs/slices/derived-dependencies.md`):
+  a draft's Sources step suggests every dependency its interfaces and journeys already say
+  (an API's consumer calls it; an event's or a file's system sends to its consumers; a
+  journey's hand-over, through an integration layer as two), one per two systems and kind,
+  each citing the interfaces and journey steps that say it. They are decided on Decide like
+  any other suggestion; suggesting again leaves out what the draft holds or a curator
+  rejected. `POST /architecture-knowledge/releases/{id}/derived-dependencies`; public
+  contract, additive. Decide names the draft's own catalogue as a suggestion's source,
+  rather than a missing document, for every reading of it.
+
+- One canonical dependency model, part 1 (ADR-0119, `docs/slices/dependency-identity.md`): a
+  dependency is identified by its two systems and its kind, so rewording what it is for is a
+  change to it and two systems can depend on each other in two ways at once. Dependencies
+  gain `confidence` and `source` like every other fact, in the API and every catalogue file
+  (optional Relationships columns). A version stored before reads with same-kind dependencies
+  between one pair joined. A connection's change says how the systems were linked even once
+  removed, and names what changed in words. Public contract, additive.
+
+- Retiring without deleting (ADR-0121, `docs/slices/lifecycle-deprecation.md`): a system, a
+  concept or a vocabulary term can be retired and name the one that replaces it. It stays in
+  every version and reads everywhere, drawn struck through with the word Retired, and the
+  draft's changes name it; no requirement maps to it, no assessment or suggestion reaches it,
+  and a reference to it forwards to its successor. A squad seated on a replaced system is
+  pointed at the successor. The system sheet's editor retires a system; catalogue files carry
+  `deprecated` and `replaced_by` (optional workbook columns on Systems, Concepts and
+  Vocabulary). Public contract, additive: the two fields on systems, concepts and terms, and
+  `replaced_systems` on the organisation's reference flags.
+
 - Provenance survives acceptance (ADR-0120, `docs/slices/provenance-survives-acceptance.md`):
   accepting a suggestion records on what it produced which suggestion it was, the model and
   prompt version behind it, and who accepted it when. The system and concept records show it

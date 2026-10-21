@@ -218,6 +218,9 @@ class BusinessCapabilitySchema(BaseModel):
     confidence: SourceConfidence | None = None
     source: Text | None = None
 
+    # Retired, and the entry of the same type that takes its place (ADR-0121).
+    deprecated: bool = False
+    replaced_by: Identifier | None = None
     # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
     accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
@@ -233,6 +236,8 @@ class BusinessCapabilitySchema(BaseModel):
             exact_match=concept.exact_match,
             confidence=concept.confidence,
             source=concept.source,
+            deprecated=concept.deprecated,
+            replaced_by=concept.replaced_by,
             accepted=[AcceptedFromSchema.from_domain(item) for item in concept.accepted],
         )
 
@@ -247,6 +252,8 @@ class BusinessCapabilitySchema(BaseModel):
             self.exact_match,
             self.confidence,
             self.source,
+            deprecated=self.deprecated,
+            replaced_by=self.replaced_by,
         )
 
 
@@ -270,6 +277,9 @@ class VocabularyTermSchema(BaseModel):
     confidence: SourceConfidence | None = None
     source: Text | None = None
 
+    # Retired, and the entry of the same type that takes its place (ADR-0121).
+    deprecated: bool = False
+    replaced_by: Identifier | None = None
     # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
     accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
@@ -286,6 +296,8 @@ class VocabularyTermSchema(BaseModel):
             exact_match=term.exact_match,
             confidence=term.confidence,
             source=term.source,
+            deprecated=term.deprecated,
+            replaced_by=term.replaced_by,
             accepted=[AcceptedFromSchema.from_domain(item) for item in term.accepted],
         )
 
@@ -301,6 +313,8 @@ class VocabularyTermSchema(BaseModel):
             self.exact_match,
             self.confidence,
             self.source,
+            deprecated=self.deprecated,
+            replaced_by=self.replaced_by,
         )
 
 
@@ -1831,6 +1845,9 @@ class SystemDefinitionSchema(BaseModel):
     masters: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     reads: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
+    # Retired, and the entry of the same type that takes its place (ADR-0121).
+    deprecated: bool = False
+    replaced_by: Identifier | None = None
     # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
     accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
@@ -1855,6 +1872,8 @@ class SystemDefinitionSchema(BaseModel):
             source=system.source,
             masters=list(system.masters),
             reads=list(system.reads),
+            deprecated=system.deprecated,
+            replaced_by=system.replaced_by,
             accepted=[AcceptedFromSchema.from_domain(item) for item in system.accepted],
         )
 
@@ -1878,6 +1897,8 @@ class SystemDefinitionSchema(BaseModel):
             source=self.source,
             masters=tuple(self.masters),
             reads=tuple(self.reads),
+            deprecated=self.deprecated,
+            replaced_by=self.replaced_by,
         )
 
 
@@ -1886,6 +1907,8 @@ class SystemRelationshipSchema(BaseModel):
     target_system_id: Identifier
     description: Text
     kind: RelationshipKind = RelationshipKind.UNSPECIFIED
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
 
     # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
     accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
@@ -1897,12 +1920,19 @@ class SystemRelationshipSchema(BaseModel):
             target_system_id=relationship.target_system_id,
             description=relationship.description,
             kind=relationship.kind,
+            confidence=relationship.confidence,
+            source=relationship.source,
             accepted=[AcceptedFromSchema.from_domain(item) for item in relationship.accepted],
         )
 
     def to_domain(self) -> SystemRelationship:
         return SystemRelationship(
-            self.source_system_id, self.target_system_id, self.description, self.kind
+            self.source_system_id,
+            self.target_system_id,
+            self.description,
+            self.kind,
+            confidence=self.confidence,
+            source=self.source,
         )
 
 

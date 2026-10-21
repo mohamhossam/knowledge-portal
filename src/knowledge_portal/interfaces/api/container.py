@@ -86,6 +86,7 @@ from knowledge_portal.application.use_cases.change_requests import (
     ReceiveDelivery,
 )
 from knowledge_portal.application.use_cases.cited_passages import CitedPassages
+from knowledge_portal.application.use_cases.derived_dependencies import SuggestDerivedDependencies
 from knowledge_portal.application.use_cases.document_library import DocumentLibrary
 from knowledge_portal.application.use_cases.golden_runs import GoldenSetRuns
 from knowledge_portal.application.use_cases.historic_requirements import (
@@ -243,6 +244,7 @@ class Container:
     decide_catalogue_candidates: DecideCatalogueCandidate
     propose_capability_concepts: ProposeCapabilityConcepts
     clean_up_vocabulary: CleanUpVocabulary
+    suggest_derived_dependencies: SuggestDerivedDependencies
     suggest_component_capabilities: SuggestComponentCapabilities
     # Change requests from Requirement AI (requirement-portal ADR-0101, step 7).
     receive_change_request: ReceiveChangeRequest
@@ -468,6 +470,7 @@ def _build_container(
         decide_catalogue_candidates=architecture.decide_candidates,
         propose_capability_concepts=architecture.propose_concepts,
         clean_up_vocabulary=architecture.clean_up_vocabulary,
+        suggest_derived_dependencies=architecture.suggest_derived_dependencies,
         suggest_component_capabilities=architecture.suggest_component_links,
         receive_change_request=architecture.receive_change_request,
         receive_delivery=architecture.receive_delivery,

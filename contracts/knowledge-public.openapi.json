@@ -1297,6 +1297,11 @@
             ],
             "title": "Definition"
           },
+          "deprecated": {
+            "default": false,
+            "title": "Deprecated",
+            "type": "boolean"
+          },
           "domain_id": {
             "anyOf": [
               {
@@ -1330,6 +1335,18 @@
             "maxLength": 300,
             "title": "Pref Label",
             "type": "string"
+          },
+          "replaced_by": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaced By"
           },
           "source": {
             "anyOf": [
@@ -2177,7 +2194,8 @@
         "enum": [
           "concept_backfill",
           "component_links",
-          "vocabulary_cleanup"
+          "vocabulary_cleanup",
+          "derived_dependencies"
         ],
         "title": "CatalogueReading",
         "type": "string"
@@ -10374,6 +10392,14 @@
       "ReferenceFlagResponse": {
         "description": "A squad or product naming what the version in service no longer has, or a product\nwhose systems differ from what its offerings name, or that is linked to nothing.",
         "properties": {
+          "replaced_systems": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SystemSuccessorResponse"
+            },
+            "title": "Replaced Systems",
+            "type": "array"
+          },
           "retired_capabilities": {
             "items": {
               "$ref": "#/components/schemas/CapabilityScopeResponse"
@@ -12071,6 +12097,11 @@
             "title": "Constraints",
             "type": "array"
           },
+          "deprecated": {
+            "default": false,
+            "title": "Deprecated",
+            "type": "boolean"
+          },
           "description": {
             "anyOf": [
               {
@@ -12177,6 +12208,18 @@
             "maxItems": 5000,
             "title": "Reads",
             "type": "array"
+          },
+          "replaced_by": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaced By"
           },
           "roadmap": {
             "anyOf": [
@@ -12384,6 +12427,16 @@
             "title": "Accepted",
             "type": "array"
           },
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "description": {
             "maxLength": 10000,
             "title": "Description",
@@ -12392,6 +12445,18 @@
           "kind": {
             "$ref": "#/components/schemas/RelationshipKind",
             "default": "unspecified"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
           },
           "source_system_id": {
             "maxLength": 200,
@@ -12503,6 +12568,25 @@
           "standing"
         ],
         "title": "SystemStanding",
+        "type": "object"
+      },
+      "SystemSuccessorResponse": {
+        "description": "A retired system still named, and the system that replaced it (ADR-0121).",
+        "properties": {
+          "successor_id": {
+            "title": "Successor Id",
+            "type": "string"
+          },
+          "system_id": {
+            "title": "System Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "system_id",
+          "successor_id"
+        ],
+        "title": "SystemSuccessorResponse",
         "type": "object"
       },
       "SystemUpdateRequest": {
@@ -13128,6 +13212,11 @@
             ],
             "title": "Definition"
           },
+          "deprecated": {
+            "default": false,
+            "title": "Deprecated",
+            "type": "boolean"
+          },
           "exact_match": {
             "anyOf": [
               {
@@ -13161,6 +13250,18 @@
             "maxLength": 300,
             "title": "Pref Label",
             "type": "string"
+          },
+          "replaced_by": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaced By"
           },
           "scheme": {
             "$ref": "#/components/schemas/VocabularyScheme"
@@ -15072,6 +15173,70 @@
           }
         ],
         "summary": "Propose Capability Concepts",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
+    "/architecture-knowledge/releases/{release_id}/derived-dependencies": {
+      "post": {
+        "description": "Suggest each dependency the draft's interfaces and journeys say between two systems\nin service, citing what says it (ADR-0119).\n\nThe suggestions replace the undecided ones of the previous reading; a dependency in the\ndraft already, or rejected before, is left out.",
+        "operationId": "suggest_derived_dependencies_architecture_knowledge_releases__release_id__derived_dependencies_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtractionRunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Suggest Derived Dependencies",
         "tags": [
           "architecture knowledge"
         ]

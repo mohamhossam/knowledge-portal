@@ -150,6 +150,30 @@ describe("Decide", () => {
     expect(within(pane).getByText("System: x").closest("blockquote")).toHaveAttribute("lang", "en");
   });
 
+  it("cites a dependency derived from the draft's own catalogue by its place there, not as a document", async () => {
+    const derived = base(
+      "dep",
+      { kind: "relationship", system_id: "bcrm", target_system_id: "cwom", relationship_kind: "calls_api", text: "Order API" },
+      {
+        document_version_id: "derived_dependencies", basis: "inferred", rationale: "Said by 1 interface of this catalogue.",
+        citations: [{ location: "Catalogue › interface Order API of CWOM", quote: "Takes channel orders." }],
+        model: "dependency-derivation", system_name: "BCRM", target_system_name: "CWOM",
+      },
+    );
+    renderStep("decide", { suggestions: [...SUGGESTIONS, derived] });
+    await screen.findByRole("grid");
+    expect(screen.getByText(/from 1 document and the draft's catalogue/)).toBeInTheDocument();
+    const cell = within(screen.getByRole("grid")).getByText("Catalogue › interface Order API of CWOM", { exact: false }).closest("[data-cell-focus]") as HTMLElement;
+    cell.focus();
+    await waitFor(() => expect(cell).toHaveAttribute("tabindex", "0"));
+    const pane = screen.getByRole("complementary", { name: "The suggestion" });
+    expect(within(pane).getByText("From the draft's catalogue")).toBeInTheDocument();
+    expect(within(pane).getByText("Inferred from the draft's catalogue.")).toBeInTheDocument();
+    expect(within(pane).getByText("Catalogue › interface Order API of CWOM")).toBeInTheDocument();
+    expect(within(pane).queryByText(/A document no longer in the draft/)).not.toBeInTheDocument();
+    expect(within(pane).queryByRole("button", { name: "Show the passage around it" })).not.toBeInTheDocument();
+  });
+
   it("on a narrow screen, brings the pane into view when a row is tapped", async () => {
     renderStep("decide");
     await screen.findByRole("grid");
@@ -269,6 +293,18 @@ describe("Sources", () => {
     const table = await screen.findByRole("table", { name: "The draft's documents and how their reading stands" });
     expect(within(table).getByText("Not read yet")).toBeInTheDocument();
     expect(await screen.findByRole("link", { name: "Next: decide 4 suggestions" })).toHaveAttribute("href", "/architecture/versions/d/decide");
+  });
+
+  it("suggests the dependencies the draft's interfaces and journeys say, and what came of it", async () => {
+    renderStep("sources");
+    const suggest = vi.spyOn(api, "suggestDerivedDependencies").mockResolvedValue({
+      id: "r1", release_id: "d", document_version_id: "derived_dependencies", model: "dependency-derivation",
+      prompt_version: "dependency-derivation-v1", candidate_count: 52, warnings: [], created_at: "", reading: "derived_dependencies",
+    } as never);
+    const section = (await screen.findByRole("heading", { name: "Dependencies from interfaces and journeys" })).closest("section")!;
+    fireEvent.click(within(section).getByRole("button", { name: "Suggest dependencies" }));
+    expect(await within(section).findByText("52 dependencies suggested; decide them on Decide.")).toBeInTheDocument();
+    expect(suggest).toHaveBeenCalledWith("d");
   });
 
   it("says which part a document's reading is on, when it started and what comes next", async () => {

@@ -29,7 +29,7 @@ from knowledge_portal.domain.architecture.provenance import AcceptedFrom
 from knowledge_portal.domain.architecture.vocabularies import VocabularyTerm
 
 # Which entity, by kind and identity: ("system", id), ("component", system id, id),
-# ("relationship", source, target, description), ("offering", id) and so on.
+# ("relationship", source, target, kind), ("offering", id) and so on.
 type AcceptanceKey = tuple[str, ...]
 type _Carrier = (
     SystemDefinition
@@ -125,12 +125,7 @@ def _visit[Body: CatalogueBody](body: Body, visit: _Visitor) -> Body:
         systems=systems,
         relationships=tuple(
             visit(
-                (
-                    "relationship",
-                    item.source_system_id,
-                    item.target_system_id,
-                    item.description.casefold(),
-                ),
+                ("relationship", item.source_system_id, item.target_system_id, item.kind.value),
                 item,
             )
             for item in body.relationships

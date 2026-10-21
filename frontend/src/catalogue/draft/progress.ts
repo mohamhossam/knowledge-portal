@@ -48,12 +48,15 @@ export function useDraftProgress(release: Release) {
   const counts = tally(suggestions.data?.suggestions ?? []);
   const readings = (extractions.data ?? []).map((item) => reading(item.job, extractions.dataUpdatedAt));
   const busy = readings.filter((item) => item.busy);
-  const requests = new Set((suggestions.data?.runs ?? []).flatMap((run) => (run.change_request_id ? [run.change_request_id] : []))).size;
+  const runs = suggestions.data?.runs ?? [];
+  const requests = new Set(runs.flatMap((run) => (run.change_request_id ? [run.change_request_id] : []))).size;
+  // Each reading of the draft's own catalogue (its derived dependencies, its vocabulary) is a source too.
+  const catalogue = new Set(runs.flatMap((run) => (run.reading ? [run.reading] : []))).size;
   return {
     suggestions,
     changes,
     counts,
-    sources: release.documents.length + requests,
+    sources: release.documents.length + requests + catalogue,
     reading: busy.length,
     readingLabel: readingWords(busy),
     stalled: busy.filter((item) => item.stalled).length,

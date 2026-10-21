@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import type { Release } from "../api/client";
-import { buildState, connectionSentence, diffSections, fieldsInWords, impactVerdict, systemUses, withoutSystem } from "./drafting";
+import { buildState, connectionFieldsInWords, connectionSentence, diffSections, fieldsInWords, impactVerdict, systemUses, withoutSystem } from "./drafting";
 import { finishedSystem, systemProblem } from "./editing";
 
-const system = (id: string, name: string, extra: object = {}) => ({ id, name, aliases: [], capabilities: [], components: [], constraints: [], external: false, masters: [], reads: [], accepted: [], ...extra });
+const system = (id: string, name: string, extra: object = {}) => ({ id, name, aliases: [], capabilities: [], components: [], constraints: [], external: false, masters: [], reads: [], deprecated: false, accepted: [], ...extra });
 
 const draft = {
   id: "d", revision: 5, built_revision: 4, status: "draft", documents: [],
@@ -88,9 +88,14 @@ describe("getting ready to publish", () => {
     ]);
     expect(fieldsInWords(["name_ar", "landscape_domain"])).toBe("Arabic name and where it sits");
     // A connection is a sentence, never an arrow.
-    const added = { item: "relationship" as const, change: "added" as const, key: "cwom->bscs:closure", label: "CWOM → BSCS: Closure", fields: [] };
+    // Its kind is in its key (ADR-0119), so even a removed one says how they were linked.
+    const added = { item: "relationship" as const, change: "added" as const, key: "cwom->bscs:transfers_data_to", label: "CWOM → BSCS: Closure", fields: [] };
     expect(connectionSentence(added, draft)).toEqual({ sentence: "CWOM sends data to BSCS", forWhat: "Closure" });
-    expect(connectionSentence({ ...added, change: "removed", key: "cwom->gone:old", label: "CWOM → Legacy: Old" }, draft).sentence)
-      .toBe("CWOM no longer depends on Legacy");
+    expect(connectionSentence({ ...added, change: "removed", key: "cwom->gone:calls_api", label: "CWOM → Legacy: Old" }, draft).sentence)
+      .toBe("CWOM no longer calls the API of Legacy");
+    expect(connectionSentence({ ...added, change: "changed", label: "CWOM → BSCS: Closure; Billing", fields: ["description"] }, draft))
+      .toEqual({ sentence: "CWOM sends data to BSCS", forWhat: "Closure; Billing" });
+    expect(connectionSentence({ ...added, key: "cwom->bscs:unspecified" }, draft).sentence).toBe("CWOM depends on BSCS");
+    expect(connectionFieldsInWords(["description", "source"])).toBe("what it is for and where it is said");
   });
 });

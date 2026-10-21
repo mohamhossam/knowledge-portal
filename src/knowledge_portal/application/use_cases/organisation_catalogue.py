@@ -16,6 +16,7 @@ from knowledge_portal.application.ports.identity import (
 from knowledge_portal.application.ports.organisation_repository import (
     OrganisationRepositoryPort,
 )
+from knowledge_portal.domain.architecture.deprecation import in_service, successor
 from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge
 from knowledge_portal.domain.architecture.products import ProductOffering
 from knowledge_portal.domain.organisation.catalogue import (
@@ -181,10 +182,18 @@ class ManageOrganisationCatalogue:
 
 
 def _release_references(release: ArchitectureKnowledge) -> ReleaseReferences:
+    """What a squad or product may point at: the systems in service; a retired system
+    forwards to the one that replaced it (ADR-0121)."""
+    successors = {
+        system.id: current.id
+        for system in release.systems
+        if system.deprecated and (current := successor(release.systems, system.id)) is not None
+    }
     return ReleaseReferences(
+        successors=successors,
         systems={
             system.id: {item.concept_id for item in system.capabilities if item.concept_id}
-            for system in release.systems
+            for system in in_service(release.systems)
         },
         offering_systems={
             offering.id: _offering_systems(release, offering) for offering in release.products

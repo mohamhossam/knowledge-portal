@@ -168,13 +168,14 @@ export function ConnectionEdit({ system, connection, onDone }: { system: Catalog
   const [kind, setKind] = useState<RelationshipKind>(connection?.kind ?? "calls_api");
   const [text, setText] = useState(connection?.description ?? "");
   const others = release.systems.filter((item) => item.id !== system.id);
+  // ADR-0119: one dependency of each kind between two systems.
   const duplicate = release.relationships.some(
-    (item) => item !== connection && item.source_system_id === system.id && item.target_system_id === target,
+    (item) => item !== connection && item.source_system_id === system.id && item.target_system_id === target && item.kind === kind,
   );
   const problem = !target
     ? "Choose the system it depends on."
     : duplicate
-      ? "It already depends on that system; change that connection instead."
+      ? "It already depends on that system that way; change that connection instead."
       : !text.trim() ? "Say what the dependency is for." : null;
   const next: Relationship = { source_system_id: system.id, target_system_id: target, kind, description: text.trim(), accepted: connection?.accepted ?? [] };
   const relationships = connection

@@ -27,6 +27,7 @@ from knowledge_portal.domain.architecture.concepts import (
     CapabilityRef,
     label_key,
 )
+from knowledge_portal.domain.architecture.deprecation import successor
 from knowledge_portal.domain.architecture.drafts import OfferingDraft
 from knowledge_portal.domain.architecture.governance import (
     KnowledgeSource,
@@ -45,6 +46,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     SystemDefinition,
     SystemRelationship,
     relationship_kind,
+    with_purpose,
 )
 from knowledge_portal.domain.architecture.products import (
     OfferingComponent,
@@ -59,6 +61,7 @@ from knowledge_portal.domain.architecture.vocabularies import (
     SCHEME_NAMES,
     VocabularyTerm,
     find_term,
+    term_named,
 )
 from knowledge_portal.domain.architecture.vocabulary_links import (
     VocabularyRef,
@@ -449,7 +452,26 @@ def _words(value: str) -> str:
 
 
 def find_system(release: ArchitectureKnowledge, reference: str) -> SystemDefinition | None:
-    """A draft system named by id, name, Arabic name or alias, ignoring case.
+    """The system a reference means now (ADR-0121): one retired forwards to what replaced
+    it, and one retired for good matches nothing. ``system_named`` sees every system."""
+    found = system_named(release, reference)
+    return successor(release.systems, found.id) if found is not None else None
+
+
+def retired_names(release: ArchitectureKnowledge) -> dict[str, tuple[str, ...]]:
+    """The names and aliases of retired systems, by the system in service that replaced
+    them, so a document that still uses an old name is read as its successor (ADR-0121)."""
+    found: dict[str, list[str]] = {}
+    for system in release.systems:
+        current = successor(release.systems, system.id) if system.deprecated else None
+        if current is not None:
+            found.setdefault(current.id, []).extend((system.name, *system.aliases))
+    return {system_id: tuple(names) for system_id, names in found.items()}
+
+
+def system_named(release: ArchitectureKnowledge, reference: str) -> SystemDefinition | None:
+    """A draft system named by id, name, Arabic name or alias, ignoring case, retired or not:
+    whether a label is taken.
 
     Failing an exact label, the words alone are compared, so ``dynamics-crm``
     (the id of a suggested system) finds the system that has since taken
@@ -874,7 +896,15 @@ def _resolved_question(
 
 
 def find_concept(release: ArchitectureKnowledge, reference: str) -> BusinessCapability | None:
-    """A draft concept named by id or by any of its labels, ignoring case and punctuation."""
+    """The concept a reference means now (ADR-0121): one retired forwards to what replaced
+    it, and one retired for good matches nothing. ``concept_named`` sees every concept."""
+    found = concept_named(release, reference)
+    return successor(release.business_capabilities, found.id) if found is not None else None
+
+
+def concept_named(release: ArchitectureKnowledge, reference: str) -> BusinessCapability | None:
+    """A draft concept named by id or by any of its labels, ignoring case and punctuation,
+    retired or not: whether a label is taken."""
     exact = next((item for item in release.business_capabilities if item.id == reference), None)
     key = label_key(reference)
     if exact is not None or not key:
@@ -903,7 +933,7 @@ def _free_labels(
     seen: set[str] = set()
     for label in labels:
         key = label_key(label)
-        owner = find_concept(release, label)
+        owner = concept_named(release, label)
         if key and key not in seen and (owner is None or owner.id == owner_id):
             seen.add(key)
             free.append(label)
@@ -1167,37 +1197,49 @@ def classify(content: CandidateContent, release: ArchitectureKnowledge) -> Candi
     target = find_system(release, content.target_system_id or "")
     if target is None:
         return CandidateMatch.NEEDS_SYSTEM
-    link = _relationship(release, system.id, target.id, content.text)
+    link = _relationship(release, system.id, target.id, content)
     if link is None:
         return CandidateMatch.NEW
     return (
-        CandidateMatch.UPDATES_EXISTING
-        if _new_kind(content, link) is not None
-        else CandidateMatch.ALREADY_PRESENT
+        CandidateMatch.ALREADY_PRESENT
+        if _with_suggested(content, link) == link
+        else CandidateMatch.UPDATES_EXISTING
     )
 
 
 def _relationship(
-    release: ArchitectureKnowledge, source_id: str, target_id: str, text: str
+    release: ArchitectureKnowledge, source_id: str, target_id: str, content: CandidateContent
 ) -> SystemRelationship | None:
-    return next(
-        (
-            item
-            for item in release.relationships
-            if item.source_system_id == source_id
-            and item.target_system_id == target_id
-            and item.description.casefold() == text.casefold()
-        ),
-        None,
+    """The dependency a suggestion means (ADR-0119): the one of the kind it states, else the
+    pair's unspecified one, which learns its kind; a suggestion that states no kind means
+    the unspecified one, or the pair's only dependency."""
+    between = [
+        item
+        for item in release.relationships
+        if item.source_system_id == source_id and item.target_system_id == target_id
+    ]
+    stated = content.relationship_kind
+    unspecified = next(
+        (item for item in between if item.kind is RelationshipKind.UNSPECIFIED), None
     )
+    if stated is not None and stated is not RelationshipKind.UNSPECIFIED:
+        exact = next((item for item in between if item.kind is stated), None)
+        return exact or unspecified
+    return unspecified or (between[0] if len(between) == 1 else None)
 
 
-def _new_kind(content: CandidateContent, current: SystemRelationship) -> RelationshipKind | None:
-    """The kind a suggestion would set: only a stated kind that differs from the record."""
-    wanted = content.relationship_kind
-    if wanted is None or wanted is RelationshipKind.UNSPECIFIED or wanted is current.kind:
-        return None
-    return wanted
+def _with_suggested(content: CandidateContent, current: SystemRelationship) -> SystemRelationship:
+    """The dependency once the suggestion is accepted: an unspecified kind takes the one
+    stated, and a purpose not said yet joins its description; nothing is replaced."""
+    stated = content.relationship_kind
+    kind = (
+        stated
+        if current.kind is RelationshipKind.UNSPECIFIED
+        and stated is not None
+        and stated is not RelationshipKind.UNSPECIFIED
+        else current.kind
+    )
+    return replace(current, kind=kind, description=with_purpose(current.description, content.text))
 
 
 def open_matches(
@@ -1406,7 +1448,7 @@ def _free(
     return tuple(
         label
         for label in labels
-        if (found := find_system(release, label)) is None or found.id == owner_id
+        if (found := system_named(release, label)) is None or found.id == owner_id
     )
 
 
@@ -1833,7 +1875,7 @@ def _term_to_apply(
     owner_id = current.id if current is not None else None
 
     def free(label: str) -> bool:
-        owner = find_term(terms, scheme, label)
+        owner = term_named(terms, scheme, label)
         return owner is None or owner.id == owner_id
 
     labels: list[str] = []
@@ -2050,15 +2092,13 @@ def apply_candidate(
             replace(system, constraints=_merged(system.constraints, (content.text.strip(),))),
         )
     target = _require_system(release, content.target_system_id or "")
-    link = _relationship(release, system.id, target.id, content.text)
+    link = _relationship(release, system.id, target.id, content)
     if link is not None:
-        kind = _new_kind(content, link)
-        if kind is None:
+        changed = _with_suggested(content, link)
+        if changed == link:
             return release.updated()
         return release.updated(
-            relationships=tuple(
-                replace(item, kind=kind) if item is link else item for item in release.relationships
-            )
+            relationships=tuple(changed if item is link else item for item in release.relationships)
         )
     relationship = SystemRelationship(
         system.id,
