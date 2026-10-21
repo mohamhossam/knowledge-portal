@@ -17,6 +17,14 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   realisation records were left out of what accepting saved. Public contract, additive;
   prompt `catalogue-extraction-v17`.
 
+- Library documents have a type and topics (ADR-0123, `docs/slices/library-classification.md`):
+  the owner sets what kind of document it is (a document-type term of the catalogue in service,
+  such as Solution design or Contract) and the business capabilities it is about, on its page
+  or its type at upload. The library list filters by type and topic, and the summary and the
+  document page say both. English only. `GET /library/classification-options`,
+  `PUT /library/documents/{id}/classification`, and an optional `document_type` on upload;
+  public contract, additive. The catalogue gains a `document_type` vocabulary with eight terms.
+
 - Data with more than one owner (ADR-0123, `docs/slices/shared-mastery.md`): several systems
   may be the system of record for one information entity when each says which part it
   masters, in a `mastery_notes` list on the system (API, YAML and JSON, and a new MasteryNotes

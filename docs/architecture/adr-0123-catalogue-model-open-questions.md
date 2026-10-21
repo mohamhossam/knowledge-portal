@@ -12,8 +12,9 @@ Accepted 2026-10-21 by the owner, who decided each point as follows:
 3. Library classification: type and taxonomy topics, **English only, with no language
    field**, since the library takes English documents only. This narrows decision 3.
 
-Implemented in slices: `docs/slices/shared-mastery.md` (1); the library classification and
-the suggestion kinds follow.
+Implemented in slices: `docs/slices/shared-mastery.md` (1),
+`docs/slices/library-classification.md` (3), `docs/slices/interface-suggestions.md` (2, the
+first kind); the other suggestion kinds follow.
 
 Proposed 2026-10-21. Records the three decisions left from review item O7 of the portal
 review ([report](https://claude.ai/code/artifact/d5147883-5ccd-472f-a57a-6a2464b2fd53)).

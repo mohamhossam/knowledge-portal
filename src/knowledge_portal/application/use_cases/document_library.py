@@ -139,6 +139,9 @@ class LibraryView:
     citations: int | None = None
     # When it was last confirmed and when it falls due again; None while nothing is in service.
     review: ReviewStanding | None = None
+    # Its type and topics, by catalogue id (ADR-0123).
+    document_type: str | None = None
+    topics: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -298,6 +301,7 @@ class DocumentLibrary:
         return safe_source, publication
 
     def _reviewed(self, document: LibraryDocument, view: LibraryView) -> LibraryView:
+        view = replace(view, document_type=document.document_type, topics=document.topics)
         last = document.last_review()
         if last is None:
             return view
@@ -308,6 +312,21 @@ class DocumentLibrary:
     def get(self, document_id: str, actor: ActorProfile) -> LibraryView:
         document = self._get(document_id)
         return self._reviewed(document, self._visible(document, actor))
+
+    def classify(
+        self,
+        document_id: str,
+        document_type: str | None,
+        topics: tuple[str, ...],
+        expected: int,
+        actor: ActorProfile,
+    ) -> LibraryDocument:
+        """Set what kind of document it is and what it is about; the owner only."""
+        with self._transactions.transaction():
+            document = self._owned(document_id, actor, expected)
+            updated = document.classified(document_type, topics)
+            self._repository.save(updated, expected)
+            return updated
 
     def list(
         self, actor: ActorProfile, offset: int = 0, limit: int = 50
@@ -339,7 +358,9 @@ class DocumentLibrary:
         actor: ActorProfile,
         document_id: str | None = None,
         expected: int | None = None,
+        document_type: str | None = None,
     ) -> LibraryDocument:
+        """A new document, or a new version of one; ``document_type`` applies to a new one."""
         filename, mime = validate_ingested_upload(
             data.filename, data.mime_type, data.content, self.max_file_bytes
         )
@@ -393,6 +414,7 @@ class DocumentLibrary:
                     title.strip(),
                     actor.snapshot(),
                     (version,),
+                    document_type=document_type,
                 )
                 self._repository.add(document)
             else:

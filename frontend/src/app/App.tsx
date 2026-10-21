@@ -46,6 +46,7 @@ const MainPage = library.page("MainPage");
 const VersionsPage = library.page("VersionsPage");
 const CitationsPage = library.page("CitationsPage");
 const OwnershipPage = library.page("OwnershipPage");
+const ClassificationPage = library.page("ClassificationPage");
 const ReviewFocus = library.page("ReviewFocus");
 
 /** The catalogue: a version's pages, its draft's steps, versions and compare. */
@@ -216,6 +217,7 @@ export function App() {
           {/* The old address keeps working until area 10 turns it into a redirect. */}
           <Route path="citations" element={<Loading><CitationsPage /></Loading>} />
           <Route path="ownership" element={<Loading><OwnershipPage /></Loading>} />
+          <Route path="about" element={<Loading><ClassificationPage /></Loading>} />
           {/* The review one question at a time (UX rebuild, phase 2): the shell hides its sidebar. */}
           <Route path="focus" element={<Loading><ReviewFocus /></Loading>} />
         </Route>
