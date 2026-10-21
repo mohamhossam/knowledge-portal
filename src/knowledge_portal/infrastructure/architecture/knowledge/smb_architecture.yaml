@@ -317,3 +317,63 @@ dependencies:
     target_system_id: cns
     description: Order milestones trigger customer notifications.
     kind: publishes_events_to
+vocabulary:
+- id: doctype-solution-design
+  scheme: document_type
+  pref_label: Solution design
+  alt_labels:
+  - SDD
+  - Solution design document
+  definition: 'How a solution is built: its systems, integrations and data, such as an SDD.'
+  confidence: inferred
+  source: ADR-0123 · library classification, the owner's decision of 2026-10-21
+- id: doctype-high-level-design
+  scheme: document_type
+  pref_label: High-level design
+  alt_labels:
+  - HLD
+  definition: 'The shape of a solution before its detail: its parts and how they connect.'
+  confidence: inferred
+  source: ADR-0123 · library classification, the owner's decision of 2026-10-21
+- id: doctype-process-book
+  scheme: document_type
+  pref_label: Process book
+  alt_labels:
+  - Workflow book
+  definition: 'How work flows step by step, such as a workflow book of an order journey.'
+  confidence: inferred
+  source: ADR-0123 · library classification, the owner's decision of 2026-10-21
+- id: doctype-product-specification
+  scheme: document_type
+  pref_label: Product specification
+  alt_labels:
+  - Product spec
+  definition: 'What an offering is and how it is sold and fulfilled.'
+  confidence: inferred
+  source: ADR-0123 · library classification, the owner's decision of 2026-10-21
+- id: doctype-contract
+  scheme: document_type
+  pref_label: Contract
+  definition: 'An agreement with a customer, vendor or partner.'
+  confidence: inferred
+  source: ADR-0123 · library classification, the owner's decision of 2026-10-21
+- id: doctype-policy
+  scheme: document_type
+  pref_label: Policy
+  definition: 'A rule the business has to follow, and why.'
+  confidence: inferred
+  source: ADR-0123 · library classification, the owner's decision of 2026-10-21
+- id: doctype-guide
+  scheme: document_type
+  pref_label: Guide
+  alt_labels:
+  - How-to
+  definition: 'How to do something, for the people who do it.'
+  confidence: inferred
+  source: ADR-0123 · library classification, the owner's decision of 2026-10-21
+- id: doctype-other
+  scheme: document_type
+  pref_label: Other
+  definition: 'A document none of the other types describes.'
+  confidence: inferred
+  source: ADR-0123 · library classification, the owner's decision of 2026-10-21

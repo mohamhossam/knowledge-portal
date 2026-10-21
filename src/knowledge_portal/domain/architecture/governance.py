@@ -17,14 +17,16 @@ from __future__ import annotations
 
 import re
 from collections.abc import Collection, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import StrEnum
 
+from knowledge_portal.domain.architecture.concepts import label_key
 from knowledge_portal.domain.architecture.invariants import (
     InvalidKnowledgeError,
     optional,
     required,
 )
+from knowledge_portal.domain.architecture.provenance import AcceptedFrom
 from knowledge_portal.domain.architecture.sources import SourceConfidence, check_source
 
 
@@ -66,6 +68,8 @@ class KnowledgeSource:
     scope: str | None = None
     # What it cannot tell, such as diagrams that are not machine-readable.
     boundary: str | None = None
+    # The accepted suggestions that created or extended it, oldest first (ADR-0120).
+    accepted: tuple[AcceptedFrom, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Source id"))
@@ -142,6 +146,8 @@ class SourceConflict:
     decision: str | None = None
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # The accepted suggestions that created or extended it, oldest first (ADR-0120).
+    accepted: tuple[AcceptedFrom, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Conflict id"))
@@ -160,6 +166,52 @@ class SourceConflict:
     def concerns(self, product_id: str, order_code: str | None = None) -> bool:
         """Whether the conflict affects an offering, and an order type of it when given."""
         return any(item.concerns(product_id, order_code) for item in self.scope)
+
+
+def find_source_among(
+    sources: tuple[KnowledgeSource, ...], reference: str
+) -> KnowledgeSource | None:
+    """A registered source named by id or, when only one has it, by its title or short name,
+    ignoring case and punctuation."""
+    exact = next((item for item in sources if item.id == reference.strip()), None)
+    if exact is not None:
+        return exact
+    key = label_key(reference)
+    named = [
+        item
+        for item in sources
+        if key in {label_key(label) for label in (item.title, item.short or "") if label}
+    ]
+    return named[0] if len(named) == 1 else None
+
+
+def merge_sources(first: KnowledgeSource, second: KnowledgeSource) -> KnowledgeSource:
+    """Two readings of one source as one: the first's title and level win; the second fills
+    what the first leaves unset."""
+    return replace(
+        first,
+        short=first.short or second.short,
+        version=first.version or second.version,
+        file=first.file or second.file,
+        authority=first.authority or second.authority,
+        scope=first.scope or second.scope,
+        boundary=first.boundary or second.boundary,
+    )
+
+
+def merge_conflicts(first: SourceConflict, second: SourceConflict) -> SourceConflict:
+    """Two readings of one conflict as one: the first's sides win; the second adds the
+    offerings it affects and fills what the first leaves unset."""
+    held = {item.product_id for item in first.scope}
+    return replace(
+        first,
+        scope=(*first.scope, *(item for item in second.scope if item.product_id not in held)),
+        difference=first.difference or second.difference,
+        impact=first.impact or second.impact,
+        decision=first.decision or second.decision,
+        confidence=first.confidence or second.confidence,
+        source=first.source or second.source,
+    )
 
 
 @dataclass(frozen=True)

@@ -394,16 +394,9 @@ def test_every_value_in_the_smb_catalogue_is_mapped_or_flagged() -> None:
         if not found.term_ids
     }
     assert unmapped == flagged
-    # The responsibility verbs no activity role names are left for a maintainer.
-    assert sorted({ref.value for ref in flagged}) == [
-        "APPLIES",
-        "CREATES",
-        "ENABLES",
-        "PASSES",
-        "RETURNS",
-        "SAML",
-        "SUGGESTS",
-    ]
+    # Configure, Authenticate and Suggest now cover the component verbs; PASSES
+    # (relaying a choice in an onboarding ticket) stays for a maintainer to place.
+    assert sorted({ref.value for ref in flagged}) == ["PASSES"]
     # Re-running proposes only the flagged values again.
     assert {item.term.id for item in propose_terms(release)} == {
         item.term.id for item in proposals if not item.existing

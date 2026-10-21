@@ -32,6 +32,12 @@ from knowledge_portal.application.ports.catalogue_file import (
     CatalogueContent,
     CatalogueFileFormat,
 )
+from knowledge_portal.domain.architecture.acceptance import (
+    AcceptanceKey,
+    CatalogueBody,
+    recorded_acceptances,
+    with_recorded_acceptances,
+)
 from knowledge_portal.domain.architecture.change_requests import (
     ChangeItem,
     ChangeItemStatus,
@@ -68,6 +74,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     InvalidKnowledgeError,
     KnowledgeCapability,
     LandscapeDomain,
+    MasteryNote,
     RelationshipKind,
     SystemComponent,
     SystemDefinition,
@@ -93,6 +100,7 @@ from knowledge_portal.domain.architecture.products import (
     Realisation,
     SourceConfidence,
 )
+from knowledge_portal.domain.architecture.provenance import AcceptedFrom
 from knowledge_portal.domain.architecture.realisations import RealisationRecord
 from knowledge_portal.domain.architecture.tracking import (
     FalloutCase,
@@ -144,6 +152,8 @@ CONCEPTS = "Concepts"
 VOCABULARY = "Vocabulary"
 INTERFACES = "Interfaces"
 REALISATION_RECORDS = "RealisationRecords"
+ACCEPTANCES = "Acceptances"
+MASTERY_NOTES = "MasteryNotes"
 _CELLS = tuple(f"cell_{number}" for number in range(1, MAX_TABLE_COLUMNS + 1))
 INSTRUCTIONS = "Instructions"
 _DOMAIN_HEADERS = ("domain_id", "name", "name_ar", "parent_id", "description")
@@ -164,6 +174,8 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "source",
         "masters",
         "reads",
+        "deprecated",
+        "replaced_by",
     ),
     COMPONENTS: (
         "system_id",
@@ -185,7 +197,14 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "unlinked_reason",
     ),
     CONSTRAINTS: ("system_id", "constraint"),
-    RELATIONSHIPS: ("source_system_id", "target_system_id", "description", "kind"),
+    RELATIONSHIPS: (
+        "source_system_id",
+        "target_system_id",
+        "description",
+        "kind",
+        "confidence",
+        "source",
+    ),
     DOMAINS: _DOMAIN_HEADERS,
     LANDSCAPE: (*_DOMAIN_HEADERS, "cross_cutting"),
     PRODUCTS: (
@@ -467,6 +486,8 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "exact_match",
         "confidence",
         "source",
+        "deprecated",
+        "replaced_by",
     ),
     VOCABULARY: (
         "term_id",
@@ -479,6 +500,8 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "exact_match",
         "confidence",
         "source",
+        "deprecated",
+        "replaced_by",
     ),
     INTERFACES: (
         "interface_id",
@@ -503,6 +526,16 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "description",
         "confidence",
         "source",
+    ),
+    MASTERY_NOTES: ("system_id", "entity_id", "note"),
+    ACCEPTANCES: (
+        "entity",
+        "key",
+        "candidate_id",
+        "model",
+        "prompt_version",
+        "decided_by",
+        "decided_at",
     ),
 }
 # Headers a sheet cannot do without. Columns added later stay optional, so
@@ -556,6 +589,8 @@ _REQUIRED_HEADERS: dict[str, tuple[str, ...]] = {
     VOCABULARY: ("term_id", "scheme", "pref_label"),
     INTERFACES: ("interface_id", "name", "system_id"),
     REALISATION_RECORDS: ("record_id", "layer", "name"),
+    MASTERY_NOTES: _HEADERS[MASTERY_NOTES],
+    ACCEPTANCES: _HEADERS[ACCEPTANCES],
 }
 _KINDS = ", ".join(kind.value for kind in RelationshipKind)
 _REQUIRED_SHEETS = (SYSTEMS,)
@@ -717,6 +752,20 @@ _INSTRUCTIONS = (
         "purpose, style and tmf_equivalent; a call to a system with no step of its own has "
         "to_activity equal to from_activity.",
     ),
+    (
+        "Acceptances (kept by the portal): which accepted suggestions produced an entry, one "
+        "row each, naming the entry by entity and key. Leave it as exported; a row naming "
+        "nothing in the file is ignored.",
+    ),
+    (
+        "MasteryNotes: where several systems master one information entity, one row per system "
+        "saying which part of it that system is the system of record for.",
+    ),
+    (
+        "Systems, Concepts and Vocabulary deprecated (yes or no) and replaced_by (optional): a "
+        "retired entry stays in the catalogue but is never matched again; replaced_by names the "
+        "entry of the same sheet that takes its place, and implies deprecated.",
+    ),
     ("Row 1 of each sheet holds the headers; keep them as they are.",),
 )
 
@@ -795,11 +844,86 @@ def _text_list(value: object, where: str, field: str) -> tuple[str, ...]:
     raise InvalidKnowledgeError(f"{where}: {field} must be a list.")
 
 
+def _mastery_notes(value: object, where: str) -> tuple[MasteryNote, ...]:
+    """A system's notes on what it masters where others master it too (ADR-0123)."""
+    if value is None:
+        return ()
+    if not isinstance(value, list):
+        raise InvalidKnowledgeError(f"{where}: mastery_notes must be a list.")
+    notes = []
+    for number, item in enumerate(value, start=1):
+        place = f"{where} mastery note {number}"
+        if not isinstance(item, dict):
+            raise InvalidKnowledgeError(f"{place} must name an entity and a note.")
+        notes.append(
+            MasteryNote(
+                _text(item.get("entity"), place, "entity"), _text(item.get("note"), place, "note")
+            )
+        )
+    return tuple(notes)
+
+
 def _entries(raw: dict[str, Any], key: str) -> list[dict[str, Any]]:
     value = raw.get(key, [])
     if not isinstance(value, list) or not all(isinstance(item, dict) for item in value):
         raise InvalidKnowledgeError(f"'{key}' must be a list of entries.")
     return value
+
+
+# Acceptances (ADR-0120): which accepted suggestions produced an entity, one row each, naming
+# the entity by kind and key so the entries themselves stay as people write them.
+def _acceptance_rows(body: CatalogueBody) -> list[dict[str, Any]]:
+    return [
+        {
+            "entity": key[0],
+            "key": list(key[1:]),
+            "candidate_id": entry.candidate_id,
+            "model": entry.model,
+            "prompt_version": entry.prompt_version,
+            "decided_by": entry.decided_by,
+            "decided_at": entry.decided_at.isoformat(),
+        }
+        for key, entries in recorded_acceptances(body).items()
+        for entry in entries
+    ]
+
+
+def _acceptance(item: dict[str, Any], where: str) -> AcceptedFrom:
+    moment = _moment(item.get("decided_at"), where, "decided_at")
+    if moment is None:
+        raise InvalidKnowledgeError(f"{where}: decided_at is required.")
+    return AcceptedFrom(
+        _text(item.get("candidate_id"), where, "candidate_id"),
+        _text(item.get("model"), where, "model"),
+        _text(item.get("prompt_version"), where, "prompt_version"),
+        _text(item.get("decided_by"), where, "decided_by"),
+        moment,
+    )
+
+
+def _acceptances(
+    entries: list[dict[str, Any]],
+) -> dict[AcceptanceKey, tuple[AcceptedFrom, ...]]:
+    recorded: dict[AcceptanceKey, list[AcceptedFrom]] = {}
+    for number, item in enumerate(entries, start=1):
+        where = _where(item, f"acceptances entry {number}")
+        key = (
+            _text(item.get("entity"), where, "entity"),
+            *_text_list(item.get("key"), where, "key"),
+        )
+        recorded.setdefault(key, []).append(_part(where, partial(_acceptance, item, where)))
+    return {key: tuple(entries) for key, entries in recorded.items()}
+
+
+def _key_cell(value: object, where: str) -> list[object]:
+    """A workbook key: the JSON list the export wrote, such as ["bcrm", "quotes"]."""
+    try:
+        key = json.loads(_text(value, where, "key"))
+    except json.JSONDecodeError as exc:
+        raise InvalidKnowledgeError(f"{where}: key must be a list as exported.") from exc
+    if not isinstance(key, list):
+        raise InvalidKnowledgeError(f"{where}: key must be a list as exported.")
+    return key
 
 
 def content_from_mapping(raw: object) -> CatalogueContent:
@@ -881,6 +1005,9 @@ def content_from_mapping(raw: object) -> CatalogueContent:
                     source=_optional_text(item.get("source"), where, "source"),
                     masters=_text_list(item.get("masters"), where, "masters"),
                     reads=_text_list(item.get("reads"), where, "reads"),
+                    deprecated=bool(_flag(item.get("deprecated"), where, "deprecated", False)),
+                    replaced_by=_optional_text(item.get("replaced_by"), where, "replaced_by"),
+                    mastery_notes=_mastery_notes(item.get("mastery_notes"), where),
                 )
             )
         except InvalidKnowledgeError as exc:
@@ -895,11 +1022,13 @@ def content_from_mapping(raw: object) -> CatalogueContent:
                     _text(item.get("target_system_id"), where, "target_system_id"),
                     _text(item.get("description"), where, "description"),
                     _kind(item.get("kind"), where),
+                    confidence=_trust(item.get("confidence"), where),
+                    source=_optional_text(item.get("source"), where, "source"),
                 )
             )
         except InvalidKnowledgeError as exc:
             raise _located(where, exc) from exc
-    return _content(
+    content = _content(
         systems,
         relationships,
         _mapped_domains(raw, "capability_domains", CapabilityDomain),
@@ -920,6 +1049,7 @@ def content_from_mapping(raw: object) -> CatalogueContent:
         _interfaces(_entries(raw, "interfaces")),
         _realisations(_entries(raw, "realisations")),
     )
+    return with_recorded_acceptances(content, _acceptances(_entries(raw, "acceptances")))
 
 
 def _concepts(entries: list[dict[str, Any]]) -> list[BusinessCapability]:
@@ -939,6 +1069,7 @@ def _concepts(entries: list[dict[str, Any]]) -> list[BusinessCapability]:
                     _optional_text(item.get("exact_match"), where, "exact_match"),
                     _trust(item.get("confidence"), where),
                     _optional_text(item.get("source"), where, "source"),
+                    **_retirement(item, where),
                 )
             )
         except InvalidKnowledgeError as exc:
@@ -958,6 +1089,7 @@ def _concept_mapping(concept: BusinessCapability) -> dict[str, Any]:
             exact_match=concept.exact_match,
         ),
         **_sourced(concept),
+        **_retired(concept),
     }
 
 
@@ -979,6 +1111,7 @@ def _terms(entries: list[dict[str, Any]]) -> list[VocabularyTerm]:
                     _optional_text(item.get("exact_match"), where, "exact_match"),
                     _trust(item.get("confidence"), where),
                     _optional_text(item.get("source"), where, "source"),
+                    **_retirement(item, where),
                 )
             )
         except InvalidKnowledgeError as exc:
@@ -999,6 +1132,7 @@ def _term_mapping(term: VocabularyTerm) -> dict[str, Any]:
             exact_match=term.exact_match,
         ),
         **_sourced(term),
+        **_retired(term),
     }
 
 
@@ -1713,6 +1847,18 @@ def _sourced(item: Any) -> dict[str, Any]:
     )
 
 
+def _retired(item: Any) -> dict[str, Any]:
+    """A retired entry and its successor (ADR-0121); one in service writes neither."""
+    return _present(deprecated=item.deprecated or None, replaced_by=item.replaced_by)
+
+
+def _retirement(item: dict[str, Any], where: str) -> dict[str, Any]:
+    return {
+        "deprecated": bool(_flag(item.get("deprecated"), where, "deprecated", False)),
+        "replaced_by": _optional_text(item.get("replaced_by"), where, "replaced_by"),
+    }
+
+
 def _offering_mapping(offering: ProductOffering) -> dict[str, Any]:
     return {
         "id": offering.id,
@@ -2223,6 +2369,12 @@ def release_to_mapping(release: ArchitectureKnowledge) -> dict[str, Any]:
                 ),
                 **_sourced(item),
                 **_present(masters=list(item.masters), reads=list(item.reads)),
+                **_present(
+                    mastery_notes=[
+                        {"entity": note.entity_id, "note": note.note} for note in item.mastery_notes
+                    ]
+                ),
+                **_retired(item),
             }
             for item in release.systems
         ],
@@ -2236,6 +2388,7 @@ def release_to_mapping(release: ArchitectureKnowledge) -> dict[str, Any]:
                     if item.kind is not RelationshipKind.UNSPECIFIED
                     else {}
                 ),
+                **_sourced(item),
             }
             for item in release.relationships
         ],
@@ -2275,6 +2428,7 @@ def release_to_mapping(release: ArchitectureKnowledge) -> dict[str, Any]:
             vocabulary=[_term_mapping(item) for item in release.vocabulary],
             interfaces=[_interface_mapping(item) for item in release.interfaces],
             realisations=[_realisation_mapping(item) for item in release.realisations],
+            acceptances=_acceptance_rows(release),
         ),
     }
 
@@ -2357,6 +2511,8 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                 "source": _optional_text(cells.get("source"), where, "source"),
                 "masters": _split(cells.get("masters"), where, "masters"),
                 "reads": _split(cells.get("reads"), where, "reads"),
+                **_retirement(cells, where),
+                "mastery_notes": [],
                 "capabilities": [],
                 "constraints": [],
                 "components": [],
@@ -2406,6 +2562,17 @@ def _read_workbook(content: bytes) -> CatalogueContent:
             owner(cells, where)["constraints"].append(
                 _text(cells.get("constraint"), where, "constraint")
             )
+        for number, cells in _rows(workbook, MASTERY_NOTES):
+            where = f"{MASTERY_NOTES} row {number}"
+            try:
+                owner(cells, where)["mastery_notes"].append(
+                    MasteryNote(
+                        _text(cells.get("entity_id"), where, "entity_id"),
+                        _text(cells.get("note"), where, "note"),
+                    )
+                )
+            except InvalidKnowledgeError as exc:
+                raise _located(where, exc) from exc
         relationships = []
         for number, cells in _rows(workbook, RELATIONSHIPS):
             where = f"{RELATIONSHIPS} row {number}"
@@ -2416,6 +2583,8 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                         _text(cells.get("target_system_id"), where, "target_system_id"),
                         _text(cells.get("description"), where, "description"),
                         _kind(cells.get("kind"), where),
+                        confidence=_trust(cells.get("confidence"), where),
+                        source=_optional_text(cells.get("source"), where, "source"),
                     )
                 )
             except InvalidKnowledgeError as exc:
@@ -2520,6 +2689,16 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                 for number, cells in _rows(workbook, REALISATION_RECORDS)
             ]
         )
+        acceptances = _acceptances(
+            [
+                {
+                    **cells,
+                    "_where": f"{ACCEPTANCES} row {number}",
+                    "key": _key_cell(cells.get("key"), f"{ACCEPTANCES} row {number}"),
+                }
+                for number, cells in _rows(workbook, ACCEPTANCES)
+            ]
+        )
     finally:
         workbook.close()
     definitions = []
@@ -2545,11 +2724,14 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                     source=data["source"],
                     masters=data["masters"],
                     reads=data["reads"],
+                    deprecated=data["deprecated"],
+                    replaced_by=data["replaced_by"],
+                    mastery_notes=tuple(data["mastery_notes"]),
                 )
             )
         except InvalidKnowledgeError as exc:
             raise _located(data["where"], exc) from exc
-    return _content(
+    body = _content(
         definitions,
         relationships,
         domains,
@@ -2566,6 +2748,7 @@ def _read_workbook(content: bytes) -> CatalogueContent:
         interfaces,
         realisations,
     )
+    return with_recorded_acceptances(body, acceptances)
 
 
 def _sheet_journeys(workbook: Any) -> list[dict[str, Any]]:
@@ -3368,6 +3551,8 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 system.source,
                 f"{_LIST_SEPARATOR} ".join(system.masters),
                 f"{_LIST_SEPARATOR} ".join(system.reads),
+                _yes(system.deprecated) if system.deprecated else None,
+                system.replaced_by,
             ),
         )
         for capability in system.capabilities:
@@ -3399,6 +3584,8 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
             )
         for constraint in system.constraints:
             _append(sheets[CONSTRAINTS], (system.id, constraint))
+        for note in system.mastery_notes:
+            _append(sheets[MASTERY_NOTES], (system.id, note.entity_id, note.note))
     for relationship in release.relationships if release is not None else ():
         _append(
             sheets[RELATIONSHIPS],
@@ -3407,6 +3594,8 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 relationship.target_system_id,
                 relationship.description,
                 relationship.kind.value,
+                _confidence(relationship),
+                relationship.source,
             ),
         )
     for sheet, tree in (
@@ -3443,6 +3632,8 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 concept.exact_match,
                 _confidence(concept),
                 concept.source,
+                _yes(concept.deprecated) if concept.deprecated else None,
+                concept.replaced_by,
             ),
         )
     for term in release.vocabulary if release is not None else ():
@@ -3459,6 +3650,8 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 term.exact_match,
                 _confidence(term),
                 term.source,
+                _yes(term.deprecated) if term.deprecated else None,
+                term.replaced_by,
             ),
         )
     for interface in release.interfaces if release is not None else ():
@@ -3604,6 +3797,19 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 sheets[CHANGE_ITEMS],
                 (record.id, item.kind, item.summary, item.status.value, item.feature_id),
             )
+    for row in _acceptance_rows(release) if release is not None else ():
+        _append(
+            sheets[ACCEPTANCES],
+            (
+                row["entity"],
+                json.dumps(row["key"], ensure_ascii=False),
+                row["candidate_id"],
+                row["model"],
+                row["prompt_version"],
+                row["decided_by"],
+                row["decided_at"],
+            ),
+        )
     buffer = io.BytesIO()
     workbook.save(buffer)
     return buffer.getvalue()

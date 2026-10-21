@@ -13,6 +13,7 @@ type Schemas = components["schemas"];
 export type Actor = Schemas["ActorResponse"];
 export type IdentityConfig = Schemas["IdentityConfigResponse"];
 export type LibraryDocument = Schemas["LibraryView"];
+export type ClassificationOptions = Schemas["ClassificationOptions"];
 export type LibraryVersion = Schemas["LibraryVersion"];
 export type Publication = Schemas["Publication"];
 export type Release = Schemas["KnowledgeReleaseResponse"];
@@ -66,6 +67,7 @@ export type SuggestionContent = Schemas["CandidateContentSchema"];
 export type SuggestionKind = Schemas["CandidateKind"];
 export type PossibleMatch = Schemas["PossibleMatchResponse"];
 export type ExtractionRun = Schemas["ExtractionRunResponse"];
+export type CatalogueReading = Schemas["CatalogueReading"];
 export type ArchitectureJob = Schemas["ArchitectureJobResponse"];
 export type DocumentExtraction = Schemas["DocumentExtractionResponse"];
 export type RequirementCorpus = Schemas["RequirementCorpusResponse"];
@@ -256,6 +258,8 @@ export const api = {
       `/architecture-knowledge/releases/${encodeURIComponent(releaseId)}/suggestions`,
     ),
   release: (releaseId: string) => apiRequest<Release>(releasePath(releaseId)),
+  /** Suggest the dependencies the draft's interfaces and journeys say (ADR-0119). */
+  suggestDerivedDependencies: (releaseId: string) => post<ExtractionRun>(`${releasePath(releaseId)}/derived-dependencies`, {}),
   releaseAudit: (releaseId: string) => apiRequest<ReleaseAuditEvent[]>(`${releasePath(releaseId)}/audit`),
   /** What changed from the version in service to this one. */
   /** What changed from `base` to this release; from the version in service when no base is given. */
@@ -411,12 +415,17 @@ export const api = {
 
   // Library: one document and its curation. Every change names the version it saw.
   libraryDocument: (documentId: string) => apiRequest<LibraryDocument>(documentPath(documentId)),
+  /** The document types and topics the catalogue in service offers (ADR-0123). */
+  classificationOptions: () => apiRequest<ClassificationOptions>("/library/classification-options"),
+  classify: (documentId: string, body: { expected_version: number; document_type: string | null; topics: string[] }) =>
+    apiRequest<LibraryDocument>(`${documentPath(documentId)}/classification`, { method: "PUT", body: JSON.stringify(body) }),
   /** A new document, or a new version of one (with its id and the version the owner saw). */
-  upload: (input: { file: File; title: string; documentId?: string; expectedVersion?: number }) => {
+  upload: (input: { file: File; title: string; documentId?: string; expectedVersion?: number; documentType?: string }) => {
     const form = new FormData();
     form.append("file", input.file);
     form.append("title", input.title);
     form.append("idempotency_key", crypto.randomUUID());
+    if (input.documentType) form.append("document_type", input.documentType);
     if (input.documentId) {
       form.append("document_id", input.documentId);
       form.append("expected_version", String(input.expectedVersion ?? 0));

@@ -809,6 +809,25 @@ def clean_up_vocabulary(
 
 
 @router.post(
+    "/releases/{release_id}/derived-dependencies",
+    response_model=ExtractionRunResponse,
+    status_code=201,
+)
+def suggest_derived_dependencies(
+    release_id: str, container: ContainerDep, actor: KnowledgeActorDep
+) -> ExtractionRunResponse:
+    """Suggest each dependency the draft's interfaces and journeys say between two systems
+    in service, citing what says it (ADR-0119).
+
+    The suggestions replace the undecided ones of the previous reading; a dependency in the
+    draft already, or rejected before, is left out.
+    """
+    return ExtractionRunResponse.from_domain(
+        container.suggest_derived_dependencies.execute(release_id, actor)
+    )
+
+
+@router.post(
     "/releases/{release_id}/component-link-suggestions",
     response_model=ExtractionRunResponse,
     status_code=201,

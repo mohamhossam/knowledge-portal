@@ -8,8 +8,8 @@ import { ActionGroup, Button, EvidenceQuote, Facts, Lines, RadioGroup, Status, S
 import { formatDay } from "../../home/format";
 import { traceLine, useChangeRequests } from "../inbox";
 import { SuggestionEditor } from "../SuggestionEditor";
-import { type Lexicon, changeSentence, decideWhy, offeringHolds, suggestionState, waitsFor, waitsForMany } from "../suggestions";
-import { NEW, STATE_TONE, citedPart, documentLang, linked, stateWords } from "./decide";
+import { type Lexicon, changeSentence, decideWhy, fromCatalogue, offeringHolds, suggestionState, waitsFor, waitsForMany } from "../suggestions";
+import { NEW, STATE_TONE, citedPart, citedSource, documentLang, linked, stateWords } from "./decide";
 
 const TABLE_READER = "catalogue-table-reader";
 
@@ -62,12 +62,12 @@ export function SuggestionPane({
       {suggestion.content.kind === "relationship" && suggestion.content.text && <p dir="auto">For: {suggestion.content.text}</p>}
 
       <section className="draft-pane__part" aria-labelledby={`${suggestion.id}-source`}>
-        <h3 id={`${suggestion.id}-source`} className="draft-pane__label">{suggestion.change_request ? "From the change request" : "From the document"}</h3>
+        <h3 id={`${suggestion.id}-source`} className="draft-pane__label">{suggestion.change_request ? "From the change request" : fromCatalogue(suggestion) ? "From the draft's catalogue" : "From the document"}</h3>
         {suggestion.change_request ? (
           <ChangeRequestSource suggestion={suggestion} notes={notes} />
         ) : suggestion.citations.length ? (
           suggestion.citations.map((citation, index) => (
-            <Citation key={`${citation.location}:${index}`} release={release} document={document} location={citation.location} quote={citation.quote} />
+            <Citation key={`${citation.location}:${index}`} release={release} suggestion={suggestion} document={document} location={citation.location} quote={citation.quote} />
           ))
         ) : (
           <p className="draft-quiet">The suggestion cites no passage.</p>
@@ -154,7 +154,7 @@ function Decision({ suggestion, words, busy, kept, onEdit, onDrop, onDecide }: {
       {suggestionState(suggestion) === "present" && <p className="draft-quiet">The draft already says this. Rejecting it changes nothing.</p>}
       <ActionGroup label="Decide this suggestion">
         <Button variant="primary" icon={<Check size={14} />} aria-keyshortcuts="a" busy={busy} unavailableReason={why} onClick={() => onDecide(true, linked(suggestion, choice))}>
-          {kept ? "Accept as the document said" : "Accept"}
+          {kept ? (fromCatalogue(suggestion) ? "Accept as suggested" : "Accept as the document said") : "Accept"}
         </Button>
         <Button icon={<Pencil size={14} />} aria-keyshortcuts="e" busy={busy} onClick={onEdit}>{kept ? "Back to your edits" : "Edit, then accept"}</Button>
         <Button icon={<X size={14} />} aria-keyshortcuts="r" busy={busy} onClick={() => onDecide(false)}>Reject</Button>
@@ -234,10 +234,16 @@ function ChangeRequestSource({ suggestion, notes }: { suggestion: Suggestion; no
 }
 
 /** One cited place: the quote, then the passage around it (or the image) on request. */
-function Citation({ release, document, location, quote }: { release: Release; document?: CatalogueDocument; location: string; quote: string }) {
+function Citation({ release, suggestion, document, location, quote }: {
+  release: Release;
+  suggestion: Suggestion;
+  document?: CatalogueDocument;
+  location: string;
+  quote: string;
+}) {
   const [open, setOpen] = useState(false);
   const image = document?.mime_type.startsWith("image/") ?? false;
-  const source = <><bdi>{document?.title ?? "A document no longer in the draft"}</bdi> · {location}</>;
+  const source = <bdi>{citedSource(suggestion, document, location)}</bdi>;
   return (
     <div className="draft-citation">
       {quote ? <EvidenceQuote text={quote} source={source} lang={documentLang(document)} /> : <p>{source}</p>}

@@ -11,7 +11,7 @@ and gains the id of the record it means, as a vocabulary field gains a term.
 from __future__ import annotations
 
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from knowledge_portal.domain.architecture.concepts import label_key
 from knowledge_portal.domain.architecture.invariants import (
@@ -24,6 +24,7 @@ from knowledge_portal.domain.architecture.products import (
     RealisationLayer,
     realisation_layer,
 )
+from knowledge_portal.domain.architecture.provenance import AcceptedFrom
 from knowledge_portal.domain.architecture.sources import SourceConfidence, check_source
 
 # What may realise each layer: the layers below it.
@@ -54,6 +55,8 @@ class RealisationRecord:
     description: str | None = None
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # The accepted suggestions that created or extended it, oldest first (ADR-0120).
+    accepted: tuple[AcceptedFrom, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Realisation record id"))
@@ -132,6 +135,60 @@ def check_realisations(
                         f"{item.layer.value.upper()} in the catalogue."
                     )
     return by_id
+
+
+def record_id(layer: RealisationLayer, slugged_name: str) -> str:
+    """A record's id from its layer and its name as a slug: the layer in front, once, so
+    "RFS_POLICY" gives "rfs-policy" and "POLICY" gives "rfs-policy" too."""
+    prefix = f"{layer.value}-"
+    return slugged_name if slugged_name.startswith(prefix) else f"{prefix}{slugged_name}"
+
+
+def find_realisation_among(
+    records: tuple[RealisationRecord, ...],
+    reference: str,
+    layers: Iterable[RealisationLayer] | None = None,
+) -> RealisationRecord | None:
+    """A record named by id or, when only one has it, by one of its names, ignoring case and
+    punctuation; ``layers`` narrows a name to records of those layers."""
+    exact = next((item for item in records if item.id == reference.strip()), None)
+    if exact is not None:
+        return exact
+    allowed = None if layers is None else frozenset(layers)
+    key = label_key(reference)
+    named = [
+        item
+        for item in records
+        if (allowed is None or item.layer in allowed)
+        and key in {label_key(label) for label in item.labels}
+    ]
+    return named[0] if len(named) == 1 else None
+
+
+def merge_realisations(first: RealisationRecord, second: RealisationRecord) -> RealisationRecord:
+    """Two readings of one record as one: the first's layer, name and facts win; the second
+    adds names, systems and what realises it, and fills what the first leaves unset."""
+
+    def joined(one: tuple[str, ...], other: tuple[str, ...]) -> tuple[str, ...]:
+        return tuple(dict.fromkeys((*one, *other)))
+
+    names = {label_key(first.name)}
+    aliases = []
+    for alias in (*first.aliases, second.name, *second.aliases):
+        if label_key(alias) not in names:
+            names.add(label_key(alias))
+            aliases.append(alias)
+    return replace(
+        first,
+        aliases=tuple(aliases),
+        system_ids=joined(first.system_ids, second.system_ids),
+        realised_by=tuple(
+            item for item in joined(first.realised_by, second.realised_by) if item != first.id
+        ),
+        description=first.description or second.description,
+        confidence=first.confidence or second.confidence,
+        source=first.source or second.source,
+    )
 
 
 def realisation_chains(

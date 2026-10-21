@@ -115,9 +115,9 @@ def test_a_record_round_trips_its_publication_commits_with_its_event_and_version
 
 def test_the_import_queue_has_its_own_table() -> None:
     run_migrations(os.environ["TEST_DATABASE_URL"])
-    connector = DirectPostgresConnector(os.environ["TEST_DATABASE_URL"])
-    historic = PostgresArchitectureJobs(connector, "historic_import_jobs")
-    catalogue = PostgresArchitectureJobs(connector)
+    store = PostgresStore(DirectPostgresConnector(os.environ["TEST_DATABASE_URL"]))
+    historic = PostgresArchitectureJobs(store, "historic_import_jobs")
+    catalogue = PostgresArchitectureJobs(store)
     unique = uuid.uuid4().hex
     job = historic.enqueue(
         ArchitectureJob(
@@ -132,4 +132,4 @@ def test_the_import_queue_has_its_own_table() -> None:
     assert catalogue.get(job.id) is None
     assert historic.get(job.id) == job
     with pytest.raises(ValueError, match="not a job queue"):
-        PostgresArchitectureJobs(connector, "library_documents")
+        PostgresArchitectureJobs(store, "library_documents")

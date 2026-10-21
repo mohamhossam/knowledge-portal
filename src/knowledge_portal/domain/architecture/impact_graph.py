@@ -13,6 +13,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 
 from knowledge_portal.domain.architecture.assessment import PathKind, PathStep
+from knowledge_portal.domain.architecture.deprecation import in_service
 from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge
 from knowledge_portal.domain.architecture.products import ProductOffering
 from knowledge_portal.domain.architecture.realisations import realisation_chains
@@ -27,11 +28,13 @@ class Realiser:
 
 
 def concept_family(release: ArchitectureKnowledge, concept_id: str) -> tuple[str, ...]:
-    """The concept and every concept narrower than it, the concept first."""
+    """The concept and every concept narrower than it in service, the concept first."""
     found = [concept_id]
     for current in found:
         found.extend(
-            item.id for item in release.business_capabilities if item.broader_id == current
+            item.id
+            for item in in_service(release.business_capabilities)
+            if item.broader_id == current
         )
     return tuple(dict.fromkeys(found))
 
@@ -93,7 +96,9 @@ def realisers(release: ArchitectureKnowledge, concept_id: str) -> tuple[Realiser
                                     PathStep(PathKind.SYSTEM, system_id, names[system_id]),
                                 )
                                 found.setdefault(via, Realiser(system_id, via))
-    return tuple(found.values())
+    # However it is reached, a retired system realises nothing now (ADR-0121).
+    retired = {item.id for item in release.systems if item.deprecated}
+    return tuple(item for item in found.values() if item.system_id not in retired)
 
 
 def composes(offering: ProductOffering, concepts: Iterable[str]) -> frozenset[str]:

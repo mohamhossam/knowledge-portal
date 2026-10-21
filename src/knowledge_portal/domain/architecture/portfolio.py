@@ -15,6 +15,7 @@ from knowledge_portal.domain.architecture.invariants import (
     optional,
     required,
 )
+from knowledge_portal.domain.architecture.provenance import AcceptedFrom
 from knowledge_portal.domain.architecture.sources import SourceConfidence, check_source
 
 
@@ -28,6 +29,8 @@ class PortfolioNode:
     description: str | None = None
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # The accepted suggestions that created or extended it, oldest first (ADR-0120).
+    accepted: tuple[AcceptedFrom, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Portfolio node id"))

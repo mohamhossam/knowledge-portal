@@ -150,6 +150,30 @@ describe("Decide", () => {
     expect(within(pane).getByText("System: x").closest("blockquote")).toHaveAttribute("lang", "en");
   });
 
+  it("cites a dependency derived from the draft's own catalogue by its place there, not as a document", async () => {
+    const derived = base(
+      "dep",
+      { kind: "relationship", system_id: "bcrm", target_system_id: "cwom", relationship_kind: "calls_api", text: "Order API" },
+      {
+        document_version_id: "derived_dependencies", basis: "inferred", rationale: "Said by 1 interface of this catalogue.",
+        citations: [{ location: "Catalogue › interface Order API of CWOM", quote: "Takes channel orders." }],
+        model: "dependency-derivation", system_name: "BCRM", target_system_name: "CWOM",
+      },
+    );
+    renderStep("decide", { suggestions: [...SUGGESTIONS, derived] });
+    await screen.findByRole("grid");
+    expect(screen.getByText(/from 1 document and the draft's catalogue/)).toBeInTheDocument();
+    const cell = within(screen.getByRole("grid")).getByText("Catalogue › interface Order API of CWOM", { exact: false }).closest("[data-cell-focus]") as HTMLElement;
+    cell.focus();
+    await waitFor(() => expect(cell).toHaveAttribute("tabindex", "0"));
+    const pane = screen.getByRole("complementary", { name: "The suggestion" });
+    expect(within(pane).getByText("From the draft's catalogue")).toBeInTheDocument();
+    expect(within(pane).getByText("Inferred from the draft's catalogue.")).toBeInTheDocument();
+    expect(within(pane).getByText("Catalogue › interface Order API of CWOM")).toBeInTheDocument();
+    expect(within(pane).queryByText(/A document no longer in the draft/)).not.toBeInTheDocument();
+    expect(within(pane).queryByRole("button", { name: "Show the passage around it" })).not.toBeInTheDocument();
+  });
+
   it("on a narrow screen, brings the pane into view when a row is tapped", async () => {
     renderStep("decide");
     await screen.findByRole("grid");
@@ -271,6 +295,18 @@ describe("Sources", () => {
     expect(await screen.findByRole("link", { name: "Next: decide 4 suggestions" })).toHaveAttribute("href", "/architecture/versions/d/decide");
   });
 
+  it("suggests the dependencies the draft's interfaces and journeys say, and what came of it", async () => {
+    renderStep("sources");
+    const suggest = vi.spyOn(api, "suggestDerivedDependencies").mockResolvedValue({
+      id: "r1", release_id: "d", document_version_id: "derived_dependencies", model: "dependency-derivation",
+      prompt_version: "dependency-derivation-v1", candidate_count: 52, warnings: [], created_at: "", reading: "derived_dependencies",
+    } as never);
+    const section = (await screen.findByRole("heading", { name: "Dependencies from interfaces and journeys" })).closest("section")!;
+    fireEvent.click(within(section).getByRole("button", { name: "Suggest dependencies" }));
+    expect(await within(section).findByText("52 dependencies suggested; decide them on Decide.")).toBeInTheDocument();
+    expect(suggest).toHaveBeenCalledWith("d");
+  });
+
   it("says which part a document's reading is on, when it started and what comes next", async () => {
     const started = new Date(Date.now() - 4 * 60_000).toISOString();
     renderStep("sources", {
@@ -295,6 +331,22 @@ describe("Sources", () => {
 });
 
 describe("Check", () => {
+  it("lists data with more than one system of record, saying which owner has no note", async () => {
+    const release = draft({
+      vocabulary: [{ id: "entity-customer", scheme: "information_entity", pref_label: "Customer", alt_labels: [], accepted: [], deprecated: false }],
+      systems: [
+        { id: "cwom", name: "CWOM", aliases: [], capabilities: [], components: [], constraints: [], masters: ["entity-customer"], mastery_notes: [{ entity_id: "entity-customer", note: "Customers migrated to CWOM" }] },
+        { id: "bcrm", name: "BCRM", aliases: [], capabilities: [], components: [], constraints: [], masters: ["entity-customer"], mastery_notes: [] },
+      ],
+    } as unknown as Partial<Release>);
+    renderStep("check", { release });
+    const section = within((await screen.findByRole("heading", { name: /Data with more than one owner/ })).closest("section")!);
+    expect(section.getByText("Customer")).toBeInTheDocument();
+    expect(section.getByText("Customers migrated to CWOM")).toBeInTheDocument();
+    expect(section.getByText("No note yet")).toBeInTheDocument();
+    expect(section.getByText(/1 owner says nothing yet; publishing is not held for it\./)).toBeInTheDocument();
+  });
+
   it("compares every sample and says what moves", async () => {
     vi.spyOn(api, "compareImpact").mockResolvedValue({
       query: "Order Hub takes orders",

@@ -5,7 +5,137 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ## Unreleased
 
+### Changed
+
+- Dependabot no longer proposes TypeScript 6 or later (`.github/dependabot.yml`):
+  openapi-typescript and typescript-eslint, even at their latest, require TypeScript below 6.1,
+  so such a bump cannot install. Lift the rule once both accept a newer major.
+- CI builds and tests the frontend on Node 26 (`.github/workflows/ci.yml`), the version the web
+  image builds with once #115 moves `deploy/web` to `node:26-alpine`.
+
+## 0.7.0 — 2026-10-21
+
+Reading a document now suggests every kind of catalogue entry a curator decides on: interfaces,
+capability domains, portfolio nodes, realisation records, sources and conflicts join the
+earlier kinds, each recording where it came from once accepted (ADR-0123). Systems that share
+mastery of an entity carry a note on the part each owns; library documents carry a type and
+topics, in English; the explorer keeps a version's change history and rate-limits plans
+lookups (ADR-0101 Amendment 3). Uses platform-kernel v1.3.1 and Pillow 13.
+
 ### Added
+
+- Sources and conflicts suggested from documents (ADR-0123,
+  `docs/slices/source-conflict-suggestions.md`), the last of the suggestion kinds the owner
+  asked for: reading a document now suggests the sources it names or is (title, the name it is
+  cited by, version, and level, L3 unless the document states one) and the conflicts it reports
+  between two sources (both statements, where each is said, the offerings affected). A source
+  fills an existing one's gaps and never changes its level; a conflict waits for its two
+  sources (new `needs_source`) and the offerings it affects (`needs_offering`), keeps the sides
+  first recorded, and is always decided one by one, never accepted in bulk. Both record where
+  they came from once accepted (`accepted` on sources and conflicts, kept by every catalogue
+  file format). Decide lists them under Sources and Conflicts between sources. Public contract,
+  additive; prompt `catalogue-extraction-v20`.
+
+- Realisation records suggested from documents (ADR-0123,
+  `docs/slices/realisation-suggestions.md`): reading a document now suggests the customer-facing
+  services, resource-facing services and resources it names (layer, the system that delivers or
+  holds it, and what realises it one layer down). One per record, its readings merged; it waits
+  for the systems it names (`needs_system`) and for the lower-layer records that realise it (new
+  `needs_realisation`), fills an existing record's names, systems and gaps without replacing its
+  layer or anything set, and records where it came from once accepted (`accepted` on realisation
+  records, kept by every catalogue file format). Accepting all takes resources, then RFSs, then
+  CFSs. Decide lists them under Realisations. Public contract, additive; prompt
+  `catalogue-extraction-v19`.
+
+- Business areas and portfolio places suggested from documents (ADR-0123,
+  `docs/slices/tree-suggestions.md`): reading a document now suggests the capability domains
+  ("business areas") and portfolio nodes it describes, each with the node it sits inside,
+  and a portfolio node with its level in the document's own words. One per tree and name, its
+  readings merged; each waits for its parent (`needs_domain`, new `needs_portfolio_node`),
+  fills an existing node's gaps and never replaces its level or anything set, and records
+  where it came from once accepted (ADR-0120): `accepted` on capability domains and portfolio
+  nodes, kept by every catalogue file format. Decide lists them under Business areas and
+  Portfolio. Accepting all now repeats while it makes progress, so a node three levels down
+  is accepted in one go once the nodes above it are. Public contract, additive; prompt
+  `catalogue-extraction-v18`.
+
+- Interfaces suggested from documents (ADR-0123, `docs/slices/interface-suggestions.md`):
+  reading a document now suggests the APIs, event streams and file feeds it describes, each
+  with the system that exposes it and those that consume it. One per system and name, its
+  readings merged; it waits for the systems it names and the interfaces it relays, fills an
+  existing interface's gaps and never overrides it, and records where it came from once
+  accepted (ADR-0120). Decide lists them under Interfaces. An accepted suggestion of any kind
+  now always reaches the draft: capability domains, conflicts, the portfolio, interfaces and
+  realisation records were left out of what accepting saved. Public contract, additive;
+  prompt `catalogue-extraction-v17`.
+
+- Library documents have a type and topics (ADR-0123, `docs/slices/library-classification.md`):
+  the owner sets what kind of document it is (a document-type term of the catalogue in service,
+  such as Solution design or Contract) and the business capabilities it is about, on its page
+  or its type at upload. The library list filters by type and topic, and the summary and the
+  document page say both. English only. `GET /library/classification-options`,
+  `PUT /library/documents/{id}/classification`, and an optional `document_type` on upload;
+  public contract, additive. The catalogue gains a `document_type` vocabulary with eight terms.
+
+- Data with more than one owner (ADR-0123, `docs/slices/shared-mastery.md`): several systems
+  may be the system of record for one information entity when each says which part it
+  masters, in a `mastery_notes` list on the system (API, YAML and JSON, and a new MasteryNotes
+  workbook sheet). A note names an entity its system masters, once. The system record shows
+  each note; the draft's Check step lists the shared entities and the owners with no note yet,
+  and Publish names them as worth a look without holding publishing. Public contract, additive.
+
+- Explorer plans lookups are rate-limited (requirement-portal ADR-0101, Amendment 3,
+  `docs/slices/explorer-plans-limit.md`): each reader's lookups of an offering's plans count
+  against their own per-minute budget (`PROVIDER_RATE_LIMIT_PER_MINUTE`), apart from admins' AI
+  calls; past it they are told "Too many product catalogue lookups" with when to try again
+  (429, `Retry-After`). The explorer keeps the version's change history: the owner decided it is
+  content, and the rule now says so.
+
+- Names compared one way (`docs/slices/model-cleanup.md`): two systems, two components of
+  one system or two sibling domains may no longer differ only in punctuation ("Wi-Fi Hub"
+  and "WiFi hub"), as concepts and terms already may not; one system still keeps such
+  spellings of its own name. A capability linked to a concept sits in that concept's
+  domain or in none. The committed catalogue holds to both. ADR-0123 proposes the item's
+  three open decisions: co-mastery, an interface suggestion kind, library classification.
+
+- One canonical dependency model, part 2 (ADR-0119, `docs/slices/derived-dependencies.md`):
+  a draft's Sources step suggests every dependency its interfaces and journeys already say
+  (an API's consumer calls it; an event's or a file's system sends to its consumers; a
+  journey's hand-over, through an integration layer as two), one per two systems and kind,
+  each citing the interfaces and journey steps that say it. They are decided on Decide like
+  any other suggestion; suggesting again leaves out what the draft holds or a curator
+  rejected. `POST /architecture-knowledge/releases/{id}/derived-dependencies`; public
+  contract, additive. Decide names the draft's own catalogue as a suggestion's source,
+  rather than a missing document, for every reading of it.
+
+- One canonical dependency model, part 1 (ADR-0119, `docs/slices/dependency-identity.md`): a
+  dependency is identified by its two systems and its kind, so rewording what it is for is a
+  change to it and two systems can depend on each other in two ways at once. Dependencies
+  gain `confidence` and `source` like every other fact, in the API and every catalogue file
+  (optional Relationships columns). A version stored before reads with same-kind dependencies
+  between one pair joined. A connection's change says how the systems were linked even once
+  removed, and names what changed in words. Public contract, additive.
+
+- Retiring without deleting (ADR-0121, `docs/slices/lifecycle-deprecation.md`): a system, a
+  concept or a vocabulary term can be retired and name the one that replaces it. It stays in
+  every version and reads everywhere, drawn struck through with the word Retired, and the
+  draft's changes name it; no requirement maps to it, no assessment or suggestion reaches it,
+  and a reference to it forwards to its successor. A squad seated on a replaced system is
+  pointed at the successor. The system sheet's editor retires a system; catalogue files carry
+  `deprecated` and `replaced_by` (optional workbook columns on Systems, Concepts and
+  Vocabulary). Public contract, additive: the two fields on systems, concepts and terms, and
+  `replaced_systems` on the organisation's reference flags.
+
+- Provenance survives acceptance (ADR-0120, `docs/slices/provenance-survives-acceptance.md`):
+  accepting a suggestion records on what it produced which suggestion it was, the model and
+  prompt version behind it, and who accepted it when. The system and concept records show it
+  beside their source, the offering and journey records in a line under their name; the
+  explorer does not. A page edit adds and removes none; a catalogue file carries them in a new
+  `acceptances` table (an `Acceptances` sheet in the workbook) and an import adds them. The diff
+  ignores them. Public contract, additive: a read-only `accepted` list on systems, components,
+  capabilities, dependencies, landscape domains, offerings, journeys, channels, concepts and
+  terms. The internal contract gains the same list on an offering draft's offering and journey
+  (always empty): requirement-portal should review it.
 
 - The Golden set report (Catalogue › Golden set): run the impact mapper over the catalogue's
   golden set in the background, keep each run, and read it: scores in three groups with the counts
@@ -76,6 +206,16 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   `scripts/_catalogue_seed.py`: the personas, the full catalogue's file and name, one wait
   that stops on a failed read or after 120 s, and the service's refusal (409, such as a
   draft already in progress) reported in one line instead of a traceback.
+
+### Changed
+
+- platform-kernel v1.3.1 (was v1.1.0): it allows Pillow 13, so only the docling family still
+  needs the `[tool.uv]` Pillow override. Behaviour changes it brings (kernel CHANGELOG 1.2.0):
+  migrations serialise on an advisory lock and wait at most 10 s for each lock, so a migration
+  stuck behind live traffic fails and leaves the database as it was instead of queueing every
+  later query; OIDC tokens get 60 s of clock leeway; signing keys reload without blocking other
+  requests; and the client for requirement-portal has a circuit breaker, failing at once for
+  30 s after five unavailable calls in a row. Tracing (1.3.0) stays off. No upgrade step.
 
 ### Fixed
 

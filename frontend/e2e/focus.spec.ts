@@ -4,6 +4,7 @@
  * goes on, Esc leaves; leaving with unsent answers asks first. Nothing here
  * saves or sends, so the seed stays as it is for every other spec.
  */
+import { basePath } from "../basePath";
 import { expect, settled, test } from "./fixtures";
 import { seeded } from "./routes";
 
@@ -79,5 +80,6 @@ test("keyboard only: a draft's decisions beside the tree, and leaving asks befor
   // Leaving without sending goes back to To do, and sends nothing.
   await page.keyboard.press("Escape");
   await ask.getByRole("button", { name: "Leave without sending" }).click();
-  await expect(page).toHaveURL(/\/knowledge\/?$/);
+  // The app's home under whatever base path this build serves.
+  await expect(page).toHaveURL(new RegExp(`${basePath(process.env.KNOWLEDGE_BASE_PATH).replace(/\//g, "\\/")}?$`));
 });

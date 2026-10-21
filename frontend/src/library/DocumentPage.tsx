@@ -14,6 +14,7 @@ import { formatDay, formatElapsed } from "../home/format";
 import { DocumentReview } from "../reviews/DocumentReview";
 import { ButtonLink, RouterLink } from "../shell/links";
 import { ActAsAdmin, ActingBanner } from "./AdminGrant";
+import { classificationFacts, useClassificationOptions } from "./classification";
 import { type DocumentContext, type ReviewState, useDocumentContext } from "./documentContext";
 import { DOC_STATE_WORDS, DOC_TONE, docState } from "./docState";
 import { FileButton } from "./FileButton";
@@ -111,7 +112,8 @@ function Record({ document, hook }: { document: LibraryDocument; hook: Hook }) {
   const base = `/library/${encodeURIComponent(document.id)}`;
   const tab = location.pathname.endsWith("/versions") ? "versions"
     : /\/(cited-by|citations)$/.test(location.pathname) ? "cited-by"
-      : location.pathname.endsWith("/ownership") ? "ownership" : "main";
+      : location.pathname.endsWith("/ownership") ? "ownership"
+        : location.pathname.endsWith("/about") ? "about" : "main";
   const desk = awaitingReview(document);
   const tabPanel = useRef<HTMLDivElement>(null);
   useTabFocus(tab, tabPanel);
@@ -228,6 +230,7 @@ function Record({ document, hook }: { document: LibraryDocument; hook: Hook }) {
             { href: `${base}/versions`, label: "Versions", current: tab === "versions" },
             { href: `${base}/cited-by`, label: "Cited by", current: tab === "cited-by" },
             { href: `${base}/ownership`, label: "Owner", current: tab === "ownership" },
+            { href: `${base}/about`, label: "Type and topics", current: tab === "about" },
           ]}
         />
       </PageHeader>
@@ -490,6 +493,7 @@ function InService({ caption }: { caption: string }) {
 /** The record's main page when nothing waits for review: where it stands, its facts, what is in service. */
 function Overview() {
   const { document } = useDocumentContext();
+  const options = useClassificationOptions();
   const version = newestVersion(document);
   const stand = standing(document);
   const live = livePublication(document);
@@ -504,6 +508,7 @@ function Overview() {
           ["Newest version", version ? <>{version.number} · <bdi>{version.filename}</bdi>, uploaded {formatDay(version.uploaded_at)} by <bdi>{version.uploaded_by.display_name}</bdi></> : "—"],
           ["In service", live ? <>Version {liveVersion?.number ?? "?"}{live.chunk_count ? `, ${plural(live.chunk_count, "indexed passage")}` : ""}</> : stand.kind === "withdrawn" ? <>Nothing: withdrawn on {formatDay(stand.publication.withdrawn_at)}</> : "Nothing yet"],
           ["Owner", document.is_owner ? "You" : <bdi>{document.owner.display_name}</bdi>],
+          ...classificationFacts(document, options.data),
         ]}
       />
       {again && (

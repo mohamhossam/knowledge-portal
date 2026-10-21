@@ -38,6 +38,15 @@ from knowledge_portal.domain.architecture.candidates import (
     CandidateKind,
 )
 from knowledge_portal.domain.architecture.channels import Channel
+from knowledge_portal.domain.architecture.concepts import label_key
+from knowledge_portal.domain.architecture.governance import (
+    ConflictScope,
+    ConflictSide,
+    KnowledgeSource,
+    SourceConflict,
+    SourceLevel,
+)
+from knowledge_portal.domain.architecture.interfaces import InterfaceStyle, SystemInterface
 from knowledge_portal.domain.architecture.journeys import (
     Activity,
     FlowRule,
@@ -45,6 +54,7 @@ from knowledge_portal.domain.architecture.journeys import (
     Journey,
 )
 from knowledge_portal.domain.architecture.knowledge import (
+    CapabilityDomain,
     InvalidKnowledgeError,
     RelationshipKind,
 )
@@ -56,6 +66,7 @@ from knowledge_portal.domain.architecture.lifecycle import (
     NoteBlock,
     NoteBlockKind,
 )
+from knowledge_portal.domain.architecture.portfolio import PortfolioNode
 from knowledge_portal.domain.architecture.products import (
     ComponentResponsibility,
     OfferingComponent,
@@ -66,9 +77,11 @@ from knowledge_portal.domain.architecture.products import (
     PlanCharacteristic,
     ProductOffering,
     Realisation,
+    RealisationLayer,
     SourceConfidence,
     merge_components,
 )
+from knowledge_portal.domain.architecture.realisations import RealisationRecord, record_id
 from knowledge_portal.domain.architecture.tracking import (
     FalloutCase,
     OrderTracking,
@@ -335,6 +348,15 @@ class JourneyOutput(_Output):
     rules: list[RuleOutput] = Field(max_length=100)
 
 
+class ConflictSideOutput(_Output):
+    """One of two contradicting statements: the source that says it, as the document names
+    it, what it says, and where."""
+
+    source: str = Field(max_length=_MAX_NAME)
+    statement: str = Field(max_length=_MAX_TEXT)
+    reference: str | None = Field(max_length=_MAX_NAME)
+
+
 _LeanKind = Literal[
     "system",
     "component",
@@ -383,12 +405,38 @@ class LeanChangeOutput(_Output):
 
 class ChangeOutput(LeanChangeOutput):
     # A small context reads without journeys and channels; tables still give both.
-    kind: _LeanKind | Literal["journey", "channel"]  # type: ignore[assignment]
+    kind: (
+        _LeanKind
+        | Literal[  # type: ignore[assignment]
+            "journey",
+            "channel",
+            "interface",
+            "capability_domain",
+            "portfolio_node",
+            "realisation_record",
+            "source",
+            "conflict",
+        ]
+    )
     # The whole journey, for a journey; null for other kinds (ADR-0096).
     offering: PlannedOfferingOutput | None
     journey: JourneyOutput | None
     # A channel's kind, such as Digital or Assisted; null for other kinds (ADR-0101).
     channel_kind: str | None = Field(max_length=_MAX_NAME)
+    # How an interface is called; null for other kinds (ADR-0123).
+    interface_style: Literal["api", "event", "file", "unspecified"] | None
+    # A portfolio node's level in the operator's words, such as Segment; null for other kinds.
+    portfolio_level: str | None = Field(max_length=_MAX_NAME)
+    # A realisation record's layer and the records one layer down that realise it, by name;
+    # null and empty for other kinds.
+    realisation_layer: Literal["cfs", "rfs", "resource"] | None
+    realised_by: list[str] = Field(max_length=20)
+    # A source's level and version, when the document states them; null for other kinds.
+    source_level: Literal["L1", "L2", "L3"] | None
+    source_version: str | None = Field(max_length=_MAX_NAME)
+    # A conflict's two sides and the offerings it affects, by name; empty for other kinds.
+    conflict_sides: list[ConflictSideOutput] = Field(max_length=2)
+    affected_offerings: list[str] = Field(max_length=20)
 
 
 class ExtractionOutput(_Output):
@@ -504,7 +552,19 @@ def _kind_of(raw: object) -> str:
     return kind if isinstance(kind, str) and kind in _KINDS else "item"
 
 
-_KINDS = frozenset((*get_args(_LeanKind), "journey", "channel"))
+_KINDS = frozenset(
+    (
+        *get_args(_LeanKind),
+        "journey",
+        "channel",
+        "interface",
+        "capability_domain",
+        "portfolio_node",
+        "realisation_record",
+        "source",
+        "conflict",
+    )
+)
 # What each reading asks with: its prompt, the answer it parses, and each item's shape.
 _ASKED: dict[_Reading, tuple[str, type[_Answers], type[LeanChangeOutput]]] = {
     "detailed": (DETAILED_SYSTEM_PROMPT, _DetailedAnswers, DetailedChangeOutput),
@@ -522,6 +582,14 @@ def _detailed(item: LeanChangeOutput) -> DetailedChangeOutput:
         {
             "journey": None,
             "channel_kind": None,
+            "interface_style": None,
+            "portfolio_level": None,
+            "realisation_layer": None,
+            "realised_by": [],
+            "source_level": None,
+            "source_version": None,
+            "conflict_sides": [],
+            "affected_offerings": [],
             **item.model_dump(),
             "offering": (
                 offering
@@ -636,6 +704,12 @@ def _proposed(
             CandidateKind.PRODUCT,
             CandidateKind.JOURNEY,
             CandidateKind.CHANNEL,
+            CandidateKind.INTERFACE,
+            CandidateKind.CAPABILITY_DOMAIN,
+            CandidateKind.PORTFOLIO_NODE,
+            CandidateKind.REALISATION_RECORD,
+            CandidateKind.SOURCE,
+            CandidateKind.CONFLICT,
         }
         else item.system
     )
@@ -996,6 +1070,117 @@ def _channel(item: DetailedChangeOutput, names: _SystemNames) -> Channel:
     )
 
 
+def _interface(item: DetailedChangeOutput, names: _SystemNames) -> SystemInterface:
+    """An interface as stated: the system that exposes it and, when named, one consumer, both
+    resolved like any system reference; readings of one interface are merged later."""
+    name = (item.name or "").strip()
+    exposer = plain_name(item.system or "")
+    if not name or not exposer:
+        raise InvalidKnowledgeError("An interface needs its name and the system that exposes it.")
+    exposer_id = names.resolve(exposer)
+    consumer = plain_name(item.target_system or "")
+    consumer_id = names.resolve(consumer) if consumer else None
+    return SystemInterface(
+        f"if-{slug(exposer_id)}-{slug(name)}",
+        name,
+        exposer_id,
+        style=InterfaceStyle(item.interface_style or "unspecified"),
+        consumer_ids=(consumer_id,) if consumer_id and consumer_id != exposer_id else (),
+        description=_text(item.text),
+        confidence=SourceConfidence.CONFIRMED,
+    )
+
+
+def _capability_domain(item: DetailedChangeOutput) -> CapabilityDomain:
+    """A business area as stated, keyed like a landscape domain; its parent as named."""
+    name = (item.name or "").strip()
+    if not name:
+        raise InvalidKnowledgeError("A capability domain needs its name.")
+    parent = (item.parent_domain or "").strip() or None
+    return CapabilityDomain(
+        domain_key(name, parent), name, parent_id=parent, description=_text(item.text)
+    )
+
+
+def _portfolio_node(item: DetailedChangeOutput) -> PortfolioNode:
+    """A place in the product portfolio as stated, with its level; its parent as named."""
+    name = (item.name or "").strip()
+    level = (item.portfolio_level or "").strip()
+    if not name or not level:
+        raise InvalidKnowledgeError("A portfolio node needs its name and its level.")
+    parent = (item.parent_domain or "").strip() or None
+    return PortfolioNode(
+        domain_key(name, parent),
+        name,
+        level,
+        parent_id=parent,
+        description=_text(item.text),
+        confidence=SourceConfidence.CONFIRMED,
+    )
+
+
+def _knowledge_source(item: DetailedChangeOutput) -> KnowledgeSource:
+    """A source as stated: its title, the name it is cited by, its version and what it is the
+    authority for when given, and its level, L3 (a baseline) unless the document states one."""
+    title = (item.name or "").strip()
+    if not title:
+        raise InvalidKnowledgeError("A source needs its title.")
+    short = next(iter(_clean(item.aliases)), None)
+    return KnowledgeSource(
+        f"src-{slug(short or title)}",
+        title,
+        SourceLevel(item.source_level or "L3"),
+        short=short,
+        version=_text(item.source_version),
+        authority=_text(item.text),
+    )
+
+
+def _source_conflict(item: DetailedChangeOutput) -> SourceConflict:
+    """Two sources contradicting each other as stated: both sides, the offerings it affects by
+    name, and what differs."""
+    title = (item.name or "").strip()
+    if not title or len(item.conflict_sides) != 2:
+        raise InvalidKnowledgeError("A conflict needs its title and its two sides.")
+    a, b = (
+        ConflictSide(side.source.strip(), side.statement.strip(), _text(side.reference))
+        for side in item.conflict_sides
+    )
+    return SourceConflict(
+        f"conflict-{slug(title)}",
+        title,
+        a,
+        b,
+        scope=tuple(ConflictScope(name) for name in dict.fromkeys(_clean(item.affected_offerings))),
+        difference=_text(item.text),
+        confidence=SourceConfidence.CONFIRMED,
+    )
+
+
+def _realisation_record(item: DetailedChangeOutput, names: _SystemNames) -> RealisationRecord:
+    """A CFS, RFS or resource as stated, with the system that delivers or holds it, when named,
+    and what realises it one layer down, by name until the draft resolves them."""
+    name = (item.name or "").strip()
+    if not name or item.realisation_layer is None:
+        raise InvalidKnowledgeError("A realisation record needs its name and its layer.")
+    system = plain_name(item.system or "")
+    layer = RealisationLayer(item.realisation_layer)
+    below = tuple(
+        dict.fromkeys(
+            entry for entry in _clean(item.realised_by) if label_key(entry) != label_key(name)
+        )
+    )
+    return RealisationRecord(
+        record_id(layer, slug(name)),
+        layer,
+        name,
+        system_ids=(names.resolve(system),) if system else (),
+        realised_by=() if layer is RealisationLayer.RESOURCE else below,
+        description=_text(item.text),
+        confidence=SourceConfidence.CONFIRMED,
+    )
+
+
 def _content(item: DetailedChangeOutput, names: _SystemNames) -> CandidateContent:
     if item.kind == "journey":
         journey = _journey(item, names)
@@ -1011,6 +1196,36 @@ def _content(item: DetailedChangeOutput, names: _SystemNames) -> CandidateConten
         channel = _channel(item, names)
         return CandidateContent(
             CandidateKind.CHANNEL, channel.id, name=channel.name, channel=channel
+        )
+    if item.kind == "interface":
+        interface = _interface(item, names)
+        return CandidateContent(
+            CandidateKind.INTERFACE, interface.id, name=interface.name, interface=interface
+        )
+    if item.kind == "capability_domain":
+        domain = _capability_domain(item)
+        return CandidateContent(
+            CandidateKind.CAPABILITY_DOMAIN, domain.id, name=domain.name, capability_domain=domain
+        )
+    if item.kind == "source":
+        source = _knowledge_source(item)
+        return CandidateContent(
+            CandidateKind.SOURCE, source.id, name=source.title, knowledge_source=source
+        )
+    if item.kind == "conflict":
+        conflict = _source_conflict(item)
+        return CandidateContent(
+            CandidateKind.CONFLICT, conflict.id, name=conflict.title, conflict=conflict
+        )
+    if item.kind == "realisation_record":
+        record = _realisation_record(item, names)
+        return CandidateContent(
+            CandidateKind.REALISATION_RECORD, record.id, name=record.name, realisation=record
+        )
+    if item.kind == "portfolio_node":
+        node = _portfolio_node(item)
+        return CandidateContent(
+            CandidateKind.PORTFOLIO_NODE, node.id, name=node.name, portfolio_node=node
         )
     kind = CandidateKind(item.kind)
     name = (item.name or "").strip()
@@ -1760,8 +1975,14 @@ class FakeCatalogueExtractor:
     """Deterministic offline extraction from labelled lines; not a language model.
 
     Recognises ``System: Name``, ``Component: Name [technology]``,
-    ``Capability: Name (phrase, phrase) @ Component``, ``Constraint: text`` (all
-    three for the last system named; the technology and component are optional),
+    ``Capability: Name (phrase, phrase) @ Component``, ``Constraint: text`` and
+    ``Interface: Name [api] consumed by A, B`` (all for the last system named; the
+    technology, component, style and consumers are optional),
+    ``Capability domain: Name under Parent`` and ``Portfolio: Name (Level) under Parent``
+    (the parent optional), ``Realisation: NAME [cfs] realised by A, B`` (delivered by the last
+    system named, if any), ``Source: Title [L2] as SHORT`` (level and short name optional),
+    ``Conflict: Title; A says statement; B says statement; affects X, Y`` (the offerings
+    optional),
     ``A depends on B for reason`` and ``A calls B for reason`` lines (the second
     as an API call), and reads ``A sends X to B`` as an inferred data transfer.
     An uploaded image yields one system named after the document so the review
@@ -1780,6 +2001,35 @@ class FakeCatalogueExtractor:
         re.I,
     )
     _CONSTRAINT = re.compile(r"^constraint:\s*(?P<text>.+)$", re.IGNORECASE)
+    _INTERFACE = re.compile(
+        r"^interface:\s*(?P<name>[^\[]+?)\s*(?:\[(?P<style>api|event|file)\])?"
+        r"(?:\s+consumed by\s+(?P<consumers>.+?))?\.?$",
+        re.IGNORECASE,
+    )
+    _DOMAIN = re.compile(
+        r"^capability domain:\s*(?P<name>.+?)(?:\s+under\s+(?P<parent>.+?))?\.?$", re.I
+    )
+    _SOURCE = re.compile(
+        r"^source:\s*(?P<title>.+?)(?:\s*\[(?P<level>L[123])\])?(?:\s+as\s+(?P<short>\S+))?\.?$",
+        re.I,
+    )
+    # Semicolons, not bars: a line holding " | " is a table row and is skipped.
+    _CONFLICT = re.compile(
+        r"^conflict:\s*(?P<title>[^;]+?)\s*;\s*(?P<a>[^;]+?)\s+says\s+(?P<sa>[^;]+?)\s*"
+        r";\s*(?P<b>[^;]+?)\s+says\s+(?P<sb>[^;]+?)"
+        r"(?:\s*;\s*affects\s+(?P<offerings>.+?))?\.?$",
+        re.I,
+    )
+    _REALISATION = re.compile(
+        r"^realisation:\s*(?P<name>[^\[]+?)\s*\[(?P<layer>cfs|rfs|resource)\]"
+        r"(?:\s+realised by\s+(?P<below>.+?))?\.?$",
+        re.I,
+    )
+    _PORTFOLIO = re.compile(
+        r"^portfolio:\s*(?P<name>[^(]+?)\s*\((?P<level>[^)]+)\)"
+        r"(?:\s+under\s+(?P<parent>.+?))?\.?$",
+        re.I,
+    )
     _DEPENDS = re.compile(
         r"^(?P<source>.+?)\s+(?P<verb>depends on|calls)\s+(?P<target>.+?)"
         r"(?:\s+(?:for|to)\s+(?P<why>.+?))?\.?$",
@@ -1855,6 +2105,87 @@ class FakeCatalogueExtractor:
                 elif (match := self._CONSTRAINT.match(line)) and current:
                     content = CandidateContent(
                         CandidateKind.CONSTRAINT, current, text=match["text"].strip()
+                    )
+                elif (match := self._INTERFACE.match(line)) and current:
+                    name = match["name"].strip()
+                    consumers = _clean(re.split(r",|\band\b", match["consumers"] or ""))
+                    interface = SystemInterface(
+                        f"if-{current}-{slug(name)}",
+                        name,
+                        current,
+                        style=InterfaceStyle((match["style"] or "unspecified").casefold()),
+                        consumer_ids=tuple(
+                            dict.fromkeys(
+                                system_id(item) for item in consumers if system_id(item) != current
+                            )
+                        ),
+                    )
+                    source_name = name
+                    content = CandidateContent(
+                        CandidateKind.INTERFACE, interface.id, name=name, interface=interface
+                    )
+                elif match := self._DOMAIN.match(line):
+                    name, parent = match["name"].strip(), (match["parent"] or "").strip() or None
+                    domain = CapabilityDomain(domain_key(name, parent), name, parent_id=parent)
+                    source_name = name
+                    content = CandidateContent(
+                        CandidateKind.CAPABILITY_DOMAIN,
+                        domain.id,
+                        name=name,
+                        capability_domain=domain,
+                    )
+                elif match := self._SOURCE.match(line):
+                    title, short = match["title"].strip(), match["short"]
+                    source = KnowledgeSource(
+                        f"src-{slug(short or title)}",
+                        title,
+                        SourceLevel((match["level"] or "L3").upper()),
+                        short=short,
+                    )
+                    source_name = title
+                    content = CandidateContent(
+                        CandidateKind.SOURCE, source.id, name=title, knowledge_source=source
+                    )
+                elif match := self._CONFLICT.match(line):
+                    title = match["title"].strip()
+                    conflict = SourceConflict(
+                        f"conflict-{slug(title)}",
+                        title,
+                        ConflictSide(match["a"].strip(), match["sa"].strip()),
+                        ConflictSide(match["b"].strip(), match["sb"].strip()),
+                        scope=tuple(
+                            ConflictScope(item)
+                            for item in dict.fromkeys(
+                                _clean(re.split(r",", match["offerings"] or ""))
+                            )
+                        ),
+                    )
+                    source_name = title
+                    content = CandidateContent(
+                        CandidateKind.CONFLICT, conflict.id, name=title, conflict=conflict
+                    )
+                elif match := self._REALISATION.match(line):
+                    name = match["name"].strip()
+                    layer = RealisationLayer(match["layer"].casefold())
+                    record = RealisationRecord(
+                        record_id(layer, slug(name)),
+                        layer,
+                        name,
+                        system_ids=(current,) if current else (),
+                        realised_by=_clean(re.split(r",", match["below"] or "")),
+                    )
+                    source_name = name
+                    content = CandidateContent(
+                        CandidateKind.REALISATION_RECORD, record.id, name=name, realisation=record
+                    )
+                elif match := self._PORTFOLIO.match(line):
+                    name, parent = match["name"].strip(), (match["parent"] or "").strip() or None
+                    node = PortfolioNode(
+                        domain_key(name, parent), name, match["level"].strip(), parent_id=parent
+                    )
+                    source_name = name
+                    content = CandidateContent(
+                        CandidateKind.PORTFOLIO_NODE, node.id, name=name, portfolio_node=node
                     )
                 elif match := self._DEPENDS.match(line) or self._SENDS.match(line):
                     source_name, target_name = match["source"].strip(), match["target"].strip()

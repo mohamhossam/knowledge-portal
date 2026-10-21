@@ -16,6 +16,12 @@ from knowledge_portal.domain.architecture.concepts import (
     BusinessCapability,
     check_concepts,
     check_link,
+    concept_domain,
+    label_key,
+)
+from knowledge_portal.domain.architecture.deprecation import (
+    check_replacements,
+    check_retirement,
 )
 from knowledge_portal.domain.architecture.governance import (
     KnowledgeSource,
@@ -37,6 +43,7 @@ from knowledge_portal.domain.architecture.invariants import required
 from knowledge_portal.domain.architecture.journeys import Journey, check_journeys
 from knowledge_portal.domain.architecture.portfolio import PortfolioNode, check_portfolio
 from knowledge_portal.domain.architecture.products import ProductOffering, check_offerings
+from knowledge_portal.domain.architecture.provenance import AcceptedFrom
 from knowledge_portal.domain.architecture.realisations import (
     RealisationRecord,
     check_realisations,
@@ -86,6 +93,8 @@ class CapabilityDomain:
     name_ar: str | None = None
     parent_id: str | None = None
     description: str | None = None
+    # The accepted suggestions that created or extended it, oldest first (ADR-0120).
+    accepted: tuple[AcceptedFrom, ...] = ()
 
     def __post_init__(self) -> None:
         _check_node(self, "Domain")
@@ -108,6 +117,8 @@ class LandscapeDomain:
     # It serves every other domain (TAM's enterprise domain, the integration layer), so the
     # landscape runs it across the domains rather than beside them.
     cross_cutting: bool = False
+    # The accepted suggestions that created or extended it, oldest first (ADR-0120).
+    accepted: tuple[AcceptedFrom, ...] = ()
 
     def __post_init__(self) -> None:
         _check_node(self, "Landscape domain")
@@ -144,6 +155,12 @@ def _check_node(node: _Node, noun: str) -> None:
         raise InvalidKnowledgeError(f"A {noun.casefold()} cannot be its own parent.")
 
 
+def _compared(label: str) -> str:
+    """A label as one entity's own labels are told apart: punctuation counts, so a system
+    may keep both "CRMGW" and "CRM GW". Between entities, ``label_key`` decides."""
+    return label.casefold().strip()
+
+
 def _check_domains[NodeT: _Node](
     domains: tuple[NodeT, ...], noun: str = "Domain"
 ) -> dict[str, NodeT]:
@@ -158,7 +175,7 @@ def _check_domains[NodeT: _Node](
             raise InvalidKnowledgeError(
                 f"{noun} {item.name!r} names a parent that is not in the catalogue."
             )
-        key = (item.parent_id, item.name.casefold().strip())
+        key = (item.parent_id, label_key(item.name) or _compared(item.name))
         if key in siblings:
             raise InvalidKnowledgeError(f"Two {lower}s under one parent are named {item.name!r}.")
         siblings.add(key)
@@ -190,6 +207,8 @@ class KnowledgeCapability:
     concept_id: str | None = None
     # Why no concept fits, when a maintainer has said so; None while undecided.
     unlinked_reason: str | None = None
+    # The accepted suggestions that created or extended it, oldest first (ADR-0120).
+    accepted: tuple[AcceptedFrom, ...] = ()
 
     def __post_init__(self) -> None:
         if self.domain_id is not None:
@@ -222,6 +241,8 @@ class SystemComponent:
     aliases: tuple[str, ...] = ()
     # What it is built as, in the maintainer's words: "Microservice", "Batch job".
     technology: str | None = None
+    # The accepted suggestions that created or extended it, oldest first (ADR-0120).
+    accepted: tuple[AcceptedFrom, ...] = ()
 
     def __post_init__(self) -> None:
         _required(self.id, "Component id")
@@ -239,6 +260,19 @@ class SystemComponent:
     @property
     def labels(self) -> tuple[str, ...]:
         return (self.name, *((self.name_ar,) if self.name_ar else ()), *self.aliases)
+
+
+@dataclass(frozen=True)
+class MasteryNote:
+    """Which part of an information entity a system is the system of record for, when it
+    shares that role with another system (ADR-0123): "Customers migrated to Netcracker"."""
+
+    entity_id: str
+    note: str
+
+    def __post_init__(self) -> None:
+        _required(self.entity_id, "Mastered entity")
+        _required(self.note, "Mastery note")
 
 
 @dataclass(frozen=True)
@@ -271,6 +305,14 @@ class SystemDefinition:
     # term id (ontology plan Phase 8).
     masters: tuple[str, ...] = ()
     reads: tuple[str, ...] = ()
+    # Retired, with the system of the same type that takes its place if any (ADR-0121):
+    # it stays readable everywhere but selection and matching leave it out.
+    deprecated: bool = False
+    replaced_by: str | None = None
+    # The accepted suggestions that created or extended it, oldest first (ADR-0120).
+    accepted: tuple[AcceptedFrom, ...] = ()
+    # What part of an entity it masters, where others master it too (ADR-0123).
+    mastery_notes: tuple[MasteryNote, ...] = ()
 
     def __post_init__(self) -> None:
         _required(self.id, "System id")
@@ -291,25 +333,38 @@ class SystemDefinition:
                 f"{self.name}: a moved placement names both where it was and why it moved."
             )
         check_source(self)
+        check_retirement(self, self.name)
         if any(not value.strip() for value in (*self.aliases, *self.constraints)):
             raise InvalidKnowledgeError("System aliases and constraints must not be blank.")
         labels = (self.name, *((self.name_ar,) if self.name_ar else ()), *self.aliases)
-        if len({value.casefold().strip() for value in labels}) != len(labels):
+        if len({_compared(value) for value in labels}) != len(labels):
             raise InvalidKnowledgeError("System names and aliases must be unique.")
+        noted = [item.entity_id for item in self.mastery_notes]
+        if len(set(noted)) != len(noted):
+            raise InvalidKnowledgeError(f"{self.name}: one mastery note per entity.")
+        unmastered = [item for item in noted if item not in self.masters]
+        if unmastered:
+            raise InvalidKnowledgeError(
+                f"{self.name} has a mastery note for {unmastered[0]!r}, which it does not master."
+            )
         if len({item.id for item in self.capabilities}) != len(self.capabilities):
             raise InvalidKnowledgeError("Capability ids must be unique within a system.")
         if len({item.id for item in self.components}) != len(self.components):
             raise InvalidKnowledgeError(f"{self.name}: component ids must be unique.")
-        seen: set[str] = set()
+        named: dict[str, str] = {}
         for component in self.components:
+            if len({_compared(label) for label in component.labels}) != len(component.labels):
+                raise InvalidKnowledgeError(
+                    f"{self.name}: {component.name}'s names and aliases must be unique."
+                )
             for label in component.labels:
-                key = label.casefold().strip()
-                if key in seen:
+                if named.setdefault(label_key(label) or _compared(label), component.id) != (
+                    component.id
+                ):
                     raise InvalidKnowledgeError(
                         f"{self.name}: {label!r} names more than one component. Each name or "
                         "alias must identify one component."
                     )
-                seen.add(key)
         component_ids = {item.id for item in self.components}
         for capability in self.capabilities:
             if capability.component_id is not None and capability.component_id not in component_ids:
@@ -342,12 +397,21 @@ def relationship_kind(value: str | RelationshipKind) -> RelationshipKind:
 
 @dataclass(frozen=True)
 class SystemRelationship:
+    """The canonical edge for what depends on what (ADR-0119).
+
+    Its source, target and kind identify it, so a pair holds at most one dependency of
+    each kind; what it is for is an attribute, and rewording it is an edit. Relationships
+    recorded before kinds existed are unspecified.
+    """
+
     source_system_id: str
     target_system_id: str
     description: str
-    # An attribute of the relationship, not part of its identity: changing it is
-    # an edit. Relationships recorded before kinds existed are unspecified.
     kind: RelationshipKind = RelationshipKind.UNSPECIFIED
+    # The accepted suggestions that created or extended it, oldest first (ADR-0120).
+    accepted: tuple[AcceptedFrom, ...] = ()
+    confidence: SourceConfidence | None = None
+    source: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "kind", relationship_kind(self.kind))
@@ -356,6 +420,47 @@ class SystemRelationship:
         _required(self.description, "Relationship description")
         if self.source_system_id == self.target_system_id:
             raise InvalidKnowledgeError("A system cannot depend on itself.")
+        check_source(self)
+
+    @property
+    def key(self) -> tuple[str, str, RelationshipKind]:
+        return (self.source_system_id, self.target_system_id, self.kind)
+
+
+def with_purpose(description: str, purpose: str) -> str:
+    """A dependency's description with another purpose said for it, unless it says it
+    already: "Closure; Billing"."""
+    said = {part.strip().casefold() for part in description.split(";")}
+    addition = purpose.strip()
+    return description if addition.casefold() in said else f"{description}; {addition}"
+
+
+def merged_relationships(
+    relationships: tuple[SystemRelationship, ...],
+) -> tuple[SystemRelationship, ...]:
+    """One dependency per source, target and kind, in first-seen order (ADR-0119).
+
+    Releases recorded while the description was part of the identity may hold several of
+    one kind between two systems; reading them joins their descriptions, keeps the first
+    confidence and source given, and every acceptance recorded on any of them.
+    """
+    merged: dict[tuple[str, str, RelationshipKind], SystemRelationship] = {}
+    for item in relationships:
+        held = merged.get(item.key)
+        if held is None:
+            merged[item.key] = item
+            continue
+        merged[item.key] = replace(
+            held,
+            description=with_purpose(held.description, item.description),
+            confidence=held.confidence or item.confidence,
+            source=held.source or item.source,
+            accepted=(
+                *held.accepted,
+                *(each for each in item.accepted if each not in held.accepted),
+            ),
+        )
+    return tuple(merged.values())
 
 
 @dataclass(frozen=True)
@@ -416,6 +521,10 @@ class ArchitectureKnowledge:
     # recorded before versions were named.
     name: str | None = None
     created_by: str | None = None
+    # The release this draft was copied from, so its review diff keeps that
+    # base even when another release is re-activated mid-draft. None on
+    # releases recorded before drafts kept their base.
+    base_release_id: str | None = None
     capability_domains: tuple[CapabilityDomain, ...] = ()
     landscape_domains: tuple[LandscapeDomain, ...] = ()
     # Commercial offerings and the systems that deliver their components (ADR-0095).
@@ -464,7 +573,7 @@ class ArchitectureKnowledge:
             for alias in (system.id, system.name, system.name_ar or "", *system.aliases):
                 if not alias:
                     continue
-                owner = owners.setdefault(alias.casefold().strip(), system)
+                owner = owners.setdefault(label_key(alias) or _compared(alias), system)
                 if owner.id != system.id:
                     raise InvalidKnowledgeError(
                         f"{alias!r} already names {owner.name}, so it cannot also name "
@@ -475,12 +584,7 @@ class ArchitectureKnowledge:
             for item in self.relationships
         ):
             raise InvalidKnowledgeError("Relationships must connect catalogued systems.")
-        relationship_keys = [
-            (item.source_system_id, item.target_system_id, item.description.casefold())
-            for item in self.relationships
-        ]
-        if len(set(relationship_keys)) != len(relationship_keys):
-            raise InvalidKnowledgeError("Relationships must be unique.")
+        object.__setattr__(self, "relationships", merged_relationships(self.relationships))
         if len({item.id for item in self.documents}) != len(self.documents):
             raise InvalidKnowledgeError("Document version ids must be unique.")
         domains = _check_domains(self.capability_domains)
@@ -494,10 +598,20 @@ class ArchitectureKnowledge:
         concepts = check_concepts(self.business_capabilities, domains)
         for system in self.systems:
             for capability in system.capabilities:
-                if capability.concept_id is not None and capability.concept_id not in concepts:
+                if capability.concept_id is None:
+                    continue
+                if capability.concept_id not in concepts:
                     raise InvalidKnowledgeError(
                         f"{system.name}: {capability.name} is linked to concept "
                         f"{capability.concept_id!r}, which is not in the catalogue."
+                    )
+                held = concept_domain(concepts, capability.concept_id)
+                if capability.domain_id is not None and held not in (None, capability.domain_id):
+                    raise InvalidKnowledgeError(
+                        f"{system.name}: {capability.name} is placed in domain "
+                        f"{capability.domain_id!r}, but the concept it realises, "
+                        f"{concepts[capability.concept_id].pref_label}, sits in {held!r}. A "
+                        "capability sits in its concept's domain."
                     )
         channel_ids = check_channels(self.channels, system_ids)
         check_offerings(self.products, system_ids, channel_ids)
@@ -538,6 +652,9 @@ class ArchitectureKnowledge:
             },
         )
         check_change_history(self.change_history)
+        check_replacements(self.systems, "System")
+        check_replacements(self.business_capabilities, "Concept")
+        check_replacements(self.vocabulary, "Term", lambda old, new: old.scheme is new.scheme)
         landscape = _check_domains(self.landscape_domains, "Landscape domain")
         for system in self.systems:
             if (

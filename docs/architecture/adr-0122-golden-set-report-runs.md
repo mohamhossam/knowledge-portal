@@ -1,9 +1,11 @@
-# ADR — Golden set report: stored runs on their own queue
+# ADR 0122 — Golden set report: stored runs on their own queue
 
 ## Status
 
-Proposed 2026-10-19, with the Golden set report. The number is for the owner to assign: the
-platform-level ADRs in requirement-portal share this series.
+Proposed 2026-10-19, with the Golden set report; the feature shipped with
+[#95](https://github.com/mohamhossam/knowledge-portal/pull/95). Numbered 0122 in the
+platform-wide series requirement-portal anchors (its last is 0118; 0119–0121 are this
+portal's proposed ontology ADRs).
 
 ## Context
 

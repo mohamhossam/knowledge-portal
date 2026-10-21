@@ -14,7 +14,7 @@ import { densityFor, usePreferences } from "../../shell/preferences";
 import { ButtonLink } from "../../shell/links";
 import { openShortcuts } from "../../shell/shortcuts";
 import {
-  type Blocker, type Filter, type SuggestionGroup, blockers as deadEnds, bulkAcceptable, changeSentence, decideWhy, draftedForRequirement, featureWarnings, inWords, lexicon,
+  type Blocker, type Filter, type SuggestionGroup, blockers as deadEnds, bulkAcceptable, changeSentence, decideWhy, draftedForRequirement, featureWarnings, fromCatalogue, inWords, lexicon,
   matchesFind, shown as inFilter, suggestionGroups, suggestionState, tally, waitsFor,
 } from "../suggestions";
 import { useCatalogueContext } from "../useCatalogue";
@@ -453,11 +453,17 @@ function Decide() {
   );
 }
 
-/** "2 documents and 1 change request": where the suggestions came from. */
+/** "2 documents, 1 change request and the draft's catalogue": where the suggestions came from. */
 function sourcesInWords(suggestions: Suggestion[]): string {
-  const documents = new Set(suggestions.filter((item) => !item.change_request).map((item) => item.document_version_id)).size;
+  const catalogue = suggestions.some(fromCatalogue);
+  const documents = new Set(suggestions.filter((item) => !item.change_request && !fromCatalogue(item)).map((item) => item.document_version_id)).size;
   const requests = new Set(suggestions.filter((item) => item.change_request).map((item) => item.document_version_id)).size;
-  return [documents || !requests ? count(documents, "document") : "", requests ? count(requests, "change request") : ""].filter(Boolean).join(" and ");
+  const parts = [
+    documents || (!requests && !catalogue) ? count(documents, "document") : "",
+    requests ? count(requests, "change request") : "",
+    catalogue ? "the draft's catalogue" : "",
+  ].filter(Boolean);
+  return parts.length > 1 ? `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}` : parts[0]!;
 }
 
 /** "Accept the 4 ready and the 11 that wait on them", for the bulk action. */

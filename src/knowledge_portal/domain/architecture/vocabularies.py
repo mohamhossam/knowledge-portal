@@ -19,11 +19,13 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from knowledge_portal.domain.architecture.concepts import label_key, label_words
+from knowledge_portal.domain.architecture.deprecation import check_retirement, successor
 from knowledge_portal.domain.architecture.invariants import (
     InvalidKnowledgeError,
     optional,
     required,
 )
+from knowledge_portal.domain.architecture.provenance import AcceptedFrom
 from knowledge_portal.domain.architecture.sources import SourceConfidence, check_source
 
 # eTOM's own levels 1 to 3; the other schemes are flat or nearly so.
@@ -39,6 +41,8 @@ class VocabularyScheme(StrEnum):
     OPEN_API = "open_api"
     # What systems master or read, and interfaces carry: Customer, Product order.
     INFORMATION_ENTITY = "information_entity"
+    # What kind of document a library document is: a solution design, a contract (ADR-0123).
+    DOCUMENT_TYPE = "document_type"
 
 
 SCHEME_NAMES = {
@@ -48,6 +52,7 @@ SCHEME_NAMES = {
     VocabularyScheme.RESPONSIBILITY_ROLE: "role",
     VocabularyScheme.OPEN_API: "Open API",
     VocabularyScheme.INFORMATION_ENTITY: "information entity",
+    VocabularyScheme.DOCUMENT_TYPE: "document type",
 }
 
 _ID_PREFIXES = {
@@ -57,6 +62,7 @@ _ID_PREFIXES = {
     VocabularyScheme.RESPONSIBILITY_ROLE: "role",
     VocabularyScheme.OPEN_API: "api",
     VocabularyScheme.INFORMATION_ENTITY: "entity",
+    VocabularyScheme.DOCUMENT_TYPE: "doctype",
 }
 
 
@@ -85,6 +91,12 @@ class VocabularyTerm:
     exact_match: str | None = None
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # Retired, with the term of the same type that takes its place if any (ADR-0121):
+    # it stays readable everywhere but selection and matching leave it out.
+    deprecated: bool = False
+    replaced_by: str | None = None
+    # The accepted suggestions that created or extended it, oldest first (ADR-0120).
+    accepted: tuple[AcceptedFrom, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Term id"))
@@ -101,6 +113,7 @@ class VocabularyTerm:
         ):
             object.__setattr__(self, field, optional(getattr(self, field), label))
         check_source(self)
+        check_retirement(self, self.pref_label)
         keys = [label_key(item) for item in self.labels]
         if any(not key for key in keys):
             raise InvalidKnowledgeError(f"{self.pref_label}: a label needs a letter or digit.")
@@ -216,8 +229,18 @@ def api_name(value: str, code: str) -> str:
 def find_term(
     terms: Iterable[VocabularyTerm], scheme: VocabularyScheme, reference: str
 ) -> VocabularyTerm | None:
+    """The term of the scheme a reference means now (ADR-0121): one retired forwards to what
+    replaced it, and one retired for good matches nothing. ``term_named`` sees every term."""
+    every = tuple(terms)
+    found = term_named(every, scheme, reference)
+    return successor(every, found.id) if found is not None else None
+
+
+def term_named(
+    terms: Iterable[VocabularyTerm], scheme: VocabularyScheme, reference: str
+) -> VocabularyTerm | None:
     """A term of the scheme named by id, or by one of its labels or its code, ignoring case
-    and punctuation."""
+    and punctuation, retired or not: whether a label is taken."""
     candidates = [item for item in terms if item.scheme is scheme]
     exact = next((item for item in candidates if item.id == reference), None)
     key = label_key(reference)

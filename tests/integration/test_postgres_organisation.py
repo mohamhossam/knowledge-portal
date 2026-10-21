@@ -27,6 +27,7 @@ from knowledge_portal.infrastructure.persistence.migration_runner import (
 from knowledge_portal.infrastructure.persistence.postgres_organisation import (
     PostgresOrganisationRepository,
 )
+from knowledge_portal.infrastructure.persistence.postgres_store import PostgresStore
 
 DATABASE_URL = os.getenv("TEST_DATABASE_URL")
 pytestmark = pytest.mark.skipif(not DATABASE_URL, reason="TEST_DATABASE_URL is not configured")
@@ -38,7 +39,7 @@ def test_organisation_catalogue_round_trips_and_rejects_stale_revisions() -> Non
     assert DATABASE_URL is not None
     run_migrations(DATABASE_URL)
     repository = PostgresOrganisationRepository(
-        DirectPostgresConnector(DATABASE_URL), FixedClock(NOW)
+        PostgresStore(DirectPostgresConnector(DATABASE_URL)), FixedClock(NOW)
     )
     suffix = f"{datetime.now(UTC).timestamp():.0f}"
     person_id, stream_id, squad_id = f"p-{suffix}", f"vs-{suffix}", f"sq-{suffix}"
@@ -64,7 +65,7 @@ def test_organisation_catalogue_round_trips_and_rejects_stale_revisions() -> Non
     )
 
     reloaded = PostgresOrganisationRepository(
-        DirectPostgresConnector(DATABASE_URL), FixedClock(NOW)
+        PostgresStore(DirectPostgresConnector(DATABASE_URL)), FixedClock(NOW)
     )
     squad = reloaded.load().squad(squad_id)
     assert squad.resources == (SquadResource("bcrm", SquadRole.SYSTEM_CONTACT, person_id),)
@@ -122,7 +123,7 @@ def test_squad_systems_stored_before_resources_become_system_contacts() -> None:
         )
         connection.execute(MIGRATION.read_text(encoding="utf-8"))
     try:
-        catalogue = PostgresOrganisationRepository(connector, FixedClock(NOW)).load()
+        catalogue = PostgresOrganisationRepository(PostgresStore(connector), FixedClock(NOW)).load()
         squad = catalogue.squad("fulfilment")
         assert squad.resources == (
             SquadResource("cwom", SquadRole.SYSTEM_CONTACT, "omar"),

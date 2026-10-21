@@ -16,6 +16,7 @@ from knowledge_portal.application.ports.architecture_rag import (
     EvidenceChunk,
     EvidenceSelection,
 )
+from knowledge_portal.domain.architecture.deprecation import in_service
 from knowledge_portal.domain.architecture.entities import ArchitectureCitation
 from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge
 
@@ -50,7 +51,7 @@ class FakeArchitectureReasoner:
         corpus = " ".join(query.text).casefold()
         matches = tuple(
             system.id
-            for system in release.systems
+            for system in in_service(release.systems)
             if any(
                 alias.casefold() in corpus
                 for alias in (system.name, system.name_ar or "", *system.aliases)
@@ -147,7 +148,7 @@ class StructuredArchitectureReasoner:
             },
             ensure_ascii=False,
         )
-        allowed_systems = {system.id for system in release.systems}
+        allowed_systems = {system.id for system in in_service(release.systems)}
         evidence_by_id = {chunk.id: chunk for chunk in selected_evidence}
         try:
             result = self._client.parse(
@@ -220,7 +221,7 @@ def _catalogue(
         return any(name and name.casefold() in text for name in names)
 
     ordered = sorted(
-        release.systems,
+        in_service(release.systems),
         key=lambda item: not mentioned((item.id, item.name, item.name_ar or "", *item.aliases)),
     )
     rows: list[dict[str, object]] = [

@@ -373,8 +373,8 @@ To run the images a release published to ghcr.io instead of building, name them 
 build. The images are public:
 
 ```bash
-export KNOWLEDGE_API_IMAGE=ghcr.io/mohamhossam/knowledge-api:v0.6.0
-export KNOWLEDGE_WEB_IMAGE=ghcr.io/mohamhossam/knowledge-web:v0.6.0
+export KNOWLEDGE_API_IMAGE=ghcr.io/mohamhossam/knowledge-api:v0.7.0
+export KNOWLEDGE_WEB_IMAGE=ghcr.io/mohamhossam/knowledge-web:v0.7.0
 docker compose -f deploy/compose.local.yaml pull api web
 docker compose -f deploy/compose.local.yaml up -d --no-build
 ```
@@ -481,6 +481,8 @@ Browser app:
 ```bash
 cd frontend
 npm run lint && npm run typecheck && npm test && npm run api:check && npm run build
+npm run lint:brand && npm run lint:legacy-css && npm run budget   # budget needs the build
+npm run e2e   # route axe checks and keyboard journeys (Playwright)
 ```
 
 ## 12. Common startup problems

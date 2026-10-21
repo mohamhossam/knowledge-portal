@@ -35,6 +35,7 @@ from knowledge_portal.domain.architecture.candidates import (
 )
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
+    InvalidKnowledgeError,
     KnowledgeDocumentVersion,
     RelationshipKind,
     SystemDefinition,
@@ -126,6 +127,14 @@ def _change(**values: Any) -> ChangeOutput:
         "reasoning": None,
         "relationship_kind": None,
         "channel_kind": None,
+        "interface_style": None,
+        "portfolio_level": None,
+        "realisation_layer": None,
+        "realised_by": [],
+        "source_level": None,
+        "source_version": None,
+        "conflict_sides": [],
+        "affected_offerings": [],
     }
     return ChangeOutput(**(base | values))
 
@@ -169,15 +178,15 @@ def test_a_name_written_apart_finds_the_system_whose_alias_runs_it_together() ->
     release = ArchitectureKnowledge("k", 1, systems, ())
 
     assert (found := find_system(release, "ORDER GW")) is not None and found.id == "order-gateway"
-    # Two systems that both run together to the same letters answer to neither.
-    twice = ArchitectureKnowledge(
-        "k", 1, (*systems, SystemDefinition("other", "Other", ("ORD ERGW",))), ()
-    )
-    assert find_system(twice, "ORDER GW") is None
+    # Two systems whose labels run together to the same letters cannot both be catalogued.
+    with pytest.raises(InvalidKnowledgeError, match="already names Order Gateway"):
+        ArchitectureKnowledge(
+            "k", 1, (*systems, SystemDefinition("other", "Other", ("ORD ERGW",))), ()
+        )
 
 
 def test_the_prompt_reads_tables_as_records_and_integrations_as_stated() -> None:
-    assert PROMPT_VERSION == "catalogue-extraction-v16"
+    assert PROMPT_VERSION == "catalogue-extraction-v20"
     for rule in (
         "Read each row as one record",
         "the ID value",
