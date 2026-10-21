@@ -53,7 +53,8 @@
    ],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "nc-csrd",
@@ -92,7 +93,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "pega",
@@ -128,7 +130,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "sonic",
@@ -164,7 +167,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "bcc",
@@ -206,7 +210,8 @@
    ],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "psm",
@@ -248,7 +253,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "ecm",
@@ -290,7 +296,8 @@
    ],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "rtf-catalog",
@@ -327,7 +334,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "caf",
@@ -369,7 +377,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "b2b-web",
@@ -422,7 +431,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "smb-app",
@@ -470,7 +480,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "sas-portal",
@@ -509,7 +520,8 @@
    ],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "cim",
@@ -547,7 +559,8 @@
    ],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "dcrm",
@@ -583,7 +596,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "cbcm",
@@ -628,7 +642,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "nc-crm",
@@ -671,7 +686,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "rtf",
@@ -716,7 +732,8 @@
    ],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "ibm-bpm",
@@ -757,7 +774,8 @@
    ],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "felix",
@@ -796,7 +814,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "ehs",
@@ -833,7 +852,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "nc-cpm",
@@ -873,7 +893,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "bscs",
@@ -914,7 +935,8 @@
    ],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "cwom",
@@ -953,7 +975,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "e2eso",
@@ -992,7 +1015,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "xaas",
@@ -1028,7 +1052,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "sla",
@@ -1064,7 +1089,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "veda",
@@ -1116,7 +1142,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "in",
@@ -1179,7 +1206,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "alepo",
@@ -1215,7 +1243,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "nrm",
@@ -1252,7 +1281,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "inv-6d",
@@ -1295,7 +1325,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "nps",
@@ -1334,7 +1365,8 @@
    ],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "gis",
@@ -1371,7 +1403,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "wfms",
@@ -1412,7 +1445,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "remedy",
@@ -1449,7 +1483,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "gov",
@@ -1486,7 +1521,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "eida",
@@ -1522,7 +1558,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "ocr",
@@ -1562,7 +1599,8 @@
    ],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "fortinet",
@@ -1613,7 +1651,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "npc",
@@ -1649,7 +1688,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "cns",
@@ -1689,7 +1729,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "edms",
@@ -1728,7 +1769,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "itsm",
@@ -1768,7 +1810,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "adfs",
@@ -1804,7 +1847,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "tibco",
@@ -1840,7 +1884,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   },
   {
    "id": "bff",
@@ -1878,7 +1923,8 @@
    "reads": [],
    "deprecated": false,
    "replaced_by": null,
-   "accepted": []
+   "accepted": [],
+   "mastery_notes": []
   }
  ],
  "relationships": [],
