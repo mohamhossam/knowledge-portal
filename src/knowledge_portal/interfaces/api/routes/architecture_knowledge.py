@@ -92,6 +92,7 @@ from knowledge_portal.interfaces.api.schemas.architecture_knowledge import (
     SystemUpdateRequest,
 )
 from knowledge_portal.interfaces.api.schemas.bounds import (
+    MAX_NAME_CHARACTERS,
     Text,
 )
 from knowledge_portal.interfaces.api.schemas.change_requests import (
@@ -413,8 +414,8 @@ async def upload_document(
     clock: ClockDep,
     use_case: Annotated[UploadKnowledgeDocument, Depends(get_upload_knowledge_document)],
     file: Annotated[UploadFile, File()],
-    title: Annotated[str, Form()],
-    language: Annotated[str, Form()],
+    title: Annotated[str, Form(max_length=MAX_NAME_CHARACTERS)],
+    language: Annotated[str, Form(max_length=20)],
     expected_revision: Annotated[int, Form()],
 ) -> KnowledgeReleaseResponse:
     # One byte past the limit is enough for validation to reject an oversized

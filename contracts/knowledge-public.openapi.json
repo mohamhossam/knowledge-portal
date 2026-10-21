@@ -953,6 +953,7 @@
           "document_id": {
             "anyOf": [
               {
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -978,10 +979,12 @@
             "type": "string"
           },
           "idempotency_key": {
+            "maxLength": 200,
             "title": "Idempotency Key",
             "type": "string"
           },
           "title": {
+            "maxLength": 300,
             "title": "Title",
             "type": "string"
           }
@@ -1006,10 +1009,12 @@
             "type": "string"
           },
           "language": {
+            "maxLength": 20,
             "title": "Language",
             "type": "string"
           },
           "title": {
+            "maxLength": 300,
             "title": "Title",
             "type": "string"
           }
