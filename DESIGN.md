@@ -193,8 +193,8 @@ A white ledger with warm ink, bound in maroon, sealed in red, with four quiet st
 
   Its hover is **Deep Claret** (#6a1a2d), which is also the link colour. Selection washes in
   **Maroon Mist** (#f4eaec).
-- **e& Red** (#e00800): the seal. It is used for the logo tile and the 3px marker on the active
-  area in the sidebar. Nothing else.
+- **e& Red** (#e00800): the seal. It is used for the 3px marker on the active area in the
+  sidebar; the logo itself is the white mark on the maroon masthead. Nothing else.
 
 ### Secondary
 

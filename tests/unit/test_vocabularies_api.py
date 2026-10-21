@@ -37,7 +37,7 @@ def test_the_clean_up_maps_values_and_leaves_new_terms_to_decide_alone(
     assert run.status_code == 201, run.text
     assert run.json()["reading"] == "vocabulary_cleanup"
     assert run.json()["warnings"] == [
-        "7 values match no term yet; each is suggested as a new term to decide one by one."
+        "1 value matches no term yet; each is suggested as a new term to decide one by one."
     ]
     listing = client.get(f"{base}/suggestions", headers=OWNER).json()
     terms = {
@@ -45,24 +45,11 @@ def test_the_clean_up_maps_values_and_leaves_new_terms_to_decide_alone(
         for item in listing["suggestions"]
         if item["content"]["kind"] == "vocabulary_term"
     }
-    orders = terms["etom-order-handling"]
-    assert orders["match"] == "updates_existing"
-    assert orders["citations"] == [
-        {
-            "location": "Catalogue › 97 activities' eTOM process",
-            "quote": "Fulfillment · Order Handling",
-        }
-    ]
-    assert terms["role-saml"]["match"] == "new"
-
-    bulk = client.post(
-        f"{base}/suggestions/acceptance",
-        json={"expected_revision": listing["release_revision"]},
-        headers=OWNER,
-    )
-    assert bulk.status_code == 200, bulk.text
-    assert bulk.json()["remaining"] == 7
-    release = bulk.json()["release"]
+    # The committed catalogue is curated: every written value but one already
+    # carries its term id, so the clean-up proposes only the flagged verb.
+    assert set(terms) == {"role-passes"}
+    assert terms["role-passes"]["match"] == "new"
+    release = client.get(base, headers=OWNER).json()
     activities = [step for journey in release["journeys"] for step in journey["activities"]]
     assert all(step["etom_id"] for step in activities if step["etom"])
     assert all(step["role_id"] for step in activities if step["role"])
@@ -70,28 +57,28 @@ def test_the_clean_up_maps_values_and_leaves_new_terms_to_decide_alone(
     links = [link for journey in release["journeys"] for link in journey["integrations"]]
     assert all(link["open_api_ids"] for link in links if link["tmf_equivalent"])
 
-    # A maintainer merges a flagged verb into the role it means.
-    applies = terms["role-applies"]
-    edited = applies["content"] | {"term": applies["content"]["term"] | {"id": "role-activate"}}
+    # A maintainer merges the flagged verb into the role it means, in the draft.
+    passes = terms["role-passes"]
+    edited = passes["content"] | {"term": passes["content"]["term"] | {"id": "role-record"}}
     decided = client.post(
-        f"{base}/suggestions/{applies['id']}/decision",
+        f"{base}/suggestions/{passes['id']}/decision",
         json={"expected_revision": release["revision"], "accept": True, "content": edited},
         headers=OWNER,
     )
     assert decided.status_code == 200, decided.text
-    activate = next(item for item in decided.json()["vocabulary"] if item["id"] == "role-activate")
-    assert "APPLIES" in activate["alt_labels"]
+    record = next(item for item in decided.json()["vocabulary"] if item["id"] == "role-record")
+    assert "PASSES" in record["alt_labels"]
     duties = [
         duty
         for offering in decided.json()["products"]
         for part in offering["components"]
         for duty in part["responsibilities"]
-        if duty["role"] == "APPLIES"
+        if duty["role"] == "PASSES"
     ]
-    assert [duty["role_id"] for duty in duties] == ["role-activate", "role-activate"]
+    assert [duty["role_id"] for duty in duties] == ["role-record"]
 
     again = client.post(f"{base}/vocabulary-cleanup", headers=OWNER).json()
-    assert again["candidate_count"] == 6
+    assert again["candidate_count"] == 0
 
 
 def test_terms_are_edited_with_the_draft_and_fields_name_known_ones(client: TestClient) -> None:

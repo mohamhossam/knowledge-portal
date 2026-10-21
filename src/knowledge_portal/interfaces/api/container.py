@@ -309,8 +309,14 @@ def _build_container(
     )
     identity = build_identity(settings, resources, persistence.actor_directory, identity_override)
     requirement_work = requirement_override or _requirement_work(settings, resources, metrics)
+    # One scanner, shared by the library, historic imports and architecture uploads.
+    scanner = (
+        OfflineDocumentScanner()
+        if settings.library_scan_mode == "offline"
+        else ClamAvDocumentScanner(settings.library_scanner_host, settings.library_scanner_port)
+    )
     architecture = build_architecture(
-        settings, persistence, retrieval, llm, llm.architecture_reasoner, clock
+        settings, persistence, retrieval, llm, llm.architecture_reasoner, clock, scanner
     )
     review_cycle = timedelta(days=settings.knowledge_review_cycle_days)
     system_reviews = SystemReviews(
@@ -339,13 +345,8 @@ def _build_container(
         _embedding_identity(settings),
         stewardship,
     )
-    # One bounded extractor and one scanner, shared by the library and historic imports.
+    # One bounded extractor, shared by the library and historic imports.
     extractor = _library_extractor(settings)
-    scanner = (
-        OfflineDocumentScanner()
-        if settings.library_scan_mode == "offline"
-        else ClamAvDocumentScanner(settings.library_scanner_host, settings.library_scanner_port)
-    )
     library = DocumentLibrary(
         persistence.library_repository,
         persistence.document_storage,

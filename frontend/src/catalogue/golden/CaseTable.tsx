@@ -28,9 +28,9 @@ function SystemChips({ item }: { item: GoldenCase }) {
         return expected && predicted ? (
           <code key={id} className="golden-chip">{id}</code>
         ) : expected ? (
-          <code key={id} className="golden-chip golden-chip--missed"><span aria-hidden="true">−</span> {id}<span className="golden-sr"> missed</span></code>
+          <code key={id} className="golden-chip golden-chip--missed"><span aria-hidden="true">−</span> {id}<span className="ds-visually-hidden"> missed</span></code>
         ) : (
-          <code key={id} className="golden-chip golden-chip--raised"><span aria-hidden="true">+</span> {id}<span className="golden-sr"> extra</span></code>
+          <code key={id} className="golden-chip golden-chip--raised"><span aria-hidden="true">+</span> {id}<span className="ds-visually-hidden"> extra</span></code>
         );
       })}
     </p>

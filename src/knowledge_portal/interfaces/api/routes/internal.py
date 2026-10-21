@@ -18,16 +18,12 @@ from pydantic import BaseModel, Field
 
 from knowledge_portal.application.ports.architecture_knowledge import (
     ArchitectureKnowledgeMatch,
-    ArchitectureQuery,
 )
 from knowledge_portal.application.ports.architecture_rag import EvidenceChunk
 from knowledge_portal.application.ports.knowledge_events import KnowledgeEvent
 from knowledge_portal.application.ports.precedents import PrecedentReceipt
 from knowledge_portal.application.ports.reference_grounding import ReferenceEvidence
-from knowledge_portal.application.ports.requirement_assessment import (
-    ArchitectureAssessment,
-    AssessmentQuery,
-)
+from knowledge_portal.application.ports.requirement_assessment import ArchitectureAssessment
 from knowledge_portal.application.use_cases.cited_passages import CitedPassage, PassageCitation
 from knowledge_portal.domain.historic.historic_requirement import CONTENT_PAGE_MAX, ContentPart
 from knowledge_portal.interfaces.api.dependencies import ContainerDep, require_service_caller
@@ -44,6 +40,10 @@ from knowledge_portal.interfaces.api.schemas.historic import (
     HistoricPassageEntry,
     HistoricPassagesPage,
 )
+from knowledge_portal.interfaces.api.schemas.internal_queries import (
+    ArchitectureQuery,
+    AssessmentQuery,
+)
 from knowledge_portal.interfaces.api.schemas.precedents import PrecedentBody
 
 router = APIRouter(prefix="/internal", dependencies=[Depends(require_service_caller)])
@@ -59,7 +59,7 @@ class PublishedResponse(BaseModel):
 
 @router.post("/architecture/match")
 def match(query: ArchitectureQuery, container: ContainerDep) -> ArchitectureKnowledgeMatch:
-    return container.architecture_knowledge.match(query)
+    return container.architecture_knowledge.match(query.to_query())
 
 
 @router.post("/architecture/assess")
@@ -68,7 +68,7 @@ def assess(query: AssessmentQuery, container: ContainerDep) -> ArchitectureAsses
 
     With no verdict yet, the answer carries the questions to ask instead.
     """
-    return container.requirement_assessment.assess(query)
+    return container.requirement_assessment.assess(query.to_query())
 
 
 @router.post(

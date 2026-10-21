@@ -9,7 +9,7 @@ every component's API, states, keyboard and accessibility behaviour.
 |---|---|
 | Code | `frontend/src/design/`: `tokens/` (primitive, semantic, component), `components/` (seven families), `hooks.ts`, `words.ts` |
 | Use | Import `frontend/src/design` once at an app root. Wrap the area in `.ds-root`; `AppShell` does this for you. |
-| See it | `http://localhost:5184/knowledge/design-system` (dev only): every component, both themes, both densities |
+| See it | `http://localhost:5174/knowledge/design-system` (dev only): every component, both themes, both densities |
 | Tests | `npx vitest run src/design`: 159 tests covering the token contract, behaviour, keyboard and ARIA |
 | Related | `docs/ux/interaction/model.md` (behaviour rules, cited as §n below) · `docs/ux/content/` (voice, microcopy, glossary) |
 | Status | In use on every screen. The legacy `src/styles/` and its island were removed in the UX rebuild's last phase. |
@@ -19,7 +19,7 @@ every component's API, states, keyboard and accessibility behaviour.
 | Rule | How it is held |
 |---|---|
 | e& values only in primitives | `tokens.test.ts`: there is no raw colour in `semantic.css` or `component.css`, and `--eand-*` is read only by `semantic.css` |
-| Red is a brand accent only | `--color-brand-accent` is used by the logo and the rail's active marker. The test checks that no state token equals it. The gallery shows the right and wrong uses. |
+| Red is a brand accent only | `--color-brand-accent` is used by the rail's active marker (the logo is the white mark on the maroon masthead). The test checks that no state token equals it. The gallery shows the right and wrong uses. |
 | Maroon is for action, selection and focus | `--color-action*`, `--color-selected`, `--color-focus`, plus the masthead (≈ 7% of the view) |
 | States are their own hues, always with an icon and words | `Status` renders an icon and its words. Danger is rust, warning ochre, success green and info slate-teal, all distinct from red and maroon. |
 | Contrast | Text ≥ 4.5:1 and non-text ≥ 3:1, in both themes, for 44 pairs (matrix below, enforced by the test) |

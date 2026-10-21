@@ -6,6 +6,9 @@ from dataclasses import replace
 from datetime import datetime
 from uuid import uuid4
 
+from smb_kernel.documents.ports import DocumentScannerPort
+
+from knowledge_portal.application.errors import MalwareRejectedError
 from knowledge_portal.application.ports.architecture_knowledge_repository import (
     ArchitectureKnowledgeRepositoryPort,
 )
@@ -59,11 +62,13 @@ class ManageArchitectureKnowledge:
         files: CatalogueFilePort,
         index: ArchitectureEvidenceIndexPort,
         max_file_bytes: int,
+        scanner: DocumentScannerPort,
     ) -> None:
         self._repository = repository
         self._files = files
         self._index = index
         self.max_file_bytes = max_file_bytes
+        self._scanner = scanner
 
     def list_releases(self, actor: Actor) -> tuple[ArchitectureKnowledge, ...]:
         """Every release, drafts included; maintainers only."""
@@ -184,6 +189,7 @@ class ManageArchitectureKnowledge:
             published_by=None,
             name=label,
             created_by=actor.id,
+            base_release_id=current.id,
         )
         self._repository.save(draft, None, actor.id, "create_draft")
         return draft
@@ -354,6 +360,10 @@ class ManageArchitectureKnowledge:
             raise InvalidKnowledgeError("The catalogue file is too large.")
         if not content:
             raise InvalidKnowledgeError("The catalogue file is empty.")
+        # Catalogue files are parsed (XLSX/YAML/CSV) and kept, so they pass the same
+        # malware scan as document uploads before anything reads them.
+        if not self._scanner.scan(content):
+            raise MalwareRejectedError("Malware scan rejected this catalogue file.")
         imported = self._files.read(CatalogueFileFormat.from_filename(filename), content)
         return replace(
             current,
@@ -424,14 +434,24 @@ class ManageArchitectureKnowledge:
         return self._files.template()
 
     def changes(self, release_id: str, actor: Actor, base_id: str | None = None) -> CatalogueDiff:
-        """How a release differs from another: the one in service unless a base is named.
+        """How a release differs from another: a draft against the release it was
+        copied from, anything else against the one in service, unless a base is named.
 
         Any two versions compare, in either order, so a curator can see what one published
-        version changed from the one before it (Knowledge Center C).
+        version changed from the one before it (Knowledge Center C). A draft keeps its
+        recorded base, so re-activating an older release mid-draft cannot silently move
+        the review diff onto the wrong base.
         """
         require_maintainer(actor)
-        base = self._repository.active() if base_id is None else self.get(base_id)
-        return diff_releases(base, self.get(release_id))
+        release = self.get(release_id)
+        if base_id is None:
+            recorded = (
+                release.base_release_id if release.status is KnowledgeReleaseStatus.DRAFT else None
+            )
+            base = self.get(recorded) if recorded is not None else self._repository.active()
+        else:
+            base = self.get(base_id)
+        return diff_releases(base, release)
 
     def select_documents(
         self,

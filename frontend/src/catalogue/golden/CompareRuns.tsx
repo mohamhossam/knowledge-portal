@@ -34,7 +34,7 @@ export function CompareRuns({ runs, current, onOpenCase }: { runs: GoldenRunSumm
             <p role="note"><Status tone="warning">These runs used a different kind of model or a different golden set, so their scores do not answer the same question.</Status></p>
           )}
           <table className="golden-table">
-            <caption className="golden-sr">Each score in the earlier and the current run</caption>
+            <caption className="ds-visually-hidden">Each score in the earlier and the current run</caption>
             <thead>
               <tr>
                 <th scope="col">Score</th>

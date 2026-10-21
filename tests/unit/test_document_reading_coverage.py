@@ -35,6 +35,7 @@ from knowledge_portal.infrastructure.architecture.located_extractor import (
     LocatedDocumentExtractor,
 )
 from knowledge_portal.infrastructure.architecture.tokenizer import FakeWordTokenizer
+from knowledge_portal.infrastructure.documents.library_worker import OfflineDocumentScanner
 from knowledge_portal.infrastructure.llm.catalogue_extraction import FakeCatalogueExtractor
 from knowledge_portal.infrastructure.llm.catalogue_matching import FakeSystemMatcher
 from knowledge_portal.infrastructure.persistence.document_storage import (
@@ -186,6 +187,7 @@ def _setup(content: bytes, extractor: _Recording) -> tuple[ProposeCatalogueChang
         CatalogueFileAdapter(),
         InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer()),
         10_000,
+        OfflineDocumentScanner(),
     )
     storage = InMemoryDocumentStorage()
     documents = SafeDocumentTextExtractor()
