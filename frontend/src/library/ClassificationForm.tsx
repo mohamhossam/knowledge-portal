@@ -27,7 +27,7 @@ export function ClassificationForm({ document, onDone }: { document: LibraryDocu
         if (!(error instanceof ApiError) || error.status !== 409) throw error;
         const latest = await api.libraryDocument(document.id);
         const untouched = (latest.document_type ?? null) === opened.type && (latest.topics ?? []).join("\n") === opened.topics.join("\n");
-        if (!untouched) throw new Error("Someone changed its type or topics meanwhile. Reload to see them, then choose again.");
+        if (!untouched) throw new Error("Someone changed its type or topics meanwhile. Reload to see them, then choose again.", { cause: error });
         return send(latest.version);
       }
     },
