@@ -366,3 +366,20 @@ a.cat-chip:hover {
 .cat-basis__list li + li {
   margin-block-start: var(--space-1);
 }
+
+/* Where every plan of an offering comes from, said once above the plans. */
+.cat-plans-source {
+  margin-block-end: var(--space-2);
+  color: var(--color-ink-2);
+}
+
+/* Read as one sentence: "Every plan: SDD v2.3 (L2) · …". */
+.cat-plans-source .offering-by {
+  display: inline;
+  margin-block-start: 0;
+}
+
+/* A find box sized for a name, not the table's width. */
+.cat-find {
+  max-inline-size: 28rem;
+}

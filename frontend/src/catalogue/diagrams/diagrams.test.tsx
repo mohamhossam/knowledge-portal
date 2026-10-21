@@ -166,6 +166,18 @@ describe("MapPage", () => {
     expect(within(table).getByText("Work orders")).toBeInTheDocument();
   });
 
+  it("finds the connections of one system by its name", async () => {
+    renderMap("/architecture/map");
+    await userEvent.click(screen.getByRole("button", { name: "Show as table" }));
+    const table = screen.getByRole("table", { name: "Every connection between systems in this version" });
+    const before = within(table).getAllByRole("row").length;
+    await userEvent.type(screen.getByRole("searchbox", { name: "Find connections by a system’s name" }), "wfm");
+    const rows = within(table).getAllByRole("row").slice(1);
+    expect(rows.length).toBeLessThan(before - 1);
+    expect(rows.every((row) => /WFM/.test(row.textContent ?? ""))).toBe(true);
+    expect(screen.getByRole("status")).toHaveTextContent(`${rows.length === 1 ? "1 connection" : `${rows.length} connections`} of ${before - 1}`);
+  });
+
   it("opens a system's record in the app when its node is pressed", async () => {
     renderMap("/architecture/map");
     await userEvent.click(within(screen.getByRole("group", { name: "How systems connect" })).getByRole("link", { name: "WFM" }));

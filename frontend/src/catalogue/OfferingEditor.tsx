@@ -300,7 +300,7 @@ export function QuestionFields({ item, orders, change }: {
   const choices = [...orders, ...unknown.map((code) => ({ code, name: `${code} (not one of its order types)` }))];
   return (
     <>
-      <TextField label="Id" value={item.id} dir="ltr" hint="Such as OQ-01; made for you when left empty." onChange={(id) => change({ id })} />
+      <TextField label="Id" value={item.id} dir="ltr" hint="The source’s own, such as F3; made for you when empty." onChange={(id) => change({ id })} />
       <SelectField
         label="How sure its source is"
         value={item.confidence ?? ""}
@@ -308,7 +308,7 @@ export function QuestionFields({ item, orders, change }: {
         onChange={(confidence) => change({ confidence: (confidence || null) as SourceConfidence | null })}
       />
       <TextField label="Source" value={item.source} onChange={(source) => change({ source: source || null })} />
-      <TextField label="In a few words" value={item.title} hint="Such as B2B Digital scope; optional." onChange={(title) => change({ title: title || null })} />
+      <TextField label="In a few words" value={item.title} wide hint="The question’s title, such as Is B2B Digital in scope?; optional." onChange={(title) => change({ title: title || null })} />
       <AreaField label="Question" value={item.text} required onChange={(text) => change({ text })} />
       <AreaField label="What the catalogue does meanwhile" value={item.impact} onChange={(impact) => change({ impact: impact || null })} />
       {choices.length > 0 && (

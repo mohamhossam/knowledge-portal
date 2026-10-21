@@ -45,10 +45,49 @@ export function BusinessRules({ offering, level }: { offering: Offering; level: 
   );
 }
 
+/** A value as a number and its unit, "200 Mbps" as 200 and Mbps; nothing for anything else. */
+function measure(value: string): { amount: string; unit: string } | null {
+  const found = /^(\d+(?:[.,]\d+)?)\s*([^\d\s]\S*)$/.exec(value.trim());
+  return found ? { amount: found[1]!, unit: found[2]! } : null;
+}
+
+/** A characteristic's column: its unit in the head when every plan states it in the same one. */
+function characteristic(plans: Plan[], name: string): Column<Plan> {
+  const values = plans.map((plan) => plan.characteristics.find((item) => item.name === name)?.value).filter((value): value is string => !!value);
+  const units = new Set(values.map((value) => measure(value)?.unit ?? null));
+  const unit = units.size === 1 ? [...units][0] : null;
+  const missing = <span className="cat-quiet">—</span>;
+  if (unit) {
+    return {
+      id: `c:${name}`,
+      header: `${name} (${unit})`,
+      numeric: true,
+      cell: (plan) => {
+        const value = plan.characteristics.find((item) => item.name === name)?.value;
+        return value ? measure(value)!.amount : missing;
+      },
+    };
+  }
+  return {
+    id: `c:${name}`,
+    header: name,
+    bidi: true,
+    cell: (plan) => {
+      const value = plan.characteristics.find((item) => item.name === name)?.value;
+      if (!value) return missing;
+      // A code ("FAP-23JF-E") is read whole: it never breaks at its hyphens.
+      return /\s/.test(value.trim()) ? value : <span className="cat-nowrap" dir="ltr">{value}</span>;
+    },
+  };
+}
+
 /** The offering's plans side by side, one column per characteristic any plan has. */
 export function Plans({ offering, level }: { offering: Offering; level: 2 | 3 }) {
   const plans = offering.plans ?? [];
   const names = [...new Set(plans.flatMap((plan) => plan.characteristics.map((item) => item.name)))];
+  // Where every plan comes from the same source, it is said once, above them.
+  const first = plans[0];
+  const shared = first !== undefined && plans.every((plan) => plan.source === first.source && plan.confidence === first.confidence);
   const columns: Column<Plan>[] = [
     {
       id: "plan",
@@ -59,22 +98,22 @@ export function Plans({ offering, level }: { offering: Offering; level: 2 | 3 })
         <>
           <span dir="auto">{plan.name}</span>
           {plan.description && <span className="cat-detail" dir="auto">{plan.description}</span>}
-          <Provenance item={plan} />
+          {!shared && <Provenance item={plan} />}
         </>
       ),
     },
-    ...names.map((name): Column<Plan> => ({
-      id: `c:${name}`,
-      header: name,
-      bidi: true,
-      cell: (plan) => plan.characteristics.find((item) => item.name === name)?.value ?? <span className="cat-quiet">—</span>,
-    })),
+    ...names.map((name) => characteristic(plans, name)),
   ];
   return (
     <Section title="Plans" count={plans.length} headingLevel={level}>
       {plans.length ? (
         <>
           <p className="cat-lead">Prices are not held in the catalogue: the explorer reads them from the product catalogue.</p>
+          {shared && first && (first.source || first.confidence) && (
+            <div className="cat-plans-source">
+              Every plan: <Provenance item={first} />
+            </div>
+          )}
           <DataTable caption={`Plans of ${offering.name}`} captionHidden columns={columns} rows={plans} rowId={(plan) => plan.name} />
         </>
       ) : (

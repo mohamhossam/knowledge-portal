@@ -19,5 +19,5 @@ export const OFFERING_SECTIONS: Record<OfferingSection, { edit: string; save: st
   questions: { edit: "the open questions", save: "Save the open questions", Fields: OfferingQuestions },
   decisions: { edit: "the architecture decisions", save: "Save the decisions", Fields: OfferingDecisions },
   sources: { edit: "the sources and boundaries", save: "Save the sources and boundaries", Fields: OfferingSources },
-  rules: { edit: "the rules", save: "Save the rules", Fields: OfferingRules },
+  rules: { edit: "the other rules", save: "Save the other rules", Fields: OfferingRules },
 };

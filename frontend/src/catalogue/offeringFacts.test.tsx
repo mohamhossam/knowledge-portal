@@ -13,13 +13,14 @@ const BASE = { ...EXPLORED, revision: 3, status: "published", documents: [] } as
 const OFFERING = {
   ...BASE.products![0]!,
   portfolio_node_id: "smb",
+  family: "SMB",
   business_rules: [
     { id: "R1", statement: "Firewall is mandatory and locked.", kind: "composition", confidence: "confirmed", source: "SDD" },
     { id: "R2", statement: "One bundle per account.", kind: null },
   ],
   plans: [
-    { name: "200 Mbps", characteristics: [{ name: "Download", value: "200 Mbps" }, { name: "CPE", value: "Fortinet 90G" }] },
-    { name: "500 Mbps", characteristics: [{ name: "Download", value: "500 Mbps" }] },
+    { name: "200 Mbps", characteristics: [{ name: "Download", value: "200 Mbps" }, { name: "CPE", value: "Fortinet 90G" }], source: "SDD", confidence: "confirmed" },
+    { name: "500 Mbps", characteristics: [{ name: "Download", value: "500 Mbps" }, { name: "Access point", value: "FAP-23JF-E" }], source: "SDD", confidence: "confirmed" },
   ],
 };
 const RELEASE = {
@@ -50,6 +51,8 @@ describe("what an offering's record holds beyond its parts", () => {
   it("says where the offering sits in the portfolio", () => {
     open();
     expect(screen.getByText("Fixed › SMB")).toBeInTheDocument();
+    // The family the portfolio line ends with is not said again.
+    expect(screen.queryByText(/· SMB\b|^SMB ·/)).not.toBeInTheDocument();
     expect(portfolioPath(RELEASE, "missing")).toEqual(["missing"]);
     expect(portfolioPath(RELEASE, null)).toEqual([]);
   });
@@ -57,8 +60,15 @@ describe("what an offering's record holds beyond its parts", () => {
   it("lists its plans side by side, a column for each characteristic any plan has", () => {
     open("?tab=plans");
     const table = within(screen.getByRole("table", { name: /Plans of/ }));
-    expect(table.getAllByRole("columnheader").map((cell) => cell.textContent)).toEqual(["Plan", "Download", "CPE"]);
-    expect(table.getByRole("row", { name: /500 Mbps/ })).toHaveTextContent("500 Mbps500 Mbps—");
+    // Every plan states its download in Mbps: the unit goes to the head, the numbers stay bare.
+    expect(table.getAllByRole("columnheader").map((cell) => cell.textContent)).toEqual(["Plan", "Download (Mbps)", "CPE", "Access point"]);
+    expect(table.getByRole("row", { name: /500 Mbps/ })).toHaveTextContent("500 Mbps500—FAP-23JF-E");
+    // A code is read whole; words wrap as they need.
+    expect(table.getByText("FAP-23JF-E")).toHaveClass("cat-nowrap");
+    expect(table.getByText("Fortinet 90G")).not.toHaveClass("cat-nowrap");
+    // A source every plan shares is said once, above the plans.
+    expect(screen.getByText(/^Every plan:/)).toBeInTheDocument();
+    expect(table.queryByText("SDD")).not.toBeInTheDocument();
   });
 
   it("lists its business rules with their kind, beside the rules written by hand", () => {

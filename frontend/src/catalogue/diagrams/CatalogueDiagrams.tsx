@@ -27,7 +27,7 @@ export function ConnectionsFlowDiagram({ landscape, href, highlight, table, capt
   const layout = useCallback((fitWidth?: number) => layered(flow.nodes, flow.edges, { nodeWidth: 168, columnGap: 112, fitWidth }), [flow]);
   const keys: [LegendMark, string][] = [
     ...(highlight ? [["subject", "In this order"] as [LegendMark, string]] : []),
-    ...(flow.edges.some((edge) => edge.dashed) ? [["dashed", "Dashed line: how it depends is not stated"] as [LegendMark, string]] : []),
+    ...(flow.edges.some((edge) => edge.dashed) ? [["dashed", "Dashed line: the kind of dependency isn’t known"] as [LegendMark, string]] : []),
   ];
   if (!flow.nodes.length) return <p className="cat-quiet">No system depends on another in this version.</p>;
   return (

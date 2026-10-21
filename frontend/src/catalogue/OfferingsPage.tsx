@@ -244,7 +244,8 @@ function OfferingRecord({ offering }: { offering: Offering }) {
         <>
           {offering.confidence && <Status tone={SOURCE_TONE[offering.confidence]}>{SOURCE_WORD[offering.confidence]}</Status>}
           <span>
-            {[offering.code, offering.family, offering.version && `version ${offering.version}`, offering.lifecycle].filter(Boolean).join(" · ")}
+            {/* The family is said by the portfolio line when it ends there. */}
+            {[offering.code, portfolio.at(-1) === offering.family ? null : offering.family, offering.version && `version ${offering.version}`, offering.lifecycle].filter(Boolean).join(" · ")}
           </span>
           <span>{count(offering.components.length, "component")} · {count(offering.order_types.length, "order type")} · {count(journeys.length, "journey")}</span>
           {portfolio.length > 0 && <span>In <bdi>{portfolio.join(" › ")}</bdi></span>}

@@ -1,7 +1,8 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
-import { type Column, DataTable, Tabs } from "../design/components";
+import { type Column, DataTable, ListFind, Tabs } from "../design/components";
+import { count } from "../home/format";
 import { diagramHref } from "../shell/diagramHref";
 import { RouterLink } from "../shell/links";
 import { LINK_VERB, allConnections, systemName } from "./catalogue";
@@ -62,10 +63,18 @@ export function MapPage() {
   );
 }
 
-/** Every connection read as a sentence, with what it is for: the flow's table. */
+const fold = (text: string) => text.normalize("NFKC").toLocaleLowerCase();
+
+/** Every connection read as a sentence, with what it is for: the flow's table, found by a system's name. */
 function ConnectionsTable() {
   const { book, base } = useCatalogueContext();
-  const rows = useMemo(() => allConnections(book), [book]);
+  const all = useMemo(() => allConnections(book), [book]);
+  const [find, setFind] = useState("");
+  const rows = useMemo(() => {
+    const wanted = fold(find.trim());
+    if (!wanted) return all;
+    return all.filter((row) => [row.source_system_id, row.target_system_id].some((id) => fold(systemName(book, id)).includes(wanted) || fold(id).includes(wanted)));
+  }, [all, book, find]);
   const link = (systemId: string) => (
     <Link to={`${base}/systems/${encodeURIComponent(systemId)}`} dir="auto">{systemName(book, systemId)}</Link>
   );
@@ -77,12 +86,18 @@ function ConnectionsTable() {
     { id: "basis", header: "Known from", cell: (row) => <LinkBasis link={row} base={base} /> },
   ];
   return (
-    <DataTable
-      caption="Every connection between systems in this version"
-      columns={columns}
-      rows={rows}
-      rowId={(row) => `${row.source_system_id}>${row.target_system_id}`}
-      emptyText="No system depends on another in this version."
-    />
+    <div className="cat-stack">
+      <div className="cat-find">
+        <ListFind label="Find connections by a system’s name" value={find} onChange={setFind} />
+      </div>
+      {find.trim() && <p className="cat-quiet" role="status">{count(rows.length, "connection")} of {all.length.toLocaleString("en")}</p>}
+      <DataTable
+        caption="Every connection between systems in this version"
+        columns={columns}
+        rows={rows}
+        rowId={(row) => `${row.source_system_id}>${row.target_system_id}`}
+        emptyText={find.trim() ? "No connection names that system." : "No system depends on another in this version."}
+      />
+    </div>
   );
 }
