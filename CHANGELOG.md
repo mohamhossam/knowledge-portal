@@ -15,6 +15,13 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   `PUT /library/documents/{id}/classification`, and an optional `document_type` on upload;
   public contract, additive. The catalogue gains a `document_type` vocabulary with eight terms.
 
+- Data with more than one owner (ADR-0123, `docs/slices/shared-mastery.md`): several systems
+  may be the system of record for one information entity when each says which part it
+  masters, in a `mastery_notes` list on the system (API, YAML and JSON, and a new MasteryNotes
+  workbook sheet). A note names an entity its system masters, once. The system record shows
+  each note; the draft's Check step lists the shared entities and the owners with no note yet,
+  and Publish names them as worth a look without holding publishing. Public contract, additive.
+
 - Explorer plans lookups are rate-limited (requirement-portal ADR-0101, Amendment 3,
   `docs/slices/explorer-plans-limit.md`): each reader's lookups of an offering's plans count
   against their own per-minute budget (`PROVIDER_RATE_LIMIT_PER_MINUTE`), apart from admins' AI

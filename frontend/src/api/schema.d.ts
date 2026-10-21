@@ -4712,6 +4712,16 @@ export interface components {
             stories: number;
         };
         /**
+         * MasteryNoteSchema
+         * @description Which part of an entity a system masters, where others master it too (ADR-0123).
+         */
+        MasteryNoteSchema: {
+            /** Entity Id */
+            entity_id: string;
+            /** Note */
+            note: string;
+        };
+        /**
          * MatchRole
          * @description Which system reference of a candidate a possible match is for.
          * @enum {string}
@@ -6229,6 +6239,11 @@ export interface components {
              * @default []
              */
             masters: string[];
+            /**
+             * Mastery Notes
+             * @default []
+             */
+            mastery_notes: components["schemas"]["MasteryNoteSchema"][];
             /** Name */
             name: string;
             /** Name Ar */
