@@ -21,6 +21,10 @@ from knowledge_portal.application.use_cases.catalog_plans import (
     CatalogPlansStatus,
     ReadCatalogPlans,
 )
+from knowledge_portal.application.use_cases.provider_call_rate import (
+    CATALOG_REFUSAL,
+    ProviderCallRateLimit,
+)
 from knowledge_portal.domain.architecture.invariants import InvalidKnowledgeError
 from knowledge_portal.domain.architecture.plans import (
     CatalogOffering,
@@ -48,6 +52,7 @@ from tests.conftest import FAKE_PROVIDER_SETTINGS
 
 NOW = datetime(2026, 10, 5, 9, 30, tzinfo=UTC)
 OBSERVER = {"X-Fake-Actor-Id": "fake-observer"}
+OWNER = {"X-Fake-Actor-Id": "fake-owner"}
 
 PRO = ProductOffering(
     "business-pro-plus",
@@ -381,6 +386,38 @@ def test_an_unknown_caller_reads_no_plans(plans_client: TestClient) -> None:
     )
 
     assert response.status_code == 401
+
+
+def test_a_readers_lookups_are_rate_limited_apart_from_ai_calls(container: Container) -> None:
+    plans = _plans(FakeProductCatalog(FixedClock(NOW)))
+    limited = replace(
+        container,
+        catalog_plans=plans,
+        catalog_read_rate_limit=ProviderCallRateLimit(2, FixedClock(NOW), CATALOG_REFUSAL),
+    )
+    route = "/explorer/offerings/business-pro-plus/plans"
+    with TestClient(create_app(lambda: limited)) as client:
+        # An offering not in service is refused before the catalog is called: refunded.
+        assert client.get("/explorer/offerings/missing/plans", headers=OBSERVER).status_code == 404
+        for _ in range(2):
+            assert client.get(route, headers=OBSERVER).status_code == 200
+
+        refused = client.get(route, headers=OBSERVER)
+
+        assert refused.status_code == 429
+        assert refused.json()["code"] == "provider_rate_limited"
+        assert refused.json()["message"].startswith(
+            "Too many product catalogue lookups: at most 2 per minute."
+        )
+        assert 1 <= int(refused.headers["Retry-After"]) <= 60
+        # Another reader has their own budget, and the AI budget is untouched.
+        assert client.get(route, headers=OWNER).status_code == 200
+        assert (
+            client.post(
+                "/knowledge/search", json={"query": "eligibility"}, headers=OBSERVER | OWNER
+            ).status_code
+            == 200
+        )
 
 
 # Settings ---------------------------------------------------------------------------------

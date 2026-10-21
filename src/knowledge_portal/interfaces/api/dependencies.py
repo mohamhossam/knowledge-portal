@@ -62,6 +62,7 @@ from knowledge_portal.application.use_cases.organisation_catalogue import (
     ManageOrganisationCatalogue,
 )
 from knowledge_portal.application.use_cases.precedents import ReadPrecedentSummaries
+from knowledge_portal.application.use_cases.provider_call_rate import ProviderCallRateLimit
 from knowledge_portal.application.use_cases.reference_knowledge import ReferenceKnowledge
 from knowledge_portal.application.use_cases.requirement_corpus import (
     ActOnRequirementCorpus,
@@ -144,12 +145,22 @@ def limit_provider_calls(container: ContainerDep, actor: CurrentActorDep) -> Ite
     Attach to every route that calls an AI provider, synchronously or by queueing
     a job. A request refused before it could reach a provider is refunded.
     """
-    ticket = container.provider_call_rate_limit.acquire(actor)
+    yield from _counted(container.provider_call_rate_limit, actor)
+
+
+def limit_catalog_reads(container: ContainerDep, actor: SignedInActorDep) -> Iterator[None]:
+    """Count one explorer reader's product catalogue lookup against their own per-minute
+    budget, apart from AI calls (requirement-portal ADR-0101, Amendment 3)."""
+    yield from _counted(container.catalog_read_rate_limit, actor)
+
+
+def _counted(limit: ProviderCallRateLimit, actor: ActorProfile) -> Iterator[None]:
+    ticket = limit.acquire(actor)
     try:
         yield
     except Exception as exc:
         if ticket is not None and _refused_before_provider(exc):
-            container.provider_call_rate_limit.refund(ticket)
+            limit.refund(ticket)
         raise
 
 

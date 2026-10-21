@@ -1,9 +1,10 @@
 """The product architecture explorer: open to anyone signed in (requirement-portal ADR-0101).
 
 These are the only public routes that do not require ``knowledge_admin``. They read the
-catalogue version in service, an offering's plans and prices from the product catalog, and
-who is reading; nothing here writes, and drafts, documents and history stay behind the
-admin gate.
+catalogue version in service with the change history applied to it, an offering's plans and
+prices from the product catalog, and who is reading. Nothing here writes; drafts, documents,
+the index and earlier versions stay behind the admin gate. A plans lookup can call the
+product catalog, so each counts against the reader's per-minute budget (Amendment 3).
 """
 
 from typing import Annotated
@@ -16,6 +17,7 @@ from knowledge_portal.interfaces.api.dependencies import (
     SignedInActorDep,
     get_catalog_plans,
     get_explore_architecture,
+    limit_catalog_reads,
 )
 from knowledge_portal.interfaces.api.routes.identity import actor_response
 from knowledge_portal.interfaces.api.schemas.architecture_knowledge import (
@@ -41,7 +43,11 @@ def release_in_service(explore: ExploreDep, actor: SignedInActorDep) -> Explorer
     return ExplorerReleaseResponse.from_domain(explore.in_service())
 
 
-@router.get("/offerings/{offering_id}/plans", response_model=CatalogPlansResponse)
+@router.get(
+    "/offerings/{offering_id}/plans",
+    response_model=CatalogPlansResponse,
+    dependencies=[Depends(limit_catalog_reads)],
+)
 def offering_plans(
     offering_id: Annotated[str, Path(max_length=200)], plans: PlansDep, actor: SignedInActorDep
 ) -> CatalogPlansResponse:
