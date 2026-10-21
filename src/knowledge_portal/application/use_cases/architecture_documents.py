@@ -18,11 +18,13 @@ from smb_kernel.documents.ports import (
 
 from knowledge_portal.application.document_upload_validation import (
     SUPPORTED_EXTENSIONS,
+    require_clean,
     validate_document_upload,
 )
 from knowledge_portal.application.errors import (
     DocumentExtractionError,
     MalwareRejectedError,
+    MalwareScannerUnavailableError,
     UnsupportedDocumentError,
 )
 from knowledge_portal.application.ports.architecture_knowledge_repository import (
@@ -126,8 +128,7 @@ class UploadKnowledgeDocument:
         )
         # Architecture sources are read by models and re-downloaded by admins, so they
         # pass the same malware scan as library uploads before anything parses them.
-        if not self._scanner.scan(content):
-            raise MalwareRejectedError("Malware scan rejected this upload.")
+        require_clean(self._scanner, content, "this upload")
         # The existing extractor checks signatures, unsafe archives, macros and blank text.
         self._extractor.extract(mime_type, content)
         checksum = hashlib.sha256(content).hexdigest()
@@ -157,6 +158,11 @@ class UploadKnowledgeDocument:
 
 # One choice of files at a time; each is still held to the per-file limit.
 MAX_BATCH_FILES = 20
+# Why a batch's later files were not tried once the scanner stopped answering.
+NOT_SCANNED = (
+    "Not added: the malware scanner stopped answering on an earlier file, so this one was "
+    "not scanned. Upload it again once the scanner is back."
+)
 
 
 @dataclass(frozen=True)
@@ -196,7 +202,9 @@ class UploadArchitectureDocuments:
     """Several files into a draft at once, each added or refused on its own (C).
 
     The draft's revision is checked once, before the first file; each file is then saved
-    as the single upload saves it, so one unreadable file doesn't stop the rest.
+    as the single upload saves it, so one unreadable file doesn't stop the rest. A scanner
+    that stops answering does stop them, since each later file would wait on it in turn:
+    they are refused unscanned, and the result still says which files were added.
     """
 
     def __init__(
@@ -228,7 +236,7 @@ class UploadArchitectureDocuments:
             raise KnowledgeConflictError("The draft changed; reload before uploading.")
         revision = expected_revision
         results: list[FileResult] = []
-        for incoming in files:
+        for at, incoming in enumerate(files):
             title = _title(incoming.filename)
             try:
                 updated = self._single.execute(
@@ -253,6 +261,15 @@ class UploadArchitectureDocuments:
                     FileResult(incoming.filename, UploadOutcome.REFUSED, reason=str(refused))
                 )
                 continue
+            except MalwareScannerUnavailableError as outage:
+                results.append(
+                    FileResult(incoming.filename, UploadOutcome.REFUSED, reason=str(outage))
+                )
+                results.extend(
+                    FileResult(item.filename, UploadOutcome.REFUSED, reason=NOT_SCANNED)
+                    for item in files[at + 1 :]
+                )
+                break
             revision = updated.revision
             results.append(
                 FileResult(

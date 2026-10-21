@@ -125,6 +125,15 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Fixed
 
+- A catalogue upload the malware scanner gives no verdict on is refused with 503
+  `malware_scanner_unavailable`, not 422 `document_extraction`: the scanner being down, or
+  the file being larger than it accepts, is an outage to retry, not a fault in the file. This
+  covers document uploads and catalogue-file preview and import. A batch upload stops at the
+  first such file instead of waiting on the scanner for each one after it; those are refused
+  unscanned, and the response still lists every file, with the ones already added. Nothing is
+  ever taken unscanned. The screens say what to do, since the service withholds an outage's
+  own message. Public contract unchanged.
+
 - The catalogue's view model (adapter, model, conventions, vocabulary, flow layout, exports and the
   bundled sample) moves from a new top-level `frontend/src/architecture/` to
   `frontend/src/catalogue/model/`, a sub-area of the catalogue module like `draft/` and `journey/`,

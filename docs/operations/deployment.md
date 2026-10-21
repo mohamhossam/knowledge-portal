@@ -10,7 +10,7 @@ when both are deployed.
 | Container | Purpose |
 |---|---|
 | `postgres` | PostgreSQL 17 with pgvector, the portal's own database `smb_knowledge` |
-| `clamav` | Malware scanner for library uploads |
+| `clamav` | Malware scanner for library and catalogue uploads |
 | `migrate` | Applies the migrations, then exits; the API and worker wait for it |
 | `api` | The knowledge API, HTTP only |
 | `worker` | Library ingestion and catalogue jobs; scale with `--scale worker=N` |
@@ -19,6 +19,10 @@ when both are deployed.
 
 Put TLS in front of `edge`. The API, worker, database, scanner and metrics ports
 (`9464` on `api` and `worker`) stay on the private network.
+
+Uploads are never taken unscanned. When `clamav` gives no verdict, because it is down or the
+file is larger than its `StreamMaxLength`, a catalogue upload is refused with 503
+`malware_scanner_unavailable`; restore the scanner or raise its limit, then upload again.
 
 ## First deployment
 

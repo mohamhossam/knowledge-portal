@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from smb_kernel.documents.ports import DocumentScannerPort
 
-from knowledge_portal.application.errors import MalwareRejectedError
+from knowledge_portal.application.document_upload_validation import require_clean
 from knowledge_portal.application.ports.architecture_knowledge_repository import (
     ArchitectureKnowledgeRepositoryPort,
 )
@@ -365,8 +365,7 @@ class ManageArchitectureKnowledge:
             raise InvalidKnowledgeError("The catalogue file is empty.")
         # Catalogue files are parsed (XLSX/YAML/CSV) and kept, so they pass the same
         # malware scan as document uploads before anything reads them.
-        if not self._scanner.scan(content):
-            raise MalwareRejectedError("Malware scan rejected this catalogue file.")
+        require_clean(self._scanner, content, "this catalogue file")
         imported = self._files.read(CatalogueFileFormat.from_filename(filename), content)
         return replace(
             current,

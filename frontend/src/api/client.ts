@@ -6,7 +6,7 @@
  * every request still in flight, so one person's answer never lands on
  * another's screen.
  */
-import { ApiError, normalizeErrorDetail } from "./errors";
+import { ApiError, codeWords, normalizeErrorDetail } from "./errors";
 import type { components } from "./schema";
 
 type Schemas = components["schemas"];
@@ -185,10 +185,11 @@ function responseError(status: number, payload: unknown): ApiError {
   const value = typeof payload === "object" && payload !== null
     ? payload as Record<string, unknown>
     : {};
+  const code = typeof value.code === "string" ? value.code : undefined;
   return new ApiError(
     status,
-    normalizeErrorDetail(payload, `Request failed with status ${status}.`),
-    typeof value.code === "string" ? value.code : undefined,
+    codeWords(code) ?? normalizeErrorDetail(payload, `Request failed with status ${status}.`),
+    code,
     typeof value.correlation_id === "string" ? value.correlation_id : undefined,
   );
 }

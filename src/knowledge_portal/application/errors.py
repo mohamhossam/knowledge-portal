@@ -38,6 +38,10 @@ class MalwareRejectedError(Exception):
     """The malware scan refused an uploaded file; it was not stored."""
 
 
+class MalwareScannerUnavailableError(Exception):
+    """The malware scanner gave no verdict on an uploaded file, so it was not taken unscanned."""
+
+
 class DocumentStorageError(Exception):
     """Document bytes could not be stored or retrieved safely."""
 
