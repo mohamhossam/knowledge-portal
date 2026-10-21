@@ -190,6 +190,16 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   that stops on a failed read or after 120 s, and the service's refusal (409, such as a
   draft already in progress) reported in one line instead of a traceback.
 
+### Changed
+
+- platform-kernel v1.3.1 (was v1.1.0): it allows Pillow 13, so only the docling family still
+  needs the `[tool.uv]` Pillow override. Behaviour changes it brings (kernel CHANGELOG 1.2.0):
+  migrations serialise on an advisory lock and wait at most 10 s for each lock, so a migration
+  stuck behind live traffic fails and leaves the database as it was instead of queueing every
+  later query; OIDC tokens get 60 s of clock leeway; signing keys reload without blocking other
+  requests; and the client for requirement-portal has a circuit breaker, failing at once for
+  30 s after five unavailable calls in a row. Tracing (1.3.0) stays off. No upgrade step.
+
 ### Fixed
 
 - The catalogue's view model (adapter, model, conventions, vocabulary, flow layout, exports and the
