@@ -4,7 +4,7 @@ import json
 
 from knowledge_portal.application.ports.catalogue_extractor import ExtractionRequest
 
-PROMPT_VERSION = "catalogue-extraction-v19"
+PROMPT_VERSION = "catalogue-extraction-v20"
 
 # A journey is the largest answer shape. A model whose context leaves too little room for
 # it reads without it (ADR-0096): LEAN_SYSTEM_PROMPT and an answer schema without journeys.
@@ -75,7 +75,17 @@ resource named as such, such as "CFSS_ONPREM_FIREWALL_HE". Give its name, its la
 (realisation_layer: "cfs", "rfs" or "resource"), the system that delivers it or holds the \
 resource (system) only if stated, the names of the RFSs or resources one layer down that \
 realise it (realised_by) only if stated, and what it is in one sentence (text) only if given. \
-A resource is realised by nothing below it."""
+A resource is realised by nothing below it.
+- source: a document the catalogue's facts come from, such as a solution design or a product \
+specification, when this document names it or says what it itself is. Give its title (name), \
+the short name it is cited by (aliases, one) if stated, its version (source_version) and level \
+(source_level: "L1" for the enterprise landscape, "L2" for a primary source of its scope, \
+"L3" for a carried-forward baseline) only if stated, and what it is the authority for (text) \
+only if stated. Leave "system" empty.
+- conflict: two sources that say contradicting things about the same fact. Give a short title \
+(name), the two sides (conflict_sides: each the source as named, what it says, and where if \
+stated), the offerings it affects (affected_offerings) if stated, and what differs (text). \
+Only when the document itself says the sources disagree; never reconcile them."""
 
 _SYSTEM_PROMPT = """You read architecture documents and propose entries for an architecture \
 catalogue. A human maintainer reviews every proposal before anything changes.

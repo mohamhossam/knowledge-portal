@@ -256,6 +256,10 @@ def _change(**values: Any) -> ChangeOutput:
         "portfolio_level": None,
         "realisation_layer": None,
         "realised_by": [],
+        "source_level": None,
+        "source_version": None,
+        "conflict_sides": [],
+        "affected_offerings": [],
     }
     return ChangeOutput(**(base | values))
 
@@ -285,7 +289,7 @@ def test_the_model_suggests_domains_and_placements_from_prose() -> None:
         "cim",
         "customer-assisted",
     )
-    assert PROMPT_VERSION == "catalogue-extraction-v19"
+    assert PROMPT_VERSION == "catalogue-extraction-v20"
     assert "landscape_domain: an area of the architecture landscape" in SYSTEM_PROMPT
     assert "placement: one system sitting in one landscape domain" in SYSTEM_PROMPT
 

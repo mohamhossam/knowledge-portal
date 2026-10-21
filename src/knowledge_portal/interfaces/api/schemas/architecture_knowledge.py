@@ -582,6 +582,8 @@ class KnowledgeSourceSchema(BaseModel):
     authority: Text | None = None
     scope: Text | None = None
     boundary: Text | None = None
+    # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
+    accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, item: KnowledgeSource) -> KnowledgeSourceSchema:
@@ -596,6 +598,7 @@ class KnowledgeSourceSchema(BaseModel):
             authority=item.authority,
             scope=item.scope,
             boundary=item.boundary,
+            accepted=[AcceptedFromSchema.from_domain(entry) for entry in item.accepted],
         )
 
     def to_domain(self) -> KnowledgeSource:
@@ -659,6 +662,8 @@ class SourceConflictSchema(BaseModel):
     decision: Text | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
+    accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, item: SourceConflict) -> SourceConflictSchema:
@@ -673,6 +678,7 @@ class SourceConflictSchema(BaseModel):
             decision=item.decision,
             confidence=item.confidence,
             source=item.source,
+            accepted=[AcceptedFromSchema.from_domain(entry) for entry in item.accepted],
         )
 
     def to_domain(self) -> SourceConflict:
@@ -2430,6 +2436,9 @@ class CandidateContentSchema(BaseModel):
     portfolio_node: PortfolioNodeSchema | None = None
     # The whole record, for a realisation suggestion (ADR-0123).
     realisation: RealisationRecordSchema | None = None
+    # The whole source or conflict, for a source or conflict suggestion (ADR-0123).
+    knowledge_source: KnowledgeSourceSchema | None = None
+    conflict: SourceConflictSchema | None = None
 
     @classmethod
     def from_domain(cls, content: CandidateContent) -> CandidateContentSchema:
@@ -2487,6 +2496,14 @@ class CandidateContentSchema(BaseModel):
                 if content.realisation
                 else None
             ),
+            knowledge_source=(
+                KnowledgeSourceSchema.from_domain(content.knowledge_source)
+                if content.knowledge_source
+                else None
+            ),
+            conflict=(
+                SourceConflictSchema.from_domain(content.conflict) if content.conflict else None
+            ),
         )
 
     def to_domain(self) -> CandidateContent:
@@ -2521,6 +2538,8 @@ class CandidateContentSchema(BaseModel):
             self.capability_domain.to_domain() if self.capability_domain else None,
             self.portfolio_node.to_domain() if self.portfolio_node else None,
             self.realisation.to_domain() if self.realisation else None,
+            self.knowledge_source.to_domain() if self.knowledge_source else None,
+            self.conflict.to_domain() if self.conflict else None,
         )
 
 

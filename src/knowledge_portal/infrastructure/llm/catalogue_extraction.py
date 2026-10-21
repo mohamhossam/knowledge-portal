@@ -39,6 +39,13 @@ from knowledge_portal.domain.architecture.candidates import (
 )
 from knowledge_portal.domain.architecture.channels import Channel
 from knowledge_portal.domain.architecture.concepts import label_key
+from knowledge_portal.domain.architecture.governance import (
+    ConflictScope,
+    ConflictSide,
+    KnowledgeSource,
+    SourceConflict,
+    SourceLevel,
+)
 from knowledge_portal.domain.architecture.interfaces import InterfaceStyle, SystemInterface
 from knowledge_portal.domain.architecture.journeys import (
     Activity,
@@ -341,6 +348,15 @@ class JourneyOutput(_Output):
     rules: list[RuleOutput] = Field(max_length=100)
 
 
+class ConflictSideOutput(_Output):
+    """One of two contradicting statements: the source that says it, as the document names
+    it, what it says, and where."""
+
+    source: str = Field(max_length=_MAX_NAME)
+    statement: str = Field(max_length=_MAX_TEXT)
+    reference: str | None = Field(max_length=_MAX_NAME)
+
+
 _LeanKind = Literal[
     "system",
     "component",
@@ -398,6 +414,8 @@ class ChangeOutput(LeanChangeOutput):
             "capability_domain",
             "portfolio_node",
             "realisation_record",
+            "source",
+            "conflict",
         ]
     )
     # The whole journey, for a journey; null for other kinds (ADR-0096).
@@ -413,6 +431,12 @@ class ChangeOutput(LeanChangeOutput):
     # null and empty for other kinds.
     realisation_layer: Literal["cfs", "rfs", "resource"] | None
     realised_by: list[str] = Field(max_length=20)
+    # A source's level and version, when the document states them; null for other kinds.
+    source_level: Literal["L1", "L2", "L3"] | None
+    source_version: str | None = Field(max_length=_MAX_NAME)
+    # A conflict's two sides and the offerings it affects, by name; empty for other kinds.
+    conflict_sides: list[ConflictSideOutput] = Field(max_length=2)
+    affected_offerings: list[str] = Field(max_length=20)
 
 
 class ExtractionOutput(_Output):
@@ -537,6 +561,8 @@ _KINDS = frozenset(
         "capability_domain",
         "portfolio_node",
         "realisation_record",
+        "source",
+        "conflict",
     )
 )
 # What each reading asks with: its prompt, the answer it parses, and each item's shape.
@@ -560,6 +586,10 @@ def _detailed(item: LeanChangeOutput) -> DetailedChangeOutput:
             "portfolio_level": None,
             "realisation_layer": None,
             "realised_by": [],
+            "source_level": None,
+            "source_version": None,
+            "conflict_sides": [],
+            "affected_offerings": [],
             **item.model_dump(),
             "offering": (
                 offering
@@ -678,6 +708,8 @@ def _proposed(
             CandidateKind.CAPABILITY_DOMAIN,
             CandidateKind.PORTFOLIO_NODE,
             CandidateKind.REALISATION_RECORD,
+            CandidateKind.SOURCE,
+            CandidateKind.CONFLICT,
         }
         else item.system
     )
@@ -1087,6 +1119,44 @@ def _portfolio_node(item: DetailedChangeOutput) -> PortfolioNode:
     )
 
 
+def _knowledge_source(item: DetailedChangeOutput) -> KnowledgeSource:
+    """A source as stated: its title, the name it is cited by, its version and what it is the
+    authority for when given, and its level, L3 (a baseline) unless the document states one."""
+    title = (item.name or "").strip()
+    if not title:
+        raise InvalidKnowledgeError("A source needs its title.")
+    short = next(iter(_clean(item.aliases)), None)
+    return KnowledgeSource(
+        f"src-{slug(short or title)}",
+        title,
+        SourceLevel(item.source_level or "L3"),
+        short=short,
+        version=_text(item.source_version),
+        authority=_text(item.text),
+    )
+
+
+def _source_conflict(item: DetailedChangeOutput) -> SourceConflict:
+    """Two sources contradicting each other as stated: both sides, the offerings it affects by
+    name, and what differs."""
+    title = (item.name or "").strip()
+    if not title or len(item.conflict_sides) != 2:
+        raise InvalidKnowledgeError("A conflict needs its title and its two sides.")
+    a, b = (
+        ConflictSide(side.source.strip(), side.statement.strip(), _text(side.reference))
+        for side in item.conflict_sides
+    )
+    return SourceConflict(
+        f"conflict-{slug(title)}",
+        title,
+        a,
+        b,
+        scope=tuple(ConflictScope(name) for name in dict.fromkeys(_clean(item.affected_offerings))),
+        difference=_text(item.text),
+        confidence=SourceConfidence.CONFIRMED,
+    )
+
+
 def _realisation_record(item: DetailedChangeOutput, names: _SystemNames) -> RealisationRecord:
     """A CFS, RFS or resource as stated, with the system that delivers or holds it, when named,
     and what realises it one layer down, by name until the draft resolves them."""
@@ -1136,6 +1206,16 @@ def _content(item: DetailedChangeOutput, names: _SystemNames) -> CandidateConten
         domain = _capability_domain(item)
         return CandidateContent(
             CandidateKind.CAPABILITY_DOMAIN, domain.id, name=domain.name, capability_domain=domain
+        )
+    if item.kind == "source":
+        source = _knowledge_source(item)
+        return CandidateContent(
+            CandidateKind.SOURCE, source.id, name=source.title, knowledge_source=source
+        )
+    if item.kind == "conflict":
+        conflict = _source_conflict(item)
+        return CandidateContent(
+            CandidateKind.CONFLICT, conflict.id, name=conflict.title, conflict=conflict
         )
     if item.kind == "realisation_record":
         record = _realisation_record(item, names)
@@ -1900,7 +1980,9 @@ class FakeCatalogueExtractor:
     technology, component, style and consumers are optional),
     ``Capability domain: Name under Parent`` and ``Portfolio: Name (Level) under Parent``
     (the parent optional), ``Realisation: NAME [cfs] realised by A, B`` (delivered by the last
-    system named, if any),
+    system named, if any), ``Source: Title [L2] as SHORT`` (level and short name optional),
+    ``Conflict: Title; A says statement; B says statement; affects X, Y`` (the offerings
+    optional),
     ``A depends on B for reason`` and ``A calls B for reason`` lines (the second
     as an API call), and reads ``A sends X to B`` as an inferred data transfer.
     An uploaded image yields one system named after the document so the review
@@ -1926,6 +2008,17 @@ class FakeCatalogueExtractor:
     )
     _DOMAIN = re.compile(
         r"^capability domain:\s*(?P<name>.+?)(?:\s+under\s+(?P<parent>.+?))?\.?$", re.I
+    )
+    _SOURCE = re.compile(
+        r"^source:\s*(?P<title>.+?)(?:\s*\[(?P<level>L[123])\])?(?:\s+as\s+(?P<short>\S+))?\.?$",
+        re.I,
+    )
+    # Semicolons, not bars: a line holding " | " is a table row and is skipped.
+    _CONFLICT = re.compile(
+        r"^conflict:\s*(?P<title>[^;]+?)\s*;\s*(?P<a>[^;]+?)\s+says\s+(?P<sa>[^;]+?)\s*"
+        r";\s*(?P<b>[^;]+?)\s+says\s+(?P<sb>[^;]+?)"
+        r"(?:\s*;\s*affects\s+(?P<offerings>.+?))?\.?$",
+        re.I,
     )
     _REALISATION = re.compile(
         r"^realisation:\s*(?P<name>[^\[]+?)\s*\[(?P<layer>cfs|rfs|resource)\]"
@@ -2040,6 +2133,36 @@ class FakeCatalogueExtractor:
                         domain.id,
                         name=name,
                         capability_domain=domain,
+                    )
+                elif match := self._SOURCE.match(line):
+                    title, short = match["title"].strip(), match["short"]
+                    source = KnowledgeSource(
+                        f"src-{slug(short or title)}",
+                        title,
+                        SourceLevel((match["level"] or "L3").upper()),
+                        short=short,
+                    )
+                    source_name = title
+                    content = CandidateContent(
+                        CandidateKind.SOURCE, source.id, name=title, knowledge_source=source
+                    )
+                elif match := self._CONFLICT.match(line):
+                    title = match["title"].strip()
+                    conflict = SourceConflict(
+                        f"conflict-{slug(title)}",
+                        title,
+                        ConflictSide(match["a"].strip(), match["sa"].strip()),
+                        ConflictSide(match["b"].strip(), match["sb"].strip()),
+                        scope=tuple(
+                            ConflictScope(item)
+                            for item in dict.fromkeys(
+                                _clean(re.split(r",", match["offerings"] or ""))
+                            )
+                        ),
+                    )
+                    source_name = title
+                    content = CandidateContent(
+                        CandidateKind.CONFLICT, conflict.id, name=title, conflict=conflict
                     )
                 elif match := self._REALISATION.match(line):
                     name = match["name"].strip()

@@ -101,6 +101,10 @@ def _item(**values: Any) -> dict[str, Any]:
         "portfolio_level": None,
         "realisation_layer": None,
         "realised_by": [],
+        "source_level": None,
+        "source_version": None,
+        "conflict_sides": [],
+        "affected_offerings": [],
     }
     return base | values
 

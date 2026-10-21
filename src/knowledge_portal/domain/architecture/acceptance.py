@@ -15,6 +15,7 @@ from typing import Any, ClassVar, Protocol
 from knowledge_portal.domain.architecture.candidates import CandidateKind
 from knowledge_portal.domain.architecture.channels import Channel
 from knowledge_portal.domain.architecture.concepts import BusinessCapability
+from knowledge_portal.domain.architecture.governance import KnowledgeSource, SourceConflict
 from knowledge_portal.domain.architecture.interfaces import SystemInterface
 from knowledge_portal.domain.architecture.journeys import Journey
 from knowledge_portal.domain.architecture.knowledge import (
@@ -48,6 +49,8 @@ type _Carrier = (
     | CapabilityDomain
     | PortfolioNode
     | RealisationRecord
+    | KnowledgeSource
+    | SourceConflict
     | BusinessCapability
     | VocabularyTerm
 )
@@ -95,6 +98,12 @@ class CatalogueBody(Protocol):
     @property
     def realisations(self) -> tuple[RealisationRecord, ...]: ...
 
+    @property
+    def sources(self) -> tuple[KnowledgeSource, ...]: ...
+
+    @property
+    def conflicts(self) -> tuple[SourceConflict, ...]: ...
+
 
 class _Visitor(Protocol):
     def __call__[T: _Carrier](self, key: AcceptanceKey, item: T, /) -> T: ...
@@ -119,6 +128,8 @@ _SUBJECT: dict[CandidateKind, str] = {
     CandidateKind.CAPABILITY_DOMAIN: "capability_domain",
     CandidateKind.PORTFOLIO_NODE: "portfolio_node",
     CandidateKind.REALISATION_RECORD: "realisation",
+    CandidateKind.SOURCE: "source",
+    CandidateKind.CONFLICT: "conflict",
     CandidateKind.CONCEPT: "concept",
     CandidateKind.VOCABULARY_TERM: "term",
 }
@@ -170,6 +181,8 @@ def _visit[Body: CatalogueBody](body: Body, visit: _Visitor) -> Body:
         ),
         portfolio=tuple(visit(("portfolio_node", item.id), item) for item in body.portfolio),
         realisations=tuple(visit(("realisation", item.id), item) for item in body.realisations),
+        sources=tuple(visit(("source", item.id), item) for item in body.sources),
+        conflicts=tuple(visit(("conflict", item.id), item) for item in body.conflicts),
     )
 
 

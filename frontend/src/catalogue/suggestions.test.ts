@@ -488,3 +488,39 @@ describe("realisation record suggestions (ADR-0123)", () => {
     expect(groups.find((group) => group.key === "section:realisations")?.suggestions.map((item) => item.id).sort()).toEqual([appliance.id, firewall.id].sort());
   });
 });
+
+describe("source and conflict suggestions (ADR-0123)", () => {
+  const qpd = suggestion(
+    { kind: "source", system_id: "src-qpd", name: "Quokka Product Design", knowledge_source: { id: "src-qpd", title: "Quokka Product Design", short: "QPD", level: "L2", supplied: true, accepted: [] } },
+  );
+  const wln = suggestion(
+    { kind: "source", system_id: "src-wln", name: "Wombat Landscape Notes", knowledge_source: { id: "src-wln", title: "Wombat Landscape Notes", short: "WLN", level: "L3", supplied: true, accepted: [] } },
+  );
+  const speed = suggestion(
+    {
+      kind: "conflict", system_id: "conflict-speed", name: "Upload speed",
+      conflict: { id: "conflict-speed", title: "Upload speed", a: { source_id: "QPD", statement: "100 Mbps" }, b: { source_id: "WLN", statement: "50 Mbps" }, scope: [], accepted: [] },
+    },
+    { match: "needs_source" },
+  );
+  const all = [qpd, wln, speed];
+  const named = lexicon(release, all);
+
+  it("says what it registers, and both sides of a conflict", () => {
+    expect(changeSentence(qpd, named)).toBe("Registers the source Quokka Product Design (QPD), level L2");
+    expect(changeSentence(speed, named)).toBe("Records the conflict Upload speed: QPD says “100 Mbps”; WLN says “50 Mbps”");
+  });
+
+  it("waits for the sources a conflict cites, and is always decided one by one", () => {
+    expect(waitsFor(speed, named)).toBe("Waits for the sources QPD and WLN");
+    expect(needsOneByOne(speed)).toBe(true);
+    expect(needsOneByOne({ ...speed, match: "new" })).toBe(true);
+    expect(bulkAcceptable(release, all).ready).toEqual([qpd, wln]);
+  });
+
+  it("is listed under Sources and Conflicts between sources", () => {
+    const groups = suggestionGroups(release, all, named);
+    expect(groups.find((group) => group.key === "section:sources")?.suggestions.map((item) => item.id).sort()).toEqual([qpd.id, wln.id].sort());
+    expect(groups.find((group) => group.key === "section:conflicts")?.label).toBe("Conflicts between sources");
+  });
+});

@@ -2680,11 +2680,13 @@ export interface components {
              * @default []
              */
             concept_ids: string[];
+            conflict?: components["schemas"]["SourceConflictSchema"] | null;
             /** Description */
             description?: string | null;
             interface?: components["schemas"]["SystemInterfaceSchema"] | null;
             journey?: components["schemas"]["JourneySchema"] | null;
             kind: components["schemas"]["CandidateKind"];
+            knowledge_source?: components["schemas"]["KnowledgeSourceSchema"] | null;
             /** Landscape Domain Id */
             landscape_domain_id?: string | null;
             /**
@@ -2728,13 +2730,13 @@ export interface components {
          * CandidateKind
          * @enum {string}
          */
-        CandidateKind: "system" | "component" | "capability" | "constraint" | "relationship" | "landscape_domain" | "placement" | "product" | "journey" | "channel" | "question" | "concept" | "component_link" | "vocabulary_term" | "offering_rule" | "interface" | "capability_domain" | "portfolio_node" | "realisation_record";
+        CandidateKind: "system" | "component" | "capability" | "constraint" | "relationship" | "landscape_domain" | "placement" | "product" | "journey" | "channel" | "question" | "concept" | "component_link" | "vocabulary_term" | "offering_rule" | "interface" | "capability_domain" | "portfolio_node" | "realisation_record" | "source" | "conflict";
         /**
          * CandidateMatch
          * @description How a candidate relates to the draft as it stands now.
          * @enum {string}
          */
-        CandidateMatch: "new" | "updates_existing" | "already_present" | "needs_system" | "needs_component" | "needs_domain" | "needs_offering" | "needs_channel" | "needs_concept" | "needs_interface" | "needs_portfolio_node" | "needs_realisation";
+        CandidateMatch: "new" | "updates_existing" | "already_present" | "needs_system" | "needs_component" | "needs_domain" | "needs_offering" | "needs_channel" | "needs_concept" | "needs_interface" | "needs_portfolio_node" | "needs_realisation" | "needs_source";
         /**
          * CandidateStatus
          * @enum {string}
@@ -4366,6 +4368,11 @@ export interface components {
          * @description A source the catalogue is read from, and its level (ADR-0101, step 5).
          */
         KnowledgeSourceSchema: {
+            /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
             /** Authority */
             authority?: string | null;
             /** Boundary */
@@ -6079,6 +6086,11 @@ export interface components {
          */
         SourceConflictSchema: {
             a: components["schemas"]["ConflictSideSchema"];
+            /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
             b: components["schemas"]["ConflictSideSchema"];
             confidence?: components["schemas"]["SourceConfidence"] | null;
             /** Decision */

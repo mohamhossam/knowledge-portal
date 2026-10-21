@@ -30,9 +30,14 @@ from knowledge_portal.domain.architecture.concepts import (
 from knowledge_portal.domain.architecture.deprecation import successor
 from knowledge_portal.domain.architecture.drafts import OfferingDraft
 from knowledge_portal.domain.architecture.governance import (
+    ConflictScope,
     KnowledgeSource,
     OpenQuestion,
+    SourceConflict,
     SourceLevel,
+    find_source_among,
+    merge_conflicts,
+    merge_sources,
 )
 from knowledge_portal.domain.architecture.interfaces import (
     SystemInterface,
@@ -118,6 +123,9 @@ class CandidateKind(StrEnum):
     PORTFOLIO_NODE = "portfolio_node"
     # A CFS, RFS or resource, the systems that deliver it and what realises it (ADR-0123).
     REALISATION_RECORD = "realisation_record"
+    # A source the catalogue is read from, and two sources contradicting each other (ADR-0123).
+    SOURCE = "source"
+    CONFLICT = "conflict"
 
 
 class CandidateStatus(StrEnum):
@@ -150,6 +158,8 @@ class CandidateMatch(StrEnum):
     NEEDS_PORTFOLIO_NODE = "needs_portfolio_node"
     # A realisation record realised by one the draft does not have yet.
     NEEDS_REALISATION = "needs_realisation"
+    # A conflict citing a source the draft does not register yet.
+    NEEDS_SOURCE = "needs_source"
 
 
 class CandidateBasis(StrEnum):
@@ -241,6 +251,9 @@ class CandidateContent:
     - realisation_record: the whole ``realisation``; its id is also the ``system_id``. Its
       systems and the records realising it are named as the document names them until the
       draft resolves them
+    - source: the whole ``knowledge_source``; its id is also the ``system_id``
+    - conflict: the whole ``conflict``; its id is also the ``system_id``. Its two sources and the
+      offerings it affects are named as the document names them until the draft resolves them
     """
 
     kind: CandidateKind
@@ -271,6 +284,8 @@ class CandidateContent:
     capability_domain: CapabilityDomain | None = None
     portfolio_node: PortfolioNode | None = None
     realisation: RealisationRecord | None = None
+    knowledge_source: KnowledgeSource | None = None
+    conflict: SourceConflict | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "kind", CandidateKind(self.kind))
@@ -324,6 +339,10 @@ class CandidateContent:
             raise InvalidKnowledgeError("Only a portfolio suggestion holds a portfolio node.")
         if (self.realisation is not None) != (self.kind is CandidateKind.REALISATION_RECORD):
             raise InvalidKnowledgeError("Only a realisation suggestion holds a realisation record.")
+        if (self.knowledge_source is not None) != (self.kind is CandidateKind.SOURCE):
+            raise InvalidKnowledgeError("Only a source suggestion holds a source.")
+        if (self.conflict is not None) != (self.kind is CandidateKind.CONFLICT):
+            raise InvalidKnowledgeError("Only a conflict suggestion holds a conflict.")
         if (self.question is not None) != (self.kind is CandidateKind.QUESTION):
             raise InvalidKnowledgeError("Only a question suggestion holds a question.")
         if (self.concept is not None) != (self.kind is CandidateKind.CONCEPT):
@@ -370,6 +389,8 @@ class CandidateContent:
             CandidateKind.CAPABILITY_DOMAIN,
             CandidateKind.PORTFOLIO_NODE,
             CandidateKind.REALISATION_RECORD,
+            CandidateKind.SOURCE,
+            CandidateKind.CONFLICT,
         }:
             pass
         elif self.kind is CandidateKind.COMPONENT_LINK:
@@ -725,6 +746,52 @@ def _current_realisation(
     answers to its name."""
     by_id = next((item for item in release.realisations if item.id == record.id), None)
     return by_id or find_realisation_among(release.realisations, record.name, (record.layer,))
+
+
+def _current_source(
+    source: KnowledgeSource, release: ArchitectureKnowledge
+) -> KnowledgeSource | None:
+    """The draft's source a suggested one is: the same id, or one answering to its title or
+    short name."""
+    by_id = next((item for item in release.sources if item.id == source.id), None)
+    return (
+        by_id
+        or find_source_among(release.sources, source.title)
+        or (find_source_among(release.sources, source.short) if source.short else None)
+    )
+
+
+def _resolved_conflict(
+    conflict: SourceConflict, release: ArchitectureKnowledge
+) -> tuple[SourceConflict, tuple[str, ...], tuple[str, ...]]:
+    """The conflict naming its sources and offerings by the draft's ids, with the sources and
+    offerings the draft lacks."""
+    sources: list[str] = []
+    sides = []
+    for side in (conflict.a, conflict.b):
+        found = find_source_among(release.sources, side.source_id)
+        if found is None:
+            sources.append(side.source_id)
+        sides.append(replace(side, source_id=found.id) if found is not None else side)
+    offerings: list[str] = []
+    scope: list[ConflictScope] = []
+    for item in conflict.scope:
+        offering = find_offering(release.products, item.product_id)
+        if offering is None:
+            offerings.append(item.product_id)
+        scope.append(replace(item, product_id=offering.id) if offering is not None else item)
+    resolved = replace(conflict, a=sides[0], b=sides[1], scope=tuple(scope))
+    return resolved, tuple(dict.fromkeys(sources)), tuple(dict.fromkeys(offerings))
+
+
+def _current_conflict(
+    conflict: SourceConflict, release: ArchitectureKnowledge
+) -> SourceConflict | None:
+    """The draft's conflict a suggested one is: the same id, or the same title."""
+    key = label_key(conflict.title)
+    return next((item for item in release.conflicts if item.id == conflict.id), None) or next(
+        (item for item in release.conflicts if label_key(item.title) == key), None
+    )
 
 
 def _find_node[Node: (CapabilityDomain, PortfolioNode)](
@@ -1349,6 +1416,29 @@ def classify(content: CandidateContent, release: ArchitectureKnowledge) -> Candi
             if _portfolio_fill(recorded_node, node) != recorded_node
             else CandidateMatch.ALREADY_PRESENT
         )
+    if content.kind is CandidateKind.SOURCE and content.knowledge_source is not None:
+        recorded_source = _current_source(content.knowledge_source, release)
+        if recorded_source is None:
+            return CandidateMatch.NEW
+        return (
+            CandidateMatch.UPDATES_EXISTING
+            if merge_sources(recorded_source, content.knowledge_source) != recorded_source
+            else CandidateMatch.ALREADY_PRESENT
+        )
+    if content.kind is CandidateKind.CONFLICT and content.conflict is not None:
+        conflict, cited, affected = _resolved_conflict(content.conflict, release)
+        if cited:
+            return CandidateMatch.NEEDS_SOURCE
+        if affected:
+            return CandidateMatch.NEEDS_OFFERING
+        recorded_conflict = _current_conflict(conflict, release)
+        if recorded_conflict is None:
+            return CandidateMatch.NEW
+        return (
+            CandidateMatch.UPDATES_EXISTING
+            if merge_conflicts(recorded_conflict, conflict) != recorded_conflict
+            else CandidateMatch.ALREADY_PRESENT
+        )
     if content.kind is CandidateKind.REALISATION_RECORD and content.realisation is not None:
         record, systems, below = _resolved_realisation(content.realisation, release)
         if systems:
@@ -1512,6 +1602,8 @@ def open_matches(
             CandidateKind.CAPABILITY_DOMAIN,
             CandidateKind.PORTFOLIO_NODE,
             CandidateKind.REALISATION_RECORD,
+            CandidateKind.SOURCE,
+            CandidateKind.CONFLICT,
             CandidateKind.QUESTION,
             CandidateKind.OFFERING_RULE,
         }
@@ -1666,6 +1758,8 @@ def missing_systems(content: CandidateContent, release: ArchitectureKnowledge) -
         CandidateKind.LANDSCAPE_DOMAIN,
         CandidateKind.CAPABILITY_DOMAIN,
         CandidateKind.PORTFOLIO_NODE,
+        CandidateKind.SOURCE,
+        CandidateKind.CONFLICT,
         CandidateKind.OFFERING_RULE,
         CandidateKind.QUESTION,
         CandidateKind.COMPONENT_LINK,
@@ -1694,11 +1788,14 @@ def needs_one_by_one(candidate: CatalogueCandidate, release: ArchitectureKnowled
         candidate.content.kind is CandidateKind.VOCABULARY_TERM
         and classify(candidate.content, release) is CandidateMatch.NEW
     )
+    # Two sources contradicting each other are never reconciled in bulk (ADR-0123).
+    disputed = candidate.content.kind is CandidateKind.CONFLICT
     return (
         candidate.basis is CandidateBasis.INFERRED
         or moves
         or drafted
         or flagged
+        or disputed
         or bool(open_matches(candidate, release))
     )
 
@@ -1843,6 +1940,41 @@ def _with_interface(
     merged = merge_interfaces(current, resolved)
     return release.updated(
         interfaces=tuple(merged if item.id == current.id else item for item in release.interfaces)
+    )
+
+
+def _with_source(source: KnowledgeSource, release: ArchitectureKnowledge) -> ArchitectureKnowledge:
+    """The draft with a suggested source registered, or its gaps filled."""
+    current = _current_source(source, release)
+    if current is None:
+        return release.updated(sources=(*release.sources, source))
+    merged = merge_sources(current, source)
+    return release.updated(
+        sources=tuple(merged if item.id == current.id else item for item in release.sources)
+    )
+
+
+def _with_conflict(
+    conflict: SourceConflict, release: ArchitectureKnowledge
+) -> ArchitectureKnowledge:
+    """The draft with a suggested conflict recorded, or its gaps filled."""
+    resolved, cited, affected = _resolved_conflict(conflict, release)
+    if cited:
+        names = ", ".join(f"source {item!r}" for item in cited)
+        raise CandidateDependencyError(
+            f"Accept or add {names} before the conflict {conflict.title} that cites it."
+        )
+    if affected:
+        names = ", ".join(f"product offering {item!r}" for item in affected)
+        raise CandidateDependencyError(
+            f"Accept or add {names} before the conflict {conflict.title} that affects it."
+        )
+    current = _current_conflict(resolved, release)
+    if current is None:
+        return release.updated(conflicts=(*release.conflicts, resolved))
+    merged = merge_conflicts(current, resolved)
+    return release.updated(
+        conflicts=tuple(merged if item.id == current.id else item for item in release.conflicts)
     )
 
 
@@ -2337,6 +2469,10 @@ def apply_candidate(
         return _with_capability_domain(content.capability_domain, release)
     if content.kind is CandidateKind.REALISATION_RECORD and content.realisation is not None:
         return _with_realisation(content.realisation, release)
+    if content.kind is CandidateKind.SOURCE and content.knowledge_source is not None:
+        return _with_source(content.knowledge_source, release)
+    if content.kind is CandidateKind.CONFLICT and content.conflict is not None:
+        return _with_conflict(content.conflict, release)
     if content.kind is CandidateKind.PORTFOLIO_NODE and content.portfolio_node is not None:
         return _with_portfolio_node(content.portfolio_node, release)
     if content.kind is CandidateKind.CONCEPT and content.concept is not None:

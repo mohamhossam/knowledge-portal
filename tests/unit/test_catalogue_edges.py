@@ -599,6 +599,10 @@ def test_extraction_adapter_builds_every_kind_and_skips_unusable_items() -> None
             "portfolio_level": None,
             "realisation_layer": None,
             "realised_by": [],
+            "source_level": None,
+            "source_version": None,
+            "conflict_sides": [],
+            "affected_offerings": [],
         }
         return ChangeOutput(**(base | values))
 

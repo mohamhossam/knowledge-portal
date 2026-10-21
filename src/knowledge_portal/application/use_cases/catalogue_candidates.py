@@ -93,6 +93,7 @@ from knowledge_portal.domain.architecture.channels import (
 )
 from knowledge_portal.domain.architecture.concepts import label_key
 from knowledge_portal.domain.architecture.deprecation import in_service
+from knowledge_portal.domain.architecture.governance import merge_conflicts, merge_sources
 from knowledge_portal.domain.architecture.interfaces import merge_interfaces
 from knowledge_portal.domain.architecture.journeys import (
     Journey,
@@ -319,7 +320,9 @@ def _within_budget(
 
 # Accepted in this order, so what a suggestion refers to is in the draft first.
 _ORDER = (
-    # Trees first: a capability names its domain, and an offering its portfolio node.
+    # The sources an offering or a conflict names are registered first;
+    CandidateKind.SOURCE,
+    # then trees: a capability names its domain, and an offering its portfolio node.
     CandidateKind.CAPABILITY_DOMAIN,
     CandidateKind.PORTFOLIO_NODE,
     CandidateKind.LANDSCAPE_DOMAIN,
@@ -349,6 +352,8 @@ _ORDER = (
     CandidateKind.COMPONENT_LINK,
     # A vocabulary term links values written in channels, offerings and journeys.
     CandidateKind.VOCABULARY_TERM,
+    # A conflict names the sources it cites and the offerings it affects.
+    CandidateKind.CONFLICT,
 )
 
 CommitFence = Callable[[], None]
@@ -376,6 +381,8 @@ def _view(candidate: CatalogueCandidate, release: ArchitectureKnowledge) -> Cand
         CandidateKind.CAPABILITY_DOMAIN,
         CandidateKind.PORTFOLIO_NODE,
         CandidateKind.REALISATION_RECORD,
+        CandidateKind.SOURCE,
+        CandidateKind.CONFLICT,
         CandidateKind.QUESTION,
         CandidateKind.CONCEPT,
         CandidateKind.COMPONENT_LINK,
@@ -442,6 +449,8 @@ def _references(
         CandidateKind.CAPABILITY_DOMAIN,
         CandidateKind.PORTFOLIO_NODE,
         CandidateKind.REALISATION_RECORD,
+        CandidateKind.SOURCE,
+        CandidateKind.CONFLICT,
     }:
         return ()
     if content.kind is CandidateKind.SYSTEM:
@@ -530,8 +539,10 @@ def _canonical(
             CandidateKind.LANDSCAPE_DOMAIN,
             CandidateKind.CAPABILITY_DOMAIN,
             CandidateKind.PORTFOLIO_NODE,
+            CandidateKind.SOURCE,
+            CandidateKind.CONFLICT,
         }:
-            # Its subject is a domain or a portfolio node, not a system.
+            # Its subject is a domain, a portfolio node, a source or a conflict, not a system.
             result.append(change)
             continue
         ruled = (
@@ -945,6 +956,8 @@ def _subject(content: CandidateContent) -> tuple[object, ...] | None:
         CandidateKind.CAPABILITY_DOMAIN,
         CandidateKind.PORTFOLIO_NODE,
         CandidateKind.REALISATION_RECORD,
+        CandidateKind.SOURCE,
+        CandidateKind.CONFLICT,
     }:
         return (kind, content.system_id)
     return None
@@ -993,6 +1006,18 @@ def _merged_content(lead: CandidateContent, others: list[CandidateContent]) -> C
         return replace(
             lead, capability_domain=replace(domain, description=domain.description or described)
         )
+    if lead.knowledge_source is not None:
+        source = lead.knowledge_source
+        for other in others:
+            if other.knowledge_source is not None:
+                source = merge_sources(source, other.knowledge_source)
+        return replace(lead, knowledge_source=source)
+    if lead.conflict is not None:
+        conflict = lead.conflict
+        for other in others:
+            if other.conflict is not None:
+                conflict = merge_conflicts(conflict, other.conflict)
+        return replace(lead, conflict=conflict)
     if lead.realisation is not None:
         record = lead.realisation
         for other in others:
