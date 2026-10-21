@@ -2878,3 +2878,12 @@ class EntityRenameRequest(BaseModel):
 
     expected_revision: int
     new_id: Identifier
+
+
+class UnregisteredCitationResponse(BaseModel):
+    """What a set of the version's facts cite that is not in its source register."""
+
+    cited: str
+    facts: int
+    # A few of the facts, by kind and name: "Offering component CPE device".
+    examples: list[str]

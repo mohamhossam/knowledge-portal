@@ -363,6 +363,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/architecture-knowledge/releases/{release_id}/citations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Citations
+         * @description What the version's facts cite that its source register does not hold.
+         */
+        get: operations["citations_architecture_knowledge_releases__release_id__citations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/architecture-knowledge/releases/{release_id}/compare-impact": {
         parameters: {
             query?: never;
@@ -6462,6 +6482,18 @@ export interface components {
             pref_label: string;
         };
         /**
+         * UnregisteredCitationResponse
+         * @description What a set of the version's facts cite that is not in its source register.
+         */
+        UnregisteredCitationResponse: {
+            /** Cited */
+            cited: string;
+            /** Examples */
+            examples: string[];
+            /** Facts */
+            facts: number;
+        };
+        /**
          * UploadOutcome
          * @enum {string}
          */
@@ -7441,6 +7473,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CatalogueDiffResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    citations_architecture_knowledge_releases__release_id__citations_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnregisteredCitationResponse"][];
                 };
             };
             /** @description Validation Error */

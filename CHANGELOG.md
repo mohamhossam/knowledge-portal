@@ -14,6 +14,15 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   domain or in none. The committed catalogue holds to both. ADR-0123 proposes the item's
   three open decisions: co-mastery, an interface suggestion kind, library classification.
 
+- Sources a draft cites but doesn't register. A fact cites its source as the source's id or
+  short name, then where in it; one whose source the register doesn't hold can't show that
+  source's level or title. The Check step lists each such source with how many facts cite it
+  and a few of them, and links to the draft's register; it says so when every fact names a
+  registered source, and a failed check doesn't hold up the step. Citations that differ only
+  in case are one source. The committed catalogue cites four: "Ontology plan" Phases 1, 6 and
+  8, and "Catalogue curation". `GET /architecture-knowledge/releases/{id}/citations`; public
+  contract, additive.
+
 - Stable ids for offerings and journeys (ADR 0124, proposed). An offering or journey can be
   given a new id from its page ("Change the id…"); the old id is kept in `former_ids`, and the
   version's journeys and conflicts follow. Precedents, change requests, suggestions and the

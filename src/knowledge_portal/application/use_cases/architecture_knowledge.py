@@ -28,6 +28,10 @@ from knowledge_portal.application.ports.identity import (
 )
 from knowledge_portal.domain.architecture.acceptance import with_provenance_kept
 from knowledge_portal.domain.architecture.channels import Channel
+from knowledge_portal.domain.architecture.citations import (
+    UnregisteredCitation,
+    unregistered_citations,
+)
 from knowledge_portal.domain.architecture.concepts import BusinessCapability
 from knowledge_portal.domain.architecture.diff import CatalogueDiff, diff_releases
 from knowledge_portal.domain.architecture.governance import KnowledgeSource, SourceConflict
@@ -283,6 +287,13 @@ class ManageArchitectureKnowledge:
         if len(systems) == len(current.systems):
             raise KnowledgeNotFoundError(f"System {system_id!r} not found.")
         return self.update(release_id, expected_revision, actor, systems=systems)
+
+    def unregistered_citations(
+        self, release_id: str, actor: Actor
+    ) -> tuple[UnregisteredCitation, ...]:
+        """What the version's facts cite that is not in its source register."""
+        require_maintainer(actor)
+        return unregistered_citations(self.get(release_id))
 
     def rename_offering(
         self, release_id: str, expected_revision: int, old_id: str, new_id: str, actor: Actor

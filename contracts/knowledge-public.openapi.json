@@ -13061,6 +13061,33 @@
         "title": "UnlinkedConceptSchema",
         "type": "object"
       },
+      "UnregisteredCitationResponse": {
+        "description": "What a set of the version's facts cite that is not in its source register.",
+        "properties": {
+          "cited": {
+            "title": "Cited",
+            "type": "string"
+          },
+          "examples": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Examples",
+            "type": "array"
+          },
+          "facts": {
+            "title": "Facts",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "cited",
+          "facts",
+          "examples"
+        ],
+        "title": "UnregisteredCitationResponse",
+        "type": "object"
+      },
       "UploadOutcome": {
         "enum": [
           "added",
@@ -15116,6 +15143,74 @@
           }
         ],
         "summary": "Release Changes",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
+    "/architecture-knowledge/releases/{release_id}/citations": {
+      "get": {
+        "description": "What the version's facts cite that its source register does not hold.",
+        "operationId": "citations_architecture_knowledge_releases__release_id__citations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UnregisteredCitationResponse"
+                  },
+                  "title": "Response Citations Architecture Knowledge Releases  Release Id  Citations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Citations",
         "tags": [
           "architecture knowledge"
         ]

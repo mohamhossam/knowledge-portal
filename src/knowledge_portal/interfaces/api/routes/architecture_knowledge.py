@@ -91,6 +91,7 @@ from knowledge_portal.interfaces.api.schemas.architecture_knowledge import (
     SettleSubjectResponse,
     SuggestionDecisionRequest,
     SystemUpdateRequest,
+    UnregisteredCitationResponse,
 )
 from knowledge_portal.interfaces.api.schemas.bounds import (
     MAX_NAME_CHARACTERS,
@@ -315,6 +316,19 @@ def remove_system(
     return KnowledgeReleaseResponse.from_domain(
         knowledge.remove_system(release_id, body.expected_revision, system_id, actor)
     )
+
+
+@router.get("/releases/{release_id}/citations", response_model=list[UnregisteredCitationResponse])
+def citations(
+    release_id: str, knowledge: KnowledgeDep, actor: KnowledgeActorDep
+) -> list[UnregisteredCitationResponse]:
+    """What the version's facts cite that its source register does not hold."""
+    return [
+        UnregisteredCitationResponse(
+            cited=item.cited, facts=item.facts, examples=list(item.examples)
+        )
+        for item in knowledge.unregistered_citations(release_id, actor)
+    ]
 
 
 @router.post(
