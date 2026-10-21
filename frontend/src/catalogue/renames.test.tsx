@@ -89,3 +89,14 @@ describe("changing an offering's id", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "Change the id…" })).toHaveFocus());
   });
 });
+
+describe("a journey's panels", () => {
+  it("give focus back to the button that opened them when closed", async () => {
+    for (const name of ["Remove this journey…", "Change the id…"]) {
+      open(DRAFT, `/architecture/journeys/${JOURNEY.id}`);
+      fireEvent.click(screen.getByRole("button", { name }));
+      fireEvent.keyDown(screen.getByRole("form"), { key: "Escape" });
+      await waitFor(() => expect(screen.getByRole("button", { name })).toHaveFocus());
+    }
+  });
+});

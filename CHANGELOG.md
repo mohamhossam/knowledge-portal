@@ -167,6 +167,16 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Fixed
 
+- Accessibility and reading fixes from the catalogue's design review. A focused field in a
+  workbench record pane, which scrolls on its own, now stays clear of a pinned editor foot
+  as it does in the page (WCAG 2.4.11). The masthead's sign-out and a search field's clear
+  button are 24px targets (WCAG 2.5.8). A diagram's "Show as table" button now says
+  "Show as drawing" once the table shows, instead of a pressed state. Lead and caption text
+  keeps to 62 characters a line, as Archivo's wide figures run long. The device an offering
+  is built on is one choice above its parts, so choosing one no longer silently clears
+  another part's box. Closing a journey's edit or remove panel gives focus back to its
+  button, as an offering's already did. A question's title field takes the full width.
+
 - A catalogue upload the malware scanner gives no verdict on is refused with 503
   `malware_scanner_unavailable`, not 422 `document_extraction`: the scanner being down, or
   the file being larger than it accepts, is an outage to retry, not a fault in the file. This
