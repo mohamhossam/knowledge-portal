@@ -558,10 +558,10 @@ A task is complete only when:
   catalogue records no dependency yet. ADR-0120 (provenance that survives acceptance)
   and ADR-0121 (lifecycle) are implemented; under ADR-0121, concepts and terms
   retire only through a catalogue file until their pages have an editor.
-- **Customer's two masters carry no note yet (ADR-0123).** ADR-0123 is implemented in full,
-  but the committed catalogue's two masters of Customer (CBCM and Netcracker CRM) carry no
-  mastery note, because no source says which part each masters; the draft's Check step lists
-  them until the owner supplies the two notes.
+- **Customer's two masters are interim (ADR-0123).** The committed catalogue's two masters of
+  Customer carry the owner's notes (2026-10-21): customers are migrating to NC Digital, NC CRM's
+  customer management is replicated to CBCM until then, and NC CRM is then the only master.
+  When the migration ends, take `entity-customer` off CBCM's masters and drop both notes.
 - **No frontend coverage floor.** The backend holds an 89% floor with
   `TEST_DATABASE_URL`; the frontend's vitest suite runs without one.
 
