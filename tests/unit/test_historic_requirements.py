@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import inspect
 import json
+import time
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
@@ -85,6 +87,19 @@ def brd(name: str = "XGPON_bundles.docx", *lines: str) -> IncomingFile:
 def drain(container: Container) -> None:
     while container.historic_jobs.run_once() is not None:
         pass
+
+
+def _settled(client: TestClient, container: Container, historic_id: str) -> dict[str, Any]:
+    """The record once its queue is idle: the API's own worker may have claimed a job before
+    `drain` did, so it is read until no BRD is being read and no run is queued or running."""
+    deadline = time.monotonic() + 60
+    while True:
+        drain(container)
+        detail: dict[str, Any] = client.get(f"/historic-requirements/{historic_id}").json()
+        busy = detail["brds_reading"] or detail["run_status"] in {"queued", "running"}
+        if not busy or time.monotonic() > deadline:
+            return detail
+        time.sleep(0.05)
 
 
 @pytest.fixture
@@ -423,8 +438,7 @@ def test_the_routes(container: Container) -> None:
         first, refused = created.json()["results"]
         assert (first["outcome"], refused["outcome"]) == ("added", "refused")
         historic_id = first["version_id"]
-        drain(container)
-        detail = client.get(f"/historic-requirements/{historic_id}").json()
+        detail = _settled(client, container, historic_id)
         assert [s["work_item_id"] for s in detail["suggestions"]] == [48213]
         assert detail["brd_files"][0]["passages"][0]["text"] == "Delivered as Epic 48213."
 
@@ -439,8 +453,7 @@ def test_the_routes(container: Container) -> None:
         assert put(list(range(1, 52)), detail["version"]) == 422
         assert put([48213], detail["version"] - 1) == 409
         assert put([48213], detail["version"]) == 200
-        drain(container)
-        detail = client.get(f"/historic-requirements/{historic_id}").json()
+        detail = _settled(client, container, historic_id)
         (epic,) = detail["breakdown"]["lineage"]
         assert epic["item"]["type"] == "epic" and len(epic["children"]) == 2
         published = client.post(
@@ -461,7 +474,7 @@ def test_the_routes(container: Container) -> None:
             "/historic-requirements/batch",
             files=[("files", ("XGPON_v2.docx", word("Also Epic 48213."), DOCX_MIME))],
         ).json()["results"]
-        drain(container)
+        _settled(client, container, second["version_id"])
         shared = client.get(f"/historic-requirements/{second['version_id']}/shared-roots")
         assert shared.json()["items"] == [
             {
