@@ -67,8 +67,10 @@ below is the owner's to make; each says what is recommended and why.
 
 ## Consequences
 
-- Co-mastery becomes a reviewable statement, not an accident. The committed catalogue
-  needs two notes (CBCM and Netcracker CRM on Customer) before its Check step is clear.
+- Co-mastery becomes a reviewable statement, not an accident. The committed catalogue's two
+  notes (CBCM and Netcracker CRM on Customer) came from the owner on 2026-10-21: customers are
+  migrating to NC Digital, NC CRM's customer management is replicated to CBCM until the
+  migration ends, and NC CRM is then the only master.
 - An interface suggestion kind adds one candidate kind, with its classify, apply, file and
   UI parts, the size of the channel kind (ADR-0101). The other entity types stay curated by
   hand or by file.

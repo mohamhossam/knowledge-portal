@@ -304,6 +304,11 @@ systems:
   - entity-customer
   - entity-billing-account
   - entity-product
+  mastery_notes:
+  - entity: entity-customer
+    note: 'Master of Customer only until the migration to NC Digital ends: it holds customers not yet migrated
+      and receives NC CRM''s customer management by replication. Once every customer has migrated, mastership
+      passes to NC CRM.'
 - id: nc-crm
   name: Netcracker CRM (NC Digital)
   aliases:
@@ -326,6 +331,11 @@ systems:
   masters:
   - entity-party
   - entity-customer
+  mastery_notes:
+  - entity: entity-customer
+    note: 'Target master of Customer: all customers are being migrated to NC Digital. Until the migration
+      ends, customer management done here is replicated to CBCM; once every customer has migrated, NC CRM
+      is the only master.'
 - id: rtf
   name: RTF
   aliases:

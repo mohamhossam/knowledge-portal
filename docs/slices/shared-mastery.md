@@ -53,7 +53,8 @@ None.
 
 - In: rules 1 to 4.
 - Out: writing the two notes on the committed catalogue. No source says which customers each
-  system masters, so they are not invented; the owner supplies them. Editing notes on the
+  system masters, so they are not invented; the owner supplies them. (Done 2026-10-21 from the
+  owner's account of the NC Digital migration.) Editing notes on the
   system sheet: masters and reads change through a catalogue file today, and so do notes.
 
 ## Acceptance Criteria

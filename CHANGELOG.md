@@ -12,6 +12,11 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   so such a bump cannot install. Lift the rule once both accept a newer major.
 - CI builds and tests the frontend on Node 26 (`.github/workflows/ci.yml`), the version the web
   image builds with once #115 moves `deploy/web` to `node:26-alpine`.
+- The committed catalogue (`catalogues/smb-architecture.yaml`) gives Customer's two masters
+  their notes, from the owner's account of the NC Digital migration (ADR-0123): CBCM masters
+  Customer only until every customer has moved, receiving NC CRM's customer management by
+  replication meanwhile, and NC CRM is then the only master. The Check step of a draft built
+  from it no longer lists Customer as missing a note.
 
 ### Fixed
 
