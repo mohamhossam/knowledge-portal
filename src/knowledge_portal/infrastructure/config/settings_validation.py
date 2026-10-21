@@ -253,6 +253,24 @@ def validate_settings(settings: Settings) -> None:
         and settings.identity_provider is IdentityProvider.FAKE
     ):
         raise ConfigurationError("APP_ENV=production requires IDENTITY_PROVIDER=oidc.")
+    if settings.app_environment == "production" and settings.llm_provider is LLMProvider.FAKE:
+        raise ConfigurationError(
+            "APP_ENV=production refuses LLM_PROVIDER=fake: curation would run on canned "
+            "model output. Configure a real provider, or LLM_CONFIG_PATH profiles."
+        )
+    if (
+        settings.app_environment == "production"
+        and settings.product_catalog_provider is ProductCatalogProvider.FAKE
+    ):
+        raise ConfigurationError(
+            "APP_ENV=production refuses PRODUCT_CATALOG_PROVIDER=fake: plans and prices "
+            "must be real (tmf620) or off (none)."
+        )
+    if settings.app_environment == "production" and settings.debug_trace_enabled:
+        raise ConfigurationError(
+            "APP_ENV=production refuses DEBUG_TRACE_ENABLED: the trace records redacted "
+            "but verbose internals to disk. Reproduce in a non-production environment."
+        )
     if settings.app_environment == "production" and not settings.knowledge_evaluation_approved:
         raise ConfigurationError(
             "Production architecture mapping requires KNOWLEDGE_EVALUATION_APPROVED=true "

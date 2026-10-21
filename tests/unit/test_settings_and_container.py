@@ -13,6 +13,7 @@ from knowledge_portal.infrastructure.config.options import (
     LLMProvider,
     LogFormat,
     PersistenceProvider,
+    ProductCatalogProvider,
 )
 from knowledge_portal.infrastructure.config.settings import Settings
 from knowledge_portal.infrastructure.llm.catalogue_extraction import StructuredCatalogueExtractor
@@ -34,7 +35,9 @@ from tests.conftest import FAKE_PROVIDER_SETTINGS
 
 TOKEN = "t" * 40
 PRODUCTION = Settings(
-    llm_provider=LLMProvider.FAKE,
+    # Production refuses the fake LLM, so the fixture names a real provider.
+    llm_provider=LLMProvider.OPENAI,
+    openai_api_key="sk-test-not-a-real-key",
     persistence_provider=PersistenceProvider.POSTGRES,
     database_url="postgresql://example/test",
     identity_provider=IdentityProvider.OIDC,
@@ -63,6 +66,29 @@ PRODUCTION = Settings(
 def test_service_settings_are_checked_at_startup(changes: dict[str, str], message: str) -> None:
     with pytest.raises(ConfigurationError, match=message):
         replace(FAKE_PROVIDER_SETTINGS, **changes)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    ("changes", "message"),
+    [
+        ({"llm_provider": LLMProvider.FAKE}, "refuses LLM_PROVIDER=fake"),
+        (
+            {"product_catalog_provider": ProductCatalogProvider.FAKE},
+            "refuses PRODUCT_CATALOG_PROVIDER=fake",
+        ),
+        ({"debug_trace_enabled": True}, "refuses DEBUG_TRACE_ENABLED"),
+    ],
+)
+def test_production_refuses_development_conveniences(
+    changes: dict[str, object], message: str
+) -> None:
+    with pytest.raises(ConfigurationError, match=message):
+        replace(
+            PRODUCTION,
+            app_environment="production",
+            knowledge_evaluation_approved=True,
+            **changes,  # type: ignore[arg-type]
+        )
 
 
 def test_production_runs_with_or_without_requirement_work() -> None:

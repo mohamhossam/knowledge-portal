@@ -454,7 +454,9 @@ def test_architecture_embeddings_reject_a_well_formed_wrong_dimension() -> None:
 def test_production_requires_real_model_evaluation_approval() -> None:
     with pytest.raises(ConfigurationError, match="KNOWLEDGE_EVALUATION_APPROVED"):
         Settings(
-            llm_provider=LLMProvider.FAKE,
+            # A real provider: production refuses the fake LLM before this rule.
+            llm_provider=LLMProvider.OPENAI,
+            openai_api_key="sk-test-not-a-real-key",
             app_environment="production",
             identity_provider=IdentityProvider.OIDC,
             oidc_issuer_url="https://identity.example/tenant",
