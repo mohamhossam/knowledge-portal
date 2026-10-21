@@ -71,9 +71,9 @@ None.
 ## Tests
 
 - `tests/unit/test_model_cleanup.py`.
-- Three tests built a release the rules now refuse, to show lookups refusing to choose
+- Two tests built a release the rules now refuse, to show lookups refusing to choose
   between two systems spelled alike; each now asserts the refusal instead
-  (`test_catalogue_matching.py`, `test_catalogue_table_reading.py`), and
+  (`test_catalogue_matching.py`, `test_catalogue_table_reading.py`).
   `test_system_components.py` names the clearer message for a component repeating its
   own name.
 
