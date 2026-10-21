@@ -11,9 +11,13 @@
  */
 import { defineConfig, devices } from "@playwright/test";
 
+import { basePath } from "./basePath";
 import { apiPort, webPort } from "./e2e/env";
 
 const ci = Boolean(process.env.CI);
+// The same build-time setting the app is served under; e2e follows it instead
+// of hard-coding /knowledge/.
+const base = basePath(process.env.KNOWLEDGE_BASE_PATH);
 
 export default defineConfig({
   testDir: "./e2e",
@@ -25,15 +29,22 @@ export default defineConfig({
   reporter: ci ? [["list"], ["html", { open: "never", outputFolder: "e2e/.report" }]] : "list",
   globalSetup: "./e2e/global-setup.ts",
   use: {
-    baseURL: `http://127.0.0.1:${webPort}/knowledge/`,
+    baseURL: `http://127.0.0.1:${webPort}${base}`,
     channel: process.env.E2E_CHANNEL,
+    // A preinstalled browser binary (sandboxes that must not download one).
+    launchOptions: { executablePath: process.env.E2E_EXECUTABLE },
     reducedMotion: "reduce",
     trace: "retain-on-failure",
   },
   projects: [
     { name: "chromium", testIgnore: /-journey\.spec\.ts/, use: { ...devices["Desktop Chrome"], channel: process.env.E2E_CHANNEL } },
+    // The same axe pass in the dark theme: its contrast otherwise rests on the
+    // token matrix alone, which cannot see component CSS.
+    { name: "a11y-dark", testMatch: /a11y\.spec\.ts/, use: { ...devices["Desktop Chrome"], colorScheme: "dark", channel: process.env.E2E_CHANNEL } },
+    // And at a phone-ish width, where reflow and overflow issues appear.
+    { name: "a11y-narrow", testMatch: /a11y\.spec\.ts/, use: { ...devices["Desktop Chrome"], viewport: { width: 600, height: 900 }, channel: process.env.E2E_CHANNEL } },
     // Journeys that change the seed run last, after every route has been checked as seeded.
-    { name: "journeys", testMatch: /-journey\.spec\.ts/, dependencies: ["chromium"], use: { ...devices["Desktop Chrome"], channel: process.env.E2E_CHANNEL } },
+    { name: "journeys", testMatch: /-journey\.spec\.ts/, dependencies: ["chromium", "a11y-dark", "a11y-narrow"], use: { ...devices["Desktop Chrome"], channel: process.env.E2E_CHANNEL } },
   ],
   webServer: [
     {
@@ -52,7 +63,7 @@ export default defineConfig({
     },
     {
       command: `npx vite preview --host 127.0.0.1 --port ${webPort} --strictPort`,
-      url: `http://127.0.0.1:${webPort}/knowledge/`,
+      url: `http://127.0.0.1:${webPort}${base}`,
       reuseExistingServer: !ci,
       timeout: 60_000,
       env: { KNOWLEDGE_API_PORT: apiPort },
