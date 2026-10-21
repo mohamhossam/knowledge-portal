@@ -7,6 +7,13 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- Explorer plans lookups are rate-limited (requirement-portal ADR-0101, Amendment 3,
+  `docs/slices/explorer-plans-limit.md`): each reader's lookups of an offering's plans count
+  against their own per-minute budget (`PROVIDER_RATE_LIMIT_PER_MINUTE`), apart from admins' AI
+  calls; past it they are told "Too many product catalogue lookups" with when to try again
+  (429, `Retry-After`). The explorer keeps the version's change history: the owner decided it is
+  content, and the rule now says so.
+
 - Names compared one way (`docs/slices/model-cleanup.md`): two systems, two components of
   one system or two sibling domains may no longer differ only in punctuation ("Wi-Fi Hub"
   and "WiFi hub"), as concepts and terms already may not; one system still keeps such
