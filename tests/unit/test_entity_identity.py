@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from smb_kernel.documents.scanner import OfflineDocumentScanner
 
 from knowledge_portal.application.ports.catalogue_file import CatalogueFileFormat
 from knowledge_portal.application.ports.identity import Actor
@@ -50,6 +51,7 @@ def _catalogue() -> tuple[ManageArchitectureKnowledge, ArchitectureKnowledge]:
         CatalogueFileAdapter(),
         InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer()),
         10_000_000,
+        OfflineDocumentScanner(),
     )
     draft = manage.create_draft(MAINTAINER, "Renames")
     draft = manage.apply_file_import(

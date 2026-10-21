@@ -54,8 +54,6 @@
   --rail-current-fg: var(--color-on-selected);
   --rail-marker: var(--color-brand-accent);
   --rail-marker-width: 3px;
-  --logo-bg: var(--color-brand-accent);
-  --logo-fg: var(--color-on-brand-accent);
 
   /* Page and ledger rules */
   --page-max: 90rem;

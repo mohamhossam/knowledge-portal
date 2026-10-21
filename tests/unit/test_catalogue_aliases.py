@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from datetime import UTC, datetime
+from threading import RLock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -42,11 +43,15 @@ from knowledge_portal.infrastructure.architecture.embeddings import FakeEmbeddin
 from knowledge_portal.infrastructure.architecture.evidence_index import InMemoryEvidenceIndex
 from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.architecture.tokenizer import FakeWordTokenizer
+from knowledge_portal.infrastructure.documents.library_worker import OfflineDocumentScanner
 from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
     InMemoryArchitectureKnowledgeRepository,
 )
 from knowledge_portal.infrastructure.persistence.in_memory_catalogue_candidates import (
     InMemoryCatalogueCandidates,
+)
+from knowledge_portal.infrastructure.persistence.in_memory_transaction import (
+    InMemoryTransactionManager,
 )
 
 NOW = datetime(2026, 9, 29, 9, 0, tzinfo=UTC)
@@ -116,6 +121,7 @@ def test_accept_all_leaves_what_cannot_apply_and_accepts_the_rest() -> None:
         CatalogueFileAdapter(),
         InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer()),
         10_000,
+        OfflineDocumentScanner(),
     )
     candidates = InMemoryCatalogueCandidates()
     draft = manage.create_draft(MAINTAINER, "Next version")
@@ -144,9 +150,9 @@ def test_accept_all_leaves_what_cannot_apply_and_accepts_the_rest() -> None:
         ),
     )
 
-    updated, remaining = DecideCatalogueCandidate(manage, repository, candidates).accept_all(
-        draft.id, draft.revision, MAINTAINER, NOW
-    )
+    updated, remaining = DecideCatalogueCandidate(
+        manage, repository, candidates, InMemoryTransactionManager(RLock())
+    ).accept_all(draft.id, draft.revision, MAINTAINER, NOW)
 
     assert remaining == 1
     assert any(item.id == "atg-commerce" for item in updated.systems)

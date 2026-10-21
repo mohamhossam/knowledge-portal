@@ -53,6 +53,7 @@ from knowledge_portal.infrastructure.architecture.located_extractor import (
     LocatedDocumentExtractor,
 )
 from knowledge_portal.infrastructure.architecture.tokenizer import ApproximateTokenizer
+from knowledge_portal.infrastructure.documents.library_worker import OfflineDocumentScanner
 from knowledge_portal.infrastructure.persistence.document_storage import (
     InMemoryDocumentStorage,
 )
@@ -176,7 +177,9 @@ def _build(release: ArchitectureKnowledge) -> tuple[_Recording, ArchitectureKnow
     """Build a draft holding the release's catalogue and one document of PASSAGES."""
     repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
     recording = _Recording()
-    manage = ManageArchitectureKnowledge(repository, CatalogueFileAdapter(), recording, 10_000_000)
+    manage = ManageArchitectureKnowledge(
+        repository, CatalogueFileAdapter(), recording, 10_000_000, OfflineDocumentScanner()
+    )
     draft = manage.create_draft(MAINTAINER, "Concepts")
     storage = InMemoryDocumentStorage()
     storage.put(DocumentVersionId("notes"), PASSAGES.encode())
@@ -343,7 +346,9 @@ def test_an_index_from_before_links_is_still_read_but_reports_no_coverage() -> N
 def test_a_release_indexed_before_links_stays_in_service_until_rebuilt() -> None:
     repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
     index = InMemoryEvidenceIndex(FakeEmbeddings(), ApproximateTokenizer())
-    manage = ManageArchitectureKnowledge(repository, CatalogueFileAdapter(), index, 10_000_000)
+    manage = ManageArchitectureKnowledge(
+        repository, CatalogueFileAdapter(), index, 10_000_000, OfflineDocumentScanner()
+    )
     draft = manage.create_draft(MAINTAINER, "Old build")
     previous = index.profile.replace("section-v3", "section-v2")
     built = manage.mark_built(draft.id, draft.revision, previous, "hash", "amina", "old-index")

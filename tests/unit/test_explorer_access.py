@@ -107,7 +107,7 @@ def oidc_client(container: Container) -> Generator[TestClient, None, None]:
         oidc_issuer_url="https://identity.example/tenant",
         oidc_audience="api://smb",
         oidc_client_id="browser",
-        # Real sign-in never scans offline; nothing here uploads, so no scanner is reached.
+        # The offline scanner is only allowed with fake identity.
         library_scan_mode="clamav",
     )
     application = create_app(lambda: replace(container, settings=settings))

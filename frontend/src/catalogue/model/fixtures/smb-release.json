@@ -3159,6 +3159,7 @@
  "index_id": null,
  "name": "SMB architecture: Business Pro Plus",
  "created_by": "fake-owner",
+ "base_release_id": null,
  "capability_domains": [
   {
    "id": "market-sales",
@@ -3727,7 +3728,7 @@
        "order_types": [],
        "confidence": null,
        "source": null,
-       "role_id": null
+       "role_id": "role-orchestrate"
       },
       {
        "system_id": "e2eso",
@@ -3736,7 +3737,7 @@
        "order_types": [],
        "confidence": null,
        "source": null,
-       "role_id": null
+       "role_id": "role-activate"
       },
       {
        "system_id": "wfms",
@@ -3745,7 +3746,7 @@
        "order_types": [],
        "confidence": null,
        "source": null,
-       "role_id": null
+       "role_id": "role-field"
       }
      ],
      "confidence": "confirmed",
@@ -3785,7 +3786,7 @@
        "order_types": [],
        "confidence": null,
        "source": null,
-       "role_id": null
+       "role_id": "role-suggest"
       },
       {
        "system_id": "wfms",
@@ -3794,7 +3795,7 @@
        "order_types": [],
        "confidence": null,
        "source": null,
-       "role_id": null
+       "role_id": "role-capture"
       },
       {
        "system_id": "e2eso",
@@ -3803,7 +3804,7 @@
        "order_types": [],
        "confidence": null,
        "source": null,
-       "role_id": null
+       "role_id": "role-activate"
       }
      ],
      "confidence": "confirmed",
@@ -3843,7 +3844,7 @@
        "order_types": [],
        "confidence": null,
        "source": null,
-       "role_id": null
+       "role_id": "role-activate"
       },
       {
        "system_id": "e2eso",
@@ -3852,7 +3853,7 @@
        "order_types": [],
        "confidence": null,
        "source": null,
-       "role_id": null
+       "role_id": "role-configure"
       }
      ],
      "confidence": "confirmed",
@@ -3892,7 +3893,7 @@
        "order_types": [],
        "confidence": null,
        "source": null,
-       "role_id": null
+       "role_id": "role-configure"
       },
       {
        "system_id": "cbcm",
@@ -3901,7 +3902,7 @@
        "order_types": [],
        "confidence": null,
        "source": null,
-       "role_id": null
+       "role_id": "role-configure"
       },
       {
        "system_id": "b2b-web",
@@ -3910,7 +3911,7 @@
        "order_types": [],
        "confidence": null,
        "source": null,
-       "role_id": null
+       "role_id": "role-authenticate"
       }
      ],
      "confidence": "confirmed",
@@ -3990,7 +3991,7 @@
        "order_types": [],
        "confidence": null,
        "source": null,
-       "role_id": null
+       "role_id": "role-suggest"
       },
       {
        "system_id": "wfms",
@@ -3999,7 +4000,7 @@
        "order_types": [],
        "confidence": null,
        "source": null,
-       "role_id": null
+       "role_id": "role-capture"
       },
       {
        "system_id": "cwom",
@@ -4008,7 +4009,7 @@
        "order_types": [],
        "confidence": null,
        "source": null,
-       "role_id": null
+       "role_id": "role-activate"
       }
      ],
      "confidence": "confirmed",
@@ -4048,7 +4049,7 @@
        "order_types": [],
        "confidence": null,
        "source": null,
-       "role_id": null
+       "role_id": "role-activate"
       }
      ],
      "confidence": "confirmed",
@@ -4080,7 +4081,7 @@
        "order_types": [],
        "confidence": null,
        "source": null,
-       "role_id": null
+       "role_id": "role-configure"
       }
      ],
      "confidence": "confirmed",
@@ -4112,7 +4113,7 @@
        "order_types": [],
        "confidence": null,
        "source": null,
-       "role_id": null
+       "role_id": "role-activate"
       },
       {
        "system_id": "in",
@@ -4121,7 +4122,7 @@
        "order_types": [],
        "confidence": null,
        "source": null,
-       "role_id": null
+       "role_id": "role-configure"
       }
      ],
      "confidence": "confirmed",
@@ -4826,8 +4827,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-selling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -4855,8 +4856,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CATALOG",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-selling",
+     "role_id": "role-catalog",
      "main_track": true
     },
     {
@@ -4884,8 +4885,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-selling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -4913,8 +4914,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CUSTOMER_DATA",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-customer-data",
      "main_track": true
     },
     {
@@ -4942,8 +4943,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CUSTOMER_DATA",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-customer-data",
      "main_track": false
     },
     {
@@ -4970,8 +4971,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-selling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -4998,8 +4999,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CUSTOMER_DATA",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-customer-data",
      "main_track": true
     },
     {
@@ -5024,8 +5025,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -5050,8 +5051,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "TRACK",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-track",
      "main_track": true
     },
     {
@@ -5076,8 +5077,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "VALIDATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-validate",
      "main_track": true
     },
     {
@@ -5128,8 +5129,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -5154,8 +5155,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -5180,8 +5181,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CATALOG",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-catalog",
      "main_track": true
     },
     {
@@ -5206,8 +5207,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -5232,8 +5233,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-activate",
      "main_track": false
     },
     {
@@ -5258,8 +5259,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-supplier-partner-requisition-management",
+     "role_id": "role-activate",
      "main_track": false
     },
     {
@@ -5284,8 +5285,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "FIELD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-resource-provisioning",
+     "role_id": "role-field",
      "main_track": false
     },
     {
@@ -5310,8 +5311,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-orchestrate",
      "main_track": false
     },
     {
@@ -5336,8 +5337,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-resource-provisioning",
+     "role_id": "role-activate",
      "main_track": false
     },
     {
@@ -5362,8 +5363,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-resource-provisioning",
+     "role_id": "role-activate",
      "main_track": false
     },
     {
@@ -5388,8 +5389,8 @@
      "performer": null,
      "point_of_no_return": "The XaaS callback is the point of no return for the asynchronous SaaS order.",
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-activate",
      "main_track": false
     },
     {
@@ -5414,8 +5415,8 @@
      "performer": null,
      "point_of_no_return": "For managed devices, the MDVC callback from HPSM is the point of no return.",
      "role": "LOGISTICS",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-supplier-partner-requisition-management",
+     "role_id": "role-logistics",
      "main_track": false
     },
     {
@@ -5440,8 +5441,8 @@
      "performer": "MSS team",
      "point_of_no_return": null,
      "role": "FIELD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-field",
      "main_track": false
     },
     {
@@ -5466,8 +5467,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "BILL",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-billing-revenue-management",
+     "role_id": "role-bill",
      "main_track": false
     },
     {
@@ -5492,8 +5493,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "NOTIFY",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-customer-interface-management",
+     "role_id": "role-notify",
      "main_track": false
     },
     {
@@ -5518,8 +5519,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "RECORD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-record",
      "main_track": false
     }
    ],
@@ -5752,7 +5753,10 @@
      "purpose": "Load customer, account and product data.",
      "style": "API",
      "tmf_equivalent": "TMF629 Customer · TMF637 Product Inventory",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf629",
+      "api-tmf637"
+     ]
     },
     {
      "from_activity": "50",
@@ -5770,7 +5774,10 @@
      "purpose": "Load party data of a customer migrated to NC Digital.",
      "style": "API",
      "tmf_equivalent": "TMF632 Party Management · TMF629 Customer",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf632",
+      "api-tmf629"
+     ]
     },
     {
      "from_activity": "300",
@@ -5788,7 +5795,9 @@
      "purpose": "Submit the order with the summary-order flags.",
      "style": "XML request",
      "tmf_equivalent": "TMF622 Product Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "310",
@@ -5806,7 +5815,9 @@
      "purpose": "Open the order tracker. For BFM orders it carries No_Change items too.",
      "style": null,
      "tmf_equivalent": "TMF622 Product Ordering (notification)",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "320",
@@ -5824,7 +5835,9 @@
      "purpose": "Translate to the value order with PSM codes; check business rules.",
      "style": "API",
      "tmf_equivalent": "TMF679 Product Offering Qualification",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf679"
+     ]
     },
     {
      "from_activity": "320",
@@ -5860,7 +5873,9 @@
      "purpose": "Hand the summary order to CWOM; refresh carries forward devices and overrides amounts.",
      "style": "API",
      "tmf_equivalent": "TMF622 Product Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "350",
@@ -5914,7 +5929,9 @@
      "purpose": "Provision the Fortinet HE CPE; site name and organisation name passed.",
      "style": "API",
      "tmf_equivalent": "TMF641 Service Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf641"
+     ]
     },
     {
      "from_activity": "380",
@@ -6184,7 +6201,9 @@
      "purpose": "SMS or email from a template ID, language (EN/AR) and parameters.",
      "style": "API",
      "tmf_equivalent": "TMF681 Communication",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf681"
+     ]
     },
     {
      "from_activity": "470",
@@ -6220,7 +6239,9 @@
      "purpose": "Update the product inventory with PSM codes.",
      "style": null,
      "tmf_equivalent": "TMF637 Product Inventory",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf637"
+     ]
     },
     {
      "from_activity": "210",
@@ -7177,8 +7198,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -7203,8 +7224,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -7229,8 +7250,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -7255,8 +7276,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "VALIDATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-validate",
      "main_track": true
     },
     {
@@ -7282,7 +7303,7 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null,
+     "role_id": "role-capture",
      "main_track": false
     },
     {
@@ -7307,8 +7328,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "TRACK",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-track",
      "main_track": true
     },
     {
@@ -7333,8 +7354,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -7359,8 +7380,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "VALIDATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-validate",
      "main_track": true
     },
     {
@@ -7385,8 +7406,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -7411,8 +7432,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -7437,8 +7458,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-resource-provisioning",
+     "role_id": "role-activate",
      "main_track": false
     },
     {
@@ -7463,8 +7484,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-resource-provisioning",
+     "role_id": "role-activate",
      "main_track": false
     },
     {
@@ -7489,8 +7510,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-resource-provisioning",
+     "role_id": "role-activate",
      "main_track": false
     },
     {
@@ -7515,8 +7536,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-resource-provisioning",
+     "role_id": "role-activate",
      "main_track": false
     },
     {
@@ -7541,8 +7562,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-resource-provisioning",
+     "role_id": "role-activate",
      "main_track": false
     },
     {
@@ -7567,8 +7588,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CATALOG",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-catalog",
      "main_track": true
     },
     {
@@ -7593,8 +7614,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "FIELD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-resource-provisioning",
+     "role_id": "role-field",
      "main_track": false
     },
     {
@@ -7619,8 +7640,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "BILL",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-billing-revenue-management",
+     "role_id": "role-bill",
      "main_track": false
     },
     {
@@ -7645,8 +7666,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-activate",
      "main_track": true
     },
     {
@@ -7671,8 +7692,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "NOTIFY",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-customer-interface-management",
+     "role_id": "role-notify",
      "main_track": true
     }
    ],
@@ -7839,7 +7860,9 @@
      "purpose": "Read the subscription and its NEW_BUNDLE_MODEL attribute.",
      "style": "API",
      "tmf_equivalent": "TMF637 Product Inventory",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf637"
+     ]
     },
     {
      "from_activity": "20",
@@ -7875,7 +7898,9 @@
      "purpose": "Submit the change with the summary-order attributes.",
      "style": "XML request",
      "tmf_equivalent": "TMF622 Product Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "35",
@@ -7893,7 +7918,9 @@
      "purpose": "Validate the order against the pending-order matrix (UPDOWNGRD needs every sub-order and the master order closed).",
      "style": "API",
      "tmf_equivalent": "TMF679 Product Offering Qualification",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf679"
+     ]
     },
     {
      "from_activity": "40",
@@ -7983,7 +8010,9 @@
      "purpose": "Pass the whole loaded basket.",
      "style": "API",
      "tmf_equivalent": "TMF622 Product Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "70",
@@ -8145,7 +8174,9 @@
      "purpose": "Change the CPE service per workflow and technical proposal.",
      "style": null,
      "tmf_equivalent": "TMF641 Service Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf641"
+     ]
     },
     {
      "from_activity": "150",
@@ -8163,7 +8194,9 @@
      "purpose": "Set the CPE bandwidth after any speed booster (platform FORTINET).",
      "style": null,
      "tmf_equivalent": "TMF641 Service Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf641"
+     ]
     },
     {
      "from_activity": "160",
@@ -8499,7 +8532,7 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null,
+     "role_id": "role-track",
      "main_track": true
     },
     {
@@ -8525,7 +8558,7 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null,
+     "role_id": "role-track",
      "main_track": true
     },
     {
@@ -8551,7 +8584,7 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null,
+     "role_id": "role-track",
      "main_track": true
     },
     {
@@ -8577,7 +8610,7 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null,
+     "role_id": "role-track",
      "main_track": true
     },
     {
@@ -8603,7 +8636,7 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null,
+     "role_id": "role-track",
      "main_track": true
     },
     {
@@ -8629,7 +8662,7 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null,
+     "role_id": "role-track",
      "main_track": true
     },
     {
@@ -8655,7 +8688,7 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null,
+     "role_id": "role-track",
      "main_track": true
     },
     {
@@ -8681,7 +8714,7 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null,
+     "role_id": "role-track",
      "main_track": true
     },
     {
@@ -8707,7 +8740,7 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null,
+     "role_id": "role-track",
      "main_track": true
     },
     {
@@ -8733,7 +8766,7 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null,
+     "role_id": "role-track",
      "main_track": true
     },
     {
@@ -8759,7 +8792,7 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null,
+     "role_id": "role-track",
      "main_track": true
     },
     {
@@ -8785,7 +8818,7 @@
      "point_of_no_return": null,
      "role": "TRACK",
      "etom_id": null,
-     "role_id": null,
+     "role_id": "role-track",
      "main_track": true
     }
    ],
@@ -8969,7 +9002,9 @@
      "purpose": "The customer (B2B, SMB App) or the back office opens the tracker.",
      "style": "API",
      "tmf_equivalent": "TMF622 Product Ordering (GET)",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "110",
@@ -9178,8 +9213,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-selling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -9204,8 +9239,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CUSTOMER_DATA",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-customer-data",
      "main_track": true
     },
     {
@@ -9230,8 +9265,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-selling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -9256,8 +9291,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -9282,8 +9317,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "VALIDATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-validate",
      "main_track": true
     },
     {
@@ -9309,7 +9344,7 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null,
+     "role_id": "role-capture",
      "main_track": false
     },
     {
@@ -9334,8 +9369,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "TRACK",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-track",
      "main_track": true
     },
     {
@@ -9360,8 +9395,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -9386,8 +9421,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "VALIDATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-validate",
      "main_track": true
     },
     {
@@ -9412,8 +9447,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -9438,8 +9473,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -9464,8 +9499,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-resource-provisioning",
+     "role_id": "role-activate",
      "main_track": false
     },
     {
@@ -9490,8 +9525,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-resource-provisioning",
+     "role_id": "role-activate",
      "main_track": false
     },
     {
@@ -9516,8 +9551,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CATALOG",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-catalog",
      "main_track": true
     },
     {
@@ -9542,8 +9577,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-activate",
      "main_track": true
     },
     {
@@ -9568,8 +9603,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-supplier-partner-requisition-management",
+     "role_id": "role-activate",
      "main_track": true
     },
     {
@@ -9594,8 +9629,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "FIELD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-resource-provisioning",
+     "role_id": "role-field",
      "main_track": true
     },
     {
@@ -9620,8 +9655,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "LOGISTICS",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-supplier-partner-requisition-management",
+     "role_id": "role-logistics",
      "main_track": true
     },
     {
@@ -9646,8 +9681,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "BILL",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-billing-revenue-management",
+     "role_id": "role-bill",
      "main_track": true
     },
     {
@@ -9672,8 +9707,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "BILL",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-billing-revenue-management",
+     "role_id": "role-bill",
      "main_track": false
     },
     {
@@ -9698,8 +9733,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "BILL",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-billing-revenue-management",
+     "role_id": "role-bill",
      "main_track": true
     },
     {
@@ -9724,8 +9759,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "NOTIFY",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-customer-interface-management",
+     "role_id": "role-notify",
      "main_track": true
     },
     {
@@ -9750,8 +9785,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "RECORD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-record",
      "main_track": true
     }
    ],
@@ -9870,7 +9905,9 @@
      "purpose": "Read NEW_BUNDLE_MODEL and productGroup (BFV2 = migration).",
      "style": "API",
      "tmf_equivalent": "TMF637 Product Inventory",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf637"
+     ]
     },
     {
      "from_activity": "40",
@@ -9888,7 +9925,9 @@
      "purpose": "Submit the migration with the summary-order attributes.",
      "style": "XML request",
      "tmf_equivalent": "TMF622 Product Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "50",
@@ -9906,7 +9945,9 @@
      "purpose": "Validate the order against the pending-order matrix (MIGRATE: the GSM and GPON sub-orders and the master order (migration on an existing account)).",
      "style": "API",
      "tmf_equivalent": "TMF679 Product Offering Qualification",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf679"
+     ]
     },
     {
      "from_activity": "60",
@@ -9924,7 +9965,9 @@
      "purpose": "Open the tracker (OrderInstanceType MIGRATE); No_Change items included.",
      "style": null,
      "tmf_equivalent": "TMF622 Product Ordering (notification)",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "70",
@@ -9996,7 +10039,9 @@
      "purpose": "Pass the whole loaded basket; carry forward devices; override amounts.",
      "style": "API",
      "tmf_equivalent": "TMF622 Product Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "110",
@@ -10068,7 +10113,9 @@
      "purpose": "Provision the Pro+ CPE and FortiPortal per the technical proposal.",
      "style": null,
      "tmf_equivalent": "TMF641 Service Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf641"
+     ]
     },
     {
      "from_activity": "150",
@@ -10469,8 +10516,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-selling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -10495,8 +10542,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CUSTOMER_DATA",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-customer-data",
      "main_track": true
     },
     {
@@ -10521,8 +10568,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "VALIDATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-validate",
      "main_track": true
     },
     {
@@ -10547,8 +10594,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-selling",
+     "role_id": "role-capture",
      "main_track": false
     },
     {
@@ -10573,8 +10620,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-orchestrate",
      "main_track": false
     },
     {
@@ -10599,8 +10646,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "RECORD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-record",
      "main_track": false
     },
     {
@@ -10625,8 +10672,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -10651,8 +10698,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "TRACK",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-track",
      "main_track": true
     },
     {
@@ -10677,8 +10724,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -10703,8 +10750,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -10729,8 +10776,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -10755,8 +10802,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-resource-provisioning",
+     "role_id": "role-activate",
      "main_track": false
     },
     {
@@ -10781,8 +10828,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-resource-provisioning",
+     "role_id": "role-activate",
      "main_track": false
     },
     {
@@ -10807,8 +10854,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-activate",
      "main_track": true
     },
     {
@@ -10833,8 +10880,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "FIELD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-resource-provisioning",
+     "role_id": "role-field",
      "main_track": true
     },
     {
@@ -10859,8 +10906,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "BILL",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-billing-revenue-management",
+     "role_id": "role-bill",
      "main_track": true
     },
     {
@@ -10885,8 +10932,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "BILL",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-billing-revenue-management",
+     "role_id": "role-bill",
      "main_track": false
     },
     {
@@ -10911,8 +10958,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "BILL",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-billing-revenue-management",
+     "role_id": "role-bill",
      "main_track": true
     },
     {
@@ -10937,8 +10984,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "RECORD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-record",
      "main_track": true
     }
    ],
@@ -11069,7 +11116,9 @@
      "purpose": "Read NEW_BUNDLE_MODEL.",
      "style": "API",
      "tmf_equivalent": "TMF637 Product Inventory",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf637"
+     ]
     },
     {
      "from_activity": "30",
@@ -11087,7 +11136,9 @@
      "purpose": "Validate the order against the pending-order matrix (CESSREQ: every sub-order (GSM, asynchronous SaaS, vSaaS, GPON) and the master order).",
      "style": "API",
      "tmf_equivalent": "TMF679 Product Offering Qualification",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf679"
+     ]
     },
     {
      "from_activity": "45",
@@ -11141,7 +11192,9 @@
      "purpose": "Submit the cessation in the existing structure with the summary-order attributes.",
      "style": "XML request",
      "tmf_equivalent": "TMF622 Product Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "60",
@@ -11195,7 +11248,9 @@
      "purpose": "Submit the loaded basket.",
      "style": "API",
      "tmf_equivalent": "TMF622 Product Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "100",
@@ -11267,7 +11322,9 @@
      "purpose": "Cease the CPE service per the technical proposal and interface agreement.",
      "style": null,
      "tmf_equivalent": "TMF641 Service Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf641"
+     ]
     },
     {
      "from_activity": "120",
@@ -11578,8 +11635,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-selling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -11604,8 +11661,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -11630,8 +11687,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "VALIDATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-validate",
      "main_track": true
     },
     {
@@ -11657,7 +11714,7 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null,
+     "role_id": "role-capture",
      "main_track": false
     },
     {
@@ -11682,8 +11739,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "TRACK",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-track",
      "main_track": true
     },
     {
@@ -11708,8 +11765,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -11734,8 +11791,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -11760,8 +11817,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "FIELD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-resource-provisioning",
+     "role_id": "role-field",
      "main_track": false
     },
     {
@@ -11786,8 +11843,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "FIELD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-resource-provisioning",
+     "role_id": "role-field",
      "main_track": false
     },
     {
@@ -11812,8 +11869,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "FIELD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-resource-provisioning",
+     "role_id": "role-field",
      "main_track": false
     },
     {
@@ -11838,8 +11895,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -11864,8 +11921,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-resource-provisioning",
+     "role_id": "role-activate",
      "main_track": false
     },
     {
@@ -11890,8 +11947,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-activate",
      "main_track": true
     },
     {
@@ -11916,8 +11973,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "TRACK",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-track",
      "main_track": true
     },
     {
@@ -11942,8 +11999,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "NOTIFY",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-customer-interface-management",
+     "role_id": "role-notify",
      "main_track": true
     },
     {
@@ -11968,8 +12025,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "RECORD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-record",
      "main_track": true
     }
    ],
@@ -12100,7 +12157,9 @@
      "purpose": "Submit the shift with the new address and the summary-order attributes.",
      "style": "XML request",
      "tmf_equivalent": "TMF622 Product Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "30",
@@ -12118,7 +12177,9 @@
      "purpose": "Validate the order against the pending-order matrix (EXTSHIFTSITE: the GSM and GPON sub-orders and the master order).",
      "style": "API",
      "tmf_equivalent": "TMF679 Product Offering Qualification",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf679"
+     ]
     },
     {
      "from_activity": "40",
@@ -12136,7 +12197,9 @@
      "purpose": "Open the tracker; items as No_Change.",
      "style": null,
      "tmf_equivalent": "TMF622 Product Ordering (notification)",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "50",
@@ -12172,7 +12235,9 @@
      "purpose": "Pass the complete basket.",
      "style": "API",
      "tmf_equivalent": "TMF622 Product Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "70",
@@ -12262,7 +12327,9 @@
      "purpose": "Pass the new site name in the agreed path.",
      "style": null,
      "tmf_equivalent": "TMF641 Service Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf641"
+     ]
     },
     {
      "from_activity": "120",
@@ -12561,8 +12628,8 @@
      "performer": "Dunning process",
      "point_of_no_return": null,
      "role": "BILL",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-billing-revenue-management",
+     "role_id": "role-bill",
      "main_track": true
     },
     {
@@ -12587,8 +12654,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "VALIDATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-validate",
      "main_track": true
     },
     {
@@ -12613,8 +12680,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -12639,8 +12706,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-activate",
      "main_track": false
     },
     {
@@ -12665,8 +12732,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-resource-provisioning",
+     "role_id": "role-activate",
      "main_track": false
     },
     {
@@ -12691,8 +12758,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-activate",
      "main_track": false
     },
     {
@@ -12717,8 +12784,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-resource-provisioning",
+     "role_id": "role-activate",
      "main_track": false
     },
     {
@@ -12743,8 +12810,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-activate",
      "main_track": false
     },
     {
@@ -12769,8 +12836,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-resource-provisioning",
+     "role_id": "role-activate",
      "main_track": false
     },
     {
@@ -12795,8 +12862,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "RECORD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-record",
      "main_track": true
     }
    ],
@@ -12963,7 +13030,9 @@
      "purpose": "Read NEW_BUNDLE_MODEL.",
      "style": "API",
      "tmf_equivalent": "TMF637 Product Inventory",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf637"
+     ]
     },
     {
      "from_activity": "30",
@@ -13017,7 +13086,9 @@
      "purpose": "Restore the CPE bandwidth with the speed booster.",
      "style": null,
      "tmf_equivalent": "TMF641 Service Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf641"
+     ]
     },
     {
      "from_activity": "55",
@@ -13266,8 +13337,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-selling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -13292,8 +13363,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -13318,8 +13389,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -13344,8 +13415,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -13370,8 +13441,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -13396,8 +13467,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-activate",
      "main_track": false
     },
     {
@@ -13422,8 +13493,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-activate",
      "main_track": false
     },
     {
@@ -13448,8 +13519,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "TRACK",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-track",
      "main_track": true
     },
     {
@@ -13474,8 +13545,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "RECORD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-record",
      "main_track": true
     }
    ],
@@ -13564,7 +13635,9 @@
      "purpose": "Pass the summary-order flags.",
      "style": "XML request",
      "tmf_equivalent": "TMF622 Product Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "30",
@@ -13600,7 +13673,9 @@
      "purpose": "Submit the loaded basket.",
      "style": "API",
      "tmf_equivalent": "TMF622 Product Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "40",
@@ -13993,8 +14068,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-selling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -14019,8 +14094,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "VALIDATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-validate",
      "main_track": true
     },
     {
@@ -14045,8 +14120,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -14071,8 +14146,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -14097,8 +14172,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-resource-provisioning",
+     "role_id": "role-activate",
      "main_track": false
     },
     {
@@ -14123,8 +14198,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-activate",
      "main_track": true
     },
     {
@@ -14149,8 +14224,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "RECORD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-record",
      "main_track": true
     }
    ],
@@ -14227,7 +14302,9 @@
      "purpose": "Read NEW_BUNDLE_MODEL.",
      "style": "API",
      "tmf_equivalent": "TMF637 Product Inventory",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf637"
+     ]
     },
     {
      "from_activity": "20",
@@ -14245,7 +14322,9 @@
      "purpose": "Submit with the summary-order attributes.",
      "style": "XML request",
      "tmf_equivalent": "TMF622 Product Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "30",
@@ -14281,7 +14360,9 @@
      "purpose": "Submit the loaded basket.",
      "style": "API",
      "tmf_equivalent": "TMF622 Product Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "50",
@@ -14442,8 +14523,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-problem-handling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -14468,8 +14549,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "FIELD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-problem-handling",
+     "role_id": "role-field",
      "main_track": true
     },
     {
@@ -14494,8 +14575,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CATALOG",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-problem-handling",
+     "role_id": "role-catalog",
      "main_track": true
     },
     {
@@ -14520,8 +14601,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "FIELD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-problem-handling",
+     "role_id": "role-field",
      "main_track": true
     },
     {
@@ -14546,8 +14627,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "FIELD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-problem-handling",
+     "role_id": "role-field",
      "main_track": false
     },
     {
@@ -14572,8 +14653,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "FIELD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-problem-handling",
+     "role_id": "role-field",
      "main_track": false
     },
     {
@@ -14598,8 +14679,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "FIELD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-problem-handling",
+     "role_id": "role-field",
      "main_track": false
     },
     {
@@ -14624,8 +14705,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -14650,8 +14731,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "VALIDATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-validate",
      "main_track": true
     },
     {
@@ -14676,8 +14757,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "FIELD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-field",
      "main_track": false
     },
     {
@@ -14702,8 +14783,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -14728,8 +14809,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "BILL",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-billing-revenue-management",
+     "role_id": "role-bill",
      "main_track": true
     },
     {
@@ -14754,8 +14835,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "RECORD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-record",
      "main_track": true
     }
    ],
@@ -14874,7 +14955,9 @@
      "purpose": "Open the complaint work order with the device context.",
      "style": "API",
      "tmf_equivalent": "TMF621 Trouble Ticket",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf621"
+     ]
     },
     {
      "from_activity": "30",
@@ -14910,7 +14993,9 @@
      "purpose": "Submit the replacement.",
      "style": "XML request",
      "tmf_equivalent": "TMF622 Product Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "90",
@@ -14928,7 +15013,9 @@
      "purpose": "Validate the order against the pending-order matrix (DVCREP: the GSM sub-order).",
      "style": "API",
      "tmf_equivalent": "TMF679 Product Offering Qualification",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf679"
+     ]
     },
     {
      "from_activity": "100",
@@ -15155,8 +15242,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-billing-revenue-management",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -15181,8 +15268,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CATALOG",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-selling",
+     "role_id": "role-catalog",
      "main_track": true
     },
     {
@@ -15207,8 +15294,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -15233,8 +15320,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "VALIDATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-validate",
      "main_track": true
     },
     {
@@ -15259,8 +15346,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-capture",
      "main_track": false
     },
     {
@@ -15285,8 +15372,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "VALIDATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-validate",
      "main_track": true
     },
     {
@@ -15311,8 +15398,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-orchestrate",
      "main_track": false
     },
     {
@@ -15337,8 +15424,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -15363,8 +15450,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -15389,8 +15476,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-activate",
      "main_track": true
     },
     {
@@ -15415,8 +15502,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "BILL",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-billing-revenue-management",
+     "role_id": "role-bill",
      "main_track": true
     },
     {
@@ -15441,8 +15528,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "RECORD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-record",
      "main_track": true
     }
    ],
@@ -15525,7 +15612,9 @@
      "purpose": "Fetch the new-model non-commitment bundle PO.",
      "style": "API",
      "tmf_equivalent": "TMF620 Product Catalog",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf620"
+     ]
     },
     {
      "from_activity": "30",
@@ -15543,7 +15632,9 @@
      "purpose": "Submit the move to the non-commitment package.",
      "style": "XML request",
      "tmf_equivalent": "TMF622 Product Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "40",
@@ -15561,7 +15652,9 @@
      "purpose": "Validate the order against the pending-order matrix (RENEWAL: every sub-order and the master order).",
      "style": "API",
      "tmf_equivalent": "TMF679 Product Offering Qualification",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf679"
+     ]
     },
     {
      "from_activity": "60",
@@ -15579,7 +15672,9 @@
      "purpose": "Submit the basket with the copied values.",
      "style": "API",
      "tmf_equivalent": "TMF622 Product Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "80",
@@ -15597,7 +15692,9 @@
      "purpose": "Update UPSTREAM/DOWNSTREAM on the CPE.",
      "style": null,
      "tmf_equivalent": "TMF641 Service Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf641"
+     ]
     }
    ],
    "confidence": "confirmed",
@@ -15782,8 +15879,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-selling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -15808,8 +15905,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -15834,8 +15931,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "VALIDATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-validate",
      "main_track": true
     },
     {
@@ -15861,7 +15958,7 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null,
+     "role_id": "role-capture",
      "main_track": false
     },
     {
@@ -15886,8 +15983,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -15912,8 +16009,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-activate",
      "main_track": false
     },
     {
@@ -15938,8 +16035,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-resource-provisioning",
+     "role_id": "role-activate",
      "main_track": false
     },
     {
@@ -15964,8 +16061,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "BILL",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-billing-revenue-management",
+     "role_id": "role-bill",
      "main_track": true
     },
     {
@@ -15990,8 +16087,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "RECORD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-record",
      "main_track": true
     }
    ],
@@ -16074,7 +16171,9 @@
      "purpose": "Submit the add-on change in the existing structure.",
      "style": "XML request",
      "tmf_equivalent": "TMF622 Product Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "30",
@@ -16092,7 +16191,9 @@
      "purpose": "Validate against the ADDDELETE matrix by add-on service type.",
      "style": "API",
      "tmf_equivalent": "TMF679 Product Offering Qualification",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf679"
+     ]
     },
     {
      "from_activity": "40",
@@ -16128,7 +16229,9 @@
      "purpose": "Update UPSTREAM/DOWNSTREAM after the speed booster.",
      "style": null,
      "tmf_equivalent": "TMF641 Service Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf641"
+     ]
     }
    ],
    "confidence": "confirmed",
@@ -16277,8 +16380,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-selling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -16303,8 +16406,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -16329,8 +16432,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "VALIDATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-validate",
      "main_track": true
     },
     {
@@ -16356,7 +16459,7 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null,
+     "role_id": "role-capture",
      "main_track": false
     },
     {
@@ -16381,8 +16484,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -16407,8 +16510,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -16433,8 +16536,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "RECORD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-record",
      "main_track": true
     }
    ],
@@ -16481,7 +16584,9 @@
      "purpose": "Submit in the existing structure.",
      "style": "XML request",
      "tmf_equivalent": "TMF622 Product Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "30",
@@ -16499,7 +16604,9 @@
      "purpose": "Validate the order against the pending-order matrix (CHINTUSRN: the GSM and GPON sub-orders).",
      "style": "API",
      "tmf_equivalent": "TMF679 Product Offering Qualification",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf679"
+     ]
     },
     {
      "from_activity": "40",
@@ -16630,8 +16737,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-selling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -16656,8 +16763,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -16682,8 +16789,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "VALIDATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-validate",
      "main_track": true
     },
     {
@@ -16709,7 +16816,7 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null,
+     "role_id": "role-capture",
      "main_track": false
     },
     {
@@ -16734,8 +16841,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -16760,8 +16867,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -16786,8 +16893,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "RECORD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-record",
      "main_track": true
     }
    ],
@@ -16834,7 +16941,9 @@
      "purpose": "Submit in the existing structure.",
      "style": "XML request",
      "tmf_equivalent": "TMF622 Product Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "30",
@@ -16852,7 +16961,9 @@
      "purpose": "Validate the order against the pending-order matrix (CHGPSWD: the GSM and GPON sub-orders).",
      "style": "API",
      "tmf_equivalent": "TMF679 Product Offering Qualification",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf679"
+     ]
     },
     {
      "from_activity": "40",
@@ -16983,8 +17094,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-selling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -17009,8 +17120,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -17035,8 +17146,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "VALIDATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-validate",
      "main_track": true
     },
     {
@@ -17062,7 +17173,7 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null,
+     "role_id": "role-capture",
      "main_track": false
     },
     {
@@ -17087,8 +17198,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -17113,8 +17224,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -17139,8 +17250,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "RECORD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-record",
      "main_track": true
     }
    ],
@@ -17187,7 +17298,9 @@
      "purpose": "Submit in the existing structure.",
      "style": "XML request",
      "tmf_equivalent": "TMF622 Product Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "30",
@@ -17205,7 +17318,9 @@
      "purpose": "Validate the order against the pending-order matrix (CHGDOMN: the GSM sub-order).",
      "style": "API",
      "tmf_equivalent": "TMF679 Product Offering Qualification",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf679"
+     ]
     },
     {
      "from_activity": "40",
@@ -17336,8 +17451,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-selling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -17362,8 +17477,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -17388,8 +17503,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "VALIDATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-validate",
      "main_track": true
     },
     {
@@ -17415,7 +17530,7 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null,
+     "role_id": "role-capture",
      "main_track": false
     },
     {
@@ -17440,8 +17555,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -17466,8 +17581,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -17492,8 +17607,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "RECORD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-record",
      "main_track": true
     }
    ],
@@ -17540,7 +17655,9 @@
      "purpose": "Submit in the existing structure.",
      "style": "XML request",
      "tmf_equivalent": "TMF622 Product Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "30",
@@ -17558,7 +17675,9 @@
      "purpose": "Validate the order against the pending-order matrix (CHGSUBDOMN: the GSM sub-order).",
      "style": "API",
      "tmf_equivalent": "TMF679 Product Offering Qualification",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf679"
+     ]
     },
     {
      "from_activity": "40",
@@ -17689,8 +17808,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-selling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -17715,8 +17834,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -17741,8 +17860,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "VALIDATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-validate",
      "main_track": true
     },
     {
@@ -17768,7 +17887,7 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null,
+     "role_id": "role-capture",
      "main_track": false
     },
     {
@@ -17793,8 +17912,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -17819,8 +17938,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -17845,8 +17964,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "RECORD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-record",
      "main_track": true
     }
    ],
@@ -17893,7 +18012,9 @@
      "purpose": "Submit in the existing structure.",
      "style": "XML request",
      "tmf_equivalent": "TMF622 Product Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "30",
@@ -17911,7 +18032,9 @@
      "purpose": "Validate the order against the pending-order matrix (CHNUMBER: the GSM and GPON sub-orders).",
      "style": "API",
      "tmf_equivalent": "TMF679 Product Offering Qualification",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf679"
+     ]
     },
     {
      "from_activity": "40",
@@ -18042,8 +18165,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-selling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -18068,8 +18191,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -18094,8 +18217,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "VALIDATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-validate",
      "main_track": true
     },
     {
@@ -18121,7 +18244,7 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null,
+     "role_id": "role-capture",
      "main_track": false
     },
     {
@@ -18146,8 +18269,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -18172,8 +18295,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -18198,8 +18321,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "RECORD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-record",
      "main_track": true
     }
    ],
@@ -18246,7 +18369,9 @@
      "purpose": "Submit in the existing structure.",
      "style": "XML request",
      "tmf_equivalent": "TMF622 Product Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "30",
@@ -18264,7 +18389,9 @@
      "purpose": "Validate the order against the pending-order matrix (FLEXIMINMOV: the GSM sub-order).",
      "style": "API",
      "tmf_equivalent": "TMF679 Product Offering Qualification",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf679"
+     ]
     },
     {
      "from_activity": "40",
@@ -18395,8 +18522,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-selling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -18421,8 +18548,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -18447,8 +18574,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "VALIDATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-validate",
      "main_track": true
     },
     {
@@ -18474,7 +18601,7 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null,
+     "role_id": "role-capture",
      "main_track": false
     },
     {
@@ -18499,8 +18626,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -18525,8 +18652,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -18551,8 +18678,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "RECORD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-record",
      "main_track": true
     }
    ],
@@ -18599,7 +18726,9 @@
      "purpose": "Submit in the existing structure.",
      "style": "XML request",
      "tmf_equivalent": "TMF622 Product Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "30",
@@ -18617,7 +18746,9 @@
      "purpose": "Validate the order against the pending-order matrix (TECHVISIT: the GSM sub-order).",
      "style": "API",
      "tmf_equivalent": "TMF679 Product Offering Qualification",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf679"
+     ]
     },
     {
      "from_activity": "40",
@@ -18748,8 +18879,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-selling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -18774,8 +18905,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "CAPTURE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-capture",
      "main_track": true
     },
     {
@@ -18800,8 +18931,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "VALIDATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-validate",
      "main_track": true
     },
     {
@@ -18827,7 +18958,7 @@
      "point_of_no_return": null,
      "role": "CAPTURE",
      "etom_id": null,
-     "role_id": null,
+     "role_id": "role-capture",
      "main_track": false
     },
     {
@@ -18852,8 +18983,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -18878,8 +19009,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "ORCHESTRATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-orchestrate",
      "main_track": true
     },
     {
@@ -18904,8 +19035,8 @@
      "performer": null,
      "point_of_no_return": "The XaaS callback is the point of no return for the asynchronous SaaS order.",
      "role": "ACTIVATE",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-service-configuration-activation",
+     "role_id": "role-activate",
      "main_track": true
     },
     {
@@ -18930,8 +19061,8 @@
      "performer": null,
      "point_of_no_return": null,
      "role": "RECORD",
-     "etom_id": null,
-     "role_id": null,
+     "etom_id": "etom-order-handling",
+     "role_id": "role-record",
      "main_track": true
     }
    ],
@@ -18978,7 +19109,9 @@
      "purpose": "Submit in the existing structure.",
      "style": "XML request",
      "tmf_equivalent": "TMF622 Product Ordering",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf622"
+     ]
     },
     {
      "from_activity": "30",
@@ -18996,7 +19129,9 @@
      "purpose": "Validate the order against the pending-order matrix (MODSUBS: the GSM sub-order).",
      "style": "API",
      "tmf_equivalent": "TMF679 Product Offering Qualification",
-     "open_api_ids": []
+     "open_api_ids": [
+      "api-tmf679"
+     ]
     },
     {
      "from_activity": "40",
@@ -19138,7 +19273,7 @@
    "description": null,
    "confidence": null,
    "source": null,
-   "kind_id": null
+   "kind_id": "channel-assisted"
   },
   {
    "id": "b2b-web",
@@ -19148,7 +19283,7 @@
    "description": null,
    "confidence": null,
    "source": null,
-   "kind_id": null
+   "kind_id": "channel-self-service"
   },
   {
    "id": "smb-app",
@@ -19158,7 +19293,7 @@
    "description": null,
    "confidence": null,
    "source": null,
-   "kind_id": null
+   "kind_id": "channel-self-service"
   },
   {
    "id": "cim",
@@ -19168,7 +19303,7 @@
    "description": null,
    "confidence": null,
    "source": null,
-   "kind_id": null
+   "kind_id": "channel-assisted"
   },
   {
    "id": "nps",
@@ -19178,7 +19313,7 @@
    "description": null,
    "confidence": null,
    "source": null,
-   "kind_id": null
+   "kind_id": "channel-system"
   },
   {
    "id": "ehs",
@@ -19188,7 +19323,7 @@
    "description": null,
    "confidence": null,
    "source": null,
-   "kind_id": null
+   "kind_id": "channel-system"
   }
  ],
  "sources": [
@@ -19223,12 +19358,12 @@
    "title": "How milestones reach tracking",
    "a": {
     "source_id": "ref",
-    "statement": "The reference says CWOM writes a milestone table and a database trigger feeds Felix. The SDD says CWOM publishes milestones per sub-order through TIBCO to BPM, after RTF's NotifyOrderCreationRequest. This catalogue follows the SDD.",
+    "statement": "CWOM writes a milestone table, and a database trigger feeds Felix.",
     "reference": "§3.1 step 9"
    },
    "b": {
     "source_id": "sdd",
-    "statement": "The reference says CWOM writes a milestone table and a database trigger feeds Felix. The SDD says CWOM publishes milestones per sub-order through TIBCO to BPM, after RTF's NotifyOrderCreationRequest. This catalogue follows the SDD.",
+    "statement": "CWOM publishes milestones per sub-order through TIBCO to BPM, after RTF's NotifyOrderCreationRequest.",
     "reference": "§BPM; §TIBCO"
    },
    "scope": [
@@ -19238,7 +19373,7 @@
      "question_id": null
     }
    ],
-   "difference": "The reference says CWOM writes a milestone table and a database trigger feeds Felix. The SDD says CWOM publishes milestones per sub-order through TIBCO to BPM, after RTF's NotifyOrderCreationRequest. This catalogue follows the SDD.",
+   "difference": "Milestones reach tracking by a database trigger in the reference and by TIBCO messages to BPM in the SDD. This catalogue follows the SDD.",
    "impact": null,
    "decision": null,
    "confidence": null,
@@ -19249,12 +19384,12 @@
    "title": "IBM BPM and Felix overlap",
    "a": {
     "source_id": "ref",
-    "statement": "Both are described as holding order milestones for tracking. The SDD reads them as BPM using a Felix stored procedure.",
+    "statement": "IBM BPM and Felix are each described as holding order milestones for tracking.",
     "reference": "§1 IBM BPM, Felix"
    },
    "b": {
     "source_id": "sdd",
-    "statement": "Both are described as holding order milestones for tracking. The SDD reads them as BPM using a Felix stored procedure.",
+    "statement": "BPM reads the milestones through a Felix stored procedure.",
     "reference": "§BPM General Note"
    },
    "scope": [
@@ -19264,7 +19399,7 @@
      "question_id": null
     }
    ],
-   "difference": "Both are described as holding order milestones for tracking. The SDD reads them as BPM using a Felix stored procedure.",
+   "difference": "One source describes two overlapping milestone stores; the other reads BPM as using Felix's data. This catalogue follows the SDD.",
    "impact": null,
    "decision": null,
    "confidence": null,
@@ -19275,12 +19410,12 @@
    "title": "Names that differ between sources",
    "a": {
     "source_id": "ref",
-    "statement": "eVEDA / vEDA, WFM / WFMS, B2B Web / B2B, CBCM / CRMGW. Treated as aliases of one system.",
+    "statement": "The systems are named eVEDA, WFM, B2B Web and CBCM.",
     "reference": "§1; §6"
    },
    "b": {
     "source_id": "sdd",
-    "statement": "eVEDA / vEDA, WFM / WFMS, B2B Web / B2B, CBCM / CRMGW. Treated as aliases of one system.",
+    "statement": "The same systems appear as vEDA, WFMS, B2B and CRMGW.",
     "reference": "Stakeholders"
    },
    "scope": [
@@ -20296,6 +20431,52 @@
    "exact_match": null,
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own activity roles"
+  },
+  {
+   "id": "role-configure",
+   "scheme": "responsibility_role",
+   "pref_label": "Configure",
+   "alt_labels": [
+    "Applies",
+    "Creates",
+    "Enables",
+    "Returns"
+   ],
+   "notation": null,
+   "definition": "Sets a component's options up on the delivering system, such as applying a firewall policy on the CPE or creating the self-service portal organisation.",
+   "broader_id": null,
+   "exact_match": null,
+   "confidence": "inferred",
+   "source": "Catalogue curation · the components' own responsibility notes"
+  },
+  {
+   "id": "role-authenticate",
+   "scheme": "responsibility_role",
+   "pref_label": "Authenticate",
+   "alt_labels": [
+    "SAML",
+    "SSO"
+   ],
+   "notation": null,
+   "definition": "Signs users in to a component, such as SAML single sign-on into the self-service portal.",
+   "broader_id": null,
+   "exact_match": null,
+   "confidence": "inferred",
+   "source": "Catalogue curation · the components' own responsibility notes"
+  },
+  {
+   "id": "role-suggest",
+   "scheme": "responsibility_role",
+   "pref_label": "Suggest",
+   "alt_labels": [
+    "Suggests"
+   ],
+   "notation": null,
+   "definition": "Proposes the fitting option for an order, such as the equipment model by bandwidth.",
+   "broader_id": null,
+   "exact_match": null,
+   "confidence": "inferred",
+   "source": "Catalogue curation · the components' own responsibility notes"
   },
   {
    "id": "api-tmf620",

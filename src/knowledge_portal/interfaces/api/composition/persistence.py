@@ -206,21 +206,19 @@ def _postgres(
     return PersistenceAdapters(
         document_storage=PostgresDocumentStorage(postgres),
         actor_directory=PostgresActorDirectory(postgres),
-        architecture_repository=PostgresArchitectureKnowledgeRepository(
-            connector, seed_knowledge()
-        ),
-        organisation_repository=PostgresOrganisationRepository(connector, clock),
-        sample_requirements=PostgresSampleRequirements(connector),
-        catalogue_candidates=PostgresCatalogueCandidates(connector),
-        change_requests=PostgresChangeRequests(connector),
-        precedents=PostgresPrecedents(connector),
+        architecture_repository=PostgresArchitectureKnowledgeRepository(postgres, seed_knowledge()),
+        organisation_repository=PostgresOrganisationRepository(postgres, clock),
+        sample_requirements=PostgresSampleRequirements(postgres),
+        catalogue_candidates=PostgresCatalogueCandidates(postgres),
+        change_requests=PostgresChangeRequests(postgres),
+        precedents=PostgresPrecedents(postgres),
         architecture_evidence_index=PostgresEvidenceIndex(
-            connector,
+            postgres,
             architecture_embeddings,
             architecture_tokenizer,
             settings.architecture_index_version,
         ),
-        architecture_job_repository=PostgresArchitectureJobs(connector),
+        architecture_job_repository=PostgresArchitectureJobs(postgres),
         library_repository=PublishingDocumentLibrary(
             PostgresDocumentLibrary(postgres),
             knowledge_events,
@@ -231,9 +229,9 @@ def _postgres(
         system_reviews=PostgresSystemReviews(postgres),
         knowledge_events=knowledge_events,
         historic_requirements=PostgresHistoricRequirements(postgres),
-        historic_job_repository=PostgresArchitectureJobs(connector, "historic_import_jobs"),
-        golden_runs=PostgresGoldenRuns(connector),
-        golden_job_repository=PostgresArchitectureJobs(connector, "golden_run_jobs"),
+        historic_job_repository=PostgresArchitectureJobs(postgres, "historic_import_jobs"),
+        golden_runs=PostgresGoldenRuns(postgres),
+        golden_job_repository=PostgresArchitectureJobs(postgres, "golden_run_jobs"),
         reference_index=PostgresReferenceIndex(postgres),
         transaction_manager=postgres,
         readiness_check=postgres.readiness,
@@ -257,31 +255,62 @@ def _memory(
     library_admin = InMemoryLibraryAdmin(lock)
     system_reviews = InMemorySystemReviews(lock)
     historic = InMemoryHistoricRequirements(lock)
+    architecture = InMemoryArchitectureKnowledgeRepository(seed_knowledge(), events)
+    organisation = InMemoryOrganisationRepository(clock)
+    samples = InMemorySampleRequirements()
+    candidates = InMemoryCatalogueCandidates()
+    change_requests = InMemoryChangeRequests()
+    precedents = InMemoryPrecedents()
+    evidence_index = InMemoryEvidenceIndex(
+        architecture_embeddings, architecture_tokenizer, index_version
+    )
+    architecture_jobs = InMemoryArchitectureJobs()
+    historic_jobs = InMemoryArchitectureJobs()
+    golden_runs = InMemoryGoldenRuns()
+    golden_jobs = InMemoryArchitectureJobs()
+    # Every mutable store joins the one manager, so the fake graph rolls a
+    # failed multi-repository flow back exactly as PostgreSQL does.
     transactions.enroll(
-        library, events, reference_index, storage, actors, library_admin, system_reviews, historic
+        library,
+        events,
+        reference_index,
+        storage,
+        actors,
+        library_admin,
+        system_reviews,
+        historic,
+        architecture,
+        organisation,
+        samples,
+        candidates,
+        change_requests,
+        precedents,
+        evidence_index,
+        architecture_jobs,
+        historic_jobs,
+        golden_runs,
+        golden_jobs,
     )
     return PersistenceAdapters(
         document_storage=storage,
         actor_directory=actors,
-        architecture_repository=InMemoryArchitectureKnowledgeRepository(seed_knowledge(), events),
-        organisation_repository=InMemoryOrganisationRepository(clock),
-        sample_requirements=InMemorySampleRequirements(),
-        catalogue_candidates=InMemoryCatalogueCandidates(),
-        change_requests=InMemoryChangeRequests(),
-        precedents=InMemoryPrecedents(),
-        architecture_evidence_index=InMemoryEvidenceIndex(
-            architecture_embeddings, architecture_tokenizer, index_version
-        ),
-        architecture_job_repository=InMemoryArchitectureJobs(),
+        architecture_repository=architecture,
+        organisation_repository=organisation,
+        sample_requirements=samples,
+        catalogue_candidates=candidates,
+        change_requests=change_requests,
+        precedents=precedents,
+        architecture_evidence_index=evidence_index,
+        architecture_job_repository=architecture_jobs,
         library_repository=PublishingDocumentLibrary(library, events, review_cycle),
         library_admin_grants=library_admin,
         library_admin_record=InMemoryLibraryAdminRecord(library_admin),
         system_reviews=system_reviews,
         knowledge_events=events,
         historic_requirements=historic,
-        historic_job_repository=InMemoryArchitectureJobs(),
-        golden_runs=InMemoryGoldenRuns(),
-        golden_job_repository=InMemoryArchitectureJobs(),
+        historic_job_repository=historic_jobs,
+        golden_runs=golden_runs,
+        golden_job_repository=golden_jobs,
         reference_index=reference_index,
         transaction_manager=transactions,
         readiness_check=_always_ready,

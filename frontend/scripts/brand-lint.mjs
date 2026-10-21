@@ -4,9 +4,13 @@
  * the token layers only.
  *
  * Fails when
- *   - a raw colour (hex, rgb(), hsl()) appears outside the token files, or
+ *   - a raw colour (hex — with or without "#" in scripts —, rgb(), hsl(),
+ *     oklch(), lab(), lch(), color(), or a named colour in a CSS value)
+ *     appears outside the token files, or
  *   - an e& primitive (`--eand-*`) is read outside the semantic layer, or
- *     declared outside the primitive layer.
+ *     declared outside the primitive layer, or
+ *   - a colour-valued primitive token is read outside the semantic layer,
+ *     so a component cannot reach `--rust-600` around the semantic names.
  *
  * A ratchet for the legacy screens: `brand-lint-legacy.json` lists the files
  * that already had raw colours when the lint arrived, with their count. Such
@@ -24,15 +28,21 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const src = join(root, "src");
 const legacyPath = join(root, "scripts", "brand-lint-legacy.json");
 
-/** The only files that may hold raw colour values. */
-const TOKEN_FILES = new Set(["src/design/tokens/primitive.css"]);
+/** The only files that may hold raw colour values: the primitive layer, and
+ * the document exports' frozen copy of it (Word and rasterised SVG cannot
+ * read CSS custom properties). */
+const TOKEN_FILES = new Set(["src/design/tokens/primitive.css", "src/explorer/document/palette.ts"]);
 const PRIMITIVE_LAYER = "src/design/tokens/primitive.css";
 const SEMANTIC_LAYER = "src/design/tokens/semantic.css";
 
 const HEX_CSS = /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})(?![0-9a-zA-Z_-])/g;
-// In scripts, only a whole quoted colour counts (ids and hashes like "#added" don't).
-const HEX_TS = /["'`]#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})["'`]/g;
-const FUNCTION = /\b(?:rgba?|hsla?)\(\s*[\d.]/g;
+// In scripts, a whole quoted colour counts, with or without "#": WordML and
+// canvas APIs take bare "B3122B" strings, which is how red once slipped out.
+const HEX_TS = /["'`]#?(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6})["'`]|["'`]#(?:[0-9a-fA-F]{3,4})["'`]/g;
+const FUNCTION = /\b(?:rgba?|hsla?|oklch|oklab|lab|lch|color)\(\s*[\d.a-z%]/g;
+// Named colours in a CSS value position ("currentcolor", "transparent" and
+// "inherit" stay fine; "white"/"black" in prose or class names don't match).
+const NAMED_CSS = /:\s*(?:red|blue|green|yellow|orange|purple|pink|brown|black|white|gr[ae]y|cyan|magenta|lime|maroon|navy|olive|teal|silver|gold|crimson|salmon|coral|tomato|khaki|plum|orchid|beige|ivory|azure|lavender|turquoise|violet|indigo)\s*[;!}]/g;
 const EAND_READ = /var\(\s*--eand-[\w-]+/g;
 const EAND_DECLARE = /(^|[\s;{])--eand-[\w-]+\s*:/gm;
 
@@ -53,6 +63,16 @@ function lineOf(text, index) {
   return text.slice(0, index).split("\n").length;
 }
 
+// Primitive tokens whose value is a colour: components must reach them only
+// through the semantic layer, like the e& primitives.
+const primitiveCss = readFileSync(join(root, PRIMITIVE_LAYER), "utf8");
+const COLOUR_VALUE = /#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?|oklch|oklab|lab|lch|color)\(/;
+const colourPrimitives = new Set(
+  [...primitiveCss.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)]
+    .filter(([, , value]) => COLOUR_VALUE.test(value))
+    .map(([, tokenName]) => tokenName),
+);
+
 const colourFindings = new Map();
 const eandFindings = [];
 for (const path of files(src)) {
@@ -60,11 +80,19 @@ for (const path of files(src)) {
   const css = name.endsWith(".css");
   const text = stripComments(readFileSync(path, "utf8"), css);
   if (!TOKEN_FILES.has(name)) {
-    const hits = [...text.matchAll(css ? HEX_CSS : HEX_TS), ...text.matchAll(FUNCTION)];
+    const hits = [
+      ...text.matchAll(css ? HEX_CSS : HEX_TS),
+      ...text.matchAll(FUNCTION),
+      ...(css ? text.matchAll(NAMED_CSS) : []),
+    ];
     if (hits.length) colourFindings.set(name, hits.map((hit) => ({ line: lineOf(text, hit.index), value: hit[0] })));
   }
   if (name !== SEMANTIC_LAYER && name !== PRIMITIVE_LAYER) {
     for (const hit of text.matchAll(EAND_READ)) eandFindings.push(`${name}:${lineOf(text, hit.index)} — ${hit[0]}) read outside the semantic layer`);
+    for (const hit of text.matchAll(/var\(\s*(--[\w-]+)/g)) {
+      if (colourPrimitives.has(hit[1]) && !hit[1].startsWith("--eand-"))
+        eandFindings.push(`${name}:${lineOf(text, hit.index)} — ${hit[1]} is a colour primitive; read it through a semantic token`);
+    }
   }
   if (name !== PRIMITIVE_LAYER) {
     for (const hit of text.matchAll(EAND_DECLARE)) eandFindings.push(`${name}:${lineOf(text, hit.index)} — e& primitive declared outside the primitive layer`);

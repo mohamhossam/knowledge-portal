@@ -1,7 +1,9 @@
 """Offline stored golden set runs."""
 
+from copy import deepcopy
 from dataclasses import replace
 from threading import RLock
+from typing import Any
 
 from knowledge_portal.application.errors import GoldenRunNotFoundError
 from knowledge_portal.application.ports.golden_runs import GoldenRun, GoldenRunResult
@@ -11,6 +13,12 @@ class InMemoryGoldenRuns:
     def __init__(self) -> None:
         self._lock = RLock()
         self._runs: dict[str, GoldenRun] = {}
+
+    def snapshot_state(self) -> Any:
+        return deepcopy((self._runs,))
+
+    def restore_state(self, state: Any) -> None:
+        (self._runs,) = deepcopy(state)
 
     def add(self, run: GoldenRun) -> None:
         with self._lock:

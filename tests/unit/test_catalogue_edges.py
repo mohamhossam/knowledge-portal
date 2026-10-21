@@ -6,6 +6,7 @@ import io
 import zipfile
 from dataclasses import replace
 from datetime import UTC, datetime
+from threading import RLock
 from typing import Any
 
 import psycopg
@@ -77,6 +78,7 @@ from knowledge_portal.infrastructure.architecture.yaml_knowledge import (
     YamlArchitectureKnowledge,
     default_knowledge_path,
 )
+from knowledge_portal.infrastructure.documents.library_worker import OfflineDocumentScanner
 from knowledge_portal.infrastructure.llm.catalogue_extraction import (
     FakeCatalogueExtractor,
     slug,
@@ -94,12 +96,16 @@ from knowledge_portal.infrastructure.persistence.in_memory_catalogue_candidates 
 from knowledge_portal.infrastructure.persistence.in_memory_organisation import (
     InMemoryOrganisationRepository,
 )
+from knowledge_portal.infrastructure.persistence.in_memory_transaction import (
+    InMemoryTransactionManager,
+)
 from knowledge_portal.infrastructure.persistence.postgres_catalogue_candidates import (
     PostgresCatalogueCandidates,
 )
 from knowledge_portal.infrastructure.persistence.postgres_organisation import (
     PostgresOrganisationRepository,
 )
+from knowledge_portal.infrastructure.persistence.postgres_store import PostgresStore
 
 NOW = datetime(2026, 9, 29, 9, 0, tzinfo=UTC)
 MAINTAINER = Actor("amina", frozenset({"knowledge_maintainer"}))
@@ -274,7 +280,11 @@ def test_workbook_rows_are_checked_against_the_systems_sheet() -> None:
 def test_file_import_refuses_published_empty_and_oversized_files() -> None:
     repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
     manage = ManageArchitectureKnowledge(
-        repository, ADAPTER, InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer()), 10
+        repository,
+        ADAPTER,
+        InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer()),
+        10,
+        OfflineDocumentScanner(),
     )
     with pytest.raises(KnowledgeConflictError, match="Only a draft"):
         manage.preview_file_import(seed_knowledge().id, "c.yaml", b"systems: []", MAINTAINER)
@@ -297,7 +307,11 @@ def _proposer(
 ]:
     repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
     manage = ManageArchitectureKnowledge(
-        repository, ADAPTER, InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer()), 10_000
+        repository,
+        ADAPTER,
+        InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer()),
+        10_000,
+        OfflineDocumentScanner(),
     )
     storage = InMemoryDocumentStorage()
     candidates = InMemoryCatalogueCandidates()
@@ -320,7 +334,9 @@ def _proposer(
     storage.put(DocumentVersionId("doc"), b"Nothing architectural here.\n")
     drafted = draft.updated(documents=(version, image))
     repository.save(drafted, draft.revision, "amina", "upload_document")
-    decide = DecideCatalogueCandidate(manage, repository, candidates)
+    decide = DecideCatalogueCandidate(
+        manage, repository, candidates, InMemoryTransactionManager(RLock())
+    )
     return proposer, decide, drafted, candidates, manage
 
 
@@ -375,10 +391,15 @@ def test_decisions_check_revision_ownership_and_undo_on_a_lost_draft() -> None:
         def save(self, *_: object) -> None:
             raise PersistenceError("lost")
 
+    # A save that loses rolls the decision marks back with it: they share one
+    # transaction, so no candidate is left decided against an unsaved draft.
+    rollback = InMemoryTransactionManager(RLock())
+    rollback.enroll(candidates)
     losing = DecideCatalogueCandidate(
         manage,
         _LosingRepository(),  # type: ignore[arg-type]
         candidates,
+        rollback,
     )
     with pytest.raises(PersistenceError):
         losing.decide(draft.id, "c1", draft.revision, True, MAINTAINER, NOW)
@@ -455,7 +476,9 @@ def test_fake_extractor_skips_table_rows() -> None:
 def test_ai_mapping_of_a_published_release_records_organisation_ownership() -> None:
     repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
     index = InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer())
-    manage = ManageArchitectureKnowledge(repository, ADAPTER, index, 10_000)
+    manage = ManageArchitectureKnowledge(
+        repository, ADAPTER, index, 10_000, OfflineDocumentScanner()
+    )
     draft = manage.create_draft(MAINTAINER, "Next version")
     built = BuildArchitectureIndex(
         manage,
@@ -510,14 +533,23 @@ def test_ai_mapping_of_a_published_release_records_organisation_ownership() -> N
 class _BrokenConnector:
     """A database that refuses every connection."""
 
+    def acquire(self) -> Any:
+        raise psycopg.OperationalError("database is down")
+
+    def release(self, connection: Any) -> None:
+        return None
+
     def connection(self, timeout_seconds: float | None = None) -> Any:
         raise psycopg.OperationalError("database is down")
 
+    def close(self) -> None:
+        return None
+
 
 def test_postgres_adapters_report_database_failures_as_persistence_errors() -> None:
-    connector: Any = _BrokenConnector()
-    organisation = PostgresOrganisationRepository(connector, FixedClock(NOW))
-    candidates = PostgresCatalogueCandidates(connector)
+    store = PostgresStore(_BrokenConnector())
+    organisation = PostgresOrganisationRepository(store, FixedClock(NOW))
+    candidates = PostgresCatalogueCandidates(store)
     candidate = _candidate("draft", CandidateContent(CandidateKind.SYSTEM, "hub", name="Hub"))
     failing: list[Any] = [
         organisation.load,

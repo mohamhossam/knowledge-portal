@@ -1215,12 +1215,15 @@ products:
     responsibilities:
     - system: cwom
       role: ORCHESTRATES
+      role_term: role-orchestrate
       description: Orchestrates the GPON sub-order
     - system: e2eso
       role: PROVISIONS
+      role_term: role-activate
       description: Provisions the CPE service
     - system: wfms
       role: INSTALLATION
+      role_term: role-field
       description: Installation work order
   - id: cpe
     name: CPE device (Fortinet 90G / 120G)
@@ -1243,12 +1246,15 @@ products:
     responsibilities:
     - system: ecm
       role: SUGGESTS
+      role_term: role-suggest
       description: Suggests the model by bandwidth
     - system: wfms
       role: CAPTURES
+      role_term: role-capture
       description: Captures SIC code and serial
     - system: e2eso
       role: PROVISIONS
+      role_term: role-activate
       description: Provisions in the ADOM cluster
   - id: firewall
     name: Firewall
@@ -1270,9 +1276,11 @@ products:
     responsibilities:
     - system: cwom
       role: PROVISIONS
+      role_term: role-activate
       description: Provisions by default/non-default
     - system: e2eso
       role: APPLIES
+      role_term: role-configure
       description: Applies on the CPE
   - id: selfservice
     name: Self-service portal (FortiPortal)
@@ -1294,12 +1302,15 @@ products:
     responsibilities:
     - system: e2eso
       role: CREATES
+      role_term: role-configure
       description: Creates the FortiPortal organisation
     - system: cbcm
       role: RETURNS
+      role_term: role-configure
       description: Returns the SSPRTL benefit
     - system: b2b-web
       role: SAML
+      role_term: role-authenticate
       description: SAML single sign-on
   - id: sdwan
     name: SD-WAN
@@ -1340,12 +1351,15 @@ products:
     responsibilities:
     - system: ecm
       role: SUGGESTS
+      role_term: role-suggest
       description: Suggests the AP model
     - system: wfms
       role: CAPTURES
+      role_term: role-capture
       description: Captures serial and SIC code
     - system: cwom
       role: PROVISIONS
+      role_term: role-activate
       description: Provisions like the generic CPE
   - id: static-ip
     name: Static IP
@@ -1358,6 +1372,7 @@ products:
     responsibilities:
     - system: cwom
       role: PROVISIONS
+      role_term: role-activate
       description: Provisions
   - id: monitoring
     name: Proactive monitoring
@@ -1370,6 +1385,7 @@ products:
     responsibilities:
     - system: e2eso
       role: ENABLES
+      role_term: role-configure
       description: Enables on the CPE
   - id: backup-5g
     name: Backup 5G
@@ -1383,9 +1399,11 @@ products:
     responsibilities:
     - system: veda
       role: ACTIVATES
+      role_term: role-activate
       description: Activates and removes the profile
     - system: in
       role: APPLIES
+      role_term: role-configure
       description: Applies the speed offer
   values:
   - name: Secure by default
@@ -1764,42 +1782,50 @@ journeys:
     name: Browse and configure the bundle
     description: Offers come from the local BCC catalogue, configured for the new Business Pro Plus POs.
     etom: Fulfillment · Selling
+    etom_term: etom-selling
     channels:
     - b2b-web
     - smb-app
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     confidence: confirmed
     source: SMB reference v1.0 · §3.1 step 1
   - number: '20'
     name: Map the offer to PSM package codes and the ECM structure
     system: bcc
     etom: Fulfillment · Selling
+    etom_term: etom-selling
     channels:
     - b2b-web
     - smb-app
     role: CATALOG
+    role_term: role-catalog
     confidence: confirmed
     source: SMB reference v1.0 · §3.1 step 2
   - number: '30'
     name: Add the bundle to the cart
     output: Customer migrated to NC Digital?
     etom: Fulfillment · Selling
+    etom_term: etom-selling
     channels:
     - b2b-web
     - smb-app
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     confidence: confirmed
     source: SMB reference v1.0 · §3.1 step 3
   - number: '40'
     name: Return customer, account and product data
     system: cbcm
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     channels:
     - b2b-web
     - smb-app
     role: CUSTOMER_DATA
+    role_term: role-customer-data
     confidence: confirmed
     source: SMB reference v1.0 · §3.1 step 4
   - number: '50'
@@ -1808,36 +1834,44 @@ journeys:
     system: nc-crm
     description: Other entities still come from CRMGW.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     channels:
     - b2b-web
     - smb-app
     role: CUSTOMER_DATA
+    role_term: role-customer-data
     confidence: confirmed
     source: SMB reference v1.0 · §3.1 step 4 branch
   - number: '200'
     name: Capture the order from the bundle definition
     description: The new PO-modelling flag in the bundle definition decides the summary-order flags.
     etom: Fulfillment · Selling
+    etom_term: etom-selling
     channels:
     - bcrm
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     confidence: confirmed
     source: 'SDD v2.3 · §P1 Legacy Migration (as for SMB FW: Order to Delivery)'
   - number: '210'
     name: Return customer and account data
     system: cbcm
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     channels:
     - bcrm
     role: CUSTOMER_DATA
+    role_term: role-customer-data
     confidence: confirmed
     source: SMB reference v1.0 · §1 BCRM integrations
   - number: '300'
     name: Submit the order with the summary-order flags
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     confidence: confirmed
     source: SDD v2.3 · §P1 New Activation (channels pass the Summary Order Flag)
   - number: '310'
@@ -1845,7 +1879,9 @@ journeys:
     system: rtf
     description: RTF sends NotifyOrderCreationRequest through TIBCO to BPM, which opens the order tracker.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: TRACK
+    role_term: role-track
     confidence: confirmed
     source: SDD v2.3 · §BPM; §TIBCO (Order Tracking)
   - number: '320'
@@ -1855,7 +1891,9 @@ journeys:
       and ECM.
     output: Business rules passed?
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: VALIDATE
+    role_term: role-validate
     confidence: confirmed
     source: SMB reference v1.0 · §3.1 step 6
   - number: '330'
@@ -1869,7 +1907,9 @@ journeys:
     system: rtf
     description: In Ericsson Order Care format, as a summary order (SUMMARY_ORDER / DETAILED_ORDER flags).
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: ORCHESTRATE
+    role_term: role-orchestrate
     confidence: confirmed
     source: SMB reference v1.0 · §3.1 step 7
   - number: '350'
@@ -1877,7 +1917,9 @@ journeys:
     system: cwom
     description: CWOM accepts the new platform type “Fortinet HE” and the new POs.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: ORCHESTRATE
+    role_term: role-orchestrate
     confidence: confirmed
     source: SMB reference v1.0 · §3.1 step 8
   - number: '360'
@@ -1885,7 +1927,9 @@ journeys:
     system: ecm
     description: 'Below 1 Gbps: Fortinet 90G and FAP-23JF-E. At 1 Gbps: Fortinet 120G and FAP-431F-E.'
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: CATALOG
+    role_term: role-catalog
     confidence: confirmed
     source: SDD v2.3 · §P1.1 Generic FortiAP Offer
   - number: '370'
@@ -1894,7 +1938,9 @@ journeys:
     description: GPON; GSM (Backup 5G, UCaaS, synchronous SaaS); SaaS (asynchronous); vSaaS; and the master
       order.
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ORCHESTRATE
+    role_term: role-orchestrate
     confidence: inferred
     source: SDD v2.3 · §P4 Pending Order Validation · The sub-orders are named in the validation matrix;
       the split as a step is this catalogue's reading.
@@ -1905,7 +1951,9 @@ journeys:
     description: The organisation is created once, with the customer's first site. CWOM passes the site
       name and organisation name.
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ACTIVATE
+    role_term: role-activate
     confidence: confirmed
     source: SDD v2.3 · §P1 New Activation; §P2 New Activation
   - number: '390'
@@ -1913,7 +1961,9 @@ journeys:
     track: PARALLEL-CPE
     system: fortinet
     etom: Fulfillment · Supplier/Partner Requisition Management
+    etom_term: etom-supplier-partner-requisition-management
     role: ACTIVATE
+    role_term: role-activate
     confidence: confirmed
     source: SDD v2.3 · §P1 FortiPortal Access
   - number: '400'
@@ -1923,7 +1973,9 @@ journeys:
     description: The technician sees the SIC code; WFMS updates CWOM with the AP's SIC code and serial.
       A faulty FortiAP can be replaced on site.
     etom: Fulfillment · Resource Provisioning
+    etom_term: etom-resource-provisioning
     role: FIELD
+    role_term: role-field
     confidence: confirmed
     source: SDD v2.3 · §P1 New Activation; §P1.1 Generic FortiAP Offer
   - number: '405'
@@ -1934,7 +1986,9 @@ journeys:
       and synchronous SaaS.
     output: Backup 5G in the bundle?
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ORCHESTRATE
+    role_term: role-orchestrate
     confidence: inferred
     source: SDD v2.3 · §P4 Enhancement 1873844 · The IN offers apply only when the bundle has Backup 5G;
       the check as a step is this catalogue's reading.
@@ -1946,7 +2000,9 @@ journeys:
       IDs and the dongle's IMEI. A faulty 5G SIM can be replaced during installation (WFMS "Replace",
       CWOM to vEDA).
     etom: Fulfillment · Resource Provisioning
+    etom_term: etom-resource-provisioning
     role: ACTIVATE
+    role_term: role-activate
     confidence: inferred
     source: SDD v2.3 · §P2 IN; §vEDA · The SDD details Backup 5G for up/downgrade and cessation and says
       activation is “the same as the new activation fulfillment”.
@@ -1957,7 +2013,9 @@ journeys:
     description: 'UpdateOffer twice: the base offer (PO_GSM_BACKUP_5G_UNL, IN offer 6980, SERVICE_TYPE
       BASE) and the bandwidth offer for the GPON speed (Business Pro+: 862, 864, 866, 869, 872, 874).'
     etom: Fulfillment · Resource Provisioning
+    etom_term: etom-resource-provisioning
     role: ACTIVATE
+    role_term: role-activate
     confidence: confirmed
     source: SDD v2.3 · §P4 Enhancement 1873844 (New Activation/Migration)
   - number: '430'
@@ -1965,8 +2023,10 @@ journeys:
     track: PARALLEL-SAAS
     system: xaas
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     point_of_no_return: The XaaS callback is the point of no return for the asynchronous SaaS order.
     role: ACTIVATE
+    role_term: role-activate
     confidence: confirmed
     source: SMB reference v1.0 · §3.1 step 11
   - number: '440'
@@ -1976,8 +2036,10 @@ journeys:
     description: Shipment order from CWOM; the shipment confirmation comes back through TIBCO to a CWOM
       callback.
     etom: Fulfillment · Supplier/Partner Requisition Management
+    etom_term: etom-supplier-partner-requisition-management
     point_of_no_return: For managed devices, the MDVC callback from HPSM is the point of no return.
     role: LOGISTICS
+    role_term: role-logistics
     confidence: confirmed
     source: SDD v2.3 · §TIBCO; §P4 Cancel Order Changes
   - number: '450'
@@ -1985,8 +2047,10 @@ journeys:
     track: PARALLEL-ONBOARD
     description: SD-WAN configuration is Day-N; activation doesn't wait for it.
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     performer: MSS team
     role: FIELD
+    role_term: role-field
     confidence: confirmed
     source: SDD v2.3 · §P1 New Activation; General Highlights
   - number: '460'
@@ -1996,7 +2060,9 @@ journeys:
     description: The CPE rate plan follows the contract period chosen at capture (no contract, 1 year,
       2 years); a commitment carries an exit charge of AED 650.
     etom: Billing · Billing & Revenue Management
+    etom_term: etom-billing-revenue-management
     role: BILL
+    role_term: role-bill
     confidence: confirmed
     source: SMB reference v1.0 · §3.1 step 12; SDD v2.3 · §ADO 438907 US 438909
   - number: '470'
@@ -2006,7 +2072,9 @@ journeys:
     description: Template-driven, in English or Arabic. RTF also triggers the order-submitted and order-completed
       emails.
     etom: CRM · Customer Interface Management
+    etom_term: etom-customer-interface-management
     role: NOTIFY
+    role_term: role-notify
     confidence: confirmed
     source: SMB reference v1.0 · §3.1 step 14
   - number: '480'
@@ -2015,7 +2083,9 @@ journeys:
     system: cbcm
     description: With PSM catalogue codes.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: RECORD
+    role_term: role-record
     confidence: confirmed
     source: SMB reference v1.0 · §3.1 step 15
   flow_rules:
@@ -2110,6 +2180,7 @@ journeys:
     purpose: Load customer, account and product data.
     style: API
     tmf_equivalent: TMF629 Customer · TMF637 Product Inventory
+    open_apis: [api-tmf629, api-tmf637]
     confidence: confirmed
     source: SMB reference v1.0 · §3.1 step 4
   - from: '50'
@@ -2122,6 +2193,7 @@ journeys:
     purpose: Load party data of a customer migrated to NC Digital.
     style: API
     tmf_equivalent: TMF632 Party Management · TMF629 Customer
+    open_apis: [api-tmf632, api-tmf629]
     confidence: confirmed
     source: SMB reference v1.0 · §3.1 step 4 branch
   - from: '300'
@@ -2131,6 +2203,7 @@ journeys:
     purpose: Submit the order with the summary-order flags.
     style: XML request
     tmf_equivalent: TMF622 Product Ordering
+    open_apis: [api-tmf622]
     confidence: inferred
     source: SDD v2.3 · §P1 New Activation · The XML shape is read from the SDD's request samples.
   - from: '310'
@@ -2141,6 +2214,7 @@ journeys:
     via: tibco
     purpose: Open the order tracker. For BFM orders it carries No_Change items too.
     tmf_equivalent: TMF622 Product Ordering (notification)
+    open_apis: [api-tmf622]
     confidence: confirmed
     source: SDD v2.3 · §BPM; §TIBCO
   - from: '320'
@@ -2151,6 +2225,7 @@ journeys:
     purpose: Translate to the value order with PSM codes; check business rules.
     style: API
     tmf_equivalent: TMF679 Product Offering Qualification
+    open_apis: [api-tmf679]
     confidence: confirmed
     source: SDD v2.3 · §P2 UpDowngrade (evaluteOrder with CRMGW & ECM)
   - from: '320'
@@ -2170,6 +2245,7 @@ journeys:
     purpose: Hand the summary order to CWOM; refresh carries forward devices and overrides amounts.
     style: API
     tmf_equivalent: TMF622 Product Ordering
+    open_apis: [api-tmf622]
     confidence: inferred
     source: SDD v2.3 · §P1 Legacy Migration; §P2 UpDowngrade · Named for migration and up/downgrade; the
       reference only says “CWOM format” for activation.
@@ -2201,6 +2277,7 @@ journeys:
     purpose: Provision the Fortinet HE CPE; site name and organisation name passed.
     style: API
     tmf_equivalent: TMF641 Service Ordering
+    open_apis: [api-tmf641]
     confidence: confirmed
     source: SDD v2.3 · §P2 New Activation; IAD (annex not provided)
   - from: '380'
@@ -2339,6 +2416,7 @@ journeys:
     purpose: SMS or email from a template ID, language (EN/AR) and parameters.
     style: API
     tmf_equivalent: TMF681 Communication
+    open_apis: [api-tmf681]
     confidence: confirmed
     source: SMB reference v1.0 · §3.1 step 14
   - from: '470'
@@ -2356,6 +2434,7 @@ journeys:
     to_system: cbcm
     purpose: Update the product inventory with PSM codes.
     tmf_equivalent: TMF637 Product Inventory
+    open_apis: [api-tmf637]
     confidence: confirmed
     source: SMB reference v1.0 · §3.1 step 15
   - from: '210'
@@ -2381,8 +2460,10 @@ journeys:
     name: Retrieve the account and check the bundle model
     description: If NEW_BUNDLE_MODEL is true, the summary-order attributes are added.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     confidence: confirmed
     source: SDD v2.3 · §P2 ADO 81197
   - number: '20'
@@ -2390,8 +2471,10 @@ journeys:
     description: The SMB App calls CRMGW's OrderEvaluate for toBeAddedItems and toBeDeletedItems; BCRM
       uses its existing logic.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     confidence: confirmed
     source: SDD v2.3 · §P2 ADO 81197
   - number: '30'
@@ -2400,8 +2483,10 @@ journeys:
       add-ons, ACTION_CHARGE_CODE AC_UPDOWNGRD_F. The CPE PO matches the contract period chosen (no contract,
       1 year, 2 years). With site-access consent, SITE_ACCESS_REQUIRED = TRUE.'
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     confidence: confirmed
     source: SDD v2.3 · §P2 ADO 81197, request mapping
   - number: '35'
@@ -2412,7 +2497,9 @@ journeys:
       RTF rejects it.
     output: Accepted?
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: VALIDATE
+    role_term: role-validate
     confidence: confirmed
     source: SDD v2.3 · §P4 Pending Order Validation
   - number: '38'
@@ -2421,6 +2508,7 @@ journeys:
     description: The channel tells the customer the change can be placed once the activation is closed.
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     confidence: inferred
     source: SDD v2.3 · §P4 Pending Order Validation · RTF rejects the request; how the channel shows it
       isn't stated.
@@ -2429,21 +2517,27 @@ journeys:
     system: rtf
     description: No_Change items included for BFM orders; BPM doesn't track DELETE items for UPDOWNGRD.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: TRACK
+    role_term: role-track
     confidence: confirmed
     source: SDD v2.3 · §BPM; §TIBCO ADO 81961
   - number: '50'
     name: Load the basket from the CRMGW registry
     system: rtf
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: ORCHESTRATE
+    role_term: role-orchestrate
     confidence: confirmed
     source: SDD v2.3 · §P2 ADO 81197
   - number: '60'
     name: Evaluate the order
     system: rtf
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: VALIDATE
+    role_term: role-validate
     confidence: confirmed
     source: SDD v2.3 · §P2 ADO 81197
   - number: '70'
@@ -2451,7 +2545,9 @@ journeys:
     system: rtf
     description: Carry forward devices and override amounts in refreshShoppingCart.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: ORCHESTRATE
+    role_term: role-orchestrate
     confidence: confirmed
     source: SDD v2.3 · §P2 ADO 81197
   - number: '80'
@@ -2462,7 +2558,9 @@ journeys:
       Pro Plus.'
     output: Backup 5G in the source and target?
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ORCHESTRATE
+    role_term: role-orchestrate
     confidence: confirmed
     source: SDD v2.3 · §P2 ADO 81197
   - number: '90'
@@ -2472,7 +2570,9 @@ journeys:
     description: DeleteOffer for the source bandwidth offer, UpdateOffer for the target one (862–874 by
       speed); the base offer stays.
     etom: Fulfillment · Resource Provisioning
+    etom_term: etom-resource-provisioning
     role: ACTIVATE
+    role_term: role-activate
     confidence: confirmed
     source: SDD v2.3 · §P2 IN; §P4 Enhancement 1873844 (w/ 5G to w/ 5G)
   - number: '100'
@@ -2481,7 +2581,9 @@ journeys:
     system: veda
     description: As in new activation (HSS profile 5GNSA_BPRO5GBKP).
     etom: Fulfillment · Resource Provisioning
+    etom_term: etom-resource-provisioning
     role: ACTIVATE
+    role_term: role-activate
     confidence: confirmed
     source: SDD v2.3 · §P2 IN
   - number: '105'
@@ -2490,7 +2592,9 @@ journeys:
     system: in
     description: UpdateOffer for the base offer (6980) and for the target bandwidth offer, as in new activation.
     etom: Fulfillment · Resource Provisioning
+    etom_term: etom-resource-provisioning
     role: ACTIVATE
+    role_term: role-activate
     confidence: confirmed
     source: SDD v2.3 · §P4 Enhancement 1873844 (w/o 5G to w/ 5G)
   - number: '110'
@@ -2499,7 +2603,9 @@ journeys:
     system: veda
     description: As for DI/DPI.
     etom: Fulfillment · Resource Provisioning
+    etom_term: etom-resource-provisioning
     role: ACTIVATE
+    role_term: role-activate
     confidence: confirmed
     source: SDD v2.3 · §P2 IN
   - number: '115'
@@ -2508,7 +2614,9 @@ journeys:
     system: in
     description: DeleteOffer for both, as in cessation.
     etom: Fulfillment · Resource Provisioning
+    etom_term: etom-resource-provisioning
     role: ACTIVATE
+    role_term: role-activate
     confidence: confirmed
     source: SDD v2.3 · §P4 Enhancement 1873844 (w/ 5G to w/o 5G)
   - number: '120'
@@ -2518,7 +2626,9 @@ journeys:
       FAP-431F-E, so a 120G can stay. At 1 Gbps: Fortinet 120G and FAP-431F-E.'
     output: Device change?
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: CATALOG
+    role_term: role-catalog
     confidence: confirmed
     source: SDD v2.3 · §P4 Enhancement 1871663
   - number: '130'
@@ -2528,7 +2638,9 @@ journeys:
     description: The technician swaps the devices with site access, per workflow, and returns the new
       SIC codes and serials.
     etom: Fulfillment · Resource Provisioning
+    etom_term: etom-resource-provisioning
     role: FIELD
+    role_term: role-field
     confidence: inferred
     source: SDD v2.3 · §P3 ADO 81961 · WFMS fulfils per the agreed workflow (“w/ Device Change”), which
       isn't in the SDD text.
@@ -2539,7 +2651,9 @@ journeys:
     description: Only when the removed CPE's rate plan is still within its commitment (1 or 2 years);
       the amount is to be confirmed by Business.
     etom: Billing · Billing & Revenue Management
+    etom_term: etom-billing-revenue-management
     role: BILL
+    role_term: role-bill
     confidence: inferred
     source: SDD v2.3 · §ADO 438907 US 438909 · The exit charge applies to up/downgrade; the commitment
       test follows the existing exit-charge rules.
@@ -2548,14 +2662,18 @@ journeys:
     system: e2eso
     description: With a device change from P3 (ADO 81961).
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ACTIVATE
+    role_term: role-activate
     confidence: confirmed
     source: SDD v2.3 · §P3 ADO 81961
   - number: '160'
     name: Send the order submitted and completed emails
     system: cns
     etom: CRM · Customer Interface Management
+    etom_term: etom-customer-interface-management
     role: NOTIFY
+    role_term: role-notify
     confidence: inferred
     source: SDD v2.3 · §P2 ADO 81197 · RTF triggers them; the sending system isn't named.
   flow_rules:
@@ -2617,6 +2735,7 @@ journeys:
     purpose: Read the subscription and its NEW_BUNDLE_MODEL attribute.
     style: API
     tmf_equivalent: TMF637 Product Inventory
+    open_apis: [api-tmf637]
     confidence: confirmed
     source: SDD v2.3 · §P2 ADO 81197
   - from: '20'
@@ -2638,6 +2757,7 @@ journeys:
     purpose: Submit the change with the summary-order attributes.
     style: XML request
     tmf_equivalent: TMF622 Product Ordering
+    open_apis: [api-tmf622]
     confidence: confirmed
     source: SDD v2.3 · §P2 ADO 81197, request mapping
   - from: '35'
@@ -2650,6 +2770,7 @@ journeys:
       the master order closed).
     style: API
     tmf_equivalent: TMF679 Product Offering Qualification
+    open_apis: [api-tmf679]
     confidence: confirmed
     source: SDD v2.3 · §P4 Pending Order Validation
   - from: '40'
@@ -2695,6 +2816,7 @@ journeys:
     purpose: Pass the whole loaded basket.
     style: API
     tmf_equivalent: TMF622 Product Ordering
+    open_apis: [api-tmf622]
     confidence: confirmed
     source: SDD v2.3 · §P2 ADO 81197
   - from: '70'
@@ -2776,6 +2898,7 @@ journeys:
     to_system: e2eso
     purpose: Change the CPE service per workflow and technical proposal.
     tmf_equivalent: TMF641 Service Ordering
+    open_apis: [api-tmf641]
     confidence: confirmed
     source: SDD v2.3 · §P2; §P3 ADO 81961
   - from: '150'
@@ -2786,6 +2909,7 @@ journeys:
     to_system: e2eso
     purpose: Set the CPE bandwidth after any speed booster (platform FORTINET).
     tmf_equivalent: TMF641 Service Ordering
+    open_apis: [api-tmf641]
     confidence: confirmed
     source: SDD v2.3 · §P4 ADO 198968
   - from: '160'
@@ -2810,6 +2934,7 @@ journeys:
     description: The channel submits the order.
     channel_entry: true
     role: TRACK
+    role_term: role-track
     confidence: confirmed
     source: SMB reference v1.0 · §3.1 step 5
   - number: '20'
@@ -2817,6 +2942,7 @@ journeys:
     system: rtf
     description: Order and its items; BFM orders include No_Change items.
     role: TRACK
+    role_term: role-track
     confidence: confirmed
     source: SDD v2.3 · §TIBCO; §BPM
   - number: '30'
@@ -2824,6 +2950,7 @@ journeys:
     system: tibco
     description: isBFMOrder, mergeOrderItems (GSM and GPON items of a BFM primary package).
     role: TRACK
+    role_term: role-track
     confidence: confirmed
     source: SDD v2.3 · §BPM
   - number: '40'
@@ -2831,6 +2958,7 @@ journeys:
     system: cwom
     description: CWOM publishes the AS-IS milestones of each sub-order.
     role: TRACK
+    role_term: role-track
     confidence: confirmed
     source: SDD v2.3 · §TIBCO (TIBCO follows the M/S approach)
   - number: '50'
@@ -2838,6 +2966,7 @@ journeys:
     system: tibco
     description: BPM records the milestone against the order item.
     role: TRACK
+    role_term: role-track
     confidence: confirmed
     source: SDD v2.3 · §BPM
   - number: '60'
@@ -2845,6 +2974,7 @@ journeys:
     system: ibm-bpm
     description: Milestones kept for the real-time read.
     role: TRACK
+    role_term: role-track
     confidence: inferred
     source: SDD v2.3 · §BPM General Note · The SDD names “the felix / getRealTimeOrderDetails SP”.
   - number: '70'
@@ -2852,6 +2982,7 @@ journeys:
     system: cwom
     description: Device delivery.
     role: TRACK
+    role_term: role-track
     confidence: confirmed
     source: SDD v2.3 · §TIBCO
   - number: '80'
@@ -2859,6 +2990,7 @@ journeys:
     system: itsm
     description: HPSM confirms the delivery.
     role: TRACK
+    role_term: role-track
     confidence: confirmed
     source: SDD v2.3 · §TIBCO
   - number: '90'
@@ -2866,6 +2998,7 @@ journeys:
     system: tibco
     description: Device delivered.
     role: TRACK
+    role_term: role-track
     confidence: confirmed
     source: SDD v2.3 · §TIBCO
   - number: '100'
@@ -2873,6 +3006,7 @@ journeys:
     description: The customer (B2B, SMB App) or the back office opens the tracker.
     channel_entry: true
     role: TRACK
+    role_term: role-track
     confidence: confirmed
     source: SDD v2.3 · §TIBCO; US 2367, 44387, 2380
   - number: '110'
@@ -2880,6 +3014,7 @@ journeys:
     system: tibco
     description: Through the getRealTimeOrderDetails SP.
     role: TRACK
+    role_term: role-track
     confidence: inferred
     source: SDD v2.3 · §BPM General Note · Read path inferred from the SP's name.
   - number: '120'
@@ -2887,6 +3022,7 @@ journeys:
     system: tibco
     description: Milestones shown on the tracking page.
     role: TRACK
+    role_term: role-track
     confidence: confirmed
     source: SMB reference v1.0 · §3.1 step 10
   integrations:
@@ -2979,6 +3115,7 @@ journeys:
     purpose: The customer (B2B, SMB App) or the back office opens the tracker.
     style: API
     tmf_equivalent: TMF622 Product Ordering (GET)
+    open_apis: [api-tmf622]
     confidence: confirmed
     source: SDD v2.3 · §TIBCO; US 2367, 44387, 2380
   - from: '110'
@@ -3016,8 +3153,10 @@ journeys:
       %BFM% an upgrade. Legacy migration (new or existing account) is BCRM only.'
     output: Source product?
     etom: Fulfillment · Selling
+    etom_term: etom-selling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P1 Legacy Migration; §P3 ADO 202824
     confidence: confirmed
   - number: '20'
@@ -3025,7 +3164,9 @@ journeys:
     system: cbcm
     description: NEW_BUNDLE_MODEL = true on the primary subscription decides the summary-order attributes.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: CUSTOMER_DATA
+    role_term: role-customer-data
     source: SDD v2.3 · §P3 ADO 202824
     confidence: confirmed
   - number: '30'
@@ -3034,15 +3175,19 @@ journeys:
       and removed components; common components are carried forward and not sent. CRMGW's OrderEvaluate
       isn't used for migration. With site-access consent, SITE_ACCESS_REQUIRED = TRUE.
     etom: Fulfillment · Selling
+    etom_term: etom-selling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P3 ADO 202824, request mapping
     confidence: confirmed
   - number: '40'
     name: Submit the migration with the summary-order flags
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P1 Legacy Migration; §P3 ADO 202824
     confidence: confirmed
   - number: '50'
@@ -3053,7 +3198,9 @@ journeys:
       RTF rejects it.
     output: Accepted?
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: VALIDATE
+    role_term: role-validate
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - number: '55'
@@ -3063,6 +3210,7 @@ journeys:
       closed.
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     confidence: inferred
     source: SDD v2.3 · §P4 Pending Order Validation · RTF rejects the request; how the channel shows it
       isn't stated.
@@ -3071,7 +3219,9 @@ journeys:
     system: rtf
     description: BFM orders include No_Change items; BPM doesn't track DELETE items for MIGRATE.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: TRACK
+    role_term: role-track
     source: SDD v2.3 · §BPM; §TIBCO ADO 202824
     confidence: confirmed
   - number: '70'
@@ -3079,14 +3229,18 @@ journeys:
     system: rtf
     description: RTF also fills the installation address and contacts when the channel doesn't pass them.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P1 Legacy Migration; §P3 ADO 202824
     confidence: confirmed
   - number: '80'
     name: Evaluate the order
     system: rtf
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: VALIDATE
+    role_term: role-validate
     source: SDD v2.3 · §P1 Legacy Migration
     confidence: confirmed
   - number: '90'
@@ -3094,7 +3248,9 @@ journeys:
     system: rtf
     description: Carry forward devices; override amounts (CWOM enriches the charges).
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P1 Legacy Migration
     confidence: confirmed
   - number: '100'
@@ -3104,7 +3260,9 @@ journeys:
       profile per the target package.
     output: Backup 5G in the target bundle?
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · Feasibility US 202815, 202817; §P3 ADO 202824
     confidence: confirmed
   - number: '110'
@@ -3113,7 +3271,9 @@ journeys:
     system: veda
     description: 'As for a new activation: HSS profile 5GNSA_BPRO5GBKP.'
     etom: Fulfillment · Resource Provisioning
+    etom_term: etom-resource-provisioning
     role: ACTIVATE
+    role_term: role-activate
     source: SDD v2.3 · §P2 UpDowngrade (as new activation); §P4 Enhancement 1873844
     confidence: confirmed
   - number: '120'
@@ -3123,7 +3283,9 @@ journeys:
     description: UpdateOffer for the base offer and for the bandwidth offer (IN offers 860–878, by GPON
       speed).
     etom: Fulfillment · Resource Provisioning
+    etom_term: etom-resource-provisioning
     role: ACTIVATE
+    role_term: role-activate
     source: SDD v2.3 · §P4 Enhancement 1873844 (New Activation/Migration)
     confidence: confirmed
   - number: '130'
@@ -3131,7 +3293,9 @@ journeys:
     system: ecm
     description: 'Below 1 Gbps: Fortinet 90G and FAP-23JF-E. At 1 Gbps: Fortinet 120G and FAP-431F-E.'
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: CATALOG
+    role_term: role-catalog
     source: SDD v2.3 · §P1.1 Generic FortiAP Offer
     confidence: confirmed
   - number: '140'
@@ -3140,14 +3304,18 @@ journeys:
     description: New dedicated ADOM cluster; static IP enabled or carried forward; domain, SaaS and building
       blocks carried forward, incompatible ones ceased.
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ACTIVATE
+    role_term: role-activate
     source: SDD v2.3 · Feasibility US 202815; §P1 New Activation/Legacy Migration
     confidence: confirmed
   - number: '150'
     name: Register the CPE and the organisation
     system: fortinet
     etom: Fulfillment · Supplier/Partner Requisition Management
+    etom_term: etom-supplier-partner-requisition-management
     role: ACTIVATE
+    role_term: role-activate
     source: SDD v2.3 · §P1 FortiPortal Access
     confidence: confirmed
   - number: '160'
@@ -3156,7 +3324,9 @@ journeys:
     description: The technician installs the Pro+ CPE and FortiAP and captures SIC codes and serials;
       a faulty 5G SIM can be replaced during installation.
     etom: Fulfillment · Resource Provisioning
+    etom_term: etom-resource-provisioning
     role: FIELD
+    role_term: role-field
     source: SDD v2.3 · Feasibility US 202817; §ADO 443271
     confidence: confirmed
   - number: '170'
@@ -3164,7 +3334,9 @@ journeys:
     system: itsm
     description: ShipmentOrder and the shipment-confirmation callback are supported for MIGRATE.
     etom: Fulfillment · Supplier/Partner Requisition Management
+    etom_term: etom-supplier-partner-requisition-management
     role: LOGISTICS
+    role_term: role-logistics
     source: SDD v2.3 · §CWOM ADO 202824; §TIBCO ADO 202824
     confidence: confirmed
   - number: '180'
@@ -3173,7 +3345,9 @@ journeys:
     description: Contract reset and exit charges on the removed devices follow the existing rules.
     output: Legacy devices still under commitment?
     etom: Billing · Billing & Revenue Management
+    etom_term: etom-billing-revenue-management
     role: BILL
+    role_term: role-bill
     source: SDD v2.3 · Feasibility US 202815, 202817
     confidence: confirmed
   - number: '185'
@@ -3181,7 +3355,9 @@ journeys:
     track: BRANCH-EXIT
     system: bscs
     etom: Billing · Billing & Revenue Management
+    etom_term: etom-billing-revenue-management
     role: BILL
+    role_term: role-bill
     confidence: inferred
     source: SDD v2.3 · Feasibility US 202817 · “Existing exit-charge rules posting on devices to follow”;
       the commitment test is the existing rule's.
@@ -3191,21 +3367,27 @@ journeys:
     description: 'The CPE rate plan follows the contract period chosen: no contract, 1 year or 2 years
       (exit charge AED 650).'
     etom: Billing · Billing & Revenue Management
+    etom_term: etom-billing-revenue-management
     role: BILL
+    role_term: role-bill
     confidence: inferred
     source: SDD v2.3 · §ADO 438907 US 438909 · Billing start is read from the new-activation journey.
   - number: '200'
     name: Send the order submitted and completed emails
     system: cns
     etom: CRM · Customer Interface Management
+    etom_term: etom-customer-interface-management
     role: NOTIFY
+    role_term: role-notify
     confidence: inferred
     source: SDD v2.3 · §P3 ADO 202824 · RTF triggers them; the sending system isn't named.
   - number: '210'
     name: Close the order and update the registry
     system: cbcm
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: RECORD
+    role_term: role-record
     confidence: inferred
     source: SDD v2.3 · §P2 One-Time Data Migration · CRMGW holds the registry; closing is read from the
       other journeys.
@@ -3251,6 +3433,7 @@ journeys:
     purpose: Read NEW_BUNDLE_MODEL and productGroup (BFV2 = migration).
     style: API
     tmf_equivalent: TMF637 Product Inventory
+    open_apis: [api-tmf637]
     source: SDD v2.3 · §P3 ADO 202824
     confidence: confirmed
   - from: '40'
@@ -3261,6 +3444,7 @@ journeys:
     purpose: Submit the migration with the summary-order attributes.
     style: XML request
     tmf_equivalent: TMF622 Product Ordering
+    open_apis: [api-tmf622]
     source: SDD v2.3 · §P3 ADO 202824, request mapping
     confidence: confirmed
   - from: '50'
@@ -3273,6 +3457,7 @@ journeys:
       and the master order (migration on an existing account)).'
     style: API
     tmf_equivalent: TMF679 Product Offering Qualification
+    open_apis: [api-tmf679]
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - from: '60'
@@ -3283,6 +3468,7 @@ journeys:
     via: tibco
     purpose: Open the tracker (OrderInstanceType MIGRATE); No_Change items included.
     tmf_equivalent: TMF622 Product Ordering (notification)
+    open_apis: [api-tmf622]
     source: SDD v2.3 · §BPM, §TIBCO ADO 202824
     confidence: confirmed
   - from: '70'
@@ -3319,6 +3505,7 @@ journeys:
     purpose: Pass the whole loaded basket; carry forward devices; override amounts.
     style: API
     tmf_equivalent: TMF622 Product Ordering
+    open_apis: [api-tmf622]
     source: SDD v2.3 · §P1 Legacy Migration
     confidence: confirmed
   - from: '110'
@@ -3355,6 +3542,7 @@ journeys:
     to_system: e2eso
     purpose: Provision the Pro+ CPE and FortiPortal per the technical proposal.
     tmf_equivalent: TMF641 Service Ordering
+    open_apis: [api-tmf641]
     source: SDD v2.3 · §P1; §P3 ADO 202824
     confidence: confirmed
   - from: '150'
@@ -3407,8 +3595,10 @@ journeys:
     description: 'Churn & Exit types: direct cessation, cease with retention, cease within the trial period,
       bulk cessation (each account checked).'
     etom: Fulfillment · Selling
+    etom_term: etom-selling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P2 ADO 259161
     confidence: confirmed
   - number: '20'
@@ -3416,7 +3606,9 @@ journeys:
     system: cbcm
     description: NEW_BUNDLE_MODEL = true adds the summary-order attributes.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: CUSTOMER_DATA
+    role_term: role-customer-data
     source: SDD v2.3 · §P2 ADO 259161
     confidence: confirmed
   - number: '30'
@@ -3427,7 +3619,9 @@ journeys:
       it.
     output: Accepted?
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: VALIDATE
+    role_term: role-validate
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - number: '40'
@@ -3436,8 +3630,10 @@ journeys:
     description: Cessation is blocked while the new activation is in progress; the customer cancels it,
       then ceases.
     etom: Fulfillment · Selling
+    etom_term: etom-selling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P4 ADO 288752
     confidence: confirmed
   - number: '45'
@@ -3447,7 +3643,9 @@ journeys:
     description: 'GSM: device capture. GPON: E2E test confirmation. Asynchronous SaaS: XaaS callback (ceaseService).
       Managed devices: the MDVC callback (HPSM ticket cancelled).'
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P4 ADO 323163, 288752
     confidence: confirmed
   - number: '48'
@@ -3455,21 +3653,27 @@ journeys:
     track: CANCEL-FIRST
     system: cbcm
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: RECORD
+    role_term: role-record
     source: SDD v2.3 · §P4 ADO 288752
     confidence: confirmed
   - number: '50'
     name: Submit the cessation with the summary-order flags
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P2 ADO 259161
     confidence: confirmed
   - number: '60'
     name: Announce the order for tracking
     system: rtf
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: TRACK
+    role_term: role-track
     confidence: inferred
     source: SDD v2.3 · §P3 Order Tracking · Stated for BFM lifecycle orders generally.
   - number: '70'
@@ -3477,14 +3681,18 @@ journeys:
     system: rtf
     description: Only the completed components when the activation was partly fulfilled.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P2 ADO 259161; §P4 ADO 288752
     confidence: confirmed
   - number: '80'
     name: Hand the basket to CWOM with the summary-order flags
     system: rtf
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P2 ADO 259161
     confidence: confirmed
   - number: '90'
@@ -3492,7 +3700,9 @@ journeys:
     system: cwom
     output: Backup 5G in the bundle?
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P2 ADO 259161
     confidence: confirmed
   - number: '100'
@@ -3502,7 +3712,9 @@ journeys:
     description: HSS commands as for DI/DPI with epsProfileId 5GNSA_BPRO5GBKP; vEDA's commands towards
       IN and Alepo unchanged.
     etom: Fulfillment · Resource Provisioning
+    etom_term: etom-resource-provisioning
     role: ACTIVATE
+    role_term: role-activate
     source: SDD v2.3 · §P2 ADO 259161
     confidence: confirmed
   - number: '110'
@@ -3511,7 +3723,9 @@ journeys:
     system: in
     description: DeleteOffer for both offers.
     etom: Fulfillment · Resource Provisioning
+    etom_term: etom-resource-provisioning
     role: ACTIVATE
+    role_term: role-activate
     source: SDD v2.3 · §P4 Enhancement 1873844 (Cease)
     confidence: confirmed
   - number: '120'
@@ -3519,14 +3733,18 @@ journeys:
     system: e2eso
     description: The FortiPortal organisation is removed only when the customer's last branch is ceased.
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ACTIVATE
+    role_term: role-activate
     source: SDD v2.3 · §P1 FortiPortal Access; §P2 ADO 259161
     confidence: confirmed
   - number: '130'
     name: Complete the field work, per workflow
     system: wfms
     etom: Fulfillment · Resource Provisioning
+    etom_term: etom-resource-provisioning
     role: FIELD
+    role_term: role-field
     confidence: inferred
     source: SDD v2.3 · §P2 ADO 259161 · WFMS fulfils per the agreed workflow, which isn't in the SDD text.
   - number: '140'
@@ -3536,7 +3754,9 @@ journeys:
       2 years) with an exit charge of AED 650.
     output: Still within the commitment period?
     etom: Billing · Billing & Revenue Management
+    etom_term: etom-billing-revenue-management
     role: BILL
+    role_term: role-bill
     source: SDD v2.3 · §ADO 438907 US 438909
     confidence: confirmed
   - number: '150'
@@ -3544,7 +3764,9 @@ journeys:
     track: BRANCH-EXIT
     system: bscs
     etom: Billing · Billing & Revenue Management
+    etom_term: etom-billing-revenue-management
     role: BILL
+    role_term: role-bill
     confidence: inferred
     source: SDD v2.3 · §ADO 438907 US 438909 · The exit charge applies to cessation; the commitment test
       follows the existing exit-charge rules.
@@ -3552,7 +3774,9 @@ journeys:
     name: Stop billing and close the account
     system: bscs
     etom: Billing · Billing & Revenue Management
+    etom_term: etom-billing-revenue-management
     role: BILL
+    role_term: role-bill
     confidence: inferred
     source: SDD v2.3 · §P2 ADO 259161 · Ceasing all services implies the final bill; the SDD doesn't detail
       it.
@@ -3561,7 +3785,9 @@ journeys:
     system: cbcm
     description: With partial components when the activation was partly fulfilled.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: RECORD
+    role_term: role-record
     source: SDD v2.3 · §P4 ADO 288752
     confidence: confirmed
   flow_rules:
@@ -3610,6 +3836,7 @@ journeys:
     purpose: Read NEW_BUNDLE_MODEL.
     style: API
     tmf_equivalent: TMF637 Product Inventory
+    open_apis: [api-tmf637]
     source: SDD v2.3 · §P2 ADO 259161
     confidence: confirmed
   - from: '30'
@@ -3622,6 +3849,7 @@ journeys:
       SaaS, vSaaS, GPON) and the master order).'
     style: API
     tmf_equivalent: TMF679 Product Offering Qualification
+    open_apis: [api-tmf679]
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - from: '45'
@@ -3648,6 +3876,7 @@ journeys:
     purpose: Submit the cessation in the existing structure with the summary-order attributes.
     style: XML request
     tmf_equivalent: TMF622 Product Ordering
+    open_apis: [api-tmf622]
     source: SDD v2.3 · §P2 ADO 259161
     confidence: confirmed
   - from: '60'
@@ -3675,6 +3904,7 @@ journeys:
     purpose: Submit the loaded basket.
     style: API
     tmf_equivalent: TMF622 Product Ordering
+    open_apis: [api-tmf622]
     source: SDD v2.3 · §P2 ADO 259161
     confidence: confirmed
   - from: '100'
@@ -3710,6 +3940,7 @@ journeys:
     to_system: e2eso
     purpose: Cease the CPE service per the technical proposal and interface agreement.
     tmf_equivalent: TMF641 Service Ordering
+    open_apis: [api-tmf641]
     source: SDD v2.3 · §P2 ADO 259161
     confidence: confirmed
   - from: '120'
@@ -3735,8 +3966,10 @@ journeys:
     name: Capture the new address and site-access consent
     description: With consent, SITE_ACCESS_REQUIRED = TRUE.
     etom: Fulfillment · Selling
+    etom_term: etom-selling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P3 ADO 202826
     confidence: confirmed
   - number: '20'
@@ -3744,8 +3977,10 @@ journeys:
     description: processCode PRSU0001, operation EXTSHIFTSITE, ACTION_CHARGE_CODE AC_EXTSHIFTSITE_1; the
       new address in the party block.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P3 ADO 202826, request mapping
     confidence: confirmed
   - number: '30'
@@ -3755,7 +3990,9 @@ journeys:
       GSM and GPON sub-orders and the master order are closed; otherwise RTF rejects it.
     output: Accepted?
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: VALIDATE
+    role_term: role-validate
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - number: '35'
@@ -3765,6 +4002,7 @@ journeys:
       closed.
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     confidence: inferred
     source: SDD v2.3 · §P4 Pending Order Validation · RTF rejects the request; how the channel shows it
       isn't stated.
@@ -3773,14 +4011,18 @@ journeys:
     system: rtf
     description: Items posted as No_Change; OrderInstanceType EXTSHIFT.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: TRACK
+    role_term: role-track
     source: SDD v2.3 · §P3 ADO 202826; §BPM, §TIBCO
     confidence: confirmed
   - number: '50'
     name: Load the basket from CRMGW and hand it to CWOM
     system: rtf
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P3 ADO 202826
     confidence: confirmed
   - number: '60'
@@ -3790,7 +4032,9 @@ journeys:
       site's EID status.
     output: Site status?
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P3 ADO 202826
     confidence: confirmed
   - number: '70'
@@ -3799,7 +4043,9 @@ journeys:
     system: wfms
     description: As in new activation.
     etom: Fulfillment · Resource Provisioning
+    etom_term: etom-resource-provisioning
     role: FIELD
+    role_term: role-field
     source: SDD v2.3 · §P3 ADO 202826
     confidence: confirmed
   - number: '80'
@@ -3807,7 +4053,9 @@ journeys:
     track: BRANCH-PASS
     system: wfms
     etom: Fulfillment · Resource Provisioning
+    etom_term: etom-resource-provisioning
     role: FIELD
+    role_term: role-field
     source: SDD v2.3 · §P3 ADO 202826
     confidence: confirmed
   - number: '90'
@@ -3815,7 +4063,9 @@ journeys:
     track: BRANCH-PASS
     system: wfms
     etom: Fulfillment · Resource Provisioning
+    etom_term: etom-resource-provisioning
     role: FIELD
+    role_term: role-field
     source: SDD v2.3 · §P3 ADO 202826
     confidence: confirmed
   - number: '100'
@@ -3823,7 +4073,9 @@ journeys:
     system: cwom
     output: Backup 5G in the bundle?
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ORCHESTRATE
+    role_term: role-orchestrate
     confidence: inferred
     source: SDD v2.3 · §P4 Enhancement 1873844 · The geo-lock reset applies only to Backup 5G; the check
       as a step is this catalogue's reading.
@@ -3833,7 +4085,9 @@ journeys:
     system: in
     description: No change to the base or bandwidth offers.
     etom: Fulfillment · Resource Provisioning
+    etom_term: etom-resource-provisioning
     role: ACTIVATE
+    role_term: role-activate
     source: SDD v2.3 · §P4 Enhancement 1873844 (External Shift)
     confidence: confirmed
   - number: '120'
@@ -3841,7 +4095,9 @@ journeys:
     system: e2eso
     description: CWOM passes the new site name; E2ESO updates it at Fortinet through the agreed new API.
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ACTIVATE
+    role_term: role-activate
     source: SDD v2.3 · §P3 ADO 202826
     confidence: confirmed
   - number: '130'
@@ -3849,21 +4105,27 @@ journeys:
     system: cwom
     description: Order tracking for EXTSHIFTSITE; TIBCO follows the master/sub approach.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: TRACK
+    role_term: role-track
     source: SDD v2.3 · §CWOM, §TIBCO ADO 202826
     confidence: confirmed
   - number: '140'
     name: Send the order submitted and completed emails
     system: cns
     etom: CRM · Customer Interface Management
+    etom_term: etom-customer-interface-management
     role: NOTIFY
+    role_term: role-notify
     confidence: inferred
     source: SDD v2.3 · §P3 ADO 202826 · RTF triggers them; the sending system isn't named.
   - number: '150'
     name: Close the order and update the registry
     system: cbcm
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: RECORD
+    role_term: role-record
     confidence: inferred
     source: SDD v2.3 · §P3 ADO 202826 · Closing is read from the other journeys.
   flow_rules:
@@ -3912,6 +4174,7 @@ journeys:
     purpose: Submit the shift with the new address and the summary-order attributes.
     style: XML request
     tmf_equivalent: TMF622 Product Ordering
+    open_apis: [api-tmf622]
     source: SDD v2.3 · §P3 ADO 202826
     confidence: confirmed
   - from: '30'
@@ -3924,6 +4187,7 @@ journeys:
       and the master order).'
     style: API
     tmf_equivalent: TMF679 Product Offering Qualification
+    open_apis: [api-tmf679]
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - from: '40'
@@ -3934,6 +4198,7 @@ journeys:
     via: tibco
     purpose: Open the tracker; items as No_Change.
     tmf_equivalent: TMF622 Product Ordering (notification)
+    open_apis: [api-tmf622]
     source: SDD v2.3 · §P3 ADO 202826
     confidence: confirmed
   - from: '50'
@@ -3952,6 +4217,7 @@ journeys:
     purpose: Pass the complete basket.
     style: API
     tmf_equivalent: TMF622 Product Ordering
+    open_apis: [api-tmf622]
     source: SDD v2.3 · §P3 ADO 202826
     confidence: confirmed
   - from: '70'
@@ -3997,6 +4263,7 @@ journeys:
     to_system: e2eso
     purpose: Pass the new site name in the agreed path.
     tmf_equivalent: TMF641 Service Ordering
+    open_apis: [api-tmf641]
     source: SDD v2.3 · §P3 ADO 202826
     confidence: confirmed
   - from: '120'
@@ -4041,8 +4308,10 @@ journeys:
     name: Raise the dunning action
     description: Actions BAR_OG, NPTOSS (TOSS), RECONNP (reconnect), CESSNP (non-payment cessation).
     etom: Billing · Billing & Revenue Management
+    etom_term: etom-billing-revenue-management
     performer: Dunning process
     role: BILL
+    role_term: role-bill
     confidence: gap
     source: SDD v2.3 · §P3 ADO 259162 · The SDD doesn't name the system that raises the action (finding
       F12).
@@ -4052,7 +4321,9 @@ journeys:
     description: sRTF (RTF Common) checks NEW_BUNDLE_MODEL through CRMGW; the solution overview names
       NPS for the same logic.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: VALIDATE
+    role_term: role-validate
     confidence: inferred
     source: SDD v2.3 · §P3 ADO 259162; §RTF ADO 259162 [RTF Common] · See finding F16.
   - number: '30'
@@ -4062,7 +4333,9 @@ journeys:
       CWOM registry is retired.'
     output: Which action?
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: ORCHESTRATE
+    role_term: role-orchestrate
     confidence: inferred
     source: SDD v2.3 · General Highlights (Dunning); §P3 ADO 259162 · See finding F16.
   - number: '40'
@@ -4071,7 +4344,9 @@ journeys:
     system: cwom
     output: Backup 5G in the bundle?
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ACTIVATE
+    role_term: role-activate
     source: SDD v2.3 · §P3 ADO 259162
     confidence: confirmed
   - number: '45'
@@ -4080,7 +4355,9 @@ journeys:
     system: in
     description: UpdateOffer, offer 854, as for DI.
     etom: Fulfillment · Resource Provisioning
+    etom_term: etom-resource-provisioning
     role: ACTIVATE
+    role_term: role-activate
     source: SDD v2.3 · §P3 ADO 259162; §P4 Enhancement 1873844
     confidence: confirmed
   - number: '50'
@@ -4090,7 +4367,9 @@ journeys:
     description: With the speed booster, CWOM also asks E2ESO to set the CPE bandwidth (RECONNP).
     output: Backup 5G in the bundle?
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ACTIVATE
+    role_term: role-activate
     source: SDD v2.3 · §P3 ADO 259162; §P4 ADO 198968
     confidence: confirmed
   - number: '55'
@@ -4099,7 +4378,9 @@ journeys:
     system: in
     description: DeleteOffer, offer 854, as for DI.
     etom: Fulfillment · Resource Provisioning
+    etom_term: etom-resource-provisioning
     role: ACTIVATE
+    role_term: role-activate
     source: SDD v2.3 · §P3 ADO 259162; §P4 Enhancement 1873844
     confidence: confirmed
   - number: '60'
@@ -4109,7 +4390,9 @@ journeys:
     description: As-is CESSNP request structure.
     output: Backup 5G in the bundle?
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ACTIVATE
+    role_term: role-activate
     source: SDD v2.3 · §P3 ADO 259162
     confidence: confirmed
   - number: '65'
@@ -4118,14 +4401,18 @@ journeys:
     system: veda
     description: As for DI/DPI.
     etom: Fulfillment · Resource Provisioning
+    etom_term: etom-resource-provisioning
     role: ACTIVATE
+    role_term: role-activate
     source: SDD v2.3 · §P3 ADO 259162
     confidence: confirmed
   - number: '70'
     name: Close the dunning order
     system: cwom
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: RECORD
+    role_term: role-record
     confidence: inferred
     source: SDD v2.3 · §P3 ADO 259162 · Closing isn't detailed.
   flow_rules:
@@ -4187,6 +4474,7 @@ journeys:
     purpose: Read NEW_BUNDLE_MODEL.
     style: API
     tmf_equivalent: TMF637 Product Inventory
+    open_apis: [api-tmf637]
     source: SDD v2.3 · §P3 ADO 259162
     confidence: confirmed
   - from: '30'
@@ -4215,6 +4503,7 @@ journeys:
     to_system: e2eso
     purpose: Restore the CPE bandwidth with the speed booster.
     tmf_equivalent: TMF641 Service Ordering
+    open_apis: [api-tmf641]
     source: SDD v2.3 · §P4 ADO 198968
     confidence: confirmed
   - from: '55'
@@ -4248,12 +4537,14 @@ journeys:
     name: Capture the port-in order
     description: The channels pass the existing summary-order flag.
     etom: Fulfillment · Selling
+    etom_term: etom-selling
     channels:
     - bcrm
     - b2b-web
     - smb-app
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P3 ADO 202826
     confidence: confirmed
   - number: '20'
@@ -4261,14 +4552,18 @@ journeys:
     system: nps
     description: SUMMARY_ORDER = true, DETAILED_ORDER = true.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §NPS ADO 202826
     confidence: confirmed
   - number: '30'
     name: Load the basket from the CRMGW registry
     system: rtf
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P3 ADO 202826
     confidence: confirmed
   - number: '40'
@@ -4277,7 +4572,9 @@ journeys:
     description: 'The port request is brought up front: right after the CRMGW order is created and before
       the split. Interactions with RTF and NPS are unchanged.'
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §ADO 470510
     confidence: confirmed
   - number: '50'
@@ -4287,7 +4584,9 @@ journeys:
       WFMS stage.
     output: Where is UCaaS provisioned?
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P3 ADO 202826; §ADO 470510
     confidence: confirmed
   - number: '60'
@@ -4295,7 +4594,9 @@ journeys:
     track: BRANCH-GSM
     system: cwom
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ACTIVATE
+    role_term: role-activate
     source: SDD v2.3 · §ADO 470510
     confidence: confirmed
   - number: '65'
@@ -4303,7 +4604,9 @@ journeys:
     track: BRANCH-GPON
     system: cwom
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ACTIVATE
+    role_term: role-activate
     source: SDD v2.3 · §ADO 470510
     confidence: confirmed
   - number: '70'
@@ -4312,7 +4615,9 @@ journeys:
     description: 'On the sub-order''s closure: a new intermediate NP RFS notification to RTF, which updates
       NPS.'
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: TRACK
+    role_term: role-track
     source: SDD v2.3 · §ADO 470510
     confidence: confirmed
   - number: '80'
@@ -4320,7 +4625,9 @@ journeys:
     system: cwom
     description: The existing order-closure notification to RTF stays as is.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: RECORD
+    role_term: role-record
     source: SDD v2.3 · §ADO 470510
     confidence: confirmed
   flow_rules:
@@ -4357,6 +4664,7 @@ journeys:
     purpose: Pass the summary-order flags.
     style: XML request
     tmf_equivalent: TMF622 Product Ordering
+    open_apis: [api-tmf622]
     source: SDD v2.3 · §NPS ADO 202826
     confidence: confirmed
   - from: '30'
@@ -4375,6 +4683,7 @@ journeys:
     purpose: Submit the loaded basket.
     style: API
     tmf_equivalent: TMF622 Product Ordering
+    open_apis: [api-tmf622]
     source: SDD v2.3 · §P3 ADO 202826
     confidence: confirmed
   - from: '40'
@@ -4425,7 +4734,9 @@ journeys:
     name: Request the port-out
     system: npc
     etom: Fulfillment · Selling
+    etom_term: etom-selling
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P3 ADO 202826
     confidence: confirmed
   - number: '20'
@@ -4433,15 +4744,19 @@ journeys:
     description: 'For new-model accounts: LOAD_SR = false, SUMMARY_ORDER = true, DETAILED_ORDER = true.
       Churn & Exit retention doesn''t apply.'
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     channel_entry: true
     role: VALIDATE
+    role_term: role-validate
     source: SDD v2.3 · §P3 ADO 202826; §ADO 470510
     confidence: confirmed
   - number: '30'
     name: Load the basket from the CRMGW registry
     system: rtf
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P3 ADO 202826
     confidence: confirmed
   - number: '40'
@@ -4449,7 +4764,9 @@ journeys:
     system: cwom
     output: Backup 5G in the bundle?
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P3 ADO 202826; §ADO 470510
     confidence: confirmed
   - number: '50'
@@ -4458,21 +4775,27 @@ journeys:
     system: veda
     description: As in cessation.
     etom: Fulfillment · Resource Provisioning
+    etom_term: etom-resource-provisioning
     role: ACTIVATE
+    role_term: role-activate
     confidence: inferred
     source: SDD v2.3 · §P2 ADO 259161; §P4 Enhancement 1873844 · Port-out is fulfilled as a cessation.
   - number: '60'
     name: Cease the CPE service
     system: e2eso
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ACTIVATE
+    role_term: role-activate
     confidence: inferred
     source: SDD v2.3 · §P2 ADO 259161 · Port-out is fulfilled as a cessation.
   - number: '70'
     name: Close the order and update the registry
     system: cbcm
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: RECORD
+    role_term: role-record
     confidence: inferred
     source: SDD v2.3 · §P3 ADO 202826 · Closing is read from cessation.
   flow_rules:
@@ -4506,6 +4829,7 @@ journeys:
     purpose: Read NEW_BUNDLE_MODEL.
     style: API
     tmf_equivalent: TMF637 Product Inventory
+    open_apis: [api-tmf637]
     source: SDD v2.3 · §P3 ADO 202826
     confidence: confirmed
   - from: '20'
@@ -4517,6 +4841,7 @@ journeys:
     purpose: Submit with the summary-order attributes.
     style: XML request
     tmf_equivalent: TMF622 Product Ordering
+    open_apis: [api-tmf622]
     source: SDD v2.3 · §P3 ADO 202826
     confidence: confirmed
   - from: '30'
@@ -4535,6 +4860,7 @@ journeys:
     purpose: Submit the loaded basket.
     style: API
     tmf_equivalent: TMF622 Product Ordering
+    open_apis: [api-tmf622]
     source: SDD v2.3 · §P3 ADO 202826
     confidence: confirmed
   - from: '50'
@@ -4569,15 +4895,19 @@ journeys:
     description: CIM/UCMS passes CPE_PLATFORM_TYPE, BANDWIDTH and PRODUCT_FLAVOUR; without CPE_PLATFORM_TYPE
       the existing behaviour stays.
     etom: Assurance · Problem Handling
+    etom_term: etom-problem-handling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P4 ADO 289225
     confidence: confirmed
   - number: '20'
     name: Create the complaint work order
     system: wfms
     etom: Assurance · Problem Handling
+    etom_term: etom-problem-handling
     role: FIELD
+    role_term: role-field
     source: SDD v2.3 · §P4 ADO 289225
     confidence: confirmed
   - number: '30'
@@ -4585,7 +4915,9 @@ journeys:
     system: ecm
     description: CPE models at index 0, FortiAP models at index 1; WFMS doesn't pass orderSubType here.
     etom: Assurance · Problem Handling
+    etom_term: etom-problem-handling
     role: CATALOG
+    role_term: role-catalog
     source: SDD v2.3 · §P4 ADO 289225; Enhancement 1871663
     confidence: confirmed
   - number: '40'
@@ -4595,7 +4927,9 @@ journeys:
       to 90G, FAP-431F-E to FAP-23JF-E). Device recovery stays manual.'
     output: Which case?
     etom: Assurance · Problem Handling
+    etom_term: etom-problem-handling
     role: FIELD
+    role_term: role-field
     source: SDD v2.3 · §P4 ADO 289225
     confidence: confirmed
   - number: '50'
@@ -4604,7 +4938,9 @@ journeys:
     system: wfms
     description: Generic CPE/FortiAP PO, action UPDATE, existing SIC, new serial.
     etom: Assurance · Problem Handling
+    etom_term: etom-problem-handling
     role: FIELD
+    role_term: role-field
     source: SDD v2.3 · §P4 ADO 289225
     confidence: confirmed
   - number: '60'
@@ -4613,7 +4949,9 @@ journeys:
     system: wfms
     description: Generic CPE/FortiAP PO, action UPDATE, new SIC, new serial.
     etom: Assurance · Problem Handling
+    etom_term: etom-problem-handling
     role: FIELD
+    role_term: role-field
     source: SDD v2.3 · §P4 ADO 289225
     confidence: confirmed
   - number: '70'
@@ -4623,14 +4961,18 @@ journeys:
     description: 'Generic PO UPDATE (new SIC and serial) plus the charge PO ADD: Fortinet 90G 13,200,
       Fortinet 120G 18,000 (one-time).'
     etom: Assurance · Problem Handling
+    etom_term: etom-problem-handling
     role: FIELD
+    role_term: role-field
     source: SDD v2.3 · §P4 ADO 289225; §ADO 438907 US 438912
     confidence: confirmed
   - number: '80'
     name: Submit DEVICEREPLACEMENT
     system: wfms
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P4 ADO 289225
     confidence: confirmed
   - number: '90'
@@ -4640,7 +4982,9 @@ journeys:
       GSM sub-order is closed; otherwise RTF rejects it.
     output: Accepted?
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: VALIDATE
+    role_term: role-validate
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - number: '95'
@@ -4649,14 +4993,18 @@ journeys:
     system: wfms
     description: RTF rejects; the work order waits.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: FIELD
+    role_term: role-field
     confidence: inferred
     source: SDD v2.3 · §P4 Pending Order Validation · What WFMS does with a rejection isn't stated.
   - number: '100'
     name: Fulfil the replacement, as today
     system: cwom
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P4 ADO 289225
     confidence: confirmed
   - number: '110'
@@ -4664,7 +5012,9 @@ journeys:
     system: bscs
     description: Only in the Add case; the new rate plans hold one-time charges and no exit charge.
     etom: Billing · Billing & Revenue Management
+    etom_term: etom-billing-revenue-management
     role: BILL
+    role_term: role-bill
     confidence: inferred
     source: SDD v2.3 · §P4 ADO 289225; §ADO 438907 US 438912 · Billing the OTC is read from the charge
       PO.
@@ -4672,7 +5022,9 @@ journeys:
     name: Close the complaint and update the registry
     system: cbcm
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: RECORD
+    role_term: role-record
     confidence: inferred
     source: SDD v2.3 · §P4 ADO 289225 · Closing is read from the other journeys.
   flow_rules:
@@ -4718,6 +5070,7 @@ journeys:
     purpose: Open the complaint work order with the device context.
     style: API
     tmf_equivalent: TMF621 Trouble Ticket
+    open_apis: [api-tmf621]
     source: SDD v2.3 · §P4 ADO 289225
     confidence: confirmed
   - from: '30'
@@ -4740,6 +5093,7 @@ journeys:
     purpose: Submit the replacement.
     style: XML request
     tmf_equivalent: TMF622 Product Ordering
+    open_apis: [api-tmf622]
     source: SDD v2.3 · §P4 ADO 289225
     confidence: confirmed
   - from: '90'
@@ -4751,6 +5105,7 @@ journeys:
     purpose: 'Validate the order against the pending-order matrix (DVCREP: the GSM sub-order).'
     style: API
     tmf_equivalent: TMF679 Product Offering Qualification
+    open_apis: [api-tmf679]
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - from: '100'
@@ -4776,8 +5131,10 @@ journeys:
     name: Raise the contract-end event
     description: ccat_after_contract_action on the commitment bundle.
     etom: Billing · Billing & Revenue Management
+    etom_term: etom-billing-revenue-management
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P4 ADO 420619
     confidence: confirmed
   - number: '20'
@@ -4786,14 +5143,18 @@ journeys:
     description: ccat_after_contract_migrate_plan points each old commitment PO to its new-model non-commitment
       PO.
     etom: Fulfillment · Selling
+    etom_term: etom-selling
     role: CATALOG
+    role_term: role-catalog
     source: SDD v2.3 · §P4 ADO 420619
     confidence: confirmed
   - number: '30'
     name: Submit the up/downgrade (renewal flow)
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P4 ADO 420619
     confidence: confirmed
   - number: '40'
@@ -4803,15 +5164,19 @@ journeys:
       sub-order and the master order are closed; otherwise RTF rejects it.
     output: Accepted?
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: VALIDATE
+    role_term: role-validate
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - number: '45'
     name: 'Renewal held: the activation isn''t complete'
     track: REJECTED
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     confidence: inferred
     source: SDD v2.3 · §P4 Pending Order Validation · What EHS does with a rejection isn't stated.
   - number: '50'
@@ -4820,7 +5185,9 @@ journeys:
     description: IS_MAIN_PO = true with action Delete.
     output: Old model to new model?
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: VALIDATE
+    role_term: role-validate
     source: SDD v2.3 · §P4 ADO 420619
     confidence: confirmed
   - number: '55'
@@ -4832,14 +5199,18 @@ journeys:
       DOWNSTREAM, EVENT_CODE, IS_MAIN_PO, LINE_TYPE, PASSWORD, PREFIX_LICENSE_QUANTITY, PRODUCT_GROUP,
       TRIAL_PERIOD_DAYS, UPSTREAM.'
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P4 ADO 420619
     confidence: confirmed
   - number: '60'
     name: Hand the basket to CWOM
     system: rtf
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P4 ADO 420619
     confidence: confirmed
   - number: '70'
@@ -4847,7 +5218,9 @@ journeys:
     system: cwom
     description: CRMGW doesn't fail the request because of the copied values.
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P4 ADO 420619
     confidence: confirmed
   - number: '80'
@@ -4855,21 +5228,27 @@ journeys:
     system: e2eso
     description: 'Platform FORTINET: category RENEWAL, CFSS_INTERNET_CPE_HE, action Modify, UPSTREAM/DOWNSTREAM.'
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ACTIVATE
+    role_term: role-activate
     source: SDD v2.3 · §P4 ADO 198968
     confidence: confirmed
   - number: '90'
     name: Bill the non-commitment package
     system: bscs
     etom: Billing · Billing & Revenue Management
+    etom_term: etom-billing-revenue-management
     role: BILL
+    role_term: role-bill
     confidence: inferred
     source: SDD v2.3 · §P4 ADO 420619 · The billing step isn't detailed.
   - number: '100'
     name: Close the order and update the registry
     system: cbcm
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: RECORD
+    role_term: role-record
     confidence: inferred
     source: SDD v2.3 · §P4 ADO 420619 · Closing is read from the other journeys.
   flow_rules:
@@ -4901,6 +5280,7 @@ journeys:
     purpose: Fetch the new-model non-commitment bundle PO.
     style: API
     tmf_equivalent: TMF620 Product Catalog
+    open_apis: [api-tmf620]
     confidence: inferred
     source: SDD v2.3 · §P4 ADO 420619 · The caller isn't named; read as EHS.
   - from: '30'
@@ -4910,6 +5290,7 @@ journeys:
     purpose: Submit the move to the non-commitment package.
     style: XML request
     tmf_equivalent: TMF622 Product Ordering
+    open_apis: [api-tmf622]
     source: SDD v2.3 · §P4 ADO 420619
     confidence: confirmed
   - from: '40'
@@ -4922,6 +5303,7 @@ journeys:
       order).'
     style: API
     tmf_equivalent: TMF679 Product Offering Qualification
+    open_apis: [api-tmf679]
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - from: '60'
@@ -4932,6 +5314,7 @@ journeys:
     purpose: Submit the basket with the copied values.
     style: API
     tmf_equivalent: TMF622 Product Ordering
+    open_apis: [api-tmf622]
     source: SDD v2.3 · §P4 ADO 420619
     confidence: confirmed
   - from: '80'
@@ -4942,6 +5325,7 @@ journeys:
     to_system: e2eso
     purpose: Update UPSTREAM/DOWNSTREAM on the CPE.
     tmf_equivalent: TMF641 Service Ordering
+    open_apis: [api-tmf641]
     source: SDD v2.3 · §P4 ADO 198968
     confidence: confirmed
 - id: bpp-adddelete
@@ -4959,15 +5343,19 @@ journeys:
     description: Static IP, speed booster (100/200/300 MB per the bundle's speed), SaaS, vSaaS, voice,
       managed devices, discounts, OTT, accessories.
     etom: Fulfillment · Selling
+    etom_term: etom-selling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P4 Pending Order Validation; ADO 198968
     confidence: confirmed
   - number: '20'
     name: Submit ADDDELETE
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P4 ADO 324570
     confidence: confirmed
   - number: '30'
@@ -4978,7 +5366,9 @@ journeys:
       in the activation.'
     output: Accepted?
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: VALIDATE
+    role_term: role-validate
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - number: '35'
@@ -4988,6 +5378,7 @@ journeys:
       closed.
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     confidence: inferred
     source: SDD v2.3 · §P4 Pending Order Validation · RTF rejects the request; how the channel shows it
       isn't stated.
@@ -4997,7 +5388,9 @@ journeys:
     description: Without the summary-order flags or a basket load.
     output: Speed booster?
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P4 ADO 324570
     confidence: confirmed
   - number: '50'
@@ -5006,7 +5399,9 @@ journeys:
     system: e2eso
     description: 'Platform FORTINET: category ADDDELETE, CFSS_INTERNET_CPE_HE, action Modify, UPSTREAM/DOWNSTREAM.'
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ACTIVATE
+    role_term: role-activate
     source: SDD v2.3 · §P4 ADO 198968
     confidence: confirmed
   - number: '55'
@@ -5015,7 +5410,9 @@ journeys:
     system: veda
     description: New profiles 500/250, 700/350, 900/450 (900/450 not on the 90G until lab-tested).
     etom: Fulfillment · Resource Provisioning
+    etom_term: etom-resource-provisioning
     role: ACTIVATE
+    role_term: role-activate
     confidence: inferred
     source: SDD v2.3 · §P4 ADO 198968 · vEDA holds the new profiles; provisioning follows the existing
       booster solution (Epic 45678).
@@ -5023,7 +5420,9 @@ journeys:
     name: Update billing for the add-on
     system: bscs
     etom: Billing · Billing & Revenue Management
+    etom_term: etom-billing-revenue-management
     role: BILL
+    role_term: role-bill
     confidence: inferred
     source: SDD v2.3 · §P4 ADO 198968 · Add-ons are configured in BSCS; the billing step isn't detailed.
   - number: '70'
@@ -5031,7 +5430,9 @@ journeys:
     system: cwom
     description: Even when the activation is still in progress.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: RECORD
+    role_term: role-record
     source: SDD v2.3 · §P4 ADO 324570
     confidence: confirmed
   flow_rules:
@@ -5063,6 +5464,7 @@ journeys:
     purpose: Submit the add-on change in the existing structure.
     style: XML request
     tmf_equivalent: TMF622 Product Ordering
+    open_apis: [api-tmf622]
     source: SDD v2.3 · §P4 ADO 324570
     confidence: confirmed
   - from: '30'
@@ -5074,6 +5476,7 @@ journeys:
     purpose: Validate against the ADDDELETE matrix by add-on service type.
     style: API
     tmf_equivalent: TMF679 Product Offering Qualification
+    open_apis: [api-tmf679]
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - from: '40'
@@ -5093,6 +5496,7 @@ journeys:
     to_system: e2eso
     purpose: Update UPSTREAM/DOWNSTREAM after the speed booster.
     tmf_equivalent: TMF641 Service Ordering
+    open_apis: [api-tmf641]
     source: SDD v2.3 · §P4 ADO 198968
     confidence: confirmed
 - id: bpp-chintusrn
@@ -5109,16 +5513,20 @@ journeys:
     name: Capture the change internet username request
     description: Channels place it as today; no impact on BCRM, B2B or the SMB App.
     etom: Fulfillment · Selling
+    etom_term: etom-selling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P4 ADO 288756
     confidence: confirmed
   - number: '20'
     name: Submit it to RTF
     description: Existing structure, without the summary-order flags.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P4 ADO 288756
     confidence: confirmed
   - number: '30'
@@ -5128,7 +5536,9 @@ journeys:
       GSM and GPON sub-orders are closed; otherwise RTF rejects it.
     output: Accepted?
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: VALIDATE
+    role_term: role-validate
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - number: '35'
@@ -5138,6 +5548,7 @@ journeys:
       closed.
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     confidence: inferred
     source: SDD v2.3 · §P4 Pending Order Validation · RTF rejects the request; how the channel shows it
       isn't stated.
@@ -5146,7 +5557,9 @@ journeys:
     system: rtf
     description: CWOM accepts it without the summary-order flags or a basket load from RTF/CRMGW.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P4 ADO 288756
     confidence: confirmed
   - number: '50'
@@ -5154,7 +5567,9 @@ journeys:
     system: cwom
     description: The SDD keeps the existing implementation and doesn't name the network systems.
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P4 ADO 288756
     confidence: confirmed
   - number: '60'
@@ -5162,7 +5577,9 @@ journeys:
     system: cbcm
     description: CWOM and CRMGW close it even while the original activation is still in progress.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: RECORD
+    role_term: role-record
     source: SDD v2.3 · §P4 ADO 288756
     confidence: confirmed
   flow_rules:
@@ -5182,6 +5599,7 @@ journeys:
     purpose: Submit in the existing structure.
     style: XML request
     tmf_equivalent: TMF622 Product Ordering
+    open_apis: [api-tmf622]
     source: SDD v2.3 · §P4 ADO 288756
     confidence: confirmed
   - from: '30'
@@ -5193,6 +5611,7 @@ journeys:
     purpose: 'Validate the order against the pending-order matrix (CHINTUSRN: the GSM and GPON sub-orders).'
     style: API
     tmf_equivalent: TMF679 Product Offering Qualification
+    open_apis: [api-tmf679]
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - from: '40'
@@ -5218,16 +5637,20 @@ journeys:
     name: Capture the change password request
     description: Channels place it as today; no impact on BCRM, B2B or the SMB App.
     etom: Fulfillment · Selling
+    etom_term: etom-selling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P4 ADO 288754
     confidence: confirmed
   - number: '20'
     name: Submit it to RTF
     description: Existing structure, without the summary-order flags.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P4 ADO 288754
     confidence: confirmed
   - number: '30'
@@ -5237,7 +5660,9 @@ journeys:
       GSM and GPON sub-orders are closed; otherwise RTF rejects it.
     output: Accepted?
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: VALIDATE
+    role_term: role-validate
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - number: '35'
@@ -5247,6 +5672,7 @@ journeys:
       closed.
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     confidence: inferred
     source: SDD v2.3 · §P4 Pending Order Validation · RTF rejects the request; how the channel shows it
       isn't stated.
@@ -5255,7 +5681,9 @@ journeys:
     system: rtf
     description: CWOM accepts it without the summary-order flags or a basket load from RTF/CRMGW.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P4 ADO 288754
     confidence: confirmed
   - number: '50'
@@ -5263,7 +5691,9 @@ journeys:
     system: cwom
     description: The SDD keeps the existing implementation and doesn't name the network systems.
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P4 ADO 288754
     confidence: confirmed
   - number: '60'
@@ -5271,7 +5701,9 @@ journeys:
     system: cbcm
     description: CWOM and CRMGW close it even while the original activation is still in progress.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: RECORD
+    role_term: role-record
     source: SDD v2.3 · §P4 ADO 288754
     confidence: confirmed
   flow_rules:
@@ -5291,6 +5723,7 @@ journeys:
     purpose: Submit in the existing structure.
     style: XML request
     tmf_equivalent: TMF622 Product Ordering
+    open_apis: [api-tmf622]
     source: SDD v2.3 · §P4 ADO 288754
     confidence: confirmed
   - from: '30'
@@ -5302,6 +5735,7 @@ journeys:
     purpose: 'Validate the order against the pending-order matrix (CHGPSWD: the GSM and GPON sub-orders).'
     style: API
     tmf_equivalent: TMF679 Product Offering Qualification
+    open_apis: [api-tmf679]
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - from: '40'
@@ -5326,16 +5760,20 @@ journeys:
     name: Capture the change domain request
     description: Channels place it as today; no impact on BCRM, B2B or the SMB App.
     etom: Fulfillment · Selling
+    etom_term: etom-selling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P4 ADO 288753
     confidence: confirmed
   - number: '20'
     name: Submit it to RTF
     description: Existing structure, without the summary-order flags.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P4 ADO 288753
     confidence: confirmed
   - number: '30'
@@ -5345,7 +5783,9 @@ journeys:
       GSM sub-order is closed; otherwise RTF rejects it.
     output: Accepted?
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: VALIDATE
+    role_term: role-validate
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - number: '35'
@@ -5355,6 +5795,7 @@ journeys:
       closed.
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     confidence: inferred
     source: SDD v2.3 · §P4 Pending Order Validation · RTF rejects the request; how the channel shows it
       isn't stated.
@@ -5363,7 +5804,9 @@ journeys:
     system: rtf
     description: CWOM accepts it without the summary-order flags or a basket load from RTF/CRMGW.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P4 ADO 288753
     confidence: confirmed
   - number: '50'
@@ -5371,7 +5814,9 @@ journeys:
     system: cwom
     description: The SDD keeps the existing implementation and doesn't name the network systems.
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P4 ADO 288753
     confidence: confirmed
   - number: '60'
@@ -5379,7 +5824,9 @@ journeys:
     system: cbcm
     description: CWOM and CRMGW close it even while the original activation is still in progress.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: RECORD
+    role_term: role-record
     source: SDD v2.3 · §P4 ADO 288753
     confidence: confirmed
   flow_rules:
@@ -5399,6 +5846,7 @@ journeys:
     purpose: Submit in the existing structure.
     style: XML request
     tmf_equivalent: TMF622 Product Ordering
+    open_apis: [api-tmf622]
     source: SDD v2.3 · §P4 ADO 288753
     confidence: confirmed
   - from: '30'
@@ -5410,6 +5858,7 @@ journeys:
     purpose: 'Validate the order against the pending-order matrix (CHGDOMN: the GSM sub-order).'
     style: API
     tmf_equivalent: TMF679 Product Offering Qualification
+    open_apis: [api-tmf679]
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - from: '40'
@@ -5434,16 +5883,20 @@ journeys:
     name: Capture the change sub-domain request
     description: Channels place it as today; no impact on BCRM, B2B or the SMB App.
     etom: Fulfillment · Selling
+    etom_term: etom-selling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P4 ADO 290747
     confidence: confirmed
   - number: '20'
     name: Submit it to RTF
     description: Existing structure, without the summary-order flags.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P4 ADO 290747
     confidence: confirmed
   - number: '30'
@@ -5453,7 +5906,9 @@ journeys:
       GSM sub-order is closed; otherwise RTF rejects it.
     output: Accepted?
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: VALIDATE
+    role_term: role-validate
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - number: '35'
@@ -5463,6 +5918,7 @@ journeys:
       closed.
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     confidence: inferred
     source: SDD v2.3 · §P4 Pending Order Validation · RTF rejects the request; how the channel shows it
       isn't stated.
@@ -5471,7 +5927,9 @@ journeys:
     system: rtf
     description: CWOM accepts it without the summary-order flags or a basket load from RTF/CRMGW.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P4 ADO 290747
     confidence: confirmed
   - number: '50'
@@ -5479,7 +5937,9 @@ journeys:
     system: cwom
     description: The SDD keeps the existing implementation and doesn't name the network systems.
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P4 ADO 290747
     confidence: confirmed
   - number: '60'
@@ -5487,7 +5947,9 @@ journeys:
     system: cbcm
     description: CWOM and CRMGW close it even while the original activation is still in progress.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: RECORD
+    role_term: role-record
     source: SDD v2.3 · §P4 ADO 290747
     confidence: confirmed
   flow_rules:
@@ -5507,6 +5969,7 @@ journeys:
     purpose: Submit in the existing structure.
     style: XML request
     tmf_equivalent: TMF622 Product Ordering
+    open_apis: [api-tmf622]
     source: SDD v2.3 · §P4 ADO 290747
     confidence: confirmed
   - from: '30'
@@ -5518,6 +5981,7 @@ journeys:
     purpose: 'Validate the order against the pending-order matrix (CHGSUBDOMN: the GSM sub-order).'
     style: API
     tmf_equivalent: TMF679 Product Offering Qualification
+    open_apis: [api-tmf679]
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - from: '40'
@@ -5543,16 +6007,20 @@ journeys:
     name: Capture the change number request
     description: Channels place it as today; no impact on BCRM, B2B or the SMB App.
     etom: Fulfillment · Selling
+    etom_term: etom-selling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P4 ADO 288755
     confidence: confirmed
   - number: '20'
     name: Submit it to RTF
     description: Existing structure, without the summary-order flags.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P4 ADO 288755
     confidence: confirmed
   - number: '30'
@@ -5562,7 +6030,9 @@ journeys:
       GSM and GPON sub-orders are closed; otherwise RTF rejects it.
     output: Accepted?
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: VALIDATE
+    role_term: role-validate
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - number: '35'
@@ -5572,6 +6042,7 @@ journeys:
       closed.
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     confidence: inferred
     source: SDD v2.3 · §P4 Pending Order Validation · RTF rejects the request; how the channel shows it
       isn't stated.
@@ -5580,7 +6051,9 @@ journeys:
     system: rtf
     description: CWOM accepts it without the summary-order flags or a basket load from RTF/CRMGW.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P4 ADO 288755
     confidence: confirmed
   - number: '50'
@@ -5588,7 +6061,9 @@ journeys:
     system: cwom
     description: The SDD keeps the existing implementation and doesn't name the network systems.
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P4 ADO 288755
     confidence: confirmed
   - number: '60'
@@ -5596,7 +6071,9 @@ journeys:
     system: cbcm
     description: CWOM and CRMGW close it even while the original activation is still in progress.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: RECORD
+    role_term: role-record
     source: SDD v2.3 · §P4 ADO 288755
     confidence: confirmed
   flow_rules:
@@ -5616,6 +6093,7 @@ journeys:
     purpose: Submit in the existing structure.
     style: XML request
     tmf_equivalent: TMF622 Product Ordering
+    open_apis: [api-tmf622]
     source: SDD v2.3 · §P4 ADO 288755
     confidence: confirmed
   - from: '30'
@@ -5627,6 +6105,7 @@ journeys:
     purpose: 'Validate the order against the pending-order matrix (CHNUMBER: the GSM and GPON sub-orders).'
     style: API
     tmf_equivalent: TMF679 Product Offering Qualification
+    open_apis: [api-tmf679]
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - from: '40'
@@ -5652,16 +6131,20 @@ journeys:
     name: Capture the flexi minute movement request
     description: Channels place it as today; no impact on BCRM, B2B or the SMB App.
     etom: Fulfillment · Selling
+    etom_term: etom-selling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P4 ADO 324564
     confidence: confirmed
   - number: '20'
     name: Submit it to RTF
     description: Existing structure, without the summary-order flags.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P4 ADO 324564
     confidence: confirmed
   - number: '30'
@@ -5671,7 +6154,9 @@ journeys:
       GSM sub-order is closed; otherwise RTF rejects it.
     output: Accepted?
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: VALIDATE
+    role_term: role-validate
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - number: '35'
@@ -5681,6 +6166,7 @@ journeys:
       closed.
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     confidence: inferred
     source: SDD v2.3 · §P4 Pending Order Validation · RTF rejects the request; how the channel shows it
       isn't stated.
@@ -5689,7 +6175,9 @@ journeys:
     system: rtf
     description: CWOM accepts it without the summary-order flags or a basket load from RTF/CRMGW.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P4 ADO 324564
     confidence: confirmed
   - number: '50'
@@ -5697,7 +6185,9 @@ journeys:
     system: cwom
     description: The SDD keeps the existing implementation and doesn't name the network systems.
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P4 ADO 324564
     confidence: confirmed
   - number: '60'
@@ -5705,7 +6195,9 @@ journeys:
     system: cbcm
     description: CWOM and CRMGW close it even while the original activation is still in progress.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: RECORD
+    role_term: role-record
     source: SDD v2.3 · §P4 ADO 324564
     confidence: confirmed
   flow_rules:
@@ -5725,6 +6217,7 @@ journeys:
     purpose: Submit in the existing structure.
     style: XML request
     tmf_equivalent: TMF622 Product Ordering
+    open_apis: [api-tmf622]
     source: SDD v2.3 · §P4 ADO 324564
     confidence: confirmed
   - from: '30'
@@ -5736,6 +6229,7 @@ journeys:
     purpose: 'Validate the order against the pending-order matrix (FLEXIMINMOV: the GSM sub-order).'
     style: API
     tmf_equivalent: TMF679 Product Offering Qualification
+    open_apis: [api-tmf679]
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - from: '40'
@@ -5760,16 +6254,20 @@ journeys:
     name: Capture the technician visit request
     description: Channels place it as today; no impact on BCRM, B2B or the SMB App.
     etom: Fulfillment · Selling
+    etom_term: etom-selling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P4 ADO 290746
     confidence: confirmed
   - number: '20'
     name: Submit it to RTF
     description: Existing structure, without the summary-order flags.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P4 ADO 290746
     confidence: confirmed
   - number: '30'
@@ -5779,7 +6277,9 @@ journeys:
       GSM sub-order is closed; otherwise RTF rejects it.
     output: Accepted?
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: VALIDATE
+    role_term: role-validate
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - number: '35'
@@ -5789,6 +6289,7 @@ journeys:
       closed.
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     confidence: inferred
     source: SDD v2.3 · §P4 Pending Order Validation · RTF rejects the request; how the channel shows it
       isn't stated.
@@ -5797,7 +6298,9 @@ journeys:
     system: rtf
     description: CWOM accepts it without the summary-order flags or a basket load from RTF/CRMGW.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P4 ADO 290746
     confidence: confirmed
   - number: '50'
@@ -5805,7 +6308,9 @@ journeys:
     system: cwom
     description: The SDD keeps the existing implementation and doesn't name the network systems.
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P4 ADO 290746
     confidence: confirmed
   - number: '60'
@@ -5813,7 +6318,9 @@ journeys:
     system: cbcm
     description: CWOM and CRMGW close it even while the original activation is still in progress.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: RECORD
+    role_term: role-record
     source: SDD v2.3 · §P4 ADO 290746
     confidence: confirmed
   flow_rules:
@@ -5833,6 +6340,7 @@ journeys:
     purpose: Submit in the existing structure.
     style: XML request
     tmf_equivalent: TMF622 Product Ordering
+    open_apis: [api-tmf622]
     source: SDD v2.3 · §P4 ADO 290746
     confidence: confirmed
   - from: '30'
@@ -5844,6 +6352,7 @@ journeys:
     purpose: 'Validate the order against the pending-order matrix (TECHVISIT: the GSM sub-order).'
     style: API
     tmf_equivalent: TMF679 Product Offering Qualification
+    open_apis: [api-tmf679]
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - from: '40'
@@ -5868,16 +6377,20 @@ journeys:
     name: Capture the modify subscription request
     description: Channels place it as today; no impact on BCRM, B2B or the SMB App.
     etom: Fulfillment · Selling
+    etom_term: etom-selling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P4 ADO 324568
     confidence: confirmed
   - number: '20'
     name: Submit it to RTF
     description: Existing structure, without the summary-order flags.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     source: SDD v2.3 · §P4 ADO 324568
     confidence: confirmed
   - number: '30'
@@ -5887,7 +6400,9 @@ journeys:
       GSM sub-order is closed; otherwise RTF rejects it.
     output: Accepted?
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: VALIDATE
+    role_term: role-validate
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - number: '35'
@@ -5897,6 +6412,7 @@ journeys:
       closed.
     channel_entry: true
     role: CAPTURE
+    role_term: role-capture
     confidence: inferred
     source: SDD v2.3 · §P4 Pending Order Validation · RTF rejects the request; how the channel shows it
       isn't stated.
@@ -5905,7 +6421,9 @@ journeys:
     system: rtf
     description: CWOM accepts it without the summary-order flags or a basket load from RTF/CRMGW.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P4 ADO 324568
     confidence: confirmed
   - number: '50'
@@ -5913,15 +6431,19 @@ journeys:
     system: cwom
     description: The SDD keeps the existing implementation and doesn't name the network systems.
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     role: ORCHESTRATE
+    role_term: role-orchestrate
     source: SDD v2.3 · §P4 ADO 324568
     confidence: confirmed
   - number: '55'
     name: Activate the SaaS service
     system: xaas
     etom: Fulfillment · Service Configuration & Activation
+    etom_term: etom-service-configuration-activation
     point_of_no_return: The XaaS callback is the point of no return for the asynchronous SaaS order.
     role: ACTIVATE
+    role_term: role-activate
     confidence: inferred
     source: SDD v2.3 · §P4 ADO 324568 · The SR is titled “SaaS Service activation”; the XaaS call follows
       the activation journey.
@@ -5930,7 +6452,9 @@ journeys:
     system: cbcm
     description: CWOM and CRMGW close it even while the original activation is still in progress.
     etom: Fulfillment · Order Handling
+    etom_term: etom-order-handling
     role: RECORD
+    role_term: role-record
     source: SDD v2.3 · §P4 ADO 324568
     confidence: confirmed
   flow_rules:
@@ -5950,6 +6474,7 @@ journeys:
     purpose: Submit in the existing structure.
     style: XML request
     tmf_equivalent: TMF622 Product Ordering
+    open_apis: [api-tmf622]
     source: SDD v2.3 · §P4 ADO 324568
     confidence: confirmed
   - from: '30'
@@ -5961,6 +6486,7 @@ journeys:
     purpose: 'Validate the order against the pending-order matrix (MODSUBS: the GSM sub-order).'
     style: API
     tmf_equivalent: TMF679 Product Offering Qualification
+    open_apis: [api-tmf679]
     source: SDD v2.3 · §P4 Pending Order Validation
     confidence: confirmed
   - from: '40'
@@ -5985,26 +6511,32 @@ channels:
 - id: bcrm
   name: BCRM
   kind: assisted
+  kind_term: channel-assisted
   entry_system: bcrm
 - id: b2b-web
   name: B2B Web
   kind: self-service
+  kind_term: channel-self-service
   entry_system: b2b-web
 - id: smb-app
   name: SMB App
   kind: self-service
+  kind_term: channel-self-service
   entry_system: smb-app
 - id: cim
   name: CIM / UCMS
   kind: assisted
+  kind_term: channel-assisted
   entry_system: cim
 - id: nps
   name: NPS (portability)
   kind: system
+  kind_term: channel-system
   entry_system: nps
 - id: ehs
   name: EHS (contract events)
   kind: system
+  kind_term: channel-system
   entry_system: ehs
 sources:
 - id: sdd
@@ -6030,49 +6562,44 @@ conflicts:
   a:
     source: ref
     reference: §3.1 step 9
-    statement: The reference says CWOM writes a milestone table and a database trigger feeds Felix. The
-      SDD says CWOM publishes milestones per sub-order through TIBCO to BPM, after RTF's NotifyOrderCreationRequest.
-      This catalogue follows the SDD.
+    statement: CWOM writes a milestone table, and a database trigger feeds Felix.
   b:
     source: sdd
     reference: §BPM; §TIBCO
-    statement: The reference says CWOM writes a milestone table and a database trigger feeds Felix. The
-      SDD says CWOM publishes milestones per sub-order through TIBCO to BPM, after RTF's NotifyOrderCreationRequest.
-      This catalogue follows the SDD.
+    statement: CWOM publishes milestones per sub-order through TIBCO to BPM, after RTF's
+      NotifyOrderCreationRequest.
   scope:
   - product: business-pro-plus
-  difference: The reference says CWOM writes a milestone table and a database trigger feeds Felix. The
-    SDD says CWOM publishes milestones per sub-order through TIBCO to BPM, after RTF's NotifyOrderCreationRequest.
-    This catalogue follows the SDD.
+  difference: Milestones reach tracking by a database trigger in the reference and by TIBCO
+    messages to BPM in the SDD. This catalogue follows the SDD.
 - id: F2
   title: IBM BPM and Felix overlap
   a:
     source: ref
     reference: §1 IBM BPM, Felix
-    statement: Both are described as holding order milestones for tracking. The SDD reads them as BPM
-      using a Felix stored procedure.
+    statement: IBM BPM and Felix are each described as holding order milestones for tracking.
   b:
     source: sdd
     reference: §BPM General Note
-    statement: Both are described as holding order milestones for tracking. The SDD reads them as BPM
-      using a Felix stored procedure.
+    statement: BPM reads the milestones through a Felix stored procedure.
   scope:
   - product: business-pro-plus
-  difference: Both are described as holding order milestones for tracking. The SDD reads them as BPM using
-    a Felix stored procedure.
+  difference: One source describes two overlapping milestone stores; the other reads BPM as
+    using Felix's data. This catalogue follows the SDD.
 - id: F13
   title: Names that differ between sources
   a:
     source: ref
     reference: §1; §6
-    statement: eVEDA / vEDA, WFM / WFMS, B2B Web / B2B, CBCM / CRMGW. Treated as aliases of one system.
+    statement: The systems are named eVEDA, WFM, B2B Web and CBCM.
   b:
     source: sdd
     reference: Stakeholders
-    statement: eVEDA / vEDA, WFM / WFMS, B2B Web / B2B, CBCM / CRMGW. Treated as aliases of one system.
+    statement: The same systems appear as vEDA, WFMS, B2B and CRMGW.
   scope:
   - product: business-pro-plus
-  difference: eVEDA / vEDA, WFM / WFMS, B2B Web / B2B, CBCM / CRMGW. Treated as aliases of one system.
+  difference: eVEDA / vEDA, WFM / WFMS, B2B Web / B2B, CBCM / CRMGW. Treated as aliases of
+    one system.
 - id: F16
   title: Who loads the basket for dunning
   a:
@@ -6717,6 +7244,30 @@ vocabulary:
   definition: Keeps the record of what was delivered, such as the inventory.
   confidence: inferred
   source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: role-configure
+  scheme: responsibility_role
+  pref_label: Configure
+  alt_labels: [Applies, Creates, Enables, Returns]
+  definition: Sets a component's options up on the delivering system, such as applying a
+    firewall policy on the CPE or creating the self-service portal organisation.
+  confidence: inferred
+  source: Catalogue curation · the components' own responsibility notes
+- id: role-authenticate
+  scheme: responsibility_role
+  pref_label: Authenticate
+  alt_labels: [SAML, SSO]
+  definition: Signs users in to a component, such as SAML single sign-on into the
+    self-service portal.
+  confidence: inferred
+  source: Catalogue curation · the components' own responsibility notes
+- id: role-suggest
+  scheme: responsibility_role
+  pref_label: Suggest
+  alt_labels: [Suggests]
+  definition: Proposes the fitting option for an order, such as the equipment model by
+    bandwidth.
+  confidence: inferred
+  source: Catalogue curation · the components' own responsibility notes
 - id: api-tmf620
   scheme: open_api
   pref_label: Product Catalog Management

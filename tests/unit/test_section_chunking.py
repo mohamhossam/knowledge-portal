@@ -4,6 +4,7 @@ into parents that are read and children that are searched."""
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from threading import RLock
 from xml.sax.saxutils import escape
 
 import pytest
@@ -64,6 +65,9 @@ from knowledge_portal.infrastructure.config.settings import Settings
 from knowledge_portal.infrastructure.persistence.document_storage import InMemoryDocumentStorage
 from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
     InMemoryArchitectureKnowledgeRepository,
+)
+from knowledge_portal.infrastructure.persistence.in_memory_transaction import (
+    InMemoryTransactionManager,
 )
 from tests.pdf_fixtures import pdf_document
 from tests.presentation_fixtures import drawing_paragraph, drawing_table, presentation, table_cell
@@ -314,7 +318,9 @@ Published = tuple[
 def _published_v4() -> Published:
     repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
     index = InMemoryEvidenceIndex(FakeEmbeddings(), TOKENS, IndexVersion.SECTION_V4)
-    manage = ManageArchitectureKnowledge(repository, CatalogueFileAdapter(), index, 10_000_000)
+    manage = ManageArchitectureKnowledge(
+        repository, CatalogueFileAdapter(), index, 10_000_000, OfflineDocumentScanner()
+    )
     storage = InMemoryDocumentStorage()
     draft = manage.create_draft(MAINTAINER, "With a design")
     draft = UploadKnowledgeDocument(
@@ -322,8 +328,9 @@ def _published_v4() -> Published:
         repository,
         storage,
         SafeDocumentTextExtractor(),
-        10_000_000,
         OfflineDocumentScanner(),
+        InMemoryTransactionManager(RLock()),
+        10_000_000,
     ).execute(
         draft.id,
         draft.revision,

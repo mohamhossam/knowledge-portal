@@ -1,7 +1,9 @@
 """Isolated offline store for AI-proposed catalogue changes."""
 
+from copy import deepcopy
 from dataclasses import replace
 from threading import RLock
+from typing import Any
 
 from knowledge_portal.application.ports.catalogue_candidates import ExtractionRun
 from knowledge_portal.domain.architecture.candidates import (
@@ -16,6 +18,20 @@ class InMemoryCatalogueCandidates:
         self._lock = RLock()
         self._runs: list[ExtractionRun] = []
         self._candidates: dict[str, CatalogueCandidate] = {}
+
+    def snapshot_state(self) -> Any:
+        return deepcopy(
+            (
+                self._runs,
+                self._candidates,
+            )
+        )
+
+    def restore_state(self, state: Any) -> None:
+        (
+            self._runs,
+            self._candidates,
+        ) = deepcopy(state)
 
     def replace_proposals(
         self, run: ExtractionRun, candidates: tuple[CatalogueCandidate, ...]

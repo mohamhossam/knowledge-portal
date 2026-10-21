@@ -13,10 +13,10 @@ It is one of three repositories:
 - [`platform-kernel`](https://github.com/mohamhossam/platform-kernel), which holds the shared
   mechanisms.
 
-> **Status: backend complete (Stage 3); the UI has begun.** The API, worker, schema, data
-> import, images and CI are in place. The browser app has its design system ("the Timetable
-> Book", `DESIGN.md`), sign-in, the no-access page and the front page; the curation screens
-> follow. See `ROADMAP.md`.
+> **Status: the portal is complete and released (v0.6.0).** The API, worker, schema, data
+> import, images and CI are in place. The browser app ships every curation screen on its
+> design system ("The Calm Ledger", `DESIGN.md`), with sign-in, the no-access page and the
+> read-only Product Architecture Explorer. See `ROADMAP.md` for what each stage delivered.
 
 ## Run it offline
 
@@ -27,6 +27,8 @@ version:
 ```bash
 uv sync
 cp .env.example .env
+# Offline runs use the deterministic scanner; without this, uploads wait for ClamAV.
+echo LIBRARY_SCAN_MODE=offline >> .env
 uv run python -m knowledge_portal.interfaces.api.serve
 ```
 
@@ -41,6 +43,8 @@ anything and nothing is mapped.
 uv run ruff check . && uv run ruff format --check . && uv run mypy src tests
 uv run lint-imports
 TEST_DATABASE_URL=postgresql://user:pass@127.0.0.1:5432/knowledge_test uv run pytest --cov=knowledge_portal
+cd frontend && npm run lint && npm run typecheck && npm test && npm run api:check
+npm run build && npm run lint:brand && npm run lint:legacy-css && npm run budget && npm run e2e
 ```
 
 `TEST_DATABASE_URL` names a disposable PostgreSQL database with pgvector; without it the
@@ -50,8 +54,9 @@ with `uv run python -m knowledge_portal.infrastructure.persistence.migrate`
 
 The public API's contract is `contracts/knowledge-public.openapi.json`; regenerate it with
 `uv run python scripts/dump_openapi.py`. The internal API's contract,
-`contracts/knowledge-internal.openapi.json`, is shared with requirement-portal and changes only
-together with it.
+`contracts/knowledge-internal.openapi.json`, is regenerated with
+`uv run python scripts/dump_internal_openapi.py`; it is shared with requirement-portal and
+changes only together with it.
 
 ## Importing the existing knowledge
 

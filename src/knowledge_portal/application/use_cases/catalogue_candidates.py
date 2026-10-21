@@ -21,7 +21,6 @@ from smb_kernel.time.clock import ClockPort
 from knowledge_portal.application.errors import (
     DocumentExtractionError,
     DocumentExtractionTimeoutError,
-    PersistenceError,
     UnsupportedDocumentError,
 )
 from knowledge_portal.application.ports.architecture_jobs import (
@@ -58,6 +57,7 @@ from knowledge_portal.application.ports.system_matcher import (
     SystemMatcherPort,
     SystemMatchingError,
 )
+from knowledge_portal.application.ports.transaction_manager import TransactionManagerPort
 from knowledge_portal.application.use_cases.architecture_knowledge import (
     KnowledgeNotFoundError,
     ManageArchitectureKnowledge,
@@ -1433,11 +1433,13 @@ class DecideCatalogueCandidate:
         knowledge: ManageArchitectureKnowledge,
         repository: ArchitectureKnowledgeRepositoryPort,
         candidates: CatalogueCandidateRepositoryPort,
+        transactions: TransactionManagerPort,
         inbox: ChangeRequestInboxPort | None = None,
     ) -> None:
         self._knowledge = knowledge
         self._repository = repository
         self._candidates = candidates
+        self._transactions = transactions
         self._inbox = inbox
 
     def _applied(
@@ -1684,17 +1686,11 @@ class DecideCatalogueCandidate:
         actor: Actor,
         decided: tuple[CatalogueCandidate, ...],
     ) -> None:
-        """Mark decisions first, then save the draft; undo the marks if the draft moved on."""
-        saved: list[str] = []
-        try:
+        """The decisions and the draft commit together, or not at all."""
+        with self._transactions.transaction():
             for item in decided:
                 self._candidates.save_decision(item)
-                saved.append(item.id)
             self._repository.save(updated, expected_revision, actor.id, "accept_suggestion")
-        except (CandidateDecisionConflictError, KnowledgeConflictError, PersistenceError):
-            for candidate_id in saved:
-                self._candidates.reopen(candidate_id)
-            raise
 
 
 def _identity(content: CandidateContent) -> CandidateContent:

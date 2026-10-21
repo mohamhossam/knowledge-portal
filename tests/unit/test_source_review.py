@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from datetime import UTC, datetime
+from threading import RLock
 
 from fastapi.testclient import TestClient
 from smb_kernel.documents.scanner import OfflineDocumentScanner
@@ -41,6 +42,9 @@ from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledg
 from knowledge_portal.infrastructure.persistence.in_memory_catalogue_candidates import (
     InMemoryCatalogueCandidates,
 )
+from knowledge_portal.infrastructure.persistence.in_memory_transaction import (
+    InMemoryTransactionManager,
+)
 
 MAINTAINER = Actor("maintainer", frozenset({"knowledge_maintainer"}))
 NOW = datetime(2026, 10, 20, tzinfo=UTC)
@@ -51,7 +55,11 @@ class Portal:
         self.repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
         self.index = InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer())
         self.manage = ManageArchitectureKnowledge(
-            self.repository, CatalogueFileAdapter(), self.index, 10_000_000
+            self.repository,
+            CatalogueFileAdapter(),
+            self.index,
+            10_000_000,
+            OfflineDocumentScanner(),
         )
         self.storage = InMemoryDocumentStorage()
         self.candidates = InMemoryCatalogueCandidates()
@@ -61,8 +69,9 @@ class Portal:
             self.repository,
             self.storage,
             documents,
-            10_000_000,
             OfflineDocumentScanner(),
+            InMemoryTransactionManager(RLock()),
+            10_000_000,
         )
         self.builder = BuildArchitectureIndex(
             self.manage,
@@ -81,7 +90,9 @@ class Portal:
             self.candidates,
             FixedClock(NOW),
         )
-        self.decide = DecideCatalogueCandidate(self.manage, self.repository, self.candidates)
+        self.decide = DecideCatalogueCandidate(
+            self.manage, self.repository, self.candidates, InMemoryTransactionManager(RLock())
+        )
         self.review = ReviewSources(self.manage, self.candidates, self.index)
 
     def add(

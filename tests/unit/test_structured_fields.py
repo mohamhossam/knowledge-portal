@@ -8,6 +8,7 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
+from smb_kernel.documents.scanner import OfflineDocumentScanner
 
 from knowledge_portal.application.ports.catalogue_file import CatalogueFileFormat
 from knowledge_portal.application.ports.identity import Actor
@@ -40,6 +41,7 @@ def _catalogue() -> tuple[ManageArchitectureKnowledge, ArchitectureKnowledge]:
         CatalogueFileAdapter(),
         InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer()),
         10_000_000,
+        OfflineDocumentScanner(),
     )
     draft = manage.create_draft(MAINTAINER, "Fields")
     draft = manage.apply_file_import(

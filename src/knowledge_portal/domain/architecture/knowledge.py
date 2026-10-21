@@ -444,6 +444,10 @@ class ArchitectureKnowledge:
     # recorded before versions were named.
     name: str | None = None
     created_by: str | None = None
+    # The release this draft was copied from, so its review diff keeps that
+    # base even when another release is re-activated mid-draft. None on
+    # releases recorded before drafts kept their base.
+    base_release_id: str | None = None
     capability_domains: tuple[CapabilityDomain, ...] = ()
     landscape_domains: tuple[LandscapeDomain, ...] = ()
     # Commercial offerings and the systems that deliver their components (ADR-0095).

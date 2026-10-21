@@ -10,7 +10,10 @@ from enum import StrEnum
 from pathlib import PurePosixPath
 from uuid import uuid4
 
-from smb_kernel.documents.ports import DocumentExtractorPort, DocumentStoragePort
+from smb_kernel.documents.ports import (
+    DocumentExtractorPort,
+    DocumentStoragePort,
+)
 
 from knowledge_portal.application.document_upload_validation import (
     SUPPORTED_EXTENSIONS,
@@ -18,8 +21,8 @@ from knowledge_portal.application.document_upload_validation import (
 )
 from knowledge_portal.application.errors import (
     DocumentExtractionError,
+    MalwareRejectedError,
     MalwareScannerUnavailableError,
-    PersistenceError,
     UnsupportedDocumentError,
 )
 from knowledge_portal.application.ports.architecture_knowledge_repository import (
@@ -31,6 +34,7 @@ from knowledge_portal.application.ports.located_document_extractor import (
     LocatedDocumentExtractorPort,
     LocatedText,
 )
+from knowledge_portal.application.ports.transaction_manager import TransactionManagerPort
 from knowledge_portal.application.use_cases.architecture_knowledge import (
     KnowledgeNotFoundError,
     ManageArchitectureKnowledge,
@@ -77,15 +81,17 @@ class UploadKnowledgeDocument:
         repository: ArchitectureKnowledgeRepositoryPort,
         storage: DocumentStoragePort,
         extractor: DocumentExtractorPort,
-        max_bytes: int,
         scanner: DocumentScannerPort,
+        transactions: TransactionManagerPort,
+        max_bytes: int,
     ) -> None:
         self._knowledge = knowledge
         self._repository = repository
         self._storage = storage
         self._extractor = extractor
-        self._max_bytes = max_bytes
         self._scanner = scanner
+        self._transactions = transactions
+        self._max_bytes = max_bytes
 
     @property
     def max_bytes(self) -> int:
@@ -123,9 +129,10 @@ class UploadKnowledgeDocument:
             self._max_bytes,
             ARCHITECTURE_EXTENSIONS,
         )
-        # Scanned as library uploads are, before anything reads it. A scanner that gives no
-        # verdict refuses the document, never takes it unscanned. The scanner reports an
-        # outage and a file past its own size limit alike, so the message names both.
+        # Architecture sources are read by models and re-downloaded by admins, so they pass the
+        # same malware scan as library uploads before anything parses them. A scanner that gives
+        # no verdict refuses the document, never takes it unscanned; it reports an outage and a
+        # file past its own size limit alike, so the message names both.
         try:
             clean = self._scanner.scan(content)
         except DocumentExtractionError as exc:
@@ -135,9 +142,7 @@ class UploadKnowledgeDocument:
                 "ask an operator to check the scanner and its size limit."
             ) from exc
         if not clean:
-            raise InvalidKnowledgeError(
-                "The malware scanner held this document back; it was not added."
-            )
+            raise MalwareRejectedError("Malware scan rejected this upload.")
         # The existing extractor checks signatures, unsafe archives, macros and blank text.
         self._extractor.extract(mime_type, content)
         checksum = hashlib.sha256(content).hexdigest()
@@ -169,12 +174,11 @@ class UploadKnowledgeDocument:
         )
         updated = current.updated(documents=documents)
         blob_id = DocumentVersionId(version_id)
-        self._storage.put(blob_id, content)
-        try:
+        # The blob and the draft's new version commit together: a lost revision
+        # race rolls the blob back instead of orphaning it.
+        with self._transactions.transaction():
+            self._storage.put(blob_id, content)
             self._repository.save(updated, expected_revision, actor.id, "upload_document")
-        except (KnowledgeConflictError, PersistenceError):
-            self._storage.delete(blob_id)
-            raise
         return updated
 
 
@@ -270,6 +274,7 @@ class UploadArchitectureDocuments:
                 DocumentExtractionError,
                 InvalidKnowledgeError,
                 KnowledgeConflictError,
+                MalwareRejectedError,
             ) as refused:
                 results.append(
                     FileResult(incoming.filename, UploadOutcome.REFUSED, reason=str(refused))

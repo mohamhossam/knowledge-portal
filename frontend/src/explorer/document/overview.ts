@@ -4,6 +4,7 @@
  * each with the systems that perform its steps, and the order's tracking
  * beneath. Drawn as SVG from the scenario, then rasterised in the browser.
  */
+import { EXPORT, svg } from "./palette";
 import type { ExplorerRelease } from "../../api/client";
 import { orderedSteps } from "../../catalogue/catalogue";
 import { performer, trackingFor, type Scenario } from "../scenario";
@@ -60,12 +61,14 @@ function lines(text: string, width: number, most = 2): string[] {
   return kept;
 }
 
-const INK = "#16181D";
-const INK_2 = "#474C55";
-const RULE = "#CFD2D6";
-const BAND = "#F1F1EE";
-const RED = "#B3122B";
-const RED_WASH = "#FBEAEC";
+// The Calm Ledger's light-theme tokens; palette.ts is the one sanctioned copy
+// of raw values. A "no system (gap)" box is neutral, never a warning: a
+// dashed frame and bold ink, as the screen draws gaps.
+const INK = svg(EXPORT.ink);
+const INK_2 = svg(EXPORT.ink2);
+const RULE = svg(EXPORT.rule);
+const BAND = svg(EXPORT.band);
+const PAPER = svg(EXPORT.paper);
 
 /** The overview as an SVG of its own size. */
 export function overviewSvg(scenario: Scenario, release: ExplorerRelease): { svg: string; w: number; h: number } {
@@ -89,16 +92,16 @@ export function overviewSvg(scenario: Scenario, release: ExplorerRelease): { svg
     const label = lines(text, Math.max(8, Math.floor(w / 8.4)), 3);
     const first = y + boxH / 2 + 5 - (label.length - 1) * 9;
     return (
-      `<rect x="${x}" y="${y}" width="${w}" height="${boxH}" fill="${due ? RED_WASH : "#FFFFFF"}" stroke="${due ? RED : INK}" stroke-width="${due ? 1.5 : 1}"${due ? ' stroke-dasharray="5 4"' : ""}/>` +
+      `<rect x="${x}" y="${y}" width="${w}" height="${boxH}" fill="${due ? BAND : PAPER}" stroke="${due ? INK_2 : INK}" stroke-width="${due ? 1.5 : 1}"${due ? ' stroke-dasharray="5 4"' : ""}/>` +
       label
         .map(
           (line, index) =>
-            `<text x="${x + w / 2}" y="${first + index * 18}" font-size="15" text-anchor="middle" fill="${due ? RED : INK}"${due ? ' font-weight="700"' : ""}>${escape(line)}</text>`,
+            `<text x="${x + w / 2}" y="${first + index * 18}" font-size="15" text-anchor="middle" fill="${INK}"${due ? ' font-weight="700"' : ""}>${escape(line)}</text>`,
         )
         .join("")
     );
   };
-  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="Arial, Helvetica, sans-serif"><rect width="${W}" height="${H}" fill="#FFFFFF"/>`;
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="Arial, Helvetica, sans-serif"><rect width="${W}" height="${H}" fill="${PAPER}"/>`;
   svg += `<text x="30" y="44" font-size="26" font-weight="700" fill="${INK}">${escape(title)}</text>`;
   svg += `<line x1="30" y1="60" x2="${W - 30}" y2="60" stroke="${INK}" stroke-width="2"/>`;
   svg += `<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="${INK_2}"/></marker></defs>`;
@@ -116,7 +119,7 @@ export function overviewSvg(scenario: Scenario, release: ExplorerRelease): { svg
     });
     if (index < columns.length - 1) svg += `<path d="M${x + boxW + 3} ${top + boxH / 2} H${x + colW - 5}" stroke="${INK_2}" stroke-width="1.6" marker-end="url(#arrow)"/>`;
   });
-  if (!columns.length) svg += `<text x="30" y="${top + 20}" font-size="15" fill="${RED}" font-weight="700">No journey is recorded for this order type.</text>`;
+  if (!columns.length) svg += `<text x="30" y="${top + 20}" font-size="15" fill="${INK}" font-weight="700">No journey is recorded for this order type.</text>`;
   if (tracking.length) {
     const y = top + bodyH + 80;
     svg += `<line x1="30" y1="${y - 40}" x2="${W - 30}" y2="${y - 40}" stroke="${RULE}" stroke-width="1"/>`;

@@ -314,7 +314,7 @@ def _build_container(
     )
     identity = build_identity(settings, resources, persistence.actor_directory, identity_override)
     requirement_work = requirement_override or _requirement_work(settings, resources, metrics)
-    # One scanner, shared by the library, historic imports and catalogue documents.
+    # One scanner, shared by the library, historic imports and architecture uploads.
     scanner = (
         OfflineDocumentScanner()
         if settings.library_scan_mode == "offline"

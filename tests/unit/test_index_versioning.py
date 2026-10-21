@@ -5,12 +5,14 @@ from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime, timedelta
+from threading import RLock
 
 import pytest
 from smb_kernel.documents.scanner import OfflineDocumentScanner
 from smb_kernel.documents.text_extractor import SafeDocumentTextExtractor
 from smb_kernel.time.fixed import FixedClock
 
+from knowledge_portal.application.errors import MalwareRejectedError
 from knowledge_portal.application.ports.identity import Actor
 from knowledge_portal.application.ports.located_document_extractor import LocatedText
 from knowledge_portal.application.use_cases.architecture_documents import UploadKnowledgeDocument
@@ -46,6 +48,9 @@ from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledg
 from knowledge_portal.infrastructure.persistence.in_memory_catalogue_candidates import (
     InMemoryCatalogueCandidates,
 )
+from knowledge_portal.infrastructure.persistence.in_memory_transaction import (
+    InMemoryTransactionManager,
+)
 
 MAINTAINER = Actor("maintainer", frozenset({"knowledge_maintainer"}))
 NOW = datetime(2026, 10, 20, tzinfo=UTC)
@@ -78,7 +83,11 @@ class Catalogue:
         self.embeddings = CountingEmbeddings()
         self.index = InMemoryEvidenceIndex(self.embeddings, FakeWordTokenizer())
         self.manage = ManageArchitectureKnowledge(
-            self.repository, CatalogueFileAdapter(), self.index, 10_000_000
+            self.repository,
+            CatalogueFileAdapter(),
+            self.index,
+            10_000_000,
+            OfflineDocumentScanner(),
         )
         self.storage = InMemoryDocumentStorage()
         self.extractor = CountingExtractor()
@@ -87,8 +96,9 @@ class Catalogue:
             self.repository,
             self.storage,
             SafeDocumentTextExtractor(),
-            10_000_000,
             OfflineDocumentScanner(),
+            InMemoryTransactionManager(RLock()),
+            10_000_000,
         )
         self.builder = BuildArchitectureIndex(
             self.manage, self.index, self.storage, self.extractor, FakeWordTokenizer()
@@ -189,7 +199,9 @@ def test_reading_a_new_version_lists_what_the_catalogue_took_from_the_old_one_an
         candidates,
         FixedClock(NOW),
     )
-    decide = DecideCatalogueCandidate(catalogue.manage, catalogue.repository, candidates)
+    decide = DecideCatalogueCandidate(
+        catalogue.manage, catalogue.repository, candidates, InMemoryTransactionManager(RLock())
+    )
     draft = catalogue.add(
         catalogue.manage.create_draft(MAINTAINER, "Next"),
         "System: Order Hub\nConstraint: Orders close at midnight\n",
@@ -212,7 +224,7 @@ def test_reading_a_new_version_lists_what_the_catalogue_took_from_the_old_one_an
 def test_a_document_the_malware_scanner_holds_back_is_never_added() -> None:
     catalogue = Catalogue()
     draft = catalogue.manage.create_draft(MAINTAINER, "Next")
-    with pytest.raises(InvalidKnowledgeError, match="malware scanner held"):
+    with pytest.raises(MalwareRejectedError):
         catalogue.add(draft, "Notes X5O!P%@AP EICAR-STANDARD-ANTIVIRUS-TEST-FILE end")
     assert catalogue.manage.get(draft.id).documents == ()
 

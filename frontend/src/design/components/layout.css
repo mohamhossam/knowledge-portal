@@ -353,10 +353,10 @@
   position: absolute;
   inset-block-start: 0;
   inset-inline-end: 0;
-  min-inline-size: 1.125rem;
+  min-inline-size: 1.25rem;
   padding-inline: 2px;
   background: var(--color-surface);
-  font-size: 0.6875rem;
+  font-size: var(--text-meta);
   line-height: 1.4;
 }
 

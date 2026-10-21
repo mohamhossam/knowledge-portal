@@ -593,7 +593,11 @@ class DocumentLibrary:
     def process_next(self) -> bool:
         token = str(uuid.uuid4())
         now = self._clock.now()
-        document = self._repository.claim(now, now + timedelta(seconds=660), token)
+        # The claim and its reference_document_changed event commit together;
+        # without the outer transaction the event would follow in a second one
+        # and a crash in between would lose it.
+        with self._transactions.transaction():
+            document = self._repository.claim(now, now + timedelta(seconds=660), token)
         if document is None:
             return False
         source = next((v for v in document.versions if v.lease_token == token), None)

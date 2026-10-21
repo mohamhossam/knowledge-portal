@@ -11,12 +11,14 @@ import type { ReactNode } from "react";
 import type { CatalogueSystem } from "../api/client";
 import { Button, Checkbox, Field } from "../design/components";
 
-export function TextField({ label, value, onChange, required, dir = "auto", wide, hint, error }: {
+export function TextField({ label, value, onChange, required, dir = "auto", lang, wide, hint, error }: {
   label: string;
   value: string | null | undefined;
   onChange: (value: string) => void;
   required?: boolean;
   dir?: "auto" | "ltr" | "rtl";
+  /** The content language, so screen readers switch pronunciation (lang="ar" on Arabic names). */
+  lang?: string;
   wide?: boolean;
   hint?: string;
   /** What is wrong with the value, under the field and tied to it. */
@@ -31,6 +33,7 @@ export function TextField({ label, value, onChange, required, dir = "auto", wide
             {...control}
             value={value ?? ""}
             dir={dir}
+            lang={lang}
             required={required}
             onChange={(event) => onChange(event.target.value)}
           />

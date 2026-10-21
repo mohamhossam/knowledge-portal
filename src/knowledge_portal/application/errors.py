@@ -34,6 +34,10 @@ class DocumentNotFoundError(Exception):
     """A requested source document or immutable version does not exist."""
 
 
+class MalwareRejectedError(Exception):
+    """The malware scan refused an uploaded file; it was not stored."""
+
+
 class DocumentStorageError(Exception):
     """Document bytes could not be stored or retrieved safely."""
 

@@ -1404,14 +1404,17 @@
           "declared_systems": {
             "default": [],
             "items": {
+              "maxLength": 200,
               "type": "string"
             },
+            "maxItems": 50,
             "title": "Declared Systems",
             "type": "array"
           },
           "release_id": {
             "anyOf": [
               {
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -1422,8 +1425,10 @@
           },
           "text": {
             "items": {
+              "maxLength": 10000,
               "type": "string"
             },
+            "maxItems": 50,
             "title": "Text",
             "type": "array"
           }
@@ -1650,14 +1655,17 @@
           "declared_systems": {
             "default": [],
             "items": {
+              "maxLength": 200,
               "type": "string"
             },
+            "maxItems": 50,
             "title": "Declared Systems",
             "type": "array"
           },
           "release_id": {
             "anyOf": [
               {
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -1669,6 +1677,7 @@
           "requirement_id": {
             "anyOf": [
               {
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -1679,8 +1688,10 @@
           },
           "text": {
             "items": {
+              "maxLength": 10000,
               "type": "string"
             },
+            "maxItems": 50,
             "title": "Text",
             "type": "array"
           }

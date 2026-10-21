@@ -49,6 +49,10 @@ from knowledge_portal.interfaces.api.dependencies import (
     limit_provider_calls,
     require_authenticated_actor,
 )
+from knowledge_portal.interfaces.api.schemas.bounds import (
+    MAX_IDENTIFIER_CHARACTERS,
+    MAX_NAME_CHARACTERS,
+)
 
 router = APIRouter(
     prefix="/library", tags=["library"], dependencies=[Depends(require_authenticated_actor)]
@@ -291,9 +295,9 @@ async def submit(
     service: LibraryDep,
     actor: CurrentActorDep,
     file: Annotated[UploadFile, File()],
-    title: str = Form(...),
-    idempotency_key: str = Form(...),
-    document_id: str | None = Form(None),
+    title: str = Form(..., max_length=MAX_NAME_CHARACTERS),
+    idempotency_key: str = Form(..., max_length=MAX_IDENTIFIER_CHARACTERS),
+    document_id: str | None = Form(None, max_length=MAX_IDENTIFIER_CHARACTERS),
     expected_version: int | None = Form(None),
 ) -> LibraryView:
     content = await file.read(service.max_file_bytes + 1)

@@ -118,7 +118,11 @@ def build_mapping_evaluation(settings: Settings, clock: ClockPort) -> MappingEva
         retrieval.embeddings, retrieval.tokenizer, settings.architecture_index_version
     )
     manage = ManageArchitectureKnowledge(
-        repository, CatalogueFileAdapter(), index, settings.document_max_file_bytes
+        repository,
+        CatalogueFileAdapter(),
+        index,
+        settings.document_max_file_bytes,
+        OfflineDocumentScanner(),
     )
     build_index = BuildArchitectureIndex(
         manage,

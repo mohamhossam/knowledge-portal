@@ -411,3 +411,67 @@ def test_postgres_library_publication_survives_restart_and_replacement() -> None
 def _publishing(store: PostgresStore) -> PublishingDocumentLibrary:
     """A library repository that publishes each change to the outbox, as wired."""
     return PublishingDocumentLibrary(PostgresDocumentLibrary(store), PostgresKnowledgeEvents(store))
+
+
+@pytest.mark.skipif(
+    not os.getenv("TEST_DATABASE_URL"), reason="TEST_DATABASE_URL is not configured"
+)
+def test_a_claim_and_its_event_commit_or_roll_back_together() -> None:
+    """The worker's claim writes its reference_document_changed event in the
+    same transaction (ADR-0099): a failed event write rolls the claim back."""
+    from knowledge_portal.application.ports.knowledge_events import KnowledgeEvent
+    from knowledge_portal.domain.document.ingestion import IngestionStage
+
+    store = PostgresStore(DirectPostgresConnector(os.environ["TEST_DATABASE_URL"]))
+    events = PostgresKnowledgeEvents(store)
+
+    class ArmedOutbox:
+        """The real outbox, with a switch that fails the next append."""
+
+        def __init__(self) -> None:
+            self.fail = False
+
+        def append(self, kind: str, subject_id: str, payload: object) -> int:
+            if self.fail:
+                raise RuntimeError("outbox unavailable")
+            return events.append(kind, subject_id, payload)
+
+        def after(self, seq: int, limit: int) -> tuple[KnowledgeEvent, ...]:
+            return events.after(seq, limit)
+
+    outbox = ArmedOutbox()
+    repository = PublishingDocumentLibrary(PostgresDocumentLibrary(store), outbox)
+    clock = FixedClock(datetime(2026, 9, 22, tzinfo=UTC))
+    service = DocumentLibrary(
+        repository,
+        PostgresDocumentStorage(store),
+        SafeDocumentTextExtractor(),
+        OfflineDocumentScanner(),
+        store,
+        clock,
+        100000,
+    )
+    unique = str(uuid.uuid4())
+    owner = ActorProfile(ActorId(f"owner-{unique}"), "Owner")
+    document = service.submit(
+        "Atomic claim", UploadDocumentInput("policy.txt", "text/plain", b"Policy"), unique, owner
+    )
+
+    def document_events() -> int:
+        return sum(1 for event in events.after(0, 100_000) if event.subject_id == document.id)
+
+    before = document_events()
+    outbox.fail = True
+    with pytest.raises(RuntimeError, match="outbox unavailable"):
+        service.process_next()
+
+    stored = repository.get(document.id)
+    assert stored is not None
+    version = stored.versions[-1]
+    assert version.lease_token is None
+    assert version.stage is IngestionStage.QUEUED
+    assert document_events() == before
+
+    outbox.fail = False
+    assert service.process_next() is True
+    assert document_events() > before

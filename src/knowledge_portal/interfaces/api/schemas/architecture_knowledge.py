@@ -2061,6 +2061,7 @@ class KnowledgeReleaseResponse(BaseModel):
     index_id: str | None = None
     name: str | None = None
     created_by: str | None = None
+    base_release_id: str | None = None
     capability_domains: list[CapabilityDomainSchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
     )
@@ -2128,6 +2129,7 @@ class KnowledgeReleaseResponse(BaseModel):
             index_id=release.index_id,
             name=release.name,
             created_by=release.created_by,
+            base_release_id=release.base_release_id,
             capability_domains=[
                 CapabilityDomainSchema.from_domain(item) for item in release.capability_domains
             ],

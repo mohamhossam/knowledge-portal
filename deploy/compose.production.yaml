@@ -22,6 +22,9 @@ x-backend: &backend
     - path: production.env
       required: true
   environment: &backend-environment
+    # Forced here so a production.env that forgets it cannot boot a development
+    # configuration (fake identity, fake providers) against the durable database.
+    APP_ENV: production
     PERSISTENCE_PROVIDER: postgres
     DATABASE_URL: postgresql://knowledge:${KNOWLEDGE_POSTGRES_PASSWORD:?set KNOWLEDGE_POSTGRES_PASSWORD}@postgres:5432/smb_knowledge
     LIBRARY_SCAN_MODE: clamav

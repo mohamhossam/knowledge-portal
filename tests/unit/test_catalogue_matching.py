@@ -8,6 +8,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import replace
 from datetime import UTC, datetime
+from threading import RLock
 from typing import Any
 
 import pytest
@@ -67,6 +68,7 @@ from knowledge_portal.infrastructure.architecture.located_extractor import (
     LocatedDocumentExtractor,
 )
 from knowledge_portal.infrastructure.architecture.tokenizer import FakeWordTokenizer
+from knowledge_portal.infrastructure.documents.library_worker import OfflineDocumentScanner
 from knowledge_portal.infrastructure.llm.catalogue_extraction import (
     ChangeOutput,
     ExtractionOutput,
@@ -89,6 +91,9 @@ from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledg
 )
 from knowledge_portal.infrastructure.persistence.in_memory_catalogue_candidates import (
     InMemoryCatalogueCandidates,
+)
+from knowledge_portal.infrastructure.persistence.in_memory_transaction import (
+    InMemoryTransactionManager,
 )
 
 NOW = datetime(2026, 9, 30, 9, 0, tzinfo=UTC)
@@ -409,6 +414,7 @@ def _setup(
         CatalogueFileAdapter(),
         InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer()),
         10_000,
+        OfflineDocumentScanner(),
     )
     storage = InMemoryDocumentStorage()
     candidates = InMemoryCatalogueCandidates()
@@ -430,7 +436,14 @@ def _setup(
     storage.put(DocumentVersionId("doc"), text)
     drafted = draft.updated(documents=(version,))
     repository.save(drafted, draft.revision, "amina", "upload_document")
-    return proposer, DecideCatalogueCandidate(manage, repository, candidates), drafted, candidates
+    return (
+        proposer,
+        DecideCatalogueCandidate(
+            manage, repository, candidates, InMemoryTransactionManager(RLock())
+        ),
+        drafted,
+        candidates,
+    )
 
 
 def test_matching_failures_are_warnings_and_known_pairs_are_not_inferred_again() -> None:

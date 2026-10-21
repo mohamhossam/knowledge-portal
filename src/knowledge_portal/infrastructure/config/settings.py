@@ -40,7 +40,6 @@ from knowledge_portal.infrastructure.config.options import (
     DEFAULT_DOCUMENT_MAX_PDF_PAGES,
     DEFAULT_DOCUMENT_MAX_SPREADSHEET_CELLS,
     DEFAULT_DOCUMENT_MAX_XML_NODES,
-    DEFAULT_DOCUMENT_STORAGE_PATH,
     DEFAULT_KNOWLEDGE_REVIEW_CYCLE_DAYS,
     DEFAULT_LOCAL_LLM_BASE_URL,
     DEFAULT_LOCAL_LLM_CONTEXT_WINDOW_TOKENS,
@@ -128,7 +127,7 @@ class Settings:
     llm_provider: LLMProvider = LLMProvider.OPENAI
     llm_config_path: str | None = None
     llm_profiles: LLMProfileConfiguration | None = field(default=None, repr=False)
-    openai_api_key: str | None = None
+    openai_api_key: str | None = field(default=None, repr=False)
     openai_model: str = DEFAULT_OPENAI_MODEL
     openai_timeout_seconds: float = DEFAULT_OPENAI_TIMEOUT_SECONDS
     openai_embedding_model: str = DEFAULT_OPENAI_EMBEDDING_MODEL
@@ -164,7 +163,6 @@ class Settings:
     document_max_xml_nodes: int = DEFAULT_DOCUMENT_MAX_XML_NODES
     document_max_image_pixels: int = DEFAULT_DOCUMENT_MAX_IMAGE_PIXELS
     document_max_spreadsheet_cells: int = DEFAULT_DOCUMENT_MAX_SPREADSHEET_CELLS
-    document_storage_path: str = DEFAULT_DOCUMENT_STORAGE_PATH
     app_environment: str = "development"
     identity_provider: IdentityProvider = IdentityProvider.FAKE
     oidc_issuer_url: str = ""
@@ -526,9 +524,6 @@ class Settings:
             document_max_xml_nodes=document_max_xml_nodes,
             document_max_image_pixels=document_max_image_pixels,
             document_max_spreadsheet_cells=document_max_spreadsheet_cells,
-            document_storage_path=(
-                os.getenv("DOCUMENT_STORAGE_PATH", "").strip() or DEFAULT_DOCUMENT_STORAGE_PATH
-            ),
             app_environment=os.getenv("APP_ENV", "development").strip().lower(),
             identity_provider=identity_provider,
             oidc_issuer_url=os.getenv("OIDC_ISSUER_URL", "").strip().rstrip("/"),

@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
+from smb_kernel.documents.scanner import OfflineDocumentScanner
 
 from knowledge_portal.application.ports.catalogue_file import CatalogueFileFormat
 from knowledge_portal.application.ports.identity import Actor
@@ -61,6 +62,7 @@ def _smb() -> ArchitectureKnowledge:
         CatalogueFileAdapter(),
         InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer()),
         10_000_000,
+        OfflineDocumentScanner(),
     )
     draft = manage.create_draft(MAINTAINER, "Derivations")
     return manage.apply_file_import(
@@ -137,7 +139,12 @@ def test_a_link_known_by_no_name_says_where_it_comes_from() -> None:
 
 def test_citations_that_name_no_registered_source_are_grouped_by_what_they_cite() -> None:
     found = {item.cited: item for item in unregistered_citations(_smb())}
-    assert set(found) == {"Ontology plan Phase 8", "Ontology plan Phase 1", "Ontology plan Phase 6"}
+    assert set(found) == {
+        "Ontology plan Phase 8",
+        "Ontology plan Phase 1",
+        "Ontology plan Phase 6",
+        "Catalogue curation",
+    }
     assert found["Ontology plan Phase 8"].facts == 68
     assert len(found["Ontology plan Phase 8"].examples) == 3
     sources = (

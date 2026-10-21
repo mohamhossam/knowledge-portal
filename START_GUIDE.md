@@ -250,7 +250,8 @@ LIBRARY_SCAN_MODE=clamav
 ```
 
 ```bash
-docker run -d --name knowledge-clamav -p 127.0.0.1:3310:3310 clamav/clamav:1.5
+docker run -d --name knowledge-clamav -p 127.0.0.1:3310:3310 \
+  clamav/clamav:1.5@sha256:ebec5bc138401b36ae987caa1a3fa3c3b2a21ed3d51f0bfa5852825e663e67b0
 ```
 
 ClamAV loads its signatures for a few minutes after it starts. An upload made before it is ready
@@ -480,6 +481,8 @@ Browser app:
 ```bash
 cd frontend
 npm run lint && npm run typecheck && npm test && npm run api:check && npm run build
+npm run lint:brand && npm run lint:legacy-css && npm run budget   # budget needs the build
+npm run e2e   # route axe checks and keyboard journeys (Playwright)
 ```
 
 ## 12. Common startup problems
