@@ -166,6 +166,8 @@ class FlowRule:
     rejoin_at: str | None = None
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # The channel it is taken for, when it splits the flow by channel.
+    channel_id: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "kind", flow_rule_kind(self.kind))
@@ -176,6 +178,7 @@ class FlowRule:
             ("branch", "Branch"),
             ("parallel_group", "Parallel group"),
             ("rejoin_at", "Rejoin activity"),
+            ("channel_id", "Channel"),
         ):
             object.__setattr__(self, field, optional(getattr(self, field), label))
         check_source(self)
@@ -430,6 +433,12 @@ def check_journeys(
                 raise InvalidKnowledgeError(
                     f"{journey.name} › {activity.number}. {activity.name} names channel "
                     f"{unknown[0]!r}, which is not in the catalogue."
+                )
+        for rule in journey.flow_rules:
+            if rule.channel_id is not None and rule.channel_id not in channel_ids:
+                raise InvalidKnowledgeError(
+                    f"{journey.name}: the flow from activity {rule.from_activity} names channel "
+                    f"{rule.channel_id!r}, which is not in the catalogue."
                 )
         for link in journey.integrations:
             for system in link.systems:

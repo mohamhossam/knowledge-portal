@@ -6,7 +6,7 @@ import { draftBody, sourceUses } from "./drafting";
 import { EditPanel } from "./DraftEdits";
 import { slug } from "./editing";
 import { AreaField, CheckField, Rows, SelectField, TextField } from "./forms";
-import { LEVEL_OPTIONS, withIds } from "./governance";
+import { LEVEL_OPTIONS, questionLine, withIds } from "./governance";
 import { useCatalogueContext } from "./useCatalogue";
 import { useEditing } from "./useEditing";
 
@@ -193,7 +193,7 @@ export function ConflictsEdit({ onDone }: { onDone: () => void }) {
                       value={scope.question_id ?? ""}
                       options={[
                         { value: "", label: "None named" },
-                        ...(offering?.questions ?? []).map((question) => ({ value: question.id, label: cut(`${question.id} ${question.text}`, 0, "").trim() })),
+                        ...(offering?.questions ?? []).map((question) => ({ value: question.id, label: cut(`${question.id} ${questionLine(question)}`, 0, "").trim() })),
                       ]}
                       onChange={(question_id) => change({ question_id: question_id || null })}
                     />

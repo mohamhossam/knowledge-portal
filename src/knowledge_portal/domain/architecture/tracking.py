@@ -105,10 +105,13 @@ class FalloutCase:
     handling: str | None = None
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # The catalogued system it falls out in, when its source names one.
+    system_id: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "trigger", required(self.trigger, "Fallout trigger"))
         object.__setattr__(self, "handling", optional(self.handling, "Handling"))
+        object.__setattr__(self, "system_id", optional(self.system_id, "System"))
         check_source(self)
 
 
@@ -169,6 +172,7 @@ class OrderTracking:
                     ),
                     *(system for channel in self.channels for system in channel.systems),
                     *(item.system_id for item in self.milestones if item.system_id),
+                    *(item.system_id for item in self.fallout if item.system_id),
                 )
             )
         )

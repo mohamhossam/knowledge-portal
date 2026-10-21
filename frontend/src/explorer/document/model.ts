@@ -7,7 +7,7 @@
  */
 import type { CatalogPlans, ExplorerRelease, Journey, SourceConfidence } from "../../api/client";
 import { CONFIDENCE, COVERAGE, LAYERS, concerns, orderedSteps, roleLabel, sentenceCase } from "../../catalogue/catalogue";
-import { byLevel, questionOf, withLevel } from "../../catalogue/governance";
+import { byLevel, questionLine, questionOf, withLevel } from "../../catalogue/governance";
 import { count } from "../../home/format";
 import { falling, formatAmount } from "../plans";
 import { gaps, involvement, journeyFor, listed, partsFor, performer, trackingFor, type Involvement, type Scenario } from "../scenario";
@@ -43,6 +43,7 @@ const NO_SYSTEM = (n: number) => `${n} ${n === 1 ? "step" : "steps"}: no system 
 const citation = (text: string | null | undefined) => text?.split(" › ")[0]?.trim() || null;
 const NOT_HELD = (what: string) => `The catalogue does not hold ${what} yet, so this is a gap; nothing is filled in.`;
 const SHORT: Record<SourceConfidence, string> = { confirmed: "Confirmed", inferred: "Inferred", gap: "Gap" };
+// For a step with no role, the words that make it a validation.
 const VALIDATE = /validat|check|eligib|verif|feasib/i;
 
 function day(at: Date | string | null | undefined): string {
@@ -406,9 +407,14 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
     const inbound = links.filter((link) => to(link) === item.systemId);
     const outbound = links.filter((link) => from(link) === item.systemId);
     const performed = steps.filter((each) => by(each) === item.systemId);
-    const validations = performed.filter((each) => VALIDATE.test(`${each.phase ?? ""} ${each.name}`));
+    const validations = performed.filter((each) => (each.role ? each.role === "VALIDATE" : VALIDATE.test(`${each.phase ?? ""} ${each.name}`)));
     const failing = (journey?.edges ?? []).filter((edge) => (edge.kind === "fail" || edge.kind === "loop") && [step.get(edge.from_activity), step.get(edge.to_activity)].some((each) => each && by(each) === item.systemId));
-    const fallout = (tracked?.tracking.fallout ?? []).filter((each) => [system?.name, ...(system?.aliases ?? [])].some((alias) => alias && alias.length > 2 && `${each.trigger} ${each.handling}`.toLocaleLowerCase().includes(alias.toLocaleLowerCase())));
+    // A fallout case names its system; one that names none is matched by the system's names in its words.
+    const fallout = (tracked?.tracking.fallout ?? []).filter((each) =>
+      each.system_id
+        ? each.system_id === item.systemId
+        : [system?.name, ...(system?.aliases ?? [])].some((alias) => alias && alias.length > 2 && `${each.trigger} ${each.handling}`.toLocaleLowerCase().includes(alias.toLocaleLowerCase())),
+    );
     const trackingFlows = (tracked?.flows ?? []).filter((flow) => flow.from_system_id === item.systemId || flow.to_system_id === item.systemId);
     const entry = tracked?.entry;
     table(
@@ -428,7 +434,7 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
         ["Validations", lines(validations.map((each) => `${each.number} ${each.name}`), "No step it performs validates.")],
         ["Failure handling", lines([...failing.map((edge) => `${edge.kind === "fail" ? "Rejection" : "Retry"}: ${edge.from_activity} → ${edge.to_activity}${edge.label ? ` (${edge.label})` : ""}`), ...fallout.map((each) => `${each.trigger}: ${each.handling}`)], "The catalogue records none for it.")],
         ["Tracking and correlation", lines([...trackingFlows.map((flow) => `${name(flow.from_system_id)} → ${name(flow.to_system_id)}: ${flow.label}`), ...(entry?.ui_system_id === item.systemId ? [`Correlation key: ${entry.correlation_key || "not defined (gap)"}`] : [])], "Not on the tracking path of this scenario.")],
-        ["Gaps and open questions", lines([...performed.filter((each) => each.confidence === "gap").map((each) => `Step ${each.number} is marked in its source as a gap.`), ...questions.filter((question) => [label, ...(system?.aliases ?? [])].some((alias) => alias.length > 2 && question.text.includes(alias))).map((question) => `${question.id}: ${question.text}`)], "None recorded for this system.")],
+        ["Gaps and open questions", lines([...performed.filter((each) => each.confidence === "gap").map((each) => `Step ${each.number} is marked in its source as a gap.`), ...questions.filter((question) => [label, ...(system?.aliases ?? [])].some((alias) => alias.length > 2 && questionLine(question).includes(alias))).map((question) => `${question.id}: ${questionLine(question)}`)], "None recorded for this system.")],
       ],
       { firstColShade: true },
     );
@@ -593,7 +599,7 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
     }
   } else p(`No conflict between sources concerns ${orderType.name}.`);
   h2(`16.${marked.length ? 4 : 3} Open questions`);
-  if (questions.length) table(columns(["Id", 10], ["Question", 52], ["Meanwhile", 22], ["Confidence", 16]), questions.map((item) => [item.id, item.text, item.impact || "—", evidence(item)]));
+  if (questions.length) table(columns(["Id", 10], ["Question", 52], ["Meanwhile", 22], ["Confidence", 16]), questions.map((item) => [item.id, questionLine(item), item.impact || "—", evidence(item)]));
   else p("No open question is recorded for this offering.");
 
   /* 17 Journey */
@@ -611,8 +617,8 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
       steps.map((each) => {
         const performing = by(each);
         // A decision that only splits the journey by channel is already taken: the scenario is one channel's.
-        const byChannel = (condition: string) => channel !== null && /^channels?\b/i.test(condition.trim());
-        const conditions = journey.flow_rules.filter((rule) => rule.from_activity === each.number && rule.condition && !byChannel(rule.condition)).map((rule) => `${rule.kind === "loop" ? "Retry" : rule.kind === "parallel" ? "Alongside" : "If"} → ${rule.to_activity}: ${rule.condition}`);
+        const byChannel = (rule: (typeof journey.flow_rules)[number]) => channel !== null && (rule.channel_id ? true : /^channels?\b/i.test(rule.condition?.trim() ?? ""));
+        const conditions = journey.flow_rules.filter((rule) => rule.from_activity === each.number && rule.condition && !byChannel(rule)).map((rule) => `${rule.kind === "loop" ? "Retry" : rule.kind === "parallel" ? "Alongside" : "If"} → ${rule.to_activity}: ${rule.condition}`);
         return [
           each.number,
           each.phase || "—",

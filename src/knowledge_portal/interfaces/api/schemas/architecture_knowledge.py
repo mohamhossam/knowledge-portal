@@ -109,6 +109,7 @@ from knowledge_portal.domain.architecture.portfolio import PortfolioNode
 from knowledge_portal.domain.architecture.products import (
     BusinessRule,
     ComponentResponsibility,
+    CustomerStage,
     NfrCoverage,
     OfferingComponent,
     OfferingNfr,
@@ -688,6 +689,8 @@ class OpenQuestionSchema(BaseModel):
     source: Text | None = None
     # The order types it is asked for; none means the offering as a whole (step 7).
     order_types: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    # The question in a few words; the text is its detail.
+    title: Name | None = None
 
     @classmethod
     def from_domain(cls, item: OpenQuestion) -> OpenQuestionSchema:
@@ -698,6 +701,7 @@ class OpenQuestionSchema(BaseModel):
             confidence=item.confidence,
             source=item.source,
             order_types=list(item.order_types),
+            title=item.title,
         )
 
     def to_domain(self) -> OpenQuestion:
@@ -708,6 +712,7 @@ class OpenQuestionSchema(BaseModel):
             self.confidence,
             self.source,
             tuple(self.order_types),
+            self.title,
         )
 
 
@@ -1070,6 +1075,8 @@ class FalloutCaseSchema(BaseModel):
     handling: Text | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # The catalogued system it falls out in, when its source names one.
+    system_id: Identifier | None = None
 
     @classmethod
     def from_domain(cls, item: FalloutCase) -> FalloutCaseSchema:
@@ -1078,10 +1085,13 @@ class FalloutCaseSchema(BaseModel):
             handling=item.handling,
             confidence=item.confidence,
             source=item.source,
+            system_id=item.system_id,
         )
 
     def to_domain(self) -> FalloutCase:
-        return FalloutCase(self.trigger, self.handling, self.confidence, self.source)
+        return FalloutCase(
+            self.trigger, self.handling, self.confidence, self.source, self.system_id
+        )
 
 
 class OrderTrackingSchema(BaseModel):
@@ -1227,6 +1237,8 @@ class OrderTypeSchema(BaseModel):
     channels: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     # The delivery drop it comes in, as its source names it, such as "P2 / P3".
     delivery_drop: Name | None = None
+    # Where it sits in the customer's life: join, change, support or leave.
+    stage: CustomerStage | None = None
 
     @classmethod
     def from_domain(cls, order: OrderType) -> OrderTypeSchema:
@@ -1239,6 +1251,7 @@ class OrderTypeSchema(BaseModel):
             source=order.source,
             channels=list(order.channels),
             delivery_drop=order.delivery_drop,
+            stage=order.stage,
         )
 
     def to_domain(self) -> OrderType:
@@ -1251,6 +1264,7 @@ class OrderTypeSchema(BaseModel):
             self.source,
             tuple(self.channels),
             delivery_drop=self.delivery_drop,
+            stage=self.stage,
         )
 
 
@@ -1310,6 +1324,8 @@ class OfferingComponentSchema(BaseModel):
     unlinked_reason: Sentence | None = None
     # The component kind term the kind means.
     kind_id: Identifier | None = None
+    # The device the bundle is built on: at most one per offering.
+    hub: bool = False
 
     @classmethod
     def from_domain(cls, component: OfferingComponent) -> OfferingComponentSchema:
@@ -1334,6 +1350,7 @@ class OfferingComponentSchema(BaseModel):
             capability_ids=list(component.capability_ids),
             unlinked_reason=component.unlinked_reason,
             kind_id=component.kind_id,
+            hub=component.hub,
         )
 
     def to_domain(self) -> OfferingComponent:
@@ -1355,6 +1372,7 @@ class OfferingComponentSchema(BaseModel):
             capability_ids=tuple(self.capability_ids),
             unlinked_reason=self.unlinked_reason,
             kind_id=self.kind_id,
+            hub=self.hub,
         )
 
 
@@ -1465,6 +1483,8 @@ class ProductOfferingSchema(BaseModel):
 
     # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
     accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    # Why a customer buys it, beside the proposition that says what it is.
+    purpose: Text | None = None
 
     @classmethod
     def from_domain(cls, offering: ProductOffering) -> ProductOfferingSchema:
@@ -1502,6 +1522,7 @@ class ProductOfferingSchema(BaseModel):
                 BusinessRuleSchema.from_domain(item) for item in offering.business_rules
             ],
             accepted=[AcceptedFromSchema.from_domain(item) for item in offering.accepted],
+            purpose=offering.purpose,
         )
 
     def to_domain(self) -> ProductOffering:
@@ -1532,6 +1553,7 @@ class ProductOfferingSchema(BaseModel):
             portfolio_node_id=self.portfolio_node_id,
             plans=tuple(item.to_domain() for item in self.plans),
             business_rules=tuple(item.to_domain() for item in self.business_rules),
+            purpose=self.purpose,
         )
 
 
@@ -1635,6 +1657,8 @@ class FlowRuleSchema(BaseModel):
     rejoin_at: Identifier | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # The channel it is taken for, when it splits the flow by channel.
+    channel_id: Identifier | None = None
 
     @classmethod
     def from_domain(cls, rule: FlowRule) -> FlowRuleSchema:
@@ -1648,6 +1672,7 @@ class FlowRuleSchema(BaseModel):
             rejoin_at=rule.rejoin_at,
             confidence=rule.confidence,
             source=rule.source,
+            channel_id=rule.channel_id,
         )
 
     def to_domain(self) -> FlowRule:
@@ -1661,6 +1686,7 @@ class FlowRuleSchema(BaseModel):
             self.rejoin_at,
             self.confidence,
             self.source,
+            self.channel_id,
         )
 
 

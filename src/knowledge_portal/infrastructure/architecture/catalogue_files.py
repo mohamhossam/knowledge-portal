@@ -98,6 +98,7 @@ from knowledge_portal.domain.architecture.products import (
     ProductOffering,
     Realisation,
     SourceConfidence,
+    customer_stage,
 )
 from knowledge_portal.domain.architecture.provenance import AcceptedFrom
 from knowledge_portal.domain.architecture.realisations import RealisationRecord
@@ -219,6 +220,7 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "sources",
         "primary_source",
         "portfolio",
+        "purpose",
     ),
     ORDER_TYPES: (
         "product_id",
@@ -230,6 +232,7 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "source",
         "channels",
         "delivery_drop",
+        "stage",
     ),
     OFFERING_COMPONENTS: (
         "product_id",
@@ -248,6 +251,7 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "capability_ids",
         "unlinked_reason",
         "type_term",
+        "hub",
     ),
     RESPONSIBILITIES: (
         "product_id",
@@ -307,6 +311,7 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "rejoin_at",
         "confidence",
         "source",
+        "channel_id",
     ),
     ACTIVITY_INTEGRATIONS: (
         "journey_id",
@@ -443,6 +448,7 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "confidence",
         "source",
         "order_types",
+        "title",
     ),
     DECISIONS: ("product_id", "decision_id", "title", "text", "confidence", "source"),
     BOUNDARIES: ("product_id", "kind", "text"),
@@ -609,12 +615,19 @@ _INSTRUCTIONS = (
         "other domain, such as the integration layer.",
     ),
     ("Systems description and landscape_domain_id (optional): what it is for, and where.",),
-    ("Products (optional): product offerings such as Business Pro Plus; rules separated by ;.",),
+    (
+        "Products (optional): product offerings such as Business Pro Plus; rules separated by ;; "
+        "purpose (optional) is why a customer buys it, beside the proposition.",
+    ),
     (
         "OrderTypes: how each offering is ordered; enabled is yes or no; delivery_drop (optional) "
-        "is the drop it comes in, such as P2 / P3.",
+        "is the drop it comes in, such as P2 / P3; stage (optional) is join, change, support or "
+        "leave.",
     ),
-    ("OfferingComponents: the parts of each offering; mandatory and customer_visible yes or no.",),
+    (
+        "OfferingComponents: the parts of each offering; mandatory and customer_visible yes or "
+        "no; hub yes for the one device the bundle is built on.",
+    ),
     (
         "Responsibilities: which system does what for a component, in which role; order_types "
         "names order type codes separated by ;.",
@@ -1247,6 +1260,7 @@ def _rule(rule: dict[str, Any], place: str) -> FlowRule:
         rejoin_at=_optional_text(rule.get("rejoin_at"), place, "rejoin_at"),
         confidence=_trust(rule.get("confidence"), place),
         source=_optional_text(rule.get("source"), place, "source"),
+        channel_id=_optional_text(rule.get("channel"), place, "channel"),
     )
 
 
@@ -1364,6 +1378,7 @@ def _journey_mapping(journey: Journey) -> dict[str, Any]:
                         branch=rule.branch,
                         parallel_group=rule.parallel_group,
                         rejoin_at=rule.rejoin_at,
+                        channel=rule.channel_id,
                     ),
                     **_sourced(rule),
                 }
@@ -1472,6 +1487,7 @@ def _offerings(entries: list[dict[str, Any]]) -> list[ProductOffering]:
                     delivery_drop=_optional_text(
                         order.get("delivery_drop"), place, "delivery_drop"
                     ),
+                    stage=customer_stage(_optional_text(order.get("stage"), place, "stage")),
                 )
                 for position, order in enumerate(_sub_entries(item, "order_types", where), 1)
                 for place in [_where(order, f"{where}, order type {position}")]
@@ -1532,6 +1548,7 @@ def _offerings(entries: list[dict[str, Any]]) -> list[ProductOffering]:
                             part.get("unlinked_reason"), place, "unlinked_reason"
                         ),
                         kind_id=_optional_text(part.get("type_term"), place, "type_term"),
+                        hub=bool(_flag(part.get("hub"), place, "hub", False)),
                     )
                 )
             offerings.append(
@@ -1589,6 +1606,7 @@ def _offerings(entries: list[dict[str, Any]]) -> list[ProductOffering]:
                         for index, raw in enumerate(_sub_entries(item, "business_rules", where), 1)
                         for spot in [_where(raw, f"{where}, business rule {index}")]
                     ),
+                    purpose=_optional_text(item.get("purpose"), where, "purpose"),
                 )
             )
         except InvalidKnowledgeError as exc:
@@ -1665,6 +1683,7 @@ def _question(raw: dict[str, Any], where: str) -> OpenQuestion:
         _text_list(order_types, where, "order_types")
         if isinstance(order_types, list)
         else _split(order_types, where, "order_types"),
+        _optional_text(raw.get("title"), where, "title"),
     )
 
 
@@ -1731,6 +1750,7 @@ def _tracking(item: dict[str, Any], where: str) -> OrderTracking | None:
                 _optional_text(case.get("handling"), spot, "handling"),
                 _trust(case.get("confidence"), spot),
                 _optional_text(case.get("source"), spot, "source"),
+                _optional_text(case.get("system"), spot, "system"),
             )
             for case, spot in each("fallout", "fallout")
         ),
@@ -1841,6 +1861,7 @@ def _offering_mapping(offering: ProductOffering) -> dict[str, Any]:
             version=offering.version,
             lifecycle=offering.lifecycle,
             proposition=offering.proposition,
+            purpose=offering.purpose,
             rules=list(offering.rules),
         ),
         **_sourced(offering),
@@ -1854,6 +1875,7 @@ def _offering_mapping(offering: ProductOffering) -> dict[str, Any]:
                         description=order.description,
                         channels=list(order.channels),
                         delivery_drop=order.delivery_drop,
+                        stage=order.stage.value if order.stage else None,
                     ),
                     **_sourced(order),
                 }
@@ -1899,6 +1921,7 @@ def _offering_mapping(offering: ProductOffering) -> dict[str, Any]:
                         capabilities=list(part.capability_ids),
                         unlinked_reason=part.unlinked_reason,
                         type_term=part.kind_id,
+                        hub=part.hub or None,
                     ),
                 }
                 for part in offering.components
@@ -1929,6 +1952,7 @@ def _offering_mapping(offering: ProductOffering) -> dict[str, Any]:
             questions=[
                 {
                     "id": item.id,
+                    **_present(title=item.title),
                     "text": item.text,
                     **_present(impact=item.impact, order_types=list(item.order_types)),
                     **_sourced(item),
@@ -2044,7 +2068,7 @@ def _tracking_mapping(tracking: OrderTracking) -> dict[str, Any]:
             fallout=[
                 {
                     "trigger": case.trigger,
-                    **_present(handling=case.handling),
+                    **_present(handling=case.handling, system=case.system_id),
                     **_sourced(case),
                 }
                 for case in tracking.fallout
@@ -2757,6 +2781,7 @@ def _sheet_journeys(workbook: Any) -> list[dict[str, Any]]:
                 "_where": where,
                 "from": cells.get("from_activity"),
                 "to": cells.get("to_activity"),
+                "channel": cells.get("channel_id"),
             }
         )
     for number, cells in _rows(workbook, ACTIVITY_INTEGRATIONS):
@@ -3132,6 +3157,7 @@ def _write_offering(sheets: dict[str, Any], product: ProductOffering) -> None:
             f"{_LIST_SEPARATOR} ".join(product.sources),
             product.primary_source,
             product.portfolio_node_id,
+            product.purpose,
         ),
     )
     for plan in product.plans:
@@ -3157,6 +3183,7 @@ def _write_offering(sheets: dict[str, Any], product: ProductOffering) -> None:
                 _confidence(question),
                 question.source,
                 f"{_LIST_SEPARATOR} ".join(question.order_types),
+                question.title,
             ),
         )
     for decision in product.decisions:
@@ -3187,6 +3214,7 @@ def _write_offering(sheets: dict[str, Any], product: ProductOffering) -> None:
                 order.source,
                 f"{_LIST_SEPARATOR} ".join(order.channels),
                 order.delivery_drop,
+                order.stage.value if order.stage else None,
             ),
         )
     for part in product.components:
@@ -3209,6 +3237,7 @@ def _write_offering(sheets: dict[str, Any], product: ProductOffering) -> None:
                 f"{_LIST_SEPARATOR} ".join(part.capability_ids),
                 part.unlinked_reason,
                 part.kind_id,
+                _yes(part.hub) if part.hub else None,
             ),
         )
         for duty in part.responsibilities:
@@ -3379,7 +3408,7 @@ def _write_tracking(sheets: dict[str, Any], product_id: str, tracking: OrderTrac
                 "fallout",
                 case.trigger,
                 case.handling,
-                None,
+                case.system_id,
                 _confidence(case),
                 case.source,
             ),
@@ -3444,6 +3473,7 @@ def _write_journey(sheets: dict[str, Any], journey: Journey) -> None:
                 rule.rejoin_at,
                 _confidence(rule),
                 rule.source,
+                rule.channel_id,
             ),
         )
     for link in journey.integrations:

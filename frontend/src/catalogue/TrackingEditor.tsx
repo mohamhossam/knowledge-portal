@@ -173,6 +173,7 @@ export function TrackingEditor({ value, onChange, systems, channels, orderTypes,
             <TextField label="When" value={item.trigger} required wide onChange={(trigger) => change({ trigger })} />
             <Sureness value={item.confidence} onChange={(confidence) => change({ confidence })} />
             <AreaField label="What happens" value={item.handling} onChange={(handling) => change({ handling: handling || null })} />
+            <SystemField label="Falls out in" value={item.system_id ?? ""} systems={systems} writtenAs={system(item.system_id)} allowNone onChange={(id) => change({ system_id: id || null })} />
           </>
         )}
       />

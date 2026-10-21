@@ -73,6 +73,25 @@ describe("a catalogue version as the views read it", () => {
     expect(read.domains).toEqual(data.domains);
   });
 
+  it("reads the purpose, question titles, hub and stages the service sends, and the prose of an older version alike", () => {
+    const offering = data.offerings[0]!;
+    expect(offering.purpose).toMatch(/^Gives a small or medium business/);
+    expect(offering.components.filter((part) => part.hub).map((part) => part.id)).toEqual(["cpe"]);
+    expect(offering.orderTypes.find((type) => type.code === "PORTOUT")?.stage).toBe("leave");
+    const older = structuredClone(asRelease(release));
+    for (const product of older.products ?? []) {
+      product.proposition = `${product.proposition ?? ""}\n\n${product.purpose ?? ""}`;
+      product.purpose = null;
+      for (const question of product.questions) {
+        question.text = `${question.title}: ${question.text}`;
+        question.title = null;
+      }
+    }
+    const read = fromRelease(older);
+    expect(read.offerings.map(({ summary, purpose }) => ({ summary, purpose }))).toEqual(data.offerings.map(({ summary, purpose }) => ({ summary, purpose })));
+    expect(read.findings).toEqual(data.findings);
+  });
+
   it("takes the domains the service marks cross-cutting, not their ids, once any is marked", () => {
     const marked = structuredClone(asRelease(release));
     for (const domain of marked.landscape_domains ?? []) domain.cross_cutting = domain.id === "customer";

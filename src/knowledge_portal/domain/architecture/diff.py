@@ -21,6 +21,7 @@ _OFFERING_FIELDS = (
     "version",
     "lifecycle",
     "proposition",
+    "purpose",
     "rules",
     "confidence",
     "source",

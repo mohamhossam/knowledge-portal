@@ -148,6 +148,14 @@ export function JourneyEditor({ value, onChange, systems, offerings, channels = 
             <SelectField label="From step" value={rule.from_activity} options={stepOptions} onChange={(from_activity) => update({ from_activity })} />
             <SelectField label="To step" value={rule.to_activity} options={stepOptions} onChange={(to_activity) => update({ to_activity })} />
             <TextField label="When" value={rule.condition} onChange={(condition) => update({ condition: condition || null })} />
+            {(channels.length > 0 || rule.channel_id) && (
+              <SelectField
+                label="Taken for channel"
+                value={rule.channel_id ?? ""}
+                options={[{ value: "", label: "Every channel" }, ...channels.map((channel) => ({ value: channel.id, label: channel.name }))]}
+                onChange={(channel_id) => update({ channel_id: channel_id || null })}
+              />
+            )}
             {rule.kind === "parallel" && (
               <SelectField
                 label="Rejoins at step"
