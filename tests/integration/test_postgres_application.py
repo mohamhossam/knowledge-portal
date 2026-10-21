@@ -107,7 +107,9 @@ def test_activating_a_release_names_it_for_requirement_work() -> None:
         run_migrations(url)
         seed = seed_knowledge()
         # A fresh database: the seed release is activated, and the event says so.
-        PostgresArchitectureKnowledgeRepository(DirectPostgresConnector(url), seed).active()
+        PostgresArchitectureKnowledgeRepository(
+            PostgresStore(DirectPostgresConnector(url)), seed
+        ).active()
         events = PostgresKnowledgeEvents(PostgresStore(DirectPostgresConnector(url))).after(0, 10)
         (activated,) = [e for e in events if e.kind == "architecture_release_activated"]
         assert activated.payload == {"release_id": seed.id, "name": seed.name}

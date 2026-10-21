@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, fields, is_dataclass, replace
 from enum import StrEnum
 
 from knowledge_portal.domain.architecture.journeys import Journey
@@ -37,6 +37,9 @@ _OFFERING_FIELDS = (
     "decisions",
     "boundaries",
     "not_used",
+    "portfolio_node_id",
+    "plans",
+    "business_rules",
 )
 
 
@@ -114,6 +117,8 @@ _CONCEPT_FIELDS = (
     "exact_match",
     "confidence",
     "source",
+    "deprecated",
+    "replaced_by",
 )
 
 
@@ -128,6 +133,8 @@ _TERM_FIELDS = (
     "exact_match",
     "confidence",
     "source",
+    "deprecated",
+    "replaced_by",
 )
 
 
@@ -145,6 +152,17 @@ _INTERFACE_FIELDS = (
     "source",
 )
 
+# A portfolio node's attributes, as reported when the tree changes.
+_PORTFOLIO_FIELDS = (
+    "name",
+    "level",
+    "parent_id",
+    "description",
+    "confidence",
+    "source",
+)
+
+
 _REALISATION_FIELDS = (
     "layer",
     "name",
@@ -155,6 +173,18 @@ _REALISATION_FIELDS = (
     "confidence",
     "source",
 )
+
+
+def _unstamped(item: object) -> object:
+    """The item without the acceptances recorded on it: an acceptance is not a change to the
+    fact itself (ADR-0120)."""
+    if (
+        is_dataclass(item)
+        and not isinstance(item, type)
+        and any(field.name == "accepted" for field in fields(item))
+    ):
+        return replace(item, accepted=())
+    return item
 
 
 def _bare(offering: ProductOffering) -> tuple[object, ...]:
@@ -290,6 +320,8 @@ class ChangedItem(StrEnum):
     # A contract a system exposes, with its consumers (ontology plan Phase 8).
     INTERFACE = "interface"
     REALISATION = "realisation"
+    # A node of the offering portfolio tree.
+    PORTFOLIO_NODE = "portfolio_node"
 
 
 @dataclass(frozen=True)
@@ -330,6 +362,27 @@ def _system_fields(before: SystemDefinition, after: SystemDefinition) -> tuple[s
         fields.append("masters")
     if sorted(before.reads) != sorted(after.reads):
         fields.append("reads")
+    if set(before.mastery_notes) != set(after.mastery_notes):
+        fields.append("mastery_notes")
+    if before.owner != after.owner:
+        fields.append("owner")
+    if before.external != after.external:
+        fields.append("external")
+    if before.roadmap != after.roadmap:
+        fields.append("roadmap")
+    if (before.placement_from, before.placement_reason) != (
+        after.placement_from,
+        after.placement_reason,
+    ):
+        fields.append("placement")
+    if before.confidence != after.confidence:
+        fields.append("confidence")
+    if before.source != after.source:
+        fields.append("source")
+    if before.deprecated != after.deprecated:
+        fields.append("deprecated")
+    if before.replaced_by != after.replaced_by:
+        fields.append("replaced_by")
     return tuple(fields)
 
 
@@ -362,7 +415,7 @@ def _register_changes(
     changes = _keyed_changes(item, before, after)
     for key, (label, value) in after.items():
         previous = before.get(key)
-        if previous is None or previous[1] == value:
+        if previous is None or _unstamped(previous[1]) == _unstamped(value):
             continue
         changes.append(
             CatalogueChange(
@@ -486,15 +539,22 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
             )
         )
 
-    def relationships(release: ArchitectureKnowledge) -> dict[str, tuple[str, str]]:
-        # The key and label formats are read by the catalogue workbench; the kind is
-        # the value, so a changed kind is an edit to the same relationship.
+    def relationships(
+        release: ArchitectureKnowledge,
+    ) -> dict[str, tuple[str, tuple[str, str, str]]]:
+        # The key and label formats are read by the catalogue workbench. Source, target
+        # and kind identify a dependency (ADR-0119); what it is for and where that is
+        # said are its fields, so rewording one is an edit to the same dependency.
         names = {item.id: item.name for item in release.systems}
         return {
-            f"{item.source_system_id}->{item.target_system_id}:{item.description.casefold()}": (
+            f"{item.source_system_id}->{item.target_system_id}:{item.kind.value}": (
                 f"{names.get(item.source_system_id, item.source_system_id)} → "
                 f"{names.get(item.target_system_id, item.target_system_id)}: {item.description}",
-                item.kind.value,
+                (
+                    item.description,
+                    item.confidence.value if item.confidence else "",
+                    item.source or "",
+                ),
             )
             for item in release.relationships
         }
@@ -503,11 +563,28 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
     changes.extend(
         _keyed_changes(ChangedItem.RELATIONSHIP, base_relationships, draft_relationships)
     )
-    changes.extend(
-        CatalogueChange(ChangedItem.RELATIONSHIP, ChangeKind.CHANGED, key, label, ("kind",))
-        for key, (label, kind) in draft_relationships.items()
-        if key in base_relationships and base_relationships[key][1] != kind
-    )
+    for key, (label, said) in draft_relationships.items():
+        previous_relationship = base_relationships.get(key)
+        if previous_relationship is None or previous_relationship[1] == said:
+            continue
+        changes.append(
+            CatalogueChange(
+                ChangedItem.RELATIONSHIP,
+                ChangeKind.CHANGED,
+                key,
+                label,
+                tuple(
+                    field
+                    for field, before, after in zip(
+                        ("description", "confidence", "source"),
+                        previous_relationship[1],
+                        said,
+                        strict=True,
+                    )
+                    if before != after
+                ),
+            )
+        )
 
     def domains(
         release: ArchitectureKnowledge, landscape: bool
@@ -558,7 +635,7 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
     changes.extend(_keyed_changes(ChangedItem.PRODUCT, base_offerings, draft_offerings))
     for key, (label, offering) in draft_offerings.items():
         previous_offering = base_offerings.get(key)
-        if previous_offering is None or previous_offering[1] == offering:
+        if previous_offering is None or _unstamped(previous_offering[1]) == _unstamped(offering):
             continue
         changes.append(
             CatalogueChange(
@@ -574,7 +651,7 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
     changes.extend(_keyed_changes(ChangedItem.JOURNEY, base_journeys, draft_journeys))
     for key, (label, journey) in draft_journeys.items():
         previous_journey = base_journeys.get(key)
-        if previous_journey is None or previous_journey[1] == journey:
+        if previous_journey is None or _unstamped(previous_journey[1]) == _unstamped(journey):
             continue
         changes.append(
             CatalogueChange(
@@ -590,7 +667,7 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
     changes.extend(_keyed_changes(ChangedItem.CHANNEL, base_channels, draft_channels))
     for key, (label, channel) in draft_channels.items():
         previous_channel = base_channels.get(key)
-        if previous_channel is None or previous_channel[1] == channel:
+        if previous_channel is None or _unstamped(previous_channel[1]) == _unstamped(channel):
             continue
         changes.append(
             CatalogueChange(
@@ -659,6 +736,14 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
             _CHANGE_REQUEST_FIELDS,
             {item.id: (item.title, item) for item in base.change_history},
             {item.id: (item.title, item) for item in draft.change_history},
+        )
+    )
+    changes.extend(
+        _register_changes(
+            ChangedItem.PORTFOLIO_NODE,
+            _PORTFOLIO_FIELDS,
+            {item.id: (item.name, item) for item in base.portfolio},
+            {item.id: (item.name, item) for item in draft.portfolio},
         )
     )
     changes.extend(

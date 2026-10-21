@@ -128,6 +128,14 @@ def _change(**values: Any) -> ChangeOutput:
         "reasoning": None,
         "relationship_kind": None,
         "channel_kind": None,
+        "interface_style": None,
+        "portfolio_level": None,
+        "realisation_layer": None,
+        "realised_by": [],
+        "source_level": None,
+        "source_version": None,
+        "conflict_sides": [],
+        "affected_offerings": [],
     }
     return ChangeOutput(**(defaults | values))
 
@@ -277,12 +285,23 @@ def test_extraction_to_accepted_draft_through_the_api(client: TestClient) -> Non
     assert order_hub["aliases"] == ["OH"]
     assert order_hub["capabilities"][0]["triggers"] == ["capture order", "new order"]
     assert order_hub["constraints"] == []
-    assert {
+    lookup = next(
+        item
+        for item in rest["release"]["relationships"]
+        if (item["source_system_id"], item["target_system_id"]) == ("order-hub", "bcrm")
+    )
+    assert {key: value for key, value in lookup.items() if key != "accepted"} == {
         "source_system_id": "order-hub",
         "target_system_id": "bcrm",
         "description": "customer lookup",
         "kind": "unspecified",
-    } in rest["release"]["relationships"]
+        "confidence": None,
+        "source": None,
+    }
+    # Accepting it recorded which suggestion it came from and who accepted it (ADR-0120).
+    assert [(entry["candidate_id"], entry["decided_by"]) for entry in lookup["accepted"]] == [
+        (by_kind["relationship"]["id"], "fake-owner")
+    ]
     decided = client.get(f"{base}/suggestions", headers=OWNER).json()["suggestions"]
     assert {item["status"] for item in decided} == {"accepted", "rejected"}
     assert next(item for item in decided if item["content"]["kind"] == "system")["edited"]

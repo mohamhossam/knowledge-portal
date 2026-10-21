@@ -8,6 +8,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import replace
 from datetime import UTC, datetime
+from threading import RLock
 from typing import Any
 
 import pytest
@@ -91,6 +92,9 @@ from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledg
 from knowledge_portal.infrastructure.persistence.in_memory_catalogue_candidates import (
     InMemoryCatalogueCandidates,
 )
+from knowledge_portal.infrastructure.persistence.in_memory_transaction import (
+    InMemoryTransactionManager,
+)
 
 NOW = datetime(2026, 9, 30, 9, 0, tzinfo=UTC)
 MAINTAINER = Actor("amina", frozenset({"knowledge_maintainer"}))
@@ -122,10 +126,11 @@ def test_a_system_is_found_by_its_words_when_only_one_system_fits() -> None:
     assert found is not None and found.id == "bcrm"
     assert find_system(release, "ORDER_HUB") is None  # underscores are part of a word
     assert find_system(release, "---") is None
-    twins = release.updated(
-        systems=(*release.systems, SystemDefinition("hub-b", "Hub B", aliases=("order hub!",)))
-    )
-    assert find_system(twins, "order  hub") is None
+    # Two systems whose labels share their words cannot both be catalogued.
+    with pytest.raises(InvalidKnowledgeError, match="already names Order Hub"):
+        release.updated(
+            systems=(*release.systems, SystemDefinition("hub-b", "Hub B", aliases=("order hub!",)))
+        )
 
 
 def _candidate(content: CandidateContent, **values: Any) -> CatalogueCandidate:
@@ -345,6 +350,14 @@ def _change(**values: Any) -> ChangeOutput:
         "reasoning": "Order Hub hands invoices to Dynamics CRM, so it relies on it.",
         "relationship_kind": None,
         "channel_kind": None,
+        "interface_style": None,
+        "portfolio_level": None,
+        "realisation_layer": None,
+        "realised_by": [],
+        "source_level": None,
+        "source_version": None,
+        "conflict_sides": [],
+        "affected_offerings": [],
     }
     return ChangeOutput(**(base | values))
 
@@ -432,7 +445,14 @@ def _setup(
     storage.put(DocumentVersionId("doc"), text)
     drafted = draft.updated(documents=(version,))
     repository.save(drafted, draft.revision, "amina", "upload_document")
-    return proposer, DecideCatalogueCandidate(manage, repository, candidates), drafted, candidates
+    return (
+        proposer,
+        DecideCatalogueCandidate(
+            manage, repository, candidates, InMemoryTransactionManager(RLock())
+        ),
+        drafted,
+        candidates,
+    )
 
 
 def test_matching_failures_are_warnings_and_known_pairs_are_not_inferred_again() -> None:
@@ -548,12 +568,20 @@ def test_a_possible_match_is_confirmed_and_inferred_items_wait_for_a_person(
         headers=OWNER,
     )
     assert accepted.status_code == 200, accepted.text
-    assert {
+    quotes = next(
+        item
+        for item in accepted.json()["relationships"]
+        if (item["source_system_id"], item["description"]) == ("order-hub", "quotes")
+    )
+    assert {key: value for key, value in quotes.items() if key != "accepted"} == {
         "source_system_id": "order-hub",
         "target_system_id": "bcrm",
         "description": "quotes",
         "kind": "unspecified",
-    } in accepted.json()["relationships"]
+        "confidence": None,
+        "source": None,
+    }
+    assert [entry["candidate_id"] for entry in quotes["accepted"]] == [stated["id"]]
     decided = {
         s["id"]: s["status"]
         for s in client.get(f"{base}/suggestions", headers=OWNER).json()["suggestions"]

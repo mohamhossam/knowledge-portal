@@ -42,6 +42,7 @@ from knowledge_portal.domain.architecture.assessment import (
     SystemRole,
     change_type_in,
 )
+from knowledge_portal.domain.architecture.deprecation import in_service, successor
 from knowledge_portal.domain.architecture.entities import (
     ArchitectureCitation,
     ArchitectureDependency,
@@ -55,7 +56,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     KnowledgeReleaseStatus,
     SystemDefinition,
 )
-from knowledge_portal.domain.architecture.neighbours import adjacent
+from knowledge_portal.domain.architecture.neighbours import adjacent, interface_edges
 
 
 def _reference(item: SystemDefinition) -> SystemReference:
@@ -105,7 +106,10 @@ class ResolveArchitectureKnowledge(ArchitectureKnowledgePort):
             )
 
         mapped = {item.id for item in matched.systems if item.catalogued}
-        nearby = adjacent(mapped, release.relationships)
+        # A release with no recorded relationships still knows its edges
+        # through the interfaces systems expose and consume.
+        edges = release.relationships or interface_edges(release.interfaces)
+        nearby = adjacent(mapped, edges)
         systems = {item.id: item for item in release.systems}
 
         def placed(system: SystemReference) -> SystemReference:
@@ -186,7 +190,8 @@ class ResolveArchitectureKnowledge(ArchitectureKnowledgePort):
         text = " ".join(query.text)
         evidence = gather_evidence(self._index, release, release.index_id or release.id, text)
         selected = self._reasoner.select(query, release, evidence)
-        catalogue = {item.id: item for item in release.systems}
+        # A retired system is never selected (ADR-0121).
+        catalogue = {item.id: item for item in in_service(release.systems)}
         ids = set(selected.system_ids)
         citation_ids = list(selected.citation_ids)
         citations = list(selected.citations)
@@ -224,6 +229,8 @@ class ResolveArchitectureKnowledge(ArchitectureKnowledgePort):
                 ),
                 None,
             )
+            # A retired system forwards to what replaced it, or names nothing in service.
+            known = successor(release.systems, known.id) if known is not None else None
             if known is not None:
                 ids.add(known.id)
             else:

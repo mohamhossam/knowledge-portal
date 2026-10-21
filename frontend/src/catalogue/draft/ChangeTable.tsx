@@ -7,7 +7,7 @@ import type { CatalogueDiff, Release } from "../../api/client";
 import { type Column, DataTable, FilterStrip } from "../../design/components";
 import { count } from "../../home/format";
 import { RouterLink } from "../../shell/links";
-import { CHANGE_WORD, DIFF_ORDER, connectionSentence, diffSections, fieldsInWords } from "../drafting";
+import { CHANGE_WORD, DIFF_ORDER, connectionFieldsInWords, connectionSentence, diffSections, fieldsInWords } from "../drafting";
 
 type Row = { key: string; item: string; kind: string; change: "added" | "changed" | "removed"; what: string; detail: string; to: string | null };
 
@@ -41,7 +41,14 @@ export function ChangeTable({ diff, release, caption, systemLink }: {
             kind: one,
             change: change.change,
             what: said?.sentence ?? change.label,
-            detail: [said?.forWhat ? `For what: ${said.forWhat}` : "", change.change === "changed" && change.fields.length ? `Its ${fieldsInWords(change.fields)}` : ""]
+            detail: [
+              said?.forWhat ? `For what: ${said.forWhat}` : "",
+              change.change !== "changed" || !change.fields.length
+                ? ""
+                : said
+                  ? `Changed: ${connectionFieldsInWords(change.fields)}`
+                  : `Its ${fieldsInWords(change.fields)}`,
+            ]
               .filter(Boolean)
               .join(". "),
             to: section.item === "system" && change.change !== "removed" ? systemLink?.(change.key) ?? null : null,

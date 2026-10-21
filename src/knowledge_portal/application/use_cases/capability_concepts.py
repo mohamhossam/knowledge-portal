@@ -42,6 +42,7 @@ from knowledge_portal.domain.architecture.concept_backfill import (
     ConceptProposal,
     propose_concepts,
 )
+from knowledge_portal.domain.architecture.deprecation import in_service
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
     KnowledgeConflictError,
@@ -138,7 +139,8 @@ class ProposeCapabilityConcepts:
 
 def _choices(release: ArchitectureKnowledge) -> tuple[ConceptChoice, ...]:
     choices = []
-    for concept in release.business_capabilities:
+    # A model is offered the concepts in service only (ADR-0121).
+    for concept in in_service(release.business_capabilities):
         domain = release.concept_domain(concept.id)
         path = [
             *(item.name for item in release.domain_path(domain.id if domain else None)),

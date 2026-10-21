@@ -86,6 +86,7 @@ from knowledge_portal.application.use_cases.change_requests import (
     ReceiveDelivery,
 )
 from knowledge_portal.application.use_cases.cited_passages import CitedPassages
+from knowledge_portal.application.use_cases.derived_dependencies import SuggestDerivedDependencies
 from knowledge_portal.application.use_cases.document_library import DocumentLibrary
 from knowledge_portal.application.use_cases.golden_runs import GoldenSetRuns
 from knowledge_portal.application.use_cases.historic_requirements import (
@@ -108,6 +109,9 @@ from knowledge_portal.application.use_cases.library_admin import (
     LibraryStewardship,
 )
 from knowledge_portal.application.use_cases.library_bulk import BulkRetryLibrary
+from knowledge_portal.application.use_cases.library_classification import (
+    LibraryClassification,
+)
 from knowledge_portal.application.use_cases.library_governance import LibraryGovernance
 from knowledge_portal.application.use_cases.organisation_catalogue import (
     ManageOrganisationCatalogue,
@@ -116,7 +120,10 @@ from knowledge_portal.application.use_cases.precedents import (
     ReadPrecedentSummaries,
     RecordPrecedent,
 )
-from knowledge_portal.application.use_cases.provider_call_rate import ProviderCallRateLimit
+from knowledge_portal.application.use_cases.provider_call_rate import (
+    CATALOG_REFUSAL,
+    ProviderCallRateLimit,
+)
 from knowledge_portal.application.use_cases.reference_knowledge import (
     LEGACY_BYTE_BUDGET,
     ChunkSizer,
@@ -208,9 +215,13 @@ class Container:
     resolve_signed_in_actor: ResolveSignedInActor
     search_known_actors: SearchKnownActors
     provider_call_rate_limit: ProviderCallRateLimit
+    # Explorer readers' product catalogue lookups, counted apart (ADR-0101, Amendment 3).
+    catalog_read_rate_limit: ProviderCallRateLimit
     document_storage: DocumentStoragePort
     knowledge_events: KnowledgeEventOutboxPort
     document_library: DocumentLibrary
+    # Library documents' types and topics, from the catalogue in service (ADR-0123).
+    library_classification: LibraryClassification
     library_governance: LibraryGovernance
     library_admin: AdministerLibraryDocument
     library_retry: BulkRetryLibrary
@@ -243,6 +254,7 @@ class Container:
     decide_catalogue_candidates: DecideCatalogueCandidate
     propose_capability_concepts: ProposeCapabilityConcepts
     clean_up_vocabulary: CleanUpVocabulary
+    suggest_derived_dependencies: SuggestDerivedDependencies
     suggest_component_capabilities: SuggestComponentCapabilities
     # Change requests from Requirement AI (requirement-portal ADR-0101, step 7).
     receive_change_request: ReceiveChangeRequest
@@ -398,9 +410,13 @@ def _build_container(
         provider_call_rate_limit=ProviderCallRateLimit(
             settings.provider_rate_limit_per_minute, clock
         ),
+        catalog_read_rate_limit=ProviderCallRateLimit(
+            settings.provider_rate_limit_per_minute, clock, CATALOG_REFUSAL
+        ),
         document_storage=persistence.document_storage,
         knowledge_events=persistence.knowledge_events,
         document_library=library,
+        library_classification=LibraryClassification(library, persistence.architecture_repository),
         library_governance=LibraryGovernance(
             persistence.library_repository,
             persistence.actor_directory,
@@ -468,6 +484,7 @@ def _build_container(
         decide_catalogue_candidates=architecture.decide_candidates,
         propose_capability_concepts=architecture.propose_concepts,
         clean_up_vocabulary=architecture.clean_up_vocabulary,
+        suggest_derived_dependencies=architecture.suggest_derived_dependencies,
         suggest_component_capabilities=architecture.suggest_component_links,
         receive_change_request=architecture.receive_change_request,
         receive_delivery=architecture.receive_delivery,

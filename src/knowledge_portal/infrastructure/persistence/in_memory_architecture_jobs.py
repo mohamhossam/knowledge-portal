@@ -1,7 +1,9 @@
 """Deterministic offline architecture queue."""
 
+from copy import deepcopy
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from knowledge_portal.application.ports.architecture_jobs import (
     ArchitectureJob,
@@ -15,6 +17,12 @@ from knowledge_portal.domain.architecture.knowledge import KnowledgeConflictErro
 class InMemoryArchitectureJobs:
     def __init__(self) -> None:
         self._jobs: dict[str, ArchitectureJob] = {}
+
+    def snapshot_state(self) -> Any:
+        return deepcopy((self._jobs,))
+
+    def restore_state(self, state: Any) -> None:
+        (self._jobs,) = deepcopy(state)
 
     def enqueue(self, job: ArchitectureJob) -> ArchitectureJob:
         existing = next(

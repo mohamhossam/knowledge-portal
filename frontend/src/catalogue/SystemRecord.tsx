@@ -9,6 +9,9 @@ import { ActionGroup, Button, type Column, DataTable, Facts, Lines, RecordView, 
 import { RouterLink } from "../shell/links";
 import { SystemReview } from "../reviews/SystemReview";
 import { seatsLine, seatsOn } from "../squads/organisation";
+import { Retired } from "./Retired";
+import { acceptances } from "./accepted";
+import { AcceptedFrom } from "./AcceptedFrom";
 import { connections, dependsHow, domainPath, sentenceCase, systemName, systemRoles, usedHow } from "./catalogue";
 import { SystemContextDiagram } from "./diagrams/CatalogueDiagrams";
 import { ConnectionEdit, ConnectionRemove, SystemEdit, SystemRemove } from "./DraftEdits";
@@ -30,13 +33,21 @@ export function SystemRecord({ system, index }: { system: CatalogueSystem; index
   const navigate = useNavigate();
   const from = (location.state as Trail | null)?.from;
   const place = domainPath(book.landscape, system.landscape_domain_id);
+  const replacement = system.replaced_by ? book.systems.get(system.replaced_by) : undefined;
 
   return (
     <RecordView
       title={system.name}
       // Choosing a system moves focus to its record; a fresh page load leaves it be.
       takeFocus={location.key !== "default"}
-      meta={system.name_ar ? <span lang="ar" dir="rtl">{system.name_ar}</span> : undefined}
+      meta={
+        system.name_ar || system.deprecated ? (
+          <>
+            {system.name_ar && <span lang="ar" dir="rtl">{system.name_ar}</span>}
+            {system.deprecated && <Retired successor={replacement && { name: replacement.name, href: `${base}/systems/${encodeURIComponent(replacement.id)}` }} />}
+          </>
+        ) : undefined
+      }
       lead={system.description || undefined}
       actions={
         editable ? (
@@ -69,6 +80,7 @@ export function SystemRecord({ system, index }: { system: CatalogueSystem; index
                 {system.source ? <bdi>{system.source}</bdi> : !system.confidence && <span className="cat-quiet">Not stated</span>}
               </span>,
             ],
+            ...(acceptances(system).length ? [["Accepted from", <AcceptedFrom key="accepted" accepted={acceptances(system)} />] as [string, ReactNode]] : []),
           ]}
         />
       </div>
@@ -416,11 +428,13 @@ function Data({ system }: { system: CatalogueSystem }) {
   if (!masters.length && !reads.length) return null;
   const entities = entityNames(book.release);
   const names = (ids: string[]) => ids.map((entity) => entities.get(entity) ?? entity).join(", ");
+  const notes = system.mastery_notes ?? [];
   return (
     <Section title="Information" headingLevel={3}>
       <Facts
         items={[
           ["Masters", masters.length ? <bdi>{names(masters)}</bdi> : <span className="cat-quiet">Nothing recorded</span>],
+          ...notes.map((item): [string, ReactNode] => [`Its share of ${entities.get(item.entity_id) ?? item.entity_id}`, <bdi key={item.entity_id}>{item.note}</bdi>]),
           ["Reads", reads.length ? <bdi>{names(reads)}</bdi> : <span className="cat-quiet">Nothing recorded</span>],
         ]}
       />

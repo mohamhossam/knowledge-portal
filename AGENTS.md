@@ -145,7 +145,7 @@ adapter's job, at the boundary where the external system is known about.
   domain value object can raise on the data, clean it or fail before
   constructing that value object.
 - An unusable external response is an explicit adapter-level failure
-  (`RequirementAnalysisGenerationError` and its future equivalents), not an
+  (`KnowledgeGenerationError` and its equivalents), not an
   empty success and not a leaked `ValueError`, `KeyError`, or `IndexError`.
 - Index into a provider response only after checking it is populated.
 - Sanitising in the adapter is not defensive clutter. Skipping it means the
@@ -363,8 +363,9 @@ Introduce production persistence only when the roadmap requires durable state/ve
 - Prefer meaningful domain names over technical names.
 - Avoid generic `utils.py` dumping grounds.
 - Import at module level. A function-level import hides a dependency and usually
-  papers over a cycle; the two process- and platform-specific exceptions are
-  listed, with reasons, in `tests/architecture/test_runtime_invariants.py`.
+  papers over a cycle; `tests/architecture/test_runtime_invariants.py` enforces
+  this, and any genuinely necessary exception is listed there with its reason
+  (today there are none).
 - Avoid “manager”, “helper”, or “service” classes unless their responsibility is precise.
 - Keep functions/classes focused.
 - Do not duplicate domain invariants across adapters. Adapters clean external
@@ -543,7 +544,26 @@ A task is complete only when:
 
 ## 19. Outstanding Architectural Debt
 
-None recorded yet.
+- **Private-member access in tests.** Eight test sites reach into private members
+  (`_store`, `_repository`, …) instead of going through a seam. Replace them
+  with proper injection points when the code around them next changes (§13).
+- **One vocabulary value stays flagged.** The seed catalogue's responsibility
+  verb `PASSES` has no curated role term yet; the Phase 6 clean-up deliberately
+  leaves it flagged until a curator decides whether it merges into
+  `role-record` or earns its own term.
+- **ADR-0119** (one canonical dependency model) is implemented, but for its
+  point 4: the adjacent-systems fallback onto interfaces (`neighbours.py`
+  `interface_edges`) stays until curators accept the derived dependencies into a
+  release in service, and is retired in the release after. The committed
+  catalogue records no dependency yet. ADR-0120 (provenance that survives acceptance)
+  and ADR-0121 (lifecycle) are implemented; under ADR-0121, concepts and terms
+  retire only through a catalogue file until their pages have an editor.
+- **Customer's two masters carry no note yet (ADR-0123).** ADR-0123 is implemented in full,
+  but the committed catalogue's two masters of Customer (CBCM and Netcracker CRM) carry no
+  mastery note, because no source says which part each masters; the draft's Check step lists
+  them until the owner supplies the two notes.
+- **No frontend coverage floor.** The backend holds an 89% floor with
+  `TEST_DATABASE_URL`; the frontend's vitest suite runs without one.
 
 ---
 

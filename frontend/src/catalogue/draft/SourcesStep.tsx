@@ -38,6 +38,7 @@ export function SourcesStep() {
       <Documents release={release} draft={draft} actorName={actorName} />
       <AddDocuments key={release.id} draft={draft} />
       <ChangeRequests release={release} draft={draft} />
+      <DerivedDependencies release={release} draft={draft} />
       <CatalogueFile release={release} />
       <p className="draft-next">
         <ButtonLink to={`${base}/decide`} variant={waiting ? "primary" : "secondary"}>
@@ -373,6 +374,52 @@ function ChangeRequests({ release, draft }: { release: Release; draft: DraftHook
       </p>
       {read.isError && <p role="status"><Status tone="attention">{errorMessage(read.error)}</Status></p>}
       <DataTable caption="The change requests read into this draft" captionHidden columns={columns} rows={items} rowId={(item) => item.id} />
+    </Section>
+  );
+}
+
+const DERIVED = "derived_dependencies";
+
+/**
+ * The dependencies the draft's interfaces and journeys already say (ADR-0119), suggested
+ * for Decide like any other: a reading of the draft's own catalogue, with no model.
+ */
+function DerivedDependencies({ release, draft }: { release: Release; draft: DraftHook }) {
+  const queryClient = useQueryClient();
+  const suggest = useMutation({
+    mutationFn: () => api.suggestDerivedDependencies(release.id),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["architecture"] }),
+  });
+  const last = (draft.suggestions.data?.runs ?? []).filter((run) => run.reading === DERIVED).at(-1);
+  const waiting = (draft.suggestions.data?.suggestions ?? []).filter((item) => item.document_version_id === DERIVED && item.status === "proposed").length;
+  const said = suggest.isError
+    ? errorMessage(suggest.error)
+    : suggest.data
+      ? `${count(suggest.data.candidate_count, "dependency", "dependencies")} suggested; decide ${suggest.data.candidate_count === 1 ? "it" : "them"} on Decide.`
+      : null;
+  return (
+    <Section title="Dependencies from interfaces and journeys">
+      <p className="draft-lead">
+        Each system that calls another's interface, and each hand-over a journey makes from one system to another, suggested as a dependency
+        between the two and citing what says it. None becomes a dependency until it is accepted on Decide. Suggesting again replaces the
+        undecided ones, and leaves out what the draft holds or a curator rejected.
+      </p>
+      {last && (
+        <p className="draft-detail">
+          {count(last.candidate_count, "suggestion")} on its last reading{waiting ? ` · ${waiting.toLocaleString("en")} waiting` : ""}
+        </p>
+      )}
+      {last && last.warnings.length > 0 && (
+        <Lines label="What the last reading of interfaces and journeys noted">
+          {last.warnings.map((warning) => <li key={warning} className="draft-detail">{warning}</li>)}
+        </Lines>
+      )}
+      <ActionGroup>
+        <Button icon={last ? <RotateCw size={14} /> : undefined} busy={suggest.isPending} onClick={() => !suggest.isPending && suggest.mutate()}>
+          {suggest.isPending ? "Suggesting…" : last ? "Suggest them again" : "Suggest dependencies"}
+        </Button>
+      </ActionGroup>
+      <Said text={said} failed={suggest.isError} />
     </Section>
   );
 }

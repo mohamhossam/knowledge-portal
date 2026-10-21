@@ -8,6 +8,7 @@ from knowledge_portal.application.ports.architecture_rag import (
     ArchitectureEvidenceIndexPort,
     EvidenceChunk,
 )
+from knowledge_portal.domain.architecture.deprecation import in_service
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
     SystemDefinition,
@@ -46,7 +47,7 @@ def named_systems(release: ArchitectureKnowledge, text: str) -> tuple[SystemDefi
     """
     return tuple(
         system
-        for system in release.systems
+        for system in in_service(release.systems)
         if any(_names(label, text) for label in _labels(system))
     )
 

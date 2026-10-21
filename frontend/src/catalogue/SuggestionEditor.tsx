@@ -8,6 +8,22 @@ import { JourneyEditor } from "./JourneyEditor";
 import { OfferingEditor, QuestionFields } from "./OfferingEditor";
 import type { Lexicon } from "./suggestions";
 
+type Contract = NonNullable<SuggestionContent["interface"]>;
+type Area = NonNullable<SuggestionContent["capability_domain"]>;
+type PortfolioPlace = NonNullable<SuggestionContent["portfolio_node"]>;
+type Realised = NonNullable<SuggestionContent["realisation"]>;
+type Source = NonNullable<SuggestionContent["knowledge_source"]>;
+type Conflict = NonNullable<SuggestionContent["conflict"]>;
+
+/** A tree's parents to choose from, with one the document named that the draft lacks, as written. */
+function parentOptions(nodes: { id: string; name: string }[], self: string, current: string | null | undefined) {
+  const options = [
+    { value: "", label: "At the top" },
+    ...nodes.filter((node) => node.id !== self).map((node) => ({ value: node.id, label: node.name })),
+  ];
+  return current && !nodes.some((node) => node.id === current) ? [...options, { value: current, label: `${current} (as the document names it)` }] : options;
+}
+
 const HOW: { value: RelationshipKind; label: string }[] = [
   { value: "calls_api", label: "Calls its API" },
   { value: "publishes_events_to", label: "Sends it events" },
@@ -22,7 +38,7 @@ function startingSystem(release: Release, name: string | null, id: string): stri
 }
 
 const emptyJourney = (name: string): Journey => ({
-  id: slug(name), name, activities: [], flow_rules: [], integrations: [], edges: [], channel_edges: [], shared_edges: [],
+  id: slug(name), name, activities: [], flow_rules: [], integrations: [], edges: [], channel_edges: [], shared_edges: [], accepted: [],
 });
 
 /**
@@ -47,7 +63,7 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
   useEffect(() => title.current?.focus(), []);
   const [content, setContent] = useState<SuggestionContent>(() => kept ?? ({
     ...original,
-    system_id: original.kind === "landscape_domain" || original.kind === "product" || original.kind === "journey" || original.kind === "channel" || original.kind === "offering_rule"
+    system_id: original.kind === "landscape_domain" || original.kind === "product" || original.kind === "journey" || original.kind === "channel" || original.kind === "interface" || original.kind === "capability_domain" || original.kind === "portfolio_node" || original.kind === "realisation_record" || original.kind === "source" || original.kind === "conflict" || original.kind === "offering_rule"
       ? original.system_id
       : startingSystem(release, suggestion.system_name, original.system_id),
     target_system_id: original.target_system_id
@@ -78,6 +94,12 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
     }
     if (content.kind === "journey" && content.journey) return { ...base, system_id: content.journey.id, name: content.journey.name };
     if (content.kind === "channel" && content.channel) return { ...base, name: content.channel.name };
+    if (content.kind === "interface" && content.interface) return { ...base, name: content.interface.name };
+    if (content.kind === "capability_domain" && content.capability_domain) return { ...base, name: content.capability_domain.name };
+    if (content.kind === "portfolio_node" && content.portfolio_node) return { ...base, name: content.portfolio_node.name };
+    if (content.kind === "realisation_record" && content.realisation) return { ...base, name: content.realisation.name };
+    if (content.kind === "source" && content.knowledge_source) return { ...base, name: content.knowledge_source.title };
+    if (content.kind === "conflict" && content.conflict) return { ...base, name: content.conflict.title };
     return base;
   };
 
@@ -106,6 +128,20 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
         return content.journey ? journeyProblem(content.journey) : "The journey is missing.";
       case "channel":
         return content.channel?.name.trim() ? null : "Give the channel a name.";
+      case "interface":
+        if (!content.interface?.name.trim()) return "Give the interface a name.";
+        return content.interface.system_id ? null : "Choose the system that exposes it.";
+      case "capability_domain":
+        return content.capability_domain?.name.trim() ? null : "Give the business area a name.";
+      case "portfolio_node":
+        if (!content.portfolio_node?.name.trim()) return "Give it a name.";
+        return content.portfolio_node.level.trim() ? null : "Say what level of the portfolio it is.";
+      case "realisation_record":
+        return content.realisation?.name.trim() ? null : "Give it a name.";
+      case "source":
+        return content.knowledge_source?.title.trim() ? null : "Give the source its title.";
+      case "conflict":
+        return content.conflict?.title.trim() ? null : "Give the conflict a title.";
       case "question":
         if (!content.system_id.trim()) return "Choose the offering it asks.";
         return content.question?.text.trim() ? null : "Say what it asks.";
@@ -273,7 +309,7 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
           />
         ) : null;
       case "channel": {
-        const channel = content.channel ?? { id: content.system_id, name: content.name };
+        const channel: Channel = content.channel ?? { id: content.system_id, name: content.name, accepted: [] };
         const change = (patch: Partial<Channel>) => set({ channel: { ...channel, ...patch } });
         return (
           <>
@@ -288,6 +324,144 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
               onChange={(entry) => change({ entry_system_id: entry || null })}
             />
             <AreaField label="What it is" value={channel.description} onChange={(description) => change({ description: description || null })} />
+          </>
+        );
+      }
+      case "capability_domain": {
+        const area = content.capability_domain;
+        if (!area) return null;
+        const change = (patch: Partial<Area>) => set({ capability_domain: { ...area, ...patch } });
+        return (
+          <>
+            <TextField label="Name" value={area.name} required onChange={(name) => change({ name })} />
+            <SelectField
+              label="Inside"
+              value={area.parent_id ?? ""}
+              options={parentOptions(release.capability_domains ?? [], area.id, area.parent_id)}
+              onChange={(parent) => change({ parent_id: parent || null })}
+            />
+            <AreaField label="What it covers" value={area.description} onChange={(description) => change({ description: description || null })} />
+          </>
+        );
+      }
+      case "portfolio_node": {
+        const place = content.portfolio_node;
+        if (!place) return null;
+        const change = (patch: Partial<PortfolioPlace>) => set({ portfolio_node: { ...place, ...patch } });
+        return (
+          <>
+            <TextField label="Name" value={place.name} required onChange={(name) => change({ name })} />
+            <TextField label="Level" value={place.level} required hint="In the business's own words, such as Segment." onChange={(level) => change({ level })} />
+            <SelectField
+              label="Under"
+              value={place.parent_id ?? ""}
+              options={parentOptions(release.portfolio ?? [], place.id, place.parent_id)}
+              onChange={(parent) => change({ parent_id: parent || null })}
+            />
+            <AreaField label="What it is" value={place.description} onChange={(description) => change({ description: description || null })} />
+          </>
+        );
+      }
+      case "source": {
+        const source = content.knowledge_source;
+        if (!source) return null;
+        const change = (patch: Partial<Source>) => set({ knowledge_source: { ...source, ...patch } });
+        return (
+          <>
+            <TextField label="Title" value={source.title} required onChange={(title) => change({ title })} />
+            <TextField label="Cited as" value={source.short} hint="The short name other sources use, such as BPP SDD." onChange={(short) => change({ short: short || null })} />
+            <TextField label="Version" value={source.version} onChange={(version) => change({ version: version || null })} />
+            <SelectField
+              label="Level"
+              value={source.level}
+              options={[
+                { value: "L1", label: "L1, the enterprise landscape" },
+                { value: "L2", label: "L2, a primary source for its scope" },
+                { value: "L3", label: "L3, a baseline carried forward" },
+              ]}
+              onChange={(level) => change({ level: level as Source["level"] })}
+            />
+            <AreaField label="The authority for" value={source.authority} onChange={(authority) => change({ authority: authority || null })} />
+          </>
+        );
+      }
+      case "conflict": {
+        const conflict = content.conflict;
+        if (!conflict) return null;
+        const change = (patch: Partial<Conflict>) => set({ conflict: { ...conflict, ...patch } });
+        const affected = (conflict.scope ?? []).map((item) => words.offering(item.product_id));
+        return (
+          <>
+            <TextField label="Title" value={conflict.title} required onChange={(title) => change({ title })} />
+            <AreaField label="What differs" value={conflict.difference} onChange={(difference) => change({ difference: difference || null })} />
+            <AreaField label="What it holds up" value={conflict.impact} onChange={(impact) => change({ impact: impact || null })} />
+            <AreaField label="The decision it needs" value={conflict.decision} onChange={(decision) => change({ decision: decision || null })} />
+            <p className="cat-quiet">
+              {`${words.source(conflict.a.source_id)} says “${conflict.a.statement}”; ${words.source(conflict.b.source_id)} says “${conflict.b.statement}”, as the document says.`}
+              {affected.length ? ` It affects ${affected.join(", ")}.` : ""}
+            </p>
+          </>
+        );
+      }
+      case "realisation_record": {
+        const record = content.realisation;
+        if (!record) return null;
+        const change = (patch: Partial<Realised>) => set({ realisation: { ...record, ...patch } });
+        const delivered = record.system_ids ?? [];
+        const below = record.realised_by ?? [];
+        return (
+          <>
+            <TextField label="Name" value={record.name} required onChange={(name) => change({ name })} />
+            <SelectField
+              label="Layer"
+              value={record.layer}
+              options={[
+                { value: "cfs", label: "Customer-facing service (CFS)" },
+                { value: "rfs", label: "Resource-facing service (RFS)" },
+                { value: "resource", label: "Resource" },
+              ]}
+              onChange={(layer) => change({ layer: layer as Realised["layer"], realised_by: layer === "resource" ? [] : below })}
+            />
+            <AreaField label="What it is" value={record.description} onChange={(description) => change({ description: description || null })} />
+            <p className="cat-quiet">
+              {delivered.length
+                ? `${record.layer === "resource" ? "Held" : "Delivered"} by ${delivered.map(words.system).join(", ")}`
+                : `The document names no system that ${record.layer === "resource" ? "holds" : "delivers"} it`}
+              {record.layer === "resource" ? "." : below.length ? `; realised by ${below.map(words.realisation).join(", ")}, as the document says.` : "; the document names nothing that realises it."}
+            </p>
+          </>
+        );
+      }
+      case "interface": {
+        const contract = content.interface;
+        if (!contract) return null;
+        const change = (patch: Partial<Contract>) => set({ interface: { ...contract, ...patch } });
+        const consumers = contract.consumer_ids ?? [];
+        return (
+          <>
+            <TextField label="Name" value={contract.name} required onChange={(name) => change({ name })} />
+            <SystemField
+              label="Exposed by"
+              value={contract.system_id}
+              systems={systems}
+              writtenAs={contract.system_id ? words.system(contract.system_id) : undefined}
+              onChange={(exposer) => change({ system_id: exposer })}
+            />
+            <SelectField
+              label="How it is called"
+              value={contract.style ?? "unspecified"}
+              options={[
+                { value: "api", label: "An API" },
+                { value: "event", label: "Events" },
+                { value: "file", label: "Files" },
+                { value: "unspecified", label: "Not said" },
+              ]}
+              onChange={(style) => change({ style: style as Contract["style"] })}
+            />
+            <AreaField label="What it carries" value={contract.description} onChange={(description) => change({ description: description || null })} />
+            <p className="cat-quiet">
+              {consumers.length ? `Consumed by ${consumers.map(words.system).join(", ")}, as the document says.` : "The document names no system that consumes it."}
+            </p>
           </>
         );
       }

@@ -23,7 +23,6 @@ from knowledge_portal.application.document_upload_validation import (
 from knowledge_portal.application.errors import (
     DocumentExtractionError,
     MalwareRejectedError,
-    PersistenceError,
     UnsupportedDocumentError,
 )
 from knowledge_portal.application.ports.architecture_knowledge_repository import (
@@ -34,6 +33,7 @@ from knowledge_portal.application.ports.located_document_extractor import (
     LocatedDocumentExtractorPort,
     LocatedText,
 )
+from knowledge_portal.application.ports.transaction_manager import TransactionManagerPort
 from knowledge_portal.application.use_cases.architecture_knowledge import (
     KnowledgeNotFoundError,
     ManageArchitectureKnowledge,
@@ -80,6 +80,7 @@ class UploadKnowledgeDocument:
         storage: DocumentStoragePort,
         extractor: DocumentExtractorPort,
         scanner: DocumentScannerPort,
+        transactions: TransactionManagerPort,
         max_bytes: int,
     ) -> None:
         self._knowledge = knowledge
@@ -87,6 +88,7 @@ class UploadKnowledgeDocument:
         self._storage = storage
         self._extractor = extractor
         self._scanner = scanner
+        self._transactions = transactions
         self._max_bytes = max_bytes
 
     @property
@@ -145,12 +147,11 @@ class UploadKnowledgeDocument:
         )
         updated = current.updated(documents=(*current.documents, version))
         blob_id = DocumentVersionId(version_id)
-        self._storage.put(blob_id, content)
-        try:
+        # The blob and the draft's new version commit together: a lost revision
+        # race rolls the blob back instead of orphaning it.
+        with self._transactions.transaction():
+            self._storage.put(blob_id, content)
             self._repository.save(updated, expected_revision, actor.id, "upload_document")
-        except (KnowledgeConflictError, PersistenceError):
-            self._storage.delete(blob_id)
-            raise
         return updated
 
 

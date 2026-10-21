@@ -109,10 +109,10 @@ function SystemsList({ index, current, onAdd }: { index: ConceptIndex; current?:
           .map(({ system, place, why }) => ({
             id: system.id,
             href: `${base}/systems/${encodeURIComponent(system.id)}${query}`,
-            name: system.name,
+            name: system.deprecated ? <span className="cat-retired">{system.name}</span> : system.name,
             bidi: true,
             detail: why ?? (place.split(" › ").slice(1).join(" › ") || undefined),
-            meta: <GapBadge gaps={(gaps.bySystem.get(system.id) ?? []).filter((gap) => !gaps.common.has(gap))} />,
+            meta: system.deprecated ? <span className="cat-quiet">Retired</span> : <GapBadge gaps={(gaps.bySystem.get(system.id) ?? []).filter((gap) => !gaps.common.has(gap))} />,
           })),
       }));
   }, [rows, params, base, gaps]);

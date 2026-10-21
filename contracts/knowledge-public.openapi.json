@@ -18,6 +18,45 @@
         "title": "AcceptAllResponse",
         "type": "object"
       },
+      "AcceptedFromSchema": {
+        "description": "An accepted suggestion recorded on what it produced: the model and prompt that\nsuggested it, and who accepted it when (ADR-0120).",
+        "properties": {
+          "candidate_id": {
+            "maxLength": 200,
+            "title": "Candidate Id",
+            "type": "string"
+          },
+          "decided_at": {
+            "format": "date-time",
+            "title": "Decided At",
+            "type": "string"
+          },
+          "decided_by": {
+            "maxLength": 200,
+            "title": "Decided By",
+            "type": "string"
+          },
+          "model": {
+            "maxLength": 300,
+            "title": "Model",
+            "type": "string"
+          },
+          "prompt_version": {
+            "maxLength": 300,
+            "title": "Prompt Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "candidate_id",
+          "model",
+          "prompt_version",
+          "decided_by",
+          "decided_at"
+        ],
+        "title": "AcceptedFromSchema",
+        "type": "object"
+      },
       "ActivateRequest": {
         "properties": {
           "rationale": {
@@ -962,6 +1001,18 @@
             ],
             "title": "Document Id"
           },
+          "document_type": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Type"
+          },
           "expected_version": {
             "anyOf": [
               {
@@ -1205,6 +1256,15 @@
       "BusinessCapabilitySchema": {
         "description": "A business capability concept; a top concept names its capability domain (ADR-0114).",
         "properties": {
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
+          },
           "alt_labels": {
             "default": [],
             "items": {
@@ -1249,6 +1309,11 @@
             ],
             "title": "Definition"
           },
+          "deprecated": {
+            "default": false,
+            "title": "Deprecated",
+            "type": "boolean"
+          },
           "domain_id": {
             "anyOf": [
               {
@@ -1282,6 +1347,18 @@
             "maxLength": 300,
             "title": "Pref Label",
             "type": "string"
+          },
+          "replaced_by": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaced By"
           },
           "source": {
             "anyOf": [
@@ -1396,6 +1473,16 @@
             "title": "Aliases",
             "type": "array"
           },
+          "capability_domain": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CapabilityDomainSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "capability_id": {
             "anyOf": [
               {
@@ -1459,6 +1546,16 @@
             "title": "Concept Ids",
             "type": "array"
           },
+          "conflict": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConflictSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "description": {
             "anyOf": [
               {
@@ -1470,6 +1567,16 @@
               }
             ],
             "title": "Description"
+          },
+          "interface": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SystemInterfaceSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "journey": {
             "anyOf": [
@@ -1483,6 +1590,16 @@
           },
           "kind": {
             "$ref": "#/components/schemas/CandidateKind"
+          },
+          "knowledge_source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KnowledgeSourceSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "landscape_domain_id": {
             "anyOf": [
@@ -1526,6 +1643,16 @@
             ],
             "title": "Parent Domain Id"
           },
+          "portfolio_node": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PortfolioNodeSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "product": {
             "anyOf": [
               {
@@ -1540,6 +1667,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/OpenQuestionSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "realisation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RealisationRecordSchema"
               },
               {
                 "type": "null"
@@ -1644,7 +1781,13 @@
           "concept",
           "component_link",
           "vocabulary_term",
-          "offering_rule"
+          "offering_rule",
+          "interface",
+          "capability_domain",
+          "portfolio_node",
+          "realisation_record",
+          "source",
+          "conflict"
         ],
         "title": "CandidateKind",
         "type": "string"
@@ -1660,7 +1803,11 @@
           "needs_domain",
           "needs_offering",
           "needs_channel",
-          "needs_concept"
+          "needs_concept",
+          "needs_interface",
+          "needs_portfolio_node",
+          "needs_realisation",
+          "needs_source"
         ],
         "title": "CandidateMatch",
         "type": "string"
@@ -1676,6 +1823,15 @@
       },
       "CapabilityDomainSchema": {
         "properties": {
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
+          },
           "description": {
             "anyOf": [
               {
@@ -2129,7 +2285,8 @@
         "enum": [
           "concept_backfill",
           "component_links",
-          "vocabulary_cleanup"
+          "vocabulary_cleanup",
+          "derived_dependencies"
         ],
         "title": "CatalogueReading",
         "type": "string"
@@ -2768,7 +2925,8 @@
           "concept",
           "vocabulary_term",
           "interface",
-          "realisation"
+          "realisation",
+          "portfolio_node"
         ],
         "title": "ChangedItem",
         "type": "string"
@@ -2776,6 +2934,15 @@
       "ChannelSchema": {
         "description": "Where orders are placed, and the system each is entered through (ADR-0101, step 3).",
         "properties": {
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
+          },
           "confidence": {
             "anyOf": [
               {
@@ -3026,6 +3193,49 @@
           "active"
         ],
         "title": "CitingDependency",
+        "type": "object"
+      },
+      "ClassificationOption": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label"
+        ],
+        "title": "ClassificationOption",
+        "type": "object"
+      },
+      "ClassificationOptions": {
+        "description": "The types and topics a library document may be given now.",
+        "properties": {
+          "document_types": {
+            "items": {
+              "$ref": "#/components/schemas/ClassificationOption"
+            },
+            "title": "Document Types",
+            "type": "array"
+          },
+          "topics": {
+            "items": {
+              "$ref": "#/components/schemas/ClassificationOption"
+            },
+            "title": "Topics",
+            "type": "array"
+          }
+        },
+        "required": [
+          "document_types",
+          "topics"
+        ],
+        "title": "ClassificationOptions",
         "type": "object"
       },
       "ComparedImpactResponse": {
@@ -4345,7 +4555,7 @@
         "type": "string"
       },
       "ExplorerReleaseResponse": {
-        "description": "The version in service as the explorer reads it: its content, never its documents,\nindex or version history (requirement-portal ADR-0101). The change requests applied to\nit are part of its content, for the Solution Architecture document (step 7).",
+        "description": "The version in service as the explorer reads it: its content, never its documents,\nindex, version history or who accepted what (requirement-portal ADR-0101, ADR-0120).\nThe change requests applied to it are part of its content, for the Solution\nArchitecture document (step 7).",
         "properties": {
           "change_history": {
             "items": {
@@ -6159,6 +6369,15 @@
       "JourneySchema": {
         "description": "A journey and, read-only, the flow derived from its order and rules (ADR-0096).",
         "properties": {
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
+          },
           "activities": {
             "default": [],
             "items": {
@@ -6337,6 +6556,15 @@
       },
       "KnowledgeCapabilitySchema": {
         "properties": {
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
+          },
           "component_id": {
             "anyOf": [
               {
@@ -6469,6 +6697,17 @@
       },
       "KnowledgeReleaseResponse": {
         "properties": {
+          "base_release_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Release Id"
+          },
           "built_revision": {
             "anyOf": [
               {
@@ -6735,6 +6974,15 @@
       "KnowledgeSourceSchema": {
         "description": "A source the catalogue is read from, and its level (ADR-0101, step 5).",
         "properties": {
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
+          },
           "authority": {
             "anyOf": [
               {
@@ -6837,6 +7085,15 @@
       "LandscapeDomainSchema": {
         "description": "Where systems sit in the landscape; a sub-domain names its parent (ADR-0094).",
         "properties": {
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
+          },
           "cross_cutting": {
             "default": false,
             "title": "Cross Cutting",
@@ -7032,6 +7289,43 @@
           "fingerprint"
         ],
         "title": "LibraryApprovalRequest",
+        "type": "object"
+      },
+      "LibraryClassificationRequest": {
+        "description": "What kind of document it is and what it is about, as catalogue ids (ADR-0123).",
+        "properties": {
+          "document_type": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Type"
+          },
+          "expected_version": {
+            "minimum": 1.0,
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "topics": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Topics",
+            "type": "array"
+          }
+        },
+        "required": [
+          "expected_version"
+        ],
+        "title": "LibraryClassificationRequest",
         "type": "object"
       },
       "LibraryDependency": {
@@ -7423,6 +7717,17 @@
             ],
             "title": "Citations"
           },
+          "document_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Type"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -7487,6 +7792,14 @@
           "title": {
             "title": "Title",
             "type": "string"
+          },
+          "topics": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Topics",
+            "type": "array"
           },
           "version": {
             "title": "Version",
@@ -7745,6 +8058,27 @@
           "outdated_stories"
         ],
         "title": "MappingImpactResponse",
+        "type": "object"
+      },
+      "MasteryNoteSchema": {
+        "description": "Which part of an entity a system masters, where others master it too (ADR-0123).",
+        "properties": {
+          "entity_id": {
+            "maxLength": 200,
+            "title": "Entity Id",
+            "type": "string"
+          },
+          "note": {
+            "maxLength": 10000,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "entity_id",
+          "note"
+        ],
+        "title": "MasteryNoteSchema",
         "type": "object"
       },
       "MatchRole": {
@@ -9073,6 +9407,15 @@
       "PortfolioNodeSchema": {
         "description": "A level of the product portfolio, such as Enterprise \u203a Fixed \u203a SMB; levels are data.",
         "properties": {
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
+          },
           "confidence": {
             "anyOf": [
               {
@@ -9261,6 +9604,15 @@
       "ProductOfferingSchema": {
         "description": "A commercial offering, its order types and components, and the systems behind them.",
         "properties": {
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
+          },
           "audiences": {
             "default": [],
             "items": {
@@ -9988,6 +10340,15 @@
       "RealisationRecordSchema": {
         "description": "A CFS, RFS or resource, the systems that deliver it, and what realises it below.",
         "properties": {
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
+          },
           "aliases": {
             "default": [],
             "items": {
@@ -10269,6 +10630,14 @@
       "ReferenceFlagResponse": {
         "description": "A squad or product naming what the version in service no longer has, or a product\nwhose systems differ from what its offerings name, or that is linked to nothing.",
         "properties": {
+          "replaced_systems": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SystemSuccessorResponse"
+            },
+            "title": "Replaced Systems",
+            "type": "array"
+          },
           "retired_capabilities": {
             "items": {
               "$ref": "#/components/schemas/CapabilityScopeResponse"
@@ -11514,6 +11883,15 @@
           "a": {
             "$ref": "#/components/schemas/ConflictSideSchema"
           },
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
+          },
           "b": {
             "$ref": "#/components/schemas/ConflictSideSchema"
           },
@@ -11834,6 +12212,15 @@
       },
       "SystemComponentSchema": {
         "properties": {
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
+          },
           "aliases": {
             "default": [],
             "items": {
@@ -11900,6 +12287,15 @@
       },
       "SystemDefinitionSchema": {
         "properties": {
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
+          },
           "aliases": {
             "default": [],
             "items": {
@@ -11948,6 +12344,11 @@
             "title": "Constraints",
             "type": "array"
           },
+          "deprecated": {
+            "default": false,
+            "title": "Deprecated",
+            "type": "boolean"
+          },
           "description": {
             "anyOf": [
               {
@@ -11990,6 +12391,15 @@
             },
             "maxItems": 5000,
             "title": "Masters",
+            "type": "array"
+          },
+          "mastery_notes": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/MasteryNoteSchema"
+            },
+            "maxItems": 5000,
+            "title": "Mastery Notes",
             "type": "array"
           },
           "name": {
@@ -12055,6 +12465,18 @@
             "title": "Reads",
             "type": "array"
           },
+          "replaced_by": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaced By"
+          },
           "roadmap": {
             "anyOf": [
               {
@@ -12090,6 +12512,15 @@
       "SystemInterfaceSchema": {
         "description": "An API, event or file contract one system exposes, and the systems that consume it.",
         "properties": {
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
+          },
           "confidence": {
             "anyOf": [
               {
@@ -12252,6 +12683,25 @@
       },
       "SystemRelationshipSchema": {
         "properties": {
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "description": {
             "maxLength": 10000,
             "title": "Description",
@@ -12260,6 +12710,18 @@
           "kind": {
             "$ref": "#/components/schemas/RelationshipKind",
             "default": "unspecified"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
           },
           "source_system_id": {
             "maxLength": 200,
@@ -12371,6 +12833,25 @@
           "standing"
         ],
         "title": "SystemStanding",
+        "type": "object"
+      },
+      "SystemSuccessorResponse": {
+        "description": "A retired system still named, and the system that replaced it (ADR-0121).",
+        "properties": {
+          "successor_id": {
+            "title": "Successor Id",
+            "type": "string"
+          },
+          "system_id": {
+            "title": "System Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "system_id",
+          "successor_id"
+        ],
+        "title": "SystemSuccessorResponse",
         "type": "object"
       },
       "SystemUpdateRequest": {
@@ -12935,7 +13416,8 @@
           "component_kind",
           "responsibility_role",
           "open_api",
-          "information_entity"
+          "information_entity",
+          "document_type"
         ],
         "title": "VocabularyScheme",
         "type": "string"
@@ -12943,6 +13425,15 @@
       "VocabularyTermSchema": {
         "description": "A term of a controlled vocabulary: an eTOM process, a channel or component kind, a\nrole, an Open API or an information entity.",
         "properties": {
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
+          },
           "alt_labels": {
             "default": [],
             "items": {
@@ -12987,6 +13478,11 @@
             ],
             "title": "Definition"
           },
+          "deprecated": {
+            "default": false,
+            "title": "Deprecated",
+            "type": "boolean"
+          },
           "exact_match": {
             "anyOf": [
               {
@@ -13020,6 +13516,18 @@
             "maxLength": 300,
             "title": "Pref Label",
             "type": "string"
+          },
+          "replaced_by": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaced By"
           },
           "scheme": {
             "$ref": "#/components/schemas/VocabularyScheme"
@@ -14931,6 +15439,70 @@
           }
         ],
         "summary": "Propose Capability Concepts",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
+    "/architecture-knowledge/releases/{release_id}/derived-dependencies": {
+      "post": {
+        "description": "Suggest each dependency the draft's interfaces and journeys say between two systems\nin service, citing what says it (ADR-0119).\n\nThe suggestions replace the undecided ones of the previous reading; a dependency in the\ndraft already, or rejected before, is left out.",
+        "operationId": "suggest_derived_dependencies_architecture_knowledge_releases__release_id__derived_dependencies_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtractionRunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Suggest Derived Dependencies",
         "tags": [
           "architecture knowledge"
         ]
@@ -19335,6 +19907,61 @@
         ]
       }
     },
+    "/library/classification-options": {
+      "get": {
+        "description": "The document types and topics the catalogue in service offers.",
+        "operationId": "classification_options_library_classification_options_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassificationOptions"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Classification Options",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/library/documents": {
       "get": {
         "operationId": "list_documents_library_documents_get",
@@ -20037,6 +20664,79 @@
           }
         ],
         "summary": "Preview Chunks",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/library/documents/{document_id}/classification": {
+      "put": {
+        "operationId": "classify_library_documents__document_id__classification_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LibraryClassificationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Classify",
         "tags": [
           "library"
         ]

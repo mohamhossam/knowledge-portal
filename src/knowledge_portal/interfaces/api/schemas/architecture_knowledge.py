@@ -39,6 +39,7 @@ from knowledge_portal.application.use_cases.catalogue_candidates import (
     CandidateView,
     SubjectKind,
 )
+from knowledge_portal.domain.architecture.acceptance import without_acceptances
 from knowledge_portal.domain.architecture.candidates import (
     CandidateBasis,
     CandidateContent,
@@ -92,6 +93,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     KnowledgeDocumentVersion,
     KnowledgeReleaseStatus,
     LandscapeDomain,
+    MasteryNote,
     RelationshipKind,
     SystemComponent,
     SystemDefinition,
@@ -120,6 +122,7 @@ from knowledge_portal.domain.architecture.products import (
     RealisationLayer,
     SourceConfidence,
 )
+from knowledge_portal.domain.architecture.provenance import AcceptedFrom
 from knowledge_portal.domain.architecture.realisations import RealisationRecord
 from knowledge_portal.domain.architecture.samples import MAX_SAMPLES, SampleRequirementSet
 from knowledge_portal.domain.architecture.tracking import (
@@ -144,6 +147,27 @@ from knowledge_portal.interfaces.api.schemas.bounds import (
 # validation, so a stored release always reads back.
 
 
+class AcceptedFromSchema(BaseModel):
+    """An accepted suggestion recorded on what it produced: the model and prompt that
+    suggested it, and who accepted it when (ADR-0120)."""
+
+    candidate_id: Identifier
+    model: Name
+    prompt_version: Name
+    decided_by: Identifier
+    decided_at: datetime
+
+    @classmethod
+    def from_domain(cls, entry: AcceptedFrom) -> AcceptedFromSchema:
+        return cls.model_construct(
+            candidate_id=entry.candidate_id,
+            model=entry.model,
+            prompt_version=entry.prompt_version,
+            decided_by=entry.decided_by,
+            decided_at=entry.decided_at,
+        )
+
+
 class KnowledgeCapabilitySchema(BaseModel):
     id: Identifier
     name: Name
@@ -153,6 +177,9 @@ class KnowledgeCapabilitySchema(BaseModel):
     # The business capability concept it delivers (ADR-0114), or why none fits.
     concept_id: Identifier | None = None
     unlinked_reason: Sentence | None = None
+
+    # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
+    accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, capability: KnowledgeCapability) -> KnowledgeCapabilitySchema:
@@ -164,6 +191,7 @@ class KnowledgeCapabilitySchema(BaseModel):
             component_id=capability.component_id,
             concept_id=capability.concept_id,
             unlinked_reason=capability.unlinked_reason,
+            accepted=[AcceptedFromSchema.from_domain(item) for item in capability.accepted],
         )
 
     def to_domain(self) -> KnowledgeCapability:
@@ -191,6 +219,12 @@ class BusinessCapabilitySchema(BaseModel):
     confidence: SourceConfidence | None = None
     source: Text | None = None
 
+    # Retired, and the entry of the same type that takes its place (ADR-0121).
+    deprecated: bool = False
+    replaced_by: Identifier | None = None
+    # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
+    accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+
     @classmethod
     def from_domain(cls, concept: BusinessCapability) -> BusinessCapabilitySchema:
         return cls.model_construct(
@@ -203,6 +237,9 @@ class BusinessCapabilitySchema(BaseModel):
             exact_match=concept.exact_match,
             confidence=concept.confidence,
             source=concept.source,
+            deprecated=concept.deprecated,
+            replaced_by=concept.replaced_by,
+            accepted=[AcceptedFromSchema.from_domain(item) for item in concept.accepted],
         )
 
     def to_domain(self) -> BusinessCapability:
@@ -216,6 +253,8 @@ class BusinessCapabilitySchema(BaseModel):
             self.exact_match,
             self.confidence,
             self.source,
+            deprecated=self.deprecated,
+            replaced_by=self.replaced_by,
         )
 
 
@@ -239,6 +278,12 @@ class VocabularyTermSchema(BaseModel):
     confidence: SourceConfidence | None = None
     source: Text | None = None
 
+    # Retired, and the entry of the same type that takes its place (ADR-0121).
+    deprecated: bool = False
+    replaced_by: Identifier | None = None
+    # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
+    accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+
     @classmethod
     def from_domain(cls, term: VocabularyTerm) -> VocabularyTermSchema:
         return cls.model_construct(
@@ -252,6 +297,9 @@ class VocabularyTermSchema(BaseModel):
             exact_match=term.exact_match,
             confidence=term.confidence,
             source=term.source,
+            deprecated=term.deprecated,
+            replaced_by=term.replaced_by,
+            accepted=[AcceptedFromSchema.from_domain(item) for item in term.accepted],
         )
 
     def to_domain(self) -> VocabularyTerm:
@@ -266,6 +314,8 @@ class VocabularyTermSchema(BaseModel):
             self.exact_match,
             self.confidence,
             self.source,
+            deprecated=self.deprecated,
+            replaced_by=self.replaced_by,
         )
 
 
@@ -284,6 +334,8 @@ class SystemInterfaceSchema(BaseModel):
     source: Text | None = None
     # The interfaces it passes on, each one its system consumes.
     relays: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
+    accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, interface: SystemInterface) -> SystemInterfaceSchema:
@@ -299,6 +351,7 @@ class SystemInterfaceSchema(BaseModel):
             confidence=interface.confidence,
             source=interface.source,
             relays=list(interface.relays),
+            accepted=[AcceptedFromSchema.from_domain(item) for item in interface.accepted],
         )
 
     def to_domain(self) -> SystemInterface:
@@ -348,6 +401,9 @@ class SystemComponentSchema(BaseModel):
     aliases: list[Name] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     technology: Name | None = None
 
+    # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
+    accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+
     @classmethod
     def from_domain(cls, component: SystemComponent) -> SystemComponentSchema:
         return cls.model_construct(
@@ -357,6 +413,7 @@ class SystemComponentSchema(BaseModel):
             description=component.description,
             aliases=list(component.aliases),
             technology=component.technology,
+            accepted=[AcceptedFromSchema.from_domain(item) for item in component.accepted],
         )
 
     def to_domain(self) -> SystemComponent:
@@ -376,6 +433,8 @@ class CapabilityDomainSchema(BaseModel):
     name_ar: Name | None = None
     parent_id: Identifier | None = None
     description: Text | None = None
+    # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
+    accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, domain: CapabilityDomain) -> CapabilityDomainSchema:
@@ -385,6 +444,7 @@ class CapabilityDomainSchema(BaseModel):
             name_ar=domain.name_ar,
             parent_id=domain.parent_id,
             description=domain.description,
+            accepted=[AcceptedFromSchema.from_domain(item) for item in domain.accepted],
         )
 
     def to_domain(self) -> CapabilityDomain:
@@ -402,6 +462,9 @@ class LandscapeDomainSchema(BaseModel):
     # It serves every other domain (the enterprise domain, the integration layer).
     cross_cutting: bool = False
 
+    # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
+    accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+
     @classmethod
     def from_domain(cls, domain: LandscapeDomain) -> LandscapeDomainSchema:
         return cls.model_construct(
@@ -411,6 +474,7 @@ class LandscapeDomainSchema(BaseModel):
             parent_id=domain.parent_id,
             description=domain.description,
             cross_cutting=domain.cross_cutting,
+            accepted=[AcceptedFromSchema.from_domain(item) for item in domain.accepted],
         )
 
     def to_domain(self) -> LandscapeDomain:
@@ -434,6 +498,8 @@ class PortfolioNodeSchema(BaseModel):
     description: Text | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
+    accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, node: PortfolioNode) -> PortfolioNodeSchema:
@@ -445,6 +511,7 @@ class PortfolioNodeSchema(BaseModel):
             description=node.description,
             confidence=node.confidence,
             source=node.source,
+            accepted=[AcceptedFromSchema.from_domain(item) for item in node.accepted],
         )
 
     def to_domain(self) -> PortfolioNode:
@@ -472,6 +539,9 @@ class ChannelSchema(BaseModel):
     # The channel kind term the kind means.
     kind_id: Identifier | None = None
 
+    # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
+    accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+
     @classmethod
     def from_domain(cls, channel: Channel) -> ChannelSchema:
         return cls.model_construct(
@@ -483,6 +553,7 @@ class ChannelSchema(BaseModel):
             description=channel.description,
             confidence=channel.confidence,
             source=channel.source,
+            accepted=[AcceptedFromSchema.from_domain(item) for item in channel.accepted],
         )
 
     def to_domain(self) -> Channel:
@@ -511,6 +582,8 @@ class KnowledgeSourceSchema(BaseModel):
     authority: Text | None = None
     scope: Text | None = None
     boundary: Text | None = None
+    # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
+    accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, item: KnowledgeSource) -> KnowledgeSourceSchema:
@@ -525,6 +598,7 @@ class KnowledgeSourceSchema(BaseModel):
             authority=item.authority,
             scope=item.scope,
             boundary=item.boundary,
+            accepted=[AcceptedFromSchema.from_domain(entry) for entry in item.accepted],
         )
 
     def to_domain(self) -> KnowledgeSource:
@@ -588,6 +662,8 @@ class SourceConflictSchema(BaseModel):
     decision: Text | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
+    accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, item: SourceConflict) -> SourceConflictSchema:
@@ -602,6 +678,7 @@ class SourceConflictSchema(BaseModel):
             decision=item.decision,
             confidence=item.confidence,
             source=item.source,
+            accepted=[AcceptedFromSchema.from_domain(entry) for entry in item.accepted],
         )
 
     def to_domain(self) -> SourceConflict:
@@ -852,6 +929,8 @@ class RealisationRecordSchema(BaseModel):
     description: Text | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
+    accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, record: RealisationRecord) -> RealisationRecordSchema:
@@ -865,6 +944,7 @@ class RealisationRecordSchema(BaseModel):
             description=record.description,
             confidence=record.confidence,
             source=record.source,
+            accepted=[AcceptedFromSchema.from_domain(item) for item in record.accepted],
         )
 
     def to_domain(self) -> RealisationRecord:
@@ -1402,6 +1482,9 @@ class ProductOfferingSchema(BaseModel):
     plans: list[OfferingPlanSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     business_rules: list[BusinessRuleSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
+    # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
+    accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+
     @classmethod
     def from_domain(cls, offering: ProductOffering) -> ProductOfferingSchema:
         return cls.model_construct(
@@ -1437,6 +1520,7 @@ class ProductOfferingSchema(BaseModel):
             business_rules=[
                 BusinessRuleSchema.from_domain(item) for item in offering.business_rules
             ],
+            accepted=[AcceptedFromSchema.from_domain(item) for item in offering.accepted],
         )
 
     def to_domain(self) -> ProductOffering:
@@ -1712,6 +1796,9 @@ class JourneySchema(BaseModel):
     )
     shared_edges: list[JourneyEdgeResponse] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS * 4)
 
+    # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
+    accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+
     @classmethod
     def from_domain(cls, journey: Journey) -> JourneySchema:
         return cls.model_construct(
@@ -1735,6 +1822,7 @@ class JourneySchema(BaseModel):
                 for channel in journey_channels(journey)
             ],
             shared_edges=_edge_responses(shared_journey_edges(journey)),
+            accepted=[AcceptedFromSchema.from_domain(item) for item in journey.accepted],
         )
 
     def to_domain(self) -> Journey:
@@ -1750,6 +1838,20 @@ class JourneySchema(BaseModel):
             confidence=self.confidence,
             source=self.source,
         )
+
+
+class MasteryNoteSchema(BaseModel):
+    """Which part of an entity a system masters, where others master it too (ADR-0123)."""
+
+    entity_id: Identifier
+    note: Text
+
+    @classmethod
+    def from_domain(cls, note: MasteryNote) -> MasteryNoteSchema:
+        return cls.model_construct(entity_id=note.entity_id, note=note.note)
+
+    def to_domain(self) -> MasteryNote:
+        return MasteryNote(self.entity_id, self.note)
 
 
 class SystemDefinitionSchema(BaseModel):
@@ -1776,6 +1878,14 @@ class SystemDefinitionSchema(BaseModel):
     masters: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     reads: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
+    # Retired, and the entry of the same type that takes its place (ADR-0121).
+    deprecated: bool = False
+    replaced_by: Identifier | None = None
+    # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
+    accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    # What part of an entity it masters, where others master it too (ADR-0123).
+    mastery_notes: list[MasteryNoteSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+
     @classmethod
     def from_domain(cls, system: SystemDefinition) -> SystemDefinitionSchema:
         return cls.model_construct(
@@ -1797,6 +1907,10 @@ class SystemDefinitionSchema(BaseModel):
             source=system.source,
             masters=list(system.masters),
             reads=list(system.reads),
+            deprecated=system.deprecated,
+            replaced_by=system.replaced_by,
+            accepted=[AcceptedFromSchema.from_domain(item) for item in system.accepted],
+            mastery_notes=[MasteryNoteSchema.from_domain(item) for item in system.mastery_notes],
         )
 
     def to_domain(self) -> SystemDefinition:
@@ -1819,6 +1933,9 @@ class SystemDefinitionSchema(BaseModel):
             source=self.source,
             masters=tuple(self.masters),
             reads=tuple(self.reads),
+            deprecated=self.deprecated,
+            replaced_by=self.replaced_by,
+            mastery_notes=tuple(item.to_domain() for item in self.mastery_notes),
         )
 
 
@@ -1827,6 +1944,11 @@ class SystemRelationshipSchema(BaseModel):
     target_system_id: Identifier
     description: Text
     kind: RelationshipKind = RelationshipKind.UNSPECIFIED
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
+
+    # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
+    accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, relationship: SystemRelationship) -> SystemRelationshipSchema:
@@ -1835,11 +1957,19 @@ class SystemRelationshipSchema(BaseModel):
             target_system_id=relationship.target_system_id,
             description=relationship.description,
             kind=relationship.kind,
+            confidence=relationship.confidence,
+            source=relationship.source,
+            accepted=[AcceptedFromSchema.from_domain(item) for item in relationship.accepted],
         )
 
     def to_domain(self) -> SystemRelationship:
         return SystemRelationship(
-            self.source_system_id, self.target_system_id, self.description, self.kind
+            self.source_system_id,
+            self.target_system_id,
+            self.description,
+            self.kind,
+            confidence=self.confidence,
+            source=self.source,
         )
 
 
@@ -1884,6 +2014,7 @@ class KnowledgeReleaseResponse(BaseModel):
     index_id: str | None = None
     name: str | None = None
     created_by: str | None = None
+    base_release_id: str | None = None
     capability_domains: list[CapabilityDomainSchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
     )
@@ -1946,6 +2077,7 @@ class KnowledgeReleaseResponse(BaseModel):
             index_id=release.index_id,
             name=release.name,
             created_by=release.created_by,
+            base_release_id=release.base_release_id,
             capability_domains=[
                 CapabilityDomainSchema.from_domain(item) for item in release.capability_domains
             ],
@@ -1974,8 +2106,9 @@ class KnowledgeReleaseResponse(BaseModel):
 
 class ExplorerReleaseResponse(BaseModel):
     """The version in service as the explorer reads it: its content, never its documents,
-    index or version history (requirement-portal ADR-0101). The change requests applied to
-    it are part of its content, for the Solution Architecture document (step 7)."""
+    index, version history or who accepted what (requirement-portal ADR-0101, ADR-0120).
+    The change requests applied to it are part of its content, for the Solution
+    Architecture document (step 7)."""
 
     id: str
     name: str | None = None
@@ -2005,6 +2138,7 @@ class ExplorerReleaseResponse(BaseModel):
 
     @classmethod
     def from_domain(cls, release: ArchitectureKnowledge) -> ExplorerReleaseResponse:
+        release = without_acceptances(release)
         return cls(
             id=release.id,
             name=release.name,
@@ -2295,6 +2429,16 @@ class CandidateContentSchema(BaseModel):
     # A vocabulary term and the places it covers, for a vocabulary suggestion.
     term: VocabularyTermSchema | None = None
     value_refs: list[VocabularyRefSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    # The whole interface, for an interface suggestion (ADR-0123).
+    interface: SystemInterfaceSchema | None = None
+    # The whole node, for a capability domain or portfolio suggestion (ADR-0123).
+    capability_domain: CapabilityDomainSchema | None = None
+    portfolio_node: PortfolioNodeSchema | None = None
+    # The whole record, for a realisation suggestion (ADR-0123).
+    realisation: RealisationRecordSchema | None = None
+    # The whole source or conflict, for a source or conflict suggestion (ADR-0123).
+    knowledge_source: KnowledgeSourceSchema | None = None
+    conflict: SourceConflictSchema | None = None
 
     @classmethod
     def from_domain(cls, content: CandidateContent) -> CandidateContentSchema:
@@ -2334,6 +2478,32 @@ class CandidateContentSchema(BaseModel):
             concept_ids=list(content.concept_ids),
             term=VocabularyTermSchema.from_domain(content.term) if content.term else None,
             value_refs=[VocabularyRefSchema.from_domain(item) for item in content.value_refs],
+            interface=(
+                SystemInterfaceSchema.from_domain(content.interface) if content.interface else None
+            ),
+            capability_domain=(
+                CapabilityDomainSchema.from_domain(content.capability_domain)
+                if content.capability_domain
+                else None
+            ),
+            portfolio_node=(
+                PortfolioNodeSchema.from_domain(content.portfolio_node)
+                if content.portfolio_node
+                else None
+            ),
+            realisation=(
+                RealisationRecordSchema.from_domain(content.realisation)
+                if content.realisation
+                else None
+            ),
+            knowledge_source=(
+                KnowledgeSourceSchema.from_domain(content.knowledge_source)
+                if content.knowledge_source
+                else None
+            ),
+            conflict=(
+                SourceConflictSchema.from_domain(content.conflict) if content.conflict else None
+            ),
         )
 
     def to_domain(self) -> CandidateContent:
@@ -2364,6 +2534,12 @@ class CandidateContentSchema(BaseModel):
             tuple(self.concept_ids),
             self.term.to_domain() if self.term else None,
             tuple(item.to_domain() for item in self.value_refs),
+            self.interface.to_domain() if self.interface else None,
+            self.capability_domain.to_domain() if self.capability_domain else None,
+            self.portfolio_node.to_domain() if self.portfolio_node else None,
+            self.realisation.to_domain() if self.realisation else None,
+            self.knowledge_source.to_domain() if self.knowledge_source else None,
+            self.conflict.to_domain() if self.conflict else None,
         )
 
 

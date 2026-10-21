@@ -108,7 +108,7 @@ QUOTING = KnowledgeCapability("quoting", "Quoting", ("quote",), component_id="qu
         ),
         (
             lambda: _crm(components=(SystemComponent("x", "X", aliases=("x",)),)),
-            "names more than one component",
+            "X's names and aliases must be unique",
         ),
         (lambda: _crm(QUOTING, components=(ORDER_ENTRY,)), "Quoting is placed in a component"),
         (lambda: SystemComponent("x", "X", technology=" "), "technology must not be blank"),
@@ -342,6 +342,14 @@ def _change(**values: Any) -> ChangeOutput:
         "reasoning": None,
         "relationship_kind": None,
         "channel_kind": None,
+        "interface_style": None,
+        "portfolio_level": None,
+        "realisation_layer": None,
+        "realised_by": [],
+        "source_level": None,
+        "source_version": None,
+        "conflict_sides": [],
+        "affected_offerings": [],
     }
     return ChangeOutput(**(defaults | values))
 

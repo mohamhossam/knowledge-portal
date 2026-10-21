@@ -11,10 +11,30 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 
+from knowledge_portal.domain.architecture.derived_dependencies import interface_dependency
 from knowledge_portal.domain.architecture.entities import ArchitectureDependency
+from knowledge_portal.domain.architecture.interfaces import SystemInterface
 from knowledge_portal.domain.architecture.knowledge import SystemRelationship
 
 ADJACENT_LIMIT = 8
+
+
+def interface_edges(interfaces: Iterable[SystemInterface]) -> tuple[SystemRelationship, ...]:
+    """Curated interface consumption as one-hop edges.
+
+    A release that records no system relationships (the seed catalogue does
+    not) still knows who talks to whom through its interfaces; without this
+    fallback the adjacent-systems view is always empty on such a release.
+    Relays need no special walk here: a relaying system consumes the relayed
+    interface itself, so each hop is already an edge. It stays until curators
+    accept the dependencies derived from the same interfaces (ADR-0119).
+    """
+    edges: list[SystemRelationship] = []
+    for item in interfaces:
+        for consumer in item.consumer_ids:
+            source, target, kind = interface_dependency(item, consumer)
+            edges.append(SystemRelationship(source, target, item.name, kind))
+    return tuple(edges)
 
 
 @dataclass(frozen=True)

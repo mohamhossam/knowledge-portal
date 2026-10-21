@@ -15,11 +15,13 @@ import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 
+from knowledge_portal.domain.architecture.deprecation import check_retirement
 from knowledge_portal.domain.architecture.invariants import (
     InvalidKnowledgeError,
     optional,
     required,
 )
+from knowledge_portal.domain.architecture.provenance import AcceptedFrom
 from knowledge_portal.domain.architecture.sources import SourceConfidence, check_source
 
 # Below a capability domain; a deeper scheme is a sign the concepts describe systems.
@@ -53,6 +55,12 @@ class BusinessCapability:
     exact_match: str | None = None
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # Retired, with the concept of the same type that takes its place if any (ADR-0121):
+    # it stays readable everywhere but selection and matching leave it out.
+    deprecated: bool = False
+    replaced_by: str | None = None
+    # The accepted suggestions that created or extended it, oldest first (ADR-0120).
+    accepted: tuple[AcceptedFrom, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Concept id"))
@@ -68,6 +76,7 @@ class BusinessCapability:
         ):
             object.__setattr__(self, field, optional(getattr(self, field), label))
         check_source(self)
+        check_retirement(self, self.pref_label)
         keys = [label_key(item) for item in self.labels]
         if any(not key for key in keys):
             raise InvalidKnowledgeError(f"{self.pref_label}: a label needs a letter or digit.")
@@ -144,6 +153,18 @@ def check_concepts(
     return by_id
 
 
+def concept_domain(concepts: dict[str, BusinessCapability], concept_id: str) -> str | None:
+    """The domain a concept sits in: its own as a top concept, else its top concept's."""
+    current = concepts.get(concept_id)
+    seen: set[str] = set()
+    while current is not None and current.id not in seen:
+        if current.broader_id is None:
+            return current.domain_id
+        seen.add(current.id)
+        current = concepts.get(current.broader_id)
+    return None
+
+
 def check_link(concept_ids: Iterable[str], unlinked_reason: str | None, where: str) -> None:
     """A link is to concepts, or it says why none fits, never both."""
     ids = tuple(concept_ids)
@@ -187,5 +208,7 @@ def labels_in(text: str, concepts: Iterable[BusinessCapability]) -> tuple[str, .
     return tuple(
         concept.id
         for concept in concepts
-        if any(_contains(words, label_key(label)) for label in concept.labels)
+        # A retired concept is never matched again (ADR-0121).
+        if not concept.deprecated
+        and any(_contains(words, label_key(label)) for label in concept.labels)
     )

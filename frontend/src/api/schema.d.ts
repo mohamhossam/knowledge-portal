@@ -427,6 +427,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/architecture-knowledge/releases/{release_id}/derived-dependencies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Suggest Derived Dependencies
+         * @description Suggest each dependency the draft's interfaces and journeys say between two systems
+         *     in service, citing what says it (ADR-0119).
+         *
+         *     The suggestions replace the undecided ones of the previous reading; a dependency in the
+         *     draft already, or rejected before, is left out.
+         */
+        post: operations["suggest_derived_dependencies_architecture_knowledge_releases__release_id__derived_dependencies_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/architecture-knowledge/releases/{release_id}/documents": {
         parameters: {
             query?: never;
@@ -1456,6 +1480,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/library/classification-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Classification Options
+         * @description The document types and topics the catalogue in service offers.
+         */
+        get: operations["classification_options_library_classification_options_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/library/documents": {
         parameters: {
             query?: never;
@@ -1609,6 +1653,23 @@ export interface paths {
         /** Preview Chunks */
         get: operations["preview_chunks_library_documents__document_id__chunks_preview_get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/library/documents/{document_id}/classification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Classify */
+        put: operations["classify_library_documents__document_id__classification_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -2157,6 +2218,26 @@ export interface components {
             /** Remaining */
             remaining: number;
         };
+        /**
+         * AcceptedFromSchema
+         * @description An accepted suggestion recorded on what it produced: the model and prompt that
+         *     suggested it, and who accepted it when (ADR-0120).
+         */
+        AcceptedFromSchema: {
+            /** Candidate Id */
+            candidate_id: string;
+            /**
+             * Decided At
+             * Format: date-time
+             */
+            decided_at: string;
+            /** Decided By */
+            decided_by: string;
+            /** Model */
+            model: string;
+            /** Prompt Version */
+            prompt_version: string;
+        };
         /** ActivateRequest */
         ActivateRequest: {
             /** Rationale */
@@ -2428,6 +2509,8 @@ export interface components {
         Body_submit_library_ingestions_post: {
             /** Document Id */
             document_id?: string | null;
+            /** Document Type */
+            document_type?: string | null;
             /** Expected Version */
             expected_version?: number | null;
             /** File */
@@ -2516,6 +2599,11 @@ export interface components {
          */
         BusinessCapabilitySchema: {
             /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
+            /**
              * Alt Labels
              * @default []
              */
@@ -2525,6 +2613,11 @@ export interface components {
             confidence?: components["schemas"]["SourceConfidence"] | null;
             /** Definition */
             definition?: string | null;
+            /**
+             * Deprecated
+             * @default false
+             */
+            deprecated: boolean;
             /** Domain Id */
             domain_id?: string | null;
             /** Exact Match */
@@ -2533,6 +2626,8 @@ export interface components {
             id: string;
             /** Pref Label */
             pref_label: string;
+            /** Replaced By */
+            replaced_by?: string | null;
             /** Source */
             source?: string | null;
         };
@@ -2568,6 +2663,7 @@ export interface components {
              * @default []
              */
             aliases: string[];
+            capability_domain?: components["schemas"]["CapabilityDomainSchema"] | null;
             /** Capability Id */
             capability_id?: string | null;
             /**
@@ -2584,10 +2680,13 @@ export interface components {
              * @default []
              */
             concept_ids: string[];
+            conflict?: components["schemas"]["SourceConflictSchema"] | null;
             /** Description */
             description?: string | null;
+            interface?: components["schemas"]["SystemInterfaceSchema"] | null;
             journey?: components["schemas"]["JourneySchema"] | null;
             kind: components["schemas"]["CandidateKind"];
+            knowledge_source?: components["schemas"]["KnowledgeSourceSchema"] | null;
             /** Landscape Domain Id */
             landscape_domain_id?: string | null;
             /**
@@ -2599,8 +2698,10 @@ export interface components {
             name_ar?: string | null;
             /** Parent Domain Id */
             parent_domain_id?: string | null;
+            portfolio_node?: components["schemas"]["PortfolioNodeSchema"] | null;
             product?: components["schemas"]["ProductOfferingSchema"] | null;
             question?: components["schemas"]["OpenQuestionSchema"] | null;
+            realisation?: components["schemas"]["RealisationRecordSchema"] | null;
             relationship_kind?: components["schemas"]["RelationshipKind"] | null;
             /** System Id */
             system_id: string;
@@ -2629,13 +2730,13 @@ export interface components {
          * CandidateKind
          * @enum {string}
          */
-        CandidateKind: "system" | "component" | "capability" | "constraint" | "relationship" | "landscape_domain" | "placement" | "product" | "journey" | "channel" | "question" | "concept" | "component_link" | "vocabulary_term" | "offering_rule";
+        CandidateKind: "system" | "component" | "capability" | "constraint" | "relationship" | "landscape_domain" | "placement" | "product" | "journey" | "channel" | "question" | "concept" | "component_link" | "vocabulary_term" | "offering_rule" | "interface" | "capability_domain" | "portfolio_node" | "realisation_record" | "source" | "conflict";
         /**
          * CandidateMatch
          * @description How a candidate relates to the draft as it stands now.
          * @enum {string}
          */
-        CandidateMatch: "new" | "updates_existing" | "already_present" | "needs_system" | "needs_component" | "needs_domain" | "needs_offering" | "needs_channel" | "needs_concept";
+        CandidateMatch: "new" | "updates_existing" | "already_present" | "needs_system" | "needs_component" | "needs_domain" | "needs_offering" | "needs_channel" | "needs_concept" | "needs_interface" | "needs_portfolio_node" | "needs_realisation" | "needs_source";
         /**
          * CandidateStatus
          * @enum {string}
@@ -2643,6 +2744,11 @@ export interface components {
         CandidateStatus: "proposed" | "accepted" | "rejected";
         /** CapabilityDomainSchema */
         CapabilityDomainSchema: {
+            /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
             /** Description */
             description?: string | null;
             /** Id */
@@ -2779,7 +2885,7 @@ export interface components {
          *     undecided suggestions of the previous one.
          * @enum {string}
          */
-        CatalogueReading: "concept_backfill" | "component_links" | "vocabulary_cleanup";
+        CatalogueReading: "concept_backfill" | "component_links" | "vocabulary_cleanup" | "derived_dependencies";
         /** CatalogueSuggestionResponse */
         CatalogueSuggestionResponse: {
             basis: components["schemas"]["CandidateBasis"];
@@ -2966,12 +3072,17 @@ export interface components {
          * ChangedItem
          * @enum {string}
          */
-        ChangedItem: "system" | "capability" | "relationship" | "document" | "domain" | "component" | "landscape_domain" | "product" | "journey" | "channel" | "source" | "conflict" | "change_request" | "concept" | "vocabulary_term" | "interface" | "realisation";
+        ChangedItem: "system" | "capability" | "relationship" | "document" | "domain" | "component" | "landscape_domain" | "product" | "journey" | "channel" | "source" | "conflict" | "change_request" | "concept" | "vocabulary_term" | "interface" | "realisation" | "portfolio_node";
         /**
          * ChannelSchema
          * @description Where orders are placed, and the system each is entered through (ADR-0101, step 3).
          */
         ChannelSchema: {
+            /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
             confidence?: components["schemas"]["SourceConfidence"] | null;
             /** Description */
             description?: string | null;
@@ -3059,6 +3170,23 @@ export interface components {
             target_id: string;
             /** Target Kind */
             target_kind: string;
+        };
+        /** ClassificationOption */
+        ClassificationOption: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+        };
+        /**
+         * ClassificationOptions
+         * @description The types and topics a library document may be given now.
+         */
+        ClassificationOptions: {
+            /** Document Types */
+            document_types: components["schemas"]["ClassificationOption"][];
+            /** Topics */
+            topics: components["schemas"]["ClassificationOption"][];
         };
         /** ComparedImpactResponse */
         ComparedImpactResponse: {
@@ -3447,8 +3575,9 @@ export interface components {
         /**
          * ExplorerReleaseResponse
          * @description The version in service as the explorer reads it: its content, never its documents,
-         *     index or version history (requirement-portal ADR-0101). The change requests applied to
-         *     it are part of its content, for the Solution Architecture document (step 7).
+         *     index, version history or who accepted what (requirement-portal ADR-0101, ADR-0120).
+         *     The change requests applied to it are part of its content, for the Solution
+         *     Architecture document (step 7).
          */
         ExplorerReleaseResponse: {
             /** Change History */
@@ -4049,6 +4178,11 @@ export interface components {
          */
         JourneySchema: {
             /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
+            /**
              * Activities
              * @default []
              */
@@ -4112,6 +4246,11 @@ export interface components {
         };
         /** KnowledgeCapabilitySchema */
         KnowledgeCapabilitySchema: {
+            /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
             /** Component Id */
             component_id?: string | null;
             /** Concept Id */
@@ -4153,6 +4292,8 @@ export interface components {
         };
         /** KnowledgeReleaseResponse */
         KnowledgeReleaseResponse: {
+            /** Base Release Id */
+            base_release_id?: string | null;
             /** Built Revision */
             built_revision?: number | null;
             /** Business Capabilities */
@@ -4227,6 +4368,11 @@ export interface components {
          * @description A source the catalogue is read from, and its level (ADR-0101, step 5).
          */
         KnowledgeSourceSchema: {
+            /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
             /** Authority */
             authority?: string | null;
             /** Boundary */
@@ -4255,6 +4401,11 @@ export interface components {
          * @description Where systems sit in the landscape; a sub-domain names its parent (ADR-0094).
          */
         LandscapeDomainSchema: {
+            /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
             /**
              * Cross Cutting
              * @default false
@@ -4308,6 +4459,21 @@ export interface components {
             fingerprint: string;
             /** Revision Id */
             revision_id: string;
+        };
+        /**
+         * LibraryClassificationRequest
+         * @description What kind of document it is and what it is about, as catalogue ids (ADR-0123).
+         */
+        LibraryClassificationRequest: {
+            /** Document Type */
+            document_type?: string | null;
+            /** Expected Version */
+            expected_version: number;
+            /**
+             * Topics
+             * @default []
+             */
+            topics: string[];
         };
         /** LibraryDependency */
         LibraryDependency: {
@@ -4448,6 +4614,8 @@ export interface components {
             can_edit: boolean;
             /** Citations */
             citations?: number | null;
+            /** Document Type */
+            document_type?: string | null;
             /** Id */
             id: string;
             /**
@@ -4466,6 +4634,11 @@ export interface components {
             review_fingerprint: string | null;
             /** Title */
             title: string;
+            /**
+             * Topics
+             * @default []
+             */
+            topics: string[];
             /** Version */
             version: number;
             /** Versions */
@@ -4553,6 +4726,16 @@ export interface components {
             requirements: number;
             /** Stories */
             stories: number;
+        };
+        /**
+         * MasteryNoteSchema
+         * @description Which part of an entity a system masters, where others master it too (ADR-0123).
+         */
+        MasteryNoteSchema: {
+            /** Entity Id */
+            entity_id: string;
+            /** Note */
+            note: string;
         };
         /**
          * MatchRole
@@ -4998,6 +5181,11 @@ export interface components {
          * @description A level of the product portfolio, such as Enterprise › Fixed › SMB; levels are data.
          */
         PortfolioNodeSchema: {
+            /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
             confidence?: components["schemas"]["SourceConfidence"] | null;
             /** Description */
             description?: string | null;
@@ -5061,6 +5249,11 @@ export interface components {
          * @description A commercial offering, its order types and components, and the systems behind them.
          */
         ProductOfferingSchema: {
+            /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
             /**
              * Audiences
              * @default []
@@ -5324,6 +5517,11 @@ export interface components {
          */
         RealisationRecordSchema: {
             /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
+            /**
              * Aliases
              * @default []
              */
@@ -5437,6 +5635,11 @@ export interface components {
          *     whose systems differ from what its offerings name, or that is linked to nothing.
          */
         ReferenceFlagResponse: {
+            /**
+             * Replaced Systems
+             * @default []
+             */
+            replaced_systems: components["schemas"]["SystemSuccessorResponse"][];
             /** Retired Capabilities */
             retired_capabilities: components["schemas"]["CapabilityScopeResponse"][];
             /** Retired Offering Ids */
@@ -5883,6 +6086,11 @@ export interface components {
          */
         SourceConflictSchema: {
             a: components["schemas"]["ConflictSideSchema"];
+            /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
             b: components["schemas"]["ConflictSideSchema"];
             confidence?: components["schemas"]["SourceConfidence"] | null;
             /** Decision */
@@ -5993,6 +6201,11 @@ export interface components {
         /** SystemComponentSchema */
         SystemComponentSchema: {
             /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
+            /**
              * Aliases
              * @default []
              */
@@ -6010,6 +6223,11 @@ export interface components {
         };
         /** SystemDefinitionSchema */
         SystemDefinitionSchema: {
+            /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
             /**
              * Aliases
              * @default []
@@ -6031,6 +6249,11 @@ export interface components {
              * @default []
              */
             constraints: string[];
+            /**
+             * Deprecated
+             * @default false
+             */
+            deprecated: boolean;
             /** Description */
             description?: string | null;
             /**
@@ -6047,6 +6270,11 @@ export interface components {
              * @default []
              */
             masters: string[];
+            /**
+             * Mastery Notes
+             * @default []
+             */
+            mastery_notes: components["schemas"]["MasteryNoteSchema"][];
             /** Name */
             name: string;
             /** Name Ar */
@@ -6062,6 +6290,8 @@ export interface components {
              * @default []
              */
             reads: string[];
+            /** Replaced By */
+            replaced_by?: string | null;
             /** Roadmap */
             roadmap?: string | null;
             /** Source */
@@ -6072,6 +6302,11 @@ export interface components {
          * @description An API, event or file contract one system exposes, and the systems that consume it.
          */
         SystemInterfaceSchema: {
+            /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
             confidence?: components["schemas"]["SourceConfidence"] | null;
             /**
              * Consumer Ids
@@ -6127,10 +6362,18 @@ export interface components {
         };
         /** SystemRelationshipSchema */
         SystemRelationshipSchema: {
+            /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
+            confidence?: components["schemas"]["SourceConfidence"] | null;
             /** Description */
             description: string;
             /** @default unspecified */
             kind: components["schemas"]["RelationshipKind"];
+            /** Source */
+            source?: string | null;
             /** Source System Id */
             source_system_id: string;
             /** Target System Id */
@@ -6153,6 +6396,16 @@ export interface components {
             note?: string | null;
             on_behalf?: components["schemas"]["AdminOverride"] | null;
             standing: components["schemas"]["ReviewStanding"];
+            /** System Id */
+            system_id: string;
+        };
+        /**
+         * SystemSuccessorResponse
+         * @description A retired system still named, and the system that replaced it (ADR-0121).
+         */
+        SystemSuccessorResponse: {
+            /** Successor Id */
+            successor_id: string;
             /** System Id */
             system_id: string;
         };
@@ -6333,13 +6586,18 @@ export interface components {
          * VocabularyScheme
          * @enum {string}
          */
-        VocabularyScheme: "etom_process" | "channel_kind" | "component_kind" | "responsibility_role" | "open_api" | "information_entity";
+        VocabularyScheme: "etom_process" | "channel_kind" | "component_kind" | "responsibility_role" | "open_api" | "information_entity" | "document_type";
         /**
          * VocabularyTermSchema
          * @description A term of a controlled vocabulary: an eTOM process, a channel or component kind, a
          *     role, an Open API or an information entity.
          */
         VocabularyTermSchema: {
+            /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
             /**
              * Alt Labels
              * @default []
@@ -6350,6 +6608,11 @@ export interface components {
             confidence?: components["schemas"]["SourceConfidence"] | null;
             /** Definition */
             definition?: string | null;
+            /**
+             * Deprecated
+             * @default false
+             */
+            deprecated: boolean;
             /** Exact Match */
             exact_match?: string | null;
             /** Id */
@@ -6358,6 +6621,8 @@ export interface components {
             notation?: string | null;
             /** Pref Label */
             pref_label: string;
+            /** Replaced By */
+            replaced_by?: string | null;
             scheme: components["schemas"]["VocabularyScheme"];
             /** Source */
             source?: string | null;
@@ -7299,6 +7564,39 @@ export interface operations {
         };
     };
     propose_capability_concepts_architecture_knowledge_releases__release_id__concept_proposals_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtractionRunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    suggest_derived_dependencies_architecture_knowledge_releases__release_id__derived_dependencies_post: {
         parameters: {
             query?: never;
             header?: {
@@ -9532,6 +9830,37 @@ export interface operations {
             };
         };
     };
+    classification_options_library_classification_options_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClassificationOptions"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_documents_library_documents_get: {
         parameters: {
             query?: {
@@ -9866,6 +10195,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReferenceChunk"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    classify_library_documents__document_id__classification_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryClassificationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryView"];
                 };
             };
             /** @description Validation Error */
