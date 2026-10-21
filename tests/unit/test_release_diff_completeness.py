@@ -23,6 +23,7 @@ from knowledge_portal.infrastructure.architecture.knowledge_yaml import (
     seed_knowledge,
 )
 from knowledge_portal.infrastructure.architecture.tokenizer import FakeWordTokenizer
+from knowledge_portal.infrastructure.documents.library_worker import OfflineDocumentScanner
 from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
     InMemoryArchitectureKnowledgeRepository,
 )
@@ -111,6 +112,7 @@ def test_a_draft_diffs_against_its_recorded_base_not_the_active_release() -> Non
         CatalogueFileAdapter(),
         InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer()),
         10_000_000,
+        OfflineDocumentScanner(),
     )
     draft = manage.create_draft(MAINTAINER, "Kept base")
     assert draft.base_release_id == seed.id
