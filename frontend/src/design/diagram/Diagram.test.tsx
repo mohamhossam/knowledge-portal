@@ -82,6 +82,22 @@ describe("Diagram with nodes to open", () => {
     expect(screen.getByRole("link", { name: "Order Hub" })).toHaveAttribute("href", "/catalogue/systems/order-hub");
     expect(screen.queryByRole("button", { name: "CWOM" })).not.toBeInTheDocument();
   });
+
+  it("shows every word of a long label, and each word it shows is in the node's name, in order (WCAG 2.5.3)", () => {
+    const name = "Network / SIM / Device / Number Inventory, Network and resources (sample), In this order";
+    const long = layered(
+      [{ id: "inv", label: "Network / SIM / Device / Number Inventory", detail: "Network and resources (sample)", status: "In this order", href: "/catalogue/systems/inv" }, { id: "b", label: "B" }],
+      [{ from: "inv", to: "b" }],
+      { nodeWidth: 148 },
+    );
+    render(<Diagram label="Inventory" layout={long} />);
+    const link = screen.getByRole("link", { name });
+    // The text a speech user reads off the box, as axe joins it: the drawn lines, title aside.
+    const shown = [...link.childNodes].filter((child) => child.nodeName !== "title").map((child) => child.textContent).join("");
+    const words = (text: string) => text.toLowerCase().replace(/\([^)]*\)/g, " ").split(/[^a-z0-9]+/).filter(Boolean);
+    expect(words(shown).slice(0, 5)).toEqual(words("Network / SIM / Device / Number Inventory"));
+    expect(words(name).join(" ")).toContain(words(shown).join(" "));
+  });
 });
 
 describe("Show as table", () => {

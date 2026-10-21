@@ -379,9 +379,11 @@ Diagrams section with two seed-shaped examples (CWOM in context, the ownership t
   `label`). Once nodes open something (an `href`, or `onActivate`), it is a named group
   (`aria-roledescription="diagram"`), because an image hides its children: Tab enters once,
   arrows move to the nearest node that way, Home and End jump, Enter (and Space on buttons)
-  opens. A label and its second line each wrap onto two lines, and every node of a layout grows
-  to hold the most lines any needs; past that, text ends in "…". The whole label is the
-  accessible name and the tooltip. No text is under 14px.
+  opens. A label wraps onto as many lines as it needs and is never cut; its second line wraps
+  onto two and ends in "…" past that, cut between words. Every node of a layout grows to hold
+  the most lines any needs. The label, detail and state are the accessible name and the
+  tooltip, so every word shown is in the name, in order (WCAG 2.5.3, which axe checks). No
+  text is under 14px.
 
 ### Hooks (`hooks.ts`)
 
