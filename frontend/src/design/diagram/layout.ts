@@ -95,11 +95,15 @@ export const secondLine = (node: DiagramNode) => [node.detail, node.status].filt
 /** How tall a node is that shows this many lines of text. */
 export const nodeHeightFor = (lines: number) => Math.max(DIAGRAM.nodeHeight, NODE_FRAME + LINE * lines);
 
-/** A node's lines at a width: its label and its second line, each on at most two. */
+/**
+ * A node's lines at a width: its label on as many as it needs, never cut, and its second line on
+ * at most two. The label is the start of the node's accessible name, so a label shown whole keeps
+ * every word on screen in that name, in order (WCAG 2.5.3).
+ */
 export function nodeLines(node: DiagramNode, width: number): { label: string[]; second: string[] } {
   const inner = width - NODE_INSET;
   const second = secondLine(node);
-  return { label: wrap(node.label, inner, TEXT_PX.label), second: second ? wrap(second, inner, TEXT_PX.detail) : [] };
+  return { label: wrap(node.label, inner, TEXT_PX.label, Infinity), second: second ? wrap(second, inner, TEXT_PX.detail) : [] };
 }
 
 /**
@@ -527,10 +531,10 @@ export function textWidth(text: string, fontPx: number): number {
 }
 
 /**
- * A label cut to fit a node's width at the given font size, ending in "…".
- * Widths are estimated per character (generously, so a cut label never spills
- * out of its box); the full label is always the node's accessible name and its
- * tooltip.
+ * A text cut to fit a width at the given font size, ending in "…", between
+ * words unless one word alone is too wide. Widths are estimated per character
+ * (generously, so a cut text never spills out of its box); the full text is
+ * always the accessible name and the tooltip of what shows it.
  */
 export function fit(text: string, width: number, fontPx: number): string {
   if (textWidth(text, fontPx) <= width) return text;
@@ -539,7 +543,12 @@ export function fit(text: string, width: number, fontPx: number): string {
   let used = 0;
   let end = 0;
   while (end < chars.length && used + advance(chars[end]!) * fontPx <= room) used += advance(chars[end++]!) * fontPx;
-  return `${chars.slice(0, end).join("").trimEnd()}…`;
+  let kept = chars.slice(0, end).join("");
+  // Between words where there is a space to cut at: half a word reads as another word, and the
+  // accessible name, which is the whole text, must hold every word shown (WCAG 2.5.3).
+  const space = chars[end] === " " ? end : kept.lastIndexOf(" ");
+  if (space > 0) kept = kept.slice(0, space).replace(/[\s·,;:/(›–-]+$/u, "");
+  return `${kept.trimEnd()}…`;
 }
 
 /**

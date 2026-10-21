@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { CWOM_EDGES, CWOM_LANES, CWOM_NODES, OWNERSHIP_EDGES, OWNERSHIP_NODES } from "../../design-lab/gallery/diagramExamples";
-import { DIAGRAM, diagramRows, fit, layered, longestPathLevels, nearest, nodeHeightFor, readingOrder, textWidth, tree, wrap } from "./layout";
+import { DIAGRAM, diagramRows, fit, layered, longestPathLevels, nearest, nodeHeightFor, nodeLines, readingOrder, textWidth, tree, wrap } from "./layout";
 import type { DiagramLayout, DiagramNode, PlacedNode } from "./types";
 
 const nodes = (...ids: string[]): DiagramNode[] => ids.map((id) => ({ id, label: id.toUpperCase() }));
@@ -232,6 +232,10 @@ describe("reading a layout", () => {
     const cut = fit("Fibre bundle ordering for business customers", 150, 15);
     expect(cut.endsWith("…")).toBe(true);
     expect(textWidth(cut, 15)).toBeLessThanOrEqual(150);
+    // Between words: every word it keeps is a whole word of the text, in order.
+    expect("Fibre bundle ordering for business customers".startsWith(`${cut.slice(0, -1)} `)).toBe(true);
+    const dated = fit("September landscape and offerings (sample)", 230, 14);
+    expect("September landscape and offerings (sample)".startsWith(`${dated.slice(0, -1)} `)).toBe(true);
     expect(textWidth(fit("WWWWWWWWWWWWWWWWWWWW", 150, 15), 15)).toBeLessThanOrEqual(150);
   });
 });
@@ -286,7 +290,10 @@ describe("fitting a layout to the screen", () => {
     const fitted = layered(wide, [{ from: "a", to: "b" }, { from: "b", to: "c" }], { fitWidth: 520 });
     expect(fitted.width).toBeLessThanOrEqual(520);
     expect(at(fitted, "a").width).toBeLessThan(DIAGRAM.nodeWidth);
-    expect(at(fitted, "a").height).toBe(nodeHeightFor(3));
+    // Its label wraps whole, never cut, and the box is tall enough for every line.
+    const { label, second } = nodeLines(wide[0]!, at(fitted, "a").width);
+    expect(label.join(" ")).toBe(wide[0]!.label);
+    expect(at(fitted, "a").height).toBe(nodeHeightFor(label.length + second.length));
   });
 
   it("keeps its nodes' width when even the narrowest would not fit: it scrolls instead", () => {
@@ -309,6 +316,25 @@ describe("fitting a layout to the screen", () => {
     const fitted = tree(OWNERSHIP_NODES, OWNERSHIP_EDGES, { fitWidth: 640 });
     expect(fitted.width).toBeLessThanOrEqual(Math.max(640, tree(OWNERSHIP_NODES, OWNERSHIP_EDGES).width));
     noOverlaps(fitted);
+  });
+});
+
+describe("nodeLines", () => {
+  it("never cuts a label: it takes as many lines as it needs, and only the second line ends in an ellipsis", () => {
+    const node = { id: "inv", label: "Network / SIM / Device / Number Inventory", detail: "Network and resources (sample)", status: "In this order" };
+    const { label, second } = nodeLines(node, 148);
+    expect(label.length).toBeGreaterThan(2);
+    expect(label.join(" ")).toBe(node.label);
+    expect(second).toHaveLength(2);
+    expect(second[1]!.endsWith("…")).toBe(true);
+  });
+
+  it("makes every node of a layout tall enough for the longest label", () => {
+    const nodes: DiagramNode[] = [{ id: "inv", label: "Network / SIM / Device / Number Inventory", detail: "System" }, { id: "b", label: "B" }];
+    const { label } = nodeLines(nodes[0]!, 148);
+    const placed = layered(nodes, [{ from: "inv", to: "b" }], { nodeWidth: 148 });
+    expect(at(placed, "inv").height).toBe(nodeHeightFor(label.length + 1));
+    expect(at(placed, "b").height).toBe(at(placed, "inv").height);
   });
 });
 
