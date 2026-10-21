@@ -5,6 +5,15 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ## Unreleased
 
+## 0.7.0 — 2026-10-21
+
+Reading a document now suggests every kind of catalogue entry a curator decides on: interfaces,
+capability domains, portfolio nodes, realisation records, sources and conflicts join the
+earlier kinds, each recording where it came from once accepted (ADR-0123). Systems that share
+mastery of an entity carry a note on the part each owns; library documents carry a type and
+topics, in English; the explorer keeps a version's change history and rate-limits plans
+lookups (ADR-0101 Amendment 3). Uses platform-kernel v1.3.1 and Pillow 13.
+
 ### Added
 
 - Sources and conflicts suggested from documents (ADR-0123,
