@@ -68,7 +68,7 @@ describe("the organisation through what it sells", () => {
     expect(productLinks(product, release, undefined)).toEqual({ sells: ["Business fibre"], portfolio: "SMB (Segment)", checks: [] });
     const flag: ReferenceFlag = {
       subject: "product", subject_id: "p", retired_system_ids: ["legacy"], retired_offering_ids: ["old-offer"],
-      retired_portfolio_node_id: null, retired_capabilities: [], systems_missing: ["cwom"], systems_unexplained: ["bcrm"], unlinked: false,
+      retired_portfolio_node_id: null, retired_capabilities: [], replaced_systems: [], systems_missing: ["cwom"], systems_unexplained: ["bcrm"], unlinked: false,
     };
     expect(productLinks({ ...product, offering_ids: ["fibre-offer", "old-offer"] }, release, flag).checks).toEqual([
       "old-offer: no longer an offering in service.",
@@ -145,9 +145,11 @@ describe("seats scoped to a capability", () => {
     const flag: ReferenceFlag = {
       subject: "squad", subject_id: "zeta", retired_system_ids: ["gone"], retired_offering_ids: [], retired_portfolio_node_id: null,
       retired_capabilities: [{ system_id: "bscs", capability_id: "cap-charging" }], systems_missing: [], systems_unexplained: [], unlinked: false,
+      replaced_systems: [{ system_id: "old-billing", successor_id: "bscs" }],
     };
     expect(squadChecks(flag, billing)).toEqual([
       "gone: no longer a system in service.",
+      "old-billing: retired, replaced by BSCS; move the seat to it.",
       "BSCS › Charging: no capability of the system links to it any more.",
     ]);
     expect(squadChecks(undefined, billing)).toEqual([]);

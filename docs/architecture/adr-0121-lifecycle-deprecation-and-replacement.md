@@ -2,8 +2,17 @@
 
 ## Status
 
+Accepted 2026-10-21 by the owner; implemented in `docs/slices/lifecycle-deprecation.md`.
 Proposed 2026-10-19. Implements review finding #8 of the portal review
 ([report](https://claude.ai/code/artifact/d5147883-5ccd-472f-a57a-6a2464b2fd53)).
+
+Settled while implementing it: a reference to a retired entity forwards to its last
+successor in service, or matches nothing when it was retired for good, while the entity
+keeps its labels so nothing new can take them (so each lookup has a matching form and a
+label-ownership form); the reader is told a successor's old names, so a document that
+still uses one is read as the successor; and a successor offered on the page is one still
+in service. Concepts and terms retire through a catalogue file until their pages have an
+editor.
 
 ## Context
 

@@ -19,6 +19,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 
 from knowledge_portal.domain.architecture.assessment import PathKind, PathStep
+from knowledge_portal.domain.architecture.deprecation import in_service
 from knowledge_portal.domain.architecture.interfaces import SystemInterface
 from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge
 from knowledge_portal.domain.architecture.vocabularies import VocabularyScheme
@@ -42,7 +43,7 @@ def entity_family(release: ArchitectureKnowledge, entity_id: str) -> frozenset[s
     for current in found:
         found.extend(
             item.id
-            for item in release.vocabulary
+            for item in in_service(release.vocabulary)
             if item.scheme is VocabularyScheme.INFORMATION_ENTITY and item.broader_id == current
         )
     return frozenset(found)
@@ -70,7 +71,7 @@ def data_owners(release: ArchitectureKnowledge, entity_id: str) -> tuple[Reach, 
             system.id,
             (_entity_step(release, entity_id), _system_step(release, system.id)),
         )
-        for system in release.systems
+        for system in in_service(release.systems)
         if family & set(system.masters)
     )
 
@@ -83,7 +84,7 @@ def data_readers(release: ArchitectureKnowledge, entity_id: str) -> tuple[Reach,
             system.id,
             (_entity_step(release, entity_id), _system_step(release, system.id)),
         )
-        for system in release.systems
+        for system in in_service(release.systems)
         if family & set(system.reads)
     )
 
@@ -114,7 +115,8 @@ def ripple(
     MAX_HOPS interfaces away. A start system is never its own consumer, and a system is
     reached once.
     """
-    seen: set[str] = set()
+    # A retired system is never reached, nor relays a change on (ADR-0121).
+    seen: set[str] = {item.id for item in release.systems if item.deprecated}
     frontier: list[tuple[Reach, SystemInterface | None]] = []
     for item in start:
         if item.system_id not in seen:

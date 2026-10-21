@@ -117,6 +117,8 @@ _CONCEPT_FIELDS = (
     "exact_match",
     "confidence",
     "source",
+    "deprecated",
+    "replaced_by",
 )
 
 
@@ -131,6 +133,8 @@ _TERM_FIELDS = (
     "exact_match",
     "confidence",
     "source",
+    "deprecated",
+    "replaced_by",
 )
 
 
@@ -373,6 +377,10 @@ def _system_fields(before: SystemDefinition, after: SystemDefinition) -> tuple[s
         fields.append("confidence")
     if before.source != after.source:
         fields.append("source")
+    if before.deprecated != after.deprecated:
+        fields.append("deprecated")
+    if before.replaced_by != after.replaced_by:
+        fields.append("replaced_by")
     return tuple(fields)
 
 

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import re
 
+from knowledge_portal.domain.architecture.deprecation import in_service
 from knowledge_portal.domain.architecture.entities import DomainSuggestion
 from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge
 
@@ -37,7 +38,8 @@ def suggest_domains(release: ArchitectureKnowledge, text: str) -> tuple[DomainSu
     }
     systems: dict[str, set[str]] = {item.id: set() for item in release.capability_domains}
     names = {system.id: system.name for system in release.systems}
-    for system in release.systems:
+    # A retired system suggests nothing (ADR-0121).
+    for system in in_service(release.systems):
         for capability in system.capabilities:
             # A capability counts for its domain and every domain above it.
             for domain in release.domain_path(capability.domain_id):

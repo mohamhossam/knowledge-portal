@@ -70,6 +70,7 @@ from knowledge_portal.domain.architecture.assessment import (
     PathKind,
     SystemRole,
 )
+from knowledge_portal.domain.architecture.deprecation import in_service
 from knowledge_portal.domain.architecture.drafts import OfferingDraft
 from knowledge_portal.domain.architecture.entities import OrganisationReference
 from knowledge_portal.domain.architecture.impact_graph import realised_nowhere, realisers
@@ -341,6 +342,7 @@ class AssessRequirement(RequirementAssessmentPort):
                 suggested = [
                     concept for part in offering.components for concept in part.capability_ids
                 ]
+            offered = {item.id for item in in_service(release.business_capabilities)}
             if not suggested:
                 suggested = [
                     item.id
@@ -348,7 +350,8 @@ class AssessRequirement(RequirementAssessmentPort):
                         release.business_capabilities, key=lambda item: item.pref_label.casefold()
                     )
                 ]
-            ids = list(dict.fromkeys(suggested))[:MAX_OPTIONS]
+            # A retired concept is never offered as an answer (ADR-0121).
+            ids = list(dict.fromkeys(item for item in suggested if item in offered))[:MAX_OPTIONS]
             if ids:
                 questions.append(
                     AssessmentQuestion(

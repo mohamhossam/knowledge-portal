@@ -211,6 +211,13 @@ class CapabilityScopeResponse(BaseModel):
     capability_id: str
 
 
+class SystemSuccessorResponse(BaseModel):
+    """A retired system still named, and the system that replaced it (ADR-0121)."""
+
+    system_id: str
+    successor_id: str
+
+
 class ReferenceFlagResponse(BaseModel):
     """A squad or product naming what the version in service no longer has, or a product
     whose systems differ from what its offerings name, or that is linked to nothing."""
@@ -221,6 +228,7 @@ class ReferenceFlagResponse(BaseModel):
     retired_offering_ids: list[str]
     retired_portfolio_node_id: str | None
     retired_capabilities: list[CapabilityScopeResponse]
+    replaced_systems: list[SystemSuccessorResponse] = []
     systems_missing: list[str]
     systems_unexplained: list[str]
     unlinked: bool
@@ -238,6 +246,12 @@ class ReferenceFlagResponse(BaseModel):
                     system_id=item.system_id, capability_id=item.capability_id
                 )
                 for item in flag.retired_capabilities
+            ],
+            replaced_systems=[
+                SystemSuccessorResponse.model_construct(
+                    system_id=item.system_id, successor_id=item.successor_id
+                )
+                for item in flag.replaced_systems
             ],
             systems_missing=list(flag.systems_missing),
             systems_unexplained=list(flag.systems_unexplained),

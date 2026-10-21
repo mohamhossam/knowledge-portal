@@ -7,6 +7,7 @@ import {
 } from "../design/components";
 import { count } from "../home/format";
 import { RouterLink } from "../shell/links";
+import { Retired } from "./Retired";
 import { acceptances } from "./accepted";
 import { AcceptedFrom } from "./AcceptedFrom";
 import { CatalogueHeader } from "./frame/CatalogueHeader";
@@ -119,10 +120,10 @@ function ConceptsList({ index, current }: { index: ConceptIndex; current?: strin
           return {
             id: concept.id,
             href: `${base}/concepts/${encodeURIComponent(concept.id)}${query}`,
-            name: concept.pref_label,
+            name: concept.deprecated ? <span className="cat-retired">{concept.pref_label}</span> : concept.pref_label,
             bidi: true,
             detail: why ? <>Also called “<bdi>{why}</bdi>”</> : concept.alt_labels.join(" · ") || undefined,
-            meta: <GapBadge gaps={realised(index, concept) ? [] : ["a system that realises it"]} />,
+            meta: concept.deprecated ? <span className="cat-quiet">Retired</span> : <GapBadge gaps={realised(index, concept) ? [] : ["a system that realises it"]} />,
           };
         }),
     }));
@@ -170,6 +171,7 @@ function ConceptRecord({ concept, index }: { concept: Concept; index: ConceptInd
   const components = index.components.get(concept.id) ?? [];
   const narrower = index.narrower.get(concept.id) ?? [];
   const broader = concept.broader_id ? index.byId.get(concept.broader_id) : undefined;
+  const replacement = concept.replaced_by ? index.byId.get(concept.replaced_by) : undefined;
   const conceptLink = (other: Concept) => <Link key={other.id} to={`${base}/concepts/${encodeURIComponent(other.id)}`} dir="auto">{other.pref_label}</Link>;
 
   type Use = (typeof systems)[number];
@@ -180,6 +182,7 @@ function ConceptRecord({ concept, index }: { concept: Concept; index: ConceptInd
       takeFocus={location.key !== "default"}
       meta={
         <>
+          {concept.deprecated && <Retired successor={replacement && { name: replacement.pref_label, href: `${base}/concepts/${encodeURIComponent(replacement.id)}` }} />}
           {concept.confidence && <Status tone={SOURCE_TONE[concept.confidence]}>{SOURCE_WORD[concept.confidence]}</Status>}
           {path.length > 0 && <bdi>{path.join(" › ")}</bdi>}
         </>

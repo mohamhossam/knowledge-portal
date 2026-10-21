@@ -15,6 +15,7 @@ import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 
+from knowledge_portal.domain.architecture.deprecation import check_retirement
 from knowledge_portal.domain.architecture.invariants import (
     InvalidKnowledgeError,
     optional,
@@ -54,6 +55,10 @@ class BusinessCapability:
     exact_match: str | None = None
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # Retired, with the concept of the same type that takes its place if any (ADR-0121):
+    # it stays readable everywhere but selection and matching leave it out.
+    deprecated: bool = False
+    replaced_by: str | None = None
     # The accepted suggestions that created or extended it, oldest first (ADR-0120).
     accepted: tuple[AcceptedFrom, ...] = ()
 
@@ -71,6 +76,7 @@ class BusinessCapability:
         ):
             object.__setattr__(self, field, optional(getattr(self, field), label))
         check_source(self)
+        check_retirement(self, self.pref_label)
         keys = [label_key(item) for item in self.labels]
         if any(not key for key in keys):
             raise InvalidKnowledgeError(f"{self.pref_label}: a label needs a letter or digit.")
@@ -190,5 +196,7 @@ def labels_in(text: str, concepts: Iterable[BusinessCapability]) -> tuple[str, .
     return tuple(
         concept.id
         for concept in concepts
-        if any(_contains(words, label_key(label)) for label in concept.labels)
+        # A retired concept is never matched again (ADR-0121).
+        if not concept.deprecated
+        and any(_contains(words, label_key(label)) for label in concept.labels)
     )

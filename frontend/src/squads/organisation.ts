@@ -205,6 +205,9 @@ export function productLinks(product: OrgProduct, release: Release | null, flag:
     checks.push(`${list(flag.retired_offering_ids, offeringName)}: no longer an offering in service.`);
   }
   if (flag?.retired_portfolio_node_id) checks.push(`${flag.retired_portfolio_node_id}: no longer a portfolio node in service.`);
+  for (const item of flag?.replaced_systems ?? []) {
+    checks.push(`${systemName(item.system_id)}: retired, replaced by ${systemName(item.successor_id)}; list that instead.`);
+  }
   if (flag?.systems_missing.length) {
     checks.push(`Its offerings also name ${list(flag.systems_missing, systemName)}, which it does not list.`);
   }
@@ -223,6 +226,10 @@ export function squadChecks(flag: ReferenceFlag | undefined, release: Release | 
   const systemName = (id: string) => release?.systems.find((item) => item.id === id)?.name ?? id;
   return [
     ...(flag?.retired_system_ids ?? []).map((id) => `${id}: no longer a system in service.`),
+    // ADR-0121: a retired system another replaced points at its successor.
+    ...(flag?.replaced_systems ?? []).map(
+      (item) => `${systemName(item.system_id)}: retired, replaced by ${systemName(item.successor_id)}; move the seat to it.`,
+    ),
     ...(flag?.retired_capabilities ?? []).map(
       (scope) => `${systemName(scope.system_id)} › ${conceptName(release, scope.capability_id)}: no capability of the system links to it any more.`,
     ),

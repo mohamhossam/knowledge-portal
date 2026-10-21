@@ -2550,6 +2550,11 @@ export interface components {
             confidence?: components["schemas"]["SourceConfidence"] | null;
             /** Definition */
             definition?: string | null;
+            /**
+             * Deprecated
+             * @default false
+             */
+            deprecated: boolean;
             /** Domain Id */
             domain_id?: string | null;
             /** Exact Match */
@@ -2558,6 +2563,8 @@ export interface components {
             id: string;
             /** Pref Label */
             pref_label: string;
+            /** Replaced By */
+            replaced_by?: string | null;
             /** Source */
             source?: string | null;
         };
@@ -5490,6 +5497,11 @@ export interface components {
          *     whose systems differ from what its offerings name, or that is linked to nothing.
          */
         ReferenceFlagResponse: {
+            /**
+             * Replaced Systems
+             * @default []
+             */
+            replaced_systems: components["schemas"]["SystemSuccessorResponse"][];
             /** Retired Capabilities */
             retired_capabilities: components["schemas"]["CapabilityScopeResponse"][];
             /** Retired Offering Ids */
@@ -6094,6 +6106,11 @@ export interface components {
              * @default []
              */
             constraints: string[];
+            /**
+             * Deprecated
+             * @default false
+             */
+            deprecated: boolean;
             /** Description */
             description?: string | null;
             /**
@@ -6125,6 +6142,8 @@ export interface components {
              * @default []
              */
             reads: string[];
+            /** Replaced By */
+            replaced_by?: string | null;
             /** Roadmap */
             roadmap?: string | null;
             /** Source */
@@ -6221,6 +6240,16 @@ export interface components {
             note?: string | null;
             on_behalf?: components["schemas"]["AdminOverride"] | null;
             standing: components["schemas"]["ReviewStanding"];
+            /** System Id */
+            system_id: string;
+        };
+        /**
+         * SystemSuccessorResponse
+         * @description A retired system still named, and the system that replaced it (ADR-0121).
+         */
+        SystemSuccessorResponse: {
+            /** Successor Id */
+            successor_id: string;
             /** System Id */
             system_id: string;
         };
@@ -6423,6 +6452,11 @@ export interface components {
             confidence?: components["schemas"]["SourceConfidence"] | null;
             /** Definition */
             definition?: string | null;
+            /**
+             * Deprecated
+             * @default false
+             */
+            deprecated: boolean;
             /** Exact Match */
             exact_match?: string | null;
             /** Id */
@@ -6431,6 +6465,8 @@ export interface components {
             notation?: string | null;
             /** Pref Label */
             pref_label: string;
+            /** Replaced By */
+            replaced_by?: string | null;
             scheme: components["schemas"]["VocabularyScheme"];
             /** Source */
             source?: string | null;

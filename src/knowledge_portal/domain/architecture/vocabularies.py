@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from knowledge_portal.domain.architecture.concepts import label_key, label_words
+from knowledge_portal.domain.architecture.deprecation import check_retirement, successor
 from knowledge_portal.domain.architecture.invariants import (
     InvalidKnowledgeError,
     optional,
@@ -86,6 +87,10 @@ class VocabularyTerm:
     exact_match: str | None = None
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # Retired, with the term of the same type that takes its place if any (ADR-0121):
+    # it stays readable everywhere but selection and matching leave it out.
+    deprecated: bool = False
+    replaced_by: str | None = None
     # The accepted suggestions that created or extended it, oldest first (ADR-0120).
     accepted: tuple[AcceptedFrom, ...] = ()
 
@@ -104,6 +109,7 @@ class VocabularyTerm:
         ):
             object.__setattr__(self, field, optional(getattr(self, field), label))
         check_source(self)
+        check_retirement(self, self.pref_label)
         keys = [label_key(item) for item in self.labels]
         if any(not key for key in keys):
             raise InvalidKnowledgeError(f"{self.pref_label}: a label needs a letter or digit.")
@@ -219,8 +225,18 @@ def api_name(value: str, code: str) -> str:
 def find_term(
     terms: Iterable[VocabularyTerm], scheme: VocabularyScheme, reference: str
 ) -> VocabularyTerm | None:
+    """The term of the scheme a reference means now (ADR-0121): one retired forwards to what
+    replaced it, and one retired for good matches nothing. ``term_named`` sees every term."""
+    every = tuple(terms)
+    found = term_named(every, scheme, reference)
+    return successor(every, found.id) if found is not None else None
+
+
+def term_named(
+    terms: Iterable[VocabularyTerm], scheme: VocabularyScheme, reference: str
+) -> VocabularyTerm | None:
     """A term of the scheme named by id, or by one of its labels or its code, ignoring case
-    and punctuation."""
+    and punctuation, retired or not: whether a label is taken."""
     candidates = [item for item in terms if item.scheme is scheme]
     exact = next((item for item in candidates if item.id == reference), None)
     key = label_key(reference)

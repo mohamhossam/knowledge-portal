@@ -22,6 +22,7 @@ from knowledge_portal.application.ports.architecture_rag import (
     LinkedEntity,
 )
 from knowledge_portal.domain.architecture.concepts import BusinessCapability, labels_in
+from knowledge_portal.domain.architecture.deprecation import in_service
 from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge
 
 # A label link stands only when the concept is among the passage's nearest concepts by
@@ -64,7 +65,8 @@ def _indexed(release: ArchitectureKnowledge, concept: BusinessCapability) -> Ind
 
 
 def concept_scheme(release: ArchitectureKnowledge) -> tuple[IndexedConcept, ...]:
-    return tuple(_indexed(release, item) for item in release.business_capabilities)
+    """The concepts the index matches against: those in service (ADR-0121)."""
+    return tuple(_indexed(release, item) for item in in_service(release.business_capabilities))
 
 
 def record_concepts(

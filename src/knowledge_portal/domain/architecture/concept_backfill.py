@@ -17,6 +17,7 @@ from knowledge_portal.domain.architecture.concepts import (
     concept_id_for,
     label_key,
 )
+from knowledge_portal.domain.architecture.deprecation import successor
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
     KnowledgeCapability,
@@ -53,14 +54,18 @@ def propose_concepts(release: ArchitectureKnowledge) -> tuple[ConceptProposal, .
     domain when they all share one. Matching phrases become other labels unless
     another concept, or another proposal's name, already uses them.
     """
+    concepts = release.business_capabilities
+    # A retired concept's label links to what replaced it, or to nothing (ADR-0121),
+    # while it still holds the label, so no proposal takes it.
     owners = {
-        label_key(label): concept
-        for concept in release.business_capabilities
+        label_key(label): current
+        for concept in concepts
+        if (current := successor(concepts, concept.id)) is not None
         for label in concept.labels
     }
     groups = _unlinked(release)
     # Every proposal's own name first, so a phrase never takes another proposal's name.
-    claimed = set(owners) | set(groups)
+    claimed = {label_key(label) for concept in concepts for label in concept.labels} | set(groups)
     taken = {concept.id for concept in release.business_capabilities}
     proposals: list[ConceptProposal] = []
     for key, members in groups.items():
