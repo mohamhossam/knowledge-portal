@@ -7,6 +7,13 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- Data with more than one owner (ADR-0123, `docs/slices/shared-mastery.md`): several systems
+  may be the system of record for one information entity when each says which part it
+  masters, in a `mastery_notes` list on the system (API, YAML and JSON, and a new MasteryNotes
+  workbook sheet). A note names an entity its system masters, once. The system record shows
+  each note; the draft's Check step lists the shared entities and the owners with no note yet,
+  and Publish names them as worth a look without holding publishing. Public contract, additive.
+
 - Names compared one way (`docs/slices/model-cleanup.md`): two systems, two components of
   one system or two sibling domains may no longer differ only in punctuation ("Wi-Fi Hub"
   and "WiFi hub"), as concepts and terms already may not; one system still keeps such

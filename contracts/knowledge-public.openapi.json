@@ -7861,6 +7861,27 @@
         "title": "MappingImpactResponse",
         "type": "object"
       },
+      "MasteryNoteSchema": {
+        "description": "Which part of an entity a system masters, where others master it too (ADR-0123).",
+        "properties": {
+          "entity_id": {
+            "maxLength": 200,
+            "title": "Entity Id",
+            "type": "string"
+          },
+          "note": {
+            "maxLength": 10000,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "entity_id",
+          "note"
+        ],
+        "title": "MasteryNoteSchema",
+        "type": "object"
+      },
       "MatchRole": {
         "description": "Which system reference of a candidate a possible match is for.",
         "enum": [
@@ -12144,6 +12165,15 @@
             },
             "maxItems": 5000,
             "title": "Masters",
+            "type": "array"
+          },
+          "mastery_notes": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/MasteryNoteSchema"
+            },
+            "maxItems": 5000,
+            "title": "Mastery Notes",
             "type": "array"
           },
           "name": {

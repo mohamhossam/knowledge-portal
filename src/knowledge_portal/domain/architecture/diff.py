@@ -362,6 +362,8 @@ def _system_fields(before: SystemDefinition, after: SystemDefinition) -> tuple[s
         fields.append("masters")
     if sorted(before.reads) != sorted(after.reads):
         fields.append("reads")
+    if set(before.mastery_notes) != set(after.mastery_notes):
+        fields.append("mastery_notes")
     if before.owner != after.owner:
         fields.append("owner")
     if before.external != after.external:
