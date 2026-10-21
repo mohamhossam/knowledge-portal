@@ -1480,6 +1480,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/library/classification-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Classification Options
+         * @description The document types and topics the catalogue in service offers.
+         */
+        get: operations["classification_options_library_classification_options_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/library/documents": {
         parameters: {
             query?: never;
@@ -1633,6 +1653,23 @@ export interface paths {
         /** Preview Chunks */
         get: operations["preview_chunks_library_documents__document_id__chunks_preview_get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/library/documents/{document_id}/classification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Classify */
+        put: operations["classify_library_documents__document_id__classification_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -2472,6 +2509,8 @@ export interface components {
         Body_submit_library_ingestions_post: {
             /** Document Id */
             document_id?: string | null;
+            /** Document Type */
+            document_type?: string | null;
             /** Expected Version */
             expected_version?: number | null;
             /** File */
@@ -3129,6 +3168,23 @@ export interface components {
             target_id: string;
             /** Target Kind */
             target_kind: string;
+        };
+        /** ClassificationOption */
+        ClassificationOption: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+        };
+        /**
+         * ClassificationOptions
+         * @description The types and topics a library document may be given now.
+         */
+        ClassificationOptions: {
+            /** Document Types */
+            document_types: components["schemas"]["ClassificationOption"][];
+            /** Topics */
+            topics: components["schemas"]["ClassificationOption"][];
         };
         /** ComparedImpactResponse */
         ComparedImpactResponse: {
@@ -4397,6 +4453,21 @@ export interface components {
             /** Revision Id */
             revision_id: string;
         };
+        /**
+         * LibraryClassificationRequest
+         * @description What kind of document it is and what it is about, as catalogue ids (ADR-0123).
+         */
+        LibraryClassificationRequest: {
+            /** Document Type */
+            document_type?: string | null;
+            /** Expected Version */
+            expected_version: number;
+            /**
+             * Topics
+             * @default []
+             */
+            topics: string[];
+        };
         /** LibraryDependency */
         LibraryDependency: {
             /** Analysis Id */
@@ -4536,6 +4607,8 @@ export interface components {
             can_edit: boolean;
             /** Citations */
             citations?: number | null;
+            /** Document Type */
+            document_type?: string | null;
             /** Id */
             id: string;
             /**
@@ -4554,6 +4627,11 @@ export interface components {
             review_fingerprint: string | null;
             /** Title */
             title: string;
+            /**
+             * Topics
+             * @default []
+             */
+            topics: string[];
             /** Version */
             version: number;
             /** Versions */
@@ -4641,6 +4719,16 @@ export interface components {
             requirements: number;
             /** Stories */
             stories: number;
+        };
+        /**
+         * MasteryNoteSchema
+         * @description Which part of an entity a system masters, where others master it too (ADR-0123).
+         */
+        MasteryNoteSchema: {
+            /** Entity Id */
+            entity_id: string;
+            /** Note */
+            note: string;
         };
         /**
          * MatchRole
@@ -6170,6 +6258,11 @@ export interface components {
              * @default []
              */
             masters: string[];
+            /**
+             * Mastery Notes
+             * @default []
+             */
+            mastery_notes: components["schemas"]["MasteryNoteSchema"][];
             /** Name */
             name: string;
             /** Name Ar */
@@ -6481,7 +6574,7 @@ export interface components {
          * VocabularyScheme
          * @enum {string}
          */
-        VocabularyScheme: "etom_process" | "channel_kind" | "component_kind" | "responsibility_role" | "open_api" | "information_entity";
+        VocabularyScheme: "etom_process" | "channel_kind" | "component_kind" | "responsibility_role" | "open_api" | "information_entity" | "document_type";
         /**
          * VocabularyTermSchema
          * @description A term of a controlled vocabulary: an eTOM process, a channel or component kind, a
@@ -9725,6 +9818,37 @@ export interface operations {
             };
         };
     };
+    classification_options_library_classification_options_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClassificationOptions"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_documents_library_documents_get: {
         parameters: {
             query?: {
@@ -10059,6 +10183,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReferenceChunk"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    classify_library_documents__document_id__classification_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryClassificationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryView"];
                 };
             };
             /** @description Validation Error */

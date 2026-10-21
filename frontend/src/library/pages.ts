@@ -4,6 +4,7 @@
  * entry chunk (area 1 backlog: lazy route groups).
  */
 export { CitationsPage } from "./CitationsPage";
+export { ClassificationPage } from "./ClassificationPage";
 export { DocumentPage, MainPage } from "./DocumentPage";
 export { LibraryPage } from "./LibraryPage";
 export { OwnershipPage } from "./OwnershipPage";

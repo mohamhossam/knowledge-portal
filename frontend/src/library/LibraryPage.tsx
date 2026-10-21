@@ -17,6 +17,7 @@ import { formatDay } from "../home/format";
 import { REVIEW_STATUS } from "../reviews/review";
 import { ButtonLink, RouterLink } from "../shell/links";
 import { DOC_STATE_WORDS, DOC_TONE, type DocState, docState } from "./docState";
+import { classificationFacts, labelOf, useClassificationOptions } from "./classification";
 import { LibraryRetry } from "./LibraryRetry";
 import { LifecycleDiagram } from "./LifecycleDiagram";
 import { newestState, newestVersion, standing } from "./model";
@@ -59,7 +60,10 @@ export function LibraryPage() {
   const status = (params.get("status") ?? "all") as DocState | "all";
   const owner = params.get("owner") === "mine" ? "mine" : "everyone";
   const find = params.get("q") ?? "";
+  const kind = params.get("type") ?? "all";
+  const topic = params.get("topic") ?? "all";
   const chosenId = params.get("doc");
+  const classification = useClassificationOptions();
   // Typed here, written to the address a moment later: one history update per pause, not per key.
   const [findDraft, setFindDraft] = useState(find);
   const [findFor, setFindFor] = useState(find);
@@ -103,8 +107,14 @@ export function LibraryPage() {
     return all.filter((row) =>
       (status === "all" || row.state === status)
       && (owner === "everyone" || row.doc.is_owner)
+      && (kind === "all" || (kind === "none" ? !row.doc.document_type : row.doc.document_type === kind))
+      && (topic === "all" || (row.doc.topics ?? []).includes(topic))
       && (!needle || row.doc.title.toLocaleLowerCase().includes(needle)));
-  }, [all, status, owner, find]);
+  }, [all, status, owner, kind, topic, find]);
+
+  // The types and topics given to some document, so a filter never offers an empty choice.
+  const givenTypes = useMemo(() => [...new Set(all.flatMap((row) => (row.doc.document_type ? [row.doc.document_type] : [])))], [all]);
+  const givenTopics = useMemo(() => [...new Set(all.flatMap((row) => row.doc.topics ?? []))], [all]);
 
   // A row keeps the list's filters in its address, so the list stays as it was beside the record.
   const hrefFor = useCallback((id: string) => {
@@ -141,7 +151,7 @@ export function LibraryPage() {
   };
   const retried = () => void queryClient.invalidateQueries({ queryKey: ["library", "documents"] });
 
-  const filtering = status !== "all" || owner !== "everyone" || find !== "";
+  const filtering = status !== "all" || owner !== "everyone" || kind !== "all" || topic !== "all" || find !== "";
   const offered = [...FILTERS, ...OTHERS.filter((state) => (counts.get(state) ?? 0) > 0)];
   const chosen = chosenId ? all.find((row) => row.doc.id === chosenId) : undefined;
 
@@ -183,6 +193,33 @@ export function LibraryPage() {
             options={[{ id: "everyone", label: "Everyone" }, { id: "mine", label: "Mine" }]}
             onChange={(id) => set({ owner: id === "mine" ? "mine" : null })}
           />
+          {givenTypes.length > 0 && (
+            <ListFilter
+              label="Type"
+              value={kind}
+              options={[
+                { id: "all", label: "Any type" },
+                ...givenTypes
+                  .map((id) => ({ id, label: labelOf(classification.data, "document_types", id), count: all.filter((row) => row.doc.document_type === id).length }))
+                  .sort((a, b) => a.label.localeCompare(b.label)),
+                { id: "none", label: "No type given", count: all.filter((row) => !row.doc.document_type).length },
+              ]}
+              onChange={(id) => set({ type: id === "all" ? null : id })}
+            />
+          )}
+          {givenTopics.length > 0 && (
+            <ListFilter
+              label="Topic"
+              value={topic}
+              options={[
+                { id: "all", label: "Any topic" },
+                ...givenTopics
+                  .map((id) => ({ id, label: labelOf(classification.data, "topics", id), count: all.filter((row) => (row.doc.topics ?? []).includes(id)).length }))
+                  .sort((a, b) => a.label.localeCompare(b.label)),
+              ]}
+              onChange={(id) => set({ topic: id === "all" ? null : id })}
+            />
+          )}
           {filtering && <Button variant="link" onClick={() => setParams(chosenId ? { doc: chosenId } : {}, { replace: true })}>Clear filters</Button>}
         </ListTools>
         <RecordList
@@ -238,6 +275,7 @@ function DocumentSummary({ row, takeFocus, stopped, onRetried }: {
   onRetried: () => void;
 }) {
   const { doc, state } = row;
+  const classification = useClassificationOptions();
   const href = `/library/${encodeURIComponent(doc.id)}`;
   const newest = newestState(doc);
   const version = newestVersion(doc);
@@ -287,6 +325,7 @@ function DocumentSummary({ row, takeFocus, stopped, onRetried }: {
           ...(version && version.blocks.length ? [["Passages read", plural(version.blocks.length, "passage")] as [string, ReactNode]] : []),
           ["Cited by", doc.citations === null || doc.citations === undefined ? "Requirement AI didn't say" : doc.citations === 0 ? "No requirement yet" : <RouterLink href={`${href}/cited-by`}>{plural(doc.citations, "requirement")}</RouterLink>],
           ["Owner", doc.is_owner ? "You" : <bdi>{doc.owner.display_name}</bdi>],
+          ...classificationFacts(doc, classification.data),
         ]}
       />
       {doc.versions.length > 1 && (

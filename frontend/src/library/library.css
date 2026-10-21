@@ -573,3 +573,16 @@
     white-space: nowrap;
   }
 }
+
+/* A document's type and topics, set by its owner (ADR-0123). */
+.lib-classify {
+  display: grid;
+  gap: var(--space-3);
+  max-inline-size: 36rem;
+}
+
+.lib-classify__topic {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}

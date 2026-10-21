@@ -7,6 +7,7 @@ import { useDisclosure } from "../../design/hooks";
 import { count } from "../../home/format";
 import { RouterLink } from "../../shell/links";
 import { changeSentence } from "../catalogue";
+import { sharedMastery } from "../mastery";
 import { impactVerdict } from "../drafting";
 import { useCatalogueContext, useMappingImpact } from "../useCatalogue";
 import { usePublish, useSamples } from "../useEditing";
@@ -36,7 +37,7 @@ function Publish({ release }: { release: Release }) {
   const sentence = progress.changes.data ? changeSentence(progress.changes.data) : null;
   const mapped = impact.data ? impact.data.requirements - impact.data.outdated_requirements : null;
   const buildFirst = progress.build !== "built";
-  const items = preflight({ base, progress, sentence, mapped, samples: samples.map((item) => item.id ?? item.text), results });
+  const items = preflight({ base, release, progress, sentence, mapped, samples: samples.map((item) => item.id ?? item.text), results });
   const blocked = items.find((item) => item.tone === "attention");
 
   return (
@@ -104,8 +105,9 @@ function Publish({ release }: { release: Release }) {
 }
 
 /** The checks before publishing, each with its state in words and the way to settle it. */
-function preflight({ base, progress, sentence, mapped, samples, results }: {
+function preflight({ base, release, progress, sentence, mapped, samples, results }: {
   base: string;
+  release: Release;
   progress: DraftProgress;
   sentence: string | null;
   mapped: number | null;
@@ -157,6 +159,17 @@ function preflight({ base, progress, sentence, mapped, samples, results }: {
         ? { id: "changes", tone: "neutral", word: "Changes", title: sentence ? `It would ${sentence}` : count(progress.changes.data.changes.length, "change"), action: step("changes", "See every change") }
         : { id: "changes", tone: "held", word: "Worth a look", title: "Its contents match the version in service", detail: "Publishing it changes nothing requirement work sees." },
   );
+  const unexplained = sharedMastery(release).filter((item) => item.unexplained);
+  if (unexplained.length) {
+    items.push({
+      id: "mastery",
+      tone: "held",
+      word: "Worth a look",
+      title: `${count(unexplained.length, "kind of information has", "kinds of information have")} several systems of record without saying which part each masters`,
+      detail: unexplained.map((item) => item.name).join(", "),
+      action: step("check", "See Check"),
+    });
+  }
   if (mapped !== null) {
     items.push({
       id: "mapped",

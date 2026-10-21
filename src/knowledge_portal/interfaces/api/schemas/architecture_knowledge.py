@@ -93,6 +93,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     KnowledgeDocumentVersion,
     KnowledgeReleaseStatus,
     LandscapeDomain,
+    MasteryNote,
     RelationshipKind,
     SystemComponent,
     SystemDefinition,
@@ -1833,6 +1834,20 @@ class JourneySchema(BaseModel):
         )
 
 
+class MasteryNoteSchema(BaseModel):
+    """Which part of an entity a system masters, where others master it too (ADR-0123)."""
+
+    entity_id: Identifier
+    note: Text
+
+    @classmethod
+    def from_domain(cls, note: MasteryNote) -> MasteryNoteSchema:
+        return cls.model_construct(entity_id=note.entity_id, note=note.note)
+
+    def to_domain(self) -> MasteryNote:
+        return MasteryNote(self.entity_id, self.note)
+
+
 class SystemDefinitionSchema(BaseModel):
     id: Identifier
     name: Name
@@ -1862,6 +1877,8 @@ class SystemDefinitionSchema(BaseModel):
     replaced_by: Identifier | None = None
     # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
     accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    # What part of an entity it masters, where others master it too (ADR-0123).
+    mastery_notes: list[MasteryNoteSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, system: SystemDefinition) -> SystemDefinitionSchema:
@@ -1887,6 +1904,7 @@ class SystemDefinitionSchema(BaseModel):
             deprecated=system.deprecated,
             replaced_by=system.replaced_by,
             accepted=[AcceptedFromSchema.from_domain(item) for item in system.accepted],
+            mastery_notes=[MasteryNoteSchema.from_domain(item) for item in system.mastery_notes],
         )
 
     def to_domain(self) -> SystemDefinition:
@@ -1911,6 +1929,7 @@ class SystemDefinitionSchema(BaseModel):
             reads=tuple(self.reads),
             deprecated=self.deprecated,
             replaced_by=self.replaced_by,
+            mastery_notes=tuple(item.to_domain() for item in self.mastery_notes),
         )
 
 

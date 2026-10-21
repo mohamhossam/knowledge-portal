@@ -1001,6 +1001,18 @@
             ],
             "title": "Document Id"
           },
+          "document_type": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Type"
+          },
           "expected_version": {
             "anyOf": [
               {
@@ -3158,6 +3170,49 @@
           "active"
         ],
         "title": "CitingDependency",
+        "type": "object"
+      },
+      "ClassificationOption": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label"
+        ],
+        "title": "ClassificationOption",
+        "type": "object"
+      },
+      "ClassificationOptions": {
+        "description": "The types and topics a library document may be given now.",
+        "properties": {
+          "document_types": {
+            "items": {
+              "$ref": "#/components/schemas/ClassificationOption"
+            },
+            "title": "Document Types",
+            "type": "array"
+          },
+          "topics": {
+            "items": {
+              "$ref": "#/components/schemas/ClassificationOption"
+            },
+            "title": "Topics",
+            "type": "array"
+          }
+        },
+        "required": [
+          "document_types",
+          "topics"
+        ],
+        "title": "ClassificationOptions",
         "type": "object"
       },
       "ComparedImpactResponse": {
@@ -7204,6 +7259,43 @@
         "title": "LibraryApprovalRequest",
         "type": "object"
       },
+      "LibraryClassificationRequest": {
+        "description": "What kind of document it is and what it is about, as catalogue ids (ADR-0123).",
+        "properties": {
+          "document_type": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Type"
+          },
+          "expected_version": {
+            "minimum": 1.0,
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "topics": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Topics",
+            "type": "array"
+          }
+        },
+        "required": [
+          "expected_version"
+        ],
+        "title": "LibraryClassificationRequest",
+        "type": "object"
+      },
       "LibraryDependency": {
         "properties": {
           "analysis_id": {
@@ -7593,6 +7685,17 @@
             ],
             "title": "Citations"
           },
+          "document_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Type"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -7657,6 +7760,14 @@
           "title": {
             "title": "Title",
             "type": "string"
+          },
+          "topics": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Topics",
+            "type": "array"
           },
           "version": {
             "title": "Version",
@@ -7915,6 +8026,27 @@
           "outdated_stories"
         ],
         "title": "MappingImpactResponse",
+        "type": "object"
+      },
+      "MasteryNoteSchema": {
+        "description": "Which part of an entity a system masters, where others master it too (ADR-0123).",
+        "properties": {
+          "entity_id": {
+            "maxLength": 200,
+            "title": "Entity Id",
+            "type": "string"
+          },
+          "note": {
+            "maxLength": 10000,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "entity_id",
+          "note"
+        ],
+        "title": "MasteryNoteSchema",
         "type": "object"
       },
       "MatchRole": {
@@ -12220,6 +12352,15 @@
             "title": "Masters",
             "type": "array"
           },
+          "mastery_notes": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/MasteryNoteSchema"
+            },
+            "maxItems": 5000,
+            "title": "Mastery Notes",
+            "type": "array"
+          },
           "name": {
             "maxLength": 300,
             "title": "Name",
@@ -13234,7 +13375,8 @@
           "component_kind",
           "responsibility_role",
           "open_api",
-          "information_entity"
+          "information_entity",
+          "document_type"
         ],
         "title": "VocabularyScheme",
         "type": "string"
@@ -19724,6 +19866,61 @@
         ]
       }
     },
+    "/library/classification-options": {
+      "get": {
+        "description": "The document types and topics the catalogue in service offers.",
+        "operationId": "classification_options_library_classification_options_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassificationOptions"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Classification Options",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/library/documents": {
       "get": {
         "operationId": "list_documents_library_documents_get",
@@ -20426,6 +20623,79 @@
           }
         ],
         "summary": "Preview Chunks",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/library/documents/{document_id}/classification": {
+      "put": {
+        "operationId": "classify_library_documents__document_id__classification_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LibraryClassificationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Classify",
         "tags": [
           "library"
         ]

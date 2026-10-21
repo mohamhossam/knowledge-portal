@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { api, type CatalogPlans } from "../api/client";
+import { ApiError } from "../api/errors";
 import { ExplorerPage, NOT_YET } from "./ExplorerPage";
 import { EXPLORED, PLANS } from "./fixtures";
 
@@ -165,6 +166,14 @@ describe("ExplorerPage", () => {
     open("/explorer", false, () => Promise.reject(new Error("The product catalog service is unavailable (503).")));
     const section = within((await screen.findByRole("heading", { name: "Plans and prices" })).closest("section")!);
     expect(await section.findByRole("alert")).toHaveTextContent("The product catalog service is unavailable (503).");
+    expect(section.getByRole("button", { name: "Try again" })).toBeInTheDocument();
+  });
+
+  it("says when a reader has looked up too many plans, and when to try again", async () => {
+    const message = "Too many product catalogue lookups: at most 30 per minute. Try again in 12 seconds.";
+    open("/explorer", false, () => Promise.reject(new ApiError(429, message, "provider_rate_limited")));
+    const section = within((await screen.findByRole("heading", { name: "Plans and prices" })).closest("section")!);
+    expect(await section.findByRole("alert")).toHaveTextContent(message);
     expect(section.getByRole("button", { name: "Try again" })).toBeInTheDocument();
   });
 
