@@ -7,6 +7,16 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- One canonical dependency model, part 2 (ADR-0119, `docs/slices/derived-dependencies.md`):
+  a draft's Sources step suggests every dependency its interfaces and journeys already say
+  (an API's consumer calls it; an event's or a file's system sends to its consumers; a
+  journey's hand-over, through an integration layer as two), one per two systems and kind,
+  each citing the interfaces and journey steps that say it. They are decided on Decide like
+  any other suggestion; suggesting again leaves out what the draft holds or a curator
+  rejected. `POST /architecture-knowledge/releases/{id}/derived-dependencies`; public
+  contract, additive. Decide names the draft's own catalogue as a suggestion's source,
+  rather than a missing document, for every reading of it.
+
 - One canonical dependency model, part 1 (ADR-0119, `docs/slices/dependency-identity.md`): a
   dependency is identified by its two systems and its kind, so rewording what it is for is a
   change to it and two systems can depend on each other in two ways at once. Dependencies

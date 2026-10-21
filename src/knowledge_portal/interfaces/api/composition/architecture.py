@@ -49,6 +49,7 @@ from knowledge_portal.application.use_cases.change_requests import (
     ReceiveChangeRequest,
     ReceiveDelivery,
 )
+from knowledge_portal.application.use_cases.derived_dependencies import SuggestDerivedDependencies
 from knowledge_portal.application.use_cases.precedents import (
     ReadPrecedentSummaries,
     RecordPrecedent,
@@ -106,6 +107,8 @@ class ArchitectureWiring:
     suggest_component_links: SuggestComponentCapabilities
     # The clean-up mapping written values onto the controlled vocabularies.
     clean_up_vocabulary: CleanUpVocabulary
+    # The dependencies its interfaces and journeys say (ADR-0119).
+    suggest_derived_dependencies: SuggestDerivedDependencies
     # Change requests from Requirement AI (requirement-portal ADR-0101, step 7).
     receive_change_request: ReceiveChangeRequest
     receive_delivery: ReceiveDelivery
@@ -237,6 +240,9 @@ def build_architecture(
         ),
         propose_concepts=ProposeCapabilityConcepts(manage, persistence.catalogue_candidates, clock),
         clean_up_vocabulary=CleanUpVocabulary(manage, persistence.catalogue_candidates, clock),
+        suggest_derived_dependencies=SuggestDerivedDependencies(
+            manage, persistence.catalogue_candidates, clock
+        ),
         suggest_component_links=SuggestComponentCapabilities(
             manage, persistence.catalogue_candidates, llm.capability_linker, clock
         ),

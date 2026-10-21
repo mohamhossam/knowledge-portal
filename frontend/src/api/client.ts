@@ -66,6 +66,7 @@ export type SuggestionContent = Schemas["CandidateContentSchema"];
 export type SuggestionKind = Schemas["CandidateKind"];
 export type PossibleMatch = Schemas["PossibleMatchResponse"];
 export type ExtractionRun = Schemas["ExtractionRunResponse"];
+export type CatalogueReading = Schemas["CatalogueReading"];
 export type ArchitectureJob = Schemas["ArchitectureJobResponse"];
 export type DocumentExtraction = Schemas["DocumentExtractionResponse"];
 export type RequirementCorpus = Schemas["RequirementCorpusResponse"];
@@ -256,6 +257,8 @@ export const api = {
       `/architecture-knowledge/releases/${encodeURIComponent(releaseId)}/suggestions`,
     ),
   release: (releaseId: string) => apiRequest<Release>(releasePath(releaseId)),
+  /** Suggest the dependencies the draft's interfaces and journeys say (ADR-0119). */
+  suggestDerivedDependencies: (releaseId: string) => post<ExtractionRun>(`${releasePath(releaseId)}/derived-dependencies`, {}),
   releaseAudit: (releaseId: string) => apiRequest<ReleaseAuditEvent[]>(`${releasePath(releaseId)}/audit`),
   /** What changed from the version in service to this one. */
   /** What changed from `base` to this release; from the version in service when no base is given. */

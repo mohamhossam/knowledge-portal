@@ -551,10 +551,11 @@ A task is complete only when:
   verb `PASSES` has no curated role term yet; the Phase 6 clean-up deliberately
   leaves it flagged until a curator decides whether it merges into
   `role-record` or earns its own term.
-- **ADR-0119** (one canonical dependency model) is half implemented: the
-  dependency's identity, source and merge are in; deriving dependency
-  suggestions from interfaces and journeys, and retiring the adjacent-systems
-  fallback, are its next slice. ADR-0120 (provenance that survives acceptance)
+- **ADR-0119** (one canonical dependency model) is implemented, but for its
+  point 4: the adjacent-systems fallback onto interfaces (`neighbours.py`
+  `interface_edges`) stays until curators accept the derived dependencies into a
+  release in service, and is retired in the release after. The committed
+  catalogue records no dependency yet. ADR-0120 (provenance that survives acceptance)
   and ADR-0121 (lifecycle) are implemented; under ADR-0121, concepts and terms
   retire only through a catalogue file until their pages have an editor.
 - **No frontend coverage floor.** The backend holds an 89% floor with

@@ -3,8 +3,16 @@
 ## Status
 
 Accepted 2026-10-21 by the owner, implemented in two slices: the dependency itself (points
-2 and 3, `docs/slices/dependency-identity.md`) and the derived suggestions (point 1, with
-point 4's fallback retirement), which follows.
+2 and 3, `docs/slices/dependency-identity.md`) and the derived suggestions (point 1,
+`docs/slices/derived-dependencies.md`). Point 4 waits on curation: the fallback goes in the
+release after curators accept derived dependencies into a release in service.
+
+Settled while implementing point 1: the derivation is a reading of the draft's own
+catalogue a maintainer starts from the draft's Sources step (as ADR-0114's readings are),
+not a step of every build, so a build never adds dozens of suggestions unasked. A journey
+hand-over through an integration layer is two dependencies, one per hop, as an interface
+relay is. A saying that names no kind joins the pair's one stated kind, as a suggestion
+does under point 3. A dependency rejected before is not suggested again.
 Proposed 2026-10-19. Implements review finding #7 of the portal review
 ([report](https://claude.ai/code/artifact/d5147883-5ccd-472f-a57a-6a2464b2fd53));
 pairs with the adjacent-systems fallback shipped as the stop-gap (#109).

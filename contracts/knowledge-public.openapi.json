@@ -2194,7 +2194,8 @@
         "enum": [
           "concept_backfill",
           "component_links",
-          "vocabulary_cleanup"
+          "vocabulary_cleanup",
+          "derived_dependencies"
         ],
         "title": "CatalogueReading",
         "type": "string"
@@ -15172,6 +15173,70 @@
           }
         ],
         "summary": "Propose Capability Concepts",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
+    "/architecture-knowledge/releases/{release_id}/derived-dependencies": {
+      "post": {
+        "description": "Suggest each dependency the draft's interfaces and journeys say between two systems\nin service, citing what says it (ADR-0119).\n\nThe suggestions replace the undecided ones of the previous reading; a dependency in the\ndraft already, or rejected before, is left out.",
+        "operationId": "suggest_derived_dependencies_architecture_knowledge_releases__release_id__derived_dependencies_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtractionRunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Suggest Derived Dependencies",
         "tags": [
           "architecture knowledge"
         ]

@@ -427,6 +427,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/architecture-knowledge/releases/{release_id}/derived-dependencies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Suggest Derived Dependencies
+         * @description Suggest each dependency the draft's interfaces and journeys say between two systems
+         *     in service, citing what says it (ADR-0119).
+         *
+         *     The suggestions replace the undecided ones of the previous reading; a dependency in the
+         *     draft already, or rejected before, is left out.
+         */
+        post: operations["suggest_derived_dependencies_architecture_knowledge_releases__release_id__derived_dependencies_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/architecture-knowledge/releases/{release_id}/documents": {
         parameters: {
             query?: never;
@@ -2811,7 +2835,7 @@ export interface components {
          *     undecided suggestions of the previous one.
          * @enum {string}
          */
-        CatalogueReading: "concept_backfill" | "component_links" | "vocabulary_cleanup";
+        CatalogueReading: "concept_backfill" | "component_links" | "vocabulary_cleanup" | "derived_dependencies";
         /** CatalogueSuggestionResponse */
         CatalogueSuggestionResponse: {
             basis: components["schemas"]["CandidateBasis"];
@@ -7411,6 +7435,39 @@ export interface operations {
         };
     };
     propose_capability_concepts_architecture_knowledge_releases__release_id__concept_proposals_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtractionRunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    suggest_derived_dependencies_architecture_knowledge_releases__release_id__derived_dependencies_post: {
         parameters: {
             query?: never;
             header?: {
