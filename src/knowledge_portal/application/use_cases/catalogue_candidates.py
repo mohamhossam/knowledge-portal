@@ -110,6 +110,7 @@ from knowledge_portal.domain.architecture.knowledge import (
 from knowledge_portal.domain.architecture.offering_drafts import slug
 from knowledge_portal.domain.architecture.products import (
     ProductOffering,
+    RealisationLayer,
     find_offering,
     find_offering_component,
     find_order_type,
@@ -117,6 +118,7 @@ from knowledge_portal.domain.architecture.products import (
     same_offering,
 )
 from knowledge_portal.domain.architecture.provenance import AcceptedFrom
+from knowledge_portal.domain.architecture.realisations import merge_realisations
 from knowledge_portal.domain.document.value_objects import DocumentVersionId, EvidenceBlockKind
 
 IMAGE_TYPES = frozenset({"image/png", "image/jpeg"})
@@ -329,6 +331,8 @@ _ORDER = (
     CandidateKind.RELATIONSHIP,
     # An interface names the systems that expose and consume it,
     CandidateKind.INTERFACE,
+    # a realisation record the systems that deliver it,
+    CandidateKind.REALISATION_RECORD,
     # a channel names the system its orders enter through,
     CandidateKind.CHANNEL,
     # then an offering names systems and channels that must be in the draft first,
@@ -371,6 +375,7 @@ def _view(candidate: CatalogueCandidate, release: ArchitectureKnowledge) -> Cand
         CandidateKind.INTERFACE,
         CandidateKind.CAPABILITY_DOMAIN,
         CandidateKind.PORTFOLIO_NODE,
+        CandidateKind.REALISATION_RECORD,
         CandidateKind.QUESTION,
         CandidateKind.CONCEPT,
         CandidateKind.COMPONENT_LINK,
@@ -436,6 +441,7 @@ def _references(
         CandidateKind.INTERFACE,
         CandidateKind.CAPABILITY_DOMAIN,
         CandidateKind.PORTFOLIO_NODE,
+        CandidateKind.REALISATION_RECORD,
     }:
         return ()
     if content.kind is CandidateKind.SYSTEM:
@@ -558,6 +564,15 @@ def _canonical(
                 ),
             )
             result.append(replace(change, content=replace(content, interface=interface)))
+            continue
+        if content.kind is CandidateKind.REALISATION_RECORD and content.realisation is not None:
+            record = replace(
+                content.realisation,
+                system_ids=tuple(
+                    dict.fromkeys(resolved(name) for name in content.realisation.system_ids)
+                ),
+            )
+            result.append(replace(change, content=replace(content, realisation=record)))
             continue
         if content.kind is CandidateKind.PRODUCT and content.product is not None:
             offering = content.product
@@ -926,7 +941,11 @@ def _subject(content: CandidateContent) -> tuple[object, ...] | None:
         return (kind, content.system_id, " ".join(content.text.casefold().split()))
     if kind is CandidateKind.RELATIONSHIP:
         return (kind, content.system_id, content.target_system_id, content.relationship_kind)
-    if kind in {CandidateKind.CAPABILITY_DOMAIN, CandidateKind.PORTFOLIO_NODE}:
+    if kind in {
+        CandidateKind.CAPABILITY_DOMAIN,
+        CandidateKind.PORTFOLIO_NODE,
+        CandidateKind.REALISATION_RECORD,
+    }:
         return (kind, content.system_id)
     return None
 
@@ -974,6 +993,12 @@ def _merged_content(lead: CandidateContent, others: list[CandidateContent]) -> C
         return replace(
             lead, capability_domain=replace(domain, description=domain.description or described)
         )
+    if lead.realisation is not None:
+        record = lead.realisation
+        for other in others:
+            if other.realisation is not None:
+                record = merge_realisations(record, other.realisation)
+        return replace(lead, realisation=record)
     if lead.portfolio_node is not None:
         node = lead.portfolio_node
         others_nodes = [item.portfolio_node for item in every if item.portfolio_node]
@@ -1770,10 +1795,17 @@ class DecideCatalogueCandidate:
             self._repository.save(updated, expected_revision, actor.id, "accept_suggestion")
 
 
-def _nested(content: CandidateContent) -> bool:
-    """Whether a domain or portfolio suggestion sits inside another, so is accepted after."""
+# Resources first, then the RFSs they realise, then CFSs.
+_LAYER_RANK = {RealisationLayer.RESOURCE: 0, RealisationLayer.RFS: 1, RealisationLayer.CFS: 2}
+
+
+def _nested(content: CandidateContent) -> int:
+    """How deep a suggestion sits, so what it sits inside or is realised by is accepted first:
+    a domain or portfolio node inside another, or a record by its layer."""
+    if content.realisation is not None:
+        return _LAYER_RANK[content.realisation.layer]
     tree = content.capability_domain or content.portfolio_node
-    return (content.parent_domain_id or (tree.parent_id if tree else None)) is not None
+    return int((content.parent_domain_id or (tree.parent_id if tree else None)) is not None)
 
 
 def _identity(content: CandidateContent) -> CandidateContent:

@@ -4,7 +4,7 @@ import json
 
 from knowledge_portal.application.ports.catalogue_extractor import ExtractionRequest
 
-PROMPT_VERSION = "catalogue-extraction-v18"
+PROMPT_VERSION = "catalogue-extraction-v19"
 
 # A journey is the largest answer shape. A model whose context leaves too little room for
 # it reads without it (ADR-0096): LEAN_SYSTEM_PROMPT and an answer schema without journeys.
@@ -69,7 +69,13 @@ one. Leave "system" empty. It is an area of business, never a system, team or la
 unit, line of business, segment or product family ("Enterprise", "Fixed", "SMB"). Give its \
 name, its level in the document's own words (portfolio_level, such as "Segment"), the node \
 it sits under (parent_domain) only if stated, and a short description (text) only if given. \
-Leave "system" empty. A product sold is a product_offering, never a portfolio node."""
+Leave "system" empty. A product sold is a product_offering, never a portfolio node.
+- realisation_record: a customer-facing service (CFS), resource-facing service (RFS) or \
+resource named as such, such as "CFSS_ONPREM_FIREWALL_HE". Give its name, its layer \
+(realisation_layer: "cfs", "rfs" or "resource"), the system that delivers it or holds the \
+resource (system) only if stated, the names of the RFSs or resources one layer down that \
+realise it (realised_by) only if stated, and what it is in one sentence (text) only if given. \
+A resource is realised by nothing below it."""
 
 _SYSTEM_PROMPT = """You read architecture documents and propose entries for an architecture \
 catalogue. A human maintainer reviews every proposal before anything changes.

@@ -99,6 +99,8 @@ def _item(**values: Any) -> dict[str, Any]:
         "channel_kind": None,
         "interface_style": None,
         "portfolio_level": None,
+        "realisation_layer": None,
+        "realised_by": [],
     }
     return base | values
 

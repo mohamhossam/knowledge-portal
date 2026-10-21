@@ -2699,6 +2699,7 @@ export interface components {
             portfolio_node?: components["schemas"]["PortfolioNodeSchema"] | null;
             product?: components["schemas"]["ProductOfferingSchema"] | null;
             question?: components["schemas"]["OpenQuestionSchema"] | null;
+            realisation?: components["schemas"]["RealisationRecordSchema"] | null;
             relationship_kind?: components["schemas"]["RelationshipKind"] | null;
             /** System Id */
             system_id: string;
@@ -2727,13 +2728,13 @@ export interface components {
          * CandidateKind
          * @enum {string}
          */
-        CandidateKind: "system" | "component" | "capability" | "constraint" | "relationship" | "landscape_domain" | "placement" | "product" | "journey" | "channel" | "question" | "concept" | "component_link" | "vocabulary_term" | "offering_rule" | "interface" | "capability_domain" | "portfolio_node";
+        CandidateKind: "system" | "component" | "capability" | "constraint" | "relationship" | "landscape_domain" | "placement" | "product" | "journey" | "channel" | "question" | "concept" | "component_link" | "vocabulary_term" | "offering_rule" | "interface" | "capability_domain" | "portfolio_node" | "realisation_record";
         /**
          * CandidateMatch
          * @description How a candidate relates to the draft as it stands now.
          * @enum {string}
          */
-        CandidateMatch: "new" | "updates_existing" | "already_present" | "needs_system" | "needs_component" | "needs_domain" | "needs_offering" | "needs_channel" | "needs_concept" | "needs_interface" | "needs_portfolio_node";
+        CandidateMatch: "new" | "updates_existing" | "already_present" | "needs_system" | "needs_component" | "needs_domain" | "needs_offering" | "needs_channel" | "needs_concept" | "needs_interface" | "needs_portfolio_node" | "needs_realisation";
         /**
          * CandidateStatus
          * @enum {string}
@@ -5508,6 +5509,11 @@ export interface components {
          * @description A CFS, RFS or resource, the systems that deliver it, and what realises it below.
          */
         RealisationRecordSchema: {
+            /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
             /**
              * Aliases
              * @default []

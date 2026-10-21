@@ -597,6 +597,8 @@ def test_extraction_adapter_builds_every_kind_and_skips_unusable_items() -> None
             "channel_kind": None,
             "interface_style": None,
             "portfolio_level": None,
+            "realisation_layer": None,
+            "realised_by": [],
         }
         return ChangeOutput(**(base | values))
 

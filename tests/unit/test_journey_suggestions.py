@@ -424,6 +424,8 @@ def _journey_change(journey: JourneyOutput | None, quote: str) -> ChangeOutput:
         channel_kind=None,
         interface_style=None,
         portfolio_level=None,
+        realisation_layer=None,
+        realised_by=[],
         journey=journey,
     )
 

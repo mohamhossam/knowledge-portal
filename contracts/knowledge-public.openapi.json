@@ -1653,6 +1653,16 @@
               }
             ]
           },
+          "realisation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RealisationRecordSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "relationship_kind": {
             "anyOf": [
               {
@@ -1754,7 +1764,8 @@
           "offering_rule",
           "interface",
           "capability_domain",
-          "portfolio_node"
+          "portfolio_node",
+          "realisation_record"
         ],
         "title": "CandidateKind",
         "type": "string"
@@ -1772,7 +1783,8 @@
           "needs_channel",
           "needs_concept",
           "needs_interface",
-          "needs_portfolio_node"
+          "needs_portfolio_node",
+          "needs_realisation"
         ],
         "title": "CandidateMatch",
         "type": "string"
@@ -10296,6 +10308,15 @@
       "RealisationRecordSchema": {
         "description": "A CFS, RFS or resource, the systems that deliver it, and what realises it below.",
         "properties": {
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
+          },
           "aliases": {
             "default": [],
             "items": {

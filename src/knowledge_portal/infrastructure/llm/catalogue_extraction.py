@@ -38,6 +38,7 @@ from knowledge_portal.domain.architecture.candidates import (
     CandidateKind,
 )
 from knowledge_portal.domain.architecture.channels import Channel
+from knowledge_portal.domain.architecture.concepts import label_key
 from knowledge_portal.domain.architecture.interfaces import InterfaceStyle, SystemInterface
 from knowledge_portal.domain.architecture.journeys import (
     Activity,
@@ -69,9 +70,11 @@ from knowledge_portal.domain.architecture.products import (
     PlanCharacteristic,
     ProductOffering,
     Realisation,
+    RealisationLayer,
     SourceConfidence,
     merge_components,
 )
+from knowledge_portal.domain.architecture.realisations import RealisationRecord, record_id
 from knowledge_portal.domain.architecture.tracking import (
     FalloutCase,
     OrderTracking,
@@ -389,7 +392,12 @@ class ChangeOutput(LeanChangeOutput):
     kind: (
         _LeanKind
         | Literal[  # type: ignore[assignment]
-            "journey", "channel", "interface", "capability_domain", "portfolio_node"
+            "journey",
+            "channel",
+            "interface",
+            "capability_domain",
+            "portfolio_node",
+            "realisation_record",
         ]
     )
     # The whole journey, for a journey; null for other kinds (ADR-0096).
@@ -401,6 +409,10 @@ class ChangeOutput(LeanChangeOutput):
     interface_style: Literal["api", "event", "file", "unspecified"] | None
     # A portfolio node's level in the operator's words, such as Segment; null for other kinds.
     portfolio_level: str | None = Field(max_length=_MAX_NAME)
+    # A realisation record's layer and the records one layer down that realise it, by name;
+    # null and empty for other kinds.
+    realisation_layer: Literal["cfs", "rfs", "resource"] | None
+    realised_by: list[str] = Field(max_length=20)
 
 
 class ExtractionOutput(_Output):
@@ -524,6 +536,7 @@ _KINDS = frozenset(
         "interface",
         "capability_domain",
         "portfolio_node",
+        "realisation_record",
     )
 )
 # What each reading asks with: its prompt, the answer it parses, and each item's shape.
@@ -545,6 +558,8 @@ def _detailed(item: LeanChangeOutput) -> DetailedChangeOutput:
             "channel_kind": None,
             "interface_style": None,
             "portfolio_level": None,
+            "realisation_layer": None,
+            "realised_by": [],
             **item.model_dump(),
             "offering": (
                 offering
@@ -662,6 +677,7 @@ def _proposed(
             CandidateKind.INTERFACE,
             CandidateKind.CAPABILITY_DOMAIN,
             CandidateKind.PORTFOLIO_NODE,
+            CandidateKind.REALISATION_RECORD,
         }
         else item.system
     )
@@ -1071,6 +1087,30 @@ def _portfolio_node(item: DetailedChangeOutput) -> PortfolioNode:
     )
 
 
+def _realisation_record(item: DetailedChangeOutput, names: _SystemNames) -> RealisationRecord:
+    """A CFS, RFS or resource as stated, with the system that delivers or holds it, when named,
+    and what realises it one layer down, by name until the draft resolves them."""
+    name = (item.name or "").strip()
+    if not name or item.realisation_layer is None:
+        raise InvalidKnowledgeError("A realisation record needs its name and its layer.")
+    system = plain_name(item.system or "")
+    layer = RealisationLayer(item.realisation_layer)
+    below = tuple(
+        dict.fromkeys(
+            entry for entry in _clean(item.realised_by) if label_key(entry) != label_key(name)
+        )
+    )
+    return RealisationRecord(
+        record_id(layer, slug(name)),
+        layer,
+        name,
+        system_ids=(names.resolve(system),) if system else (),
+        realised_by=() if layer is RealisationLayer.RESOURCE else below,
+        description=_text(item.text),
+        confidence=SourceConfidence.CONFIRMED,
+    )
+
+
 def _content(item: DetailedChangeOutput, names: _SystemNames) -> CandidateContent:
     if item.kind == "journey":
         journey = _journey(item, names)
@@ -1096,6 +1136,11 @@ def _content(item: DetailedChangeOutput, names: _SystemNames) -> CandidateConten
         domain = _capability_domain(item)
         return CandidateContent(
             CandidateKind.CAPABILITY_DOMAIN, domain.id, name=domain.name, capability_domain=domain
+        )
+    if item.kind == "realisation_record":
+        record = _realisation_record(item, names)
+        return CandidateContent(
+            CandidateKind.REALISATION_RECORD, record.id, name=record.name, realisation=record
         )
     if item.kind == "portfolio_node":
         node = _portfolio_node(item)
@@ -1854,7 +1899,8 @@ class FakeCatalogueExtractor:
     ``Interface: Name [api] consumed by A, B`` (all for the last system named; the
     technology, component, style and consumers are optional),
     ``Capability domain: Name under Parent`` and ``Portfolio: Name (Level) under Parent``
-    (the parent optional),
+    (the parent optional), ``Realisation: NAME [cfs] realised by A, B`` (delivered by the last
+    system named, if any),
     ``A depends on B for reason`` and ``A calls B for reason`` lines (the second
     as an API call), and reads ``A sends X to B`` as an inferred data transfer.
     An uploaded image yields one system named after the document so the review
@@ -1880,6 +1926,11 @@ class FakeCatalogueExtractor:
     )
     _DOMAIN = re.compile(
         r"^capability domain:\s*(?P<name>.+?)(?:\s+under\s+(?P<parent>.+?))?\.?$", re.I
+    )
+    _REALISATION = re.compile(
+        r"^realisation:\s*(?P<name>[^\[]+?)\s*\[(?P<layer>cfs|rfs|resource)\]"
+        r"(?:\s+realised by\s+(?P<below>.+?))?\.?$",
+        re.I,
     )
     _PORTFOLIO = re.compile(
         r"^portfolio:\s*(?P<name>[^(]+?)\s*\((?P<level>[^)]+)\)"
@@ -1989,6 +2040,20 @@ class FakeCatalogueExtractor:
                         domain.id,
                         name=name,
                         capability_domain=domain,
+                    )
+                elif match := self._REALISATION.match(line):
+                    name = match["name"].strip()
+                    layer = RealisationLayer(match["layer"].casefold())
+                    record = RealisationRecord(
+                        record_id(layer, slug(name)),
+                        layer,
+                        name,
+                        system_ids=(current,) if current else (),
+                        realised_by=_clean(re.split(r",", match["below"] or "")),
+                    )
+                    source_name = name
+                    content = CandidateContent(
+                        CandidateKind.REALISATION_RECORD, record.id, name=name, realisation=record
                     )
                 elif match := self._PORTFOLIO.match(line):
                     name, parent = match["name"].strip(), (match["parent"] or "").strip() or None
