@@ -561,9 +561,8 @@ A task is complete only when:
 - **ADR-0123 is accepted, partly implemented.** Shared mastery notes and library
   classification are in; the committed catalogue's two masters of Customer (CBCM and
   Netcracker CRM) carry no note yet, because no source says which part each masters, so the
-  draft's Check step lists them. Interfaces, capability domains and portfolio nodes are
-  suggested from documents; the remaining suggestion kinds (realisation records, sources,
-  conflicts) are the next slices.
+  draft's Check step lists them. Interfaces, capability domains, portfolio nodes and
+  realisation records are suggested from documents; sources and conflicts are the next slice.
 - **No frontend coverage floor.** The backend holds an 89% floor with
   `TEST_DATABASE_URL`; the frontend's vitest suite runs without one.
 
