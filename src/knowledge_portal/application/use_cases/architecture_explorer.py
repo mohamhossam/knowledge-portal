@@ -3,7 +3,8 @@
 The explorer is a reading of the published catalogue (requirement-portal ADR-0101).
 Curating stays with knowledge admins; the version in service is open to every signed-in
 person, so the people who order and deliver products read the same architecture that
-impact mapping uses. Drafts, documents and history stay closed.
+impact mapping uses, with the change history applied to it (ADR-0101, Amendment 3).
+Drafts, documents, the index and earlier versions stay closed.
 """
 
 from __future__ import annotations
