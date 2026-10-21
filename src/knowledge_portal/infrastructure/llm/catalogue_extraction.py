@@ -46,6 +46,7 @@ from knowledge_portal.domain.architecture.journeys import (
     Journey,
 )
 from knowledge_portal.domain.architecture.knowledge import (
+    CapabilityDomain,
     InvalidKnowledgeError,
     RelationshipKind,
 )
@@ -57,6 +58,7 @@ from knowledge_portal.domain.architecture.lifecycle import (
     NoteBlock,
     NoteBlockKind,
 )
+from knowledge_portal.domain.architecture.portfolio import PortfolioNode
 from knowledge_portal.domain.architecture.products import (
     ComponentResponsibility,
     OfferingComponent,
@@ -384,7 +386,12 @@ class LeanChangeOutput(_Output):
 
 class ChangeOutput(LeanChangeOutput):
     # A small context reads without journeys and channels; tables still give both.
-    kind: _LeanKind | Literal["journey", "channel", "interface"]  # type: ignore[assignment]
+    kind: (
+        _LeanKind
+        | Literal[  # type: ignore[assignment]
+            "journey", "channel", "interface", "capability_domain", "portfolio_node"
+        ]
+    )
     # The whole journey, for a journey; null for other kinds (ADR-0096).
     offering: PlannedOfferingOutput | None
     journey: JourneyOutput | None
@@ -392,6 +399,8 @@ class ChangeOutput(LeanChangeOutput):
     channel_kind: str | None = Field(max_length=_MAX_NAME)
     # How an interface is called; null for other kinds (ADR-0123).
     interface_style: Literal["api", "event", "file", "unspecified"] | None
+    # A portfolio node's level in the operator's words, such as Segment; null for other kinds.
+    portfolio_level: str | None = Field(max_length=_MAX_NAME)
 
 
 class ExtractionOutput(_Output):
@@ -507,7 +516,16 @@ def _kind_of(raw: object) -> str:
     return kind if isinstance(kind, str) and kind in _KINDS else "item"
 
 
-_KINDS = frozenset((*get_args(_LeanKind), "journey", "channel", "interface"))
+_KINDS = frozenset(
+    (
+        *get_args(_LeanKind),
+        "journey",
+        "channel",
+        "interface",
+        "capability_domain",
+        "portfolio_node",
+    )
+)
 # What each reading asks with: its prompt, the answer it parses, and each item's shape.
 _ASKED: dict[_Reading, tuple[str, type[_Answers], type[LeanChangeOutput]]] = {
     "detailed": (DETAILED_SYSTEM_PROMPT, _DetailedAnswers, DetailedChangeOutput),
@@ -526,6 +544,7 @@ def _detailed(item: LeanChangeOutput) -> DetailedChangeOutput:
             "journey": None,
             "channel_kind": None,
             "interface_style": None,
+            "portfolio_level": None,
             **item.model_dump(),
             "offering": (
                 offering
@@ -641,6 +660,8 @@ def _proposed(
             CandidateKind.JOURNEY,
             CandidateKind.CHANNEL,
             CandidateKind.INTERFACE,
+            CandidateKind.CAPABILITY_DOMAIN,
+            CandidateKind.PORTFOLIO_NODE,
         }
         else item.system
     )
@@ -1022,6 +1043,34 @@ def _interface(item: DetailedChangeOutput, names: _SystemNames) -> SystemInterfa
     )
 
 
+def _capability_domain(item: DetailedChangeOutput) -> CapabilityDomain:
+    """A business area as stated, keyed like a landscape domain; its parent as named."""
+    name = (item.name or "").strip()
+    if not name:
+        raise InvalidKnowledgeError("A capability domain needs its name.")
+    parent = (item.parent_domain or "").strip() or None
+    return CapabilityDomain(
+        domain_key(name, parent), name, parent_id=parent, description=_text(item.text)
+    )
+
+
+def _portfolio_node(item: DetailedChangeOutput) -> PortfolioNode:
+    """A place in the product portfolio as stated, with its level; its parent as named."""
+    name = (item.name or "").strip()
+    level = (item.portfolio_level or "").strip()
+    if not name or not level:
+        raise InvalidKnowledgeError("A portfolio node needs its name and its level.")
+    parent = (item.parent_domain or "").strip() or None
+    return PortfolioNode(
+        domain_key(name, parent),
+        name,
+        level,
+        parent_id=parent,
+        description=_text(item.text),
+        confidence=SourceConfidence.CONFIRMED,
+    )
+
+
 def _content(item: DetailedChangeOutput, names: _SystemNames) -> CandidateContent:
     if item.kind == "journey":
         journey = _journey(item, names)
@@ -1042,6 +1091,16 @@ def _content(item: DetailedChangeOutput, names: _SystemNames) -> CandidateConten
         interface = _interface(item, names)
         return CandidateContent(
             CandidateKind.INTERFACE, interface.id, name=interface.name, interface=interface
+        )
+    if item.kind == "capability_domain":
+        domain = _capability_domain(item)
+        return CandidateContent(
+            CandidateKind.CAPABILITY_DOMAIN, domain.id, name=domain.name, capability_domain=domain
+        )
+    if item.kind == "portfolio_node":
+        node = _portfolio_node(item)
+        return CandidateContent(
+            CandidateKind.PORTFOLIO_NODE, node.id, name=node.name, portfolio_node=node
         )
     kind = CandidateKind(item.kind)
     name = (item.name or "").strip()
@@ -1794,6 +1853,8 @@ class FakeCatalogueExtractor:
     ``Capability: Name (phrase, phrase) @ Component``, ``Constraint: text`` and
     ``Interface: Name [api] consumed by A, B`` (all for the last system named; the
     technology, component, style and consumers are optional),
+    ``Capability domain: Name under Parent`` and ``Portfolio: Name (Level) under Parent``
+    (the parent optional),
     ``A depends on B for reason`` and ``A calls B for reason`` lines (the second
     as an API call), and reads ``A sends X to B`` as an inferred data transfer.
     An uploaded image yields one system named after the document so the review
@@ -1816,6 +1877,14 @@ class FakeCatalogueExtractor:
         r"^interface:\s*(?P<name>[^\[]+?)\s*(?:\[(?P<style>api|event|file)\])?"
         r"(?:\s+consumed by\s+(?P<consumers>.+?))?\.?$",
         re.IGNORECASE,
+    )
+    _DOMAIN = re.compile(
+        r"^capability domain:\s*(?P<name>.+?)(?:\s+under\s+(?P<parent>.+?))?\.?$", re.I
+    )
+    _PORTFOLIO = re.compile(
+        r"^portfolio:\s*(?P<name>[^(]+?)\s*\((?P<level>[^)]+)\)"
+        r"(?:\s+under\s+(?P<parent>.+?))?\.?$",
+        re.I,
     )
     _DEPENDS = re.compile(
         r"^(?P<source>.+?)\s+(?P<verb>depends on|calls)\s+(?P<target>.+?)"
@@ -1910,6 +1979,25 @@ class FakeCatalogueExtractor:
                     source_name = name
                     content = CandidateContent(
                         CandidateKind.INTERFACE, interface.id, name=name, interface=interface
+                    )
+                elif match := self._DOMAIN.match(line):
+                    name, parent = match["name"].strip(), (match["parent"] or "").strip() or None
+                    domain = CapabilityDomain(domain_key(name, parent), name, parent_id=parent)
+                    source_name = name
+                    content = CandidateContent(
+                        CandidateKind.CAPABILITY_DOMAIN,
+                        domain.id,
+                        name=name,
+                        capability_domain=domain,
+                    )
+                elif match := self._PORTFOLIO.match(line):
+                    name, parent = match["name"].strip(), (match["parent"] or "").strip() or None
+                    node = PortfolioNode(
+                        domain_key(name, parent), name, match["level"].strip(), parent_id=parent
+                    )
+                    source_name = name
+                    content = CandidateContent(
+                        CandidateKind.PORTFOLIO_NODE, node.id, name=name, portfolio_node=node
                     )
                 elif match := self._DEPENDS.match(line) or self._SENDS.match(line):
                     source_name, target_name = match["source"].strip(), match["target"].strip()

@@ -2624,6 +2624,7 @@ export interface components {
              * @default []
              */
             aliases: string[];
+            capability_domain?: components["schemas"]["CapabilityDomainSchema"] | null;
             /** Capability Id */
             capability_id?: string | null;
             /**
@@ -2656,6 +2657,7 @@ export interface components {
             name_ar?: string | null;
             /** Parent Domain Id */
             parent_domain_id?: string | null;
+            portfolio_node?: components["schemas"]["PortfolioNodeSchema"] | null;
             product?: components["schemas"]["ProductOfferingSchema"] | null;
             question?: components["schemas"]["OpenQuestionSchema"] | null;
             relationship_kind?: components["schemas"]["RelationshipKind"] | null;
@@ -2686,13 +2688,13 @@ export interface components {
          * CandidateKind
          * @enum {string}
          */
-        CandidateKind: "system" | "component" | "capability" | "constraint" | "relationship" | "landscape_domain" | "placement" | "product" | "journey" | "channel" | "question" | "concept" | "component_link" | "vocabulary_term" | "offering_rule" | "interface";
+        CandidateKind: "system" | "component" | "capability" | "constraint" | "relationship" | "landscape_domain" | "placement" | "product" | "journey" | "channel" | "question" | "concept" | "component_link" | "vocabulary_term" | "offering_rule" | "interface" | "capability_domain" | "portfolio_node";
         /**
          * CandidateMatch
          * @description How a candidate relates to the draft as it stands now.
          * @enum {string}
          */
-        CandidateMatch: "new" | "updates_existing" | "already_present" | "needs_system" | "needs_component" | "needs_domain" | "needs_offering" | "needs_channel" | "needs_concept" | "needs_interface";
+        CandidateMatch: "new" | "updates_existing" | "already_present" | "needs_system" | "needs_component" | "needs_domain" | "needs_offering" | "needs_channel" | "needs_concept" | "needs_interface" | "needs_portfolio_node";
         /**
          * CandidateStatus
          * @enum {string}
@@ -2700,6 +2702,11 @@ export interface components {
         CandidateStatus: "proposed" | "accepted" | "rejected";
         /** CapabilityDomainSchema */
         CapabilityDomainSchema: {
+            /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
             /** Description */
             description?: string | null;
             /** Id */
@@ -5078,6 +5085,11 @@ export interface components {
          * @description A level of the product portfolio, such as Enterprise › Fixed › SMB; levels are data.
          */
         PortfolioNodeSchema: {
+            /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
             confidence?: components["schemas"]["SourceConfidence"] | null;
             /** Description */
             description?: string | null;

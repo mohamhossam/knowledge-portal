@@ -409,3 +409,49 @@ describe("an interface suggestion (ADR-0123)", () => {
     expect(groups.find((group) => group.key === "section:interfaces")?.suggestions).toEqual([orders]);
   });
 });
+
+describe("business area and portfolio suggestions (ADR-0123)", () => {
+  const area = suggestion(
+    { kind: "capability_domain", system_id: "partners", name: "Partners", capability_domain: { id: "partners", name: "Partners", accepted: [] } },
+  );
+  const onboarding = suggestion(
+    {
+      kind: "capability_domain", system_id: "partners-onboarding", name: "Onboarding",
+      capability_domain: { id: "partners-onboarding", name: "Onboarding", parent_id: "Partners", accepted: [] },
+    },
+    { match: "needs_domain" },
+  );
+  const fixed = suggestion(
+    { kind: "portfolio_node", system_id: "fixed", name: "Fixed", portfolio_node: { id: "fixed", name: "Fixed", level: "Line of business", accepted: [] } },
+  );
+  const smb = suggestion(
+    {
+      kind: "portfolio_node", system_id: "fixed-smb", name: "SMB",
+      portfolio_node: { id: "fixed-smb", name: "SMB", level: "Segment", parent_id: "Fixed", accepted: [] },
+    },
+    { match: "needs_portfolio_node" },
+  );
+  const all = [area, onboarding, fixed, smb];
+  const named = lexicon(release, all);
+
+  it("says what each adds and where it sits", () => {
+    expect(changeSentence(onboarding, named)).toBe("Adds the business area Onboarding, inside Partners");
+    expect(changeSentence(smb, named)).toBe("Adds SMB (Segment) to the portfolio, under Fixed");
+  });
+
+  it("waits for its parent, which another suggestion adds", () => {
+    expect(waitsFor(onboarding, named)).toBe("Waits for the business area Partners");
+    expect(waitsFor(smb, named)).toBe("Waits for Fixed in the portfolio");
+    expect(bulkAcceptable(release, all).lifted).toEqual([onboarding, smb]);
+    expect(inWords("Accept or add portfolio node 'Fixed' before SMB, which sits under it.", named)).toBe(
+      "Accept or add Fixed in the portfolio before SMB, which sits under it.",
+    );
+  });
+
+  it("is listed under Business areas and Portfolio, not under a system", () => {
+    const groups = suggestionGroups(release, all, named);
+    const held = (key: string) => groups.find((group) => group.key === key)?.suggestions.map((item) => item.id).sort();
+    expect(held("section:areas")).toEqual([area.id, onboarding.id].sort());
+    expect(held("section:portfolio")).toEqual([fixed.id, smb.id].sort());
+  });
+});

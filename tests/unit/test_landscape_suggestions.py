@@ -253,6 +253,7 @@ def _change(**values: Any) -> ChangeOutput:
         "relationship_kind": None,
         "channel_kind": None,
         "interface_style": None,
+        "portfolio_level": None,
     }
     return ChangeOutput(**(base | values))
 
@@ -282,7 +283,7 @@ def test_the_model_suggests_domains_and_placements_from_prose() -> None:
         "cim",
         "customer-assisted",
     )
-    assert PROMPT_VERSION == "catalogue-extraction-v17"
+    assert PROMPT_VERSION == "catalogue-extraction-v18"
     assert "landscape_domain: an area of the architecture landscape" in SYSTEM_PROMPT
     assert "placement: one system sitting in one landscape domain" in SYSTEM_PROMPT
 

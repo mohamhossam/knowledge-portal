@@ -423,6 +423,7 @@ def _journey_change(journey: JourneyOutput | None, quote: str) -> ChangeOutput:
         relationship_kind=None,
         channel_kind=None,
         interface_style=None,
+        portfolio_level=None,
         journey=journey,
     )
 

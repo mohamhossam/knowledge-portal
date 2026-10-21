@@ -19,12 +19,14 @@ from knowledge_portal.domain.architecture.interfaces import SystemInterface
 from knowledge_portal.domain.architecture.journeys import Journey
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
+    CapabilityDomain,
     KnowledgeCapability,
     LandscapeDomain,
     SystemComponent,
     SystemDefinition,
     SystemRelationship,
 )
+from knowledge_portal.domain.architecture.portfolio import PortfolioNode
 from knowledge_portal.domain.architecture.products import ProductOffering
 from knowledge_portal.domain.architecture.provenance import AcceptedFrom
 from knowledge_portal.domain.architecture.vocabularies import VocabularyTerm
@@ -42,6 +44,8 @@ type _Carrier = (
     | Journey
     | Channel
     | SystemInterface
+    | CapabilityDomain
+    | PortfolioNode
     | BusinessCapability
     | VocabularyTerm
 )
@@ -80,6 +84,12 @@ class CatalogueBody(Protocol):
     @property
     def interfaces(self) -> tuple[SystemInterface, ...]: ...
 
+    @property
+    def capability_domains(self) -> tuple[CapabilityDomain, ...]: ...
+
+    @property
+    def portfolio(self) -> tuple[PortfolioNode, ...]: ...
+
 
 class _Visitor(Protocol):
     def __call__[T: _Carrier](self, key: AcceptanceKey, item: T, /) -> T: ...
@@ -101,6 +111,8 @@ _SUBJECT: dict[CandidateKind, str] = {
     CandidateKind.JOURNEY: "journey",
     CandidateKind.CHANNEL: "channel",
     CandidateKind.INTERFACE: "interface",
+    CandidateKind.CAPABILITY_DOMAIN: "capability_domain",
+    CandidateKind.PORTFOLIO_NODE: "portfolio_node",
     CandidateKind.CONCEPT: "concept",
     CandidateKind.VOCABULARY_TERM: "term",
 }
@@ -147,6 +159,10 @@ def _visit[Body: CatalogueBody](body: Body, visit: _Visitor) -> Body:
         ),
         vocabulary=tuple(visit(("term", item.id), item) for item in body.vocabulary),
         interfaces=tuple(visit(("interface", item.id), item) for item in body.interfaces),
+        capability_domains=tuple(
+            visit(("capability_domain", item.id), item) for item in body.capability_domains
+        ),
+        portfolio=tuple(visit(("portfolio_node", item.id), item) for item in body.portfolio),
     )
 
 

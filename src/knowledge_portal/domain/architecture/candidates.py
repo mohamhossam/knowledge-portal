@@ -42,6 +42,7 @@ from knowledge_portal.domain.architecture.interfaces import (
 from knowledge_portal.domain.architecture.journeys import Journey, same_journey
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
+    CapabilityDomain,
     InvalidKnowledgeError,
     KnowledgeCapability,
     KnowledgeReleaseStatus,
@@ -53,6 +54,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     relationship_kind,
     with_purpose,
 )
+from knowledge_portal.domain.architecture.portfolio import PortfolioNode
 from knowledge_portal.domain.architecture.products import (
     OfferingComponent,
     ProductOffering,
@@ -105,6 +107,9 @@ class CandidateKind(StrEnum):
     OFFERING_RULE = "offering_rule"
     # An API, event or file contract one system exposes and others consume (ADR-0123).
     INTERFACE = "interface"
+    # A business area capabilities belong to, and a place in the product portfolio (ADR-0123).
+    CAPABILITY_DOMAIN = "capability_domain"
+    PORTFOLIO_NODE = "portfolio_node"
 
 
 class CandidateStatus(StrEnum):
@@ -122,7 +127,8 @@ class CandidateMatch(StrEnum):
     NEEDS_SYSTEM = "needs_system"
     # A capability that names a component its system does not have yet.
     NEEDS_COMPONENT = "needs_component"
-    # A placement, or a sub-domain, whose landscape domain the draft does not have yet.
+    # A placement, or a sub-domain, whose landscape domain the draft does not have yet;
+    # likewise a capability domain inside one the draft does not have.
     NEEDS_DOMAIN = "needs_domain"
     # A journey whose product offering, or that offering's order type, the draft does not have.
     NEEDS_OFFERING = "needs_offering"
@@ -132,6 +138,8 @@ class CandidateMatch(StrEnum):
     NEEDS_CONCEPT = "needs_concept"
     # An interface relaying another the draft does not have yet.
     NEEDS_INTERFACE = "needs_interface"
+    # A portfolio node sitting under one the draft does not have yet.
+    NEEDS_PORTFOLIO_NODE = "needs_portfolio_node"
 
 
 class CandidateBasis(StrEnum):
@@ -216,6 +224,10 @@ class CandidateContent:
       are the places a value it means is written, linked to it when it is accepted
     - interface: the whole ``interface``; its id is also the ``system_id``. Its exposing and
       consuming systems are named as the document names them until the draft resolves them
+    - capability_domain: the whole ``capability_domain``; its id is also the ``system_id``.
+      Its parent is named as the document names it until the draft resolves it
+    - portfolio_node: the whole ``portfolio_node``; its id is also the ``system_id``, and its
+      parent is named likewise
     """
 
     kind: CandidateKind
@@ -243,6 +255,8 @@ class CandidateContent:
     term: VocabularyTerm | None = None
     value_refs: tuple[VocabularyRef, ...] = ()
     interface: SystemInterface | None = None
+    capability_domain: CapabilityDomain | None = None
+    portfolio_node: PortfolioNode | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "kind", CandidateKind(self.kind))
@@ -290,6 +304,10 @@ class CandidateContent:
             raise InvalidKnowledgeError("Only a channel suggestion holds a channel.")
         if (self.interface is not None) != (self.kind is CandidateKind.INTERFACE):
             raise InvalidKnowledgeError("Only an interface suggestion holds an interface.")
+        if (self.capability_domain is not None) != (self.kind is CandidateKind.CAPABILITY_DOMAIN):
+            raise InvalidKnowledgeError("Only a capability domain suggestion holds a domain.")
+        if (self.portfolio_node is not None) != (self.kind is CandidateKind.PORTFOLIO_NODE):
+            raise InvalidKnowledgeError("Only a portfolio suggestion holds a portfolio node.")
         if (self.question is not None) != (self.kind is CandidateKind.QUESTION):
             raise InvalidKnowledgeError("Only a question suggestion holds a question.")
         if (self.concept is not None) != (self.kind is CandidateKind.CONCEPT):
@@ -333,6 +351,8 @@ class CandidateContent:
             CandidateKind.CONCEPT,
             CandidateKind.VOCABULARY_TERM,
             CandidateKind.INTERFACE,
+            CandidateKind.CAPABILITY_DOMAIN,
+            CandidateKind.PORTFOLIO_NODE,
         }:
             pass
         elif self.kind is CandidateKind.COMPONENT_LINK:
@@ -644,6 +664,77 @@ def _current_interface(
 ) -> SystemInterface | None:
     by_id = next((item for item in release.interfaces if item.id == interface.id), None)
     return by_id or find_interface_among(release.interfaces, interface.name, interface.system_id)
+
+
+def _find_node[Node: (CapabilityDomain, PortfolioNode)](
+    nodes: tuple[Node, ...], reference: str
+) -> Node | None:
+    """A tree node named by id or, when only one has it, by name, ignoring case."""
+    key = reference.strip().casefold()
+    exact = next((item for item in nodes if item.id.casefold() == key), None)
+    if exact is not None or not key:
+        return exact
+    named = [
+        item
+        for item in nodes
+        if _words(item.name) == _words(reference) or _words(item.id) == _words(reference)
+    ]
+    return named[0] if len(named) == 1 else None
+
+
+def find_capability_domain(
+    release: ArchitectureKnowledge, reference: str
+) -> CapabilityDomain | None:
+    """A capability domain named by id or, when only one has it, by name, ignoring case."""
+    return _find_node(release.capability_domains, reference)
+
+
+def find_portfolio_node(release: ArchitectureKnowledge, reference: str) -> PortfolioNode | None:
+    """A portfolio node named by id or, when only one has it, by name, ignoring case."""
+    return _find_node(release.portfolio, reference)
+
+
+def _resolved_node[Node: (CapabilityDomain, PortfolioNode)](
+    node: Node, nodes: tuple[Node, ...]
+) -> tuple[Node, str | None]:
+    """The node naming its parent by the draft's id, or the parent the draft lacks."""
+    if node.parent_id is None:
+        return node, None
+    parent = _find_node(nodes, node.parent_id)
+    if parent is None:
+        return node, node.parent_id
+    return replace(node, parent_id=parent.id), None
+
+
+def _current_node[Node: (CapabilityDomain, PortfolioNode)](
+    node: Node, nodes: tuple[Node, ...]
+) -> Node | None:
+    """The draft's node a suggested one is: the same id, or the same name under the same
+    parent."""
+    return next((item for item in nodes if item.id == node.id), None) or next(
+        (
+            item
+            for item in nodes
+            if item.parent_id == node.parent_id and _words(item.name) == _words(node.name)
+        ),
+        None,
+    )
+
+
+def _domain_fill(current: CapabilityDomain, suggested: CapabilityDomain) -> CapabilityDomain:
+    """The draft's capability domain with what the suggestion adds; nothing set is replaced."""
+    return replace(current, description=current.description or suggested.description)
+
+
+def _portfolio_fill(current: PortfolioNode, suggested: PortfolioNode) -> PortfolioNode:
+    """The draft's portfolio node with what the suggestion adds; its level and anything else
+    set is kept."""
+    return replace(
+        current,
+        description=current.description or suggested.description,
+        confidence=current.confidence or suggested.confidence,
+        source=current.source or suggested.source,
+    )
 
 
 def _current_channel(channel: Channel, release: ArchitectureKnowledge) -> Channel | None:
@@ -1177,6 +1268,26 @@ def classify(content: CandidateContent, release: ArchitectureKnowledge) -> Candi
             if merge_interfaces(recorded_interface, interface) != recorded_interface
             else CandidateMatch.ALREADY_PRESENT
         )
+    if content.kind is CandidateKind.CAPABILITY_DOMAIN and content.capability_domain is not None:
+        area, parent = _resolved_node(content.capability_domain, release.capability_domains)
+        recorded_domain = _current_node(area, release.capability_domains)
+        if recorded_domain is None:
+            return CandidateMatch.NEEDS_DOMAIN if parent else CandidateMatch.NEW
+        return (
+            CandidateMatch.UPDATES_EXISTING
+            if _domain_fill(recorded_domain, area) != recorded_domain
+            else CandidateMatch.ALREADY_PRESENT
+        )
+    if content.kind is CandidateKind.PORTFOLIO_NODE and content.portfolio_node is not None:
+        node, parent = _resolved_node(content.portfolio_node, release.portfolio)
+        recorded_node = _current_node(node, release.portfolio)
+        if recorded_node is None:
+            return CandidateMatch.NEEDS_PORTFOLIO_NODE if parent else CandidateMatch.NEW
+        return (
+            CandidateMatch.UPDATES_EXISTING
+            if _portfolio_fill(recorded_node, node) != recorded_node
+            else CandidateMatch.ALREADY_PRESENT
+        )
     if content.kind is CandidateKind.OFFERING_RULE:
         offering = find_offering(release.products, content.system_id)
         if offering is None:
@@ -1323,6 +1434,8 @@ def open_matches(
             CandidateKind.LANDSCAPE_DOMAIN,
             CandidateKind.CHANNEL,
             CandidateKind.INTERFACE,
+            CandidateKind.CAPABILITY_DOMAIN,
+            CandidateKind.PORTFOLIO_NODE,
             CandidateKind.QUESTION,
             CandidateKind.OFFERING_RULE,
         }
@@ -1473,6 +1586,8 @@ def missing_systems(content: CandidateContent, release: ArchitectureKnowledge) -
     elif kind not in {
         CandidateKind.SYSTEM,
         CandidateKind.LANDSCAPE_DOMAIN,
+        CandidateKind.CAPABILITY_DOMAIN,
+        CandidateKind.PORTFOLIO_NODE,
         CandidateKind.OFFERING_RULE,
         CandidateKind.QUESTION,
         CandidateKind.COMPONENT_LINK,
@@ -1651,6 +1766,44 @@ def _with_interface(
     return release.updated(
         interfaces=tuple(merged if item.id == current.id else item for item in release.interfaces)
     )
+
+
+def _with_capability_domain(
+    domain: CapabilityDomain, release: ArchitectureKnowledge
+) -> ArchitectureKnowledge:
+    """The draft with a suggested capability domain added, or its gaps filled."""
+    resolved, parent = _resolved_node(domain, release.capability_domains)
+    current = _current_node(resolved, release.capability_domains)
+    if current is not None:
+        filled = _domain_fill(current, resolved)
+        return release.updated(
+            capability_domains=tuple(
+                filled if item.id == current.id else item for item in release.capability_domains
+            )
+        )
+    if parent is not None:
+        raise CandidateDependencyError(
+            f"Accept or add capability domain {parent!r} before the domain {domain.name} inside it."
+        )
+    return release.updated(capability_domains=(*release.capability_domains, resolved))
+
+
+def _with_portfolio_node(
+    node: PortfolioNode, release: ArchitectureKnowledge
+) -> ArchitectureKnowledge:
+    """The draft with a suggested portfolio node added, or its gaps filled."""
+    resolved, parent = _resolved_node(node, release.portfolio)
+    current = _current_node(resolved, release.portfolio)
+    if current is not None:
+        filled = _portfolio_fill(current, resolved)
+        return release.updated(
+            portfolio=tuple(filled if item.id == current.id else item for item in release.portfolio)
+        )
+    if parent is not None:
+        raise CandidateDependencyError(
+            f"Accept or add portfolio node {parent!r} before {node.name}, which sits under it."
+        )
+    return release.updated(portfolio=(*release.portfolio, resolved))
 
 
 def _channel_dependency(missing: tuple[str, ...], what: str) -> CandidateDependencyError:
@@ -2078,6 +2231,10 @@ def apply_candidate(
         return _with_channel(content.channel, release)
     if content.kind is CandidateKind.INTERFACE and content.interface is not None:
         return _with_interface(content.interface, release)
+    if content.kind is CandidateKind.CAPABILITY_DOMAIN and content.capability_domain is not None:
+        return _with_capability_domain(content.capability_domain, release)
+    if content.kind is CandidateKind.PORTFOLIO_NODE and content.portfolio_node is not None:
+        return _with_portfolio_node(content.portfolio_node, release)
     if content.kind is CandidateKind.CONCEPT and content.concept is not None:
         return _with_concept(content, content.concept, release)
     if content.kind is CandidateKind.COMPONENT_LINK:

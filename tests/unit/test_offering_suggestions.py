@@ -314,6 +314,7 @@ def _offering_change(offering: PlannedOfferingOutput) -> ChangeOutput:
         relationship_kind=None,
         channel_kind=None,
         interface_style=None,
+        portfolio_level=None,
         journey=None,
     )
 

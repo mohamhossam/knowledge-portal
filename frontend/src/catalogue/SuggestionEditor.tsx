@@ -9,6 +9,17 @@ import { OfferingEditor, QuestionFields } from "./OfferingEditor";
 import type { Lexicon } from "./suggestions";
 
 type Contract = NonNullable<SuggestionContent["interface"]>;
+type Area = NonNullable<SuggestionContent["capability_domain"]>;
+type PortfolioPlace = NonNullable<SuggestionContent["portfolio_node"]>;
+
+/** A tree's parents to choose from, with one the document named that the draft lacks, as written. */
+function parentOptions(nodes: { id: string; name: string }[], self: string, current: string | null | undefined) {
+  const options = [
+    { value: "", label: "At the top" },
+    ...nodes.filter((node) => node.id !== self).map((node) => ({ value: node.id, label: node.name })),
+  ];
+  return current && !nodes.some((node) => node.id === current) ? [...options, { value: current, label: `${current} (as the document names it)` }] : options;
+}
 
 const HOW: { value: RelationshipKind; label: string }[] = [
   { value: "calls_api", label: "Calls its API" },
@@ -49,7 +60,7 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
   useEffect(() => title.current?.focus(), []);
   const [content, setContent] = useState<SuggestionContent>(() => kept ?? ({
     ...original,
-    system_id: original.kind === "landscape_domain" || original.kind === "product" || original.kind === "journey" || original.kind === "channel" || original.kind === "interface" || original.kind === "offering_rule"
+    system_id: original.kind === "landscape_domain" || original.kind === "product" || original.kind === "journey" || original.kind === "channel" || original.kind === "interface" || original.kind === "capability_domain" || original.kind === "portfolio_node" || original.kind === "offering_rule"
       ? original.system_id
       : startingSystem(release, suggestion.system_name, original.system_id),
     target_system_id: original.target_system_id
@@ -81,6 +92,8 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
     if (content.kind === "journey" && content.journey) return { ...base, system_id: content.journey.id, name: content.journey.name };
     if (content.kind === "channel" && content.channel) return { ...base, name: content.channel.name };
     if (content.kind === "interface" && content.interface) return { ...base, name: content.interface.name };
+    if (content.kind === "capability_domain" && content.capability_domain) return { ...base, name: content.capability_domain.name };
+    if (content.kind === "portfolio_node" && content.portfolio_node) return { ...base, name: content.portfolio_node.name };
     return base;
   };
 
@@ -112,6 +125,11 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
       case "interface":
         if (!content.interface?.name.trim()) return "Give the interface a name.";
         return content.interface.system_id ? null : "Choose the system that exposes it.";
+      case "capability_domain":
+        return content.capability_domain?.name.trim() ? null : "Give the business area a name.";
+      case "portfolio_node":
+        if (!content.portfolio_node?.name.trim()) return "Give it a name.";
+        return content.portfolio_node.level.trim() ? null : "Say what level of the portfolio it is.";
       case "question":
         if (!content.system_id.trim()) return "Choose the offering it asks.";
         return content.question?.text.trim() ? null : "Say what it asks.";
@@ -294,6 +312,41 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
               onChange={(entry) => change({ entry_system_id: entry || null })}
             />
             <AreaField label="What it is" value={channel.description} onChange={(description) => change({ description: description || null })} />
+          </>
+        );
+      }
+      case "capability_domain": {
+        const area = content.capability_domain;
+        if (!area) return null;
+        const change = (patch: Partial<Area>) => set({ capability_domain: { ...area, ...patch } });
+        return (
+          <>
+            <TextField label="Name" value={area.name} required onChange={(name) => change({ name })} />
+            <SelectField
+              label="Inside"
+              value={area.parent_id ?? ""}
+              options={parentOptions(release.capability_domains ?? [], area.id, area.parent_id)}
+              onChange={(parent) => change({ parent_id: parent || null })}
+            />
+            <AreaField label="What it covers" value={area.description} onChange={(description) => change({ description: description || null })} />
+          </>
+        );
+      }
+      case "portfolio_node": {
+        const place = content.portfolio_node;
+        if (!place) return null;
+        const change = (patch: Partial<PortfolioPlace>) => set({ portfolio_node: { ...place, ...patch } });
+        return (
+          <>
+            <TextField label="Name" value={place.name} required onChange={(name) => change({ name })} />
+            <TextField label="Level" value={place.level} required hint="In the business's own words, such as Segment." onChange={(level) => change({ level })} />
+            <SelectField
+              label="Under"
+              value={place.parent_id ?? ""}
+              options={parentOptions(release.portfolio ?? [], place.id, place.parent_id)}
+              onChange={(parent) => change({ parent_id: parent || null })}
+            />
+            <AreaField label="What it is" value={place.description} onChange={(description) => change({ description: description || null })} />
           </>
         );
       }

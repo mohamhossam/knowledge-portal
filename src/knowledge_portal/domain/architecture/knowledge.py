@@ -93,6 +93,8 @@ class CapabilityDomain:
     name_ar: str | None = None
     parent_id: str | None = None
     description: str | None = None
+    # The accepted suggestions that created or extended it, oldest first (ADR-0120).
+    accepted: tuple[AcceptedFrom, ...] = ()
 
     def __post_init__(self) -> None:
         _check_node(self, "Domain")

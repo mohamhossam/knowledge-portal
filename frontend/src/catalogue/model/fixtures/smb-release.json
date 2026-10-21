@@ -1899,35 +1899,40 @@
    "name": "Market and sales",
    "name_ar": null,
    "parent_id": null,
-   "description": "Selling to business customers: opportunities, quotes, offers and discounts."
+   "description": "Selling to business customers: opportunities, quotes, offers and discounts.",
+   "accepted": []
   },
   {
    "id": "product",
    "name": "Product",
    "name_ar": null,
    "parent_id": null,
-   "description": "Designing offerings and keeping the product catalogue, its eligibility and prices."
+   "description": "Designing offerings and keeping the product catalogue, its eligibility and prices.",
+   "accepted": []
   },
   {
    "id": "customer",
    "name": "Customer",
    "name_ar": null,
    "parent_id": null,
-   "description": "Taking, tracking and caring for customers' orders, accounts, documents, bills and problems."
+   "description": "Taking, tracking and caring for customers' orders, accounts, documents, bills and problems.",
+   "accepted": []
   },
   {
    "id": "service",
    "name": "Service",
    "name_ar": null,
    "parent_id": null,
-   "description": "The services an offering delivers, their fulfilment, activation and assurance."
+   "description": "The services an offering delivers, their fulfilment, activation and assurance.",
+   "accepted": []
   },
   {
    "id": "resource",
    "name": "Resource",
    "name_ar": null,
    "parent_id": null,
-   "description": "The network, devices, numbers and field work the services run on."
+   "description": "The network, devices, numbers and field work the services run on.",
+   "accepted": []
   }
  ],
  "landscape_domains": [
@@ -18055,7 +18060,8 @@
    "parent_id": null,
    "description": "The business unit that owns the business portfolios.",
    "confidence": "inferred",
-   "source": "SMB reference v1.0 · title and scope; user, 2026-10-06"
+   "source": "SMB reference v1.0 · title and scope; user, 2026-10-06",
+   "accepted": []
   },
   {
    "id": "fixed",
@@ -18064,7 +18070,8 @@
    "parent_id": "enterprise",
    "description": "Fixed-line products: fibre broadband, voice and the services bundled with them.",
    "confidence": "inferred",
-   "source": "SMB reference v1.0 · title and scope; user, 2026-10-06"
+   "source": "SMB reference v1.0 · title and scope; user, 2026-10-06",
+   "accepted": []
   },
   {
    "id": "smb",
@@ -18073,7 +18080,8 @@
    "parent_id": "fixed",
    "description": "Small and medium businesses.",
    "confidence": "inferred",
-   "source": "SMB reference v1.0 · title and scope; user, 2026-10-06"
+   "source": "SMB reference v1.0 · title and scope; user, 2026-10-06",
+   "accepted": []
   },
   {
    "id": "business-internet",
@@ -18082,7 +18090,8 @@
    "parent_id": "smb",
    "description": "Bundles built on the Bundle Framework (BFM): broadband with business services.",
    "confidence": "inferred",
-   "source": "SMB reference v1.0 · title and scope; user, 2026-10-06"
+   "source": "SMB reference v1.0 · title and scope; user, 2026-10-06",
+   "accepted": []
   }
  ],
  "business_capabilities": [

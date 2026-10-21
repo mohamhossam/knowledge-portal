@@ -1461,6 +1461,16 @@
             "title": "Aliases",
             "type": "array"
           },
+          "capability_domain": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CapabilityDomainSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "capability_id": {
             "anyOf": [
               {
@@ -1601,6 +1611,16 @@
             ],
             "title": "Parent Domain Id"
           },
+          "portfolio_node": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PortfolioNodeSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "product": {
             "anyOf": [
               {
@@ -1720,7 +1740,9 @@
           "component_link",
           "vocabulary_term",
           "offering_rule",
-          "interface"
+          "interface",
+          "capability_domain",
+          "portfolio_node"
         ],
         "title": "CandidateKind",
         "type": "string"
@@ -1737,7 +1759,8 @@
           "needs_offering",
           "needs_channel",
           "needs_concept",
-          "needs_interface"
+          "needs_interface",
+          "needs_portfolio_node"
         ],
         "title": "CandidateMatch",
         "type": "string"
@@ -1753,6 +1776,15 @@
       },
       "CapabilityDomainSchema": {
         "properties": {
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
+          },
           "description": {
             "anyOf": [
               {
@@ -9199,6 +9231,15 @@
       "PortfolioNodeSchema": {
         "description": "A level of the product portfolio, such as Enterprise \u203a Fixed \u203a SMB; levels are data.",
         "properties": {
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
+          },
           "confidence": {
             "anyOf": [
               {
