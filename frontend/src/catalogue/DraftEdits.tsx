@@ -283,7 +283,7 @@ export function DomainsEdit({ tree, onDone }: { tree: "landscape" | "areas"; onD
         render={(item, update, index) => (
           <>
             <TextField label="Name" value={item.name} required onChange={(name) => update({ name })} />
-            <TextField label="Arabic name" value={item.name_ar} dir="rtl" onChange={(name_ar) => update({ name_ar: name_ar || null })} />
+            <TextField label="Arabic name" value={item.name_ar} dir="rtl" lang="ar" onChange={(name_ar) => update({ name_ar: name_ar || null })} />
             <SelectField
               label="Inside"
               value={item.parent_id ?? ""}

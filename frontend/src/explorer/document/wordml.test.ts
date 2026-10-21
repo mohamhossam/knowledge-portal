@@ -43,8 +43,9 @@ describe("the Word package", () => {
     expect(document).toMatch(/<w:bidi\/>.*<w:rtl\/><\/w:rPr><w:t xml:space="preserve">اسم النظام/);
   });
 
-  it("sets a gap in red and bold, and a section with a wide table landscape", () => {
-    expect(document).toContain('<w:shd w:val="clear" w:color="auto" w:fill="FBEAEC"/></w:tcPr><w:p><w:pPr><w:pStyle w:val="TableText"/></w:pPr><w:r><w:rPr><w:b/><w:bCs/><w:color w:val="B3122B"/>');
+  it("sets a gap neutral and bold, and a section with a wide table landscape", () => {
+    expect(document).toContain('<w:shd w:val="clear" w:color="auto" w:fill="F3F2EC"/></w:tcPr><w:p><w:pPr><w:pStyle w:val="TableText"/></w:pPr><w:r><w:rPr><w:b/><w:bCs/>');
+    expect(document).not.toContain("B3122B");
     expect(document).toMatch(/w:orient="landscape".*17\. Complete End-to-End Journey|17\. Complete End-to-End Journey[\s\S]*w:orient="landscape"/);
     expect(document.match(/<w:sectPr>/g)!.length).toBe(2);
   });

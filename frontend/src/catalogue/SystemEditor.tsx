@@ -30,7 +30,7 @@ export function SystemEditor({ value, onChange, release }: {
     <div className="cat-form">
       <div className="cat-form__grid">
         <TextField label="Name" value={value.name} required onChange={(name) => set({ name })} />
-        <TextField label="Arabic name" value={value.name_ar} dir="rtl" onChange={(name_ar) => set({ name_ar: name_ar || null })} />
+        <TextField label="Arabic name" value={value.name_ar} dir="rtl" lang="ar" onChange={(name_ar) => set({ name_ar: name_ar || null })} />
         <SelectField
           label="Sits in"
           value={value.landscape_domain_id ?? ""}
@@ -79,7 +79,7 @@ export function SystemEditor({ value, onChange, release }: {
         render={(item, update) => (
           <>
             <TextField label="Component" value={item.name} required onChange={(name) => update({ name })} />
-            <TextField label="Arabic name" value={item.name_ar} dir="rtl" onChange={(name_ar) => update({ name_ar: name_ar || null })} />
+            <TextField label="Arabic name" value={item.name_ar} dir="rtl" lang="ar" onChange={(name_ar) => update({ name_ar: name_ar || null })} />
             <TextField label="Built with" value={item.technology} onChange={(technology) => update({ technology: technology || null })} />
             <LinesField label="Also called" value={item.aliases} onChange={(aliases) => update({ aliases })} />
             <AreaField label="What it does" value={item.description} onChange={(description) => update({ description: description || null })} />

@@ -55,7 +55,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     KnowledgeReleaseStatus,
     SystemDefinition,
 )
-from knowledge_portal.domain.architecture.neighbours import adjacent
+from knowledge_portal.domain.architecture.neighbours import adjacent, interface_edges
 
 
 def _reference(item: SystemDefinition) -> SystemReference:
@@ -105,7 +105,10 @@ class ResolveArchitectureKnowledge(ArchitectureKnowledgePort):
             )
 
         mapped = {item.id for item in matched.systems if item.catalogued}
-        nearby = adjacent(mapped, release.relationships)
+        # A release with no recorded relationships still knows its edges
+        # through the interfaces systems expose and consume.
+        edges = release.relationships or interface_edges(release.interfaces)
+        nearby = adjacent(mapped, edges)
         systems = {item.id: item for item in release.systems}
 
         def placed(system: SystemReference) -> SystemReference:

@@ -4,6 +4,7 @@
  * `renderDocxParts`. The look is the Timetable Book's: ink on stock, rules for
  * structure, rank carried by weight; red is kept for a gap, as on screen.
  */
+import { EXPORT } from "./palette";
 import type { Offering, SourceConfidence } from "../../api/client";
 
 type NfrCoverage = NonNullable<Offering["nfrs"]>[number]["coverage"];
@@ -45,14 +46,9 @@ export type DocModel = {
 
 const NS =
   'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"';
-// The Timetable Book's tokens (styles/tokens.css), as Word colours.
-const INK = "16181D";
-const INK_2 = "474C55";
-const INK_3 = "686E78";
-const RULE = "CFD2D6";
-const BAND = "F1F1EE";
-const RED = "B3122B";
-const RED_WASH = "FBEAEC";
+// The Calm Ledger's light-theme tokens as Word colours; palette.ts is the one
+// sanctioned copy of raw values, shared with the overview drawing.
+const { ink: INK, ink2: INK_2, ink3: INK_3, rule: RULE, band: BAND, warning: WARNING, warningWash: WARNING_WASH } = EXPORT;
 const FACE = "Arial";
 const PORTRAIT = { w: 11906, h: 16838, content: 11906 - 2 * 1134, landscape: false };
 const LANDSCAPE = { w: 16838, h: 11906, content: 16838 - 2 * 1134, landscape: true };
@@ -128,9 +124,10 @@ function textPara(text: string, run_: RunStyle, style: ParaStyle = {}): string {
   return para(run(text, run_), { ...style, bidi: rightToLeft(text) });
 }
 
-/** How a cell's confidence or coverage reads: a gap or a missing quality is red and bold, partial bold. */
+/** How a cell's confidence or coverage reads: due is a warning, a gap or a missing quality is neutral and bold, partial bold. */
 function cellLook(cell: Exclude<DocCell, string>): { fill: string | null; run: RunStyle } {
-  if (cell.confidence === "gap" || cell.coverage === "missing" || cell.due) return { fill: RED_WASH, run: { b: true, color: RED } };
+  if (cell.due) return { fill: WARNING_WASH, run: { b: true, color: WARNING } };
+  if (cell.confidence === "gap" || cell.coverage === "missing") return { fill: BAND, run: { b: true } };
   if (cell.coverage === "partial" || cell.strong) return { fill: null, run: { b: true } };
   if (cell.confidence === "inferred") return { fill: null, run: { color: INK_2 } };
   return { fill: null, run: {} };
@@ -166,11 +163,12 @@ function tableXml(table: DocTable, content: number): string {
 }
 
 function calloutXml(block: Extract<DocBlock, { t: "callout" }>, content: number): string {
-  const [rule, fill, title] = block.kind === "gap" ? [RED, RED_WASH, RED] : block.kind === "decision" ? [INK, BAND, INK] : [INK_3, BAND, INK_2];
+  // A gap reads as the screen draws it: a dashed neutral frame, never a warning.
+  const [rule, fill, title, edge] = block.kind === "gap" ? [INK_3, BAND, INK, "dashed"] : block.kind === "decision" ? [INK, BAND, INK, "single"] : [INK_3, BAND, INK_2, "single"];
   const inner =
     textPara(block.title, { b: true, color: title }, { style: "TableText" }) +
     (block.text ? textPara(block.text, {}, { style: "TableText" }) : "");
-  return `<w:tbl><w:tblPr><w:tblW w:w="${content}" w:type="dxa"/><w:tblBorders><w:left w:val="single" w:sz="24" w:space="0" w:color="${rule}"/></w:tblBorders><w:tblCellMar><w:top w:w="80" w:type="dxa"/><w:left w:w="140" w:type="dxa"/><w:bottom w:w="80" w:type="dxa"/><w:right w:w="140" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid><w:gridCol w:w="${content}"/></w:tblGrid><w:tr><w:trPr><w:cantSplit/></w:trPr><w:tc><w:tcPr><w:tcW w:w="${content}" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="${fill}"/></w:tcPr>${inner}</w:tc></w:tr></w:tbl>`;
+  return `<w:tbl><w:tblPr><w:tblW w:w="${content}" w:type="dxa"/><w:tblBorders><w:left w:val="${edge}" w:sz="24" w:space="0" w:color="${rule}"/></w:tblBorders><w:tblCellMar><w:top w:w="80" w:type="dxa"/><w:left w:w="140" w:type="dxa"/><w:bottom w:w="80" w:type="dxa"/><w:right w:w="140" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid><w:gridCol w:w="${content}"/></w:tblGrid><w:tr><w:trPr><w:cantSplit/></w:trPr><w:tc><w:tcPr><w:tcW w:w="${content}" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="${fill}"/></w:tcPr>${inner}</w:tc></w:tr></w:tbl>`;
 }
 
 function imageXml(block: Extract<DocBlock, { t: "image" }>, rid: string, id: number, page: Page): string {

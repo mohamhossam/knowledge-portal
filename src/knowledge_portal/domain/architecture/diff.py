@@ -37,6 +37,9 @@ _OFFERING_FIELDS = (
     "decisions",
     "boundaries",
     "not_used",
+    "portfolio_node_id",
+    "plans",
+    "business_rules",
 )
 
 
@@ -144,6 +147,17 @@ _INTERFACE_FIELDS = (
     "confidence",
     "source",
 )
+
+# A portfolio node's attributes, as reported when the tree changes.
+_PORTFOLIO_FIELDS = (
+    "name",
+    "level",
+    "parent_id",
+    "description",
+    "confidence",
+    "source",
+)
+
 
 _REALISATION_FIELDS = (
     "layer",
@@ -290,6 +304,8 @@ class ChangedItem(StrEnum):
     # A contract a system exposes, with its consumers (ontology plan Phase 8).
     INTERFACE = "interface"
     REALISATION = "realisation"
+    # A node of the offering portfolio tree.
+    PORTFOLIO_NODE = "portfolio_node"
 
 
 @dataclass(frozen=True)
@@ -330,6 +346,21 @@ def _system_fields(before: SystemDefinition, after: SystemDefinition) -> tuple[s
         fields.append("masters")
     if sorted(before.reads) != sorted(after.reads):
         fields.append("reads")
+    if before.owner != after.owner:
+        fields.append("owner")
+    if before.external != after.external:
+        fields.append("external")
+    if before.roadmap != after.roadmap:
+        fields.append("roadmap")
+    if (before.placement_from, before.placement_reason) != (
+        after.placement_from,
+        after.placement_reason,
+    ):
+        fields.append("placement")
+    if before.confidence != after.confidence:
+        fields.append("confidence")
+    if before.source != after.source:
+        fields.append("source")
     return tuple(fields)
 
 
@@ -659,6 +690,14 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
             _CHANGE_REQUEST_FIELDS,
             {item.id: (item.title, item) for item in base.change_history},
             {item.id: (item.title, item) for item in draft.change_history},
+        )
+    )
+    changes.extend(
+        _register_changes(
+            ChangedItem.PORTFOLIO_NODE,
+            _PORTFOLIO_FIELDS,
+            {item.id: (item.name, item) for item in base.portfolio},
+            {item.id: (item.name, item) for item in draft.portfolio},
         )
     )
     changes.extend(

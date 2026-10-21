@@ -20,7 +20,7 @@ describe("roles and the vocabulary", () => {
 
   it("names each role the SMB vocabulary holds, by code", () => {
     const terms = roleTerms(asRelease(release));
-    expect(Object.keys(terms)).toHaveLength(12);
+    expect(Object.keys(terms)).toHaveLength(15);
     expect(terms["customer-data"]).toBe("Customer data");
     expect(terms.orchestrate).toBe("Orchestrate");
   });

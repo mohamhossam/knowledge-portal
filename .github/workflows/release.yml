@@ -13,7 +13,6 @@ permissions:
 jobs:
   gates:
     uses: ./.github/workflows/ci.yml
-    secrets: inherit
 
   publish:
     needs: gates
@@ -30,26 +29,52 @@ jobs:
           test "$declared" = "$GITHUB_REF_NAME" || {
             echo "Tag $GITHUB_REF_NAME does not match pyproject version $declared"; exit 1; }
 
-      - name: Build and push the backend image
+      # The exact bytes that are pushed are the bytes that were scanned: each
+      # image is built once here, scanned, and only then pushed. The CI gates
+      # already scanned their own builds, but a rebuild in this job could pick
+      # up newer Debian/Alpine packages than the scanned one did.
+      - name: Build, scan and push the backend image
         env:
           REGISTRY_TOKEN: ${{ github.token }}
         run: |
           image="ghcr.io/${GITHUB_REPOSITORY_OWNER}/knowledge-api:${GITHUB_REF_NAME}"
           echo "$REGISTRY_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
           DOCKER_BUILDKIT=1 docker build -f deploy/api/Dockerfile -t "$image" .
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969 \
+            image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed \
+            --exit-code 1 "$image"
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$PWD":/out \
+            aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969 \
+            image --format cyclonedx --output /out/sbom-knowledge-api.cdx.json "$image"
           docker push "$image"
+          docker inspect --format='{{index .RepoDigests 0}}' "$image" >> pushed-digests.txt
 
-      - name: Build and push the web image
+      - name: Build, scan and push the web image
         run: |
           image="ghcr.io/${GITHUB_REPOSITORY_OWNER}/knowledge-web:${GITHUB_REF_NAME}"
           DOCKER_BUILDKIT=1 docker build -f deploy/web/Dockerfile -t "$image" .
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969 \
+            image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed \
+            --exit-code 1 "$image"
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$PWD":/out \
+            aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969 \
+            image --format cyclonedx --output /out/sbom-knowledge-web.cdx.json "$image"
           docker push "$image"
+          docker inspect --format='{{index .RepoDigests 0}}' "$image" >> pushed-digests.txt
 
       - name: Publish the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           # The internal contract requirement work's adapters pin (requirement-portal ADR-0099).
+          # The notes carry each pushed image's digest, so a deployment can pin
+          # exactly what was scanned; the SBOMs describe those same bytes.
+          digests="$(paste -sd ' and ' pushed-digests.txt)"
           gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" \
-            --notes "Images: ghcr.io/${GITHUB_REPOSITORY_OWNER}/knowledge-api:${GITHUB_REF_NAME} and ghcr.io/${GITHUB_REPOSITORY_OWNER}/knowledge-web:${GITHUB_REF_NAME}. Changes: CHANGELOG.md." \
-            contracts/knowledge-internal.openapi.json contracts/knowledge-public.openapi.json
+            --notes "Images (scanned at these digests): ${digests}. Changes: CHANGELOG.md." \
+            contracts/knowledge-internal.openapi.json contracts/knowledge-public.openapi.json \
+            sbom-knowledge-api.cdx.json sbom-knowledge-web.cdx.json

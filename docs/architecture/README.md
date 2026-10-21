@@ -14,3 +14,6 @@ were taken on 2026-10-09; requirement-portal's are authoritative if the two diff
 | [0102](adr-0102-historic-requirements-and-ado-lineage.md) | Historic Requirements and their Azure DevOps lineage |
 | [0104](adr-0104-independent-portals-with-optional-links.md) | Independent portals with optional links |
 | [0114](adr-0114-capability-concepts-select-systems.md) | Curated capability concepts may select systems |
+| [0119](adr-0119-one-canonical-dependency-model.md) | One canonical dependency model (proposed) |
+| [0120](adr-0120-provenance-survives-acceptance.md) | Provenance survives acceptance (proposed) |
+| [0121](adr-0121-lifecycle-deprecation-and-replacement.md) | Lifecycle: deprecation and replacement (proposed) |

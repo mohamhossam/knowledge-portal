@@ -16,13 +16,14 @@ describe("the solution overview", () => {
     expect(trackingChain(scenario("CEASE", ""))).toEqual([]);
   });
 
-  it("draws them with the scenario's title, a gap in red, and tracking beneath", () => {
+  it("draws them with the scenario's title, a neutral gap, and tracking beneath", () => {
     const { svg, w, h } = overviewSvg(scenario(), EXPLORED);
 
     expect([w, h]).toEqual([1200, expect.any(Number)]);
     expect(svg).toContain("Business Pro Plus: New Activation, through Online");
     expect(svg).toContain(">Orchestrate</text>");
-    expect(svg).toMatch(/fill="#B3122B" font-weight="700">1 step: no system \(gap\)<\/text>/);
+    expect(svg).toMatch(/fill="#1F1B1A" font-weight="700">1 step: no system \(gap\)<\/text>/);
+    expect(svg).not.toContain("#B3122B");
     expect(svg).toContain(">Order tracking</text>");
   });
 });
