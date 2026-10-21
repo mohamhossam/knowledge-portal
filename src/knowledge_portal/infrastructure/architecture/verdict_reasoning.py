@@ -25,6 +25,7 @@ from knowledge_portal.application.ports.requirement_assessment import (
 )
 from knowledge_portal.application.use_cases.assessment_lanes import suggested_change_type
 from knowledge_portal.domain.architecture.assessment import ChangeType, PathStep, SystemRole
+from knowledge_portal.domain.architecture.deprecation import in_service
 from knowledge_portal.domain.architecture.entities import ArchitectureCitation
 from knowledge_portal.domain.architecture.verdicts import ProductVerdict
 
@@ -158,7 +159,9 @@ class StructuredVerdictReasoner:
                 }
                 for item in context.candidates
             ],
-            "catalogue_systems": [{"id": item.id, "name": item.name} for item in release.systems],
+            "catalogue_systems": [
+                {"id": item.id, "name": item.name} for item in in_service(release.systems)
+            ],
             "worked_examples": [
                 {
                     "requirement": _clip(match.precedent.text),
@@ -204,7 +207,7 @@ class StructuredVerdictReasoner:
                 raise ArchitectureEvidenceError(
                     "The verdict named an offering outside the release."
                 )
-        systems_known = {item.id for item in release.systems}
+        systems_known = {item.id for item in in_service(release.systems)}
         by_id = {item.id: item for item in kept}
         decisions: list[SystemDecision] = []
         for item in result.systems:

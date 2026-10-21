@@ -323,3 +323,11 @@ a.cat-chip:hover {
   flex: 1 1 18rem;
   min-inline-size: 0;
 }
+
+/* A retired system or concept in a list (ADR-0121): its name struck through, the row's
+   Retired status saying so in words. */
+.cat-retired {
+  color: var(--color-ink-2);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}

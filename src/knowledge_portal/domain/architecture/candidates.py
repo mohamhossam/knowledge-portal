@@ -27,6 +27,7 @@ from knowledge_portal.domain.architecture.concepts import (
     CapabilityRef,
     label_key,
 )
+from knowledge_portal.domain.architecture.deprecation import successor
 from knowledge_portal.domain.architecture.drafts import OfferingDraft
 from knowledge_portal.domain.architecture.governance import (
     KnowledgeSource,
@@ -59,6 +60,7 @@ from knowledge_portal.domain.architecture.vocabularies import (
     SCHEME_NAMES,
     VocabularyTerm,
     find_term,
+    term_named,
 )
 from knowledge_portal.domain.architecture.vocabulary_links import (
     VocabularyRef,
@@ -449,7 +451,26 @@ def _words(value: str) -> str:
 
 
 def find_system(release: ArchitectureKnowledge, reference: str) -> SystemDefinition | None:
-    """A draft system named by id, name, Arabic name or alias, ignoring case.
+    """The system a reference means now (ADR-0121): one retired forwards to what replaced
+    it, and one retired for good matches nothing. ``system_named`` sees every system."""
+    found = system_named(release, reference)
+    return successor(release.systems, found.id) if found is not None else None
+
+
+def retired_names(release: ArchitectureKnowledge) -> dict[str, tuple[str, ...]]:
+    """The names and aliases of retired systems, by the system in service that replaced
+    them, so a document that still uses an old name is read as its successor (ADR-0121)."""
+    found: dict[str, list[str]] = {}
+    for system in release.systems:
+        current = successor(release.systems, system.id) if system.deprecated else None
+        if current is not None:
+            found.setdefault(current.id, []).extend((system.name, *system.aliases))
+    return {system_id: tuple(names) for system_id, names in found.items()}
+
+
+def system_named(release: ArchitectureKnowledge, reference: str) -> SystemDefinition | None:
+    """A draft system named by id, name, Arabic name or alias, ignoring case, retired or not:
+    whether a label is taken.
 
     Failing an exact label, the words alone are compared, so ``dynamics-crm``
     (the id of a suggested system) finds the system that has since taken
@@ -874,7 +895,15 @@ def _resolved_question(
 
 
 def find_concept(release: ArchitectureKnowledge, reference: str) -> BusinessCapability | None:
-    """A draft concept named by id or by any of its labels, ignoring case and punctuation."""
+    """The concept a reference means now (ADR-0121): one retired forwards to what replaced
+    it, and one retired for good matches nothing. ``concept_named`` sees every concept."""
+    found = concept_named(release, reference)
+    return successor(release.business_capabilities, found.id) if found is not None else None
+
+
+def concept_named(release: ArchitectureKnowledge, reference: str) -> BusinessCapability | None:
+    """A draft concept named by id or by any of its labels, ignoring case and punctuation,
+    retired or not: whether a label is taken."""
     exact = next((item for item in release.business_capabilities if item.id == reference), None)
     key = label_key(reference)
     if exact is not None or not key:
@@ -903,7 +932,7 @@ def _free_labels(
     seen: set[str] = set()
     for label in labels:
         key = label_key(label)
-        owner = find_concept(release, label)
+        owner = concept_named(release, label)
         if key and key not in seen and (owner is None or owner.id == owner_id):
             seen.add(key)
             free.append(label)
@@ -1406,7 +1435,7 @@ def _free(
     return tuple(
         label
         for label in labels
-        if (found := find_system(release, label)) is None or found.id == owner_id
+        if (found := system_named(release, label)) is None or found.id == owner_id
     )
 
 
@@ -1833,7 +1862,7 @@ def _term_to_apply(
     owner_id = current.id if current is not None else None
 
     def free(label: str) -> bool:
-        owner = find_term(terms, scheme, label)
+        owner = term_named(terms, scheme, label)
         return owner is None or owner.id == owner_id
 
     labels: list[str] = []

@@ -313,7 +313,7 @@ describe("vocabulary suggestions", () => {
   const orders = suggestion(
     {
       kind: "vocabulary_term", system_id: "etom-order-handling",
-      term: { id: "etom-order-handling", scheme: "etom_process", pref_label: "Order Handling", alt_labels: [], accepted: [] },
+      term: { id: "etom-order-handling", scheme: "etom_process", pref_label: "Order Handling", alt_labels: [], deprecated: false, accepted: [] },
       value_refs: [ref, { ...ref, item: "20" }],
     },
     { match: "updates_existing" },
@@ -321,13 +321,13 @@ describe("vocabulary suggestions", () => {
   const saml = suggestion(
     {
       kind: "vocabulary_term", system_id: "role-saml",
-      term: { id: "role-saml", scheme: "responsibility_role", pref_label: "SAML", alt_labels: [], accepted: [] },
+      term: { id: "role-saml", scheme: "responsibility_role", pref_label: "SAML", alt_labels: [], deprecated: false, accepted: [] },
       value_refs: [{ field: "responsibility_role", owner_id: "bpp", value: "SAML", item: "selfservice", part: "b2b-web" }],
     },
   );
   const api = suggestion({
     kind: "vocabulary_term", system_id: "api-tmf681",
-    term: { id: "api-tmf681", scheme: "open_api", pref_label: "Communication", notation: "TMF681", alt_labels: [], accepted: [] },
+    term: { id: "api-tmf681", scheme: "open_api", pref_label: "Communication", notation: "TMF681", alt_labels: [], deprecated: false, accepted: [] },
     value_refs: [],
   });
   const termWords = lexicon(release, [orders, saml, api]);

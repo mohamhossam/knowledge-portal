@@ -9,6 +9,7 @@ import { ActionGroup, Button, type Column, DataTable, Facts, Lines, RecordView, 
 import { RouterLink } from "../shell/links";
 import { SystemReview } from "../reviews/SystemReview";
 import { seatsLine, seatsOn } from "../squads/organisation";
+import { Retired } from "./Retired";
 import { acceptances } from "./accepted";
 import { AcceptedFrom } from "./AcceptedFrom";
 import { connections, dependsHow, domainPath, sentenceCase, systemName, systemRoles, usedHow } from "./catalogue";
@@ -32,13 +33,21 @@ export function SystemRecord({ system, index }: { system: CatalogueSystem; index
   const navigate = useNavigate();
   const from = (location.state as Trail | null)?.from;
   const place = domainPath(book.landscape, system.landscape_domain_id);
+  const replacement = system.replaced_by ? book.systems.get(system.replaced_by) : undefined;
 
   return (
     <RecordView
       title={system.name}
       // Choosing a system moves focus to its record; a fresh page load leaves it be.
       takeFocus={location.key !== "default"}
-      meta={system.name_ar ? <span lang="ar" dir="rtl">{system.name_ar}</span> : undefined}
+      meta={
+        system.name_ar || system.deprecated ? (
+          <>
+            {system.name_ar && <span lang="ar" dir="rtl">{system.name_ar}</span>}
+            {system.deprecated && <Retired successor={replacement && { name: replacement.name, href: `${base}/systems/${encodeURIComponent(replacement.id)}` }} />}
+          </>
+        ) : undefined
+      }
       lead={system.description || undefined}
       actions={
         editable ? (

@@ -17,6 +17,10 @@ from knowledge_portal.domain.architecture.concepts import (
     check_concepts,
     check_link,
 )
+from knowledge_portal.domain.architecture.deprecation import (
+    check_replacements,
+    check_retirement,
+)
 from knowledge_portal.domain.architecture.governance import (
     KnowledgeSource,
     OfferingFacts,
@@ -278,6 +282,10 @@ class SystemDefinition:
     # term id (ontology plan Phase 8).
     masters: tuple[str, ...] = ()
     reads: tuple[str, ...] = ()
+    # Retired, with the system of the same type that takes its place if any (ADR-0121):
+    # it stays readable everywhere but selection and matching leave it out.
+    deprecated: bool = False
+    replaced_by: str | None = None
     # The accepted suggestions that created or extended it, oldest first (ADR-0120).
     accepted: tuple[AcceptedFrom, ...] = ()
 
@@ -300,6 +308,7 @@ class SystemDefinition:
                 f"{self.name}: a moved placement names both where it was and why it moved."
             )
         check_source(self)
+        check_retirement(self, self.name)
         if any(not value.strip() for value in (*self.aliases, *self.constraints)):
             raise InvalidKnowledgeError("System aliases and constraints must not be blank.")
         labels = (self.name, *((self.name_ar,) if self.name_ar else ()), *self.aliases)
@@ -553,6 +562,9 @@ class ArchitectureKnowledge:
             },
         )
         check_change_history(self.change_history)
+        check_replacements(self.systems, "System")
+        check_replacements(self.business_capabilities, "Concept")
+        check_replacements(self.vocabulary, "Term", lambda old, new: old.scheme is new.scheme)
         landscape = _check_domains(self.landscape_domains, "Landscape domain")
         for system in self.systems:
             if (

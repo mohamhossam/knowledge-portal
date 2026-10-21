@@ -41,6 +41,7 @@ from knowledge_portal.domain.architecture.assessment import (
     speeds_in,
 )
 from knowledge_portal.domain.architecture.concepts import label_key, labels_in
+from knowledge_portal.domain.architecture.deprecation import in_service, successor
 from knowledge_portal.domain.architecture.impact_graph import (
     composes,
     delivering_systems,
@@ -123,7 +124,7 @@ def catalogue_terms(release: ArchitectureKnowledge) -> CatalogueTerms:
         ),
         entities=tuple(
             CatalogueTerm(item.id, item.labels)
-            for item in release.vocabulary
+            for item in in_service(release.vocabulary)
             if item.scheme is VocabularyScheme.INFORMATION_ENTITY
         ),
         interfaces=tuple(
@@ -151,8 +152,9 @@ def shortlist(
     index_id: str,
     need: Facet,
 ) -> tuple[ConceptOption, ...]:
-    """The concepts a need could mean: by label, by a component it names, then by the index."""
-    concepts = {item.id: item for item in release.business_capabilities}
+    """The concepts a need could mean: by label, by a component it names, then by the index.
+    A retired concept is never one of them (ADR-0121)."""
+    concepts = {item.id: item for item in in_service(release.business_capabilities)}
     found: dict[str, ConceptBasis] = {}
     for concept_id in labels_in(need.text, release.business_capabilities):
         found.setdefault(concept_id, ConceptBasis.LABEL)
@@ -360,7 +362,12 @@ def graph_lane(
     used = delivering_systems(release, offering) if offering else frozenset()
     found: dict[str, _Candidate] = {}
 
+    retired = {item.id for item in release.systems if item.deprecated}
+
     def add(system_id: str, role: SystemRole, path: tuple[PathStep, ...] = ()) -> None:
+        # Whatever reaches a retired system, it is never a candidate (ADR-0121).
+        if system_id in retired:
+            return
         candidate = found.setdefault(system_id, _Candidate(names[system_id], role))
         if _ROLE_RANK[role] < _ROLE_RANK[candidate.role]:
             candidate.role = role
@@ -416,6 +423,8 @@ def graph_lane(
             ),
             None,
         )
+        # A retired system named outright forwards to what replaced it.
+        known = successor(release.systems, known.id) if known is not None else None
         if known is not None:
             add(known.id, SystemRole.NAMED)
     return tuple(
@@ -583,7 +592,7 @@ def precedent_candidates(
     """
     if offering_id is None:
         return ()
-    names = {item.id: item.name for item in release.systems}
+    names = {item.id: item.name for item in in_service(release.systems)}
     reached = {item.system_id for item in known}
     paths: dict[str, list[tuple[PathStep, ...]]] = {}
     for match in precedents:
@@ -641,7 +650,7 @@ def concept_reach(
             paths = found.setdefault(item.system_id, [])
             if item.steps not in paths:
                 paths.append(item.steps)
-    names = {item.id: item.name for item in release.systems}
+    names = {item.id: item.name for item in in_service(release.systems)}
     corpus = normalise(text)
     for channel in release.channels:
         if channel.entry_system_id in names and contains(corpus, channel.name):

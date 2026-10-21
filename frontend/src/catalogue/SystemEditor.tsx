@@ -1,5 +1,5 @@
 import type { CatalogueSystem, Release } from "../api/client";
-import { AreaField, LinesField, Rows, SelectField, TextField } from "./forms";
+import { AreaField, CheckField, LinesField, Rows, SelectField, TextField } from "./forms";
 
 type Capability = CatalogueSystem["capabilities"][number];
 type Component = CatalogueSystem["components"][number];
@@ -22,6 +22,11 @@ export function SystemEditor({ value, onChange, release }: {
     { value: "", label: "No business area" },
     ...(release.capability_domains ?? []).map((domain) => ({ value: domain.id, label: domain.name })),
   ];
+  // ADR-0121: what can stand in for a retired system is one still in service.
+  const successors = [
+    { value: "", label: "Nothing replaces it" },
+    ...release.systems.filter((item) => item.id !== value.id && !item.deprecated).map((item) => ({ value: item.id, label: item.name })),
+  ];
   const components = [
     { value: "", label: "No component named" },
     ...value.components.filter((item) => item.name.trim()).map((item) => ({ value: item.id || item.name, label: item.name })),
@@ -40,6 +45,14 @@ export function SystemEditor({ value, onChange, release }: {
       </div>
       <LinesField label="Also called" value={value.aliases} onChange={(aliases) => set({ aliases })} />
       <AreaField label="What it is" value={value.description} onChange={(description) => set({ description: description || null })} />
+      <CheckField
+        label="Retired: still readable, never matched again"
+        checked={value.deprecated}
+        onChange={(deprecated) => set({ deprecated, replaced_by: deprecated ? value.replaced_by : null })}
+      />
+      {value.deprecated && (
+        <SelectField label="Replaced by" value={value.replaced_by ?? ""} options={successors} onChange={(id) => set({ replaced_by: id || null })} />
+      )}
 
       <Rows<Capability>
         legend="What it does"

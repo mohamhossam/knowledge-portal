@@ -1297,6 +1297,11 @@
             ],
             "title": "Definition"
           },
+          "deprecated": {
+            "default": false,
+            "title": "Deprecated",
+            "type": "boolean"
+          },
           "domain_id": {
             "anyOf": [
               {
@@ -1330,6 +1335,18 @@
             "maxLength": 300,
             "title": "Pref Label",
             "type": "string"
+          },
+          "replaced_by": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaced By"
           },
           "source": {
             "anyOf": [
@@ -10374,6 +10391,14 @@
       "ReferenceFlagResponse": {
         "description": "A squad or product naming what the version in service no longer has, or a product\nwhose systems differ from what its offerings name, or that is linked to nothing.",
         "properties": {
+          "replaced_systems": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SystemSuccessorResponse"
+            },
+            "title": "Replaced Systems",
+            "type": "array"
+          },
           "retired_capabilities": {
             "items": {
               "$ref": "#/components/schemas/CapabilityScopeResponse"
@@ -12071,6 +12096,11 @@
             "title": "Constraints",
             "type": "array"
           },
+          "deprecated": {
+            "default": false,
+            "title": "Deprecated",
+            "type": "boolean"
+          },
           "description": {
             "anyOf": [
               {
@@ -12177,6 +12207,18 @@
             "maxItems": 5000,
             "title": "Reads",
             "type": "array"
+          },
+          "replaced_by": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaced By"
           },
           "roadmap": {
             "anyOf": [
@@ -12503,6 +12545,25 @@
           "standing"
         ],
         "title": "SystemStanding",
+        "type": "object"
+      },
+      "SystemSuccessorResponse": {
+        "description": "A retired system still named, and the system that replaced it (ADR-0121).",
+        "properties": {
+          "successor_id": {
+            "title": "Successor Id",
+            "type": "string"
+          },
+          "system_id": {
+            "title": "System Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "system_id",
+          "successor_id"
+        ],
+        "title": "SystemSuccessorResponse",
         "type": "object"
       },
       "SystemUpdateRequest": {
@@ -13128,6 +13189,11 @@
             ],
             "title": "Definition"
           },
+          "deprecated": {
+            "default": false,
+            "title": "Deprecated",
+            "type": "boolean"
+          },
           "exact_match": {
             "anyOf": [
               {
@@ -13161,6 +13227,18 @@
             "maxLength": 300,
             "title": "Pref Label",
             "type": "string"
+          },
+          "replaced_by": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaced By"
           },
           "scheme": {
             "$ref": "#/components/schemas/VocabularyScheme"

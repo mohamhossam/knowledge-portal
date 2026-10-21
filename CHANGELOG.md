@@ -7,6 +7,16 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- Retiring without deleting (ADR-0121, `docs/slices/lifecycle-deprecation.md`): a system, a
+  concept or a vocabulary term can be retired and name the one that replaces it. It stays in
+  every version and reads everywhere, drawn struck through with the word Retired, and the
+  draft's changes name it; no requirement maps to it, no assessment or suggestion reaches it,
+  and a reference to it forwards to its successor. A squad seated on a replaced system is
+  pointed at the successor. The system sheet's editor retires a system; catalogue files carry
+  `deprecated` and `replaced_by` (optional workbook columns on Systems, Concepts and
+  Vocabulary). Public contract, additive: the two fields on systems, concepts and terms, and
+  `replaced_systems` on the organisation's reference flags.
+
 - Provenance survives acceptance (ADR-0120, `docs/slices/provenance-survives-acceptance.md`):
   accepting a suggestion records on what it produced which suggestion it was, the model and
   prompt version behind it, and who accepted it when. The system and concept records show it

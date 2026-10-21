@@ -12,7 +12,7 @@ which the system must realise through one of its capabilities.
 from __future__ import annotations
 
 from collections.abc import Collection, Iterable, Mapping
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from enum import StrEnum
 from typing import Literal
@@ -422,6 +422,14 @@ class CapabilityScope:
 
 
 @dataclass(frozen=True)
+class SystemSuccessor:
+    """A retired system a squad or product still names, and the one that replaced it."""
+
+    system_id: str
+    successor_id: str
+
+
+@dataclass(frozen=True)
 class ReferenceFlag:
     """A squad or product naming what the release in service no longer has, or a product
     whose systems differ from what its offerings say."""
@@ -433,6 +441,8 @@ class ReferenceFlag:
     retired_portfolio_node_id: str | None = None
     # A squad's seats scoped to a capability its system no longer has.
     retired_capabilities: tuple[CapabilityScope, ...] = ()
+    # Retired systems it still names that another system replaced (ADR-0121): move to it.
+    replaced_systems: tuple[SystemSuccessor, ...] = ()
     # A product's systems its offerings name but it does not, and the reverse.
     systems_missing: tuple[str, ...] = ()
     systems_unexplained: tuple[str, ...] = ()
@@ -444,11 +454,13 @@ class ReferenceFlag:
 class ReleaseReferences:
     """What one architecture release offers the organisation catalogue to point at."""
 
-    # Each system by id, with the business capability concepts its capabilities are linked to.
+    # Each system in service by id, with the concepts its capabilities are linked to.
     systems: Mapping[str, Collection[str]]
     # Each offering by id, with the systems its components name.
     offering_systems: Mapping[str, Collection[str]]
     portfolio_node_ids: Collection[str]
+    # Each retired system another replaced, by id, with that successor (ADR-0121).
+    successors: Mapping[str, str] = field(default_factory=dict)
 
 
 def check_references(
@@ -457,8 +469,20 @@ def check_references(
     """Flag each squad and product whose links a release leaves stale, squads first."""
     systems = set(release.systems)
     flags: list[ReferenceFlag] = []
+
+    def gone(ids: Iterable[str]) -> tuple[str, ...]:
+        return tuple(item for item in ids if item not in systems and item not in release.successors)
+
+    def replaced(ids: Iterable[str]) -> tuple[SystemSuccessor, ...]:
+        return tuple(
+            SystemSuccessor(item, release.successors[item])
+            for item in ids
+            if item in release.successors
+        )
+
     for squad in sorted(catalogue.squads, key=lambda item: item.name.casefold()):
-        retired = tuple(item for item in squad.system_ids if item not in systems)
+        retired = gone(squad.system_ids)
+        moved = replaced(squad.system_ids)
         # A capability lapses with its system, so only those of systems still in service.
         lapsed = tuple(
             dict.fromkeys(
@@ -469,10 +493,14 @@ def check_references(
                 and item.capability_id not in release.systems[item.system_id]
             )
         )
-        if retired or lapsed:
+        if retired or lapsed or moved:
             flags.append(
                 ReferenceFlag(
-                    "squad", squad.id, retired_system_ids=retired, retired_capabilities=lapsed
+                    "squad",
+                    squad.id,
+                    retired_system_ids=retired,
+                    retired_capabilities=lapsed,
+                    replaced_systems=moved,
                 )
             )
     for product in sorted(catalogue.products, key=lambda item: item.name.casefold()):
@@ -482,7 +510,8 @@ def check_references(
         flag = ReferenceFlag(
             "product",
             product.id,
-            retired_system_ids=tuple(item for item in product.system_ids if item not in systems),
+            retired_system_ids=gone(product.system_ids),
+            replaced_systems=replaced(product.system_ids),
             retired_offering_ids=tuple(
                 item for item in product.offering_ids if item not in release.offering_systems
             ),
