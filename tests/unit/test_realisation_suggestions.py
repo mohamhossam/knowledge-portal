@@ -151,6 +151,10 @@ def _change(**values: Any) -> ChangeOutput:
         "portfolio_level": None,
         "realisation_layer": "cfs",
         "realised_by": ["FORTINET_CPE", "CFSS_ONPREM_FIREWALL_HE"],
+        "source_level": None,
+        "source_version": None,
+        "conflict_sides": [],
+        "affected_offerings": [],
     }
     return ChangeOutput(**(base | values))
 

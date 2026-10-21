@@ -17948,7 +17948,8 @@
    "supplied": true,
    "authority": "CIT/E2E Solution Architecture",
    "scope": "Business Pro Plus: catalogue modelling, order types, fulfilment and tracking by drop (P1 to P4).",
-   "boundary": null
+   "boundary": null,
+   "accepted": []
   },
   {
    "id": "ref",
@@ -17960,7 +17961,8 @@
    "supplied": true,
    "authority": "Technical Value Stream Lead, SMB",
    "scope": "The SMB system landscape, its TAM domains and the default order flow.",
-   "boundary": null
+   "boundary": null,
+   "accepted": []
   }
  ],
  "conflicts": [
@@ -17988,7 +17990,8 @@
    "impact": null,
    "decision": null,
    "confidence": null,
-   "source": null
+   "source": null,
+   "accepted": []
   },
   {
    "id": "F2",
@@ -18014,7 +18017,8 @@
    "impact": null,
    "decision": null,
    "confidence": null,
-   "source": null
+   "source": null,
+   "accepted": []
   },
   {
    "id": "F13",
@@ -18040,7 +18044,8 @@
    "impact": null,
    "decision": null,
    "confidence": null,
-   "source": null
+   "source": null,
+   "accepted": []
   },
   {
    "id": "F16",
@@ -18068,7 +18073,8 @@
    "impact": null,
    "decision": null,
    "confidence": null,
-   "source": null
+   "source": null,
+   "accepted": []
   },
   {
    "id": "F17",
@@ -18094,7 +18100,8 @@
    "impact": null,
    "decision": null,
    "confidence": null,
-   "source": null
+   "source": null,
+   "accepted": []
   }
  ],
  "change_history": [],

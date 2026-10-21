@@ -131,6 +131,10 @@ def _change(**values: Any) -> ChangeOutput:
         "portfolio_level": None,
         "realisation_layer": None,
         "realised_by": [],
+        "source_level": None,
+        "source_version": None,
+        "conflict_sides": [],
+        "affected_offerings": [],
     }
     return ChangeOutput(**(base | values))
 
@@ -182,7 +186,7 @@ def test_a_name_written_apart_finds_the_system_whose_alias_runs_it_together() ->
 
 
 def test_the_prompt_reads_tables_as_records_and_integrations_as_stated() -> None:
-    assert PROMPT_VERSION == "catalogue-extraction-v19"
+    assert PROMPT_VERSION == "catalogue-extraction-v20"
     for rule in (
         "Read each row as one record",
         "the ID value",

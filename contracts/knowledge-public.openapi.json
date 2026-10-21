@@ -1546,6 +1546,16 @@
             "title": "Concept Ids",
             "type": "array"
           },
+          "conflict": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConflictSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "description": {
             "anyOf": [
               {
@@ -1580,6 +1590,16 @@
           },
           "kind": {
             "$ref": "#/components/schemas/CandidateKind"
+          },
+          "knowledge_source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KnowledgeSourceSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "landscape_domain_id": {
             "anyOf": [
@@ -1765,7 +1785,9 @@
           "interface",
           "capability_domain",
           "portfolio_node",
-          "realisation_record"
+          "realisation_record",
+          "source",
+          "conflict"
         ],
         "title": "CandidateKind",
         "type": "string"
@@ -1784,7 +1806,8 @@
           "needs_concept",
           "needs_interface",
           "needs_portfolio_node",
-          "needs_realisation"
+          "needs_realisation",
+          "needs_source"
         ],
         "title": "CandidateMatch",
         "type": "string"
@@ -6951,6 +6974,15 @@
       "KnowledgeSourceSchema": {
         "description": "A source the catalogue is read from, and its level (ADR-0101, step 5).",
         "properties": {
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
+          },
           "authority": {
             "anyOf": [
               {
@@ -11850,6 +11882,15 @@
         "properties": {
           "a": {
             "$ref": "#/components/schemas/ConflictSideSchema"
+          },
+          "accepted": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedFromSchema"
+            },
+            "maxItems": 5000,
+            "title": "Accepted",
+            "type": "array"
           },
           "b": {
             "$ref": "#/components/schemas/ConflictSideSchema"

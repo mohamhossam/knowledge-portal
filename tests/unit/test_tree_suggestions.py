@@ -147,6 +147,10 @@ def _change(**values: Any) -> ChangeOutput:
         "portfolio_level": "Segment",
         "realisation_layer": None,
         "realised_by": [],
+        "source_level": None,
+        "source_version": None,
+        "conflict_sides": [],
+        "affected_offerings": [],
     }
     return ChangeOutput(**(base | values))
 
@@ -163,6 +167,10 @@ def test_the_model_suggests_domains_and_portfolio_nodes() -> None:
                 portfolio_level=None,
                 realisation_layer=None,
                 realised_by=[],
+                source_level=None,
+                source_version=None,
+                conflict_sides=[],
+                affected_offerings=[],
                 text=None,
             ),
         ]

@@ -7,6 +7,18 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- Sources and conflicts suggested from documents (ADR-0123,
+  `docs/slices/source-conflict-suggestions.md`), the last of the suggestion kinds the owner
+  asked for: reading a document now suggests the sources it names or is (title, the name it is
+  cited by, version, and level, L3 unless the document states one) and the conflicts it reports
+  between two sources (both statements, where each is said, the offerings affected). A source
+  fills an existing one's gaps and never changes its level; a conflict waits for its two
+  sources (new `needs_source`) and the offerings it affects (`needs_offering`), keeps the sides
+  first recorded, and is always decided one by one, never accepted in bulk. Both record where
+  they came from once accepted (`accepted` on sources and conflicts, kept by every catalogue
+  file format). Decide lists them under Sources and Conflicts between sources. Public contract,
+  additive; prompt `catalogue-extraction-v20`.
+
 - Realisation records suggested from documents (ADR-0123,
   `docs/slices/realisation-suggestions.md`): reading a document now suggests the customer-facing
   services, resource-facing services and resources it names (layer, the system that delivers or
