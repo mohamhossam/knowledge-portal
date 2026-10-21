@@ -6,7 +6,7 @@
  * `Diagram` composes them; a screen that needs its own arrangement can draw
  * these inside its own `<svg>` too.
  */
-import type { KeyboardEvent, MouseEvent } from "react";
+import { Fragment, type KeyboardEvent, type MouseEvent } from "react";
 
 import { fit, LINE, nodeLines, nodeName } from "./layout";
 import type { PlacedContainer, PlacedLane, PlacedNode, RoutedEdge } from "./types";
@@ -70,9 +70,11 @@ export type NodeAction = {
 
 /**
  * A node: a box (or a pill) with its label and, under it, its detail and state.
- * A label and its second line each wrap onto two lines as the layout left
- * room for, and end in "…" past that; the whole label is its tooltip and
- * its accessible name. With an action it is a link or a button in the
+ * The label wraps onto as many lines as it needs and is never cut; the second
+ * line takes the room the layout left under it and ends in "…" past that. The
+ * label, detail and state are its tooltip and its accessible name, and the
+ * lines are spaced apart in the markup so their words read as the words of
+ * that name (WCAG 2.5.3). With an action it is a link or a button in the
  * diagram's roving focus, and shows the focus ring around the box.
  */
 export function DiagramNodeShape({ node, action, nodeRef }: {
@@ -84,11 +86,9 @@ export function DiagramNodeShape({ node, action, nodeRef }: {
   const radius = node.shape === "pill" ? node.height / 2 : 4;
   // As many lines as the box has room for (the layout made it tall enough), the label's first.
   const room = Math.max(1, Math.round((node.height - 20) / LINE));
-  const lines = nodeLines(node, node.width);
-  const label = lines.label.slice(0, Math.max(1, room - Math.min(1, lines.second.length)));
-  const second = lines.second.slice(0, room - label.length);
-  if (label.length < lines.label.length) label[label.length - 1] = fit(`${label[label.length - 1]} ${lines.label.slice(label.length).join(" ")}`, node.width - 16, 15);
-  if (second.length && second.length < lines.second.length) second[second.length - 1] = fit(`${second[second.length - 1]} ${lines.second.slice(second.length).join(" ")}`, node.width - 16, DETAIL_PX);
+  const { label, second: all } = nodeLines(node, node.width);
+  const second = all.slice(0, Math.max(0, room - label.length));
+  if (second.length && second.length < all.length) second[second.length - 1] = fit(`${second[second.length - 1]} ${all.slice(second.length).join(" ")}`, node.width - 16, DETAIL_PX);
   const first = (node.height - LINE * (label.length + second.length)) / 2 + 13;
   const drawing = (
     <>
@@ -96,14 +96,20 @@ export function DiagramNodeShape({ node, action, nodeRef }: {
       {action && <rect className="ds-diagram__ring" x={-4} y={-4} width={node.width + 8} height={node.height + 8} rx={radius + 4} />}
       <rect className="ds-diagram__box" width={node.width} height={node.height} rx={radius} />
       {label.map((line, at) => (
-        <text key={`l${at}`} x={node.width / 2} y={first + at * LINE} textAnchor="middle" className="ds-diagram__label">
-          {line}
-        </text>
+        <Fragment key={`l${at}`}>
+          {" "}
+          <text x={node.width / 2} y={first + at * LINE} textAnchor="middle" className="ds-diagram__label">
+            {line}
+          </text>
+        </Fragment>
       ))}
       {second.map((line, at) => (
-        <text key={`d${at}`} x={node.width / 2} y={first + (label.length + at) * LINE} textAnchor="middle" className="ds-diagram__detail">
-          {line}
-        </text>
+        <Fragment key={`d${at}`}>
+          {" "}
+          <text x={node.width / 2} y={first + (label.length + at) * LINE} textAnchor="middle" className="ds-diagram__detail">
+            {line}
+          </text>
+        </Fragment>
       ))}
     </>
   );

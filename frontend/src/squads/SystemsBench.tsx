@@ -324,7 +324,7 @@ function RunBySection({ row, editing, start, done, panelRef }: {
       header: <span className="ds-visually-hidden">Edit</span>,
       width: "9rem",
       cell: ({ squad }) => (
-        <Button variant="quiet" aria-label={`Edit the seats of ${squad.name}`} aria-expanded={editing?.what === "seats" && editing.squad.id === squad.id} onClick={(event) => start({ what: "seats", squad }, event)}>
+        <Button variant="quiet" aria-label={`Edit seats of ${squad.name}`} aria-expanded={editing?.what === "seats" && editing.squad.id === squad.id} onClick={(event) => start({ what: "seats", squad }, event)}>
           Edit seats
         </Button>
       ),
