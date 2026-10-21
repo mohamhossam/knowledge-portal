@@ -331,6 +331,22 @@ describe("Sources", () => {
 });
 
 describe("Check", () => {
+  it("lists data with more than one system of record, saying which owner has no note", async () => {
+    const release = draft({
+      vocabulary: [{ id: "entity-customer", scheme: "information_entity", pref_label: "Customer", alt_labels: [], accepted: [], deprecated: false }],
+      systems: [
+        { id: "cwom", name: "CWOM", aliases: [], capabilities: [], components: [], constraints: [], masters: ["entity-customer"], mastery_notes: [{ entity_id: "entity-customer", note: "Customers migrated to CWOM" }] },
+        { id: "bcrm", name: "BCRM", aliases: [], capabilities: [], components: [], constraints: [], masters: ["entity-customer"], mastery_notes: [] },
+      ],
+    } as unknown as Partial<Release>);
+    renderStep("check", { release });
+    const section = within((await screen.findByRole("heading", { name: /Data with more than one owner/ })).closest("section")!);
+    expect(section.getByText("Customer")).toBeInTheDocument();
+    expect(section.getByText("Customers migrated to CWOM")).toBeInTheDocument();
+    expect(section.getByText("No note yet")).toBeInTheDocument();
+    expect(section.getByText(/1 owner says nothing yet; publishing is not held for it\./)).toBeInTheDocument();
+  });
+
   it("compares every sample and says what moves", async () => {
     vi.spyOn(api, "compareImpact").mockResolvedValue({
       query: "Order Hub takes orders",

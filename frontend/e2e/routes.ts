@@ -43,6 +43,7 @@ export const ROUTES: RouteDef[] = [
   // The old address, kept working until area 10 makes it a redirect.
   { key: "library-citations", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/citations`, mask: [".ds-provenance", ".review-line__text"] },
   { key: "library-ownership", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/ownership`, mask: [".ds-provenance", ".review-line__text", "tbody th"] },
+  { key: "library-about", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/about`, mask: [".ds-provenance", ".review-line__text"] },
   // The architecture catalogue.
   { key: "architecture", path: at("architecture") },
   // The map (UX rebuild phase 4): how systems connect, one system in context, what systems do.

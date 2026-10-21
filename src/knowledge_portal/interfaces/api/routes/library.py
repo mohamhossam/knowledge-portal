@@ -23,6 +23,11 @@ from knowledge_portal.application.use_cases.library_bulk import (
     LibraryRetryResult,
     LibraryRetryScope,
 )
+from knowledge_portal.application.use_cases.library_classification import (
+    MAX_TOPICS,
+    ClassificationOptions,
+    LibraryClassification,
+)
 from knowledge_portal.application.use_cases.library_governance import (
     LibraryDependencyPage,
     LibraryGovernance,
@@ -43,6 +48,7 @@ from knowledge_portal.interfaces.api.dependencies import (
     get_document_library,
     get_document_source_impact,
     get_library_admin,
+    get_library_classification,
     get_library_governance,
     get_library_retry,
     get_reference_knowledge,
@@ -60,6 +66,7 @@ router = APIRouter(
 LibraryDep = Annotated[DocumentLibrary, Depends(get_document_library)]
 KnowledgeDep = Annotated[ReferenceKnowledge, Depends(get_reference_knowledge)]
 GovernanceDep = Annotated[LibraryGovernance, Depends(get_library_governance)]
+ClassificationDep = Annotated[LibraryClassification, Depends(get_library_classification)]
 ImpactDep = Annotated[DocumentSourceImpact, Depends(get_document_source_impact)]
 AdminDep = Annotated[AdministerLibraryDocument, Depends(get_library_admin)]
 RetryDep = Annotated[BulkRetryLibrary, Depends(get_library_retry)]
@@ -123,6 +130,37 @@ class LibraryMutation(BaseModel):
 class LibraryOwnershipRequest(LibraryMutation):
     actor_id: str = Field(min_length=1, max_length=200)
     reason: str = Field(min_length=1, max_length=2000)
+
+
+class LibraryClassificationRequest(LibraryMutation):
+    """What kind of document it is and what it is about, as catalogue ids (ADR-0123)."""
+
+    document_type: str | None = Field(default=None, max_length=MAX_IDENTIFIER_CHARACTERS)
+    topics: list[Annotated[str, Field(max_length=MAX_IDENTIFIER_CHARACTERS)]] = Field(
+        default=[], max_length=MAX_TOPICS
+    )
+
+
+@router.get("/classification-options")
+def classification_options(
+    service: ClassificationDep, actor: CurrentActorDep
+) -> ClassificationOptions:
+    """The document types and topics the catalogue in service offers."""
+    return service.options()
+
+
+@router.put("/documents/{document_id}/classification")
+def classify(
+    document_id: str,
+    data: LibraryClassificationRequest,
+    service: ClassificationDep,
+    library: LibraryDep,
+    actor: CurrentActorDep,
+) -> LibraryView:
+    service.classify(
+        document_id, data.document_type, tuple(data.topics), data.expected_version, actor
+    )
+    return library.get(document_id, actor)
 
 
 @router.post("/documents/{document_id}/ownership")
@@ -293,16 +331,20 @@ def get_document(document_id: str, service: LibraryDep, actor: CurrentActorDep) 
 @router.post("/ingestions", status_code=202)
 async def submit(
     service: LibraryDep,
+    classification: ClassificationDep,
     actor: CurrentActorDep,
     file: Annotated[UploadFile, File()],
     title: str = Form(..., max_length=MAX_NAME_CHARACTERS),
     idempotency_key: str = Form(..., max_length=MAX_IDENTIFIER_CHARACTERS),
     document_id: str | None = Form(None, max_length=MAX_IDENTIFIER_CHARACTERS),
     expected_version: int | None = Form(None),
+    document_type: str | None = Form(None, max_length=MAX_IDENTIFIER_CHARACTERS),
 ) -> LibraryView:
     content = await file.read(service.max_file_bytes + 1)
     if len(content) > service.max_file_bytes:
         raise UnsupportedDocumentError("Document exceeds the configured upload limit.")
+    if document_type:
+        classification.check(document_type, ())
 
     document = await run_in_threadpool(
         service.submit,
@@ -312,6 +354,7 @@ async def submit(
         actor,
         document_id,
         expected_version,
+        document_type or None,
     )
     return service.get(document.id, actor)
 

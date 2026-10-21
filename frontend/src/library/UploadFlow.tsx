@@ -3,7 +3,8 @@ import { type RefObject, useId, useState } from "react";
 
 import { api, type LibraryDocument } from "../api/client";
 import { errorMessage } from "../api/errors";
-import { ActionGroup, Button, TextField, Upload, type UploadItem } from "../design/components";
+import { ActionGroup, Button, Select, TextField, Upload, type UploadItem } from "../design/components";
+import { useClassificationOptions } from "./classification";
 import { DOC_STATE_WORDS, docState } from "./docState";
 import { ACCEPT } from "./FileButton";
 import { DocumentLink } from "./parts";
@@ -49,6 +50,8 @@ export function UploadFlow({ onClose, panelRef }: { onClose: () => void; panelRe
   const queryClient = useQueryClient();
   const [chosen, setChosen] = useState<Chosen[]>([]);
   const [tried, setTried] = useState(false);
+  const [documentType, setDocumentType] = useState("");
+  const types = useClassificationOptions().data?.document_types ?? [];
   const started = chosen.some((item) => item.documentId || item.sending || item.error);
   const sending = chosen.some((item) => item.sending);
   const documents = useQuery({ queryKey: ["library", "documents"], queryFn: api.libraryDocuments, enabled: started });
@@ -74,7 +77,7 @@ export function UploadFlow({ onClose, panelRef }: { onClose: () => void; panelRe
     await settleInPool(waiting.filter((item) => item.file.size <= MAX_BYTES), UPLOADS_AT_ONCE, async (item) => {
       update(item.key, { sending: true });
       try {
-        const document = await api.upload({ file: item.file, title: item.title.trim() });
+        const document = await api.upload({ file: item.file, title: item.title.trim(), documentType: documentType || undefined });
         update(item.key, { sending: false, documentId: document.id });
       } catch (error) {
         update(item.key, { sending: false, error: errorMessage(error) });
@@ -124,6 +127,17 @@ export function UploadFlow({ onClose, panelRef }: { onClose: () => void; panelRe
             />
           ))}
         </fieldset>
+      )}
+      {!started && chosen.length > 0 && types.length > 0 && (
+        <Select
+          label={chosen.length === 1 ? "Its type (optional)" : "Their type (optional)"}
+          hint="What kind of document it is. Its topics are set on its page."
+          value={documentType}
+          onChange={(event) => setDocumentType(event.target.value)}
+        >
+          <option value="">Not given</option>
+          {types.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+        </Select>
       )}
       {started ? (
         <>

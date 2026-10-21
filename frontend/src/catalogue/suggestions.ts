@@ -263,6 +263,7 @@ const SCHEME: Record<NonNullable<Suggestion["content"]["term"]>["scheme"], strin
   responsibility_role: "role",
   open_api: "Open API",
   information_entity: "information entity",
+  document_type: "document type",
 };
 
 /** Kinds whose sentence is said about a system ("Sends data to RTF"), which a list shows it under. */
