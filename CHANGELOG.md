@@ -13,6 +13,15 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 - CI builds and tests the frontend on Node 26 (`.github/workflows/ci.yml`), the version the web
   image builds with once #115 moves `deploy/web` to `node:26-alpine`.
 
+### Fixed
+
+- Every word a diagram node shows is in its accessible name, in order (WCAG 2.5.3 Label in
+  Name, which axe 4.14 checks): a node's label wraps onto as many lines as it needs and is
+  never cut, the layout growing every node to hold it; its detail and state line still ends in
+  "…" past two lines, now cut between words; and its drawn lines are spaced apart in the
+  markup, so their words no longer run together. The squads bench's seat button reads "Edit
+  seats of {squad}", its visible "Edit seats" first. `docs/design-system.md` says so.
+
 ## 0.7.0 — 2026-10-21
 
 Reading a document now suggests every kind of catalogue entry a curator decides on: interfaces,
