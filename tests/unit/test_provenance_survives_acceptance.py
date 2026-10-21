@@ -257,7 +257,7 @@ def _recorded_everywhere() -> ArchitectureKnowledge:
         ("system", first.id),
         ("component", first.id, "quotes"),
         ("capability", capable.id, capable.capabilities[0].id),
-        ("relationship", first.id, second.id, "looks customers up"),
+        ("relationship", first.id, second.id, "unspecified"),
         ("landscape_domain", release.landscape_domains[0].id),
         ("offering", release.products[0].id),
         ("journey", release.journeys[0].id),

@@ -46,6 +46,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     SystemDefinition,
     SystemRelationship,
     relationship_kind,
+    with_purpose,
 )
 from knowledge_portal.domain.architecture.products import (
     OfferingComponent,
@@ -1196,37 +1197,49 @@ def classify(content: CandidateContent, release: ArchitectureKnowledge) -> Candi
     target = find_system(release, content.target_system_id or "")
     if target is None:
         return CandidateMatch.NEEDS_SYSTEM
-    link = _relationship(release, system.id, target.id, content.text)
+    link = _relationship(release, system.id, target.id, content)
     if link is None:
         return CandidateMatch.NEW
     return (
-        CandidateMatch.UPDATES_EXISTING
-        if _new_kind(content, link) is not None
-        else CandidateMatch.ALREADY_PRESENT
+        CandidateMatch.ALREADY_PRESENT
+        if _with_suggested(content, link) == link
+        else CandidateMatch.UPDATES_EXISTING
     )
 
 
 def _relationship(
-    release: ArchitectureKnowledge, source_id: str, target_id: str, text: str
+    release: ArchitectureKnowledge, source_id: str, target_id: str, content: CandidateContent
 ) -> SystemRelationship | None:
-    return next(
-        (
-            item
-            for item in release.relationships
-            if item.source_system_id == source_id
-            and item.target_system_id == target_id
-            and item.description.casefold() == text.casefold()
-        ),
-        None,
+    """The dependency a suggestion means (ADR-0119): the one of the kind it states, else the
+    pair's unspecified one, which learns its kind; a suggestion that states no kind means
+    the unspecified one, or the pair's only dependency."""
+    between = [
+        item
+        for item in release.relationships
+        if item.source_system_id == source_id and item.target_system_id == target_id
+    ]
+    stated = content.relationship_kind
+    unspecified = next(
+        (item for item in between if item.kind is RelationshipKind.UNSPECIFIED), None
     )
+    if stated is not None and stated is not RelationshipKind.UNSPECIFIED:
+        exact = next((item for item in between if item.kind is stated), None)
+        return exact or unspecified
+    return unspecified or (between[0] if len(between) == 1 else None)
 
 
-def _new_kind(content: CandidateContent, current: SystemRelationship) -> RelationshipKind | None:
-    """The kind a suggestion would set: only a stated kind that differs from the record."""
-    wanted = content.relationship_kind
-    if wanted is None or wanted is RelationshipKind.UNSPECIFIED or wanted is current.kind:
-        return None
-    return wanted
+def _with_suggested(content: CandidateContent, current: SystemRelationship) -> SystemRelationship:
+    """The dependency once the suggestion is accepted: an unspecified kind takes the one
+    stated, and a purpose not said yet joins its description; nothing is replaced."""
+    stated = content.relationship_kind
+    kind = (
+        stated
+        if current.kind is RelationshipKind.UNSPECIFIED
+        and stated is not None
+        and stated is not RelationshipKind.UNSPECIFIED
+        else current.kind
+    )
+    return replace(current, kind=kind, description=with_purpose(current.description, content.text))
 
 
 def open_matches(
@@ -2079,15 +2092,13 @@ def apply_candidate(
             replace(system, constraints=_merged(system.constraints, (content.text.strip(),))),
         )
     target = _require_system(release, content.target_system_id or "")
-    link = _relationship(release, system.id, target.id, content.text)
+    link = _relationship(release, system.id, target.id, content)
     if link is not None:
-        kind = _new_kind(content, link)
-        if kind is None:
+        changed = _with_suggested(content, link)
+        if changed == link:
             return release.updated()
         return release.updated(
-            relationships=tuple(
-                replace(item, kind=kind) if item is link else item for item in release.relationships
-            )
+            relationships=tuple(changed if item is link else item for item in release.relationships)
         )
     relationship = SystemRelationship(
         system.id,

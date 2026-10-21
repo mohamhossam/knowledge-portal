@@ -7,6 +7,14 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- One canonical dependency model, part 1 (ADR-0119, `docs/slices/dependency-identity.md`): a
+  dependency is identified by its two systems and its kind, so rewording what it is for is a
+  change to it and two systems can depend on each other in two ways at once. Dependencies
+  gain `confidence` and `source` like every other fact, in the API and every catalogue file
+  (optional Relationships columns). A version stored before reads with same-kind dependencies
+  between one pair joined. A connection's change says how the systems were linked even once
+  removed, and names what changed in words. Public contract, additive.
+
 - Retiring without deleting (ADR-0121, `docs/slices/lifecycle-deprecation.md`): a system, a
   concept or a vocabulary term can be retired and name the one that replaces it. It stays in
   every version and reads everywhere, drawn struck through with the word Retired, and the

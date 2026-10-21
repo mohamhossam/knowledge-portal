@@ -12426,6 +12426,16 @@
             "title": "Accepted",
             "type": "array"
           },
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "description": {
             "maxLength": 10000,
             "title": "Description",
@@ -12434,6 +12444,18 @@
           "kind": {
             "$ref": "#/components/schemas/RelationshipKind",
             "default": "unspecified"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
           },
           "source_system_id": {
             "maxLength": 200,
