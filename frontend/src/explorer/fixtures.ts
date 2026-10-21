@@ -10,8 +10,12 @@ export const EXPLORED = {
   id: "live",
   name: "October",
   published_at: "2026-10-05T00:00:00Z",
-  systems: [system("web", "B2B Web"), system("rtf", "RTF"), system("cwom", "CWOM"), system("wfm", "WFM"), system("bscs", "BSCS")],
+  systems: [
+    system("web", "B2B Web"), system("rtf", "RTF"), { ...system("cwom", "CWOM"), masters: ["entity-order"] }, { ...system("wfm", "WFM"), reads: ["entity-order"] },
+    system("bscs", "BSCS"),
+  ],
   relationships: [],
+  vocabulary: [{ id: "entity-order", scheme: "information_entity", pref_label: "Customer order", alt_labels: [] }],
   landscape_domains: [],
   channels: [
     { id: "online", name: "Online", kind: "Digital", entry_system_id: "web" },

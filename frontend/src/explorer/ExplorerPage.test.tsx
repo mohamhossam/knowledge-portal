@@ -4,7 +4,7 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { api, type CatalogPlans } from "../api/client";
-import { ExplorerPage, NOT_YET } from "./ExplorerPage";
+import { ExplorerPage } from "./ExplorerPage";
 import { EXPLORED, PLANS } from "./fixtures";
 
 afterEach(() => vi.restoreAllMocks());
@@ -55,10 +55,15 @@ describe("ExplorerPage", () => {
     expect(screen.getByTestId("where")).toHaveTextContent("view=flowchart");
   });
 
+  it("lists the information the order's systems are the record for or read", async () => {
+    open();
+    const section = within((await screen.findByRole("heading", { name: /^Information it handles/ })).closest("section")!);
+    expect(section.getByRole("row", { name: /Customer order/ })).toHaveTextContent("Customer orderCWOMWFM");
+  });
+
   it("says what the catalogue does not say, as due lines", async () => {
     open();
     const section = within((await screen.findByRole("heading", { name: /^What the catalogue does not say yet/ })).closest("section")!);
-    expect(section.getByText(NOT_YET)).toBeInTheDocument();
     expect(section.getByText("Step 4 names no system that performs it.")).toHaveClass("explorer-gap");
   });
 
@@ -147,7 +152,6 @@ describe("ExplorerPage", () => {
     expect(table.getByRole("row", { name: /Installation/ })).toHaveTextContent("Once");
     expect(table.getByRole("row", { name: /300Mbps \(sample\)/ })).toHaveTextContent("RetiredSold with: 12 months");
     expect(table.getByText("The catalog states no price for this plan.")).toBeInTheDocument();
-    expect(screen.getByText(NOT_YET)).not.toHaveTextContent("Plans");
   });
 
   it.each([
@@ -181,7 +185,6 @@ describe("ExplorerPage", () => {
     expect(table).toHaveTextContent("200Mbps300Mbps");
     expect(within(table).getByText("Workflows are in the annexure.")).toBeInTheDocument();
     expect(section.getByText("2 more notes concern other order types or channels.")).toBeInTheDocument();
-    expect(screen.getByText(NOT_YET)).toHaveTextContent("Information objects");
   });
 
   it("closes notes to an index when there are several, each saying what it holds", async () => {

@@ -207,7 +207,7 @@ export function ConceptChips({ system, index }: { system: CatalogueSystem; index
 /** With no system chosen: how many connections there are, and the way to see them drawn. */
 function MapLine() {
   const { book, base } = useCatalogueContext();
-  const connections = book.release.relationships.length;
+  const connections = book.links.length;
   return (
     <p className="cat-lead">
       {connections ? `${count(connections, "connection")} between systems in this version.` : "No system depends on another in this version."}{" "}

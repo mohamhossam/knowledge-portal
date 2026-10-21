@@ -5,9 +5,10 @@
  */
 import { count } from "../home/format";
 import type {
-  CatalogueDiff, CatalogueSystem, Journey, JourneyActivity, LandscapeDomain, Offering, Relationship, RelationshipKind, Release,
+  CatalogueDiff, CatalogueSystem, Journey, JourneyActivity, LandscapeDomain, Offering, RelationshipKind, Release,
   ReleaseAuditEvent, SourceConfidence,
 } from "../api/client";
+import { type SystemLink, systemLinks } from "./links";
 
 /** A connection on a sheet's "Depends on" side, the other system as its subject: "Gets data from CWOM". */
 export function dependsHow(kind: RelationshipKind, sheet: string): string {
@@ -86,6 +87,8 @@ export function auditLabel(event: ReleaseAuditEvent): string {
 
 export type Catalogue = {
   release: Release;
+  /** How systems connect: stated, and read from interfaces and journeys. */
+  links: SystemLink[];
   systems: Map<string, CatalogueSystem>;
   landscape: Map<string, LandscapeDomain>;
 };
@@ -93,6 +96,7 @@ export type Catalogue = {
 export function catalogue(release: Release): Catalogue {
   return {
     release,
+    links: systemLinks(release),
     systems: new Map(release.systems.map((system) => [system.id, system])),
     landscape: new Map((release.landscape_domains ?? []).map((domain) => [domain.id, domain])),
   };
@@ -194,20 +198,20 @@ export function findSystems(book: Catalogue, query: string): Map<string, string 
   return found;
 }
 
-export function connections(book: Catalogue, systemId: string): { dependsOn: Relationship[]; usedBy: Relationship[] } {
+export function connections(book: Catalogue, systemId: string): { dependsOn: SystemLink[]; usedBy: SystemLink[] } {
   const named = (id: string) => systemName(book, id);
-  const order = (key: (item: Relationship) => string) => (a: Relationship, b: Relationship) =>
+  const order = (key: (item: SystemLink) => string) => (a: SystemLink, b: SystemLink) =>
     named(key(a)).localeCompare(named(key(b)), "en", { sensitivity: "base" });
   return {
-    dependsOn: book.release.relationships.filter((item) => item.source_system_id === systemId).sort(order((item) => item.target_system_id)),
-    usedBy: book.release.relationships.filter((item) => item.target_system_id === systemId).sort(order((item) => item.source_system_id)),
+    dependsOn: book.links.filter((item) => item.source_system_id === systemId).sort(order((item) => item.target_system_id)),
+    usedBy: book.links.filter((item) => item.target_system_id === systemId).sort(order((item) => item.source_system_id)),
   };
 }
 
 /** Every connection, from the depending system's name, then the other's. */
-export function allConnections(book: Catalogue): Relationship[] {
+export function allConnections(book: Catalogue): SystemLink[] {
   const named = (id: string) => systemName(book, id);
-  return [...book.release.relationships].sort(
+  return [...book.links].sort(
     (a, b) =>
       named(a.source_system_id).localeCompare(named(b.source_system_id), "en", { sensitivity: "base" })
       || named(a.target_system_id).localeCompare(named(b.target_system_id), "en", { sensitivity: "base" }),
@@ -293,11 +297,23 @@ export function phaseRuns(steps: JourneyActivity[]): { phase: string | null; ste
   return runs;
 }
 
+/** Where an offering sits in the portfolio, outermost first: "Enterprise › Fixed › SMB". */
+export function portfolioPath(release: Pick<Release, "portfolio">, nodeId: string | null | undefined): string[] {
+  const nodes = new Map((release.portfolio ?? []).map((node) => [node.id, node]));
+  const path: string[] = [];
+  const seen = new Set<string>();
+  for (let id = nodeId; id && !seen.has(id); id = nodes.get(id)?.parent_id) {
+    seen.add(id);
+    path.unshift(nodes.get(id)?.name ?? id);
+  }
+  return path;
+}
+
 /** What a version holds, counted. */
 export function contents(release: Release): { systems: number; connections: number; offerings: number; journeys: number } {
   return {
     systems: release.systems.length,
-    connections: release.relationships.length,
+    connections: systemLinks(release).length,
     offerings: release.products?.length ?? 0,
     journeys: release.journeys?.length ?? 0,
   };

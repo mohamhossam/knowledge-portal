@@ -12,6 +12,7 @@ import { seatsLine, seatsOn } from "../squads/organisation";
 import { connections, dependsHow, domainPath, sentenceCase, systemName, systemRoles, usedHow } from "./catalogue";
 import { SystemContextDiagram } from "./diagrams/CatalogueDiagrams";
 import { ConnectionEdit, ConnectionRemove, SystemEdit, SystemRemove } from "./DraftEdits";
+import { linkBasis, type SystemLink } from "./links";
 import { type ConceptIndex, entityNames, INTERFACE_STYLE, type Interface, interfacesOf, SOURCE_TONE, SOURCE_WORD } from "./ontology";
 import { useCatalogueContext } from "./useCatalogue";
 
@@ -231,9 +232,9 @@ function Connections({ system, from }: { system: CatalogueSystem; from?: string 
 
 function ConnectionTable({ title, rows, other, how, from, system, empty, editable }: {
   title: string;
-  rows: Relationship[];
-  other: (row: Relationship) => string;
-  how: (row: Relationship) => string;
+  rows: SystemLink[];
+  other: (row: SystemLink) => string;
+  how: (row: SystemLink) => string;
   from?: string;
   system: CatalogueSystem;
   empty: string;
@@ -243,7 +244,7 @@ function ConnectionTable({ title, rows, other, how, from, system, empty, editabl
   const { book, base } = useCatalogueContext();
   const [editing, setEditing] = useState<Relationship | "new" | null>(null);
   const [removing, setRemoving] = useState<Relationship | null>(null);
-  const columns: Column<Relationship>[] = [
+  const columns: Column<SystemLink>[] = [
     {
       id: "system",
       header: "System",
@@ -261,16 +262,22 @@ function ConnectionTable({ title, rows, other, how, from, system, empty, editabl
       },
     },
     { id: "what", header: "For what", bidi: true, cell: (row) => row.description },
+    { id: "basis", header: "Known from", cell: (row) => linkBasis(row) },
     ...(editable
       ? [{
           id: "edit",
           header: <span className="ds-visually-hidden">Edit</span>,
-          cell: (row: Relationship) => (
-            <ActionGroup label={`The dependency on ${systemName(book, other(row))}`}>
-              <Button variant="quiet" onClick={() => { setRemoving(null); setEditing(row); }}>Change</Button>
-              <Button variant="quiet" onClick={() => { setEditing(null); setRemoving(row); }}>Remove</Button>
-            </ActionGroup>
-          ),
+          // Only a stated connection is edited here; the rest change with their interfaces and journeys.
+          cell: (row: SystemLink) => {
+            const stated = row.stated;
+            if (!stated) return null;
+            return (
+              <ActionGroup label={`The dependency on ${systemName(book, other(row))}`}>
+                <Button variant="quiet" onClick={() => { setRemoving(null); setEditing(stated); }}>Change</Button>
+                <Button variant="quiet" onClick={() => { setEditing(null); setRemoving(stated); }}>Remove</Button>
+              </ActionGroup>
+            );
+          },
         }]
       : []),
   ];

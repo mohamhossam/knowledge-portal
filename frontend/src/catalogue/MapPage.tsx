@@ -1,12 +1,12 @@
 import { useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
-import type { Relationship } from "../api/client";
 import { type Column, DataTable, Tabs } from "../design/components";
 import { diagramHref } from "../shell/diagramHref";
 import { RouterLink } from "../shell/links";
 import { LINK_VERB, allConnections, systemName } from "./catalogue";
 import type { Href } from "./diagrams/build";
+import { linkBasis, type SystemLink } from "./links";
 import { CapabilityMapDiagram, ConnectionsFlowDiagram, SystemContextDiagram } from "./diagrams/CatalogueDiagrams";
 import { CatalogueHeader } from "./frame/CatalogueHeader";
 import { useCatalogueContext } from "./useCatalogue";
@@ -68,11 +68,12 @@ function ConnectionsTable() {
   const link = (systemId: string) => (
     <Link to={`${base}/systems/${encodeURIComponent(systemId)}`} dir="auto">{systemName(book, systemId)}</Link>
   );
-  const columns: Column<Relationship>[] = [
+  const columns: Column<SystemLink>[] = [
     { id: "from", header: "From", rowHeader: true, bidi: true, cell: (row) => link(row.source_system_id) },
     { id: "how", header: "How", cell: (row) => LINK_VERB[row.kind] },
     { id: "to", header: "To", bidi: true, cell: (row) => link(row.target_system_id) },
     { id: "what", header: "For what", bidi: true, cell: (row) => row.description },
+    { id: "basis", header: "Known from", cell: (row) => linkBasis(row) },
   ];
   return (
     <DataTable

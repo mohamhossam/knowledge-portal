@@ -2074,6 +2074,14 @@ class ExplorerReleaseResponse(BaseModel):
     portfolio: list[PortfolioNodeSchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
     )
+    # How systems connect beyond the stated relationships, and what the information they
+    # master and read is called.
+    interfaces: list[SystemInterfaceSchema] = Field(
+        default_factory=list, max_length=MAX_CATALOGUE_ITEMS
+    )
+    vocabulary: list[VocabularyTermSchema] = Field(
+        default_factory=list, max_length=MAX_CATALOGUE_ITEMS
+    )
 
     @classmethod
     def from_domain(cls, release: ArchitectureKnowledge) -> ExplorerReleaseResponse:
@@ -2097,6 +2105,8 @@ class ExplorerReleaseResponse(BaseModel):
                 ChangeRequestRecordSchema.from_domain(item) for item in release.change_history
             ],
             portfolio=[PortfolioNodeSchema.from_domain(item) for item in release.portfolio],
+            interfaces=[SystemInterfaceSchema.from_domain(item) for item in release.interfaces],
+            vocabulary=[VocabularyTermSchema.from_domain(item) for item in release.vocabulary],
         )
 
 

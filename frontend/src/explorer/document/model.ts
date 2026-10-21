@@ -8,6 +8,7 @@
 import type { CatalogPlans, ExplorerRelease, Journey, SourceConfidence } from "../../api/client";
 import { CONFIDENCE, COVERAGE, LAYERS, concerns, orderedSteps, roleLabel, sentenceCase } from "../../catalogue/catalogue";
 import { byLevel, questionOf, withLevel } from "../../catalogue/governance";
+import { informationHeld } from "../../catalogue/ontology";
 import { count } from "../../home/format";
 import { falling, formatAmount } from "../plans";
 import { gaps, involvement, journeyFor, listed, partsFor, performer, trackingFor, type Involvement, type Scenario } from "../scenario";
@@ -484,7 +485,14 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
 
   /* 9 Information */
   h1("9. Information Architecture", true);
-  gap("Information objects", `${NOT_HELD("information objects or which system is the record for each")} The explorer says the same.`);
+  const information = informationHeld(release, new Set(taking.map((item) => item.systemId)));
+  if (information.length) {
+    p("The information this order's systems are the record for or read, and every system that does either.");
+    table(
+      columns(["Information", 30], ["Record for it", 35], ["Read by", 35]),
+      information.map((item) => [item.name, lines(item.masters.map(name), "None recorded"), lines(item.reads.map(name), "None recorded")]),
+    );
+  } else gap("Information objects", `No system in ${orderType.name} is recorded as the record for, or a reader of, any information.`);
 
   /* 10 Tracking */
   h1("10. Tracking & Operational Architecture");

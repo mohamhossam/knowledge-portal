@@ -3643,6 +3643,8 @@ export interface components {
             conflicts?: components["schemas"]["SourceConflictSchema"][];
             /** Id */
             id: string;
+            /** Interfaces */
+            interfaces?: components["schemas"]["SystemInterfaceSchema"][];
             /** Journeys */
             journeys?: components["schemas"]["JourneySchema"][];
             /** Landscape Domains */
@@ -3661,6 +3663,8 @@ export interface components {
             sources?: components["schemas"]["KnowledgeSourceSchema"][];
             /** Systems */
             systems: components["schemas"]["SystemDefinitionSchema"][];
+            /** Vocabulary */
+            vocabulary?: components["schemas"]["VocabularyTermSchema"][];
         };
         /** ExtractionRevision */
         ExtractionRevision: {

@@ -7,6 +7,15 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- The catalogue shows what its data already holds. The map, a system's connections and the
+  explorer draw every link between systems from the stated connections, the interfaces systems
+  expose to their consumers and the calls journey steps make, one line per pair with what it is
+  known from (only stated connections are edited). An offering's record shows its plans (a
+  Plans tab), its business rules and where it sits in the portfolio. The explorer and its
+  Solution Architecture document list the information the order's systems are the record for
+  or read, in place of the "not held" gap. Contract, additive: `interfaces` and `vocabulary`
+  on `GET /explorer/release`.
+
 - Catalogue versioning (`docs/architecture/adr-catalogue-versioning.md`). A document can be
   uploaded as a new version of one the draft holds: it takes the old version's place, and its
   reading lists what the catalogue took from earlier versions that it no longer says.

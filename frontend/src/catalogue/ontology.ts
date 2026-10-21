@@ -163,10 +163,34 @@ export function interfacesOf(release: Release, systemId: string): { exposes: Int
 }
 
 /** The names of information entities (a vocabulary scheme), by id. */
-export function entityNames(release: Release): Map<string, string> {
+export function entityNames(release: Pick<Release, "vocabulary">): Map<string, string> {
   return new Map(
     (release.vocabulary ?? []).filter((term) => term.scheme === "information_entity").map((term) => [term.id, term.pref_label]),
   );
+}
+
+/** One piece of information: the systems that are its record, and those that read it. */
+export type InformationHeld = { id: string; name: string; masters: string[]; reads: string[] };
+
+/**
+ * The information systems master and read, by its name. With `among`, only what
+ * those systems master or read, though every system that does is named.
+ */
+export function informationHeld(release: Pick<Release, "systems" | "vocabulary">, among?: Set<string>): InformationHeld[] {
+  const names = entityNames(release);
+  const found = new Map<string, InformationHeld>();
+  const entry = (id: string) => {
+    let item = found.get(id);
+    if (!item) found.set(id, (item = { id, name: names.get(id) ?? id, masters: [], reads: [] }));
+    return item;
+  };
+  for (const system of release.systems) {
+    for (const id of system.masters ?? []) entry(id).masters.push(system.id);
+    for (const id of system.reads ?? []) entry(id).reads.push(system.id);
+  }
+  return [...found.values()]
+    .filter((item) => !among || [...item.masters, ...item.reads].some((id) => among.has(id)))
+    .sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base" }));
 }
 
 /** Named service and resource records (the realisation layers), by id. */

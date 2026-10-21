@@ -4,15 +4,15 @@
  * offering's structure and the versions on a timeline. Pure functions over the
  * release payload; the screens lay them out with the diagram kit.
  */
-import type { CatalogueSystem, Journey, LandscapeDomain, Offering, Relationship, RelationshipKind, Release } from "../../api/client";
+import type { CatalogueSystem, Journey, LandscapeDomain, Offering, RelationshipKind, Release } from "../../api/client";
 import type { DiagramEdge, DiagramNode } from "../../design/diagram";
 import { formatDay } from "../../home/format";
 import { domainPath, roleLabel } from "../catalogue";
+import { type Linked, type SystemLink, systemLinks } from "../links";
 
 /** What a release or an explorer release has that these diagrams read. */
-export type Landscape = {
+export type Landscape = Linked & {
   systems: CatalogueSystem[];
-  relationships: Relationship[];
   landscape_domains?: LandscapeDomain[] | null;
 };
 
@@ -28,7 +28,7 @@ export const KIND_WORD: Record<RelationshipKind, string> = {
   unspecified: "depends on",
 };
 
-const edgeOf = (relationship: Relationship, from: string, to: string): DiagramEdge => ({
+const edgeOf = (relationship: SystemLink, from: string, to: string): DiagramEdge => ({
   from,
   to,
   label: KIND_WORD[relationship.kind],
@@ -51,7 +51,8 @@ function where(landscape: Landscape, system: CatalogueSystem): string | undefine
  */
 export function connectionsFlow(landscape: Landscape, options: { href?: Href; highlight?: Set<string> } = {}) {
   const { href, highlight } = options;
-  const linked = new Set(landscape.relationships.flatMap((item) => [item.source_system_id, item.target_system_id]));
+  const links = systemLinks(landscape);
+  const linked = new Set(links.flatMap((item) => [item.source_system_id, item.target_system_id]));
   const nodes: DiagramNode[] = landscape.systems
     .filter((system) => linked.has(system.id) || highlight?.has(system.id))
     .sort(byName)
@@ -63,7 +64,7 @@ export function connectionsFlow(landscape: Landscape, options: { href?: Href; hi
       ...(highlight?.has(system.id) ? { tone: "subject" as const, status: "In this order" } : {}),
     }));
   const known = new Set(nodes.map((node) => node.id));
-  const edges = landscape.relationships
+  const edges = links
     .filter((item) => known.has(item.source_system_id) && known.has(item.target_system_id))
     .map((item) => edgeOf(item, item.source_system_id, item.target_system_id));
   const unconnected = landscape.systems.length - landscape.systems.filter((system) => linked.has(system.id)).length;
@@ -102,13 +103,14 @@ export function systemContext(landscape: Landscape, systemId: string, options: {
   ];
   const edges: DiagramEdge[] = [];
   const name = (id: string) => systems.get(id)?.name ?? id;
-  const sorted = (rows: Relationship[], other: (row: Relationship) => string) => [...rows].sort((a, b) => name(other(a)).localeCompare(name(other(b))));
-  for (const row of sorted(landscape.relationships.filter((item) => item.target_system_id === systemId && item.source_system_id !== systemId), (row) => row.source_system_id)) {
+  const links = systemLinks(landscape);
+  const sorted = (rows: SystemLink[], other: (row: SystemLink) => string) => [...rows].sort((a, b) => name(other(a)).localeCompare(name(other(b))));
+  for (const row of sorted(links.filter((item) => item.target_system_id === systemId && item.source_system_id !== systemId), (row) => row.source_system_id)) {
     const key = `in:${row.source_system_id}`;
     if (!nodes.some((item) => item.id === key)) nodes.push(node(row.source_system_id, "callers", key));
     edges.push(edgeOf(row, key, systemId));
   }
-  for (const row of sorted(landscape.relationships.filter((item) => item.source_system_id === systemId && item.target_system_id !== systemId), (row) => row.target_system_id)) {
+  for (const row of sorted(links.filter((item) => item.source_system_id === systemId && item.target_system_id !== systemId), (row) => row.target_system_id)) {
     const key = `out:${row.target_system_id}`;
     if (!nodes.some((item) => item.id === key)) nodes.push(node(row.target_system_id, "called", key));
     edges.push(edgeOf(row, systemId, key));

@@ -41,6 +41,7 @@ type BatchUpload = Schemas["BatchUploadResponse"];
 type ReviewRequest = Schemas["LibraryReviewRequest"];
 export type CatalogueSystem = Schemas["SystemDefinitionSchema"];
 export type Relationship = Schemas["SystemRelationshipSchema"];
+export type SystemInterface = Schemas["SystemInterfaceSchema"];
 export type RelationshipKind = Schemas["RelationshipKind"];
 export type LandscapeDomain = Schemas["LandscapeDomainSchema"];
 export type Offering = Schemas["ProductOfferingSchema"];

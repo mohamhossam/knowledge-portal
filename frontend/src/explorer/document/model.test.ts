@@ -82,9 +82,11 @@ describe("the Solution Architecture document", () => {
   it("says a section the catalogue cannot hold yet is a gap, and fills nothing in", () => {
     const model = made();
 
-    for (const title of ["9. Information Architecture", "12. Security Architecture", "14. Deployment & Runtime"]) {
+    for (const title of ["12. Security Architecture", "14. Deployment & Runtime"]) {
       expect(words(section(model.blocks, title))).toMatch(/does not hold .* yet, so this is a gap; nothing is filled in/);
     }
+    // The information the order's systems are the record for or read, from the systems themselves.
+    expect(words(section(model.blocks, "9. Information Architecture"))).toMatch(/Customer order \| CWOM \| WFM/);
     const realised = tables(section(model.blocks, "5. Product → Service → Resource"))[0]!;
     const firewall = realised.rows.find((row) => text(row[0]!) === "Firewall")!;
     expect(firewall.slice(1, 4).map(text)).toEqual(["Not recorded (gap)", "Not recorded (gap)", "Not recorded (gap)"]);

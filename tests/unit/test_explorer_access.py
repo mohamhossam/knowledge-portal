@@ -56,6 +56,10 @@ def test_the_explorer_never_shows_documents_index_or_who_curated(client: TestCli
         "change_history",
         # Where its offerings sit in the product portfolio.
         "portfolio",
+        # How systems connect through the contracts they expose, and what the information
+        # they master and read is called: content of the version, like its systems.
+        "interfaces",
+        "vocabulary",
     }
 
 

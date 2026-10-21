@@ -15,7 +15,8 @@ import { NfrSection, RealisationKey, RealisedAs } from "../catalogue/Realisation
 import { ArchitectureDecisions, ConflictList, OfferingSourceList, OpenQuestions } from "../catalogue/GovernanceSections";
 import { conflictsFor, questionOf, SourcesContext } from "../catalogue/governance";
 import { LifecycleSection } from "../catalogue/LifecycleNotes";
-import { SOURCE_TONE, SOURCE_WORD } from "../catalogue/ontology";
+import { systemLinks } from "../catalogue/links";
+import { type InformationHeld, informationHeld, SOURCE_TONE, SOURCE_WORD } from "../catalogue/ontology";
 import { TrackingSection } from "../catalogue/Tracking";
 import {
   ActionGroup, Banner, Button, type Column, DataTable, EmptyState, Lines, PageHeader, Section, Select, Skeleton, Status,
@@ -26,10 +27,6 @@ import { diagramHref } from "../shell/diagramHref";
 import { DocumentDownload } from "./DocumentDownload";
 import { PlansAndPrices } from "./PlansAndPrices";
 import { gaps, type Involvement, involvement, journeyFor, listed, partsFor, pickScenario, type Scenario, trackingFor } from "./scenario";
-
-/** What the catalogue cannot hold yet; each arrives with a later slice (requirement-portal ADR-0101). */
-export const NOT_YET =
-  "Information objects are not in the catalogue yet, so the explorer does not show them.";
 
 /** The journey diagrams load as their own chunk, shared with the catalogue's journey pages. */
 const JourneyViews = lazy(() => import("../catalogue/journey/JourneyViews"));
@@ -155,6 +152,20 @@ function Choose({ release, scenario, onChoose }: {
   );
 }
 
+/** Information by name, the systems that are its record and those that read it; this order's systems first. */
+function informationColumns(system: (systemId: string) => ReactNode, inOrder: Set<string>): Column<InformationHeld>[] {
+  const named = (ids: string[]) => {
+    const sorted = [...ids].sort((a, b) => Number(inOrder.has(b)) - Number(inOrder.has(a)));
+    if (!sorted.length) return <span className="cat-quiet">None recorded</span>;
+    return sorted.map((id, index) => <span key={id}>{index > 0 && ", "}{system(id)}</span>);
+  };
+  return [
+    { id: "name", header: "Information", rowHeader: true, bidi: true, cell: (item) => item.name },
+    { id: "masters", header: "Record for it", cell: (item) => named(item.masters) },
+    { id: "reads", header: "Read by", cell: (item) => named(item.reads) },
+  ];
+}
+
 function steps(numbers: string[]): string {
   return numbers.length === 1 ? `step ${numbers[0]}` : `steps ${listed(numbers)}`;
 }
@@ -182,6 +193,8 @@ function ScenarioSheet({ release, scenario, linkSystems, view, onView }: {
     );
   const taking = involvement(scenario);
   const highlight = useMemo(() => new Set(involvement(scenario).map((item) => item.systemId)), [scenario]);
+  const hasLinks = useMemo(() => systemLinks(release).length > 0, [release]);
+  const information = useMemo(() => informationHeld(release, highlight), [release, highlight]);
   const parts = partsFor(scenario);
   const tracked = trackingFor(scenario);
   const decisions = scenario.conflicts ?? [];
@@ -191,6 +204,7 @@ function ScenarioSheet({ release, scenario, linkSystems, view, onView }: {
   // and NFRs already have their lines there (gaps()).
   const empty = {
     systems: taking.length === 0,
+    information: information.length === 0,
     tracking: !offering.tracking,
     lifecycle: notes.length === 0,
     parts: parts.length === 0,
@@ -202,6 +216,7 @@ function ScenarioSheet({ release, scenario, linkSystems, view, onView }: {
   const missing = [
     ...gaps(scenario),
     ...(empty.systems ? [`No system is named for ${orderType.name} yet.`] : []),
+    ...(empty.information ? [`No system in ${orderType.name} is recorded as the record for, or a reader of, any information.`] : []),
     ...(empty.lifecycle ? [`No lifecycle note concerns ${orderType.name}${channel ? ` through ${channel.name}` : ""}.`] : []),
     ...(empty.parts ? [`No part of ${offering.name} is recorded.`] : []),
     ...(empty.questions ? [`No open question is recorded for ${offering.name}.`] : []),
@@ -351,7 +366,7 @@ function ScenarioSheet({ release, scenario, linkSystems, view, onView }: {
             rows={taking}
             rowId={(item) => item.systemId}
           />
-          {release.relationships.length > 0 && (
+          {hasLinks && (
             <ConnectionsFlowDiagram
               landscape={release}
               highlight={highlight}
@@ -377,6 +392,18 @@ function ScenarioSheet({ release, scenario, linkSystems, view, onView }: {
             flows: tracked.flows,
           } : undefined}
         />
+      )}
+
+      {!empty.information && (
+        <Section title="Information it handles" count={information.length} headingLevel={3}>
+          <DataTable
+            caption={`Information the systems of ${orderType.name} are the record for or read`}
+            captionHidden
+            columns={informationColumns(system, highlight)}
+            rows={information}
+            rowId={(item) => item.id}
+          />
+        </Section>
       )}
 
       {!empty.lifecycle && (
@@ -432,7 +459,6 @@ function ScenarioSheet({ release, scenario, linkSystems, view, onView }: {
       {!empty.sources && <OfferingSourceList offering={offering} sources={release.sources ?? []} headingId={`${id}-sources`} />}
 
       <Section title="What the catalogue does not say yet" count={missing.length} headingLevel={3}>
-        <p className="cat-lead">{NOT_YET}</p>
         {missing.length ? (
           <Lines>{missing.map((line) => <li key={line} className="explorer-gap">{line}</li>)}</Lines>
         ) : (

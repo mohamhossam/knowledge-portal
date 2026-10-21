@@ -10,9 +10,10 @@ import {
 import { useFocusAfterRender } from "../design/hooks";
 import { count } from "../home/format";
 import { RouterLink } from "../shell/links";
-import { roleLabel, systemName } from "./catalogue";
+import { portfolioPath, roleLabel, systemName } from "./catalogue";
 import { OfferingStructureDiagram } from "./diagrams/CatalogueDiagrams";
 import { OfferingEdit, OfferingSectionEdit, WholeRemove } from "./DraftEdits";
+import { BusinessRules, Plans } from "./OfferingFacts";
 import { CatalogueHeader } from "./frame/CatalogueHeader";
 import { useFindParam } from "./frame/useFindParam";
 import { ArchitectureDecisions, ConflictList, OfferingSourceList, OpenQuestions } from "./GovernanceSections";
@@ -173,10 +174,11 @@ function AllOfferings({ release }: { release: Release }) {
   );
 }
 
-const TABS = ["components", "orders", "journeys", "service", "governance", "audience"] as const;
+const TABS = ["components", "plans", "orders", "journeys", "service", "governance", "audience"] as const;
 type Tab = (typeof TABS)[number];
 const TAB_LABEL: Record<Tab, string> = {
   components: "Components",
+  plans: "Plans",
   orders: "Order types",
   journeys: "Journeys",
   service: "Service",
@@ -231,6 +233,7 @@ function OfferingRecord({ offering }: { offering: Offering }) {
   const channelName = (channelId: string) => channelNames.get(channelId) ?? channelId;
   const conflicts = conflictsFor(book.release.conflicts ?? [], offering.id);
   const system = (systemId: string) => <Link to={`${base}/systems/${encodeURIComponent(systemId)}`} dir="auto">{systemName(book, systemId)}</Link>;
+  const portfolio = portfolioPath(book.release, offering.portfolio_node_id);
 
   return (
     <RecordView
@@ -244,6 +247,7 @@ function OfferingRecord({ offering }: { offering: Offering }) {
             {[offering.code, offering.family, offering.version && `version ${offering.version}`, offering.lifecycle].filter(Boolean).join(" · ")}
           </span>
           <span>{count(offering.components.length, "component")} · {count(offering.order_types.length, "order type")} · {count(journeys.length, "journey")}</span>
+          {portfolio.length > 0 && <span>In <bdi>{portfolio.join(" › ")}</bdi></span>}
           {(offering.former_ids ?? []).length > 0 && <span>Formerly <code>{(offering.former_ids ?? []).join(", ")}</code></span>}
         </>
       }
@@ -300,6 +304,7 @@ function OfferingRecord({ offering }: { offering: Offering }) {
           </div>
         )}
         {tab === "components" && edited("parts", <Components offering={offering} action={offer("parts")} orderName={orderName} />)}
+        {tab === "plans" && <Plans offering={offering} level={3} />}
         {tab === "orders" && edited("orders", <OrderMatrix offering={offering} action={offer("orders")} channelName={channelName} />)}
         {tab === "journeys" && (
           <Section title="Journeys" count={journeys.length} headingLevel={3}>
@@ -340,15 +345,17 @@ function OfferingRecord({ offering }: { offering: Offering }) {
                 level={3}
               />
             )}
+            <BusinessRules offering={offering} level={3} />
             {edited("questions", <OpenQuestions offering={offering} conflicts={conflicts} beside={conflicts} headingId="offering-questions" action={offer("questions")} level={3} />)}
             {edited("decisions", <ArchitectureDecisions offering={offering} headingId="offering-decisions" action={offer("decisions")} level={3} />)}
             {edited("sources", <OfferingSourceList offering={offering} sources={book.release.sources ?? []} headingId="offering-sources" action={offer("sources")} level={3} />)}
+            {/* The short rules a curator writes by hand, kept beside the business rules read from sources. */}
             {edited("rules", (
-              <Section title="Rules" count={offering.rules.length} actions={offer("rules")} headingLevel={3}>
+              <Section title="Other rules" count={offering.rules.length} actions={offer("rules")} headingLevel={3}>
                 {offering.rules.length ? (
                   <Lines>{offering.rules.map((rule) => <li key={rule} dir="auto">{rule}</li>)}</Lines>
                 ) : (
-                  <p className="cat-quiet">No rule is recorded.</p>
+                  <p className="cat-quiet">No other rule is written by hand.</p>
                 )}
               </Section>
             ))}

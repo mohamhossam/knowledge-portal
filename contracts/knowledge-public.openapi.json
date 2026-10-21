@@ -4482,6 +4482,14 @@
             "title": "Id",
             "type": "string"
           },
+          "interfaces": {
+            "items": {
+              "$ref": "#/components/schemas/SystemInterfaceSchema"
+            },
+            "maxItems": 5000,
+            "title": "Interfaces",
+            "type": "array"
+          },
           "journeys": {
             "items": {
               "$ref": "#/components/schemas/JourneySchema"
@@ -4559,6 +4567,14 @@
             },
             "maxItems": 5000,
             "title": "Systems",
+            "type": "array"
+          },
+          "vocabulary": {
+            "items": {
+              "$ref": "#/components/schemas/VocabularyTermSchema"
+            },
+            "maxItems": 5000,
+            "title": "Vocabulary",
             "type": "array"
           }
         },
