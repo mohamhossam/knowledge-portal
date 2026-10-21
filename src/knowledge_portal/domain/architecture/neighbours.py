@@ -12,9 +12,41 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 
 from knowledge_portal.domain.architecture.entities import ArchitectureDependency
-from knowledge_portal.domain.architecture.knowledge import SystemRelationship
+from knowledge_portal.domain.architecture.interfaces import InterfaceStyle, SystemInterface
+from knowledge_portal.domain.architecture.knowledge import RelationshipKind, SystemRelationship
 
 ADJACENT_LIMIT = 8
+
+# How consuming an interface of each style reads as a one-hop edge. An API is
+# called by its consumer; events and files flow from the exposing system.
+_STYLE_EDGE = {
+    InterfaceStyle.API: ("consumer_first", RelationshipKind.CALLS_API),
+    InterfaceStyle.EVENT: ("exposer_first", RelationshipKind.PUBLISHES_EVENTS_TO),
+    InterfaceStyle.FILE: ("exposer_first", RelationshipKind.TRANSFERS_DATA_TO),
+    InterfaceStyle.UNSPECIFIED: ("consumer_first", RelationshipKind.UNSPECIFIED),
+}
+
+
+def interface_edges(interfaces: Iterable[SystemInterface]) -> tuple[SystemRelationship, ...]:
+    """Curated interface consumption as one-hop edges.
+
+    A release that records no system relationships (the seed catalogue does
+    not) still knows who talks to whom through its interfaces; without this
+    fallback the adjacent-systems view is always empty on such a release.
+    Relays need no special walk here: a relaying system consumes the relayed
+    interface itself, so each hop is already an edge.
+    """
+    edges: list[SystemRelationship] = []
+    for item in interfaces:
+        order, kind = _STYLE_EDGE[item.style]
+        for consumer in item.consumer_ids:
+            source, target = (
+                (consumer, item.system_id)
+                if order == "consumer_first"
+                else (item.system_id, consumer)
+            )
+            edges.append(SystemRelationship(source, target, item.name, kind))
+    return tuple(edges)
 
 
 @dataclass(frozen=True)
